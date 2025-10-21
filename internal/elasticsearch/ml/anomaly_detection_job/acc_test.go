@@ -1,23 +1,28 @@
 package anomaly_detection_job_test
 
 import (
+	_ "embed"
 	"fmt"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-func TestAccResourceAnomalyDetectionJob(t *testing.T) {
-	jobID := fmt.Sprintf("test-anomaly-detector-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+func TestAccResourceAnomalyDetectionJobBasic(t *testing.T) {
+	jobID := fmt.Sprintf("test-anomaly-detector-basic-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceAnomalyDetectionJobBasic(jobID),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          config.TestStepDirectory(),
+				ConfigVariables: config.Variables{
+					"job_id": config.StringVariable(jobID),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "job_id", jobID),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "description", "Test anomaly detection job"),
@@ -30,7 +35,43 @@ func TestAccResourceAnomalyDetectionJob(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccResourceAnomalyDetectionJobComprehensive(jobID),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          config.TestStepDirectory(),
+				ConfigVariables: config.Variables{
+					"job_id": config.StringVariable(jobID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "job_id", jobID),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "description", "Updated basic test anomaly detection job"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "analysis_config.bucket_span", "15m"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "analysis_config.detectors.0.function", "count"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "data_description.time_field", "@timestamp"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "data_description.time_format", "epoch_ms"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "groups.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "groups.0", "basic-group"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "analysis_limits.model_memory_limit", "128mb"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "allow_lazy_open", "true"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "results_retention_days", "15"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "create_time"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "job_type", "anomaly_detector"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceAnomalyDetectionJobComprehensive(t *testing.T) {
+	jobID := fmt.Sprintf("test-anomaly-detector-comprehensive-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          config.TestStepDirectory(),
+				ConfigVariables: config.Variables{
+					"job_id": config.StringVariable(jobID),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "job_id", jobID),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "description", "Comprehensive test anomaly detection job"),
@@ -65,150 +106,44 @@ func TestAccResourceAnomalyDetectionJob(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccResourceAnomalyDetectionJobUpdated(jobID),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          config.TestStepDirectory(),
+				ConfigVariables: config.Variables{
+					"job_id": config.StringVariable(jobID),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "job_id", jobID),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "description", "Updated test anomaly detection job"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "groups.#", "1"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "groups.0", "test-group"),
-					// Verify that updatable fields were actually updated
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "analysis_limits.model_memory_limit", "200mb"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "description", "Updated comprehensive test anomaly detection job"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "groups.#", "3"),
+					// Analysis config checks (should remain the same since these are generally immutable)
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "analysis_config.bucket_span", "10m"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "analysis_config.detectors.#", "2"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "analysis_config.detectors.0.function", "count"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "analysis_config.detectors.1.function", "mean"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "analysis_config.detectors.1.field_name", "response_time"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "analysis_config.influencers.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "analysis_config.influencers.0", "status_code"),
+					// Updated analysis limits checks
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "analysis_limits.model_memory_limit", "256mb"),
+					// Data description checks (should remain the same)
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "data_description.time_field", "@timestamp"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "data_description.time_format", "epoch_ms"),
+					// Updated model plot config checks
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "model_plot_config.enabled", "false"),
+					// Updated other settings checks
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "allow_lazy_open", "false"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "background_persist_interval", "2h"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "custom_settings", "{\"updated_key\": \"updated_value\"}"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "daily_model_snapshot_retention_after_days", "5"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "model_snapshot_retention_days", "14"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "renormalization_window_days", "30"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "results_retention_days", "60"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "background_persist_interval", "3h"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "custom_settings", "{\"updated_key\": \"updated_value\", \"additional_key\": \"additional_value\"}"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "daily_model_snapshot_retention_after_days", "7"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "model_snapshot_retention_days", "21"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "renormalization_window_days", "28"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "results_retention_days", "90"),
+					// Computed fields
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "create_time"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "job_type", "anomaly_detector"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "job_version"),
 				),
 			},
 		},
 	})
-}
-
-func testAccResourceAnomalyDetectionJobBasic(jobID string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_ml_anomaly_detection_job" "test" {
-  job_id      = "%s"
-  description = "Test anomaly detection job"
-
-  analysis_config = {
-    bucket_span = "15m"
-    detectors = [
-      {
-        function              = "count"
-        detector_description = "Count detector"
-      }
-    ]
-  }
-
-  data_description = {
-    time_field  = "@timestamp"
-    time_format = "epoch_ms"
-  }
-}
-`, jobID)
-}
-
-func testAccResourceAnomalyDetectionJobComprehensive(jobID string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_ml_anomaly_detection_job" "test" {
-  job_id      = "%s"
-  description = "Comprehensive test anomaly detection job"
-  groups      = ["test-group", "ml-group"]
-
-  analysis_config = {
-    bucket_span = "10m"
-    detectors = [
-      {
-        function              = "count"
-        detector_description = "Count detector"
-      },
-      {
-        function              = "mean"
-        field_name           = "response_time"
-        detector_description = "Mean response time detector"
-      }
-    ]
-    influencers = ["status_code"]
-  }
-
-  analysis_limits = {
-    model_memory_limit = "100mb"
-  }
-
-  data_description = {
-    time_field  = "@timestamp"
-    time_format = "epoch_ms"
-  }
-
-  model_plot_config = {
-    enabled = true
-  }
-
-  allow_lazy_open = true
-  background_persist_interval = "1h"
-  custom_settings = "{\"custom_key\": \"custom_value\"}"
-  daily_model_snapshot_retention_after_days = 3
-  model_snapshot_retention_days = 7
-  renormalization_window_days = 14
-  results_retention_days = 30
-}
-`, jobID)
-}
-
-func testAccResourceAnomalyDetectionJobUpdated(jobID string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_ml_anomaly_detection_job" "test" {
-  job_id      = "%s"
-  description = "Updated test anomaly detection job"
-
-  analysis_config = {
-    bucket_span = "15m"
-    detectors = [
-      {
-        function              = "count"
-        detector_description = "Count detector"
-      }
-    ]
-  }
-
-  data_description = {
-    time_field  = "@timestamp"
-    time_format = "epoch_ms"
-  }
-
-  groups = ["test-group"]
-  
-  # Test updating some of the other updatable fields
-  analysis_limits = {
-    model_memory_limit = "200mb"
-  }
-  
-  model_plot_config = {
-    enabled = false
-  }
-  
-  allow_lazy_open = false
-  background_persist_interval = "2h"
-  custom_settings = "{\"updated_key\": \"updated_value\"}"
-  daily_model_snapshot_retention_after_days = 5
-  model_snapshot_retention_days = 14
-  renormalization_window_days = 30
-  results_retention_days = 60
-}
-`, jobID)
 }
