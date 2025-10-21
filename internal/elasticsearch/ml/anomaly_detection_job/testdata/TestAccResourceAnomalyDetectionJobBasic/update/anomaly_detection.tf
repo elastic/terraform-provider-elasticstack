@@ -15,7 +15,7 @@ resource "elasticstack_elasticsearch_ml_anomaly_detection_job" "test" {
     bucket_span = "15m"
     detectors = [
       {
-        function              = "count"
+        function             = "count"
         detector_description = "Count detector"
       }
     ]
@@ -27,11 +27,11 @@ resource "elasticstack_elasticsearch_ml_anomaly_detection_job" "test" {
   }
 
   groups = ["basic-group"]
-  
+
   analysis_limits = {
     model_memory_limit = "128mb"
   }
-  
-  allow_lazy_open = true
+
+  allow_lazy_open        = true
   results_retention_days = 15
 }

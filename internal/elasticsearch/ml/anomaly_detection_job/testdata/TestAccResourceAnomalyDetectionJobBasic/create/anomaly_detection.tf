@@ -15,7 +15,7 @@ resource "elasticstack_elasticsearch_ml_anomaly_detection_job" "test" {
     bucket_span = "15m"
     detectors = [
       {
-        function              = "count"
+        function             = "count"
         detector_description = "Count detector"
       }
     ]

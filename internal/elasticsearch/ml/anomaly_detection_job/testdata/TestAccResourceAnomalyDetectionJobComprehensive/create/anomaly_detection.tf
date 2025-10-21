@@ -16,11 +16,11 @@ resource "elasticstack_elasticsearch_ml_anomaly_detection_job" "test" {
     bucket_span = "10m"
     detectors = [
       {
-        function              = "count"
+        function             = "count"
         detector_description = "Count detector"
       },
       {
-        function              = "mean"
+        function             = "mean"
         field_name           = "response_time"
         detector_description = "Mean response time detector"
       }
@@ -41,11 +41,11 @@ resource "elasticstack_elasticsearch_ml_anomaly_detection_job" "test" {
     enabled = true
   }
 
-  allow_lazy_open = true
-  background_persist_interval = "1h"
-  custom_settings = "{\"custom_key\": \"custom_value\"}"
+  allow_lazy_open                           = true
+  background_persist_interval               = "1h"
+  custom_settings                           = "{\"custom_key\": \"custom_value\"}"
   daily_model_snapshot_retention_after_days = 3
-  model_snapshot_retention_days = 7
-  renormalization_window_days = 14
-  results_retention_days = 30
+  model_snapshot_retention_days             = 7
+  renormalization_window_days               = 14
+  results_retention_days                    = 30
 }
