@@ -5,10 +5,13 @@ import (
 	"regexp"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
@@ -73,6 +76,21 @@ func GetSchema() schema.Schema {
 			"data_view_id": schema.StringAttribute{
 				MarkdownDescription: "Data view ID for the rule. Not supported for esql and machine_learning rule types.",
 				Optional:            true,
+				Validators: []validator.String{
+					stringvalidator.All(
+						stringvalidator.Any( // Either index or data_view_id must be set except for esql and machine_learning where neither can be set
+							stringvalidator.ExactlyOneOf(path.MatchRoot("index"), path.MatchRoot("data_view_id")),
+							validators.StringAssert(
+								path.Root("type"),
+								[]string{"machine_learning", "esql"},
+							),
+						),
+						validators.StringConditionalForbidden(
+							path.Root("type"),
+							[]string{"machine_learning", "esql"},
+						),
+					),
+				},
 			},
 			"namespace": schema.StringAttribute{
 				MarkdownDescription: "Alerts index namespace. Available for all rule types.",
@@ -108,6 +126,21 @@ func GetSchema() schema.Schema {
 				MarkdownDescription: "Indices on which the rule functions.",
 				Optional:            true,
 				Computed:            true,
+				Validators: []validator.List{
+					listvalidator.All(
+						listvalidator.Any( // Either index or data_view_id must be set except for esql and machine_learning where neither can be set
+							listvalidator.ExactlyOneOf(path.MatchRoot("index"), path.MatchRoot("data_view_id")),
+							validators.ListAssert(
+								path.Root("type"),
+								[]string{"machine_learning", "esql"},
+							),
+						),
+						validators.ListConditionalForbidden(
+							path.Root("type"),
+							[]string{"machine_learning", "esql"},
+						),
+					),
+				},
 			},
 			"enabled": schema.BoolAttribute{
 				MarkdownDescription: "Determines whether the rule is enabled.",
@@ -302,6 +335,12 @@ func GetSchema() schema.Schema {
 				MarkdownDescription: "Query and filter context array to define alert conditions as JSON. Supports complex filter structures including bool queries, term filters, range filters, etc. Available for all rule types.",
 				Optional:            true,
 				CustomType:          jsontypes.NormalizedType{},
+				Validators: []validator.String{
+					validators.StringConditionalForbidden(
+						path.Root("type"),
+						[]string{"machine_learning", "esql"},
+					),
+				},
 			},
 			"note": schema.StringAttribute{
 				MarkdownDescription: "Notes to help investigate alerts produced by the rule.",
@@ -602,6 +641,10 @@ func GetSchema() schema.Schema {
 				MarkdownDescription: "Anomaly score threshold above which the rule creates an alert. Valid values are from 0 to 100. Required for machine_learning rules.",
 				Optional:            true,
 				Validators: []validator.Int64{
+					validators.Int64ConditionalRequirementSingle(
+						path.Root("type"),
+						"machine_learning",
+					),
 					int64validator.Between(0, 100),
 				},
 			},
