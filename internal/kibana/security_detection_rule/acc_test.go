@@ -73,7 +73,6 @@ func TestAccResourceSecurityDetectionRule_Query(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "severity", "medium"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score", "50"),
 					resource.TestCheckResourceAttr(resourceName, "index.0", "logs-*"),
-					resource.TestCheckResourceAttr(resourceName, "data_view_id", "test-data-view-id"),
 					resource.TestCheckResourceAttr(resourceName, "namespace", "test-namespace"),
 					resource.TestCheckResourceAttr(resourceName, "rule_name_override", "Custom Query Rule Name"),
 					resource.TestCheckResourceAttr(resourceName, "timestamp_override", "@timestamp"),
@@ -151,7 +150,6 @@ func TestAccResourceSecurityDetectionRule_Query(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "description", "Updated test query security detection rule"),
 					resource.TestCheckResourceAttr(resourceName, "severity", "high"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score", "75"),
-					resource.TestCheckResourceAttr(resourceName, "data_view_id", "updated-data-view-id"),
 					resource.TestCheckResourceAttr(resourceName, "namespace", "updated-namespace"),
 					resource.TestCheckResourceAttr(resourceName, "rule_name_override", "Updated Custom Query Rule Name"),
 					resource.TestCheckResourceAttr(resourceName, "timestamp_override", "event.ingested"),
@@ -268,7 +266,6 @@ func TestAccResourceSecurityDetectionRule_EQL(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "description", "Test EQL security detection rule"),
 					resource.TestCheckResourceAttr(resourceName, "severity", "high"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score", "70"),
-					resource.TestCheckResourceAttr(resourceName, "index.0", "winlogbeat-*"),
 					resource.TestCheckResourceAttr(resourceName, "tiebreaker_field", "@timestamp"),
 					resource.TestCheckResourceAttr(resourceName, "data_view_id", "eql-data-view-id"),
 					resource.TestCheckResourceAttr(resourceName, "namespace", "eql-namespace"),
@@ -728,7 +725,6 @@ func TestAccResourceSecurityDetectionRule_NewTerms(t *testing.T) {
 					checkResourceJSONAttr(resourceName, "filters", `[{"bool": {"should": [{"wildcard": {"user.domain": "*.internal"}}, {"term": {"user.type": "service_account"}}]}}]`),
 
 					resource.TestCheckResourceAttr(resourceName, "history_window_start", "now-14d"),
-					resource.TestCheckResourceAttr(resourceName, "data_view_id", "new-terms-data-view-id"),
 					resource.TestCheckResourceAttr(resourceName, "namespace", "new-terms-namespace"),
 					resource.TestCheckResourceAttr(resourceName, "rule_name_override", "Custom New Terms Rule Name"),
 					resource.TestCheckResourceAttr(resourceName, "timestamp_override", "user.created"),
@@ -868,7 +864,6 @@ func TestAccResourceSecurityDetectionRule_SavedQuery(t *testing.T) {
 					// Check filters field
 					checkResourceJSONAttr(resourceName, "filters", `[{"prefix": {"event.action": "user_"}}]`),
 
-					resource.TestCheckResourceAttr(resourceName, "index.0", "logs-*"),
 					resource.TestCheckResourceAttr(resourceName, "data_view_id", "saved-query-data-view-id"),
 					resource.TestCheckResourceAttr(resourceName, "namespace", "saved-query-namespace"),
 					resource.TestCheckResourceAttr(resourceName, "rule_name_override", "Custom Saved Query Rule Name"),
@@ -943,8 +938,6 @@ func TestAccResourceSecurityDetectionRule_SavedQuery(t *testing.T) {
 					// Check filters field (updated values)
 					checkResourceJSONAttr(resourceName, "filters", `[{"script": {"script": {"source": "doc['event.severity'].value > 2"}}}]`),
 
-					resource.TestCheckResourceAttr(resourceName, "index.0", "logs-*"),
-					resource.TestCheckResourceAttr(resourceName, "index.1", "audit-*"),
 					resource.TestCheckResourceAttr(resourceName, "data_view_id", "updated-saved-query-data-view-id"),
 					resource.TestCheckResourceAttr(resourceName, "namespace", "updated-saved-query-namespace"),
 					resource.TestCheckResourceAttr(resourceName, "rule_name_override", "Updated Custom Saved Query Rule Name"),
@@ -1033,7 +1026,6 @@ func TestAccResourceSecurityDetectionRule_ThreatMatch(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "severity", "high"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score", "80"),
 					resource.TestCheckResourceAttr(resourceName, "index.0", "logs-*"),
-					resource.TestCheckResourceAttr(resourceName, "data_view_id", "threat-match-data-view-id"),
 					resource.TestCheckResourceAttr(resourceName, "namespace", "threat-match-namespace"),
 					resource.TestCheckResourceAttr(resourceName, "rule_name_override", "Custom Threat Match Rule Name"),
 					resource.TestCheckResourceAttr(resourceName, "timestamp_override", "threat.indicator.first_seen"),
@@ -1115,7 +1107,6 @@ func TestAccResourceSecurityDetectionRule_ThreatMatch(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "risk_score", "95"),
 					resource.TestCheckResourceAttr(resourceName, "index.0", "logs-*"),
 					resource.TestCheckResourceAttr(resourceName, "index.1", "network-*"),
-					resource.TestCheckResourceAttr(resourceName, "data_view_id", "updated-threat-match-data-view-id"),
 					resource.TestCheckResourceAttr(resourceName, "namespace", "updated-threat-match-namespace"),
 					resource.TestCheckResourceAttr(resourceName, "rule_name_override", "Updated Custom Threat Match Rule Name"),
 					resource.TestCheckResourceAttr(resourceName, "timestamp_override", "threat.indicator.last_seen"),
@@ -1206,7 +1197,6 @@ func TestAccResourceSecurityDetectionRule_Threshold(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "description", "Test threshold security detection rule"),
 					resource.TestCheckResourceAttr(resourceName, "severity", "medium"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score", "55"),
-					resource.TestCheckResourceAttr(resourceName, "index.0", "logs-*"),
 					resource.TestCheckResourceAttr(resourceName, "data_view_id", "threshold-data-view-id"),
 					resource.TestCheckResourceAttr(resourceName, "namespace", "threshold-namespace"),
 					resource.TestCheckResourceAttr(resourceName, "rule_name_override", "Custom Threshold Rule Name"),
@@ -1277,8 +1267,6 @@ func TestAccResourceSecurityDetectionRule_Threshold(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "description", "Updated test threshold security detection rule"),
 					resource.TestCheckResourceAttr(resourceName, "severity", "high"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score", "75"),
-					resource.TestCheckResourceAttr(resourceName, "index.0", "logs-*"),
-					resource.TestCheckResourceAttr(resourceName, "index.1", "audit-*"),
 					resource.TestCheckResourceAttr(resourceName, "data_view_id", "updated-threshold-data-view-id"),
 					resource.TestCheckResourceAttr(resourceName, "namespace", "updated-threshold-namespace"),
 					resource.TestCheckResourceAttr(resourceName, "rule_name_override", "Updated Custom Threshold Rule Name"),
@@ -1437,7 +1425,6 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   to           = "now"
   interval     = "5m"
   index        = ["logs-*"]
-  data_view_id = "test-data-view-id"
   namespace    = "test-namespace"
   rule_name_override = "Custom Query Rule Name"
   timestamp_override = "@timestamp"
@@ -1555,7 +1542,6 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   author      = ["Test Author"]
   tags        = ["test", "automation"]
   license     = "Elastic License v2"
-  data_view_id = "updated-data-view-id"
   namespace    = "updated-namespace"
   rule_name_override = "Updated Custom Query Rule Name"
   timestamp_override = "event.ingested"
@@ -1695,7 +1681,6 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   from             = "now-6m"
   to               = "now"
   interval         = "5m"
-  index            = ["winlogbeat-*"]
   tiebreaker_field = "@timestamp"
   data_view_id     = "eql-data-view-id"
   namespace        = "eql-namespace"
@@ -2273,7 +2258,6 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   index               = ["logs-*"]
   new_terms_fields    = ["user.name"]
   history_window_start = "now-14d"
-  data_view_id        = "new-terms-data-view-id"
   namespace           = "new-terms-namespace"
   rule_name_override = "Custom New Terms Rule Name"
   timestamp_override = "user.created"
@@ -2492,7 +2476,6 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   from         = "now-6m"
   to           = "now"
   interval     = "5m"
-  index        = ["logs-*"]
   saved_id     = "test-saved-query-id"
   data_view_id = "saved-query-data-view-id"
   namespace    = "saved-query-namespace"
@@ -2588,7 +2571,6 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   from         = "now-6m"
   to           = "now"
   interval     = "5m"
-  index        = ["logs-*", "audit-*"]
   saved_id     = "test-saved-query-id-updated"
   data_view_id = "updated-saved-query-data-view-id"
   namespace    = "updated-saved-query-namespace"
@@ -2705,7 +2687,6 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   to           = "now"
   interval     = "5m"
   index        = ["logs-*"]
-  data_view_id = "threat-match-data-view-id"
   namespace    = "threat-match-namespace"
   rule_name_override = "Custom Threat Match Rule Name"
   timestamp_override = "threat.indicator.first_seen"
@@ -2828,7 +2809,6 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   to           = "now"
   interval     = "5m"
   index        = ["logs-*", "network-*"]
-  data_view_id = "updated-threat-match-data-view-id"
   namespace    = "updated-threat-match-namespace"
   threat_index = ["threat-intel-*", "ioc-*"]
   threat_query = "threat.indicator.type:(ip OR domain)"
@@ -2958,7 +2938,6 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   from         = "now-6m"
   to           = "now"
   interval     = "5m"
-  index        = ["logs-*"]
   data_view_id = "threshold-data-view-id"
   namespace    = "threshold-namespace"
   rule_name_override = "Custom Threshold Rule Name"
@@ -3065,7 +3044,6 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   from         = "now-6m"
   to           = "now"
   interval     = "5m"
-  index        = ["logs-*", "audit-*"]
   data_view_id = "updated-threshold-data-view-id"
   namespace    = "updated-threshold-namespace"
   author       = ["Test Author"]
@@ -3206,7 +3184,6 @@ func TestAccResourceSecurityDetectionRule_WithConnectorAction(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "severity", "medium"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score", "50"),
 					resource.TestCheckResourceAttr(resourceName, "index.0", "logs-*"),
-					resource.TestCheckResourceAttr(resourceName, "data_view_id", "connector-action-data-view-id"),
 					resource.TestCheckResourceAttr(resourceName, "namespace", "connector-action-namespace"),
 
 					// Check risk score mapping
@@ -3241,7 +3218,6 @@ func TestAccResourceSecurityDetectionRule_WithConnectorAction(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "description", "Updated test security detection rule with connector action"),
 					resource.TestCheckResourceAttr(resourceName, "severity", "high"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score", "75"),
-					resource.TestCheckResourceAttr(resourceName, "data_view_id", "updated-connector-action-data-view-id"),
 					resource.TestCheckResourceAttr(resourceName, "namespace", "updated-connector-action-namespace"),
 					resource.TestCheckResourceAttr(resourceName, "tags.#", "2"),
 					resource.TestCheckResourceAttr(resourceName, "tags.0", "test"),
@@ -3310,7 +3286,6 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   to           = "now"
   interval     = "5m"
   index        = ["logs-*"]
-  data_view_id = "connector-action-data-view-id"
   namespace    = "connector-action-namespace"
 
   risk_score_mapping = [
@@ -3381,7 +3356,6 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   to           = "now"
   interval     = "5m"
   index        = ["logs-*"]
-  data_view_id = "updated-connector-action-data-view-id"
   namespace    = "updated-connector-action-namespace"
   
   tags = ["test", "terraform"]
@@ -3444,7 +3418,6 @@ func TestAccResourceSecurityDetectionRule_BuildingBlockType(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "severity", "low"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score", "21"),
 					resource.TestCheckResourceAttr(resourceName, "index.0", "logs-*"),
-					resource.TestCheckResourceAttr(resourceName, "data_view_id", "building-block-data-view-id"),
 					resource.TestCheckResourceAttr(resourceName, "namespace", "building-block-namespace"),
 					resource.TestCheckResourceAttr(resourceName, "building_block_type", "default"),
 
@@ -3503,7 +3476,6 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   to                  = "now"
   interval            = "5m"
   index               = ["logs-*"]
-  data_view_id        = "building-block-data-view-id"
   namespace           = "building-block-namespace"
   building_block_type = "default"
 }
@@ -3528,7 +3500,6 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   from                = "now-6m"
   to                  = "now"
   interval            = "5m"
-  index               = ["logs-*"]
   data_view_id        = "updated-building-block-data-view-id"
   namespace           = "updated-building-block-namespace"
   building_block_type = "default"
@@ -3557,7 +3528,6 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   from         = "now-6m"
   to           = "now"
   interval     = "5m"
-  index        = ["logs-*"]
   data_view_id = "no-building-block-data-view-id"
   namespace    = "no-building-block-namespace"
 }
@@ -3716,7 +3686,6 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   to           = "now"
   interval     = "5m"
   index        = ["logs-*"]
-  data_view_id = "no-filters-data-view-id"
   namespace    = "no-filters-namespace"
   
   # Note: No filters field specified - this tests removing filters from a rule
