@@ -104,7 +104,6 @@ resource "elasticstack_elasticsearch_ml_anomaly_detection_job" "example" {
 
 Required:
 
-- `bucket_span` (String) The size of the interval that the analysis is aggregated into, typically between 15m and 1h. If the anomaly detector is expecting to see data at near real-time frequency, then the bucket_span should be set to a value around 10 times the time between ingested documents. For example, if data comes every second, bucket_span should be 10s; if data comes every 5 minutes, bucket_span should be 50m. For sparse or batch data, use larger bucket_span values.
 - `detectors` (Attributes List) Detector configuration objects. Detectors identify the anomaly detection functions and the fields on which they operate. (see [below for nested schema](#nestedatt--analysis_config--detectors))
 
 Optional:
@@ -117,6 +116,10 @@ Optional:
 - `multivariate_by_fields` (Boolean) This functionality is reserved for internal use. It is not supported for use in customer environments and is not subject to the support SLA of official GA features.
 - `per_partition_categorization` (Attributes) Settings related to how categorization interacts with partition fields. (see [below for nested schema](#nestedatt--analysis_config--per_partition_categorization))
 - `summary_count_field_name` (String) If this property is specified, the data that is fed to the job is expected to be pre-summarized.
+
+Read-Only:
+
+- `bucket_span` (String) The size of the interval that the analysis is aggregated into, typically between 15m and 1h. If the anomaly detector is expecting to see data at near real-time frequency, then the bucket_span should be set to a value around 10 times the time between ingested documents. For example, if data comes every second, bucket_span should be 10s; if data comes every 5 minutes, bucket_span should be 50m. For sparse or batch data, use larger bucket_span values.
 
 <a id="nestedatt--analysis_config--detectors"></a>
 ### Nested Schema for `analysis_config.detectors`

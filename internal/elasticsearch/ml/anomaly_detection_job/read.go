@@ -58,6 +58,15 @@ func (r *anomalyDetectionJobResource) read(ctx context.Context, job *AnomalyDete
 		return false, nil
 	}
 
+	if len(response.Jobs) > 1 {
+		jobIDs := []string{}
+		for _, job := range response.Jobs {
+			jobIDs = append(jobIDs, job.JobID)
+		}
+
+		diags.AddWarning("Getting jobs by ID returned multiple results", fmt.Sprintf("Expected a single result when getting anomaly detection jobs by ID. However the API returned %d jobs with IDs %v", len(response.Jobs), jobIDs))
+	}
+
 	// Convert API response back to TF model
 	diags.Append(job.fromAPIModel(ctx, &response.Jobs[0])...)
 	if diags.HasError() {
