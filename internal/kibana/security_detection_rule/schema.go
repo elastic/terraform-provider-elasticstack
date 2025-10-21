@@ -78,13 +78,16 @@ func GetSchema() schema.Schema {
 				Optional:            true,
 				Validators: []validator.String{
 					stringvalidator.All(
-						stringvalidator.Any( // Either index or data_view_id must be set except for esql and machine_learning where neither can be set
+						// Enforce that one of index or data_view_id are set if the rule type is not ml or esql
+						stringvalidator.Any(
 							stringvalidator.ExactlyOneOf(path.MatchRoot("index"), path.MatchRoot("data_view_id")),
 							validators.StringAssert(
 								path.Root("type"),
 								[]string{"machine_learning", "esql"},
 							),
 						),
+
+						// Enforce that index is not set if the rule type is ml or esql
 						validators.StringConditionalForbidden(
 							path.Root("type"),
 							[]string{"machine_learning", "esql"},
@@ -128,13 +131,15 @@ func GetSchema() schema.Schema {
 				Computed:            true,
 				Validators: []validator.List{
 					listvalidator.All(
-						listvalidator.Any( // Either index or data_view_id must be set except for esql and machine_learning where neither can be set
+						// Enforce that one of index or data_view_id are set if the rule type is not ml or esql
+						listvalidator.Any(
 							listvalidator.ExactlyOneOf(path.MatchRoot("index"), path.MatchRoot("data_view_id")),
 							validators.ListAssert(
 								path.Root("type"),
 								[]string{"machine_learning", "esql"},
 							),
 						),
+						// Enforce that index is not set if the rule type is ml or esql
 						validators.ListConditionalForbidden(
 							path.Root("type"),
 							[]string{"machine_learning", "esql"},
