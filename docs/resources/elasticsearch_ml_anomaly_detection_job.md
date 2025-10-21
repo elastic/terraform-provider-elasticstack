@@ -108,6 +108,7 @@ Required:
 
 Optional:
 
+- `bucket_span` (String) The size of the interval that the analysis is aggregated into, typically between 15m and 1h. If the anomaly detector is expecting to see data at near real-time frequency, then the bucket_span should be set to a value around 10 times the time between ingested documents. For example, if data comes every second, bucket_span should be 10s; if data comes every 5 minutes, bucket_span should be 50m. For sparse or batch data, use larger bucket_span values.
 - `categorization_field_name` (String) For categorization jobs only. The name of the field to categorize.
 - `categorization_filters` (List of String) For categorization jobs only. An array of regular expressions. A categorization message is matched against each regex in the order they are listed in the array.
 - `influencers` (List of String) A comma separated list of influencer field names. Typically these can be the by, over, or partition fields that are used in the detector configuration.
@@ -116,10 +117,6 @@ Optional:
 - `multivariate_by_fields` (Boolean) This functionality is reserved for internal use. It is not supported for use in customer environments and is not subject to the support SLA of official GA features.
 - `per_partition_categorization` (Attributes) Settings related to how categorization interacts with partition fields. (see [below for nested schema](#nestedatt--analysis_config--per_partition_categorization))
 - `summary_count_field_name` (String) If this property is specified, the data that is fed to the job is expected to be pre-summarized.
-
-Read-Only:
-
-- `bucket_span` (String) The size of the interval that the analysis is aggregated into, typically between 15m and 1h. If the anomaly detector is expecting to see data at near real-time frequency, then the bucket_span should be set to a value around 10 times the time between ingested documents. For example, if data comes every second, bucket_span should be 10s; if data comes every 5 minutes, bucket_span should be 50m. For sparse or batch data, use larger bucket_span values.
 
 <a id="nestedatt--analysis_config--detectors"></a>
 ### Nested Schema for `analysis_config.detectors`
@@ -174,9 +171,6 @@ Optional:
 
 Optional:
 
-- `field_delimiter` (String) The character used to delimit fields in the data. Only applicable when format is delimited.
-- `format` (String) Only JSON format is supported at this time.
-- `quote_character` (String) The character used to quote fields in the data. Only applicable when format is delimited.
 - `time_field` (String) The name of the field that contains the timestamp.
 - `time_format` (String) The time format, which can be epoch, epoch_ms, or a custom pattern.
 

@@ -271,26 +271,6 @@ func GetSchema() schema.Schema {
 						MarkdownDescription: "The time format, which can be epoch, epoch_ms, or a custom pattern.",
 						Optional:            true,
 					},
-					"format": schema.StringAttribute{
-						MarkdownDescription: "Only JSON format is supported at this time.",
-						Optional:            true,
-						Computed:            true,
-						Validators: []validator.String{
-							// TODO: TB If only json is supported then why are we allowing delimited?
-							stringvalidator.OneOf("json", "delimited"),
-						},
-						PlanModifiers: []planmodifier.String{
-							stringplanmodifier.UseStateForUnknown(),
-						},
-					},
-					"field_delimiter": schema.StringAttribute{
-						MarkdownDescription: "The character used to delimit fields in the data. Only applicable when format is delimited.",
-						Optional:            true,
-					},
-					"quote_character": schema.StringAttribute{
-						MarkdownDescription: "The character used to quote fields in the data. Only applicable when format is delimited.",
-						Optional:            true,
-					},
 				},
 			},
 			"model_plot_config": schema.SingleNestedAttribute{

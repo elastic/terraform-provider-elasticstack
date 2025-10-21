@@ -73,11 +73,8 @@ type AnalysisLimitsAPIModel struct {
 
 // DataDescriptionAPIModel represents data description in API format
 type DataDescriptionAPIModel struct {
-	FieldDelimiter string `json:"field_delimiter,omitempty"`
-	Format         string `json:"format,omitempty"`
-	QuoteCharacter string `json:"quote_character,omitempty"`
-	TimeField      string `json:"time_field,omitempty"`
-	TimeFormat     string `json:"time_format,omitempty"`
+	TimeField  string `json:"time_field,omitempty"`
+	TimeFormat string `json:"time_format,omitempty"`
 }
 
 // ChunkingConfigAPIModel represents chunking configuration in API format

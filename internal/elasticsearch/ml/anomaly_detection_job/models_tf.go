@@ -87,11 +87,8 @@ type AnalysisLimitsTFModel struct {
 
 // DataDescriptionTFModel represents data description configuration
 type DataDescriptionTFModel struct {
-	FieldDelimiter types.String `tfsdk:"field_delimiter"`
-	Format         types.String `tfsdk:"format"`
-	QuoteCharacter types.String `tfsdk:"quote_character"`
-	TimeField      types.String `tfsdk:"time_field"`
-	TimeFormat     types.String `tfsdk:"time_format"`
+	TimeField  types.String `tfsdk:"time_field"`
+	TimeFormat types.String `tfsdk:"time_format"`
 }
 
 // ModelPlotConfigTFModel represents model plot configuration
@@ -213,11 +210,8 @@ func (plan *AnomalyDetectionJobTFModel) toAPIModel(ctx context.Context) (*Anomal
 	d = plan.DataDescription.As(ctx, &dataDescription, basetypes.ObjectAsOptions{})
 	diags.Append(d...)
 	apiModel.DataDescription = DataDescriptionAPIModel{
-		TimeField:      dataDescription.TimeField.ValueString(),
-		TimeFormat:     dataDescription.TimeFormat.ValueString(),
-		Format:         dataDescription.Format.ValueString(),
-		FieldDelimiter: dataDescription.FieldDelimiter.ValueString(),
-		QuoteCharacter: dataDescription.QuoteCharacter.ValueString(),
+		TimeField:  dataDescription.TimeField.ValueString(),
+		TimeFormat: dataDescription.TimeFormat.ValueString(),
 	}
 
 	// Convert optional fields
@@ -547,24 +541,6 @@ func (tfModel *AnomalyDetectionJobTFModel) convertDataDescriptionFromAPI(ctx con
 		dataDescriptionTF.TimeFormat = types.StringValue(apiDataDescription.TimeFormat)
 	} else {
 		dataDescriptionTF.TimeFormat = types.StringNull()
-	}
-
-	if apiDataDescription.Format != "" {
-		dataDescriptionTF.Format = types.StringValue(apiDataDescription.Format)
-	} else {
-		dataDescriptionTF.Format = types.StringNull()
-	}
-
-	if apiDataDescription.FieldDelimiter != "" {
-		dataDescriptionTF.FieldDelimiter = types.StringValue(apiDataDescription.FieldDelimiter)
-	} else {
-		dataDescriptionTF.FieldDelimiter = types.StringNull()
-	}
-
-	if apiDataDescription.QuoteCharacter != "" {
-		dataDescriptionTF.QuoteCharacter = types.StringValue(apiDataDescription.QuoteCharacter)
-	} else {
-		dataDescriptionTF.QuoteCharacter = types.StringNull()
 	}
 
 	dataDescriptionObjectValue, d := types.ObjectValueFrom(ctx, getDataDescriptionAttrTypes(), dataDescriptionTF)
