@@ -16,7 +16,7 @@
   ],
   "postUpgradeTasks": {
     "commands": ["make -C generated/kbapi all"],
-    "fileFilters": ["generated/kbapi/Makefile"]
+    "fileFilters": ["generated/kbapi/kibana.gen.go"]
   },
   "automerge": true,
   "automergeStrategy": "squash",
