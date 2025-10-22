@@ -1,5 +1,14 @@
 package anomaly_detection_job
 
+import (
+	"context"
+	"encoding/json"
+
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+)
+
 // AnomalyDetectionJobAPIModel represents the API model for ML anomaly detection jobs
 type AnomalyDetectionJobAPIModel struct {
 	JobID                                string                   `json:"job_id"`
@@ -124,4 +133,98 @@ type AnomalyDetectionJobUpdateAPIModel struct {
 	ModelSnapshotRetentionDays           *int64                   `json:"model_snapshot_retention_days,omitempty"`
 	RenormalizationWindowDays            *int64                   `json:"renormalization_window_days,omitempty"`
 	ResultsRetentionDays                 *int64                   `json:"results_retention_days,omitempty"`
+}
+
+// BuildFromPlan populates the AnomalyDetectionJobUpdateAPIModel from the plan and state models
+func (u *AnomalyDetectionJobUpdateAPIModel) BuildFromPlan(ctx context.Context, plan, state *AnomalyDetectionJobTFModel) (bool, fwdiags.Diagnostics) {
+	var diags fwdiags.Diagnostics
+	hasChanges := false
+
+	if !plan.Description.Equal(state.Description) {
+		u.Description = utils.Pointer(plan.Description.ValueString())
+		hasChanges = true
+	}
+
+	if !plan.Groups.Equal(state.Groups) {
+		var groups []string
+		d := plan.Groups.ElementsAs(ctx, &groups, false)
+		diags.Append(d...)
+		u.Groups = groups
+		hasChanges = true
+	}
+
+	if !plan.ModelPlotConfig.Equal(state.ModelPlotConfig) {
+		var modelPlotConfig ModelPlotConfigTFModel
+		d := plan.ModelPlotConfig.As(ctx, &modelPlotConfig, basetypes.ObjectAsOptions{})
+		diags.Append(d...)
+		if diags.HasError() {
+			return false, diags
+		}
+		apiModelPlotConfig := &ModelPlotConfigAPIModel{
+			Enabled:            modelPlotConfig.Enabled.ValueBool(),
+			AnnotationsEnabled: utils.Pointer(modelPlotConfig.AnnotationsEnabled.ValueBool()),
+			Terms:              modelPlotConfig.Terms.ValueString(),
+		}
+		u.ModelPlotConfig = apiModelPlotConfig
+		hasChanges = true
+	}
+
+	if !plan.AnalysisLimits.Equal(state.AnalysisLimits) {
+		var analysisLimits AnalysisLimitsTFModel
+		d := plan.AnalysisLimits.As(ctx, &analysisLimits, basetypes.ObjectAsOptions{})
+		diags.Append(d...)
+		if diags.HasError() {
+			return false, diags
+		}
+		apiAnalysisLimits := &AnalysisLimitsAPIModel{
+			ModelMemoryLimit: analysisLimits.ModelMemoryLimit.ValueString(),
+		}
+		if !analysisLimits.CategorizationExamplesLimit.IsNull() {
+			apiAnalysisLimits.CategorizationExamplesLimit = utils.Pointer(analysisLimits.CategorizationExamplesLimit.ValueInt64())
+		}
+		u.AnalysisLimits = apiAnalysisLimits
+		hasChanges = true
+	}
+
+	if !plan.AllowLazyOpen.Equal(state.AllowLazyOpen) {
+		u.AllowLazyOpen = utils.Pointer(plan.AllowLazyOpen.ValueBool())
+		hasChanges = true
+	}
+
+	if !plan.BackgroundPersistInterval.Equal(state.BackgroundPersistInterval) && !plan.BackgroundPersistInterval.IsNull() {
+		u.BackgroundPersistInterval = utils.Pointer(plan.BackgroundPersistInterval.ValueString())
+		hasChanges = true
+	}
+
+	if !plan.CustomSettings.Equal(state.CustomSettings) && !plan.CustomSettings.IsNull() {
+		var customSettings map[string]interface{}
+		if err := json.Unmarshal([]byte(plan.CustomSettings.ValueString()), &customSettings); err != nil {
+			diags.AddError("Failed to parse custom_settings", err.Error())
+			return false, diags
+		}
+		u.CustomSettings = customSettings
+		hasChanges = true
+	}
+
+	if !plan.DailyModelSnapshotRetentionAfterDays.Equal(state.DailyModelSnapshotRetentionAfterDays) && !plan.DailyModelSnapshotRetentionAfterDays.IsNull() {
+		u.DailyModelSnapshotRetentionAfterDays = utils.Pointer(plan.DailyModelSnapshotRetentionAfterDays.ValueInt64())
+		hasChanges = true
+	}
+
+	if !plan.ModelSnapshotRetentionDays.Equal(state.ModelSnapshotRetentionDays) && !plan.ModelSnapshotRetentionDays.IsNull() {
+		u.ModelSnapshotRetentionDays = utils.Pointer(plan.ModelSnapshotRetentionDays.ValueInt64())
+		hasChanges = true
+	}
+
+	if !plan.RenormalizationWindowDays.Equal(state.RenormalizationWindowDays) && !plan.RenormalizationWindowDays.IsNull() {
+		u.RenormalizationWindowDays = utils.Pointer(plan.RenormalizationWindowDays.ValueInt64())
+		hasChanges = true
+	}
+
+	if !plan.ResultsRetentionDays.Equal(state.ResultsRetentionDays) && !plan.ResultsRetentionDays.IsNull() {
+		u.ResultsRetentionDays = utils.Pointer(plan.ResultsRetentionDays.ValueInt64())
+		hasChanges = true
+	}
+
+	return hasChanges, diags
 }

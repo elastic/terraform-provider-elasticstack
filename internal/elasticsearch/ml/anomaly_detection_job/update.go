@@ -7,9 +7,7 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
@@ -45,83 +43,10 @@ func (r *anomalyDetectionJobResource) update(ctx context.Context, req resource.U
 
 	// Create update body with only updatable fields
 	updateBody := &AnomalyDetectionJobUpdateAPIModel{}
-	hasChanges := false
-
-	if !plan.Description.Equal(state.Description) {
-		updateBody.Description = utils.Pointer(plan.Description.ValueString())
-		hasChanges = true
-	}
-
-	if !plan.Groups.Equal(state.Groups) {
-		var groups []string
-		plan.Groups.ElementsAs(ctx, &groups, false)
-		updateBody.Groups = groups
-		hasChanges = true
-	}
-
-	if !plan.ModelPlotConfig.Equal(state.ModelPlotConfig) {
-		var modelPlotConfig ModelPlotConfigTFModel
-		plan.ModelPlotConfig.As(ctx, &modelPlotConfig, basetypes.ObjectAsOptions{})
-		apiModelPlotConfig := &ModelPlotConfigAPIModel{
-			Enabled:            modelPlotConfig.Enabled.ValueBool(),
-			AnnotationsEnabled: utils.Pointer(modelPlotConfig.AnnotationsEnabled.ValueBool()),
-			Terms:              modelPlotConfig.Terms.ValueString(),
-		}
-		updateBody.ModelPlotConfig = apiModelPlotConfig
-		hasChanges = true
-	}
-
-	if !plan.AnalysisLimits.Equal(state.AnalysisLimits) {
-		var analysisLimits AnalysisLimitsTFModel
-		plan.AnalysisLimits.As(ctx, &analysisLimits, basetypes.ObjectAsOptions{})
-		apiAnalysisLimits := &AnalysisLimitsAPIModel{
-			ModelMemoryLimit: analysisLimits.ModelMemoryLimit.ValueString(),
-		}
-		if !analysisLimits.CategorizationExamplesLimit.IsNull() {
-			apiAnalysisLimits.CategorizationExamplesLimit = utils.Pointer(analysisLimits.CategorizationExamplesLimit.ValueInt64())
-		}
-		updateBody.AnalysisLimits = apiAnalysisLimits
-		hasChanges = true
-	}
-
-	if !plan.AllowLazyOpen.Equal(state.AllowLazyOpen) {
-		updateBody.AllowLazyOpen = utils.Pointer(plan.AllowLazyOpen.ValueBool())
-		hasChanges = true
-	}
-
-	if !plan.BackgroundPersistInterval.Equal(state.BackgroundPersistInterval) && !plan.BackgroundPersistInterval.IsNull() {
-		updateBody.BackgroundPersistInterval = utils.Pointer(plan.BackgroundPersistInterval.ValueString())
-		hasChanges = true
-	}
-
-	if !plan.CustomSettings.Equal(state.CustomSettings) && !plan.CustomSettings.IsNull() {
-		var customSettings map[string]interface{}
-		if err := json.Unmarshal([]byte(plan.CustomSettings.ValueString()), &customSettings); err != nil {
-			resp.Diagnostics.AddError("Failed to parse custom_settings", err.Error())
-			return
-		}
-		updateBody.CustomSettings = customSettings
-		hasChanges = true
-	}
-
-	if !plan.DailyModelSnapshotRetentionAfterDays.Equal(state.DailyModelSnapshotRetentionAfterDays) && !plan.DailyModelSnapshotRetentionAfterDays.IsNull() {
-		updateBody.DailyModelSnapshotRetentionAfterDays = utils.Pointer(plan.DailyModelSnapshotRetentionAfterDays.ValueInt64())
-		hasChanges = true
-	}
-
-	if !plan.ModelSnapshotRetentionDays.Equal(state.ModelSnapshotRetentionDays) && !plan.ModelSnapshotRetentionDays.IsNull() {
-		updateBody.ModelSnapshotRetentionDays = utils.Pointer(plan.ModelSnapshotRetentionDays.ValueInt64())
-		hasChanges = true
-	}
-
-	if !plan.RenormalizationWindowDays.Equal(state.RenormalizationWindowDays) && !plan.RenormalizationWindowDays.IsNull() {
-		updateBody.RenormalizationWindowDays = utils.Pointer(plan.RenormalizationWindowDays.ValueInt64())
-		hasChanges = true
-	}
-
-	if !plan.ResultsRetentionDays.Equal(state.ResultsRetentionDays) && !plan.ResultsRetentionDays.IsNull() {
-		updateBody.ResultsRetentionDays = utils.Pointer(plan.ResultsRetentionDays.ValueInt64())
-		hasChanges = true
+	hasChanges, diags := updateBody.BuildFromPlan(ctx, &plan, &state)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
 	// Only proceed with update if there are changes
