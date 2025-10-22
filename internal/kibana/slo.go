@@ -1019,11 +1019,15 @@ func resourceSloRead(ctx context.Context, d *schema.ResourceData, meta interface
 		params := s.Indicator.IndicatorPropertiesCustomKql.Params
 		indicatorMap := map[string]interface{}{
 			"index":           params.Index,
-			"filter":          params.Filter.String,
 			"good":            params.Good.String,
 			"total":           params.Total.String,
 			"timestamp_field": params.TimestampField,
 		}
+
+		if params.Filter != nil && params.Filter.String != nil {
+			indicatorMap["filter"] = params.Filter.String
+		}
+
 		if params.DataViewId != nil {
 			indicatorMap["data_view_id"] = *params.DataViewId
 		}

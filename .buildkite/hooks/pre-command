@@ -2,6 +2,11 @@
 
 set -euo pipefail
 
+if [[ "${BUILDKITE_PIPELINE_SLUG}" != "terraform-provider-elasticstack-release" ]]; then
+  echo "Skipping pre-command hook for non-release pipeline"
+  exit 0
+fi
+
 RELEASE_VAULT_PATH=kv/ci-shared/terraform-providers
 
 if [[ "$BUILDKITE_PIPELINE_SLUG" == "terraform-provider-elasticstack-release" ]]; then

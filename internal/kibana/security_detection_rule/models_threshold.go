@@ -107,7 +107,10 @@ func (d SecurityDetectionRuleData) toThresholdRuleCreateProps(ctx context.Contex
 		TimestampOverrideFallbackDisabled: &thresholdRule.TimestampOverrideFallbackDisabled,
 		InvestigationFields:               &thresholdRule.InvestigationFields,
 		Filters:                           &thresholdRule.Filters,
+		Threat:                            &thresholdRule.Threat,
 		AlertSuppression:                  nil, // Handle specially for threshold rule
+		TimelineId:                        &thresholdRule.TimelineId,
+		TimelineTitle:                     &thresholdRule.TimelineTitle,
 	}, &diags, client)
 
 	// Handle threshold-specific alert suppression
@@ -206,7 +209,10 @@ func (d SecurityDetectionRuleData) toThresholdRuleUpdateProps(ctx context.Contex
 		TimestampOverride:                 &thresholdRule.TimestampOverride,
 		TimestampOverrideFallbackDisabled: &thresholdRule.TimestampOverrideFallbackDisabled,
 		Filters:                           &thresholdRule.Filters,
+		Threat:                            &thresholdRule.Threat,
 		AlertSuppression:                  nil, // Handle specially for threshold rule
+		TimelineId:                        &thresholdRule.TimelineId,
+		TimelineTitle:                     &thresholdRule.TimelineTitle,
 	}, &diags, client)
 
 	// Handle threshold-specific alert suppression
@@ -251,6 +257,8 @@ func (d *SecurityDetectionRuleData) updateFromThresholdRule(ctx context.Context,
 	d.Type = types.StringValue(string(rule.Type))
 
 	// Update common fields
+	diags.Append(d.updateTimelineIdFromApi(ctx, rule.TimelineId)...)
+	diags.Append(d.updateTimelineTitleFromApi(ctx, rule.TimelineTitle)...)
 	diags.Append(d.updateDataViewIdFromApi(ctx, rule.DataViewId)...)
 	diags.Append(d.updateNamespaceFromApi(ctx, rule.Namespace)...)
 	diags.Append(d.updateRuleNameOverrideFromApi(ctx, rule.RuleNameOverride)...)
@@ -278,6 +286,10 @@ func (d *SecurityDetectionRuleData) updateFromThresholdRule(ctx context.Context,
 	d.UpdatedAt = types.StringValue(rule.UpdatedAt.Format("2006-01-02T15:04:05.000Z"))
 	d.UpdatedBy = types.StringValue(rule.UpdatedBy)
 	d.Revision = types.Int64Value(int64(rule.Revision))
+
+	// Update threat
+	threatDiags := d.updateThreatFromApi(ctx, &rule.Threat)
+	diags.Append(threatDiags...)
 
 	// Update index patterns
 	diags.Append(d.updateIndexFromApi(ctx, rule.Index)...)

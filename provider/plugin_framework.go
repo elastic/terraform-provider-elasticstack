@@ -29,7 +29,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/maintenance_window"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_detection_rule"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/spaces"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics/monitor"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics/parameter"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics/private_location"
 	"github.com/elastic/terraform-provider-elasticstack/internal/schema"
@@ -108,7 +108,7 @@ func (p *Provider) Resources(ctx context.Context) []func() resource.Resource {
 		func() resource.Resource { return &parameter.Resource{} },
 		func() resource.Resource { return &private_location.Resource{} },
 		func() resource.Resource { return &index.Resource{} },
-		func() resource.Resource { return &synthetics.Resource{} },
+		monitor.NewResource,
 		func() resource.Resource { return &api_key.Resource{} },
 		func() resource.Resource { return &data_stream_lifecycle.Resource{} },
 		func() resource.Resource { return &connectors.Resource{} },

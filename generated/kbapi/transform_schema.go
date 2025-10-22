@@ -566,6 +566,7 @@ var transformers = []TransformFunc{
 	fixPutSecurityRoleName,
 	fixGetSpacesParams,
 	fixGetSyntheticsMonitorsParams,
+	fixGetMaintenanceWindowFindParams,
 	transformRemoveExamples,
 	transformRemoveUnusedComponents,
 	transformOmitEmptyNullable,
@@ -907,6 +908,10 @@ func fixGetSpacesParams(schema *Schema) {
 
 func fixGetSyntheticsMonitorsParams(schema *Schema) {
 	schema.MustGetPath("/api/synthetics/monitors").MustGetEndpoint("get").Move("parameters.12.schema.oneOf.1", "parameters.12.schema")
+}
+
+func fixGetMaintenanceWindowFindParams(schema *Schema) {
+	schema.MustGetPath("/api/maintenance_window/_find").MustGetEndpoint("get").Move("parameters.2.schema.anyOf.1", "parameters.2.schema")
 }
 
 // transformFleetPaths fixes the fleet paths.

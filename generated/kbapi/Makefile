@@ -2,11 +2,11 @@
 SHELL := /bin/bash
 ROOT_DIR := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 
-github_ref ?= refs/heads/main
+github_ref ?= 5c4f76696e63bf9e9a53d55521f4c18faa02ccf2
 oas_url    := https://raw.githubusercontent.com/elastic/kibana/$(github_ref)/oas_docs/output/kibana.yaml
 
 .PHONY: all
-all: download transform generate ## Fetch, bundle, transform, and generate the API
+all: clean download transform generate ## Fetch, bundle, transform, and generate the API
 
 
 .PHONY: download

@@ -103,6 +103,9 @@ func toEqlRuleCreateProps(ctx context.Context, client clients.MinVersionEnforcea
 		TimestampOverrideFallbackDisabled: &eqlRule.TimestampOverrideFallbackDisabled,
 		InvestigationFields:               &eqlRule.InvestigationFields,
 		Filters:                           &eqlRule.Filters,
+		Threat:                            &eqlRule.Threat,
+		TimelineId:                        &eqlRule.TimelineId,
+		TimelineTitle:                     &eqlRule.TimelineTitle,
 	}, &diags, client)
 
 	// Set EQL-specific fields
@@ -187,6 +190,9 @@ func toEqlRuleUpdateProps(ctx context.Context, client clients.MinVersionEnforcea
 		TimestampOverrideFallbackDisabled: &eqlRule.TimestampOverrideFallbackDisabled,
 		InvestigationFields:               &eqlRule.InvestigationFields,
 		Filters:                           &eqlRule.Filters,
+		Threat:                            &eqlRule.Threat,
+		TimelineId:                        &eqlRule.TimelineId,
+		TimelineTitle:                     &eqlRule.TimelineTitle,
 	}, &diags, client)
 
 	// Set EQL-specific fields
@@ -220,6 +226,8 @@ func updateFromEqlRule(ctx context.Context, rule *kbapi.SecurityDetectionsAPIEql
 	d.Type = types.StringValue(string(rule.Type))
 
 	// Update common fields
+	diags.Append(d.updateTimelineIdFromApi(ctx, rule.TimelineId)...)
+	diags.Append(d.updateTimelineTitleFromApi(ctx, rule.TimelineTitle)...)
 	diags.Append(d.updateDataViewIdFromApi(ctx, rule.DataViewId)...)
 	diags.Append(d.updateNamespaceFromApi(ctx, rule.Namespace)...)
 	diags.Append(d.updateRuleNameOverrideFromApi(ctx, rule.RuleNameOverride)...)
@@ -294,6 +302,10 @@ func updateFromEqlRule(ctx context.Context, rule *kbapi.SecurityDetectionsAPIEql
 	// Update filters field
 	filtersDiags := d.updateFiltersFromApi(ctx, rule.Filters)
 	diags.Append(filtersDiags...)
+
+	// Update threat
+	threatDiags := d.updateThreatFromApi(ctx, &rule.Threat)
+	diags.Append(threatDiags...)
 
 	// Update severity mapping
 	severityMappingDiags := d.updateSeverityMappingFromApi(ctx, &rule.SeverityMapping)
