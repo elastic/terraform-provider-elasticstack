@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
@@ -60,20 +62,11 @@ func (m *Datafeed) ToAPIModel(ctx context.Context) (*models.Datafeed, fwdiags.Di
 	apiModel := &models.Datafeed{
 		DatafeedId: m.DatafeedID.ValueString(),
 		JobId:      m.JobID.ValueString(),
-	}
-
-	// Convert indices
-	if !m.Indices.IsNull() && !m.Indices.IsUnknown() {
-		var indices []string
-		diags.Append(m.Indices.ElementsAs(ctx, &indices, false)...)
-		if diags.HasError() {
-			return nil, diags
-		}
-		apiModel.Indices = indices
+		Indices:    utils.ListTypeToSlice_String(ctx, m.Indices, path.Root("indices"), &diags),
 	}
 
 	// Convert query
-	if !m.Query.IsNull() && !m.Query.IsUnknown() {
+	if utils.IsKnown(m.Query) {
 		var query map[string]interface{}
 		diags.Append(m.Query.Unmarshal(&query)...)
 		if diags.HasError() {
@@ -83,7 +76,7 @@ func (m *Datafeed) ToAPIModel(ctx context.Context) (*models.Datafeed, fwdiags.Di
 	}
 
 	// Convert aggregations
-	if !m.Aggregations.IsNull() && !m.Aggregations.IsUnknown() {
+	if utils.IsKnown(m.Aggregations) {
 		var aggregations map[string]interface{}
 		diags.Append(m.Aggregations.Unmarshal(&aggregations)...)
 		if diags.HasError() {
@@ -93,7 +86,7 @@ func (m *Datafeed) ToAPIModel(ctx context.Context) (*models.Datafeed, fwdiags.Di
 	}
 
 	// Convert script_fields
-	if !m.ScriptFields.IsNull() && !m.ScriptFields.IsUnknown() {
+	if utils.IsKnown(m.ScriptFields) {
 		var scriptFields map[string]interface{}
 		err := json.Unmarshal([]byte(m.ScriptFields.ValueString()), &scriptFields)
 		if err != nil {
@@ -104,7 +97,7 @@ func (m *Datafeed) ToAPIModel(ctx context.Context) (*models.Datafeed, fwdiags.Di
 	}
 
 	// Convert runtime_mappings
-	if !m.RuntimeMappings.IsNull() && !m.RuntimeMappings.IsUnknown() {
+	if utils.IsKnown(m.RuntimeMappings) {
 		var runtimeMappings map[string]interface{}
 		diags.Append(m.RuntimeMappings.Unmarshal(&runtimeMappings)...)
 		if diags.HasError() {
@@ -114,31 +107,29 @@ func (m *Datafeed) ToAPIModel(ctx context.Context) (*models.Datafeed, fwdiags.Di
 	}
 
 	// Convert scroll_size
-	if !m.ScrollSize.IsNull() && !m.ScrollSize.IsUnknown() {
+	if utils.IsKnown(m.ScrollSize) {
 		scrollSize := int(m.ScrollSize.ValueInt64())
 		apiModel.ScrollSize = &scrollSize
 	}
 
 	// Convert frequency
-	if !m.Frequency.IsNull() && !m.Frequency.IsUnknown() {
-		frequency := m.Frequency.ValueString()
-		apiModel.Frequency = &frequency
+	if utils.IsKnown(m.Frequency) {
+		apiModel.Frequency = m.Frequency.ValueStringPointer()
 	}
 
 	// Convert query_delay
-	if !m.QueryDelay.IsNull() && !m.QueryDelay.IsUnknown() {
-		queryDelay := m.QueryDelay.ValueString()
-		apiModel.QueryDelay = &queryDelay
+	if utils.IsKnown(m.QueryDelay) {
+		apiModel.QueryDelay = m.QueryDelay.ValueStringPointer()
 	}
 
 	// Convert max_empty_searches
-	if !m.MaxEmptySearches.IsNull() && !m.MaxEmptySearches.IsUnknown() {
+	if utils.IsKnown(m.MaxEmptySearches) {
 		maxEmptySearches := int(m.MaxEmptySearches.ValueInt64())
 		apiModel.MaxEmptySearches = &maxEmptySearches
 	}
 
 	// Convert chunking_config
-	if !m.ChunkingConfig.IsNull() && !m.ChunkingConfig.IsUnknown() {
+	if utils.IsKnown(m.ChunkingConfig) {
 		var chunkingConfig ChunkingConfig
 		diags.Append(m.ChunkingConfig.As(ctx, &chunkingConfig, basetypes.ObjectAsOptions{})...)
 		if diags.HasError() {
@@ -156,27 +147,25 @@ func (m *Datafeed) ToAPIModel(ctx context.Context) (*models.Datafeed, fwdiags.Di
 	}
 
 	// Convert delayed_data_check_config
-	if !m.DelayedDataCheckConfig.IsNull() && !m.DelayedDataCheckConfig.IsUnknown() {
+	if utils.IsKnown(m.DelayedDataCheckConfig) {
 		var delayedDataCheckConfig DelayedDataCheckConfig
 		diags.Append(m.DelayedDataCheckConfig.As(ctx, &delayedDataCheckConfig, basetypes.ObjectAsOptions{})...)
 		if diags.HasError() {
 			return nil, diags
 		}
 
-		apiDelayedDataCheckConfig := &models.DelayedDataCheckConfig{}
-		if !delayedDataCheckConfig.Enabled.IsNull() && !delayedDataCheckConfig.Enabled.IsUnknown() {
-			enabled := delayedDataCheckConfig.Enabled.ValueBool()
-			apiDelayedDataCheckConfig.Enabled = &enabled
+		apiDelayedDataCheckConfig := &models.DelayedDataCheckConfig{
+			Enabled: delayedDataCheckConfig.Enabled.ValueBoolPointer(),
 		}
-		if !delayedDataCheckConfig.CheckWindow.IsNull() && !delayedDataCheckConfig.CheckWindow.IsUnknown() {
-			checkWindow := delayedDataCheckConfig.CheckWindow.ValueString()
-			apiDelayedDataCheckConfig.CheckWindow = &checkWindow
+
+		if utils.IsKnown(delayedDataCheckConfig.CheckWindow) {
+			apiDelayedDataCheckConfig.CheckWindow = delayedDataCheckConfig.CheckWindow.ValueStringPointer()
 		}
 		apiModel.DelayedDataCheckConfig = apiDelayedDataCheckConfig
 	}
 
 	// Convert indices_options
-	if !m.IndicesOptions.IsNull() && !m.IndicesOptions.IsUnknown() {
+	if utils.IsKnown(m.IndicesOptions) {
 		var indicesOptions IndicesOptions
 		diags.Append(m.IndicesOptions.As(ctx, &indicesOptions, basetypes.ObjectAsOptions{})...)
 		if diags.HasError() {
@@ -184,7 +173,7 @@ func (m *Datafeed) ToAPIModel(ctx context.Context) (*models.Datafeed, fwdiags.Di
 		}
 
 		apiIndicesOptions := &models.IndicesOptions{}
-		if !indicesOptions.ExpandWildcards.IsNull() && !indicesOptions.ExpandWildcards.IsUnknown() {
+		if utils.IsKnown(indicesOptions.ExpandWildcards) {
 			var expandWildcards []string
 			diags.Append(indicesOptions.ExpandWildcards.ElementsAs(ctx, &expandWildcards, false)...)
 			if diags.HasError() {
@@ -192,17 +181,14 @@ func (m *Datafeed) ToAPIModel(ctx context.Context) (*models.Datafeed, fwdiags.Di
 			}
 			apiIndicesOptions.ExpandWildcards = expandWildcards
 		}
-		if !indicesOptions.IgnoreUnavailable.IsNull() && !indicesOptions.IgnoreUnavailable.IsUnknown() {
-			ignoreUnavailable := indicesOptions.IgnoreUnavailable.ValueBool()
-			apiIndicesOptions.IgnoreUnavailable = &ignoreUnavailable
+		if utils.IsKnown(indicesOptions.IgnoreUnavailable) {
+			apiIndicesOptions.IgnoreUnavailable = indicesOptions.IgnoreUnavailable.ValueBoolPointer()
 		}
-		if !indicesOptions.AllowNoIndices.IsNull() && !indicesOptions.AllowNoIndices.IsUnknown() {
-			allowNoIndices := indicesOptions.AllowNoIndices.ValueBool()
-			apiIndicesOptions.AllowNoIndices = &allowNoIndices
+		if utils.IsKnown(indicesOptions.AllowNoIndices) {
+			apiIndicesOptions.AllowNoIndices = indicesOptions.AllowNoIndices.ValueBoolPointer()
 		}
-		if !indicesOptions.IgnoreThrottled.IsNull() && !indicesOptions.IgnoreThrottled.IsUnknown() {
-			ignoreThrottled := indicesOptions.IgnoreThrottled.ValueBool()
-			apiIndicesOptions.IgnoreThrottled = &ignoreThrottled
+		if utils.IsKnown(indicesOptions.IgnoreThrottled) {
+			apiIndicesOptions.IgnoreThrottled = indicesOptions.IgnoreThrottled.ValueBoolPointer()
 		}
 		apiModel.IndicesOptions = apiIndicesOptions
 	}

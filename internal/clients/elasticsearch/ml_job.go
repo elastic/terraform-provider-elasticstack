@@ -73,8 +73,8 @@ func GetDatafeed(ctx context.Context, apiClient *clients.ApiClient, datafeedId s
 	}
 
 	fwDiags := diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to get ML datafeed: %s", datafeedId))
-	if fwDiags.HasError() {
-		diags.Append(fwDiags...)
+	diags.Append(fwDiags...)
+	if diags.HasError() {
 		return nil, diags
 	}
 
@@ -254,8 +254,8 @@ func GetDatafeedStats(ctx context.Context, apiClient *clients.ApiClient, datafee
 	}
 
 	fwDiags := diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to get ML datafeed stats: %s", datafeedId))
-	if fwDiags.HasError() {
-		diags.Append(fwDiags...)
+	diags.Append(fwDiags...)
+	if diags.HasError() {
 		return nil, diags
 	}
 

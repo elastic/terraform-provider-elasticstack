@@ -41,8 +41,8 @@ func (r *datafeedResource) Read(ctx context.Context, req resource.ReadRequest, r
 	}
 
 	found, diags := r.read(ctx, &state)
-	if diags.HasError() {
-		resp.Diagnostics.Append(diags...)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 

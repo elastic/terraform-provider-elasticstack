@@ -108,7 +108,6 @@ func GetSchema() schema.Schema {
 				},
 				Validators: []validator.Int64{
 					int64validator.AtLeast(1),
-					int64validator.AtMost(10000),
 				},
 			},
 			"frequency": schema.StringAttribute{
@@ -178,11 +177,7 @@ func GetSchema() schema.Schema {
 				Attributes: map[string]schema.Attribute{
 					"enabled": schema.BoolAttribute{
 						MarkdownDescription: "Specifies whether the datafeed periodically checks for delayed data.",
-						Optional:            true,
-						Computed:            true,
-						PlanModifiers: []planmodifier.Bool{
-							boolplanmodifier.UseStateForUnknown(),
-						},
+						Required:            true,
 					},
 					"check_window": schema.StringAttribute{
 						MarkdownDescription: "The window of time that is searched for late data. This window of time ends with the latest finalized bucket. It defaults to null, which causes an appropriate `check_window` to be calculated when the real-time datafeed runs.",
