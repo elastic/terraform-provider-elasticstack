@@ -81,14 +81,14 @@ func GetSchema() schema.Schema {
 						// Enforce that one of index or data_view_id are set if the rule type is not ml or esql
 						stringvalidator.Any(
 							stringvalidator.ExactlyOneOf(path.MatchRoot("index"), path.MatchRoot("data_view_id")),
-							validators.StringAssert(
+							validators.DependantPathOneOf(
 								path.Root("type"),
 								[]string{"machine_learning", "esql"},
 							),
 						),
 
 						// Enforce that index is not set if the rule type is ml or esql
-						validators.StringConditionalForbidden(
+						validators.ForbiddenIfDependentPathOneOf(
 							path.Root("type"),
 							[]string{"machine_learning", "esql"},
 						),
@@ -134,13 +134,13 @@ func GetSchema() schema.Schema {
 						// Enforce that one of index or data_view_id are set if the rule type is not ml or esql
 						listvalidator.Any(
 							listvalidator.ExactlyOneOf(path.MatchRoot("index"), path.MatchRoot("data_view_id")),
-							validators.ListAssert(
+							validators.DependantPathOneOf(
 								path.Root("type"),
 								[]string{"machine_learning", "esql"},
 							),
 						),
 						// Enforce that index is not set if the rule type is ml or esql
-						validators.ListConditionalForbidden(
+						validators.ForbiddenIfDependentPathOneOf(
 							path.Root("type"),
 							[]string{"machine_learning", "esql"},
 						),
@@ -341,7 +341,7 @@ func GetSchema() schema.Schema {
 				Optional:            true,
 				CustomType:          jsontypes.NormalizedType{},
 				Validators: []validator.String{
-					validators.StringConditionalForbidden(
+					validators.ForbiddenIfDependentPathOneOf(
 						path.Root("type"),
 						[]string{"machine_learning", "esql"},
 					),
@@ -646,7 +646,7 @@ func GetSchema() schema.Schema {
 				MarkdownDescription: "Anomaly score threshold above which the rule creates an alert. Valid values are from 0 to 100. Required for machine_learning rules.",
 				Optional:            true,
 				Validators: []validator.Int64{
-					validators.Int64ConditionalRequirementSingle(
+					validators.RequiredIfDependentPathEquals(
 						path.Root("type"),
 						"machine_learning",
 					),
