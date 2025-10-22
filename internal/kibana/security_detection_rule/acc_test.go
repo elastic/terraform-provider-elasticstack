@@ -4751,7 +4751,8 @@ func TestAccResourceSecurityDetectionRule_ValidateConfig(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Test 1: Valid config with only index (should succeed)
 			{
-				Config: testAccSecurityDetectionRuleConfig_validationIndexOnly("test-validation-index-only"),
+				Config:   testAccSecurityDetectionRuleConfig_validationIndexOnly("test-validation-index-only"),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_detection_rule.test", "name", "test-validation-index-only"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_detection_rule.test", "index.0", "logs-*"),
@@ -4760,7 +4761,8 @@ func TestAccResourceSecurityDetectionRule_ValidateConfig(t *testing.T) {
 			},
 			// Test 2: Valid config with only data_view_id (should succeed)
 			{
-				Config: testAccSecurityDetectionRuleConfig_validationDataViewOnly("test-validation-dataview-only"),
+				Config:   testAccSecurityDetectionRuleConfig_validationDataViewOnly("test-validation-dataview-only"),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_detection_rule.test", "name", "test-validation-dataview-only"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_detection_rule.test", "data_view_id", "test-data-view-id"),
@@ -4770,18 +4772,21 @@ func TestAccResourceSecurityDetectionRule_ValidateConfig(t *testing.T) {
 			// Test 3: Invalid config with both index and data_view_id (should fail)
 			{
 				Config:      testAccSecurityDetectionRuleConfig_validationBothIndexAndDataView("test-validation-both"),
+				SkipFunc:    versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
 				ExpectError: regexp.MustCompile("Both 'index' and 'data_view_id' cannot be set at the same time"),
 				PlanOnly:    true,
 			},
 			// Test 4: Invalid config with neither index nor data_view_id (should fail)
 			{
 				Config:      testAccSecurityDetectionRuleConfig_validationNeither("test-validation-neither"),
+				SkipFunc:    versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
 				ExpectError: regexp.MustCompile("One of 'index' or 'data_view_id' must be set"),
 				PlanOnly:    true,
 			},
 			// Test 5: ESQL rule type should skip validation (both index and data_view_id allowed to be unset)
 			{
-				Config: testAccSecurityDetectionRuleConfig_validationESQLType("test-validation-esql"),
+				Config:   testAccSecurityDetectionRuleConfig_validationESQLType("test-validation-esql"),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_detection_rule.test", "name", "test-validation-esql"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_detection_rule.test", "type", "esql"),
@@ -4791,7 +4796,8 @@ func TestAccResourceSecurityDetectionRule_ValidateConfig(t *testing.T) {
 			},
 			// Test 6: Machine learning rule type should skip validation (both index and data_view_id allowed to be unset)
 			{
-				Config: testAccSecurityDetectionRuleConfig_validationMLType("test-validation-ml"),
+				Config:   testAccSecurityDetectionRuleConfig_validationMLType("test-validation-ml"),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_detection_rule.test", "name", "test-validation-ml"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_detection_rule.test", "type", "machine_learning"),
