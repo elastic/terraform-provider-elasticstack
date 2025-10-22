@@ -4,11 +4,11 @@ import (
 	"context"
 	"regexp"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
-	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -77,21 +77,10 @@ func GetSchema() schema.Schema {
 				MarkdownDescription: "Data view ID for the rule. Not supported for esql and machine_learning rule types.",
 				Optional:            true,
 				Validators: []validator.String{
-					stringvalidator.All(
-						// Enforce that one of index or data_view_id are set if the rule type is not ml or esql
-						stringvalidator.Any(
-							stringvalidator.ExactlyOneOf(path.MatchRoot("index"), path.MatchRoot("data_view_id")),
-							validators.DependantPathOneOf(
-								path.Root("type"),
-								[]string{"machine_learning", "esql"},
-							),
-						),
-
-						// Enforce that index is not set if the rule type is ml or esql
-						validators.ForbiddenIfDependentPathOneOf(
-							path.Root("type"),
-							[]string{"machine_learning", "esql"},
-						),
+					// Enforce that data_view_id is not set if the rule type is ml or esql
+					validators.ForbiddenIfDependentPathOneOf(
+						path.Root("type"),
+						[]string{"machine_learning", "esql"},
 					),
 				},
 			},
@@ -130,20 +119,10 @@ func GetSchema() schema.Schema {
 				Optional:            true,
 				Computed:            true,
 				Validators: []validator.List{
-					listvalidator.All(
-						// Enforce that one of index or data_view_id are set if the rule type is not ml or esql
-						listvalidator.Any(
-							listvalidator.ExactlyOneOf(path.MatchRoot("index"), path.MatchRoot("data_view_id")),
-							validators.DependantPathOneOf(
-								path.Root("type"),
-								[]string{"machine_learning", "esql"},
-							),
-						),
-						// Enforce that index is not set if the rule type is ml or esql
-						validators.ForbiddenIfDependentPathOneOf(
-							path.Root("type"),
-							[]string{"machine_learning", "esql"},
-						),
+					// Enforce that index is not set if the rule type is ml or esql
+					validators.ForbiddenIfDependentPathOneOf(
+						path.Root("type"),
+						[]string{"machine_learning", "esql"},
 					),
 				},
 			},
@@ -960,4 +939,48 @@ func getThreatSubtechniqueElementType() attr.Type {
 	threatType := GetSchema().Attributes["threat"].GetType().(attr.TypeWithElementType).ElementType().(attr.TypeWithAttributeTypes)
 	techniqueType := threatType.AttributeTypes()["technique"].(attr.TypeWithElementType).ElementType().(attr.TypeWithAttributeTypes)
 	return techniqueType.AttributeTypes()["subtechnique"].(attr.TypeWithElementType).ElementType()
+}
+
+// ValidateConfig validates the configuration for a security detection rule resource.
+// It ensures that the configuration meets the following requirements:
+//
+// - For rule types "esql" and "machine_learning", no additional validation is performed
+// - For other rule types, exactly one of 'index' or 'data_view_id' must be specified
+// - Both 'index' and 'data_view_id' cannot be set simultaneously
+//
+// The function adds appropriate error diagnostics if validation fails.
+func (r securityDetectionRuleResource) ValidateConfig(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
+	var data SecurityDetectionRuleData
+
+	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	t, diag := data.Type.ToStringValue(ctx)
+	resp.Diagnostics.Append(diag...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if t.ValueString() == "esql" || t.ValueString() == "machine_learning" {
+		return
+	}
+
+	if utils.IsKnown(data.Index) && utils.IsKnown(data.DataViewId) {
+		resp.Diagnostics.AddError(
+			"Invalid Configuration",
+			"Both 'index' and 'data_view_id' cannot be set at the same time.",
+		)
+
+	}
+
+	if !utils.IsKnown(data.Index) && !utils.IsKnown(data.DataViewId) {
+		resp.Diagnostics.AddError(
+			"Invalid Configuration",
+			"One of 'index' or 'data_view_id' must be set.",
+		)
+
+	}
 }

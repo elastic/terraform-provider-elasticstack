@@ -3,6 +3,7 @@ package security_detection_rule_test
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -4737,6 +4738,187 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
       ]
     }
   ]
+}
+`, name)
+}
+
+// TestAccResourceSecurityDetectionRule_ValidateConfig tests the ValidateConfig method
+// to ensure proper validation of index vs data_view_id configuration
+func TestAccResourceSecurityDetectionRule_ValidateConfig(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			// Test 1: Valid config with only index (should succeed)
+			{
+				Config: testAccSecurityDetectionRuleConfig_validationIndexOnly("test-validation-index-only"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_detection_rule.test", "name", "test-validation-index-only"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_detection_rule.test", "index.0", "logs-*"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_security_detection_rule.test", "data_view_id"),
+				),
+			},
+			// Test 2: Valid config with only data_view_id (should succeed)
+			{
+				Config: testAccSecurityDetectionRuleConfig_validationDataViewOnly("test-validation-dataview-only"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_detection_rule.test", "name", "test-validation-dataview-only"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_detection_rule.test", "data_view_id", "test-data-view-id"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_security_detection_rule.test", "index.0"),
+				),
+			},
+			// Test 3: Invalid config with both index and data_view_id (should fail)
+			{
+				Config:      testAccSecurityDetectionRuleConfig_validationBothIndexAndDataView("test-validation-both"),
+				ExpectError: regexp.MustCompile("Both 'index' and 'data_view_id' cannot be set at the same time"),
+				PlanOnly:    true,
+			},
+			// Test 4: Invalid config with neither index nor data_view_id (should fail)
+			{
+				Config:      testAccSecurityDetectionRuleConfig_validationNeither("test-validation-neither"),
+				ExpectError: regexp.MustCompile("One of 'index' or 'data_view_id' must be set"),
+				PlanOnly:    true,
+			},
+			// Test 5: ESQL rule type should skip validation (both index and data_view_id allowed to be unset)
+			{
+				Config: testAccSecurityDetectionRuleConfig_validationESQLType("test-validation-esql"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_detection_rule.test", "name", "test-validation-esql"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_detection_rule.test", "type", "esql"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_security_detection_rule.test", "index.0"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_security_detection_rule.test", "data_view_id"),
+				),
+			},
+			// Test 6: Machine learning rule type should skip validation (both index and data_view_id allowed to be unset)
+			{
+				Config: testAccSecurityDetectionRuleConfig_validationMLType("test-validation-ml"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_detection_rule.test", "name", "test-validation-ml"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_detection_rule.test", "type", "machine_learning"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_security_detection_rule.test", "index.0"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_security_detection_rule.test", "data_view_id"),
+				),
+			},
+		},
+	})
+}
+
+// Helper function configurations for validation tests
+
+func testAccSecurityDetectionRuleConfig_validationIndexOnly(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  kibana {}
+}
+
+resource "elasticstack_kibana_security_detection_rule" "test" {
+  name        = "%s"
+  type        = "query"
+  query       = "*:*"
+  language    = "kuery"
+  enabled     = true
+  description = "Test validation with index only"
+  severity    = "medium"
+  risk_score  = 50
+  index       = ["logs-*"]
+}
+`, name)
+}
+
+func testAccSecurityDetectionRuleConfig_validationDataViewOnly(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  kibana {}
+}
+
+resource "elasticstack_kibana_security_detection_rule" "test" {
+  name         = "%s"
+  type         = "query"
+  query        = "*:*"
+  language     = "kuery"
+  enabled      = true
+  description  = "Test validation with data_view_id only"
+  severity     = "medium"
+  risk_score   = 50
+  data_view_id = "test-data-view-id"
+}
+`, name)
+}
+
+func testAccSecurityDetectionRuleConfig_validationBothIndexAndDataView(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  kibana {}
+}
+
+resource "elasticstack_kibana_security_detection_rule" "test" {
+  name         = "%s"
+  type         = "query"
+  query        = "*:*"
+  language     = "kuery"
+  enabled      = true
+  description  = "Test validation with both index and data_view_id (should fail)"
+  severity     = "medium"
+  risk_score   = 50
+  index        = ["logs-*"]
+  data_view_id = "test-data-view-id"
+}
+`, name)
+}
+
+func testAccSecurityDetectionRuleConfig_validationNeither(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  kibana {}
+}
+
+resource "elasticstack_kibana_security_detection_rule" "test" {
+  name        = "%s"
+  type        = "query"
+  query       = "*:*"
+  language    = "kuery"
+  enabled     = true
+  description = "Test validation with neither index nor data_view_id (should fail)"
+  severity    = "medium"
+  risk_score  = 50
+}
+`, name)
+}
+
+func testAccSecurityDetectionRuleConfig_validationESQLType(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  kibana {}
+}
+
+resource "elasticstack_kibana_security_detection_rule" "test" {
+  name        = "%s"
+  type        = "esql"
+  query       = "FROM logs-* | WHERE event.action == \"login\" | STATS count(*) BY user.name"
+  language    = "esql"
+  enabled     = true
+  description = "Test ESQL validation bypass - neither index nor data_view_id required"
+  severity    = "medium"
+  risk_score  = 50
+}
+`, name)
+}
+
+func testAccSecurityDetectionRuleConfig_validationMLType(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  kibana {}
+}
+
+resource "elasticstack_kibana_security_detection_rule" "test" {
+  name                     = "%s"
+  type                     = "machine_learning"
+  enabled                  = true
+  description              = "Test ML validation bypass - neither index nor data_view_id required"
+  severity                 = "medium"
+  risk_score               = 50
+  anomaly_threshold        = 75
+  machine_learning_job_id  = ["test-ml-job"]
 }
 `, name)
 }
