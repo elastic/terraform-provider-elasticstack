@@ -36,8 +36,20 @@ func (v condition) MarkdownDescription(ctx context.Context) string {
 	return v.description()
 }
 
-// isConditionMet checks if the condition is satisfied by evaluating the dependent field's value
-func (v condition) isConditionMet(ctx context.Context, config tfsdk.Config) (bool, string, diag.Diagnostics) {
+// dependentFieldHasAllowedValue checks if the dependent field specified by the condition's
+// dependentPath has a value that matches one of the allowed values defined in the condition.
+// It retrieves the dependent field's value from the provided configuration context and
+// compares it against the condition's allowedValues slice.
+//
+// The method returns three values:
+//   - bool: true if the dependent field has a non-null, non-unknown value that matches
+//     one of the allowed values; false otherwise
+//   - string: the string representation of the dependent field's current value
+//   - diag.Diagnostics: any diagnostics encountered while retrieving the field value
+//
+// If the dependent field is null, unknown, or its value doesn't match any of the
+// allowed values, the condition is considered not met and the method returns false.
+func (v condition) dependentFieldHasAllowedValue(ctx context.Context, config tfsdk.Config) (bool, string, diag.Diagnostics) {
 	var dependentValue types.String
 	diags := config.GetAttribute(ctx, v.dependentPath, &dependentValue)
 
@@ -48,27 +60,27 @@ func (v condition) isConditionMet(ctx context.Context, config tfsdk.Config) (boo
 	// If dependent value is null, unknown, or doesn't match any allowed values,
 	// then the condition is not met
 	dependentValueStr := dependentValue.ValueString()
-	conditionMet := false
+	dependentFieldHasAllowedValue := false
 
 	if !dependentValue.IsNull() && !dependentValue.IsUnknown() {
 		for _, allowedValue := range v.allowedValues {
 			if dependentValueStr == allowedValue {
-				conditionMet = true
+				dependentFieldHasAllowedValue = true
 				break
 			}
 		}
 	}
 
-	return conditionMet, dependentValueStr, nil
+	return dependentFieldHasAllowedValue, dependentValueStr, nil
 }
 
 func (v condition) validate(ctx context.Context, config tfsdk.Config, val attr.Value, p path.Path) diag.Diagnostics {
-	conditionMet, dependentValueStr, diags := v.isConditionMet(ctx, config)
+	dependentFieldHasAllowedValue, dependentValueStr, diags := v.dependentFieldHasAllowedValue(ctx, config)
 	if diags.HasError() {
 		return diags
 	}
 
-	return v.validateValue(conditionMet, dependentValueStr, val, p)
+	return v.validateValue(dependentFieldHasAllowedValue, dependentValueStr, val, p)
 }
 
 func (v condition) ValidateString(ctx context.Context, request validator.StringRequest, response *validator.StringResponse) {
@@ -83,27 +95,17 @@ func (v condition) ValidateInt64(ctx context.Context, request validator.Int64Req
 	response.Diagnostics.Append(v.validate(ctx, request.Config, request.ConfigValue, request.Path)...)
 }
 
-// Assertion validations validate that the path matches one of the provided values and fail otherwise
-// eg using Any to skip validation for some cases
-//   stringvalidator.Any(
-// 	   stringvalidator.ExactlyOneOf(path.MatchRoot("index"), path.MatchRoot("data_view_id")),
-// 	   validators.StringAssert(
-// 		 path.Root("type"),
-// 		 []string{"machine_learning", "esql"},
-// 	   ),
-//   )
-// ------------------------------------------------------------------------------
-
-// StringAssert returns a validator that ensures a string attribute's value is within
-// the allowedValues slice when the attribute at dependentPath meets certain conditions.
-// This conditional validator is typically used to enforce in combination with other validations
-// eg composing with validator.Any to skip validation for certain cases
+// DependantPathOneOf creates a condition that validates a dependent path's value is one of the allowed values.
+// It returns a condition that checks if the value at dependentPath matches any of the provided allowedValues.
+// If the dependent field does not have an allowed value, it generates a diagnostic error indicating
+// which values are permitted and what the current value is.
 //
 // Parameters:
-//   - dependentPath: The path to the attribute that this validation depends on
-//   - allowedValues: The slice of string values that are considered valid for assertion
+//   - dependentPath: The path to the attribute that must have one of the allowed values
+//   - allowedValues: A slice of strings representing the valid values for the dependent path
 //
-// Returns a validator.String that can be used in schema attribute validation.
+// Returns:
+//   - condition: A condition struct that can be used for validation
 func DependantPathOneOf(dependentPath path.Path, allowedValues []string) condition {
 	return condition{
 		dependentPath: dependentPath,
@@ -132,26 +134,20 @@ func DependantPathOneOf(dependentPath path.Path, allowedValues []string) conditi
 	}
 }
 
-// Allowance validations validate that the value is only set when the condition is met
-// ----------------------------------------------------------------------------------
-
-// StringConditionalAllowance returns a validator which ensures that a string attribute
-// can only be set if another attribute at the specified path equals one of the specified values.
+// AllowedIfDependentPathOneOf creates a validation condition that allows the current attribute
+// to be set only when a dependent attribute at the specified path has one of the allowed values.
 //
-// The dependentPath parameter should use path.Root() to specify the attribute path.
-// For example: path.Root("auth_type")
+// Parameters:
+//   - dependentPath: The path to the attribute that this validation depends on
+//   - allowedValues: A slice of string values that the dependent attribute must match
 //
-// Example usage:
+// Returns:
+//   - condition: A validation condition that can be used with conditional validators
 //
-//	"connection_type": schema.StringAttribute{
-//		Optional: true,
-//		Validators: []validator.String{
-//			validators.StringConditionalAllowance(
-//				path.Root("auth_type"),
-//				[]string{"none"},
-//			),
-//		},
-//	},
+// Example:
+//
+//	// Only allow "ssl_cert" to be set when "protocol" is "https"
+//	AllowedIfDependentPathOneOf(path.Root("protocol"), []string{"https"})
 func AllowedIfDependentPathOneOf(dependentPath path.Path, allowedValues []string) condition {
 	return condition{
 		dependentPath: dependentPath,
@@ -200,28 +196,57 @@ func AllowedIfDependentPathOneOf(dependentPath path.Path, allowedValues []string
 	}
 }
 
-// StringConditionalAllowanceSingle is a convenience function for when there's only one allowed value.
+// AllowedIfDependentPathEquals returns a condition that allows a field to be set
+// only if the value at the specified dependent path equals the required value.
+// This is a convenience function that wraps AllowedIfDependentPathOneOf with a
+// single value slice.
+//
+// Parameters:
+//   - dependentPath: The path to the field whose value determines if this field is allowed
+//   - requiredValue: The exact string value that the dependent field must equal
+//
+// Returns:
+//   - condition: A validation condition that enforces the dependency rule
 func AllowedIfDependentPathEquals(dependentPath path.Path, requiredValue string) condition {
 	return AllowedIfDependentPathOneOf(dependentPath, []string{requiredValue})
 }
 
-// Requirement validations validate that the value is set when the condition is met
-// ----------------------------------------------------------------------------------
-
-// Int64ConditionalRequirementSingle is a convenience function for when there's only one required value.
+// RequiredIfDependentPathEquals returns a condition that makes a field required
+// when the value at the specified dependent path equals the given required value.
+// This is a convenience function that wraps RequiredIfDependentPathOneOf with
+// a single value slice.
+//
+// Parameters:
+//   - dependentPath: The path to the field whose value will be checked
+//   - requiredValue: The value that, when present at dependentPath, makes this field required
+//
+// Returns:
+//   - condition: A validation condition function
 func RequiredIfDependentPathEquals(dependentPath path.Path, requiredValue string) condition {
 	return RequiredIfDependentPathOneOf(dependentPath, []string{requiredValue})
 }
 
-// Int64ConditionalRequirement returns a validator that requires an int64 value to be present
-// when the field at the specified dependentPath contains one of the allowedValues.
+// RequiredIfDependentPathOneOf returns a condition that validates an attribute is required
+// when a dependent attribute's value matches one of the specified allowed values.
+//
+// The condition checks if the dependent attribute (specified by dependentPath) has a value
+// that is present in the allowedValues slice. If the dependent attribute matches any of
+// the allowed values, then the attribute being validated must not be null or unknown.
 //
 // Parameters:
-//   - dependentPath: The path to the field whose value determines if this field is required
-//   - allowedValues: A slice of string values that trigger the requirement when found in the dependent field
+//   - dependentPath: The path to the attribute whose value determines the requirement
+//   - allowedValues: A slice of string values that trigger the requirement when matched
 //
 // Returns:
-//   - validator.Int64: A validator that enforces the conditional requirement rule
+//   - condition: A validation condition that enforces the requirement rule
+//
+// Example usage:
+//
+//	validator := RequiredIfDependentPathOneOf(
+//	  path.Root("type"),
+//	  []string{"custom", "advanced"},
+//	)
+//	// This would require the current attribute when "type" equals "custom" or "advanced"
 func RequiredIfDependentPathOneOf(dependentPath path.Path, allowedValues []string) condition {
 	return condition{
 		dependentPath: dependentPath,
@@ -254,19 +279,28 @@ func RequiredIfDependentPathOneOf(dependentPath path.Path, allowedValues []strin
 	}
 }
 
-// Forbidden validate that the value is NOT set when the condition is met
-// -------------------------------------------------------------------------------
-
-// ListConditionalForbidden returns a validator that restricts a list attribute from having any values
-// when a dependent attribute at the specified path contains one of the allowed values.
-// When the dependent path's value matches any of the allowedValues, this validator will
-// produce an error if the list attribute being validated is not empty.
+// ForbiddenIfDependentPathOneOf creates a validation condition that forbids setting a value
+// when a dependent field matches one of the specified allowed values.
+//
+// This validator is useful for creating mutually exclusive configuration scenarios where
+// certain attributes should not be set when another attribute has specific values.
 //
 // Parameters:
-//   - dependentPath: The path to the attribute whose value determines the validation behavior
-//   - allowedValues: The values that, when present in the dependent attribute, trigger the restriction
+//   - dependentPath: The path to the field whose value determines the validation behavior
+//   - allowedValues: A slice of string values that, when matched by the dependent field,
+//     will trigger the forbidden condition
 //
-// Returns a List validator that enforces the conditional restriction rule.
+// Returns:
+//   - condition: A validation condition that will generate an error if the current field
+//     is set while the dependent field matches any of the allowed values
+//
+// Example usage:
+//
+//	validator := ForbiddenIfDependentPathOneOf(
+//	  path.Root("type"),
+//	  []string{"basic", "simple"},
+//	)
+//	// This will prevent setting the current attribute when "type" equals "basic" or "simple"
 func ForbiddenIfDependentPathOneOf(dependentPath path.Path, allowedValues []string) condition {
 	return condition{
 		dependentPath: dependentPath,
