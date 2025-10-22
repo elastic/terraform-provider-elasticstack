@@ -1,0 +1,157 @@
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
+    container_name: ${ELASTICSEARCH_CONTAINER_NAME}
+    volumes:
+      - dev-elasticsearch:/usr/share/elasticsearch/data
+    ports:
+      - 127.0.0.1:${ELASTICSEARCH_PORT}:9200
+    environment:
+      discovery.type: single-node
+      ELASTIC_PASSWORD: ${ELASTICSEARCH_PASSWORD}
+      xpack.security.enabled: true
+      xpack.security.http.ssl.enabled: false
+      xpack.license.self_generated.type: trial
+      xpack.ml.use_auto_machine_memory_percent: true
+      xpack.security.authc.api_key.enabled: true
+      xpack.security.authc.token.enabled: true
+      xpack.watcher.enabled: true
+      repositories.url.allowed_urls: https://example.com/*
+      path.repo: /tmp
+      ES_JAVA_OPTS: ${ELASTICSEARCH_JAVA_OPTS}
+    mem_limit: 2g
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl --output /dev/null --silent --head --fail -u elastic:${ELASTICSEARCH_PASSWORD} http://elasticsearch:9200",
+        ]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+
+  kibana_settings:
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
+    container_name: ${KIBANA_SETTINGS_CONTAINER_NAME}
+    restart: 'no'
+    command: >
+      bash -c '
+      echo "Setup the kibana_system password";
+      curl -sS --retry 5 --retry-delay 5 --retry-all-errors -u "elastic:${ELASTICSEARCH_PASSWORD}" -X POST http://elasticsearch:9200/_security/user/kibana_system/_password -d "{\"password\":\"${KIBANA_PASSWORD}\"}" -H "Content-Type: application/json"
+      '
+
+  kibana:
+    depends_on:
+      kibana_settings:
+        condition: service_completed_successfully
+    image: docker.elastic.co/kibana/kibana:${STACK_VERSION}
+    container_name: ${KIBANA_CONTAINER_NAME}
+    volumes:
+      - dev-kibana:/usr/share/kibana/data
+    ports:
+      - 127.0.0.1:${KIBANA_PORT}:5601
+    environment:
+      SERVER_NAME: kibana
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+      ELASTICSEARCH_USERNAME: kibana_system
+      ELASTICSEARCH_PASSWORD: ${KIBANA_PASSWORD}
+      XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY: ${KIBANA_ENCRYPTION_KEY}
+      ELASTICSEARCH_PUBLICBASEURL: http://localhost:${ELASTICSEARCH_PORT}
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -s -w \"%{http_code}\" http://kibana:5601 | grep 302",
+        ]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+
+  fleet_settings:
+    depends_on:
+      kibana:
+        condition: service_healthy
+    image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
+    container_name: ${FLEET_SETTINGS_CONTAINER_NAME}
+    restart: 'no'
+    environment:
+      CACERT: ""
+      KIBANA_HOST: http://kibana:5601
+    command: >
+      bash -c '
+      echo "Setting fleet server host";
+      curl -sS --retry 5 --retry-delay 5 --retry-all-errors $$CACERT -u "elastic:${ELASTICSEARCH_PASSWORD}" -H "kbn-xsrf: true" $$KIBANA_HOST/api/fleet/fleet_server_hosts -d "{\"name\":\"default\",\"host_urls\":[\"http://fleet:8220\"],\"is_default\":true}" -H "Content-Type: application/json";
+      echo "Setting fleet server agent policy";
+      curl -sS --retry 5 --retry-delay 5 --retry-all-errors $$CACERT -u "elastic:${ELASTICSEARCH_PASSWORD}" -H "kbn-xsrf: true" $$KIBANA_HOST/api/fleet/agent_policies -d "{\"id\":\"fleet-server\",\"name\":\"Fleet Server\",\"namespace\":\"default\",\"monitoring_enabled\":[\"logs\",\"metrics\"]}" -H "Content-Type: application/json";
+      echo "Setting fleet server package policy";
+      curl -sS --retry 5 --retry-delay 5 --retry-all-errors $$CACERT -u "elastic:${ELASTICSEARCH_PASSWORD}" -H "kbn-xsrf: true" $$KIBANA_HOST/api/fleet/package_policies -d "{\"name\":\"fleet-server\",\"namespace\":\"default\",\"policy_id\":\"fleet-server\",\"enabled\":true,\"inputs\":[{\"type\":\"fleet-server\",\"enabled\":true,\"streams\":[],\"vars\":{}}],\"package\":{\"name\":\"fleet_server\",\"version\":\"1.5.0\"}}" -H "Content-Type: application/json";
+      '
+  
+  fleet:
+    depends_on:
+      fleet_settings:
+        condition: service_completed_successfully
+    image: elastic/elastic-agent:${STACK_VERSION}
+    container_name: ${FLEET_CONTAINER_NAME}
+    restart: unless-stopped
+    volumes:
+      - dev-fleet:/usr/share/elastic-agent/data
+    environment:
+      FLEET_ENROLL: 1
+      FLEET_URL: https://fleet:8220
+      FLEET_INSECURE: true
+      FLEET_SERVER_ENABLE: 1
+      FLEET_SERVER_POLICY_ID: fleet-server
+      FLEET_SERVER_ELASTICSEARCH_HOST: http://elasticsearch:9200
+      FLEET_SERVER_ELASTICSEARCH_INSECURE: true
+      FLEET_SERVER_INSECURE_HTTP: true
+      KIBANA_HOST: http://kibana:5601
+      KIBANA_FLEET_SETUP: 1
+      KIBANA_FLEET_USERNAME: elastic
+      KIBANA_FLEET_PASSWORD: ${ELASTICSEARCH_PASSWORD}
+
+  acceptance-tests:
+    profiles: ["acceptance-tests"]
+    depends_on:
+      fleet:
+        condition: service_started
+    image: golang:${GOVERSION}
+    container_name: ${ACCEPTANCE_TESTS_CONTAINER_NAME}
+    working_dir: /provider
+    volumes:
+      - ./:/provider
+    environment:
+      ELASTICSEARCH_ENDPOINTS: http://elasticsearch:9200
+      KIBANA_ENDPOINT: http://kibana:5601
+      ELASTICSEARCH_USERNAME: elastic
+      ELASTICSEARCH_PASSWORD: ${ELASTICSEARCH_PASSWORD}
+      TF_LOG: ${TF_LOG:-info}
+    command: make testacc TESTARGS=${TESTARGS:-}
+
+  token-acceptance-tests:
+    profiles: ["token-acceptance-tests"]
+    depends_on:
+      fleet:
+        condition: service_started
+    container_name: ${TOKEN_ACCEPTANCE_TESTS_CONTAINER_NAME}
+    extends:
+      service: acceptance-tests
+    volumes:
+      - ./:/provider
+    environment:
+      ELASTICSEARCH_BEARER_TOKEN: ${ELASTICSEARCH_BEARER_TOKEN:-}
+      ELASTIC_PASSWORD: ""
+      KIBANA_USERNAME: elastic
+      KIBANA_PASSWORD: ${ELASTICSEARCH_PASSWORD}
+
+volumes:
+  dev-elasticsearch:
+  dev-kibana:
+  dev-fleet:
