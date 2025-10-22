@@ -57,8 +57,6 @@ func (v condition) dependentFieldHasAllowedValue(ctx context.Context, config tfs
 		return false, "", diags
 	}
 
-	// If dependent value is null, unknown, or doesn't match any allowed values,
-	// then the condition is not met
 	dependentValueStr := dependentValue.ValueString()
 	dependentFieldHasAllowedValue := false
 
