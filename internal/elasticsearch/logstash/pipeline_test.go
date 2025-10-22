@@ -13,7 +13,8 @@ import (
 )
 
 func TestResourceLogstashPipeline(t *testing.T) {
-	pipelineID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	// Pipelines must start with a letter or underscore
+	pipelineID := "pipeline-" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		CheckDestroy:             checkResourceLogstashPipelineDestroy,
