@@ -147,7 +147,7 @@ services:
       - ./:/provider
     environment:
       ELASTICSEARCH_BEARER_TOKEN: ${ELASTICSEARCH_BEARER_TOKEN:-}
-      ELASTIC_PASSWORD: ""
+      ELASTICSEARCH_PASSWORD: ""
       KIBANA_USERNAME: elastic
       KIBANA_PASSWORD: ${ELASTICSEARCH_PASSWORD}
 
