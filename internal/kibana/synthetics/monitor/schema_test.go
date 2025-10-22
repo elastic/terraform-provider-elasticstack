@@ -1,4 +1,4 @@
-package synthetics
+package monitor
 
 import (
 	"context"
@@ -23,6 +23,56 @@ func boolPointer(v bool) *bool {
 	var res = new(bool)
 	*res = v
 	return res
+}
+
+func TestLabelsFieldConversion(t *testing.T) {
+	testcases := []struct {
+		name     string
+		input    kbapi.SyntheticsMonitor
+		expected types.Map
+	}{
+		{
+			name: "monitor with nil labels",
+			input: kbapi.SyntheticsMonitor{
+				Type:   kbapi.Http,
+				Labels: nil,
+			},
+			expected: types.MapNull(types.StringType),
+		},
+		{
+			name: "monitor with empty labels",
+			input: kbapi.SyntheticsMonitor{
+				Type:   kbapi.Http,
+				Labels: map[string]string{},
+			},
+			expected: types.MapValueMust(types.StringType, map[string]attr.Value{}),
+		},
+		{
+			name: "monitor with labels",
+			input: kbapi.SyntheticsMonitor{
+				Type: kbapi.Http,
+				Labels: map[string]string{
+					"environment": "production",
+					"team":        "platform",
+					"service":     "web-app",
+				},
+			},
+			expected: types.MapValueMust(types.StringType, map[string]attr.Value{
+				"environment": types.StringValue("production"),
+				"team":        types.StringValue("platform"),
+				"service":     types.StringValue("web-app"),
+			}),
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			model := &tfModelV0{}
+			result, diags := model.toModelV0(context.Background(), &tc.input, "default")
+			assert.False(t, diags.HasError())
+			assert.Equal(t, tc.expected, result.Labels)
+		})
+	}
 }
 
 func toAlertObject(t *testing.T, v tfAlertConfigV0) basetypes.ObjectValue {
@@ -52,6 +102,7 @@ func TestToModelV0(t *testing.T) {
 				SpaceID:        types.StringValue(""),
 				Namespace:      types.StringValue(""),
 				Schedule:       types.Int64Value(0),
+				Labels:         types.MapNull(types.StringType),
 				APMServiceName: types.StringValue(""),
 				TimeoutSeconds: types.Int64Value(0),
 				Params:         jsontypes.NewNormalizedValue("null"),
@@ -87,6 +138,7 @@ func TestToModelV0(t *testing.T) {
 				SpaceID:        types.StringValue(""),
 				Namespace:      types.StringValue(""),
 				Schedule:       types.Int64Value(0),
+				Labels:         types.MapNull(types.StringType),
 				APMServiceName: types.StringValue(""),
 				TimeoutSeconds: types.Int64Value(0),
 				Params:         jsontypes.NewNormalizedValue("null"),
@@ -116,6 +168,7 @@ func TestToModelV0(t *testing.T) {
 				SpaceID:        types.StringValue(""),
 				Namespace:      types.StringValue(""),
 				Schedule:       types.Int64Value(0),
+				Labels:         types.MapNull(types.StringType),
 				APMServiceName: types.StringValue(""),
 				TimeoutSeconds: types.Int64Value(0),
 				Params:         jsontypes.NewNormalizedValue("null"),
@@ -136,6 +189,7 @@ func TestToModelV0(t *testing.T) {
 				SpaceID:        types.StringValue(""),
 				Namespace:      types.StringValue(""),
 				Schedule:       types.Int64Value(0),
+				Labels:         types.MapNull(types.StringType),
 				APMServiceName: types.StringValue(""),
 				TimeoutSeconds: types.Int64Value(0),
 				Params:         jsontypes.NewNormalizedValue("null"),
@@ -202,6 +256,7 @@ func TestToModelV0(t *testing.T) {
 				PrivateLocations: []types.String{types.StringValue("test private location")},
 				Enabled:          types.BoolPointerValue(tBool),
 				Tags:             []types.String{types.StringValue("tag1"), types.StringValue("tag2")},
+				Labels:           types.MapNull(types.StringType),
 				Alert:            toAlertObject(t, tfAlertConfigV0{Status: &tfStatusConfigV0{Enabled: types.BoolPointerValue(tBool)}, TLS: &tfStatusConfigV0{Enabled: types.BoolPointerValue(fBool)}}),
 				APMServiceName:   types.StringValue("test-service-http"),
 				TimeoutSeconds:   types.Int64Value(30),
@@ -273,6 +328,7 @@ func TestToModelV0(t *testing.T) {
 				PrivateLocations: []types.String{types.StringValue("test private location")},
 				Enabled:          types.BoolPointerValue(tBool),
 				Tags:             nil,
+				Labels:           types.MapNull(types.StringType),
 				Alert:            toAlertObject(t, tfAlertConfigV0{Status: &tfStatusConfigV0{Enabled: types.BoolPointerValue(tBool)}}),
 				APMServiceName:   types.StringValue("test-service-tcp"),
 				TimeoutSeconds:   types.Int64Value(30),
@@ -333,6 +389,7 @@ func TestToModelV0(t *testing.T) {
 				PrivateLocations: []types.String{types.StringValue("test private location")},
 				Enabled:          types.BoolPointerValue(tBool),
 				Tags:             nil,
+				Labels:           types.MapNull(types.StringType),
 				Alert:            toAlertObject(t, tfAlertConfigV0{Status: &tfStatusConfigV0{Enabled: types.BoolPointerValue(tBool)}}),
 				APMServiceName:   types.StringValue("test-service-tcp"),
 				TimeoutSeconds:   types.Int64Value(30),
@@ -389,6 +446,7 @@ func TestToModelV0(t *testing.T) {
 				PrivateLocations: []types.String{types.StringValue("test private location")},
 				Enabled:          types.BoolPointerValue(tBool),
 				Tags:             nil,
+				Labels:           types.MapNull(types.StringType),
 				Alert:            toAlertObject(t, tfAlertConfigV0{Status: &tfStatusConfigV0{Enabled: types.BoolPointerValue(tBool)}}),
 				APMServiceName:   types.StringValue("test-service-tcp"),
 				TimeoutSeconds:   types.Int64Value(30),
@@ -427,7 +485,9 @@ func TestToKibanaAPIRequest(t *testing.T) {
 			},
 			expected: kibanaAPIRequest{
 				fields: kbapi.HTTPMonitorFields{},
-				config: kbapi.SyntheticsMonitorConfig{},
+				config: kbapi.SyntheticsMonitorConfig{
+					Labels: map[string]string{},
+				},
 			},
 		},
 		{
@@ -437,7 +497,9 @@ func TestToKibanaAPIRequest(t *testing.T) {
 			},
 			expected: kibanaAPIRequest{
 				fields: kbapi.TCPMonitorFields{},
-				config: kbapi.SyntheticsMonitorConfig{},
+				config: kbapi.SyntheticsMonitorConfig{
+					Labels: map[string]string{},
+				},
 			},
 		},
 		{
@@ -447,7 +509,9 @@ func TestToKibanaAPIRequest(t *testing.T) {
 			},
 			expected: kibanaAPIRequest{
 				fields: kbapi.ICMPMonitorFields{},
-				config: kbapi.SyntheticsMonitorConfig{},
+				config: kbapi.SyntheticsMonitorConfig{
+					Labels: map[string]string{},
+				},
 			},
 		},
 		{
@@ -457,7 +521,9 @@ func TestToKibanaAPIRequest(t *testing.T) {
 			},
 			expected: kibanaAPIRequest{
 				fields: kbapi.BrowserMonitorFields{},
-				config: kbapi.SyntheticsMonitorConfig{},
+				config: kbapi.SyntheticsMonitorConfig{
+					Labels: map[string]string{},
+				},
 			},
 		},
 		{
@@ -508,6 +574,7 @@ func TestToKibanaAPIRequest(t *testing.T) {
 					PrivateLocations: []string{"test private location"},
 					Enabled:          tBool,
 					Tags:             []string{"tag1", "tag2"},
+					Labels:           map[string]string{},
 					Alert:            &kbapi.MonitorAlertConfig{Status: &kbapi.SyntheticsStatusConfig{Enabled: tBool}, Tls: &kbapi.SyntheticsStatusConfig{Enabled: fBool}},
 					APMServiceName:   "test-service-http",
 					Namespace:        "default-3",
@@ -579,6 +646,7 @@ func TestToKibanaAPIRequest(t *testing.T) {
 					PrivateLocations: nil,
 					Enabled:          tBool,
 					Tags:             []string{"tag1", "tag2"},
+					Labels:           map[string]string{},
 					Alert:            &kbapi.MonitorAlertConfig{Status: &kbapi.SyntheticsStatusConfig{Enabled: tBool}},
 					APMServiceName:   "test-service-tcp",
 					Namespace:        "default",
@@ -631,6 +699,7 @@ func TestToKibanaAPIRequest(t *testing.T) {
 					PrivateLocations: nil,
 					Enabled:          tBool,
 					Tags:             []string{"tag1", "tag2"},
+					Labels:           map[string]string{},
 					Alert:            &kbapi.MonitorAlertConfig{Status: &kbapi.SyntheticsStatusConfig{Enabled: tBool}},
 					APMServiceName:   "test-service-tcp",
 					Namespace:        "default",
@@ -675,6 +744,7 @@ func TestToKibanaAPIRequest(t *testing.T) {
 					PrivateLocations: nil,
 					Enabled:          tBool,
 					Tags:             []string{"tag1", "tag2"},
+					Labels:           map[string]string{},
 					Alert:            &kbapi.MonitorAlertConfig{Status: &kbapi.SyntheticsStatusConfig{Enabled: tBool}},
 					APMServiceName:   "test-service-tcp",
 					Namespace:        "default",
@@ -737,6 +807,7 @@ func TestToModelV0MergeAttributes(t *testing.T) {
 				SpaceID:         types.StringValue(""),
 				Namespace:       types.StringValue(""),
 				Schedule:        types.Int64Value(0),
+				Labels:          types.MapNull(types.StringType),
 				APMServiceName:  types.StringValue(""),
 				TimeoutSeconds:  types.Int64Value(0),
 				Params:          jsontypes.NewNormalizedValue(`{"param1":"value1"}`),
@@ -783,6 +854,7 @@ func TestToModelV0MergeAttributes(t *testing.T) {
 				SpaceID:        types.StringValue(""),
 				Namespace:      types.StringValue(""),
 				Schedule:       types.Int64Value(0),
+				Labels:         types.MapNull(types.StringType),
 				APMServiceName: types.StringValue(""),
 				TimeoutSeconds: types.Int64Value(0),
 				Locations:      []types.String{types.StringValue("us_east")},
@@ -818,6 +890,7 @@ func TestToModelV0MergeAttributes(t *testing.T) {
 				SpaceID:        types.StringValue(""),
 				Namespace:      types.StringValue(""),
 				Schedule:       types.Int64Value(0),
+				Labels:         types.MapNull(types.StringType),
 				APMServiceName: types.StringValue(""),
 				TimeoutSeconds: types.Int64Value(0),
 				Browser: &tfBrowserMonitorFieldsV0{
@@ -836,6 +909,70 @@ func TestToModelV0MergeAttributes(t *testing.T) {
 			assert.False(t, diag.HasError())
 			assert.NotNil(t, actual)
 			assert.Equal(t, &tt.expected, actual)
+		})
+	}
+}
+
+func TestToSyntheticsMonitorConfig(t *testing.T) {
+	testcases := []struct {
+		name     string
+		input    tfModelV0
+		expected kbapi.SyntheticsMonitorConfig
+	}{
+		{
+			name: "monitor config with nil labels",
+			input: tfModelV0{
+				Name:   types.StringValue("test-monitor"),
+				Labels: types.MapNull(types.StringType),
+			},
+			expected: kbapi.SyntheticsMonitorConfig{
+				Name:   "test-monitor",
+				Labels: map[string]string{},
+			},
+		},
+		{
+			name: "monitor config with empty labels",
+			input: tfModelV0{
+				Name: types.StringValue("test-monitor"),
+				Labels: func() types.Map {
+					mapValue, _ := types.MapValue(types.StringType, map[string]attr.Value{})
+					return mapValue
+				}(),
+			},
+			expected: kbapi.SyntheticsMonitorConfig{
+				Name:   "test-monitor",
+				Labels: map[string]string{},
+			},
+		},
+		{
+			name: "monitor config with labels",
+			input: tfModelV0{
+				Name: types.StringValue("test-monitor"),
+				Labels: func() types.Map {
+					elements := map[string]attr.Value{
+						"environment": types.StringValue("production"),
+						"team":        types.StringValue("platform"),
+					}
+					mapValue, _ := types.MapValue(types.StringType, elements)
+					return mapValue
+				}(),
+			},
+			expected: kbapi.SyntheticsMonitorConfig{
+				Name: "test-monitor",
+				Labels: map[string]string{
+					"environment": "production",
+					"team":        "platform",
+				},
+			},
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			result, diags := tc.input.toSyntheticsMonitorConfig(context.Background())
+			assert.False(t, diags.HasError())
+			assert.Equal(t, tc.expected.Name, result.Name)
+			assert.Equal(t, tc.expected.Labels, result.Labels)
 		})
 	}
 }

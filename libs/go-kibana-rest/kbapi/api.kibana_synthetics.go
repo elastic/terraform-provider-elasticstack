@@ -153,6 +153,7 @@ type SyntheticsMonitorConfig struct {
 	PrivateLocations []string            `json:"private_locations,omitempty"`
 	Enabled          *bool               `json:"enabled,omitempty"`
 	Tags             []string            `json:"tags,omitempty"`
+	Labels           map[string]string   `json:"labels"`
 	Alert            *MonitorAlertConfig `json:"alert,omitempty"`
 	APMServiceName   string              `json:"service.name,omitempty"`
 	TimeoutSeconds   int                 `json:"timeout,omitempty"`
@@ -208,6 +209,7 @@ type SyntheticsMonitor struct {
 	Alert          *MonitorAlertConfig     `json:"alert,omitempty"`
 	Schedule       *MonitorScheduleConfig  `json:"schedule,omitempty"`
 	Tags           []string                `json:"tags,omitempty"`
+	Labels         map[string]string       `json:"labels,omitempty"`
 	APMServiceName string                  `json:"service.name,omitempty"`
 	Timeout        json.Number             `json:"timeout,omitempty"`
 	Locations      []MonitorLocationConfig `json:"locations,omitempty"`

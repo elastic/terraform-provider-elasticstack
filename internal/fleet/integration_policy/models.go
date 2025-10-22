@@ -2,6 +2,7 @@ package integration_policy
 
 import (
 	"context"
+	"fmt"
 	"sort"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -12,12 +13,17 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+type features struct {
+	SupportsPolicyIds bool
+}
+
 type integrationPolicyModel struct {
 	ID                 types.String         `tfsdk:"id"`
 	PolicyID           types.String         `tfsdk:"policy_id"`
 	Name               types.String         `tfsdk:"name"`
 	Namespace          types.String         `tfsdk:"namespace"`
 	AgentPolicyID      types.String         `tfsdk:"agent_policy_id"`
+	AgentPolicyIDs     types.List           `tfsdk:"agent_policy_ids"`
 	Description        types.String         `tfsdk:"description"`
 	Enabled            types.Bool           `tfsdk:"enabled"`
 	Force              types.Bool           `tfsdk:"force"`
@@ -45,7 +51,40 @@ func (model *integrationPolicyModel) populateFromAPI(ctx context.Context, data *
 	model.PolicyID = types.StringValue(data.Id)
 	model.Name = types.StringValue(data.Name)
 	model.Namespace = types.StringPointerValue(data.Namespace)
-	model.AgentPolicyID = types.StringPointerValue(data.PolicyId)
+
+	// Only populate the agent policy field that was originally configured
+	// to avoid Terraform detecting inconsistent state
+
+	originallyUsedAgentPolicyID := utils.IsKnown(model.AgentPolicyID)
+	originallyUsedAgentPolicyIDs := utils.IsKnown(model.AgentPolicyIDs)
+
+	if originallyUsedAgentPolicyID {
+		model.AgentPolicyID = types.StringPointerValue(data.PolicyId)
+	}
+	if originallyUsedAgentPolicyIDs {
+		if data.PolicyIds != nil {
+			agentPolicyIDs, d := types.ListValueFrom(ctx, types.StringType, *data.PolicyIds)
+			diags.Append(d...)
+			model.AgentPolicyIDs = agentPolicyIDs
+		} else {
+			model.AgentPolicyIDs = types.ListNull(types.StringType)
+		}
+	}
+
+	if !originallyUsedAgentPolicyID && !originallyUsedAgentPolicyIDs {
+		// Handle edge cases: both fields configured or neither configured
+		// Default to the behavior based on API response structure
+		if data.PolicyIds != nil && len(*data.PolicyIds) > 1 {
+			// Multiple policy IDs, use agent_policy_ids
+			agentPolicyIDs, d := types.ListValueFrom(ctx, types.StringType, *data.PolicyIds)
+			diags.Append(d...)
+			model.AgentPolicyIDs = agentPolicyIDs
+		} else if data.PolicyId != nil {
+			// Single policy ID, use agent_policy_id
+			model.AgentPolicyID = types.StringPointerValue(data.PolicyId)
+		}
+	}
+
 	model.Description = types.StringPointerValue(data.Description)
 	model.Enabled = types.BoolValue(data.Enabled)
 	model.IntegrationName = types.StringValue(data.Package.Name)
@@ -81,8 +120,21 @@ func (model *integrationPolicyModel) populateInputFromAPI(ctx context.Context, i
 	}
 }
 
-func (model integrationPolicyModel) toAPIModel(ctx context.Context, isUpdate bool) (kbapi.PackagePolicyRequest, diag.Diagnostics) {
+func (model integrationPolicyModel) toAPIModel(ctx context.Context, isUpdate bool, feat features) (kbapi.PackagePolicyRequest, diag.Diagnostics) {
 	var diags diag.Diagnostics
+
+	// Check if agent_policy_ids is configured and version supports it
+	if utils.IsKnown(model.AgentPolicyIDs) {
+		if !feat.SupportsPolicyIds {
+			return kbapi.PackagePolicyRequest{}, diag.Diagnostics{
+				diag.NewAttributeErrorDiagnostic(
+					path.Root("agent_policy_ids"),
+					"Unsupported Elasticsearch version",
+					fmt.Sprintf("Agent policy IDs are only supported in Elastic Stack %s and above", MinVersionPolicyIds),
+				),
+			}
+		}
+	}
 
 	body := kbapi.PackagePolicyRequest{
 		Description: model.Description.ValueStringPointer(),
@@ -94,7 +146,21 @@ func (model integrationPolicyModel) toAPIModel(ctx context.Context, isUpdate boo
 			Version: model.IntegrationVersion.ValueString(),
 		},
 		PolicyId: model.AgentPolicyID.ValueStringPointer(),
-		Vars:     utils.MapRef(utils.NormalizedTypeToMap[any](model.VarsJson, path.Root("vars_json"), &diags)),
+		PolicyIds: func() *[]string {
+			if !model.AgentPolicyIDs.IsNull() && !model.AgentPolicyIDs.IsUnknown() {
+				var policyIDs []string
+				d := model.AgentPolicyIDs.ElementsAs(ctx, &policyIDs, false)
+				diags.Append(d...)
+				return &policyIDs
+			}
+			// Only return empty array for 8.15+ when agent_policy_ids is not defined
+			if feat.SupportsPolicyIds {
+				emptyArray := []string{}
+				return &emptyArray
+			}
+			return nil
+		}(),
+		Vars: utils.MapRef(utils.NormalizedTypeToMap[any](model.VarsJson, path.Root("vars_json"), &diags)),
 	}
 
 	if isUpdate {

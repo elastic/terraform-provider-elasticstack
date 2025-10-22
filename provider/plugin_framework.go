@@ -24,10 +24,12 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/server_host"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/connectors"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/data_view"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/export_saved_objects"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/import_saved_objects"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/maintenance_window"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_detection_rule"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/spaces"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics/monitor"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics/parameter"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics/private_location"
 	"github.com/elastic/terraform-provider-elasticstack/internal/schema"
@@ -90,6 +92,7 @@ func (p *Provider) DataSources(ctx context.Context) []func() datasource.DataSour
 	return []func() datasource.DataSource{
 		indices.NewDataSource,
 		spaces.NewDataSource,
+		export_saved_objects.NewDataSource,
 		enrollment_tokens.NewDataSource,
 		integration_ds.NewDataSource,
 		enrich.NewEnrichPolicyDataSource,
@@ -105,7 +108,7 @@ func (p *Provider) Resources(ctx context.Context) []func() resource.Resource {
 		func() resource.Resource { return &parameter.Resource{} },
 		func() resource.Resource { return &private_location.Resource{} },
 		func() resource.Resource { return &index.Resource{} },
-		func() resource.Resource { return &synthetics.Resource{} },
+		monitor.NewResource,
 		func() resource.Resource { return &api_key.Resource{} },
 		func() resource.Resource { return &data_stream_lifecycle.Resource{} },
 		func() resource.Resource { return &connectors.Resource{} },
@@ -120,5 +123,6 @@ func (p *Provider) Resources(ctx context.Context) []func() resource.Resource {
 		enrich.NewEnrichPolicyResource,
 		role_mapping.NewRoleMappingResource,
 		datafeed.NewDatafeedResource,
+		security_detection_rule.NewSecurityDetectionRuleResource,
 	}
 }

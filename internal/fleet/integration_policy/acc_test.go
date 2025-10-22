@@ -21,8 +21,9 @@ import (
 )
 
 var (
-	minVersionIntegrationPolicy = version.Must(version.NewVersion("8.10.0"))
-	minVersionSqlIntegration    = version.Must(version.NewVersion("9.1.0"))
+	minVersionIntegrationPolicy    = version.Must(version.NewVersion("8.10.0"))
+	minVersionIntegrationPolicyIds = version.Must(version.NewVersion("8.15.0"))
+	minVersionSqlIntegration       = version.Must(version.NewVersion("9.1.0"))
 )
 
 func TestJsonTypes(t *testing.T) {
@@ -31,6 +32,29 @@ func TestJsonTypes(t *testing.T) {
 	equal, diags := jsontypes.NewNormalizedValue(`{"a": "b"}`).StringSemanticEquals(context.Background(), jsontypes.NewNormalizedValue(string(mapBytes)))
 	require.Empty(t, diags)
 	require.False(t, equal)
+}
+
+func TestAccResourceIntegrationPolicyMultipleAgentPolicies(t *testing.T) {
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceIntegrationPolicyDestroy,
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicyIds),
+				Config:   testAccResourceIntegrationPolicyCreateMultipleAgentPolicies(policyName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "description", "IntegrationPolicyTest Policy"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_name", "tcp"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_version", "1.16.0"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "agent_policy_ids.#", "2"),
+				),
+			},
+		},
+	})
 }
 
 func TestAccResourceIntegrationPolicy(t *testing.T) {
@@ -492,6 +516,64 @@ resource "elasticstack_fleet_integration_policy" "test_policy" {
   }
 }
 `, common, id, key, id)
+}
+
+func testAccResourceIntegrationPolicyCreateMultipleAgentPolicies(id string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+resource "elasticstack_fleet_integration" "test_policy" {
+  name    = "tcp"
+  version = "1.16.0"
+  force   = true
+}
+resource "elasticstack_fleet_agent_policy" "test_policy_1" {
+  name            = "%s Agent Policy 1"
+  namespace       = "default"
+  description     = "IntegrationPolicyTest Agent Policy 1"
+  monitor_logs    = true
+  monitor_metrics = true
+  skip_destroy    = false
+}
+resource "elasticstack_fleet_agent_policy" "test_policy_2" {
+  name            = "%s Agent Policy 2"
+  namespace       = "default"
+  description     = "IntegrationPolicyTest Agent Policy 2"
+  monitor_logs    = true
+  monitor_metrics = true
+  skip_destroy    = false
+}
+resource "elasticstack_fleet_integration_policy" "test_policy" {
+  name            = "%s"
+  namespace       = "default"
+  description     = "IntegrationPolicyTest Policy"
+  agent_policy_ids = [
+    elasticstack_fleet_agent_policy.test_policy_1.policy_id,
+    elasticstack_fleet_agent_policy.test_policy_2.policy_id
+  ]
+  integration_name    = elasticstack_fleet_integration.test_policy.name
+  integration_version = elasticstack_fleet_integration.test_policy.version
+  input {
+    input_id = "tcp-tcp"
+    streams_json = jsonencode({
+      "tcp.generic": {
+        "enabled": true
+        "vars": {
+          "listen_address": "localhost"
+          "listen_port": 8080
+          "data_stream.dataset": "tcp.generic"
+          "tags": []
+          "syslog_options": "field: message"
+          "ssl": ""
+          "custom": ""
+        }
+      }
+    })
+  }
+}
+`, id, id, id)
 }
 
 func testAccResourceIntegrationPolicySecretsIds(id string, key string) string {

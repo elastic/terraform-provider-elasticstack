@@ -17,6 +17,7 @@ import (
 
 func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Version:     1,
 		Description: "Creates a Kibana action connector. See https://www.elastic.co/guide/en/kibana/current/action-types.html",
 		Blocks: map[string]schema.Block{
 			"kibana_connection": providerschema.GetKbFWConnectionBlock(),
