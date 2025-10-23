@@ -217,11 +217,6 @@ generate-alerting-client: ## generate Kibana alerting client
 	@ rm -rf generated/alerting/go.mod generated/alerting/go.sum generated/alerting/test
 	@ go fmt ./generated/alerting/...
 
-.PHONY: generate-connectors-client
-generate-connectors-client: tools ## generate Kibana connectors client
-	@ cd tools && go generate
-	@ go fmt ./generated/connectors/...
-
 .PHONY: generate-slo-client
 generate-slo-client: tools ## generate Kibana slo client
 	@ rm -rf generated/slo
@@ -240,4 +235,4 @@ generate-slo-client: tools ## generate Kibana slo client
 	@ go fmt ./generated/slo/...
 
 .PHONY: generate-clients
-generate-clients: generate-alerting-client generate-slo-client generate-connectors-client ## generate all clients
+generate-clients: generate-alerting-client generate-slo-client ## generate all clients
