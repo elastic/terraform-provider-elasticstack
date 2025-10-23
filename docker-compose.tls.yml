@@ -13,7 +13,7 @@ services:
       service: kibana_settings
 
   kibana_certs:
-    image: alpine/mkcert:latest
+    image: alpine/mkcert:latest@sha256:a8f4f5af61908b4c79c2e9d1e5f23e747f29de174649209ebafcab03d4f6d5fd
     container_name: ${KIBANA_CERTS_CONTAINER_NAME}
     restart: 'no'
     volumes:
