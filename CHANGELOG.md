@@ -1,9 +1,29 @@
 ## [Unreleased]
 
+## [0.12.1] - 2025-10-22
 - Fix regression restricting the characters in an `elasticstack_elasticsearch_role_mapping` `name`. ([#1373](https://github.com/elastic/terraform-provider-elasticstack/pull/1373))
+- Add schema validations to require either (but not both) `index` and `data_view_id` is set for relevant Security Detection Rules ([#1381](https://github.com/elastic/terraform-provider-elasticstack/pull/1381))
 
 ## [0.12.0] - 2025-10-15
 
+- Fix provider crash with `elasticstack_kibana_action_connector` when `config` or `secrets` was unset in 0.11.17 ([#1355](https://github.com/elastic/terraform-provider-elasticstack/pull/1355))
+- Added `labels` field to `elasticstack_kibana_synthetics_monitor` resource for associating key-value pairs with monitors ([#1360](https://github.com/elastic/terraform-provider-elasticstack/pull/1360))
+- Fixes provider crash with `elasticstack_kibana_slo` when using `kql_custom_indicator` with no `filter` set. ([#1354](https://github.com/elastic/terraform-provider-elasticstack/pull/1354))
+- Updates for Security Detection Rules ([#1361](https://github.com/elastic/terraform-provider-elasticstack/pull/1361)
+  - Add support for `threat` property
+  - Gracefully support `query` property not being set
+  - Add esql specific validations to reject unsupported fields `index` and `filters`
+  - Gracefully handle response action with no provided `frequency`
+  - Add validation for required `anomaly_threshold` field in anomaly detection rules
+  - Add support for `timeline_id` / `timeline_title` fields
+  - Gracefully handle `threat_query` not being provided for `threat_match` ule
+
+## [0.11.19] - 2025-10-22
+
+Version 0.11.19 is equivalent to 0.12.1. It is being released to help mitigate impact from 0.11.18 being inadvertently released ahead of schedule. This version contained a breaking change and defects related to internal refactors. While 0.11.19 still contains a breaking change from 0.11.17 it does fix defects (see details below) for any users relying on the latest 0.11.x version.
+
+- Fix regression restricting the characters in an `elasticstack_elasticsearch_role_mapping` `name`. ([#1373](https://github.com/elastic/terraform-provider-elasticstack/pull/1373))
+- Add schema validations to require either (but not both) `index` and `data_view_id` is set for relevant Security Detection Rules ([#1381](https://github.com/elastic/terraform-provider-elasticstack/pull/1381))
 - Fix provider crash with `elasticstack_kibana_action_connector` when `config` or `secrets` was unset in 0.11.17 ([#1355](https://github.com/elastic/terraform-provider-elasticstack/pull/1355))
 - Added `labels` field to `elasticstack_kibana_synthetics_monitor` resource for associating key-value pairs with monitors ([#1360](https://github.com/elastic/terraform-provider-elasticstack/pull/1360))
 - Fixes provider crash with `elasticstack_kibana_slo` when using `kql_custom_indicator` with no `filter` set. ([#1354](https://github.com/elastic/terraform-provider-elasticstack/pull/1354))
@@ -507,8 +527,10 @@ resource "elasticstack_fleet_output" "output" {
 - Initial set of docs
 - CI integration
 
-[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.12.0...HEAD
-[0.11.18]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.18...v0.12.0
+[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.12.1...HEAD
+[0.12.1]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.12.0...v0.12.1
+[0.12.0]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.18...v0.12.0
+[0.11.19]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.18...v0.11.19
 [0.11.18]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.17...v0.11.18
 [0.11.17]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.16...v0.11.17
 [0.11.16]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.15...v0.11.16
