@@ -958,13 +958,7 @@ func (r securityDetectionRuleResource) ValidateConfig(ctx context.Context, req r
 		return
 	}
 
-	t, diag := data.Type.ToStringValue(ctx)
-	resp.Diagnostics.Append(diag...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if t.ValueString() == "esql" || t.ValueString() == "machine_learning" {
+	if data.Type.ValueString() == "esql" || data.Type.ValueString() == "machine_learning" {
 		return
 	}
 
