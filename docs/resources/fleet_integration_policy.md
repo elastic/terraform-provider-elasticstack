@@ -108,6 +108,7 @@ resource "elasticstack_fleet_integration_policy" "sample" {
 ### Read-Only
 
 - `id` (String) The ID of this resource.
+- `space_ids` (List of String) The Kibana space IDs that this integration policy is available in. This is read-only and inherited from the agent policy.
 
 <a id="nestedblock--input"></a>
 ### Nested Schema for `input`

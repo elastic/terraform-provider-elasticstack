@@ -46,6 +46,7 @@ type agentPolicyModel struct {
 	InactivityTimeout   customtypes.Duration `tfsdk:"inactivity_timeout"`
 	UnenrollmentTimeout customtypes.Duration `tfsdk:"unenrollment_timeout"`
 	GlobalDataTags      types.Map            `tfsdk:"global_data_tags"` //> globalDataTagsModel
+	SpaceIds            types.List           `tfsdk:"space_ids"`
 }
 
 func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.AgentPolicy) diag.Diagnostics {
@@ -120,6 +121,16 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 			return diags
 		}
 
+	}
+
+	if data.SpaceIds != nil {
+		spaceIds, d := types.ListValueFrom(ctx, types.StringType, *data.SpaceIds)
+		if d.HasError() {
+			return d
+		}
+		model.SpaceIds = spaceIds
+	} else {
+		model.SpaceIds = types.ListNull(types.StringType)
 	}
 
 	return nil
@@ -251,6 +262,16 @@ func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, feat featur
 	}
 	body.GlobalDataTags = tags
 
+	if utils.IsKnown(model.SpaceIds) {
+		var spaceIds []string
+		d := model.SpaceIds.ElementsAs(ctx, &spaceIds, false)
+		diags.Append(d...)
+		if diags.HasError() {
+			return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diags
+		}
+		body.SpaceIds = &spaceIds
+	}
+
 	return body, nil
 }
 
@@ -328,6 +349,16 @@ func (model *agentPolicyModel) toAPIUpdateModel(ctx context.Context, feat featur
 		return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diags
 	}
 	body.GlobalDataTags = tags
+
+	if utils.IsKnown(model.SpaceIds) {
+		var spaceIds []string
+		d := model.SpaceIds.ElementsAs(ctx, &spaceIds, false)
+		diags.Append(d...)
+		if diags.HasError() {
+			return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diags
+		}
+		body.SpaceIds = &spaceIds
+	}
 
 	return body, nil
 }

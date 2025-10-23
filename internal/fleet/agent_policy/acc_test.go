@@ -281,6 +281,29 @@ func TestAccResourceAgentPolicyWithBadGlobalDataTags(t *testing.T) {
 	})
 }
 
+func TestAccResourceAgentPolicyWithSpaceIds(t *testing.T) {
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceAgentPolicyDestroy,
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionAgentPolicy),
+				Config:   testAccResourceAgentPolicyCreateWithSpaceIds(policyName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "description", "Test Agent Policy with Space IDs"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "space_ids.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "space_ids.0", "default"),
+				),
+			},
+		},
+	})
+}
+
 func testAccResourceAgentPolicyCreate(id string, skipDestroy bool) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
@@ -584,4 +607,28 @@ data "elasticstack_fleet_enrollment_tokens" "test_policy" {
 }
 
 `, fmt.Sprintf("Updated Policy %s", id))
+}
+
+func testAccResourceAgentPolicyCreateWithSpaceIds(id string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_fleet_agent_policy" "test_policy" {
+  name             = "%s"
+  namespace        = "default"
+  description      = "Test Agent Policy with Space IDs"
+  monitor_logs     = true
+  monitor_metrics  = false
+  skip_destroy     = false
+  space_ids        = ["default"]
+}
+
+data "elasticstack_fleet_enrollment_tokens" "test_policy" {
+  policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
+}
+
+`, fmt.Sprintf("Policy %s", id))
 }

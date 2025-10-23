@@ -99,6 +99,11 @@ func getSchemaV1() schema.Schema {
 				Optional:    true,
 				Sensitive:   true,
 			},
+			"space_ids": schema.ListAttribute{
+				Description: "The Kibana space IDs that this integration policy is available in. This is read-only and inherited from the agent policy.",
+				ElementType: types.StringType,
+				Computed:    true,
+			},
 		},
 		Blocks: map[string]schema.Block{
 			"input": schema.ListNestedBlock{

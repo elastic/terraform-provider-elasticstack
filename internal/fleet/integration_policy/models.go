@@ -31,6 +31,7 @@ type integrationPolicyModel struct {
 	IntegrationVersion types.String         `tfsdk:"integration_version"`
 	Input              types.List           `tfsdk:"input"` //> integrationPolicyInputModel
 	VarsJson           jsontypes.Normalized `tfsdk:"vars_json"`
+	SpaceIds           types.List           `tfsdk:"space_ids"`
 }
 
 type integrationPolicyInputModel struct {
@@ -90,6 +91,14 @@ func (model *integrationPolicyModel) populateFromAPI(ctx context.Context, data *
 	model.IntegrationName = types.StringValue(data.Package.Name)
 	model.IntegrationVersion = types.StringValue(data.Package.Version)
 	model.VarsJson = utils.MapToNormalizedType(utils.Deref(data.Vars), path.Root("vars_json"), &diags)
+
+	if data.SpaceIds != nil {
+		spaceIds, d := types.ListValueFrom(ctx, types.StringType, *data.SpaceIds)
+		diags.Append(d...)
+		model.SpaceIds = spaceIds
+	} else {
+		model.SpaceIds = types.ListNull(types.StringType)
+	}
 
 	model.populateInputFromAPI(ctx, data.Inputs, &diags)
 
@@ -175,6 +184,8 @@ func (model integrationPolicyModel) toAPIModel(ctx context.Context, isUpdate boo
 				Vars:    utils.MapRef(utils.NormalizedTypeToMap[any](inputModel.VarsJson, meta.Path.AtName("vars_json"), &diags)),
 			}
 		}))
+
+	// Note: space_ids is read-only for integration policies and inherited from the agent policy
 
 	return body, diags
 }
