@@ -2,7 +2,7 @@ package index
 
 import (
 	"context"
-	"maps"
+	"reflect"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
@@ -115,7 +115,7 @@ func (r *Resource) updateSettings(ctx context.Context, client *clients.ApiClient
 		}
 	}
 
-	if !maps.Equal(planDynamicSettings, stateDynamicSettings) {
+	if !deepEqual(planDynamicSettings, stateDynamicSettings) {
 		// Settings which are being removed must be explicitly set to null in the new settings
 		for setting := range stateDynamicSettings {
 			if _, ok := planDynamicSettings[setting]; !ok {
@@ -148,4 +148,25 @@ func (r *Resource) updateMappings(ctx context.Context, client *clients.ApiClient
 	}
 
 	return nil
+}
+
+// deepEqual compares two maps for deep equality, handling slices and other types
+// that are not comparable with maps.Equal
+func deepEqual(a, b map[string]interface{}) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	for key, valueA := range a {
+		valueB, exists := b[key]
+		if !exists {
+			return false
+		}
+
+		if !reflect.DeepEqual(valueA, valueB) {
+			return false
+		}
+	}
+
+	return true
 }
