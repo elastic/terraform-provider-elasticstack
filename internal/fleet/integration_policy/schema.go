@@ -100,7 +100,7 @@ func getSchemaV1() schema.Schema {
 				Sensitive:   true,
 			},
 			"space_ids": schema.ListAttribute{
-				Description: "The Kibana space IDs that this integration policy is available in. This is read-only and inherited from the agent policy.",
+				Description: "The Kibana space IDs where this integration policy is available. This field is read-only and inherited from the agent policy.",
 				ElementType: types.StringType,
 				Computed:    true,
 			},
