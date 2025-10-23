@@ -1,5 +1,8 @@
 ## [Unreleased]
 
+
+- Add new `elasticstack_elasticsearch_ml_anomaly_detection_job` ([#1329](https://github.com/elastic/terraform-provider-elasticstack/pull/1329))
+
 ## [0.12.1] - 2025-10-22
 - Fix regression restricting the characters in an `elasticstack_elasticsearch_role_mapping` `name`. ([#1373](https://github.com/elastic/terraform-provider-elasticstack/pull/1373))
 - Add schema validations to require either (but not both) `index` and `data_view_id` is set for relevant Security Detection Rules ([#1381](https://github.com/elastic/terraform-provider-elasticstack/pull/1381))
