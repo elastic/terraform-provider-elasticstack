@@ -22,8 +22,6 @@
 
 Version 0.11.19 is equivalent to 0.12.1. It is being released to help mitigate impact from 0.11.18 being inadvertently released ahead of schedule. This version contained a breaking change and defects related to internal refactors. While 0.11.19 still contains a breaking change from 0.11.17 it does fix defects (see details below) for any users relying on the latest 0.11.x version.
 
-This patch release is intended to prevent users
-
 - Fix regression restricting the characters in an `elasticstack_elasticsearch_role_mapping` `name`. ([#1373](https://github.com/elastic/terraform-provider-elasticstack/pull/1373))
 - Add schema validations to require either (but not both) `index` and `data_view_id` is set for relevant Security Detection Rules ([#1381](https://github.com/elastic/terraform-provider-elasticstack/pull/1381))
 - Fix provider crash with `elasticstack_kibana_action_connector` when `config` or `secrets` was unset in 0.11.17 ([#1355](https://github.com/elastic/terraform-provider-elasticstack/pull/1355))
