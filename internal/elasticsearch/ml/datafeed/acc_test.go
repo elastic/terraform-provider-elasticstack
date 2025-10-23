@@ -12,25 +12,16 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-//go:embed testdata/datafeed_basic.tf
-var testAccResourceDatafeedBasic string
-
-//go:embed testdata/datafeed_comprehensive.tf
-var testAccResourceDatafeedComprehensive string
-
-//go:embed testdata/datafeed_updated.tf
-var testAccResourceDatafeedUpdated string
-
 func TestAccResourceDatafeed(t *testing.T) {
 	jobID := fmt.Sprintf("test-job-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 	datafeedID := fmt.Sprintf("test-datafeed-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceDatafeedBasic,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"job_id":      config.StringVariable(jobID),
 					"datafeed_id": config.StringVariable(datafeedID),
@@ -43,6 +34,39 @@ func TestAccResourceDatafeed(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_ml_datafeed.test", "query"),
 				),
 			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"job_id":      config.StringVariable(jobID),
+					"datafeed_id": config.StringVariable(datafeedID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed.test", "datafeed_id", datafeedID),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed.test", "job_id", jobID),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed.test", "indices.#", "2"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed.test", "indices.0", "test-index-*"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed.test", "indices.1", "test-index-2-*"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed.test", "scroll_size", "1000"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed.test", "frequency", "60s"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_ml_datafeed.test", "query"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ResourceName:             "elasticstack_elasticsearch_ml_datafeed.test",
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+					rs := s.RootModule().Resources["elasticstack_elasticsearch_ml_datafeed.test"]
+					return rs.Primary.ID, nil
+				},
+				ConfigVariables: config.Variables{
+					"job_id":      config.StringVariable(jobID),
+					"datafeed_id": config.StringVariable(datafeedID),
+				},
+			},
 		},
 	})
 }
@@ -52,11 +76,11 @@ func TestAccResourceDatafeedComprehensive(t *testing.T) {
 	datafeedID := fmt.Sprintf("test-datafeed-comprehensive-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceDatafeedComprehensive,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"job_id":      config.StringVariable(jobID),
 					"datafeed_id": config.StringVariable(datafeedID),
@@ -101,7 +125,8 @@ func TestAccResourceDatafeedComprehensive(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccResourceDatafeedUpdated,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"job_id":      config.StringVariable(jobID),
 					"datafeed_id": config.StringVariable(datafeedID),
@@ -139,44 +164,6 @@ func TestAccResourceDatafeedComprehensive(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_ml_datafeed.test", "script_fields"),
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_ml_datafeed.test", "runtime_mappings"),
 				),
-			},
-		},
-	})
-}
-
-// Test import functionality
-func TestAccResourceDatafeedImport(t *testing.T) {
-	jobID := fmt.Sprintf("test-job-import-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
-	datafeedID := fmt.Sprintf("test-datafeed-import-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
-
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
-		CheckDestroy:             testAccCheckDatafeedDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccResourceDatafeedBasic,
-				ConfigVariables: config.Variables{
-					"job_id":      config.StringVariable(jobID),
-					"datafeed_id": config.StringVariable(datafeedID),
-				},
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed.test", "datafeed_id", datafeedID),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed.test", "job_id", jobID),
-				),
-			},
-			{
-				ResourceName:      "elasticstack_elasticsearch_ml_datafeed.test",
-				ImportState:       true,
-				ImportStateVerify: true,
-				ImportStateIdFunc: func(s *terraform.State) (string, error) {
-					rs := s.RootModule().Resources["elasticstack_elasticsearch_ml_datafeed.test"]
-					return rs.Primary.ID, nil
-				},
-				ConfigVariables: config.Variables{
-					"job_id":      config.StringVariable(jobID),
-					"datafeed_id": config.StringVariable(datafeedID),
-				},
 			},
 		},
 	})

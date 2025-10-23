@@ -5,6 +5,7 @@ import (
 	"regexp"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
@@ -163,6 +164,7 @@ func GetSchema() schema.Schema {
 						},
 						Validators: []validator.String{
 							stringvalidator.RegexMatches(regexp.MustCompile(`^\d+[nsumdh]$`), "must be a valid duration (e.g., 1h, 1d)"),
+							validators.AllowedIfDependentPathEquals(path.Root("chunking_config").AtName("mode"), "manual"),
 						},
 					},
 				},
