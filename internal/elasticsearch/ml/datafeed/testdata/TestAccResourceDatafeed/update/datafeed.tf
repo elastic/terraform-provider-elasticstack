@@ -37,7 +37,7 @@ resource "elasticstack_elasticsearch_ml_anomaly_detection_job" "test" {
 resource "elasticstack_elasticsearch_ml_datafeed" "test" {
   datafeed_id = var.datafeed_id
   job_id      = elasticstack_elasticsearch_ml_anomaly_detection_job.test.job_id
-  indices     = ["test-index-*", "test-index-2-*"]  # Added second index
+  indices     = ["test-index-*", "test-index-2-*"] # Added second index
 
   query = jsonencode({
     match_all = {
