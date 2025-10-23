@@ -1,7 +1,7 @@
 ## [Unreleased]
 
-
-- Add new `elasticstack_elasticsearch_ml_anomaly_detection_job` ([#1329](https://github.com/elastic/terraform-provider-elasticstack/pull/1329))
+- Add new `elasticstack_elasticsearch_ml_anomaly_detection_job` resource ([#1329](https://github.com/elastic/terraform-provider-elasticstack/pull/1329))
+- Add new `elasticstack_elasticsearch_ml_datafeed` resource ([1340](https://github.com/elastic/terraform-provider-elasticstack/pull/1340))
 
 ## [0.12.1] - 2025-10-22
 - Fix regression restricting the characters in an `elasticstack_elasticsearch_role_mapping` `name`. ([#1373](https://github.com/elastic/terraform-provider-elasticstack/pull/1373))

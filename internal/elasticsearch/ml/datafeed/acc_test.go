@@ -168,9 +168,3 @@ func TestAccResourceDatafeedComprehensive(t *testing.T) {
 		},
 	})
 }
-
-func testAccCheckDatafeedDestroy(s *terraform.State) error {
-	// This function should verify that the datafeed was properly destroyed
-	// For now, just return nil
-	return nil
-}
