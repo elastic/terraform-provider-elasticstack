@@ -144,8 +144,8 @@ func GetMLJobStats(ctx context.Context, apiClient *clients.ApiClient, jobId stri
 	if res.StatusCode == http.StatusNotFound {
 		return nil, diags
 	}
-	if fwDiags := diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to get ML job stats: %s", jobId)); fwDiags.HasError() {
-		diags.Append(fwDiags...)
+	diags.Append(diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to get ML job stats: %s", jobId))...)
+	if diags.HasError() {
 		return nil, diags
 	}
 
@@ -193,8 +193,7 @@ func GetDatafeed(ctx context.Context, apiClient *clients.ApiClient, datafeedId s
 		return nil, diags
 	}
 
-	fwDiags := diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to get ML datafeed: %s", datafeedId))
-	diags.Append(fwDiags...)
+	diags.Append(diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to get ML datafeed: %s", datafeedId))...)
 	if diags.HasError() {
 		return nil, diags
 	}
@@ -241,8 +240,7 @@ func UpdateDatafeed(ctx context.Context, apiClient *clients.ApiClient, datafeedI
 	}
 	defer res.Body.Close()
 
-	fwDiags := diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to update ML datafeed: %s", datafeedId))
-	diags.Append(fwDiags...)
+	diags.Append(diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to update ML datafeed: %s", datafeedId))...)
 
 	return diags
 }
@@ -269,8 +267,7 @@ func DeleteDatafeed(ctx context.Context, apiClient *clients.ApiClient, datafeedI
 	}
 	defer res.Body.Close()
 
-	fwDiags := diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to delete ML datafeed: %s", datafeedId))
-	diags.Append(fwDiags...)
+	diags.Append(diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to delete ML datafeed: %s", datafeedId))...)
 
 	return diags
 }
@@ -302,8 +299,7 @@ func StopDatafeed(ctx context.Context, apiClient *clients.ApiClient, datafeedId 
 	}
 	defer res.Body.Close()
 
-	fwDiags := diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to stop ML datafeed: %s", datafeedId))
-	diags.Append(fwDiags...)
+	diags.Append(diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to stop ML datafeed: %s", datafeedId))...)
 
 	return diags
 }
@@ -341,8 +337,7 @@ func StartDatafeed(ctx context.Context, apiClient *clients.ApiClient, datafeedId
 	}
 	defer res.Body.Close()
 
-	fwDiags := diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to start ML datafeed: %s", datafeedId))
-	diags.Append(fwDiags...)
+	diags.Append(diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to start ML datafeed: %s", datafeedId))...)
 
 	return diags
 }
@@ -374,8 +369,7 @@ func GetDatafeedStats(ctx context.Context, apiClient *clients.ApiClient, datafee
 		return nil, diags
 	}
 
-	fwDiags := diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to get ML datafeed stats: %s", datafeedId))
-	diags.Append(fwDiags...)
+	diags.Append(diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to get ML datafeed stats: %s", datafeedId))...)
 	if diags.HasError() {
 		return nil, diags
 	}

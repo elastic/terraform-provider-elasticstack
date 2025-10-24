@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -24,22 +23,16 @@ func (r *mlJobStateResource) Read(ctx context.Context, req resource.ReadRequest,
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	jobId := compId.ResourceId
 
-	client, diags := clients.MaybeNewApiClientFromFrameworkResource(ctx, data.ElasticsearchConnection, r.client)
+	// Get job stats to check current state
+	jobId := compId.ResourceId
+	currentState, diags := r.getJobState(ctx, jobId)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// Get job stats to check current state
-	currentJob, fwDiags := elasticsearch.GetMLJobStats(ctx, client, jobId)
-	resp.Diagnostics.Append(fwDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if currentJob == nil {
+	if currentState == nil {
 		tflog.Warn(ctx, fmt.Sprintf(`ML job "%s" not found, removing from state`, jobId))
 		resp.State.RemoveResource(ctx)
 		return
@@ -47,7 +40,7 @@ func (r *mlJobStateResource) Read(ctx context.Context, req resource.ReadRequest,
 
 	// Update the state with current job information
 	data.JobId = types.StringValue(jobId)
-	data.State = types.StringValue(currentJob.State)
+	data.State = types.StringValue(*currentState)
 
 	// Set defaults for computed attributes if they're not already set (e.g., during import)
 	if data.Force.IsNull() {

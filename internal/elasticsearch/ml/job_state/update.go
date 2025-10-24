@@ -53,13 +53,13 @@ func (r *mlJobStateResource) update(ctx context.Context, plan tfsdk.Plan, state 
 	desiredState := data.State.ValueString()
 
 	// First, get the current job stats to check if the job exists and its current state
-	currentJob, fwDiags := elasticsearch.GetMLJobStats(ctx, client, jobId)
+	currentState, fwDiags := r.getJobState(ctx, jobId)
 	diags.Append(fwDiags...)
 	if diags.HasError() {
 		return diags
 	}
 
-	if currentJob == nil {
+	if currentState == nil {
 		diags.AddError(
 			"ML Job not found",
 			fmt.Sprintf("ML job %s does not exist", jobId),
@@ -67,10 +67,8 @@ func (r *mlJobStateResource) update(ctx context.Context, plan tfsdk.Plan, state 
 		return diags
 	}
 
-	currentState := currentJob.State
-
 	// Perform state transition if needed
-	fwDiags = r.performStateTransition(ctx, client, data, currentState, operationTimeout)
+	fwDiags = r.performStateTransition(ctx, client, data, *currentState, operationTimeout)
 	diags.Append(fwDiags...)
 	if diags.HasError() {
 		return diags
@@ -92,34 +90,6 @@ func (r *mlJobStateResource) update(ctx context.Context, plan tfsdk.Plan, state 
 
 	diags.Append(state.Set(ctx, data)...)
 	return diags
-}
-
-// waitForJobStateTransition waits for an ML job to reach the desired state
-func waitForJobStateTransition(ctx context.Context, client *clients.ApiClient, jobId, desiredState string) error {
-	const pollInterval = 2 * time.Second
-	ticker := time.NewTicker(pollInterval)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-ticker.C:
-			currentJob, fwDiags := elasticsearch.GetMLJobStats(ctx, client, jobId)
-			if fwDiags.HasError() {
-				return fmt.Errorf("failed to get job stats during state transition check")
-			}
-
-			if currentJob == nil {
-				return fmt.Errorf("job not found during state transition check")
-			}
-
-			if currentJob.State == desiredState {
-				return nil // Successfully reached desired state
-			}
-			tflog.Debug(ctx, fmt.Sprintf("ML job %s current state: %s, waiting for: %s", jobId, currentJob.State, desiredState))
-		}
-	}
 }
 
 // performStateTransition handles the ML job state transition process
@@ -147,13 +117,11 @@ func (r *mlJobStateResource) performStateTransition(ctx context.Context, client 
 	// Initiate the state change
 	switch desiredState {
 	case "opened":
-		diags := elasticsearch.OpenMLJob(ctx, client, jobId)
-		if diags.HasError() {
+		if diags := elasticsearch.OpenMLJob(ctx, client, jobId); diags.HasError() {
 			return diags
 		}
 	case "closed":
-		diags := elasticsearch.CloseMLJob(ctx, client, jobId, force, timeout) // Always allow no match
-		if diags.HasError() {
+		if diags := elasticsearch.CloseMLJob(ctx, client, jobId, force, timeout); diags.HasError() {
 			return diags
 		}
 	default:
@@ -166,14 +134,9 @@ func (r *mlJobStateResource) performStateTransition(ctx context.Context, client 
 	}
 
 	// Wait for state transition to complete
-	err := waitForJobStateTransition(ctx, client, jobId, desiredState)
-	if err != nil {
-		return diag.Diagnostics{
-			diag.NewErrorDiagnostic(
-				"State transition timeout",
-				fmt.Sprintf("ML job %s did not transition to state %s within timeout: %s", jobId, desiredState, err.Error()),
-			),
-		}
+	diags := r.waitForJobState(ctx, jobId, desiredState)
+	if diags.HasError() {
+		return diags
 	}
 
 	tflog.Info(ctx, fmt.Sprintf("ML job %s successfully transitioned to state %s", jobId, desiredState))
