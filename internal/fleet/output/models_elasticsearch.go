@@ -23,10 +23,9 @@ func (model *outputModel) fromAPIElasticsearchModel(ctx context.Context, data *k
 	model.ConfigYaml = types.StringPointerValue(data.ConfigYaml)
 	model.Ssl, diags = sslToObjectValue(ctx, data.Ssl)
 
-	// Note: SpaceIds is not returned by the API for outputs, so we always set to null
+	// Note: SpaceIds is not returned by the API for outputs, so we don't modify it here
+	// The value from the plan/state is preserved as-is
 	// It's only used to determine which API endpoint to call during create/update/delete
-	// Users should not rely on reading this value back from state
-	model.SpaceIds = types.ListNull(types.StringType)
 
 	return
 }

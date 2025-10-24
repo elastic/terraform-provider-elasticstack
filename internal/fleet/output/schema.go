@@ -95,9 +95,6 @@ func getSchema() schema.Schema {
 				ElementType: types.StringType,
 				Optional:    true,
 				Computed:    true,
-				PlanModifiers: []planmodifier.List{
-					listplanmodifier.UseStateForUnknown(),
-				},
 			},
 			"ssl": schema.SingleNestedAttribute{
 				Description: "SSL configuration.",
