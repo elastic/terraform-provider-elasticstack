@@ -41,10 +41,19 @@ func (r *agentPolicyResource) Create(ctx context.Context, req resource.CreateReq
 		return
 	}
 
-	policy, diags = fleet.GetAgentPolicy(ctx, client, policy.Id)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	// The CREATE response may not include all fields (e.g., space_ids can be null in the response
+	// even when specified in the request). Read the policy back to get the complete state.
+	// Only do this if we got a valid ID from the create response.
+	if policy != nil && policy.Id != "" {
+		readPolicy, diags := fleet.GetAgentPolicy(ctx, client, policy.Id)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		// Use the read response if available, otherwise fall back to create response
+		if readPolicy != nil {
+			policy = readPolicy
+		}
 	}
 
 	diags = planModel.populateFromAPI(ctx, policy)
