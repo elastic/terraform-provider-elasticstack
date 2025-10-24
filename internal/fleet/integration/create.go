@@ -58,7 +58,8 @@ func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state 
 	planModel.ID = types.StringValue(getPackageID(name, version))
 
 	// Populate space_ids in state
-	if planModel.SpaceIds.IsNull() {
+	// If space_ids is unknown (not provided by user), set to null to satisfy Terraform's requirement
+	if planModel.SpaceIds.IsNull() || planModel.SpaceIds.IsUnknown() {
 		planModel.SpaceIds = types.ListNull(types.StringType)
 	}
 

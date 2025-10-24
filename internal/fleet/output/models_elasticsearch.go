@@ -25,7 +25,8 @@ func (model *outputModel) fromAPIElasticsearchModel(ctx context.Context, data *k
 
 	// Note: SpaceIds is not returned by the API for outputs, so we preserve it from existing state
 	// It's only used to determine which API endpoint to call
-	if model.SpaceIds.IsNull() {
+	// If space_ids is unknown (not provided by user), set to null to satisfy Terraform's requirement
+	if model.SpaceIds.IsNull() || model.SpaceIds.IsUnknown() {
 		model.SpaceIds = types.ListNull(types.StringType)
 	}
 
