@@ -193,10 +193,10 @@ func TestAccResourceIntegrationPolicySecrets(t *testing.T) {
 				{
 					SkipFunc:                versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
 					ResourceName:            "elasticstack_fleet_integration_policy.test_policy",
-					Config:                  testAccResourceIntegrationPolicyUpdate(policyName),
+					Config:                  testAccResourceIntegrationPolicySecretsUpdate(policyName, "updated"),
 					ImportState:             true,
 					ImportStateVerify:       true,
-					ImportStateVerifyIgnore: []string{"vars_json"},
+					ImportStateVerifyIgnore: []string{"vars_json", "space_ids"},
 					Check: resource.ComposeTestCheckFunc(
 						resource.TestMatchResourceAttr("elasticstack_fleet_integration_policy.test_policy", "vars_json", regexp.MustCompile(`{"access_key_id":{"id":"\S+","isSecretRef":true},"default_region":"us-east-2","endpoint":"endpoint","secret_access_key":{"id":"\S+","isSecretRef":true},"session_token":{"id":"\S+","isSecretRef":true}}`)),
 					),
@@ -233,7 +233,7 @@ func TestAccResourceIntegrationPolicySecrets(t *testing.T) {
 					Config:                  testAccResourceIntegrationPolicySecretsIds(policyName, "created"),
 					ImportState:             true,
 					ImportStateVerify:       true,
-					ImportStateVerifyIgnore: []string{"input.0.streams_json"},
+					ImportStateVerifyIgnore: []string{"input.0.streams_json", "space_ids"},
 					Check: resource.ComposeTestCheckFunc(
 						resource.TestMatchResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.streams_json", regexp.MustCompile(`"hosts":{"ids":["\S+"],"isSecretRef":true}`)),
 					),
