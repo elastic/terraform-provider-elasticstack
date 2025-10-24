@@ -21,6 +21,7 @@ type features struct {
 	SupportsSupportsAgentless   bool
 	SupportsInactivityTimeout   bool
 	SupportsUnenrollmentTimeout bool
+	SupportsSpaceIds            bool
 }
 
 type globalDataTagsItemModel struct {
@@ -263,6 +264,15 @@ func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, feat featur
 	body.GlobalDataTags = tags
 
 	if utils.IsKnown(model.SpaceIds) {
+		if !feat.SupportsSpaceIds {
+			return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diag.Diagnostics{
+				diag.NewAttributeErrorDiagnostic(
+					path.Root("space_ids"),
+					"Unsupported Elasticsearch version",
+					fmt.Sprintf("Space IDs are only supported in Elastic Stack %s and above", MinVersionSpaceIds),
+				),
+			}
+		}
 		var spaceIds []string
 		d := model.SpaceIds.ElementsAs(ctx, &spaceIds, false)
 		diags.Append(d...)
@@ -351,6 +361,15 @@ func (model *agentPolicyModel) toAPIUpdateModel(ctx context.Context, feat featur
 	body.GlobalDataTags = tags
 
 	if utils.IsKnown(model.SpaceIds) {
+		if !feat.SupportsSpaceIds {
+			return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diag.Diagnostics{
+				diag.NewAttributeErrorDiagnostic(
+					path.Root("space_ids"),
+					"Unsupported Elasticsearch version",
+					fmt.Sprintf("Space IDs are only supported in Elastic Stack %s and above", MinVersionSpaceIds),
+				),
+			}
+		}
 		var spaceIds []string
 		d := model.SpaceIds.ElementsAs(ctx, &spaceIds, false)
 		diags.Append(d...)

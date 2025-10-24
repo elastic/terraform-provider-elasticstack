@@ -290,7 +290,7 @@ func TestAccResourceAgentPolicyWithSpaceIds(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionAgentPolicy),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionSpaceIds),
 				Config:   testAccResourceAgentPolicyCreateWithSpaceIds(policyName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),

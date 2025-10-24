@@ -201,3 +201,101 @@ func TestUnenrollmentTimeoutVersionValidation(t *testing.T) {
 		t.Errorf("Did not expect error when unenrollment_timeout is not set in update: %v", diags)
 	}
 }
+
+func TestMinVersionSpaceIds(t *testing.T) {
+	// Test that the MinVersionSpaceIds constant is set correctly
+	expected := "9.1.0"
+	actual := MinVersionSpaceIds.String()
+	if actual != expected {
+		t.Errorf("Expected MinVersionSpaceIds to be '%s', got '%s'", expected, actual)
+	}
+
+	// Test version comparison - should be greater than 9.0.0
+	olderVersion := version.Must(version.NewVersion("9.0.0"))
+	if MinVersionSpaceIds.LessThan(olderVersion) {
+		t.Errorf("MinVersionSpaceIds (%s) should be greater than %s", MinVersionSpaceIds.String(), olderVersion.String())
+	}
+
+	// Test version comparison - should be less than 9.2.0
+	newerVersion := version.Must(version.NewVersion("9.2.0"))
+	if MinVersionSpaceIds.GreaterThan(newerVersion) {
+		t.Errorf("MinVersionSpaceIds (%s) should be less than %s", MinVersionSpaceIds.String(), newerVersion.String())
+	}
+}
+
+func TestSpaceIdsVersionValidation(t *testing.T) {
+	ctx := context.Background()
+
+	// Test case where space_ids is not supported (older version)
+	spaceIds, _ := types.ListValueFrom(ctx, types.StringType, []string{"default", "marketing"})
+	model := &agentPolicyModel{
+		Name:      types.StringValue("test"),
+		Namespace: types.StringValue("default"),
+		SpaceIds:  spaceIds,
+	}
+
+	// Create features with space_ids NOT supported
+	feat := features{
+		SupportsSpaceIds: false,
+	}
+
+	// Test toAPICreateModel - should return error when space_ids is used but not supported
+	_, diags := model.toAPICreateModel(ctx, feat)
+	if !diags.HasError() {
+		t.Error("Expected error when using space_ids on unsupported version, but got none")
+	}
+
+	// Check that the error message contains the expected text
+	found := false
+	for _, diag := range diags {
+		if diag.Summary() == "Unsupported Elasticsearch version" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("Expected 'Unsupported Elasticsearch version' error, but didn't find it")
+	}
+
+	// Test toAPIUpdateModel - should return error when space_ids is used but not supported
+	_, diags = model.toAPIUpdateModel(ctx, feat)
+	if !diags.HasError() {
+		t.Error("Expected error when using space_ids on unsupported version in update, but got none")
+	}
+
+	// Test case where space_ids IS supported (newer version)
+	featSupported := features{
+		SupportsSpaceIds: true,
+	}
+
+	// Test toAPICreateModel - should NOT return error when space_ids is supported
+	_, diags = model.toAPICreateModel(ctx, featSupported)
+	if diags.HasError() {
+		t.Errorf("Did not expect error when using space_ids on supported version: %v", diags)
+	}
+
+	// Test toAPIUpdateModel - should NOT return error when space_ids is supported
+	_, diags = model.toAPIUpdateModel(ctx, featSupported)
+	if diags.HasError() {
+		t.Errorf("Did not expect error when using space_ids on supported version in update: %v", diags)
+	}
+
+	// Test case where space_ids is not set (should not cause validation errors)
+	modelWithoutSpaceIds := &agentPolicyModel{
+		Name:      types.StringValue("test"),
+		Namespace: types.StringValue("default"),
+		// SpaceIds is not set (null/unknown)
+	}
+
+	// Test toAPICreateModel - should NOT return error when space_ids is not set, even on unsupported version
+	_, diags = modelWithoutSpaceIds.toAPICreateModel(ctx, feat)
+	if diags.HasError() {
+		t.Errorf("Did not expect error when space_ids is not set: %v", diags)
+	}
+
+	// Test toAPIUpdateModel - should NOT return error when space_ids is not set, even on unsupported version
+	_, diags = modelWithoutSpaceIds.toAPIUpdateModel(ctx, feat)
+	if diags.HasError() {
+		t.Errorf("Did not expect error when space_ids is not set in update: %v", diags)
+	}
+}

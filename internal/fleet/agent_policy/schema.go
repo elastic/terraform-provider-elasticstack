@@ -140,9 +140,10 @@ func getSchema() schema.Schema {
 				}, map[string]attr.Value{})),
 			},
 			"space_ids": schema.ListAttribute{
-				Description: "The Kibana space IDs that this agent policy should be available in. When not specified, the agent policy is available in all spaces.",
+				Description: "The Kibana space IDs that this agent policy should be available in. When not specified, defaults to [\"default\"].",
 				ElementType: types.StringType,
 				Optional:    true,
+				Computed:    true,
 			},
 		}}
 }
