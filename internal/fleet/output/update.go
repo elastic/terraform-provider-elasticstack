@@ -14,11 +14,24 @@ import (
 
 func (r *outputResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var planModel outputModel
+	var stateModel outputModel
 
 	diags := req.Plan.Get(ctx, &planModel)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
+	}
+
+	diags = req.State.Get(ctx, &stateModel)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Preserve space_ids from state if not specified in plan
+	// This prevents plan diffs since the API doesn't return space_ids
+	if planModel.SpaceIds.IsNull() || planModel.SpaceIds.IsUnknown() {
+		planModel.SpaceIds = stateModel.SpaceIds
 	}
 
 	client, err := r.client.GetFleetClient()
