@@ -2,8 +2,10 @@ package fleet
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -64,6 +66,46 @@ func GetAgentPolicy(ctx context.Context, client *Client, id string) (*kbapi.Agen
 		return nil, nil
 	default:
 		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+	}
+}
+
+// GetAgentPolicyInSpace reads a specific agent policy from the API within a specific Kibana space.
+// This is necessary for space-aware policies that are created with space_ids.
+func GetAgentPolicyInSpace(ctx context.Context, client *Client, id string, spaceID string) (*kbapi.AgentPolicy, diag.Diagnostics) {
+	// Construct the space-aware path
+	// For default space: /api/fleet/agent_policies/{id}
+	// For custom space: /s/{space_id}/api/fleet/agent_policies/{id}
+	path := fmt.Sprintf("/api/fleet/agent_policies/%s", id)
+	if spaceID != "" && spaceID != "default" {
+		path = fmt.Sprintf("/s/%s/api/fleet/agent_policies/%s", spaceID, id)
+	}
+
+	// Make the request using the underlying HTTP client
+	req, err := http.NewRequestWithContext(ctx, "GET", client.URL+path, nil)
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+
+	httpResp, err := client.HTTP.Do(req)
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+	defer httpResp.Body.Close()
+
+	switch httpResp.StatusCode {
+	case http.StatusOK:
+		var result struct {
+			Item kbapi.AgentPolicy `json:"item"`
+		}
+		if err := json.NewDecoder(httpResp.Body).Decode(&result); err != nil {
+			return nil, diagutil.FrameworkDiagFromError(err)
+		}
+		return &result.Item, nil
+	case http.StatusNotFound:
+		return nil, nil
+	default:
+		bodyBytes, _ := io.ReadAll(httpResp.Body)
+		return nil, reportUnknownError(httpResp.StatusCode, bodyBytes)
 	}
 }
 
