@@ -23,12 +23,10 @@ func (model *outputModel) fromAPILogstashModel(ctx context.Context, data *kbapi.
 	model.ConfigYaml = types.StringPointerValue(data.ConfigYaml)
 	model.Ssl, diags = sslToObjectValue(ctx, data.Ssl)
 
-	// Note: SpaceIds is not returned by the API for outputs, so we preserve it from existing state
-	// It's only used to determine which API endpoint to call
-	// If space_ids is unknown (not provided by user), set to null to satisfy Terraform's requirement
-	if model.SpaceIds.IsNull() || model.SpaceIds.IsUnknown() {
-		model.SpaceIds = types.ListNull(types.StringType)
-	}
+	// Note: SpaceIds is not returned by the API for outputs, so we always set to null
+	// It's only used to determine which API endpoint to call during create/update/delete
+	// Users should not rely on reading this value back from state
+	model.SpaceIds = types.ListNull(types.StringType)
 
 	return
 }
