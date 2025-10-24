@@ -4,7 +4,10 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
@@ -30,6 +33,18 @@ func (r *agentPolicyResource) Delete(ctx context.Context, req resource.DeleteReq
 		return
 	}
 
-	diags = fleet.DeleteAgentPolicy(ctx, client, policyID)
+	// If space_ids is set in state, use space-aware DELETE request
+	if !stateModel.SpaceIds.IsNull() && !stateModel.SpaceIds.IsUnknown() {
+		spaceIDs := utils.ListTypeAs[types.String](ctx, stateModel.SpaceIds, path.Root("space_ids"), &resp.Diagnostics)
+		if len(spaceIDs) > 0 {
+			spaceID := spaceIDs[0].ValueString()
+			diags = fleet.DeleteAgentPolicyInSpace(ctx, client, policyID, spaceID)
+		} else {
+			diags = fleet.DeleteAgentPolicy(ctx, client, policyID)
+		}
+	} else {
+		diags = fleet.DeleteAgentPolicy(ctx, client, policyID)
+	}
+
 	resp.Diagnostics.Append(diags...)
 }

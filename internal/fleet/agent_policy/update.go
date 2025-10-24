@@ -3,8 +3,12 @@ package agent_policy
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func (r *agentPolicyResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
@@ -36,7 +40,21 @@ func (r *agentPolicyResource) Update(ctx context.Context, req resource.UpdateReq
 	}
 
 	policyID := planModel.PolicyID.ValueString()
-	policy, diags := fleet.UpdateAgentPolicy(ctx, client, policyID, body)
+
+	// If space_ids is set, use space-aware UPDATE request
+	var policy *kbapi.AgentPolicy
+	if !planModel.SpaceIds.IsNull() && !planModel.SpaceIds.IsUnknown() {
+		spaceIDs := utils.ListTypeAs[types.String](ctx, planModel.SpaceIds, path.Root("space_ids"), &resp.Diagnostics)
+		if len(spaceIDs) > 0 {
+			spaceID := spaceIDs[0].ValueString()
+			policy, diags = fleet.UpdateAgentPolicyInSpace(ctx, client, policyID, spaceID, body)
+		} else {
+			policy, diags = fleet.UpdateAgentPolicy(ctx, client, policyID, body)
+		}
+	} else {
+		policy, diags = fleet.UpdateAgentPolicy(ctx, client, policyID, body)
+	}
+
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

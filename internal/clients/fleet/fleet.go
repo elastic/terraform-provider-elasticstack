@@ -1,6 +1,7 @@
 package fleet
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -143,6 +144,49 @@ func UpdateAgentPolicy(ctx context.Context, client *Client, id string, req kbapi
 	}
 }
 
+// UpdateAgentPolicyInSpace updates an existing agent policy within a specific Kibana space.
+// This is necessary for space-aware policies that are created with space_ids.
+func UpdateAgentPolicyInSpace(ctx context.Context, client *Client, id string, spaceID string, reqBody kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody) (*kbapi.AgentPolicy, diag.Diagnostics) {
+	// Construct the space-aware path
+	path := fmt.Sprintf("/api/fleet/agent_policies/%s", id)
+	if spaceID != "" && spaceID != "default" {
+		path = fmt.Sprintf("/s/%s/api/fleet/agent_policies/%s", spaceID, id)
+	}
+
+	// Marshal the request body
+	bodyBytes, err := json.Marshal(reqBody)
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+
+	// Make the request using the underlying HTTP client
+	req, err := http.NewRequestWithContext(ctx, "PUT", client.URL+path, bytes.NewReader(bodyBytes))
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	httpResp, err := client.HTTP.Do(req)
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+	defer httpResp.Body.Close()
+
+	switch httpResp.StatusCode {
+	case http.StatusOK:
+		var result struct {
+			Item kbapi.AgentPolicy `json:"item"`
+		}
+		if err := json.NewDecoder(httpResp.Body).Decode(&result); err != nil {
+			return nil, diagutil.FrameworkDiagFromError(err)
+		}
+		return &result.Item, nil
+	default:
+		bodyBytes, _ := io.ReadAll(httpResp.Body)
+		return nil, reportUnknownError(httpResp.StatusCode, bodyBytes)
+	}
+}
+
 // DeleteAgentPolicy deletes an existing agent policy.
 func DeleteAgentPolicy(ctx context.Context, client *Client, id string) diag.Diagnostics {
 	body := kbapi.PostFleetAgentPoliciesDeleteJSONRequestBody{
@@ -161,6 +205,50 @@ func DeleteAgentPolicy(ctx context.Context, client *Client, id string) diag.Diag
 		return nil
 	default:
 		return reportUnknownError(resp.StatusCode(), resp.Body)
+	}
+}
+
+// DeleteAgentPolicyInSpace deletes an existing agent policy within a specific Kibana space.
+// This is necessary for space-aware policies that are created with space_ids.
+func DeleteAgentPolicyInSpace(ctx context.Context, client *Client, id string, spaceID string) diag.Diagnostics {
+	// Construct the space-aware path
+	path := "/api/fleet/agent_policies/delete"
+	if spaceID != "" && spaceID != "default" {
+		path = fmt.Sprintf("/s/%s/api/fleet/agent_policies/delete", spaceID)
+	}
+
+	// Create request body
+	reqBody := kbapi.PostFleetAgentPoliciesDeleteJSONRequestBody{
+		AgentPolicyId: id,
+	}
+
+	// Marshal the request body
+	bodyBytes, err := json.Marshal(reqBody)
+	if err != nil {
+		return diagutil.FrameworkDiagFromError(err)
+	}
+
+	// Make the request using the underlying HTTP client
+	req, err := http.NewRequestWithContext(ctx, "POST", client.URL+path, bytes.NewReader(bodyBytes))
+	if err != nil {
+		return diagutil.FrameworkDiagFromError(err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	httpResp, err := client.HTTP.Do(req)
+	if err != nil {
+		return diagutil.FrameworkDiagFromError(err)
+	}
+	defer httpResp.Body.Close()
+
+	switch httpResp.StatusCode {
+	case http.StatusOK:
+		return nil
+	case http.StatusNotFound:
+		return nil
+	default:
+		bodyBytes, _ := io.ReadAll(httpResp.Body)
+		return reportUnknownError(httpResp.StatusCode, bodyBytes)
 	}
 }
 
