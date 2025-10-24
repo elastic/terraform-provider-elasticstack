@@ -401,6 +401,43 @@ func GetPackagePolicy(ctx context.Context, client *Client, id string) (*kbapi.Pa
 	}
 }
 
+// GetPackagePolicyInSpace reads a specific package policy from the API within a specific Kibana space.
+// This is necessary for space-aware policies that are created with space_ids.
+func GetPackagePolicyInSpace(ctx context.Context, client *Client, id string, spaceID string) (*kbapi.PackagePolicy, diag.Diagnostics) {
+	// Construct the space-aware path
+	path := fmt.Sprintf("/api/fleet/package_policies/%s?format=simplified", id)
+	if spaceID != "" && spaceID != "default" {
+		path = fmt.Sprintf("/s/%s/api/fleet/package_policies/%s?format=simplified", spaceID, id)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "GET", client.URL+path, nil)
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+
+	httpResp, err := client.HTTP.Do(req)
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+	defer httpResp.Body.Close()
+
+	switch httpResp.StatusCode {
+	case http.StatusOK:
+		var result struct {
+			Item kbapi.PackagePolicy `json:"item"`
+		}
+		if err := json.NewDecoder(httpResp.Body).Decode(&result); err != nil {
+			return nil, diagutil.FrameworkDiagFromError(err)
+		}
+		return &result.Item, nil
+	case http.StatusNotFound:
+		return nil, nil
+	default:
+		bodyBytes, _ := io.ReadAll(httpResp.Body)
+		return nil, reportUnknownError(httpResp.StatusCode, bodyBytes)
+	}
+}
+
 // CreatePackagePolicy creates a new package policy.
 func CreatePackagePolicy(ctx context.Context, client *Client, req kbapi.PackagePolicyRequest) (*kbapi.PackagePolicy, diag.Diagnostics) {
 	params := kbapi.PostFleetPackagePoliciesParams{
@@ -417,6 +454,48 @@ func CreatePackagePolicy(ctx context.Context, client *Client, req kbapi.PackageP
 		return &resp.JSON200.Item, nil
 	default:
 		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+	}
+}
+
+// CreatePackagePolicyInSpace creates a new package policy within a specific Kibana space.
+// This is necessary when the referenced agent policy exists in a specific space.
+func CreatePackagePolicyInSpace(ctx context.Context, client *Client, spaceID string, reqBody kbapi.PackagePolicyRequest) (*kbapi.PackagePolicy, diag.Diagnostics) {
+	// Construct the space-aware path
+	path := "/api/fleet/package_policies?format=simplified"
+	if spaceID != "" && spaceID != "default" {
+		path = fmt.Sprintf("/s/%s/api/fleet/package_policies?format=simplified", spaceID)
+	}
+
+	// Marshal the request body
+	bodyBytes, err := json.Marshal(reqBody)
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "POST", client.URL+path, bytes.NewReader(bodyBytes))
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	httpResp, err := client.HTTP.Do(req)
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+	defer httpResp.Body.Close()
+
+	switch httpResp.StatusCode {
+	case http.StatusOK:
+		var result struct {
+			Item kbapi.PackagePolicy `json:"item"`
+		}
+		if err := json.NewDecoder(httpResp.Body).Decode(&result); err != nil {
+			return nil, diagutil.FrameworkDiagFromError(err)
+		}
+		return &result.Item, nil
+	default:
+		bodyBytes, _ := io.ReadAll(httpResp.Body)
+		return nil, reportUnknownError(httpResp.StatusCode, bodyBytes)
 	}
 }
 
@@ -439,6 +518,48 @@ func UpdatePackagePolicy(ctx context.Context, client *Client, id string, req kba
 	}
 }
 
+// UpdatePackagePolicyInSpace updates an existing package policy within a specific Kibana space.
+// This is necessary for space-aware policies that are created with space_ids.
+func UpdatePackagePolicyInSpace(ctx context.Context, client *Client, id string, spaceID string, reqBody kbapi.PackagePolicyRequest) (*kbapi.PackagePolicy, diag.Diagnostics) {
+	// Construct the space-aware path
+	path := fmt.Sprintf("/api/fleet/package_policies/%s?format=simplified", id)
+	if spaceID != "" && spaceID != "default" {
+		path = fmt.Sprintf("/s/%s/api/fleet/package_policies/%s?format=simplified", spaceID, id)
+	}
+
+	// Marshal the request body
+	bodyBytes, err := json.Marshal(reqBody)
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "PUT", client.URL+path, bytes.NewReader(bodyBytes))
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	httpResp, err := client.HTTP.Do(req)
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+	defer httpResp.Body.Close()
+
+	switch httpResp.StatusCode {
+	case http.StatusOK:
+		var result struct {
+			Item kbapi.PackagePolicy `json:"item"`
+		}
+		if err := json.NewDecoder(httpResp.Body).Decode(&result); err != nil {
+			return nil, diagutil.FrameworkDiagFromError(err)
+		}
+		return &result.Item, nil
+	default:
+		bodyBytes, _ := io.ReadAll(httpResp.Body)
+		return nil, reportUnknownError(httpResp.StatusCode, bodyBytes)
+	}
+}
+
 // DeletePackagePolicy deletes an existing package policy.
 func DeletePackagePolicy(ctx context.Context, client *Client, id string, force bool) diag.Diagnostics {
 	params := kbapi.DeleteFleetPackagePoliciesPackagepolicyidParams{
@@ -457,6 +578,37 @@ func DeletePackagePolicy(ctx context.Context, client *Client, id string, force b
 		return nil
 	default:
 		return reportUnknownError(resp.StatusCode(), resp.Body)
+	}
+}
+
+// DeletePackagePolicyInSpace deletes an existing package policy within a specific Kibana space.
+// This is necessary for space-aware policies that are created with space_ids.
+func DeletePackagePolicyInSpace(ctx context.Context, client *Client, id string, spaceID string, force bool) diag.Diagnostics {
+	// Construct the space-aware path
+	path := fmt.Sprintf("/api/fleet/package_policies/%s?force=%t", id, force)
+	if spaceID != "" && spaceID != "default" {
+		path = fmt.Sprintf("/s/%s/api/fleet/package_policies/%s?force=%t", spaceID, id, force)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "DELETE", client.URL+path, nil)
+	if err != nil {
+		return diagutil.FrameworkDiagFromError(err)
+	}
+
+	httpResp, err := client.HTTP.Do(req)
+	if err != nil {
+		return diagutil.FrameworkDiagFromError(err)
+	}
+	defer httpResp.Body.Close()
+
+	switch httpResp.StatusCode {
+	case http.StatusOK:
+		return nil
+	case http.StatusNotFound:
+		return nil
+	default:
+		bodyBytes, _ := io.ReadAll(httpResp.Body)
+		return reportUnknownError(httpResp.StatusCode, bodyBytes)
 	}
 }
 

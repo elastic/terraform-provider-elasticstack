@@ -56,11 +56,15 @@ func (r *agentPolicyResource) Create(ctx context.Context, req resource.CreateReq
 		var getDiags diag.Diagnostics
 
 		if !planModel.SpaceIds.IsNull() && !planModel.SpaceIds.IsUnknown() {
-			spaceIDs := utils.ListTypeAs[types.String](ctx, planModel.SpaceIds, path.Root("space_ids"), &resp.Diagnostics)
-			if len(spaceIDs) > 0 {
+			var tempDiags diag.Diagnostics
+			spaceIDs := utils.ListTypeAs[types.String](ctx, planModel.SpaceIds, path.Root("space_ids"), &tempDiags)
+			if !tempDiags.HasError() && len(spaceIDs) > 0 {
 				// Use the first space for the GET request
 				spaceID := spaceIDs[0].ValueString()
 				readPolicy, getDiags = fleet.GetAgentPolicyInSpace(ctx, client, policy.Id, spaceID)
+			} else {
+				// Fall back to standard GET if we couldn't extract space IDs
+				readPolicy, getDiags = fleet.GetAgentPolicy(ctx, client, policy.Id)
 			}
 		} else {
 			// No space_ids, use standard GET
