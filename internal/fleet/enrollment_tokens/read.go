@@ -27,10 +27,30 @@ func (d *enrollmentTokensDataSource) Read(ctx context.Context, req datasource.Re
 
 	var tokens []kbapi.EnrollmentApiKey
 	policyID := model.PolicyID.ValueString()
+
+	// Determine space context for querying enrollment tokens
+	var spaceID string
+	if !model.SpaceIds.IsNull() && !model.SpaceIds.IsUnknown() {
+		var spaceIDs []types.String
+		diags = model.SpaceIds.ElementsAs(ctx, &spaceIDs, false)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		if len(spaceIDs) > 0 {
+			spaceID = spaceIDs[0].ValueString()
+		}
+	}
+
+	// Query enrollment tokens with space context if needed
 	if policyID == "" {
 		tokens, diags = fleet.GetEnrollmentTokens(ctx, client)
 	} else {
-		tokens, diags = fleet.GetEnrollmentTokensByPolicy(ctx, client, policyID)
+		if spaceID != "" && spaceID != "default" {
+			tokens, diags = fleet.GetEnrollmentTokensByPolicyInSpace(ctx, client, policyID, spaceID)
+		} else {
+			tokens, diags = fleet.GetEnrollmentTokensByPolicy(ctx, client, policyID)
+		}
 	}
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {

@@ -11,11 +11,12 @@ import (
 )
 
 type serverHostModel struct {
-	Id      types.String `tfsdk:"id"`
-	HostID  types.String `tfsdk:"host_id"`
-	Name    types.String `tfsdk:"name"`
-	Hosts   types.List   `tfsdk:"hosts"`
-	Default types.Bool   `tfsdk:"default"`
+	Id       types.String `tfsdk:"id"`
+	HostID   types.String `tfsdk:"host_id"`
+	Name     types.String `tfsdk:"name"`
+	Hosts    types.List   `tfsdk:"hosts"`
+	Default  types.Bool   `tfsdk:"default"`
+	SpaceIds types.List   `tfsdk:"space_ids"` //> string
 }
 
 func (model *serverHostModel) populateFromAPI(ctx context.Context, data *kbapi.ServerHost) (diags diag.Diagnostics) {
@@ -28,6 +29,12 @@ func (model *serverHostModel) populateFromAPI(ctx context.Context, data *kbapi.S
 	model.Name = types.StringValue(data.Name)
 	model.Hosts = utils.SliceToListType_String(ctx, data.HostUrls, path.Root("hosts"), &diags)
 	model.Default = types.BoolPointerValue(data.IsDefault)
+
+	// Note: SpaceIds is not returned by the API for server hosts, so we preserve it from existing state
+	// It's only used to determine which API endpoint to call
+	if model.SpaceIds.IsNull() {
+		model.SpaceIds = types.ListNull(types.StringType)
+	}
 
 	return
 }

@@ -3,8 +3,13 @@ package server_host
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func (r *serverHostResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
@@ -29,7 +34,22 @@ func (r *serverHostResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
-	host, diags := fleet.UpdateFleetServerHost(ctx, client, hostID, body)
+	// If space_ids is set, use space-aware UPDATE request
+	var spaceID string
+	if !planModel.SpaceIds.IsNull() && !planModel.SpaceIds.IsUnknown() {
+		var tempDiags diag.Diagnostics
+		spaceIDs := utils.ListTypeAs[types.String](ctx, planModel.SpaceIds, path.Root("space_ids"), &tempDiags)
+		if !tempDiags.HasError() && len(spaceIDs) > 0 {
+			spaceID = spaceIDs[0].ValueString()
+		}
+	}
+
+	var host *kbapi.ServerHost
+	if spaceID != "" && spaceID != "default" {
+		host, diags = fleet.UpdateFleetServerHostInSpace(ctx, client, hostID, spaceID, body)
+	} else {
+		host, diags = fleet.UpdateFleetServerHost(ctx, client, hostID, body)
+	}
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

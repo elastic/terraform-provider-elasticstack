@@ -69,6 +69,7 @@ resource "elasticstack_fleet_integration" "test_integration" {
 
 - `force` (Boolean) Set to true to force the requested action.
 - `skip_destroy` (Boolean) Set to true if you do not wish the integration package to be uninstalled at destroy time, and instead just remove the integration package from the Terraform state.
+- `space_ids` (List of String) The Kibana space IDs where this integration package should be installed. When set, the package will be installed and managed within the specified space.
 
 ### Read-Only
 

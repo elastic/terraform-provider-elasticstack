@@ -90,6 +90,12 @@ func getSchema() schema.Schema {
 				Optional:    true,
 				Sensitive:   true,
 			},
+			"space_ids": schema.ListAttribute{
+				Description: "The Kibana space IDs where this output is available. When set, the output will be created and managed within the specified space.",
+				ElementType: types.StringType,
+				Optional:    true,
+				Computed:    true,
+			},
 			"ssl": schema.SingleNestedAttribute{
 				Description: "SSL configuration.",
 				Optional:    true,

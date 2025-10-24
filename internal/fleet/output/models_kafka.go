@@ -555,5 +555,12 @@ func (model *outputModel) fromAPIKafkaModel(ctx context.Context, data *kbapi.Out
 	kafkaObj, nd := types.ObjectValueFrom(ctx, getKafkaAttrTypes(), kafkaModel)
 	diags.Append(nd...)
 	model.Kafka = kafkaObj
+
+	// Note: SpaceIds is not returned by the API for outputs, so we preserve it from existing state
+	// It's only used to determine which API endpoint to call
+	if model.SpaceIds.IsNull() {
+		model.SpaceIds = types.ListNull(types.StringType)
+	}
+
 	return
 }

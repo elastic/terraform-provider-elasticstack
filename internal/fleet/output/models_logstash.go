@@ -22,6 +22,13 @@ func (model *outputModel) fromAPILogstashModel(ctx context.Context, data *kbapi.
 	model.DefaultMonitoring = types.BoolPointerValue(data.IsDefaultMonitoring)
 	model.ConfigYaml = types.StringPointerValue(data.ConfigYaml)
 	model.Ssl, diags = sslToObjectValue(ctx, data.Ssl)
+
+	// Note: SpaceIds is not returned by the API for outputs, so we preserve it from existing state
+	// It's only used to determine which API endpoint to call
+	if model.SpaceIds.IsNull() {
+		model.SpaceIds = types.ListNull(types.StringType)
+	}
+
 	return
 }
 

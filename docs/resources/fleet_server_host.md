@@ -38,6 +38,7 @@ resource "elasticstack_fleet_server_host" "test_host" {
 
 - `default` (Boolean) Set as default.
 - `host_id` (String) Unique identifier of the Fleet server host.
+- `space_ids` (List of String) The Kibana space IDs where this server host is available. When set, the server host will be created and managed within the specified space.
 
 ### Read-Only
 

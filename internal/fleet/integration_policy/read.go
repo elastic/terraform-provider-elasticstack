@@ -60,10 +60,19 @@ func (r *integrationPolicyResource) Read(ctx context.Context, req resource.ReadR
 		return
 	}
 
+	// Remember if the state had input configured
+	stateHadInput := utils.IsKnown(stateModel.Input) && !stateModel.Input.IsNull() && len(stateModel.Input.Elements()) > 0
+
 	diags = stateModel.populateFromAPI(ctx, policy)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
+	}
+
+	// If state didn't have input configured, ensure we don't add it now
+	// This prevents "Provider produced inconsistent result" errors during refresh
+	if !stateHadInput {
+		stateModel.Input = types.ListNull(getInputTypeV1())
 	}
 
 	diags = resp.State.Set(ctx, stateModel)
