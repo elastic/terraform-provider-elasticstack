@@ -18,10 +18,11 @@ func newKibanaConfigFromSDK(d *schema.ResourceData, base baseConfig) (kibanaConf
 	var diags sdkdiags.Diagnostics
 
 	// Use ES details by default
-	config := base.toKibanaConfig()
+	config := kibanaConfig{}
+
 	kibConn, ok := d.GetOk("kibana")
 	if !ok {
-		return config, diags
+		return config.withDefaultsApplied(base.toKibanaConfig()), diags
 	}
 
 	// if defined, then we only have a single entry
@@ -59,11 +60,11 @@ func newKibanaConfigFromSDK(d *schema.ResourceData, base baseConfig) (kibanaConf
 		}
 	}
 
-	return config.withEnvironmentOverrides(), nil
+	return config.withEnvironmentOverrides().withDefaultsApplied(base.toKibanaConfig()), nil
 }
 
 func newKibanaConfigFromFramework(ctx context.Context, cfg ProviderConfiguration, base baseConfig) (kibanaConfig, fwdiags.Diagnostics) {
-	config := base.toKibanaConfig()
+	config := kibanaConfig{}
 
 	if len(cfg.Kibana) > 0 {
 		kibConfig := cfg.Kibana[0]
@@ -95,8 +96,36 @@ func newKibanaConfigFromFramework(ctx context.Context, cfg ProviderConfiguration
 
 		config.DisableVerifySSL = kibConfig.Insecure.ValueBool()
 	}
+	return config.withEnvironmentOverrides().withDefaultsApplied(base.toKibanaConfig()), nil
+}
 
-	return config.withEnvironmentOverrides(), nil
+func (config kibanaConfig) withDefaultsApplied(defaults kibanaConfig) kibanaConfig {
+
+	// Apply defaults for non-auth fields
+	if config.Address == "" {
+		config.Address = defaults.Address
+	}
+	if config.DisableVerifySSL == false {
+		config.DisableVerifySSL = defaults.DisableVerifySSL
+	}
+	if config.CAs == nil {
+		config.CAs = defaults.CAs
+	}
+
+	// Handle auth defaults. ApiKey and Username are mutually exclusive. If one is already set don't apply any auth defaults
+	if config.ApiKey != "" || config.Username != "" {
+		return config
+	}
+
+	if defaults.ApiKey != "" {
+		config.ApiKey = defaults.ApiKey
+	} else if defaults.Username != "" {
+		config.Username = defaults.Username
+		config.Password = defaults.Password
+	}
+
+	return config
+
 }
 
 func (k kibanaConfig) withEnvironmentOverrides() kibanaConfig {
