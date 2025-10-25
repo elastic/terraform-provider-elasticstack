@@ -19,6 +19,16 @@ var (
 	ErrPackageNotFound = errors.New("package not found")
 )
 
+// buildSpaceAwarePath constructs an API path with space awareness.
+// If spaceID is empty or "default", returns the basePath unchanged.
+// Otherwise, prepends "/s/{spaceID}" to the basePath.
+func buildSpaceAwarePath(spaceID, basePath string) string {
+	if spaceID != "" && spaceID != "default" {
+		return fmt.Sprintf("/s/%s%s", spaceID, basePath)
+	}
+	return basePath
+}
+
 // GetEnrollmentTokens reads all enrollment tokens from the API.
 func GetEnrollmentTokens(ctx context.Context, client *Client) ([]kbapi.EnrollmentApiKey, diag.Diagnostics) {
 	resp, err := client.API.GetFleetEnrollmentApiKeysWithResponse(ctx, nil)
@@ -56,10 +66,7 @@ func GetEnrollmentTokensByPolicy(ctx context.Context, client *Client, policyID s
 // GetEnrollmentTokensInSpace Get all enrollment tokens within a specific Kibana space.
 func GetEnrollmentTokensInSpace(ctx context.Context, client *Client, spaceID string) ([]kbapi.EnrollmentApiKey, diag.Diagnostics) {
 	// Construct the space-aware path
-	path := "/api/fleet/enrollment_api_keys"
-	if spaceID != "" && spaceID != "default" {
-		path = fmt.Sprintf("/s/%s/api/fleet/enrollment_api_keys", spaceID)
-	}
+	path := buildSpaceAwarePath(spaceID, "/api/fleet/enrollment_api_keys")
 
 	req, err := http.NewRequestWithContext(ctx, "GET", client.URL+path, nil)
 	if err != nil {
@@ -90,10 +97,7 @@ func GetEnrollmentTokensInSpace(ctx context.Context, client *Client, spaceID str
 // GetEnrollmentTokensByPolicyInSpace Get enrollment tokens by policy ID within a specific Kibana space.
 func GetEnrollmentTokensByPolicyInSpace(ctx context.Context, client *Client, policyID string, spaceID string) ([]kbapi.EnrollmentApiKey, diag.Diagnostics) {
 	// Construct the space-aware path
-	path := "/api/fleet/enrollment_api_keys?kuery=policy_id:" + policyID
-	if spaceID != "" && spaceID != "default" {
-		path = fmt.Sprintf("/s/%s/api/fleet/enrollment_api_keys?kuery=policy_id:%s", spaceID, policyID)
-	}
+	path := buildSpaceAwarePath(spaceID, "/api/fleet/enrollment_api_keys?kuery=policy_id:"+policyID)
 
 	req, err := http.NewRequestWithContext(ctx, "GET", client.URL+path, nil)
 	if err != nil {
@@ -144,10 +148,7 @@ func GetAgentPolicyInSpace(ctx context.Context, client *Client, id string, space
 	// Construct the space-aware path
 	// For default space: /api/fleet/agent_policies/{id}
 	// For custom space: /s/{space_id}/api/fleet/agent_policies/{id}
-	path := fmt.Sprintf("/api/fleet/agent_policies/%s", id)
-	if spaceID != "" && spaceID != "default" {
-		path = fmt.Sprintf("/s/%s/api/fleet/agent_policies/%s", spaceID, id)
-	}
+	path := buildSpaceAwarePath(spaceID, fmt.Sprintf("/api/fleet/agent_policies/%s", id))
 
 	// Make the request using the underlying HTTP client
 	req, err := http.NewRequestWithContext(ctx, "GET", client.URL+path, nil)
@@ -216,10 +217,7 @@ func UpdateAgentPolicy(ctx context.Context, client *Client, id string, req kbapi
 // This is necessary for space-aware policies that are created with space_ids.
 func UpdateAgentPolicyInSpace(ctx context.Context, client *Client, id string, spaceID string, reqBody kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody) (*kbapi.AgentPolicy, diag.Diagnostics) {
 	// Construct the space-aware path
-	path := fmt.Sprintf("/api/fleet/agent_policies/%s", id)
-	if spaceID != "" && spaceID != "default" {
-		path = fmt.Sprintf("/s/%s/api/fleet/agent_policies/%s", spaceID, id)
-	}
+	path := buildSpaceAwarePath(spaceID, fmt.Sprintf("/api/fleet/agent_policies/%s", id))
 
 	// Marshal the request body
 	bodyBytes, err := json.Marshal(reqBody)
@@ -280,10 +278,7 @@ func DeleteAgentPolicy(ctx context.Context, client *Client, id string) diag.Diag
 // This is necessary for space-aware policies that are created with space_ids.
 func DeleteAgentPolicyInSpace(ctx context.Context, client *Client, id string, spaceID string) diag.Diagnostics {
 	// Construct the space-aware path
-	path := "/api/fleet/agent_policies/delete"
-	if spaceID != "" && spaceID != "default" {
-		path = fmt.Sprintf("/s/%s/api/fleet/agent_policies/delete", spaceID)
-	}
+	path := buildSpaceAwarePath(spaceID, "/api/fleet/agent_policies/delete")
 
 	// Create request body
 	reqBody := kbapi.PostFleetAgentPoliciesDeleteJSONRequestBody{
@@ -386,10 +381,7 @@ func DeleteOutput(ctx context.Context, client *Client, id string) diag.Diagnosti
 
 // GetOutputInSpace gets an output within a specific Kibana space.
 func GetOutputInSpace(ctx context.Context, client *Client, id string, spaceID string) (*kbapi.OutputUnion, diag.Diagnostics) {
-	path := fmt.Sprintf("/api/fleet/outputs/%s", id)
-	if spaceID != "" && spaceID != "default" {
-		path = fmt.Sprintf("/s/%s/api/fleet/outputs/%s", spaceID, id)
-	}
+	path := buildSpaceAwarePath(spaceID, fmt.Sprintf("/api/fleet/outputs/%s", id))
 
 	req, err := http.NewRequestWithContext(ctx, "GET", client.URL+path, nil)
 	if err != nil {
@@ -421,10 +413,7 @@ func GetOutputInSpace(ctx context.Context, client *Client, id string, spaceID st
 
 // CreateOutputInSpace creates a new output within a specific Kibana space.
 func CreateOutputInSpace(ctx context.Context, client *Client, spaceID string, reqBody kbapi.NewOutputUnion) (*kbapi.OutputUnion, diag.Diagnostics) {
-	path := "/api/fleet/outputs"
-	if spaceID != "" && spaceID != "default" {
-		path = fmt.Sprintf("/s/%s/api/fleet/outputs", spaceID)
-	}
+	path := buildSpaceAwarePath(spaceID, "/api/fleet/outputs")
 
 	bodyBytes, err := json.Marshal(reqBody)
 	if err != nil {
@@ -460,10 +449,7 @@ func CreateOutputInSpace(ctx context.Context, client *Client, spaceID string, re
 
 // UpdateOutputInSpace updates an output within a specific Kibana space.
 func UpdateOutputInSpace(ctx context.Context, client *Client, id string, spaceID string, reqBody kbapi.UpdateOutputUnion) (*kbapi.OutputUnion, diag.Diagnostics) {
-	path := fmt.Sprintf("/api/fleet/outputs/%s", id)
-	if spaceID != "" && spaceID != "default" {
-		path = fmt.Sprintf("/s/%s/api/fleet/outputs/%s", spaceID, id)
-	}
+	path := buildSpaceAwarePath(spaceID, fmt.Sprintf("/api/fleet/outputs/%s", id))
 
 	bodyBytes, err := json.Marshal(reqBody)
 	if err != nil {
@@ -499,10 +485,7 @@ func UpdateOutputInSpace(ctx context.Context, client *Client, id string, spaceID
 
 // DeleteOutputInSpace deletes an output within a specific Kibana space.
 func DeleteOutputInSpace(ctx context.Context, client *Client, id string, spaceID string) diag.Diagnostics {
-	path := fmt.Sprintf("/api/fleet/outputs/%s", id)
-	if spaceID != "" && spaceID != "default" {
-		path = fmt.Sprintf("/s/%s/api/fleet/outputs/%s", spaceID, id)
-	}
+	path := buildSpaceAwarePath(spaceID, fmt.Sprintf("/api/fleet/outputs/%s", id))
 
 	req, err := http.NewRequestWithContext(ctx, "DELETE", client.URL+path, nil)
 	if err != nil {
@@ -592,7 +575,7 @@ func DeleteFleetServerHost(ctx context.Context, client *Client, id string) diag.
 
 // GetFleetServerHostInSpace reads a specific fleet server host from the API in a specific space.
 func GetFleetServerHostInSpace(ctx context.Context, client *Client, id string, spaceID string) (*kbapi.ServerHost, diag.Diagnostics) {
-	path := fmt.Sprintf("/s/%s/api/fleet/fleet_server_hosts/%s", spaceID, id)
+	path := buildSpaceAwarePath(spaceID, fmt.Sprintf("/api/fleet/fleet_server_hosts/%s", id))
 	req, err := http.NewRequestWithContext(ctx, "GET", client.URL+path, nil)
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
@@ -623,7 +606,7 @@ func GetFleetServerHostInSpace(ctx context.Context, client *Client, id string, s
 
 // CreateFleetServerHostInSpace creates a new fleet server host in a specific space.
 func CreateFleetServerHostInSpace(ctx context.Context, client *Client, spaceID string, req kbapi.PostFleetFleetServerHostsJSONRequestBody) (*kbapi.ServerHost, diag.Diagnostics) {
-	path := fmt.Sprintf("/s/%s/api/fleet/fleet_server_hosts", spaceID)
+	path := buildSpaceAwarePath(spaceID, "/api/fleet/fleet_server_hosts")
 	bodyBytes, err := json.Marshal(req)
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
@@ -658,7 +641,7 @@ func CreateFleetServerHostInSpace(ctx context.Context, client *Client, spaceID s
 
 // UpdateFleetServerHostInSpace updates an existing fleet server host in a specific space.
 func UpdateFleetServerHostInSpace(ctx context.Context, client *Client, id string, spaceID string, reqBody kbapi.PutFleetFleetServerHostsItemidJSONRequestBody) (*kbapi.ServerHost, diag.Diagnostics) {
-	path := fmt.Sprintf("/s/%s/api/fleet/fleet_server_hosts/%s", spaceID, id)
+	path := buildSpaceAwarePath(spaceID, fmt.Sprintf("/api/fleet/fleet_server_hosts/%s", id))
 	bodyBytes, err := json.Marshal(reqBody)
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
@@ -693,7 +676,7 @@ func UpdateFleetServerHostInSpace(ctx context.Context, client *Client, id string
 
 // DeleteFleetServerHostInSpace deletes an existing fleet server host in a specific space.
 func DeleteFleetServerHostInSpace(ctx context.Context, client *Client, id string, spaceID string) diag.Diagnostics {
-	path := fmt.Sprintf("/s/%s/api/fleet/fleet_server_hosts/%s", spaceID, id)
+	path := buildSpaceAwarePath(spaceID, fmt.Sprintf("/api/fleet/fleet_server_hosts/%s", id))
 	req, err := http.NewRequestWithContext(ctx, "DELETE", client.URL+path, nil)
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
@@ -739,10 +722,7 @@ func GetPackagePolicy(ctx context.Context, client *Client, id string) (*kbapi.Pa
 // This is necessary for space-aware policies that are created with space_ids.
 func GetPackagePolicyInSpace(ctx context.Context, client *Client, id string, spaceID string) (*kbapi.PackagePolicy, diag.Diagnostics) {
 	// Construct the space-aware path
-	path := fmt.Sprintf("/api/fleet/package_policies/%s?format=simplified", id)
-	if spaceID != "" && spaceID != "default" {
-		path = fmt.Sprintf("/s/%s/api/fleet/package_policies/%s?format=simplified", spaceID, id)
-	}
+	path := buildSpaceAwarePath(spaceID, fmt.Sprintf("/api/fleet/package_policies/%s?format=simplified", id))
 
 	req, err := http.NewRequestWithContext(ctx, "GET", client.URL+path, nil)
 	if err != nil {
@@ -795,10 +775,7 @@ func CreatePackagePolicy(ctx context.Context, client *Client, req kbapi.PackageP
 // This is necessary when the referenced agent policy exists in a specific space.
 func CreatePackagePolicyInSpace(ctx context.Context, client *Client, spaceID string, reqBody kbapi.PackagePolicyRequest) (*kbapi.PackagePolicy, diag.Diagnostics) {
 	// Construct the space-aware path
-	path := "/api/fleet/package_policies?format=simplified"
-	if spaceID != "" && spaceID != "default" {
-		path = fmt.Sprintf("/s/%s/api/fleet/package_policies?format=simplified", spaceID)
-	}
+	path := buildSpaceAwarePath(spaceID, "/api/fleet/package_policies?format=simplified")
 
 	// Marshal the request body
 	bodyBytes, err := json.Marshal(reqBody)
@@ -856,10 +833,7 @@ func UpdatePackagePolicy(ctx context.Context, client *Client, id string, req kba
 // This is necessary for space-aware policies that are created with space_ids.
 func UpdatePackagePolicyInSpace(ctx context.Context, client *Client, id string, spaceID string, reqBody kbapi.PackagePolicyRequest) (*kbapi.PackagePolicy, diag.Diagnostics) {
 	// Construct the space-aware path
-	path := fmt.Sprintf("/api/fleet/package_policies/%s?format=simplified", id)
-	if spaceID != "" && spaceID != "default" {
-		path = fmt.Sprintf("/s/%s/api/fleet/package_policies/%s?format=simplified", spaceID, id)
-	}
+	path := buildSpaceAwarePath(spaceID, fmt.Sprintf("/api/fleet/package_policies/%s?format=simplified", id))
 
 	// Marshal the request body
 	bodyBytes, err := json.Marshal(reqBody)
@@ -919,10 +893,7 @@ func DeletePackagePolicy(ctx context.Context, client *Client, id string, force b
 // This is necessary for space-aware policies that are created with space_ids.
 func DeletePackagePolicyInSpace(ctx context.Context, client *Client, id string, spaceID string, force bool) diag.Diagnostics {
 	// Construct the space-aware path
-	path := fmt.Sprintf("/api/fleet/package_policies/%s?force=%t", id, force)
-	if spaceID != "" && spaceID != "default" {
-		path = fmt.Sprintf("/s/%s/api/fleet/package_policies/%s?force=%t", spaceID, id, force)
-	}
+	path := buildSpaceAwarePath(spaceID, fmt.Sprintf("/api/fleet/package_policies/%s?force=%t", id, force))
 
 	req, err := http.NewRequestWithContext(ctx, "DELETE", client.URL+path, nil)
 	if err != nil {
@@ -1011,7 +982,7 @@ func Uninstall(ctx context.Context, client *Client, name, version string, force 
 
 // InstallPackageInSpace installs a package in a specific space.
 func InstallPackageInSpace(ctx context.Context, client *Client, name, version string, spaceID string, force bool) diag.Diagnostics {
-	path := fmt.Sprintf("/s/%s/api/fleet/epm/packages/%s/%s", spaceID, name, version)
+	path := buildSpaceAwarePath(spaceID, fmt.Sprintf("/api/fleet/epm/packages/%s/%s", name, version))
 	body := map[string]interface{}{
 		"force": force,
 	}
@@ -1043,7 +1014,7 @@ func InstallPackageInSpace(ctx context.Context, client *Client, name, version st
 
 // UninstallInSpace uninstalls a package from a specific space.
 func UninstallInSpace(ctx context.Context, client *Client, name, version string, spaceID string, force bool) diag.Diagnostics {
-	path := fmt.Sprintf("/s/%s/api/fleet/epm/packages/%s/%s", spaceID, name, version)
+	path := buildSpaceAwarePath(spaceID, fmt.Sprintf("/api/fleet/epm/packages/%s/%s", name, version))
 	httpReq, err := http.NewRequestWithContext(ctx, "DELETE", client.URL+path, nil)
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
