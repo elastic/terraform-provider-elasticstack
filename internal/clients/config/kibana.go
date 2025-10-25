@@ -14,15 +14,31 @@ import (
 
 type kibanaConfig kibana.Config
 
+// Structure to keep track of which keys were explicitly set in the config.
+// This allows us to determine the difference between explicitly set empty
+// values and values that were not set at all. Building this intermediate
+// representation allows for compability with plugin framework and sdkv2.
+type kibanaConfigKeys struct {
+	Address          bool
+	Username         bool
+	Password         bool
+	ApiKey           bool
+	DisableVerifySSL bool
+	CAs              bool
+}
+
 func newKibanaConfigFromSDK(d *schema.ResourceData, base baseConfig) (kibanaConfig, sdkdiags.Diagnostics) {
 	var diags sdkdiags.Diagnostics
 
 	// Use ES details by default
 	config := kibanaConfig{}
 
+	// Keep track of keys that are explicitly set in the config.
+	knownKeys := kibanaConfigKeys{}
+
 	kibConn, ok := d.GetOk("kibana")
 	if !ok {
-		return config.withDefaultsApplied(base.toKibanaConfig()), diags
+		return config.withDefaultsApplied(base.toKibanaConfig(), knownKeys), diags
 	}
 
 	// if defined, then we only have a single entry
@@ -31,19 +47,23 @@ func newKibanaConfigFromSDK(d *schema.ResourceData, base baseConfig) (kibanaConf
 
 		if username, ok := kibConfig["username"]; ok && username != "" {
 			config.Username = username.(string)
+			knownKeys.Username = true
 		}
 		if password, ok := kibConfig["password"]; ok && password != "" {
 			config.Password = password.(string)
+			knownKeys.Password = true
 		}
 
 		if apiKey, ok := kibConfig["api_key"]; ok && apiKey != "" {
 			config.ApiKey = apiKey.(string)
+			knownKeys.ApiKey = true
 		}
 
 		if endpoints, ok := kibConfig["endpoints"]; ok && len(endpoints.([]interface{})) > 0 {
 			// We're curently limited by the API to a single endpoint
 			if endpoint := endpoints.([]interface{})[0]; endpoint != nil {
 				config.Address = endpoint.(string)
+				knownKeys.Address = true
 			}
 		}
 
@@ -53,29 +73,35 @@ func newKibanaConfigFromSDK(d *schema.ResourceData, base baseConfig) (kibanaConf
 					config.CAs = append(config.CAs, vStr)
 				}
 			}
+			knownKeys.CAs = true
 		}
 
 		if insecure, ok := kibConfig["insecure"]; ok && insecure.(bool) {
 			config.DisableVerifySSL = true
+			knownKeys.DisableVerifySSL = true
 		}
 	}
 
-	return config.withEnvironmentOverrides().withDefaultsApplied(base.toKibanaConfig()), nil
+	return config.withEnvironmentOverrides().withDefaultsApplied(base.toKibanaConfig(), knownKeys), nil
 }
 
 func newKibanaConfigFromFramework(ctx context.Context, cfg ProviderConfiguration, base baseConfig) (kibanaConfig, fwdiags.Diagnostics) {
 	config := kibanaConfig{}
 
+	knownKeys := kibanaConfigKeys{}
 	if len(cfg.Kibana) > 0 {
 		kibConfig := cfg.Kibana[0]
 		if kibConfig.Username.ValueString() != "" {
 			config.Username = kibConfig.Username.ValueString()
+			knownKeys.Username = true
 		}
 		if kibConfig.Password.ValueString() != "" {
 			config.Password = kibConfig.Password.ValueString()
+			knownKeys.Password = true
 		}
 		if kibConfig.ApiKey.ValueString() != "" {
 			config.ApiKey = kibConfig.ApiKey.ValueString()
+			knownKeys.ApiKey = true
 		}
 		var endpoints []string
 		diags := kibConfig.Endpoints.ElementsAs(ctx, &endpoints, true)
@@ -88,32 +114,35 @@ func newKibanaConfigFromFramework(ctx context.Context, cfg ProviderConfiguration
 
 		if len(endpoints) > 0 {
 			config.Address = endpoints[0]
+			knownKeys.Address = true
 		}
 
 		if len(cas) > 0 {
 			config.CAs = cas
+			knownKeys.CAs = true
 		}
 
 		config.DisableVerifySSL = kibConfig.Insecure.ValueBool()
+		knownKeys.DisableVerifySSL = true
 	}
-	return config.withEnvironmentOverrides().withDefaultsApplied(base.toKibanaConfig()), nil
+	return config.withEnvironmentOverrides().withDefaultsApplied(base.toKibanaConfig(), knownKeys), nil
 }
 
-func (config kibanaConfig) withDefaultsApplied(defaults kibanaConfig) kibanaConfig {
+func (config kibanaConfig) withDefaultsApplied(defaults kibanaConfig, knownKeys kibanaConfigKeys) kibanaConfig {
 
 	// Apply defaults for non-auth fields
-	if config.Address == "" {
+	if !knownKeys.Address {
 		config.Address = defaults.Address
 	}
-	if config.DisableVerifySSL == false {
+	if !knownKeys.DisableVerifySSL {
 		config.DisableVerifySSL = defaults.DisableVerifySSL
 	}
-	if config.CAs == nil {
+	if !knownKeys.CAs {
 		config.CAs = defaults.CAs
 	}
 
 	// Handle auth defaults. ApiKey and Username are mutually exclusive. If one is already set don't apply any auth defaults
-	if config.ApiKey != "" || config.Username != "" {
+	if knownKeys.ApiKey || knownKeys.Username {
 		return config
 	}
 
