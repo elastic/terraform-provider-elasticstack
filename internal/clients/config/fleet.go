@@ -16,7 +16,7 @@ type fleetConfig fleet.Config
 // Structure to keep track of which keys were explicitly set in the config.
 // This allows us to determine the difference between explicitly set empty
 // values and values that were not set at all. Building this intermediate
-// representation allows for compability with plugin framework and sdkv2.
+// representation allows for compatibility with plugin framework and sdkv2.
 type fleetConfigKeys struct {
 	URL      bool
 	Username bool
