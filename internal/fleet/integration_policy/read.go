@@ -63,8 +63,9 @@ func (r *integrationPolicyResource) Read(ctx context.Context, req resource.ReadR
 	// Remember if the state had input configured
 	stateHadInput := utils.IsKnown(stateModel.Input) && !stateModel.Input.IsNull() && len(stateModel.Input.Elements()) > 0
 
-	// Check if this is an import operation using the explicit ImportState flag
-	isImport := req.ImportState
+	// Check if this is an import operation (PolicyID is the only field set)
+	isImport := stateModel.PolicyID.ValueString() != "" &&
+		(stateModel.Name.IsNull() || stateModel.Name.IsUnknown())
 
 	diags = stateModel.populateFromAPI(ctx, policy)
 	resp.Diagnostics.Append(diags...)
