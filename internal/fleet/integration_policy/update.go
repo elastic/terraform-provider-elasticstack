@@ -48,17 +48,21 @@ func (r *integrationPolicyResource) Update(ctx context.Context, req resource.Upd
 
 	policyID := planModel.PolicyID.ValueString()
 
-	// If space_ids is set, use space-aware UPDATE request
+	// Determine if we should use space-aware UPDATE request
 	var policy *kbapi.PackagePolicy
+	var spaceID string
+
 	if !planModel.SpaceIds.IsNull() && !planModel.SpaceIds.IsUnknown() {
 		var tempDiags diag.Diagnostics
 		spaceIDs := utils.ListTypeAs[types.String](ctx, planModel.SpaceIds, path.Root("space_ids"), &tempDiags)
 		if !tempDiags.HasError() && len(spaceIDs) > 0 {
-			spaceID := spaceIDs[0].ValueString()
-			policy, diags = fleet.UpdatePackagePolicyInSpace(ctx, client, policyID, spaceID, body)
-		} else {
-			policy, diags = fleet.UpdatePackagePolicy(ctx, client, policyID, body)
+			spaceID = spaceIDs[0].ValueString()
 		}
+	}
+
+	// Use space-aware method if we have a non-default space
+	if spaceID != "" && spaceID != "default" {
+		policy, diags = fleet.UpdatePackagePolicyInSpace(ctx, client, policyID, spaceID, body)
 	} else {
 		policy, diags = fleet.UpdatePackagePolicy(ctx, client, policyID, body)
 	}

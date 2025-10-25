@@ -53,6 +53,40 @@ func GetEnrollmentTokensByPolicy(ctx context.Context, client *Client, policyID s
 	}
 }
 
+// GetEnrollmentTokensInSpace Get all enrollment tokens within a specific Kibana space.
+func GetEnrollmentTokensInSpace(ctx context.Context, client *Client, spaceID string) ([]kbapi.EnrollmentApiKey, diag.Diagnostics) {
+	// Construct the space-aware path
+	path := "/api/fleet/enrollment_api_keys"
+	if spaceID != "" && spaceID != "default" {
+		path = fmt.Sprintf("/s/%s/api/fleet/enrollment_api_keys", spaceID)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "GET", client.URL+path, nil)
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+
+	httpResp, err := client.HTTP.Do(req)
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+	defer httpResp.Body.Close()
+
+	switch httpResp.StatusCode {
+	case http.StatusOK:
+		var result struct {
+			Items []kbapi.EnrollmentApiKey `json:"items"`
+		}
+		if err := json.NewDecoder(httpResp.Body).Decode(&result); err != nil {
+			return nil, diagutil.FrameworkDiagFromError(err)
+		}
+		return result.Items, nil
+	default:
+		bodyBytes, _ := io.ReadAll(httpResp.Body)
+		return nil, reportUnknownError(httpResp.StatusCode, bodyBytes)
+	}
+}
+
 // GetEnrollmentTokensByPolicyInSpace Get enrollment tokens by policy ID within a specific Kibana space.
 func GetEnrollmentTokensByPolicyInSpace(ctx context.Context, client *Client, policyID string, spaceID string) ([]kbapi.EnrollmentApiKey, diag.Diagnostics) {
 	// Construct the space-aware path
