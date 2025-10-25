@@ -4,7 +4,11 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func (r *serverHostResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
@@ -23,6 +27,21 @@ func (r *serverHostResource) Delete(ctx context.Context, req resource.DeleteRequ
 	}
 
 	hostID := stateModel.HostID.ValueString()
-	diags = fleet.DeleteFleetServerHost(ctx, client, hostID)
+
+	// If space_ids is set, use space-aware DELETE request
+	var spaceID string
+	if !stateModel.SpaceIds.IsNull() && !stateModel.SpaceIds.IsUnknown() {
+		var tempDiags diag.Diagnostics
+		spaceIDs := utils.ListTypeAs[types.String](ctx, stateModel.SpaceIds, path.Root("space_ids"), &tempDiags)
+		if !tempDiags.HasError() && len(spaceIDs) > 0 {
+			spaceID = spaceIDs[0].ValueString()
+		}
+	}
+
+	if spaceID != "" && spaceID != "default" {
+		diags = fleet.DeleteFleetServerHostInSpace(ctx, client, hostID, spaceID)
+	} else {
+		diags = fleet.DeleteFleetServerHost(ctx, client, hostID)
+	}
 	resp.Diagnostics.Append(diags...)
 }

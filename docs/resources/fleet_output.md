@@ -213,6 +213,7 @@ resource "elasticstack_fleet_output" "kafka_round_robin" {
 - `hosts` (List of String) A list of hosts.
 - `kafka` (Attributes) Kafka-specific configuration. (see [below for nested schema](#nestedatt--kafka))
 - `output_id` (String) Unique identifier of the output.
+- `space_ids` (List of String) The Kibana space IDs where this output is available. When set, the output will be created and managed within the specified space.
 - `ssl` (Attributes) SSL configuration. (see [below for nested schema](#nestedatt--ssl))
 
 ### Read-Only

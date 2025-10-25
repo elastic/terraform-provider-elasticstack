@@ -3,8 +3,13 @@ package integration_policy
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func (r *integrationPolicyResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -23,7 +28,22 @@ func (r *integrationPolicyResource) Read(ctx context.Context, req resource.ReadR
 	}
 
 	policyID := stateModel.PolicyID.ValueString()
-	policy, diags := fleet.GetPackagePolicy(ctx, client, policyID)
+
+	// If space_ids is set in state, use space-aware GET request
+	var policy *kbapi.PackagePolicy
+	if !stateModel.SpaceIds.IsNull() && !stateModel.SpaceIds.IsUnknown() {
+		var tempDiags diag.Diagnostics
+		spaceIDs := utils.ListTypeAs[types.String](ctx, stateModel.SpaceIds, path.Root("space_ids"), &tempDiags)
+		if !tempDiags.HasError() && len(spaceIDs) > 0 {
+			spaceID := spaceIDs[0].ValueString()
+			policy, diags = fleet.GetPackagePolicyInSpace(ctx, client, policyID, spaceID)
+		} else {
+			policy, diags = fleet.GetPackagePolicy(ctx, client, policyID)
+		}
+	} else {
+		policy, diags = fleet.GetPackagePolicy(ctx, client, policyID)
+	}
+
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -40,10 +60,24 @@ func (r *integrationPolicyResource) Read(ctx context.Context, req resource.ReadR
 		return
 	}
 
+	// Remember if the state had input configured
+	stateHadInput := utils.IsKnown(stateModel.Input) && !stateModel.Input.IsNull() && len(stateModel.Input.Elements()) > 0
+
+	// Check if this is an import operation (PolicyID is the only field set)
+	isImport := stateModel.PolicyID.ValueString() != "" &&
+		(stateModel.Name.IsNull() || stateModel.Name.IsUnknown())
+
 	diags = stateModel.populateFromAPI(ctx, policy)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
+	}
+
+	// If state didn't have input configured and this is not an import, ensure we don't add it now
+	// This prevents "Provider produced inconsistent result" errors during refresh
+	// However, during import we should always populate inputs from the API
+	if !stateHadInput && !isImport {
+		stateModel.Input = types.ListNull(getInputTypeV1())
 	}
 
 	diags = resp.State.Set(ctx, stateModel)

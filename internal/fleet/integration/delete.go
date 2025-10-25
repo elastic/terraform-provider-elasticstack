@@ -4,7 +4,11 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
@@ -32,6 +36,20 @@ func (r *integrationResource) Delete(ctx context.Context, req resource.DeleteReq
 		return
 	}
 
-	diags = fleet.Uninstall(ctx, client, name, version, force)
+	// If space_ids is set, use space-aware uninstallation
+	var spaceID string
+	if !stateModel.SpaceIds.IsNull() && !stateModel.SpaceIds.IsUnknown() {
+		var tempDiags diag.Diagnostics
+		spaceIDs := utils.ListTypeAs[types.String](ctx, stateModel.SpaceIds, path.Root("space_ids"), &tempDiags)
+		if !tempDiags.HasError() && len(spaceIDs) > 0 {
+			spaceID = spaceIDs[0].ValueString()
+		}
+	}
+
+	if spaceID != "" && spaceID != "default" {
+		diags = fleet.UninstallInSpace(ctx, client, name, version, spaceID, force)
+	} else {
+		diags = fleet.Uninstall(ctx, client, name, version, force)
+	}
 	resp.Diagnostics.Append(diags...)
 }
