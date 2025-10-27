@@ -52,6 +52,10 @@ func (r *mlJobStateResource) update(ctx context.Context, plan tfsdk.Plan, state 
 	jobId := data.JobId.ValueString()
 	desiredState := data.State.ValueString()
 
+	// Create context with timeout
+	ctx, cancel := context.WithTimeout(ctx, operationTimeout)
+	defer cancel()
+
 	// First, get the current job stats to check if the job exists and its current state
 	currentState, fwDiags := r.getJobState(ctx, jobId)
 	diags.Append(fwDiags...)
@@ -109,10 +113,6 @@ func (r *mlJobStateResource) performStateTransition(ctx context.Context, client 
 		tflog.Debug(ctx, fmt.Sprintf("ML job %s is already in desired state %s", jobId, desiredState))
 		return nil
 	}
-
-	// Create context with timeout
-	ctx, cancel := context.WithTimeout(ctx, operationTimeout)
-	defer cancel()
 
 	// Initiate the state change
 	switch desiredState {
