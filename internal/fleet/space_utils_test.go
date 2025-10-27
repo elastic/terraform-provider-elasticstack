@@ -1,7 +1,12 @@
 package fleet
 
 import (
+	"context"
+	"fmt"
 	"testing"
+
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func TestGetOperationalSpace(t *testing.T) {
@@ -213,4 +218,210 @@ func spacesEqual(a, b *string) bool {
 		return false
 	}
 	return *a == *b
+}
+
+// TestExtractSpaceIDs tests the ExtractSpaceIDs helper function that converts
+// Terraform List types to Go string slices.
+func TestExtractSpaceIDs(t *testing.T) {
+	ctx := context.Background()
+
+	tests := []struct {
+		name     string
+		input    types.List
+		expected []string
+	}{
+		{
+			name:     "null list returns empty slice",
+			input:    types.ListNull(types.StringType),
+			expected: []string{},
+		},
+		{
+			name:     "unknown list returns empty slice",
+			input:    types.ListUnknown(types.StringType),
+			expected: []string{},
+		},
+		{
+			name: "single space",
+			input: types.ListValueMust(types.StringType, []attr.Value{
+				types.StringValue("default"),
+			}),
+			expected: []string{"default"},
+		},
+		{
+			name: "multiple spaces",
+			input: types.ListValueMust(types.StringType, []attr.Value{
+				types.StringValue("default"),
+				types.StringValue("space-a"),
+				types.StringValue("space-b"),
+			}),
+			expected: []string{"default", "space-a", "space-b"},
+		},
+		{
+			name: "spaces with special characters",
+			input: types.ListValueMust(types.StringType, []attr.Value{
+				types.StringValue("my-space"),
+				types.StringValue("another_space"),
+				types.StringValue("space.with.dots"),
+			}),
+			expected: []string{"my-space", "another_space", "space.with.dots"},
+		},
+		{
+			name: "empty string in list",
+			input: types.ListValueMust(types.StringType, []attr.Value{
+				types.StringValue(""),
+				types.StringValue("space-a"),
+			}),
+			expected: []string{"", "space-a"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := ExtractSpaceIDs(ctx, tt.input)
+
+			if len(got) != len(tt.expected) {
+				t.Errorf("ExtractSpaceIDs() length = %v, want %v", len(got), len(tt.expected))
+				return
+			}
+
+			for i := range got {
+				if got[i] != tt.expected[i] {
+					t.Errorf("ExtractSpaceIDs()[%d] = %v, want %v", i, got[i], tt.expected[i])
+				}
+			}
+		})
+	}
+}
+
+// TestSpaceIDsToList tests the SpaceIDsToList helper function that converts
+// Go string slices to Terraform List types.
+func TestSpaceIDsToList(t *testing.T) {
+	ctx := context.Background()
+
+	tests := []struct {
+		name        string
+		input       []string
+		expectError bool
+	}{
+		{
+			name:        "empty slice",
+			input:       []string{},
+			expectError: false,
+		},
+		{
+			name:        "nil slice",
+			input:       nil,
+			expectError: false,
+		},
+		{
+			name:        "single space",
+			input:       []string{"default"},
+			expectError: false,
+		},
+		{
+			name:        "multiple spaces",
+			input:       []string{"default", "space-a", "space-b"},
+			expectError: false,
+		},
+		{
+			name:        "spaces with special characters",
+			input:       []string{"my-space", "another_space", "space.with.dots"},
+			expectError: false,
+		},
+		{
+			name:        "empty string in slice",
+			input:       []string{"", "space-a"},
+			expectError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, diags := SpaceIDsToList(ctx, tt.input)
+
+			if tt.expectError {
+				if !diags.HasError() {
+					t.Error("SpaceIDsToList() expected error, got none")
+				}
+				return
+			}
+
+			if diags.HasError() {
+				t.Errorf("SpaceIDsToList() unexpected error: %v", diags)
+				return
+			}
+
+			// Verify the list was created correctly
+			// Note: Empty slices return null lists (by design)
+			if len(tt.input) == 0 {
+				if !got.IsNull() {
+					t.Error("SpaceIDsToList() should return null list for empty input")
+				}
+				return
+			}
+
+			if got.IsNull() {
+				t.Error("SpaceIDsToList() returned null list for non-empty input")
+				return
+			}
+
+			// Convert back to slice to verify round-trip
+			var result []types.String
+			diags = got.ElementsAs(ctx, &result, false)
+			if diags.HasError() {
+				t.Errorf("ElementsAs() error: %v", diags)
+				return
+			}
+
+			if len(result) != len(tt.input) {
+				t.Errorf("SpaceIDsToList() length = %v, want %v", len(result), len(tt.input))
+				return
+			}
+
+			for i := range result {
+				if result[i].ValueString() != tt.input[i] {
+					t.Errorf("SpaceIDsToList()[%d] = %v, want %v", i, result[i].ValueString(), tt.input[i])
+				}
+			}
+		})
+	}
+}
+
+// TestExtractAndConvertRoundTrip tests that ExtractSpaceIDs and SpaceIDsToList
+// are inverse operations (round-trip conversion works correctly).
+func TestExtractAndConvertRoundTrip(t *testing.T) {
+	ctx := context.Background()
+
+	testCases := [][]string{
+		{},
+		{"default"},
+		{"default", "space-a"},
+		{"space-a", "space-b", "space-c"},
+		{"my-space", "another_space", "space.with.dots"},
+	}
+
+	for _, original := range testCases {
+		t.Run(fmt.Sprintf("round_trip_%d_spaces", len(original)), func(t *testing.T) {
+			// Convert to Terraform List
+			list, diags := SpaceIDsToList(ctx, original)
+			if diags.HasError() {
+				t.Fatalf("SpaceIDsToList() error: %v", diags)
+			}
+
+			// Convert back to Go slice
+			result := ExtractSpaceIDs(ctx, list)
+
+			// Verify they match
+			if len(result) != len(original) {
+				t.Errorf("Round-trip length mismatch: got %v, want %v", len(result), len(original))
+				return
+			}
+
+			for i := range result {
+				if result[i] != original[i] {
+					t.Errorf("Round-trip[%d] mismatch: got %v, want %v", i, result[i], original[i])
+				}
+			}
+		})
+	}
 }
