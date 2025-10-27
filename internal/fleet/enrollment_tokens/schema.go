@@ -6,7 +6,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func (d *enrollmentTokensDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
@@ -25,9 +24,8 @@ func getSchema() schema.Schema {
 				Description: "The identifier of the target agent policy. When provided, only the enrollment tokens associated with this agent policy will be selected. Omit this value to select all enrollment tokens.",
 				Optional:    true,
 			},
-			"space_ids": schema.ListAttribute{
-				Description: "The Kibana space IDs to query enrollment tokens from. When the agent policy is space-scoped, this must be set to match the policy's space. If not specified, queries the default space.",
-				ElementType: types.StringType,
+			"space_id": schema.StringAttribute{
+				Description: "The Kibana space ID to query enrollment tokens from. When the agent policy is space-scoped, this must be set to match the policy's space. If not specified, queries the default space.",
 				Optional:    true,
 			},
 			"tokens": schema.ListNestedAttribute{
