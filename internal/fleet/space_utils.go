@@ -21,21 +21,22 @@ import (
 // choice for API operations. This prevents resource orphaning when space_ids ordering changes.
 //
 // Selection Strategy:
-//   1. If space_ids is empty/null → return nil (implicit default space)
-//   2. If "default" is in space_ids → ALWAYS use "default" (most stable)
-//   3. If empty string "" is in space_ids → use "default" (normalize empty to default)
-//   4. Otherwise → use first space in list (fallback for custom-space-only resources)
+//  1. If space_ids is empty/null → return nil (implicit default space)
+//  2. If "default" is in space_ids → ALWAYS use "default" (most stable)
+//  3. If empty string "" is in space_ids → use "default" (normalize empty to default)
+//  4. Otherwise → use first space in list (fallback for custom-space-only resources)
 //
 // This ensures stable, predictable behavior that prevents resource orphaning
 // when users reorder or modify space_ids.
 //
 // Example Scenarios:
-//   []                           → nil (default space)
-//   ["default"]                  → "default"
-//   ["space-a", "default"]       → "default" (prefer default over first)
-//   ["default", "space-a"]       → "default" (prefer default over first)
-//   ["space-a", "space-b"]       → "space-a" (no default, use first)
-//   ["", "space-a"]              → "default" (normalize empty string)
+//
+//	[]                           → nil (default space)
+//	["default"]                  → "default"
+//	["space-a", "default"]       → "default" (prefer default over first)
+//	["default", "space-a"]       → "default" (prefer default over first)
+//	["space-a", "space-b"]       → "space-a" (no default, use first)
+//	["", "space-a"]              → "default" (normalize empty string)
 func GetOperationalSpace(spaceIDs []string) *string {
 	if len(spaceIDs) == 0 {
 		// Empty list means implicit default space
