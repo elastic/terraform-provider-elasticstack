@@ -5,9 +5,8 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -48,21 +47,16 @@ func (r *integrationPolicyResource) Update(ctx context.Context, req resource.Upd
 
 	policyID := planModel.PolicyID.ValueString()
 
-	// Determine if we should use space-aware UPDATE request
+	// Extract space IDs from PLAN (where user wants changes) and determine operational space
+	// Using default-space-first model: always prefer "default" if present
+	// API handles adding/removing policy from spaces based on space_ids in body
+	planSpaceIDs := fleetutils.ExtractSpaceIDs(ctx, planModel.SpaceIds)
+	spaceID := fleetutils.GetOperationalSpace(planSpaceIDs)
+
+	// Update using the operational space
 	var policy *kbapi.PackagePolicy
-	var spaceID string
-
-	if !planModel.SpaceIds.IsNull() && !planModel.SpaceIds.IsUnknown() {
-		var tempDiags diag.Diagnostics
-		spaceIDs := utils.ListTypeAs[types.String](ctx, planModel.SpaceIds, path.Root("space_ids"), &tempDiags)
-		if !tempDiags.HasError() && len(spaceIDs) > 0 {
-			spaceID = spaceIDs[0].ValueString()
-		}
-	}
-
-	// Use space-aware method if we have a non-default space
-	if spaceID != "" && spaceID != "default" {
-		policy, diags = fleet.UpdatePackagePolicyInSpace(ctx, client, policyID, spaceID, body)
+	if spaceID != nil && *spaceID != "" {
+		policy, diags = fleet.UpdatePackagePolicyInSpace(ctx, client, policyID, *spaceID, body)
 	} else {
 		policy, diags = fleet.UpdatePackagePolicy(ctx, client, policyID, body)
 	}

@@ -5,11 +5,8 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/path"
+	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func (r *outputResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
@@ -42,19 +39,16 @@ func (r *outputResource) Update(ctx context.Context, req resource.UpdateRequest,
 
 	outputID := planModel.OutputID.ValueString()
 
-	// If space_ids is set, use space-aware UPDATE request
-	var spaceID string
-	if !planModel.SpaceIds.IsNull() && !planModel.SpaceIds.IsUnknown() {
-		var tempDiags diag.Diagnostics
-		spaceIDs := utils.ListTypeAs[types.String](ctx, planModel.SpaceIds, path.Root("space_ids"), &tempDiags)
-		if !tempDiags.HasError() && len(spaceIDs) > 0 {
-			spaceID = spaceIDs[0].ValueString()
-		}
-	}
+	// Extract space IDs from PLAN (where user wants changes) and determine operational space
+	// Using default-space-first model: always prefer "default" if present
+	// API handles adding/removing output from spaces based on space_ids in body
+	planSpaceIDs := fleetutils.ExtractSpaceIDs(ctx, planModel.SpaceIds)
+	spaceID := fleetutils.GetOperationalSpace(planSpaceIDs)
 
+	// Update using the operational space
 	var output *kbapi.OutputUnion
-	if spaceID != "" && spaceID != "default" {
-		output, diags = fleet.UpdateOutputInSpace(ctx, client, outputID, spaceID, body)
+	if spaceID != nil && *spaceID != "" {
+		output, diags = fleet.UpdateOutputInSpace(ctx, client, outputID, *spaceID, body)
 	} else {
 		output, diags = fleet.UpdateOutput(ctx, client, outputID, body)
 	}

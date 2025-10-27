@@ -5,9 +5,8 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -29,17 +28,16 @@ func (r *integrationPolicyResource) Read(ctx context.Context, req resource.ReadR
 
 	policyID := stateModel.PolicyID.ValueString()
 
-	// If space_ids is set in state, use space-aware GET request
+	// Extract space IDs from state and determine operational space
+	// Using default-space-first model: always prefer "default" if present
+	// This prevents resource orphaning when space_ids is reordered
+	spaceIDs := fleetutils.ExtractSpaceIDs(ctx, stateModel.SpaceIds)
+	spaceID := fleetutils.GetOperationalSpace(spaceIDs)
+
+	// Query using the operational space
 	var policy *kbapi.PackagePolicy
-	if !stateModel.SpaceIds.IsNull() && !stateModel.SpaceIds.IsUnknown() {
-		var tempDiags diag.Diagnostics
-		spaceIDs := utils.ListTypeAs[types.String](ctx, stateModel.SpaceIds, path.Root("space_ids"), &tempDiags)
-		if !tempDiags.HasError() && len(spaceIDs) > 0 {
-			spaceID := spaceIDs[0].ValueString()
-			policy, diags = fleet.GetPackagePolicyInSpace(ctx, client, policyID, spaceID)
-		} else {
-			policy, diags = fleet.GetPackagePolicy(ctx, client, policyID)
-		}
+	if spaceID != nil && *spaceID != "" {
+		policy, diags = fleet.GetPackagePolicyInSpace(ctx, client, policyID, *spaceID)
 	} else {
 		policy, diags = fleet.GetPackagePolicy(ctx, client, policyID)
 	}

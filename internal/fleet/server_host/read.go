@@ -5,11 +5,8 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/path"
+	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func (r *serverHostResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -29,19 +26,16 @@ func (r *serverHostResource) Read(ctx context.Context, req resource.ReadRequest,
 
 	hostID := stateModel.HostID.ValueString()
 
-	// If space_ids is set in state, use space-aware GET request
-	var spaceID string
-	if !stateModel.SpaceIds.IsNull() && !stateModel.SpaceIds.IsUnknown() {
-		var tempDiags diag.Diagnostics
-		spaceIDs := utils.ListTypeAs[types.String](ctx, stateModel.SpaceIds, path.Root("space_ids"), &tempDiags)
-		if !tempDiags.HasError() && len(spaceIDs) > 0 {
-			spaceID = spaceIDs[0].ValueString()
-		}
-	}
+	// Extract space IDs from state and determine operational space
+	// Using default-space-first model: always prefer "default" if present
+	// This prevents resource orphaning when space_ids is reordered
+	spaceIDs := fleetutils.ExtractSpaceIDs(ctx, stateModel.SpaceIds)
+	spaceID := fleetutils.GetOperationalSpace(spaceIDs)
 
+	// Query using the operational space
 	var host *kbapi.ServerHost
-	if spaceID != "" && spaceID != "default" {
-		host, diags = fleet.GetFleetServerHostInSpace(ctx, client, hostID, spaceID)
+	if spaceID != nil && *spaceID != "" {
+		host, diags = fleet.GetFleetServerHostInSpace(ctx, client, hostID, *spaceID)
 	} else {
 		host, diags = fleet.GetFleetServerHost(ctx, client, hostID)
 	}
