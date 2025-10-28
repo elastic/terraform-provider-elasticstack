@@ -49,6 +49,7 @@ set ` + "`skip_destroy` to `true`."
 			Computed:    true,
 			PlanModifiers: []planmodifier.List{
 				listplanmodifier.RequiresReplace(),
+				listplanmodifier.UseStateForUnknown(),
 			},
 		},
 	}

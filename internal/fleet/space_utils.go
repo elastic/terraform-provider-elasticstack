@@ -98,3 +98,39 @@ func SpaceIDsToList(ctx context.Context, spaceIDs []string) (types.List, diag.Di
 
 	return types.ListValue(types.StringType, spaceIDValues)
 }
+
+// ShouldPreserveSpaceIdsOrder determines whether to preserve the user's configured
+// space_ids order instead of using the API response order.
+//
+// The Kibana Fleet API sorts space_ids alphabetically in responses (as of 9.1.3+),
+// but Terraform expects the exact order from configuration to be preserved to avoid
+// false drift detection.
+//
+// This function returns true ONLY when ALL of these conditions are met:
+//
+//  1. apiSpaceIds != nil: API response includes space_ids (Kibana 9.1+ feature)
+//  2. !originalSpaceIds.IsNull(): User explicitly configured space_ids in plan/state
+//  3. !originalSpaceIds.IsUnknown(): Value is known (not a computed value)
+//  4. !populatedSpaceIds.IsNull(): populateFromAPI successfully set a non-null value
+//
+// Edge Cases Handled:
+//   - User doesn't configure space_ids → Use API's computed default
+//   - Older Kibana versions (no space_ids support) → Use API's null value
+//   - User configures, but Kibana sorts → Preserve user's order
+//   - Computed values → Let provider compute, don't preserve
+//
+// Example Truth Table:
+//
+//	User Config | API Response  | After Populate | Preserve? | Result
+//	----------- | ------------- | -------------- | --------- | ------
+//	null        | null          | null           | No        | null (old Kibana)
+//	null        | ["default"]   | ["default"]    | No        | ["default"] (computed)
+//	["a","b"]   | ["b","a"]     | ["b","a"]      | Yes       | ["a","b"] (user order)
+//	unknown     | ["default"]   | ["default"]    | No        | ["default"] (computed)
+//	["a"]       | null          | null           | No        | null (not supported)
+func ShouldPreserveSpaceIdsOrder(apiSpaceIds *[]string, originalSpaceIds types.List, populatedSpaceIds types.List) bool {
+	return apiSpaceIds != nil &&
+		!originalSpaceIds.IsNull() &&
+		!originalSpaceIds.IsUnknown() &&
+		!populatedSpaceIds.IsNull()
+}

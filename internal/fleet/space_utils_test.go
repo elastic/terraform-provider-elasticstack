@@ -389,6 +389,83 @@ func TestSpaceIDsToList(t *testing.T) {
 
 // TestExtractAndConvertRoundTrip tests that ExtractSpaceIDs and SpaceIDsToList
 // are inverse operations (round-trip conversion works correctly).
+func TestShouldPreserveSpaceIdsOrder(t *testing.T) {
+	tests := []struct {
+		name              string
+		apiSpaceIds       *[]string
+		originalSpaceIds  types.List
+		populatedSpaceIds types.List
+		expectedPreserve  bool
+		description       string
+	}{
+		{
+			name:              "user doesn't configure space_ids (null)",
+			apiSpaceIds:       &[]string{"default"},
+			originalSpaceIds:  types.ListNull(types.StringType),
+			populatedSpaceIds: types.ListValueMust(types.StringType, []attr.Value{types.StringValue("default")}),
+			expectedPreserve:  false,
+			description:       "When user doesn't configure space_ids, use API's computed default",
+		},
+		{
+			name:              "user configures space_ids, API sorts them (Kibana 9.1.3+)",
+			apiSpaceIds:       &[]string{"default", "space-test-a"},
+			originalSpaceIds:  types.ListValueMust(types.StringType, []attr.Value{types.StringValue("space-test-a"), types.StringValue("default")}),
+			populatedSpaceIds: types.ListValueMust(types.StringType, []attr.Value{types.StringValue("default"), types.StringValue("space-test-a")}),
+			expectedPreserve:  true,
+			description:       "When user configures order and API sorts, preserve user's order",
+		},
+		{
+			name:              "user configures space_ids on older Kibana (no support)",
+			apiSpaceIds:       nil,
+			originalSpaceIds:  types.ListValueMust(types.StringType, []attr.Value{types.StringValue("default")}),
+			populatedSpaceIds: types.ListNull(types.StringType),
+			expectedPreserve:  false,
+			description:       "When older Kibana doesn't support space_ids, don't preserve (feature not supported)",
+		},
+		{
+			name:              "computed value (unknown in plan)",
+			apiSpaceIds:       &[]string{"default"},
+			originalSpaceIds:  types.ListUnknown(types.StringType),
+			populatedSpaceIds: types.ListValueMust(types.StringType, []attr.Value{types.StringValue("default")}),
+			expectedPreserve:  false,
+			description:       "When value was computed (unknown), let provider compute, don't preserve",
+		},
+		{
+			name:              "API returns null but user configured (edge case)",
+			apiSpaceIds:       nil,
+			originalSpaceIds:  types.ListValueMust(types.StringType, []attr.Value{types.StringValue("space-a")}),
+			populatedSpaceIds: types.ListNull(types.StringType),
+			expectedPreserve:  false,
+			description:       "When API returns nil, don't preserve even if user configured (old Kibana)",
+		},
+		{
+			name:              "populateFromAPI set null value",
+			apiSpaceIds:       &[]string{},
+			originalSpaceIds:  types.ListValueMust(types.StringType, []attr.Value{types.StringValue("default")}),
+			populatedSpaceIds: types.ListNull(types.StringType),
+			expectedPreserve:  false,
+			description:       "When populateFromAPI sets null, don't preserve (empty API response)",
+		},
+		{
+			name:              "all conditions met - single space",
+			apiSpaceIds:       &[]string{"default"},
+			originalSpaceIds:  types.ListValueMust(types.StringType, []attr.Value{types.StringValue("default")}),
+			populatedSpaceIds: types.ListValueMust(types.StringType, []attr.Value{types.StringValue("default")}),
+			expectedPreserve:  true,
+			description:       "When all conditions met with single space, preserve (edge case where order doesn't matter but logic should still work)",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := ShouldPreserveSpaceIdsOrder(tt.apiSpaceIds, tt.originalSpaceIds, tt.populatedSpaceIds)
+			if got != tt.expectedPreserve {
+				t.Errorf("ShouldPreserveSpaceIdsOrder() = %v, want %v\nDescription: %s", got, tt.expectedPreserve, tt.description)
+			}
+		})
+	}
+}
+
 func TestExtractAndConvertRoundTrip(t *testing.T) {
 	ctx := context.Background()
 

@@ -61,9 +61,9 @@ func (r *agentPolicyResource) Read(ctx context.Context, req resource.ReadRequest
 		return
 	}
 
-	// Restore the original space_ids order from state if the API returned spaces
-	// We only need to verify that the set of spaces matches, not the order
-	if policy.SpaceIds != nil && !originalSpaceIds.IsNull() {
+	// Restore the original space_ids order if appropriate
+	// See ShouldPreserveSpaceIdsOrder documentation for edge case handling
+	if fleetutils.ShouldPreserveSpaceIdsOrder(policy.SpaceIds, originalSpaceIds, stateModel.SpaceIds) {
 		stateModel.SpaceIds = originalSpaceIds
 	}
 

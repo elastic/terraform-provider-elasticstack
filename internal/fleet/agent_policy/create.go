@@ -5,6 +5,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -92,9 +93,9 @@ func (r *agentPolicyResource) Create(ctx context.Context, req resource.CreateReq
 		return
 	}
 
-	// Restore the original space_ids order from plan if the API returned spaces
-	// We only need to verify that the set of spaces matches, not the order
-	if policy.SpaceIds != nil && !originalSpaceIds.IsNull() {
+	// Restore the original space_ids order if appropriate
+	// See ShouldPreserveSpaceIdsOrder documentation for edge case handling
+	if fleetutils.ShouldPreserveSpaceIdsOrder(policy.SpaceIds, originalSpaceIds, planModel.SpaceIds) {
 		planModel.SpaceIds = originalSpaceIds
 	}
 

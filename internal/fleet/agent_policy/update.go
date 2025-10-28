@@ -65,9 +65,9 @@ func (r *agentPolicyResource) Update(ctx context.Context, req resource.UpdateReq
 
 	planModel.populateFromAPI(ctx, policy)
 
-	// Restore the original space_ids order from plan if the API returned spaces
-	// We only need to verify that the set of spaces matches, not the order
-	if policy.SpaceIds != nil && !originalSpaceIds.IsNull() {
+	// Restore the original space_ids order if appropriate
+	// See ShouldPreserveSpaceIdsOrder documentation for edge case handling
+	if fleetutils.ShouldPreserveSpaceIdsOrder(policy.SpaceIds, originalSpaceIds, planModel.SpaceIds) {
 		planModel.SpaceIds = originalSpaceIds
 	}
 
