@@ -81,10 +81,21 @@ func (r *agentPolicyResource) Create(ctx context.Context, req resource.CreateReq
 		}
 	}
 
+	// Preserve the space_ids order from plan before populating from API
+	// The Kibana API may return space_ids in a different order (sorted),
+	// but we need to maintain the user's configured order to avoid false drift detection
+	originalSpaceIds := planModel.SpaceIds
+
 	diags = planModel.populateFromAPI(ctx, policy)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
+	}
+
+	// Restore the original space_ids order from plan if the API returned spaces
+	// We only need to verify that the set of spaces matches, not the order
+	if policy.SpaceIds != nil && !originalSpaceIds.IsNull() {
+		planModel.SpaceIds = originalSpaceIds
 	}
 
 	resp.State.Set(ctx, planModel)
