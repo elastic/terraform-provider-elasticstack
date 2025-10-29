@@ -124,8 +124,22 @@ type DatafeedNode struct {
 
 // DatafeedRunning represents the running state of a datafeed
 type DatafeedRunning struct {
-	RealTimeConfigured bool       `json:"real_time_configured"`
-	RealTimeRunning    bool       `json:"real_time_running"`
-	SearchInterval     *int64     `json:"search_interval,omitempty"`
-	LastEndTime        *time.Time `json:"last_end_time,omitempty"`
+
+// MLJobStats represents the statistics structure for an ML job
+type MLJobStats struct {
+	Jobs []MLJob `json:"jobs"`
+}
+
+// MLJob represents a single ML job in the stats response
+type MLJob struct {
+	JobId string     `json:"job_id"`
+	State string     `json:"state"`
+	Node  *MLJobNode `json:"node,omitempty"`
+}
+
+// MLJobNode represents the node information for an ML job
+type MLJobNode struct {
+	Id         string                 `json:"id"`
+	Name       string                 `json:"name"`
+	Attributes map[string]interface{} `json:"attributes"`
 }
