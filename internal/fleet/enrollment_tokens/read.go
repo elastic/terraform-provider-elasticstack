@@ -31,12 +31,7 @@ func (d *enrollmentTokensDataSource) Read(ctx context.Context, req datasource.Re
 
 	// Query enrollment tokens with space context if needed
 	if policyID == "" {
-		// Get all tokens, with space awareness if specified
-		if spaceID != "" && spaceID != "default" {
-			tokens, diags = fleet.GetEnrollmentTokensInSpace(ctx, client, spaceID)
-		} else {
-			tokens, diags = fleet.GetEnrollmentTokens(ctx, client)
-		}
+		tokens, diags = fleet.GetEnrollmentTokens(ctx, client, spaceID)
 	} else {
 		// Get tokens by policy, with space awareness if specified
 		if spaceID != "" && spaceID != "default" {
