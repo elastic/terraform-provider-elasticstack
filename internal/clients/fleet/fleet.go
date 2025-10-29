@@ -29,9 +29,16 @@ func buildSpaceAwarePath(spaceID, basePath string) string {
 	return basePath
 }
 
+func spaceAwarePathRequestEditor(spaceID string) func(ctx context.Context, req *http.Request) error {
+	return func(ctx context.Context, req *http.Request) error {
+		req.URL.Path = buildSpaceAwarePath(spaceID, req.URL.Path)
+		return nil
+	}
+}
+
 // GetEnrollmentTokens reads all enrollment tokens from the API.
-func GetEnrollmentTokens(ctx context.Context, client *Client) ([]kbapi.EnrollmentApiKey, diag.Diagnostics) {
-	resp, err := client.API.GetFleetEnrollmentApiKeysWithResponse(ctx, nil)
+func GetEnrollmentTokens(ctx context.Context, client *Client, spaceID string) ([]kbapi.EnrollmentApiKey, diag.Diagnostics) {
+	resp, err := client.API.GetFleetEnrollmentApiKeysWithResponse(ctx, nil, spaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -60,37 +67,6 @@ func GetEnrollmentTokensByPolicy(ctx context.Context, client *Client, policyID s
 		return resp.JSON200.Items, nil
 	default:
 		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
-	}
-}
-
-// GetEnrollmentTokensInSpace Get all enrollment tokens within a specific Kibana space.
-func GetEnrollmentTokensInSpace(ctx context.Context, client *Client, spaceID string) ([]kbapi.EnrollmentApiKey, diag.Diagnostics) {
-	// Construct the space-aware path
-	path := buildSpaceAwarePath(spaceID, "/api/fleet/enrollment_api_keys")
-
-	req, err := http.NewRequestWithContext(ctx, "GET", client.URL+path, nil)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-
-	httpResp, err := client.HTTP.Do(req)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-	defer httpResp.Body.Close()
-
-	switch httpResp.StatusCode {
-	case http.StatusOK:
-		var result struct {
-			Items []kbapi.EnrollmentApiKey `json:"items"`
-		}
-		if err := json.NewDecoder(httpResp.Body).Decode(&result); err != nil {
-			return nil, diagutil.FrameworkDiagFromError(err)
-		}
-		return result.Items, nil
-	default:
-		bodyBytes, _ := io.ReadAll(httpResp.Body)
-		return nil, reportUnknownError(httpResp.StatusCode, bodyBytes)
 	}
 }
 
