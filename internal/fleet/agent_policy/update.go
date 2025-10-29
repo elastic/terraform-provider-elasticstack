@@ -39,16 +39,22 @@ func (r *agentPolicyResource) Update(ctx context.Context, req resource.UpdateReq
 
 	policyID := planModel.PolicyID.ValueString()
 
-	// Extract space IDs from plan and determine operational space
-	// Using default-space-first model for stable multi-space updates
-	planSpaceIDs := fleetutils.ExtractSpaceIDs(ctx, planModel.SpaceIds)
-	spaceID := fleetutils.GetOperationalSpace(planSpaceIDs)
+	// Read the existing spaces from state to avoid updating the policy
+	// in a space where it's not yet visible.
+	// This prevents errors when prepending a new space to space_ids:
+	// e.g., ["space-a"] → ["space-b", "space-a"] would fail if we queried "space-b"
+	// because the policy doesn't exist there yet.
+	spaceID, diags := fleetutils.GetOperationalSpaceFromState(ctx, req.State)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
-	// Update using the operational space
+	// Update using the operational space from STATE
 	// The API will handle adding/removing the policy from spaces based on space_ids in body
 	var policy *kbapi.AgentPolicy
-	if spaceID != nil && *spaceID != "" {
-		policy, diags = fleet.UpdateAgentPolicyInSpace(ctx, client, policyID, *spaceID, body)
+	if spaceID != "" {
+		policy, diags = fleet.UpdateAgentPolicyInSpace(ctx, client, policyID, spaceID, body)
 	} else {
 		policy, diags = fleet.UpdateAgentPolicy(ctx, client, policyID, body)
 	}
@@ -58,18 +64,9 @@ func (r *agentPolicyResource) Update(ctx context.Context, req resource.UpdateReq
 		return
 	}
 
-	// Preserve the space_ids order from plan before populating from API
-	// The Kibana API may return space_ids in a different order (sorted),
-	// but we need to maintain the user's configured order to avoid false drift detection
-	originalSpaceIds := planModel.SpaceIds
-
+	// Populate from API response
+	// With Sets, we don't need order preservation - Terraform handles set comparison automatically
 	planModel.populateFromAPI(ctx, policy)
-
-	// Restore the original space_ids order if appropriate
-	// See ShouldPreserveSpaceIdsOrder documentation for edge case handling
-	if fleetutils.ShouldPreserveSpaceIdsOrder(policy.SpaceIds, originalSpaceIds, planModel.SpaceIds) {
-		planModel.SpaceIds = originalSpaceIds
-	}
 
 	diags = resp.State.Set(ctx, planModel)
 	resp.Diagnostics.Append(diags...)

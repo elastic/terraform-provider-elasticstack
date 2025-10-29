@@ -31,7 +31,7 @@ type integrationPolicyModel struct {
 	IntegrationVersion types.String         `tfsdk:"integration_version"`
 	Input              types.List           `tfsdk:"input"` //> integrationPolicyInputModel
 	VarsJson           jsontypes.Normalized `tfsdk:"vars_json"`
-	SpaceIds           types.List           `tfsdk:"space_ids"`
+	SpaceIds           types.Set            `tfsdk:"space_ids"`
 }
 
 type integrationPolicyInputModel struct {
@@ -96,12 +96,12 @@ func (model *integrationPolicyModel) populateFromAPI(ctx context.Context, data *
 	// The API response may not include space_ids, so we keep the original value
 	originallySetSpaceIds := utils.IsKnown(model.SpaceIds)
 	if data.SpaceIds != nil {
-		spaceIds, d := types.ListValueFrom(ctx, types.StringType, *data.SpaceIds)
+		spaceIds, d := types.SetValueFrom(ctx, types.StringType, *data.SpaceIds)
 		diags.Append(d...)
 		model.SpaceIds = spaceIds
 	} else if !originallySetSpaceIds {
 		// Only set to null if it wasn't originally set
-		model.SpaceIds = types.ListNull(types.StringType)
+		model.SpaceIds = types.SetNull(types.StringType)
 	}
 	// If originally set but API didn't return it, keep the original value
 

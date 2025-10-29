@@ -40,7 +40,7 @@ func (r *integrationResource) Delete(ctx context.Context, req resource.DeleteReq
 	var spaceID string
 	if !stateModel.SpaceIds.IsNull() && !stateModel.SpaceIds.IsUnknown() {
 		var tempDiags diag.Diagnostics
-		spaceIDs := utils.ListTypeAs[types.String](ctx, stateModel.SpaceIds, path.Root("space_ids"), &tempDiags)
+		spaceIDs := utils.SetTypeAs[types.String](ctx, stateModel.SpaceIds, path.Root("space_ids"), &tempDiags)
 		if !tempDiags.HasError() && len(spaceIDs) > 0 {
 			spaceID = spaceIDs[0].ValueString()
 		}

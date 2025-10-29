@@ -26,15 +26,18 @@ func (r *integrationPolicyResource) Delete(ctx context.Context, req resource.Del
 	policyID := stateModel.PolicyID.ValueString()
 	force := stateModel.Force.ValueBool()
 
-	// Extract space IDs from STATE and determine operational space
-	// Using default-space-first model: always prefer "default" if present
-	stateSpaceIDs := fleetutils.ExtractSpaceIDs(ctx, stateModel.SpaceIds)
-	spaceID := fleetutils.GetOperationalSpace(stateSpaceIDs)
-
+	// Read the existing spaces from state to determine where to delete
 	// NOTE: DELETE removes the policy from ALL spaces (global delete)
 	// To remove from specific spaces only, UPDATE space_ids instead
-	if spaceID != nil && *spaceID != "" {
-		diags = fleet.DeletePackagePolicyInSpace(ctx, client, policyID, *spaceID, force)
+	spaceID, diags := fleetutils.GetOperationalSpaceFromState(ctx, req.State)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Delete using the operational space from STATE
+	if spaceID != "" {
+		diags = fleet.DeletePackagePolicyInSpace(ctx, client, policyID, spaceID, force)
 	} else {
 		diags = fleet.DeletePackagePolicy(ctx, client, policyID, force)
 	}

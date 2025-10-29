@@ -560,7 +560,7 @@ func (model *outputModel) fromAPIKafkaModel(ctx context.Context, data *kbapi.Out
 	// If it's currently null/unknown, set to explicit null to satisfy Terraform's requirement
 	// If it has a value from plan, preserve it to avoid plan diffs
 	if model.SpaceIds.IsNull() || model.SpaceIds.IsUnknown() {
-		model.SpaceIds = types.ListNull(types.StringType)
+		model.SpaceIds = types.SetNull(types.StringType)
 	}
 
 	return

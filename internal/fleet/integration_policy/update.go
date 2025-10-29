@@ -47,16 +47,18 @@ func (r *integrationPolicyResource) Update(ctx context.Context, req resource.Upd
 
 	policyID := planModel.PolicyID.ValueString()
 
-	// Extract space IDs from PLAN (where user wants changes) and determine operational space
-	// Using default-space-first model: always prefer "default" if present
-	// API handles adding/removing policy from spaces based on space_ids in body
-	planSpaceIDs := fleetutils.ExtractSpaceIDs(ctx, planModel.SpaceIds)
-	spaceID := fleetutils.GetOperationalSpace(planSpaceIDs)
+	// Read the existing spaces from state to avoid updating in a space where it's not yet visible
+	spaceID, diags := fleetutils.GetOperationalSpaceFromState(ctx, req.State)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
-	// Update using the operational space
+	// Update using the operational space from STATE
+	// The API will handle adding/removing policy from spaces based on space_ids in body
 	var policy *kbapi.PackagePolicy
-	if spaceID != nil && *spaceID != "" {
-		policy, diags = fleet.UpdatePackagePolicyInSpace(ctx, client, policyID, *spaceID, body)
+	if spaceID != "" {
+		policy, diags = fleet.UpdatePackagePolicyInSpace(ctx, client, policyID, spaceID, body)
 	} else {
 		policy, diags = fleet.UpdatePackagePolicy(ctx, client, policyID, body)
 	}

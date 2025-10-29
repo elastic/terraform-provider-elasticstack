@@ -47,7 +47,7 @@ type agentPolicyModel struct {
 	InactivityTimeout   customtypes.Duration `tfsdk:"inactivity_timeout"`
 	UnenrollmentTimeout customtypes.Duration `tfsdk:"unenrollment_timeout"`
 	GlobalDataTags      types.Map            `tfsdk:"global_data_tags"` //> globalDataTagsModel
-	SpaceIds            types.List           `tfsdk:"space_ids"`
+	SpaceIds            types.Set            `tfsdk:"space_ids"`
 }
 
 func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.AgentPolicy) diag.Diagnostics {
@@ -125,13 +125,13 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 	}
 
 	if data.SpaceIds != nil {
-		spaceIds, d := types.ListValueFrom(ctx, types.StringType, *data.SpaceIds)
+		spaceIds, d := types.SetValueFrom(ctx, types.StringType, *data.SpaceIds)
 		if d.HasError() {
 			return d
 		}
 		model.SpaceIds = spaceIds
 	} else {
-		model.SpaceIds = types.ListNull(types.StringType)
+		model.SpaceIds = types.SetNull(types.StringType)
 	}
 
 	return nil

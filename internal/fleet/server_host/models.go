@@ -16,7 +16,7 @@ type serverHostModel struct {
 	Name     types.String `tfsdk:"name"`
 	Hosts    types.List   `tfsdk:"hosts"`
 	Default  types.Bool   `tfsdk:"default"`
-	SpaceIds types.List   `tfsdk:"space_ids"` //> string
+	SpaceIds types.Set    `tfsdk:"space_ids"` //> string
 }
 
 func (model *serverHostModel) populateFromAPI(ctx context.Context, data *kbapi.ServerHost) (diags diag.Diagnostics) {
@@ -34,7 +34,7 @@ func (model *serverHostModel) populateFromAPI(ctx context.Context, data *kbapi.S
 	// It's only used to determine which API endpoint to call.
 	// If space_ids is unknown (not provided by user), set to null to satisfy Terraform's requirement.
 	if model.SpaceIds.IsUnknown() {
-		model.SpaceIds = types.ListNull(types.StringType)
+		model.SpaceIds = types.SetNull(types.StringType)
 	}
 
 	return

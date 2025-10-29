@@ -28,16 +28,17 @@ func (r *integrationPolicyResource) Read(ctx context.Context, req resource.ReadR
 
 	policyID := stateModel.PolicyID.ValueString()
 
-	// Extract space IDs from state and determine operational space
-	// Using default-space-first model: always prefer "default" if present
-	// This prevents resource orphaning when space_ids is reordered
-	spaceIDs := fleetutils.ExtractSpaceIDs(ctx, stateModel.SpaceIds)
-	spaceID := fleetutils.GetOperationalSpace(spaceIDs)
+	// Read the existing spaces from state to determine where to query
+	spaceID, diags := fleetutils.GetOperationalSpaceFromState(ctx, req.State)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
-	// Query using the operational space
+	// Query using the operational space from STATE
 	var policy *kbapi.PackagePolicy
-	if spaceID != nil && *spaceID != "" {
-		policy, diags = fleet.GetPackagePolicyInSpace(ctx, client, policyID, *spaceID)
+	if spaceID != "" {
+		policy, diags = fleet.GetPackagePolicyInSpace(ctx, client, policyID, spaceID)
 	} else {
 		policy, diags = fleet.GetPackagePolicy(ctx, client, policyID)
 	}

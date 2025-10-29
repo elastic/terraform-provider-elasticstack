@@ -45,7 +45,7 @@ func (r *integrationPolicyResource) Create(ctx context.Context, req resource.Cre
 	if !planModel.SpaceIds.IsNull() && !planModel.SpaceIds.IsUnknown() {
 		// Explicit space_ids provided - use the first one
 		var tempDiags diag.Diagnostics
-		spaceIDs := utils.ListTypeAs[types.String](ctx, planModel.SpaceIds, path.Root("space_ids"), &tempDiags)
+		spaceIDs := utils.SetTypeAs[types.String](ctx, planModel.SpaceIds, path.Root("space_ids"), &tempDiags)
 		if !tempDiags.HasError() && len(spaceIDs) > 0 {
 			spaceID = spaceIDs[0].ValueString()
 		}

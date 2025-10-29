@@ -5,8 +5,8 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -42,14 +42,14 @@ set ` + "`skip_destroy` to `true`."
 			Description: "Set to true if you do not wish the integration package to be uninstalled at destroy time, and instead just remove the integration package from the Terraform state.",
 			Optional:    true,
 		},
-		"space_ids": schema.ListAttribute{
-			Description: "The Kibana space IDs where this integration package should be installed. When set, the package will be installed and managed within the specified space.",
+		"space_ids": schema.SetAttribute{
+			Description: "The Kibana space IDs where this integration package should be installed. When set, the package will be installed and managed within the specified space. Note: The order of space IDs does not matter as this is a set.",
 			ElementType: types.StringType,
 			Optional:    true,
 			Computed:    true,
-			PlanModifiers: []planmodifier.List{
-				listplanmodifier.RequiresReplace(),
-				listplanmodifier.UseStateForUnknown(),
+			PlanModifiers: []planmodifier.Set{
+				setplanmodifier.RequiresReplace(),
+				setplanmodifier.UseStateForUnknown(),
 			},
 		},
 	}

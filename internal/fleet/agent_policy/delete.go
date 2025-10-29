@@ -31,15 +31,18 @@ func (r *agentPolicyResource) Delete(ctx context.Context, req resource.DeleteReq
 		return
 	}
 
-	// Extract space IDs from state and determine operational space
+	// Read the existing spaces from state to determine where to delete
 	// NOTE: DELETE removes the policy from ALL spaces (global delete)
 	// To remove from specific spaces only, UPDATE space_ids instead of deleting
-	stateSpaceIDs := fleetutils.ExtractSpaceIDs(ctx, stateModel.SpaceIds)
-	spaceID := fleetutils.GetOperationalSpace(stateSpaceIDs)
+	spaceID, diags := fleetutils.GetOperationalSpaceFromState(ctx, req.State)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
-	// Delete using the operational space
-	if spaceID != nil && *spaceID != "" {
-		diags = fleet.DeleteAgentPolicyInSpace(ctx, client, policyID, *spaceID)
+	// Delete using the operational space from STATE
+	if spaceID != "" {
+		diags = fleet.DeleteAgentPolicyInSpace(ctx, client, policyID, spaceID)
 	} else {
 		diags = fleet.DeleteAgentPolicy(ctx, client, policyID)
 	}

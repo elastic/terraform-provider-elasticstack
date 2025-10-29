@@ -26,16 +26,17 @@ func (r *agentPolicyResource) Read(ctx context.Context, req resource.ReadRequest
 
 	policyID := stateModel.PolicyID.ValueString()
 
-	// Extract space IDs from state and determine operational space
-	// Using default-space-first model: always prefer "default" if present
-	// This prevents resource orphaning when space_ids is reordered
-	spaceIDs := fleetutils.ExtractSpaceIDs(ctx, stateModel.SpaceIds)
-	spaceID := fleetutils.GetOperationalSpace(spaceIDs)
+	// Read the existing spaces from state to determine where to query
+	spaceID, diags := fleetutils.GetOperationalSpaceFromState(ctx, req.State)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
-	// Query using the operational space
+	// Query using the operational space from STATE
 	var policy *kbapi.AgentPolicy
-	if spaceID != nil && *spaceID != "" {
-		policy, diags = fleet.GetAgentPolicyInSpace(ctx, client, policyID, *spaceID)
+	if spaceID != "" {
+		policy, diags = fleet.GetAgentPolicyInSpace(ctx, client, policyID, spaceID)
 	} else {
 		policy, diags = fleet.GetAgentPolicy(ctx, client, policyID)
 	}
@@ -50,21 +51,12 @@ func (r *agentPolicyResource) Read(ctx context.Context, req resource.ReadRequest
 		return
 	}
 
-	// Preserve the space_ids order from state before populating from API
-	// The Kibana API may return space_ids in a different order (sorted),
-	// but we need to maintain the user's configured order to avoid false drift detection
-	originalSpaceIds := stateModel.SpaceIds
-
+	// Populate from API response
+	// With Sets, we don't need order preservation - Terraform handles set comparison automatically
 	diags = stateModel.populateFromAPI(ctx, policy)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
-	}
-
-	// Restore the original space_ids order if appropriate
-	// See ShouldPreserveSpaceIdsOrder documentation for edge case handling
-	if fleetutils.ShouldPreserveSpaceIdsOrder(policy.SpaceIds, originalSpaceIds, stateModel.SpaceIds) {
-		stateModel.SpaceIds = originalSpaceIds
 	}
 
 	resp.State.Set(ctx, stateModel)

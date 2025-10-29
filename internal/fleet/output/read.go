@@ -26,16 +26,17 @@ func (r *outputResource) Read(ctx context.Context, req resource.ReadRequest, res
 
 	outputID := stateModel.OutputID.ValueString()
 
-	// Extract space IDs from state and determine operational space
-	// Using default-space-first model: always prefer "default" if present
-	// This prevents resource orphaning when space_ids is reordered
-	spaceIDs := fleetutils.ExtractSpaceIDs(ctx, stateModel.SpaceIds)
-	spaceID := fleetutils.GetOperationalSpace(spaceIDs)
+	// Read the existing spaces from state to determine where to query
+	spaceID, diags := fleetutils.GetOperationalSpaceFromState(ctx, req.State)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
-	// Query using the operational space
+	// Query using the operational space from STATE
 	var output *kbapi.OutputUnion
-	if spaceID != nil && *spaceID != "" {
-		output, diags = fleet.GetOutputInSpace(ctx, client, outputID, *spaceID)
+	if spaceID != "" {
+		output, diags = fleet.GetOutputInSpace(ctx, client, outputID, spaceID)
 	} else {
 		output, diags = fleet.GetOutput(ctx, client, outputID)
 	}

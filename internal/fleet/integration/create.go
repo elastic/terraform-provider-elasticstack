@@ -39,7 +39,7 @@ func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state 
 	var spaceID string
 	if !planModel.SpaceIds.IsNull() && !planModel.SpaceIds.IsUnknown() {
 		var tempDiags diag.Diagnostics
-		spaceIDs := utils.ListTypeAs[types.String](ctx, planModel.SpaceIds, path.Root("space_ids"), &tempDiags)
+		spaceIDs := utils.SetTypeAs[types.String](ctx, planModel.SpaceIds, path.Root("space_ids"), &tempDiags)
 		if !tempDiags.HasError() && len(spaceIDs) > 0 {
 			spaceID = spaceIDs[0].ValueString()
 		}
@@ -60,7 +60,7 @@ func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state 
 	// Populate space_ids in state
 	// If space_ids is unknown (not provided by user), set to null to satisfy Terraform's requirement
 	if planModel.SpaceIds.IsNull() || planModel.SpaceIds.IsUnknown() {
-		planModel.SpaceIds = types.ListNull(types.StringType)
+		planModel.SpaceIds = types.SetNull(types.StringType)
 	}
 
 	diags = state.Set(ctx, planModel)

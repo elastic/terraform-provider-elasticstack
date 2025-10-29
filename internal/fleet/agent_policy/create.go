@@ -5,7 +5,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -58,7 +57,7 @@ func (r *agentPolicyResource) Create(ctx context.Context, req resource.CreateReq
 
 		if !planModel.SpaceIds.IsNull() && !planModel.SpaceIds.IsUnknown() {
 			var tempDiags diag.Diagnostics
-			spaceIDs := utils.ListTypeAs[types.String](ctx, planModel.SpaceIds, path.Root("space_ids"), &tempDiags)
+			spaceIDs := utils.SetTypeAs[types.String](ctx, planModel.SpaceIds, path.Root("space_ids"), &tempDiags)
 			if !tempDiags.HasError() && len(spaceIDs) > 0 {
 				// Use the first space for the GET request
 				spaceID := spaceIDs[0].ValueString()
@@ -82,21 +81,12 @@ func (r *agentPolicyResource) Create(ctx context.Context, req resource.CreateReq
 		}
 	}
 
-	// Preserve the space_ids order from plan before populating from API
-	// The Kibana API may return space_ids in a different order (sorted),
-	// but we need to maintain the user's configured order to avoid false drift detection
-	originalSpaceIds := planModel.SpaceIds
-
+	// Populate from API response
+	// With Sets, we don't need order preservation - Terraform handles set comparison automatically
 	diags = planModel.populateFromAPI(ctx, policy)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
-	}
-
-	// Restore the original space_ids order if appropriate
-	// See ShouldPreserveSpaceIdsOrder documentation for edge case handling
-	if fleetutils.ShouldPreserveSpaceIdsOrder(policy.SpaceIds, originalSpaceIds, planModel.SpaceIds) {
-		planModel.SpaceIds = originalSpaceIds
 	}
 
 	resp.State.Set(ctx, planModel)

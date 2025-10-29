@@ -31,16 +31,18 @@ func (r *serverHostResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
-	// Extract space IDs from PLAN (where user wants changes) and determine operational space
-	// Using default-space-first model: always prefer "default" if present
-	// API handles adding/removing server host from spaces based on space_ids in body
-	planSpaceIDs := fleetutils.ExtractSpaceIDs(ctx, planModel.SpaceIds)
-	spaceID := fleetutils.GetOperationalSpace(planSpaceIDs)
+	// Read the existing spaces from state to avoid updating in a space where it's not yet visible
+	spaceID, diags := fleetutils.GetOperationalSpaceFromState(ctx, req.State)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
-	// Update using the operational space
+	// Update using the operational space from STATE
+	// API handles adding/removing server host from spaces based on space_ids in body
 	var host *kbapi.ServerHost
-	if spaceID != nil && *spaceID != "" {
-		host, diags = fleet.UpdateFleetServerHostInSpace(ctx, client, hostID, *spaceID, body)
+	if spaceID != "" {
+		host, diags = fleet.UpdateFleetServerHostInSpace(ctx, client, hostID, spaceID, body)
 	} else {
 		host, diags = fleet.UpdateFleetServerHost(ctx, client, hostID, body)
 	}

@@ -25,15 +25,17 @@ func (r *serverHostResource) Delete(ctx context.Context, req resource.DeleteRequ
 
 	hostID := stateModel.HostID.ValueString()
 
-	// Extract space IDs from STATE and determine operational space
-	// Using default-space-first model: always prefer "default" if present
-	stateSpaceIDs := fleetutils.ExtractSpaceIDs(ctx, stateModel.SpaceIds)
-	spaceID := fleetutils.GetOperationalSpace(stateSpaceIDs)
-
+	// Read the existing spaces from state to determine where to delete
 	// NOTE: DELETE removes the server host from ALL spaces (global delete)
 	// To remove from specific spaces only, UPDATE space_ids instead
-	if spaceID != nil && *spaceID != "" {
-		diags = fleet.DeleteFleetServerHostInSpace(ctx, client, hostID, *spaceID)
+	spaceID, diags := fleetutils.GetOperationalSpaceFromState(ctx, req.State)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if spaceID != "" {
+		diags = fleet.DeleteFleetServerHostInSpace(ctx, client, hostID, spaceID)
 	} else {
 		diags = fleet.DeleteFleetServerHost(ctx, client, hostID)
 	}

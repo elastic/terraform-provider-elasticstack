@@ -37,7 +37,7 @@ func (r *serverHostResource) Create(ctx context.Context, req resource.CreateRequ
 	var spaceID string
 	if !planModel.SpaceIds.IsNull() && !planModel.SpaceIds.IsUnknown() {
 		var tempDiags diag.Diagnostics
-		spaceIDs := utils.ListTypeAs[types.String](ctx, planModel.SpaceIds, path.Root("space_ids"), &tempDiags)
+		spaceIDs := utils.SetTypeAs[types.String](ctx, planModel.SpaceIds, path.Root("space_ids"), &tempDiags)
 		if !tempDiags.HasError() && len(spaceIDs) > 0 {
 			spaceID = spaceIDs[0].ValueString()
 		}

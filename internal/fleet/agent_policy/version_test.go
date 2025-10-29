@@ -227,7 +227,7 @@ func TestSpaceIdsVersionValidation(t *testing.T) {
 	ctx := context.Background()
 
 	// Test case where space_ids is not supported (older version)
-	spaceIds, _ := types.ListValueFrom(ctx, types.StringType, []string{"default", "marketing"})
+	spaceIds, _ := types.SetValueFrom(ctx, types.StringType, []string{"default", "marketing"})
 	model := &agentPolicyModel{
 		Name:      types.StringValue("test"),
 		Namespace: types.StringValue("default"),

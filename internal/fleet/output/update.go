@@ -39,16 +39,18 @@ func (r *outputResource) Update(ctx context.Context, req resource.UpdateRequest,
 
 	outputID := planModel.OutputID.ValueString()
 
-	// Extract space IDs from PLAN (where user wants changes) and determine operational space
-	// Using default-space-first model: always prefer "default" if present
-	// API handles adding/removing output from spaces based on space_ids in body
-	planSpaceIDs := fleetutils.ExtractSpaceIDs(ctx, planModel.SpaceIds)
-	spaceID := fleetutils.GetOperationalSpace(planSpaceIDs)
+	// Read the existing spaces from state to avoid updating in a space where it's not yet visible
+	spaceID, diags := fleetutils.GetOperationalSpaceFromState(ctx, req.State)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
-	// Update using the operational space
+	// Update using the operational space from STATE
+	// The API will handle adding/removing output from spaces based on space_ids in body
 	var output *kbapi.OutputUnion
-	if spaceID != nil && *spaceID != "" {
-		output, diags = fleet.UpdateOutputInSpace(ctx, client, outputID, *spaceID, body)
+	if spaceID != "" {
+		output, diags = fleet.UpdateOutputInSpace(ctx, client, outputID, spaceID, body)
 	} else {
 		output, diags = fleet.UpdateOutput(ctx, client, outputID, body)
 	}
@@ -57,16 +59,12 @@ func (r *outputResource) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
+	// Populate from API response
+	// With Sets, we don't need order preservation - Terraform handles set comparison automatically
 	diags = planModel.populateFromAPI(ctx, output)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
-	}
-
-	// Preserve space_ids from state after populateFromAPI
-	// The API doesn't return space_ids, so we need to restore it from state
-	if planModel.SpaceIds.IsNull() || planModel.SpaceIds.IsUnknown() {
-		planModel.SpaceIds = stateModel.SpaceIds
 	}
 
 	diags = resp.State.Set(ctx, planModel)
