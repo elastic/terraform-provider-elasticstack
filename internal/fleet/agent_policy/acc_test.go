@@ -304,16 +304,15 @@ func TestAccResourceAgentPolicyWithSpaceIds(t *testing.T) {
 	})
 }
 
-// TestAccResourceAgentPolicySpaceReordering validates the CRITICAL bug fix:
-// Reordering space_ids should NOT cause Terraform to recreate resources.
+// TestAccResourceAgentPolicySpaceReordering validates that space_ids as a Set works correctly:
+// With Sets, order doesn't matter - Terraform handles set comparison automatically.
 //
-// This test validates the complete fix by:
+// This test validates:
 // Step 1: Create policy with space_ids = ["default"]
-// Step 2: Prepend a new space ["space-test-a", "default"] - proves stable operational space
-// Step 3: Reorder spaces ["default", "space-test-a"] - proves position-independent lookups
+// Step 2: Add a new space ["space-test-a", "default"] - proves stable operational space
+// Step 3: Same spaces in different order ["default", "space-test-a"] - no drift (Sets are unordered)
 //
-// Without the fix: Steps 2 and 3 would cause resource recreation (policy_id changes)
-// With the fix: policy_id remains constant across all steps (operational space is stable)
+// With Sets: No drift from reordering, policy_id remains constant across all steps
 func TestAccResourceAgentPolicySpaceReordering(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
@@ -331,7 +330,7 @@ func TestAccResourceAgentPolicySpaceReordering(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "space_ids.#", "1"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "space_ids.0", "default"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_fleet_agent_policy.test_policy", "space_ids.*", "default"),
 					// Capture the policy ID - it should NOT change in subsequent steps
 					resource.TestCheckResourceAttrWith("elasticstack_fleet_agent_policy.test_policy", "policy_id", func(value string) error {
 						originalPolicyId = value
@@ -343,16 +342,15 @@ func TestAccResourceAgentPolicySpaceReordering(t *testing.T) {
 				),
 			},
 			{
-				// Step 2: Prepend new space ["space-test-a", "default"]
-				// CRITICAL TEST: Without fix, Terraform uses space-test-a for lookup, gets 404, recreates
-				// With fix: GetOperationalSpace() returns "default" (stable), finds resource, updates in-place
+				// Step 2: Add new space ["space-test-a", "default"]
+				// With Sets + GetOperationalSpaceFromState: reads from STATE, finds resource, updates in-place
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionSpaceIds),
 				Config:   testAccResourceAgentPolicySpaceReorderingStep2(policyName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "description", "Test space reordering - step 2: prepend new space"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "space_ids.#", "2"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "space_ids.0", "space-test-a"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "space_ids.1", "default"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_fleet_agent_policy.test_policy", "space_ids.*", "space-test-a"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_fleet_agent_policy.test_policy", "space_ids.*", "default"),
 					// CRITICAL: policy_id must be UNCHANGED (proves stable operational space)
 					resource.TestCheckResourceAttrWith("elasticstack_fleet_agent_policy.test_policy", "policy_id", func(value string) error {
 						if value != originalPolicyId {
@@ -363,15 +361,15 @@ func TestAccResourceAgentPolicySpaceReordering(t *testing.T) {
 				),
 			},
 			{
-				// Step 3: Reorder spaces ["default", "space-test-a"]
-				// CRITICAL TEST: Proves operational space is truly position-independent
+				// Step 3: Same spaces, different order ["default", "space-test-a"]
+				// With Sets: No drift because order doesn't matter - Terraform sees identical sets
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionSpaceIds),
 				Config:   testAccResourceAgentPolicySpaceReorderingStep3(policyName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "description", "Test space reordering - step 3: reorder spaces"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "space_ids.#", "2"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "space_ids.0", "default"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "space_ids.1", "space-test-a"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_fleet_agent_policy.test_policy", "space_ids.*", "default"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_fleet_agent_policy.test_policy", "space_ids.*", "space-test-a"),
 					// CRITICAL: policy_id must STILL be unchanged
 					resource.TestCheckResourceAttrWith("elasticstack_fleet_agent_policy.test_policy", "policy_id", func(value string) error {
 						if value != originalPolicyId {
