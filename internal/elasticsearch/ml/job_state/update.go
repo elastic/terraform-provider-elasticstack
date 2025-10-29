@@ -72,7 +72,7 @@ func (r *mlJobStateResource) update(ctx context.Context, plan tfsdk.Plan, state 
 	}
 
 	// Perform state transition if needed
-	fwDiags = r.performStateTransition(ctx, client, data, *currentState, operationTimeout)
+	fwDiags = r.performStateTransition(ctx, client, data, *currentState)
 	diags.Append(fwDiags...)
 	if diags.HasError() {
 		return diags
@@ -97,7 +97,7 @@ func (r *mlJobStateResource) update(ctx context.Context, plan tfsdk.Plan, state 
 }
 
 // performStateTransition handles the ML job state transition process
-func (r *mlJobStateResource) performStateTransition(ctx context.Context, client *clients.ApiClient, data MLJobStateData, currentState string, operationTimeout time.Duration) diag.Diagnostics {
+func (r *mlJobStateResource) performStateTransition(ctx context.Context, client *clients.ApiClient, data MLJobStateData, currentState string) diag.Diagnostics {
 	jobId := data.JobId.ValueString()
 	desiredState := data.State.ValueString()
 	force := data.Force.ValueBool()
