@@ -3,7 +3,6 @@ package server_host
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -40,12 +39,7 @@ func (r *serverHostResource) Update(ctx context.Context, req resource.UpdateRequ
 
 	// Update using the operational space from STATE
 	// API handles adding/removing server host from spaces based on space_ids in body
-	var host *kbapi.ServerHost
-	if spaceID != "" {
-		host, diags = fleet.UpdateFleetServerHostInSpace(ctx, client, hostID, spaceID, body)
-	} else {
-		host, diags = fleet.UpdateFleetServerHost(ctx, client, hostID, body)
-	}
+	host, diags := fleet.UpdateFleetServerHost(ctx, client, hostID, spaceID, body)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

@@ -45,11 +45,7 @@ func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state 
 		}
 	}
 
-	if spaceID != "" && spaceID != "default" {
-		diags = fleet.InstallPackageInSpace(ctx, client, name, version, spaceID, force)
-	} else {
-		diags = fleet.InstallPackage(ctx, client, name, version, force)
-	}
+	diags = fleet.InstallPackage(ctx, client, name, version, spaceID, force)
 	respDiags.Append(diags...)
 	if respDiags.HasError() {
 		return

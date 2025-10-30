@@ -3,7 +3,6 @@ package agent_policy
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -34,12 +33,7 @@ func (r *agentPolicyResource) Read(ctx context.Context, req resource.ReadRequest
 	}
 
 	// Query using the operational space from STATE
-	var policy *kbapi.AgentPolicy
-	if spaceID != "" {
-		policy, diags = fleet.GetAgentPolicyInSpace(ctx, client, policyID, spaceID)
-	} else {
-		policy, diags = fleet.GetAgentPolicy(ctx, client, policyID)
-	}
+	policy, diags := fleet.GetAgentPolicy(ctx, client, policyID, spaceID)
 
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {

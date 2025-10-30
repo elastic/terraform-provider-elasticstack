@@ -622,7 +622,7 @@ func checkResourceAgentPolicyDestroy(s *terraform.State) error {
 		if err != nil {
 			return err
 		}
-		policy, diags := fleet.GetAgentPolicy(context.Background(), fleetClient, rs.Primary.ID)
+		policy, diags := fleet.GetAgentPolicy(context.Background(), fleetClient, rs.Primary.ID, "")
 		if diags.HasError() {
 			return diagutil.FwDiagsAsError(diags)
 		}
@@ -648,7 +648,7 @@ func checkResourceAgentPolicySkipDestroy(s *terraform.State) error {
 		if err != nil {
 			return err
 		}
-		policy, diags := fleet.GetAgentPolicy(context.Background(), fleetClient, rs.Primary.ID)
+		policy, diags := fleet.GetAgentPolicy(context.Background(), fleetClient, rs.Primary.ID, "")
 		if diags.HasError() {
 			return diagutil.FwDiagsAsError(diags)
 		}
@@ -656,7 +656,7 @@ func checkResourceAgentPolicySkipDestroy(s *terraform.State) error {
 			return fmt.Errorf("agent policy id=%v does not exist, but should still exist when skip_destroy is true", rs.Primary.ID)
 		}
 
-		if diags = fleet.DeleteAgentPolicy(context.Background(), fleetClient, rs.Primary.ID); diags.HasError() {
+		if diags = fleet.DeleteAgentPolicy(context.Background(), fleetClient, rs.Primary.ID, ""); diags.HasError() {
 			return diagutil.FwDiagsAsError(diags)
 		}
 	}

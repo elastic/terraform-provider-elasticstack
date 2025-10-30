@@ -41,11 +41,7 @@ func (r *agentPolicyResource) Delete(ctx context.Context, req resource.DeleteReq
 	}
 
 	// Delete using the operational space from STATE
-	if spaceID != "" {
-		diags = fleet.DeleteAgentPolicyInSpace(ctx, client, policyID, spaceID)
-	} else {
-		diags = fleet.DeleteAgentPolicy(ctx, client, policyID)
-	}
+	diags = fleet.DeleteAgentPolicy(ctx, client, policyID, spaceID)
 
 	resp.Diagnostics.Append(diags...)
 }

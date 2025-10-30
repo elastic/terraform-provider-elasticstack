@@ -34,10 +34,6 @@ func (r *serverHostResource) Delete(ctx context.Context, req resource.DeleteRequ
 		return
 	}
 
-	if spaceID != "" {
-		diags = fleet.DeleteFleetServerHostInSpace(ctx, client, hostID, spaceID)
-	} else {
-		diags = fleet.DeleteFleetServerHost(ctx, client, hostID)
-	}
+	diags = fleet.DeleteFleetServerHost(ctx, client, hostID, spaceID)
 	resp.Diagnostics.Append(diags...)
 }

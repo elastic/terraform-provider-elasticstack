@@ -3,7 +3,6 @@ package output
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -43,12 +42,7 @@ func (r *outputResource) Create(ctx context.Context, req resource.CreateRequest,
 		}
 	}
 
-	var output *kbapi.OutputUnion
-	if spaceID != "" && spaceID != "default" {
-		output, diags = fleet.CreateOutputInSpace(ctx, client, spaceID, body)
-	} else {
-		output, diags = fleet.CreateOutput(ctx, client, body)
-	}
+	output, diags := fleet.CreateOutput(ctx, client, spaceID, body)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

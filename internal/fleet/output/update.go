@@ -3,7 +3,6 @@ package output
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -48,12 +47,7 @@ func (r *outputResource) Update(ctx context.Context, req resource.UpdateRequest,
 
 	// Update using the operational space from STATE
 	// The API will handle adding/removing output from spaces based on space_ids in body
-	var output *kbapi.OutputUnion
-	if spaceID != "" {
-		output, diags = fleet.UpdateOutputInSpace(ctx, client, outputID, spaceID, body)
-	} else {
-		output, diags = fleet.UpdateOutput(ctx, client, outputID, body)
-	}
+	output, diags := fleet.UpdateOutput(ctx, client, outputID, spaceID, body)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

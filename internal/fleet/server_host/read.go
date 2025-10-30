@@ -3,7 +3,6 @@ package server_host
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -34,12 +33,7 @@ func (r *serverHostResource) Read(ctx context.Context, req resource.ReadRequest,
 	}
 
 	// Query using the operational space from STATE
-	var host *kbapi.ServerHost
-	if spaceID != "" {
-		host, diags = fleet.GetFleetServerHostInSpace(ctx, client, hostID, spaceID)
-	} else {
-		host, diags = fleet.GetFleetServerHost(ctx, client, hostID)
-	}
+	host, diags := fleet.GetFleetServerHost(ctx, client, hostID, spaceID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

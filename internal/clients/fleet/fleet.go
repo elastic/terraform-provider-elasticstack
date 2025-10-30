@@ -1,7 +1,6 @@
 package fleet
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -102,8 +101,8 @@ func GetEnrollmentTokensByPolicyInSpace(ctx context.Context, client *Client, pol
 }
 
 // GetAgentPolicy reads a specific agent policy from the API.
-func GetAgentPolicy(ctx context.Context, client *Client, id string) (*kbapi.AgentPolicy, diag.Diagnostics) {
-	resp, err := client.API.GetFleetAgentPoliciesAgentpolicyidWithResponse(ctx, id, nil)
+func GetAgentPolicy(ctx context.Context, client *Client, id string, spaceID string) (*kbapi.AgentPolicy, diag.Diagnostics) {
+	resp, err := client.API.GetFleetAgentPoliciesAgentpolicyidWithResponse(ctx, id, nil, spaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -115,43 +114,6 @@ func GetAgentPolicy(ctx context.Context, client *Client, id string) (*kbapi.Agen
 		return nil, nil
 	default:
 		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
-	}
-}
-
-// GetAgentPolicyInSpace reads a specific agent policy from the API within a specific Kibana space.
-// This is necessary for space-aware policies that are created with space_ids.
-func GetAgentPolicyInSpace(ctx context.Context, client *Client, id string, spaceID string) (*kbapi.AgentPolicy, diag.Diagnostics) {
-	// Construct the space-aware path
-	// For default space: /api/fleet/agent_policies/{id}
-	// For custom space: /s/{space_id}/api/fleet/agent_policies/{id}
-	path := buildSpaceAwarePath(spaceID, fmt.Sprintf("/api/fleet/agent_policies/%s", id))
-
-	// Make the request using the underlying HTTP client
-	req, err := http.NewRequestWithContext(ctx, "GET", client.URL+path, nil)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-
-	httpResp, err := client.HTTP.Do(req)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-	defer httpResp.Body.Close()
-
-	switch httpResp.StatusCode {
-	case http.StatusOK:
-		var result struct {
-			Item kbapi.AgentPolicy `json:"item"`
-		}
-		if err := json.NewDecoder(httpResp.Body).Decode(&result); err != nil {
-			return nil, diagutil.FrameworkDiagFromError(err)
-		}
-		return &result.Item, nil
-	case http.StatusNotFound:
-		return nil, nil
-	default:
-		bodyBytes, _ := io.ReadAll(httpResp.Body)
-		return nil, reportUnknownError(httpResp.StatusCode, bodyBytes)
 	}
 }
 
@@ -175,8 +137,8 @@ func CreateAgentPolicy(ctx context.Context, client *Client, req kbapi.PostFleetA
 }
 
 // UpdateAgentPolicy updates an existing agent policy.
-func UpdateAgentPolicy(ctx context.Context, client *Client, id string, req kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody) (*kbapi.AgentPolicy, diag.Diagnostics) {
-	resp, err := client.API.PutFleetAgentPoliciesAgentpolicyidWithResponse(ctx, id, nil, req)
+func UpdateAgentPolicy(ctx context.Context, client *Client, id string, spaceID string, req kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody) (*kbapi.AgentPolicy, diag.Diagnostics) {
+	resp, err := client.API.PutFleetAgentPoliciesAgentpolicyidWithResponse(ctx, id, nil, req, spaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -189,53 +151,13 @@ func UpdateAgentPolicy(ctx context.Context, client *Client, id string, req kbapi
 	}
 }
 
-// UpdateAgentPolicyInSpace updates an existing agent policy within a specific Kibana space.
-// This is necessary for space-aware policies that are created with space_ids.
-func UpdateAgentPolicyInSpace(ctx context.Context, client *Client, id string, spaceID string, reqBody kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody) (*kbapi.AgentPolicy, diag.Diagnostics) {
-	// Construct the space-aware path
-	path := buildSpaceAwarePath(spaceID, fmt.Sprintf("/api/fleet/agent_policies/%s", id))
-
-	// Marshal the request body
-	bodyBytes, err := json.Marshal(reqBody)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-
-	// Make the request using the underlying HTTP client
-	req, err := http.NewRequestWithContext(ctx, "PUT", client.URL+path, bytes.NewReader(bodyBytes))
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	httpResp, err := client.HTTP.Do(req)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-	defer httpResp.Body.Close()
-
-	switch httpResp.StatusCode {
-	case http.StatusOK:
-		var result struct {
-			Item kbapi.AgentPolicy `json:"item"`
-		}
-		if err := json.NewDecoder(httpResp.Body).Decode(&result); err != nil {
-			return nil, diagutil.FrameworkDiagFromError(err)
-		}
-		return &result.Item, nil
-	default:
-		bodyBytes, _ := io.ReadAll(httpResp.Body)
-		return nil, reportUnknownError(httpResp.StatusCode, bodyBytes)
-	}
-}
-
 // DeleteAgentPolicy deletes an existing agent policy.
-func DeleteAgentPolicy(ctx context.Context, client *Client, id string) diag.Diagnostics {
+func DeleteAgentPolicy(ctx context.Context, client *Client, id string, spaceID string) diag.Diagnostics {
 	body := kbapi.PostFleetAgentPoliciesDeleteJSONRequestBody{
 		AgentPolicyId: id,
 	}
 
-	resp, err := client.API.PostFleetAgentPoliciesDeleteWithResponse(ctx, body)
+	resp, err := client.API.PostFleetAgentPoliciesDeleteWithResponse(ctx, body, spaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -250,50 +172,9 @@ func DeleteAgentPolicy(ctx context.Context, client *Client, id string) diag.Diag
 	}
 }
 
-// DeleteAgentPolicyInSpace deletes an existing agent policy within a specific Kibana space.
-// This is necessary for space-aware policies that are created with space_ids.
-func DeleteAgentPolicyInSpace(ctx context.Context, client *Client, id string, spaceID string) diag.Diagnostics {
-	// Construct the space-aware path
-	path := buildSpaceAwarePath(spaceID, "/api/fleet/agent_policies/delete")
-
-	// Create request body
-	reqBody := kbapi.PostFleetAgentPoliciesDeleteJSONRequestBody{
-		AgentPolicyId: id,
-	}
-
-	// Marshal the request body
-	bodyBytes, err := json.Marshal(reqBody)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	// Make the request using the underlying HTTP client
-	req, err := http.NewRequestWithContext(ctx, "POST", client.URL+path, bytes.NewReader(bodyBytes))
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	httpResp, err := client.HTTP.Do(req)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	defer httpResp.Body.Close()
-
-	switch httpResp.StatusCode {
-	case http.StatusOK:
-		return nil
-	case http.StatusNotFound:
-		return nil
-	default:
-		bodyBytes, _ := io.ReadAll(httpResp.Body)
-		return reportUnknownError(httpResp.StatusCode, bodyBytes)
-	}
-}
-
 // GetOutput reads a specific output from the API.
-func GetOutput(ctx context.Context, client *Client, id string) (*kbapi.OutputUnion, diag.Diagnostics) {
-	resp, err := client.API.GetFleetOutputsOutputidWithResponse(ctx, id)
+func GetOutput(ctx context.Context, client *Client, id string, spaceID string) (*kbapi.OutputUnion, diag.Diagnostics) {
+	resp, err := client.API.GetFleetOutputsOutputidWithResponse(ctx, id, spaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -309,8 +190,8 @@ func GetOutput(ctx context.Context, client *Client, id string) (*kbapi.OutputUni
 }
 
 // CreateOutput creates a new output.
-func CreateOutput(ctx context.Context, client *Client, req kbapi.NewOutputUnion) (*kbapi.OutputUnion, diag.Diagnostics) {
-	resp, err := client.API.PostFleetOutputsWithResponse(ctx, req)
+func CreateOutput(ctx context.Context, client *Client, spaceID string, req kbapi.NewOutputUnion) (*kbapi.OutputUnion, diag.Diagnostics) {
+	resp, err := client.API.PostFleetOutputsWithResponse(ctx, req, spaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -324,8 +205,8 @@ func CreateOutput(ctx context.Context, client *Client, req kbapi.NewOutputUnion)
 }
 
 // UpdateOutput updates an existing output.
-func UpdateOutput(ctx context.Context, client *Client, id string, req kbapi.UpdateOutputUnion) (*kbapi.OutputUnion, diag.Diagnostics) {
-	resp, err := client.API.PutFleetOutputsOutputidWithResponse(ctx, id, req)
+func UpdateOutput(ctx context.Context, client *Client, id string, spaceID string, req kbapi.UpdateOutputUnion) (*kbapi.OutputUnion, diag.Diagnostics) {
+	resp, err := client.API.PutFleetOutputsOutputidWithResponse(ctx, id, req, spaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -339,8 +220,8 @@ func UpdateOutput(ctx context.Context, client *Client, id string, req kbapi.Upda
 }
 
 // DeleteOutput deletes an existing output.
-func DeleteOutput(ctx context.Context, client *Client, id string) diag.Diagnostics {
-	resp, err := client.API.DeleteFleetOutputsOutputidWithResponse(ctx, id)
+func DeleteOutput(ctx context.Context, client *Client, id string, spaceID string) diag.Diagnostics {
+	resp, err := client.API.DeleteFleetOutputsOutputidWithResponse(ctx, id, spaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -355,139 +236,9 @@ func DeleteOutput(ctx context.Context, client *Client, id string) diag.Diagnosti
 	}
 }
 
-// GetOutputInSpace gets an output within a specific Kibana space.
-func GetOutputInSpace(ctx context.Context, client *Client, id string, spaceID string) (*kbapi.OutputUnion, diag.Diagnostics) {
-	path := buildSpaceAwarePath(spaceID, fmt.Sprintf("/api/fleet/outputs/%s", id))
-
-	req, err := http.NewRequestWithContext(ctx, "GET", client.URL+path, nil)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-
-	httpResp, err := client.HTTP.Do(req)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-	defer httpResp.Body.Close()
-
-	switch httpResp.StatusCode {
-	case http.StatusOK:
-		var result struct {
-			Item kbapi.OutputUnion `json:"item"`
-		}
-		if err := json.NewDecoder(httpResp.Body).Decode(&result); err != nil {
-			return nil, diagutil.FrameworkDiagFromError(err)
-		}
-		return &result.Item, nil
-	case http.StatusNotFound:
-		return nil, nil
-	default:
-		bodyBytes, _ := io.ReadAll(httpResp.Body)
-		return nil, reportUnknownError(httpResp.StatusCode, bodyBytes)
-	}
-}
-
-// CreateOutputInSpace creates a new output within a specific Kibana space.
-func CreateOutputInSpace(ctx context.Context, client *Client, spaceID string, reqBody kbapi.NewOutputUnion) (*kbapi.OutputUnion, diag.Diagnostics) {
-	path := buildSpaceAwarePath(spaceID, "/api/fleet/outputs")
-
-	bodyBytes, err := json.Marshal(reqBody)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-
-	req, err := http.NewRequestWithContext(ctx, "POST", client.URL+path, bytes.NewReader(bodyBytes))
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	httpResp, err := client.HTTP.Do(req)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-	defer httpResp.Body.Close()
-
-	switch httpResp.StatusCode {
-	case http.StatusOK:
-		var result struct {
-			Item kbapi.OutputUnion `json:"item"`
-		}
-		if err := json.NewDecoder(httpResp.Body).Decode(&result); err != nil {
-			return nil, diagutil.FrameworkDiagFromError(err)
-		}
-		return &result.Item, nil
-	default:
-		bodyBytes, _ := io.ReadAll(httpResp.Body)
-		return nil, reportUnknownError(httpResp.StatusCode, bodyBytes)
-	}
-}
-
-// UpdateOutputInSpace updates an output within a specific Kibana space.
-func UpdateOutputInSpace(ctx context.Context, client *Client, id string, spaceID string, reqBody kbapi.UpdateOutputUnion) (*kbapi.OutputUnion, diag.Diagnostics) {
-	path := buildSpaceAwarePath(spaceID, fmt.Sprintf("/api/fleet/outputs/%s", id))
-
-	bodyBytes, err := json.Marshal(reqBody)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-
-	req, err := http.NewRequestWithContext(ctx, "PUT", client.URL+path, bytes.NewReader(bodyBytes))
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	httpResp, err := client.HTTP.Do(req)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-	defer httpResp.Body.Close()
-
-	switch httpResp.StatusCode {
-	case http.StatusOK:
-		var result struct {
-			Item kbapi.OutputUnion `json:"item"`
-		}
-		if err := json.NewDecoder(httpResp.Body).Decode(&result); err != nil {
-			return nil, diagutil.FrameworkDiagFromError(err)
-		}
-		return &result.Item, nil
-	default:
-		bodyBytes, _ := io.ReadAll(httpResp.Body)
-		return nil, reportUnknownError(httpResp.StatusCode, bodyBytes)
-	}
-}
-
-// DeleteOutputInSpace deletes an output within a specific Kibana space.
-func DeleteOutputInSpace(ctx context.Context, client *Client, id string, spaceID string) diag.Diagnostics {
-	path := buildSpaceAwarePath(spaceID, fmt.Sprintf("/api/fleet/outputs/%s", id))
-
-	req, err := http.NewRequestWithContext(ctx, "DELETE", client.URL+path, nil)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	httpResp, err := client.HTTP.Do(req)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	defer httpResp.Body.Close()
-
-	switch httpResp.StatusCode {
-	case http.StatusOK:
-		return nil
-	case http.StatusNotFound:
-		return nil
-	default:
-		bodyBytes, _ := io.ReadAll(httpResp.Body)
-		return reportUnknownError(httpResp.StatusCode, bodyBytes)
-	}
-}
-
 // GetFleetServerHost reads a specific fleet server host from the API.
-func GetFleetServerHost(ctx context.Context, client *Client, id string) (*kbapi.ServerHost, diag.Diagnostics) {
-	resp, err := client.API.GetFleetFleetServerHostsItemidWithResponse(ctx, id)
+func GetFleetServerHost(ctx context.Context, client *Client, id string, spaceID string) (*kbapi.ServerHost, diag.Diagnostics) {
+	resp, err := client.API.GetFleetFleetServerHostsItemidWithResponse(ctx, id, spaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -503,8 +254,8 @@ func GetFleetServerHost(ctx context.Context, client *Client, id string) (*kbapi.
 }
 
 // CreateFleetServerHost creates a new fleet server host.
-func CreateFleetServerHost(ctx context.Context, client *Client, req kbapi.PostFleetFleetServerHostsJSONRequestBody) (*kbapi.ServerHost, diag.Diagnostics) {
-	resp, err := client.API.PostFleetFleetServerHostsWithResponse(ctx, req)
+func CreateFleetServerHost(ctx context.Context, client *Client, spaceID string, req kbapi.PostFleetFleetServerHostsJSONRequestBody) (*kbapi.ServerHost, diag.Diagnostics) {
+	resp, err := client.API.PostFleetFleetServerHostsWithResponse(ctx, req, spaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -518,8 +269,8 @@ func CreateFleetServerHost(ctx context.Context, client *Client, req kbapi.PostFl
 }
 
 // UpdateFleetServerHost updates an existing fleet server host.
-func UpdateFleetServerHost(ctx context.Context, client *Client, id string, req kbapi.PutFleetFleetServerHostsItemidJSONRequestBody) (*kbapi.ServerHost, diag.Diagnostics) {
-	resp, err := client.API.PutFleetFleetServerHostsItemidWithResponse(ctx, id, req)
+func UpdateFleetServerHost(ctx context.Context, client *Client, id string, spaceID string, req kbapi.PutFleetFleetServerHostsItemidJSONRequestBody) (*kbapi.ServerHost, diag.Diagnostics) {
+	resp, err := client.API.PutFleetFleetServerHostsItemidWithResponse(ctx, id, req, spaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -533,8 +284,8 @@ func UpdateFleetServerHost(ctx context.Context, client *Client, id string, req k
 }
 
 // DeleteFleetServerHost deletes an existing fleet server host.
-func DeleteFleetServerHost(ctx context.Context, client *Client, id string) diag.Diagnostics {
-	resp, err := client.API.DeleteFleetFleetServerHostsItemidWithResponse(ctx, id)
+func DeleteFleetServerHost(ctx context.Context, client *Client, id string, spaceID string) diag.Diagnostics {
+	resp, err := client.API.DeleteFleetFleetServerHostsItemidWithResponse(ctx, id, spaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -546,140 +297,16 @@ func DeleteFleetServerHost(ctx context.Context, client *Client, id string) diag.
 		return nil
 	default:
 		return reportUnknownError(resp.StatusCode(), resp.Body)
-	}
-}
-
-// GetFleetServerHostInSpace reads a specific fleet server host from the API in a specific space.
-func GetFleetServerHostInSpace(ctx context.Context, client *Client, id string, spaceID string) (*kbapi.ServerHost, diag.Diagnostics) {
-	path := buildSpaceAwarePath(spaceID, fmt.Sprintf("/api/fleet/fleet_server_hosts/%s", id))
-	req, err := http.NewRequestWithContext(ctx, "GET", client.URL+path, nil)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-
-	httpResp, err := client.HTTP.Do(req)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-	defer httpResp.Body.Close()
-
-	switch httpResp.StatusCode {
-	case http.StatusOK:
-		var result struct {
-			Item kbapi.ServerHost `json:"item"`
-		}
-		if err := json.NewDecoder(httpResp.Body).Decode(&result); err != nil {
-			return nil, diagutil.FrameworkDiagFromError(err)
-		}
-		return &result.Item, nil
-	case http.StatusNotFound:
-		return nil, nil
-	default:
-		bodyBytes, _ := io.ReadAll(httpResp.Body)
-		return nil, reportUnknownError(httpResp.StatusCode, bodyBytes)
-	}
-}
-
-// CreateFleetServerHostInSpace creates a new fleet server host in a specific space.
-func CreateFleetServerHostInSpace(ctx context.Context, client *Client, spaceID string, req kbapi.PostFleetFleetServerHostsJSONRequestBody) (*kbapi.ServerHost, diag.Diagnostics) {
-	path := buildSpaceAwarePath(spaceID, "/api/fleet/fleet_server_hosts")
-	bodyBytes, err := json.Marshal(req)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-
-	httpReq, err := http.NewRequestWithContext(ctx, "POST", client.URL+path, bytes.NewBuffer(bodyBytes))
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-	httpReq.Header.Set("Content-Type", "application/json")
-
-	httpResp, err := client.HTTP.Do(httpReq)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-	defer httpResp.Body.Close()
-
-	switch httpResp.StatusCode {
-	case http.StatusOK:
-		var result struct {
-			Item kbapi.ServerHost `json:"item"`
-		}
-		if err := json.NewDecoder(httpResp.Body).Decode(&result); err != nil {
-			return nil, diagutil.FrameworkDiagFromError(err)
-		}
-		return &result.Item, nil
-	default:
-		bodyBytes, _ := io.ReadAll(httpResp.Body)
-		return nil, reportUnknownError(httpResp.StatusCode, bodyBytes)
-	}
-}
-
-// UpdateFleetServerHostInSpace updates an existing fleet server host in a specific space.
-func UpdateFleetServerHostInSpace(ctx context.Context, client *Client, id string, spaceID string, reqBody kbapi.PutFleetFleetServerHostsItemidJSONRequestBody) (*kbapi.ServerHost, diag.Diagnostics) {
-	path := buildSpaceAwarePath(spaceID, fmt.Sprintf("/api/fleet/fleet_server_hosts/%s", id))
-	bodyBytes, err := json.Marshal(reqBody)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-
-	httpReq, err := http.NewRequestWithContext(ctx, "PUT", client.URL+path, bytes.NewBuffer(bodyBytes))
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-	httpReq.Header.Set("Content-Type", "application/json")
-
-	httpResp, err := client.HTTP.Do(httpReq)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-	defer httpResp.Body.Close()
-
-	switch httpResp.StatusCode {
-	case http.StatusOK:
-		var result struct {
-			Item kbapi.ServerHost `json:"item"`
-		}
-		if err := json.NewDecoder(httpResp.Body).Decode(&result); err != nil {
-			return nil, diagutil.FrameworkDiagFromError(err)
-		}
-		return &result.Item, nil
-	default:
-		bodyBytes, _ := io.ReadAll(httpResp.Body)
-		return nil, reportUnknownError(httpResp.StatusCode, bodyBytes)
-	}
-}
-
-// DeleteFleetServerHostInSpace deletes an existing fleet server host in a specific space.
-func DeleteFleetServerHostInSpace(ctx context.Context, client *Client, id string, spaceID string) diag.Diagnostics {
-	path := buildSpaceAwarePath(spaceID, fmt.Sprintf("/api/fleet/fleet_server_hosts/%s", id))
-	req, err := http.NewRequestWithContext(ctx, "DELETE", client.URL+path, nil)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	httpResp, err := client.HTTP.Do(req)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	defer httpResp.Body.Close()
-
-	switch httpResp.StatusCode {
-	case http.StatusOK, http.StatusNotFound:
-		return nil
-	default:
-		bodyBytes, _ := io.ReadAll(httpResp.Body)
-		return reportUnknownError(httpResp.StatusCode, bodyBytes)
 	}
 }
 
 // GetPackagePolicy reads a specific package policy from the API.
-func GetPackagePolicy(ctx context.Context, client *Client, id string) (*kbapi.PackagePolicy, diag.Diagnostics) {
+func GetPackagePolicy(ctx context.Context, client *Client, id string, spaceID string) (*kbapi.PackagePolicy, diag.Diagnostics) {
 	params := kbapi.GetFleetPackagePoliciesPackagepolicyidParams{
 		Format: utils.Pointer(kbapi.GetFleetPackagePoliciesPackagepolicyidParamsFormatSimplified),
 	}
 
-	resp, err := client.API.GetFleetPackagePoliciesPackagepolicyidWithResponse(ctx, id, &params)
+	resp, err := client.API.GetFleetPackagePoliciesPackagepolicyidWithResponse(ctx, id, &params, spaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -691,50 +318,16 @@ func GetPackagePolicy(ctx context.Context, client *Client, id string) (*kbapi.Pa
 		return nil, nil
 	default:
 		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
-	}
-}
-
-// GetPackagePolicyInSpace reads a specific package policy from the API within a specific Kibana space.
-// This is necessary for space-aware policies that are created with space_ids.
-func GetPackagePolicyInSpace(ctx context.Context, client *Client, id string, spaceID string) (*kbapi.PackagePolicy, diag.Diagnostics) {
-	// Construct the space-aware path
-	path := buildSpaceAwarePath(spaceID, fmt.Sprintf("/api/fleet/package_policies/%s?format=simplified", id))
-
-	req, err := http.NewRequestWithContext(ctx, "GET", client.URL+path, nil)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-
-	httpResp, err := client.HTTP.Do(req)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-	defer httpResp.Body.Close()
-
-	switch httpResp.StatusCode {
-	case http.StatusOK:
-		var result struct {
-			Item kbapi.PackagePolicy `json:"item"`
-		}
-		if err := json.NewDecoder(httpResp.Body).Decode(&result); err != nil {
-			return nil, diagutil.FrameworkDiagFromError(err)
-		}
-		return &result.Item, nil
-	case http.StatusNotFound:
-		return nil, nil
-	default:
-		bodyBytes, _ := io.ReadAll(httpResp.Body)
-		return nil, reportUnknownError(httpResp.StatusCode, bodyBytes)
 	}
 }
 
 // CreatePackagePolicy creates a new package policy.
-func CreatePackagePolicy(ctx context.Context, client *Client, req kbapi.PackagePolicyRequest) (*kbapi.PackagePolicy, diag.Diagnostics) {
+func CreatePackagePolicy(ctx context.Context, client *Client, spaceID string, req kbapi.PackagePolicyRequest) (*kbapi.PackagePolicy, diag.Diagnostics) {
 	params := kbapi.PostFleetPackagePoliciesParams{
 		Format: utils.Pointer(kbapi.PostFleetPackagePoliciesParamsFormatSimplified),
 	}
 
-	resp, err := client.API.PostFleetPackagePoliciesWithResponse(ctx, &params, req)
+	resp, err := client.API.PostFleetPackagePoliciesWithResponse(ctx, &params, req, spaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -744,55 +337,16 @@ func CreatePackagePolicy(ctx context.Context, client *Client, req kbapi.PackageP
 		return &resp.JSON200.Item, nil
 	default:
 		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
-	}
-}
-
-// CreatePackagePolicyInSpace creates a new package policy within a specific Kibana space.
-// This is necessary when the referenced agent policy exists in a specific space.
-func CreatePackagePolicyInSpace(ctx context.Context, client *Client, spaceID string, reqBody kbapi.PackagePolicyRequest) (*kbapi.PackagePolicy, diag.Diagnostics) {
-	// Construct the space-aware path
-	path := buildSpaceAwarePath(spaceID, "/api/fleet/package_policies?format=simplified")
-
-	// Marshal the request body
-	bodyBytes, err := json.Marshal(reqBody)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-
-	req, err := http.NewRequestWithContext(ctx, "POST", client.URL+path, bytes.NewReader(bodyBytes))
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	httpResp, err := client.HTTP.Do(req)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-	defer httpResp.Body.Close()
-
-	switch httpResp.StatusCode {
-	case http.StatusOK:
-		var result struct {
-			Item kbapi.PackagePolicy `json:"item"`
-		}
-		if err := json.NewDecoder(httpResp.Body).Decode(&result); err != nil {
-			return nil, diagutil.FrameworkDiagFromError(err)
-		}
-		return &result.Item, nil
-	default:
-		bodyBytes, _ := io.ReadAll(httpResp.Body)
-		return nil, reportUnknownError(httpResp.StatusCode, bodyBytes)
 	}
 }
 
 // UpdatePackagePolicy updates an existing package policy.
-func UpdatePackagePolicy(ctx context.Context, client *Client, id string, req kbapi.PackagePolicyRequest) (*kbapi.PackagePolicy, diag.Diagnostics) {
+func UpdatePackagePolicy(ctx context.Context, client *Client, id string, spaceID string, req kbapi.PackagePolicyRequest) (*kbapi.PackagePolicy, diag.Diagnostics) {
 	params := kbapi.PutFleetPackagePoliciesPackagepolicyidParams{
 		Format: utils.Pointer(kbapi.PutFleetPackagePoliciesPackagepolicyidParamsFormatSimplified),
 	}
 
-	resp, err := client.API.PutFleetPackagePoliciesPackagepolicyidWithResponse(ctx, id, &params, req)
+	resp, err := client.API.PutFleetPackagePoliciesPackagepolicyidWithResponse(ctx, id, &params, req, spaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -805,52 +359,13 @@ func UpdatePackagePolicy(ctx context.Context, client *Client, id string, req kba
 	}
 }
 
-// UpdatePackagePolicyInSpace updates an existing package policy within a specific Kibana space.
-// This is necessary for space-aware policies that are created with space_ids.
-func UpdatePackagePolicyInSpace(ctx context.Context, client *Client, id string, spaceID string, reqBody kbapi.PackagePolicyRequest) (*kbapi.PackagePolicy, diag.Diagnostics) {
-	// Construct the space-aware path
-	path := buildSpaceAwarePath(spaceID, fmt.Sprintf("/api/fleet/package_policies/%s?format=simplified", id))
-
-	// Marshal the request body
-	bodyBytes, err := json.Marshal(reqBody)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-
-	req, err := http.NewRequestWithContext(ctx, "PUT", client.URL+path, bytes.NewReader(bodyBytes))
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	httpResp, err := client.HTTP.Do(req)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-	defer httpResp.Body.Close()
-
-	switch httpResp.StatusCode {
-	case http.StatusOK:
-		var result struct {
-			Item kbapi.PackagePolicy `json:"item"`
-		}
-		if err := json.NewDecoder(httpResp.Body).Decode(&result); err != nil {
-			return nil, diagutil.FrameworkDiagFromError(err)
-		}
-		return &result.Item, nil
-	default:
-		bodyBytes, _ := io.ReadAll(httpResp.Body)
-		return nil, reportUnknownError(httpResp.StatusCode, bodyBytes)
-	}
-}
-
 // DeletePackagePolicy deletes an existing package policy.
-func DeletePackagePolicy(ctx context.Context, client *Client, id string, force bool) diag.Diagnostics {
+func DeletePackagePolicy(ctx context.Context, client *Client, id string, spaceID string, force bool) diag.Diagnostics {
 	params := kbapi.DeleteFleetPackagePoliciesPackagepolicyidParams{
 		Force: &force,
 	}
 
-	resp, err := client.API.DeleteFleetPackagePoliciesPackagepolicyidWithResponse(ctx, id, &params)
+	resp, err := client.API.DeleteFleetPackagePoliciesPackagepolicyidWithResponse(ctx, id, &params, spaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -862,34 +377,6 @@ func DeletePackagePolicy(ctx context.Context, client *Client, id string, force b
 		return nil
 	default:
 		return reportUnknownError(resp.StatusCode(), resp.Body)
-	}
-}
-
-// DeletePackagePolicyInSpace deletes an existing package policy within a specific Kibana space.
-// This is necessary for space-aware policies that are created with space_ids.
-func DeletePackagePolicyInSpace(ctx context.Context, client *Client, id string, spaceID string, force bool) diag.Diagnostics {
-	// Construct the space-aware path
-	path := buildSpaceAwarePath(spaceID, fmt.Sprintf("/api/fleet/package_policies/%s?force=%t", id, force))
-
-	req, err := http.NewRequestWithContext(ctx, "DELETE", client.URL+path, nil)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	httpResp, err := client.HTTP.Do(req)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	defer httpResp.Body.Close()
-
-	switch httpResp.StatusCode {
-	case http.StatusOK:
-		return nil
-	case http.StatusNotFound:
-		return nil
-	default:
-		bodyBytes, _ := io.ReadAll(httpResp.Body)
-		return reportUnknownError(httpResp.StatusCode, bodyBytes)
 	}
 }
 
@@ -913,13 +400,13 @@ func GetPackage(ctx context.Context, client *Client, name, version string) (*kba
 }
 
 // InstallPackage installs a package.
-func InstallPackage(ctx context.Context, client *Client, name, version string, force bool) diag.Diagnostics {
+func InstallPackage(ctx context.Context, client *Client, name, version string, spaceID string, force bool) diag.Diagnostics {
 	params := kbapi.PostFleetEpmPackagesPkgnamePkgversionParams{}
 	body := kbapi.PostFleetEpmPackagesPkgnamePkgversionJSONRequestBody{
 		Force: &force,
 	}
 
-	resp, err := client.API.PostFleetEpmPackagesPkgnamePkgversionWithResponse(ctx, name, version, &params, body)
+	resp, err := client.API.PostFleetEpmPackagesPkgnamePkgversionWithResponse(ctx, name, version, &params, body, spaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -933,8 +420,8 @@ func InstallPackage(ctx context.Context, client *Client, name, version string, f
 }
 
 // Uninstall uninstalls a package.
-func Uninstall(ctx context.Context, client *Client, name, version string, force bool) diag.Diagnostics {
-	resp, err := client.API.DeleteFleetEpmPackagesPkgnamePkgversionWithResponse(ctx, name, version, nil)
+func Uninstall(ctx context.Context, client *Client, name, version string, spaceID string, force bool) diag.Diagnostics {
+	resp, err := client.API.DeleteFleetEpmPackagesPkgnamePkgversionWithResponse(ctx, name, version, nil, spaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -953,74 +440,6 @@ func Uninstall(ctx context.Context, client *Client, name, version string, force 
 		return nil
 	default:
 		return reportUnknownError(resp.StatusCode(), resp.Body)
-	}
-}
-
-// InstallPackageInSpace installs a package in a specific space.
-func InstallPackageInSpace(ctx context.Context, client *Client, name, version string, spaceID string, force bool) diag.Diagnostics {
-	path := buildSpaceAwarePath(spaceID, fmt.Sprintf("/api/fleet/epm/packages/%s/%s", name, version))
-	body := map[string]interface{}{
-		"force": force,
-	}
-	bodyBytes, err := json.Marshal(body)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	httpReq, err := http.NewRequestWithContext(ctx, "POST", client.URL+path, bytes.NewBuffer(bodyBytes))
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	httpReq.Header.Set("Content-Type", "application/json")
-
-	httpResp, err := client.HTTP.Do(httpReq)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	defer httpResp.Body.Close()
-
-	switch httpResp.StatusCode {
-	case http.StatusOK:
-		return nil
-	default:
-		bodyBytes, _ := io.ReadAll(httpResp.Body)
-		return reportUnknownError(httpResp.StatusCode, bodyBytes)
-	}
-}
-
-// UninstallInSpace uninstalls a package from a specific space.
-func UninstallInSpace(ctx context.Context, client *Client, name, version string, spaceID string, force bool) diag.Diagnostics {
-	path := buildSpaceAwarePath(spaceID, fmt.Sprintf("/api/fleet/epm/packages/%s/%s", name, version))
-	httpReq, err := http.NewRequestWithContext(ctx, "DELETE", client.URL+path, nil)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	httpResp, err := client.HTTP.Do(httpReq)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	defer httpResp.Body.Close()
-
-	switch httpResp.StatusCode {
-	case http.StatusOK:
-		return nil
-	case http.StatusBadRequest:
-		bodyBytes, _ := io.ReadAll(httpResp.Body)
-		var result struct {
-			Message string `json:"message"`
-		}
-		if err := json.Unmarshal(bodyBytes, &result); err == nil {
-			if result.Message == fmt.Sprintf("%s is not installed", name) {
-				return nil
-			}
-		}
-		return reportUnknownError(httpResp.StatusCode, bodyBytes)
-	case http.StatusNotFound:
-		return nil
-	default:
-		bodyBytes, _ := io.ReadAll(httpResp.Body)
-		return reportUnknownError(httpResp.StatusCode, bodyBytes)
 	}
 }
 

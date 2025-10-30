@@ -35,10 +35,6 @@ func (r *outputResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	}
 
 	// Delete using the operational space from STATE
-	if spaceID != "" {
-		diags = fleet.DeleteOutputInSpace(ctx, client, outputID, spaceID)
-	} else {
-		diags = fleet.DeleteOutput(ctx, client, outputID)
-	}
+	diags = fleet.DeleteOutput(ctx, client, outputID, spaceID)
 	resp.Diagnostics.Append(diags...)
 }

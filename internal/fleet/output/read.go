@@ -3,7 +3,6 @@ package output
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -34,12 +33,7 @@ func (r *outputResource) Read(ctx context.Context, req resource.ReadRequest, res
 	}
 
 	// Query using the operational space from STATE
-	var output *kbapi.OutputUnion
-	if spaceID != "" {
-		output, diags = fleet.GetOutputInSpace(ctx, client, outputID, spaceID)
-	} else {
-		output, diags = fleet.GetOutput(ctx, client, outputID)
-	}
+	output, diags := fleet.GetOutput(ctx, client, outputID, spaceID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		resp.State.RemoveResource(ctx)

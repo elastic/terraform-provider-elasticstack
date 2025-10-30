@@ -54,22 +54,18 @@ func (r *agentPolicyResource) Create(ctx context.Context, req resource.CreateReq
 		// exists within that space context, not in the default space.
 		var readPolicy *kbapi.AgentPolicy
 		var getDiags diag.Diagnostics
+		var spaceID string
 
 		if !planModel.SpaceIds.IsNull() && !planModel.SpaceIds.IsUnknown() {
 			var tempDiags diag.Diagnostics
 			spaceIDs := utils.SetTypeAs[types.String](ctx, planModel.SpaceIds, path.Root("space_ids"), &tempDiags)
 			if !tempDiags.HasError() && len(spaceIDs) > 0 {
 				// Use the first space for the GET request
-				spaceID := spaceIDs[0].ValueString()
-				readPolicy, getDiags = fleet.GetAgentPolicyInSpace(ctx, client, policy.Id, spaceID)
-			} else {
-				// Fall back to standard GET if we couldn't extract space IDs
-				readPolicy, getDiags = fleet.GetAgentPolicy(ctx, client, policy.Id)
+				spaceID = spaceIDs[0].ValueString()
 			}
-		} else {
-			// No space_ids, use standard GET
-			readPolicy, getDiags = fleet.GetAgentPolicy(ctx, client, policy.Id)
 		}
+
+		readPolicy, getDiags = fleet.GetAgentPolicy(ctx, client, policy.Id, spaceID)
 
 		resp.Diagnostics.Append(getDiags...)
 		if resp.Diagnostics.HasError() {

@@ -3,7 +3,6 @@ package integration_policy
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
@@ -36,12 +35,7 @@ func (r *integrationPolicyResource) Read(ctx context.Context, req resource.ReadR
 	}
 
 	// Query using the operational space from STATE
-	var policy *kbapi.PackagePolicy
-	if spaceID != "" {
-		policy, diags = fleet.GetPackagePolicyInSpace(ctx, client, policyID, spaceID)
-	} else {
-		policy, diags = fleet.GetPackagePolicy(ctx, client, policyID)
-	}
+	policy, diags := fleet.GetPackagePolicy(ctx, client, policyID, spaceID)
 
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {

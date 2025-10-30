@@ -3,7 +3,6 @@ package agent_policy
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -52,12 +51,7 @@ func (r *agentPolicyResource) Update(ctx context.Context, req resource.UpdateReq
 
 	// Update using the operational space from STATE
 	// The API will handle adding/removing the policy from spaces based on space_ids in body
-	var policy *kbapi.AgentPolicy
-	if spaceID != "" {
-		policy, diags = fleet.UpdateAgentPolicyInSpace(ctx, client, policyID, spaceID, body)
-	} else {
-		policy, diags = fleet.UpdateAgentPolicy(ctx, client, policyID, body)
-	}
+	policy, diags := fleet.UpdateAgentPolicy(ctx, client, policyID, spaceID, body)
 
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {

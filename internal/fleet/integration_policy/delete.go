@@ -36,11 +36,7 @@ func (r *integrationPolicyResource) Delete(ctx context.Context, req resource.Del
 	}
 
 	// Delete using the operational space from STATE
-	if spaceID != "" {
-		diags = fleet.DeletePackagePolicyInSpace(ctx, client, policyID, spaceID, force)
-	} else {
-		diags = fleet.DeletePackagePolicy(ctx, client, policyID, force)
-	}
+	diags = fleet.DeletePackagePolicy(ctx, client, policyID, spaceID, force)
 
 	resp.Diagnostics.Append(diags...)
 }

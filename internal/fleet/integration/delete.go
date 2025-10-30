@@ -46,10 +46,6 @@ func (r *integrationResource) Delete(ctx context.Context, req resource.DeleteReq
 		}
 	}
 
-	if spaceID != "" && spaceID != "default" {
-		diags = fleet.UninstallInSpace(ctx, client, name, version, spaceID, force)
-	} else {
-		diags = fleet.Uninstall(ctx, client, name, version, force)
-	}
+	diags = fleet.Uninstall(ctx, client, name, version, spaceID, force)
 	resp.Diagnostics.Append(diags...)
 }

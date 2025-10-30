@@ -3,7 +3,6 @@ package integration_policy
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -52,12 +51,7 @@ func (r *integrationPolicyResource) Create(ctx context.Context, req resource.Cre
 	}
 
 	// Create package policy with appropriate space context
-	var policy *kbapi.PackagePolicy
-	if spaceID != "" && spaceID != "default" {
-		policy, diags = fleet.CreatePackagePolicyInSpace(ctx, client, spaceID, body)
-	} else {
-		policy, diags = fleet.CreatePackagePolicy(ctx, client, body)
-	}
+	policy, diags := fleet.CreatePackagePolicy(ctx, client, spaceID, body)
 
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {

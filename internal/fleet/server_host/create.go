@@ -3,7 +3,6 @@ package server_host
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -43,12 +42,7 @@ func (r *serverHostResource) Create(ctx context.Context, req resource.CreateRequ
 		}
 	}
 
-	var host *kbapi.ServerHost
-	if spaceID != "" && spaceID != "default" {
-		host, diags = fleet.CreateFleetServerHostInSpace(ctx, client, spaceID, body)
-	} else {
-		host, diags = fleet.CreateFleetServerHost(ctx, client, body)
-	}
+	host, diags := fleet.CreateFleetServerHost(ctx, client, spaceID, body)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
