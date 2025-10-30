@@ -297,7 +297,7 @@ func TestAccResourceAgentPolicyWithSpaceIds(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "description", "Test Agent Policy with Space IDs"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "space_ids.#", "1"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "space_ids.0", "default"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_fleet_agent_policy.test_policy", "space_ids.*", "default"),
 				),
 			},
 		},
