@@ -1,32 +1,45 @@
 package system_user_test
 
 import (
+	_ "embed"
 	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest/checks"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
+const remoteMonitoringUser = "remote_monitoring_user"
+
 func TestAccResourceSecuritySystemUser(t *testing.T) {
+	newPassword := "new_password"
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceSecuritySystemUserCreate,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"username": config.StringVariable(remoteMonitoringUser),
+				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_system_user.remote_monitoring_user", "username", "remote_monitoring_user"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_system_user.remote_monitoring_user", "username", remoteMonitoringUser),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_system_user.remote_monitoring_user", "enabled", "true"),
 				),
 			},
 			{
-				Config: testAccResourceSecuritySystemUserUpdate,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"username": config.StringVariable(remoteMonitoringUser),
+					"password": config.StringVariable(newPassword),
+				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_system_user.remote_monitoring_user", "username", "remote_monitoring_user"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_system_user.remote_monitoring_user", "username", remoteMonitoringUser),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_system_user.remote_monitoring_user", "enabled", "true"),
-					checks.CheckUserCanAuthenticate("remote_monitoring_user", "new_password"),
+					checks.CheckUserCanAuthenticate(remoteMonitoringUser, newPassword),
 				),
 			},
 		},
@@ -35,16 +48,23 @@ func TestAccResourceSecuritySystemUser(t *testing.T) {
 
 func TestAccResourceSecuritySystemUserNotFound(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config:      testAccResourceSecuritySystemUserNotFound,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory(""),
+				ConfigVariables: config.Variables{
+					"username": config.StringVariable("not_system_user"),
+					"password": config.StringVariable("new_password"),
+				},
 				ExpectError: regexp.MustCompile(`System user "not_system_user" not found`),
 			},
 		},
 	})
 }
+
+//go:embed testdata/TestAccResourceSecuritySystemUserFromSDK/system_user.tf
+var sdkCreateTestConfig string
 
 func TestAccResourceSecuritySystemUserFromSDK(t *testing.T) {
 	resource.Test(t, resource.TestCase{
@@ -58,51 +78,26 @@ func TestAccResourceSecuritySystemUserFromSDK(t *testing.T) {
 						VersionConstraint: "0.11.15",
 					},
 				},
-				Config: testAccResourceSecuritySystemUserCreate,
+				ConfigVariables: config.Variables{
+					"username": config.StringVariable(remoteMonitoringUser),
+				},
+				Config: sdkCreateTestConfig,
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_system_user.remote_monitoring_user", "username", "remote_monitoring_user"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_system_user.remote_monitoring_user", "username", remoteMonitoringUser),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_system_user.remote_monitoring_user", "enabled", "true"),
 				),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				Config:                   testAccResourceSecuritySystemUserCreate,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory(""),
+				ConfigVariables: config.Variables{
+					"username": config.StringVariable(remoteMonitoringUser),
+				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_system_user.remote_monitoring_user", "username", "remote_monitoring_user"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_system_user.remote_monitoring_user", "username", remoteMonitoringUser),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_system_user.remote_monitoring_user", "enabled", "true"),
 				),
 			},
 		},
 	})
 }
-
-const testAccResourceSecuritySystemUserCreate = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_security_system_user" "remote_monitoring_user" {
-  username  = "remote_monitoring_user"
-}
-`
-
-const testAccResourceSecuritySystemUserUpdate = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_security_system_user" "remote_monitoring_user" {
-  username  = "remote_monitoring_user"
-  password  = "new_password"
-}
-	`
-const testAccResourceSecuritySystemUserNotFound = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_security_system_user" "test" {
-  username  = "not_system_user"
-  password  = "new_password"
-}
-	`
