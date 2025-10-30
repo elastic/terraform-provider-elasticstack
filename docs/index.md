@@ -7,7 +7,9 @@ description: |-
 
 # Elasticstack Provider
 
-The Elasticstack provider provides the resources to interact with Elastic stack products.
+The Elasticstack provider provides the resources to interact with Elastic stack products, including:
+* Elastic Stack (Self managed, Elastic Cloud hosted, ECK managed)
+* Elasticsearch Serverless (API authentication only)
 
 
 It is recommended to setup at least minimum security, https://www.elastic.co/guide/en/elasticsearch/reference/current/security-minimal-setup.html
