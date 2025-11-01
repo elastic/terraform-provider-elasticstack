@@ -4,7 +4,11 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func (r *integrationPolicyResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -34,7 +38,21 @@ func (r *integrationPolicyResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
-	policy, diags := fleet.CreatePackagePolicy(ctx, client, body)
+	// Determine space context for creating the package policy
+	// The package policy must be created in the same space as the agent policy it references
+	var spaceID string
+	if !planModel.SpaceIds.IsNull() && !planModel.SpaceIds.IsUnknown() {
+		// Explicit space_ids provided - use the first one
+		var tempDiags diag.Diagnostics
+		spaceIDs := utils.SetTypeAs[types.String](ctx, planModel.SpaceIds, path.Root("space_ids"), &tempDiags)
+		if !tempDiags.HasError() && len(spaceIDs) > 0 {
+			spaceID = spaceIDs[0].ValueString()
+		}
+	}
+
+	// Create package policy with appropriate space context
+	policy, diags := fleet.CreatePackagePolicy(ctx, client, spaceID, body)
+
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -46,10 +64,19 @@ func (r *integrationPolicyResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
+	// Remember if the user configured input in the plan
+	planHadInput := utils.IsKnown(planModel.Input) && !planModel.Input.IsNull() && len(planModel.Input.Elements()) > 0
+
 	diags = planModel.populateFromAPI(ctx, policy)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
+	}
+
+	// If plan didn't have input configured, ensure we don't add it now
+	// This prevents "Provider produced inconsistent result" errors
+	if !planHadInput {
+		planModel.Input = types.ListNull(getInputTypeV1())
 	}
 
 	diags = resp.State.Set(ctx, planModel)

@@ -11,6 +11,7 @@ type integrationModel struct {
 	Version     types.String `tfsdk:"version"`
 	Force       types.Bool   `tfsdk:"force"`
 	SkipDestroy types.Bool   `tfsdk:"skip_destroy"`
+	SpaceIds    types.Set    `tfsdk:"space_ids"` //> string
 }
 
 func getPackageID(name string, version string) string {

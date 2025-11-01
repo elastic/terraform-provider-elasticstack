@@ -93,6 +93,7 @@ func upgradeV0(ctx context.Context, req resource.UpgradeStateRequest, resp *reso
 		Force:              stateModelV0.Force,
 		IntegrationName:    stateModelV0.IntegrationName,
 		IntegrationVersion: stateModelV0.IntegrationVersion,
+		SpaceIds:           types.SetNull(types.StringType), // V0 didn't have space_ids
 	}
 
 	// Convert vars_json from string to normalized JSON type

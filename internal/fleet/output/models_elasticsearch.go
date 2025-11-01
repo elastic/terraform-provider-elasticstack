@@ -22,6 +22,14 @@ func (model *outputModel) fromAPIElasticsearchModel(ctx context.Context, data *k
 	model.DefaultMonitoring = types.BoolPointerValue(data.IsDefaultMonitoring)
 	model.ConfigYaml = types.StringPointerValue(data.ConfigYaml)
 	model.Ssl, diags = sslToObjectValue(ctx, data.Ssl)
+
+	// Note: SpaceIds is not returned by the API for outputs
+	// If it's currently null/unknown, set to explicit null to satisfy Terraform's requirement
+	// If it has a value from plan, preserve it to avoid plan diffs
+	if model.SpaceIds.IsNull() || model.SpaceIds.IsUnknown() {
+		model.SpaceIds = types.SetNull(types.StringType)
+	}
+
 	return
 }
 

@@ -38,5 +38,11 @@ func (r *serverHostResource) Schema(ctx context.Context, req resource.SchemaRequ
 			Description: "Set as default.",
 			Optional:    true,
 		},
+		"space_ids": schema.SetAttribute{
+			Description: "The Kibana space IDs where this server host is available. When set, the server host will be created and managed within the specified space. Note: The order of space IDs does not matter as this is a set.",
+			ElementType: types.StringType,
+			Optional:    true,
+			Computed:    true,
+		},
 	}
 }

@@ -13,6 +13,7 @@ import (
 type enrollmentTokensModel struct {
 	ID       types.String `tfsdk:"id"`
 	PolicyID types.String `tfsdk:"policy_id"`
+	SpaceID  types.String `tfsdk:"space_id"`
 	Tokens   types.List   `tfsdk:"tokens"` //> enrollmentTokenModel
 }
 

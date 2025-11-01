@@ -31,6 +31,7 @@ type integrationPolicyModel struct {
 	IntegrationVersion types.String         `tfsdk:"integration_version"`
 	Input              types.List           `tfsdk:"input"` //> integrationPolicyInputModel
 	VarsJson           jsontypes.Normalized `tfsdk:"vars_json"`
+	SpaceIds           types.Set            `tfsdk:"space_ids"`
 }
 
 type integrationPolicyInputModel struct {
@@ -91,12 +92,45 @@ func (model *integrationPolicyModel) populateFromAPI(ctx context.Context, data *
 	model.IntegrationVersion = types.StringValue(data.Package.Version)
 	model.VarsJson = utils.MapToNormalizedType(utils.Deref(data.Vars), path.Root("vars_json"), &diags)
 
+	// Preserve space_ids if it was originally set in the plan/state
+	// The API response may not include space_ids, so we keep the original value
+	originallySetSpaceIds := utils.IsKnown(model.SpaceIds)
+	if data.SpaceIds != nil {
+		spaceIds, d := types.SetValueFrom(ctx, types.StringType, *data.SpaceIds)
+		diags.Append(d...)
+		model.SpaceIds = spaceIds
+	} else if !originallySetSpaceIds {
+		// Only set to null if it wasn't originally set
+		model.SpaceIds = types.SetNull(types.StringType)
+	}
+	// If originally set but API didn't return it, keep the original value
+
 	model.populateInputFromAPI(ctx, data.Inputs, &diags)
 
 	return diags
 }
 
 func (model *integrationPolicyModel) populateInputFromAPI(ctx context.Context, inputs map[string]kbapi.PackagePolicyInput, diags *diag.Diagnostics) {
+	// Handle input population based on context:
+	// 1. If model.Input is unknown: we're importing or reading fresh state → populate from API
+	// 2. If model.Input is known and null/empty: user explicitly didn't configure inputs → don't populate (avoid inconsistent state)
+	// 3. If model.Input is known and has values: user configured inputs → populate from API
+
+	isInputKnown := utils.IsKnown(model.Input)
+	isInputNullOrEmpty := model.Input.IsNull() || (isInputKnown && len(model.Input.Elements()) == 0)
+
+	// Case 1: Unknown (import/fresh read) - always populate
+	if !isInputKnown {
+		// Import or fresh read - populate everything from API
+		// (continue to normal population below)
+	} else if isInputNullOrEmpty {
+		// Case 2: Known and null/empty - user explicitly didn't configure inputs
+		// Don't populate to avoid "Provider produced inconsistent result" error
+		model.Input = types.ListNull(getInputTypeV1())
+		return
+	}
+	// Case 3: Known and not null/empty - user configured inputs, populate from API (continue below)
+
 	newInputs := utils.TransformMapToSlice(ctx, inputs, path.Root("input"), diags,
 		func(inputData kbapi.PackagePolicyInput, meta utils.MapMeta) integrationPolicyInputModel {
 			return integrationPolicyInputModel{
@@ -175,6 +209,8 @@ func (model integrationPolicyModel) toAPIModel(ctx context.Context, isUpdate boo
 				Vars:    utils.MapRef(utils.NormalizedTypeToMap[any](inputModel.VarsJson, meta.Path.AtName("vars_json"), &diags)),
 			}
 		}))
+
+	// Note: space_ids is read-only for integration policies and inherited from the agent policy
 
 	return body, diags
 }

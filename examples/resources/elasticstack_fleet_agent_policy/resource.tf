@@ -9,6 +9,7 @@ resource "elasticstack_fleet_agent_policy" "test_policy" {
   sys_monitoring  = true
   monitor_logs    = true
   monitor_metrics = true
+  space_ids       = ["default"]
 
   global_data_tags = {
     first_tag = {

@@ -281,6 +281,108 @@ func TestAccResourceAgentPolicyWithBadGlobalDataTags(t *testing.T) {
 	})
 }
 
+func TestAccResourceAgentPolicyWithSpaceIds(t *testing.T) {
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceAgentPolicyDestroy,
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionSpaceIds),
+				Config:   testAccResourceAgentPolicyCreateWithSpaceIds(policyName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "description", "Test Agent Policy with Space IDs"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "space_ids.#", "1"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_fleet_agent_policy.test_policy", "space_ids.*", "default"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceAgentPolicySpaceReordering validates that space_ids as a Set works correctly:
+// With Sets, order doesn't matter - Terraform handles set comparison automatically.
+//
+// This test validates:
+// Step 1: Create policy with space_ids = ["default"]
+// Step 2: Add a new space ["space-test-a", "default"] - proves stable operational space
+// Step 3: Same spaces in different order ["default", "space-test-a"] - no drift (Sets are unordered)
+//
+// With Sets: No drift from reordering, policy_id remains constant across all steps
+func TestAccResourceAgentPolicySpaceReordering(t *testing.T) {
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	var originalPolicyId string
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceAgentPolicyDestroy,
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				// Step 1: Create with space_ids = ["default"]
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionSpaceIds),
+				Config:   testAccResourceAgentPolicySpaceReorderingStep1(policyName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "space_ids.#", "1"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_fleet_agent_policy.test_policy", "space_ids.*", "default"),
+					// Capture the policy ID - it should NOT change in subsequent steps
+					resource.TestCheckResourceAttrWith("elasticstack_fleet_agent_policy.test_policy", "policy_id", func(value string) error {
+						originalPolicyId = value
+						if len(value) == 0 {
+							return errors.New("expected policy_id to be non-empty")
+						}
+						return nil
+					}),
+				),
+			},
+			{
+				// Step 2: Add new space ["space-test-a", "default"]
+				// With Sets + GetOperationalSpaceFromState: reads from STATE, finds resource, updates in-place
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionSpaceIds),
+				Config:   testAccResourceAgentPolicySpaceReorderingStep2(policyName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "description", "Test space reordering - step 2: prepend new space"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "space_ids.#", "2"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_fleet_agent_policy.test_policy", "space_ids.*", "space-test-a"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_fleet_agent_policy.test_policy", "space_ids.*", "default"),
+					// CRITICAL: policy_id must be UNCHANGED (proves stable operational space)
+					resource.TestCheckResourceAttrWith("elasticstack_fleet_agent_policy.test_policy", "policy_id", func(value string) error {
+						if value != originalPolicyId {
+							return fmt.Errorf("policy_id changed from %s to %s - operational space not stable!", originalPolicyId, value)
+						}
+						return nil
+					}),
+				),
+			},
+			{
+				// Step 3: Same spaces, different order ["default", "space-test-a"]
+				// With Sets: No drift because order doesn't matter - Terraform sees identical sets
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionSpaceIds),
+				Config:   testAccResourceAgentPolicySpaceReorderingStep3(policyName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "description", "Test space reordering - step 3: reorder spaces"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "space_ids.#", "2"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_fleet_agent_policy.test_policy", "space_ids.*", "default"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_fleet_agent_policy.test_policy", "space_ids.*", "space-test-a"),
+					// CRITICAL: policy_id must STILL be unchanged
+					resource.TestCheckResourceAttrWith("elasticstack_fleet_agent_policy.test_policy", "policy_id", func(value string) error {
+						if value != originalPolicyId {
+							return fmt.Errorf("policy_id changed from %s to %s", originalPolicyId, value)
+						}
+						return nil
+					}),
+				),
+			},
+		},
+	})
+}
+
 func testAccResourceAgentPolicyCreate(id string, skipDestroy bool) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
@@ -520,7 +622,7 @@ func checkResourceAgentPolicyDestroy(s *terraform.State) error {
 		if err != nil {
 			return err
 		}
-		policy, diags := fleet.GetAgentPolicy(context.Background(), fleetClient, rs.Primary.ID)
+		policy, diags := fleet.GetAgentPolicy(context.Background(), fleetClient, rs.Primary.ID, "")
 		if diags.HasError() {
 			return diagutil.FwDiagsAsError(diags)
 		}
@@ -546,7 +648,7 @@ func checkResourceAgentPolicySkipDestroy(s *terraform.State) error {
 		if err != nil {
 			return err
 		}
-		policy, diags := fleet.GetAgentPolicy(context.Background(), fleetClient, rs.Primary.ID)
+		policy, diags := fleet.GetAgentPolicy(context.Background(), fleetClient, rs.Primary.ID, "")
 		if diags.HasError() {
 			return diagutil.FwDiagsAsError(diags)
 		}
@@ -554,7 +656,7 @@ func checkResourceAgentPolicySkipDestroy(s *terraform.State) error {
 			return fmt.Errorf("agent policy id=%v does not exist, but should still exist when skip_destroy is true", rs.Primary.ID)
 		}
 
-		if diags = fleet.DeleteAgentPolicy(context.Background(), fleetClient, rs.Primary.ID); diags.HasError() {
+		if diags = fleet.DeleteAgentPolicy(context.Background(), fleetClient, rs.Primary.ID, ""); diags.HasError() {
 			return diagutil.FwDiagsAsError(diags)
 		}
 	}
@@ -584,4 +686,116 @@ data "elasticstack_fleet_enrollment_tokens" "test_policy" {
 }
 
 `, fmt.Sprintf("Updated Policy %s", id))
+}
+
+func testAccResourceAgentPolicyCreateWithSpaceIds(id string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_fleet_agent_policy" "test_policy" {
+  name             = "%s"
+  namespace        = "default"
+  description      = "Test Agent Policy with Space IDs"
+  monitor_logs     = true
+  monitor_metrics  = false
+  skip_destroy     = false
+  space_ids        = ["default"]
+}
+
+data "elasticstack_fleet_enrollment_tokens" "test_policy" {
+  policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
+}
+
+`, fmt.Sprintf("Policy %s", id))
+}
+
+// Helper functions for space reordering test
+
+func testAccResourceAgentPolicySpaceReorderingStep1(id string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_kibana_space" "test_space" {
+  space_id    = "space-test-a"
+  name        = "Test Space A"
+  description = "Test space for Fleet agent policy space reordering test"
+}
+
+resource "elasticstack_fleet_agent_policy" "test_policy" {
+  name             = "Policy %s"
+  namespace        = "default"
+  description      = "Test space reordering - step 1"
+  monitor_logs     = true
+  monitor_metrics  = false
+  skip_destroy     = false
+  space_ids        = ["default"]
+
+  depends_on = [elasticstack_kibana_space.test_space]
+}
+`, id)
+}
+
+func testAccResourceAgentPolicySpaceReorderingStep2(id string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_kibana_space" "test_space" {
+  space_id    = "space-test-a"
+  name        = "Test Space A"
+  description = "Test space for Fleet agent policy space reordering test"
+}
+
+resource "elasticstack_fleet_agent_policy" "test_policy" {
+  name             = "Policy %s"
+  namespace        = "default"
+  description      = "Test space reordering - step 2: prepend new space"
+  monitor_logs     = true
+  monitor_metrics  = false
+  skip_destroy     = false
+  # CRITICAL TEST: Prepending "space-test-a" before "default"
+  # Without the fix: Terraform queries using space-test-a, gets 404, recreates resource
+  # With the fix: Terraform uses "default" (position-independent), finds resource, updates in-place
+  space_ids        = ["space-test-a", "default"]
+
+  depends_on = [elasticstack_kibana_space.test_space]
+}
+`, id)
+}
+
+func testAccResourceAgentPolicySpaceReorderingStep3(id string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_kibana_space" "test_space" {
+  space_id    = "space-test-a"
+  name        = "Test Space A"
+  description = "Test space for Fleet agent policy space reordering test"
+}
+
+resource "elasticstack_fleet_agent_policy" "test_policy" {
+  name             = "Policy %s"
+  namespace        = "default"
+  description      = "Test space reordering - step 3: reorder spaces"
+  monitor_logs     = true
+  monitor_metrics  = false
+  skip_destroy     = false
+  # CRITICAL TEST: Reordering spaces (default now first)
+  # With the fix: Still uses "default", resource found, updates in-place
+  space_ids        = ["default", "space-test-a"]
+
+  depends_on = [elasticstack_kibana_space.test_space]
+}
+`, id)
 }
