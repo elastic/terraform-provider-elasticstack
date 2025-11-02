@@ -58,6 +58,37 @@ func TestAccResourceSLM(t *testing.T) {
 	})
 }
 
+func TestAccResourceSLMWithMetadata(t *testing.T) {
+	// generate a random policy name
+	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkSlmDestroy(name),
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccSlmCreateWithMetadata(name),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm_metadata", "name", name),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm_metadata", "schedule", "0 30 1 * * ?"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm_metadata", "repository", fmt.Sprintf("%s-repo", name)),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm_metadata", "expire_after", "30d"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm_metadata", "min_count", "5"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm_metadata", "max_count", "50"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_snapshot_lifecycle.test_slm_metadata", "metadata"),
+				),
+			},
+			{
+				RefreshState: true,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_snapshot_lifecycle.test_slm_metadata", "metadata"),
+				),
+			},
+		},
+	})
+}
+
 func testAccSlmCreate(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
@@ -88,6 +119,45 @@ resource "elasticstack_elasticsearch_snapshot_lifecycle" "test_slm" {
   expire_after = "30d"
   min_count    = 5
   max_count    = 50
+}
+	`, name, name)
+}
+
+func testAccSlmCreateWithMetadata(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_snapshot_repository" "repo" {
+  name = "%s-repo"
+
+  fs {
+    location                  = "/tmp/snapshots"
+    compress                  = true
+    max_restore_bytes_per_sec = "20mb"
+  }
+}
+
+resource "elasticstack_elasticsearch_snapshot_lifecycle" "test_slm_metadata" {
+  name = "%s"
+
+  schedule      = "0 30 1 * * ?"
+  snapshot_name = "<daily-snap-{now/d}>"
+  repository    = elasticstack_elasticsearch_snapshot_repository.repo.name
+
+  indices              = ["data-*", "abc"]
+  ignore_unavailable   = false
+  include_global_state = false
+
+  expire_after = "30d"
+  min_count    = 5
+  max_count    = 50
+
+  metadata = jsonencode({
+    created_by = "terraform"
+    purpose    = "daily backup"
+  })
 }
 	`, name, name)
 }
