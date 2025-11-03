@@ -151,3 +151,83 @@ resource "elasticstack_kibana_data_view" "dv" {
 	}
 }`, indexName, indexName, indexName)
 }
+
+func TestAccResourceDataViewColorFieldFormat(t *testing.T) {
+	indexName := "my-color-index-" + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minFullDataviewSupport),
+				Config:   testAccResourceDataViewColorFieldFormat(indexName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_data_view.color_dv", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.color_dv", "data_view.field_formats.status.id", "color"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.color_dv", "data_view.field_formats.status.params.field_type", "string"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.color_dv", "data_view.field_formats.status.params.colors.#", "2"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.color_dv", "data_view.field_formats.status.params.colors.0.range", "-Infinity:Infinity"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.color_dv", "data_view.field_formats.status.params.colors.0.regex", "Completed"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.color_dv", "data_view.field_formats.status.params.colors.0.text", "#000000"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.color_dv", "data_view.field_formats.status.params.colors.0.background", "#54B399"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.color_dv", "data_view.field_formats.status.params.colors.1.regex", "Error"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.color_dv", "data_view.field_formats.status.params.colors.1.text", "#FFFFFF"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.color_dv", "data_view.field_formats.status.params.colors.1.background", "#BD271E"),
+				),
+			},
+			{
+				SkipFunc:          versionutils.CheckIfVersionIsUnsupported(minFullDataviewSupport),
+				Config:            testAccResourceDataViewColorFieldFormat(indexName),
+				ImportState:       true,
+				ImportStateVerify: true,
+				ResourceName:      "elasticstack_kibana_data_view.color_dv",
+			},
+		},
+	})
+}
+
+func testAccResourceDataViewColorFieldFormat(indexName string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+	elasticsearch {}
+	kibana {}
+}
+
+resource "elasticstack_elasticsearch_index" "my_color_index" {
+	name                = "%s"
+	deletion_protection = false
+}
+
+resource "elasticstack_kibana_data_view" "color_dv" {
+	override = true
+	data_view = {
+		title           = "%s*"
+		name            = "%s"
+		time_field_name = "@timestamp"
+		allow_no_index  = true
+		field_formats = {
+			status = {
+				id = "color"
+				params = {
+					field_type = "string"
+					colors = [
+						{
+							range      = "-Infinity:Infinity"
+							regex      = "Completed"
+							text       = "#000000"
+							background = "#54B399"
+						},
+						{
+							range      = "-Infinity:Infinity"
+							regex      = "Error"
+							text       = "#FFFFFF"
+							background = "#BD271E"
+						}
+					]
+				}
+			}
+		}
+	}
+}`, indexName, indexName, indexName)
+}
