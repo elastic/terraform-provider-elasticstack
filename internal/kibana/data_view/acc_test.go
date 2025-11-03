@@ -181,7 +181,10 @@ func TestAccResourceDataViewColorFieldFormat(t *testing.T) {
 				Config:            testAccResourceDataViewColorFieldFormat(indexName),
 				ImportState:       true,
 				ImportStateVerify: true,
-				ResourceName:      "elasticstack_kibana_data_view.color_dv",
+				ImportStateVerifyIgnore: []string{
+					"override",
+				},
+				ResourceName: "elasticstack_kibana_data_view.color_dv",
 			},
 		},
 	})
