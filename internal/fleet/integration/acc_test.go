@@ -136,7 +136,7 @@ func TestAccResourceIntegrationDeleted(t *testing.T) {
 					require.NoError(t, err)
 
 					ctx := context.Background()
-					diags := fleet.Uninstall(ctx, fleetClient, "sysmon_linux", "1.7.0", true)
+					diags := fleet.Uninstall(ctx, fleetClient, "sysmon_linux", "1.7.0", "", true)
 					require.Empty(t, diags)
 				},
 				// Expect the plan to want to reinstall

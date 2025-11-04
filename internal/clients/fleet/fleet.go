@@ -2,8 +2,10 @@ package fleet
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -16,9 +18,26 @@ var (
 	ErrPackageNotFound = errors.New("package not found")
 )
 
+// buildSpaceAwarePath constructs an API path with space awareness.
+// If spaceID is empty or "default", returns the basePath unchanged.
+// Otherwise, prepends "/s/{spaceID}" to the basePath.
+func buildSpaceAwarePath(spaceID, basePath string) string {
+	if spaceID != "" && spaceID != "default" {
+		return fmt.Sprintf("/s/%s%s", spaceID, basePath)
+	}
+	return basePath
+}
+
+func spaceAwarePathRequestEditor(spaceID string) func(ctx context.Context, req *http.Request) error {
+	return func(ctx context.Context, req *http.Request) error {
+		req.URL.Path = buildSpaceAwarePath(spaceID, req.URL.Path)
+		return nil
+	}
+}
+
 // GetEnrollmentTokens reads all enrollment tokens from the API.
-func GetEnrollmentTokens(ctx context.Context, client *Client) ([]kbapi.EnrollmentApiKey, diag.Diagnostics) {
-	resp, err := client.API.GetFleetEnrollmentApiKeysWithResponse(ctx, nil)
+func GetEnrollmentTokens(ctx context.Context, client *Client, spaceID string) ([]kbapi.EnrollmentApiKey, diag.Diagnostics) {
+	resp, err := client.API.GetFleetEnrollmentApiKeysWithResponse(ctx, nil, spaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -50,9 +69,40 @@ func GetEnrollmentTokensByPolicy(ctx context.Context, client *Client, policyID s
 	}
 }
 
+// GetEnrollmentTokensByPolicyInSpace Get enrollment tokens by policy ID within a specific Kibana space.
+func GetEnrollmentTokensByPolicyInSpace(ctx context.Context, client *Client, policyID string, spaceID string) ([]kbapi.EnrollmentApiKey, diag.Diagnostics) {
+	// Construct the space-aware path
+	path := buildSpaceAwarePath(spaceID, "/api/fleet/enrollment_api_keys?kuery=policy_id:"+policyID)
+
+	req, err := http.NewRequestWithContext(ctx, "GET", client.URL+path, nil)
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+
+	httpResp, err := client.HTTP.Do(req)
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+	defer httpResp.Body.Close()
+
+	switch httpResp.StatusCode {
+	case http.StatusOK:
+		var result struct {
+			Items []kbapi.EnrollmentApiKey `json:"items"`
+		}
+		if err := json.NewDecoder(httpResp.Body).Decode(&result); err != nil {
+			return nil, diagutil.FrameworkDiagFromError(err)
+		}
+		return result.Items, nil
+	default:
+		bodyBytes, _ := io.ReadAll(httpResp.Body)
+		return nil, reportUnknownError(httpResp.StatusCode, bodyBytes)
+	}
+}
+
 // GetAgentPolicy reads a specific agent policy from the API.
-func GetAgentPolicy(ctx context.Context, client *Client, id string) (*kbapi.AgentPolicy, diag.Diagnostics) {
-	resp, err := client.API.GetFleetAgentPoliciesAgentpolicyidWithResponse(ctx, id, nil)
+func GetAgentPolicy(ctx context.Context, client *Client, id string, spaceID string) (*kbapi.AgentPolicy, diag.Diagnostics) {
+	resp, err := client.API.GetFleetAgentPoliciesAgentpolicyidWithResponse(ctx, id, nil, spaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -87,8 +137,8 @@ func CreateAgentPolicy(ctx context.Context, client *Client, req kbapi.PostFleetA
 }
 
 // UpdateAgentPolicy updates an existing agent policy.
-func UpdateAgentPolicy(ctx context.Context, client *Client, id string, req kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody) (*kbapi.AgentPolicy, diag.Diagnostics) {
-	resp, err := client.API.PutFleetAgentPoliciesAgentpolicyidWithResponse(ctx, id, nil, req)
+func UpdateAgentPolicy(ctx context.Context, client *Client, id string, spaceID string, req kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody) (*kbapi.AgentPolicy, diag.Diagnostics) {
+	resp, err := client.API.PutFleetAgentPoliciesAgentpolicyidWithResponse(ctx, id, nil, req, spaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -102,12 +152,12 @@ func UpdateAgentPolicy(ctx context.Context, client *Client, id string, req kbapi
 }
 
 // DeleteAgentPolicy deletes an existing agent policy.
-func DeleteAgentPolicy(ctx context.Context, client *Client, id string) diag.Diagnostics {
+func DeleteAgentPolicy(ctx context.Context, client *Client, id string, spaceID string) diag.Diagnostics {
 	body := kbapi.PostFleetAgentPoliciesDeleteJSONRequestBody{
 		AgentPolicyId: id,
 	}
 
-	resp, err := client.API.PostFleetAgentPoliciesDeleteWithResponse(ctx, body)
+	resp, err := client.API.PostFleetAgentPoliciesDeleteWithResponse(ctx, body, spaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -123,8 +173,8 @@ func DeleteAgentPolicy(ctx context.Context, client *Client, id string) diag.Diag
 }
 
 // GetOutput reads a specific output from the API.
-func GetOutput(ctx context.Context, client *Client, id string) (*kbapi.OutputUnion, diag.Diagnostics) {
-	resp, err := client.API.GetFleetOutputsOutputidWithResponse(ctx, id)
+func GetOutput(ctx context.Context, client *Client, id string, spaceID string) (*kbapi.OutputUnion, diag.Diagnostics) {
+	resp, err := client.API.GetFleetOutputsOutputidWithResponse(ctx, id, spaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -140,8 +190,8 @@ func GetOutput(ctx context.Context, client *Client, id string) (*kbapi.OutputUni
 }
 
 // CreateOutput creates a new output.
-func CreateOutput(ctx context.Context, client *Client, req kbapi.NewOutputUnion) (*kbapi.OutputUnion, diag.Diagnostics) {
-	resp, err := client.API.PostFleetOutputsWithResponse(ctx, req)
+func CreateOutput(ctx context.Context, client *Client, spaceID string, req kbapi.NewOutputUnion) (*kbapi.OutputUnion, diag.Diagnostics) {
+	resp, err := client.API.PostFleetOutputsWithResponse(ctx, req, spaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -155,8 +205,8 @@ func CreateOutput(ctx context.Context, client *Client, req kbapi.NewOutputUnion)
 }
 
 // UpdateOutput updates an existing output.
-func UpdateOutput(ctx context.Context, client *Client, id string, req kbapi.UpdateOutputUnion) (*kbapi.OutputUnion, diag.Diagnostics) {
-	resp, err := client.API.PutFleetOutputsOutputidWithResponse(ctx, id, req)
+func UpdateOutput(ctx context.Context, client *Client, id string, spaceID string, req kbapi.UpdateOutputUnion) (*kbapi.OutputUnion, diag.Diagnostics) {
+	resp, err := client.API.PutFleetOutputsOutputidWithResponse(ctx, id, req, spaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -170,8 +220,8 @@ func UpdateOutput(ctx context.Context, client *Client, id string, req kbapi.Upda
 }
 
 // DeleteOutput deletes an existing output.
-func DeleteOutput(ctx context.Context, client *Client, id string) diag.Diagnostics {
-	resp, err := client.API.DeleteFleetOutputsOutputidWithResponse(ctx, id)
+func DeleteOutput(ctx context.Context, client *Client, id string, spaceID string) diag.Diagnostics {
+	resp, err := client.API.DeleteFleetOutputsOutputidWithResponse(ctx, id, spaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -187,8 +237,8 @@ func DeleteOutput(ctx context.Context, client *Client, id string) diag.Diagnosti
 }
 
 // GetFleetServerHost reads a specific fleet server host from the API.
-func GetFleetServerHost(ctx context.Context, client *Client, id string) (*kbapi.ServerHost, diag.Diagnostics) {
-	resp, err := client.API.GetFleetFleetServerHostsItemidWithResponse(ctx, id)
+func GetFleetServerHost(ctx context.Context, client *Client, id string, spaceID string) (*kbapi.ServerHost, diag.Diagnostics) {
+	resp, err := client.API.GetFleetFleetServerHostsItemidWithResponse(ctx, id, spaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -204,8 +254,8 @@ func GetFleetServerHost(ctx context.Context, client *Client, id string) (*kbapi.
 }
 
 // CreateFleetServerHost creates a new fleet server host.
-func CreateFleetServerHost(ctx context.Context, client *Client, req kbapi.PostFleetFleetServerHostsJSONRequestBody) (*kbapi.ServerHost, diag.Diagnostics) {
-	resp, err := client.API.PostFleetFleetServerHostsWithResponse(ctx, req)
+func CreateFleetServerHost(ctx context.Context, client *Client, spaceID string, req kbapi.PostFleetFleetServerHostsJSONRequestBody) (*kbapi.ServerHost, diag.Diagnostics) {
+	resp, err := client.API.PostFleetFleetServerHostsWithResponse(ctx, req, spaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -219,8 +269,8 @@ func CreateFleetServerHost(ctx context.Context, client *Client, req kbapi.PostFl
 }
 
 // UpdateFleetServerHost updates an existing fleet server host.
-func UpdateFleetServerHost(ctx context.Context, client *Client, id string, req kbapi.PutFleetFleetServerHostsItemidJSONRequestBody) (*kbapi.ServerHost, diag.Diagnostics) {
-	resp, err := client.API.PutFleetFleetServerHostsItemidWithResponse(ctx, id, req)
+func UpdateFleetServerHost(ctx context.Context, client *Client, id string, spaceID string, req kbapi.PutFleetFleetServerHostsItemidJSONRequestBody) (*kbapi.ServerHost, diag.Diagnostics) {
+	resp, err := client.API.PutFleetFleetServerHostsItemidWithResponse(ctx, id, req, spaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -234,8 +284,8 @@ func UpdateFleetServerHost(ctx context.Context, client *Client, id string, req k
 }
 
 // DeleteFleetServerHost deletes an existing fleet server host.
-func DeleteFleetServerHost(ctx context.Context, client *Client, id string) diag.Diagnostics {
-	resp, err := client.API.DeleteFleetFleetServerHostsItemidWithResponse(ctx, id)
+func DeleteFleetServerHost(ctx context.Context, client *Client, id string, spaceID string) diag.Diagnostics {
+	resp, err := client.API.DeleteFleetFleetServerHostsItemidWithResponse(ctx, id, spaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -251,12 +301,12 @@ func DeleteFleetServerHost(ctx context.Context, client *Client, id string) diag.
 }
 
 // GetPackagePolicy reads a specific package policy from the API.
-func GetPackagePolicy(ctx context.Context, client *Client, id string) (*kbapi.PackagePolicy, diag.Diagnostics) {
+func GetPackagePolicy(ctx context.Context, client *Client, id string, spaceID string) (*kbapi.PackagePolicy, diag.Diagnostics) {
 	params := kbapi.GetFleetPackagePoliciesPackagepolicyidParams{
 		Format: utils.Pointer(kbapi.GetFleetPackagePoliciesPackagepolicyidParamsFormatSimplified),
 	}
 
-	resp, err := client.API.GetFleetPackagePoliciesPackagepolicyidWithResponse(ctx, id, &params)
+	resp, err := client.API.GetFleetPackagePoliciesPackagepolicyidWithResponse(ctx, id, &params, spaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -272,12 +322,12 @@ func GetPackagePolicy(ctx context.Context, client *Client, id string) (*kbapi.Pa
 }
 
 // CreatePackagePolicy creates a new package policy.
-func CreatePackagePolicy(ctx context.Context, client *Client, req kbapi.PackagePolicyRequest) (*kbapi.PackagePolicy, diag.Diagnostics) {
+func CreatePackagePolicy(ctx context.Context, client *Client, spaceID string, req kbapi.PackagePolicyRequest) (*kbapi.PackagePolicy, diag.Diagnostics) {
 	params := kbapi.PostFleetPackagePoliciesParams{
 		Format: utils.Pointer(kbapi.PostFleetPackagePoliciesParamsFormatSimplified),
 	}
 
-	resp, err := client.API.PostFleetPackagePoliciesWithResponse(ctx, &params, req)
+	resp, err := client.API.PostFleetPackagePoliciesWithResponse(ctx, &params, req, spaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -291,12 +341,12 @@ func CreatePackagePolicy(ctx context.Context, client *Client, req kbapi.PackageP
 }
 
 // UpdatePackagePolicy updates an existing package policy.
-func UpdatePackagePolicy(ctx context.Context, client *Client, id string, req kbapi.PackagePolicyRequest) (*kbapi.PackagePolicy, diag.Diagnostics) {
+func UpdatePackagePolicy(ctx context.Context, client *Client, id string, spaceID string, req kbapi.PackagePolicyRequest) (*kbapi.PackagePolicy, diag.Diagnostics) {
 	params := kbapi.PutFleetPackagePoliciesPackagepolicyidParams{
 		Format: utils.Pointer(kbapi.PutFleetPackagePoliciesPackagepolicyidParamsFormatSimplified),
 	}
 
-	resp, err := client.API.PutFleetPackagePoliciesPackagepolicyidWithResponse(ctx, id, &params, req)
+	resp, err := client.API.PutFleetPackagePoliciesPackagepolicyidWithResponse(ctx, id, &params, req, spaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -310,12 +360,12 @@ func UpdatePackagePolicy(ctx context.Context, client *Client, id string, req kba
 }
 
 // DeletePackagePolicy deletes an existing package policy.
-func DeletePackagePolicy(ctx context.Context, client *Client, id string, force bool) diag.Diagnostics {
+func DeletePackagePolicy(ctx context.Context, client *Client, id string, spaceID string, force bool) diag.Diagnostics {
 	params := kbapi.DeleteFleetPackagePoliciesPackagepolicyidParams{
 		Force: &force,
 	}
 
-	resp, err := client.API.DeleteFleetPackagePoliciesPackagepolicyidWithResponse(ctx, id, &params)
+	resp, err := client.API.DeleteFleetPackagePoliciesPackagepolicyidWithResponse(ctx, id, &params, spaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -350,13 +400,13 @@ func GetPackage(ctx context.Context, client *Client, name, version string) (*kba
 }
 
 // InstallPackage installs a package.
-func InstallPackage(ctx context.Context, client *Client, name, version string, force bool) diag.Diagnostics {
+func InstallPackage(ctx context.Context, client *Client, name, version string, spaceID string, force bool) diag.Diagnostics {
 	params := kbapi.PostFleetEpmPackagesPkgnamePkgversionParams{}
 	body := kbapi.PostFleetEpmPackagesPkgnamePkgversionJSONRequestBody{
 		Force: &force,
 	}
 
-	resp, err := client.API.PostFleetEpmPackagesPkgnamePkgversionWithResponse(ctx, name, version, &params, body)
+	resp, err := client.API.PostFleetEpmPackagesPkgnamePkgversionWithResponse(ctx, name, version, &params, body, spaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -370,8 +420,8 @@ func InstallPackage(ctx context.Context, client *Client, name, version string, f
 }
 
 // Uninstall uninstalls a package.
-func Uninstall(ctx context.Context, client *Client, name, version string, force bool) diag.Diagnostics {
-	resp, err := client.API.DeleteFleetEpmPackagesPkgnamePkgversionWithResponse(ctx, name, version, nil)
+func Uninstall(ctx context.Context, client *Client, name, version string, spaceID string, force bool) diag.Diagnostics {
+	resp, err := client.API.DeleteFleetEpmPackagesPkgnamePkgversionWithResponse(ctx, name, version, nil, spaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}

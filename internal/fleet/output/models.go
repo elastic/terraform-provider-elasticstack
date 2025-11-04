@@ -22,8 +22,9 @@ type outputModel struct {
 	DefaultIntegrations  types.Bool   `tfsdk:"default_integrations"`
 	DefaultMonitoring    types.Bool   `tfsdk:"default_monitoring"`
 	ConfigYaml           types.String `tfsdk:"config_yaml"`
-	Ssl                  types.Object `tfsdk:"ssl"`   //> outputSslModel
-	Kafka                types.Object `tfsdk:"kafka"` //> outputKafkaModel
+	SpaceIds             types.Set    `tfsdk:"space_ids"` //> string
+	Ssl                  types.Object `tfsdk:"ssl"`       //> outputSslModel
+	Kafka                types.Object `tfsdk:"kafka"`     //> outputKafkaModel
 }
 
 func (model *outputModel) populateFromAPI(ctx context.Context, union *kbapi.OutputUnion) (diags diag.Diagnostics) {
