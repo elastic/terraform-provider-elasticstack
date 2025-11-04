@@ -313,7 +313,7 @@ func resourceSlmRead(ctx context.Context, d *schema.ResourceData, meta interface
 			if err != nil {
 				return diag.FromErr(err)
 			}
-			if err := d.Set("metadata", meta); err != nil {
+			if err := d.Set("metadata", string(meta)); err != nil {
 				return diag.FromErr(err)
 			}
 		}

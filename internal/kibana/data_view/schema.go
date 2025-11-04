@@ -134,6 +134,7 @@ func getSchema() schema.Schema {
 								},
 								"params": schema.SingleNestedAttribute{
 									Optional: true,
+									Computed: true,
 									Attributes: map[string]schema.Attribute{
 										"pattern": schema.StringAttribute{
 											Optional:            true,

@@ -1,5 +1,6 @@
 ## [Unreleased]
 
+- Fix `elasticstack_elasticsearch_snapshot_lifecycle` metadata type conversion causing terraform apply to fail ([#1409](https://github.com/elastic/terraform-provider-elasticstack/issues/1409))
 - Add new `elasticstack_elasticsearch_ml_anomaly_detection_job` resource ([#1329](https://github.com/elastic/terraform-provider-elasticstack/pull/1329))
 - Add new `elasticstack_elasticsearch_ml_datafeed` resource ([1340](https://github.com/elastic/terraform-provider-elasticstack/pull/1340))
 
