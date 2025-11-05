@@ -1,0 +1,60 @@
+name: New Stack functionality
+description: Add support for new Stack functionality
+title: "[FEATURE] <title>"
+labels: ["Feature", "Stack Led"]
+body:
+- type: input
+  attributes:
+    label: Name of the resource
+    description: What is the name of the resource you are adding or extending?
+    placeholder: "e.g elasticstack_elasticsearch_ml_datafeed"
+- type: textarea
+  attributes:
+    label: Describe new functionality
+    description: A concise description of the new functionality to add. 
+    placeholder: |
+      If you're extending an existing resource:
+        * Describe any new fields, or changes to existing fields. 
+        * Reference the source code for the existing resource. 
+        * Describe any new cases that should be covered in acceptance testing.
+      e.g:
+        Add support for `query` field to the Machine Learning Datafeed resource. 
+        The code for the resource is in `internal/elasticsearch/ml/datafeed/`. 
+        Add new acceptance tests covering the new `query` field.  
+
+      If you're adding an entirely new resource:
+        * Describe the resource and its purpose.
+        * Include links to relevant API documentation.
+        * Describe where the resource code should live in the provider.
+        * Describe any cases that should be covered in acceptance testing.
+      e.g 
+        Add a new Machine Learning Datafeed resource to manage datafeeds for ML jobs. 
+        The new resource should live in `internal/elasticsearch/ml/datafeed/`. 
+        The resource will allow users to create, read, and delete ML datafeeds via the Elasticsearch API. 
+        API docs:
+          - Create: https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-ml-put-datafeed
+          - Get: https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-ml-get-datafeeds
+          - Delete: https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-ml-delete-datafeed
+        Make sure acceptance tests cover both a basic datafeed, and thoroughly cover all attributes in the resource schema, including datafeeds filtered by the `query` attribute.
+  validations:
+    required: true
+- type: input
+  attributes:
+    label: Version Introduced
+    description: What version of the Stack was this functionality introduced in?
+    placeholder: "e.g 9.2.0"
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Anything else?
+    placeholder: |
+      Links? References? Anything that will give us more context about the functionality you're adding!
+
+      e.g:
+        - Links to issues/PRs where this was added in Elasticsearch/Kibana etc.
+        - Links to any relevant documentation. 
+        - Describe any dependencies or relationships to other resources (e.g an ML datafeed is linked to an anomaly detection job).
+        - Describe any edge cases that should be covered in acceptance testing. 
+  validations:
+    required: false
