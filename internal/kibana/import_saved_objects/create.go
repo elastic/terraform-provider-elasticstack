@@ -32,7 +32,13 @@ func (r *Resource) importObjects(ctx context.Context, plan tfsdk.Plan, state *tf
 		return
 	}
 
-	resp, err := kibanaClient.KibanaSavedObject.Import([]byte(model.FileContents.ValueString()), model.Overwrite.ValueBool(), model.SpaceID.ValueString())
+	// Determine which file contents to use (file_contents or file_contents_wo)
+	fileContents := model.FileContents.ValueString()
+	if !model.FileContentsWO.IsNull() && !model.FileContentsWO.IsUnknown() {
+		fileContents = model.FileContentsWO.ValueString()
+	}
+
+	resp, err := kibanaClient.KibanaSavedObject.Import([]byte(fileContents), model.Overwrite.ValueBool(), model.SpaceID.ValueString())
 	if err != nil {
 		diags.AddError("failed to import saved objects", err.Error())
 		return
@@ -58,6 +64,10 @@ func (r *Resource) importObjects(ctx context.Context, plan tfsdk.Plan, state *tf
 	if model.ID.IsUnknown() {
 		model.ID = types.StringValue(uuid.NewString())
 	}
+
+	// Clear write-only attributes before saving to state
+	model.FileContentsWO = types.StringNull()
+	model.FileContentsWOVersion = types.StringNull()
 
 	diags.Append(state.Set(ctx, model)...)
 	diags.Append(state.SetAttribute(ctx, path.Root("success"), respModel.Success)...)

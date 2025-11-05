@@ -1,6 +1,7 @@
 package import_saved_objects_test
 
 import (
+	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -93,4 +94,146 @@ resource "elasticstack_kibana_import_saved_objects" "settings" {
 EOT
   overwrite     = true
 }`
+}
+
+func TestAccResourceImportSavedObjectsWriteOnly(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccResourceImportSavedObjectsWriteOnly(),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.wo_test", "success", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.wo_test", "success_count", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.wo_test", "success_results.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.wo_test", "errors.#", "0"),
+					// Verify write-only attributes are not stored in state
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_import_saved_objects.wo_test", "file_contents_wo"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_import_saved_objects.wo_test", "file_contents_wo_version"),
+				),
+			},
+		},
+	})
+}
+
+func testAccResourceImportSavedObjectsWriteOnly() string {
+	return `
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_kibana_import_saved_objects" "wo_test" {
+  overwrite = true
+  file_contents_wo = <<-EOT
+{"attributes":{"buildNum":42747,"defaultIndex":"metricbeat-*","theme:darkMode":true},"coreMigrationVersion":"7.0.0","id":"7.14.0","managed":false,"references":[],"type":"config","typeMigrationVersion":"7.0.0","updated_at":"2021-08-04T02:04:43.306Z","version":"WzY1MiwyXQ=="}
+{"excludedObjects":[],"excludedObjectsCount":0,"exportedCount":1,"missingRefCount":0,"missingReferences":[]}
+EOT
+}
+	`
+}
+
+func TestAccResourceImportSavedObjectsWriteOnlyWithVersion(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccResourceImportSavedObjectsWriteOnlyWithVersion(),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.wo_version_test", "success", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.wo_version_test", "success_count", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.wo_version_test", "success_results.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.wo_version_test", "errors.#", "0"),
+					// Verify write-only attributes are not stored in state
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_import_saved_objects.wo_version_test", "file_contents_wo"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_import_saved_objects.wo_version_test", "file_contents_wo_version"),
+				),
+			},
+		},
+	})
+}
+
+func testAccResourceImportSavedObjectsWriteOnlyWithVersion() string {
+	return `
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_kibana_import_saved_objects" "wo_version_test" {
+  overwrite = true
+  file_contents_wo = <<-EOT
+{"attributes":{"buildNum":42747,"defaultIndex":"metricbeat-*","theme:darkMode":true},"coreMigrationVersion":"7.0.0","id":"7.14.0","managed":false,"references":[],"type":"config","typeMigrationVersion":"7.0.0","updated_at":"2021-08-04T02:04:43.306Z","version":"WzY1MiwyXQ=="}
+{"excludedObjects":[],"excludedObjectsCount":0,"exportedCount":1,"missingRefCount":0,"missingReferences":[]}
+EOT
+  file_contents_wo_version = "v1.0.0"
+}
+	`
+}
+
+func TestAccResourceImportSavedObjectsConflictValidation(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				Config:      testAccResourceImportSavedObjectsConflict(),
+				ExpectError: regexp.MustCompile("Attribute \"file_contents_wo\" cannot be specified when \"file_contents\" is specified"),
+			},
+		},
+	})
+}
+
+func testAccResourceImportSavedObjectsConflict() string {
+	return `
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_kibana_import_saved_objects" "conflict_test" {
+  overwrite = true
+  file_contents = <<-EOT
+{"attributes":{"buildNum":42747,"defaultIndex":"metricbeat-*","theme:darkMode":true},"coreMigrationVersion":"7.0.0","id":"7.14.0","managed":false,"references":[],"type":"config","typeMigrationVersion":"7.0.0","updated_at":"2021-08-04T02:04:43.306Z","version":"WzY1MiwyXQ=="}
+{"excludedObjects":[],"excludedObjectsCount":0,"exportedCount":1,"missingRefCount":0,"missingReferences":[]}
+EOT
+  file_contents_wo = <<-EOT
+{"attributes":{"buildNum":42747,"defaultIndex":"metricbeat-*","theme:darkMode":false},"coreMigrationVersion":"7.0.0","id":"7.14.0","managed":false,"references":[],"type":"config","typeMigrationVersion":"7.0.0","updated_at":"2021-08-04T02:04:43.306Z","version":"WzY1MiwyXQ=="}
+{"excludedObjects":[],"excludedObjectsCount":0,"exportedCount":1,"missingRefCount":0,"missingReferences":[]}
+EOT
+}
+	`
+}
+
+func TestAccResourceImportSavedObjectsDependencyValidation(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				Config:      testAccResourceImportSavedObjectsDependency(),
+				ExpectError: regexp.MustCompile("Attribute \"file_contents_wo_version\" must be specified when \"file_contents_wo\" is specified"),
+			},
+		},
+	})
+}
+
+func testAccResourceImportSavedObjectsDependency() string {
+	return `
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_kibana_import_saved_objects" "dependency_test" {
+  overwrite = true
+  file_contents = <<-EOT
+{"attributes":{"buildNum":42747,"defaultIndex":"metricbeat-*","theme:darkMode":true},"coreMigrationVersion":"7.0.0","id":"7.14.0","managed":false,"references":[],"type":"config","typeMigrationVersion":"7.0.0","updated_at":"2021-08-04T02:04:43.306Z","version":"WzY1MiwyXQ=="}
+{"excludedObjects":[],"excludedObjectsCount":0,"exportedCount":1,"missingRefCount":0,"missingReferences":[]}
+EOT
+  file_contents_wo_version = "v1.0.0"
+}
+	`
 }

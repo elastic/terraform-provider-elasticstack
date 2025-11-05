@@ -4,23 +4,26 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/hashicorp/terraform-plugin-framework-validators/resourcevalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces
 var _ resource.Resource = &Resource{}
 var _ resource.ResourceWithConfigure = &Resource{}
+var _ resource.ResourceWithConfigValidators = &Resource{}
 
 // TODO - Uncomment these lines when we're using a kibana client which supports create_new_copies and compatibility_mode
 // create_new_copies and compatibility_mode aren't supported by the current version of the Kibana client
 // We can add these ourselves once https://github.com/elastic/terraform-provider-elasticstack/pull/372 is merged
-
-// var _ resource.ResourceWithConfigValidators = &Resource{}
 
 // func (r *Resource) ConfigValidators(context.Context) []resource.ConfigValidator {
 // 	return []resource.ConfigValidator{
@@ -31,6 +34,15 @@ var _ resource.ResourceWithConfigure = &Resource{}
 // 		),
 // 	}
 // }
+
+func (r *Resource) ConfigValidators(context.Context) []resource.ConfigValidator {
+	return []resource.ConfigValidator{
+		resourcevalidator.AtLeastOneOf(
+			path.MatchRoot("file_contents"),
+			path.MatchRoot("file_contents_wo"),
+		),
+	}
+}
 
 func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
@@ -67,7 +79,26 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 			// },
 			"file_contents": schema.StringAttribute{
 				Description: "The contents of the exported saved objects file.",
-				Required:    true,
+				Optional:    true,
+				Validators: []validator.String{
+					stringvalidator.ConflictsWith(path.MatchRoot("file_contents_wo")),
+				},
+			},
+			"file_contents_wo": schema.StringAttribute{
+				Description: "The contents of the exported saved objects file (write-only, not stored in state).",
+				Optional:    true,
+				Sensitive:   true,
+				Validators: []validator.String{
+					stringvalidator.ConflictsWith(path.MatchRoot("file_contents")),
+				},
+			},
+			"file_contents_wo_version": schema.StringAttribute{
+				Description: "Version or identifier for the file contents (write-only, not stored in state).",
+				Optional:    true,
+				Sensitive:   true,
+				Validators: []validator.String{
+					stringvalidator.AlsoRequires(path.MatchRoot("file_contents_wo")),
+				},
 			},
 
 			"success": schema.BoolAttribute{
@@ -140,9 +171,11 @@ type modelV0 struct {
 	// CreateNewCopies    types.Bool   `tfsdk:"create_new_copies"`
 	Overwrite types.Bool `tfsdk:"overwrite"`
 	// CompatibilityMode  types.Bool   `tfsdk:"compatibility_mode"`
-	FileContents   types.String `tfsdk:"file_contents"`
-	Success        types.Bool   `tfsdk:"success"`
-	SuccessCount   types.Int64  `tfsdk:"success_count"`
-	Errors         types.List   `tfsdk:"errors"`
-	SuccessResults types.List   `tfsdk:"success_results"`
+	FileContents          types.String `tfsdk:"file_contents"`
+	FileContentsWO        types.String `tfsdk:"file_contents_wo"`
+	FileContentsWOVersion types.String `tfsdk:"file_contents_wo_version"`
+	Success               types.Bool   `tfsdk:"success"`
+	SuccessCount          types.Int64  `tfsdk:"success_count"`
+	Errors                types.List   `tfsdk:"errors"`
+	SuccessResults        types.List   `tfsdk:"success_results"`
 }
