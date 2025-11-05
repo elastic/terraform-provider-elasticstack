@@ -11,6 +11,8 @@ type UserData struct {
 	Username                types.String         `tfsdk:"username"`
 	Password                types.String         `tfsdk:"password"`
 	PasswordHash            types.String         `tfsdk:"password_hash"`
+	PasswordWo              types.String         `tfsdk:"password_wo"`
+	PasswordWoVersion       types.String         `tfsdk:"password_wo_version"`
 	FullName                types.String         `tfsdk:"full_name"`
 	Email                   types.String         `tfsdk:"email"`
 	Roles                   types.Set            `tfsdk:"roles"`

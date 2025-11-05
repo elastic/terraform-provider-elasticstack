@@ -54,12 +54,16 @@ func (r *userResource) update(ctx context.Context, plan tfsdk.Plan, state *tfsdk
 	var user models.User
 	user.Username = usernameId
 
-	// Only set password if it's in the plan AND (it's a create OR it has changed from state)
-	if utils.IsKnown(planData.Password) && (!hasState || !planData.Password.Equal(stateData.Password)) {
+	// Handle password fields - only set password if it's in the plan AND (it's a create OR it has changed from state)
+	// Priority: password_wo > password > password_hash
+	if utils.IsKnown(planData.PasswordWo) && (!hasState || !planData.PasswordWo.Equal(stateData.PasswordWo) || !planData.PasswordWoVersion.Equal(stateData.PasswordWoVersion)) {
+		// Use write-only password
+		password := planData.PasswordWo.ValueString()
+		user.Password = &password
+	} else if utils.IsKnown(planData.Password) && (!hasState || !planData.Password.Equal(stateData.Password)) {
 		password := planData.Password.ValueString()
 		user.Password = &password
-	}
-	if utils.IsKnown(planData.PasswordHash) && (!hasState || !planData.PasswordHash.Equal(stateData.PasswordHash)) {
+	} else if utils.IsKnown(planData.PasswordHash) && (!hasState || !planData.PasswordHash.Equal(stateData.PasswordHash)) {
 		passwordHash := planData.PasswordHash.ValueString()
 		user.PasswordHash = &passwordHash
 	}
@@ -102,9 +106,9 @@ func (r *userResource) update(ctx context.Context, plan tfsdk.Plan, state *tfsdk
 	}
 
 	planData.Id = types.StringValue(id.String())
-	
+
 	// Set computed fields from the API response
-	if readUser.Metadata != nil && len(readUser.Metadata) > 0 {
+	if len(readUser.Metadata) > 0 {
 		metadata, err := json.Marshal(readUser.Metadata)
 		if err != nil {
 			diags.AddError("Failed to marshal metadata", err.Error())

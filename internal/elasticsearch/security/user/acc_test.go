@@ -237,6 +237,54 @@ resource "elasticstack_elasticsearch_security_user" "test" {
 	`, username, role)
 }
 
+func TestAccResourceSecurityUserWithPasswordWo(t *testing.T) {
+	username := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	password1 := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	password2 := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceSecurityUserDestroy,
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccResourceSecurityUserWithPasswordWo(username, password1, "v1"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_user.test", "username", username),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_user.test", "roles.*", "kibana_user"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_user.test", "password_wo_version", "v1"),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_security_user.test", "password"),
+					checks.CheckUserCanAuthenticate(username, password1),
+				),
+			},
+			{
+				Config: testAccResourceSecurityUserWithPasswordWo(username, password2, "v2"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_user.test", "username", username),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_user.test", "password_wo_version", "v2"),
+					checks.CheckUserCanAuthenticate(username, password2),
+				),
+			},
+		},
+	})
+}
+
+func testAccResourceSecurityUserWithPasswordWo(username, password, version string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_security_user" "test" {
+  username            = "%s"
+  roles               = ["kibana_user"]
+  full_name           = "Test User"
+  password_wo         = "%s"
+  password_wo_version = "%s"
+}
+	`, username, password, version)
+}
+
 func checkResourceSecurityUserDestroy(s *terraform.State) error {
 	client, err := clients.NewAcceptanceTestingClient()
 	if err != nil {

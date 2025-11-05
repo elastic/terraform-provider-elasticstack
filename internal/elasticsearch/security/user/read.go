@@ -53,7 +53,7 @@ func (r *userResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	data.Enabled = types.BoolValue(user.Enabled)
 
 	// Handle metadata
-	if user.Metadata != nil && len(user.Metadata) > 0 {
+	if len(user.Metadata) > 0 {
 		metadata, err := json.Marshal(user.Metadata)
 		if err != nil {
 			resp.Diagnostics.AddError("Failed to marshal metadata", err.Error())

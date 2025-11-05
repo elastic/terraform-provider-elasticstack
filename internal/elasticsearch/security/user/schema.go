@@ -50,12 +50,14 @@ func GetSchema() schema.Schema {
 				},
 			},
 			"password": schema.StringAttribute{
-				MarkdownDescription: "The user's password. Passwords must be at least 6 characters long.",
+				MarkdownDescription: "The user's password. Passwords must be at least 6 characters long. Note: Consider using `password_wo` for better security with ephemeral resources.",
 				Optional:            true,
 				Sensitive:           true,
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(6, 128),
 					stringvalidator.ConflictsWith(path.MatchRoot("password_hash")),
+					AtMostOneOf(path.MatchRoot("password_wo")),
+					PreferWriteOnlyAttribute("password_wo"),
 				},
 			},
 			"password_hash": schema.StringAttribute{
@@ -65,6 +67,23 @@ func GetSchema() schema.Schema {
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(6, 128),
 					stringvalidator.ConflictsWith(path.MatchRoot("password")),
+					AtMostOneOf(path.MatchRoot("password_wo")),
+				},
+			},
+			"password_wo": schema.StringAttribute{
+				MarkdownDescription: "Write-only password attribute for use with ephemeral resources. Passwords must be at least 6 characters long. This attribute is designed for use with ephemeral resources like `vault_kv_secret_v2` to prevent secrets from being stored in the Terraform state. Must be used with `password_wo_version`.",
+				Optional:            true,
+				Sensitive:           true,
+				Validators: []validator.String{
+					stringvalidator.LengthBetween(6, 128),
+					AtMostOneOf(path.MatchRoot("password"), path.MatchRoot("password_hash")),
+				},
+			},
+			"password_wo_version": schema.StringAttribute{
+				MarkdownDescription: "Version identifier for the write-only password. This field is used to trigger updates when the password changes. Required when `password_wo` is set. Typically, you would use a hash of the password or a version identifier from your secret management system.",
+				Optional:            true,
+				Validators: []validator.String{
+					RequiresAttribute(path.MatchRoot("password_wo")),
 				},
 			},
 			"full_name": schema.StringAttribute{
