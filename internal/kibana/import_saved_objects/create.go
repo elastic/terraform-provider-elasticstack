@@ -65,10 +65,6 @@ func (r *Resource) importObjects(ctx context.Context, plan tfsdk.Plan, state *tf
 		model.ID = types.StringValue(uuid.NewString())
 	}
 
-	// Clear write-only attributes before saving to state
-	model.FileContentsWO = types.StringNull()
-	model.FileContentsWOVersion = types.StringNull()
-
 	diags.Append(state.Set(ctx, model)...)
 	diags.Append(state.SetAttribute(ctx, path.Root("success"), respModel.Success)...)
 	diags.Append(state.SetAttribute(ctx, path.Root("success_count"), respModel.SuccessCount)...)

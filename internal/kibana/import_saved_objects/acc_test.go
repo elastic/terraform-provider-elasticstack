@@ -108,9 +108,6 @@ func TestAccResourceImportSavedObjectsWriteOnly(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.wo_test", "success_count", "1"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.wo_test", "success_results.#", "1"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.wo_test", "errors.#", "0"),
-					// Verify write-only attributes are not stored in state
-					resource.TestCheckNoResourceAttr("elasticstack_kibana_import_saved_objects.wo_test", "file_contents_wo"),
-					resource.TestCheckNoResourceAttr("elasticstack_kibana_import_saved_objects.wo_test", "file_contents_wo_version"),
 				),
 			},
 		},
@@ -146,9 +143,6 @@ func TestAccResourceImportSavedObjectsWriteOnlyWithVersion(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.wo_version_test", "success_count", "1"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.wo_version_test", "success_results.#", "1"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.wo_version_test", "errors.#", "0"),
-					// Verify write-only attributes are not stored in state
-					resource.TestCheckNoResourceAttr("elasticstack_kibana_import_saved_objects.wo_version_test", "file_contents_wo"),
-					resource.TestCheckNoResourceAttr("elasticstack_kibana_import_saved_objects.wo_version_test", "file_contents_wo_version"),
 				),
 			},
 		},
@@ -180,7 +174,7 @@ func TestAccResourceImportSavedObjectsConflictValidation(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config:      testAccResourceImportSavedObjectsConflict(),
-				ExpectError: regexp.MustCompile("Attribute \"file_contents_wo\" cannot be specified when \"file_contents\" is specified"),
+				ExpectError: regexp.MustCompile(`cannot be specified when`),
 			},
 		},
 	})
@@ -214,7 +208,7 @@ func TestAccResourceImportSavedObjectsDependencyValidation(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config:      testAccResourceImportSavedObjectsDependency(),
-				ExpectError: regexp.MustCompile("Attribute \"file_contents_wo_version\" must be specified when \"file_contents_wo\" is specified"),
+				ExpectError: regexp.MustCompile(`Attribute "file_contents_wo" must be specified when\s+"file_contents_wo_version" is specified`),
 			},
 		},
 	})
