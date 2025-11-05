@@ -6,6 +6,7 @@ import (
 	"regexp"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -55,8 +56,8 @@ func GetSchema() schema.Schema {
 				Sensitive:           true,
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(6, 128),
-					AtMostOneOf(path.MatchRoot("password_hash"), path.MatchRoot("password_wo")),
-					PreferWriteOnlyAttribute("password_wo"),
+					stringvalidator.ConflictsWith(path.MatchRoot("password_hash"), path.MatchRoot("password_wo")),
+					stringvalidator.PreferWriteOnlyAttribute(path.MatchRoot("password_wo")),
 				},
 			},
 			"password_hash": schema.StringAttribute{
@@ -65,7 +66,7 @@ func GetSchema() schema.Schema {
 				Sensitive:           true,
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(6, 128),
-					AtMostOneOf(path.MatchRoot("password"), path.MatchRoot("password_wo")),
+					stringvalidator.ConflictsWith(path.MatchRoot("password"), path.MatchRoot("password_wo")),
 				},
 			},
 			"password_wo": schema.StringAttribute{
@@ -74,14 +75,14 @@ func GetSchema() schema.Schema {
 				Sensitive:           true,
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(6, 128),
-					AtMostOneOf(path.MatchRoot("password"), path.MatchRoot("password_hash")),
+					stringvalidator.ConflictsWith(path.MatchRoot("password"), path.MatchRoot("password_hash")),
 				},
 			},
 			"password_wo_version": schema.StringAttribute{
 				MarkdownDescription: "Version identifier for the write-only password. This field is used to trigger updates when the password changes. Required when `password_wo` is set. Typically, you would use a hash of the password or a version identifier from your secret management system.",
 				Optional:            true,
 				Validators: []validator.String{
-					RequiresAttribute(path.MatchRoot("password_wo")),
+					stringvalidator.AlsoRequires(path.MatchRoot("password_wo")),
 				},
 			},
 			"full_name": schema.StringAttribute{
@@ -100,6 +101,9 @@ func GetSchema() schema.Schema {
 				MarkdownDescription: "A set of roles the user has. The roles determine the user's access permissions.",
 				Required:            true,
 				ElementType:         types.StringType,
+				Validators: []validator.Set{
+					setvalidator.SizeAtLeast(1),
+				},
 			},
 			"metadata": schema.StringAttribute{
 				MarkdownDescription: "Arbitrary metadata that you want to associate with the user.",

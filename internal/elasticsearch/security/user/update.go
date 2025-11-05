@@ -28,13 +28,11 @@ func (r *userResource) update(ctx context.Context, plan tfsdk.Plan, state *tfsdk
 	// Check if we have existing state (this is an update, not a create)
 	hasState := false
 	var stateData UserData
-	if state != nil {
-		if getRaw := state.Raw; !getRaw.IsNull() {
-			hasState = true
-			diags.Append(state.Get(ctx, &stateData)...)
-			if diags.HasError() {
-				return diags
-			}
+	if state != nil && !state.Raw.IsNull() {
+		hasState = true
+		diags.Append(state.Get(ctx, &stateData)...)
+		if diags.HasError() {
+			return diags
 		}
 	}
 
@@ -56,8 +54,8 @@ func (r *userResource) update(ctx context.Context, plan tfsdk.Plan, state *tfsdk
 
 	// Handle password fields - only set password if it's in the plan AND (it's a create OR it has changed from state)
 	// Priority: password_wo > password > password_hash
-	if utils.IsKnown(planData.PasswordWo) && (!hasState || !planData.PasswordWo.Equal(stateData.PasswordWo) || !planData.PasswordWoVersion.Equal(stateData.PasswordWoVersion)) {
-		// Use write-only password
+	if utils.IsKnown(planData.PasswordWo) && (!hasState || !planData.PasswordWoVersion.Equal(stateData.PasswordWoVersion)) {
+		// Use write-only password - changes triggered by version change
 		password := planData.PasswordWo.ValueString()
 		user.Password = &password
 	} else if utils.IsKnown(planData.Password) && (!hasState || !planData.Password.Equal(stateData.Password)) {
@@ -92,8 +90,7 @@ func (r *userResource) update(ctx context.Context, plan tfsdk.Plan, state *tfsdk
 		user.Metadata = metadata
 	}
 
-	sdkDiags = elasticsearch.PutUser(ctx, client, &user)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	diags.Append(elasticsearch.PutUserFw(ctx, client, &user)...)
 	if diags.HasError() {
 		return diags
 	}

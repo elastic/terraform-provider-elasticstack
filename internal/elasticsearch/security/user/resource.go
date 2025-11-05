@@ -8,6 +8,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
+// Ensure provider defined types fully satisfy framework interfaces
+var _ resource.Resource = &userResource{}
+var _ resource.ResourceWithConfigure = &userResource{}
+var _ resource.ResourceWithImportState = &userResource{}
+
 func NewUserResource() resource.Resource {
 	return &userResource{}
 }
