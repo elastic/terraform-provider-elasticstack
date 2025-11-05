@@ -1,4 +1,4 @@
-package security_test
+package user_test
 
 import (
 	"context"
@@ -154,6 +154,38 @@ func TestAccImportedUserDoesNotResetPassword(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_user.test", "password"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_user.test", "roles.*", "kibana_user"),
 					checks.CheckUserCanAuthenticate(username, userUpdatedPassword),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceSecurityUserFromSDK(t *testing.T) {
+	username := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				// Create the user with the last provider version where the user resource was built on the SDK
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"elasticstack": {
+						Source:            "elastic/elasticstack",
+						VersionConstraint: "0.12.1",
+					},
+				},
+				Config: testAccResourceSecurityUserCreate(username),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_user.test", "username", username),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_user.test", "roles.*", "kibana_user"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				Config:                   testAccResourceSecurityUserCreate(username),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_user.test", "username", username),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_user.test", "roles.*", "kibana_user"),
 				),
 			},
 		},
