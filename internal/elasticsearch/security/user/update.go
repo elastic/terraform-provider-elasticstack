@@ -61,7 +61,7 @@ func (r *userResource) update(ctx context.Context, plan tfsdk.Plan, config tfsdk
 	if diags.HasError() {
 		return diags
 	}
-	
+
 	if utils.IsKnown(passwordWoFromConfig) && (!hasState || !planData.PasswordWoVersion.Equal(stateData.PasswordWoVersion)) {
 		// Use write-only password - changes triggered by version change
 		password := passwordWoFromConfig.ValueString()
