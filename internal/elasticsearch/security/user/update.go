@@ -12,12 +12,13 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *userResource) update(ctx context.Context, plan tfsdk.Plan, state *tfsdk.State) diag.Diagnostics {
+func (r *userResource) update(ctx context.Context, plan tfsdk.Plan, config tfsdk.Config, state *tfsdk.State) diag.Diagnostics {
 	var planData UserData
 	var diags diag.Diagnostics
 	diags.Append(plan.Get(ctx, &planData)...)
@@ -54,9 +55,16 @@ func (r *userResource) update(ctx context.Context, plan tfsdk.Plan, state *tfsdk
 
 	// Handle password fields - only set password if it's in the plan AND (it's a create OR it has changed from state)
 	// Priority: password_wo > password > password_hash
-	if utils.IsKnown(planData.PasswordWo) && (!hasState || !planData.PasswordWoVersion.Equal(stateData.PasswordWoVersion)) {
+	// Read password_wo from config as per Terraform write-only attribute guidelines
+	var passwordWoFromConfig types.String
+	diags.Append(config.GetAttribute(ctx, path.Root("password_wo"), &passwordWoFromConfig)...)
+	if diags.HasError() {
+		return diags
+	}
+	
+	if utils.IsKnown(passwordWoFromConfig) && (!hasState || !planData.PasswordWoVersion.Equal(stateData.PasswordWoVersion)) {
 		// Use write-only password - changes triggered by version change
-		password := planData.PasswordWo.ValueString()
+		password := passwordWoFromConfig.ValueString()
 		user.Password = &password
 	} else if utils.IsKnown(planData.Password) && (!hasState || !planData.Password.Equal(stateData.Password)) {
 		password := planData.Password.ValueString()
@@ -121,9 +129,5 @@ func (r *userResource) update(ctx context.Context, plan tfsdk.Plan, state *tfsdk
 }
 
 func (r *userResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	diags := r.update(ctx, req.Plan, &resp.State)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	resp.Diagnostics.Append(r.update(ctx, req.Plan, req.Config, &resp.State)...)
 }
