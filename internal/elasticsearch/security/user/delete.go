@@ -27,5 +27,5 @@ func (r *userResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 		return
 	}
 
-	resp.Diagnostics.Append(elasticsearch.DeleteUserFw(ctx, client, compId.ResourceId)...)
+	resp.Diagnostics.Append(elasticsearch.DeleteUser(ctx, client, compId.ResourceId)...)
 }

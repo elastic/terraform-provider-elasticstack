@@ -90,7 +90,7 @@ func (r *userResource) update(ctx context.Context, plan tfsdk.Plan, state *tfsdk
 		user.Metadata = metadata
 	}
 
-	diags.Append(elasticsearch.PutUserFw(ctx, client, &user)...)
+	diags.Append(elasticsearch.PutUser(ctx, client, &user)...)
 	if diags.HasError() {
 		return diags
 	}

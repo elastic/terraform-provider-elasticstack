@@ -14,23 +14,26 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
-func PutUser(ctx context.Context, apiClient *clients.ApiClient, user *models.User) diag.Diagnostics {
-	var diags diag.Diagnostics
+func PutUser(ctx context.Context, apiClient *clients.ApiClient, user *models.User) fwdiag.Diagnostics {
+	var diags fwdiag.Diagnostics
 	userBytes, err := json.Marshal(user)
 	if err != nil {
-		return diag.FromErr(err)
+		diags.AddError("Unable to marshal user", err.Error())
+		return diags
 	}
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
-		return diag.FromErr(err)
+		diags.AddError("Unable to get Elasticsearch client", err.Error())
+		return diags
 	}
 	res, err := esClient.Security.PutUser(user.Username, bytes.NewReader(userBytes), esClient.Security.PutUser.WithContext(ctx))
 	if err != nil {
-		return diag.FromErr(err)
+		diags.AddError("Unable to create or update user", err.Error())
+		return diags
 	}
 	defer res.Body.Close()
-	if diags := diagutil.CheckError(res, "Unable to create or update a user"); diags.HasError() {
-		return diags
+	if fwDiags := diagutil.CheckErrorFromFW(res, "Unable to create or update a user"); fwDiags.HasError() {
+		return fwDiags
 	}
 	return diags
 }
@@ -72,24 +75,7 @@ func GetUser(ctx context.Context, apiClient *clients.ApiClient, username string)
 	return nil, diags
 }
 
-func DeleteUser(ctx context.Context, apiClient *clients.ApiClient, username string) diag.Diagnostics {
-	var diags diag.Diagnostics
-	esClient, err := apiClient.GetESClient()
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	res, err := esClient.Security.DeleteUser(username, esClient.Security.DeleteUser.WithContext(ctx))
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	defer res.Body.Close()
-	if diags := diagutil.CheckError(res, "Unable to delete a user"); diags.HasError() {
-		return diags
-	}
-	return diags
-}
-
-func DeleteUserFw(ctx context.Context, apiClient *clients.ApiClient, username string) fwdiag.Diagnostics {
+func DeleteUser(ctx context.Context, apiClient *clients.ApiClient, username string) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
@@ -103,30 +89,6 @@ func DeleteUserFw(ctx context.Context, apiClient *clients.ApiClient, username st
 	}
 	defer res.Body.Close()
 	if fwDiags := diagutil.CheckErrorFromFW(res, "Unable to delete a user"); fwDiags.HasError() {
-		return fwDiags
-	}
-	return diags
-}
-
-func PutUserFw(ctx context.Context, apiClient *clients.ApiClient, user *models.User) fwdiag.Diagnostics {
-	var diags fwdiag.Diagnostics
-	userBytes, err := json.Marshal(user)
-	if err != nil {
-		diags.AddError("Unable to marshal user", err.Error())
-		return diags
-	}
-	esClient, err := apiClient.GetESClient()
-	if err != nil {
-		diags.AddError("Unable to get Elasticsearch client", err.Error())
-		return diags
-	}
-	res, err := esClient.Security.PutUser(user.Username, bytes.NewReader(userBytes), esClient.Security.PutUser.WithContext(ctx))
-	if err != nil {
-		diags.AddError("Unable to create or update user", err.Error())
-		return diags
-	}
-	defer res.Body.Close()
-	if fwDiags := diagutil.CheckErrorFromFW(res, "Unable to create or update a user"); fwDiags.HasError() {
 		return fwDiags
 	}
 	return diags
