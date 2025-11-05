@@ -55,8 +55,7 @@ func GetSchema() schema.Schema {
 				Sensitive:           true,
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(6, 128),
-					stringvalidator.ConflictsWith(path.MatchRoot("password_hash")),
-					AtMostOneOf(path.MatchRoot("password_wo")),
+					AtMostOneOf(path.MatchRoot("password_hash"), path.MatchRoot("password_wo")),
 					PreferWriteOnlyAttribute("password_wo"),
 				},
 			},
@@ -66,8 +65,7 @@ func GetSchema() schema.Schema {
 				Sensitive:           true,
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(6, 128),
-					stringvalidator.ConflictsWith(path.MatchRoot("password")),
-					AtMostOneOf(path.MatchRoot("password_wo")),
+					AtMostOneOf(path.MatchRoot("password"), path.MatchRoot("password_wo")),
 				},
 			},
 			"password_wo": schema.StringAttribute{

@@ -42,9 +42,6 @@ func (v atMostOneOfValidator) ValidateString(ctx context.Context, req validator.
 		return
 	}
 
-	// Count how many of the specified attributes are set
-	expressions := req.PathExpression.MergeExpressions(v.pathExpressions...)
-
 	for _, expression := range v.pathExpressions {
 		matchedPaths, diags := req.Config.PathMatches(ctx, expression)
 		resp.Diagnostics.Append(diags...)
@@ -69,7 +66,7 @@ func (v atMostOneOfValidator) ValidateString(ctx context.Context, req validator.
 			if !matchedValue.IsNull() && !matchedValue.IsUnknown() {
 				resp.Diagnostics.Append(validatordiag.InvalidAttributeCombinationDiagnostic(
 					req.Path,
-					fmt.Sprintf("Only one of %s can be configured at a time", expressions),
+					fmt.Sprintf("Attribute %s conflicts with %s", req.Path, matchedPath),
 				))
 				return
 			}
