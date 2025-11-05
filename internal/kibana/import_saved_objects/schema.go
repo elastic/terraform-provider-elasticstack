@@ -95,7 +95,6 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 			"file_contents_wo_version": schema.StringAttribute{
 				Description: "Version or identifier for the file contents (write-only, not stored in state).",
 				Optional:    true,
-				Sensitive:   true,
 				Validators: []validator.String{
 					stringvalidator.AlsoRequires(path.MatchRoot("file_contents_wo")),
 				},

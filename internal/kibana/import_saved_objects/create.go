@@ -15,10 +15,10 @@ import (
 )
 
 func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, response *resource.CreateResponse) {
-	r.importObjects(ctx, request.Plan, &response.State, &response.Diagnostics)
+	r.importObjects(ctx, request.Plan, request.Config, &response.State, &response.Diagnostics)
 }
 
-func (r *Resource) importObjects(ctx context.Context, plan tfsdk.Plan, state *tfsdk.State, diags *diag.Diagnostics) {
+func (r *Resource) importObjects(ctx context.Context, plan tfsdk.Plan, config tfsdk.Config, state *tfsdk.State, diags *diag.Diagnostics) {
 	var model modelV0
 
 	diags.Append(plan.Get(ctx, &model)...)
@@ -33,9 +33,16 @@ func (r *Resource) importObjects(ctx context.Context, plan tfsdk.Plan, state *tf
 	}
 
 	// Determine which file contents to use (file_contents or file_contents_wo)
+	// Read write-only attributes from config as per Terraform best practices
+	var fileContentsWO types.String
+	diags.Append(config.GetAttribute(ctx, path.Root("file_contents_wo"), &fileContentsWO)...)
+	if diags.HasError() {
+		return
+	}
+
 	fileContents := model.FileContents.ValueString()
-	if !model.FileContentsWO.IsNull() && !model.FileContentsWO.IsUnknown() {
-		fileContents = model.FileContentsWO.ValueString()
+	if !fileContentsWO.IsNull() && !fileContentsWO.IsUnknown() {
+		fileContents = fileContentsWO.ValueString()
 	}
 
 	resp, err := kibanaClient.KibanaSavedObject.Import([]byte(fileContents), model.Overwrite.ValueBool(), model.SpaceID.ValueString())

@@ -7,5 +7,5 @@ import (
 )
 
 func (r *Resource) Update(ctx context.Context, request resource.UpdateRequest, response *resource.UpdateResponse) {
-	r.importObjects(ctx, request.Plan, &response.State, &response.Diagnostics)
+	r.importObjects(ctx, request.Plan, request.Config, &response.State, &response.Diagnostics)
 }
