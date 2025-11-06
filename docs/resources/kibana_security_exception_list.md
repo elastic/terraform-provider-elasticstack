@@ -95,4 +95,3 @@ resource "elasticstack_kibana_security_exception_list" "endpoint" {
 - `tie_breaker_id` (String) Field used in search to ensure all containers are sorted and returned correctly.
 - `updated_at` (String) The timestamp of when the exception list was last updated.
 - `updated_by` (String) The user who last updated the exception list.
-- `version` (Number) The version of the exception list.

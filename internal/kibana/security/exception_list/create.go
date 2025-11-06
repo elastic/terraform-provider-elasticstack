@@ -137,15 +137,6 @@ func (r *ExceptionListResource) updateStateFromAPIResponse(ctx context.Context, 
 	model.Immutable = types.BoolValue(apiResp.Immutable)
 	model.TieBreakerID = types.StringValue(apiResp.TieBreakerId)
 
-	// Set version if present
-	if apiResp.UnderscoreVersion != nil {
-		// Parse version string to int64
-		var version int64
-		model.Version = types.Int64Value(version)
-	} else {
-		model.Version = types.Int64Null()
-	}
-
 	// Set optional os_types
 	if apiResp.OsTypes != nil && len(*apiResp.OsTypes) > 0 {
 		osTypes := make([]string, len(*apiResp.OsTypes))

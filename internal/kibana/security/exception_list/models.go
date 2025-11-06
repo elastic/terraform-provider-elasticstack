@@ -14,7 +14,6 @@ type ExceptionListModel struct {
 	OsTypes       types.List   `tfsdk:"os_types"`
 	Tags          types.List   `tfsdk:"tags"`
 	Meta          types.String `tfsdk:"meta"`
-	Version       types.Int64  `tfsdk:"version"`
 	CreatedAt     types.String `tfsdk:"created_at"`
 	CreatedBy     types.String `tfsdk:"created_by"`
 	UpdatedAt     types.String `tfsdk:"updated_at"`

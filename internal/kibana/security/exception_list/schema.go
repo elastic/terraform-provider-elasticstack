@@ -86,10 +86,6 @@ func (r *ExceptionListResource) Schema(_ context.Context, _ resource.SchemaReque
 				MarkdownDescription: "Placeholder for metadata about the list container as JSON string.",
 				Optional:            true,
 			},
-			"version": schema.Int64Attribute{
-				MarkdownDescription: "The version of the exception list.",
-				Computed:            true,
-			},
 			"created_at": schema.StringAttribute{
 				MarkdownDescription: "The timestamp of when the exception list was created.",
 				Computed:            true,
