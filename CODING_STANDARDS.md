@@ -14,7 +14,7 @@ This document outlines the coding standards and conventions used in the terrafor
 - Use the Plugin Framework for all new resources (not SDKv2)
 - Follow the code organization pattern of `internal/elasticsearch/security/system_user` for new Plugin Framework resources
 - Avoid adding extra functionality to the existing `utils` package. Instead:
-  - Code should live as close the consumers.
+  - Code should live as close to the consumers.
   - Resource, area, application specific shared logic should live at that level. For example within `internal/kibana` for Kibana specific shared logic.
   - Provider wide shared logic should be packaged together by a logical concept. For example `internal/diagutil` contains shared code for managing Terraform Diagnostics, and translating between errors, SDKv2 diags, and Plugin Framework diags.
 
@@ -25,7 +25,7 @@ This document outlines the coding standards and conventions used in the terrafor
     - Use `customtypes.DurationType{}` for duration-based string attributes.
     - Use `customtypes.JSONWithDefaultsType{}` to allow users to specify only a subset of a JSON blob.
 - Always include comprehensive descriptions for all resources, and attributes. 
-- Long, multiline descriptions should be stored in an external markdown file, which is imported via Golang embedding. See `resource-description.md` for examples. 
+- Long, multiline descriptions should be stored in an external markdown file, which is imported via Golang embedding. See `internal/elasticsearch/security/system_user/resource-description.md` for an example location.
 - Use schema validation wherever possible. Only perform validation within create/read/update functions as a last resort. 
   - For example, any validation that relies on the actual Elastic Stack components (e.g Elasticsearch version)
     can only be performed during the create/read/update phase. 

@@ -1,4 +1,4 @@
-You will be writing or reviewing code for the Terraform provider for Elastic Stack (Elasticsearch, Kibana, Fleet, APM, and Logstash). This is a Go based repository hosting the provider source. 
+You will be writing or reviewing code for the Terraform provider for Elastic Stack (Elasticsearch, Kibana, Fleet, APM, and Logstash). This is a Go-based repository hosting the provider source. 
 
 When writing code, you must adhere to the coding standards and conventions outlined in the [CODING_STANDARDS.md](../CODING_STANDARDS.md) document in this repository.
 
