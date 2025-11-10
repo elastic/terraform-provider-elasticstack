@@ -52,6 +52,9 @@ This document outlines the coding standards and conventions used in the terrafor
   - Further details may be found in the [API documentation](https://www.elastic.co/docs/api/doc/kibana/v9/)
 - Elasticsearch resources will be backed by the [go-elasticsearch](https://github.com/elastic/go-elasticsearch) client. 
   - Further details may be found in the [API documentation](https://www.elastic.co/docs/api/doc/elasticsearch/)
+- Use `EnforceMinVersion` to ensure the backing Elastic Stack applications support the defined fields. 
+  - The provider supports a wide range of Stack versions, and so newer features will not be available in all versions. 
+  - See [`assertKafkaSupport`](./internal/fleet/output/models.go) for an example of how to handle the use of unsupported attributes.
 
 
 ## JSON Handling
