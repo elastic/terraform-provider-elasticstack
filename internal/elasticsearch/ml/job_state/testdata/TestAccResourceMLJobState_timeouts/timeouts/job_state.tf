@@ -42,7 +42,7 @@ resource "elasticstack_elasticsearch_ml_anomaly_detection_job" "test" {
     time_format = "epoch_ms"
   }
   analysis_limits = {
-    model_memory_limit = "784mb" # Large memory requirement close to cluster limit
+    model_memory_limit = "2g" # Large memory requirement close to cluster limit
   }
   allow_lazy_open = true # This should cause datafeed to wait for available node
 }
