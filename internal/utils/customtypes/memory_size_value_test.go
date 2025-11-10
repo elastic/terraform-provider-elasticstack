@@ -279,7 +279,7 @@ func TestMemorySize_ParseBytes(t *testing.T) {
 	tests := []struct {
 		name          string
 		memorySize    MemorySize
-		expectedBytes int64
+		expectedMB    int64
 		expectedError bool
 	}{
 		{
@@ -293,69 +293,69 @@ func TestMemorySize_ParseBytes(t *testing.T) {
 			expectedError: true,
 		},
 		{
-			name:          "bytes without unit",
-			memorySize:    NewMemorySizeValue("1048576"), // exactly 1MB
-			expectedBytes: 1048576,
+			name:       "bytes without unit",
+			memorySize: NewMemorySizeValue("1048576"), // exactly 1MB
+			expectedMB: 1,
 		},
 		{
-			name:          "bytes without unit - rounds down",
-			memorySize:    NewMemorySizeValue("1048575"), // 1 byte less than 1MB
-			expectedBytes: 0,                             // rounds down to 0MB
+			name:       "bytes without unit - rounds down",
+			memorySize: NewMemorySizeValue("1048575"), // 1 byte less than 1MB
+			expectedMB: 0,                             // rounds down to 0MB
 		},
 		{
-			name:          "bytes without unit - partial MB rounds down",
-			memorySize:    NewMemorySizeValue("1500000"), // ~1.43MB
-			expectedBytes: 1048576,                       // rounds down to 1MB
+			name:       "bytes without unit - partial MB rounds down",
+			memorySize: NewMemorySizeValue("1500000"), // ~1.43MB
+			expectedMB: 1,                             // rounds down to 1MB
 		},
 		{
-			name:          "kilobytes",
-			memorySize:    NewMemorySizeValue("1024k"), // exactly 1MB
-			expectedBytes: 1024 * 1024,
+			name:       "kilobytes",
+			memorySize: NewMemorySizeValue("1024k"), // exactly 1MB
+			expectedMB: 1,
 		},
 		{
-			name:          "kilobytes - partial MB rounds down",
-			memorySize:    NewMemorySizeValue("1000k"), // ~976KB, rounds down to 0MB
-			expectedBytes: 0,
+			name:       "kilobytes - partial MB rounds down",
+			memorySize: NewMemorySizeValue("1000k"), // ~976KB, rounds down to 0MB
+			expectedMB: 0,
 		},
 		{
-			name:          "kilobytes with B suffix",
-			memorySize:    NewMemorySizeValue("1024kb"), // exactly 1MB
-			expectedBytes: 1024 * 1024,
+			name:       "kilobytes with B suffix",
+			memorySize: NewMemorySizeValue("1024kb"), // exactly 1MB
+			expectedMB: 1,
 		},
 		{
-			name:          "megabytes",
-			memorySize:    NewMemorySizeValue("128m"),
-			expectedBytes: 128 * 1024 * 1024,
+			name:       "megabytes",
+			memorySize: NewMemorySizeValue("128m"),
+			expectedMB: 128,
 		},
 		{
-			name:          "megabytes with B suffix",
-			memorySize:    NewMemorySizeValue("128mb"),
-			expectedBytes: 128 * 1024 * 1024,
+			name:       "megabytes with B suffix",
+			memorySize: NewMemorySizeValue("128mb"),
+			expectedMB: 128,
 		},
 		{
-			name:          "uppercase megabytes",
-			memorySize:    NewMemorySizeValue("128MB"),
-			expectedBytes: 128 * 1024 * 1024,
+			name:       "uppercase megabytes",
+			memorySize: NewMemorySizeValue("128MB"),
+			expectedMB: 128,
 		},
 		{
-			name:          "gigabytes",
-			memorySize:    NewMemorySizeValue("2g"),
-			expectedBytes: 2 * 1024 * 1024 * 1024,
+			name:       "gigabytes",
+			memorySize: NewMemorySizeValue("2g"),
+			expectedMB: 2 * 1024,
 		},
 		{
-			name:          "gigabytes with B suffix",
-			memorySize:    NewMemorySizeValue("2gb"),
-			expectedBytes: 2 * 1024 * 1024 * 1024,
+			name:       "gigabytes with B suffix",
+			memorySize: NewMemorySizeValue("2gb"),
+			expectedMB: 2 * 1024,
 		},
 		{
-			name:          "terabytes",
-			memorySize:    NewMemorySizeValue("1t"),
-			expectedBytes: 1024 * 1024 * 1024 * 1024,
+			name:       "terabytes",
+			memorySize: NewMemorySizeValue("1t"),
+			expectedMB: 1024 * 1024,
 		},
 		{
-			name:          "terabytes with B suffix",
-			memorySize:    NewMemorySizeValue("1tb"),
-			expectedBytes: 1024 * 1024 * 1024 * 1024,
+			name:       "terabytes with B suffix",
+			memorySize: NewMemorySizeValue("1tb"),
+			expectedMB: 1024 * 1024,
 		},
 		{
 			name:          "invalid format",
@@ -377,7 +377,7 @@ func TestMemorySize_ParseBytes(t *testing.T) {
 				require.True(t, diags.HasError())
 			} else {
 				require.False(t, diags.HasError())
-				require.Equal(t, tt.expectedBytes, bytes)
+				require.Equal(t, tt.expectedMB, bytes)
 			}
 		})
 	}
