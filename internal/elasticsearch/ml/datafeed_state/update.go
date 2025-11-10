@@ -74,7 +74,7 @@ func (r *mlDatafeedStateResource) update(ctx context.Context, plan tfsdk.Plan, s
 	}
 
 	// Perform state transition if needed
-	inDesiredState, fwDiags := r.performStateTransition(ctx, client, data, datafeedStats.State)
+	inDesiredState, fwDiags := r.performStateTransition(ctx, client, data, datafeed.State(datafeedStats.State))
 	diags.Append(fwDiags...)
 	if diags.HasError() {
 		return diags
