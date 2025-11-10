@@ -1,15 +1,20 @@
 package job_state_test
 
 import (
+	"encoding/json"
 	"fmt"
+	"maps"
 	"regexp"
+	"slices"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"github.com/stretchr/testify/require"
 )
 
 func TestAccResourceMLJobState(t *testing.T) {
@@ -129,9 +134,44 @@ func TestAccResourceMLJobState_timeouts(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"job_id":     config.StringVariable(jobID),
 					"index_name": config.StringVariable(indexName),
+					"job_memory": config.StringVariable(GetMaxMLJobMemory(t)),
 				},
 				ExpectError: regexp.MustCompile("Operation timed out"),
 			},
 		},
 	})
+}
+
+func GetMaxMLJobMemory(t *testing.T) string {
+	client, err := clients.NewAcceptanceTestingClient()
+	require.NoError(t, err)
+
+	esClient, err := client.GetESClient()
+	require.NoError(t, err)
+
+	resp, err := esClient.ML.GetMemoryStats()
+	require.NoError(t, err)
+
+	defer resp.Body.Close()
+	type mlNode struct {
+		Memory struct {
+			ML struct {
+				MaxInBytes int64 `json:"max_in_bytes"`
+			} `json:"ml"`
+		} `json:"mem"`
+	}
+	var mlMemoryStats struct {
+		Nodes map[string]mlNode `json:"nodes"`
+	}
+
+	err = json.NewDecoder(resp.Body).Decode(&mlMemoryStats)
+	require.NoError(t, err)
+
+	nodes := slices.Collect(maps.Values(mlMemoryStats.Nodes))
+	nodeWithMaxMemory := slices.MaxFunc(nodes, func(a, b mlNode) int {
+		return int(b.Memory.ML.MaxInBytes - a.Memory.ML.MaxInBytes)
+	})
+
+	maxAvailableMemoryInMB := nodeWithMaxMemory.Memory.ML.MaxInBytes / (1024 * 1024)
+	return fmt.Sprintf("%dmb", maxAvailableMemoryInMB+50)
 }

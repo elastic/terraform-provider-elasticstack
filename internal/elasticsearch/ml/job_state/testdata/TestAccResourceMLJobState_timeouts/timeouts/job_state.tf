@@ -8,6 +8,11 @@ variable "index_name" {
   type        = string
 }
 
+variable "job_memory" {
+  description = "The ML job memory limit"
+  type        = string
+}
+
 provider "elasticstack" {
   elasticsearch {}
 }
@@ -42,7 +47,7 @@ resource "elasticstack_elasticsearch_ml_anomaly_detection_job" "test" {
     time_format = "epoch_ms"
   }
   analysis_limits = {
-    model_memory_limit = "2g" # Large memory requirement close to cluster limit
+    model_memory_limit = var.job_memory
   }
   allow_lazy_open = true # This should cause datafeed to wait for available node
 }
