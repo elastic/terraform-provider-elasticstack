@@ -39,7 +39,7 @@ func (r *mlDatafeedStateResource) Delete(ctx context.Context, req resource.Delet
 	}
 
 	// If the datafeed is started, stop it when deleting the resource
-	if *currentState == "started" {
+	if *currentState == datafeed.StateStarted {
 		tflog.Info(ctx, fmt.Sprintf("Stopping ML datafeed %s during delete", datafeedId))
 
 		// Parse timeout duration
@@ -57,7 +57,7 @@ func (r *mlDatafeedStateResource) Delete(ctx context.Context, req resource.Delet
 		}
 
 		// Wait for the datafeed to stop
-		_, diags := datafeed.WaitForDatafeedState(ctx, client, datafeedId, "stopped")
+		_, diags := datafeed.WaitForDatafeedState(ctx, client, datafeedId, datafeed.StateStopped)
 		resp.Diagnostics.Append(diags...)
 		if resp.Diagnostics.HasError() {
 			return

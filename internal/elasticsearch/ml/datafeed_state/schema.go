@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"regexp"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
@@ -56,7 +57,7 @@ func GetSchema() schema.Schema {
 				MarkdownDescription: "The desired state for the ML datafeed. Valid values are `started` and `stopped`.",
 				Required:            true,
 				Validators: []validator.String{
-					stringvalidator.OneOf("started", "stopped"),
+					stringvalidator.OneOf(string(datafeed.StateStarted), string(datafeed.StateStopped)),
 				},
 			},
 			"force": schema.BoolAttribute{

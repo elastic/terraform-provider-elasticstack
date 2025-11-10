@@ -140,9 +140,9 @@ func (r *mlDatafeedStateResource) update(ctx context.Context, plan tfsdk.Plan, s
 }
 
 // performStateTransition handles the ML datafeed state transition process
-func (r *mlDatafeedStateResource) performStateTransition(ctx context.Context, client *clients.ApiClient, data MLDatafeedStateData, currentState string) (bool, diag.Diagnostics) {
+func (r *mlDatafeedStateResource) performStateTransition(ctx context.Context, client *clients.ApiClient, data MLDatafeedStateData, currentState datafeed.State) (bool, diag.Diagnostics) {
 	datafeedId := data.DatafeedId.ValueString()
-	desiredState := data.State.ValueString()
+	desiredState := datafeed.State(data.State.ValueString())
 	force := data.Force.ValueBool()
 
 	// Parse timeout duration
@@ -159,7 +159,7 @@ func (r *mlDatafeedStateResource) performStateTransition(ctx context.Context, cl
 
 	// Initiate the state change
 	switch desiredState {
-	case "started":
+	case datafeed.StateStarted:
 		start, diags := data.GetStartAsString()
 		if diags.HasError() {
 			return false, diags
@@ -175,7 +175,7 @@ func (r *mlDatafeedStateResource) performStateTransition(ctx context.Context, cl
 		if diags.HasError() {
 			return false, diags
 		}
-	case "stopped":
+	case datafeed.StateStopped:
 		if diags := elasticsearch.StopDatafeed(ctx, client, datafeedId, force, timeout); diags.HasError() {
 			return false, diags
 		}

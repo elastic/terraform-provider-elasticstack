@@ -54,7 +54,7 @@ func (r *datafeedResource) maybeStopDatafeed(ctx context.Context, datafeedId str
 	}
 
 	// If the datafeed is not running, nothing to stop
-	if *currentState != "started" && *currentState != "starting" {
+	if *currentState != StateStarted && *currentState != StateStarting {
 		return false, diags
 	}
 
@@ -66,7 +66,7 @@ func (r *datafeedResource) maybeStopDatafeed(ctx context.Context, datafeedId str
 	}
 
 	// Wait for the datafeed to reach stopped state
-	_, waitDiags := WaitForDatafeedState(ctx, r.client, datafeedId, "stopped")
+	_, waitDiags := WaitForDatafeedState(ctx, r.client, datafeedId, StateStopped)
 	diags.Append(waitDiags...)
 	if diags.HasError() {
 		return true, diags

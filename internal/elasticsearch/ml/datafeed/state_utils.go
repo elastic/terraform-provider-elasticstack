@@ -12,8 +12,16 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
+type State string
+
+const (
+	StateStopped  State = "stopped"
+	StateStarted  State = "started"
+	StateStarting State = "starting"
+)
+
 // GetDatafeedState returns the current state of a datafeed
-func GetDatafeedState(ctx context.Context, client *clients.ApiClient, datafeedId string) (*string, diag.Diagnostics) {
+func GetDatafeedState(ctx context.Context, client *clients.ApiClient, datafeedId string) (*State, diag.Diagnostics) {
 	statsResponse, diags := elasticsearch.GetDatafeedStats(ctx, client, datafeedId)
 	if diags.HasError() {
 		return nil, diags
@@ -23,18 +31,19 @@ func GetDatafeedState(ctx context.Context, client *clients.ApiClient, datafeedId
 		return nil, nil
 	}
 
-	return &statsResponse.State, nil
+	state := State(statsResponse.State)
+	return &state, nil
 }
 
-var terminalDatafeedStates = map[string]struct{}{
-	"stopped": {},
-	"started": {},
+var terminalDatafeedStates = map[State]struct{}{
+	StateStopped: {},
+	StateStarted: {},
 }
 
 var errDatafeedInUndesiredState = errors.New("datafeed stuck in undesired state")
 
 // WaitForDatafeedState waits for a datafeed to reach the desired state
-func WaitForDatafeedState(ctx context.Context, client *clients.ApiClient, datafeedId, desiredState string) (bool, diag.Diagnostics) {
+func WaitForDatafeedState(ctx context.Context, client *clients.ApiClient, datafeedId string, desiredState State) (bool, diag.Diagnostics) {
 	stateChecker := func(ctx context.Context) (bool, error) {
 		currentState, diags := GetDatafeedState(ctx, client, datafeedId)
 		if diags.HasError() {

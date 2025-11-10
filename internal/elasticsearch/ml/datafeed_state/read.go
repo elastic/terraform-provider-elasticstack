@@ -6,6 +6,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed"
 	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -55,7 +56,7 @@ func (r *mlDatafeedStateResource) read(ctx context.Context, data MLDatafeedState
 	// Update the data with current information
 	data.State = types.StringValue(datafeedStats.State)
 
-	if datafeedStats.State == "started" {
+	if datafeed.State(datafeedStats.State) == datafeed.StateStarted {
 		if datafeedStats.RunningState == nil {
 			diags.AddWarning("Running state was empty for a started datafeed", "The Elasticsearch API returned an empty running state for a Datafeed which was successfully started. Ignoring start and end response values.")
 		}

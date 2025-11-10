@@ -61,7 +61,7 @@ func (r *datafeedResource) update(ctx context.Context, req resource.UpdateReques
 		}
 
 		// Wait for the datafeed to reach started state
-		_, waitDiags := WaitForDatafeedState(ctx, r.client, datafeedId, "started")
+		_, waitDiags := WaitForDatafeedState(ctx, r.client, datafeedId, StateStarted)
 		resp.Diagnostics.Append(waitDiags...)
 		if resp.Diagnostics.HasError() {
 			return
