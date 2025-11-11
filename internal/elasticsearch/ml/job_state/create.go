@@ -25,7 +25,7 @@ func (r *mlJobStateResource) Create(ctx context.Context, req resource.CreateRequ
 	}
 
 	diags = r.update(ctx, req.Plan, &resp.State, createTimeout)
-	if diags.Contains(diagutil.FrameworkDiagFromError(context.DeadlineExceeded)[0]) {
+	if diagutil.ContainsContextDeadlineExceeded(ctx, diags) {
 		diags.AddError("Operation timed out", fmt.Sprintf("The operation to create the ML job state timed out after %s. You may need to allocate more free memory within ML nodes by either closing other jobs, or increasing the overall ML memory. You may retry the operation.", createTimeout))
 	}
 

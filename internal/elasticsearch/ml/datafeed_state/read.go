@@ -2,12 +2,11 @@ package datafeed_state
 
 import (
 	"context"
-	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed"
-	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -56,17 +55,17 @@ func (r *mlDatafeedStateResource) read(ctx context.Context, data MLDatafeedState
 	// Update the data with current information
 	data.State = types.StringValue(datafeedStats.State)
 
-	if datafeed.State(datafeedStats.State) == datafeed.StateStarted {
-		if datafeedStats.RunningState == nil {
-			diags.AddWarning("Running state was empty for a started datafeed", "The Elasticsearch API returned an empty running state for a Datafeed which was successfully started. Ignoring start and end response values.")
-		}
+	// Regenerate composite ID to ensure it's current
+	compId, sdkDiags := client.ID(ctx, datafeedId)
+	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	if diags.HasError() {
+		return nil, diags
+	}
 
-		data.Start = timetypes.NewRFC3339TimeValue(time.UnixMilli(datafeedStats.RunningState.SearchInterval.StartMS))
-		if datafeedStats.RunningState.RealTimeConfigured {
-			data.End = timetypes.NewRFC3339Null()
-		} else {
-			data.End = timetypes.NewRFC3339TimeValue(time.UnixMilli(datafeedStats.RunningState.SearchInterval.EndMS))
-		}
+	data.Id = types.StringValue(compId.String())
+
+	if datafeed.State(datafeedStats.State) == datafeed.StateStarted {
+		diags.Append(data.SetStartAndEndFromAPI(datafeedStats)...)
 	}
 
 	return &data, diags

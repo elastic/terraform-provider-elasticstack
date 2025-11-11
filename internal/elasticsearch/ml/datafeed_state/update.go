@@ -9,6 +9,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed"
+	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -33,7 +34,7 @@ func (r *mlDatafeedStateResource) Update(ctx context.Context, req resource.Updat
 	}
 
 	diags = r.update(ctx, req.Plan, &resp.State, updateTimeout)
-	if diags.Contains(diagutil.FrameworkDiagFromError(context.DeadlineExceeded)[0]) {
+	if diagutil.ContainsContextDeadlineExceeded(ctx, diags) {
 		diags.AddError("Operation timed out", fmt.Sprintf("The operation to update the ML datafeed state timed out after %s. You may need to allocate more free memory within ML nodes by either closing other jobs, or increasing the overall ML memory. You may retry the operation.", updateTimeout))
 	}
 
@@ -106,33 +107,12 @@ func (r *mlDatafeedStateResource) update(ctx context.Context, plan tfsdk.Plan, s
 			return diags
 		}
 	} else {
-		statsAfterUpdate, fwDiags := elasticsearch.GetDatafeedStats(ctx, client, datafeedId)
-		diags.Append(fwDiags...)
+		var updateDiags diag.Diagnostics
+		finalData, updateDiags = r.updateAfterMissedTransition(ctx, client, data, datafeedStats)
+		diags.Append(updateDiags...)
 		if diags.HasError() {
 			return diags
 		}
-
-		if datafeedStats == nil {
-			diags.AddError(
-				"ML Datafeed not found",
-				fmt.Sprintf("ML datafeed %s does not exist after successful update", datafeedId),
-			)
-			return diags
-		}
-
-		if statsAfterUpdate.TimingStats.SearchCount < datafeedStats.TimingStats.SearchCount {
-			diags.AddError(
-				"Datafeed did not successfully transition to the desired state",
-				fmt.Sprintf("[%s] datafeed did not settle into the [%s] state. The current state is [%s]", datafeedId, desiredState, statsAfterUpdate.State),
-			)
-			return diags
-		}
-
-		if data.Start.IsUnknown() {
-			data.Start = timetypes.NewRFC3339Null()
-		}
-
-		finalData = &data
 	}
 
 	if finalData == nil {
@@ -142,6 +122,42 @@ func (r *mlDatafeedStateResource) update(ctx context.Context, plan tfsdk.Plan, s
 
 	diags.Append(state.Set(ctx, finalData)...)
 	return diags
+}
+
+func (r *mlDatafeedStateResource) updateAfterMissedTransition(ctx context.Context, client *clients.ApiClient, data MLDatafeedStateData, datafeedStats *models.DatafeedStats) (*MLDatafeedStateData, diag.Diagnostics) {
+	datafeedId := data.DatafeedId.ValueString()
+	statsAfterUpdate, diags := elasticsearch.GetDatafeedStats(ctx, client, datafeedId)
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	if statsAfterUpdate == nil {
+		diags.AddError(
+			"ML Datafeed not found",
+			fmt.Sprintf("ML datafeed %s does not exist after successful update", datafeedId),
+		)
+		return nil, diags
+	}
+
+	// It's possible that the datafeed starts, and then immediately stops if there is no (or very little) data to process.
+	// In this case, the state transition may occur too quickly to be detected by the wait function.
+	// To handle this, we check if the search count has increased to determine if the datafeed actually started since the update.
+	if statsAfterUpdate.TimingStats == nil || datafeedStats.TimingStats == nil {
+		diags.AddWarning("Expected Datafeed to contain timing stats",
+			fmt.Sprintf("Stats for datafeed %s did not contain timing stats either before or after the update. Before %v - After %v", datafeedId, datafeedStats, statsAfterUpdate))
+	} else if statsAfterUpdate.TimingStats.SearchCount <= datafeedStats.TimingStats.SearchCount {
+		diags.AddError(
+			"Datafeed did not successfully transition to the desired state",
+			fmt.Sprintf("[%s] datafeed did not settle into the [%s] state. The current state is [%s]", datafeedId, data.State.ValueString(), statsAfterUpdate.State),
+		)
+		return nil, diags
+	}
+
+	if data.Start.IsUnknown() {
+		data.Start = timetypes.NewRFC3339Null()
+	}
+
+	return &data, nil
 }
 
 // performStateTransition handles the ML datafeed state transition process
