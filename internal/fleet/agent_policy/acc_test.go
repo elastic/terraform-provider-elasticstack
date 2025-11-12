@@ -799,3 +799,177 @@ resource "elasticstack_fleet_agent_policy" "test_policy" {
 }
 `, id)
 }
+
+func TestAccResourceAgentPolicyWithRequiredVersions(t *testing.T) {
+policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+resource.Test(t, resource.TestCase{
+PreCheck:                 func() { acctest.PreCheck(t) },
+CheckDestroy:             checkResourceAgentPolicyDestroy,
+ProtoV6ProviderFactories: acctest.Providers,
+Steps: []resource.TestStep{
+{
+SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionAgentPolicy),
+Config:   testAccResourceAgentPolicyCreateWithRequiredVersions(policyName),
+Check: resource.ComposeTestCheckFunc(
+resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
+resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
+resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "required_versions.#", "1"),
+resource.TestCheckTypeSetElemNestedAttrs("elasticstack_fleet_agent_policy.test_policy", "required_versions.*", map[string]string{
+"version":    "8.15.0",
+"percentage": "100",
+}),
+),
+},
+{
+SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionAgentPolicy),
+Config:   testAccResourceAgentPolicyUpdateRequiredVersionsPercentage(policyName),
+Check: resource.ComposeTestCheckFunc(
+resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
+resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
+resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "required_versions.#", "1"),
+resource.TestCheckTypeSetElemNestedAttrs("elasticstack_fleet_agent_policy.test_policy", "required_versions.*", map[string]string{
+"version":    "8.15.0",
+"percentage": "50",
+}),
+),
+},
+{
+SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionAgentPolicy),
+Config:   testAccResourceAgentPolicyAddRequiredVersion(policyName),
+Check: resource.ComposeTestCheckFunc(
+resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
+resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
+resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "required_versions.#", "2"),
+resource.TestCheckTypeSetElemNestedAttrs("elasticstack_fleet_agent_policy.test_policy", "required_versions.*", map[string]string{
+"version":    "8.15.0",
+"percentage": "50",
+}),
+resource.TestCheckTypeSetElemNestedAttrs("elasticstack_fleet_agent_policy.test_policy", "required_versions.*", map[string]string{
+"version":    "8.16.0",
+"percentage": "50",
+}),
+),
+},
+{
+SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionAgentPolicy),
+Config:   testAccResourceAgentPolicyRemoveRequiredVersions(policyName),
+Check: resource.ComposeTestCheckFunc(
+resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
+resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
+resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_policy.test_policy", "required_versions"),
+),
+},
+},
+})
+}
+
+func testAccResourceAgentPolicyCreateWithRequiredVersions(id string) string {
+return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_fleet_agent_policy" "test_policy" {
+  name             = "%s"
+  namespace        = "default"
+  description      = "Test Agent Policy with Required Versions"
+  monitor_logs     = true
+  monitor_metrics  = false
+  skip_destroy     = false
+  required_versions = [
+    {
+      version    = "8.15.0"
+      percentage = 100
+    }
+  ]
+}
+
+data "elasticstack_fleet_enrollment_tokens" "test_policy" {
+  policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
+}
+`, fmt.Sprintf("Policy %s", id))
+}
+
+func testAccResourceAgentPolicyUpdateRequiredVersionsPercentage(id string) string {
+return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_fleet_agent_policy" "test_policy" {
+  name             = "%s"
+  namespace        = "default"
+  description      = "Test Agent Policy with Required Versions - Updated Percentage"
+  monitor_logs     = true
+  monitor_metrics  = false
+  skip_destroy     = false
+  required_versions = [
+    {
+      version    = "8.15.0"
+      percentage = 50
+    }
+  ]
+}
+
+data "elasticstack_fleet_enrollment_tokens" "test_policy" {
+  policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
+}
+`, fmt.Sprintf("Policy %s", id))
+}
+
+func testAccResourceAgentPolicyAddRequiredVersion(id string) string {
+return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_fleet_agent_policy" "test_policy" {
+  name             = "%s"
+  namespace        = "default"
+  description      = "Test Agent Policy with Multiple Required Versions"
+  monitor_logs     = true
+  monitor_metrics  = false
+  skip_destroy     = false
+  required_versions = [
+    {
+      version    = "8.15.0"
+      percentage = 50
+    },
+    {
+      version    = "8.16.0"
+      percentage = 50
+    }
+  ]
+}
+
+data "elasticstack_fleet_enrollment_tokens" "test_policy" {
+  policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
+}
+`, fmt.Sprintf("Policy %s", id))
+}
+
+func testAccResourceAgentPolicyRemoveRequiredVersions(id string) string {
+return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_fleet_agent_policy" "test_policy" {
+  name             = "%s"
+  namespace        = "default"
+  description      = "Test Agent Policy without Required Versions"
+  monitor_logs     = true
+  monitor_metrics  = false
+  skip_destroy     = false
+}
+
+data "elasticstack_fleet_enrollment_tokens" "test_policy" {
+  policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
+}
+`, fmt.Sprintf("Policy %s", id))
+}

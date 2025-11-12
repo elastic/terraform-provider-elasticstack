@@ -30,24 +30,25 @@ type globalDataTagsItemModel struct {
 }
 
 type agentPolicyModel struct {
-	ID                  types.String         `tfsdk:"id"`
-	PolicyID            types.String         `tfsdk:"policy_id"`
-	Name                types.String         `tfsdk:"name"`
-	Namespace           types.String         `tfsdk:"namespace"`
-	Description         types.String         `tfsdk:"description"`
-	DataOutputId        types.String         `tfsdk:"data_output_id"`
-	MonitoringOutputId  types.String         `tfsdk:"monitoring_output_id"`
-	FleetServerHostId   types.String         `tfsdk:"fleet_server_host_id"`
-	DownloadSourceId    types.String         `tfsdk:"download_source_id"`
-	MonitorLogs         types.Bool           `tfsdk:"monitor_logs"`
-	MonitorMetrics      types.Bool           `tfsdk:"monitor_metrics"`
-	SysMonitoring       types.Bool           `tfsdk:"sys_monitoring"`
-	SkipDestroy         types.Bool           `tfsdk:"skip_destroy"`
-	SupportsAgentless   types.Bool           `tfsdk:"supports_agentless"`
-	InactivityTimeout   customtypes.Duration `tfsdk:"inactivity_timeout"`
-	UnenrollmentTimeout customtypes.Duration `tfsdk:"unenrollment_timeout"`
-	GlobalDataTags      types.Map            `tfsdk:"global_data_tags"` //> globalDataTagsModel
-	SpaceIds            types.Set            `tfsdk:"space_ids"`
+	ID                  types.String          `tfsdk:"id"`
+	PolicyID            types.String          `tfsdk:"policy_id"`
+	Name                types.String          `tfsdk:"name"`
+	Namespace           types.String          `tfsdk:"namespace"`
+	Description         types.String          `tfsdk:"description"`
+	DataOutputId        types.String          `tfsdk:"data_output_id"`
+	MonitoringOutputId  types.String          `tfsdk:"monitoring_output_id"`
+	FleetServerHostId   types.String          `tfsdk:"fleet_server_host_id"`
+	DownloadSourceId    types.String          `tfsdk:"download_source_id"`
+	MonitorLogs         types.Bool            `tfsdk:"monitor_logs"`
+	MonitorMetrics      types.Bool            `tfsdk:"monitor_metrics"`
+	SysMonitoring       types.Bool            `tfsdk:"sys_monitoring"`
+	SkipDestroy         types.Bool            `tfsdk:"skip_destroy"`
+	SupportsAgentless   types.Bool            `tfsdk:"supports_agentless"`
+	InactivityTimeout   customtypes.Duration  `tfsdk:"inactivity_timeout"`
+	UnenrollmentTimeout customtypes.Duration  `tfsdk:"unenrollment_timeout"`
+	GlobalDataTags      types.Map             `tfsdk:"global_data_tags"` //> globalDataTagsModel
+	SpaceIds            types.Set             `tfsdk:"space_ids"`
+	RequiredVersions    RequiredVersionsValue `tfsdk:"required_versions"`
 }
 
 func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.AgentPolicy) diag.Diagnostics {
@@ -134,6 +135,37 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 		model.SpaceIds = types.SetNull(types.StringType)
 	}
 
+	// Handle required_versions
+	if data.RequiredVersions != nil && len(*data.RequiredVersions) > 0 {
+		elemType := getRequiredVersionsElementType()
+		elements := make([]attr.Value, 0, len(*data.RequiredVersions))
+		
+		for _, rv := range *data.RequiredVersions {
+			objValue, d := types.ObjectValue(
+				map[string]attr.Type{
+					"version":    types.StringType,
+					"percentage": types.Int32Type,
+				},
+				map[string]attr.Value{
+					"version":    types.StringValue(rv.Version),
+					"percentage": types.Int32Value(int32(rv.Percentage)),
+				},
+			)
+			if d.HasError() {
+				return d
+			}
+			elements = append(elements, objValue)
+		}
+		
+		reqVersions, d := NewRequiredVersionsValue(elemType, elements)
+		if d.HasError() {
+			return d
+		}
+		model.RequiredVersions = reqVersions
+	} else {
+		model.RequiredVersions = NewRequiredVersionsValueNull(getRequiredVersionsElementType())
+	}
+
 	return nil
 }
 
@@ -184,6 +216,63 @@ func (model *agentPolicyModel) convertGlobalDataTags(ctx context.Context, feat f
 	}
 
 	return &itemsList, diags
+}
+
+// convertRequiredVersions converts the required versions from terraform model to API model
+func (model *agentPolicyModel) convertRequiredVersions(ctx context.Context) (*[]struct {
+	Percentage float32 `json:"percentage"`
+	Version    string  `json:"version"`
+}, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	if model.RequiredVersions.IsNull() || model.RequiredVersions.IsUnknown() {
+		return nil, diags
+	}
+
+	elements := model.RequiredVersions.Elements()
+	if len(elements) == 0 {
+		return nil, diags
+	}
+
+	result := make([]struct {
+		Percentage float32 `json:"percentage"`
+		Version    string  `json:"version"`
+	}, 0, len(elements))
+
+	for _, elem := range elements {
+		obj, ok := elem.(types.Object)
+		if !ok {
+			diags.AddError("required_versions conversion error", fmt.Sprintf("Expected ObjectValue, got %T", elem))
+			continue
+		}
+
+		attrs := obj.Attributes()
+		versionAttr := attrs["version"].(types.String)
+		percentageAttr := attrs["percentage"].(types.Int32)
+
+		if versionAttr.IsNull() || versionAttr.IsUnknown() {
+			diags.AddError("required_versions validation error", "version cannot be null or unknown")
+			continue
+		}
+		if percentageAttr.IsNull() || percentageAttr.IsUnknown() {
+			diags.AddError("required_versions validation error", "percentage cannot be null or unknown")
+			continue
+		}
+
+		result = append(result, struct {
+			Percentage float32 `json:"percentage"`
+			Version    string  `json:"version"`
+		}{
+			Percentage: float32(percentageAttr.ValueInt32()),
+			Version:    versionAttr.ValueString(),
+		})
+	}
+
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	return &result, diags
 }
 
 func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, feat features) (kbapi.PostFleetAgentPoliciesJSONRequestBody, diag.Diagnostics) {
@@ -282,6 +371,13 @@ func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, feat featur
 		body.SpaceIds = &spaceIds
 	}
 
+	// Handle required_versions
+	requiredVersions, d := model.convertRequiredVersions(ctx)
+	if d.HasError() {
+		return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, d
+	}
+	body.RequiredVersions = requiredVersions
+
 	return body, nil
 }
 
@@ -378,6 +474,13 @@ func (model *agentPolicyModel) toAPIUpdateModel(ctx context.Context, feat featur
 		}
 		body.SpaceIds = &spaceIds
 	}
+
+	// Handle required_versions
+	requiredVersions, d := model.convertRequiredVersions(ctx)
+	if d.HasError() {
+		return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, d
+	}
+	body.RequiredVersions = requiredVersions
 
 	return body, nil
 }
