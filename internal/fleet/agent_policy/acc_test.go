@@ -845,7 +845,7 @@ func TestAccResourceAgentPolicyWithRequiredVersions(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
-					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_policy.test_policy", "required_versions"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "required_versions.%", "0"),
 				),
 			},
 		},
