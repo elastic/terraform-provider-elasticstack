@@ -139,7 +139,7 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 	if data.RequiredVersions != nil && len(*data.RequiredVersions) > 0 {
 		elemType := getRequiredVersionsElementType()
 		elements := make([]attr.Value, 0, len(*data.RequiredVersions))
-		
+
 		for _, rv := range *data.RequiredVersions {
 			objValue, d := types.ObjectValue(
 				map[string]attr.Type{
@@ -156,7 +156,7 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 			}
 			elements = append(elements, objValue)
 		}
-		
+
 		reqVersions, d := NewRequiredVersionsValue(elemType, elements)
 		if d.HasError() {
 			return d

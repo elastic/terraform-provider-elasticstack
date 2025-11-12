@@ -24,7 +24,7 @@ type RequiredVersionsValue struct {
 func (v RequiredVersionsValue) Type(ctx context.Context) attr.Type {
 	return RequiredVersionsType{
 		SetType: basetypes.SetType{
-			ElemType: v.SetValue.ElementType(ctx),
+			ElemType: v.ElementType(ctx),
 		},
 	}
 }
