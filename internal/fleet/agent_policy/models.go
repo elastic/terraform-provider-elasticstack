@@ -22,6 +22,7 @@ type features struct {
 	SupportsInactivityTimeout   bool
 	SupportsUnenrollmentTimeout bool
 	SupportsSpaceIds            bool
+	SupportsRequiredVersions    bool
 }
 
 type globalDataTagsItemModel struct {
@@ -140,7 +141,9 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 		versionMap := make(map[string]attr.Value)
 
 		for _, rv := range *data.RequiredVersions {
-			versionMap[rv.Version] = types.Int32Value(int32(rv.Percentage))
+			// Round the float32 percentage to nearest integer since we use Int32 in the schema
+			percentage := int32(rv.Percentage + 0.5)
+			versionMap[rv.Version] = types.Int32Value(percentage)
 		}
 
 		reqVersions, d := types.MapValue(types.Int32Type, versionMap)
@@ -205,7 +208,7 @@ func (model *agentPolicyModel) convertGlobalDataTags(ctx context.Context, feat f
 }
 
 // convertRequiredVersions converts the required versions from terraform model to API model
-func (model *agentPolicyModel) convertRequiredVersions(ctx context.Context) (*[]struct {
+func (model *agentPolicyModel) convertRequiredVersions(ctx context.Context, feat features) (*[]struct {
 	Percentage float32 `json:"percentage"`
 	Version    string  `json:"version"`
 }, diag.Diagnostics) {
@@ -215,9 +218,26 @@ func (model *agentPolicyModel) convertRequiredVersions(ctx context.Context) (*[]
 		return nil, diags
 	}
 
+	// Check if required_versions is supported
+	if !feat.SupportsRequiredVersions {
+		return nil, diag.Diagnostics{
+			diag.NewAttributeErrorDiagnostic(
+				path.Root("required_versions"),
+				"Unsupported Elasticsearch version",
+				fmt.Sprintf("Required versions (automatic agent upgrades) are only supported in Elastic Stack %s and above", MinVersionRequiredVersions),
+			),
+		}
+	}
+
 	elements := model.RequiredVersions.Elements()
+
+	// If the map is empty (required_versions = {}), return an empty array to clear upgrades
 	if len(elements) == 0 {
-		return nil, diags
+		emptyArray := make([]struct {
+			Percentage float32 `json:"percentage"`
+			Version    string  `json:"version"`
+		}, 0)
+		return &emptyArray, diags
 	}
 
 	result := make([]struct {
@@ -350,7 +370,7 @@ func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, feat featur
 	}
 
 	// Handle required_versions
-	requiredVersions, d := model.convertRequiredVersions(ctx)
+	requiredVersions, d := model.convertRequiredVersions(ctx, feat)
 	if d.HasError() {
 		return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, d
 	}
@@ -454,7 +474,7 @@ func (model *agentPolicyModel) toAPIUpdateModel(ctx context.Context, feat featur
 	}
 
 	// Handle required_versions
-	requiredVersions, d := model.convertRequiredVersions(ctx)
+	requiredVersions, d := model.convertRequiredVersions(ctx, feat)
 	if d.HasError() {
 		return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, d
 	}

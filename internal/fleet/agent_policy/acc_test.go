@@ -20,6 +20,7 @@ import (
 )
 
 var minVersionAgentPolicy = version.Must(version.NewVersion("8.6.0"))
+var minVersionRequiredVersions = version.Must(version.NewVersion("9.1.0"))
 
 func TestAccResourceAgentPolicyFromSDK(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
@@ -809,7 +810,7 @@ func TestAccResourceAgentPolicyWithRequiredVersions(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionAgentPolicy),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionRequiredVersions),
 				Config:   testAccResourceAgentPolicyCreateWithRequiredVersions(policyName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
@@ -819,7 +820,7 @@ func TestAccResourceAgentPolicyWithRequiredVersions(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionAgentPolicy),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionRequiredVersions),
 				Config:   testAccResourceAgentPolicyUpdateRequiredVersionsPercentage(policyName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
@@ -829,7 +830,7 @@ func TestAccResourceAgentPolicyWithRequiredVersions(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionAgentPolicy),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionRequiredVersions),
 				Config:   testAccResourceAgentPolicyAddRequiredVersion(policyName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
@@ -840,7 +841,7 @@ func TestAccResourceAgentPolicyWithRequiredVersions(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionAgentPolicy),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionRequiredVersions),
 				Config:   testAccResourceAgentPolicyRemoveRequiredVersions(policyName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
