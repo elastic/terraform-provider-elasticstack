@@ -973,3 +973,51 @@ data "elasticstack_fleet_enrollment_tokens" "test_policy" {
 }
 `, fmt.Sprintf("Policy %s", id))
 }
+
+func TestAccResourceAgentPolicyWithDuplicateRequiredVersions(t *testing.T) {
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc:    versionutils.CheckIfVersionIsUnsupported(minVersionAgentPolicy),
+				Config:      testAccResourceAgentPolicyCreateWithDuplicateRequiredVersions(policyName),
+				ExpectError: regexp.MustCompile(".*Duplicate Version.*8.15.0.*"),
+			},
+		},
+	})
+}
+
+func testAccResourceAgentPolicyCreateWithDuplicateRequiredVersions(id string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_fleet_agent_policy" "test_policy" {
+  name             = "%s"
+  namespace        = "default"
+  description      = "Test Agent Policy with Duplicate Required Versions"
+  monitor_logs     = true
+  monitor_metrics  = false
+  skip_destroy     = false
+  required_versions = [
+    {
+      version    = "8.15.0"
+      percentage = 50
+    },
+    {
+      version    = "8.15.0"
+      percentage = 100
+    }
+  ]
+}
+
+data "elasticstack_fleet_enrollment_tokens" "test_policy" {
+  policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
+}
+`, fmt.Sprintf("Policy %s", id))
+}

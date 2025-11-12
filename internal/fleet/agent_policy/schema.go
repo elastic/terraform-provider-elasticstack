@@ -156,6 +156,9 @@ func getSchema() schema.Schema {
 				},
 				Optional:   true,
 				CustomType: RequiredVersionsType{SetType: basetypes.SetType{ElemType: types.ObjectType{AttrTypes: map[string]attr.Type{"version": types.StringType, "percentage": types.Int32Type}}}},
+				Validators: []validator.Set{
+					UniqueVersions(),
+				},
 			},
 		}}
 }
