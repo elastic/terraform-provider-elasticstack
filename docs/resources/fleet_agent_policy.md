@@ -57,7 +57,7 @@ resource "elasticstack_fleet_agent_policy" "test_policy" {
 - `monitor_metrics` (Boolean) Enable collection of agent metrics.
 - `monitoring_output_id` (String) The identifier for monitoring output.
 - `policy_id` (String) Unique identifier of the agent policy.
-- `required_versions` (Set of Object) Specifies target agent versions for automatic upgrade. Each entry contains a version string and a percentage of agents to upgrade to that version. Multiple entries with the same version are not allowed. (see [below for nested schema](#nestedatt--required_versions))
+- `required_versions` (Map of Number) Map of agent versions to target percentages for automatic upgrade. The key is the target version and the value is the percentage of agents to upgrade to that version.
 - `skip_destroy` (Boolean) Set to true if you do not wish the agent policy to be deleted at destroy time, and instead just remove the agent policy from the Terraform state.
 - `space_ids` (Set of String) The Kibana space IDs that this agent policy should be available in. When not specified, defaults to ["default"]. Note: The order of space IDs does not matter as this is a set.
 - `supports_agentless` (Boolean) Set to true to enable agentless data collection.
@@ -75,15 +75,6 @@ Optional:
 
 - `number_value` (Number) Number value for the field. If this is set, string_value must not be defined.
 - `string_value` (String) String value for the field. If this is set, number_value must not be defined.
-
-
-<a id="nestedatt--required_versions"></a>
-### Nested Schema for `required_versions`
-
-Optional:
-
-- `percentage` (Number)
-- `version` (String)
 
 ## Import
 

@@ -17,7 +17,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 func (r *agentPolicyResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
@@ -146,30 +145,13 @@ func getSchema() schema.Schema {
 				Optional:    true,
 				Computed:    true,
 			},
-			"required_versions": schema.SetAttribute{
-				Description: "Specifies target agent versions for automatic upgrade. Each entry contains a version string and a percentage of agents to upgrade to that version. Multiple entries with the same version are not allowed.",
-				ElementType: types.ObjectType{
-					AttrTypes: map[string]attr.Type{
-						"version":    types.StringType,
-						"percentage": types.Int32Type,
-					},
-				},
-				Optional:   true,
-				CustomType: RequiredVersionsType{SetType: basetypes.SetType{ElemType: types.ObjectType{AttrTypes: map[string]attr.Type{"version": types.StringType, "percentage": types.Int32Type}}}},
-				Validators: []validator.Set{
-					UniqueVersions(),
-				},
+			"required_versions": schema.MapAttribute{
+				Description: "Map of agent versions to target percentages for automatic upgrade. The key is the target version and the value is the percentage of agents to upgrade to that version.",
+				ElementType: types.Int32Type,
+				Optional:    true,
 			},
 		}}
 }
 func getGlobalDataTagsAttrTypes() attr.Type {
 	return getSchema().Attributes["global_data_tags"].GetType()
-}
-func getRequiredVersionsElementType() attr.Type {
-	return types.ObjectType{
-		AttrTypes: map[string]attr.Type{
-			"version":    types.StringType,
-			"percentage": types.Int32Type,
-		},
-	}
 }
