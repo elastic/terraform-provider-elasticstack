@@ -4,11 +4,14 @@ import (
 	"context"
 	"regexp"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
@@ -73,6 +76,13 @@ func GetSchema() schema.Schema {
 			"data_view_id": schema.StringAttribute{
 				MarkdownDescription: "Data view ID for the rule. Not supported for esql and machine_learning rule types.",
 				Optional:            true,
+				Validators: []validator.String{
+					// Enforce that data_view_id is not set if the rule type is ml or esql
+					validators.ForbiddenIfDependentPathOneOf(
+						path.Root("type"),
+						[]string{"machine_learning", "esql"},
+					),
+				},
 			},
 			"namespace": schema.StringAttribute{
 				MarkdownDescription: "Alerts index namespace. Available for all rule types.",
@@ -108,6 +118,13 @@ func GetSchema() schema.Schema {
 				MarkdownDescription: "Indices on which the rule functions.",
 				Optional:            true,
 				Computed:            true,
+				Validators: []validator.List{
+					// Enforce that index is not set if the rule type is ml or esql
+					validators.ForbiddenIfDependentPathOneOf(
+						path.Root("type"),
+						[]string{"machine_learning", "esql"},
+					),
+				},
 			},
 			"enabled": schema.BoolAttribute{
 				MarkdownDescription: "Determines whether the rule is enabled.",
@@ -302,6 +319,12 @@ func GetSchema() schema.Schema {
 				MarkdownDescription: "Query and filter context array to define alert conditions as JSON. Supports complex filter structures including bool queries, term filters, range filters, etc. Available for all rule types.",
 				Optional:            true,
 				CustomType:          jsontypes.NormalizedType{},
+				Validators: []validator.String{
+					validators.ForbiddenIfDependentPathOneOf(
+						path.Root("type"),
+						[]string{"machine_learning", "esql"},
+					),
+				},
 			},
 			"note": schema.StringAttribute{
 				MarkdownDescription: "Notes to help investigate alerts produced by the rule.",
@@ -602,6 +625,10 @@ func GetSchema() schema.Schema {
 				MarkdownDescription: "Anomaly score threshold above which the rule creates an alert. Valid values are from 0 to 100. Required for machine_learning rules.",
 				Optional:            true,
 				Validators: []validator.Int64{
+					validators.RequiredIfDependentPathEquals(
+						path.Root("type"),
+						"machine_learning",
+					),
 					int64validator.Between(0, 100),
 				},
 			},
@@ -912,4 +939,42 @@ func getThreatSubtechniqueElementType() attr.Type {
 	threatType := GetSchema().Attributes["threat"].GetType().(attr.TypeWithElementType).ElementType().(attr.TypeWithAttributeTypes)
 	techniqueType := threatType.AttributeTypes()["technique"].(attr.TypeWithElementType).ElementType().(attr.TypeWithAttributeTypes)
 	return techniqueType.AttributeTypes()["subtechnique"].(attr.TypeWithElementType).ElementType()
+}
+
+// ValidateConfig validates the configuration for a security detection rule resource.
+// It ensures that the configuration meets the following requirements:
+//
+// - For rule types "esql" and "machine_learning", no additional validation is performed
+// - For other rule types, exactly one of 'index' or 'data_view_id' must be specified
+// - Both 'index' and 'data_view_id' cannot be set simultaneously
+//
+// The function adds appropriate error diagnostics if validation fails.
+func (r securityDetectionRuleResource) ValidateConfig(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
+	var data SecurityDetectionRuleData
+
+	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if data.Type.ValueString() == "esql" || data.Type.ValueString() == "machine_learning" {
+		return
+	}
+
+	if utils.IsKnown(data.Index) && utils.IsKnown(data.DataViewId) {
+		resp.Diagnostics.AddError(
+			"Invalid Configuration",
+			"Both 'index' and 'data_view_id' cannot be set at the same time.",
+		)
+
+	}
+
+	if !utils.IsKnown(data.Index) && !utils.IsKnown(data.DataViewId) {
+		resp.Diagnostics.AddError(
+			"Invalid Configuration",
+			"One of 'index' or 'data_view_id' must be set.",
+		)
+
+	}
 }
