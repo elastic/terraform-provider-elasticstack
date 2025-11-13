@@ -2,6 +2,7 @@ package agent_policy_test
 
 import (
 	"context"
+	_ "embed"
 	"errors"
 	"fmt"
 	"regexp"
@@ -14,12 +15,16 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/agent_policy"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 var minVersionAgentPolicy = version.Must(version.NewVersion("8.6.0"))
+
+//go:embed testdata/TestAccResourceAgentPolicyFromSDK/main.tf
+var sdkCreateTestConfig string
 
 func TestAccResourceAgentPolicyFromSDK(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
@@ -36,7 +41,11 @@ func TestAccResourceAgentPolicyFromSDK(t *testing.T) {
 					},
 				},
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionAgentPolicy),
-				Config:   testAccResourceAgentPolicyCreate(policyName, false),
+				Config:   sdkCreateTestConfig,
+				ConfigVariables: config.Variables{
+					"policy_name":  config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+					"skip_destroy": config.BoolVariable(false),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
@@ -49,7 +58,11 @@ func TestAccResourceAgentPolicyFromSDK(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionAgentPolicy),
-				Config:                   testAccResourceAgentPolicyCreate(policyName, false),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory(""),
+				ConfigVariables: config.Variables{
+					"policy_name":  config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+					"skip_destroy": config.BoolVariable(false),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
@@ -70,13 +83,17 @@ func TestAccResourceAgentPolicy(t *testing.T) {
 	var originalPolicyId string
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceAgentPolicyDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceAgentPolicyDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionAgentPolicy),
-				Config:   testAccResourceAgentPolicyCreate(policyName, false),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionAgentPolicy),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name":  config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+					"skip_destroy": config.BoolVariable(false),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
@@ -96,8 +113,13 @@ func TestAccResourceAgentPolicy(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionAgentPolicy),
-				Config:   testAccResourceAgentPolicyCreate(policyName, false),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionAgentPolicy),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name":  config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+					"skip_destroy": config.BoolVariable(false),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
@@ -117,8 +139,13 @@ func TestAccResourceAgentPolicy(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionAgentPolicy),
-				Config:   testAccResourceAgentPolicyUpdate(policyName, false),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionAgentPolicy),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"policy_name":  config.StringVariable(fmt.Sprintf("Updated Policy %s", policyName)),
+					"skip_destroy": config.BoolVariable(false),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Updated Policy %s", policyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
@@ -136,16 +163,25 @@ func TestAccResourceAgentPolicy(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                versionutils.CheckIfVersionIsUnsupported(minVersionAgentPolicy),
-				Config:                  testAccResourceAgentPolicyUpdate(policyName, false),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionAgentPolicy),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"policy_name":  config.StringVariable(fmt.Sprintf("Updated Policy %s", policyName)),
+					"skip_destroy": config.BoolVariable(false),
+				},
 				ResourceName:            "elasticstack_fleet_agent_policy.test_policy",
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"skip_destroy"},
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionInactivityTimeout),
-				Config:   testAccResourceAgentPolicyCreateWithInactivityTimeout(policyName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionInactivityTimeout),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_inactivity_timeout"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
@@ -157,8 +193,12 @@ func TestAccResourceAgentPolicy(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionUnenrollmentTimeout),
-				Config:   testAccResourceAgentPolicyCreateWithUnenrollmentTimeout(policyName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionUnenrollmentTimeout),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_unenrollment_timeout"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
@@ -170,8 +210,12 @@ func TestAccResourceAgentPolicy(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionUnenrollmentTimeout),
-				Config:   testAccResourceAgentPolicyUpdateWithTimeouts(policyName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionUnenrollmentTimeout),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_with_timeouts"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(fmt.Sprintf("Updated Policy %s", policyName)),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Updated Policy %s", policyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
@@ -184,8 +228,13 @@ func TestAccResourceAgentPolicy(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionGlobalDataTags),
-				Config:   testAccResourceAgentPolicyCreateWithGlobalDataTags(policyNameGlobalDataTags, false),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionGlobalDataTags),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_with_global_data_tags"),
+				ConfigVariables: config.Variables{
+					"policy_name":  config.StringVariable(fmt.Sprintf("Policy %s", policyNameGlobalDataTags)),
+					"skip_destroy": config.BoolVariable(false),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyNameGlobalDataTags)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
@@ -198,8 +247,13 @@ func TestAccResourceAgentPolicy(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionGlobalDataTags),
-				Config:   testAccResourceAgentPolicyUpdateWithGlobalDataTags(policyNameGlobalDataTags, false),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionGlobalDataTags),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_with_global_data_tags"),
+				ConfigVariables: config.Variables{
+					"policy_name":  config.StringVariable(fmt.Sprintf("Updated Policy %s", policyNameGlobalDataTags)),
+					"skip_destroy": config.BoolVariable(false),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Updated Policy %s", policyNameGlobalDataTags)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
@@ -212,8 +266,13 @@ func TestAccResourceAgentPolicy(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionGlobalDataTags),
-				Config:   testAccResourceAgentPolicyUpdateWithNoGlobalDataTags(policyNameGlobalDataTags, false),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionGlobalDataTags),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_with_no_global_data_tags"),
+				ConfigVariables: config.Variables{
+					"policy_name":  config.StringVariable(fmt.Sprintf("Updated Policy %s", policyNameGlobalDataTags)),
+					"skip_destroy": config.BoolVariable(false),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Updated Policy %s", policyNameGlobalDataTags)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
@@ -225,8 +284,13 @@ func TestAccResourceAgentPolicy(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfNotServerless(),
-				Config:   testAccResourceAgentPolicyUpdateWithSupportsAgentless(policyNameGlobalDataTags, false),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfNotServerless(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_with_supports_agentless"),
+				ConfigVariables: config.Variables{
+					"policy_name":  config.StringVariable(fmt.Sprintf("Updated Policy %s", policyNameGlobalDataTags)),
+					"skip_destroy": config.BoolVariable(false),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Updated Policy %s", policyNameGlobalDataTags)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
@@ -245,13 +309,17 @@ func TestAccResourceAgentPolicySkipDestroy(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceAgentPolicySkipDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceAgentPolicySkipDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionAgentPolicy),
-				Config:   testAccResourceAgentPolicyCreate(policyName, true),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionAgentPolicy),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name":  config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+					"skip_destroy": config.BoolVariable(true),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
@@ -269,12 +337,16 @@ func TestAccResourceAgentPolicyWithBadGlobalDataTags(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:    versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionGlobalDataTags),
-				Config:      testAccResourceAgentPolicyCreateWithBadGlobalDataTags(policyName, true),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionGlobalDataTags),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_with_bad_tags"),
+				ConfigVariables: config.Variables{
+					"policy_name":  config.StringVariable(fmt.Sprintf("Updated Policy %s", policyName)),
+					"skip_destroy": config.BoolVariable(true),
+				},
 				ExpectError: regexp.MustCompile(".*Error: Invalid Attribute Combination.*"),
 			},
 		},
@@ -285,13 +357,16 @@ func TestAccResourceAgentPolicyWithSpaceIds(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceAgentPolicyDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceAgentPolicyDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionSpaceIds),
-				Config:   testAccResourceAgentPolicyCreateWithSpaceIds(policyName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionSpaceIds),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_with_space_ids"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
@@ -319,14 +394,17 @@ func TestAccResourceAgentPolicySpaceReordering(t *testing.T) {
 	var originalPolicyId string
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceAgentPolicyDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceAgentPolicyDestroy,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				// Step 1: Create with space_ids = ["default"]
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionSpaceIds),
-				Config:   testAccResourceAgentPolicySpaceReorderingStep1(policyName),
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionSpaceIds),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("step1"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "space_ids.#", "1"),
@@ -342,10 +420,14 @@ func TestAccResourceAgentPolicySpaceReordering(t *testing.T) {
 				),
 			},
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				// Step 2: Add new space ["space-test-a", "default"]
 				// With Sets + GetOperationalSpaceFromState: reads from STATE, finds resource, updates in-place
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionSpaceIds),
-				Config:   testAccResourceAgentPolicySpaceReorderingStep2(policyName),
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionSpaceIds),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("step2"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "description", "Test space reordering - step 2: prepend new space"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "space_ids.#", "2"),
@@ -361,10 +443,14 @@ func TestAccResourceAgentPolicySpaceReordering(t *testing.T) {
 				),
 			},
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				// Step 3: Same spaces, different order ["default", "space-test-a"]
 				// With Sets: No drift because order doesn't matter - Terraform sees identical sets
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionSpaceIds),
-				Config:   testAccResourceAgentPolicySpaceReorderingStep3(policyName),
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionSpaceIds),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("step3"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "description", "Test space reordering - step 3: reorder spaces"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "space_ids.#", "2"),
@@ -381,230 +467,6 @@ func TestAccResourceAgentPolicySpaceReordering(t *testing.T) {
 			},
 		},
 	})
-}
-
-func testAccResourceAgentPolicyCreate(id string, skipDestroy bool) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_fleet_agent_policy" "test_policy" {
-  name        = "%s"
-  namespace   = "default"
-  description = "Test Agent Policy"
-  monitor_logs = true
-  monitor_metrics = false
-  skip_destroy = %t
-}
-
-data "elasticstack_fleet_enrollment_tokens" "test_policy" {
-  policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
-}
-
-`, fmt.Sprintf("Policy %s", id), skipDestroy)
-}
-
-func testAccResourceAgentPolicyCreateWithGlobalDataTags(id string, skipDestroy bool) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_fleet_agent_policy" "test_policy" {
-  name        = "%s"
-  namespace   = "default"
-  description = "Test Agent Policy"
-  monitor_logs = true
-  monitor_metrics = false
-  skip_destroy = %t
-  global_data_tags = {
-		tag1 = {
-			string_value = "value1"
-		},
-		tag2 = {
-			number_value = 1.1
-		}
-	}
-}
-
-data "elasticstack_fleet_enrollment_tokens" "test_policy" {
-  policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
-}
-
-`, fmt.Sprintf("Policy %s", id), skipDestroy)
-}
-
-func testAccResourceAgentPolicyCreateWithInactivityTimeout(id string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_fleet_agent_policy" "test_policy" {
-  name        = "%s"
-  namespace   = "default"
-  description = "Test Agent Policy with Inactivity Timeout"
-  monitor_logs = true
-  monitor_metrics = false
-  skip_destroy = false
-  inactivity_timeout = "2m"
-}
-
-data "elasticstack_fleet_enrollment_tokens" "test_policy" {
-  policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
-}
-
-`, fmt.Sprintf("Policy %s", id))
-}
-
-func testAccResourceAgentPolicyCreateWithUnenrollmentTimeout(id string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_fleet_agent_policy" "test_policy" {
-  name        = "%s"
-  namespace   = "default"
-  description = "Test Agent Policy with Unenrollment Timeout"
-  monitor_logs = true
-  monitor_metrics = false
-  skip_destroy = false
-  unenrollment_timeout = "300s"
-}
-
-data "elasticstack_fleet_enrollment_tokens" "test_policy" {
-  policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
-}
-
-`, fmt.Sprintf("Policy %s", id))
-}
-
-func testAccResourceAgentPolicyCreateWithBadGlobalDataTags(id string, skipDestroy bool) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_fleet_agent_policy" "test_policy" {
-  name            = "%s"
-  namespace       = "default"
-  description     = "This policy was not created due to bad tags"
-  monitor_logs    = false
-  monitor_metrics = true
-  skip_destroy    = %t
-   global_data_tags = {
-		tag1 = {
-			string_value = "value1a"
-			number_value = 1.2
-		}
-	}
-}
-
-data "elasticstack_fleet_enrollment_tokens" "test_policy" {
-  policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
-}
-`, fmt.Sprintf("Updated Policy %s", id), skipDestroy)
-}
-
-func testAccResourceAgentPolicyUpdateWithGlobalDataTags(id string, skipDestroy bool) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_fleet_agent_policy" "test_policy" {
-  name            = "%s"
-  namespace       = "default"
-  description     = "This policy was updated"
-  monitor_logs    = false
-  monitor_metrics = true
-  skip_destroy    = %t
-   global_data_tags = {
-		tag1 = {
-			string_value = "value1a"
-		}
-	}
-}
-
-data "elasticstack_fleet_enrollment_tokens" "test_policy" {
-  policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
-}
-`, fmt.Sprintf("Updated Policy %s", id), skipDestroy)
-}
-
-func testAccResourceAgentPolicyUpdateWithNoGlobalDataTags(id string, skipDestroy bool) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_fleet_agent_policy" "test_policy" {
-  name        = "%s"
-  namespace   = "default"
-  description = "This policy was updated without global data tags"
-  monitor_logs = false
-  monitor_metrics = true
-  skip_destroy = %t
-}
-
-data "elasticstack_fleet_enrollment_tokens" "test_policy" {
-  policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
-}
-`, fmt.Sprintf("Updated Policy %s", id), skipDestroy)
-}
-
-func testAccResourceAgentPolicyUpdateWithSupportsAgentless(id string, skipDestroy bool) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_fleet_agent_policy" "test_policy" {
-  name        = "%s"
-  namespace   = "default"
-  description = "This policy was updated with supports_agentless"
-  monitor_logs = false
-  monitor_metrics = true
-  skip_destroy = %t
-  supports_agentless = true
-}
-
-data "elasticstack_fleet_enrollment_tokens" "test_policy" {
-  policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
-}
-`, fmt.Sprintf("Updated Policy %s", id), skipDestroy)
-}
-
-func testAccResourceAgentPolicyUpdate(id string, skipDestroy bool) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_fleet_agent_policy" "test_policy" {
-  name        = "%s"
-  namespace   = "default"
-  description = "This policy was updated"
-  monitor_logs = false
-  monitor_metrics = true
-  skip_destroy = %t
-}
-
-data "elasticstack_fleet_enrollment_tokens" "test_policy" {
-  policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
-}
-`, fmt.Sprintf("Updated Policy %s", id), skipDestroy)
 }
 
 func checkResourceAgentPolicyDestroy(s *terraform.State) error {
@@ -661,141 +523,4 @@ func checkResourceAgentPolicySkipDestroy(s *terraform.State) error {
 		}
 	}
 	return nil
-}
-
-func testAccResourceAgentPolicyUpdateWithTimeouts(id string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_fleet_agent_policy" "test_policy" {
-  name        = "%s"
-  namespace   = "default"
-  description = "Test Agent Policy with Both Timeouts"
-  monitor_logs = false
-  monitor_metrics = true
-  skip_destroy = false
-  inactivity_timeout = "120s"
-  unenrollment_timeout = "900s"
-}
-
-data "elasticstack_fleet_enrollment_tokens" "test_policy" {
-  policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
-}
-
-`, fmt.Sprintf("Updated Policy %s", id))
-}
-
-func testAccResourceAgentPolicyCreateWithSpaceIds(id string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_fleet_agent_policy" "test_policy" {
-  name             = "%s"
-  namespace        = "default"
-  description      = "Test Agent Policy with Space IDs"
-  monitor_logs     = true
-  monitor_metrics  = false
-  skip_destroy     = false
-  space_ids        = ["default"]
-}
-
-data "elasticstack_fleet_enrollment_tokens" "test_policy" {
-  policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
-}
-
-`, fmt.Sprintf("Policy %s", id))
-}
-
-// Helper functions for space reordering test
-
-func testAccResourceAgentPolicySpaceReorderingStep1(id string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_kibana_space" "test_space" {
-  space_id    = "space-test-a"
-  name        = "Test Space A"
-  description = "Test space for Fleet agent policy space reordering test"
-}
-
-resource "elasticstack_fleet_agent_policy" "test_policy" {
-  name             = "Policy %s"
-  namespace        = "default"
-  description      = "Test space reordering - step 1"
-  monitor_logs     = true
-  monitor_metrics  = false
-  skip_destroy     = false
-  space_ids        = ["default"]
-
-  depends_on = [elasticstack_kibana_space.test_space]
-}
-`, id)
-}
-
-func testAccResourceAgentPolicySpaceReorderingStep2(id string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_kibana_space" "test_space" {
-  space_id    = "space-test-a"
-  name        = "Test Space A"
-  description = "Test space for Fleet agent policy space reordering test"
-}
-
-resource "elasticstack_fleet_agent_policy" "test_policy" {
-  name             = "Policy %s"
-  namespace        = "default"
-  description      = "Test space reordering - step 2: prepend new space"
-  monitor_logs     = true
-  monitor_metrics  = false
-  skip_destroy     = false
-  # CRITICAL TEST: Prepending "space-test-a" before "default"
-  # Without the fix: Terraform queries using space-test-a, gets 404, recreates resource
-  # With the fix: Terraform uses "default" (position-independent), finds resource, updates in-place
-  space_ids        = ["space-test-a", "default"]
-
-  depends_on = [elasticstack_kibana_space.test_space]
-}
-`, id)
-}
-
-func testAccResourceAgentPolicySpaceReorderingStep3(id string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_kibana_space" "test_space" {
-  space_id    = "space-test-a"
-  name        = "Test Space A"
-  description = "Test space for Fleet agent policy space reordering test"
-}
-
-resource "elasticstack_fleet_agent_policy" "test_policy" {
-  name             = "Policy %s"
-  namespace        = "default"
-  description      = "Test space reordering - step 3: reorder spaces"
-  monitor_logs     = true
-  monitor_metrics  = false
-  skip_destroy     = false
-  # CRITICAL TEST: Reordering spaces (default now first)
-  # With the fix: Still uses "default", resource found, updates in-place
-  space_ids        = ["default", "space-test-a"]
-
-  depends_on = [elasticstack_kibana_space.test_space]
-}
-`, id)
 }
