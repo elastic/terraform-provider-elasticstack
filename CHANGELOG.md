@@ -6,6 +6,8 @@
 - Add `space_ids` attribute to all Fleet resources to support space-aware Fleet resource management ([#1390](https://github.com/elastic/terraform-provider-elasticstack/pull/1390))
 - Add new `elasticstack_elasticsearch_ml_job_state` resource ([#1337](https://github.com/elastic/terraform-provider-elasticstack/pull/1337))
 - Add new `elasticstack_elasticsearch_ml_datafeed_state` resource ([#1422](https://github.com/elastic/terraform-provider-elasticstack/pull/1422))
+- Migrate `elasticstack_elasticsearch_security_role` resource to Terraform Plugin Framework ([#1330](https://github.com/elastic/terraform-provider-elasticstack/pull/1330))
+
 
 ## [0.12.1] - 2025-10-22
 - Fix regression restricting the characters in an `elasticstack_elasticsearch_role_mapping` `name`. ([#1373](https://github.com/elastic/terraform-provider-elasticstack/pull/1373))
@@ -96,7 +98,6 @@ resource "elasticstack_fleet_output" "output" {
 - Add support for `unenrollment_timeout` in `elasticstack_fleet_agent_policy` ([#1169](https://github.com/elastic/terraform-provider-elasticstack/issues/1169))
 - Handle default value for `allow_restricted_indices` in `elasticstack_elasticsearch_security_api_key` ([#1315](https://github.com/elastic/terraform-provider-elasticstack/pull/1315))
 - Fixed `nil` reference in kibana synthetics API client in case of response errors ([#1320](https://github.com/elastic/terraform-provider-elasticstack/pull/1320))
-- Add support for `agent_policy_ids` in `elasticstack_fleet_integration_policy` ([#1131](https://github.com/elastic/terraform-provider-elasticstack/pull/1311))
 
 ## [0.11.17] - 2025-07-21
 
