@@ -52,11 +52,16 @@ func (d *MLDatafeedStateData) SetStartAndEndFromAPI(datafeedStats *models.Datafe
 		return diags
 	}
 
-	d.Start = timetypes.NewRFC3339TimeValue(time.UnixMilli(datafeedStats.RunningState.SearchInterval.StartMS))
+	if datafeedStats.RunningState.SearchInterval != nil {
+		d.Start = timetypes.NewRFC3339TimeValue(time.UnixMilli(datafeedStats.RunningState.SearchInterval.StartMS))
+		d.End = timetypes.NewRFC3339TimeValue(time.UnixMilli(datafeedStats.RunningState.SearchInterval.EndMS))
+	} else {
+		d.Start = timetypes.NewRFC3339Null()
+		d.End = timetypes.NewRFC3339Null()
+	}
+
 	if datafeedStats.RunningState.RealTimeConfigured {
 		d.End = timetypes.NewRFC3339Null()
-	} else {
-		d.End = timetypes.NewRFC3339TimeValue(time.UnixMilli(datafeedStats.RunningState.SearchInterval.EndMS))
 	}
 
 	return diags
