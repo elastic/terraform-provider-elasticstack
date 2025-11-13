@@ -65,7 +65,7 @@ func (v MemorySize) StringSemanticEquals(_ context.Context, newValuable basetype
 	newValue, ok := newValuable.(MemorySize)
 	if !ok {
 		diags.AddError(
-			"Semantic Equality Check Error",
+			"Semantic equality check error",
 			"An unexpected value type was received while performing semantic equality checks. "+
 				"Please report this to the provider developers.\n\n"+
 				"Expected Value Type: "+fmt.Sprintf("%T", v)+"\n"+
@@ -104,19 +104,19 @@ func (v MemorySize) ConvertToMB() (int64, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	if v.IsNull() {
-		diags.Append(diag.NewErrorDiagnostic("Memory Size Parse error", "memory size string value is null"))
+		diags.Append(diag.NewErrorDiagnostic("Memory size parse error", "memory size string value is null"))
 		return 0, diags
 	}
 
 	if v.IsUnknown() {
-		diags.Append(diag.NewErrorDiagnostic("Memory Size Parse Error", "memory size string value is unknown"))
+		diags.Append(diag.NewErrorDiagnostic("Memory size parse error", "memory size string value is unknown"))
 		return 0, diags
 	}
 
 	valueString := v.ValueString()
 	matches := memoryPattern.FindStringSubmatch(valueString)
 	if len(matches) != 3 {
-		diags.Append(diag.NewErrorDiagnostic("Memory Size Parse Error",
+		diags.Append(diag.NewErrorDiagnostic("Memory size parse error",
 			fmt.Sprintf("invalid memory size format: %s", valueString)))
 		return 0, diags
 	}
@@ -125,7 +125,7 @@ func (v MemorySize) ConvertToMB() (int64, diag.Diagnostics) {
 	numStr := matches[1]
 	num, err := strconv.ParseInt(numStr, 10, 64)
 	if err != nil {
-		diags.Append(diag.NewErrorDiagnostic("Memory Size Parse Error",
+		diags.Append(diag.NewErrorDiagnostic("Memory size parse error",
 			fmt.Sprintf("invalid number in memory size: %s", numStr)))
 		return 0, diags
 	}
@@ -146,7 +146,7 @@ func (v MemorySize) ConvertToMB() (int64, diag.Diagnostics) {
 	case "": // no unit = bytes
 		bytes = num
 	default:
-		diags.Append(diag.NewErrorDiagnostic("Memory Size Parse Error",
+		diags.Append(diag.NewErrorDiagnostic("Memory size parse error",
 			fmt.Sprintf("unsupported memory unit: %s", unit)))
 		return 0, diags
 	}

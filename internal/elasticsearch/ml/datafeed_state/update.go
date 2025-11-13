@@ -175,7 +175,7 @@ func (r *mlDatafeedStateResource) performStateTransition(ctx context.Context, cl
 	// Return early if no state change is needed
 	if currentState == desiredState {
 		tflog.Debug(ctx, fmt.Sprintf("ML datafeed %s is already in desired state %s", datafeedId, desiredState))
-		return false, nil
+		return true, nil
 	}
 
 	// Initiate the state change

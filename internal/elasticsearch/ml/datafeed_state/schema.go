@@ -57,6 +57,7 @@ func GetSchema() schema.Schema {
 				MarkdownDescription: "The desired state for the ML datafeed. Valid values are `started` and `stopped`.",
 				Required:            true,
 				Validators: []validator.String{
+					// We don't allow starting/stopping here since they're transient states
 					stringvalidator.OneOf(string(datafeed.StateStarted), string(datafeed.StateStopped)),
 				},
 			},

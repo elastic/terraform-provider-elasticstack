@@ -125,10 +125,10 @@ type DatafeedNode struct {
 
 // DatafeedRunning represents the running state of a datafeed
 type DatafeedRunning struct {
-	RealTimeConfigured bool                   `json:"real_time_configured"`
-	RealTimeRunning    bool                   `json:"real_time_running"`
-	SearchInterval     DatafeedSearchInterval `json:"search_interval,omitempty"`
-	LastEndTime        *time.Time             `json:"last_end_time,omitempty"`
+	RealTimeConfigured bool                    `json:"real_time_configured"`
+	RealTimeRunning    bool                    `json:"real_time_running"`
+	SearchInterval     *DatafeedSearchInterval `json:"search_interval,omitempty"`
+	LastEndTime        *time.Time              `json:"last_end_time,omitempty"`
 }
 
 type DatafeedTimingStats struct {
