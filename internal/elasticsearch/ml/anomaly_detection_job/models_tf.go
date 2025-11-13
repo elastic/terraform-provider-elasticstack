@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -81,8 +82,8 @@ type RuleConditionTFModel struct {
 
 // AnalysisLimitsTFModel represents analysis limits configuration
 type AnalysisLimitsTFModel struct {
-	CategorizationExamplesLimit types.Int64  `tfsdk:"categorization_examples_limit"`
-	ModelMemoryLimit            types.String `tfsdk:"model_memory_limit"`
+	CategorizationExamplesLimit types.Int64            `tfsdk:"categorization_examples_limit"`
+	ModelMemoryLimit            customtypes.MemorySize `tfsdk:"model_memory_limit"`
 }
 
 // DataDescriptionTFModel represents data description configuration
@@ -558,9 +559,9 @@ func (tfModel *AnomalyDetectionJobTFModel) convertAnalysisLimitsFromAPI(ctx cont
 	}
 
 	if apiLimits.ModelMemoryLimit != "" {
-		analysisLimitsTF.ModelMemoryLimit = types.StringValue(apiLimits.ModelMemoryLimit)
+		analysisLimitsTF.ModelMemoryLimit = customtypes.NewMemorySizeValue(apiLimits.ModelMemoryLimit)
 	} else {
-		analysisLimitsTF.ModelMemoryLimit = types.StringNull()
+		analysisLimitsTF.ModelMemoryLimit = customtypes.NewMemorySizeNull()
 	}
 
 	analysisLimitsObjectValue, d := types.ObjectValueFrom(ctx, getAnalysisLimitsAttrTypes(), analysisLimitsTF)

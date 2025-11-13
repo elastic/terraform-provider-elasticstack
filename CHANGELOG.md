@@ -2,8 +2,10 @@
 
 - Fix `elasticstack_elasticsearch_snapshot_lifecycle` metadata type conversion causing terraform apply to fail ([#1409](https://github.com/elastic/terraform-provider-elasticstack/issues/1409))
 - Add new `elasticstack_elasticsearch_ml_anomaly_detection_job` resource ([#1329](https://github.com/elastic/terraform-provider-elasticstack/pull/1329))
-- Add new `elasticstack_elasticsearch_ml_datafeed` resource ([1340](https://github.com/elastic/terraform-provider-elasticstack/pull/1340))
+- Add new `elasticstack_elasticsearch_ml_datafeed` resource ([#1340](https://github.com/elastic/terraform-provider-elasticstack/pull/1340))
 - Add `space_ids` attribute to all Fleet resources to support space-aware Fleet resource management ([#1390](https://github.com/elastic/terraform-provider-elasticstack/pull/1390))
+- Add new `elasticstack_elasticsearch_ml_job_state` resource ([#1337](https://github.com/elastic/terraform-provider-elasticstack/pull/1337))
+- Add new `elasticstack_elasticsearch_ml_datafeed_state` resource ([#1422](https://github.com/elastic/terraform-provider-elasticstack/pull/1422))
 
 ## [0.12.1] - 2025-10-22
 - Fix regression restricting the characters in an `elasticstack_elasticsearch_role_mapping` `name`. ([#1373](https://github.com/elastic/terraform-provider-elasticstack/pull/1373))

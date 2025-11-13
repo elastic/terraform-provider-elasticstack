@@ -4,6 +4,7 @@ import (
 	"context"
 	"regexp"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
@@ -250,9 +251,7 @@ func GetSchema() schema.Schema {
 					"model_memory_limit": schema.StringAttribute{
 						MarkdownDescription: "The approximate maximum amount of memory resources that are required for analytical processing.",
 						Optional:            true,
-						Validators: []validator.String{
-							stringvalidator.RegexMatches(regexp.MustCompile(`^\d+[kmgtKMGT]?[bB]?$`), "must be a valid memory size (e.g., 10mb, 1gb)"),
-						},
+						CustomType:          customtypes.MemorySizeType{},
 					},
 				},
 			},

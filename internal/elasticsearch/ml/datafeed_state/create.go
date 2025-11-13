@@ -1,4 +1,4 @@
-package job_state
+package datafeed_state
 
 import (
 	"context"
@@ -9,8 +9,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
-func (r *mlJobStateResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var data MLJobStateData
+func (r *mlDatafeedStateResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	var data MLDatafeedStateData
 	diags := req.Plan.Get(ctx, &data)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -26,7 +26,7 @@ func (r *mlJobStateResource) Create(ctx context.Context, req resource.CreateRequ
 
 	diags = r.update(ctx, req.Plan, &resp.State, createTimeout)
 	if diagutil.ContainsContextDeadlineExceeded(ctx, diags) {
-		diags.AddError("Operation timed out", fmt.Sprintf("The operation to create the ML job state timed out after %s. You may need to allocate more free memory within ML nodes by either closing other jobs, or increasing the overall ML memory. You may retry the operation.", createTimeout))
+		diags.AddError("Operation timed out", fmt.Sprintf("The operation to create the ML datafeed state timed out after %s. You may need to allocate more free memory within ML nodes by either closing other jobs, or increasing the overall ML memory. You may retry the operation.", createTimeout))
 	}
 
 	resp.Diagnostics.Append(diags...)
