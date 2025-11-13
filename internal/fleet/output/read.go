@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
@@ -23,7 +24,16 @@ func (r *outputResource) Read(ctx context.Context, req resource.ReadRequest, res
 	}
 
 	outputID := stateModel.OutputID.ValueString()
-	output, diags := fleet.GetOutput(ctx, client, outputID)
+
+	// Read the existing spaces from state to determine where to query
+	spaceID, diags := fleetutils.GetOperationalSpaceFromState(ctx, req.State)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Query using the operational space from STATE
+	output, diags := fleet.GetOutput(ctx, client, outputID, spaceID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		resp.State.RemoveResource(ctx)

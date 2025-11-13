@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
@@ -23,7 +24,17 @@ func (r *agentPolicyResource) Read(ctx context.Context, req resource.ReadRequest
 	}
 
 	policyID := stateModel.PolicyID.ValueString()
-	policy, diags := fleet.GetAgentPolicy(ctx, client, policyID)
+
+	// Read the existing spaces from state to determine where to query
+	spaceID, diags := fleetutils.GetOperationalSpaceFromState(ctx, req.State)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Query using the operational space from STATE
+	policy, diags := fleet.GetAgentPolicy(ctx, client, policyID, spaceID)
+
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -34,6 +45,8 @@ func (r *agentPolicyResource) Read(ctx context.Context, req resource.ReadRequest
 		return
 	}
 
+	// Populate from API response
+	// With Sets, we don't need order preservation - Terraform handles set comparison automatically
 	diags = stateModel.populateFromAPI(ctx, policy)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {

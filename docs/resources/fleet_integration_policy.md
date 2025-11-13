@@ -103,6 +103,7 @@ resource "elasticstack_fleet_integration_policy" "sample" {
 - `force` (Boolean) Force operations, such as creation and deletion, to occur.
 - `input` (Block List) Integration inputs. (see [below for nested schema](#nestedblock--input))
 - `policy_id` (String) Unique identifier of the integration policy.
+- `space_ids` (Set of String) The Kibana space IDs where this integration policy is available. When set, must match the space_ids of the referenced agent policy. If not set, will be inherited from the agent policy. Note: The order of space IDs does not matter as this is a set.
 - `vars_json` (String, Sensitive) Integration-level variables as JSON.
 
 ### Read-Only

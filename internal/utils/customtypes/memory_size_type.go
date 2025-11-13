@@ -1,10 +1,9 @@
-package api_key
+package customtypes
 
 import (
 	"context"
 	"fmt"
 
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
@@ -12,26 +11,26 @@ import (
 )
 
 var (
-	_ basetypes.StringTypable = (*RoleDescriptorsType)(nil)
+	_ basetypes.StringTypable = (*MemorySizeType)(nil)
 )
 
-type RoleDescriptorsType struct {
-	jsontypes.NormalizedType
+type MemorySizeType struct {
+	basetypes.StringType
 }
 
 // String returns a human readable string of the type name.
-func (t RoleDescriptorsType) String() string {
-	return "api_key.RoleDescriptorsType"
+func (t MemorySizeType) String() string {
+	return "customtypes.MemorySizeType"
 }
 
 // ValueType returns the Value type.
-func (t RoleDescriptorsType) ValueType(ctx context.Context) attr.Value {
-	return RoleDescriptorsValue{}
+func (t MemorySizeType) ValueType(ctx context.Context) attr.Value {
+	return MemorySize{}
 }
 
 // Equal returns true if the given type is equivalent.
-func (t RoleDescriptorsType) Equal(o attr.Type) bool {
-	other, ok := o.(RoleDescriptorsType)
+func (t MemorySizeType) Equal(o attr.Type) bool {
+	other, ok := o.(MemorySizeType)
 
 	if !ok {
 		return false
@@ -41,17 +40,15 @@ func (t RoleDescriptorsType) Equal(o attr.Type) bool {
 }
 
 // ValueFromString returns a StringValuable type given a StringValue.
-func (t RoleDescriptorsType) ValueFromString(ctx context.Context, in basetypes.StringValue) (basetypes.StringValuable, diag.Diagnostics) {
-	return RoleDescriptorsValue{
-		Normalized: jsontypes.Normalized{
-			StringValue: in,
-		},
+func (t MemorySizeType) ValueFromString(ctx context.Context, in basetypes.StringValue) (basetypes.StringValuable, diag.Diagnostics) {
+	return MemorySize{
+		StringValue: in,
 	}, nil
 }
 
 // ValueFromTerraform returns a Value given a tftypes.Value.  This is meant to convert the tftypes.Value into a more convenient Go type
 // for the provider to consume the data with.
-func (t RoleDescriptorsType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
+func (t MemorySizeType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
 	attrValue, err := t.StringType.ValueFromTerraform(ctx, in)
 	if err != nil {
 		return nil, err

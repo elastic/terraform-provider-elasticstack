@@ -12,8 +12,6 @@ make build
 
 echo "--- Starting Stack containers"
 make docker-fleet
-docker ps 
-sleep 30
 
 echo "--- Collecting docker info"
 docker ps 
