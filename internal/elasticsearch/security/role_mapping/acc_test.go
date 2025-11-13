@@ -56,6 +56,11 @@ func TestAccResourceSecurityRoleMapping(t *testing.T) {
 							resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role_mapping.test", "metadata", `{}`),
 						),
 					},
+					{
+						ResourceName:      "elasticstack_elasticsearch_security_role_mapping.test",
+						ImportState:       true,
+						ImportStateVerify: true,
+					},
 				},
 			})
 		})
