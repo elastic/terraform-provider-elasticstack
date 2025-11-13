@@ -36,15 +36,6 @@ resource "elasticstack_fleet_output" "test_output" {
 ### Basic Kafka output
 
 ```terraform
-terraform {
-  required_providers {
-    elasticstack = {
-      source  = "elastic/elasticstack"
-      version = "~> 0.11"
-    }
-  }
-}
-
 provider "elasticstack" {
   elasticsearch {}
   kibana {}
@@ -85,15 +76,6 @@ resource "elasticstack_fleet_output" "kafka_basic" {
 ### Advanced Kafka output
 
 ```terraform
-terraform {
-  required_providers {
-    elasticstack = {
-      source  = "elastic/elasticstack"
-      version = "~> 0.11"
-    }
-  }
-}
-
 provider "elasticstack" {
   elasticsearch {}
   kibana {}

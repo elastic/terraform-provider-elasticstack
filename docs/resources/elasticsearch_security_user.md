@@ -30,12 +30,6 @@ resource "elasticstack_elasticsearch_security_user" "user" {
     "open"   = false
     "number" = 49
   })
-
-  elasticsearch_connection {
-    endpoints = ["http://localhost:9200"]
-    username  = "elastic"
-    password  = "changeme"
-  }
 }
 
 resource "elasticstack_elasticsearch_security_user" "dev" {

@@ -25,6 +25,10 @@ You can use rules to detect complex conditions and generate alerts and actions w
 For example, let's take a simple data stream that contains some logs or metrics:
 
 ```terraform
+provider "elasticstack" {
+  elasticsearch {}
+}
+
 // Create an ILM policy for our data stream
 resource "elasticstack_elasticsearch_index_lifecycle" "my_lifecycle_policy" {
   name = "my_lifecycle_policy"
@@ -96,6 +100,10 @@ There are many different methods that you can use to be notified when the condit
 In this example, we will use an index connector to write a document in an Elasticsearch index:
 
 ```terraform
+provider "elasticstack" {
+  elasticsearch {}
+}
+
 resource "elasticstack_elasticsearch_index" "my_index" {
   name = "my-index"
   mappings = jsonencode({

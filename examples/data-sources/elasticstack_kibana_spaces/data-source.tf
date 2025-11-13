@@ -4,6 +4,4 @@ provider "elasticstack" {
   kibana {}
 }
 
-data "elasticstack_kibana_spaces" "all_spaces" {
-
-}
+data "elasticstack_kibana_spaces" "all_spaces" {}

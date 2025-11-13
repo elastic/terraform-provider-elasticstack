@@ -1,3 +1,7 @@
+provider "elasticstack" {
+  elasticsearch {}
+}
+
 resource "elasticstack_elasticsearch_transform" "transform_with_pivot" {
   name        = "transform-pivot"
   description = "A meaningful description"

@@ -3,9 +3,8 @@ provider "elasticstack" {
 }
 
 data "elasticstack_elasticsearch_ingest_processor_reroute" "reroute" {
-  destination = "logs-generic-default"
-  dataset     = "generic"
-  namespace   = "default"
+  dataset   = "generic"
+  namespace = "default"
 }
 
 resource "elasticstack_elasticsearch_ingest_pipeline" "my_ingest_pipeline" {

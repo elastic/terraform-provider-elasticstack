@@ -1,3 +1,7 @@
+provider "elasticstack" {
+  elasticsearch {}
+}
+
 resource "elasticstack_elasticsearch_security_api_key" "api_key" {
   # Set the name
   name = "My API key"

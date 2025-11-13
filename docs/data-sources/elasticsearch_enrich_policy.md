@@ -18,7 +18,7 @@ provider "elasticstack" {
 }
 
 resource "elasticstack_elasticsearch_index" "my_index" {
-  name = "my-index"
+  name = "example-enrich-policy-index"
 
   mappings = jsonencode({
     properties = {
@@ -46,6 +46,8 @@ resource "elasticstack_elasticsearch_enrich_policy" "policy1" {
 
 data "elasticstack_elasticsearch_enrich_policy" "policy" {
   name = "policy1"
+
+  depends_on = [elasticstack_elasticsearch_enrich_policy.policy1]
 }
 
 output "name" {

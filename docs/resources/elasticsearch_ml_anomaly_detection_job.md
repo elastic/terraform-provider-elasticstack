@@ -13,15 +13,6 @@ Creates and manages Machine Learning anomaly detection jobs. See the [ML Job API
 ## Example Usage
 
 ```terraform
-terraform {
-  required_providers {
-    elasticstack = {
-      source  = "elastic/elasticstack"
-      version = "~> 0.11"
-    }
-  }
-}
-
 provider "elasticstack" {
   elasticsearch {}
 }

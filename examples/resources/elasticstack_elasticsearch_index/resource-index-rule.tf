@@ -1,3 +1,7 @@
+provider "elasticstack" {
+  elasticsearch {}
+}
+
 resource "elasticstack_elasticsearch_index" "my_index" {
   name = "my-index"
   mappings = jsonencode({

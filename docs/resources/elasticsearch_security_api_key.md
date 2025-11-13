@@ -13,6 +13,10 @@ Creates an API key for access without requiring basic authentication. Supports b
 ## Example Usage
 
 ```terraform
+provider "elasticstack" {
+  elasticsearch {}
+}
+
 resource "elasticstack_elasticsearch_security_api_key" "api_key" {
   # Set the name
   name = "My API key"

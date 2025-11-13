@@ -1,3 +1,7 @@
+provider "elasticstack" {
+  elasticsearch {}
+}
+
 // Create an ILM policy for our data stream
 resource "elasticstack_elasticsearch_index_lifecycle" "my_lifecycle_policy" {
   name = "my_lifecycle_policy"
