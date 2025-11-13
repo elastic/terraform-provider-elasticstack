@@ -77,7 +77,7 @@ resource "elasticstack_fleet_integration_policy" "test_policy" {
           "log_streams" : [],
           "start_position" : "beginning",
           "scan_frequency" : "2m",
-          "api_timeout" : "120s",
+          "api_timeput" : "120s",
           "api_sleep" : "200ms",
           "tags" : ["forwarded"],
           "preserve_original_event" : false,
