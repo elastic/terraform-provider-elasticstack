@@ -530,13 +530,16 @@ func TestAccResourceAgentPolicyWithRequiredVersions(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceAgentPolicyDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceAgentPolicyDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionRequiredVersions),
-				Config:   testAccResourceAgentPolicyCreateWithRequiredVersions(policyName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionRequiredVersions),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
@@ -545,8 +548,12 @@ func TestAccResourceAgentPolicyWithRequiredVersions(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionRequiredVersions),
-				Config:   testAccResourceAgentPolicyUpdateRequiredVersionsPercentage(policyName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionRequiredVersions),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_percentage"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
@@ -555,8 +562,12 @@ func TestAccResourceAgentPolicyWithRequiredVersions(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionRequiredVersions),
-				Config:   testAccResourceAgentPolicyAddRequiredVersion(policyName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionRequiredVersions),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("add_version"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
@@ -566,8 +577,27 @@ func TestAccResourceAgentPolicyWithRequiredVersions(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionRequiredVersions),
-				Config:   testAccResourceAgentPolicyRemoveRequiredVersions(policyName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionRequiredVersions),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("unset_versions"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "required_versions.%", "2"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "required_versions.8.15.0", "50"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "required_versions.8.16.0", "50"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionRequiredVersions),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("remove_versions"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
@@ -576,102 +606,4 @@ func TestAccResourceAgentPolicyWithRequiredVersions(t *testing.T) {
 			},
 		},
 	})
-}
-
-func testAccResourceAgentPolicyCreateWithRequiredVersions(id string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_fleet_agent_policy" "test_policy" {
-  name             = "%s"
-  namespace        = "default"
-  description      = "Test Agent Policy with Required Versions"
-  monitor_logs     = true
-  monitor_metrics  = false
-  skip_destroy     = false
-  required_versions = {
-    "8.15.0" = 100
-  }
-}
-
-data "elasticstack_fleet_enrollment_tokens" "test_policy" {
-  policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
-}
-`, fmt.Sprintf("Policy %s", id))
-}
-
-func testAccResourceAgentPolicyUpdateRequiredVersionsPercentage(id string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_fleet_agent_policy" "test_policy" {
-  name             = "%s"
-  namespace        = "default"
-  description      = "Test Agent Policy with Required Versions - Updated Percentage"
-  monitor_logs     = true
-  monitor_metrics  = false
-  skip_destroy     = false
-  required_versions = {
-    "8.15.0" = 50
-  }
-}
-
-data "elasticstack_fleet_enrollment_tokens" "test_policy" {
-  policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
-}
-`, fmt.Sprintf("Policy %s", id))
-}
-
-func testAccResourceAgentPolicyAddRequiredVersion(id string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_fleet_agent_policy" "test_policy" {
-  name             = "%s"
-  namespace        = "default"
-  description      = "Test Agent Policy with Multiple Required Versions"
-  monitor_logs     = true
-  monitor_metrics  = false
-  skip_destroy     = false
-  required_versions = {
-    "8.15.0" = 50
-    "8.16.0" = 50
-  }
-}
-
-data "elasticstack_fleet_enrollment_tokens" "test_policy" {
-  policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
-}
-`, fmt.Sprintf("Policy %s", id))
-}
-
-func testAccResourceAgentPolicyRemoveRequiredVersions(id string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_fleet_agent_policy" "test_policy" {
-  name             = "%s"
-  namespace        = "default"
-  description      = "Test Agent Policy without Required Versions"
-  monitor_logs     = true
-  monitor_metrics  = false
-  skip_destroy     = false
-}
-
-data "elasticstack_fleet_enrollment_tokens" "test_policy" {
-  policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
-}
-`, fmt.Sprintf("Policy %s", id))
 }

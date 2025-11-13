@@ -137,7 +137,7 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 	}
 
 	// Handle required_versions
-	if data.RequiredVersions != nil && len(*data.RequiredVersions) > 0 {
+	if data.RequiredVersions != nil {
 		versionMap := make(map[string]attr.Value)
 
 		for _, rv := range *data.RequiredVersions {
