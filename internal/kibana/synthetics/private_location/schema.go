@@ -16,11 +16,11 @@ import (
 )
 
 type tfModelV0 struct {
-	ID            types.String              `tfsdk:"id"`
-	Label         types.String              `tfsdk:"label"`
-	AgentPolicyId types.String              `tfsdk:"agent_policy_id"`
-	Tags          []types.String            `tfsdk:"tags"` //> string
-	Geo           *synthetics.TFGeoConfigV0 `tfsdk:"geo"`
+	ID            types.String   `tfsdk:"id"`
+	Label         types.String   `tfsdk:"label"`
+	AgentPolicyId types.String   `tfsdk:"agent_policy_id"`
+	Tags          []types.String `tfsdk:"tags"` //> string
+	Geo           *tfGeoConfigV0 `tfsdk:"geo"`
 }
 
 func privateLocationSchema() schema.Schema {
@@ -62,7 +62,7 @@ func privateLocationSchema() schema.Schema {
 					listplanmodifier.RequiresReplace(),
 				},
 			},
-			"geo": synthetics.GeoConfigSchema(),
+			"geo": geoConfigSchema(),
 		},
 	}
 }
@@ -70,7 +70,7 @@ func privateLocationSchema() schema.Schema {
 func (m *tfModelV0) toPrivateLocationConfig() kbapi.PrivateLocationConfig {
 	var geoConfig *kbapi.SyntheticGeoConfig
 	if m.Geo != nil {
-		geoConfig = m.Geo.ToSyntheticGeoConfig()
+		geoConfig = m.Geo.toSyntheticGeoConfig()
 	}
 
 	return kbapi.PrivateLocationConfig{
@@ -96,9 +96,51 @@ func toModelV0(pLoc kbapi.PrivateLocation) tfModelV0 {
 		Label:         types.StringValue(pLoc.Label),
 		AgentPolicyId: types.StringValue(pLoc.AgentPolicyId),
 		Tags:          synthetics.StringSliceValue(pLoc.Tags),
-		Geo:           synthetics.FromSyntheticGeoConfig(pLoc.Geo),
+		Geo:           fromSyntheticGeoConfig(pLoc.Geo),
 	}
 }
 
 //go:embed resource-description.md
 var syntheticsPrivateLocationDescription string
+
+// Geographic configuration schema and types
+func geoConfigSchema() schema.Attribute {
+	return schema.SingleNestedAttribute{
+		Optional:    true,
+		Description: "Geographic coordinates (WGS84) for the location",
+		Attributes: map[string]schema.Attribute{
+			"lat": schema.Float64Attribute{
+				Optional:            false,
+				Required:            true,
+				MarkdownDescription: "The latitude of the location.",
+			},
+			"lon": schema.Float64Attribute{
+				Optional:            false,
+				Required:            true,
+				MarkdownDescription: "The longitude of the location.",
+			},
+		},
+	}
+}
+
+type tfGeoConfigV0 struct {
+	Lat types.Float64 `tfsdk:"lat"`
+	Lon types.Float64 `tfsdk:"lon"`
+}
+
+func (m *tfGeoConfigV0) toSyntheticGeoConfig() *kbapi.SyntheticGeoConfig {
+	return &kbapi.SyntheticGeoConfig{
+		Lat: m.Lat.ValueFloat64(),
+		Lon: m.Lon.ValueFloat64(),
+	}
+}
+
+func fromSyntheticGeoConfig(v *kbapi.SyntheticGeoConfig) *tfGeoConfigV0 {
+	if v == nil {
+		return nil
+	}
+	return &tfGeoConfigV0{
+		Lat: types.Float64Value(v.Lat),
+		Lon: types.Float64Value(v.Lon),
+	}
+}

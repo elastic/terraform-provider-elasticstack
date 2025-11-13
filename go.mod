@@ -11,13 +11,15 @@ require (
 	github.com/hashicorp/go-cty v1.5.0
 	github.com/hashicorp/go-uuid v1.0.3
 	github.com/hashicorp/go-version v1.7.0
-	github.com/hashicorp/terraform-plugin-framework v1.16.0
+	github.com/hashicorp/terraform-plugin-framework v1.16.1
 	github.com/hashicorp/terraform-plugin-framework-jsontypes v0.2.0
-	github.com/hashicorp/terraform-plugin-framework-validators v0.18.0
+	github.com/hashicorp/terraform-plugin-framework-timeouts v0.7.0
+	github.com/hashicorp/terraform-plugin-framework-timetypes v0.5.0
+	github.com/hashicorp/terraform-plugin-framework-validators v0.19.0
 	github.com/hashicorp/terraform-plugin-go v0.29.0
 	github.com/hashicorp/terraform-plugin-log v0.9.0
-	github.com/hashicorp/terraform-plugin-mux v0.20.0
-	github.com/hashicorp/terraform-plugin-sdk/v2 v2.38.0
+	github.com/hashicorp/terraform-plugin-mux v0.21.0
+	github.com/hashicorp/terraform-plugin-sdk/v2 v2.38.1
 	github.com/hashicorp/terraform-plugin-testing v1.13.3
 	github.com/mitchellh/mapstructure v1.5.1-0.20231216201459-8508981c8b6c
 	github.com/oapi-codegen/runtime v1.1.2
@@ -106,6 +108,7 @@ require (
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
 	github.com/bgentry/speakeasy v0.1.0 // indirect
+	github.com/bitfield/gotestdox v0.2.2 // indirect
 	github.com/blacktop/go-dwarf v1.0.10 // indirect
 	github.com/blacktop/go-macho v1.1.238 // indirect
 	github.com/blakesmith/ar v0.0.0-20190502131153-809d4375e1fb // indirect
@@ -145,6 +148,7 @@ require (
 	github.com/digitorus/timestamp v0.0.0-20231217203849-220c5c2851b7 // indirect
 	github.com/dimchansky/utfbom v1.1.1 // indirect
 	github.com/distribution/reference v0.6.0 // indirect
+	github.com/dnephin/pflag v1.0.7 // indirect
 	github.com/docker/cli v28.1.1+incompatible // indirect
 	github.com/docker/distribution v2.8.3+incompatible // indirect
 	github.com/docker/docker v28.1.1+incompatible // indirect
@@ -159,7 +163,7 @@ require (
 	github.com/envoyproxy/protoc-gen-validate v1.2.1 // indirect
 	github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f // indirect
 	github.com/evanphx/json-patch/v5 v5.9.11 // indirect
-	github.com/fatih/color v1.17.0 // indirect
+	github.com/fatih/color v1.18.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.8 // indirect
@@ -202,6 +206,7 @@ require (
 	github.com/google/rpmpack v0.7.0 // indirect
 	github.com/google/s2a-go v0.1.9 // indirect
 	github.com/google/safetext v0.0.0-20240722112252-5a72de7e7962 // indirect
+	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/google/wire v0.6.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.6 // indirect
 	github.com/googleapis/gax-go/v2 v2.14.1 // indirect
@@ -398,6 +403,7 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
+	gotest.tools/gotestsum v1.13.0 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	lukechampine.com/blake3 v1.2.1 // indirect
 	sigs.k8s.io/kind v0.27.0 // indirect
@@ -412,4 +418,5 @@ tool (
 	github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
 	github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen
 	go.uber.org/mock/mockgen
+	gotest.tools/gotestsum
 )

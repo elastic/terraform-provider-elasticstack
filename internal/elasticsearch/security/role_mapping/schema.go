@@ -2,7 +2,6 @@ package role_mapping
 
 import (
 	"context"
-	"regexp"
 
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -39,10 +38,6 @@ func GetSchema() schema.Schema {
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
-				},
-				Validators: []validator.String{
-					stringvalidator.LengthBetween(1, 1024),
-					stringvalidator.RegexMatches(regexp.MustCompile(`^[[:graph:]]+$`), "must contain printable characters and no spaces"),
 				},
 			},
 			"enabled": schema.BoolAttribute{

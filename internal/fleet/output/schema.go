@@ -16,6 +16,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -90,6 +91,15 @@ func getSchema() schema.Schema {
 				Optional:    true,
 				Sensitive:   true,
 			},
+			"space_ids": schema.SetAttribute{
+				Description: "The Kibana space IDs where this output is available. When set, the output will be created and managed within the specified space. Note: The order of space IDs does not matter as this is a set.",
+				ElementType: types.StringType,
+				Optional:    true,
+				Computed:    true,
+				PlanModifiers: []planmodifier.Set{
+					setplanmodifier.UseStateForUnknown(),
+				},
+			},
 			"ssl": schema.SingleNestedAttribute{
 				Description: "SSL configuration.",
 				Optional:    true,
@@ -152,10 +162,7 @@ func getSchema() schema.Schema {
 							int64planmodifier.UseStateForUnknown(),
 						},
 						Validators: []validator.Int64{
-							validators.Int64ConditionalRequirement(
-								path.Root("kafka").AtName("compression"),
-								[]string{"gzip"},
-							),
+							validators.AllowedIfDependentPathEquals(path.Root("kafka").AtName("compression"), "gzip"),
 						},
 					},
 					"connection_type": schema.StringAttribute{
@@ -163,7 +170,7 @@ func getSchema() schema.Schema {
 						Optional:    true,
 						Validators: []validator.String{
 							stringvalidator.OneOf("plaintext", "encryption"),
-							validators.StringConditionalRequirementSingle(
+							validators.AllowedIfDependentPathEquals(
 								path.Root("kafka").AtName("auth_type"),
 								"none",
 							),

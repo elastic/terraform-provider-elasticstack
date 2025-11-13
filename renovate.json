@@ -3,6 +3,21 @@
   "extends": [
     "local>elastic/renovate-config"
   ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "fileMatch": ["^generated/kbapi/Makefile$"],
+      "matchStrings": ["github_ref \\?= (?<currentDigest>.*?)\\n"],
+      "currentValueTemplate": "main",
+      "depNameTemplate": "kibana-openapi-spec",
+      "packageNameTemplate": "https://github.com/elastic/kibana",
+      "datasourceTemplate": "git-refs"
+    }
+  ],
+  "postUpgradeTasks": {
+    "commands": ["make -C generated/kbapi all"],
+    "fileFilters": ["generated/kbapi/kibana.gen.go", "generated/kbapi/oas-filtered.yaml"]
+  },
   "automerge": true,
   "automergeStrategy": "squash",
   "automergeType": "branch",

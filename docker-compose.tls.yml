@@ -1,0 +1,117 @@
+services:
+  elasticsearch:
+    extends: 
+      file: docker-compose.yml
+      service: elasticsearch
+
+  kibana_settings:
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    extends: 
+      file: docker-compose.yml
+      service: kibana_settings
+
+  kibana_certs:
+    image: alpine/mkcert:latest@sha256:a8f4f5af61908b4c79c2e9d1e5f23e747f29de174649209ebafcab03d4f6d5fd
+    container_name: ${KIBANA_CERTS_CONTAINER_NAME}
+    restart: 'no'
+    volumes:
+      - kibana-certs:/certs
+    environment:
+      CAROOT: /certs
+    entrypoint: ash
+    command: >
+      -c '
+      mkcert --cert-file=/certs/kibana.crt --key-file=/certs/kibana.key kibana ${KIBANA_CONTAINER_NAME} localhost;
+      chown 1000:1000 /certs/*;
+      '
+
+  kibana:
+    depends_on:
+      kibana_settings:
+        condition: service_completed_successfully
+      kibana_certs:
+        condition: service_completed_successfully
+    extends: 
+      file: docker-compose.yml
+      service: kibana
+    volumes:
+      - dev-kibana:/usr/share/kibana/data
+      - kibana-certs:/certs:ro
+    environment:
+      SERVER_SSL_CERTIFICATE: /certs/kibana.crt
+      SERVER_SSL_KEY: /certs/kibana.key
+      SERVER_SSL_ENABLED: true
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -s --cacert /certs/rootCA.pem -w \"%{http_code}\" https://kibana:5601 | grep -q '302'",
+        ]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+
+  fleet_settings:
+    depends_on:
+      kibana:
+        condition: service_healthy
+    extends: 
+      file: docker-compose.yml
+      service: fleet_settings
+    volumes:
+      - kibana-certs:/certs:ro
+    environment:
+      CACERT: --cacert /certs/rootCA.pem
+      KIBANA_HOST: https://kibana:5601
+  
+  fleet:
+    depends_on:
+      kibana:
+        condition: service_healthy
+    extends: 
+      file: docker-compose.yml
+      service: fleet
+    volumes:
+      - dev-fleet:/usr/share/elastic-agent/data
+      - kibana-certs:/certs:ro
+    environment:
+      KIBANA_HOST: https://kibana:5601
+      KIBANA_CA: /certs/rootCA.pem
+
+  acceptance-tests:
+    profiles: ["acceptance-tests"]
+    depends_on:
+      fleet:
+        condition: service_started
+    extends: 
+      file: docker-compose.yml
+      service: acceptance-tests
+    volumes:
+      - ./:/provider
+      - kibana-certs:/certs:ro
+    environment:
+      KIBANA_ENDPOINT: https://kibana:5601
+      KIBANA_CA_CERTS: /certs/rootCA.pem
+
+  token-acceptance-tests:
+    profiles: ["token-acceptance-tests"]
+    depends_on:
+      fleet:
+        condition: service_started
+    extends:
+      service: acceptance-tests
+    volumes:
+      - ./:/provider
+      - kibana-certs:/certs:ro
+    environment:
+      ELASTICSEARCH_BEARER_TOKEN: ${ELASTICSEARCH_BEARER_TOKEN:-}
+      KIBANA_USERNAME: elastic
+      KIBANA_PASSWORD: ${ELASTICSEARCH_PASSWORD}
+
+volumes:
+  dev-elasticsearch:
+  dev-kibana:
+  dev-fleet:
+  kibana-certs:

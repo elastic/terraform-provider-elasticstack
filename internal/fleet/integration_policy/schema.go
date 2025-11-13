@@ -5,12 +5,17 @@ import (
 	_ "embed"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 //go:embed resource-description.md
@@ -51,7 +56,19 @@ func getSchemaV1() schema.Schema {
 			},
 			"agent_policy_id": schema.StringAttribute{
 				Description: "ID of the agent policy.",
-				Required:    true,
+				Optional:    true,
+				Validators: []validator.String{
+					stringvalidator.ConflictsWith(path.Root("agent_policy_ids").Expression()),
+				},
+			},
+			"agent_policy_ids": schema.ListAttribute{
+				Description: "List of agent policy IDs.",
+				ElementType: types.StringType,
+				Optional:    true,
+				Validators: []validator.List{
+					listvalidator.ConflictsWith(path.Root("agent_policy_id").Expression()),
+					listvalidator.SizeAtLeast(1),
+				},
 			},
 			"description": schema.StringAttribute{
 				Description: "The description of the integration policy.",
@@ -81,6 +98,12 @@ func getSchemaV1() schema.Schema {
 				Computed:    true,
 				Optional:    true,
 				Sensitive:   true,
+			},
+			"space_ids": schema.SetAttribute{
+				Description: "The Kibana space IDs where this integration policy is available. When set, must match the space_ids of the referenced agent policy. If not set, will be inherited from the agent policy. Note: The order of space IDs does not matter as this is a set.",
+				ElementType: types.StringType,
+				Optional:    true,
+				Computed:    true,
 			},
 		},
 		Blocks: map[string]schema.Block{
