@@ -3,6 +3,7 @@ package agent_policy
 import (
 	"context"
 	"fmt"
+	"math"
 	"slices"
 	"time"
 
@@ -142,7 +143,7 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 
 		for _, rv := range *data.RequiredVersions {
 			// Round the float32 percentage to nearest integer since we use Int32 in the schema
-			percentage := int32(rv.Percentage + 0.5)
+			percentage := int32(math.Round(float64(rv.Percentage)))
 			versionMap[rv.Version] = types.Int32Value(percentage)
 		}
 
