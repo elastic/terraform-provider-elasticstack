@@ -25,6 +25,7 @@ import (
 var (
 	minVersionIntegrationPolicy    = version.Must(version.NewVersion("8.10.0"))
 	minVersionIntegrationPolicyIds = version.Must(version.NewVersion("8.15.0"))
+	minVersionOutputId             = version.Must(version.NewVersion("8.16.0"))
 	minVersionSqlIntegration       = version.Must(version.NewVersion("9.1.0"))
 )
 
@@ -62,6 +63,56 @@ func TestAccResourceIntegrationPolicyMultipleAgentPolicies(t *testing.T) {
 	})
 }
 
+func TestAccResourceIntegrationPolicyWithOutput(t *testing.T) {
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIntegrationPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutputId),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+					"output_name": config.StringVariable(fmt.Sprintf("Test Output %s", policyName)),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "description", "IntegrationPolicyTest Policy with Output"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_name", "tcp"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_version", "1.16.0"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "output_id", fmt.Sprintf("%s-test-output", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.input_id", "tcp-tcp"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.streams_json", `{"tcp.generic":{"enabled":true,"vars":{"custom":"","data_stream.dataset":"tcp.generic","listen_address":"localhost","listen_port":8080,"ssl":"","syslog_options":"field: message","tags":[]}}}`),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutputId),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"policy_name":         config.StringVariable(policyName),
+					"output_name":         config.StringVariable(fmt.Sprintf("Test Output %s", policyName)),
+					"updated_output_name": config.StringVariable(fmt.Sprintf("Updated Test Output %s", policyName)),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "description", "Updated Integration Policy with Output"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_name", "tcp"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_version", "1.16.0"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "output_id", fmt.Sprintf("%s-updated-output", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.input_id", "tcp-tcp"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.enabled", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.streams_json", `{"tcp.generic":{"enabled":false,"vars":{"custom":"","data_stream.dataset":"tcp.generic","listen_address":"localhost","listen_port":8085,"ssl":"","syslog_options":"field: message","tags":[]}}}`),
+				),
+			},
+		},
+	})
+}
+
 func TestAccResourceIntegrationPolicy(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
@@ -82,6 +133,7 @@ func TestAccResourceIntegrationPolicy(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_name", "tcp"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_version", "1.16.0"),
 					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration_policy.test_policy", "vars_json"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration_policy.test_policy", "output_id"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.input_id", "tcp-tcp"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.enabled", "true"),
 					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.vars_json"),
@@ -101,6 +153,7 @@ func TestAccResourceIntegrationPolicy(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_name", "tcp"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_version", "1.16.0"),
 					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration_policy.test_policy", "vars_json"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration_policy.test_policy", "output_id"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.input_id", "tcp-tcp"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.enabled", "false"),
 					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.vars_json"),
