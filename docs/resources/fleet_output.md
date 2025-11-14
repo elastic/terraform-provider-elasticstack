@@ -200,6 +200,7 @@ resource "elasticstack_fleet_output" "kafka_round_robin" {
 
 ### Required
 
+- `hosts` (List of String) A list of hosts.
 - `name` (String) The name of the output.
 - `type` (String) The output type.
 
@@ -210,7 +211,6 @@ resource "elasticstack_fleet_output" "kafka_round_robin" {
 - `config_yaml` (String, Sensitive) Advanced YAML configuration. YAML settings here will be added to the output section of each agent policy.
 - `default_integrations` (Boolean) Make this output the default for agent integrations.
 - `default_monitoring` (Boolean) Make this output the default for agent monitoring.
-- `hosts` (List of String) A list of hosts.
 - `kafka` (Attributes) Kafka-specific configuration. (see [below for nested schema](#nestedatt--kafka))
 - `output_id` (String) Unique identifier of the output.
 - `space_ids` (Set of String) The Kibana space IDs where this output is available. When set, the output will be created and managed within the specified space. Note: The order of space IDs does not matter as this is a set.
