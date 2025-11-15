@@ -15,6 +15,7 @@ import (
 
 type features struct {
 	SupportsPolicyIds bool
+	SupportsOutputId  bool
 }
 
 type integrationPolicyModel struct {
@@ -29,6 +30,7 @@ type integrationPolicyModel struct {
 	Force              types.Bool           `tfsdk:"force"`
 	IntegrationName    types.String         `tfsdk:"integration_name"`
 	IntegrationVersion types.String         `tfsdk:"integration_version"`
+	OutputID           types.String         `tfsdk:"output_id"`
 	Input              types.List           `tfsdk:"input"` //> integrationPolicyInputModel
 	VarsJson           jsontypes.Normalized `tfsdk:"vars_json"`
 	SpaceIds           types.Set            `tfsdk:"space_ids"`
@@ -90,6 +92,7 @@ func (model *integrationPolicyModel) populateFromAPI(ctx context.Context, data *
 	model.Enabled = types.BoolValue(data.Enabled)
 	model.IntegrationName = types.StringValue(data.Package.Name)
 	model.IntegrationVersion = types.StringValue(data.Package.Version)
+	model.OutputID = types.StringPointerValue(data.OutputId)
 	model.VarsJson = utils.MapToNormalizedType(utils.Deref(data.Vars), path.Root("vars_json"), &diags)
 
 	// Preserve space_ids if it was originally set in the plan/state
@@ -170,11 +173,25 @@ func (model integrationPolicyModel) toAPIModel(ctx context.Context, isUpdate boo
 		}
 	}
 
+	// Check if output_id is configured and version supports it
+	if utils.IsKnown(model.OutputID) {
+		if !feat.SupportsOutputId {
+			return kbapi.PackagePolicyRequest{}, diag.Diagnostics{
+				diag.NewAttributeErrorDiagnostic(
+					path.Root("output_id"),
+					"Unsupported Elasticsearch version",
+					fmt.Sprintf("Output ID is only supported in Elastic Stack %s and above", MinVersionOutputId),
+				),
+			}
+		}
+	}
+
 	body := kbapi.PackagePolicyRequest{
 		Description: model.Description.ValueStringPointer(),
 		Force:       model.Force.ValueBoolPointer(),
 		Name:        model.Name.ValueString(),
 		Namespace:   model.Namespace.ValueStringPointer(),
+		OutputId:    model.OutputID.ValueStringPointer(),
 		Package: kbapi.PackagePolicyRequestPackage{
 			Name:    model.IntegrationName.ValueString(),
 			Version: model.IntegrationVersion.ValueString(),

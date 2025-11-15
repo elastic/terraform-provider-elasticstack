@@ -32,6 +32,8 @@ resource "elasticstack_fleet_integration_policy" "sample" {
   agent_policy_id     = elasticstack_fleet_agent_policy.sample.policy_id
   integration_name    = elasticstack_fleet_integration.sample.name
   integration_version = elasticstack_fleet_integration.sample.version
+  // Optional: specify a custom output to send data to
+  // output_id           = "my-custom-output-id"
 
   input {
     input_id = "tcp-tcp"

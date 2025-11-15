@@ -63,6 +63,8 @@ resource "elasticstack_fleet_integration_policy" "sample" {
   agent_policy_id     = elasticstack_fleet_agent_policy.sample.policy_id
   integration_name    = elasticstack_fleet_integration.sample.name
   integration_version = elasticstack_fleet_integration.sample.version
+  // Optional: specify a custom output to send data to
+  // output_id           = "my-custom-output-id"
 
   input {
     input_id = "tcp-tcp"
@@ -102,6 +104,7 @@ resource "elasticstack_fleet_integration_policy" "sample" {
 - `enabled` (Boolean) Enable the integration policy.
 - `force` (Boolean) Force operations, such as creation and deletion, to occur.
 - `input` (Block List) Integration inputs. (see [below for nested schema](#nestedblock--input))
+- `output_id` (String) The ID of the output to send data to. When not specified, the default output of the agent policy will be used.
 - `policy_id` (String) Unique identifier of the integration policy.
 - `space_ids` (Set of String) The Kibana space IDs where this integration policy is available. When set, must match the space_ids of the referenced agent policy. If not set, will be inherited from the agent policy. Note: The order of space IDs does not matter as this is a set.
 - `vars_json` (String, Sensitive) Integration-level variables as JSON.
