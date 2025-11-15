@@ -210,9 +210,9 @@ provider "elasticstack" {
 resource "elasticstack_elasticsearch_index" "test_source_index_1" {
   name = "source_index_for_transform"
 
-  alias {
+  alias = [{
     name = "test_alias_1"
-  }
+  }]
 
   mappings = jsonencode({
     properties = {
@@ -229,9 +229,9 @@ resource "elasticstack_elasticsearch_index" "test_source_index_1" {
 resource "elasticstack_elasticsearch_index" "test_source_index_2" {
   name = "additional_index"
 
-  alias {
+  alias = [{
     name = "test_alias_2"
-  }
+  }]
 
   mappings = jsonencode({
     properties = {
@@ -342,9 +342,9 @@ provider "elasticstack" {
 resource "elasticstack_elasticsearch_index" "test_index" {
   name = "%s"
 
-  alias {
+  alias = [{
     name = "test_alias_1"
-  }
+  }]
 
   mappings = jsonencode({
     properties = {
