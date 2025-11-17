@@ -2,6 +2,7 @@ package integration_policy_test
 
 import (
 	"context"
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"regexp"
@@ -14,6 +15,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -38,13 +40,16 @@ func TestAccResourceIntegrationPolicyMultipleAgentPolicies(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceIntegrationPolicyDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIntegrationPolicyDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicyIds),
-				Config:   testAccResourceIntegrationPolicyCreateMultipleAgentPolicies(policyName),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicyIds),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "description", "IntegrationPolicyTest Policy"),
@@ -61,13 +66,16 @@ func TestAccResourceIntegrationPolicy(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceIntegrationPolicyDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIntegrationPolicyDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
-				Config:   testAccResourceIntegrationPolicyCreate(policyName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "description", "IntegrationPolicyTest Policy"),
@@ -81,8 +89,12 @@ func TestAccResourceIntegrationPolicy(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
-				Config:   testAccResourceIntegrationPolicyUpdate(policyName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "description", "Updated Integration Policy"),
@@ -98,6 +110,9 @@ func TestAccResourceIntegrationPolicy(t *testing.T) {
 		},
 	})
 }
+
+//go:embed testdata/TestAccResourceIntegrationPolicySecretsFromSDK/integration_policy.tf
+var sdkCreateTestConfig string
 
 func TestAccResourceIntegrationPolicySecretsFromSDK(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
@@ -116,8 +131,12 @@ func TestAccResourceIntegrationPolicySecretsFromSDK(t *testing.T) {
 						VersionConstraint: "0.11.7",
 					},
 				},
-				SkipFunc:           versionutils.CheckIfVersionMeetsConstraints(sdkConstrains),
-				Config:             testAccResourceIntegrationPolicySecretsCreate(policyName, "created"),
+				SkipFunc: versionutils.CheckIfVersionMeetsConstraints(sdkConstrains),
+				Config:   sdkCreateTestConfig,
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+					"secret_key":  config.StringVariable("created"),
+				},
 				ExpectNonEmptyPlan: true, // secret churn
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName),
@@ -134,7 +153,11 @@ func TestAccResourceIntegrationPolicySecretsFromSDK(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(sdkConstrains),
-				Config:                   testAccResourceIntegrationPolicySecretsCreate(policyName, "created"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory(""),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+					"secret_key":  config.StringVariable("created"),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "description", "IntegrationPolicyTest Policy"),
@@ -156,13 +179,17 @@ func TestAccResourceIntegrationPolicySecrets(t *testing.T) {
 
 	t.Run("single valued secrets", func(t *testing.T) {
 		resource.Test(t, resource.TestCase{
-			PreCheck:                 func() { acctest.PreCheck(t) },
-			CheckDestroy:             checkResourceIntegrationPolicyDestroy,
-			ProtoV6ProviderFactories: acctest.Providers,
+			PreCheck:     func() { acctest.PreCheck(t) },
+			CheckDestroy: checkResourceIntegrationPolicyDestroy,
 			Steps: []resource.TestStep{
 				{
-					SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
-					Config:   testAccResourceIntegrationPolicySecretsCreate(policyName, "created"),
+					ProtoV6ProviderFactories: acctest.Providers,
+					SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
+					ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+					ConfigVariables: config.Variables{
+						"policy_name": config.StringVariable(policyName),
+						"secret_key":  config.StringVariable("created"),
+					},
 					Check: resource.ComposeTestCheckFunc(
 						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName),
 						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "description", "IntegrationPolicyTest Policy"),
@@ -176,8 +203,13 @@ func TestAccResourceIntegrationPolicySecrets(t *testing.T) {
 					),
 				},
 				{
-					SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
-					Config:   testAccResourceIntegrationPolicySecretsUpdate(policyName, "updated"),
+					ProtoV6ProviderFactories: acctest.Providers,
+					SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
+					ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+					ConfigVariables: config.Variables{
+						"policy_name": config.StringVariable(policyName),
+						"secret_key":  config.StringVariable("updated"),
+					},
 					Check: resource.ComposeTestCheckFunc(
 						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName),
 						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "description", "Updated Integration Policy"),
@@ -191,9 +223,14 @@ func TestAccResourceIntegrationPolicySecrets(t *testing.T) {
 					),
 				},
 				{
-					SkipFunc:                versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
-					ResourceName:            "elasticstack_fleet_integration_policy.test_policy",
-					Config:                  testAccResourceIntegrationPolicySecretsUpdate(policyName, "updated"),
+					ProtoV6ProviderFactories: acctest.Providers,
+					SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
+					ResourceName:             "elasticstack_fleet_integration_policy.test_policy",
+					ConfigDirectory:          acctest.NamedTestCaseDirectory("import_test"),
+					ConfigVariables: config.Variables{
+						"policy_name": config.StringVariable(policyName),
+						"secret_key":  config.StringVariable("updated"),
+					},
 					ImportState:             true,
 					ImportStateVerify:       true,
 					ImportStateVerifyIgnore: []string{"vars_json", "space_ids"},
@@ -207,13 +244,17 @@ func TestAccResourceIntegrationPolicySecrets(t *testing.T) {
 
 	t.Run("multi-valued secrets", func(t *testing.T) {
 		resource.Test(t, resource.TestCase{
-			PreCheck:                 func() { acctest.PreCheck(t) },
-			CheckDestroy:             checkResourceIntegrationPolicyDestroy,
-			ProtoV6ProviderFactories: acctest.Providers,
+			PreCheck:     func() { acctest.PreCheck(t) },
+			CheckDestroy: checkResourceIntegrationPolicyDestroy,
 			Steps: []resource.TestStep{
 				{
-					SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSqlIntegration),
-					Config:   testAccResourceIntegrationPolicySecretsIds(policyName, "created"),
+					ProtoV6ProviderFactories: acctest.Providers,
+					SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionSqlIntegration),
+					ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+					ConfigVariables: config.Variables{
+						"policy_name": config.StringVariable(policyName),
+						"secret_key":  config.StringVariable("created"),
+					},
 					Check: resource.ComposeTestCheckFunc(
 						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName),
 						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "description", "SQL Integration Policy"),
@@ -226,11 +267,16 @@ func TestAccResourceIntegrationPolicySecrets(t *testing.T) {
 					),
 				},
 				{
+					ProtoV6ProviderFactories: acctest.Providers,
 					SkipFunc: func() (bool, error) {
 						return versionutils.CheckIfVersionIsUnsupported(minVersionSqlIntegration)()
 					},
-					ResourceName:            "elasticstack_fleet_integration_policy.test_policy",
-					Config:                  testAccResourceIntegrationPolicySecretsIds(policyName, "created"),
+					ResourceName:    "elasticstack_fleet_integration_policy.test_policy",
+					ConfigDirectory: acctest.NamedTestCaseDirectory("import_test"),
+					ConfigVariables: config.Variables{
+						"policy_name": config.StringVariable(policyName),
+						"secret_key":  config.StringVariable("created"),
+					},
 					ImportState:             true,
 					ImportStateVerify:       true,
 					ImportStateVerifyIgnore: []string{"input.0.streams_json", "space_ids"},
@@ -278,336 +324,4 @@ func checkResourceIntegrationPolicyDestroy(s *terraform.State) error {
 
 	}
 	return nil
-}
-
-func testAccResourceIntegrationPolicyCommon(name string, integrationName string, integrationVersion string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_fleet_integration" "test_policy" {
-  name    = "%s"
-  version = "%s"
-  force   = true
-}
-
-resource "elasticstack_fleet_agent_policy" "test_policy" {
-  name            = "%s Agent Policy"
-  namespace       = "default"
-  description     = "IntegrationPolicyTest Agent Policy"
-  monitor_logs    = true
-  monitor_metrics = true
-  skip_destroy    = false
-}
-
-data "elasticstack_fleet_enrollment_tokens" "test_policy" {
-  policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
-}
-`, integrationName, integrationVersion, name)
-}
-
-func testAccResourceIntegrationPolicyCreate(id string) string {
-	common := testAccResourceIntegrationPolicyCommon(id, "tcp", "1.16.0")
-	return fmt.Sprintf(`
-%s
-
-resource "elasticstack_fleet_integration_policy" "test_policy" {
-  name            = "%s"
-  namespace       = "default"
-  description     = "IntegrationPolicyTest Policy"
-  agent_policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
-  integration_name    = elasticstack_fleet_integration.test_policy.name
-  integration_version = elasticstack_fleet_integration.test_policy.version
-
-  input {
-    input_id = "tcp-tcp"
-    enabled = true
-    streams_json = jsonencode({
-      "tcp.generic": {
-        "enabled": true
-        "vars": {
-          "listen_address": "localhost"
-          "listen_port": 8080
-          "data_stream.dataset": "tcp.generic"
-          "tags": []
-          "syslog_options": "field: message"
-          "ssl": ""
-          "custom": ""
-        }
-      }
-    })
-  }
-}
-`, common, id)
-}
-
-func testAccResourceIntegrationPolicyUpdate(id string) string {
-	common := testAccResourceIntegrationPolicyCommon(id, "tcp", "1.16.0")
-	return fmt.Sprintf(`
-%s
-
-resource "elasticstack_fleet_integration_policy" "test_policy" {
-  name            = "%s"
-  namespace       = "default"
-  description     = "Updated Integration Policy"
-  agent_policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
-  integration_name    = elasticstack_fleet_integration.test_policy.name
-  integration_version = elasticstack_fleet_integration.test_policy.version
-
-  input {
-    input_id = "tcp-tcp"
-    enabled  = false
-    streams_json = jsonencode({
-      "tcp.generic": {
-        "enabled": false
-        "vars": {
-          "listen_address": "localhost"
-          "listen_port": 8085
-          "data_stream.dataset": "tcp.generic"
-          "tags": []
-          "syslog_options": "field: message"
-          "ssl": ""
-          "custom": ""
-        }
-      }
-    })
-  }
-}
-`, common, id)
-}
-
-func testAccResourceIntegrationPolicySecretsCreate(id string, key string) string {
-	common := testAccResourceIntegrationPolicyCommon(id, "aws_logs", "1.4.0")
-	return fmt.Sprintf(`
-%s
-
-resource "elasticstack_fleet_integration_policy" "test_policy" {
-  name            = "%s"
-  namespace       = "default"
-  description     = "IntegrationPolicyTest Policy"
-  agent_policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
-  integration_name    = elasticstack_fleet_integration.test_policy.name
-  integration_version = elasticstack_fleet_integration.test_policy.version
-
-  vars_json = jsonencode({
-    "access_key_id": "placeholder"
-    "secret_access_key": "%s %s"
-    "session_token": "placeholder"
-    "endpoint": "endpoint"
-    "default_region": "us-east-1"
-  })
-  input {
-    input_id = "aws_logs-aws-cloudwatch"
-    enabled  = true
-    streams_json = jsonencode({
-      "aws_logs.generic" = {
-        enabled = true
-        vars = {
-          "number_of_workers": 1
-          "log_streams": []
-          "start_position": "beginning"
-          "scan_frequency": "1m"
-          "api_timeput": "120s"
-          "api_sleep": "200ms"
-          "tags": ["forwarded"]
-          "preserve_original_event": false
-          "data_stream.dataset": "aws_logs.generic"
-          "custom": ""
-        }
-      }
-    })
-  }
-  input {
-    input_id = "aws_logs-aws-s3"
-    enabled = true
-    streams_json = jsonencode({
-      "aws_logs.generic" = {
-        enabled = true
-        vars = {
-          "number_of_workers": 1
-          "bucket_list_interval": "120s"
-          "file_selectors": ""
-          "fips_enabled": false
-          "include_s3_metadata": []
-          "max_bytes": "10MiB"
-          "max_number_of_messages": 5
-          "parsers": ""
-          "sqs.max_receive_count": 5
-          "sqs.wait_time": "20s"
-          "tags": ["forwarded"]
-          "preserve_original_event": false
-          "data_stream.dataset": "aws_logs.generic"
-          "custom": ""
-        }
-      }
-    })
-  }
-}
-`, common, id, key, id)
-}
-
-func testAccResourceIntegrationPolicySecretsUpdate(id string, key string) string {
-	common := testAccResourceIntegrationPolicyCommon(id, "aws_logs", "1.4.0")
-	return fmt.Sprintf(`
-%s
-
-resource "elasticstack_fleet_integration_policy" "test_policy" {
-  name            = "%s"
-  namespace       = "default"
-  description     = "Updated Integration Policy"
-  agent_policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
-  integration_name    = elasticstack_fleet_integration.test_policy.name
-  integration_version = elasticstack_fleet_integration.test_policy.version
-
-  vars_json = jsonencode({
-    "access_key_id": "placeholder"
-    "secret_access_key": "%s %s"
-    "session_token": "placeholder"
-    "endpoint": "endpoint"
-    "default_region": "us-east-2"
-  })
-  input {
-    input_id = "aws_logs-aws-cloudwatch"
-    enabled  = false
-    streams_json = jsonencode({
-      "aws_logs.generic" = {
-        enabled = false
-        vars = {
-          "number_of_workers": 1,
-          "log_streams": [],
-          "start_position": "beginning",
-          "scan_frequency": "2m",
-          "api_timeput": "120s",
-          "api_sleep": "200ms",
-          "tags": ["forwarded"],
-          "preserve_original_event": false,
-          "data_stream.dataset": "aws_logs.generic",
-          "custom": "",
-        }
-      }
-    })
-  }
-  input {
-    input_id = "aws_logs-aws-s3"
-    enabled = false
-    streams_json = jsonencode({
-      "aws_logs.generic" = {
-        enabled = false
-        vars = {
-          "number_of_workers": 1,
-          "bucket_list_interval": "120s",
-          "file_selectors": "",
-          "fips_enabled": false,
-          "include_s3_metadata": [],
-          "max_bytes": "20MiB",
-          "max_number_of_messages": 5,
-          "parsers": "",
-          "sqs.max_receive_count": 5,
-          "sqs.wait_time": "20s",
-          "tags": ["forwarded"],
-          "preserve_original_event": false,
-          "data_stream.dataset": "aws_logs.generic",
-          "custom": "",
-        }
-      }
-    })
-  }
-}
-`, common, id, key, id)
-}
-
-func testAccResourceIntegrationPolicyCreateMultipleAgentPolicies(id string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-resource "elasticstack_fleet_integration" "test_policy" {
-  name    = "tcp"
-  version = "1.16.0"
-  force   = true
-}
-resource "elasticstack_fleet_agent_policy" "test_policy_1" {
-  name            = "%s Agent Policy 1"
-  namespace       = "default"
-  description     = "IntegrationPolicyTest Agent Policy 1"
-  monitor_logs    = true
-  monitor_metrics = true
-  skip_destroy    = false
-}
-resource "elasticstack_fleet_agent_policy" "test_policy_2" {
-  name            = "%s Agent Policy 2"
-  namespace       = "default"
-  description     = "IntegrationPolicyTest Agent Policy 2"
-  monitor_logs    = true
-  monitor_metrics = true
-  skip_destroy    = false
-}
-resource "elasticstack_fleet_integration_policy" "test_policy" {
-  name            = "%s"
-  namespace       = "default"
-  description     = "IntegrationPolicyTest Policy"
-  agent_policy_ids = [
-    elasticstack_fleet_agent_policy.test_policy_1.policy_id,
-    elasticstack_fleet_agent_policy.test_policy_2.policy_id
-  ]
-  integration_name    = elasticstack_fleet_integration.test_policy.name
-  integration_version = elasticstack_fleet_integration.test_policy.version
-  input {
-    input_id = "tcp-tcp"
-    streams_json = jsonencode({
-      "tcp.generic": {
-        "enabled": true
-        "vars": {
-          "listen_address": "localhost"
-          "listen_port": 8080
-          "data_stream.dataset": "tcp.generic"
-          "tags": []
-          "syslog_options": "field: message"
-          "ssl": ""
-          "custom": ""
-        }
-      }
-    })
-  }
-}
-`, id, id, id)
-}
-
-func testAccResourceIntegrationPolicySecretsIds(id string, key string) string {
-	common := testAccResourceIntegrationPolicyCommon(id, "sql", "1.1.0")
-	return fmt.Sprintf(`
-%s
-
-resource "elasticstack_fleet_integration_policy" "test_policy" {
-  name            = "%s"
-  namespace       = "default"
-  description     = "SQL Integration Policy"
-  agent_policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
-  integration_name    = elasticstack_fleet_integration.test_policy.name
-  integration_version = elasticstack_fleet_integration.test_policy.version
- 
-  input {
-    input_id  = "sql-sql/metrics"
-      enabled   = true
-      streams_json = jsonencode({
-        "sql.sql" : {
-          "enabled" : true,
-          "vars" : {
-            "hosts" : ["root:test@tcp(127.0.0.1:3306)/"],
-            "period" : "1m",
-            "driver" : "mysql",
-            "sql_queries" : "- query: SHOW GLOBAL STATUS LIKE 'Innodb_system%%'\n  response_format: variables\n        \n",
-            "merge_results" : false,
-            "ssl" : "",
-            "data_stream.dataset" : "sql",
-            "processors" : ""
-          }
-        }
-      })
-  }
-}
-`, common, id)
 }

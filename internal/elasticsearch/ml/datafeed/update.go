@@ -2,7 +2,6 @@ package datafeed
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
@@ -62,9 +61,9 @@ func (r *datafeedResource) update(ctx context.Context, req resource.UpdateReques
 		}
 
 		// Wait for the datafeed to reach started state
-		err := r.waitForDatafeedState(ctx, datafeedId, "started")
-		if err != nil {
-			resp.Diagnostics.AddError("Failed to wait for datafeed to start", fmt.Sprintf("Datafeed %s did not start within timeout: %s", datafeedId, err.Error()))
+		_, waitDiags := WaitForDatafeedState(ctx, r.client, datafeedId, StateStarted)
+		resp.Diagnostics.Append(waitDiags...)
+		if resp.Diagnostics.HasError() {
 			return
 		}
 	}

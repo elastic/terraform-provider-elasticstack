@@ -15,25 +15,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-// MLJobStats represents the statistics structure for an ML job
-type MLJobStats struct {
-	Jobs []MLJob `json:"jobs"`
-}
-
-// MLJob represents a single ML job in the stats response
-type MLJob struct {
-	JobId string     `json:"job_id"`
-	State string     `json:"state"`
-	Node  *MLJobNode `json:"node,omitempty"`
-}
-
-// MLJobNode represents the node information for an ML job
-type MLJobNode struct {
-	Id         string                 `json:"id"`
-	Name       string                 `json:"name"`
-	Attributes map[string]interface{} `json:"attributes"`
-}
-
 // OpenMLJob opens a machine learning job
 func OpenMLJob(ctx context.Context, apiClient *clients.ApiClient, jobId string) diag.Diagnostics {
 	var diags diag.Diagnostics
@@ -120,7 +101,7 @@ func CloseMLJob(ctx context.Context, apiClient *clients.ApiClient, jobId string,
 }
 
 // GetMLJobStats retrieves the stats for a specific machine learning job
-func GetMLJobStats(ctx context.Context, apiClient *clients.ApiClient, jobId string) (*MLJob, diag.Diagnostics) {
+func GetMLJobStats(ctx context.Context, apiClient *clients.ApiClient, jobId string) (*models.MLJob, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	esClient, err := apiClient.GetESClient()
@@ -148,8 +129,7 @@ func GetMLJobStats(ctx context.Context, apiClient *clients.ApiClient, jobId stri
 	if diags.HasError() {
 		return nil, diags
 	}
-
-	var jobStats MLJobStats
+	var jobStats models.MLJobStats
 	if err := json.NewDecoder(res.Body).Decode(&jobStats); err != nil {
 		diags.AddError("Failed to decode ML job stats response", err.Error())
 		return nil, diags
