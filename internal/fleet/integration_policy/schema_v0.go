@@ -71,7 +71,7 @@ func getSchemaV0() *schema.Schema {
 // The schema between V0 and V1 is mostly the same, however vars_json and
 // streams_json saved "" values to the state when null values were in the
 // config. jsontypes.Normalized correctly states this is invalid JSON.
-func upgradeV0(ctx context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
+func upgradeV0ToV1(ctx context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
 	var stateModelV0 integrationPolicyModelV0
 
 	diags := req.State.Get(ctx, &stateModelV0)
@@ -81,7 +81,7 @@ func upgradeV0(ctx context.Context, req resource.UpgradeStateRequest, resp *reso
 	}
 
 	// Convert V0 model to V1 model
-	stateModelV1 := integrationPolicyModel{
+	stateModelV1 := integrationPolicyModelV1{
 		ID:                 stateModelV0.ID,
 		PolicyID:           stateModelV0.PolicyID,
 		Name:               stateModelV0.Name,
@@ -109,10 +109,10 @@ func upgradeV0(ctx context.Context, req resource.UpgradeStateRequest, resp *reso
 
 	// Convert inputs from V0 to V1
 	inputsV0 := utils.ListTypeAs[integrationPolicyInputModelV0](ctx, stateModelV0.Input, path.Root("input"), &resp.Diagnostics)
-	var inputsV1 []integrationPolicyInputModel
+	var inputsV1 []integrationPolicyInputModelV1
 
 	for _, inputV0 := range inputsV0 {
-		inputV1 := integrationPolicyInputModel{
+		inputV1 := integrationPolicyInputModelV1{
 			InputID: inputV0.InputID,
 			Enabled: inputV0.Enabled,
 		}
