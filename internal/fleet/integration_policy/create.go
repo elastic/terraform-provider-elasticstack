@@ -65,7 +65,7 @@ func (r *integrationPolicyResource) Create(ctx context.Context, req resource.Cre
 	}
 
 	// Remember if the user configured input in the plan
-	planHadInput := utils.IsKnown(planModel.Input) && !planModel.Input.IsNull() && len(planModel.Input.Elements()) > 0
+	planHadInput := utils.IsKnown(planModel.Inputs) && !planModel.Inputs.IsNull() && len(planModel.Inputs.Elements()) > 0
 
 	diags = planModel.populateFromAPI(ctx, policy)
 	resp.Diagnostics.Append(diags...)
@@ -76,7 +76,7 @@ func (r *integrationPolicyResource) Create(ctx context.Context, req resource.Cre
 	// If plan didn't have input configured, ensure we don't add it now
 	// This prevents "Provider produced inconsistent result" errors
 	if !planHadInput {
-		planModel.Input = types.ListNull(getInputTypeV1())
+		planModel.Inputs = types.MapNull(getInputsTypes())
 	}
 
 	diags = resp.State.Set(ctx, planModel)
