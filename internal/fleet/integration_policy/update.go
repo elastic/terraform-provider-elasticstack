@@ -102,7 +102,7 @@ func (r *integrationPolicyResource) Update(ctx context.Context, req resource.Upd
 
 	// If state didn't have input configured, ensure we don't add it now
 	if !stateHadInput && (planModel.Inputs.IsNull() || len(planModel.Inputs.Elements()) == 0) {
-		planModel.Inputs = types.MapNull(getInputsTypes())
+		planModel.Inputs = NewInputsNull(getInputsElementType())
 	}
 
 	diags = resp.State.Set(ctx, planModel)
