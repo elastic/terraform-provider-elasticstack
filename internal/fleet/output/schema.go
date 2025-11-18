@@ -60,7 +60,7 @@ func getSchema() schema.Schema {
 			},
 			"hosts": schema.ListAttribute{
 				Description: "A list of hosts.",
-				Optional:    true,
+				Required:    true,
 				Validators: []validator.List{
 					listvalidator.SizeAtLeast(1),
 				},
