@@ -85,7 +85,10 @@ func (m integrationPolicyModelV1) toV2(ctx context.Context) (integrationPolicyMo
 		}
 	}
 
-	stateModelV2.Inputs = utils.MapValueFrom(ctx, inputsV2, getInputsTypes(), path.Root("input"), &diags)
+	inputsValue, d := NewInputsValueFrom(ctx, getInputsElementType(), inputsV2)
+	diags.Append(d...)
+
+	stateModelV2.Inputs = inputsValue
 	return stateModelV2, diags
 }
 
