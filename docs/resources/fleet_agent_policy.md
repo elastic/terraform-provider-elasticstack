@@ -57,6 +57,7 @@ resource "elasticstack_fleet_agent_policy" "test_policy" {
 - `monitor_metrics` (Boolean) Enable collection of agent metrics.
 - `monitoring_output_id` (String) The identifier for monitoring output.
 - `policy_id` (String) Unique identifier of the agent policy.
+- `required_versions` (Map of Number) Map of agent versions to target percentages for automatic upgrade. The key is the target version and the value is the percentage of agents to upgrade to that version.
 - `skip_destroy` (Boolean) Set to true if you do not wish the agent policy to be deleted at destroy time, and instead just remove the agent policy from the Terraform state.
 - `space_ids` (Set of String) The Kibana space IDs that this agent policy should be available in. When not specified, defaults to ["default"]. Note: The order of space IDs does not matter as this is a set.
 - `supports_agentless` (Boolean) Set to true to enable agentless data collection.
