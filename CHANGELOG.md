@@ -7,6 +7,7 @@
 - Add back missing import support for `elasticstack_elasticsearch_security_role_mapping` ([#1441](https://github.com/elastic/terraform-provider-elasticstack/pull/1441))
 - Add new `elasticstack_elasticsearch_ml_job_state` resource ([#1337](https://github.com/elastic/terraform-provider-elasticstack/pull/1337))
 - Add new `elasticstack_elasticsearch_ml_datafeed_state` resource ([#1422](https://github.com/elastic/terraform-provider-elasticstack/pull/1422))
+- Add `output_id` to `elasticstack_fleet_integration_policy` resource ([#1445](https://github.com/elastic/terraform-provider-elasticstack/pull/1445))
 - Make `hosts` attribute required in `elasticstack_fleet_output` resource ([#1450](https://github.com/elastic/terraform-provider-elasticstack/pull/1450/files)) 
 
 ## [0.12.1] - 2025-10-22
