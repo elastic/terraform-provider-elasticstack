@@ -243,6 +243,12 @@ func TestAccResourceSecurityDetectionRule_Query(t *testing.T) {
 					resource.TestCheckNoResourceAttr(resourceName, "filters"),
 				),
 			},
+			{
+				SkipFunc:          versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
 		},
 	})
 }
@@ -3790,6 +3796,12 @@ func TestAccResourceSecurityDetectionRule_QueryMinimalWithSpace(t *testing.T) {
 					resource.TestCheckNoResourceAttr(resourceName, "alert_suppression"),
 					resource.TestCheckNoResourceAttr(resourceName, "building_block_type"),
 				),
+			},
+			{
+				SkipFunc:          versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
