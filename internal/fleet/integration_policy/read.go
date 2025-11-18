@@ -7,7 +7,6 @@ import (
 	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func (r *integrationPolicyResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -70,7 +69,7 @@ func (r *integrationPolicyResource) Read(ctx context.Context, req resource.ReadR
 	// This prevents "Provider produced inconsistent result" errors during refresh
 	// However, during import we should always populate inputs from the API
 	if !stateHadInput && !isImport {
-		stateModel.Inputs = types.MapNull(getInputsTypes())
+		stateModel.Inputs = NewInputsNull(getInputsElementType())
 	}
 
 	diags = resp.State.Set(ctx, stateModel)

@@ -30,7 +30,7 @@ type integrationPolicyModel struct {
 	IntegrationName    types.String         `tfsdk:"integration_name"`
 	IntegrationVersion types.String         `tfsdk:"integration_version"`
 	OutputID           types.String         `tfsdk:"output_id"`
-	Inputs             types.Map            `tfsdk:"inputs"` //> integrationPolicyInputsModel
+	Inputs             InputsValue          `tfsdk:"inputs"` //> integrationPolicyInputsModel
 	VarsJson           jsontypes.Normalized `tfsdk:"vars_json"`
 	SpaceIds           types.Set            `tfsdk:"space_ids"`
 }
@@ -131,7 +131,7 @@ func (model *integrationPolicyModel) populateInputsFromAPI(ctx context.Context, 
 	} else if isInputNullOrEmpty {
 		// Case 2: Known and null/empty - user explicitly didn't configure inputs
 		// Don't populate to avoid "Provider produced inconsistent result" error
-		model.Inputs = types.MapNull(getInputsTypes())
+		model.Inputs = NewInputsNull(getInputsElementType())
 		return
 	}
 	// Case 3: Known and not null/empty - user configured inputs, populate from API (continue below)
@@ -165,7 +165,7 @@ func (model *integrationPolicyModel) populateInputsFromAPI(ctx context.Context, 
 		newInputs[inputID] = inputModel
 	}
 
-	inputsMap, d := types.MapValueFrom(ctx, getInputsTypes(), newInputs)
+	inputsMap, d := NewInputsValueFrom(ctx, getInputsElementType(), newInputs)
 	diags.Append(d...)
 	model.Inputs = inputsMap
 }
@@ -243,11 +243,11 @@ func (model integrationPolicyModel) toAPIModel(ctx context.Context, isUpdate boo
 
 // toAPIInputsFromInputsAttribute converts the 'inputs' attribute to the API model format
 func (model integrationPolicyModel) toAPIInputsFromInputsAttribute(ctx context.Context, diags *diag.Diagnostics) map[string]kbapi.PackagePolicyRequestInput {
-	if !utils.IsKnown(model.Inputs) {
+	if !utils.IsKnown(model.Inputs.MapValue) {
 		return nil
 	}
 
-	inputsMap := utils.MapTypeAs[integrationPolicyInputsModel](ctx, model.Inputs, path.Root("inputs"), diags)
+	inputsMap := utils.MapTypeAs[integrationPolicyInputsModel](ctx, model.Inputs.MapValue, path.Root("inputs"), diags)
 	if inputsMap == nil {
 		return nil
 	}

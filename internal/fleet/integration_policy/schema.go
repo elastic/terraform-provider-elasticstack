@@ -3,6 +3,7 @@ package integration_policy
 import (
 	"context"
 	_ "embed"
+	"os"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
@@ -16,16 +17,36 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging"
 )
 
 //go:embed resource-description.md
 var integrationPolicyDescription string
+
+func getInputsElementType() attr.Type {
+	// Define the element type for the inputs map
+	return types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"enabled": types.BoolType,
+			"vars":    jsontypes.NormalizedType{},
+			"streams": types.MapType{
+				ElemType: types.ObjectType{
+					AttrTypes: map[string]attr.Type{
+						"enabled": types.BoolType,
+						"vars":    jsontypes.NormalizedType{},
+					},
+				},
+			},
+		},
+	}
+}
 
 func (r *integrationPolicyResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = getSchemaV2()
 }
 
 func getSchemaV2() schema.Schema {
+	varsAreSensitive := !logging.IsDebugOrHigher() && os.Getenv("TF_ACC") != "1"
 	return schema.Schema{
 		Version:     2,
 		Description: integrationPolicyDescription,
@@ -101,7 +122,7 @@ func getSchemaV2() schema.Schema {
 				CustomType:  jsontypes.NormalizedType{},
 				Computed:    true,
 				Optional:    true,
-				Sensitive:   true,
+				Sensitive:   varsAreSensitive,
 			},
 			"space_ids": schema.SetAttribute{
 				Description: "The Kibana space IDs where this integration policy is available. When set, must match the space_ids of the referenced agent policy. If not set, will be inherited from the agent policy. Note: The order of space IDs does not matter as this is a set.",
@@ -111,6 +132,7 @@ func getSchemaV2() schema.Schema {
 			},
 			"inputs": schema.MapNestedAttribute{
 				Description: "Integration inputs mapped by input ID.",
+				CustomType:  NewInputsType(getInputsElementType()),
 				Computed:    true,
 				Optional:    true,
 				NestedObject: schema.NestedAttributeObject{
@@ -125,11 +147,10 @@ func getSchemaV2() schema.Schema {
 							Description: "Input-level variables as JSON.",
 							CustomType:  jsontypes.NormalizedType{},
 							Optional:    true,
-							Sensitive:   true,
+							Sensitive:   varsAreSensitive,
 						},
 						"streams": schema.MapNestedAttribute{
 							Description: "Input streams mapped by stream ID.",
-							Computed:    true,
 							Optional:    true,
 							NestedObject: schema.NestedAttributeObject{
 								Attributes: map[string]schema.Attribute{
@@ -143,7 +164,7 @@ func getSchemaV2() schema.Schema {
 										Description: "Stream-level variables as JSON.",
 										CustomType:  jsontypes.NormalizedType{},
 										Optional:    true,
-										Sensitive:   true,
+										Sensitive:   varsAreSensitive,
 									},
 								},
 							},
@@ -155,12 +176,8 @@ func getSchemaV2() schema.Schema {
 	}
 }
 
-func getInputsTypes() attr.Type {
-	return getSchemaV2().Attributes["inputs"].GetType().(attr.TypeWithElementType).ElementType()
-}
-
 func getInputsAttributeTypes() map[string]attr.Type {
-	return getInputsTypes().(attr.TypeWithAttributeTypes).AttributeTypes()
+	return getInputsElementType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
 func getInputStreamType() attr.Type {
