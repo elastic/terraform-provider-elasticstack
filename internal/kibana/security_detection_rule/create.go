@@ -35,7 +35,7 @@ func (r *securityDetectionRuleResource) Create(ctx context.Context, req resource
 	}
 
 	// Create the rule
-	response, err := kbClient.API.CreateRuleWithResponse(ctx, createProps)
+	response, err := kbClient.API.CreateRuleWithResponse(ctx, data.SpaceId.ValueString(), createProps)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating security detection rule",

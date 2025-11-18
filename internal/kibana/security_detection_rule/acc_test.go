@@ -1367,7 +1367,7 @@ func testAccCheckSecurityDetectionRuleDestroy(s *terraform.State) error {
 				Id: &ruleObjectId,
 			}
 
-			response, err := kbClient.API.ReadRuleWithResponse(context.Background(), params)
+			response, err := kbClient.API.ReadRuleWithResponse(context.Background(), parts[0], params)
 			if err != nil {
 				return fmt.Errorf("failed to read security detection rule: %v", err)
 			}
