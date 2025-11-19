@@ -58,7 +58,8 @@ func (r *exceptionListResource) Create(ctx context.Context, req resource.CreateR
 	}
 
 	// Set ID for import
-	plan.ID = types.StringValue(clients.CompositeId{ClusterId: spaceID, ResourceId: apiResp.Id}.String())
+	compID := clients.CompositeId{ClusterId: spaceID, ResourceId: apiResp.Id}
+	plan.ID = types.StringValue(compID.String())
 
 	diags = resp.State.Set(ctx, plan)
 	resp.Diagnostics.Append(diags...)

@@ -6,6 +6,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -22,7 +23,7 @@ func (r *exceptionListResource) Read(ctx context.Context, req resource.ReadReque
 	}
 
 	// Extract composite ID
-	compId, diags := clients.CompositeIdFromStr(state.ID.ValueString())
+	compId, diags := clients.CompositeIdFromStrFw(state.ID.ValueString())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -51,54 +52,33 @@ func (r *exceptionListResource) Read(ctx context.Context, req resource.ReadReque
 }
 
 // read is an internal function to read exception list data
-func read(ctx context.Context, client *kbapi.ClientWithResponses, state *exceptionListModel, spaceID, listID string) (diags diag.Diagnostics) {
+func read(ctx context.Context, client *kibana_oapi.Client, state *exceptionListModel, spaceID, listID string) (diags diag.Diagnostics) {
 	// Make API call to read exception list
+	nsType := kbapi.SecurityExceptionsAPIExceptionNamespaceType("single")
 	params := kbapi.ReadExceptionListParams{
 		ListId:        &listID,
-		NamespaceType: utils.Pointer("single"),
+		NamespaceType: &nsType,
 	}
 
 	// If namespace type is known from state, use it
 	if utils.IsKnown(state.NamespaceType) {
-		nsType := state.NamespaceType.ValueString()
+		nsType = kbapi.SecurityExceptionsAPIExceptionNamespaceType(state.NamespaceType.ValueString())
 		params.NamespaceType = &nsType
 	}
 
-	apiResp, err := client.ReadExceptionListWithResponse(
-		clients.WithKibanaSpaceContext(ctx, spaceID),
-		&params,
-	)
-	if err != nil {
-		diags.AddError(
-			"Failed to read exception list",
-			fmt.Sprintf("Failed to read exception list: %s", err),
-		)
+	apiResp, d := kibana_oapi.ReadExceptionList(ctx, client, &params)
+	diags.Append(d...)
+	if diags.HasError() {
 		return diags
 	}
 
-	if apiResp.StatusCode() == 404 {
+	if apiResp == nil {
 		// Resource no longer exists
 		state.ID = types.StringNull()
 		return diags
 	}
 
-	if apiResp.StatusCode() != 200 {
-		diags.AddError(
-			"Failed to read exception list",
-			fmt.Sprintf("API returned status %d: %s", apiResp.StatusCode(), string(apiResp.Body)),
-		)
-		return diags
-	}
-
-	if apiResp.JSON200 == nil {
-		diags.AddError(
-			"Failed to read exception list",
-			"API response body is empty",
-		)
-		return diags
-	}
-
 	// Populate state from response
-	diags.Append(state.fromAPIResponse(ctx, apiResp.JSON200, spaceID)...)
+	diags.Append(state.fromAPIResponse(ctx, apiResp, spaceID)...)
 	return diags
 }

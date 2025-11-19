@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
@@ -18,7 +19,7 @@ func (r *exceptionListResource) Update(ctx context.Context, req resource.UpdateR
 	}
 
 	// Extract composite ID
-	compId, diags := clients.CompositeIdFromStr(plan.ID.ValueString())
+	compId, diags := clients.CompositeIdFromStrFw(plan.ID.ValueString())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -42,36 +43,14 @@ func (r *exceptionListResource) Update(ctx context.Context, req resource.UpdateR
 	}
 
 	// Make API call
-	apiResp, err := kibanaClient.UpdateExceptionListWithResponse(
-		clients.WithKibanaSpaceContext(ctx, compId.ClusterId),
-		updateReq,
-	)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Failed to update exception list",
-			fmt.Sprintf("Failed to update exception list: %s", err),
-		)
-		return
-	}
-
-	if apiResp.StatusCode() != 200 {
-		resp.Diagnostics.AddError(
-			"Failed to update exception list",
-			fmt.Sprintf("API returned status %d: %s", apiResp.StatusCode(), string(apiResp.Body)),
-		)
-		return
-	}
-
-	if apiResp.JSON200 == nil {
-		resp.Diagnostics.AddError(
-			"Failed to update exception list",
-			"API response body is empty",
-		)
+	apiResp, diags := kibana_oapi.UpdateExceptionList(ctx, kibanaClient, updateReq)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	// Populate state from response
-	diags = plan.fromAPIResponse(ctx, apiResp.JSON200, compId.ClusterId)
+	diags = plan.fromAPIResponse(ctx, apiResp, compId.ClusterId)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

@@ -6,6 +6,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -20,7 +21,7 @@ func (r *exceptionItemResource) Delete(ctx context.Context, req resource.DeleteR
 	}
 
 	// Extract composite ID
-	compId, diags := clients.CompositeIdFromStr(state.ID.ValueString())
+	compId, diags := clients.CompositeIdFromStrFw(state.ID.ValueString())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -42,31 +43,14 @@ func (r *exceptionItemResource) Delete(ctx context.Context, req resource.DeleteR
 	if utils.IsKnown(state.NamespaceType) {
 		nsType = state.NamespaceType.ValueString()
 	}
+	nsTypeAPI := kbapi.SecurityExceptionsAPIExceptionNamespaceType(nsType)
 
 	params := kbapi.DeleteExceptionListItemParams{
 		ItemId:        &itemID,
-		NamespaceType: &nsType,
+		NamespaceType: &nsTypeAPI,
 	}
 
 	// Make API call
-	apiResp, err := kibanaClient.DeleteExceptionListItemWithResponse(
-		clients.WithKibanaSpaceContext(ctx, compId.ClusterId),
-		&params,
-	)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Failed to delete exception item",
-			fmt.Sprintf("Failed to delete exception item: %s", err),
-		)
-		return
-	}
-
-	// 404 means resource already deleted
-	if apiResp.StatusCode() != 200 && apiResp.StatusCode() != 404 {
-		resp.Diagnostics.AddError(
-			"Failed to delete exception item",
-			fmt.Sprintf("API returned status %d: %s", apiResp.StatusCode(), string(apiResp.Body)),
-		)
-		return
-	}
+	diags = kibana_oapi.DeleteExceptionListItem(ctx, kibanaClient, &params)
+	resp.Diagnostics.Append(diags...)
 }

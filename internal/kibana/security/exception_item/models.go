@@ -3,6 +3,7 @@ package exception_item
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
@@ -10,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 // exceptionItemModel is the Terraform model for the exception item resource
@@ -64,14 +66,10 @@ func (m *exceptionItemModel) toCreateRequest(ctx context.Context) (kbapi.CreateE
 
 	// Parse entries JSON
 	if utils.IsKnown(m.Entries) && !m.Entries.IsNull() {
-		var entries []json.RawMessage
-		if err := json.Unmarshal([]byte(m.Entries.ValueString()), &entries); err != nil {
+		var apiEntries kbapi.SecurityExceptionsAPIExceptionListItemEntryArray
+		if err := json.Unmarshal([]byte(m.Entries.ValueString()), &apiEntries); err != nil {
 			diags.AddError("Failed to parse entries", err.Error())
 			return req, diags
-		}
-		apiEntries := make(kbapi.SecurityExceptionsAPIExceptionListItemEntryArray, len(entries))
-		for i, e := range entries {
-			apiEntries[i] = kbapi.SecurityExceptionsAPIExceptionListItemEntry{union: e}
 		}
 		req.Entries = apiEntries
 	}
@@ -93,9 +91,9 @@ func (m *exceptionItemModel) toCreateRequest(ctx context.Context) (kbapi.CreateE
 		var osTypes []string
 		diags.Append(m.OsTypes.ElementsAs(ctx, &osTypes, false)...)
 		if !diags.HasError() {
-			apiOsTypes := make(kbapi.SecurityExceptionsAPIExceptionListItemOsTypeArray, len(osTypes))
+			apiOsTypes := make(kbapi.SecurityExceptionsAPIExceptionListOsTypeArray, len(osTypes))
 			for i, ot := range osTypes {
-				apiOsTypes[i] = kbapi.SecurityExceptionsAPIExceptionListItemOsType(ot)
+				apiOsTypes[i] = kbapi.SecurityExceptionsAPIExceptionListOsType(ot)
 			}
 			req.OsTypes = &apiOsTypes
 		}
@@ -114,12 +112,15 @@ func (m *exceptionItemModel) toCreateRequest(ctx context.Context) (kbapi.CreateE
 	// Set optional Meta
 	if utils.IsKnown(m.Meta) && !m.Meta.IsNull() {
 		var meta metaModel
-		diags.Append(m.Meta.As(ctx, &meta, utils.EmptyOpts())...)
+		diags.Append(m.Meta.As(ctx, &meta, basetypes.ObjectAsOptions{})...)
 		if !diags.HasError() && utils.IsKnown(meta.AdditionalProperties) {
 			var props map[string]string
 			diags.Append(meta.AdditionalProperties.ElementsAs(ctx, &props, false)...)
 			if !diags.HasError() {
-				apiMeta := kbapi.SecurityExceptionsAPIExceptionListItemMeta(props)
+				apiMeta := make(kbapi.SecurityExceptionsAPIExceptionListItemMeta)
+				for k, v := range props {
+					apiMeta[k] = v
+				}
 				req.Meta = &apiMeta
 			}
 		}
@@ -127,8 +128,13 @@ func (m *exceptionItemModel) toCreateRequest(ctx context.Context) (kbapi.CreateE
 
 	// Set optional ExpireTime
 	if utils.IsKnown(m.ExpireTime) {
-		expireTime := kbapi.SecurityExceptionsAPIExceptionListItemExpireTime(m.ExpireTime.ValueString())
-		req.ExpireTime = &expireTime
+		expTime, err := time.Parse(time.RFC3339, m.ExpireTime.ValueString())
+		if err != nil {
+			diags.AddError("Failed to parse expire_time", err.Error())
+		} else {
+			expireTime := (kbapi.SecurityExceptionsAPIExceptionListItemExpireTime)(expTime)
+					req.ExpireTime = &expireTime
+		}
 	}
 
 	// Set optional Comments
@@ -160,14 +166,10 @@ func (m *exceptionItemModel) toUpdateRequest(ctx context.Context) (kbapi.UpdateE
 
 	// Parse entries JSON
 	if utils.IsKnown(m.Entries) && !m.Entries.IsNull() {
-		var entries []json.RawMessage
-		if err := json.Unmarshal([]byte(m.Entries.ValueString()), &entries); err != nil {
+		var apiEntries kbapi.SecurityExceptionsAPIExceptionListItemEntryArray
+		if err := json.Unmarshal([]byte(m.Entries.ValueString()), &apiEntries); err != nil {
 			diags.AddError("Failed to parse entries", err.Error())
 			return req, diags
-		}
-		apiEntries := make(kbapi.SecurityExceptionsAPIExceptionListItemEntryArray, len(entries))
-		for i, e := range entries {
-			apiEntries[i] = kbapi.SecurityExceptionsAPIExceptionListItemEntry{union: e}
 		}
 		req.Entries = apiEntries
 	}
@@ -189,9 +191,9 @@ func (m *exceptionItemModel) toUpdateRequest(ctx context.Context) (kbapi.UpdateE
 		var osTypes []string
 		diags.Append(m.OsTypes.ElementsAs(ctx, &osTypes, false)...)
 		if !diags.HasError() {
-			apiOsTypes := make(kbapi.SecurityExceptionsAPIExceptionListItemOsTypeArray, len(osTypes))
+			apiOsTypes := make(kbapi.SecurityExceptionsAPIExceptionListOsTypeArray, len(osTypes))
 			for i, ot := range osTypes {
-				apiOsTypes[i] = kbapi.SecurityExceptionsAPIExceptionListItemOsType(ot)
+				apiOsTypes[i] = kbapi.SecurityExceptionsAPIExceptionListOsType(ot)
 			}
 			req.OsTypes = &apiOsTypes
 		}
@@ -210,12 +212,15 @@ func (m *exceptionItemModel) toUpdateRequest(ctx context.Context) (kbapi.UpdateE
 	// Set optional Meta
 	if utils.IsKnown(m.Meta) && !m.Meta.IsNull() {
 		var meta metaModel
-		diags.Append(m.Meta.As(ctx, &meta, utils.EmptyOpts())...)
+		diags.Append(m.Meta.As(ctx, &meta, basetypes.ObjectAsOptions{})...)
 		if !diags.HasError() && utils.IsKnown(meta.AdditionalProperties) {
 			var props map[string]string
 			diags.Append(meta.AdditionalProperties.ElementsAs(ctx, &props, false)...)
 			if !diags.HasError() {
-				apiMeta := kbapi.SecurityExceptionsAPIExceptionListItemMeta(props)
+				apiMeta := make(kbapi.SecurityExceptionsAPIExceptionListItemMeta)
+				for k, v := range props {
+					apiMeta[k] = v
+				}
 				req.Meta = &apiMeta
 			}
 		}
@@ -223,8 +228,13 @@ func (m *exceptionItemModel) toUpdateRequest(ctx context.Context) (kbapi.UpdateE
 
 	// Set optional ExpireTime
 	if utils.IsKnown(m.ExpireTime) {
-		expireTime := kbapi.SecurityExceptionsAPIExceptionListItemExpireTime(m.ExpireTime.ValueString())
-		req.ExpireTime = &expireTime
+		expTime, err := time.Parse(time.RFC3339, m.ExpireTime.ValueString())
+		if err != nil {
+			diags.AddError("Failed to parse expire_time", err.Error())
+		} else {
+			expireTime := (kbapi.SecurityExceptionsAPIExceptionListItemExpireTime)(expTime)
+					req.ExpireTime = &expireTime
+		}
 	}
 
 	// Set optional Comments - for updates, we use UpdateExceptionListItemComment
@@ -320,7 +330,9 @@ func (m *exceptionItemModel) fromAPIResponse(ctx context.Context, resp *kbapi.Se
 	if resp.Meta != nil {
 		metaMap := make(map[string]attr.Value)
 		for k, v := range *resp.Meta {
-			metaMap[k] = types.StringValue(v)
+			if strVal, ok := v.(string); ok {
+				metaMap[k] = types.StringValue(strVal)
+			}
 		}
 		propsMap, d := types.MapValue(types.StringType, metaMap)
 		diags.Append(d...)
@@ -339,7 +351,7 @@ func (m *exceptionItemModel) fromAPIResponse(ctx context.Context, resp *kbapi.Se
 
 	// Convert ExpireTime
 	if resp.ExpireTime != nil {
-		m.ExpireTime = types.StringValue(string(*resp.ExpireTime))
+		m.ExpireTime = types.StringValue((*resp.ExpireTime).Format(time.RFC3339))
 	} else {
 		m.ExpireTime = types.StringNull()
 	}

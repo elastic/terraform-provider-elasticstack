@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 // exceptionListModel is the Terraform model for the exception list resource
@@ -83,12 +84,15 @@ func (m *exceptionListModel) toCreateRequest(ctx context.Context) (kbapi.CreateE
 	// Set optional Meta
 	if utils.IsKnown(m.Meta) && !m.Meta.IsNull() {
 		var meta metaModel
-		diags.Append(m.Meta.As(ctx, &meta, utils.EmptyOpts())...)
+		diags.Append(m.Meta.As(ctx, &meta, basetypes.ObjectAsOptions{})...)
 		if !diags.HasError() && utils.IsKnown(meta.AdditionalProperties) {
 			var props map[string]string
 			diags.Append(meta.AdditionalProperties.ElementsAs(ctx, &props, false)...)
 			if !diags.HasError() {
-				apiMeta := kbapi.SecurityExceptionsAPIExceptionListMeta(props)
+				apiMeta := make(kbapi.SecurityExceptionsAPIExceptionListMeta)
+				for k, v := range props {
+					apiMeta[k] = v
+				}
 				req.Meta = &apiMeta
 			}
 		}
@@ -143,20 +147,19 @@ func (m *exceptionListModel) toUpdateRequest(ctx context.Context) (kbapi.UpdateE
 	// Set optional Meta
 	if utils.IsKnown(m.Meta) && !m.Meta.IsNull() {
 		var meta metaModel
-		diags.Append(m.Meta.As(ctx, &meta, utils.EmptyOpts())...)
+		diags.Append(m.Meta.As(ctx, &meta, basetypes.ObjectAsOptions{})...)
 		if !diags.HasError() && utils.IsKnown(meta.AdditionalProperties) {
 			var props map[string]string
 			diags.Append(meta.AdditionalProperties.ElementsAs(ctx, &props, false)...)
 			if !diags.HasError() {
-				apiMeta := kbapi.SecurityExceptionsAPIExceptionListMeta(props)
+				apiMeta := make(kbapi.SecurityExceptionsAPIExceptionListMeta)
+				for k, v := range props {
+					apiMeta[k] = v
+				}
 				req.Meta = &apiMeta
 			}
 		}
 	}
-
-	// Set type
-	exType := kbapi.SecurityExceptionsAPIExceptionListType(m.Type.ValueString())
-	req.Type = &exType
 
 	return req, diags
 }
@@ -173,10 +176,8 @@ func (m *exceptionListModel) fromAPIResponse(ctx context.Context, resp *kbapi.Se
 	m.Type = types.StringValue(string(resp.Type))
 	m.NamespaceType = types.StringValue(string(resp.NamespaceType))
 
-	// Convert version to int64 if available
-	if resp.Version != nil {
-		m.Version = types.Int64Value(int64(*resp.Version))
-	}
+	// Convert version to int64
+	m.Version = types.Int64Value(int64(resp.Version))
 
 	// Convert OsTypes
 	if resp.OsTypes != nil {
@@ -208,7 +209,9 @@ func (m *exceptionListModel) fromAPIResponse(ctx context.Context, resp *kbapi.Se
 	if resp.Meta != nil {
 		metaMap := make(map[string]attr.Value)
 		for k, v := range *resp.Meta {
-			metaMap[k] = types.StringValue(v)
+			if strVal, ok := v.(string); ok {
+				metaMap[k] = types.StringValue(strVal)
+			}
 		}
 		propsMap, d := types.MapValue(types.StringType, metaMap)
 		diags.Append(d...)
