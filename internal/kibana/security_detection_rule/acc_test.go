@@ -243,6 +243,12 @@ func TestAccResourceSecurityDetectionRule_Query(t *testing.T) {
 					resource.TestCheckNoResourceAttr(resourceName, "filters"),
 				),
 			},
+			{
+				SkipFunc:          versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
 		},
 	})
 }
@@ -1367,7 +1373,7 @@ func testAccCheckSecurityDetectionRuleDestroy(s *terraform.State) error {
 				Id: &ruleObjectId,
 			}
 
-			response, err := kbClient.API.ReadRuleWithResponse(context.Background(), params)
+			response, err := kbClient.API.ReadRuleWithResponse(context.Background(), parts[0], params)
 			if err != nil {
 				return fmt.Errorf("failed to read security detection rule: %v", err)
 			}
@@ -3694,6 +3700,113 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 `, name)
 }
 
+func TestAccResourceSecurityDetectionRule_QueryMinimalWithSpace(t *testing.T) {
+	resourceName := "elasticstack_kibana_security_detection_rule.test"
+	spaceResourceName := "elasticstack_kibana_space.test"
+	spaceID := fmt.Sprintf("test-space-%s", uuid.New().String()[:8])
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		CheckDestroy:             testAccCheckSecurityDetectionRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				Config:   testAccSecurityDetectionRuleConfig_queryMinimalWithSpace("test-query-rule-with-space", spaceID),
+				Check: resource.ComposeTestCheckFunc(
+					// Check space attributes
+					resource.TestCheckResourceAttr(spaceResourceName, "space_id", spaceID),
+					resource.TestCheckResourceAttr(spaceResourceName, "name", "Test Space for Detection Rules"),
+
+					// Check detection rule attributes
+					resource.TestCheckResourceAttr(resourceName, "name", "test-query-rule-with-space"),
+					resource.TestCheckResourceAttr(resourceName, "type", "query"),
+					resource.TestCheckResourceAttr(resourceName, "query", "*:*"),
+					resource.TestCheckResourceAttr(resourceName, "language", "kuery"),
+					resource.TestCheckResourceAttr(resourceName, "enabled", "true"),
+					resource.TestCheckResourceAttr(resourceName, "description", "Minimal test query security detection rule in custom space"),
+					resource.TestCheckResourceAttr(resourceName, "severity", "low"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score", "21"),
+					resource.TestCheckResourceAttr(resourceName, "index.0", "logs-*"),
+					resource.TestCheckResourceAttr(resourceName, "space_id", spaceID),
+
+					// Verify required fields are set
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttrSet(resourceName, "rule_id"),
+					resource.TestCheckResourceAttrSet(resourceName, "created_at"),
+					resource.TestCheckResourceAttrSet(resourceName, "created_by"),
+
+					// Verify optional fields are not set
+					resource.TestCheckNoResourceAttr(resourceName, "data_view_id"),
+					resource.TestCheckNoResourceAttr(resourceName, "namespace"),
+					resource.TestCheckNoResourceAttr(resourceName, "rule_name_override"),
+					resource.TestCheckNoResourceAttr(resourceName, "timestamp_override"),
+					resource.TestCheckNoResourceAttr(resourceName, "timestamp_override_fallback_disabled"),
+					resource.TestCheckNoResourceAttr(resourceName, "filters"),
+					resource.TestCheckNoResourceAttr(resourceName, "investigation_fields"),
+					resource.TestCheckNoResourceAttr(resourceName, "risk_score_mapping"),
+					resource.TestCheckNoResourceAttr(resourceName, "related_integrations"),
+					resource.TestCheckNoResourceAttr(resourceName, "required_fields"),
+					resource.TestCheckNoResourceAttr(resourceName, "severity_mapping"),
+					resource.TestCheckNoResourceAttr(resourceName, "response_actions"),
+					resource.TestCheckNoResourceAttr(resourceName, "alert_suppression"),
+					resource.TestCheckNoResourceAttr(resourceName, "building_block_type"),
+				),
+			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				Config:   testAccSecurityDetectionRuleConfig_queryMinimalWithSpaceUpdate("test-query-rule-with-space-updated", spaceID),
+				Check: resource.ComposeTestCheckFunc(
+					// Check space attributes remain the same
+					resource.TestCheckResourceAttr(spaceResourceName, "space_id", spaceID),
+					resource.TestCheckResourceAttr(spaceResourceName, "name", "Test Space for Detection Rules"),
+
+					// Check updated detection rule attributes
+					resource.TestCheckResourceAttr(resourceName, "name", "test-query-rule-with-space-updated"),
+					resource.TestCheckResourceAttr(resourceName, "type", "query"),
+					resource.TestCheckResourceAttr(resourceName, "query", "event.category:authentication"),
+					resource.TestCheckResourceAttr(resourceName, "language", "kuery"),
+					resource.TestCheckResourceAttr(resourceName, "enabled", "false"),
+					resource.TestCheckResourceAttr(resourceName, "description", "Updated minimal test query security detection rule in custom space"),
+					resource.TestCheckResourceAttr(resourceName, "severity", "medium"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score", "55"),
+					resource.TestCheckResourceAttr(resourceName, "index.0", "logs-*"),
+					resource.TestCheckResourceAttr(resourceName, "index.1", "winlogbeat-*"),
+					resource.TestCheckResourceAttr(resourceName, "space_id", spaceID),
+
+					// Verify required fields are still set
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttrSet(resourceName, "rule_id"),
+					resource.TestCheckResourceAttrSet(resourceName, "created_at"),
+					resource.TestCheckResourceAttrSet(resourceName, "created_by"),
+
+					// Verify optional fields are still not set
+					resource.TestCheckNoResourceAttr(resourceName, "data_view_id"),
+					resource.TestCheckNoResourceAttr(resourceName, "namespace"),
+					resource.TestCheckNoResourceAttr(resourceName, "rule_name_override"),
+					resource.TestCheckNoResourceAttr(resourceName, "timestamp_override"),
+					resource.TestCheckNoResourceAttr(resourceName, "timestamp_override_fallback_disabled"),
+					resource.TestCheckNoResourceAttr(resourceName, "filters"),
+					resource.TestCheckNoResourceAttr(resourceName, "investigation_fields"),
+					resource.TestCheckNoResourceAttr(resourceName, "risk_score_mapping"),
+					resource.TestCheckNoResourceAttr(resourceName, "related_integrations"),
+					resource.TestCheckNoResourceAttr(resourceName, "required_fields"),
+					resource.TestCheckNoResourceAttr(resourceName, "severity_mapping"),
+					resource.TestCheckNoResourceAttr(resourceName, "response_actions"),
+					resource.TestCheckNoResourceAttr(resourceName, "alert_suppression"),
+					resource.TestCheckNoResourceAttr(resourceName, "building_block_type"),
+				),
+			},
+			{
+				SkipFunc:          versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 func TestAccResourceSecurityDetectionRule_EQLMinimal(t *testing.T) {
 	resourceName := "elasticstack_kibana_security_detection_rule.test"
 
@@ -4623,6 +4736,66 @@ func TestAccResourceSecurityDetectionRule_QueryWithMitreThreat(t *testing.T) {
 			},
 		},
 	})
+}
+
+func testAccSecurityDetectionRuleConfig_queryMinimalWithSpace(name, spaceID string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  kibana {}
+}
+
+resource "elasticstack_kibana_space" "test" {
+  space_id    = "%s"
+  name        = "Test Space for Detection Rules"
+  description = "Space for testing detection rules"
+}
+
+resource "elasticstack_kibana_security_detection_rule" "test" {
+  space_id    = elasticstack_kibana_space.test.space_id
+  name        = "%s"
+  type        = "query"
+  query       = "*:*"
+  language    = "kuery"
+  enabled     = true
+  description = "Minimal test query security detection rule in custom space"
+  severity    = "low"
+  risk_score  = 21
+  from        = "now-6m"
+  to          = "now"
+  interval    = "5m"
+  index       = ["logs-*"]
+}
+`, spaceID, name)
+}
+
+func testAccSecurityDetectionRuleConfig_queryMinimalWithSpaceUpdate(name, spaceID string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  kibana {}
+}
+
+resource "elasticstack_kibana_space" "test" {
+  space_id    = "%s"
+  name        = "Test Space for Detection Rules"
+  description = "Space for testing detection rules"
+}
+
+resource "elasticstack_kibana_security_detection_rule" "test" {
+  space_id    = elasticstack_kibana_space.test.space_id
+  name        = "%s"
+  type        = "query"
+  query       = "event.category:authentication"
+  language    = "kuery"
+  enabled     = false
+  description = "Updated minimal test query security detection rule in custom space"
+  severity    = "medium"
+  risk_score  = 55
+  from        = "now-12m"
+  to          = "now"
+  interval    = "10m"
+  index       = ["logs-*", "winlogbeat-*"]
+}
+`, spaceID, name)
 }
 
 func testAccSecurityDetectionRuleConfig_queryWithMitreThreat(name string) string {

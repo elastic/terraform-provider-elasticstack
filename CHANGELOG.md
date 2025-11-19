@@ -9,6 +9,7 @@
 - Add new `elasticstack_elasticsearch_ml_datafeed_state` resource ([#1422](https://github.com/elastic/terraform-provider-elasticstack/pull/1422))
 - Add `output_id` to `elasticstack_fleet_integration_policy` resource ([#1445](https://github.com/elastic/terraform-provider-elasticstack/pull/1445))
 - Make `hosts` attribute required in `elasticstack_fleet_output` resource ([#1450](https://github.com/elastic/terraform-provider-elasticstack/pull/1450/files)) 
+- Fix `elasticstack_kibana_security_detection_rule` to properly respect `space_id`
 
 ## [0.12.1] - 2025-10-22
 - Fix regression restricting the characters in an `elasticstack_elasticsearch_role_mapping` `name`. ([#1373](https://github.com/elastic/terraform-provider-elasticstack/pull/1373))
