@@ -7,19 +7,19 @@ variable "item_name" {
 }
 
 resource "elasticstack_kibana_security_exception_list" "test" {
-  name          = var.list_name
-  description   = "Test exception list for items"
-  type          = "detection"
+  name           = var.list_name
+  description    = "Test exception list for items"
+  type           = "detection"
   namespace_type = "single"
 }
 
 resource "elasticstack_kibana_security_exception_item" "test" {
-  list_id       = elasticstack_kibana_security_exception_list.test.list_id
-  name          = var.item_name
-  description   = "Test exception item"
-  type          = "simple"
+  list_id        = elasticstack_kibana_security_exception_list.test.list_id
+  name           = var.item_name
+  description    = "Test exception item"
+  type           = "simple"
   namespace_type = "single"
-  
+
   entries = jsonencode([
     {
       field    = "process.name"

@@ -133,7 +133,7 @@ func (m *exceptionItemModel) toCreateRequest(ctx context.Context) (kbapi.CreateE
 			diags.AddError("Failed to parse expire_time", err.Error())
 		} else {
 			expireTime := (kbapi.SecurityExceptionsAPIExceptionListItemExpireTime)(expTime)
-					req.ExpireTime = &expireTime
+			req.ExpireTime = &expireTime
 		}
 	}
 
@@ -233,7 +233,7 @@ func (m *exceptionItemModel) toUpdateRequest(ctx context.Context) (kbapi.UpdateE
 			diags.AddError("Failed to parse expire_time", err.Error())
 		} else {
 			expireTime := (kbapi.SecurityExceptionsAPIExceptionListItemExpireTime)(expTime)
-					req.ExpireTime = &expireTime
+			req.ExpireTime = &expireTime
 		}
 	}
 
