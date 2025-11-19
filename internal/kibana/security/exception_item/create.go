@@ -8,6 +8,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -224,13 +225,13 @@ func (r *ExceptionItemResource) updateStateFromAPIResponse(ctx context.Context, 
 		model.Meta = types.StringNull()
 	}
 
-	// Set entries (convert back to JSON)
+	// Set entries (convert back to JSON and normalize)
 	entriesJSON, err := json.Marshal(apiResp.Entries)
 	if err != nil {
 		diags.AddError("Failed to serialize entries", err.Error())
 		return diags
 	}
-	model.Entries = types.StringValue(string(entriesJSON))
+	model.Entries = jsontypes.NewNormalizedValue(string(entriesJSON))
 
 	// Set optional comments
 	if len(apiResp.Comments) > 0 {

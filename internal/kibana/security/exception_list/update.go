@@ -31,6 +31,7 @@ func (r *ExceptionListResource) Update(ctx context.Context, req resource.UpdateR
 		Id:          &id,
 		Name:        kbapi.SecurityExceptionsAPIExceptionListName(plan.Name.ValueString()),
 		Description: kbapi.SecurityExceptionsAPIExceptionListDescription(plan.Description.ValueString()),
+		Type:        kbapi.SecurityExceptionsAPIExceptionListType(plan.Type.ValueString()),
 	}
 
 	// Set optional namespace_type (should not change, but include it)
