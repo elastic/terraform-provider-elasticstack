@@ -1,0 +1,1 @@
+Creates and manages Kibana exception containers. Exception containers are used to group related exception items together. See the [exceptions API documentation](https://www.elastic.co/guide/en/security/current/exceptions-api-overview.html) for more details.

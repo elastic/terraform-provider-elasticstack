@@ -1,0 +1,1 @@
+Creates and manages Kibana exception items. Exception items define the query (fields, values, and logic) used to prevent rules from generating alerts. See the [exceptions API documentation](https://www.elastic.co/guide/en/security/current/exceptions-api-overview.html) for more details.
