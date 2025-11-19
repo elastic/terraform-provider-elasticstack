@@ -343,7 +343,7 @@ func CreatePackagePolicy(ctx context.Context, client *Client, spaceID string, re
 // UpdatePackagePolicy updates an existing package policy.
 func UpdatePackagePolicy(ctx context.Context, client *Client, id string, spaceID string, req kbapi.PackagePolicyRequest) (*kbapi.PackagePolicy, diag.Diagnostics) {
 	params := kbapi.PutFleetPackagePoliciesPackagepolicyidParams{
-		Format: utils.Pointer(kbapi.PutFleetPackagePoliciesPackagepolicyidParamsFormatSimplified),
+		Format: utils.Pointer(kbapi.Simplified),
 	}
 
 	resp, err := client.API.PutFleetPackagePoliciesPackagepolicyidWithResponse(ctx, id, &params, req, spaceAwarePathRequestEditor(spaceID))

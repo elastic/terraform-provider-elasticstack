@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
         with:
           go-version-file: 'go.mod'
@@ -34,7 +34,7 @@ jobs:
     name: Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
         with:
           go-version-file: 'go.mod'
@@ -63,6 +63,8 @@ jobs:
           xpack.security.enabled: true
           xpack.security.authc.api_key.enabled: true
           xpack.security.authc.token.enabled: true
+          xpack.ml.use_auto_machine_memory_percent: true
+          xpack.ml.max_model_memory_limit: 2g
           xpack.watcher.enabled: true
           xpack.license.self_generated.type: trial
           repositories.url.allowed_urls: https://example.com/*
@@ -70,7 +72,7 @@ jobs:
           ELASTIC_PASSWORD: ${{ env.ELASTIC_PASSWORD }}
         ports:
           - 9200:9200
-        options: --health-cmd="curl http://localhost:9200/_cluster/health" --health-interval=10s --health-timeout=5s --health-retries=10
+        options: --memory=2g --health-cmd="curl http://localhost:9200/_cluster/health" --health-interval=10s --health-timeout=5s --health-retries=10
       kibana:
         image: docker.elastic.co/kibana/kibana:${{ matrix.version }}
         env:
@@ -137,7 +139,7 @@ jobs:
           - version: '8.4.3'
             runner: ubuntu-22.04
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
         with:
           go-version-file: 'go.mod'

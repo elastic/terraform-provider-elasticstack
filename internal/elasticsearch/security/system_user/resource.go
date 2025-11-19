@@ -7,6 +7,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
+// Ensure provider defined types fully satisfy framework interfaces
+var _ resource.Resource = &systemUserResource{}
+var _ resource.ResourceWithConfigure = &systemUserResource{}
+
 func NewSystemUserResource() resource.Resource {
 	return &systemUserResource{}
 }

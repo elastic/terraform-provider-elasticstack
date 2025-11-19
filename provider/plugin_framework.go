@@ -13,6 +13,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/indices"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/anomaly_detection_job"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed_state"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/job_state"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/api_key"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/role_mapping"
@@ -132,5 +133,6 @@ func (p *Provider) Resources(ctx context.Context) []func() resource.Resource {
 		exception_list.NewResource,
 		exception_item.NewResource,
 		job_state.NewMLJobStateResource,
+		datafeed_state.NewMLDatafeedStateResource,
 	}
 }
