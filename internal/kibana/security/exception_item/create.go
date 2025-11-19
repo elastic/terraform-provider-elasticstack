@@ -141,24 +141,8 @@ func (r *ExceptionItemResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
-	// Read back the created resource to get computed fields
-	readParams := &kbapi.ReadExceptionListItemParams{
-		Id: (*kbapi.SecurityExceptionsAPIExceptionListItemId)(&createResp.JSON200.Id),
-	}
-
-	readResp, diags := kibana_oapi.GetExceptionListItem(ctx, client, readParams)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if readResp == nil || readResp.JSON200 == nil {
-		resp.Diagnostics.AddError("Failed to read created exception item", "API returned empty response")
-		return
-	}
-
-	// Update state with response
-	diags = r.updateStateFromAPIResponse(ctx, &plan, readResp.JSON200)
+	// Update state with create response
+	diags = r.updateStateFromAPIResponse(ctx, &plan, createResp.JSON200)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

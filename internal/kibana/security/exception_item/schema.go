@@ -111,7 +111,7 @@ func (r *ExceptionItemResource) Schema(_ context.Context, _ resource.SchemaReque
 				},
 			},
 			"expire_time": schema.StringAttribute{
-				MarkdownDescription: "The exception item's expiration date in ISO format. This field is only available for regular exception items, not endpoint exceptions.",
+				MarkdownDescription: "The exception item's expiration date in RFC3339 format. This field is only available for regular exception items, not endpoint exceptions.",
 				Optional:            true,
 			},
 			"created_at": schema.StringAttribute{

@@ -31,7 +31,9 @@ func (r *ExceptionListResource) Update(ctx context.Context, req resource.UpdateR
 		Id:          &id,
 		Name:        kbapi.SecurityExceptionsAPIExceptionListName(plan.Name.ValueString()),
 		Description: kbapi.SecurityExceptionsAPIExceptionListDescription(plan.Description.ValueString()),
-		Type:        kbapi.SecurityExceptionsAPIExceptionListType(plan.Type.ValueString()),
+		// Type is required by the API even though it has RequiresReplace in the schema
+		// The API will reject updates without this field, even though the value cannot change
+		Type: kbapi.SecurityExceptionsAPIExceptionListType(plan.Type.ValueString()),
 	}
 
 	// Set optional namespace_type (should not change, but include it)
