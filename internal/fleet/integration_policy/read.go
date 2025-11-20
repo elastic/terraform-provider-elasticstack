@@ -59,7 +59,13 @@ func (r *integrationPolicyResource) Read(ctx context.Context, req resource.ReadR
 	isImport := stateModel.PolicyID.ValueString() != "" &&
 		(stateModel.Name.IsNull() || stateModel.Name.IsUnknown())
 
-	diags = stateModel.populateFromAPI(ctx, policy)
+	pkg, diags := fleet.GetPackage(ctx, client, policy.Package.Name, policy.Package.Version)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	diags = stateModel.populateFromAPI(ctx, pkg, policy)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

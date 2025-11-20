@@ -39,7 +39,7 @@ func TestOutputIdHandling(t *testing.T) {
 			OutputId: &outputId,
 		}
 
-		diags := model.populateFromAPI(context.Background(), data)
+		diags := model.populateFromAPI(context.Background(), nil, data)
 		require.Empty(t, diags)
 		require.Equal(t, "test-output-id", model.OutputID.ValueString())
 	})

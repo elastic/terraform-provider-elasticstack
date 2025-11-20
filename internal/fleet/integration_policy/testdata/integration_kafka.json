@@ -1,0 +1,1481 @@
+{
+  "item": {
+    "name": "kafka",
+    "title": "Kafka",
+    "version": "1.26.0",
+    "release": "ga",
+    "description": "Collect logs and metrics from Kafka servers with Elastic Agent.",
+    "type": "integration",
+    "download": "/epr/kafka/kafka-1.26.0.zip",
+    "path": "/package/kafka/1.26.0",
+    "icons": [
+      {
+        "src": "/img/logo_kafka.svg",
+        "path": "/package/kafka/1.26.0/img/logo_kafka.svg",
+        "title": "logo kafka",
+        "size": "32x32",
+        "type": "image/svg+xml"
+      }
+    ],
+    "conditions": {
+      "kibana": {
+        "version": "^8.19.6 || ^9.0.6"
+      },
+      "elastic": {
+        "subscription": "basic"
+      }
+    },
+    "owner": {
+      "type": "elastic",
+      "github": "elastic/obs-infraobs-integrations"
+    },
+    "categories": [
+      "stream_processing",
+      "observability"
+    ],
+    "signature_path": "/epr/kafka/kafka-1.26.0.zip.sig",
+    "format_version": "3.0.2",
+    "readme": "/package/kafka/1.26.0/docs/README.md",
+    "license": "basic",
+    "screenshots": [
+      {
+        "src": "/img/filebeat-kafka-logs-overview.png",
+        "path": "/package/kafka/1.26.0/img/filebeat-kafka-logs-overview.png",
+        "title": "filebeat kafka logs overview",
+        "size": "3024x3106",
+        "type": "image/png"
+      },
+      {
+        "src": "/img/metricbeat_kafka_dashboard.png",
+        "path": "/package/kafka/1.26.0/img/metricbeat_kafka_dashboard.png",
+        "title": "metricbeat kafka dashboard",
+        "size": "3024x3722",
+        "type": "image/png"
+      },
+      {
+        "src": "/img/metricbeat-kafka-controller.png",
+        "path": "/package/kafka/1.26.0/img/metricbeat-kafka-controller.png",
+        "title": "Kafka controller dashboard",
+        "size": "3024x5570",
+        "type": "image/png"
+      },
+      {
+        "src": "/img/metricbeat-kafka-jvm.png",
+        "path": "/package/kafka/1.26.0/img/metricbeat-kafka-jvm.png",
+        "title": "Kafka jvm dashboard",
+        "size": "3024x7586",
+        "type": "image/png"
+      },
+      {
+        "src": "/img/metricbeat-kafka-log_manger.png",
+        "path": "/package/kafka/1.26.0/img/metricbeat-kafka-log_manger.png",
+        "title": "Kafka log manager dashboard",
+        "size": "3024x4090",
+        "type": "image/png"
+      },
+      {
+        "src": "/img/metricbeat-kafka-network.png",
+        "path": "/package/kafka/1.26.0/img/metricbeat-kafka-network.png",
+        "title": "Kafka network dashboard",
+        "size": "3024x4898",
+        "type": "image/png"
+      },
+      {
+        "src": "/img/metricbeat-kafka-raft.png",
+        "path": "/package/kafka/1.26.0/img/metricbeat-kafka-raft.png",
+        "title": "Kafka raft dashboard",
+        "size": "3024x3890",
+        "type": "image/png"
+      },
+      {
+        "src": "/img/metricbeat-kafka-replica_manager.png",
+        "path": "/package/kafka/1.26.0/img/metricbeat-kafka-replica_manager.png",
+        "title": "Kafka replica manager dashboard",
+        "size": "3024x4426",
+        "type": "image/png"
+      },
+      {
+        "src": "/img/metricbeat-kafka-topic.png",
+        "path": "/package/kafka/1.26.0/img/metricbeat-kafka-topic.png",
+        "title": "Kafka topic dashboard",
+        "size": "3024x5906",
+        "type": "image/png"
+      },
+      {
+        "src": "/img/metricbeat-kafka-consumer.png",
+        "path": "/package/kafka/1.26.0/img/metricbeat-kafka-consumer.png",
+        "title": "Kafka consumer dashboard",
+        "size": "1625x1649",
+        "type": "image/png"
+      },
+      {
+        "src": "/img/metricbeat-kafka-producer.png",
+        "path": "/package/kafka/1.26.0/img/metricbeat-kafka-producer.png",
+        "title": "Kafka producer dashboard",
+        "size": "1365x3329",
+        "type": "image/png"
+      }
+    ],
+    "assets": {
+      "kibana": {
+        "dashboard": [
+          {
+            "pkgkey": "kafka-1.26.0",
+            "service": "kibana",
+            "type": "dashboard",
+            "file": "kafka-20094380-8713-487d-8036-5cbbb529f0ca.json",
+            "path": "kafka-1.26.0/kibana/dashboard/kafka-20094380-8713-487d-8036-5cbbb529f0ca.json"
+          },
+          {
+            "pkgkey": "kafka-1.26.0",
+            "service": "kibana",
+            "type": "dashboard",
+            "file": "kafka-28d2bf78-a638-4a1f-a46f-1a794c99166b.json",
+            "path": "kafka-1.26.0/kibana/dashboard/kafka-28d2bf78-a638-4a1f-a46f-1a794c99166b.json"
+          },
+          {
+            "pkgkey": "kafka-1.26.0",
+            "service": "kibana",
+            "type": "dashboard",
+            "file": "kafka-32a191b0-c8ac-4ea1-812d-0e3d406f9a41.json",
+            "path": "kafka-1.26.0/kibana/dashboard/kafka-32a191b0-c8ac-4ea1-812d-0e3d406f9a41.json"
+          },
+          {
+            "pkgkey": "kafka-1.26.0",
+            "service": "kibana",
+            "type": "dashboard",
+            "file": "kafka-6a239518-50b3-4af5-bb5c-01748d2310c8.json",
+            "path": "kafka-1.26.0/kibana/dashboard/kafka-6a239518-50b3-4af5-bb5c-01748d2310c8.json"
+          },
+          {
+            "pkgkey": "kafka-1.26.0",
+            "service": "kibana",
+            "type": "dashboard",
+            "file": "kafka-894682fd-555e-49c6-b469-f8fbb3f0b9dc.json",
+            "path": "kafka-1.26.0/kibana/dashboard/kafka-894682fd-555e-49c6-b469-f8fbb3f0b9dc.json"
+          },
+          {
+            "pkgkey": "kafka-1.26.0",
+            "service": "kibana",
+            "type": "dashboard",
+            "file": "kafka-943caca0-87ee-11e7-ad9c-db80de0bf8d3.json",
+            "path": "kafka-1.26.0/kibana/dashboard/kafka-943caca0-87ee-11e7-ad9c-db80de0bf8d3.json"
+          },
+          {
+            "pkgkey": "kafka-1.26.0",
+            "service": "kibana",
+            "type": "dashboard",
+            "file": "kafka-a0e91797-fa95-497f-a130-614baa5327eb.json",
+            "path": "kafka-1.26.0/kibana/dashboard/kafka-a0e91797-fa95-497f-a130-614baa5327eb.json"
+          },
+          {
+            "pkgkey": "kafka-1.26.0",
+            "service": "kibana",
+            "type": "dashboard",
+            "file": "kafka-c2cb8091-e812-4a23-9b59-3d461c4898ce.json",
+            "path": "kafka-1.26.0/kibana/dashboard/kafka-c2cb8091-e812-4a23-9b59-3d461c4898ce.json"
+          },
+          {
+            "pkgkey": "kafka-1.26.0",
+            "service": "kibana",
+            "type": "dashboard",
+            "file": "kafka-e3be4fe8-c7b4-4cea-bb2e-953032cc322a.json",
+            "path": "kafka-1.26.0/kibana/dashboard/kafka-e3be4fe8-c7b4-4cea-bb2e-953032cc322a.json"
+          },
+          {
+            "pkgkey": "kafka-1.26.0",
+            "service": "kibana",
+            "type": "dashboard",
+            "file": "kafka-ea488d90-8e63-11e8-8fa2-3d5f811fbd0f.json",
+            "path": "kafka-1.26.0/kibana/dashboard/kafka-ea488d90-8e63-11e8-8fa2-3d5f811fbd0f.json"
+          },
+          {
+            "pkgkey": "kafka-1.26.0",
+            "service": "kibana",
+            "type": "dashboard",
+            "file": "kafka-ff622b8a-bbe2-4903-add2-ba3ad50806d2.json",
+            "path": "kafka-1.26.0/kibana/dashboard/kafka-ff622b8a-bbe2-4903-add2-ba3ad50806d2.json"
+          }
+        ]
+      },
+      "elasticsearch": {
+        "ingest_pipeline": [
+          {
+            "pkgkey": "kafka-1.26.0",
+            "service": "elasticsearch",
+            "type": "ingest_pipeline",
+            "file": "default.yml",
+            "dataset": "consumer",
+            "path": "kafka-1.26.0/data_stream/consumer/elasticsearch/ingest_pipeline/default.yml"
+          },
+          {
+            "pkgkey": "kafka-1.26.0",
+            "service": "elasticsearch",
+            "type": "ingest_pipeline",
+            "file": "default.yml",
+            "dataset": "controller",
+            "path": "kafka-1.26.0/data_stream/controller/elasticsearch/ingest_pipeline/default.yml"
+          },
+          {
+            "pkgkey": "kafka-1.26.0",
+            "service": "elasticsearch",
+            "type": "ingest_pipeline",
+            "file": "default.yml",
+            "dataset": "jvm",
+            "path": "kafka-1.26.0/data_stream/jvm/elasticsearch/ingest_pipeline/default.yml"
+          },
+          {
+            "pkgkey": "kafka-1.26.0",
+            "service": "elasticsearch",
+            "type": "ingest_pipeline",
+            "file": "default.yml",
+            "dataset": "log",
+            "path": "kafka-1.26.0/data_stream/log/elasticsearch/ingest_pipeline/default.yml"
+          },
+          {
+            "pkgkey": "kafka-1.26.0",
+            "service": "elasticsearch",
+            "type": "ingest_pipeline",
+            "file": "default.yml",
+            "dataset": "log_manager",
+            "path": "kafka-1.26.0/data_stream/log_manager/elasticsearch/ingest_pipeline/default.yml"
+          },
+          {
+            "pkgkey": "kafka-1.26.0",
+            "service": "elasticsearch",
+            "type": "ingest_pipeline",
+            "file": "default.yml",
+            "dataset": "network",
+            "path": "kafka-1.26.0/data_stream/network/elasticsearch/ingest_pipeline/default.yml"
+          },
+          {
+            "pkgkey": "kafka-1.26.0",
+            "service": "elasticsearch",
+            "type": "ingest_pipeline",
+            "file": "default.yml",
+            "dataset": "producer",
+            "path": "kafka-1.26.0/data_stream/producer/elasticsearch/ingest_pipeline/default.yml"
+          },
+          {
+            "pkgkey": "kafka-1.26.0",
+            "service": "elasticsearch",
+            "type": "ingest_pipeline",
+            "file": "default.yml",
+            "dataset": "raft",
+            "path": "kafka-1.26.0/data_stream/raft/elasticsearch/ingest_pipeline/default.yml"
+          },
+          {
+            "pkgkey": "kafka-1.26.0",
+            "service": "elasticsearch",
+            "type": "ingest_pipeline",
+            "file": "default.yml",
+            "dataset": "replica_manager",
+            "path": "kafka-1.26.0/data_stream/replica_manager/elasticsearch/ingest_pipeline/default.yml"
+          },
+          {
+            "pkgkey": "kafka-1.26.0",
+            "service": "elasticsearch",
+            "type": "ingest_pipeline",
+            "file": "default.yml",
+            "dataset": "topic",
+            "path": "kafka-1.26.0/data_stream/topic/elasticsearch/ingest_pipeline/default.yml"
+          }
+        ]
+      }
+    },
+    "policy_templates": [
+      {
+        "name": "kafka",
+        "title": "Kafka logs and metrics",
+        "description": "Collect logs and metrics from Kafka brokers",
+        "inputs": [
+          {
+            "type": "jolokia/metrics",
+            "vars": [
+              {
+                "name": "hosts",
+                "type": "text",
+                "title": "Hosts",
+                "multi": true,
+                "required": true,
+                "show_user": true,
+                "default": [
+                  "http://127.0.0.1:8778"
+                ]
+              },
+              {
+                "name": "metrics_path",
+                "type": "text",
+                "title": "Metrics Path",
+                "multi": false,
+                "required": true,
+                "show_user": true,
+                "default": "/jolokia"
+              },
+              {
+                "name": "http_method",
+                "type": "text",
+                "title": "HTTP Method",
+                "multi": false,
+                "required": true,
+                "show_user": true,
+                "default": "GET"
+              },
+              {
+                "name": "bearer_token_file",
+                "type": "text",
+                "title": "HTTP config options: bearer_token_file",
+                "description": "If defined, the contents of the file will be read once at initialization and then the value will be used in an HTTP Authorization header.",
+                "multi": false,
+                "required": false,
+                "show_user": false
+              },
+              {
+                "name": "ssl.verification_mode",
+                "type": "text",
+                "title": "SSL Verification Mode",
+                "description": "SSL verification mode. See [documentation](https://www.elastic.co/guide/en/fleet/current/elastic-agent-ssl-configuration.html) for details.",
+                "multi": false,
+                "required": false,
+                "show_user": false,
+                "default": "none"
+              },
+              {
+                "name": "ssl.certificate_authorities",
+                "type": "text",
+                "title": "SSL Certificate Authorities",
+                "description": "SSL certificate authorities.  See [documentation](https://www.elastic.co/guide/en/fleet/current/elastic-agent-ssl-configuration.html) for details.",
+                "multi": true,
+                "required": false,
+                "show_user": true
+              },
+              {
+                "name": "ssl.certificate",
+                "type": "text",
+                "title": "SSL Certificate",
+                "description": "SSL certificate. See [documentation](https://www.elastic.co/guide/en/fleet/current/elastic-agent-ssl-configuration.html) for details.",
+                "multi": false,
+                "required": false,
+                "show_user": true
+              },
+              {
+                "name": "ssl.key",
+                "type": "text",
+                "title": "SSL Private Key",
+                "description": "SSL private key. See [documentation](https://www.elastic.co/guide/en/fleet/current/elastic-agent-ssl-configuration.html) for details.",
+                "multi": false,
+                "required": false,
+                "show_user": true
+              },
+              {
+                "name": "ssl.key_passphrase",
+                "type": "password",
+                "title": "SSL Key Passphrase",
+                "description": "SSL key passphrase. See [documentation](https://www.elastic.co/guide/en/fleet/current/elastic-agent-ssl-configuration.html) for details.",
+                "multi": false,
+                "required": false,
+                "show_user": true
+              },
+              {
+                "name": "ssl.ca_trusted_fingerprint",
+                "type": "text",
+                "title": "SSL CA Trusted Fingerprint",
+                "description": "SSL CA trusted fingerprint. See [documentation](https://www.elastic.co/guide/en/fleet/current/elastic-agent-ssl-configuration.html) for details.",
+                "multi": false,
+                "required": false,
+                "show_user": true
+              },
+              {
+                "name": "username",
+                "type": "text",
+                "title": "HTTP config options: Username",
+                "description": "The username to use for basic authentication.",
+                "multi": false,
+                "required": false,
+                "show_user": false
+              },
+              {
+                "name": "password",
+                "type": "password",
+                "title": "HTTP config options: Password",
+                "description": "The password to use for basic authentication.",
+                "multi": false,
+                "required": false,
+                "show_user": false
+              },
+              {
+                "name": "connect_timeout",
+                "type": "text",
+                "title": "HTTP config options: connect_timeout",
+                "description": "Total time limit for an HTTP connection to be completed (Default 2 seconds)",
+                "multi": false,
+                "required": false,
+                "show_user": false
+              },
+              {
+                "name": "timeout",
+                "type": "text",
+                "title": "HTTP config options: timeout",
+                "description": "Total time limit for HTTP requests made by the module (Default 10 seconds)",
+                "multi": false,
+                "required": false,
+                "show_user": false
+              },
+              {
+                "name": "headers",
+                "type": "yaml",
+                "title": "HTTP config options: headers",
+                "description": "A list of headers to use with the HTTP request",
+                "multi": false,
+                "required": false,
+                "show_user": false,
+                "default": "# headers:\n#   Cookie: abcdef=123456\n#   My-Custom-Header: my-custom-value\n"
+              }
+            ],
+            "title": "Collect metrics from Kafka through the Jolokia endpoint",
+            "description": "Collect metrics from Kafka through the Jolokia endpoint."
+          },
+          {
+            "type": "logfile",
+            "title": "Collect logs from Kafka brokers",
+            "description": "Collecting Kafka log logs"
+          },
+          {
+            "type": "kafka/metrics",
+            "vars": [
+              {
+                "name": "hosts",
+                "type": "text",
+                "title": "Kafka address",
+                "multi": true,
+                "required": true,
+                "show_user": true,
+                "default": [
+                  "localhost:9092"
+                ]
+              },
+              {
+                "name": "period",
+                "type": "text",
+                "title": "Period",
+                "multi": false,
+                "required": true,
+                "show_user": true,
+                "default": "10s"
+              },
+              {
+                "name": "ssl.certificate_authorities",
+                "type": "text",
+                "title": "SSL Certificate Authorities",
+                "description": "SSL certificate authorities. See [documentation](https://www.elastic.co/guide/en/fleet/current/elastic-agent-ssl-configuration.html) for details.",
+                "multi": true,
+                "required": false,
+                "show_user": true
+              },
+              {
+                "name": "ssl.certificate",
+                "type": "text",
+                "title": "SSL Certificate",
+                "description": "SSL certificate. See [documentation](https://www.elastic.co/guide/en/fleet/current/elastic-agent-ssl-configuration.html) for details.",
+                "multi": false,
+                "required": false,
+                "show_user": true
+              },
+              {
+                "name": "ssl.key",
+                "type": "text",
+                "title": "SSL Private Key",
+                "description": "SSL certificate key. See [documentation](https://www.elastic.co/guide/en/fleet/current/elastic-agent-ssl-configuration.html) for details.",
+                "multi": false,
+                "required": false,
+                "show_user": true
+              },
+              {
+                "name": "ssl.key_passphrase",
+                "type": "password",
+                "title": "SSL Key Passphrase",
+                "description": "SSL certificate passphrase. See [documentation](https://www.elastic.co/guide/en/fleet/current/elastic-agent-ssl-configuration.html) for details.",
+                "multi": false,
+                "required": false,
+                "show_user": true
+              },
+              {
+                "name": "ssl.verification_mode",
+                "type": "text",
+                "title": "SSL Verification Mode",
+                "description": "SSL verification mode. See [documentation](https://www.elastic.co/guide/en/fleet/current/elastic-agent-ssl-configuration.html) for details.",
+                "multi": false,
+                "required": false,
+                "show_user": true
+              },
+              {
+                "name": "ssl.ca_trusted_fingerprint",
+                "type": "text",
+                "title": "SSL CA Trusted Fingerprint",
+                "description": "SSL CA trusted fingerprint. See [documentation](https://www.elastic.co/guide/en/fleet/current/elastic-agent-ssl-configuration.html) for details.",
+                "multi": false,
+                "required": false,
+                "show_user": true
+              }
+            ],
+            "title": "Collect metrics from Kafka brokers",
+            "description": "Collecting Kafka broker, consumergroup and partition metrics"
+          }
+        ],
+        "multiple": true
+      }
+    ],
+    "data_streams": [
+      {
+        "type": "metrics",
+        "dataset": "kafka.broker",
+        "title": "Kafka broker metrics",
+        "release": "ga",
+        "streams": [
+          {
+            "input": "kafka/metrics",
+            "vars": [
+              {
+                "name": "jolokia_hosts",
+                "type": "text",
+                "title": "Address of Jolokia agent installed in Kafka",
+                "multi": true,
+                "required": true,
+                "show_user": true,
+                "default": [
+                  "localhost:8778"
+                ]
+              },
+              {
+                "name": "processors",
+                "type": "yaml",
+                "title": "Processors",
+                "description": "Processors are used to reduce the number of fields in the exported event or to enhance the event with metadata. This executes in the agent before the events are shipped. See [Processors](https://www.elastic.co/guide/en/fleet/current/elastic-agent-processor-configuration.html) for details.\n",
+                "multi": false,
+                "required": false,
+                "show_user": false
+              }
+            ],
+            "template_path": "stream.yml.hbs",
+            "title": "Kafka broker metrics",
+            "description": "Collect Kafka broker metrics",
+            "enabled": true,
+            "ingestion_method": "Jolokia"
+          }
+        ],
+        "package": "kafka",
+        "elasticsearch": {},
+        "path": "broker"
+      },
+      {
+        "type": "metrics",
+        "dataset": "kafka.consumer",
+        "title": "Kafka consumer metrics",
+        "release": "beta",
+        "ingest_pipeline": "default",
+        "streams": [
+          {
+            "input": "jolokia/metrics",
+            "vars": [
+              {
+                "name": "jolokia_hosts",
+                "type": "text",
+                "title": "Address of Jolokia agent installed in Kafka",
+                "multi": true,
+                "required": true,
+                "show_user": true,
+                "default": [
+                  "localhost:8774"
+                ]
+              },
+              {
+                "name": "period",
+                "type": "text",
+                "title": "Period",
+                "multi": false,
+                "required": false,
+                "show_user": true,
+                "default": "60s"
+              },
+              {
+                "name": "processors",
+                "type": "yaml",
+                "title": "Processors",
+                "description": "Processors are used to reduce the number of fields in the exported event or to enhance the event with metadata. This executes in the agent before the events are shipped. See [Processors](https://www.elastic.co/guide/en/fleet/current/elastic-agent-processor-configuration.html) for details.\n",
+                "multi": false,
+                "required": false,
+                "show_user": false
+              }
+            ],
+            "template_path": "stream.yml.hbs",
+            "title": "Kafka consumer metrics",
+            "description": "Collect Kafka consumer metrics",
+            "enabled": false,
+            "ingestion_method": "Jolokia"
+          }
+        ],
+        "package": "kafka",
+        "elasticsearch": {
+          "ingest_pipeline.name": "default"
+        },
+        "path": "consumer"
+      },
+      {
+        "type": "metrics",
+        "dataset": "kafka.consumergroup",
+        "title": "Kafka consumergroup metrics",
+        "release": "ga",
+        "streams": [
+          {
+            "input": "kafka/metrics",
+            "vars": [
+              {
+                "name": "topics",
+                "type": "text",
+                "title": "List of topics to query metrics for",
+                "multi": true,
+                "required": false,
+                "show_user": true
+              },
+              {
+                "name": "username",
+                "type": "text",
+                "title": "SASL username",
+                "multi": false,
+                "required": false,
+                "show_user": false
+              },
+              {
+                "name": "password",
+                "type": "password",
+                "title": "SASL password",
+                "multi": false,
+                "required": false,
+                "show_user": false
+              },
+              {
+                "name": "mechanism",
+                "type": "text",
+                "title": "SASL mechanism",
+                "description": "SASL authentication mechanism used. Can be one of PLAIN, SCRAM-SHA-256 or SCRAM-SHA-512",
+                "multi": false,
+                "required": false,
+                "show_user": false
+              },
+              {
+                "name": "processors",
+                "type": "yaml",
+                "title": "Processors",
+                "description": "Processors are used to reduce the number of fields in the exported event or to enhance the event with metadata. This executes in the agent before the events are shipped. See [Processors](https://www.elastic.co/guide/en/fleet/current/elastic-agent-processor-configuration.html) for details.\n",
+                "multi": false,
+                "required": false,
+                "show_user": false
+              }
+            ],
+            "template_path": "stream.yml.hbs",
+            "title": "Kafka consumergroup metrics",
+            "description": "Collect Kafka consumergroup metrics",
+            "enabled": true,
+            "ingestion_method": "Jolokia"
+          }
+        ],
+        "package": "kafka",
+        "elasticsearch": {
+          "index_template.settings": {
+            "index": {
+              "mapping": {
+                "dimension_fields": {
+                  "limit": 24
+                }
+              }
+            }
+          }
+        },
+        "path": "consumergroup"
+      },
+      {
+        "type": "metrics",
+        "dataset": "kafka.controller",
+        "title": "Apache Kafka controller metrics",
+        "release": "beta",
+        "ingest_pipeline": "default",
+        "streams": [
+          {
+            "input": "jolokia/metrics",
+            "vars": [
+              {
+                "name": "period",
+                "type": "text",
+                "title": "Period",
+                "multi": false,
+                "required": false,
+                "show_user": true,
+                "default": "60s"
+              },
+              {
+                "name": "processors",
+                "type": "yaml",
+                "title": "Processors",
+                "description": "Processors are used to reduce the number of fields in the exported event or to enhance the event with metadata. This executes in the agent before the logs are parsed. See [Processors](https://www.elastic.co/guide/en/fleet/current/elastic-agent-processor-configuration.html) for details.\n",
+                "multi": false,
+                "required": false,
+                "show_user": false
+              }
+            ],
+            "template_path": "stream.yml.hbs",
+            "title": "Apache Kafka controller metrics",
+            "description": "Collect Apache Kafka controller metrics using Jolokia agent.",
+            "enabled": false,
+            "ingestion_method": "Jolokia"
+          }
+        ],
+        "package": "kafka",
+        "elasticsearch": {
+          "ingest_pipeline.name": "default"
+        },
+        "path": "controller"
+      },
+      {
+        "type": "metrics",
+        "dataset": "kafka.jvm",
+        "title": "Apache Kafka JVM metrics",
+        "release": "beta",
+        "ingest_pipeline": "default",
+        "streams": [
+          {
+            "input": "jolokia/metrics",
+            "vars": [
+              {
+                "name": "period",
+                "type": "text",
+                "title": "Period",
+                "multi": false,
+                "required": false,
+                "show_user": true,
+                "default": "60s"
+              },
+              {
+                "name": "processors",
+                "type": "yaml",
+                "title": "Processors",
+                "description": "Processors are used to reduce the number of fields in the exported event or to enhance the event with metadata. This executes in the agent before the logs are parsed. See [Processors](https://www.elastic.co/guide/en/fleet/current/elastic-agent-processor-configuration.html) for details.\n",
+                "multi": false,
+                "required": false,
+                "show_user": false
+              }
+            ],
+            "template_path": "stream.yml.hbs",
+            "title": "Apache Kafka JVM metrics",
+            "description": "Collect Apache Kafka JVM metrics using Jolokia agent.",
+            "enabled": false,
+            "ingestion_method": "Jolokia"
+          }
+        ],
+        "package": "kafka",
+        "elasticsearch": {
+          "ingest_pipeline.name": "default"
+        },
+        "path": "jvm"
+      },
+      {
+        "type": "logs",
+        "dataset": "kafka.log",
+        "title": "Kafka log logs",
+        "release": "ga",
+        "ingest_pipeline": "default",
+        "streams": [
+          {
+            "input": "logfile",
+            "vars": [
+              {
+                "name": "kafka_home",
+                "type": "text",
+                "title": "Kafka home directory",
+                "multi": false,
+                "required": true,
+                "show_user": true,
+                "default": "/opt/kafka*"
+              },
+              {
+                "name": "paths",
+                "type": "text",
+                "title": "Paths (inside home directory)",
+                "multi": true,
+                "required": true,
+                "show_user": true,
+                "default": [
+                  "/logs/controller.log*",
+                  "/logs/server.log*",
+                  "/logs/state-change.log*",
+                  "/logs/kafka-*.log*"
+                ]
+              },
+              {
+                "name": "tags",
+                "type": "text",
+                "title": "Tags",
+                "multi": true,
+                "required": true,
+                "show_user": false,
+                "default": [
+                  "kafka-log"
+                ]
+              },
+              {
+                "name": "preserve_original_event",
+                "type": "bool",
+                "title": "Preserve original event",
+                "description": "Preserves a raw copy of the original event, added to the field `event.original`",
+                "multi": false,
+                "required": true,
+                "show_user": true,
+                "default": false
+              },
+              {
+                "name": "processors",
+                "type": "yaml",
+                "title": "Processors",
+                "description": "Processors are used to reduce the number of fields in the exported event or to enhance the event with metadata. This executes in the agent before the logs are parsed. See [Processors](https://www.elastic.co/guide/en/beats/filebeat/current/filtering-and-enhancing-data.html) for details.\n",
+                "multi": false,
+                "required": false,
+                "show_user": false
+              }
+            ],
+            "template_path": "log.yml.hbs",
+            "title": "Kafka log logs (log)",
+            "description": "Collect Kafka log logs using log input",
+            "enabled": true,
+            "ingestion_method": "File"
+          }
+        ],
+        "package": "kafka",
+        "elasticsearch": {
+          "ingest_pipeline.name": "default"
+        },
+        "path": "log"
+      },
+      {
+        "type": "metrics",
+        "dataset": "kafka.log_manager",
+        "title": "Apache Kafka Log Manager metrics",
+        "release": "beta",
+        "ingest_pipeline": "default",
+        "streams": [
+          {
+            "input": "jolokia/metrics",
+            "vars": [
+              {
+                "name": "period",
+                "type": "text",
+                "title": "Period",
+                "multi": false,
+                "required": false,
+                "show_user": true,
+                "default": "60s"
+              },
+              {
+                "name": "processors",
+                "type": "yaml",
+                "title": "Processors",
+                "description": "Processors are used to reduce the number of fields in the exported event or to enhance the event with metadata. This executes in the agent before the logs are parsed. See [Processors](https://www.elastic.co/guide/en/fleet/current/elastic-agent-processor-configuration.html) for details.\n",
+                "multi": false,
+                "required": false,
+                "show_user": false
+              }
+            ],
+            "template_path": "stream.yml.hbs",
+            "title": "Apache Kafka Log Manager metrics",
+            "description": "Collect Apache Kafka Log Manager metrics using Jolokia agent.",
+            "enabled": false,
+            "ingestion_method": "Jolokia"
+          }
+        ],
+        "package": "kafka",
+        "elasticsearch": {
+          "ingest_pipeline.name": "default"
+        },
+        "path": "log_manager"
+      },
+      {
+        "type": "metrics",
+        "dataset": "kafka.network",
+        "title": "Apache Kafka network metrics",
+        "release": "beta",
+        "ingest_pipeline": "default",
+        "streams": [
+          {
+            "input": "jolokia/metrics",
+            "vars": [
+              {
+                "name": "period",
+                "type": "text",
+                "title": "Period",
+                "multi": false,
+                "required": false,
+                "show_user": true,
+                "default": "60s"
+              },
+              {
+                "name": "processors",
+                "type": "yaml",
+                "title": "Processors",
+                "description": "Processors are used to reduce the number of fields in the exported event or to enhance the event with metadata. This executes in the agent before the logs are parsed. See [Processors](https://www.elastic.co/guide/en/fleet/current/elastic-agent-processor-configuration.html) for details.\n",
+                "multi": false,
+                "required": false,
+                "show_user": false
+              }
+            ],
+            "template_path": "stream.yml.hbs",
+            "title": "Apache Kafka network metrics",
+            "description": "Collect Apache Kafka network metrics using Jolokia agent.",
+            "enabled": false,
+            "ingestion_method": "Jolokia"
+          }
+        ],
+        "package": "kafka",
+        "elasticsearch": {
+          "index_template.settings": {
+            "index": {
+              "mapping": {
+                "dimension_fields": {
+                  "limit": 32
+                }
+              }
+            }
+          },
+          "ingest_pipeline.name": "default"
+        },
+        "path": "network"
+      },
+      {
+        "type": "metrics",
+        "dataset": "kafka.partition",
+        "title": "Kafka partition metrics",
+        "release": "ga",
+        "streams": [
+          {
+            "input": "kafka/metrics",
+            "vars": [
+              {
+                "name": "topics",
+                "type": "text",
+                "title": "List of topics to query metrics for",
+                "multi": true,
+                "required": false,
+                "show_user": true
+              },
+              {
+                "name": "username",
+                "type": "text",
+                "title": "SASL username",
+                "multi": false,
+                "required": false,
+                "show_user": false
+              },
+              {
+                "name": "password",
+                "type": "password",
+                "title": "SASL password",
+                "multi": false,
+                "required": false,
+                "show_user": false
+              },
+              {
+                "name": "mechanism",
+                "type": "text",
+                "title": "SASL mechanism",
+                "description": "SASL authentication mechanism used. Can be one of PLAIN, SCRAM-SHA-256 or SCRAM-SHA-512",
+                "multi": false,
+                "required": false,
+                "show_user": false
+              },
+              {
+                "name": "processors",
+                "type": "yaml",
+                "title": "Processors",
+                "description": "Processors are used to reduce the number of fields in the exported event or to enhance the event with metadata. This executes in the agent before the events are shipped. See [Processors](https://www.elastic.co/guide/en/fleet/current/elastic-agent-processor-configuration.html) for details.\n",
+                "multi": false,
+                "required": false,
+                "show_user": false
+              }
+            ],
+            "template_path": "stream.yml.hbs",
+            "title": "Kafka partition metrics",
+            "description": "Collect Kafka partition metrics",
+            "enabled": true,
+            "ingestion_method": "Jolokia"
+          }
+        ],
+        "package": "kafka",
+        "elasticsearch": {},
+        "path": "partition"
+      },
+      {
+        "type": "metrics",
+        "dataset": "kafka.producer",
+        "title": "Kafka producer metrics",
+        "release": "beta",
+        "ingest_pipeline": "default",
+        "streams": [
+          {
+            "input": "jolokia/metrics",
+            "vars": [
+              {
+                "name": "jolokia_hosts",
+                "type": "text",
+                "title": "Address of Jolokia agent installed in Kafka",
+                "multi": true,
+                "required": true,
+                "show_user": true,
+                "default": [
+                  "localhost:8775"
+                ]
+              },
+              {
+                "name": "period",
+                "type": "text",
+                "title": "Period",
+                "multi": false,
+                "required": false,
+                "show_user": true,
+                "default": "60s"
+              },
+              {
+                "name": "processors",
+                "type": "yaml",
+                "title": "Processors",
+                "description": "Processors are used to reduce the number of fields in the exported event or to enhance the event with metadata. This executes in the agent before the events are shipped. See [Processors](https://www.elastic.co/guide/en/fleet/current/elastic-agent-processor-configuration.html) for details.\n",
+                "multi": false,
+                "required": false,
+                "show_user": false
+              }
+            ],
+            "template_path": "stream.yml.hbs",
+            "title": "Kafka producer metrics",
+            "description": "Collect Kafka producer metrics",
+            "enabled": false,
+            "ingestion_method": "Jolokia"
+          }
+        ],
+        "package": "kafka",
+        "elasticsearch": {
+          "ingest_pipeline.name": "default"
+        },
+        "path": "producer"
+      },
+      {
+        "type": "metrics",
+        "dataset": "kafka.raft",
+        "title": "Apache Kafka Raft metrics",
+        "release": "beta",
+        "ingest_pipeline": "default",
+        "streams": [
+          {
+            "input": "jolokia/metrics",
+            "vars": [
+              {
+                "name": "period",
+                "type": "text",
+                "title": "Period",
+                "multi": false,
+                "required": false,
+                "show_user": true,
+                "default": "60s"
+              },
+              {
+                "name": "processors",
+                "type": "yaml",
+                "title": "Processors",
+                "description": "Processors are used to reduce the number of fields in the exported event or to enhance the event with metadata. This executes in the agent before the logs are parsed. See [Processors](https://www.elastic.co/guide/en/fleet/current/elastic-agent-processor-configuration.html) for details.\n",
+                "multi": false,
+                "required": false,
+                "show_user": false
+              }
+            ],
+            "template_path": "stream.yml.hbs",
+            "title": "Apache Kafka Raft metrics",
+            "description": "Collect Apache Kafka Raft metrics using Jolokia agent.",
+            "enabled": false,
+            "ingestion_method": "Jolokia"
+          }
+        ],
+        "package": "kafka",
+        "elasticsearch": {
+          "ingest_pipeline.name": "default"
+        },
+        "path": "raft"
+      },
+      {
+        "type": "metrics",
+        "dataset": "kafka.replica_manager",
+        "title": "Apache Kafka replica manager metrics",
+        "release": "beta",
+        "ingest_pipeline": "default",
+        "streams": [
+          {
+            "input": "jolokia/metrics",
+            "vars": [
+              {
+                "name": "period",
+                "type": "text",
+                "title": "Period",
+                "multi": false,
+                "required": false,
+                "show_user": true,
+                "default": "60s"
+              },
+              {
+                "name": "processors",
+                "type": "yaml",
+                "title": "Processors",
+                "description": "Processors are used to reduce the number of fields in the exported event or to enhance the event with metadata. This executes in the agent before the logs are parsed. See [Processors](https://www.elastic.co/guide/en/fleet/current/elastic-agent-processor-configuration.html) for details.\n",
+                "multi": false,
+                "required": false,
+                "show_user": false
+              }
+            ],
+            "template_path": "stream.yml.hbs",
+            "title": "Apache Kafka replica manager metrics",
+            "description": "Collect Apache Kafka replica manager metrics using Jolokia agent.",
+            "enabled": false,
+            "ingestion_method": "Jolokia"
+          }
+        ],
+        "package": "kafka",
+        "elasticsearch": {
+          "ingest_pipeline.name": "default"
+        },
+        "path": "replica_manager"
+      },
+      {
+        "type": "metrics",
+        "dataset": "kafka.topic",
+        "title": "Apache Kafka topic metrics",
+        "release": "beta",
+        "ingest_pipeline": "default",
+        "streams": [
+          {
+            "input": "jolokia/metrics",
+            "vars": [
+              {
+                "name": "period",
+                "type": "text",
+                "title": "Period",
+                "multi": false,
+                "required": false,
+                "show_user": true,
+                "default": "60s"
+              },
+              {
+                "name": "processors",
+                "type": "yaml",
+                "title": "Processors",
+                "description": "Processors are used to reduce the number of fields in the exported event or to enhance the event with metadata. This executes in the agent before the logs are parsed. See [Processors](https://www.elastic.co/guide/en/fleet/current/elastic-agent-processor-configuration.html) for details.\n",
+                "multi": false,
+                "required": false,
+                "show_user": false
+              }
+            ],
+            "template_path": "stream.yml.hbs",
+            "title": "Apache Kafka topic metrics",
+            "description": "Collect Apache Kafka topic metrics using Jolokia agent.",
+            "enabled": false,
+            "ingestion_method": "Jolokia"
+          }
+        ],
+        "package": "kafka",
+        "elasticsearch": {
+          "ingest_pipeline.name": "default"
+        },
+        "path": "topic"
+      }
+    ],
+    "latestVersion": "1.26.0",
+    "licensePath": "/package/kafka/1.26.0/LICENSE.txt",
+    "keepPoliciesUpToDate": false,
+    "status": "installed",
+    "installationInfo": {
+      "created_at": "2025-11-17T10:45:25.683Z",
+      "updated_at": "2025-11-18T22:21:45.740Z",
+      "namespaces": [],
+      "type": "epm-packages",
+      "installed_kibana": [
+        {
+          "id": "kafka-20094380-8713-487d-8036-5cbbb529f0ca",
+          "type": "dashboard"
+        },
+        {
+          "id": "kafka-28d2bf78-a638-4a1f-a46f-1a794c99166b",
+          "type": "dashboard"
+        },
+        {
+          "id": "kafka-32a191b0-c8ac-4ea1-812d-0e3d406f9a41",
+          "type": "dashboard"
+        },
+        {
+          "id": "kafka-6a239518-50b3-4af5-bb5c-01748d2310c8",
+          "type": "dashboard"
+        },
+        {
+          "id": "kafka-894682fd-555e-49c6-b469-f8fbb3f0b9dc",
+          "type": "dashboard"
+        },
+        {
+          "id": "kafka-943caca0-87ee-11e7-ad9c-db80de0bf8d3",
+          "type": "dashboard"
+        },
+        {
+          "id": "kafka-a0e91797-fa95-497f-a130-614baa5327eb",
+          "type": "dashboard"
+        },
+        {
+          "id": "kafka-c2cb8091-e812-4a23-9b59-3d461c4898ce",
+          "type": "dashboard"
+        },
+        {
+          "id": "kafka-e3be4fe8-c7b4-4cea-bb2e-953032cc322a",
+          "type": "dashboard"
+        },
+        {
+          "id": "kafka-ea488d90-8e63-11e8-8fa2-3d5f811fbd0f",
+          "type": "dashboard"
+        },
+        {
+          "id": "kafka-ff622b8a-bbe2-4903-add2-ba3ad50806d2",
+          "type": "dashboard"
+        }
+      ],
+      "installed_kibana_space_id": "default",
+      "installed_es": [
+        {
+          "id": "metrics-kafka.broker-1.26.0",
+          "type": "ingest_pipeline"
+        },
+        {
+          "id": "metrics-kafka.consumer-1.26.0",
+          "type": "ingest_pipeline"
+        },
+        {
+          "id": "metrics-kafka.consumergroup-1.26.0",
+          "type": "ingest_pipeline"
+        },
+        {
+          "id": "metrics-kafka.controller-1.26.0",
+          "type": "ingest_pipeline"
+        },
+        {
+          "id": "metrics-kafka.jvm-1.26.0",
+          "type": "ingest_pipeline"
+        },
+        {
+          "id": "logs-kafka.log-1.26.0",
+          "type": "ingest_pipeline"
+        },
+        {
+          "id": "metrics-kafka.log_manager-1.26.0",
+          "type": "ingest_pipeline"
+        },
+        {
+          "id": "metrics-kafka.network-1.26.0",
+          "type": "ingest_pipeline"
+        },
+        {
+          "id": "metrics-kafka.partition-1.26.0",
+          "type": "ingest_pipeline"
+        },
+        {
+          "id": "metrics-kafka.producer-1.26.0",
+          "type": "ingest_pipeline"
+        },
+        {
+          "id": "metrics-kafka.raft-1.26.0",
+          "type": "ingest_pipeline"
+        },
+        {
+          "id": "metrics-kafka.replica_manager-1.26.0",
+          "type": "ingest_pipeline"
+        },
+        {
+          "id": "metrics-kafka.topic-1.26.0",
+          "type": "ingest_pipeline"
+        },
+        {
+          "id": "metrics-kafka.broker",
+          "type": "index_template"
+        },
+        {
+          "id": "metrics-kafka.broker@package",
+          "type": "component_template"
+        },
+        {
+          "id": "metrics@custom",
+          "type": "component_template"
+        },
+        {
+          "id": "kafka@custom",
+          "type": "component_template"
+        },
+        {
+          "id": "metrics-kafka.broker@custom",
+          "type": "component_template"
+        },
+        {
+          "id": "metrics-kafka.consumer",
+          "type": "index_template"
+        },
+        {
+          "id": "metrics-kafka.consumer@package",
+          "type": "component_template"
+        },
+        {
+          "id": "metrics-kafka.consumer@custom",
+          "type": "component_template"
+        },
+        {
+          "id": "metrics-kafka.consumergroup",
+          "type": "index_template"
+        },
+        {
+          "id": "metrics-kafka.consumergroup@package",
+          "type": "component_template"
+        },
+        {
+          "id": "metrics-kafka.consumergroup@custom",
+          "type": "component_template"
+        },
+        {
+          "id": "metrics-kafka.controller",
+          "type": "index_template"
+        },
+        {
+          "id": "metrics-kafka.controller@package",
+          "type": "component_template"
+        },
+        {
+          "id": "metrics-kafka.controller@custom",
+          "type": "component_template"
+        },
+        {
+          "id": "metrics-kafka.jvm",
+          "type": "index_template"
+        },
+        {
+          "id": "metrics-kafka.jvm@package",
+          "type": "component_template"
+        },
+        {
+          "id": "metrics-kafka.jvm@custom",
+          "type": "component_template"
+        },
+        {
+          "id": "logs-kafka.log",
+          "type": "index_template"
+        },
+        {
+          "id": "logs-kafka.log@package",
+          "type": "component_template"
+        },
+        {
+          "id": "logs@custom",
+          "type": "component_template"
+        },
+        {
+          "id": "logs-kafka.log@custom",
+          "type": "component_template"
+        },
+        {
+          "id": "metrics-kafka.log_manager",
+          "type": "index_template"
+        },
+        {
+          "id": "metrics-kafka.log_manager@package",
+          "type": "component_template"
+        },
+        {
+          "id": "metrics-kafka.log_manager@custom",
+          "type": "component_template"
+        },
+        {
+          "id": "metrics-kafka.network",
+          "type": "index_template"
+        },
+        {
+          "id": "metrics-kafka.network@package",
+          "type": "component_template"
+        },
+        {
+          "id": "metrics-kafka.network@custom",
+          "type": "component_template"
+        },
+        {
+          "id": "metrics-kafka.partition",
+          "type": "index_template"
+        },
+        {
+          "id": "metrics-kafka.partition@package",
+          "type": "component_template"
+        },
+        {
+          "id": "metrics-kafka.partition@custom",
+          "type": "component_template"
+        },
+        {
+          "id": "metrics-kafka.producer",
+          "type": "index_template"
+        },
+        {
+          "id": "metrics-kafka.producer@package",
+          "type": "component_template"
+        },
+        {
+          "id": "metrics-kafka.producer@custom",
+          "type": "component_template"
+        },
+        {
+          "id": "metrics-kafka.raft",
+          "type": "index_template"
+        },
+        {
+          "id": "metrics-kafka.raft@package",
+          "type": "component_template"
+        },
+        {
+          "id": "metrics-kafka.raft@custom",
+          "type": "component_template"
+        },
+        {
+          "id": "metrics-kafka.replica_manager",
+          "type": "index_template"
+        },
+        {
+          "id": "metrics-kafka.replica_manager@package",
+          "type": "component_template"
+        },
+        {
+          "id": "metrics-kafka.replica_manager@custom",
+          "type": "component_template"
+        },
+        {
+          "id": "metrics-kafka.topic",
+          "type": "index_template"
+        },
+        {
+          "id": "metrics-kafka.topic@package",
+          "type": "component_template"
+        },
+        {
+          "id": "metrics-kafka.topic@custom",
+          "type": "component_template"
+        }
+      ],
+      "install_status": "installed",
+      "install_source": "registry",
+      "name": "kafka",
+      "version": "1.26.0",
+      "verification_status": "verified",
+      "verification_key_id": "d27d666cd88e42b4",
+      "latest_install_failed_attempts": [],
+      "rolled_back": false
+    }
+  }
+}

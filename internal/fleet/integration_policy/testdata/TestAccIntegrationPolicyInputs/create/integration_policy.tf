@@ -48,9 +48,9 @@ resource "elasticstack_fleet_integration_policy" "test_policy" {
     "kafka-kafka/metrics" = {
       enabled = true
       vars = jsonencode({
-        hosts   = ["localhost:9092"]
-        period  = "10s"
-        "ssl.certificate_authorities"     =[]
+        hosts                         = ["localhost:9092"]
+        period                        = "10s"
+        "ssl.certificate_authorities" = []
       })
       streams = {
         "kafka.broker" = {

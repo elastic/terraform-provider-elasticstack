@@ -25,15 +25,15 @@ resource "elasticstack_fleet_integration_policy" "test_policy" {
 
   inputs = {
     "kafka-logfile" = {
-      enabled = false 
+      enabled = false
       # Should not need to specify streams for disabled input
     }
     "kafka-kafka/metrics" = {
       enabled = true
       vars = jsonencode({
-        hosts   = ["localhost:9092"]
-        period  = "10s"
-        "ssl.certificate_authorities"     =[]
+        hosts                         = ["localhost:9092"]
+        period                        = "10s"
+        "ssl.certificate_authorities" = []
       })
       streams = {
         "kafka.broker" = {

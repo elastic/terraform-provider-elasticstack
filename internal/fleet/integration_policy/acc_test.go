@@ -276,9 +276,14 @@ func TestAccResourceIntegrationPolicySecrets(t *testing.T) {
 						"policy_name": config.StringVariable(policyName),
 						"secret_key":  config.StringVariable("updated"),
 					},
-					ImportState:             true,
-					ImportStateVerify:       true,
-					ImportStateVerifyIgnore: []string{"vars_json", "space_ids"},
+					ImportState:       true,
+					ImportStateVerify: true,
+					ImportStateVerifyIgnore: []string{
+						"vars_json",
+						"space_ids",
+						"inputs.aws_logs-aws-cloudwatch.defaults",
+						"inputs.aws_logs-aws-s3.defaults",
+					},
 					Check: resource.ComposeTestCheckFunc(
 						resource.TestMatchResourceAttr("elasticstack_fleet_integration_policy.test_policy", "vars_json", regexp.MustCompile(`{"access_key_id":{"id":"\S+","isSecretRef":true},"default_region":"us-east-2","endpoint":"endpoint","secret_access_key":{"id":"\S+","isSecretRef":true},"session_token":{"id":"\S+","isSecretRef":true}}`)),
 					),
@@ -396,6 +401,40 @@ func TestAccIntegrationPolicyInputs(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-kafka/metrics.streams.kafka.consumergroup.vars", `{"topics":["don't mention the war, I mentioned it once but I think I got away with it"]}`),
 					// Disabled input should remain disabled
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-logfile.enabled", "false"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("minimal"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "description", "Kafka Integration Policy - Minimal"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_name", "kafka"),
+					// Check specified inputs
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-logfile.enabled", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-kafka/metrics.enabled", "true"),
+					// Check unspecified, disabled by default input
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-jolokia/metrics"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("unset"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "description", "Kafka Integration Policy - Minimal"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_name", "kafka"),
+					// Check previously specified inputs
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-logfile.enabled", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-kafka/metrics.enabled", "true"),
 				),
 			},
 		},

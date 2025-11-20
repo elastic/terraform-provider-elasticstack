@@ -3,7 +3,6 @@ package integration_policy
 import (
 	"context"
 	_ "embed"
-	"os"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
@@ -13,40 +12,25 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 //go:embed resource-description.md
 var integrationPolicyDescription string
-
-func getInputsElementType() attr.Type {
-	// Define the element type for the inputs map
-	return types.ObjectType{
-		AttrTypes: map[string]attr.Type{
-			"enabled": types.BoolType,
-			"vars":    jsontypes.NormalizedType{},
-			"streams": types.MapType{
-				ElemType: types.ObjectType{
-					AttrTypes: map[string]attr.Type{
-						"enabled": types.BoolType,
-						"vars":    jsontypes.NormalizedType{},
-					},
-				},
-			},
-		},
-	}
-}
 
 func (r *integrationPolicyResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = getSchemaV2()
 }
 
 func getSchemaV2() schema.Schema {
-	varsAreSensitive := !logging.IsDebugOrHigher() && os.Getenv("TF_ACC") != "1"
+	varsAreSensitive := false //!logging.IsDebugOrHigher() && os.Getenv("TF_ACC") != "1"
 	return schema.Schema{
 		Version:     2,
 		Description: integrationPolicyDescription,
@@ -123,19 +107,29 @@ func getSchemaV2() schema.Schema {
 				Computed:    true,
 				Optional:    true,
 				Sensitive:   varsAreSensitive,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"space_ids": schema.SetAttribute{
 				Description: "The Kibana space IDs where this integration policy is available. When set, must match the space_ids of the referenced agent policy. If not set, will be inherited from the agent policy. Note: The order of space IDs does not matter as this is a set.",
 				ElementType: types.StringType,
 				Optional:    true,
 				Computed:    true,
+				PlanModifiers: []planmodifier.Set{
+					setplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"inputs": schema.MapNestedAttribute{
 				Description: "Integration inputs mapped by input ID.",
-				CustomType:  NewInputsType(getInputsElementType()),
+				CustomType:  NewInputsType(NewInputType(getInputsAttributeTypes())),
 				Computed:    true,
 				Optional:    true,
+				PlanModifiers: []planmodifier.Map{
+					mapplanmodifier.UseStateForUnknown(),
+				},
 				NestedObject: schema.NestedAttributeObject{
+					CustomType: NewInputType(getInputsAttributeTypes()),
 					Attributes: map[string]schema.Attribute{
 						"enabled": schema.BoolAttribute{
 							Description: "Enable the input.",
@@ -148,6 +142,37 @@ func getSchemaV2() schema.Schema {
 							CustomType:  jsontypes.NormalizedType{},
 							Optional:    true,
 							Sensitive:   varsAreSensitive,
+						},
+						"defaults": schema.SingleNestedAttribute{
+							Description: "Input defaults.",
+							Computed:    true,
+							Default: objectdefault.StaticValue(basetypes.NewObjectNull(
+								getInputDefaultsAttrTypes(),
+							)),
+							Attributes: map[string]schema.Attribute{
+								"vars": schema.StringAttribute{
+									Description: "Input-level variable defaults as JSON.",
+									CustomType:  jsontypes.NormalizedType{},
+									Computed:    true,
+								},
+								"streams": schema.MapNestedAttribute{
+									Description: "Stream-level defaults mapped by stream ID.",
+									Computed:    true,
+									NestedObject: schema.NestedAttributeObject{
+										Attributes: map[string]schema.Attribute{
+											"enabled": schema.BoolAttribute{
+												Description: "Default enabled state for the stream.",
+												Computed:    true,
+											},
+											"vars": schema.StringAttribute{
+												Description: "Stream-level variable defaults as JSON.",
+												CustomType:  jsontypes.NormalizedType{},
+												Computed:    true,
+											},
+										},
+									},
+								},
+							},
 						},
 						"streams": schema.MapNestedAttribute{
 							Description: "Input streams mapped by stream ID.",
@@ -176,10 +201,47 @@ func getSchemaV2() schema.Schema {
 	}
 }
 
+func getInputsElementType() InputType {
+	// Define the element type for the inputs map
+	return NewInputType(getInputsAttributeTypes())
+}
+
 func getInputsAttributeTypes() map[string]attr.Type {
-	return getInputsElementType().(attr.TypeWithAttributeTypes).AttributeTypes()
+	return map[string]attr.Type{
+		"enabled": types.BoolType,
+		"vars":    jsontypes.NormalizedType{},
+		"defaults": types.ObjectType{
+			AttrTypes: map[string]attr.Type{
+				"vars": jsontypes.NormalizedType{},
+				"streams": types.MapType{
+					ElemType: types.ObjectType{
+						AttrTypes: map[string]attr.Type{
+							"enabled": types.BoolType,
+							"vars":    jsontypes.NormalizedType{},
+						},
+					},
+				},
+			},
+		},
+		"streams": types.MapType{
+			ElemType: types.ObjectType{
+				AttrTypes: map[string]attr.Type{
+					"enabled": types.BoolType,
+					"vars":    jsontypes.NormalizedType{},
+				},
+			},
+		},
+	}
 }
 
 func getInputStreamType() attr.Type {
 	return getInputsAttributeTypes()["streams"].(attr.TypeWithElementType).ElementType()
+}
+
+func getInputDefaultsType() attr.Type {
+	return getInputsAttributeTypes()["defaults"]
+}
+
+func getInputDefaultsAttrTypes() map[string]attr.Type {
+	return getInputDefaultsType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }
