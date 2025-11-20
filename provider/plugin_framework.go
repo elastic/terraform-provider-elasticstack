@@ -31,6 +31,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/maintenance_window"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_detection_rule"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/spaces"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/streams"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics/monitor"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics/parameter"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics/private_location"
@@ -128,5 +129,6 @@ func (p *Provider) Resources(ctx context.Context) []func() resource.Resource {
 		anomaly_detection_job.NewAnomalyDetectionJobResource,
 		security_detection_rule.NewSecurityDetectionRuleResource,
 		job_state.NewMLJobStateResource,
+		streams.NewResource,
 	}
 }
