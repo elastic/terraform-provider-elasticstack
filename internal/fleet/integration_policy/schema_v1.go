@@ -79,9 +79,10 @@ func (m integrationPolicyModelV1) toV2(ctx context.Context) (integrationPolicyMo
 		}
 
 		inputsV2[id] = integrationPolicyInputsModel{
-			Enabled: inputV1.Enabled,
-			Vars:    inputV1.VarsJson,
-			Streams: streams,
+			Enabled:  inputV1.Enabled,
+			Vars:     inputV1.VarsJson,
+			Streams:  streams,
+			Defaults: types.ObjectNull(getInputDefaultsAttrTypes()),
 		}
 	}
 
