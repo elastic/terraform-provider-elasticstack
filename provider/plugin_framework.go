@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"os"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/apm/agent_configuration"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -41,6 +42,8 @@ import (
 	fwschema "github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
+
+const IncludeExperimentalEnvVar = "TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL"
 
 // Ensure the implementation satisfies the expected interfaces.
 var (
@@ -92,18 +95,26 @@ func (p *Provider) Configure(ctx context.Context, req fwprovider.ConfigureReques
 }
 
 func (p *Provider) DataSources(ctx context.Context) []func() datasource.DataSource {
-	return []func() datasource.DataSource{
-		indices.NewDataSource,
-		spaces.NewDataSource,
-		export_saved_objects.NewDataSource,
-		enrollment_tokens.NewDataSource,
-		integration_ds.NewDataSource,
-		enrich.NewEnrichPolicyDataSource,
-		role_mapping.NewRoleMappingDataSource,
+	datasources := p.dataSources(ctx)
+
+	if os.Getenv(IncludeExperimentalEnvVar) == "true" {
+		datasources = append(datasources, p.experimentalDataSources(ctx)...)
 	}
+
+	return datasources
 }
 
 func (p *Provider) Resources(ctx context.Context) []func() resource.Resource {
+	resources := p.resources(ctx)
+
+	if os.Getenv(IncludeExperimentalEnvVar) == "true" {
+		resources = append(resources, p.experimentalResources(ctx)...)
+	}
+
+	return resources
+}
+
+func (p *Provider) resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		agent_configuration.NewAgentConfigurationResource,
 		func() resource.Resource { return &import_saved_objects.Resource{} },
@@ -131,4 +142,24 @@ func (p *Provider) Resources(ctx context.Context) []func() resource.Resource {
 		job_state.NewMLJobStateResource,
 		datafeed_state.NewMLDatafeedStateResource,
 	}
+}
+
+func (p *Provider) experimentalResources(ctx context.Context) []func() resource.Resource {
+	return []func() resource.Resource{}
+}
+
+func (p *Provider) dataSources(ctx context.Context) []func() datasource.DataSource {
+	return []func() datasource.DataSource{
+		indices.NewDataSource,
+		spaces.NewDataSource,
+		export_saved_objects.NewDataSource,
+		enrollment_tokens.NewDataSource,
+		integration_ds.NewDataSource,
+		enrich.NewEnrichPolicyDataSource,
+		role_mapping.NewRoleMappingDataSource,
+	}
+}
+
+func (p *Provider) experimentalDataSources(ctx context.Context) []func() datasource.DataSource {
+	return []func() datasource.DataSource{}
 }
