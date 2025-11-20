@@ -134,7 +134,7 @@ services:
       ELASTICSEARCH_USERNAME: elastic
       ELASTICSEARCH_PASSWORD: ${ELASTICSEARCH_PASSWORD}
       TF_LOG: ${TF_LOG:-info}
-    command: make testacc TESTARGS=${TESTARGS:-}
+    command: make testacc TESTARGS='${TESTARGS:-}'
 
   token-acceptance-tests:
     profiles: ["token-acceptance-tests"]
