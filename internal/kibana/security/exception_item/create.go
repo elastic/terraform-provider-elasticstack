@@ -3,9 +3,9 @@ package exception_item
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -44,21 +44,40 @@ func (r *exceptionItemResource) Create(ctx context.Context, req resource.CreateR
 	}
 
 	// Make API call
-	apiResp, diags := kibana_oapi.CreateExceptionListItem(ctx, kibanaClient, createReq)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
+	apiResp, err := kibanaClient.API.CreateExceptionListItemWithResponse(ctx, spaceID, createReq)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Failed to create exception item",
+			fmt.Sprintf("Failed to create exception item: %s", err),
+		)
+		return
+	}
+
+	if apiResp.StatusCode() != http.StatusOK {
+		resp.Diagnostics.AddError(
+			"Failed to create exception item",
+			fmt.Sprintf("API returned status %d: %s", apiResp.StatusCode(), string(apiResp.Body)),
+		)
+		return
+	}
+
+	if apiResp.JSON200 == nil {
+		resp.Diagnostics.AddError(
+			"Failed to create exception item",
+			"API response body is empty",
+		)
 		return
 	}
 
 	// Populate state from response
-	diags = plan.fromAPIResponse(ctx, apiResp, spaceID)
+	diags = plan.fromAPIResponse(ctx, apiResp.JSON200, spaceID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	// Set ID for import
-	compID := clients.CompositeId{ClusterId: spaceID, ResourceId: apiResp.Id}
+	compID := clients.CompositeId{ClusterId: spaceID, ResourceId: apiResp.JSON200.ItemId}
 	plan.ID = types.StringValue(compID.String())
 
 	diags = resp.State.Set(ctx, plan)

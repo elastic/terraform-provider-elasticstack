@@ -3,6 +3,7 @@ package exception_list
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -66,19 +67,38 @@ func read(ctx context.Context, client *kibana_oapi.Client, state *exceptionListM
 		params.NamespaceType = &nsType
 	}
 
-	apiResp, d := kibana_oapi.ReadExceptionList(ctx, client, &params)
-	diags.Append(d...)
-	if diags.HasError() {
+	apiResp, err := client.API.ReadExceptionListWithResponse(ctx, spaceID, &params)
+	if err != nil {
+		diags.AddError(
+			"Failed to read exception list",
+			fmt.Sprintf("Failed to read exception list: %s", err),
+		)
 		return diags
 	}
 
-	if apiResp == nil {
+	if apiResp.StatusCode() == http.StatusNotFound {
 		// Resource no longer exists
 		state.ID = types.StringNull()
 		return diags
 	}
 
+	if apiResp.StatusCode() != http.StatusOK {
+		diags.AddError(
+			"Failed to read exception list",
+			fmt.Sprintf("API returned status %d: %s", apiResp.StatusCode(), string(apiResp.Body)),
+		)
+		return diags
+	}
+
+	if apiResp.JSON200 == nil {
+		diags.AddError(
+			"Failed to read exception list",
+			"API response body is empty",
+		)
+		return diags
+	}
+
 	// Populate state from response
-	diags.Append(state.fromAPIResponse(ctx, apiResp, spaceID)...)
+	diags.Append(state.fromAPIResponse(ctx, apiResp.JSON200, spaceID)...)
 	return diags
 }

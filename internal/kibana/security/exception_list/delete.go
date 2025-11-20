@@ -3,10 +3,10 @@ package exception_list
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -51,6 +51,21 @@ func (r *exceptionListResource) Delete(ctx context.Context, req resource.DeleteR
 	}
 
 	// Make API call
-	diags = kibana_oapi.DeleteExceptionList(ctx, kibanaClient, &params)
-	resp.Diagnostics.Append(diags...)
+	apiResp, err := kibanaClient.API.DeleteExceptionListWithResponse(ctx, compId.ClusterId, &params)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Failed to delete exception list",
+			fmt.Sprintf("Failed to delete exception list: %s", err),
+		)
+		return
+	}
+
+	// 404 means resource already deleted
+	if apiResp.StatusCode() != http.StatusOK && apiResp.StatusCode() != http.StatusNotFound {
+		resp.Diagnostics.AddError(
+			"Failed to delete exception list",
+			fmt.Sprintf("API returned status %d: %s", apiResp.StatusCode(), string(apiResp.Body)),
+		)
+		return
+	}
 }

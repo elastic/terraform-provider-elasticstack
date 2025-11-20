@@ -3,9 +3,9 @@ package exception_item
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
@@ -43,14 +43,33 @@ func (r *exceptionItemResource) Update(ctx context.Context, req resource.UpdateR
 	}
 
 	// Make API call
-	apiResp, diags := kibana_oapi.UpdateExceptionListItem(ctx, kibanaClient, updateReq)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
+	apiResp, err := kibanaClient.API.UpdateExceptionListItemWithResponse(ctx, compId.ClusterId, updateReq)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Failed to update exception item",
+			fmt.Sprintf("Failed to update exception item: %s", err),
+		)
+		return
+	}
+
+	if apiResp.StatusCode() != http.StatusOK {
+		resp.Diagnostics.AddError(
+			"Failed to update exception item",
+			fmt.Sprintf("API returned status %d: %s", apiResp.StatusCode(), string(apiResp.Body)),
+		)
+		return
+	}
+
+	if apiResp.JSON200 == nil {
+		resp.Diagnostics.AddError(
+			"Failed to update exception item",
+			"API response body is empty",
+		)
 		return
 	}
 
 	// Populate state from response
-	diags = plan.fromAPIResponse(ctx, apiResp, compId.ClusterId)
+	diags = plan.fromAPIResponse(ctx, apiResp.JSON200, compId.ClusterId)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
