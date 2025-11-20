@@ -103,7 +103,7 @@ resource "elasticstack_kibana_security_exception_item" "complex_entry" {
 ### Optional
 
 - `comments` (Attributes List) Array of comments about the exception item. (see [below for nested schema](#nestedatt--comments))
-- `expire_time` (String) The exception item's expiration date in ISO format. This field is only available for regular exception items, not endpoint exceptions.
+- `expire_time` (String) The exception item's expiration date in RFC3339 format. This field is only available for regular exception items, not endpoint exceptions.
 - `item_id` (String) The exception item's human readable string identifier.
 - `meta` (String) Placeholder for metadata about the exception item as JSON string.
 - `namespace_type` (String) Determines whether the exception item is available in all Kibana spaces or just the space in which it is created. Can be `single` (default) or `agnostic`.

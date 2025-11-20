@@ -8,6 +8,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -140,24 +141,8 @@ func (r *ExceptionItemResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
-	// Read back the created resource to get computed fields
-	readParams := &kbapi.ReadExceptionListItemParams{
-		Id: (*kbapi.SecurityExceptionsAPIExceptionListItemId)(&createResp.JSON200.Id),
-	}
-
-	readResp, diags := kibana_oapi.GetExceptionListItem(ctx, client, readParams)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if readResp == nil || readResp.JSON200 == nil {
-		resp.Diagnostics.AddError("Failed to read created exception item", "API returned empty response")
-		return
-	}
-
-	// Update state with response
-	diags = r.updateStateFromAPIResponse(ctx, &plan, readResp.JSON200)
+	// Update state with create response
+	diags = r.updateStateFromAPIResponse(ctx, &plan, createResp.JSON200)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -224,13 +209,13 @@ func (r *ExceptionItemResource) updateStateFromAPIResponse(ctx context.Context, 
 		model.Meta = types.StringNull()
 	}
 
-	// Set entries (convert back to JSON)
+	// Set entries (convert back to JSON and normalize)
 	entriesJSON, err := json.Marshal(apiResp.Entries)
 	if err != nil {
 		diags.AddError("Failed to serialize entries", err.Error())
 		return diags
 	}
-	model.Entries = types.StringValue(string(entriesJSON))
+	model.Entries = jsontypes.NewNormalizedValue(string(entriesJSON))
 
 	// Set optional comments
 	if len(apiResp.Comments) > 0 {
