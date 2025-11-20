@@ -74,7 +74,7 @@ func (r *securityDetectionRuleResource) read(ctx context.Context, resourceId, sp
 		Id: &ruleObjectId,
 	}
 
-	response, err := kbClient.API.ReadRuleWithResponse(ctx, params)
+	response, err := kbClient.API.ReadRuleWithResponse(ctx, spaceId, params)
 	if err != nil {
 		diags.AddError(
 			"Error reading security detection rule",

@@ -21,6 +21,7 @@ var (
 
 var (
 	MinVersionPolicyIds = version.Must(version.NewVersion("8.15.0"))
+	MinVersionOutputId  = version.Must(version.NewVersion("8.16.0"))
 )
 
 // NewResource is a helper function to simplify the provider implementation.
@@ -58,7 +59,13 @@ func (r *integrationPolicyResource) buildFeatures(ctx context.Context) (features
 		return features{}, diagutil.FrameworkDiagsFromSDK(diags)
 	}
 
+	supportsOutputId, outputIdDiags := r.client.EnforceMinVersion(ctx, MinVersionOutputId)
+	if outputIdDiags.HasError() {
+		return features{}, diagutil.FrameworkDiagsFromSDK(outputIdDiags)
+	}
+
 	return features{
 		SupportsPolicyIds: supportsPolicyIds,
+		SupportsOutputId:  supportsOutputId,
 	}, nil
 }
