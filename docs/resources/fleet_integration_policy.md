@@ -107,7 +107,7 @@ resource "elasticstack_fleet_integration_policy" "sample" {
 - `output_id` (String) The ID of the output to send data to. When not specified, the default output of the agent policy will be used.
 - `policy_id` (String) Unique identifier of the integration policy.
 - `space_ids` (Set of String) The Kibana space IDs where this integration policy is available. When set, must match the space_ids of the referenced agent policy. If not set, will be inherited from the agent policy. Note: The order of space IDs does not matter as this is a set.
-- `vars_json` (String, Sensitive) Integration-level variables as JSON.
+- `vars_json` (String) Integration-level variables as JSON.
 
 ### Read-Only
 
@@ -120,7 +120,11 @@ Optional:
 
 - `enabled` (Boolean) Enable the input.
 - `streams` (Attributes Map) Input streams mapped by stream ID. (see [below for nested schema](#nestedatt--inputs--streams))
-- `vars` (String, Sensitive) Input-level variables as JSON.
+- `vars` (String) Input-level variables as JSON.
+
+Read-Only:
+
+- `defaults` (Attributes) Input defaults. (see [below for nested schema](#nestedatt--inputs--defaults))
 
 <a id="nestedatt--inputs--streams"></a>
 ### Nested Schema for `inputs.streams`
@@ -128,7 +132,24 @@ Optional:
 Optional:
 
 - `enabled` (Boolean) Enable the stream.
-- `vars` (String, Sensitive) Stream-level variables as JSON.
+- `vars` (String) Stream-level variables as JSON.
+
+
+<a id="nestedatt--inputs--defaults"></a>
+### Nested Schema for `inputs.defaults`
+
+Read-Only:
+
+- `streams` (Attributes Map) Stream-level defaults mapped by stream ID. (see [below for nested schema](#nestedatt--inputs--defaults--streams))
+- `vars` (String) Input-level variable defaults as JSON.
+
+<a id="nestedatt--inputs--defaults--streams"></a>
+### Nested Schema for `inputs.defaults.streams`
+
+Read-Only:
+
+- `enabled` (Boolean) Default enabled state for the stream.
+- `vars` (String) Stream-level variable defaults as JSON.
 
 ## Import
 

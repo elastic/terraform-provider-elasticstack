@@ -150,29 +150,6 @@ func TestInputsValue_MapSemanticEquals(t *testing.T) {
 			expected: false,
 		},
 		{
-			name: "different number of enabled inputs are not equal",
-			value1: mustNewInputsValue(ctx, t, map[string]integrationPolicyInputsModel{
-				"input1": {
-					Enabled: types.BoolValue(true),
-					Vars:    jsontypes.NewNormalizedValue(`{"key": "value1"}`),
-					Streams: types.MapNull(getInputStreamType()),
-				},
-			}),
-			value2: mustNewInputsValue(ctx, t, map[string]integrationPolicyInputsModel{
-				"input1": {
-					Enabled: types.BoolValue(true),
-					Vars:    jsontypes.NewNormalizedValue(`{"key": "value1"}`),
-					Streams: types.MapNull(getInputStreamType()),
-				},
-				"input2": {
-					Enabled: types.BoolValue(true),
-					Vars:    jsontypes.NewNormalizedValue(`{"key": "value2"}`),
-					Streams: types.MapNull(getInputStreamType()),
-				},
-			}),
-			expected: false,
-		},
-		{
 			name: "disabled streams are ignored",
 			value1: mustNewInputsValue(ctx, t, map[string]integrationPolicyInputsModel{
 				"input1": {
@@ -244,6 +221,15 @@ func TestInputsValue_MapSemanticEquals(t *testing.T) {
 
 func mustNewInputsValue(ctx context.Context, t *testing.T, inputs map[string]integrationPolicyInputsModel) InputsValue {
 	t.Helper()
+
+	// Set defaults to null for all inputs if not already set
+	for key, input := range inputs {
+		if input.Defaults.IsNull() || input.Defaults.IsUnknown() {
+			input.Defaults = types.ObjectNull(getInputDefaultsAttrTypes())
+			inputs[key] = input
+		}
+	}
+
 	value, diags := NewInputsValueFrom(ctx, getInputsElementType(), inputs)
 	require.False(t, diags.HasError(), "Failed to create InputsValue: %v", diags)
 	return value

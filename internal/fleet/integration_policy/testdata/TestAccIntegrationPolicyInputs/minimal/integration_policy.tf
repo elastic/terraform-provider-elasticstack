@@ -21,8 +21,7 @@ resource "elasticstack_fleet_integration_policy" "test_policy" {
   agent_policy_id     = elasticstack_fleet_agent_policy.test_policy.id
   integration_name    = "kafka"
   integration_version = data.elasticstack_fleet_integration.test.version
-  description         = "Kafka Integration Policy - Updated"
-
+  description         = "Kafka Integration Policy - Minimal"
   inputs = {
     "kafka-logfile" = {
       enabled = false
@@ -30,28 +29,6 @@ resource "elasticstack_fleet_integration_policy" "test_policy" {
     }
     "kafka-kafka/metrics" = {
       enabled = true
-      vars = jsonencode({
-        hosts                         = ["localhost:9092"]
-        period                        = "10s"
-        "ssl.certificate_authorities" = []
-      })
-      streams = {
-        "kafka.broker" = {
-          enabled = true
-          vars = jsonencode({
-            "jolokia_hosts" = ["localhost:8778"]
-          })
-        }
-        "kafka.consumergroup" = {
-          enabled = true
-          vars = jsonencode({
-            "topics" = ["don't mention the war, I mentioned it once but I think I got away with it"]
-          })
-        }
-        "kafka.partition" = {
-          enabled = false
-        }
-      }
     }
   }
 }
