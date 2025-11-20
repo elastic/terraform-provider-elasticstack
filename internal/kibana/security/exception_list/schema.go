@@ -3,6 +3,7 @@ package exception_list
 import (
 	"context"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -88,8 +89,12 @@ func (r *exceptionListResource) Schema(ctx context.Context, req resource.SchemaR
 				Computed:    true,
 				ElementType: types.StringType,
 				Default:     listdefault.StaticValue(types.ListNull(types.StringType)),
-				ElementValidators: []validator.String{
-					stringvalidator.OneOf("linux", "macos", "windows"),
+				Validators: []validator.List{
+					listvalidator.ValueStringsAre(
+						stringvalidator.OneOf(
+							"linux", "macos", "windows",
+						),
+					),
 				},
 			},
 			"tags": schema.ListAttribute{
