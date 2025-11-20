@@ -126,6 +126,10 @@ Read-Only:
 
 - `defaults` (Attributes) Input defaults. (see [below for nested schema](#nestedatt--inputs--defaults))
 
+Read-Only:
+
+- `defaults` (Attributes) Input defaults. (see [below for nested schema](#nestedatt--inputs--defaults))
+
 <a id="nestedatt--inputs--streams"></a>
 ### Nested Schema for `inputs.streams`
 
@@ -133,6 +137,23 @@ Optional:
 
 - `enabled` (Boolean) Enable the stream.
 - `vars` (String) Stream-level variables as JSON.
+
+
+<a id="nestedatt--inputs--defaults"></a>
+### Nested Schema for `inputs.defaults`
+
+Read-Only:
+
+- `streams` (Attributes Map) Stream-level defaults mapped by stream ID. (see [below for nested schema](#nestedatt--inputs--defaults--streams))
+- `vars` (String) Input-level variable defaults as JSON.
+
+<a id="nestedatt--inputs--defaults--streams"></a>
+### Nested Schema for `inputs.defaults.streams`
+
+Read-Only:
+
+- `enabled` (Boolean) Default enabled state for the stream.
+- `vars` (String) Stream-level variable defaults as JSON.
 
 
 <a id="nestedatt--inputs--defaults"></a>
