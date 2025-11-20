@@ -6,19 +6,33 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 var minExceptionItemAPISupport = version.Must(version.NewVersion("7.9.0"))
 
 func TestAccResourceExceptionItem(t *testing.T) {
+	entriesCreate := `[{"field":"process.name","operator":"included","type":"match","value":"test-process"}]`
+	entriesUpdate := `[{"field":"process.name","operator":"included","type":"match","value":"test-process-updated"}]`
+
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
-				Config:   testAccResourceExceptionItemCreate,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"list_id":        config.StringVariable("test-exception-list-for-item"),
+					"item_id":        config.StringVariable("test-exception-item"),
+					"name":           config.StringVariable("Test Exception Item"),
+					"description":    config.StringVariable("Test exception item for acceptance tests"),
+					"type":           config.StringVariable("simple"),
+					"namespace_type": config.StringVariable("single"),
+					"entries":        config.StringVariable(entriesCreate),
+					"tags":           config.ListVariable(config.StringVariable("test")),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "item_id", "test-exception-item"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "name", "Test Exception Item"),
@@ -33,8 +47,19 @@ func TestAccResourceExceptionItem(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
-				Config:   testAccResourceExceptionItemUpdate,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"list_id":        config.StringVariable("test-exception-list-for-item"),
+					"item_id":        config.StringVariable("test-exception-item"),
+					"name":           config.StringVariable("Test Exception Item Updated"),
+					"description":    config.StringVariable("Updated description"),
+					"type":           config.StringVariable("simple"),
+					"namespace_type": config.StringVariable("single"),
+					"entries":        config.StringVariable(entriesUpdate),
+					"tags":           config.ListVariable(config.StringVariable("test"), config.StringVariable("updated")),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "name", "Test Exception Item Updated"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "description", "Updated description"),
@@ -45,73 +70,3 @@ func TestAccResourceExceptionItem(t *testing.T) {
 		},
 	})
 }
-
-const testAccResourceExceptionItemCreate = `
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_kibana_security_exception_list" "test" {
-  list_id        = "test-exception-list-for-item"
-  name           = "Test Exception List for Item"
-  description    = "Test exception list"
-  type           = "detection"
-  namespace_type = "single"
-}
-
-resource "elasticstack_kibana_security_exception_item" "test" {
-  list_id        = elasticstack_kibana_security_exception_list.test.list_id
-  item_id        = "test-exception-item"
-  name           = "Test Exception Item"
-  description    = "Test exception item for acceptance tests"
-  type           = "simple"
-  namespace_type = "single"
-  
-  entries = jsonencode([
-    {
-      field    = "process.name"
-      operator = "included"
-      type     = "match"
-      value    = "test-process"
-    }
-  ])
-  
-  tags = ["test"]
-}
-`
-
-const testAccResourceExceptionItemUpdate = `
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_kibana_security_exception_list" "test" {
-  list_id        = "test-exception-list-for-item"
-  name           = "Test Exception List for Item"
-  description    = "Test exception list"
-  type           = "detection"
-  namespace_type = "single"
-}
-
-resource "elasticstack_kibana_security_exception_item" "test" {
-  list_id        = elasticstack_kibana_security_exception_list.test.list_id
-  item_id        = "test-exception-item"
-  name           = "Test Exception Item Updated"
-  description    = "Updated description"
-  type           = "simple"
-  namespace_type = "single"
-  
-  entries = jsonencode([
-    {
-      field    = "process.name"
-      operator = "included"
-      type     = "match"
-      value    = "test-process-updated"
-    }
-  ])
-  
-  tags = ["test", "updated"]
-}
-`
