@@ -83,7 +83,7 @@ func (r *ExceptionListResource) Create(ctx context.Context, req resource.CreateR
 	}
 
 	// Create the exception list
-	createResp, diags := kibana_oapi.CreateExceptionList(ctx, client, body)
+	createResp, diags := kibana_oapi.CreateExceptionList(ctx, client, plan.SpaceID.ValueString(), body)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -103,7 +103,7 @@ func (r *ExceptionListResource) Create(ctx context.Context, req resource.CreateR
 		Id: (*kbapi.SecurityExceptionsAPIExceptionListId)(&createResp.JSON200.Id),
 	}
 
-	readResp, diags := kibana_oapi.GetExceptionList(ctx, client, readParams)
+	readResp, diags := kibana_oapi.GetExceptionList(ctx, client, plan.SpaceID.ValueString(), readParams)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -143,11 +143,12 @@ func (r *ExceptionListResource) updateStateFromAPIResponse(ctx context.Context, 
 
 	// Set optional os_types
 	if apiResp.OsTypes != nil && len(*apiResp.OsTypes) > 0 {
-		osTypes := make([]string, len(*apiResp.OsTypes))
-		for i, osType := range *apiResp.OsTypes {
-			osTypes[i] = string(osType)
-		}
-		list, d := types.ListValueFrom(ctx, types.StringType, osTypes)
+		// osTypes := make([]string, len(*apiResp.OsTypes))
+		// for i, osType := range *apiResp.OsTypes {
+		// 	osTypes[i] = string(osType)
+		// }
+		// list, d := types.ListValueFrom(ctx, types.StringType, osTypes)
+		list, d := types.ListValueFrom(ctx, types.StringType, apiResp.OsTypes)
 		diags.Append(d...)
 		model.OsTypes = list
 	} else {

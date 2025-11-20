@@ -6,6 +6,7 @@ import (
 
 type ExceptionListModel struct {
 	ID            types.String `tfsdk:"id"`
+	SpaceID       types.String `tfsdk:"space_id"`
 	ListID        types.String `tfsdk:"list_id"`
 	Name          types.String `tfsdk:"name"`
 	Description   types.String `tfsdk:"description"`

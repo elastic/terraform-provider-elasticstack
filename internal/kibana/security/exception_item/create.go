@@ -130,7 +130,7 @@ func (r *ExceptionItemResource) Create(ctx context.Context, req resource.CreateR
 	}
 
 	// Create the exception item
-	createResp, diags := kibana_oapi.CreateExceptionListItem(ctx, client, body)
+	createResp, diags := kibana_oapi.CreateExceptionListItem(ctx, client, plan.SpaceID.ValueString(), body)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -150,7 +150,7 @@ func (r *ExceptionItemResource) Create(ctx context.Context, req resource.CreateR
 		Id: (*kbapi.SecurityExceptionsAPIExceptionListItemId)(&createResp.JSON200.Id),
 	}
 
-	readResp, diags := kibana_oapi.GetExceptionListItem(ctx, client, readParams)
+	readResp, diags := kibana_oapi.GetExceptionListItem(ctx, client, plan.SpaceID.ValueString(), readParams)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

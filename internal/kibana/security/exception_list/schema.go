@@ -28,6 +28,15 @@ func (r *ExceptionListResource) Schema(_ context.Context, _ resource.SchemaReque
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
+			"space_id": schema.StringAttribute{
+				MarkdownDescription: "An identifier for the space. If space_id is not provided, the default space is used.",
+				Optional:            true,
+				Computed:            true,
+				Default:             stringdefault.StaticString("default"),
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
+			},
 			"list_id": schema.StringAttribute{
 				MarkdownDescription: "The exception list's human readable string identifier.",
 				Required:            true,

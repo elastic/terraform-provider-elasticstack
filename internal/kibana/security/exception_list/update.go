@@ -84,7 +84,7 @@ func (r *ExceptionListResource) Update(ctx context.Context, req resource.UpdateR
 	}
 
 	// Update the exception list
-	updateResp, diags := kibana_oapi.UpdateExceptionList(ctx, client, body)
+	updateResp, diags := kibana_oapi.UpdateExceptionList(ctx, client, plan.SpaceID.ValueString(), body)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -104,7 +104,7 @@ func (r *ExceptionListResource) Update(ctx context.Context, req resource.UpdateR
 		Id: (*kbapi.SecurityExceptionsAPIExceptionListId)(&updateResp.JSON200.Id),
 	}
 
-	readResp, diags := kibana_oapi.GetExceptionList(ctx, client, readParams)
+	readResp, diags := kibana_oapi.GetExceptionList(ctx, client, plan.SpaceID.ValueString(), readParams)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

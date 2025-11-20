@@ -29,7 +29,7 @@ func (r *ExceptionItemResource) Read(ctx context.Context, req resource.ReadReque
 		Id: &id,
 	}
 
-	readResp, diags := kibana_oapi.GetExceptionListItem(ctx, client, params)
+	readResp, diags := kibana_oapi.GetExceptionListItem(ctx, client, state.SpaceID.ValueString(), params)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

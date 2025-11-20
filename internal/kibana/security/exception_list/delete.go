@@ -29,6 +29,6 @@ func (r *ExceptionListResource) Delete(ctx context.Context, req resource.DeleteR
 		Id: &id,
 	}
 
-	diags = kibana_oapi.DeleteExceptionList(ctx, client, params)
+	diags = kibana_oapi.DeleteExceptionList(ctx, client, state.SpaceID.ValueString(), params)
 	resp.Diagnostics.Append(diags...)
 }
