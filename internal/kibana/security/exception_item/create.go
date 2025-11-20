@@ -141,8 +141,28 @@ func (r *ExceptionItemResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
-	// Update state with create response
-	diags = r.updateStateFromAPIResponse(ctx, &plan, createResp.JSON200)
+	/*
+	 * In create/update paths we typically follow the write operation with a read, and then set the state from the read.
+	 * We want to avoid a dirty plan immediately after an apply.
+	 */
+	// Read back the created resource to get the final state
+	readParams := &kbapi.ReadExceptionListItemParams{
+		Id: (*kbapi.SecurityExceptionsAPIExceptionListItemId)(&createResp.JSON200.Id),
+	}
+
+	readResp, diags := kibana_oapi.GetExceptionListItem(ctx, client, readParams)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if readResp == nil || readResp.JSON200 == nil {
+		resp.State.RemoveResource(ctx)
+		return
+	}
+
+	// Update state with read response
+	diags = r.updateStateFromAPIResponse(ctx, &plan, readResp.JSON200)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
