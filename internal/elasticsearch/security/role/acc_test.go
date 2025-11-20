@@ -1,4 +1,4 @@
-package security_test
+package role_test
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/role"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -46,11 +46,10 @@ func TestAccResourceSecurityRole(t *testing.T) {
 					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_security_role.test", "run_as.#"),
 					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_security_role.test", "global"),
 					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_security_role.test", "applications.#"),
-					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_security_role.test", "indices.0.allow_restricted_indices"),
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(security.MinSupportedRemoteIndicesVersion),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(role.MinSupportedRemoteIndicesVersion),
 				Config:   testAccResourceSecurityRoleRemoteIndicesCreate(roleNameRemoteIndices),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "name", roleNameRemoteIndices),
@@ -65,7 +64,7 @@ func TestAccResourceSecurityRole(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(security.MinSupportedRemoteIndicesVersion),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(role.MinSupportedRemoteIndicesVersion),
 				Config:   testAccResourceSecurityRoleRemoteIndicesUpdate(roleNameRemoteIndices),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "name", roleNameRemoteIndices),
@@ -75,13 +74,12 @@ func TestAccResourceSecurityRole(t *testing.T) {
 					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_security_role.test", "run_as.#"),
 					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_security_role.test", "global"),
 					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_security_role.test", "applications.#"),
-					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_security_role.test", "indices.0.allow_restricted_indices"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "remote_indices.*.clusters.*", "test-cluster2"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "remote_indices.*.names.*", "sample2"),
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(security.MinSupportedDescriptionVersion),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(role.MinSupportedDescriptionVersion),
 				Config:   testAccResourceSecurityRoleDescriptionCreate(roleNameDescription),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "name", roleNameDescription),
@@ -89,11 +87,50 @@ func TestAccResourceSecurityRole(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(security.MinSupportedDescriptionVersion),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(role.MinSupportedDescriptionVersion),
 				Config:   testAccResourceSecurityRoleDescriptionUpdate(roleNameDescription),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "name", roleNameDescription),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "description", "updated test description"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceSecurityRoleFromSDK(t *testing.T) {
+	roleName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				// Create the role with the last provider version where the role resource was built on the SDK
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"elasticstack": {
+						Source:            "elastic/elasticstack",
+						VersionConstraint: "0.11.17",
+					},
+				},
+				Config: testAccResourceSecurityRoleCreate(roleName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "name", roleName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "indices.0.allow_restricted_indices", "true"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "indices.*.names.*", "index1"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "indices.*.names.*", "index2"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "cluster.*", "all"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "run_as.*", "other_user"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				Config:                   testAccResourceSecurityRoleCreate(roleName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "name", roleName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "indices.0.allow_restricted_indices", "true"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "indices.*.names.*", "index1"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "indices.*.names.*", "index2"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "cluster.*", "all"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "run_as.*", "other_user"),
 				),
 			},
 		},

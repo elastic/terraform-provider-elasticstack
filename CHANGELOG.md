@@ -1,4 +1,5 @@
 ## [Unreleased]
+- Migrate `elasticstack_elasticsearch_security_role` resource to Terraform Plugin Framework ([#1330](https://github.com/elastic/terraform-provider-elasticstack/pull/1330))
 
 ## [0.12.2] - 2025-11-19
 - Fix `elasticstack_elasticsearch_snapshot_lifecycle` metadata type conversion causing terraform apply to fail ([#1409](https://github.com/elastic/terraform-provider-elasticstack/issues/1409))
@@ -101,7 +102,6 @@ resource "elasticstack_fleet_output" "output" {
 - Add support for `unenrollment_timeout` in `elasticstack_fleet_agent_policy` ([#1169](https://github.com/elastic/terraform-provider-elasticstack/issues/1169))
 - Handle default value for `allow_restricted_indices` in `elasticstack_elasticsearch_security_api_key` ([#1315](https://github.com/elastic/terraform-provider-elasticstack/pull/1315))
 - Fixed `nil` reference in kibana synthetics API client in case of response errors ([#1320](https://github.com/elastic/terraform-provider-elasticstack/pull/1320))
-- Add support for `agent_policy_ids` in `elasticstack_fleet_integration_policy` ([#1131](https://github.com/elastic/terraform-provider-elasticstack/pull/1311))
 
 ## [0.11.17] - 2025-07-21
 
