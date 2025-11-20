@@ -88,6 +88,9 @@ func (r *exceptionListResource) Schema(ctx context.Context, req resource.SchemaR
 				Computed:    true,
 				ElementType: types.StringType,
 				Default:     listdefault.StaticValue(types.ListNull(types.StringType)),
+				ElementValidators: []validator.String{
+					stringvalidator.OneOf("linux", "macos", "windows"),
+				},
 			},
 			"tags": schema.ListAttribute{
 				Description: "Array of tags to help categorize the exception list.",
