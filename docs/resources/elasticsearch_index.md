@@ -20,16 +20,14 @@ provider "elasticstack" {
 resource "elasticstack_elasticsearch_index" "my_index" {
   name = "my-index"
 
-  alias {
+  alias = [{
     name = "my_alias_1"
-  }
-
-  alias {
+    }, {
     name = "my_alias_2"
     filter = jsonencode({
       term = { "user.id" = "developer" }
     })
-  }
+  }]
 
   mappings = jsonencode({
     properties = {
@@ -59,7 +57,7 @@ resource "elasticstack_elasticsearch_index" "my_index" {
 
 ### Optional
 
-- `alias` (Block Set) Aliases for the index. (see [below for nested schema](#nestedblock--alias))
+- `alias` (Attributes Set) Aliases for the index. (see [below for nested schema](#nestedatt--alias))
 - `analysis_analyzer` (String) A JSON string describing the analyzers applied to the index.
 - `analysis_char_filter` (String) A JSON string describing the char_filters applied to the index.
 - `analysis_filter` (String) A JSON string describing the filters applied to the index.
@@ -135,7 +133,7 @@ resource "elasticstack_elasticsearch_index" "my_index" {
 - `id` (String) Internal identifier of the resource
 - `settings_raw` (String) All raw settings fetched from the cluster.
 
-<a id="nestedblock--alias"></a>
+<a id="nestedatt--alias"></a>
 ### Nested Schema for `alias`
 
 Required:
