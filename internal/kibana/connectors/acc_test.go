@@ -471,7 +471,7 @@ func TestAccResourceKibanaConnectorBedrock(t *testing.T) {
 }
 
 func TestAccResourceKibanaConnectorGenAi(t *testing.T) {
-	minSupportedVersion := version.Must(version.NewSemver("8.8.0"))
+	minSupportedVersion := version.Must(version.NewSemver("8.10.3"))
 
 	connectorName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
