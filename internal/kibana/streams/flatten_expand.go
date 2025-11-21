@@ -4,28 +4,24 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/elastic/terraform-provider-elasticstack/generated/kbstreams"
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// expandGroupToAPI converts the Terraform groupModel into the kbstreams payload used
-// by PUT /api/streams/{name}/_group.
-func expandGroupToAPI(ctx context.Context, m *groupModel) (*kbstreams.PutStreamsNameGroupJSONBody, diag.Diagnostics) {
+func expandGroupToAPI(ctx context.Context, m *groupModel) (*kbapi.PutStreamsNameGroupJSONBody, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	body := &kbstreams.PutStreamsNameGroupJSONBody{}
+	body := &kbapi.PutStreamsNameGroupJSONBody{}
 	if m == nil {
-		// Ensure we always send empty arrays/objects rather than nulls to match
-		// the Streams Group schema expectations.
+
 		body.Group.Members = []string{}
 		body.Group.Metadata = map[string]string{}
 		body.Group.Tags = []string{}
 		return body, diags
 	}
 
-	// Start with empty values so we never send null for these fields.
 	body.Group.Members = []string{}
 	body.Group.Metadata = map[string]string{}
 	body.Group.Tags = []string{}
@@ -67,8 +63,6 @@ func expandGroupToAPI(ctx context.Context, m *groupModel) (*kbstreams.PutStreams
 	return body, diags
 }
 
-// flattenGroupFromAPI populates a groupModel from the JSON returned by
-// GET /api/streams/{name}/_group.
 func flattenGroupFromAPI(ctx context.Context, apiBytes []byte, m *groupModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 
@@ -76,7 +70,7 @@ func flattenGroupFromAPI(ctx context.Context, apiBytes []byte, m *groupModel) di
 		return diags
 	}
 
-	var body kbstreams.PutStreamsNameGroupJSONBody
+	var body kbapi.PutStreamsNameGroupJSONBody
 	if err := json.Unmarshal(apiBytes, &body); err != nil {
 		diags.AddError("Failed to decode group stream settings", err.Error())
 		return diags
@@ -94,8 +88,7 @@ func flattenGroupFromAPI(ctx context.Context, apiBytes []byte, m *groupModel) di
 
 	// metadata
 	if len(body.Group.Metadata) == 0 {
-		// Preserve empty map rather than null to avoid post-apply inconsistencies
-		// when the plan contained `metadata = {}`.
+
 		mv, d := types.MapValueFrom(ctx, types.StringType, map[string]string{})
 		diags.Append(d...)
 		if diags.HasError() {
@@ -113,8 +106,7 @@ func flattenGroupFromAPI(ctx context.Context, apiBytes []byte, m *groupModel) di
 
 	// tags
 	if len(body.Group.Tags) == 0 {
-		// Preserve empty list rather than null to avoid post-apply inconsistencies
-		// when the plan contained `tags = []`.
+
 		m.Tags = []types.String{}
 	} else {
 		m.Tags = make([]types.String, len(body.Group.Tags))
@@ -126,9 +118,6 @@ func flattenGroupFromAPI(ctx context.Context, apiBytes []byte, m *groupModel) di
 	return diags
 }
 
-// flattenIngestFromAPI decodes the JSON returned by GET /api/streams/{name}/_ingest
-// into a Terraform Object value for the computed `ingest` attribute. For the
-// current POC we only surface the ingest `type` field.
 func flattenIngestFromAPI(ctx context.Context, apiBytes []byte) (types.Object, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
@@ -157,21 +146,9 @@ func flattenIngestFromAPI(ctx context.Context, apiBytes []byte) (types.Object, d
 	return obj, diags
 }
 
-// expandGroupToStreamUpsertJSON builds the minimal JSON body required to create
-// or upsert a group stream via PUT /api/streams/{name}. It mirrors the
-// Streams.GroupStream.UpsertRequest shape by sending:
-//   - dashboards, rules, queries as empty arrays (emptyAssets)
-//   - stream.description (when set)
-//   - stream.group.metadata, stream.group.tags, stream.group.members from the plan.
 func expandGroupToStreamUpsertJSON(ctx context.Context, name string, plan *streamModel) ([]byte, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	// The stream name is taken from the URL path in the Streams API and is
-	// intentionally omitted from the JSON body. The server-side schema expects
-	// `stream.name` to be undefined in the payload.
-	// For the group-stream upsert branch, `stream.description` is required,
-	// while `stream.ingest` must not be present (it is validated separately
-	// via the _ingest endpoint for ingest streams).
 	desc := ""
 	if plan != nil && !plan.Description.IsNull() && !plan.Description.IsUnknown() {
 		desc = plan.Description.ValueString()
@@ -223,7 +200,6 @@ func expandGroupToStreamUpsertJSON(ctx context.Context, name string, plan *strea
 			}
 			group["members"] = members
 		} else {
-			// The schema allows an empty members array; we preserve that here.
 			group["members"] = []string{}
 		}
 

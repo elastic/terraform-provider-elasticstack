@@ -12,8 +12,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-// GetStreamJSON reads a single stream definition (GET /api/streams/{name}).
-// Returns nil, nil on 404.
 func GetStreamJSON(ctx context.Context, client *Client, name string) ([]byte, diag.Diagnostics) {
 	resp, err := client.API.GetStreamsNameWithResponse(ctx, name)
 	if err != nil {
@@ -31,10 +29,6 @@ func GetStreamJSON(ctx context.Context, client *Client, name string) ([]byte, di
 	}
 }
 
-// PutStreamRaw upserts a stream by sending a pre-built JSON payload to
-// PUT /api/streams/{name}. This is used in cases where the generated
-// union types are too awkward to construct directly from
-// Terraform models.
 func PutStreamRaw(ctx context.Context, client *Client, name string, body []byte) diag.Diagnostics {
 	var diags diag.Diagnostics
 
@@ -67,19 +61,6 @@ func PutStreamRaw(ctx context.Context, client *Client, name string, body []byte)
 	return reportUnknownError(status, respBody)
 }
 
-// DeleteStream deletes a stream (DELETE /api/streams/{name}).
-// 404 is treated as success.
-//
-// We intentionally avoid the generated client here because the request body
-// for this endpoint is defined as "undefined" in Kibana's schema. Some
-// generated clients may serialize a nil body as JSON "null", which then
-// fails validation with 'expected undefined, received null'. Using the raw
-// HTTP client guarantees we send no body at all.
-//
-// Additionally, some Streams deployments validate the DELETE request body as
-// "undefined" and may respond with a 400 "Expected undefined, received null"
-// even when no body was sent. We treat that specific error as success to keep
-// Terraform idempotent.
 func DeleteStream(ctx context.Context, client *Client, name string) diag.Diagnostics {
 	var diags diag.Diagnostics
 
@@ -118,8 +99,6 @@ func DeleteStream(ctx context.Context, client *Client, name string) diag.Diagnos
 	}
 }
 
-// GetStreamIngestJSON reads ingest settings (GET /api/streams/{name}/_ingest).
-// Returns nil, nil on 404 or when the stream is not an ingest stream.
 func GetStreamIngestJSON(ctx context.Context, client *Client, name string) ([]byte, diag.Diagnostics) {
 	resp, err := client.API.GetStreamsNameIngestWithResponse(ctx, name)
 	if err != nil {
@@ -129,12 +108,9 @@ func GetStreamIngestJSON(ctx context.Context, client *Client, name string) ([]by
 	status := resp.StatusCode()
 	switch {
 	case status == http.StatusNotFound:
-		// No ingest definition for this stream.
 		return nil, nil
 	case status == http.StatusBadRequest:
-		// For non‑ingest streams (e.g. group streams) Kibana may return 400
-		// "Stream is not an ingest stream". In that case we simply omit the
-		// ingest block from Terraform state instead of treating it as an error.
+
 		return nil, nil
 	case status >= 200 && status < 300:
 		return resp.Body, nil
@@ -143,7 +119,6 @@ func GetStreamIngestJSON(ctx context.Context, client *Client, name string) ([]by
 	}
 }
 
-// PutStreamIngest upserts ingest settings (PUT /api/streams/{name}/_ingest).
 func PutStreamIngest(ctx context.Context, client *Client, name string, body kbapi.PutStreamsNameIngestJSONRequestBody) diag.Diagnostics {
 	resp, err := client.API.PutStreamsNameIngestWithResponse(ctx, name, body)
 	if err != nil {
@@ -158,8 +133,6 @@ func PutStreamIngest(ctx context.Context, client *Client, name string, body kbap
 	return reportUnknownError(status, resp.Body)
 }
 
-// GetStreamGroupJSON reads group settings (GET /api/streams/{name}/_group).
-// Returns nil, nil on 404.
 func GetStreamGroupJSON(ctx context.Context, client *Client, name string) ([]byte, diag.Diagnostics) {
 	resp, err := client.API.GetStreamsNameGroupWithResponse(ctx, name)
 	if err != nil {
@@ -177,7 +150,6 @@ func GetStreamGroupJSON(ctx context.Context, client *Client, name string) ([]byt
 	}
 }
 
-// PutStreamGroup upserts group settings (PUT /api/streams/{name}/_group).
 func PutStreamGroup(ctx context.Context, client *Client, name string, body kbapi.PutStreamsNameGroupJSONRequestBody) diag.Diagnostics {
 	resp, err := client.API.PutStreamsNameGroupWithResponse(ctx, name, body)
 	if err != nil {
@@ -192,7 +164,6 @@ func PutStreamGroup(ctx context.Context, client *Client, name string, body kbapi
 	return reportUnknownError(status, resp.Body)
 }
 
-// EnableStreams enables Streams (POST /api/streams/_enable).
 func EnableStreams(ctx context.Context, client *Client) diag.Diagnostics {
 	resp, err := client.API.PostStreamsEnableWithResponse(ctx)
 	if err != nil {
@@ -207,7 +178,6 @@ func EnableStreams(ctx context.Context, client *Client) diag.Diagnostics {
 	return reportUnknownError(status, resp.Body)
 }
 
-// DisableStreams disables Streams (POST /api/streams/_disable).
 func DisableStreams(ctx context.Context, client *Client) diag.Diagnostics {
 	resp, err := client.API.PostStreamsDisableWithResponse(ctx)
 	if err != nil {

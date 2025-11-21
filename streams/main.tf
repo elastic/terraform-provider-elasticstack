@@ -8,13 +8,13 @@ terraform {
 }
 provider "elasticstack" {
   elasticsearch {
-    endpoints = ["http://localhost:9200"] # adjust to your ES URL
+    endpoints = ["http://localhost:9200"]
     username  = var.elasticsearch_username
     password  = var.elasticsearch_password
   }
 
   kibana {
-    endpoints = ["http://localhost:5601/rStelmach"]
+    endpoints = ["http://localhost:5601"] # adjust to your Kibana URL(remember about prefix)
     username  = var.kibana_username
     password  = var.kibana_password
   }
