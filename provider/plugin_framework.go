@@ -19,6 +19,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/api_key"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/role_mapping"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/system_user"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/user"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/agent_policy"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/enrollment_tokens"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/integration"
@@ -132,6 +133,7 @@ func (p *Provider) resources(ctx context.Context) []func() resource.Resource {
 		output.NewResource,
 		server_host.NewResource,
 		system_user.NewSystemUserResource,
+		user.NewUserResource,
 		script.NewScriptResource,
 		maintenance_window.NewResource,
 		enrich.NewEnrichPolicyResource,
