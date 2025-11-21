@@ -1,7 +1,0 @@
-# yaml-language-server: $schema=https://raw.githubusercontent.com/oapi-codegen/oapi-codegen/HEAD/configuration-schema.json
-
-package: kbstreams
-output: streams.gen.go
-generate:
-  client: true
-  models: true

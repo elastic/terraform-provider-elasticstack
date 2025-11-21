@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/elastic/terraform-provider-elasticstack/generated/kbstreams"
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
@@ -132,7 +132,7 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 		}
 
 		// Upsert group configuration for the stream.
-		apiBody := kbstreams.PutStreamsNameGroupJSONRequestBody(*groupBody)
+		apiBody := kbapi.PutStreamsNameGroupJSONRequestBody(*groupBody)
 		d = kibana_oapi.PutStreamGroup(ctx, client, name, apiBody)
 		resp.Diagnostics.Append(d...)
 		if resp.Diagnostics.HasError() {
@@ -373,7 +373,7 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 			return
 		}
 
-		apiBody := kbstreams.PutStreamsNameGroupJSONRequestBody(*groupBody)
+		apiBody := kbapi.PutStreamsNameGroupJSONRequestBody(*groupBody)
 		d = kibana_oapi.PutStreamGroup(ctx, client, name, apiBody)
 		resp.Diagnostics.Append(d...)
 		if resp.Diagnostics.HasError() {

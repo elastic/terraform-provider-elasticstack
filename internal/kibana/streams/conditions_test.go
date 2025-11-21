@@ -97,5 +97,3 @@ func TestMarshalCondition_SimpleAndOr(t *testing.T) {
 		})
 	}
 }
-
-
