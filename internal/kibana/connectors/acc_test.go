@@ -2,6 +2,7 @@ package connectors_test
 
 import (
 	"context"
+	_ "embed"
 	"fmt"
 	"regexp"
 	"testing"
@@ -19,97 +20,57 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
+//go:embed testdata/TestAccResourceKibanaConnectorFromSDK/connector.tf
+var sdkIndexConnectorConfig string
+
+//go:embed testdata/TestAccResourceKibanaConnectorEmptyConfigFromSDK/connector.tf
+var sdkSlackConnectorConfig string
+
 func TestAccResourceKibanaConnectorCasesWebhook(t *testing.T) {
 	minSupportedVersion := version.Must(version.NewSemver("8.4.0"))
 
 	connectorName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
-	create := func(name, id string) string {
-		idAttribute := ""
-		if id != "" {
-			idAttribute = fmt.Sprintf(`connector_id = "%s"`, id)
-		}
-		return fmt.Sprintf(`
-	provider "elasticstack" {
-	  elasticsearch {}
-	  kibana {}
+	testCases := []struct {
+		name        string
+		connectorID string
+		minVersion  *version.Version
+	}{
+		{
+			name:        "with_empty_connector_id",
+			connectorID: "",
+			minVersion:  minSupportedVersion,
+		},
+		{
+			name:        "with_predefined_connector_id",
+			connectorID: uuid.NewString(),
+			minVersion:  connectors.MinVersionSupportingPreconfiguredIDs,
+		},
 	}
 
-	resource "elasticstack_kibana_action_connector" "test" {
-	  name         = "%s"
-	  %s
-	  config       = jsonencode({
-		createIncidentJson = "{}"
-		createIncidentResponseKey = "key"
-		createIncidentUrl = "https://www.elastic.co/"
-		getIncidentResponseExternalTitleKey = "title"
-		getIncidentUrl = "https://www.elastic.co/"
-		updateIncidentJson = "{}"
-		updateIncidentUrl = "https://www.elastic.co/"
-		viewIncidentUrl = "https://www.elastic.co/"
-	  })
-	  secrets = jsonencode({
-		user = "user1"
-		password = "password1"
-	  })
-	  connector_type_id = ".cases-webhook"
-	}`,
-			name, idAttribute)
-	}
-
-	update := func(name, id string) string {
-		idAttribute := ""
-		if id != "" {
-			idAttribute = fmt.Sprintf(`connector_id = "%s"`, id)
-		}
-		return fmt.Sprintf(`
-	provider "elasticstack" {
-	  elasticsearch {}
-	  kibana {}
-	}
-
-	resource "elasticstack_kibana_action_connector" "test" {
-	  name         = "Updated %s"
-	  %s
-	  config = jsonencode({
-		createIncidentJson = "{}"
-		createIncidentResponseKey = "key"
-		createIncidentUrl = "https://www.elastic.co/"
-		getIncidentResponseExternalTitleKey = "title"
-		getIncidentUrl = "https://www.elastic.co/"
-		updateIncidentJson = "{}"
-		updateIncidentUrl = "https://elasticsearch.com/"
-		viewIncidentUrl = "https://www.elastic.co/"
-		createIncidentMethod = "put"
-	  })
-	  secrets = jsonencode({
-		user = "user2"
-		password = "password2"
-	  })
-	  connector_type_id = ".cases-webhook"
-	}`,
-			name, idAttribute)
-	}
-
-	for _, connectorID := range []string{"", uuid.NewString()} {
-		t.Run(fmt.Sprintf("with connector ID '%s'", connectorID), func(t *testing.T) {
-			minVersion := minSupportedVersion
-			if connectorID != "" {
-				minVersion = connectors.MinVersionSupportingPreconfiguredIDs
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			vars := config.Variables{
+				"connector_name": config.StringVariable(connectorName),
 			}
+			if tc.connectorID != "" {
+				vars["connector_id"] = config.StringVariable(tc.connectorID)
+			}
+
 			resource.Test(t, resource.TestCase{
 				PreCheck:                 func() { acctest.PreCheck(t) },
 				CheckDestroy:             checkResourceKibanaConnectorDestroy,
 				ProtoV6ProviderFactories: acctest.Providers,
 				Steps: []resource.TestStep{
 					{
-						SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersion),
-						Config:   create(connectorName, connectorID),
+						SkipFunc:        versionutils.CheckIfVersionIsUnsupported(tc.minVersion),
+						ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+						ConfigVariables: vars,
 						Check: resource.ComposeTestCheckFunc(
 							testCommonAttributes(connectorName, ".cases-webhook"),
 
 							resource.TestCheckResourceAttrWith("elasticstack_kibana_action_connector.test", "connector_id", func(value string) error {
-								if connectorID == "" {
+								if tc.connectorID == "" {
 									if _, err := uuid.Parse(value); err != nil {
 										return fmt.Errorf("expected connector_id to be a uuid: %w", err)
 									}
@@ -117,8 +78,8 @@ func TestAccResourceKibanaConnectorCasesWebhook(t *testing.T) {
 									return nil
 								}
 
-								if connectorID != value {
-									return fmt.Errorf("expected connector_id to match pre-defined id. '%s' != %s", connectorID, value)
+								if tc.connectorID != value {
+									return fmt.Errorf("expected connector_id to match pre-defined id. '%s' != %s", tc.connectorID, value)
 								}
 
 								return nil
@@ -138,8 +99,9 @@ func TestAccResourceKibanaConnectorCasesWebhook(t *testing.T) {
 						),
 					},
 					{
-						SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersion),
-						Config:   update(connectorName, connectorID),
+						SkipFunc:        versionutils.CheckIfVersionIsUnsupported(tc.minVersion),
+						ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
+						ConfigVariables: vars,
 						Check: resource.ComposeTestCheckFunc(
 							testCommonAttributes(fmt.Sprintf("Updated %s", connectorName), ".cases-webhook"),
 
@@ -207,50 +169,17 @@ func TestAccResourceKibanaConnectorIndex(t *testing.T) {
 
 	connectorName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
-	create := func(name string) string {
-		return fmt.Sprintf(`
-	provider "elasticstack" {
-	  elasticsearch {}
-	  kibana {}
-	}
-
-	resource "elasticstack_kibana_action_connector" "test" {
-	  name         = "%s"
-	  config       = jsonencode({
-		index             = ".kibana"
-		refresh             = true
-	  })
-	  connector_type_id = ".index"
-	}`,
-			name)
-	}
-
-	update := func(name string) string {
-		return fmt.Sprintf(`
-	provider "elasticstack" {
-	  elasticsearch {}
-	  kibana {}
-	}
-
-	resource "elasticstack_kibana_action_connector" "test" {
-	  name         = "Updated %s"
-	  config       = jsonencode({
-		index             = ".kibana"
-		refresh             = false
-	  })
-	  connector_type_id = ".index"
-	}`,
-			name)
-	}
-
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		CheckDestroy:             checkResourceKibanaConnectorDestroy,
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
-				Config:   create(connectorName),
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"connector_name": config.StringVariable(connectorName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					testCommonAttributes(connectorName, ".index"),
 
@@ -259,8 +188,11 @@ func TestAccResourceKibanaConnectorIndex(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
-				Config:   update(connectorName),
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"connector_name": config.StringVariable(connectorName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					testCommonAttributes(fmt.Sprintf("Updated %s", connectorName), ".index"),
 
@@ -277,24 +209,6 @@ func TestAccResourceKibanaConnectorFromSDK(t *testing.T) {
 
 	connectorName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
-	create := func(name string) string {
-		return fmt.Sprintf(`
-	provider "elasticstack" {
-	  elasticsearch {}
-	  kibana {}
-	}
-
-	resource "elasticstack_kibana_action_connector" "test" {
-	  name         = "%s"
-	  config       = jsonencode({
-		index             = ".kibana"
-		refresh             = true
-	  })
-	  connector_type_id = ".index"
-	}`,
-			name)
-	}
-
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceKibanaConnectorDestroy,
@@ -308,7 +222,10 @@ func TestAccResourceKibanaConnectorFromSDK(t *testing.T) {
 					},
 				},
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
-				Config:   create(connectorName),
+				Config:   sdkIndexConnectorConfig,
+				ConfigVariables: config.Variables{
+					"connector_name": config.StringVariable(connectorName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					testCommonAttributes(connectorName, ".index"),
 
@@ -319,7 +236,10 @@ func TestAccResourceKibanaConnectorFromSDK(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
-				Config:                   create(connectorName),
+				ConfigDirectory:          config.TestNameDirectory(),
+				ConfigVariables: config.Variables{
+					"connector_name": config.StringVariable(connectorName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					testCommonAttributes(connectorName, ".index"),
 
@@ -336,23 +256,6 @@ func TestAccResourceKibanaConnectorEmptyConfigFromSDK(t *testing.T) {
 
 	connectorName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
-	create := func(name string) string {
-		return fmt.Sprintf(`
-	provider "elasticstack" {
-	  elasticsearch {}
-	  kibana {}
-	}
-
-	resource "elasticstack_kibana_action_connector" "test" {
-      name              = "%s"
-      connector_type_id = ".slack"
-      secrets = jsonencode({
-        webhookUrl = "https://example.com/webhook"
-      })
-    }`,
-			name)
-	}
-
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceKibanaConnectorDestroy,
@@ -366,7 +269,10 @@ func TestAccResourceKibanaConnectorEmptyConfigFromSDK(t *testing.T) {
 					},
 				},
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
-				Config:   create(connectorName),
+				Config:   sdkSlackConnectorConfig,
+				ConfigVariables: config.Variables{
+					"connector_name": config.StringVariable(connectorName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					testCommonAttributes(connectorName, ".slack"),
 
@@ -376,7 +282,10 @@ func TestAccResourceKibanaConnectorEmptyConfigFromSDK(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
-				Config:                   create(connectorName),
+				ConfigDirectory:          config.TestNameDirectory(),
+				ConfigVariables: config.Variables{
+					"connector_name": config.StringVariable(connectorName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					testCommonAttributes(connectorName, ".slack"),
 
