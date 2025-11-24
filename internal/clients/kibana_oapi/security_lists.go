@@ -88,3 +88,75 @@ func DeleteList(ctx context.Context, client *Client, spaceId string, params *kba
 		return reportUnknownError(resp.StatusCode(), resp.Body)
 	}
 }
+
+// GetListItem reads a security list item from the API by ID or list_id and value
+// Note: The generated Kibana API client does not support space_id for list items yet,
+// so this function operates in the default space only.
+func GetListItem(ctx context.Context, client *Client, params *kbapi.ReadListItemParams) (*kbapi.ReadListItemResponse, diag.Diagnostics) {
+	resp, err := client.API.ReadListItemWithResponse(ctx, params)
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+
+	switch resp.StatusCode() {
+	case http.StatusOK:
+		return resp, nil
+	case http.StatusNotFound:
+		return nil, nil
+	default:
+		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+	}
+}
+
+// CreateListItem creates a new security list item.
+// Note: The generated Kibana API client does not support space_id for list items yet,
+// so this function operates in the default space only.
+func CreateListItem(ctx context.Context, client *Client, body kbapi.CreateListItemJSONRequestBody) (*kbapi.CreateListItemResponse, diag.Diagnostics) {
+	resp, err := client.API.CreateListItemWithResponse(ctx, body)
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+
+	switch resp.StatusCode() {
+	case http.StatusOK:
+		return resp, nil
+	default:
+		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+	}
+}
+
+// UpdateListItem updates an existing security list item.
+// Note: The generated Kibana API client does not support space_id for list items yet,
+// so this function operates in the default space only.
+func UpdateListItem(ctx context.Context, client *Client, body kbapi.UpdateListItemJSONRequestBody) (*kbapi.UpdateListItemResponse, diag.Diagnostics) {
+	resp, err := client.API.UpdateListItemWithResponse(ctx, body)
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+
+	switch resp.StatusCode() {
+	case http.StatusOK:
+		return resp, nil
+	default:
+		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+	}
+}
+
+// DeleteListItem deletes an existing security list item.
+// Note: The generated Kibana API client does not support space_id for list items yet,
+// so this function operates in the default space only.
+func DeleteListItem(ctx context.Context, client *Client, params *kbapi.DeleteListItemParams) diag.Diagnostics {
+	resp, err := client.API.DeleteListItemWithResponse(ctx, params)
+	if err != nil {
+		return diagutil.FrameworkDiagFromError(err)
+	}
+
+	switch resp.StatusCode() {
+	case http.StatusOK:
+		return nil
+	case http.StatusNotFound:
+		return nil
+	default:
+		return reportUnknownError(resp.StatusCode(), resp.Body)
+	}
+}

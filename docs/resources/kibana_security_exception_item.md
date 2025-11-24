@@ -126,13 +126,13 @@ resource "elasticstack_kibana_security_exception_item" "complex_entry" {
 Required:
 
 - `field` (String) The field name. Required for all entry types.
-- `operator` (String) The operator to use. Valid values: `included`, `excluded`.
 - `type` (String) The type of entry. Valid values: `match`, `match_any`, `list`, `exists`, `nested`, `wildcard`.
 
 Optional:
 
 - `entries` (Attributes List) Nested entries (for `nested` type). Only `match`, `match_any`, and `exists` entry types are allowed as nested entries. (see [below for nested schema](#nestedatt--entries--entries))
 - `list` (Attributes) Value list reference (for `list` type). (see [below for nested schema](#nestedatt--entries--list))
+- `operator` (String) The operator to use. Valid values: `included`, `excluded`. Note: The operator field is not supported for nested entry types and will be ignored if specified.
 - `value` (String) The value to match (for `match` and `wildcard` types).
 - `values` (List of String) Array of values to match (for `match_any` type).
 

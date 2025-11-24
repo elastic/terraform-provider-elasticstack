@@ -12,6 +12,10 @@ variable "value_list_id" {
   description = "The value list ID"
   type        = string
 }
+variable "value_list_value" {
+  description = "The value list value"
+  type        = string
+}
 
 provider "elasticstack" {
   elasticsearch {}
@@ -25,6 +29,10 @@ resource "elasticstack_kibana_security_exception_list" "test" {
   type           = "detection"
   namespace_type = "single"
 }
+resource "elasticstack_kibana_security_list_item" "test-item" {
+  list_id = elasticstack_kibana_security_list.test.list_id
+  value   = var.value_list_value
+}
 
 # Create a value list to reference in the exception item
 resource "elasticstack_kibana_security_list" "test" {
@@ -32,7 +40,6 @@ resource "elasticstack_kibana_security_list" "test" {
   name        = "Test Value List"
   description = "Test value list for list entry type"
   type        = "ip"
-  # values      = ["192.168.1.1", "192.168.1.2", "10.0.0.1"]
 }
 
 resource "elasticstack_kibana_security_exception_item" "test" {

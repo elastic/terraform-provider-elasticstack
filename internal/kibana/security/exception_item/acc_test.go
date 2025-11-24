@@ -199,6 +199,7 @@ func TestAccResourceExceptionItemEntryType_List(t *testing.T) {
 	exceptionListID := fmt.Sprintf("test-exception-list-list-entry-%s", uuid.New().String()[:8])
 	itemID := fmt.Sprintf("test-exception-item-list-entry-%s", uuid.New().String()[:8])
 	valueListID := fmt.Sprintf("test-value-list-%s", uuid.New().String()[:8])
+	valueListValue := "192.168.1.1"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -211,6 +212,7 @@ func TestAccResourceExceptionItemEntryType_List(t *testing.T) {
 					"exception_list_id": config.StringVariable(exceptionListID),
 					"item_id":           config.StringVariable(itemID),
 					"value_list_id":     config.StringVariable(valueListID),
+					"value_list_value":  config.StringVariable(valueListValue),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "entries.0.type", "list"),
