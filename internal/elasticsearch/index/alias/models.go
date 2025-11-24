@@ -3,6 +3,7 @@ package alias
 import (
 	"context"
 	"encoding/json"
+	"reflect"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -36,6 +37,16 @@ type AliasIndexConfig struct {
 	IsHidden      bool
 	Routing       string
 	SearchRouting string
+}
+
+func (a AliasIndexConfig) Equals(b AliasIndexConfig) bool {
+	return a.Name == b.Name &&
+		a.IsWriteIndex == b.IsWriteIndex &&
+		a.IndexRouting == b.IndexRouting &&
+		a.IsHidden == b.IsHidden &&
+		a.Routing == b.Routing &&
+		a.SearchRouting == b.SearchRouting &&
+		reflect.DeepEqual(a.Filter, b.Filter)
 }
 
 func (model *tfModel) populateFromAPI(ctx context.Context, aliasName string, indices map[string]models.IndexAlias) diag.Diagnostics {

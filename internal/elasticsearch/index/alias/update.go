@@ -64,6 +64,12 @@ func (r *aliasResource) Update(ctx context.Context, req resource.UpdateRequest, 
 
 	// Add or update indices in the plan
 	for _, config := range plannedConfigs {
+		currentAlias, ok := currentIndexMap[config.Name]
+		if ok && currentAlias.Equals(config) {
+			// No change for this index
+			continue
+		}
+
 		action := elasticsearch.AliasAction{
 			Type:          "add",
 			Index:         config.Name,
