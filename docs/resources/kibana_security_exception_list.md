@@ -59,6 +59,7 @@ resource "elasticstack_kibana_security_exception_list" "endpoint" {
 - `meta` (String) Placeholder for metadata about the list container as JSON string.
 - `namespace_type` (String) Determines whether the exception list is available in all Kibana spaces or just the space in which it is created. Can be `single` (default) or `agnostic`.
 - `os_types` (List of String) Array of OS types for which the exceptions apply. Valid values: `linux`, `macos`, `windows`.
+- `space_id` (String) An identifier for the space. If space_id is not provided, the default space is used.
 - `tags` (List of String) String array containing words and phrases to help categorize exception containers.
 
 ### Read-Only

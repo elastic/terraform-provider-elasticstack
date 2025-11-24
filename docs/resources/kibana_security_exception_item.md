@@ -36,14 +36,14 @@ resource "elasticstack_kibana_security_exception_item" "example" {
   type           = "simple"
   namespace_type = "single"
 
-  entries = jsonencode([
+  entries = [
     {
+      type     = "match"
       field    = "process.name"
       operator = "included"
-      type     = "match"
       value    = "trusted-process"
     }
-  ])
+  ]
 
   tags = ["trusted", "whitelisted"]
 }
@@ -69,20 +69,20 @@ resource "elasticstack_kibana_security_exception_item" "complex_entry" {
   namespace_type = "single"
 
   # Multiple entries with different operators
-  entries = jsonencode([
+  entries = [
     {
+      type     = "match"
       field    = "host.name"
       operator = "included"
-      type     = "match"
       value    = "trusted-host"
     },
     {
+      type     = "match_any"
       field    = "user.name"
       operator = "excluded"
-      type     = "match_any"
-      value    = ["admin", "root"]
+      values   = ["admin", "root"]
     }
-  ])
+  ]
 
   os_types = ["linux"]
   tags     = ["complex", "multi-condition"]
@@ -95,7 +95,7 @@ resource "elasticstack_kibana_security_exception_item" "complex_entry" {
 ### Required
 
 - `description` (String) Describes the exception item.
-- `entries` (String) The exception item entries as JSON string. This defines the conditions under which the exception applies.
+- `entries` (Attributes List) The exception item entries. This defines the conditions under which the exception applies. (see [below for nested schema](#nestedatt--entries))
 - `list_id` (String) The exception list's identifier that this item belongs to.
 - `name` (String) The name of the exception item.
 - `type` (String) The type of exception item. Must be `simple`.
@@ -108,6 +108,7 @@ resource "elasticstack_kibana_security_exception_item" "complex_entry" {
 - `meta` (String) Placeholder for metadata about the exception item as JSON string.
 - `namespace_type` (String) Determines whether the exception item is available in all Kibana spaces or just the space in which it is created. Can be `single` (default) or `agnostic`.
 - `os_types` (List of String) Array of OS types for which the exceptions apply. Valid values: `linux`, `macos`, `windows`.
+- `space_id` (String) An identifier for the space. If space_id is not provided, the default space is used.
 - `tags` (List of String) String array containing words and phrases to help categorize exception items.
 
 ### Read-Only
@@ -118,6 +119,47 @@ resource "elasticstack_kibana_security_exception_item" "complex_entry" {
 - `tie_breaker_id` (String) Field used in search to ensure all items are sorted and returned correctly.
 - `updated_at` (String) The timestamp of when the exception item was last updated.
 - `updated_by` (String) The user who last updated the exception item.
+
+<a id="nestedatt--entries"></a>
+### Nested Schema for `entries`
+
+Required:
+
+- `field` (String) The field name. Required for all entry types.
+- `operator` (String) The operator to use. Valid values: `included`, `excluded`.
+- `type` (String) The type of entry. Valid values: `match`, `match_any`, `list`, `exists`, `nested`, `wildcard`.
+
+Optional:
+
+- `entries` (Attributes List) Nested entries (for `nested` type). Only `match`, `match_any`, and `exists` entry types are allowed as nested entries. (see [below for nested schema](#nestedatt--entries--entries))
+- `list` (Attributes) Value list reference (for `list` type). (see [below for nested schema](#nestedatt--entries--list))
+- `value` (String) The value to match (for `match` and `wildcard` types).
+- `values` (List of String) Array of values to match (for `match_any` type).
+
+<a id="nestedatt--entries--entries"></a>
+### Nested Schema for `entries.entries`
+
+Required:
+
+- `field` (String) The field name.
+- `operator` (String) The operator to use. Valid values: `included`, `excluded`.
+- `type` (String) The type of nested entry. Valid values: `match`, `match_any`, `exists`.
+
+Optional:
+
+- `value` (String) The value to match (for `match` type).
+- `values` (List of String) Array of values to match (for `match_any` type).
+
+
+<a id="nestedatt--entries--list"></a>
+### Nested Schema for `entries.list`
+
+Required:
+
+- `id` (String) The value list ID.
+- `type` (String) The value list type (e.g., `keyword`, `ip`, `ip_range`).
+
+
 
 <a id="nestedatt--comments"></a>
 ### Nested Schema for `comments`
