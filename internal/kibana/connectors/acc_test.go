@@ -13,6 +13,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -391,10 +392,6 @@ func TestAccResourceKibanaConnectorAI(t *testing.T) {
 		name                string
 		connectorTypeID     string
 		minSupportedVersion *version.Version
-		createConfig        string
-		createSecrets       string
-		updateConfig        string
-		updateSecrets       string
 		createChecks        []resource.TestCheckFunc
 		updateChecks        []resource.TestCheckFunc
 	}{
@@ -402,22 +399,6 @@ func TestAccResourceKibanaConnectorAI(t *testing.T) {
 			name:                "bedrock",
 			connectorTypeID:     ".bedrock",
 			minSupportedVersion: version.Must(version.NewSemver("8.16.2")),
-			createConfig: `{
-		apiUrl       = "https://bedrock-runtime.us-east-1.amazonaws.com"
-		defaultModel = "anthropic.claude-v2"
-	  }`,
-			createSecrets: `{
-		accessKey = "test-access-key"
-		secret    = "test-secret-key"
-	  }`,
-			updateConfig: `{
-		apiUrl       = "https://bedrock-runtime.us-west-2.amazonaws.com"
-		defaultModel = "anthropic.claude-3-5-sonnet-20240620-v1:0"
-	  }`,
-			updateSecrets: `{
-		accessKey = "updated-access-key"
-		secret    = "updated-secret-key"
-	  }`,
 			createChecks: []resource.TestCheckFunc{
 				resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"apiUrl\":\"https://bedrock-runtime\.us-east-1\.amazonaws\.com\"`)),
 				resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"defaultModel\":\"anthropic\.claude-v2\"`)),
@@ -435,22 +416,6 @@ func TestAccResourceKibanaConnectorAI(t *testing.T) {
 			name:                "gen-ai",
 			connectorTypeID:     ".gen-ai",
 			minSupportedVersion: version.Must(version.NewSemver("8.10.3")),
-			createConfig: `{
-		apiProvider  = "OpenAI"
-		apiUrl       = "https://api.openai.com/v1"
-		defaultModel = "gpt-4"
-	  }`,
-			createSecrets: `{
-		apiKey = "test-api-key"
-	  }`,
-			updateConfig: `{
-		apiProvider  = "OpenAI"
-		apiUrl       = "https://api.openai.com/v1"
-		defaultModel = "gpt-4o"
-	  }`,
-			updateSecrets: `{
-		apiKey = "updated-api-key"
-	  }`,
 			createChecks: []resource.TestCheckFunc{
 				resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"apiProvider\":\"OpenAI\"`)),
 				resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"apiUrl\":\"https://api\.openai\.com/v1\"`)),
@@ -470,53 +435,27 @@ func TestAccResourceKibanaConnectorAI(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			connectorName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
-			create := func(name string) string {
-				return fmt.Sprintf(`
-	provider "elasticstack" {
-	  elasticsearch {}
-	  kibana {}
-	}
-
-	resource "elasticstack_kibana_action_connector" "test" {
-	  name         = "%s"
-	  config       = jsonencode(%s)
-	  secrets = jsonencode(%s)
-	  connector_type_id = "%s"
-	}`,
-					name, tc.createConfig, tc.createSecrets, tc.connectorTypeID)
-			}
-
-			update := func(name string) string {
-				return fmt.Sprintf(`
-	provider "elasticstack" {
-	  elasticsearch {}
-	  kibana {}
-	}
-
-	resource "elasticstack_kibana_action_connector" "test" {
-	  name         = "Updated %s"
-	  config = jsonencode(%s)
-	  secrets = jsonencode(%s)
-	  connector_type_id = "%s"
-	}`,
-					name, tc.updateConfig, tc.updateSecrets, tc.connectorTypeID)
-			}
-
 			resource.Test(t, resource.TestCase{
 				PreCheck:                 func() { acctest.PreCheck(t) },
 				CheckDestroy:             checkResourceKibanaConnectorDestroy,
 				ProtoV6ProviderFactories: acctest.Providers,
 				Steps: []resource.TestStep{
 					{
-						SkipFunc: versionutils.CheckIfVersionIsUnsupported(tc.minSupportedVersion),
-						Config:   create(connectorName),
+						SkipFunc:        versionutils.CheckIfVersionIsUnsupported(tc.minSupportedVersion),
+						ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+						ConfigVariables: config.Variables{
+							"connector_name": config.StringVariable(connectorName),
+						},
 						Check: resource.ComposeTestCheckFunc(
 							append([]resource.TestCheckFunc{testCommonAttributes(connectorName, tc.connectorTypeID)}, tc.createChecks...)...,
 						),
 					},
 					{
-						SkipFunc: versionutils.CheckIfVersionIsUnsupported(tc.minSupportedVersion),
-						Config:   update(connectorName),
+						SkipFunc:        versionutils.CheckIfVersionIsUnsupported(tc.minSupportedVersion),
+						ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
+						ConfigVariables: config.Variables{
+							"connector_name": config.StringVariable(connectorName),
+						},
 						Check: resource.ComposeTestCheckFunc(
 							append([]resource.TestCheckFunc{testCommonAttributes(fmt.Sprintf("Updated %s", connectorName), tc.connectorTypeID)}, tc.updateChecks...)...,
 						),
