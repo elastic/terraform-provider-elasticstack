@@ -4,8 +4,9 @@ import (
 	"context"
 	_ "embed"
 
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -98,10 +99,133 @@ func (r *ExceptionItemResource) Schema(_ context.Context, _ resource.SchemaReque
 				MarkdownDescription: "Placeholder for metadata about the exception item as JSON string.",
 				Optional:            true,
 			},
-			"entries": schema.StringAttribute{
-				MarkdownDescription: "The exception item entries as JSON string. This defines the conditions under which the exception applies.",
+			"entries": schema.ListNestedAttribute{
+				MarkdownDescription: "The exception item entries. This defines the conditions under which the exception applies.",
 				Required:            true,
-				CustomType:          jsontypes.NormalizedType{},
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"type": schema.StringAttribute{
+							MarkdownDescription: "The type of entry. Valid values: `match`, `match_any`, `list`, `exists`, `nested`, `wildcard`.",
+							Required:            true,
+							Validators: []validator.String{
+								stringvalidator.OneOf("match", "match_any", "list", "exists", "nested", "wildcard"),
+							},
+						},
+						"field": schema.StringAttribute{
+							MarkdownDescription: "The field name. Required for all entry types.",
+							Required:            true,
+						},
+						"operator": schema.StringAttribute{
+							MarkdownDescription: "The operator to use. Valid values: `included`, `excluded`. Note: The operator field is not supported for nested entry types and will be ignored if specified.",
+							Optional:            true,
+							Validators: []validator.String{
+								validators.ForbiddenIfDependentPathOneOf(
+									path.Root("type"),
+									[]string{"nested"},
+								),
+								validators.RequiredIfDependentPathOneOf(
+									path.Root("type"),
+									[]string{"match", "match_any", "list", "exists", "wildcard"},
+								),
+								stringvalidator.OneOf("included", "excluded"),
+							},
+						},
+						"value": schema.StringAttribute{
+							MarkdownDescription: "The value to match (for `match` and `wildcard` types).",
+							Optional:            true,
+							Validators: []validator.String{
+								validators.RequiredIfDependentPathOneOf(
+									path.Root("type"),
+									[]string{"match", "wildcard"},
+								),
+							},
+						},
+						"values": schema.ListAttribute{
+							ElementType:         types.StringType,
+							MarkdownDescription: "Array of values to match (for `match_any` type).",
+							Optional:            true,
+							Validators: []validator.List{
+								validators.RequiredIfDependentPathOneOf(
+									path.Root("type"),
+									[]string{"match_any"},
+								),
+							},
+						},
+						"list": schema.SingleNestedAttribute{
+							MarkdownDescription: "Value list reference (for `list` type).",
+							Optional:            true,
+							Validators: []validator.Object{
+								validators.RequiredIfDependentPathOneOf(
+									path.Root("type"),
+									[]string{"list"},
+								),
+							},
+							Attributes: map[string]schema.Attribute{
+								"id": schema.StringAttribute{
+									MarkdownDescription: "The value list ID.",
+									Required:            true,
+								},
+								"type": schema.StringAttribute{
+									MarkdownDescription: "The value list type (e.g., `keyword`, `ip`, `ip_range`).",
+									Required:            true,
+								},
+							},
+						},
+						"entries": schema.ListNestedAttribute{
+							MarkdownDescription: "Nested entries (for `nested` type). Only `match`, `match_any`, and `exists` entry types are allowed as nested entries.",
+							Optional:            true,
+							Validators: []validator.List{
+								validators.RequiredIfDependentPathOneOf(
+									path.Root("type"),
+									[]string{"nested"},
+								),
+							},
+							NestedObject: schema.NestedAttributeObject{
+								Attributes: map[string]schema.Attribute{
+									"type": schema.StringAttribute{
+										MarkdownDescription: "The type of nested entry. Valid values: `match`, `match_any`, `exists`.",
+										Required:            true,
+										Validators: []validator.String{
+											stringvalidator.OneOf("match", "match_any", "exists"),
+										},
+									},
+									"field": schema.StringAttribute{
+										MarkdownDescription: "The field name.",
+										Required:            true,
+									},
+									"operator": schema.StringAttribute{
+										MarkdownDescription: "The operator to use. Valid values: `included`, `excluded`.",
+										Required:            true,
+										Validators: []validator.String{
+											stringvalidator.OneOf("included", "excluded"),
+										},
+									},
+									"value": schema.StringAttribute{
+										MarkdownDescription: "The value to match (for `match` type).",
+										Optional:            true,
+										Validators: []validator.String{
+											validators.RequiredIfDependentPathOneOf(
+												path.Root("type"),
+												[]string{"match"},
+											),
+										},
+									},
+									"values": schema.ListAttribute{
+										ElementType:         types.StringType,
+										MarkdownDescription: "Array of values to match (for `match_any` type).",
+										Optional:            true,
+										Validators: []validator.List{
+											validators.RequiredIfDependentPathOneOf(
+												path.Root("type"),
+												[]string{"match_any"},
+											),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
 			},
 			"comments": schema.ListNestedAttribute{
 				MarkdownDescription: "Array of comments about the exception item.",

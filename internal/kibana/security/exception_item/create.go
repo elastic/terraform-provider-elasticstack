@@ -8,7 +8,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -30,10 +29,10 @@ func (r *ExceptionItemResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
-	// Parse entries JSON
-	var entries kbapi.SecurityExceptionsAPIExceptionListItemEntryArray
-	if err := json.Unmarshal([]byte(plan.Entries.ValueString()), &entries); err != nil {
-		resp.Diagnostics.AddError("Failed to parse entries JSON", err.Error())
+	// Convert entries from Terraform model to API model
+	entries, diags := convertEntriesToAPI(ctx, plan.Entries)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
@@ -229,13 +228,10 @@ func (r *ExceptionItemResource) updateStateFromAPIResponse(ctx context.Context, 
 		model.Meta = types.StringNull()
 	}
 
-	// Set entries (convert back to JSON and normalize)
-	entriesJSON, err := json.Marshal(apiResp.Entries)
-	if err != nil {
-		diags.AddError("Failed to serialize entries", err.Error())
-		return diags
-	}
-	model.Entries = jsontypes.NewNormalizedValue(string(entriesJSON))
+	// Set entries (convert from API model to Terraform model)
+	entriesList, d := convertEntriesFromAPI(ctx, apiResp.Entries)
+	diags.Append(d...)
+	model.Entries = entriesList
 
 	// Set optional comments
 	if len(apiResp.Comments) > 0 {

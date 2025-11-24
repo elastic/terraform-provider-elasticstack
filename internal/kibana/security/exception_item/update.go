@@ -26,10 +26,10 @@ func (r *ExceptionItemResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
-	// Parse entries JSON
-	var entries kbapi.SecurityExceptionsAPIExceptionListItemEntryArray
-	if err := json.Unmarshal([]byte(plan.Entries.ValueString()), &entries); err != nil {
-		resp.Diagnostics.AddError("Failed to parse entries JSON", err.Error())
+	// Convert entries from Terraform model to API model
+	entries, diags := convertEntriesToAPI(ctx, plan.Entries)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 

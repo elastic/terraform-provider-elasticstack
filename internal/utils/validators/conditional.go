@@ -93,6 +93,10 @@ func (v condition) ValidateInt64(ctx context.Context, request validator.Int64Req
 	response.Diagnostics.Append(v.validate(ctx, request.Config, request.ConfigValue, request.Path)...)
 }
 
+func (v condition) ValidateObject(ctx context.Context, request validator.ObjectRequest, response *validator.ObjectResponse) {
+	response.Diagnostics.Append(v.validate(ctx, request.Config, request.ConfigValue, request.Path)...)
+}
+
 // DependantPathOneOf creates a condition that validates a dependent path's value is one of the allowed values.
 // It returns a condition that checks if the value at dependentPath matches any of the provided allowedValues.
 // If the dependent field does not have an allowed value, it generates a diagnostic error indicating
