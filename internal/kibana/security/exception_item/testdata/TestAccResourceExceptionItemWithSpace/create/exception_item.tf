@@ -33,11 +33,6 @@ variable "namespace_type" {
   type        = string
 }
 
-variable "entries" {
-  description = "The entries JSON"
-  type        = string
-}
-
 variable "tags" {
   description = "Tags for the exception item"
   type        = list(string)
@@ -66,6 +61,13 @@ resource "elasticstack_kibana_security_exception_item" "test" {
   description    = var.description
   type           = var.type
   namespace_type = var.namespace_type
-  entries        = var.entries
-  tags           = var.tags
+  entries = [
+    {
+      type     = "match"
+      field    = "process.name"
+      operator = "included"
+      value    = "test-process-space"
+    }
+  ]
+  tags = var.tags
 }

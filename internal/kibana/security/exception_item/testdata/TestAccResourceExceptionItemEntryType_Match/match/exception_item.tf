@@ -8,31 +8,6 @@ variable "item_id" {
   type        = string
 }
 
-variable "name" {
-  description = "The exception item name"
-  type        = string
-}
-
-variable "description" {
-  description = "The exception item description"
-  type        = string
-}
-
-variable "type" {
-  description = "The exception item type"
-  type        = string
-}
-
-variable "namespace_type" {
-  description = "The namespace type"
-  type        = string
-}
-
-variable "tags" {
-  description = "Tags for the exception item"
-  type        = list(string)
-}
-
 provider "elasticstack" {
   elasticsearch {}
   kibana {}
@@ -40,8 +15,8 @@ provider "elasticstack" {
 
 resource "elasticstack_kibana_security_exception_list" "test" {
   list_id        = var.list_id
-  name           = "Test Exception List for Item"
-  description    = "Test exception list"
+  name           = "Test Exception List for Match Entry"
+  description    = "Test exception list for match entry type"
   type           = "detection"
   namespace_type = "single"
 }
@@ -49,10 +24,10 @@ resource "elasticstack_kibana_security_exception_list" "test" {
 resource "elasticstack_kibana_security_exception_item" "test" {
   list_id        = elasticstack_kibana_security_exception_list.test.list_id
   item_id        = var.item_id
-  name           = var.name
-  description    = var.description
-  type           = var.type
-  namespace_type = var.namespace_type
+  name           = "Test Exception Item - Match Entry"
+  description    = "Test exception item with match entry type"
+  type           = "simple"
+  namespace_type = "single"
   entries = [
     {
       type     = "match"
@@ -61,5 +36,5 @@ resource "elasticstack_kibana_security_exception_item" "test" {
       value    = "test-process"
     }
   ]
-  tags = var.tags
+  tags = ["test", "match"]
 }
