@@ -22,11 +22,11 @@ func TestAccResourceAlias(t *testing.T) {
 		PreCheck: func() {
 			acctest.PreCheck(t)
 		},
-		CheckDestroy:             checkResourceAliasDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		CheckDestroy: checkResourceAliasDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceAliasCreateDirect,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: map[string]config.Variable{
 					"alias_name":  config.StringVariable(aliasName),
 					"index_name":  config.StringVariable(indexName),
@@ -40,7 +40,8 @@ func TestAccResourceAlias(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccResourceAliasUpdateDirect,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: map[string]config.Variable{
 					"alias_name":  config.StringVariable(aliasName),
 					"index_name":  config.StringVariable(indexName),
@@ -53,7 +54,8 @@ func TestAccResourceAlias(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccResourceAliasWithFilterDirect,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_filter"),
 				ConfigVariables: map[string]config.Variable{
 					"alias_name":  config.StringVariable(aliasName),
 					"index_name":  config.StringVariable(indexName),
@@ -82,12 +84,12 @@ func TestAccResourceAliasWriteIndex(t *testing.T) {
 		PreCheck: func() {
 			acctest.PreCheck(t)
 		},
-		CheckDestroy:             checkResourceAliasDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		CheckDestroy: checkResourceAliasDestroy,
 		Steps: []resource.TestStep{
 			// Case 1: Single index with is_write_index=true
 			{
-				Config: testAccResourceAliasWriteIndexSingleDirect,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("single"),
 				ConfigVariables: map[string]config.Variable{
 					"alias_name":  config.StringVariable(aliasName),
 					"index_name1": config.StringVariable(indexName1),
@@ -102,7 +104,8 @@ func TestAccResourceAliasWriteIndex(t *testing.T) {
 			},
 			// Case 2: Add new index with is_write_index=true, existing becomes read index
 			{
-				Config: testAccResourceAliasWriteIndexSwitchDirect,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("switch"),
 				ConfigVariables: map[string]config.Variable{
 					"alias_name":  config.StringVariable(aliasName),
 					"index_name1": config.StringVariable(indexName1),
@@ -117,7 +120,8 @@ func TestAccResourceAliasWriteIndex(t *testing.T) {
 			},
 			// Case 3: Add third index as write index
 			{
-				Config: testAccResourceAliasWriteIndexTripleDirect,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("triple"),
 				ConfigVariables: map[string]config.Variable{
 					"alias_name":  config.StringVariable(aliasName),
 					"index_name1": config.StringVariable(indexName1),
@@ -132,7 +136,8 @@ func TestAccResourceAliasWriteIndex(t *testing.T) {
 			},
 			// Case 4: Remove initial index, keep two indices with one as write index
 			{
-				Config: testAccResourceAliasWriteIndexRemoveFirstDirect,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("remove_first"),
 				ConfigVariables: map[string]config.Variable{
 					"alias_name":  config.StringVariable(aliasName),
 					"index_name1": config.StringVariable(indexName1),
@@ -155,12 +160,12 @@ func TestAccResourceAliasDataStream(t *testing.T) {
 	dsName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlpha)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceAliasDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceAliasDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceAliasDataStreamCreate,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: map[string]config.Variable{
 					"alias_name": config.StringVariable(aliasName),
 					"ds_name":    config.StringVariable(dsName),
@@ -174,43 +179,6 @@ func TestAccResourceAliasDataStream(t *testing.T) {
 		},
 	})
 }
-
-const testAccResourceAliasDataStreamCreate = `
-variable "alias_name" {
-  description = "The alias name"
-  type        = string
-}
-
-variable "ds_name" {
-  description = "The data stream name"
-  type        = string
-}
-
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_index_template" "test_ds_template" {
-  name           = var.ds_name
-  index_patterns = [var.ds_name]
-  data_stream {}
-}
-
-resource "elasticstack_elasticsearch_data_stream" "test_ds" {
-  name = var.ds_name
-  depends_on = [
-    elasticstack_elasticsearch_index_template.test_ds_template
-  ]
-}
-
-resource "elasticstack_elasticsearch_index_alias" "test_alias" {
-  name = var.alias_name
-
-  write_index = {
-    name = elasticstack_elasticsearch_data_stream.test_ds.name
-  }
-}
-`
 
 func checkResourceAliasDestroy(s *terraform.State) error {
 	client, err := clients.NewAcceptanceTestingClient()
@@ -248,374 +216,3 @@ func checkResourceAliasDestroy(s *terraform.State) error {
 	}
 	return nil
 }
-
-const testAccResourceAliasCreateDirect = `
-variable "alias_name" {
-  description = "The alias name"
-  type        = string
-}
-
-variable "index_name" {
-  description = "The index name"
-  type        = string
-}
-
-variable "index_name2" {
-  description = "The second index name"
-  type        = string
-}
-
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_index" "index1" {
-  name = var.index_name
-  deletion_protection = false
-  lifecycle {
-    ignore_changes = [settings_raw]
-  }
-}
-
-resource "elasticstack_elasticsearch_index_alias" "test_alias" {
-  name = var.alias_name
-
-  write_index = {
-    name = elasticstack_elasticsearch_index.index1.name
-  }
-}
-`
-
-const testAccResourceAliasUpdateDirect = `
-variable "alias_name" {
-  description = "The alias name"
-  type        = string
-}
-
-variable "index_name" {
-  description = "The index name"
-  type        = string
-}
-
-variable "index_name2" {
-  description = "The second index name"
-  type        = string
-}
-
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_index" "index1" {
-  name = var.index_name
-  deletion_protection = false
-  lifecycle {
-    ignore_changes = [settings_raw]
-  }
-}
-
-resource "elasticstack_elasticsearch_index" "index2" {
-  name = var.index_name2
-  deletion_protection = false
-  lifecycle {
-    ignore_changes = [settings_raw]
-  }
-}
-
-resource "elasticstack_elasticsearch_index_alias" "test_alias" {
-  name = var.alias_name
-
-  write_index = {
-    name = elasticstack_elasticsearch_index.index2.name
-  }
-
-  read_indices = [{
-    name = elasticstack_elasticsearch_index.index1.name
-  }]
-}
-`
-
-const testAccResourceAliasWithFilterDirect = `
-variable "alias_name" {
-  description = "The alias name"
-  type        = string
-}
-
-variable "index_name" {
-  description = "The index name"
-  type        = string
-}
-
-variable "index_name2" {
-  description = "The second index name"
-  type        = string
-}
-
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_index" "index1" {
-  name = var.index_name
-  deletion_protection = false
-  lifecycle {
-    ignore_changes = [settings_raw]
-  }
-}
-
-resource "elasticstack_elasticsearch_index" "index2" {
-  name = var.index_name2
-  deletion_protection = false
-  lifecycle {
-    ignore_changes = [settings_raw]
-  }
-}
-
-resource "elasticstack_elasticsearch_index_alias" "test_alias" {
-  name = var.alias_name
-
-  write_index = {
-    name    = elasticstack_elasticsearch_index.index1.name
-    index_routing = "write-routing"
-    filter = jsonencode({
-      term = {
-        status = "published"
-      }
-    })
-  }
-
-  read_indices = [{
-    name = elasticstack_elasticsearch_index.index2.name
-    filter = jsonencode({
-      term = {
-        status = "draft"
-      }
-    })
-  }]
-}
-`
-
-const testAccResourceAliasWriteIndexSingleDirect = `
-variable "alias_name" {
-  description = "The alias name"
-  type        = string
-}
-
-variable "index_name1" {
-  description = "The first index name"
-  type        = string
-}
-
-variable "index_name2" {
-  description = "The second index name"
-  type        = string
-}
-
-variable "index_name3" {
-  description = "The third index name"
-  type        = string
-}
-
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_index" "index1" {
-  name = var.index_name1
-  deletion_protection = false
-  lifecycle {
-    ignore_changes = [settings_raw]
-  }
-}
-
-resource "elasticstack_elasticsearch_index_alias" "test_alias" {
-  name = var.alias_name
-
-  write_index = {
-    name = elasticstack_elasticsearch_index.index1.name
-  }
-}
-`
-
-const testAccResourceAliasWriteIndexSwitchDirect = `
-variable "alias_name" {
-  description = "The alias name"
-  type        = string
-}
-
-variable "index_name1" {
-  description = "The first index name"
-  type        = string
-}
-
-variable "index_name2" {
-  description = "The second index name"
-  type        = string
-}
-
-variable "index_name3" {
-  description = "The third index name"
-  type        = string
-}
-
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_index" "index1" {
-  name = var.index_name1
-  deletion_protection = false
-  lifecycle {
-    ignore_changes = [settings_raw]
-  }
-}
-
-resource "elasticstack_elasticsearch_index" "index2" {
-  name = var.index_name2
-  deletion_protection = false
-  lifecycle {
-    ignore_changes = [settings_raw]
-  }
-}
-
-resource "elasticstack_elasticsearch_index_alias" "test_alias" {
-  name = var.alias_name
-
-  write_index = {
-    name = elasticstack_elasticsearch_index.index2.name
-  }
-
-  read_indices = [{
-    name = elasticstack_elasticsearch_index.index1.name
-  }]
-}
-`
-
-const testAccResourceAliasWriteIndexTripleDirect = `
-variable "alias_name" {
-  description = "The alias name"
-  type        = string
-}
-
-variable "index_name1" {
-  description = "The first index name"
-  type        = string
-}
-
-variable "index_name2" {
-  description = "The second index name"
-  type        = string
-}
-
-variable "index_name3" {
-  description = "The third index name"
-  type        = string
-}
-
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_index" "index1" {
-  name = var.index_name1
-  deletion_protection = false
-  lifecycle {
-    ignore_changes = [settings_raw]
-  }
-}
-
-resource "elasticstack_elasticsearch_index" "index2" {
-  name = var.index_name2
-  deletion_protection = false
-  lifecycle {
-    ignore_changes = [settings_raw]
-  }
-}
-
-resource "elasticstack_elasticsearch_index" "index3" {
-  name = var.index_name3
-  deletion_protection = false
-  lifecycle {
-    ignore_changes = [settings_raw]
-  }
-}
-
-resource "elasticstack_elasticsearch_index_alias" "test_alias" {
-  name = var.alias_name
-
-  write_index = {
-    name = elasticstack_elasticsearch_index.index3.name
-  }
-
-  read_indices = [
-    {
-      name = elasticstack_elasticsearch_index.index1.name
-    },
-    {
-      name = elasticstack_elasticsearch_index.index2.name
-    }
-  ]
-}
-`
-
-const testAccResourceAliasWriteIndexRemoveFirstDirect = `
-variable "alias_name" {
-  description = "The alias name"
-  type        = string
-}
-
-variable "index_name1" {
-  description = "The first index name"
-  type        = string
-}
-
-variable "index_name2" {
-  description = "The second index name"
-  type        = string
-}
-
-variable "index_name3" {
-  description = "The third index name"
-  type        = string
-}
-
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_index" "index1" {
-  name = var.index_name1
-  deletion_protection = false
-  lifecycle {
-    ignore_changes = [settings_raw]
-  }
-}
-
-resource "elasticstack_elasticsearch_index" "index2" {
-  name = var.index_name2
-  deletion_protection = false
-  lifecycle {
-    ignore_changes = [settings_raw]
-  }
-}
-
-resource "elasticstack_elasticsearch_index" "index3" {
-  name = var.index_name3
-  deletion_protection = false
-  lifecycle {
-    ignore_changes = [settings_raw]
-  }
-}
-
-resource "elasticstack_elasticsearch_index_alias" "test_alias" {
-  name = var.alias_name
-
-  write_index = {
-    name = elasticstack_elasticsearch_index.index3.name
-  }
-
-  read_indices = [{
-    name = elasticstack_elasticsearch_index.index2.name
-  }]
-}
-`
