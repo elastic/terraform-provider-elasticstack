@@ -30,8 +30,8 @@ resource "elasticstack_kibana_security_exception_item" "test" {
   namespace_type = "single"
   entries = [
     {
-      type     = "nested"
-      field    = "parent.field"
+      type  = "nested"
+      field = "parent.field"
       entries = [
         {
           type     = "match"

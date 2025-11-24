@@ -27,12 +27,12 @@ resource "elasticstack_kibana_security_exception_list" "test" {
 }
 
 # Create a value list to reference in the exception item
-resource "elasticstack_kibana_security_value_list" "test" {
+resource "elasticstack_kibana_security_list" "test" {
   list_id     = var.value_list_id
   name        = "Test Value List"
   description = "Test value list for list entry type"
   type        = "ip"
-  values      = ["192.168.1.1", "192.168.1.2", "10.0.0.1"]
+  # values      = ["192.168.1.1", "192.168.1.2", "10.0.0.1"]
 }
 
 resource "elasticstack_kibana_security_exception_item" "test" {
@@ -48,7 +48,7 @@ resource "elasticstack_kibana_security_exception_item" "test" {
       field    = "source.ip"
       operator = "included"
       list = {
-        id   = elasticstack_kibana_security_value_list.test.list_id
+        id   = elasticstack_kibana_security_list.test.list_id
         type = "ip"
       }
     }

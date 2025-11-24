@@ -15,20 +15,20 @@ resource "elasticstack_kibana_security_exception_item" "complex_entry" {
   namespace_type = "single"
 
   # Multiple entries with different operators
-  entries = jsonencode([
+  entries = [
     {
+      type     = "match"
       field    = "host.name"
       operator = "included"
-      type     = "match"
       value    = "trusted-host"
     },
     {
+      type     = "match_any"
       field    = "user.name"
       operator = "excluded"
-      type     = "match_any"
-      value    = ["admin", "root"]
+      values   = ["admin", "root"]
     }
-  ])
+  ]
 
   os_types = ["linux"]
   tags     = ["complex", "multi-condition"]

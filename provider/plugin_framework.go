@@ -32,6 +32,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/maintenance_window"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/security/exception_item"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/security/exception_list"
+	securitylist "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security/security_list"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_detection_rule"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/spaces"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics/monitor"
@@ -132,6 +133,7 @@ func (p *Provider) Resources(ctx context.Context) []func() resource.Resource {
 		security_detection_rule.NewSecurityDetectionRuleResource,
 		exception_list.NewResource,
 		exception_item.NewResource,
+		securitylist.NewResource,
 		job_state.NewMLJobStateResource,
 		datafeed_state.NewMLDatafeedStateResource,
 	}

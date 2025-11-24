@@ -195,34 +195,34 @@ func TestAccResourceExceptionItemEntryType_MatchAny(t *testing.T) {
 	})
 }
 
-// func TestAccResourceExceptionItemEntryType_List(t *testing.T) {
-// 	exceptionListID := fmt.Sprintf("test-exception-list-list-entry-%s", uuid.New().String()[:8])
-// 	itemID := fmt.Sprintf("test-exception-item-list-entry-%s", uuid.New().String()[:8])
-// 	valueListID := fmt.Sprintf("test-value-list-%s", uuid.New().String()[:8])
+func TestAccResourceExceptionItemEntryType_List(t *testing.T) {
+	exceptionListID := fmt.Sprintf("test-exception-list-list-entry-%s", uuid.New().String()[:8])
+	itemID := fmt.Sprintf("test-exception-item-list-entry-%s", uuid.New().String()[:8])
+	valueListID := fmt.Sprintf("test-value-list-%s", uuid.New().String()[:8])
 
-// 	resource.Test(t, resource.TestCase{
-// 		PreCheck: func() { acctest.PreCheck(t) },
-// 		Steps: []resource.TestStep{
-// 			{
-// 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
-// 				ProtoV6ProviderFactories: acctest.Providers,
-// 				ConfigDirectory:          acctest.NamedTestCaseDirectory("list"),
-// 				ConfigVariables: config.Variables{
-// 					"exception_list_id": config.StringVariable(exceptionListID),
-// 					"item_id":           config.StringVariable(itemID),
-// 					"value_list_id":     config.StringVariable(valueListID),
-// 				},
-// 				Check: resource.ComposeTestCheckFunc(
-// 					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "entries.0.type", "list"),
-// 					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "entries.0.field", "source.ip"),
-// 					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "entries.0.operator", "included"),
-// 					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "entries.0.list.id", "test-value-list"),
-// 					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "entries.0.list.type", "ip"),
-// 				),
-// 			},
-// 		},
-// 	})
-// }
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("list"),
+				ConfigVariables: config.Variables{
+					"exception_list_id": config.StringVariable(exceptionListID),
+					"item_id":           config.StringVariable(itemID),
+					"value_list_id":     config.StringVariable(valueListID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "entries.0.type", "list"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "entries.0.field", "source.ip"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "entries.0.operator", "included"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "entries.0.list.id", valueListID),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "entries.0.list.type", "ip"),
+				),
+			},
+		},
+	})
+}
 
 func TestAccResourceExceptionItemEntryType_Exists(t *testing.T) {
 	listID := fmt.Sprintf("test-exception-list-exists-%s", uuid.New().String()[:8])

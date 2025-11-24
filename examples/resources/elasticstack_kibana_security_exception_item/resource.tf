@@ -16,14 +16,14 @@ resource "elasticstack_kibana_security_exception_item" "example" {
   type           = "simple"
   namespace_type = "single"
 
-  entries = jsonencode([
+  entries = [
     {
+      type     = "match"
       field    = "process.name"
       operator = "included"
-      type     = "match"
       value    = "trusted-process"
     }
-  ])
+  ]
 
   tags = ["trusted", "whitelisted"]
 }
