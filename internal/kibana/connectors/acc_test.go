@@ -428,7 +428,7 @@ func TestAccResourceKibanaConnectorAI(t *testing.T) {
 				resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"apiUrl\":\"https://bedrock-runtime\.us-west-2\.amazonaws\.com\"`)),
 				resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"defaultModel\":\"anthropic\.claude-3-5-sonnet-20240620-v1:0\"`)),
 				resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "secrets", regexp.MustCompile(`\"accessKey\":\"updated-access-key\"`)),
-				resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "secrets", regexp.MustCompile(`\"updated-secret-key\"`)),
+				resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "secrets", regexp.MustCompile(`\"secret\":\"updated-secret-key\"`)),
 			},
 		},
 		{
