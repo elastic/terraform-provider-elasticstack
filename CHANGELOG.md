@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+- Support `.bedrock` and `.gen-ai` connectors ([#1467](https://github.com/elastic/terraform-provider-elasticstack/pull/1467))
+
 ## [0.12.2] - 2025-11-19
 - Fix `elasticstack_elasticsearch_snapshot_lifecycle` metadata type conversion causing terraform apply to fail ([#1409](https://github.com/elastic/terraform-provider-elasticstack/issues/1409))
 - Add new `elasticstack_elasticsearch_ml_anomaly_detection_job` resource ([#1329](https://github.com/elastic/terraform-provider-elasticstack/pull/1329))

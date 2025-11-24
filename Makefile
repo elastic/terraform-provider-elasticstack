@@ -46,6 +46,12 @@ build-ci: ## build the terraform provider
 .PHONY: build
 build: lint build-ci ## build the terraform provider
 
+# run acceptance tests against the docker container that has been started with `make docker-kibana` (or `make docker-elasticsearch`)
+# To run specific test (e.g. TestAccResourceActionConnector) execute `make testacc-vs-docker TESTARGS='-run ^TestAccResourceKibanaConnectorBedrock$$'`
+.PHONY: testacc-vs-docker
+testacc-vs-docker:
+	@ ELASTICSEARCH_ENDPOINTS=http://localhost:9200 KIBANA_ENDPOINT=http://localhost:5601 ELASTICSEARCH_USERNAME=$(ELASTICSEARCH_USERNAME) ELASTICSEARCH_PASSWORD=$(ELASTICSEARCH_PASSWORD) make testacc
+
 .PHONY: testacc
 testacc: ## Run acceptance tests
 	TF_ACC=1 go tool gotestsum --format testname --rerun-fails=3 --packages="-v ./..." -- -count $(ACCTEST_COUNT) -parallel $(ACCTEST_PARALLELISM) $(TESTARGS) -timeout $(ACCTEST_TIMEOUT)
