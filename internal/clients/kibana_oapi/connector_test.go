@@ -262,3 +262,168 @@ func TestGetConnectorByName(t *testing.T) {
 	require.NotNil(t, diags)
 	require.Nil(t, fail)
 }
+
+func TestConnectorConfigWithDefaults(t *testing.T) {
+	tests := []struct {
+		name            string
+		connectorTypeID string
+		planConfig      string
+		expectedError   bool
+		errorContains   string
+		validateResult  func(t *testing.T, result string)
+	}{
+		{
+			name:            "bedrock connector with valid config and explicit defaultModel",
+			connectorTypeID: ".bedrock",
+			planConfig:      `{"apiUrl":"https://bedrock.us-east-1.amazonaws.com","defaultModel":"anthropic.claude-v2"}`,
+			expectedError:   false,
+			validateResult: func(t *testing.T, result string) {
+				expected := `{"apiUrl":"https://bedrock.us-east-1.amazonaws.com","defaultModel":"anthropic.claude-v2"}`
+				require.JSONEq(t, expected, result)
+			},
+		},
+		{
+			name:            "bedrock connector without defaultModel gets default value",
+			connectorTypeID: ".bedrock",
+			planConfig:      `{"apiUrl":"https://bedrock.us-east-1.amazonaws.com"}`,
+			expectedError:   false,
+			validateResult: func(t *testing.T, result string) {
+				expected := `{"apiUrl":"https://bedrock.us-east-1.amazonaws.com","defaultModel":"us.anthropic.claude-sonnet-4-5-20250929-v1:0"}`
+				require.JSONEq(t, expected, result)
+			},
+		},
+		{
+			name:            "gen-ai connector with OpenAI provider with defaultModel",
+			connectorTypeID: ".gen-ai",
+			planConfig:      `{"apiProvider":"OpenAI","apiUrl":"https://api.openai.com/v1","defaultModel":"gpt-4"}`,
+			expectedError:   false,
+			validateResult: func(t *testing.T, result string) {
+				expected := `{"apiProvider":"OpenAI","apiUrl":"https://api.openai.com/v1","defaultModel":"gpt-4"}`
+				require.JSONEq(t, expected, result)
+			},
+		},
+		{
+			name:            "gen-ai connector with Azure provider",
+			connectorTypeID: ".gen-ai",
+			planConfig:      `{"apiProvider":"Azure OpenAI","apiUrl":"https://my-resource.openai.azure.com/openai/deployments/my-deployment"}`,
+			expectedError:   false,
+			validateResult: func(t *testing.T, result string) {
+				expected := `{"apiProvider":"Azure OpenAI","apiUrl":"https://my-resource.openai.azure.com/openai/deployments/my-deployment"}`
+				require.JSONEq(t, expected, result)
+			},
+		},
+		{
+			name:            "gen-ai connector with Other provider and explicit verificationMode",
+			connectorTypeID: ".gen-ai",
+			planConfig:      `{"apiProvider":"Other","apiUrl":"https://custom-llm.example.com/v1","defaultModel":"custom-model","verificationMode":"none"}`,
+			expectedError:   false,
+			validateResult: func(t *testing.T, result string) {
+				expected := `{"apiProvider":"Other","apiUrl":"https://custom-llm.example.com/v1","defaultModel":"custom-model","verificationMode":"none"}`
+				require.JSONEq(t, expected, result)
+			},
+		},
+		{
+			name:            "gen-ai connector with Other provider without verificationMode gets default",
+			connectorTypeID: ".gen-ai",
+			planConfig:      `{"apiProvider":"Other","apiUrl":"https://custom-llm.example.com/v1","defaultModel":"custom-model"}`,
+			expectedError:   false,
+			validateResult: func(t *testing.T, result string) {
+				expected := `{"apiProvider":"Other","apiUrl":"https://custom-llm.example.com/v1","defaultModel":"custom-model","verificationMode":"full"}`
+				require.JSONEq(t, expected, result)
+			},
+		},
+		{
+			name:            "gen-ai connector with OpenAI provider without defaultModel",
+			connectorTypeID: ".gen-ai",
+			planConfig:      `{"apiProvider":"OpenAI","apiUrl":"https://api.openai.com/v1"}`,
+			expectedError:   false,
+			validateResult: func(t *testing.T, result string) {
+				// Verify no verificationMode is added (that's only for Other provider)
+				expected := `{"apiProvider":"OpenAI","apiUrl":"https://api.openai.com/v1"}`
+				require.JSONEq(t, expected, result)
+			},
+		},
+		{
+			name:            "gemini connector with valid config",
+			connectorTypeID: ".gemini",
+			planConfig:      `{"apiUrl":"https://us-central1-aiplatform.googleapis.com","gcpProjectId":"my-project","gcpRegion":"us-central1","defaultModel":"gemini-pro"}`,
+			expectedError:   false,
+			validateResult: func(t *testing.T, result string) {
+				expected := `{"apiUrl":"https://us-central1-aiplatform.googleapis.com","gcpProjectId":"my-project","gcpRegion":"us-central1","defaultModel":"gemini-pro"}`
+				require.JSONEq(t, expected, result)
+			},
+		},
+		{
+			name:            "gen-ai OpenAI connector silently filters unknown fields",
+			connectorTypeID: ".gen-ai",
+			planConfig:      `{"apiProvider":"OpenAI","apiUrl":"https://api.openai.com/v1","defaultModel":"gpt-4","unknownField":"should-be-filtered"}`,
+			expectedError:   false,
+			validateResult: func(t *testing.T, result string) {
+				// Unknown field should be filtered out
+				expected := `{"apiProvider":"OpenAI","apiUrl":"https://api.openai.com/v1","defaultModel":"gpt-4"}`
+				require.JSONEq(t, expected, result)
+			},
+		},
+		{
+			name:            "gen-ai Azure connector silently filters invalid PKI fields",
+			connectorTypeID: ".gen-ai",
+			planConfig:      `{"apiProvider":"Azure OpenAI","apiUrl":"https://my.openai.azure.com","certificateData":"invalid-for-azure"}`,
+			expectedError:   false,
+			validateResult: func(t *testing.T, result string) {
+				// certificateData is not valid for Azure provider, should be filtered
+				expected := `{"apiProvider":"Azure OpenAI","apiUrl":"https://my.openai.azure.com"}`
+				require.JSONEq(t, expected, result)
+			},
+		},
+		{
+			name:            "gen-ai Other connector allows PKI fields",
+			connectorTypeID: ".gen-ai",
+			planConfig:      `{"apiProvider":"Other","apiUrl":"https://custom.com","defaultModel":"custom","certificateData":"pem-data","verificationMode":"full"}`,
+			expectedError:   false,
+			validateResult: func(t *testing.T, result string) {
+				expected := `{"apiProvider":"Other","apiUrl":"https://custom.com","defaultModel":"custom","certificateData":"pem-data","verificationMode":"full"}`
+				require.JSONEq(t, expected, result)
+			},
+		},
+		{
+			name:            "gen-ai connector without apiProvider returns error",
+			connectorTypeID: ".gen-ai",
+			planConfig:      `{"apiUrl":"https://api.example.com"}`,
+			expectedError:   true,
+			errorContains:   "apiProvider is required",
+		},
+		{
+			name:            "gen-ai connector with unknown apiProvider returns error",
+			connectorTypeID: ".gen-ai",
+			planConfig:      `{"apiProvider":"UnknownProvider","apiUrl":"https://api.example.com"}`,
+			expectedError:   true,
+			errorContains:   "unsupported apiProvider",
+		},
+		{
+			name:            "unknown connector type returns error",
+			connectorTypeID: ".unknown-type",
+			planConfig:      `{"key":"value"}`,
+			expectedError:   true,
+			errorContains:   "unknown connector type ID",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := kibana_oapi.ConnectorConfigWithDefaults(tt.connectorTypeID, tt.planConfig)
+
+			if tt.expectedError {
+				require.Error(t, err)
+				if tt.errorContains != "" {
+					require.Contains(t, err.Error(), tt.errorContains)
+				}
+			} else {
+				require.NoError(t, err)
+				require.NotEmpty(t, result)
+				if tt.validateResult != nil {
+					tt.validateResult(t, result)
+				}
+			}
+		})
+	}
+}

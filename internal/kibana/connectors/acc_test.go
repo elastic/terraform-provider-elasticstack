@@ -385,3 +385,171 @@ func TestAccResourceKibanaConnectorEmptyConfigFromSDK(t *testing.T) {
 		},
 	})
 }
+
+func TestAccResourceKibanaConnectorBedrock(t *testing.T) {
+	minSupportedVersion := version.Must(version.NewSemver("8.16.2"))
+
+	connectorName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	create := func(name string) string {
+		return fmt.Sprintf(`
+	provider "elasticstack" {
+	  elasticsearch {}
+	  kibana {}
+	}
+
+	resource "elasticstack_kibana_action_connector" "test" {
+	  name         = "%s"
+	  config       = jsonencode({
+		apiUrl       = "https://bedrock-runtime.us-east-1.amazonaws.com"
+		defaultModel = "anthropic.claude-v2"
+	  })
+	  secrets = jsonencode({
+		accessKey = "test-access-key"
+		secret    = "test-secret-key"
+	  })
+	  connector_type_id = ".bedrock"
+	}`,
+			name)
+	}
+
+	update := func(name string) string {
+		return fmt.Sprintf(`
+	provider "elasticstack" {
+	  elasticsearch {}
+	  kibana {}
+	}
+
+	resource "elasticstack_kibana_action_connector" "test" {
+	  name         = "Updated %s"
+	  config = jsonencode({
+		apiUrl       = "https://bedrock-runtime.us-west-2.amazonaws.com"
+		defaultModel = "anthropic.claude-3-5-sonnet-20240620-v1:0"
+	  })
+	  secrets = jsonencode({
+		accessKey = "updated-access-key"
+		secret    = "updated-secret-key"
+	  })
+	  connector_type_id = ".bedrock"
+	}`,
+			name)
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceKibanaConnectorDestroy,
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				Config:   create(connectorName),
+				Check: resource.ComposeTestCheckFunc(
+					testCommonAttributes(connectorName, ".bedrock"),
+
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"apiUrl\":\"https://bedrock-runtime\.us-east-1\.amazonaws\.com\"`)),
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"defaultModel\":\"anthropic\.claude-v2\"`)),
+
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "secrets", regexp.MustCompile(`\"accessKey\":\"test-access-key\"`)),
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "secrets", regexp.MustCompile(`\"secret\":\"test-secret-key\"`)),
+				),
+			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				Config:   update(connectorName),
+				Check: resource.ComposeTestCheckFunc(
+					testCommonAttributes(fmt.Sprintf("Updated %s", connectorName), ".bedrock"),
+
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"apiUrl\":\"https://bedrock-runtime\.us-west-2\.amazonaws\.com\"`)),
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"defaultModel\":\"anthropic\.claude-3-5-sonnet-20240620-v1:0\"`)),
+
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "secrets", regexp.MustCompile(`\"accessKey\":\"updated-access-key\"`)),
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "secrets", regexp.MustCompile(`\"secret\":\"updated-secret-key\"`)),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceKibanaConnectorGenAi(t *testing.T) {
+	minSupportedVersion := version.Must(version.NewSemver("8.10.3"))
+
+	connectorName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	create := func(name string) string {
+		return fmt.Sprintf(`
+	provider "elasticstack" {
+	  elasticsearch {}
+	  kibana {}
+	}
+
+	resource "elasticstack_kibana_action_connector" "test" {
+	  name         = "%s"
+	  config       = jsonencode({
+		apiProvider  = "OpenAI"
+		apiUrl       = "https://api.openai.com/v1"
+		defaultModel = "gpt-4"
+	  })
+	  secrets = jsonencode({
+		apiKey = "test-api-key"
+	  })
+	  connector_type_id = ".gen-ai"
+	}`,
+			name)
+	}
+
+	update := func(name string) string {
+		return fmt.Sprintf(`
+	provider "elasticstack" {
+	  elasticsearch {}
+	  kibana {}
+	}
+
+	resource "elasticstack_kibana_action_connector" "test" {
+	  name         = "Updated %s"
+	  config = jsonencode({
+		apiProvider  = "OpenAI"
+		apiUrl       = "https://api.openai.com/v1"
+		defaultModel = "gpt-4o"
+	  })
+	  secrets = jsonencode({
+		apiKey = "updated-api-key"
+	  })
+	  connector_type_id = ".gen-ai"
+	}`,
+			name)
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceKibanaConnectorDestroy,
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				Config:   create(connectorName),
+				Check: resource.ComposeTestCheckFunc(
+					testCommonAttributes(connectorName, ".gen-ai"),
+
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"apiProvider\":\"OpenAI\"`)),
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"apiUrl\":\"https://api\.openai\.com/v1\"`)),
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"defaultModel\":\"gpt-4\"`)),
+
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "secrets", regexp.MustCompile(`\"apiKey\":\"test-api-key\"`)),
+				),
+			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				Config:   update(connectorName),
+				Check: resource.ComposeTestCheckFunc(
+					testCommonAttributes(fmt.Sprintf("Updated %s", connectorName), ".gen-ai"),
+
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"apiProvider\":\"OpenAI\"`)),
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"apiUrl\":\"https://api\.openai\.com/v1\"`)),
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"defaultModel\":\"gpt-4o\"`)),
+
+					resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "secrets", regexp.MustCompile(`\"apiKey\":\"updated-api-key\"`)),
+				),
+			},
+		},
+	})
+}
