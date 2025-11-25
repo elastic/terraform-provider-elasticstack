@@ -194,6 +194,14 @@ var connectorConfigHandlers = map[string]connectorConfigHandler{
 		defaults:        connectorConfigWithDefaultsEmail,
 		remarshalConfig: remarshalConfig[kbapi.EmailConfig],
 	},
+	".bedrock": {
+		defaults:        connectorConfigWithDefaultsBedrock,
+		remarshalConfig: remarshalConfig[kbapi.BedrockConfig],
+	},
+	".gen-ai": {
+		defaults:        connectorConfigWithDefaultsGenAi,
+		remarshalConfig: remarshalConfigGenAi,
+	},
 	".gemini": {
 		remarshalConfig: remarshalConfig[kbapi.GeminiConfig],
 	},
@@ -273,6 +281,96 @@ func remarshalConfig[T any](plan string) (string, error) {
 		return "", err
 	}
 	return string(customJSON), nil
+}
+
+// remarshalConfigGenAi handles config for .gen-ai connectors.
+// The .gen-ai connector type has multiple possible config structures depending on the apiProvider
+// (GenaiOpenaiConfig, GenaiAzureConfig, GenaiOpenaiOtherConfig). This function unmarshals to the
+// appropriate type based on the apiProvider field. By unmarshaling to a typed struct and marshaling
+// back, unknown fields are automatically filtered out.
+func remarshalConfigGenAi(plan string) (string, error) {
+	// First, unmarshal to a map to check the apiProvider
+	var configMap map[string]interface{}
+	if err := json.Unmarshal([]byte(plan), &configMap); err != nil {
+		return "", err
+	}
+
+	apiProvider, ok := configMap["apiProvider"].(string)
+	if !ok {
+		// apiProvider is required for .gen-ai connectors
+		return "", errors.New("apiProvider is required for .gen-ai connector type")
+	}
+
+	// Unmarshal to the appropriate specific type based on apiProvider.
+	// By unmarshaling (which ignores unknown fields) and then marshaling back,
+	// we automatically filter out any fields that aren't defined in the specific config type.
+	switch apiProvider {
+	case "OpenAI":
+		return remarshalConfig[kbapi.GenaiOpenaiConfig](plan)
+	case "Azure OpenAI":
+		return remarshalConfig[kbapi.GenaiAzureConfig](plan)
+	case "Other":
+		return remarshalConfig[kbapi.GenaiOpenaiOtherConfig](plan)
+	default:
+		return "", fmt.Errorf("unsupported apiProvider %q for .gen-ai connector type, must be one of: OpenAI, Azure OpenAI, Other", apiProvider)
+	}
+}
+
+func connectorConfigWithDefaultsBedrock(plan string) (string, error) {
+	var custom kbapi.BedrockConfig
+	if err := json.Unmarshal([]byte(plan), &custom); err != nil {
+		return "", err
+	}
+	if custom.DefaultModel == nil {
+		custom.DefaultModel = utils.Pointer("us.anthropic.claude-sonnet-4-5-20250929-v1:0")
+	}
+	customJSON, err := json.Marshal(custom)
+	if err != nil {
+		return "", err
+	}
+	return string(customJSON), nil
+}
+
+func connectorConfigWithDefaultsGenAi(plan string) (string, error) {
+	// First unmarshal to check the apiProvider
+	var configMap map[string]interface{}
+	if err := json.Unmarshal([]byte(plan), &configMap); err != nil {
+		return "", err
+	}
+
+	apiProvider, ok := configMap["apiProvider"].(string)
+	if !ok {
+		// apiProvider is required for .gen-ai connectors
+		return "", errors.New("apiProvider is required for .gen-ai connector type")
+	}
+
+	// Apply defaults and filter fields based on the specific config type.
+	// By unmarshaling (which ignores unknown fields) and marshaling back,
+	// unknown fields are automatically filtered out.
+	switch apiProvider {
+	case "OpenAI":
+		// No defaults to apply for OpenAI
+		return remarshalConfig[kbapi.GenaiOpenaiConfig](plan)
+	case "Azure OpenAI":
+		// No defaults to apply for Azure
+		return remarshalConfig[kbapi.GenaiAzureConfig](plan)
+	case "Other":
+		var config kbapi.GenaiOpenaiOtherConfig
+		if err := json.Unmarshal([]byte(plan), &config); err != nil {
+			return "", err
+		}
+		// Apply verificationMode default for "Other" provider
+		if config.VerificationMode == nil {
+			config.VerificationMode = utils.Pointer(kbapi.GenaiOpenaiOtherConfigVerificationModeFull)
+		}
+		customJSON, err := json.Marshal(config)
+		if err != nil {
+			return "", err
+		}
+		return string(customJSON), nil
+	default:
+		return "", fmt.Errorf("unsupported apiProvider %q for .gen-ai connector type, must be one of: OpenAI, Azure OpenAI, Other", apiProvider)
+	}
 }
 
 func connectorConfigWithDefaultsCasesWebhook(plan string) (string, error) {

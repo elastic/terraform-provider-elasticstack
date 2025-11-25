@@ -46,7 +46,7 @@ func (r *securityDetectionRuleResource) Delete(ctx context.Context, req resource
 		Id: &ruleObjectId,
 	}
 
-	response, err := kbClient.API.DeleteRuleWithResponse(ctx, params)
+	response, err := kbClient.API.DeleteRuleWithResponse(ctx, data.SpaceId.ValueString(), params)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error deleting security detection rule",
