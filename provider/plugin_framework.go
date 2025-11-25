@@ -32,6 +32,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/import_saved_objects"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/maintenance_window"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_detection_rule"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_list"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/spaces"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics/monitor"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics/parameter"
@@ -145,7 +146,9 @@ func (p *Provider) resources(ctx context.Context) []func() resource.Resource {
 }
 
 func (p *Provider) experimentalResources(ctx context.Context) []func() resource.Resource {
-	return []func() resource.Resource{}
+	return []func() resource.Resource{
+		security_list.NewResource,
+	}
 }
 
 func (p *Provider) dataSources(ctx context.Context) []func() datasource.DataSource {
