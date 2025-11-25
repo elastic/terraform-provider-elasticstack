@@ -55,6 +55,7 @@ jobs:
       ELASTIC_PASSWORD: password
       KIBANA_SYSTEM_USERNAME: kibana_system
       KIBANA_SYSTEM_PASSWORD: password
+      TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL: true
     services:
       elasticsearch:
         image: docker.elastic.co/elasticsearch/elasticsearch:${{ matrix.version }}
