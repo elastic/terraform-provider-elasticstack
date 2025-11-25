@@ -673,7 +673,9 @@ func UpdateAliasesAtomic(ctx context.Context, apiClient *clients.ApiClient, acti
 			if action.Routing != "" {
 				addDetails["routing"] = action.Routing
 			}
-			addDetails["is_hidden"] = action.IsHidden
+			if action.IsHidden {
+				addDetails["is_hidden"] = action.IsHidden
+			}
 
 			aliasActions = append(aliasActions, map[string]interface{}{
 				"add": addDetails,
