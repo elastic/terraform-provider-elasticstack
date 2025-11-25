@@ -72,7 +72,8 @@ func (m *SecurityListModel) toCreateRequest() (*kbapi.CreateListJSONRequestBody,
 }
 
 // toUpdateRequest converts the Terraform model to API update request
-func (m *SecurityListModel) toUpdateRequest() (*kbapi.UpdateListJSONRequestBody, diag.Diagnostics) {
+// versionID should be passed from the current state for optimistic locking
+func (m *SecurityListModel) toUpdateRequest(versionID string) (*kbapi.UpdateListJSONRequestBody, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	req := &kbapi.UpdateListJSONRequestBody{
 		Id:          kbapi.SecurityListsAPIListId(m.ListID.ValueString()),
@@ -80,10 +81,10 @@ func (m *SecurityListModel) toUpdateRequest() (*kbapi.UpdateListJSONRequestBody,
 		Description: kbapi.SecurityListsAPIListDescription(m.Description.ValueString()),
 	}
 
-	// Set optional fields
-	if !m.VersionID.IsNull() && !m.VersionID.IsUnknown() {
-		versionID := kbapi.SecurityListsAPIListVersionId(m.VersionID.ValueString())
-		req.UnderscoreVersion = &versionID
+	// Set version ID from state for optimistic locking
+	if versionID != "" {
+		versionIDValue := kbapi.SecurityListsAPIListVersionId(versionID)
+		req.UnderscoreVersion = &versionIDValue
 	}
 
 	if !m.Meta.IsNull() && !m.Meta.IsUnknown() {
@@ -95,10 +96,7 @@ func (m *SecurityListModel) toUpdateRequest() (*kbapi.UpdateListJSONRequestBody,
 		req.Meta = &metaMap
 	}
 
-	if !m.Version.IsNull() && !m.Version.IsUnknown() {
-		version := kbapi.SecurityListsAPIListVersion(m.Version.ValueInt64())
-		req.Version = &version
-	}
+	// Note: Version field is not sent in update requests as it's managed server-side
 
 	return req, diags
 }
