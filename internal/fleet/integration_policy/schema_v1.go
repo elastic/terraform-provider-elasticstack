@@ -33,6 +33,7 @@ type integrationPolicyModelV1 struct {
 	Force              types.Bool           `tfsdk:"force"`
 	IntegrationName    types.String         `tfsdk:"integration_name"`
 	IntegrationVersion types.String         `tfsdk:"integration_version"`
+	OutputID           types.String         `tfsdk:"output_id"`
 	Input              types.List           `tfsdk:"input"` //> integrationPolicyInputModel
 	VarsJson           jsontypes.Normalized `tfsdk:"vars_json"`
 	SpaceIds           types.Set            `tfsdk:"space_ids"`
@@ -59,6 +60,7 @@ func (m integrationPolicyModelV1) toV2(ctx context.Context) (integrationPolicyMo
 		Force:              m.Force,
 		IntegrationName:    m.IntegrationName,
 		IntegrationVersion: m.IntegrationVersion,
+		OutputID:           m.OutputID,
 		SpaceIds:           m.SpaceIds,
 		VarsJson:           m.VarsJson,
 	}
@@ -204,6 +206,10 @@ func getSchemaV1() *schema.Schema {
 			"integration_version": schema.StringAttribute{
 				Description: "The version of the integration package.",
 				Required:    true,
+			},
+			"output_id": schema.StringAttribute{
+				Description: "The ID of the output to send data to. When not specified, the default output of the agent policy will be used.",
+				Optional:    true,
 			},
 			"vars_json": schema.StringAttribute{
 				Description: "Integration-level variables as JSON.",
