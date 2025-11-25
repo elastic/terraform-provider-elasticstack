@@ -140,14 +140,15 @@ func (p *Provider) resources(ctx context.Context) []func() resource.Resource {
 		datafeed.NewDatafeedResource,
 		anomaly_detection_job.NewAnomalyDetectionJobResource,
 		security_detection_rule.NewSecurityDetectionRuleResource,
-		security_list.NewResource,
 		job_state.NewMLJobStateResource,
 		datafeed_state.NewMLDatafeedStateResource,
 	}
 }
 
 func (p *Provider) experimentalResources(ctx context.Context) []func() resource.Resource {
-	return []func() resource.Resource{}
+	return []func() resource.Resource{
+		security_list.NewResource,
+	}
 }
 
 func (p *Provider) dataSources(ctx context.Context) []func() datasource.DataSource {
