@@ -6,12 +6,14 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
+	"github.com/hashicorp/go-version"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
+
+var minSelfManagedVersionForSpaceSolution = version.Must(version.NewVersion("8.18.0"))
 
 func TestAccResourceSpace(t *testing.T) {
 	spaceId := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
@@ -43,7 +45,7 @@ func TestAccResourceSpace(t *testing.T) {
 			},
 			{
 				Config:   testAccResourceSpaceWithSolution(spaceId),
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(kibana.SpaceSolutionMinVersion),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSelfManagedVersionForSpaceSolution),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "space_id", spaceId),
 					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "name", fmt.Sprintf("Solution %s", spaceId)),
