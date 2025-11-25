@@ -119,14 +119,6 @@ func (r *ExceptionItemResource) Schema(_ context.Context, _ resource.SchemaReque
 							MarkdownDescription: "The operator to use. Valid values: `included`, `excluded`. Note: The operator field is not supported for nested entry types and will be ignored if specified.",
 							Optional:            true,
 							Validators: []validator.String{
-								validators.ForbiddenIfDependentPathOneOf(
-									path.Root("type"),
-									[]string{"nested"},
-								),
-								validators.RequiredIfDependentPathOneOf(
-									path.Root("type"),
-									[]string{"match", "match_any", "list", "exists", "wildcard"},
-								),
 								stringvalidator.OneOf("included", "excluded"),
 							},
 						},
@@ -144,22 +136,10 @@ func (r *ExceptionItemResource) Schema(_ context.Context, _ resource.SchemaReque
 							ElementType:         types.StringType,
 							MarkdownDescription: "Array of values to match (for `match_any` type).",
 							Optional:            true,
-							Validators: []validator.List{
-								validators.RequiredIfDependentPathOneOf(
-									path.Root("type"),
-									[]string{"match_any"},
-								),
-							},
 						},
 						"list": schema.SingleNestedAttribute{
 							MarkdownDescription: "Value list reference (for `list` type).",
 							Optional:            true,
-							Validators: []validator.Object{
-								validators.RequiredIfDependentPathOneOf(
-									path.Root("type"),
-									[]string{"list"},
-								),
-							},
 							Attributes: map[string]schema.Attribute{
 								"id": schema.StringAttribute{
 									MarkdownDescription: "The value list ID.",
@@ -174,12 +154,6 @@ func (r *ExceptionItemResource) Schema(_ context.Context, _ resource.SchemaReque
 						"entries": schema.ListNestedAttribute{
 							MarkdownDescription: "Nested entries (for `nested` type). Only `match`, `match_any`, and `exists` entry types are allowed as nested entries.",
 							Optional:            true,
-							Validators: []validator.List{
-								validators.RequiredIfDependentPathOneOf(
-									path.Root("type"),
-									[]string{"nested"},
-								),
-							},
 							NestedObject: schema.NestedAttributeObject{
 								Attributes: map[string]schema.Attribute{
 									"type": schema.StringAttribute{

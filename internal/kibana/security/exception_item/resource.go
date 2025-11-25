@@ -10,9 +10,10 @@ import (
 )
 
 var (
-	_ resource.Resource                = &ExceptionItemResource{}
-	_ resource.ResourceWithConfigure   = &ExceptionItemResource{}
-	_ resource.ResourceWithImportState = &ExceptionItemResource{}
+	_ resource.Resource                   = &ExceptionItemResource{}
+	_ resource.ResourceWithConfigure      = &ExceptionItemResource{}
+	_ resource.ResourceWithImportState    = &ExceptionItemResource{}
+	_ resource.ResourceWithValidateConfig = &ExceptionItemResource{}
 )
 
 // NewResource is a helper function to simplify the provider implementation.
