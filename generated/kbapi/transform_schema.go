@@ -881,6 +881,7 @@ func removeBrokenDiscriminator(schema *Schema) {
 		"Security_Detections_API_RuleSource",
 		"Security_Endpoint_Exceptions_API_ExceptionListItemEntry",
 		"Security_Exceptions_API_ExceptionListItemEntry",
+		"Security_Endpoint_Management_API_ActionDetailsResponse",
 	}
 
 	for _, component := range brokenDiscriminatorComponents {
