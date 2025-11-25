@@ -2,6 +2,7 @@ package exception_item_test
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -300,6 +301,173 @@ func TestAccResourceExceptionItemEntryType_Wildcard(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "entries.0.operator", "included"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "entries.0.value", "/tmp/*.tmp"),
 				),
+			},
+		},
+	})
+}
+
+func TestAccResourceExceptionItemValidation(t *testing.T) {
+	listID := fmt.Sprintf("test-exception-list-validation-%s", uuid.New().String()[:8])
+	itemID := fmt.Sprintf("test-exception-item-validation-%s", uuid.New().String()[:8])
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			// Test 1: Match entry missing value
+			{
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("validation_match_missing_value"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"item_id": config.StringVariable(itemID),
+				},
+				ExpectError: regexp.MustCompile("Entry type 'match' requires 'value' to be set"),
+				PlanOnly:    true,
+			},
+			// Test 2: Match entry missing operator
+			{
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("validation_match_missing_operator"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"item_id": config.StringVariable(itemID),
+				},
+				ExpectError: regexp.MustCompile("Entry type 'match' requires 'operator' to be set"),
+				PlanOnly:    true,
+			},
+			// Test 3: Wildcard entry missing value
+			{
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("validation_wildcard_missing_value"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"item_id": config.StringVariable(itemID),
+				},
+				ExpectError: regexp.MustCompile("Entry type 'wildcard' requires 'value' to be set"),
+				PlanOnly:    true,
+			},
+			// Test 4: MatchAny entry missing values
+			{
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("validation_match_any_missing_values"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"item_id": config.StringVariable(itemID),
+				},
+				ExpectError: regexp.MustCompile("Entry type 'match_any' requires 'values' to be set"),
+				PlanOnly:    true,
+			},
+			// Test 5: MatchAny entry missing operator
+			{
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("validation_match_any_missing_operator"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"item_id": config.StringVariable(itemID),
+				},
+				ExpectError: regexp.MustCompile("Entry type 'match_any' requires 'operator' to be set"),
+				PlanOnly:    true,
+			},
+			// Test 6: List entry missing list object
+			{
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("validation_list_missing_list_object"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"item_id": config.StringVariable(itemID),
+				},
+				ExpectError: regexp.MustCompile("Entry type 'list' requires 'list' object to be set"),
+				PlanOnly:    true,
+			},
+			// Test 7: List entry missing list.id
+			{
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("validation_list_missing_list_id"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"item_id": config.StringVariable(itemID),
+				},
+				ExpectError: regexp.MustCompile(`attribute "id" is required`),
+				PlanOnly:    true,
+			},
+			// Test 8: List entry missing list.type
+			{
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("validation_list_missing_list_type"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"item_id": config.StringVariable(itemID),
+				},
+				ExpectError: regexp.MustCompile(`attribute "type" is required`),
+				PlanOnly:    true,
+			},
+			// Test 9: Exists entry missing operator
+			{
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("validation_exists_missing_operator"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"item_id": config.StringVariable(itemID),
+				},
+				ExpectError: regexp.MustCompile("Entry type 'exists' requires 'operator' to be set"),
+				PlanOnly:    true,
+			},
+			// Test 10: Nested entry missing entries
+			{
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("validation_nested_missing_entries"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"item_id": config.StringVariable(itemID),
+				},
+				ExpectError: regexp.MustCompile("Entry type 'nested' requires 'entries' to be set"),
+				PlanOnly:    true,
+			},
+			// Test 11: Nested entry with invalid entry type
+			{
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("validation_nested_invalid_entry_type"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"item_id": config.StringVariable(itemID),
+				},
+				ExpectError: regexp.MustCompile(`(Nested entry .* has invalid type|value must be one of:.*"match".*"match_any".*"exists")`),
+				PlanOnly:    true,
+			},
+			// Test 12: Nested match entry missing value
+			{
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("validation_nested_entry_missing_value"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"item_id": config.StringVariable(itemID),
+				},
+				ExpectError: regexp.MustCompile("Nested entry type 'match' requires 'value' to be set"),
+				PlanOnly:    true,
+			},
+			// Test 13: Nested entry missing operator
+			{
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("validation_nested_entry_missing_operator"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"item_id": config.StringVariable(itemID),
+				},
+				ExpectError: regexp.MustCompile(`(Nested entry requires 'operator' to be set|attribute "operator" is required)`),
+				PlanOnly:    true,
 			},
 		},
 	})
