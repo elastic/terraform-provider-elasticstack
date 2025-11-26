@@ -143,7 +143,7 @@ func toQueryRuleUpdateProps(ctx context.Context, client clients.MinVersionEnforc
 		diags.AddError("ID was not a valid UUID", err.Error())
 		return updateProps, diags
 	}
-	var id = kbapi.SecurityDetectionsAPIRuleObjectId(uid)
+	var id = kbapi.SecurityDetectionsAPIUUID(uid)
 
 	queryRule := kbapi.SecurityDetectionsAPIQueryRuleUpdateProps{
 		Id:          &id,

@@ -153,7 +153,7 @@ func (d SecurityDetectionRuleData) toThresholdRuleUpdateProps(ctx context.Contex
 		diags.AddError("ID was not a valid UUID", err.Error())
 		return updateProps, diags
 	}
-	var id = kbapi.SecurityDetectionsAPIRuleObjectId(uid)
+	var id = kbapi.SecurityDetectionsAPIUUID(uid)
 
 	thresholdRule := kbapi.SecurityDetectionsAPIThresholdRuleUpdateProps{
 		Id:          &id,

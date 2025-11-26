@@ -177,7 +177,7 @@ func (d SecurityDetectionRuleData) toThreatMatchRuleUpdateProps(ctx context.Cont
 		diags.AddError("ID was not a valid UUID", err.Error())
 		return updateProps, diags
 	}
-	var id = kbapi.SecurityDetectionsAPIRuleObjectId(uid)
+	var id = kbapi.SecurityDetectionsAPIUUID(uid)
 
 	threatMatchRule := kbapi.SecurityDetectionsAPIThreatMatchRuleUpdateProps{
 		Id:          &id,
