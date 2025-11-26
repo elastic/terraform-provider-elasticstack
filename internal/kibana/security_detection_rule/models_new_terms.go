@@ -145,10 +145,9 @@ func (d SecurityDetectionRuleData) toNewTermsRuleUpdateProps(ctx context.Context
 		diags.AddError("ID was not a valid UUID", err.Error())
 		return updateProps, diags
 	}
-	var id = kbapi.SecurityDetectionsAPIUUID(uid)
 
 	newTermsRule := kbapi.SecurityDetectionsAPINewTermsRuleUpdateProps{
-		Id:                 &id,
+		Id:                 &uid,
 		Name:               kbapi.SecurityDetectionsAPIRuleName(d.Name.ValueString()),
 		Description:        kbapi.SecurityDetectionsAPIRuleDescription(d.Description.ValueString()),
 		Type:               kbapi.SecurityDetectionsAPINewTermsRuleUpdatePropsType("new_terms"),

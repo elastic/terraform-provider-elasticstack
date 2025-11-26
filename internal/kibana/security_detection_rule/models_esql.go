@@ -136,10 +136,9 @@ func (d SecurityDetectionRuleData) toEsqlRuleUpdateProps(ctx context.Context, cl
 		diags.AddError("ID was not a valid UUID", err.Error())
 		return updateProps, diags
 	}
-	var id = kbapi.SecurityDetectionsAPIUUID(uid)
 
 	esqlRule := kbapi.SecurityDetectionsAPIEsqlRuleUpdateProps{
-		Id:          &id,
+		Id:          &uid,
 		Name:        kbapi.SecurityDetectionsAPIRuleName(d.Name.ValueString()),
 		Description: kbapi.SecurityDetectionsAPIRuleDescription(d.Description.ValueString()),
 		Type:        kbapi.SecurityDetectionsAPIEsqlRuleUpdatePropsType("esql"),

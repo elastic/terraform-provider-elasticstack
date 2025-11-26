@@ -140,10 +140,9 @@ func (d SecurityDetectionRuleData) toSavedQueryRuleUpdateProps(ctx context.Conte
 		diags.AddError("ID was not a valid UUID", err.Error())
 		return updateProps, diags
 	}
-	var id = kbapi.SecurityDetectionsAPIUUID(uid)
 
 	savedQueryRule := kbapi.SecurityDetectionsAPISavedQueryRuleUpdateProps{
-		Id:          &id,
+		Id:          &uid,
 		Name:        kbapi.SecurityDetectionsAPIRuleName(d.Name.ValueString()),
 		Description: kbapi.SecurityDetectionsAPIRuleDescription(d.Description.ValueString()),
 		Type:        kbapi.SecurityDetectionsAPISavedQueryRuleUpdatePropsType("saved_query"),
