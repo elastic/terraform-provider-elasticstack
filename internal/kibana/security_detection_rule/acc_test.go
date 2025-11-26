@@ -1368,7 +1368,7 @@ func testAccCheckSecurityDetectionRuleDestroy(s *terraform.State) error {
 			ruleId := parts[1]
 
 			// Check if the rule still exists
-			ruleObjectId := kbapi.SecurityDetectionsAPIRuleObjectId(uuid.MustParse(ruleId))
+			ruleObjectId := uuid.MustParse(ruleId)
 			params := &kbapi.ReadRuleParams{
 				Id: &ruleObjectId,
 			}
