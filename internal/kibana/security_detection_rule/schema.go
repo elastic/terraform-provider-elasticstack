@@ -970,6 +970,7 @@ func (r securityDetectionRuleResource) ValidateConfig(ctx context.Context, req r
 
 	}
 
+	// TODO unknown is allowed if we are referencing values that are not yet known
 	if !utils.IsKnown(data.Index) && !utils.IsKnown(data.DataViewId) {
 		resp.Diagnostics.AddError(
 			"Invalid Configuration",
