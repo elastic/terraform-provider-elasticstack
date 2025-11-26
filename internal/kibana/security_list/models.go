@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -39,22 +40,22 @@ func (m *SecurityListModel) toCreateRequest() (*kbapi.CreateListJSONRequestBody,
 	}
 
 	// Set optional fields
-	if !m.ListID.IsNull() && !m.ListID.IsUnknown() {
+	if utils.IsKnown(m.ListID) {
 		id := kbapi.SecurityListsAPIListId(m.ListID.ValueString())
 		req.Id = &id
 	}
 
-	if !m.Deserializer.IsNull() && !m.Deserializer.IsUnknown() {
+	if utils.IsKnown(m.Deserializer) {
 		deserializer := kbapi.SecurityListsAPIListDeserializer(m.Deserializer.ValueString())
 		req.Deserializer = &deserializer
 	}
 
-	if !m.Serializer.IsNull() && !m.Serializer.IsUnknown() {
+	if utils.IsKnown(m.Serializer) {
 		serializer := kbapi.SecurityListsAPIListSerializer(m.Serializer.ValueString())
 		req.Serializer = &serializer
 	}
 
-	if !m.Meta.IsNull() && !m.Meta.IsUnknown() {
+	if utils.IsKnown(m.Meta) {
 		var metaMap kbapi.SecurityListsAPIListMetadata
 		if err := json.Unmarshal([]byte(m.Meta.ValueString()), &metaMap); err != nil {
 			diags.AddError("Invalid meta JSON", err.Error())
@@ -63,7 +64,7 @@ func (m *SecurityListModel) toCreateRequest() (*kbapi.CreateListJSONRequestBody,
 		req.Meta = &metaMap
 	}
 
-	if !m.Version.IsNull() && !m.Version.IsUnknown() {
+	if utils.IsKnown(m.Version) {
 		version := int(m.Version.ValueInt64())
 		req.Version = &version
 	}
@@ -81,12 +82,12 @@ func (m *SecurityListModel) toUpdateRequest() (*kbapi.UpdateListJSONRequestBody,
 	}
 
 	// Set optional fields
-	if !m.VersionID.IsNull() && !m.VersionID.IsUnknown() {
+	if utils.IsKnown(m.VersionID) {
 		versionID := kbapi.SecurityListsAPIListVersionId(m.VersionID.ValueString())
 		req.UnderscoreVersion = &versionID
 	}
 
-	if !m.Meta.IsNull() && !m.Meta.IsUnknown() {
+	if utils.IsKnown(m.Meta) {
 		var metaMap kbapi.SecurityListsAPIListMetadata
 		if err := json.Unmarshal([]byte(m.Meta.ValueString()), &metaMap); err != nil {
 			diags.AddError("Invalid meta JSON", err.Error())
@@ -95,8 +96,8 @@ func (m *SecurityListModel) toUpdateRequest() (*kbapi.UpdateListJSONRequestBody,
 		req.Meta = &metaMap
 	}
 
-	if !m.Version.IsNull() && !m.Version.IsUnknown() {
-		version := kbapi.SecurityListsAPIListVersion(m.Version.ValueInt64())
+	if utils.IsKnown(m.Version) {
+		version := kbapi.SecurityListsAPIListVersion(int(m.Version.ValueInt64()))
 		req.Version = &version
 	}
 
