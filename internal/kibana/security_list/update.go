@@ -21,11 +21,6 @@ func (r *securityListResource) Update(ctx context.Context, req resource.UpdateRe
 		return
 	}
 
-	// Preserve version_id from state for optimistic locking
-	if state.VersionID.ValueString() != "" {
-		plan.VersionID = state.VersionID
-	}
-
 	// Convert plan to API request
 	updateReq, diags := plan.toUpdateRequest()
 	resp.Diagnostics.Append(diags...)

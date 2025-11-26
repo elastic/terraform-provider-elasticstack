@@ -3,6 +3,7 @@ package security_list
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
@@ -116,9 +117,9 @@ func (m *SecurityListModel) fromAPI(ctx context.Context, apiList *kbapi.Security
 	m.Immutable = types.BoolValue(apiList.Immutable)
 	m.Version = types.Int64Value(int64(apiList.Version))
 	m.TieBreakerID = types.StringValue(apiList.TieBreakerId)
-	m.CreatedAt = types.StringValue(apiList.CreatedAt.String())
+	m.CreatedAt = types.StringValue(apiList.CreatedAt.Format(time.RFC3339))
 	m.CreatedBy = types.StringValue(apiList.CreatedBy)
-	m.UpdatedAt = types.StringValue(apiList.UpdatedAt.String())
+	m.UpdatedAt = types.StringValue(apiList.UpdatedAt.Format(time.RFC3339))
 	m.UpdatedBy = types.StringValue(apiList.UpdatedBy)
 
 	// Set optional _version field

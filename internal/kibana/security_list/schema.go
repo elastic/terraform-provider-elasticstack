@@ -26,7 +26,6 @@ func (r *securityListResource) Schema(_ context.Context, _ resource.SchemaReques
 				Optional:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
-					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"space_id": schema.StringAttribute{
