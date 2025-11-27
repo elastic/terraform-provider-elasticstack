@@ -4,6 +4,7 @@ import (
 	"context"
 	_ "embed"
 
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -82,6 +83,7 @@ func (r *securityListResource) Schema(_ context.Context, _ resource.SchemaReques
 			"meta": schema.StringAttribute{
 				MarkdownDescription: "Placeholder for metadata about the value list as JSON string.",
 				Optional:            true,
+				CustomType:          jsontypes.NormalizedType{},
 			},
 			"version": schema.Int64Attribute{
 				MarkdownDescription: "The document version number.",

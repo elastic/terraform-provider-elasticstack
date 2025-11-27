@@ -7,28 +7,29 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 type SecurityListModel struct {
-	ID           types.String `tfsdk:"id"`
-	SpaceID      types.String `tfsdk:"space_id"`
-	ListID       types.String `tfsdk:"list_id"`
-	Name         types.String `tfsdk:"name"`
-	Description  types.String `tfsdk:"description"`
-	Type         types.String `tfsdk:"type"`
-	Deserializer types.String `tfsdk:"deserializer"`
-	Serializer   types.String `tfsdk:"serializer"`
-	Meta         types.String `tfsdk:"meta"`
-	Version      types.Int64  `tfsdk:"version"`
-	VersionID    types.String `tfsdk:"version_id"`
-	Immutable    types.Bool   `tfsdk:"immutable"`
-	CreatedAt    types.String `tfsdk:"created_at"`
-	CreatedBy    types.String `tfsdk:"created_by"`
-	UpdatedAt    types.String `tfsdk:"updated_at"`
-	UpdatedBy    types.String `tfsdk:"updated_by"`
-	TieBreakerID types.String `tfsdk:"tie_breaker_id"`
+	ID           types.String         `tfsdk:"id"`
+	SpaceID      types.String         `tfsdk:"space_id"`
+	ListID       types.String         `tfsdk:"list_id"`
+	Name         types.String         `tfsdk:"name"`
+	Description  types.String         `tfsdk:"description"`
+	Type         types.String         `tfsdk:"type"`
+	Deserializer types.String         `tfsdk:"deserializer"`
+	Serializer   types.String         `tfsdk:"serializer"`
+	Meta         jsontypes.Normalized `tfsdk:"meta"`
+	Version      types.Int64          `tfsdk:"version"`
+	VersionID    types.String         `tfsdk:"version_id"`
+	Immutable    types.Bool           `tfsdk:"immutable"`
+	CreatedAt    types.String         `tfsdk:"created_at"`
+	CreatedBy    types.String         `tfsdk:"created_by"`
+	UpdatedAt    types.String         `tfsdk:"updated_at"`
+	UpdatedBy    types.String         `tfsdk:"updated_by"`
+	TieBreakerID types.String         `tfsdk:"tie_breaker_id"`
 }
 
 // toCreateRequest converts the Terraform model to API create request
@@ -58,8 +59,9 @@ func (m *SecurityListModel) toCreateRequest() (*kbapi.CreateListJSONRequestBody,
 
 	if utils.IsKnown(m.Meta) {
 		var metaMap kbapi.SecurityListsAPIListMetadata
-		if err := json.Unmarshal([]byte(m.Meta.ValueString()), &metaMap); err != nil {
-			diags.AddError("Invalid meta JSON", err.Error())
+		unmarshalDiags := m.Meta.Unmarshal(&metaMap)
+		diags.Append(unmarshalDiags...)
+		if diags.HasError() {
 			return nil, diags
 		}
 		req.Meta = &metaMap
@@ -90,8 +92,9 @@ func (m *SecurityListModel) toUpdateRequest() (*kbapi.UpdateListJSONRequestBody,
 
 	if utils.IsKnown(m.Meta) {
 		var metaMap kbapi.SecurityListsAPIListMetadata
-		if err := json.Unmarshal([]byte(m.Meta.ValueString()), &metaMap); err != nil {
-			diags.AddError("Invalid meta JSON", err.Error())
+		unmarshalDiags := m.Meta.Unmarshal(&metaMap)
+		diags.Append(unmarshalDiags...)
+		if diags.HasError() {
 			return nil, diags
 		}
 		req.Meta = &metaMap
@@ -144,12 +147,12 @@ func (m *SecurityListModel) fromAPI(ctx context.Context, apiList *kbapi.Security
 	if apiList.Meta != nil {
 		metaBytes, err := json.Marshal(apiList.Meta)
 		if err != nil {
-			diags.AddError("Failed to marshal meta", err.Error())
+			diags.AddError("Failed to marshal meta field from API response to JSON", err.Error())
 			return diags
 		}
-		m.Meta = types.StringValue(string(metaBytes))
+		m.Meta = jsontypes.NewNormalizedValue(string(metaBytes))
 	} else {
-		m.Meta = types.StringNull()
+		m.Meta = jsontypes.NewNormalizedNull()
 	}
 
 	return diags

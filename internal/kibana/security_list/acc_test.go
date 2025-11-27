@@ -151,3 +151,45 @@ func TestAccResourceSecurityList_SerializerDeserializer(t *testing.T) {
 		},
 	})
 }
+
+func TestAccResourceSecurityList_WithMetadata(t *testing.T) {
+	listID := "meta-list-" + uuid.New().String()
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			ensureListIndexExists(t)
+		},
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{ // Create with metadata
+				ConfigDirectory: acctest.NamedTestCaseDirectory("create_with_meta"),
+				ConfigVariables: config.Variables{
+					"list_id":     config.StringVariable(listID),
+					"name":        config.StringVariable("List with Metadata"),
+					"description": config.StringVariable("A test list with metadata"),
+					"type":        config.StringVariable("ip"),
+					"meta":        config.StringVariable(`{"author":"test-user","category":"network","tags":["production","firewall"]}`),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_list.test", "name", "List with Metadata"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_list.test", "type", "ip"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_list.test", "meta"),
+				),
+			},
+			{ // Update metadata
+				ConfigDirectory: acctest.NamedTestCaseDirectory("update_meta"),
+				ConfigVariables: config.Variables{
+					"list_id":     config.StringVariable(listID),
+					"name":        config.StringVariable("List with Metadata"),
+					"description": config.StringVariable("A test list with updated metadata"),
+					"type":        config.StringVariable("ip"),
+					"meta":        config.StringVariable(`{"author":"updated-user","category":"security","tags":["staging","api"],"version":"2.0"}`),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_list.test", "description", "A test list with updated metadata"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_list.test", "meta"),
+				),
+			},
+		},
+	})
+}
