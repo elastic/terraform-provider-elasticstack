@@ -12,4 +12,12 @@ echo "--- Caching GPG passphrase"
 echo "$GPG_PASSPHRASE_SECRET" | gpg --armor --detach-sign --passphrase-fd 0 --pinentry-mode loopback
 
 echo "--- Release the binaries"
-make release
+
+if [[ -n "${SNAPSHOT}" ]]; then
+  make release-snapshot
+  echo "--- Uploading snapshot artifacts"
+  ls -alh dist/
+else
+  echo "Would do a real release"
+fi
+

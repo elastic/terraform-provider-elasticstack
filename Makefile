@@ -172,7 +172,7 @@ setup: tools vendor ## Setup the dev environment
 
 .PHONY: release-snapshot
 release-snapshot: tools ## Make local-only test release to see if it works using "release" command
-	@ go tool github.com/goreleaser/goreleaser/v2 release --snapshot --clean
+	@ go tool github.com/goreleaser/goreleaser/v2 release --snapshot --clean --parallelism=4
 
 
 .PHONY: release-no-publish
@@ -182,7 +182,7 @@ release-no-publish: tools check-sign-release ## Make a release without publishin
 
 .PHONY: release
 release: tools check-sign-release check-publish-release ## Build, sign, and upload your release
-	@ go tool github.com/goreleaser/goreleaser/v2 release --clean  --parallelism=4
+	@ go tool github.com/goreleaser/goreleaser/v2 release --clean --parallelism=4
 
 
 .PHONY: check-sign-release
