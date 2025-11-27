@@ -36,6 +36,7 @@ var (
 		"auto_expand_replicas",
 		"refresh_interval",
 		"search.idle.after",
+		"mapping.total_fields.limit",
 		"max_result_window",
 		"max_inner_result_window",
 		"max_rescore_window",
@@ -97,6 +98,7 @@ type tfModel struct {
 	SortField                          types.Set            `tfsdk:"sort_field"`
 	SortOrder                          types.List           `tfsdk:"sort_order"`
 	MappingCoerce                      types.Bool           `tfsdk:"mapping_coerce"`
+	MappingTotalFieldsLimit            types.Int64          `tfsdk:"mapping_total_fields_limit"`
 	NumberOfReplicas                   types.Int64          `tfsdk:"number_of_replicas"`
 	AutoExpandReplicas                 types.String         `tfsdk:"auto_expand_replicas"`
 	SearchIdleAfter                    types.String         `tfsdk:"search_idle_after"`
