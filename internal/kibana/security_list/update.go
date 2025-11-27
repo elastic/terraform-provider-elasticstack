@@ -37,36 +37,36 @@ func (r *securityListResource) Update(ctx context.Context, req resource.UpdateRe
 
 	// Update the list
 	spaceID := plan.SpaceID.ValueString()
-	updateResp, diags := kibana_oapi.UpdateList(ctx, client, spaceID, *updateReq)
+	updatedList, diags := kibana_oapi.UpdateList(ctx, client, spaceID, *updateReq)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	if updateResp == nil || updateResp.JSON200 == nil {
+	if updatedList == nil {
 		resp.Diagnostics.AddError("Failed to update security list", "API returned empty response")
 		return
 	}
 
 	// Read the updated list to populate state
 	readParams := &kbapi.ReadListParams{
-		Id: updateResp.JSON200.Id,
+		Id: updatedList.Id,
 	}
 
-	readResp, diags := kibana_oapi.GetList(ctx, client, spaceID, readParams)
+	list, diags := kibana_oapi.GetList(ctx, client, spaceID, readParams)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	if readResp == nil || readResp.JSON200 == nil {
+	if list == nil {
 		resp.State.RemoveResource(ctx)
 		resp.Diagnostics.AddError("Failed to fetch security list", "API returned empty response")
 		return
 	}
 
 	// Update state with read response
-	diags = plan.fromAPI(ctx, readResp.JSON200)
+	diags = plan.fromAPI(ctx, list)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

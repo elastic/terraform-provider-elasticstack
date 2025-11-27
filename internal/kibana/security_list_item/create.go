@@ -2,7 +2,6 @@ package security_list_item
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
@@ -31,44 +30,37 @@ func (r *securityListItemResource) Create(ctx context.Context, req resource.Crea
 	}
 
 	// Create the list item
-	createResp, diags := kibana_oapi.CreateListItem(ctx, client, plan.SpaceID.ValueString(), *createReq)
+	createdListItem, diags := kibana_oapi.CreateListItem(ctx, client, plan.SpaceID.ValueString(), *createReq)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	if createResp == nil || createResp.JSON200 == nil {
+	if createdListItem == nil {
 		resp.Diagnostics.AddError("Failed to create security list item", "API returned empty response")
 		return
 	}
 
 	// Read the created list item to populate state
-	id := kbapi.SecurityListsAPIListId(createResp.JSON200.Id)
+	id := kbapi.SecurityListsAPIListId(createdListItem.Id)
 	readParams := &kbapi.ReadListItemParams{
 		Id: &id,
 	}
 
-	readResp, diags := kibana_oapi.GetListItem(ctx, client, plan.SpaceID.ValueString(), readParams)
+	listItem, diags := kibana_oapi.GetListItem(ctx, client, plan.SpaceID.ValueString(), readParams)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	if readResp == nil || readResp.JSON200 == nil {
+	if listItem == nil {
 		resp.State.RemoveResource(ctx)
 		resp.Diagnostics.AddError("Failed to fetch security list item", "API returned empty response")
 		return
 	}
 
-	// Unmarshal the response body to get the list item
-	var listItem kbapi.SecurityListsAPIListItem
-	if err := json.Unmarshal(readResp.Body, &listItem); err != nil {
-		resp.Diagnostics.AddError("Failed to parse list item response", err.Error())
-		return
-	}
-
 	// Update state with read response
-	diags = plan.fromAPIModel(ctx, &listItem)
+	diags = plan.fromAPIModel(ctx, listItem)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

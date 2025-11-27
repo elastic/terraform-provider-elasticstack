@@ -39,19 +39,19 @@ func (r *securityListResource) Read(ctx context.Context, req resource.ReadReques
 		Id: kbapi.SecurityListsAPIListId(listID),
 	}
 
-	readResp, diags := kibana_oapi.GetList(ctx, client, spaceID, params)
+	list, diags := kibana_oapi.GetList(ctx, client, spaceID, params)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	if readResp == nil || readResp.JSON200 == nil {
+	if list == nil {
 		resp.State.RemoveResource(ctx)
 		return
 	}
 
 	// Convert API response to model
-	diags = state.fromAPI(ctx, readResp.JSON200)
+	diags = state.fromAPI(ctx, list)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
