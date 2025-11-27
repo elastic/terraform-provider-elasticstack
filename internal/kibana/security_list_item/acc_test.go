@@ -68,6 +68,16 @@ func TestAccResourceSecurityListItem(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_item.test", "value", "test-value-updated"),
 				),
 			},
+			{ // Import
+				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"value":   config.StringVariable("test-value-updated"),
+				},
+				ResourceName:      "elasticstack_kibana_security_list_item.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
 		},
 	})
 }
@@ -109,6 +119,17 @@ func TestAccResourceSecurityListItem_WithMeta(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_item.test", "value", "test-value-with-meta"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_item.test", "meta", `{"category":"malicious","notes":"Updated metadata","severity":"critical"}`),
 				),
+			},
+			{ // Import
+				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"value":   config.StringVariable("test-value-with-meta"),
+					"meta":    config.StringVariable(`{"category":"malicious","notes":"Updated metadata","severity":"critical"}`),
+				},
+				ResourceName:      "elasticstack_kibana_security_list_item.test",
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
@@ -161,6 +182,17 @@ func TestAccResourceSecurityListItem_Space(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_item.test", "value", "10.0.0.1"),
 				),
+			},
+			{ // Import
+				ConfigDirectory: acctest.NamedTestCaseDirectory("space_update"),
+				ConfigVariables: config.Variables{
+					"space_id": config.StringVariable(spaceID),
+					"list_id":  config.StringVariable(listID),
+					"value":    config.StringVariable("10.0.0.1"),
+				},
+				ResourceName:      "elasticstack_kibana_security_list_item.test",
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
