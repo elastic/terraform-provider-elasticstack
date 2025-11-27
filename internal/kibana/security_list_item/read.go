@@ -8,6 +8,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func (r *securityListItemResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -24,8 +25,13 @@ func (r *securityListItemResource) Read(ctx context.Context, req resource.ReadRe
 		return
 	}
 
-	// Parse composite ID to get space_id and resource_id
+	// Parse composite ID to get space_id and resource id
 	compId, compIdDiags := clients.CompositeIdFromStrFw(state.ID.ValueString())
+
+	if !compIdDiags.HasError() {
+		state.SpaceID = types.StringValue(compId.ClusterId)
+	}
+
 	resp.Diagnostics.Append(compIdDiags...)
 	if resp.Diagnostics.HasError() {
 		return

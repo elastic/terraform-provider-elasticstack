@@ -198,6 +198,62 @@ func TestAccResourceSecurityListItem_Space(t *testing.T) {
 	})
 }
 
+func TestAccResourceSecurityListItem_WithListItemID(t *testing.T) {
+	listID := "test-list-items-with-id-" + uuid.New().String()
+	listItemID1 := "custom-item-id-1"
+	listItemID2 := "custom-item-id-2"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			ensureListIndexExists(t)
+		},
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{ // Create with custom list_item_id
+				ConfigDirectory: acctest.NamedTestCaseDirectory("with_list_item_id_create"),
+				ConfigVariables: config.Variables{
+					"list_id":      config.StringVariable(listID),
+					"list_item_id": config.StringVariable(listItemID1),
+					"value":        config.StringVariable("test-value-1"),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_list_item.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_item.test", "list_item_id", listItemID1),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_item.test", "value", "test-value-1"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_list_item.test", "created_at"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_list_item.test", "created_by"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_list_item.test", "updated_at"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_list_item.test", "updated_by"),
+				),
+			},
+			{ // Update list_item_id (should force replacement)
+				ConfigDirectory: acctest.NamedTestCaseDirectory("with_list_item_id_update"),
+				ConfigVariables: config.Variables{
+					"list_id":      config.StringVariable(listID),
+					"list_item_id": config.StringVariable(listItemID2),
+					"value":        config.StringVariable("test-value-2"),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_item.test", "list_item_id", listItemID2),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_item.test", "value", "test-value-2"),
+				),
+			},
+			{ // Import
+				ConfigDirectory: acctest.NamedTestCaseDirectory("with_list_item_id_update"),
+				ConfigVariables: config.Variables{
+					"list_id":      config.StringVariable(listID),
+					"list_item_id": config.StringVariable(listItemID2),
+					"value":        config.StringVariable("test-value-2"),
+				},
+				ResourceName:      "elasticstack_kibana_security_list_item.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 func ensureListIndexExistsInSpace(t *testing.T, spaceID string) {
 	client, err := clients.NewAcceptanceTestingClient()
 	if err != nil {

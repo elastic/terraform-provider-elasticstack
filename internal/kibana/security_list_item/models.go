@@ -13,16 +13,17 @@ import (
 )
 
 type SecurityListItemModel struct {
-	ID        types.String         `tfsdk:"id"`
-	SpaceID   types.String         `tfsdk:"space_id"`
-	ListID    types.String         `tfsdk:"list_id"`
-	Value     types.String         `tfsdk:"value"`
-	Meta      jsontypes.Normalized `tfsdk:"meta"`
-	CreatedAt types.String         `tfsdk:"created_at"`
-	CreatedBy types.String         `tfsdk:"created_by"`
-	UpdatedAt types.String         `tfsdk:"updated_at"`
-	UpdatedBy types.String         `tfsdk:"updated_by"`
-	Version   types.String         `tfsdk:"version"`
+	ID         types.String         `tfsdk:"id"`
+	ListItemID types.String         `tfsdk:"list_item_id"`
+	SpaceID    types.String         `tfsdk:"space_id"`
+	ListID     types.String         `tfsdk:"list_id"`
+	Value      types.String         `tfsdk:"value"`
+	Meta       jsontypes.Normalized `tfsdk:"meta"`
+	CreatedAt  types.String         `tfsdk:"created_at"`
+	CreatedBy  types.String         `tfsdk:"created_by"`
+	UpdatedAt  types.String         `tfsdk:"updated_at"`
+	UpdatedBy  types.String         `tfsdk:"updated_by"`
+	Version    types.String         `tfsdk:"version"`
 }
 
 // toAPICreateModel converts the Terraform model to the API create request body
@@ -35,14 +36,8 @@ func (m *SecurityListItemModel) toAPICreateModel(ctx context.Context) (*kbapi.Cr
 	}
 
 	// Set optional ID if specified
-	if utils.IsKnown(m.ID) {
-		// Parse composite ID to get resource_id
-		compId, compIdDiags := clients.CompositeIdFromStrFw(m.ID.ValueString())
-		diags.Append(compIdDiags...)
-		if diags.HasError() {
-			return nil, diags
-		}
-		id := kbapi.SecurityListsAPIListItemId(compId.ResourceId)
+	if utils.IsKnown(m.ListItemID) {
+		id := kbapi.SecurityListsAPIListItemId(m.ListItemID.ValueString())
 		body.Id = &id
 	}
 
@@ -103,6 +98,7 @@ func (m *SecurityListItemModel) fromAPIModel(ctx context.Context, apiItem *kbapi
 		ResourceId: string(apiItem.Id),
 	}
 	m.ID = types.StringValue(compId.String())
+	m.ListItemID = types.StringValue(string(apiItem.Id))
 	m.ListID = types.StringValue(string(apiItem.ListId))
 	m.Value = types.StringValue(string(apiItem.Value))
 	m.CreatedAt = types.StringValue(apiItem.CreatedAt.Format("2006-01-02T15:04:05.000Z"))
