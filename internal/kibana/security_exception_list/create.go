@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -129,7 +130,11 @@ func (r *ExceptionListResource) Create(ctx context.Context, req resource.CreateR
 func (r *ExceptionListResource) updateStateFromAPIResponse(ctx context.Context, model *ExceptionListModel, apiResp *kbapi.SecurityExceptionsAPIExceptionList) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	model.ID = types.StringValue(string(apiResp.Id))
+	compId := clients.CompositeId{
+		ClusterId:  model.SpaceID.ValueString(),
+		ResourceId: string(apiResp.Id),
+	}
+	model.ID = types.StringValue(compId.String())
 	model.ListID = types.StringValue(string(apiResp.ListId))
 	model.Name = types.StringValue(string(apiResp.Name))
 	model.Description = types.StringValue(string(apiResp.Description))

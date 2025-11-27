@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -25,8 +26,15 @@ func (r *ExceptionListResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
+	// Parse composite ID to get space_id and resource_id
+	compId, compIdDiags := clients.CompositeIdFromStrFw(plan.ID.ValueString())
+	resp.Diagnostics.Append(compIdDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	// Build the update request body
-	id := kbapi.SecurityExceptionsAPIExceptionListId(plan.ID.ValueString())
+	id := kbapi.SecurityExceptionsAPIExceptionListId(compId.ResourceId)
 	body := kbapi.UpdateExceptionListJSONRequestBody{
 		Id:          &id,
 		Name:        kbapi.SecurityExceptionsAPIExceptionListName(plan.Name.ValueString()),
