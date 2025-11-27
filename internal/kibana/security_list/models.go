@@ -8,6 +8,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -120,10 +121,10 @@ func (m *SecurityListModel) fromAPI(ctx context.Context, apiList *kbapi.Security
 	}
 	m.ID = types.StringValue(compId.String())
 
-	m.ListID = utils.StringishValue(apiList.Id)
-	m.Name = utils.StringishValue(apiList.Name)
-	m.Description = utils.StringishValue(apiList.Description)
-	m.Type = utils.StringishValue(apiList.Type)
+	m.ListID = typeutils.StringishValue(apiList.Id)
+	m.Name = typeutils.StringishValue(apiList.Name)
+	m.Description = typeutils.StringishValue(apiList.Description)
+	m.Type = typeutils.StringishValue(apiList.Type)
 	m.Immutable = types.BoolValue(apiList.Immutable)
 	m.Version = types.Int64Value(int64(apiList.Version))
 	m.TieBreakerID = types.StringValue(apiList.TieBreakerId)
@@ -133,11 +134,11 @@ func (m *SecurityListModel) fromAPI(ctx context.Context, apiList *kbapi.Security
 	m.UpdatedBy = types.StringValue(apiList.UpdatedBy)
 
 	// Set optional _version field
-	m.VersionID = utils.StringishPointerValue(apiList.UnderscoreVersion)
+	m.VersionID = typeutils.StringishPointerValue(apiList.UnderscoreVersion)
 
-	m.Deserializer = utils.StringishPointerValue(apiList.Deserializer)
+	m.Deserializer = typeutils.StringishPointerValue(apiList.Deserializer)
 
-	m.Serializer = utils.StringishPointerValue(apiList.Serializer)
+	m.Serializer = typeutils.StringishPointerValue(apiList.Serializer)
 
 	if apiList.Meta != nil {
 		metaBytes, err := json.Marshal(apiList.Meta)

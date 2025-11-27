@@ -7,6 +7,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -98,20 +99,16 @@ func (m *SecurityListItemModel) fromAPIModel(ctx context.Context, apiItem *kbapi
 		ResourceId: string(apiItem.Id),
 	}
 	m.ID = types.StringValue(compId.String())
-	m.ListItemID = types.StringValue(string(apiItem.Id))
-	m.ListID = types.StringValue(string(apiItem.ListId))
-	m.Value = types.StringValue(string(apiItem.Value))
+	m.ListItemID = typeutils.StringishValue(apiItem.Id)
+	m.ListID = typeutils.StringishValue(apiItem.ListId)
+	m.Value = typeutils.StringishValue(apiItem.Value)
 	m.CreatedAt = types.StringValue(apiItem.CreatedAt.Format("2006-01-02T15:04:05.000Z"))
 	m.CreatedBy = types.StringValue(apiItem.CreatedBy)
 	m.UpdatedAt = types.StringValue(apiItem.UpdatedAt.Format("2006-01-02T15:04:05.000Z"))
 	m.UpdatedBy = types.StringValue(apiItem.UpdatedBy)
 
 	// Set version if available
-	if apiItem.UnderscoreVersion != nil {
-		m.VersionID = types.StringValue(string(*apiItem.UnderscoreVersion))
-	} else {
-		m.VersionID = types.StringNull()
-	}
+	m.VersionID = typeutils.StringishPointerValue(apiItem.UnderscoreVersion)
 
 	// Set meta if available
 	if apiItem.Meta != nil {
