@@ -138,10 +138,9 @@ func toEqlRuleUpdateProps(ctx context.Context, client clients.MinVersionEnforcea
 		diags.AddError("ID was not a valid UUID", err.Error())
 		return updateProps, diags
 	}
-	var id = kbapi.SecurityDetectionsAPIRuleObjectId(uid)
 
 	eqlRule := kbapi.SecurityDetectionsAPIEqlRuleUpdateProps{
-		Id:          &id,
+		Id:          &uid,
 		Name:        kbapi.SecurityDetectionsAPIRuleName(d.Name.ValueString()),
 		Description: kbapi.SecurityDetectionsAPIRuleDescription(d.Description.ValueString()),
 		Type:        kbapi.SecurityDetectionsAPIEqlRuleUpdatePropsType("eql"),

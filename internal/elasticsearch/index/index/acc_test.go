@@ -270,16 +270,17 @@ provider "elasticstack" {
 resource "elasticstack_elasticsearch_index" "test" {
   name = "%s"
 
-  alias {
-    name = "test_alias_1"
-  }
-
-  alias {
-    name = "test_alias_2"
-    filter = jsonencode({
-      term = { "user.id" = "developer" }
-    })
-  }
+  alias = [
+    {
+      name = "test_alias_1"
+    },
+    {
+      name = "test_alias_2"
+      filter = jsonencode({
+        term = { "user.id" = "developer" }
+      })
+    }
+  ]
 
   mappings = jsonencode({
     properties = {
@@ -303,9 +304,11 @@ provider "elasticstack" {
 resource "elasticstack_elasticsearch_index" "test" {
   name = "%s"
 
-  alias {
-    name = "test_alias_1"
-  }
+  alias = [
+    {
+      name = "test_alias_1"
+    }
+  ]
 
   mappings = jsonencode({
     properties = {
@@ -328,9 +331,11 @@ resource "elasticstack_elasticsearch_index" "test" {
   name = "%s"
   number_of_replicas = 0
 
-  alias {
-    name = "test_alias_1"
-  }
+  alias = [
+    {
+      name = "test_alias_1"
+    }
+  ]
 
   mappings = jsonencode({
     properties = {
@@ -516,10 +521,12 @@ resource "elasticstack_elasticsearch_index_template" "test" {
 resource "elasticstack_elasticsearch_index" "test" {
   name                = "%s"
   deletion_protection = false
-  alias {
-    name           = "%s-alias"
-    is_write_index = true
-  }
+  alias = [
+    {
+      name           = "%s-alias"
+      is_write_index = true
+    }
+  ]
   lifecycle {
     ignore_changes = [mappings]
   }

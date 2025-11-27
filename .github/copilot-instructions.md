@@ -1,6 +1,6 @@
 You will be writing or reviewing code for the Terraform provider for Elastic Stack (Elasticsearch, Kibana, Fleet, APM, and Logstash). This is a Go-based repository hosting the provider source. 
 
-When writing code, you must adhere to the coding standards and conventions outlined in the [CODING_STANDARDS.md](../CODING_STANDARDS.md) document in this repository.
+When writing code, you must adhere to the coding standards and conventions outlined in the [CODING_STANDARDS.md](../CODING_STANDARDS.md) document in this repository. After completing any code changes check again that they conform to the [CODING_STANDARDS.md](../CODING_STANDARDS.md).
 
 When reviewing code, ensure that all changes comply with the coding standards and conventions specified in the [CODING_STANDARDS.md](../CODING_STANDARDS.md) document. Pay special attention to project structure, schema definitions, JSON handling, resource implementation, and testing practices.
 

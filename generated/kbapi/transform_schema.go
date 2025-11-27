@@ -567,6 +567,7 @@ var transformers = []TransformFunc{
 	fixGetSpacesParams,
 	fixGetSyntheticsMonitorsParams,
 	fixGetMaintenanceWindowFindParams,
+	removeDuplicateOneOfRefs,
 	transformRemoveExamples,
 	transformRemoveUnusedComponents,
 	transformOmitEmptyNullable,
@@ -691,6 +692,11 @@ func transformKibanaPaths(schema *Schema) {
 		"/api/actions/connector/{id}",
 		"/api/actions/connectors",
 		"/api/detection_engine/rules",
+		"/api/exception_lists",
+		"/api/exception_lists/items",
+		"/api/lists",
+		"/api/lists/index",
+		"/api/lists/items",
 	}
 
 	// Add a spaceId parameter if not already present
@@ -881,6 +887,7 @@ func removeBrokenDiscriminator(schema *Schema) {
 		"Security_Detections_API_RuleSource",
 		"Security_Endpoint_Exceptions_API_ExceptionListItemEntry",
 		"Security_Exceptions_API_ExceptionListItemEntry",
+		"Security_Endpoint_Management_API_ActionDetailsResponse",
 	}
 
 	for _, component := range brokenDiscriminatorComponents {
@@ -913,6 +920,50 @@ func fixGetSyntheticsMonitorsParams(schema *Schema) {
 
 func fixGetMaintenanceWindowFindParams(schema *Schema) {
 	schema.MustGetPath("/api/maintenance_window/_find").MustGetEndpoint("get").Move("parameters.2.schema.anyOf.1", "parameters.2.schema")
+}
+
+func removeDuplicateOneOfRefs(schema *Schema) {
+	componentSchemas := schema.Components.MustGetMap("schemas")
+	componentSchemas.Iterate(removeDuplicateOneOfRefsFromNode)
+}
+
+// https://github.com/elastic/kibana/issues/244264
+func removeDuplicateOneOfRefsFromNode(key string, node Map) {
+	maybeOneOf, hasOneOf := node.GetSlice("oneOf")
+	if hasOneOf {
+		// Check for duplicate $ref entries
+		seenRefs := map[string]bool{}
+		newOneOf := Slice{}
+		for _, item := range maybeOneOf {
+			itemMap, ok := item.(Map)
+			if !ok {
+				newOneOf = append(newOneOf, item)
+				continue
+			}
+			refValue, hasRef := itemMap["$ref"]
+			if hasRef {
+				refStr, ok := refValue.(string)
+				if !ok {
+					newOneOf = append(newOneOf, item)
+					continue
+				}
+				if _, seen := seenRefs[refStr]; seen {
+					// Duplicate found, skip it
+					continue
+				}
+				seenRefs[refStr] = true
+			}
+			newOneOf = append(newOneOf, item)
+		}
+		node["oneOf"] = newOneOf
+	}
+
+	properties, hasProperties := node.GetMap("properties")
+	if !hasProperties {
+		return
+	}
+
+	properties.Iterate(removeDuplicateOneOfRefsFromNode)
 }
 
 // transformFleetPaths fixes the fleet paths.

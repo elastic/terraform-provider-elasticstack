@@ -1,7 +1,48 @@
 ## [Unreleased]
 
+### Breaking changes
+
+#### `elasticstack_elasticsearch_index.alias` block has changed to a set attribute. 
+
+The `alias` block in the `elasticstack_elasticsearch_index` resource has been moved to an attribute. 
+This transition provides better support for future changes in both the provider and the underlying Terraform framework. 
+
+Existing usage of the `alias` block must be migrated to the attribute syntax. For example:
+
+```hcl
+alias {
+  name = "my_alias_1"
+}
+
+alias {
+  name = "my_alias_2"
+  filter = jsonencode({
+    term = { "user.id" = "developer" }
+  })
+}
+```
+
+becomes 
+
+```hcl
+alias = [
+  {
+    name = "my_alias_1"
+  },
+  {
+    name = "my_alias_2"
+    filter = jsonencode({
+      term = { "user.id" = "developer" }
+    })
+  }
+]
+```
+
+### Changes
+
 - Support `.bedrock` and `.gen-ai` connectors ([#1467](https://github.com/elastic/terraform-provider-elasticstack/pull/1467))
 - Support the `solution` attribute in `elasticstack_kibana_space` from 8.16 ([#1486](https://github.com/elastic/terraform-provider-elasticstack/pull/1486)) 
+- Add `elasticstack_elasticsearch_alias` resource ([#1343](https://github.com/elastic/terraform-provider-elasticstack/pull/1343))
 
 ## [0.12.2] - 2025-11-19
 - Fix `elasticstack_elasticsearch_snapshot_lifecycle` metadata type conversion causing terraform apply to fail ([#1409](https://github.com/elastic/terraform-provider-elasticstack/issues/1409))
