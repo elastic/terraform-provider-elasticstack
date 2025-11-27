@@ -226,6 +226,10 @@ func getSchema() schema.Schema {
 				},
 			},
 			// Dynamic settings that can be changed at runtime
+			"mapping_total_fields_limit": schema.Int64Attribute{
+				Description: "The maximum number of fields in an index. Field type parameters count towards this limit. The default value is 1000.",
+				Optional:    true,
+			},
 			"number_of_replicas": schema.Int64Attribute{
 				Description: "Number of shard replicas.",
 				Optional:    true,

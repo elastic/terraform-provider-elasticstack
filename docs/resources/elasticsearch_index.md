@@ -85,6 +85,7 @@ resource "elasticstack_elasticsearch_index" "my_index" {
 - `indexing_slowlog_threshold_index_warn` (String) Set the cutoff for shard level slow search logging of slow searches for indexing queries, in time units, e.g. `10s`
 - `load_fixed_bitset_filters_eagerly` (Boolean) Indicates whether cached filters are pre-loaded for nested queries. This can be set only on creation.
 - `mapping_coerce` (Boolean) Set index level coercion setting that is applied to all mapping types.
+- `mapping_total_fields_limit` (Number) The maximum number of fields in an index. Field type parameters count towards this limit. The default value is 1000.
 - `mappings` (String) Mapping for fields in the index.
 			If specified, this mapping can include: field names, [field data types](https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-types.html), [mapping parameters](https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-params.html).
 			**NOTE:**
