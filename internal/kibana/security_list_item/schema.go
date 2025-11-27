@@ -56,7 +56,7 @@ func (r *securityListItemResource) Schema(_ context.Context, _ resource.SchemaRe
 				Optional:            true,
 				CustomType:          jsontypes.NormalizedType{},
 			},
-			"version": schema.StringAttribute{
+			"version_id": schema.StringAttribute{
 				MarkdownDescription: "The version id, normally returned by the API when the document is retrieved. Used to ensure updates are done against the latest version.",
 				Computed:            true,
 			},

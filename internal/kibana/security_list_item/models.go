@@ -23,7 +23,7 @@ type SecurityListItemModel struct {
 	CreatedBy  types.String         `tfsdk:"created_by"`
 	UpdatedAt  types.String         `tfsdk:"updated_at"`
 	UpdatedBy  types.String         `tfsdk:"updated_by"`
-	Version    types.String         `tfsdk:"version"`
+	VersionID  types.String         `tfsdk:"version_id"`
 }
 
 // toAPICreateModel converts the Terraform model to the API create request body
@@ -71,8 +71,8 @@ func (m *SecurityListItemModel) toAPIUpdateModel(ctx context.Context) (*kbapi.Up
 	}
 
 	// Set optional version if available
-	if utils.IsKnown(m.Version) {
-		version := kbapi.SecurityListsAPIListVersionId(m.Version.ValueString())
+	if utils.IsKnown(m.VersionID) {
+		version := kbapi.SecurityListsAPIListVersionId(m.VersionID.ValueString())
 		body.UnderscoreVersion = &version
 	}
 
@@ -108,9 +108,9 @@ func (m *SecurityListItemModel) fromAPIModel(ctx context.Context, apiItem *kbapi
 
 	// Set version if available
 	if apiItem.UnderscoreVersion != nil {
-		m.Version = types.StringValue(string(*apiItem.UnderscoreVersion))
+		m.VersionID = types.StringValue(string(*apiItem.UnderscoreVersion))
 	} else {
-		m.Version = types.StringNull()
+		m.VersionID = types.StringNull()
 	}
 
 	// Set meta if available
