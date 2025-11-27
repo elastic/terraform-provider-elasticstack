@@ -133,23 +133,11 @@ func (m *SecurityListModel) fromAPI(ctx context.Context, apiList *kbapi.Security
 	m.UpdatedBy = types.StringValue(apiList.UpdatedBy)
 
 	// Set optional _version field
-	if apiList.UnderscoreVersion != nil {
-		m.VersionID = utils.StringishPointerValue(apiList.UnderscoreVersion)
-	} else {
-		m.VersionID = types.StringNull()
-	}
+	m.VersionID = utils.StringishPointerValue(apiList.UnderscoreVersion)
 
-	if apiList.Deserializer != nil {
-		m.Deserializer = utils.StringishPointerValue(apiList.Deserializer)
-	} else {
-		m.Deserializer = types.StringNull()
-	}
+	m.Deserializer = utils.StringishPointerValue(apiList.Deserializer)
 
-	if apiList.Serializer != nil {
-		m.Serializer = utils.StringishPointerValue(apiList.Serializer)
-	} else {
-		m.Serializer = types.StringNull()
-	}
+	m.Serializer = utils.StringishPointerValue(apiList.Serializer)
 
 	if apiList.Meta != nil {
 		metaBytes, err := json.Marshal(apiList.Meta)
