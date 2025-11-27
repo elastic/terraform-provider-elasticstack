@@ -112,11 +112,11 @@ func (m *SecurityListModel) toUpdateRequest() (*kbapi.UpdateListJSONRequestBody,
 func (m *SecurityListModel) fromAPI(ctx context.Context, apiList *kbapi.SecurityListsAPIList) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	m.ID = types.StringValue(string(apiList.Id))
-	m.ListID = types.StringValue(string(apiList.Id))
-	m.Name = types.StringValue(string(apiList.Name))
-	m.Description = types.StringValue(string(apiList.Description))
-	m.Type = types.StringValue(string(apiList.Type))
+	m.ID = utils.StringishValue(apiList.Id)
+	m.ListID = utils.StringishValue(apiList.Id)
+	m.Name = utils.StringishValue(apiList.Name)
+	m.Description = utils.StringishValue(apiList.Description)
+	m.Type = utils.StringishValue(apiList.Type)
 	m.Immutable = types.BoolValue(apiList.Immutable)
 	m.Version = types.Int64Value(int64(apiList.Version))
 	m.TieBreakerID = types.StringValue(apiList.TieBreakerId)
@@ -127,19 +127,19 @@ func (m *SecurityListModel) fromAPI(ctx context.Context, apiList *kbapi.Security
 
 	// Set optional _version field
 	if apiList.UnderscoreVersion != nil {
-		m.VersionID = types.StringValue(string(*apiList.UnderscoreVersion))
+		m.VersionID = utils.StringishPointerValue(apiList.UnderscoreVersion)
 	} else {
 		m.VersionID = types.StringNull()
 	}
 
 	if apiList.Deserializer != nil {
-		m.Deserializer = types.StringValue(string(*apiList.Deserializer))
+		m.Deserializer = utils.StringishPointerValue(apiList.Deserializer)
 	} else {
 		m.Deserializer = types.StringNull()
 	}
 
 	if apiList.Serializer != nil {
-		m.Serializer = types.StringValue(string(*apiList.Serializer))
+		m.Serializer = utils.StringishPointerValue(apiList.Serializer)
 	} else {
 		m.Serializer = types.StringNull()
 	}
