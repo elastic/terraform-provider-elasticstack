@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -112,7 +113,13 @@ func (m *SecurityListModel) toUpdateRequest() (*kbapi.UpdateListJSONRequestBody,
 func (m *SecurityListModel) fromAPI(ctx context.Context, apiList *kbapi.SecurityListsAPIList) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	m.ID = utils.StringishValue(apiList.Id)
+	// Create composite ID from space_id and list_id
+	compId := clients.CompositeId{
+		ClusterId:  m.SpaceID.ValueString(),
+		ResourceId: string(apiList.Id),
+	}
+	m.ID = types.StringValue(compId.String())
+
 	m.ListID = utils.StringishValue(apiList.Id)
 	m.Name = utils.StringishValue(apiList.Name)
 	m.Description = utils.StringishValue(apiList.Description)
