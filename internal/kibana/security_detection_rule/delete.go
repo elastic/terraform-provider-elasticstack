@@ -41,12 +41,11 @@ func (r *securityDetectionRuleResource) Delete(ctx context.Context, req resource
 		resp.Diagnostics.AddError("ID was not a valid UUID", err.Error())
 		return
 	}
-	ruleObjectId := kbapi.SecurityDetectionsAPIRuleObjectId(uid)
 	params := &kbapi.DeleteRuleParams{
-		Id: &ruleObjectId,
+		Id: &uid,
 	}
 
-	response, err := kbClient.API.DeleteRuleWithResponse(ctx, params)
+	response, err := kbClient.API.DeleteRuleWithResponse(ctx, data.SpaceId.ValueString(), params)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error deleting security detection rule",

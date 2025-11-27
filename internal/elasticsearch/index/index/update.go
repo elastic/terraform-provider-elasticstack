@@ -2,12 +2,12 @@ package index
 
 import (
 	"context"
-	"maps"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -115,7 +115,7 @@ func (r *Resource) updateSettings(ctx context.Context, client *clients.ApiClient
 		}
 	}
 
-	if !maps.Equal(planDynamicSettings, stateDynamicSettings) {
+	if !utils.MapsEqual(planDynamicSettings, stateDynamicSettings) {
 		// Settings which are being removed must be explicitly set to null in the new settings
 		for setting := range stateDynamicSettings {
 			if _, ok := planDynamicSettings[setting]; !ok {

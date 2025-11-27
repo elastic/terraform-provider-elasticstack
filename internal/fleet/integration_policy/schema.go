@@ -92,6 +92,10 @@ func getSchemaV1() schema.Schema {
 				Description: "The version of the integration package.",
 				Required:    true,
 			},
+			"output_id": schema.StringAttribute{
+				Description: "The ID of the output to send data to. When not specified, the default output of the agent policy will be used.",
+				Optional:    true,
+			},
 			"vars_json": schema.StringAttribute{
 				Description: "Integration-level variables as JSON.",
 				CustomType:  jsontypes.NormalizedType{},
