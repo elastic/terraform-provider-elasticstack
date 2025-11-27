@@ -42,8 +42,8 @@ func (m *SecurityListItemModel) toAPICreateModel(ctx context.Context) (*kbapi.Cr
 	// Set optional meta if specified
 	if utils.IsKnown(m.Meta) {
 		var meta kbapi.SecurityListsAPIListItemMetadata
-		if err := json.Unmarshal([]byte(m.Meta.ValueString()), &meta); err != nil {
-			diags.AddError("Failed to parse meta JSON", err.Error())
+		diags.Append(m.Meta.Unmarshal(&meta)...)
+		if diags.HasError() {
 			return nil, diags
 		}
 		body.Meta = &meta
@@ -70,8 +70,8 @@ func (m *SecurityListItemModel) toAPIUpdateModel(ctx context.Context) (*kbapi.Up
 	// Set optional meta if specified
 	if utils.IsKnown(m.Meta) {
 		var meta kbapi.SecurityListsAPIListItemMetadata
-		if err := json.Unmarshal([]byte(m.Meta.ValueString()), &meta); err != nil {
-			diags.AddError("Failed to parse meta JSON", err.Error())
+		diags.Append(m.Meta.Unmarshal(&meta)...)
+		if diags.HasError() {
 			return nil, diags
 		}
 		body.Meta = &meta
@@ -103,7 +103,7 @@ func (m *SecurityListItemModel) fromAPIModel(ctx context.Context, apiItem *kbapi
 	if apiItem.Meta != nil {
 		metaJSON, err := json.Marshal(apiItem.Meta)
 		if err != nil {
-			diags.AddError("Failed to serialize meta", err.Error())
+			diags.AddError("Failed to serialize meta field", err.Error())
 			return diags
 		}
 		m.Meta = jsontypes.NewNormalizedValue(string(metaJSON))

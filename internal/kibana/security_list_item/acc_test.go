@@ -72,6 +72,48 @@ func TestAccResourceSecurityListItem(t *testing.T) {
 	})
 }
 
+func TestAccResourceSecurityListItem_WithMeta(t *testing.T) {
+	listID := "test-list-items-meta-" + uuid.New().String()
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			ensureListIndexExists(t)
+		},
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{ // Create with meta
+				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"value":   config.StringVariable("test-value-with-meta"),
+					"meta":    config.StringVariable(`{"category":"suspicious","severity":"high"}`),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_list_item.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_item.test", "value", "test-value-with-meta"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_item.test", "meta", `{"category":"suspicious","severity":"high"}`),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_list_item.test", "created_at"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_list_item.test", "created_by"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_list_item.test", "updated_at"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_list_item.test", "updated_by"),
+				),
+			},
+			{ // Update meta
+				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"value":   config.StringVariable("test-value-with-meta"),
+					"meta":    config.StringVariable(`{"category":"malicious","notes":"Updated metadata","severity":"critical"}`),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_item.test", "value", "test-value-with-meta"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_item.test", "meta", `{"category":"malicious","notes":"Updated metadata","severity":"critical"}`),
+				),
+			},
+		},
+	})
+}
+
 func TestAccResourceSecurityListItem_Space(t *testing.T) {
 	spaceID := "test-space-" + uuid.New().String()
 	listID := "test-list-" + uuid.New().String()
