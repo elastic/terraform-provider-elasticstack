@@ -55,6 +55,7 @@ func (r *securityListResource) Create(ctx context.Context, req resource.CreateRe
 
 	if readResp == nil || readResp.JSON200 == nil {
 		resp.State.RemoveResource(ctx)
+		resp.Diagnostics.AddError("Failed to fetch security list", "API returned empty response")
 		return
 	}
 
