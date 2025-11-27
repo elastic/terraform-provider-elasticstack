@@ -69,9 +69,8 @@ func (r *securityDetectionRuleResource) read(ctx context.Context, resourceId, sp
 		diags.AddError("ID was not a valid UUID", err.Error())
 		return nil, diags
 	}
-	ruleObjectId := kbapi.SecurityDetectionsAPIRuleObjectId(uid)
 	params := &kbapi.ReadRuleParams{
-		Id: &ruleObjectId,
+		Id: &uid,
 	}
 
 	response, err := kbClient.API.ReadRuleWithResponse(ctx, spaceId, params)

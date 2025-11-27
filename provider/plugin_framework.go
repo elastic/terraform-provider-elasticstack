@@ -9,6 +9,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster/script"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/enrich"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/alias"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/data_stream_lifecycle"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/indices"
@@ -32,6 +33,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/import_saved_objects"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/maintenance_window"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_detection_rule"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_list"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_list_item"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/spaces"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics/monitor"
@@ -137,6 +139,7 @@ func (p *Provider) resources(ctx context.Context) []func() resource.Resource {
 		maintenance_window.NewResource,
 		enrich.NewEnrichPolicyResource,
 		role_mapping.NewRoleMappingResource,
+		alias.NewAliasResource,
 		datafeed.NewDatafeedResource,
 		anomaly_detection_job.NewAnomalyDetectionJobResource,
 		security_detection_rule.NewSecurityDetectionRuleResource,
@@ -148,6 +151,7 @@ func (p *Provider) resources(ctx context.Context) []func() resource.Resource {
 func (p *Provider) experimentalResources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		security_list_item.NewResource,
+		security_list.NewResource,
 	}
 }
 
