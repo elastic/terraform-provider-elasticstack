@@ -8,6 +8,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -76,8 +77,9 @@ func (r *ExceptionListResource) Create(ctx context.Context, req resource.CreateR
 	// Set optional meta
 	if utils.IsKnown(plan.Meta) {
 		var meta kbapi.SecurityExceptionsAPIExceptionListMeta
-		if err := json.Unmarshal([]byte(plan.Meta.ValueString()), &meta); err != nil {
-			resp.Diagnostics.AddError("Failed to parse meta JSON", err.Error())
+		unmarshalDiags := plan.Meta.Unmarshal(&meta)
+		resp.Diagnostics.Append(unmarshalDiags...)
+		if resp.Diagnostics.HasError() {
 			return
 		}
 		body.Meta = &meta
@@ -177,9 +179,9 @@ func (r *ExceptionListResource) updateStateFromAPIResponse(ctx context.Context, 
 			diags.AddError("Failed to serialize meta", err.Error())
 			return diags
 		}
-		model.Meta = types.StringValue(string(metaJSON))
+		model.Meta = jsontypes.NewNormalizedValue(string(metaJSON))
 	} else {
-		model.Meta = types.StringNull()
+		model.Meta = jsontypes.NewNormalizedNull()
 	}
 
 	return diags

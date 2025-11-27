@@ -4,6 +4,7 @@ import (
 	"context"
 	_ "embed"
 
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -94,6 +95,7 @@ func (r *ExceptionListResource) Schema(_ context.Context, _ resource.SchemaReque
 			"meta": schema.StringAttribute{
 				MarkdownDescription: "Placeholder for metadata about the list container as JSON string.",
 				Optional:            true,
+				CustomType:          jsontypes.NormalizedType{},
 			},
 			"created_at": schema.StringAttribute{
 				MarkdownDescription: "The timestamp of when the exception list was created.",

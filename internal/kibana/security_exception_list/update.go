@@ -2,7 +2,6 @@ package security_exception_list
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -84,8 +83,9 @@ func (r *ExceptionListResource) Update(ctx context.Context, req resource.UpdateR
 	// Set optional meta
 	if utils.IsKnown(plan.Meta) {
 		var meta kbapi.SecurityExceptionsAPIExceptionListMeta
-		if err := json.Unmarshal([]byte(plan.Meta.ValueString()), &meta); err != nil {
-			resp.Diagnostics.AddError("Failed to parse meta JSON", err.Error())
+		unmarshalDiags := plan.Meta.Unmarshal(&meta)
+		resp.Diagnostics.Append(unmarshalDiags...)
+		if resp.Diagnostics.HasError() {
 			return
 		}
 		body.Meta = &meta
