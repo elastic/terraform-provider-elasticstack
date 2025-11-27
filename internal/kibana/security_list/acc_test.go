@@ -75,6 +75,18 @@ func TestAccResourceSecurityList(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_list.test", "description", "An updated test security list"),
 				),
 			},
+			{ // Import
+				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"list_id":     config.StringVariable(listID),
+					"name":        config.StringVariable("Updated Security List"),
+					"description": config.StringVariable("An updated test security list"),
+					"type":        config.StringVariable("ip"),
+				},
+				ResourceName:      "elasticstack_kibana_security_list.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
 		},
 	})
 }
