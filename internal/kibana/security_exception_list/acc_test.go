@@ -61,6 +61,22 @@ func TestAccResourceExceptionList(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_list.test", "tags.1", "updated"),
 				),
 			},
+			{ // Import
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionListAPISupport),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"list_id":        config.StringVariable("test-exception-list"),
+					"name":           config.StringVariable("Test Exception List Updated"),
+					"description":    config.StringVariable("Updated description"),
+					"type":           config.StringVariable("detection"),
+					"namespace_type": config.StringVariable("single"),
+					"tags":           config.ListVariable(config.StringVariable("test"), config.StringVariable("updated")),
+				},
+				ResourceName:      "elasticstack_kibana_security_exception_list.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
 		},
 	})
 }
@@ -130,6 +146,22 @@ func TestAccResourceExceptionListWithSpace(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "tags.1", "space"),
 					resource.TestCheckResourceAttr(resourceName, "tags.2", "updated"),
 				),
+			},
+			{ // Import
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minExceptionListAPISupport),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"space_id":       config.StringVariable(spaceID),
+					"list_id":        config.StringVariable("test-exception-list-space"),
+					"name":           config.StringVariable("Test Exception List in Space Updated"),
+					"description":    config.StringVariable("Updated description in space"),
+					"type":           config.StringVariable("detection"),
+					"namespace_type": config.StringVariable("single"),
+					"tags":           config.ListVariable(config.StringVariable("test"), config.StringVariable("space"), config.StringVariable("updated")),
+				},
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
