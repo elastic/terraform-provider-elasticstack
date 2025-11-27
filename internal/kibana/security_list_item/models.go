@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -35,7 +36,13 @@ func (m *SecurityListItemModel) toAPICreateModel(ctx context.Context) (*kbapi.Cr
 
 	// Set optional ID if specified
 	if utils.IsKnown(m.ID) {
-		id := kbapi.SecurityListsAPIListItemId(m.ID.ValueString())
+		// Parse composite ID to get resource_id
+		compId, compIdDiags := clients.CompositeIdFromStrFw(m.ID.ValueString())
+		diags.Append(compIdDiags...)
+		if diags.HasError() {
+			return nil, diags
+		}
+		id := kbapi.SecurityListsAPIListItemId(compId.ResourceId)
 		body.Id = &id
 	}
 
@@ -56,8 +63,15 @@ func (m *SecurityListItemModel) toAPICreateModel(ctx context.Context) (*kbapi.Cr
 func (m *SecurityListItemModel) toAPIUpdateModel(ctx context.Context) (*kbapi.UpdateListItemJSONRequestBody, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
+	// Parse composite ID to get resource_id
+	compId, compIdDiags := clients.CompositeIdFromStrFw(m.ID.ValueString())
+	diags.Append(compIdDiags...)
+	if diags.HasError() {
+		return nil, diags
+	}
+
 	body := &kbapi.UpdateListItemJSONRequestBody{
-		Id:    kbapi.SecurityListsAPIListItemId(m.ID.ValueString()),
+		Id:    kbapi.SecurityListsAPIListItemId(compId.ResourceId),
 		Value: kbapi.SecurityListsAPIListItemValue(m.Value.ValueString()),
 	}
 
@@ -84,7 +98,11 @@ func (m *SecurityListItemModel) toAPIUpdateModel(ctx context.Context) (*kbapi.Up
 func (m *SecurityListItemModel) fromAPIModel(ctx context.Context, apiItem *kbapi.SecurityListsAPIListItem) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	m.ID = types.StringValue(string(apiItem.Id))
+	compId := clients.CompositeId{
+		ClusterId:  m.SpaceID.ValueString(),
+		ResourceId: string(apiItem.Id),
+	}
+	m.ID = types.StringValue(compId.String())
 	m.ListID = types.StringValue(string(apiItem.ListId))
 	m.Value = types.StringValue(string(apiItem.Value))
 	m.CreatedAt = types.StringValue(apiItem.CreatedAt.Format("2006-01-02T15:04:05.000Z"))

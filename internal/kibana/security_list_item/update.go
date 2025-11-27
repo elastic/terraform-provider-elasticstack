@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -23,6 +24,13 @@ func (r *securityListItemResource) Update(ctx context.Context, req resource.Upda
 		return
 	}
 
+	// Parse composite ID to get space_id
+	compId, compIdDiags := clients.CompositeIdFromStrFw(plan.ID.ValueString())
+	resp.Diagnostics.Append(compIdDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	// Convert plan to API request
 	updateReq, diags := plan.toAPIUpdateModel(ctx)
 	resp.Diagnostics.Append(diags...)
@@ -31,7 +39,7 @@ func (r *securityListItemResource) Update(ctx context.Context, req resource.Upda
 	}
 
 	// Update the list item
-	updateResp, diags := kibana_oapi.UpdateListItem(ctx, client, plan.SpaceID.ValueString(), *updateReq)
+	updateResp, diags := kibana_oapi.UpdateListItem(ctx, client, compId.ClusterId, *updateReq)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -48,7 +56,7 @@ func (r *securityListItemResource) Update(ctx context.Context, req resource.Upda
 		Id: &id,
 	}
 
-	readResp, diags := kibana_oapi.GetListItem(ctx, client, plan.SpaceID.ValueString(), readParams)
+	readResp, diags := kibana_oapi.GetListItem(ctx, client, compId.ClusterId, readParams)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

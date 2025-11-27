@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -23,13 +24,20 @@ func (r *securityListItemResource) Read(ctx context.Context, req resource.ReadRe
 		return
 	}
 
-	// Read by ID
-	id := kbapi.SecurityListsAPIListId(state.ID.ValueString())
+	// Parse composite ID to get space_id and resource_id
+	compId, compIdDiags := clients.CompositeIdFromStrFw(state.ID.ValueString())
+	resp.Diagnostics.Append(compIdDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Read by resource ID from composite ID
+	id := kbapi.SecurityListsAPIListId(compId.ResourceId)
 	params := &kbapi.ReadListItemParams{
 		Id: &id,
 	}
 
-	readResp, diags := kibana_oapi.GetListItem(ctx, client, state.SpaceID.ValueString(), params)
+	readResp, diags := kibana_oapi.GetListItem(ctx, client, compId.ClusterId, params)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
