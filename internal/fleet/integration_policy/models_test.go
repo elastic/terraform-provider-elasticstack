@@ -95,6 +95,9 @@ func TestOutputIdHandling(t *testing.T) {
 			OutputId: &outputId,
 		}
 
+		// Initialize inputs union to an empty mapped set to avoid JSON parse errors
+		_ = data.Inputs.FromPackagePolicyMappedInputs(map[string]kbapi.PackagePolicyMappedInput{})
+
 		diags := model.populateFromAPI(context.Background(), data)
 		require.Empty(t, diags)
 		require.Equal(t, "test-output-id", model.OutputID.ValueString())
@@ -115,8 +118,11 @@ func TestOutputIdHandling(t *testing.T) {
 
 		result, diags := model.toAPIModel(context.Background(), false, feat)
 		require.Empty(t, diags)
-		require.NotNil(t, result.OutputId)
-		require.Equal(t, "test-output-id", *result.OutputId)
+
+		mappedResult, err := result.AsPackagePolicyRequestMappedInputs()
+		require.NoError(t, err)
+		require.NotNil(t, mappedResult.OutputId)
+		require.Equal(t, "test-output-id", *mappedResult.OutputId)
 	})
 
 	t.Run("toAPIModel_unsupported_version", func(t *testing.T) {

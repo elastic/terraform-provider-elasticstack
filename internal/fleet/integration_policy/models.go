@@ -107,13 +107,20 @@ func (model *integrationPolicyModel) populateFromAPI(ctx context.Context, data *
 		model.SpaceIds = types.SetNull(types.StringType)
 	}
 	// If originally set but API didn't return it, keep the original value
-
-	model.populateInputFromAPI(ctx, data.Inputs, &diags)
+	mappedInputs, err := data.Inputs.AsPackagePolicyMappedInputs()
+	if err != nil {
+		diags.AddError(
+			"Error reading integration policy inputs",
+			"Could not parse integration policy inputs from API response: "+err.Error(),
+		)
+		return diags
+	}
+	model.populateInputFromAPI(ctx, mappedInputs, &diags)
 
 	return diags
 }
 
-func (model *integrationPolicyModel) populateInputFromAPI(ctx context.Context, inputs map[string]kbapi.PackagePolicyInput, diags *diag.Diagnostics) {
+func (model *integrationPolicyModel) populateInputFromAPI(ctx context.Context, inputs map[string]kbapi.PackagePolicyMappedInput, diags *diag.Diagnostics) {
 	// Handle input population based on context:
 	// 1. If model.Input is unknown: we're importing or reading fresh state → populate from API
 	// 2. If model.Input is known and null/empty: user explicitly didn't configure inputs → don't populate (avoid inconsistent state)
@@ -135,7 +142,7 @@ func (model *integrationPolicyModel) populateInputFromAPI(ctx context.Context, i
 	// Case 3: Known and not null/empty - user configured inputs, populate from API (continue below)
 
 	newInputs := utils.TransformMapToSlice(ctx, inputs, path.Root("input"), diags,
-		func(inputData kbapi.PackagePolicyInput, meta utils.MapMeta) integrationPolicyInputModel {
+		func(inputData kbapi.PackagePolicyMappedInput, meta utils.MapMeta) integrationPolicyInputModel {
 			return integrationPolicyInputModel{
 				InputID:     types.StringValue(meta.Key),
 				Enabled:     types.BoolPointerValue(inputData.Enabled),
@@ -186,7 +193,7 @@ func (model integrationPolicyModel) toAPIModel(ctx context.Context, isUpdate boo
 		}
 	}
 
-	body := kbapi.PackagePolicyRequest{
+	body := kbapi.PackagePolicyRequestMappedInputs{
 		Description: model.Description.ValueStringPointer(),
 		Force:       model.Force.ValueBoolPointer(),
 		Name:        model.Name.ValueString(),
@@ -219,17 +226,27 @@ func (model integrationPolicyModel) toAPIModel(ctx context.Context, isUpdate boo
 	}
 
 	body.Inputs = utils.MapRef(utils.ListTypeToMap(ctx, model.Input, path.Root("input"), &diags,
-		func(inputModel integrationPolicyInputModel, meta utils.ListMeta) (string, kbapi.PackagePolicyRequestInput) {
-			return inputModel.InputID.ValueString(), kbapi.PackagePolicyRequestInput{
+		func(inputModel integrationPolicyInputModel, meta utils.ListMeta) (string, kbapi.PackagePolicyRequestMappedInput) {
+			return inputModel.InputID.ValueString(), kbapi.PackagePolicyRequestMappedInput{
 				Enabled: inputModel.Enabled.ValueBoolPointer(),
-				Streams: utils.MapRef(utils.NormalizedTypeToMap[kbapi.PackagePolicyRequestInputStream](inputModel.StreamsJson, meta.Path.AtName("streams_json"), &diags)),
+				Streams: utils.MapRef(utils.NormalizedTypeToMap[kbapi.PackagePolicyRequestMappedInputStream](inputModel.StreamsJson, meta.Path.AtName("streams_json"), &diags)),
 				Vars:    utils.MapRef(utils.NormalizedTypeToMap[any](inputModel.VarsJson, meta.Path.AtName("vars_json"), &diags)),
 			}
 		}))
 
 	// Note: space_ids is read-only for integration policies and inherited from the agent policy
 
-	return body, diags
+	var req kbapi.PackagePolicyRequest
+	err := req.FromPackagePolicyRequestMappedInputs(body)
+	if err != nil {
+		diags.AddError(
+			"Error constructing integration policy request",
+			"Could not convert integration policy to API request: "+err.Error(),
+		)
+		return kbapi.PackagePolicyRequest{}, diags
+	}
+
+	return req, diags
 }
 
 // sortInputs will sort the 'incoming' list of input definitions based on
