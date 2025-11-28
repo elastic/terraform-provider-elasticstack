@@ -8,7 +8,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func (r *DefaultDataViewResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -43,8 +42,11 @@ func (r *DefaultDataViewResource) setDefaultDataView(ctx context.Context, plan t
 		return diags
 	}
 
-	// Use the space_id as the resource ID
-	model.ID = types.StringValue(spaceID)
+	model, readDiags := r.read(ctx, client, model)
+	diags.Append(readDiags...)
+	if diags.HasError() {
+		return diags
+	}
 
 	diags = state.Set(ctx, model)
 	return diags
