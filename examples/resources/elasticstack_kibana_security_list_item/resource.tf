@@ -10,4 +10,9 @@ resource "elasticstack_kibana_security_list" "my_list" {
 resource "elasticstack_kibana_security_list_item" "domain_example" {
   list_id = elasticstack_kibana_security_list.my_list.list_id
   value   = "example.com"
+  meta = jsonencode({
+    category = "internal"
+    owner    = "infrastructure-team"
+    note     = "Primary internal domain"
+  })
 }
