@@ -54,7 +54,7 @@ func (r *integrationPolicyResource) Read(ctx context.Context, req resource.ReadR
 	}
 
 	// Remember if the state had input configured
-	stateHadInput := utils.IsKnown(stateModel.Input) && !stateModel.Input.IsNull() && len(stateModel.Input.Elements()) > 0
+	stateHadInput := utils.IsKnown(stateModel.Inputs) && !stateModel.Inputs.IsNull() && len(stateModel.Inputs.Elements()) > 0
 
 	// Check if this is an import operation (PolicyID is the only field set)
 	isImport := stateModel.PolicyID.ValueString() != "" &&
@@ -70,7 +70,7 @@ func (r *integrationPolicyResource) Read(ctx context.Context, req resource.ReadR
 	// This prevents "Provider produced inconsistent result" errors during refresh
 	// However, during import we should always populate inputs from the API
 	if !stateHadInput && !isImport {
-		stateModel.Input = types.ListNull(getInputTypeV1())
+		stateModel.Inputs = types.MapNull(getInputsTypes())
 	}
 
 	diags = resp.State.Set(ctx, stateModel)

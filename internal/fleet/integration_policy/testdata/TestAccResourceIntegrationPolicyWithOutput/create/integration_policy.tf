@@ -67,22 +67,23 @@ resource "elasticstack_fleet_integration_policy" "test_policy" {
   integration_version = elasticstack_fleet_integration.test_policy.version
   output_id           = elasticstack_fleet_output.test_output.output_id
 
-  input {
-    input_id = "tcp-tcp"
-    enabled  = true
-    streams_json = jsonencode({
-      "tcp.generic" : {
-        "enabled" : true
-        "vars" : {
-          "listen_address" : "localhost"
-          "listen_port" : 8080
-          "data_stream.dataset" : "tcp.generic"
-          "tags" : []
-          "syslog_options" : "field: message"
-          "ssl" : ""
-          "custom" : ""
+  inputs = {
+    "tcp-tcp" = {
+      enabled = true
+      streams = {
+        "tcp.generic" = {
+          enabled = true
+          vars = jsonencode({
+            "listen_address" : "localhost"
+            "listen_port" : 8080
+            "data_stream.dataset" : "tcp.generic"
+            "tags" : []
+            "syslog_options" : "field: message"
+            "ssl" : ""
+            "custom" : ""
+          })
         }
       }
-    })
+    }
   }
 }

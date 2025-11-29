@@ -74,7 +74,7 @@ func (r *integrationPolicyResource) Update(ctx context.Context, req resource.Upd
 	stateUsedAgentPolicyIDs := utils.IsKnown(stateModel.AgentPolicyIDs) && !stateModel.AgentPolicyIDs.IsNull()
 
 	// Remember the input configuration from state
-	stateHadInput := utils.IsKnown(stateModel.Input) && !stateModel.Input.IsNull() && len(stateModel.Input.Elements()) > 0
+	stateHadInput := utils.IsKnown(stateModel.Inputs) && !stateModel.Inputs.IsNull() && len(stateModel.Inputs.Elements()) > 0
 
 	diags = planModel.populateFromAPI(ctx, policy)
 	resp.Diagnostics.Append(diags...)
@@ -101,8 +101,8 @@ func (r *integrationPolicyResource) Update(ctx context.Context, req resource.Upd
 	}
 
 	// If state didn't have input configured, ensure we don't add it now
-	if !stateHadInput && (planModel.Input.IsNull() || len(planModel.Input.Elements()) == 0) {
-		planModel.Input = types.ListNull(getInputTypeV1())
+	if !stateHadInput && (planModel.Inputs.IsNull() || len(planModel.Inputs.Elements()) == 0) {
+		planModel.Inputs = types.MapNull(getInputsTypes())
 	}
 
 	diags = resp.State.Set(ctx, planModel)
