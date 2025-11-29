@@ -92,7 +92,7 @@ func (r *ExceptionListResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
-	if createResp == nil || createResp.JSON200 == nil {
+	if createResp == nil {
 		resp.Diagnostics.AddError("Failed to create exception list", "API returned empty response")
 		return
 	}
@@ -103,7 +103,7 @@ func (r *ExceptionListResource) Create(ctx context.Context, req resource.CreateR
 	 */
 	// Read back the created resource to get the final state
 	readParams := &kbapi.ReadExceptionListParams{
-		Id: (*kbapi.SecurityExceptionsAPIExceptionListId)(&createResp.JSON200.Id),
+		Id: (*kbapi.SecurityExceptionsAPIExceptionListId)(&createResp.Id),
 	}
 
 	readResp, diags := kibana_oapi.GetExceptionList(ctx, client, plan.SpaceID.ValueString(), readParams)
@@ -112,14 +112,14 @@ func (r *ExceptionListResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
-	if readResp == nil || readResp.JSON200 == nil {
+	if readResp == nil {
 		resp.State.RemoveResource(ctx)
 		resp.Diagnostics.AddError("Failed to fetch exception list", "API returned empty response")
 		return
 	}
 
 	// Update state with read response
-	diags = r.updateStateFromAPIResponse(ctx, &plan, readResp.JSON200)
+	diags = r.updateStateFromAPIResponse(ctx, &plan, readResp)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
