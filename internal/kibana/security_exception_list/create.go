@@ -137,11 +137,11 @@ func (r *ExceptionListResource) updateStateFromAPIResponse(ctx context.Context, 
 		ResourceId: string(apiResp.Id),
 	}
 	model.ID = types.StringValue(compId.String())
-	model.ListID = types.StringValue(string(apiResp.ListId))
-	model.Name = types.StringValue(string(apiResp.Name))
-	model.Description = types.StringValue(string(apiResp.Description))
-	model.Type = types.StringValue(string(apiResp.Type))
-	model.NamespaceType = types.StringValue(string(apiResp.NamespaceType))
+	model.ListID = utils.StringishValue(apiResp.ListId)
+	model.Name = utils.StringishValue(apiResp.Name)
+	model.Description = utils.StringishValue(apiResp.Description)
+	model.Type = utils.StringishValue(apiResp.Type)
+	model.NamespaceType = utils.StringishValue(apiResp.NamespaceType)
 	model.CreatedAt = types.StringValue(apiResp.CreatedAt.Format("2006-01-02T15:04:05.000Z"))
 	model.CreatedBy = types.StringValue(apiResp.CreatedBy)
 	model.UpdatedAt = types.StringValue(apiResp.UpdatedAt.Format("2006-01-02T15:04:05.000Z"))
