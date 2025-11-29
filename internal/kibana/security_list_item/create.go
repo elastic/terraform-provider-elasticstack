@@ -1,4 +1,4 @@
-package security_list
+package security_list_item
 
 import (
 	"context"
@@ -8,8 +8,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
-func (r *securityListResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var plan SecurityListModel
+func (r *securityListItemResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	var plan SecurityListItemModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -23,44 +23,44 @@ func (r *securityListResource) Create(ctx context.Context, req resource.CreateRe
 	}
 
 	// Convert plan to API request
-	createReq, diags := plan.toCreateRequest()
+	createReq, diags := plan.toAPICreateModel(ctx)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// Create the list
-	spaceID := plan.SpaceID.ValueString()
-	createdList, diags := kibana_oapi.CreateList(ctx, client, spaceID, *createReq)
+	// Create the list item
+	createdListItem, diags := kibana_oapi.CreateListItem(ctx, client, plan.SpaceID.ValueString(), *createReq)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	if createdList == nil {
-		resp.Diagnostics.AddError("Failed to create security list", "API returned empty response")
+	if createdListItem == nil {
+		resp.Diagnostics.AddError("Failed to create security list item", "API returned empty response")
 		return
 	}
 
-	// Read the created list to populate state
-	readParams := &kbapi.ReadListParams{
-		Id: createdList.Id,
+	// Read the created list item to populate state
+	id := kbapi.SecurityListsAPIListId(createdListItem.Id)
+	readParams := &kbapi.ReadListItemParams{
+		Id: &id,
 	}
 
-	list, diags := kibana_oapi.GetList(ctx, client, spaceID, readParams)
+	listItem, diags := kibana_oapi.GetListItem(ctx, client, plan.SpaceID.ValueString(), readParams)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	if list == nil {
+	if listItem == nil {
 		resp.State.RemoveResource(ctx)
-		resp.Diagnostics.AddError("Failed to fetch security list", "API returned empty response")
+		resp.Diagnostics.AddError("Failed to fetch security list item", "API returned empty response")
 		return
 	}
 
 	// Update state with read response
-	diags = plan.fromAPI(ctx, list)
+	diags = plan.fromAPIModel(ctx, listItem)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

@@ -1,4 +1,4 @@
-package security_list
+package security_list_item
 
 import (
 	"context"
@@ -10,48 +10,51 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *securityListResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var state SecurityListModel
+func (r *securityListItemResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var state SecurityListItemModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
+	// Get Kibana client
 	client, err := r.client.GetKibanaOapiClient()
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get Kibana client", err.Error())
 		return
 	}
 
-	// Parse composite ID to get space_id and list_id
-	spaceID := state.SpaceID.ValueString()
-	listID := state.ListID.ValueString()
+	// Parse composite ID to get space_id and resource id
+	compId, compIdDiags := clients.CompositeIdFromStrFw(state.ID.ValueString())
 
-	// Try to parse as composite ID from state.ID
-	if compId, diags := clients.CompositeIdFromStrFw(state.ID.ValueString()); !diags.HasError() {
-		spaceID = compId.ClusterId
-		listID = compId.ResourceId
-		// Update space_id in state if it was parsed from composite ID
-		state.SpaceID = types.StringValue(spaceID)
+	if !compIdDiags.HasError() {
+		state.SpaceID = types.StringValue(compId.ClusterId)
 	}
 
-	params := &kbapi.ReadListParams{
-		Id: kbapi.SecurityListsAPIListId(listID),
+	resp.Diagnostics.Append(compIdDiags...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
-	list, diags := kibana_oapi.GetList(ctx, client, spaceID, params)
+	// Read by resource ID from composite ID
+	id := kbapi.SecurityListsAPIListId(compId.ResourceId)
+	params := &kbapi.ReadListItemParams{
+		Id: &id,
+	}
+
+	listItem, diags := kibana_oapi.GetListItem(ctx, client, compId.ClusterId, params)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	if list == nil {
+	if listItem == nil {
 		resp.State.RemoveResource(ctx)
 		return
 	}
 
-	// Convert API response to model
-	diags = state.fromAPI(ctx, list)
+	// Update state with response
+	diags = state.fromAPIModel(ctx, listItem)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
