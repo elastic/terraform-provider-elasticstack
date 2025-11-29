@@ -3,6 +3,7 @@ package security_exception_list
 import (
 	"context"
 	_ "embed"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -17,6 +18,15 @@ import (
 
 //go:embed resource-description.md
 var exceptionListResourceDescription string
+
+var validExceptionListTypes = []string{
+	"detection",
+	"endpoint",
+	"endpoint_trusted_apps",
+	"endpoint_events",
+	"endpoint_host_isolation_exceptions",
+	"endpoint_blocklists",
+}
 
 func (r *ExceptionListResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
@@ -54,16 +64,11 @@ func (r *ExceptionListResource) Schema(_ context.Context, _ resource.SchemaReque
 				Required:            true,
 			},
 			"type": schema.StringAttribute{
-				MarkdownDescription: "The type of exception list. Can be one of: `detection`, `endpoint`, `endpoint_trusted_apps`, `endpoint_events`, `endpoint_host_isolation_exceptions`, `endpoint_blocklists`.",
+				MarkdownDescription: "The type of exception list. Can be one of: " + strings.Join(wrapInBackticks(validExceptionListTypes), ", ") + ".",
 				Required:            true,
 				Validators: []validator.String{
 					stringvalidator.OneOf(
-						"detection",
-						"endpoint",
-						"endpoint_trusted_apps",
-						"endpoint_events",
-						"endpoint_host_isolation_exceptions",
-						"endpoint_blocklists",
+						validExceptionListTypes...,
 					),
 				},
 				PlanModifiers: []planmodifier.String{
@@ -123,4 +128,12 @@ func (r *ExceptionListResource) Schema(_ context.Context, _ resource.SchemaReque
 			},
 		},
 	}
+}
+
+func wrapInBackticks(strs []string) []string {
+	result := make([]string, len(strs))
+	for i, s := range strs {
+		result[i] = "`" + s + "`"
+	}
+	return result
 }
