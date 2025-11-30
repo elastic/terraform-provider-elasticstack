@@ -7,6 +7,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -161,15 +162,15 @@ func (m *ExceptionListModel) fromAPI(ctx context.Context, apiList *kbapi.Securit
 	// Create composite ID from space_id and list id
 	compId := clients.CompositeId{
 		ClusterId:  m.SpaceID.ValueString(),
-		ResourceId: utils.StringishValue(apiList.Id).ValueString(),
+		ResourceId: typeutils.StringishValue(apiList.Id).ValueString(),
 	}
 	m.ID = types.StringValue(compId.String())
 
-	m.ListID = utils.StringishValue(apiList.ListId)
-	m.Name = utils.StringishValue(apiList.Name)
-	m.Description = utils.StringishValue(apiList.Description)
-	m.Type = utils.StringishValue(apiList.Type)
-	m.NamespaceType = utils.StringishValue(apiList.NamespaceType)
+	m.ListID = typeutils.StringishValue(apiList.ListId)
+	m.Name = typeutils.StringishValue(apiList.Name)
+	m.Description = typeutils.StringishValue(apiList.Description)
+	m.Type = typeutils.StringishValue(apiList.Type)
+	m.NamespaceType = typeutils.StringishValue(apiList.NamespaceType)
 	m.Immutable = types.BoolValue(apiList.Immutable)
 	m.TieBreakerID = types.StringValue(apiList.TieBreakerId)
 	m.CreatedAt = types.StringValue(apiList.CreatedAt.Format("2006-01-02T15:04:05.000Z"))
