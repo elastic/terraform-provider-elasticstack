@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -91,6 +92,11 @@ func (r *ExceptionListResource) Schema(_ context.Context, _ resource.SchemaReque
 				MarkdownDescription: "Array of OS types for which the exceptions apply. Valid values: `linux`, `macos`, `windows`.",
 				Optional:            true,
 				ElementType:         types.StringType,
+				Validators: []validator.List{
+					listvalidator.ValueStringsAre(
+						stringvalidator.OneOf("linux", "macos", "windows"),
+					),
+				},
 			},
 			"tags": schema.ListAttribute{
 				MarkdownDescription: "String array containing words and phrases to help categorize exception containers.",
