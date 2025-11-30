@@ -40,6 +40,7 @@ alias = [
 
 ### Changes
 
+- Allow `index` and `data_view_id` values to both be unknown during planning in `elasticstack_kibana_security_detection_rule` ([#1499](https://github.com/elastic/terraform-provider-elasticstack/pull/1499))
 - Support `.bedrock` and `.gen-ai` connectors ([#1467](https://github.com/elastic/terraform-provider-elasticstack/pull/1467))
 - Support the `solution` attribute in `elasticstack_kibana_space` from 8.16 ([#1486](https://github.com/elastic/terraform-provider-elasticstack/pull/1486)) 
 - Add `elasticstack_elasticsearch_alias` resource ([#1343](https://github.com/elastic/terraform-provider-elasticstack/pull/1343))
