@@ -1,12 +1,14 @@
 package index_test
 
 import (
+	_ "embed"
 	"fmt"
 	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -77,6 +79,9 @@ func TestAccResourceIndex(t *testing.T) {
 	})
 }
 
+//go:embed testdata/TestAccResourceIndexFromSDK/index.tf
+var sdkCreateTestConfig string
+
 func TestAccResourceIndexFromSDK(t *testing.T) {
 	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
@@ -92,7 +97,10 @@ func TestAccResourceIndexFromSDK(t *testing.T) {
 						VersionConstraint: "0.11.3",
 					},
 				},
-				Config: testAccResourceIndexSettingsCreate(indexName),
+				Config: sdkCreateTestConfig,
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "name", indexName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "number_of_shards", "2"),
@@ -132,7 +140,10 @@ func TestAccResourceIndexFromSDK(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				Config:                   testAccResourceIndexSettingsCreate(indexName),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory(""),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "name", indexName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "number_of_shards", "2"),
@@ -178,12 +189,15 @@ func TestAccResourceIndexSettings(t *testing.T) {
 	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceIndexDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIndexDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceIndexSettingsCreate(indexName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "name", indexName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "number_of_shards", "2"),
@@ -194,6 +208,7 @@ func TestAccResourceIndexSettings(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "sort_field.0", "sort_key"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "sort_order.0", "asc"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "mapping_coerce", "true"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "mapping_total_fields_limit", "2000"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "auto_expand_replicas", "0-5"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "search_idle_after", "30s"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "refresh_interval", "10s"),
@@ -219,6 +234,17 @@ func TestAccResourceIndexSettings(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "analysis_filter", `{"minimal_english_stemmer":{"language":"minimal_english","type":"stemmer"}}`),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "settings.0.setting.0.name", "number_of_replicas"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "settings.0.setting.0.value", "2"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "name", indexName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "mapping_total_fields_limit", "3000"),
 				),
 			},
 		},
@@ -342,84 +368,6 @@ resource "elasticstack_elasticsearch_index" "test" {
       field1 = { type = "text" }
     }
   })
-
-  deletion_protection = false
-}
-	`, name)
-}
-
-func testAccResourceIndexSettingsCreate(name string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_index" "test_settings" {
-  name = "%s"
-
-  mappings = jsonencode({
-    properties = {
-      field1    = { type = "text" }
-      sort_key = { type = "keyword" }
-    }
-  })
-
-  number_of_shards = 2
-  number_of_routing_shards = 2
-  codec = "best_compression"
-  routing_partition_size = 1
-  shard_check_on_startup = "false"
-  sort_field = ["sort_key"]
-  sort_order = ["asc"]
-  mapping_coerce = true
-  auto_expand_replicas =  "0-5"
-  search_idle_after = "30s"
-  refresh_interval = "10s"
-  max_result_window = 5000
-  max_inner_result_window = 2000
-  max_rescore_window = 1000
-  max_docvalue_fields_search = 1500
-  max_script_fields = 500
-  max_ngram_diff = 100
-  max_shingle_diff = 200
-  max_refresh_listeners = 10
-  analyze_max_token_count = 500000
-  highlight_max_analyzed_offset = 1000
-  max_terms_count = 10000
-  max_regex_length = 1000
-  query_default_field = ["field1"]
-  routing_allocation_enable = "primaries"
-  routing_rebalance_enable = "primaries"
-  gc_deletes = "30s"
-  unassigned_node_left_delayed_timeout = "5m"
-
-  analysis_char_filter = jsonencode({
-    zero_width_spaces = {
-      type     = "mapping"
-      mappings = ["\\u200C=>\\u0020"]
-    }
-  })
-  analysis_filter = jsonencode({
-    minimal_english_stemmer = {
-      type     = "stemmer"
-      language = "minimal_english"
-    }
-  })
-  analysis_analyzer = jsonencode({
-    text_en = {
-      type = "custom"
-      tokenizer = "standard"
-      char_filter = "zero_width_spaces"
-      filter = ["lowercase", "minimal_english_stemmer"]
-    }
-  })
-
-  settings {
-    setting {
-      name  = "number_of_replicas"
-      value = "2"
-    }
-  }
 
   deletion_protection = false
 }
