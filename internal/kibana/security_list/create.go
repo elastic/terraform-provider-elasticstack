@@ -31,36 +31,36 @@ func (r *securityListResource) Create(ctx context.Context, req resource.CreateRe
 
 	// Create the list
 	spaceID := plan.SpaceID.ValueString()
-	createResp, diags := kibana_oapi.CreateList(ctx, client, spaceID, *createReq)
+	createdList, diags := kibana_oapi.CreateList(ctx, client, spaceID, *createReq)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	if createResp == nil || createResp.JSON200 == nil {
+	if createdList == nil {
 		resp.Diagnostics.AddError("Failed to create security list", "API returned empty response")
 		return
 	}
 
 	// Read the created list to populate state
 	readParams := &kbapi.ReadListParams{
-		Id: createResp.JSON200.Id,
+		Id: createdList.Id,
 	}
 
-	readResp, diags := kibana_oapi.GetList(ctx, client, spaceID, readParams)
+	list, diags := kibana_oapi.GetList(ctx, client, spaceID, readParams)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	if readResp == nil || readResp.JSON200 == nil {
+	if list == nil {
 		resp.State.RemoveResource(ctx)
 		resp.Diagnostics.AddError("Failed to fetch security list", "API returned empty response")
 		return
 	}
 
 	// Update state with read response
-	diags = plan.fromAPI(ctx, readResp.JSON200)
+	diags = plan.fromAPI(ctx, list)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

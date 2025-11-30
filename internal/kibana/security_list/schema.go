@@ -91,7 +91,7 @@ func (r *securityListResource) Schema(_ context.Context, _ resource.SchemaReques
 				Computed:            true,
 			},
 			"version_id": schema.StringAttribute{
-				MarkdownDescription: "The version id, normally returned by the API when the document is retrieved. Use it ensure updates are done against the latest version.",
+				MarkdownDescription: "The version id, normally returned by the API when the document is retrieved. Use it to ensure updates are done against the latest version.",
 				Computed:            true,
 			},
 			"immutable": schema.BoolAttribute{

@@ -29,12 +29,14 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/server_host"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/connectors"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/data_view"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/default_data_view"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/export_saved_objects"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/import_saved_objects"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/maintenance_window"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_detection_rule"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_exception_list"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_list"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_list_item"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/spaces"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics/monitor"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics/parameter"
@@ -122,6 +124,7 @@ func (p *Provider) resources(ctx context.Context) []func() resource.Resource {
 		agent_configuration.NewAgentConfigurationResource,
 		func() resource.Resource { return &import_saved_objects.Resource{} },
 		data_view.NewResource,
+		default_data_view.NewResource,
 		func() resource.Resource { return &parameter.Resource{} },
 		func() resource.Resource { return &private_location.Resource{} },
 		func() resource.Resource { return &index.Resource{} },
@@ -150,6 +153,7 @@ func (p *Provider) resources(ctx context.Context) []func() resource.Resource {
 
 func (p *Provider) experimentalResources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
+		security_list_item.NewResource,
 		security_list.NewResource,
 		security_exception_list.NewResource,
 	}

@@ -2,6 +2,7 @@ package kibana_oapi
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -26,7 +27,7 @@ func CreateListIndex(ctx context.Context, client *Client, spaceId string) diag.D
 }
 
 // GetList reads a security list from the API by ID
-func GetList(ctx context.Context, client *Client, spaceId string, params *kbapi.ReadListParams) (*kbapi.ReadListResponse, diag.Diagnostics) {
+func GetList(ctx context.Context, client *Client, spaceId string, params *kbapi.ReadListParams) (*kbapi.SecurityListsAPIList, diag.Diagnostics) {
 	resp, err := client.API.ReadListWithResponse(ctx, kbapi.SpaceId(spaceId), params)
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
@@ -34,7 +35,12 @@ func GetList(ctx context.Context, client *Client, spaceId string, params *kbapi.
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		return resp, nil
+		if resp.JSON200 == nil {
+			return nil, diag.Diagnostics{
+				diag.NewErrorDiagnostic("Failed to parse list response", "API returned 200 but JSON200 is nil"),
+			}
+		}
+		return resp.JSON200, nil
 	case http.StatusNotFound:
 		return nil, nil
 	default:
@@ -43,7 +49,7 @@ func GetList(ctx context.Context, client *Client, spaceId string, params *kbapi.
 }
 
 // CreateList creates a new security list.
-func CreateList(ctx context.Context, client *Client, spaceId string, body kbapi.CreateListJSONRequestBody) (*kbapi.CreateListResponse, diag.Diagnostics) {
+func CreateList(ctx context.Context, client *Client, spaceId string, body kbapi.CreateListJSONRequestBody) (*kbapi.SecurityListsAPIList, diag.Diagnostics) {
 	resp, err := client.API.CreateListWithResponse(ctx, kbapi.SpaceId(spaceId), body)
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
@@ -51,14 +57,19 @@ func CreateList(ctx context.Context, client *Client, spaceId string, body kbapi.
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		return resp, nil
+		if resp.JSON200 == nil {
+			return nil, diag.Diagnostics{
+				diag.NewErrorDiagnostic("Failed to parse list response", "API returned 200 but JSON200 is nil"),
+			}
+		}
+		return resp.JSON200, nil
 	default:
 		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
 	}
 }
 
 // UpdateList updates an existing security list.
-func UpdateList(ctx context.Context, client *Client, spaceId string, body kbapi.UpdateListJSONRequestBody) (*kbapi.UpdateListResponse, diag.Diagnostics) {
+func UpdateList(ctx context.Context, client *Client, spaceId string, body kbapi.UpdateListJSONRequestBody) (*kbapi.SecurityListsAPIList, diag.Diagnostics) {
 	resp, err := client.API.UpdateListWithResponse(ctx, kbapi.SpaceId(spaceId), body)
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
@@ -66,7 +77,12 @@ func UpdateList(ctx context.Context, client *Client, spaceId string, body kbapi.
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		return resp, nil
+		if resp.JSON200 == nil {
+			return nil, diag.Diagnostics{
+				diag.NewErrorDiagnostic("Failed to parse list response", "API returned 200 but JSON200 is nil"),
+			}
+		}
+		return resp.JSON200, nil
 	default:
 		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
 	}
@@ -90,7 +106,9 @@ func DeleteList(ctx context.Context, client *Client, spaceId string, params *kba
 }
 
 // GetListItem reads a security list item from the API by ID or list_id and value
-func GetListItem(ctx context.Context, client *Client, spaceId string, params *kbapi.ReadListItemParams) (*kbapi.ReadListItemResponse, diag.Diagnostics) {
+// The response can be a single item or an array, so we unmarshal from the body.
+// When querying by ID, we expect a single item.
+func GetListItem(ctx context.Context, client *Client, spaceId string, params *kbapi.ReadListItemParams) (*kbapi.SecurityListsAPIListItem, diag.Diagnostics) {
 	resp, err := client.API.ReadListItemWithResponse(ctx, kbapi.SpaceId(spaceId), params)
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
@@ -98,7 +116,14 @@ func GetListItem(ctx context.Context, client *Client, spaceId string, params *kb
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		return resp, nil
+		var listItem kbapi.SecurityListsAPIListItem
+		if err := json.Unmarshal(resp.Body, &listItem); err != nil {
+			return nil, diag.Diagnostics{
+				diag.NewErrorDiagnostic("Failed to parse list item response", err.Error()),
+			}
+		}
+
+		return &listItem, nil
 	case http.StatusNotFound:
 		return nil, nil
 	default:
@@ -107,7 +132,7 @@ func GetListItem(ctx context.Context, client *Client, spaceId string, params *kb
 }
 
 // CreateListItem creates a new security list item.
-func CreateListItem(ctx context.Context, client *Client, spaceId string, body kbapi.CreateListItemJSONRequestBody) (*kbapi.CreateListItemResponse, diag.Diagnostics) {
+func CreateListItem(ctx context.Context, client *Client, spaceId string, body kbapi.CreateListItemJSONRequestBody) (*kbapi.SecurityListsAPIListItem, diag.Diagnostics) {
 	resp, err := client.API.CreateListItemWithResponse(ctx, kbapi.SpaceId(spaceId), body)
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
@@ -115,14 +140,19 @@ func CreateListItem(ctx context.Context, client *Client, spaceId string, body kb
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		return resp, nil
+		if resp.JSON200 == nil {
+			return nil, diag.Diagnostics{
+				diag.NewErrorDiagnostic("Failed to parse list item response", "API returned 200 but JSON200 is nil"),
+			}
+		}
+		return resp.JSON200, nil
 	default:
 		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
 	}
 }
 
 // UpdateListItem updates an existing security list item.
-func UpdateListItem(ctx context.Context, client *Client, spaceId string, body kbapi.UpdateListItemJSONRequestBody) (*kbapi.UpdateListItemResponse, diag.Diagnostics) {
+func UpdateListItem(ctx context.Context, client *Client, spaceId string, body kbapi.UpdateListItemJSONRequestBody) (*kbapi.SecurityListsAPIListItem, diag.Diagnostics) {
 	resp, err := client.API.UpdateListItemWithResponse(ctx, kbapi.SpaceId(spaceId), body)
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
@@ -130,7 +160,12 @@ func UpdateListItem(ctx context.Context, client *Client, spaceId string, body kb
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		return resp, nil
+		if resp.JSON200 == nil {
+			return nil, diag.Diagnostics{
+				diag.NewErrorDiagnostic("Failed to parse list item response", "API returned 200 but JSON200 is nil"),
+			}
+		}
+		return resp.JSON200, nil
 	default:
 		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
 	}
