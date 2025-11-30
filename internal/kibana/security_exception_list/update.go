@@ -58,6 +58,11 @@ func (r *ExceptionListResource) Update(ctx context.Context, req resource.UpdateR
 	readParams := &kbapi.ReadExceptionListParams{
 		Id: (*kbapi.SecurityExceptionsAPIExceptionListId)(&updateResp.Id),
 	}
+	// Include namespace_type if specified (required for agnostic lists)
+	if updateResp.NamespaceType != "" {
+		nsType := kbapi.SecurityExceptionsAPIExceptionNamespaceType(updateResp.NamespaceType)
+		readParams.NamespaceType = &nsType
+	}
 
 	readResp, diags := kibana_oapi.GetExceptionList(ctx, client, plan.SpaceID.ValueString(), readParams)
 	resp.Diagnostics.Append(diags...)

@@ -6,6 +6,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
@@ -37,6 +38,22 @@ func (r *ExceptionListResource) Delete(ctx context.Context, req resource.DeleteR
 		Id: &id,
 	}
 
+	// Include namespace_type if known (required for agnostic lists)
+	// If not known, try deletion without it first (works for single namespace)
+	if state.NamespaceType.ValueString() != "" {
+		nsType := kbapi.SecurityExceptionsAPIExceptionNamespaceType(state.NamespaceType.ValueString())
+		params.NamespaceType = &nsType
+	}
+
 	diags = kibana_oapi.DeleteExceptionList(ctx, client, compId.ClusterId, params)
+
+	// If deletion failed and namespace_type wasn't specified, try with agnostic
+	if resp.Diagnostics.HasError() && state.NamespaceType.ValueString() == "" {
+		agnosticNsType := kbapi.SecurityExceptionsAPIExceptionNamespaceType("agnostic")
+		params.NamespaceType = &agnosticNsType
+		resp.Diagnostics = diag.Diagnostics{} // Clear previous errors
+		diags = kibana_oapi.DeleteExceptionList(ctx, client, compId.ClusterId, params)
+	}
+
 	resp.Diagnostics.Append(diags...)
 }

@@ -1,15 +1,20 @@
 package security_exception_list_test
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 var minExceptionListAPISupport = version.Must(version.NewVersion("7.9.0"))
@@ -72,6 +77,74 @@ func TestAccResourceExceptionList(t *testing.T) {
 					"type":           config.StringVariable("detection"),
 					"namespace_type": config.StringVariable("single"),
 					"tags":           config.ListVariable(config.StringVariable("test"), config.StringVariable("updated")),
+				},
+				ResourceName:      "elasticstack_kibana_security_exception_list.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccResourceExceptionListAgnostic(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		CheckDestroy:             checkResourceExceptionListDestroy,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minExceptionListAPISupport),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("agnostic_create"),
+				ConfigVariables: config.Variables{
+					"list_id":        config.StringVariable("test-exception-list-agnostic"),
+					"name":           config.StringVariable("Test Exception List Agnostic"),
+					"description":    config.StringVariable("Test agnostic exception list for acceptance tests"),
+					"type":           config.StringVariable("detection"),
+					"namespace_type": config.StringVariable("agnostic"),
+					"tags":           config.ListVariable(config.StringVariable("test"), config.StringVariable("agnostic")),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_list.test", "list_id", "test-exception-list-agnostic"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_list.test", "name", "Test Exception List Agnostic"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_list.test", "description", "Test agnostic exception list for acceptance tests"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_list.test", "type", "detection"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_list.test", "namespace_type", "agnostic"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_list.test", "tags.0", "test"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_list.test", "tags.1", "agnostic"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_exception_list.test", "id"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_exception_list.test", "created_at"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_exception_list.test", "created_by"),
+				),
+			},
+			{
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minExceptionListAPISupport),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("agnostic_update"),
+				ConfigVariables: config.Variables{
+					"list_id":        config.StringVariable("test-exception-list-agnostic"),
+					"name":           config.StringVariable("Test Exception List Agnostic Updated"),
+					"description":    config.StringVariable("Updated agnostic description"),
+					"type":           config.StringVariable("detection"),
+					"namespace_type": config.StringVariable("agnostic"),
+					"tags":           config.ListVariable(config.StringVariable("test"), config.StringVariable("agnostic"), config.StringVariable("updated")),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_list.test", "name", "Test Exception List Agnostic Updated"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_list.test", "description", "Updated agnostic description"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_list.test", "tags.0", "test"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_list.test", "tags.1", "agnostic"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_list.test", "tags.2", "updated"),
+				),
+			},
+			{ // Import
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minExceptionListAPISupport),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("agnostic_update"),
+				ConfigVariables: config.Variables{
+					"list_id":        config.StringVariable("test-exception-list-agnostic"),
+					"name":           config.StringVariable("Test Exception List Agnostic Updated"),
+					"description":    config.StringVariable("Updated agnostic description"),
+					"type":           config.StringVariable("detection"),
+					"namespace_type": config.StringVariable("agnostic"),
+					"tags":           config.ListVariable(config.StringVariable("test"), config.StringVariable("agnostic"), config.StringVariable("updated")),
 				},
 				ResourceName:      "elasticstack_kibana_security_exception_list.test",
 				ImportState:       true,
@@ -165,4 +238,47 @@ func TestAccResourceExceptionListWithSpace(t *testing.T) {
 			},
 		},
 	})
+}
+
+func checkResourceExceptionListDestroy(s *terraform.State) error {
+	client, err := clients.NewAcceptanceTestingClient()
+	if err != nil {
+		return err
+	}
+
+	oapiClient, err := client.GetKibanaOapiClient()
+	if err != nil {
+		return err
+	}
+
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "elasticstack_kibana_security_exception_list" {
+			continue
+		}
+
+		compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
+
+		// Try to read the exception list with its namespace_type
+		id := kbapi.SecurityExceptionsAPIExceptionListId(compId.ResourceId)
+		params := &kbapi.ReadExceptionListParams{
+			Id: &id,
+		}
+
+		// If namespace_type is available in the state, use it
+		if nsType, ok := rs.Primary.Attributes["namespace_type"]; ok && nsType != "" {
+			nsTypeVal := kbapi.SecurityExceptionsAPIExceptionNamespaceType(nsType)
+			params.NamespaceType = &nsTypeVal
+		}
+
+		list, diags := kibana_oapi.GetExceptionList(context.Background(), oapiClient, compId.ClusterId, params)
+		if diags.HasError() {
+			// If we get an error, it might be that the resource doesn't exist, which is what we want
+			continue
+		}
+
+		if list != nil {
+			return fmt.Errorf("Exception list (%s) still exists in space (%s)", compId.ResourceId, compId.ClusterId)
+		}
+	}
+	return nil
 }
