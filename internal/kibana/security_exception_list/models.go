@@ -9,6 +9,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -54,9 +55,7 @@ func (m *ExceptionListModel) toCreateRequest(ctx context.Context) (*kbapi.Create
 
 	// Set optional os_types
 	if utils.IsKnown(m.OsTypes) {
-		var osTypes []string
-		unmarshalDiags := m.OsTypes.ElementsAs(ctx, &osTypes, false)
-		diags.Append(unmarshalDiags...)
+		osTypes := utils.SetTypeAs[string](ctx, m.OsTypes, path.Empty(), &diags)
 		if diags.HasError() {
 			return nil, diags
 		}
@@ -71,9 +70,7 @@ func (m *ExceptionListModel) toCreateRequest(ctx context.Context) (*kbapi.Create
 
 	// Set optional tags
 	if utils.IsKnown(m.Tags) {
-		var tags []string
-		unmarshalDiags := m.Tags.ElementsAs(ctx, &tags, false)
-		diags.Append(unmarshalDiags...)
+		tags := utils.SetTypeAs[string](ctx, m.Tags, path.Empty(), &diags)
 		if diags.HasError() {
 			return nil, diags
 		}
@@ -118,9 +115,7 @@ func (m *ExceptionListModel) toUpdateRequest(ctx context.Context, resourceId str
 
 	// Set optional os_types
 	if utils.IsKnown(m.OsTypes) {
-		var osTypes []string
-		unmarshalDiags := m.OsTypes.ElementsAs(ctx, &osTypes, false)
-		diags.Append(unmarshalDiags...)
+		osTypes := utils.SetTypeAs[string](ctx, m.OsTypes, path.Empty(), &diags)
 		if diags.HasError() {
 			return nil, diags
 		}
@@ -135,9 +130,7 @@ func (m *ExceptionListModel) toUpdateRequest(ctx context.Context, resourceId str
 
 	// Set optional tags
 	if utils.IsKnown(m.Tags) {
-		var tags []string
-		unmarshalDiags := m.Tags.ElementsAs(ctx, &tags, false)
-		diags.Append(unmarshalDiags...)
+		tags := utils.SetTypeAs[string](ctx, m.Tags, path.Empty(), &diags)
 		if diags.HasError() {
 			return nil, diags
 		}
