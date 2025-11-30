@@ -44,6 +44,7 @@ alias = [
 - Support the `solution` attribute in `elasticstack_kibana_space` from 8.16 ([#1486](https://github.com/elastic/terraform-provider-elasticstack/pull/1486)) 
 - Add `elasticstack_elasticsearch_alias` resource ([#1343](https://github.com/elastic/terraform-provider-elasticstack/pull/1343))
 - Add `mapping_total_fields_limit` to `elasticstack_elasticsearch_index` ([#1494](https://github.com/elastic/terraform-provider-elasticstack/pull/1494))
+- Add `elasticstack_kibana_default_data_view` resource ([#1379](https://github.com/elastic/terraform-provider-elasticstack/pull/1379))
 
 ## [0.12.2] - 2025-11-19
 - Fix `elasticstack_elasticsearch_snapshot_lifecycle` metadata type conversion causing terraform apply to fail ([#1409](https://github.com/elastic/terraform-provider-elasticstack/issues/1409))

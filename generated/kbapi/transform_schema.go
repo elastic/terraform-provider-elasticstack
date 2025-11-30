@@ -691,7 +691,13 @@ func transformKibanaPaths(schema *Schema) {
 		"/api/maintenance_window/{id}",
 		"/api/actions/connector/{id}",
 		"/api/actions/connectors",
+		"/api/data_views/default",
 		"/api/detection_engine/rules",
+		"/api/exception_lists",
+		"/api/exception_lists/items",
+		"/api/lists",
+		"/api/lists/index",
+		"/api/lists/items",
 	}
 
 	// Add a spaceId parameter if not already present
