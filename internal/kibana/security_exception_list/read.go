@@ -53,8 +53,8 @@ func (r *ExceptionListResource) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
-	// Update state with response
-	diags = r.updateStateFromAPIResponse(ctx, &state, readResp)
+	// Update state with response using model method
+	diags = state.fromAPI(ctx, readResp)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

@@ -6,7 +6,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
@@ -32,67 +31,15 @@ func (r *ExceptionListResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
-	// Build the update request body
-	id := kbapi.SecurityExceptionsAPIExceptionListId(compId.ResourceId)
-	body := kbapi.UpdateExceptionListJSONRequestBody{
-		Id:          &id,
-		Name:        kbapi.SecurityExceptionsAPIExceptionListName(plan.Name.ValueString()),
-		Description: kbapi.SecurityExceptionsAPIExceptionListDescription(plan.Description.ValueString()),
-		// Type is required by the API even though it has RequiresReplace in the schema
-		// The API will reject updates without this field, even though the value cannot change
-		Type: kbapi.SecurityExceptionsAPIExceptionListType(plan.Type.ValueString()),
-	}
-
-	// Set optional namespace_type (should not change, but include it)
-	if utils.IsKnown(plan.NamespaceType) {
-		nsType := kbapi.SecurityExceptionsAPIExceptionNamespaceType(plan.NamespaceType.ValueString())
-		body.NamespaceType = &nsType
-	}
-
-	// Set optional os_types
-	if utils.IsKnown(plan.OsTypes) {
-		var osTypes []string
-		diags := plan.OsTypes.ElementsAs(ctx, &osTypes, false)
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-		if len(osTypes) > 0 {
-			osTypesArray := make(kbapi.SecurityExceptionsAPIExceptionListOsTypeArray, len(osTypes))
-			for i, osType := range osTypes {
-				osTypesArray[i] = kbapi.SecurityExceptionsAPIExceptionListOsType(osType)
-			}
-			body.OsTypes = &osTypesArray
-		}
-	}
-
-	// Set optional tags
-	if utils.IsKnown(plan.Tags) {
-		var tags []string
-		diags := plan.Tags.ElementsAs(ctx, &tags, false)
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-		if len(tags) > 0 {
-			tagsArray := kbapi.SecurityExceptionsAPIExceptionListTags(tags)
-			body.Tags = &tagsArray
-		}
-	}
-
-	// Set optional meta
-	if utils.IsKnown(plan.Meta) {
-		var meta kbapi.SecurityExceptionsAPIExceptionListMeta
-		unmarshalDiags := plan.Meta.Unmarshal(&meta)
-		resp.Diagnostics.Append(unmarshalDiags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-		body.Meta = &meta
+	// Build the update request body using model method
+	body, diags := plan.toUpdateRequest(ctx, compId.ResourceId)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
 	// Update the exception list
-	updateResp, diags := kibana_oapi.UpdateExceptionList(ctx, client, plan.SpaceID.ValueString(), body)
+	updateResp, diags := kibana_oapi.UpdateExceptionList(ctx, client, plan.SpaceID.ValueString(), *body)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -124,8 +71,8 @@ func (r *ExceptionListResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
-	// Update state with read response
-	diags = r.updateStateFromAPIResponse(ctx, &plan, readResp)
+	// Update state with read response using model method
+	diags = plan.fromAPI(ctx, readResp)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

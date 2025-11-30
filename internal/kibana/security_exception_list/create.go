@@ -2,16 +2,10 @@ package security_exception_list
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func (r *ExceptionListResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -29,64 +23,15 @@ func (r *ExceptionListResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
-	// Build the request body
-	body := kbapi.CreateExceptionListJSONRequestBody{
-		ListId:      (*kbapi.SecurityExceptionsAPIExceptionListHumanId)(plan.ListID.ValueStringPointer()),
-		Name:        kbapi.SecurityExceptionsAPIExceptionListName(plan.Name.ValueString()),
-		Description: kbapi.SecurityExceptionsAPIExceptionListDescription(plan.Description.ValueString()),
-		Type:        kbapi.SecurityExceptionsAPIExceptionListType(plan.Type.ValueString()),
-	}
-
-	// Set optional namespace_type
-	if utils.IsKnown(plan.NamespaceType) {
-		nsType := kbapi.SecurityExceptionsAPIExceptionNamespaceType(plan.NamespaceType.ValueString())
-		body.NamespaceType = &nsType
-	}
-
-	// Set optional os_types
-	if utils.IsKnown(plan.OsTypes) {
-		var osTypes []string
-		diags := plan.OsTypes.ElementsAs(ctx, &osTypes, false)
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-		if len(osTypes) > 0 {
-			osTypesArray := make(kbapi.SecurityExceptionsAPIExceptionListOsTypeArray, len(osTypes))
-			for i, osType := range osTypes {
-				osTypesArray[i] = kbapi.SecurityExceptionsAPIExceptionListOsType(osType)
-			}
-			body.OsTypes = &osTypesArray
-		}
-	}
-
-	// Set optional tags
-	if utils.IsKnown(plan.Tags) {
-		var tags []string
-		diags := plan.Tags.ElementsAs(ctx, &tags, false)
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-		if len(tags) > 0 {
-			tagsArray := kbapi.SecurityExceptionsAPIExceptionListTags(tags)
-			body.Tags = &tagsArray
-		}
-	}
-
-	// Set optional meta
-	if utils.IsKnown(plan.Meta) {
-		var meta kbapi.SecurityExceptionsAPIExceptionListMeta
-		unmarshalDiags := plan.Meta.Unmarshal(&meta)
-		resp.Diagnostics.Append(unmarshalDiags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-		body.Meta = &meta
+	// Build the request body using model method
+	body, diags := plan.toCreateRequest(ctx)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
 	// Create the exception list
-	createResp, diags := kibana_oapi.CreateExceptionList(ctx, client, plan.SpaceID.ValueString(), body)
+	createResp, diags := kibana_oapi.CreateExceptionList(ctx, client, plan.SpaceID.ValueString(), *body)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -118,8 +63,8 @@ func (r *ExceptionListResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
-	// Update state with read response
-	diags = r.updateStateFromAPIResponse(ctx, &plan, readResp)
+	// Update state with read response using model method
+	diags = plan.fromAPI(ctx, readResp)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -127,62 +72,4 @@ func (r *ExceptionListResource) Create(ctx context.Context, req resource.CreateR
 
 	diags = resp.State.Set(ctx, plan)
 	resp.Diagnostics.Append(diags...)
-}
-
-func (r *ExceptionListResource) updateStateFromAPIResponse(ctx context.Context, model *ExceptionListModel, apiResp *kbapi.SecurityExceptionsAPIExceptionList) diag.Diagnostics {
-	var diags diag.Diagnostics
-
-	compId := clients.CompositeId{
-		ClusterId:  model.SpaceID.ValueString(),
-		ResourceId: string(apiResp.Id),
-	}
-	model.ID = types.StringValue(compId.String())
-	model.ListID = utils.StringishValue(apiResp.ListId)
-	model.Name = utils.StringishValue(apiResp.Name)
-	model.Description = utils.StringishValue(apiResp.Description)
-	model.Type = utils.StringishValue(apiResp.Type)
-	model.NamespaceType = utils.StringishValue(apiResp.NamespaceType)
-	model.CreatedAt = types.StringValue(apiResp.CreatedAt.Format("2006-01-02T15:04:05.000Z"))
-	model.CreatedBy = types.StringValue(apiResp.CreatedBy)
-	model.UpdatedAt = types.StringValue(apiResp.UpdatedAt.Format("2006-01-02T15:04:05.000Z"))
-	model.UpdatedBy = types.StringValue(apiResp.UpdatedBy)
-	model.Immutable = types.BoolValue(apiResp.Immutable)
-	model.TieBreakerID = types.StringValue(apiResp.TieBreakerId)
-
-	// Set optional os_types
-	if apiResp.OsTypes != nil && len(*apiResp.OsTypes) > 0 {
-		// osTypes := make([]string, len(*apiResp.OsTypes))
-		// for i, osType := range *apiResp.OsTypes {
-		// 	osTypes[i] = string(osType)
-		// }
-		// list, d := types.ListValueFrom(ctx, types.StringType, osTypes)
-		list, d := types.ListValueFrom(ctx, types.StringType, apiResp.OsTypes)
-		diags.Append(d...)
-		model.OsTypes = list
-	} else {
-		model.OsTypes = types.ListNull(types.StringType)
-	}
-
-	// Set optional tags
-	if apiResp.Tags != nil && len(*apiResp.Tags) > 0 {
-		list, d := types.ListValueFrom(ctx, types.StringType, *apiResp.Tags)
-		diags.Append(d...)
-		model.Tags = list
-	} else {
-		model.Tags = types.ListNull(types.StringType)
-	}
-
-	// Set optional meta
-	if apiResp.Meta != nil {
-		metaJSON, err := json.Marshal(apiResp.Meta)
-		if err != nil {
-			diags.AddError("Failed to serialize meta", err.Error())
-			return diags
-		}
-		model.Meta = jsontypes.NewNormalizedValue(string(metaJSON))
-	} else {
-		model.Meta = jsontypes.NewNormalizedNull()
-	}
-
-	return diags
 }
