@@ -33,9 +33,7 @@ func (r *ExceptionListResource) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
-	if !compIdDiags.HasError() {
-		state.SpaceID = types.StringValue(compId.ClusterId)
-	}
+	state.SpaceID = types.StringValue(compId.ClusterId)
 
 	// Read by resource ID from composite ID
 	id := kbapi.SecurityExceptionsAPIExceptionListId(compId.ResourceId)
