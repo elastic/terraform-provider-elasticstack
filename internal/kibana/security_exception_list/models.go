@@ -20,8 +20,8 @@ type ExceptionListModel struct {
 	Description   types.String         `tfsdk:"description"`
 	Type          types.String         `tfsdk:"type"`
 	NamespaceType types.String         `tfsdk:"namespace_type"`
-	OsTypes       types.List           `tfsdk:"os_types"`
-	Tags          types.List           `tfsdk:"tags"`
+	OsTypes       types.Set            `tfsdk:"os_types"`
+	Tags          types.Set            `tfsdk:"tags"`
 	Meta          jsontypes.Normalized `tfsdk:"meta"`
 	CreatedAt     types.String         `tfsdk:"created_at"`
 	CreatedBy     types.String         `tfsdk:"created_by"`
@@ -186,20 +186,20 @@ func (m *ExceptionListModel) fromAPI(ctx context.Context, apiList *kbapi.Securit
 
 	// Set optional os_types
 	if apiList.OsTypes != nil && len(*apiList.OsTypes) > 0 {
-		list, d := types.ListValueFrom(ctx, types.StringType, apiList.OsTypes)
+		set, d := types.SetValueFrom(ctx, types.StringType, apiList.OsTypes)
 		diags.Append(d...)
-		m.OsTypes = list
+		m.OsTypes = set
 	} else {
-		m.OsTypes = types.ListNull(types.StringType)
+		m.OsTypes = types.SetNull(types.StringType)
 	}
 
 	// Set optional tags
 	if apiList.Tags != nil && len(*apiList.Tags) > 0 {
-		list, d := types.ListValueFrom(ctx, types.StringType, *apiList.Tags)
+		set, d := types.SetValueFrom(ctx, types.StringType, *apiList.Tags)
 		diags.Append(d...)
-		m.Tags = list
+		m.Tags = set
 	} else {
-		m.Tags = types.ListNull(types.StringType)
+		m.Tags = types.SetNull(types.StringType)
 	}
 
 	// Set optional meta
