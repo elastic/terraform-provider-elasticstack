@@ -168,7 +168,7 @@ func (m *ExceptionListModel) fromAPI(ctx context.Context, apiList *kbapi.Securit
 	// Create composite ID from space_id and list id
 	compId := clients.CompositeId{
 		ClusterId:  m.SpaceID.ValueString(),
-		ResourceId: string(apiList.Id),
+		ResourceId: utils.StringishValue(apiList.Id).ValueString(),
 	}
 	m.ID = types.StringValue(compId.String())
 
