@@ -21,7 +21,8 @@ var minExceptionListAPISupport = version.Must(version.NewVersion("7.9.0"))
 
 func TestAccResourceExceptionList(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() { acctest.PreCheck(t) },
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceExceptionListDestroy,
 		Steps: []resource.TestStep{
 			{
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionListAPISupport),
@@ -162,6 +163,7 @@ func TestAccResourceExceptionListWithSpace(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV6ProviderFactories: acctest.Providers,
+		CheckDestroy:             checkResourceExceptionListDestroy,
 		Steps: []resource.TestStep{
 			{
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minExceptionListAPISupport),
