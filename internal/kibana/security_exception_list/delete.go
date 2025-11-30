@@ -38,7 +38,6 @@ func (r *ExceptionListResource) Delete(ctx context.Context, req resource.DeleteR
 	}
 
 	// Include namespace_type if known (required for agnostic lists)
-	// If not known, try deletion without it first (works for single namespace)
 	if state.NamespaceType.ValueString() != "" {
 		nsType := kbapi.SecurityExceptionsAPIExceptionNamespaceType(state.NamespaceType.ValueString())
 		params.NamespaceType = &nsType
