@@ -50,10 +50,11 @@ func (r *ExceptionListResource) Schema(_ context.Context, _ resource.SchemaReque
 				},
 			},
 			"list_id": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
 				MarkdownDescription: "The exception list's human readable string identifier.",
-				Required:            true,
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
+					stringplanmodifier.RequiresReplaceIfConfigured(),
 				},
 			},
 			"name": schema.StringAttribute{
