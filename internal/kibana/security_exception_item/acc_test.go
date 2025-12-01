@@ -1,23 +1,29 @@
 package security_exception_item_test
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 var minExceptionItemAPISupport = version.Must(version.NewVersion("7.9.0"))
 
 func TestAccResourceExceptionItem(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() { acctest.PreCheck(t) },
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceExceptionItemDestroy,
 		Steps: []resource.TestStep{
 			{
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
@@ -94,6 +100,7 @@ func TestAccResourceExceptionItemWithSpace(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV6ProviderFactories: acctest.Providers,
+		CheckDestroy:             checkResourceExceptionItemDestroy,
 		Steps: []resource.TestStep{
 			{
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
@@ -181,7 +188,8 @@ func TestAccResourceExceptionItemEntryType_Match(t *testing.T) {
 	itemID := fmt.Sprintf("test-exception-item-match-%s", uuid.New().String()[:8])
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() { acctest.PreCheck(t) },
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceExceptionItemDestroy,
 		Steps: []resource.TestStep{
 			{
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
@@ -207,7 +215,8 @@ func TestAccResourceExceptionItemEntryType_MatchAny(t *testing.T) {
 	itemID := fmt.Sprintf("test-exception-item-match-any-%s", uuid.New().String()[:8])
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() { acctest.PreCheck(t) },
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceExceptionItemDestroy,
 		Steps: []resource.TestStep{
 			{
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
@@ -237,7 +246,8 @@ func TestAccResourceExceptionItemEntryType_List(t *testing.T) {
 	valueListValue := "192.168.1.1"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() { acctest.PreCheck(t) },
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceExceptionItemDestroy,
 		Steps: []resource.TestStep{
 			{
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
@@ -266,7 +276,8 @@ func TestAccResourceExceptionItemEntryType_Exists(t *testing.T) {
 	itemID := fmt.Sprintf("test-exception-item-exists-%s", uuid.New().String()[:8])
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() { acctest.PreCheck(t) },
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceExceptionItemDestroy,
 		Steps: []resource.TestStep{
 			{
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
@@ -291,7 +302,8 @@ func TestAccResourceExceptionItemEntryType_Nested(t *testing.T) {
 	itemID := fmt.Sprintf("test-exception-item-nested-%s", uuid.New().String()[:8])
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() { acctest.PreCheck(t) },
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceExceptionItemDestroy,
 		Steps: []resource.TestStep{
 			{
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
@@ -319,7 +331,8 @@ func TestAccResourceExceptionItemEntryType_Wildcard(t *testing.T) {
 	itemID := fmt.Sprintf("test-exception-item-wildcard-%s", uuid.New().String()[:8])
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() { acctest.PreCheck(t) },
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceExceptionItemDestroy,
 		Steps: []resource.TestStep{
 			{
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
@@ -345,7 +358,8 @@ func TestAccResourceExceptionItemValidation(t *testing.T) {
 	itemID := fmt.Sprintf("test-exception-item-validation-%s", uuid.New().String()[:8])
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() { acctest.PreCheck(t) },
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceExceptionItemDestroy,
 		Steps: []resource.TestStep{
 			// Test 1: Match entry missing value
 			{
@@ -512,7 +526,8 @@ func TestAccResourceExceptionItem_Complex(t *testing.T) {
 	itemID := fmt.Sprintf("test-exception-item-complex-%s", uuid.New().String()[:8])
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() { acctest.PreCheck(t) },
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceExceptionItemDestroy,
 		Steps: []resource.TestStep{
 			{
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
@@ -552,4 +567,47 @@ func TestAccResourceExceptionItem_Complex(t *testing.T) {
 			},
 		},
 	})
+}
+
+func checkResourceExceptionItemDestroy(s *terraform.State) error {
+	client, err := clients.NewAcceptanceTestingClient()
+	if err != nil {
+		return err
+	}
+
+	oapiClient, err := client.GetKibanaOapiClient()
+	if err != nil {
+		return err
+	}
+
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "elasticstack_kibana_security_exception_item" {
+			continue
+		}
+
+		compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
+
+		// Try to read the exception item
+		id := kbapi.SecurityExceptionsAPIExceptionListItemId(compId.ResourceId)
+		params := &kbapi.ReadExceptionListItemParams{
+			Id: &id,
+		}
+
+		// If namespace_type is available in the state, use it
+		if nsType, ok := rs.Primary.Attributes["namespace_type"]; ok && nsType != "" {
+			nsTypeVal := kbapi.SecurityExceptionsAPIExceptionNamespaceType(nsType)
+			params.NamespaceType = &nsTypeVal
+		}
+
+		item, diags := kibana_oapi.GetExceptionListItem(context.Background(), oapiClient, compId.ClusterId, params)
+		if diags.HasError() {
+			// If we get an error, it might be that the resource doesn't exist, which is what we want
+			continue
+		}
+
+		if item != nil {
+			return fmt.Errorf("Exception item (%s) still exists in space (%s)", compId.ResourceId, compId.ClusterId)
+		}
+	}
+	return nil
 }
