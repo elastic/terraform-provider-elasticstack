@@ -768,11 +768,7 @@ func (m *ExceptionItemModel) fromAPI(ctx context.Context, apiResp *kbapi.Securit
 
 	// Set optional os_types
 	if apiResp.OsTypes != nil && len(*apiResp.OsTypes) > 0 {
-		osTypes := make([]string, len(*apiResp.OsTypes))
-		for i, osType := range *apiResp.OsTypes {
-			osTypes[i] = string(osType)
-		}
-		set, d := types.SetValueFrom(ctx, types.StringType, osTypes)
+		set, d := types.SetValueFrom(ctx, types.StringType, *apiResp.OsTypes)
 		diags.Append(d...)
 		m.OsTypes = set
 	} else {
