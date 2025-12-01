@@ -65,6 +65,23 @@ func TestAccResourceExceptionItem(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "tags.1", "updated"),
 				),
 			},
+			{ // Import
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"list_id":        config.StringVariable("test-exception-list-for-item"),
+					"item_id":        config.StringVariable("test-exception-item"),
+					"name":           config.StringVariable("Test Exception Item Updated"),
+					"description":    config.StringVariable("Updated description"),
+					"type":           config.StringVariable("simple"),
+					"namespace_type": config.StringVariable("single"),
+					"tags":           config.ListVariable(config.StringVariable("test"), config.StringVariable("updated")),
+				},
+				ResourceName:      "elasticstack_kibana_security_exception_item.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
 		},
 	})
 }
@@ -137,6 +154,23 @@ func TestAccResourceExceptionItemWithSpace(t *testing.T) {
 					resource.TestCheckTypeSetElemAttr(resourceName, "tags.*", "space"),
 					resource.TestCheckTypeSetElemAttr(resourceName, "tags.*", "updated"),
 				),
+			},
+			{ // Import
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"space_id":       config.StringVariable(spaceID),
+					"list_id":        config.StringVariable("test-exception-list-for-item-space"),
+					"item_id":        config.StringVariable("test-exception-item-space"),
+					"name":           config.StringVariable("Test Exception Item in Space Updated"),
+					"description":    config.StringVariable("Updated description in space"),
+					"type":           config.StringVariable("simple"),
+					"namespace_type": config.StringVariable("single"),
+					"tags":           config.ListVariable(config.StringVariable("test"), config.StringVariable("space"), config.StringVariable("updated")),
+				},
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
