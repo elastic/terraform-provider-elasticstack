@@ -149,10 +149,9 @@ func (d SecurityDetectionRuleData) toMachineLearningRuleUpdateProps(ctx context.
 		diags.AddError("ID was not a valid UUID", err.Error())
 		return updateProps, diags
 	}
-	var id = kbapi.SecurityDetectionsAPIRuleObjectId(uid)
 
 	mlRule := kbapi.SecurityDetectionsAPIMachineLearningRuleUpdateProps{
-		Id:               &id,
+		Id:               &uid,
 		Name:             kbapi.SecurityDetectionsAPIRuleName(d.Name.ValueString()),
 		Description:      kbapi.SecurityDetectionsAPIRuleDescription(d.Description.ValueString()),
 		Type:             kbapi.SecurityDetectionsAPIMachineLearningRuleUpdatePropsType("machine_learning"),
