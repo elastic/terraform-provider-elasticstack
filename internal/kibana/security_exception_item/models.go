@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -536,4 +538,301 @@ func getNestedEntryAttrTypes() map[string]attr.Type {
 		"value":    types.StringType,
 		"values":   types.ListType{ElemType: types.StringType},
 	}
+}
+
+// toCreateRequest converts the Terraform model to API create request
+func (m *ExceptionItemModel) toCreateRequest(ctx context.Context) (*kbapi.CreateExceptionListItemJSONRequestBody, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	// Convert entries from Terraform model to API model
+	entries, d := convertEntriesToAPI(ctx, m.Entries)
+	diags.Append(d...)
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	req := &kbapi.CreateExceptionListItemJSONRequestBody{
+		ListId:      kbapi.SecurityExceptionsAPIExceptionListHumanId(m.ListID.ValueString()),
+		Name:        kbapi.SecurityExceptionsAPIExceptionListItemName(m.Name.ValueString()),
+		Description: kbapi.SecurityExceptionsAPIExceptionListItemDescription(m.Description.ValueString()),
+		Type:        kbapi.SecurityExceptionsAPIExceptionListItemType(m.Type.ValueString()),
+		Entries:     entries,
+	}
+
+	// Set optional item_id
+	if utils.IsKnown(m.ItemID) && !m.ItemID.IsNull() {
+		itemID := kbapi.SecurityExceptionsAPIExceptionListItemHumanId(m.ItemID.ValueString())
+		req.ItemId = &itemID
+	}
+
+	// Set optional namespace_type
+	if utils.IsKnown(m.NamespaceType) {
+		nsType := kbapi.SecurityExceptionsAPIExceptionNamespaceType(m.NamespaceType.ValueString())
+		req.NamespaceType = &nsType
+	}
+
+	// Set optional os_types
+	if utils.IsKnown(m.OsTypes) && !m.OsTypes.IsNull() {
+		var osTypes []string
+		d := m.OsTypes.ElementsAs(ctx, &osTypes, false)
+		diags.Append(d...)
+		if diags.HasError() {
+			return nil, diags
+		}
+		if len(osTypes) > 0 {
+			osTypesArray := make(kbapi.SecurityExceptionsAPIExceptionListItemOsTypeArray, len(osTypes))
+			for i, osType := range osTypes {
+				osTypesArray[i] = kbapi.SecurityExceptionsAPIExceptionListOsType(osType)
+			}
+			req.OsTypes = &osTypesArray
+		}
+	}
+
+	// Set optional tags
+	if utils.IsKnown(m.Tags) && !m.Tags.IsNull() {
+		var tags []string
+		d := m.Tags.ElementsAs(ctx, &tags, false)
+		diags.Append(d...)
+		if diags.HasError() {
+			return nil, diags
+		}
+		if len(tags) > 0 {
+			tagsArray := kbapi.SecurityExceptionsAPIExceptionListItemTags(tags)
+			req.Tags = &tagsArray
+		}
+	}
+
+	// Set optional meta
+	if utils.IsKnown(m.Meta) && !m.Meta.IsNull() {
+		var meta kbapi.SecurityExceptionsAPIExceptionListItemMeta
+		if err := json.Unmarshal([]byte(m.Meta.ValueString()), &meta); err != nil {
+			diags.AddError("Failed to parse meta JSON", err.Error())
+			return nil, diags
+		}
+		req.Meta = &meta
+	}
+
+	// Set optional comments
+	if utils.IsKnown(m.Comments) && !m.Comments.IsNull() {
+		var comments []CommentModel
+		d := m.Comments.ElementsAs(ctx, &comments, false)
+		diags.Append(d...)
+		if diags.HasError() {
+			return nil, diags
+		}
+		if len(comments) > 0 {
+			commentsArray := make(kbapi.SecurityExceptionsAPICreateExceptionListItemCommentArray, len(comments))
+			for i, comment := range comments {
+				commentsArray[i] = kbapi.SecurityExceptionsAPICreateExceptionListItemComment{
+					Comment: kbapi.SecurityExceptionsAPINonEmptyString(comment.Comment.ValueString()),
+				}
+			}
+			req.Comments = &commentsArray
+		}
+	}
+
+	// Set optional expire_time
+	if utils.IsKnown(m.ExpireTime) && !m.ExpireTime.IsNull() {
+		expireTime, err := time.Parse(time.RFC3339, m.ExpireTime.ValueString())
+		if err != nil {
+			diags.AddError("Failed to parse expire_time", err.Error())
+			return nil, diags
+		}
+		expireTimeAPI := kbapi.SecurityExceptionsAPIExceptionListItemExpireTime(expireTime)
+		req.ExpireTime = &expireTimeAPI
+	}
+
+	return req, diags
+}
+
+// toUpdateRequest converts the Terraform model to API update request
+func (m *ExceptionItemModel) toUpdateRequest(ctx context.Context, resourceId string) (*kbapi.UpdateExceptionListItemJSONRequestBody, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	// Convert entries from Terraform model to API model
+	entries, d := convertEntriesToAPI(ctx, m.Entries)
+	diags.Append(d...)
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	id := kbapi.SecurityExceptionsAPIExceptionListItemId(resourceId)
+	req := &kbapi.UpdateExceptionListItemJSONRequestBody{
+		Id:          &id,
+		Name:        kbapi.SecurityExceptionsAPIExceptionListItemName(m.Name.ValueString()),
+		Description: kbapi.SecurityExceptionsAPIExceptionListItemDescription(m.Description.ValueString()),
+		Type:        kbapi.SecurityExceptionsAPIExceptionListItemType(m.Type.ValueString()),
+		Entries:     entries,
+	}
+
+	// Set optional namespace_type
+	if utils.IsKnown(m.NamespaceType) {
+		nsType := kbapi.SecurityExceptionsAPIExceptionNamespaceType(m.NamespaceType.ValueString())
+		req.NamespaceType = &nsType
+	}
+
+	// Set optional os_types
+	if utils.IsKnown(m.OsTypes) && !m.OsTypes.IsNull() {
+		var osTypes []string
+		d := m.OsTypes.ElementsAs(ctx, &osTypes, false)
+		diags.Append(d...)
+		if diags.HasError() {
+			return nil, diags
+		}
+		if len(osTypes) > 0 {
+			osTypesArray := make(kbapi.SecurityExceptionsAPIExceptionListItemOsTypeArray, len(osTypes))
+			for i, osType := range osTypes {
+				osTypesArray[i] = kbapi.SecurityExceptionsAPIExceptionListOsType(osType)
+			}
+			req.OsTypes = &osTypesArray
+		}
+	}
+
+	// Set optional tags
+	if utils.IsKnown(m.Tags) && !m.Tags.IsNull() {
+		var tags []string
+		d := m.Tags.ElementsAs(ctx, &tags, false)
+		diags.Append(d...)
+		if diags.HasError() {
+			return nil, diags
+		}
+		if len(tags) > 0 {
+			tagsArray := kbapi.SecurityExceptionsAPIExceptionListItemTags(tags)
+			req.Tags = &tagsArray
+		}
+	}
+
+	// Set optional meta
+	if utils.IsKnown(m.Meta) && !m.Meta.IsNull() {
+		var meta kbapi.SecurityExceptionsAPIExceptionListItemMeta
+		if err := json.Unmarshal([]byte(m.Meta.ValueString()), &meta); err != nil {
+			diags.AddError("Failed to parse meta JSON", err.Error())
+			return nil, diags
+		}
+		req.Meta = &meta
+	}
+
+	// Set optional comments
+	if utils.IsKnown(m.Comments) && !m.Comments.IsNull() {
+		var comments []CommentModel
+		d := m.Comments.ElementsAs(ctx, &comments, false)
+		diags.Append(d...)
+		if diags.HasError() {
+			return nil, diags
+		}
+		if len(comments) > 0 {
+			commentsArray := make(kbapi.SecurityExceptionsAPIUpdateExceptionListItemCommentArray, len(comments))
+			for i, comment := range comments {
+				commentsArray[i] = kbapi.SecurityExceptionsAPIUpdateExceptionListItemComment{
+					Comment: kbapi.SecurityExceptionsAPINonEmptyString(comment.Comment.ValueString()),
+				}
+			}
+			req.Comments = &commentsArray
+		}
+	}
+
+	// Set optional expire_time
+	if utils.IsKnown(m.ExpireTime) && !m.ExpireTime.IsNull() {
+		expireTime, err := time.Parse(time.RFC3339, m.ExpireTime.ValueString())
+		if err != nil {
+			diags.AddError("Failed to parse expire_time", err.Error())
+			return nil, diags
+		}
+		expireTimeAPI := kbapi.SecurityExceptionsAPIExceptionListItemExpireTime(expireTime)
+		req.ExpireTime = &expireTimeAPI
+	}
+
+	return req, diags
+}
+
+// fromAPI converts the API response to Terraform model
+func (m *ExceptionItemModel) fromAPI(ctx context.Context, apiResp *kbapi.SecurityExceptionsAPIExceptionListItem) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	m.ID = types.StringValue(string(apiResp.Id))
+	m.ItemID = types.StringValue(string(apiResp.ItemId))
+	m.ListID = types.StringValue(string(apiResp.ListId))
+	m.Name = types.StringValue(string(apiResp.Name))
+	m.Description = types.StringValue(string(apiResp.Description))
+	m.Type = types.StringValue(string(apiResp.Type))
+	m.NamespaceType = types.StringValue(string(apiResp.NamespaceType))
+	m.CreatedAt = types.StringValue(apiResp.CreatedAt.Format("2006-01-02T15:04:05.000Z"))
+	m.CreatedBy = types.StringValue(apiResp.CreatedBy)
+	m.UpdatedAt = types.StringValue(apiResp.UpdatedAt.Format("2006-01-02T15:04:05.000Z"))
+	m.UpdatedBy = types.StringValue(apiResp.UpdatedBy)
+	m.TieBreakerID = types.StringValue(apiResp.TieBreakerId)
+
+	// Set optional expire_time
+	if apiResp.ExpireTime != nil {
+		m.ExpireTime = types.StringValue(time.Time(*apiResp.ExpireTime).Format(time.RFC3339))
+	} else {
+		m.ExpireTime = types.StringNull()
+	}
+
+	// Set optional os_types
+	if apiResp.OsTypes != nil && len(*apiResp.OsTypes) > 0 {
+		osTypes := make([]string, len(*apiResp.OsTypes))
+		for i, osType := range *apiResp.OsTypes {
+			osTypes[i] = string(osType)
+		}
+		list, d := types.ListValueFrom(ctx, types.StringType, osTypes)
+		diags.Append(d...)
+		m.OsTypes = list
+	} else {
+		m.OsTypes = types.ListNull(types.StringType)
+	}
+
+	// Set optional tags
+	if apiResp.Tags != nil && len(*apiResp.Tags) > 0 {
+		list, d := types.ListValueFrom(ctx, types.StringType, *apiResp.Tags)
+		diags.Append(d...)
+		m.Tags = list
+	} else {
+		m.Tags = types.ListNull(types.StringType)
+	}
+
+	// Set optional meta
+	if apiResp.Meta != nil {
+		metaJSON, err := json.Marshal(apiResp.Meta)
+		if err != nil {
+			diags.AddError("Failed to serialize meta", err.Error())
+			return diags
+		}
+		m.Meta = types.StringValue(string(metaJSON))
+	} else {
+		m.Meta = types.StringNull()
+	}
+
+	// Set entries (convert from API model to Terraform model)
+	entriesList, d := convertEntriesFromAPI(ctx, apiResp.Entries)
+	diags.Append(d...)
+	m.Entries = entriesList
+
+	// Set optional comments
+	if len(apiResp.Comments) > 0 {
+		comments := make([]CommentModel, len(apiResp.Comments))
+		for i, comment := range apiResp.Comments {
+			comments[i] = CommentModel{
+				ID:      types.StringValue(string(comment.Id)),
+				Comment: types.StringValue(string(comment.Comment)),
+			}
+		}
+		list, d := types.ListValueFrom(ctx, types.ObjectType{
+			AttrTypes: map[string]attr.Type{
+				"id":      types.StringType,
+				"comment": types.StringType,
+			},
+		}, comments)
+		diags.Append(d...)
+		m.Comments = list
+	} else {
+		m.Comments = types.ListNull(types.ObjectType{
+			AttrTypes: map[string]attr.Type{
+				"id":      types.StringType,
+				"comment": types.StringType,
+			},
+		})
+	}
+
+	return diags
 }
