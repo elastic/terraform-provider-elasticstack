@@ -5,6 +5,7 @@ import (
 	_ "embed"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -85,12 +86,12 @@ func (r *ExceptionItemResource) Schema(_ context.Context, _ resource.SchemaReque
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
-			"os_types": schema.ListAttribute{
+			"os_types": schema.SetAttribute{
 				MarkdownDescription: "Array of OS types for which the exceptions apply. Valid values: `linux`, `macos`, `windows`.",
 				Optional:            true,
 				ElementType:         types.StringType,
 			},
-			"tags": schema.ListAttribute{
+			"tags": schema.SetAttribute{
 				MarkdownDescription: "String array containing words and phrases to help categorize exception items.",
 				Optional:            true,
 				ElementType:         types.StringType,
@@ -98,6 +99,7 @@ func (r *ExceptionItemResource) Schema(_ context.Context, _ resource.SchemaReque
 			"meta": schema.StringAttribute{
 				MarkdownDescription: "Placeholder for metadata about the exception item as JSON string.",
 				Optional:            true,
+				CustomType:          jsontypes.NormalizedType{},
 			},
 			"entries": schema.ListNestedAttribute{
 				MarkdownDescription: "The exception item entries. This defines the conditions under which the exception applies.",

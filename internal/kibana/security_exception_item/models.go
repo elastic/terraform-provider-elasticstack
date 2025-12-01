@@ -8,32 +8,35 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 type ExceptionItemModel struct {
-	ID            types.String `tfsdk:"id"`
-	SpaceID       types.String `tfsdk:"space_id"`
-	ItemID        types.String `tfsdk:"item_id"`
-	ListID        types.String `tfsdk:"list_id"`
-	Name          types.String `tfsdk:"name"`
-	Description   types.String `tfsdk:"description"`
-	Type          types.String `tfsdk:"type"`
-	NamespaceType types.String `tfsdk:"namespace_type"`
-	OsTypes       types.List   `tfsdk:"os_types"`
-	Tags          types.List   `tfsdk:"tags"`
-	Meta          types.String `tfsdk:"meta"`
-	Entries       types.List   `tfsdk:"entries"`
-	Comments      types.List   `tfsdk:"comments"`
-	ExpireTime    types.String `tfsdk:"expire_time"`
-	CreatedAt     types.String `tfsdk:"created_at"`
-	CreatedBy     types.String `tfsdk:"created_by"`
-	UpdatedAt     types.String `tfsdk:"updated_at"`
-	UpdatedBy     types.String `tfsdk:"updated_by"`
-	TieBreakerID  types.String `tfsdk:"tie_breaker_id"`
+	ID            types.String         `tfsdk:"id"`
+	SpaceID       types.String         `tfsdk:"space_id"`
+	ItemID        types.String         `tfsdk:"item_id"`
+	ListID        types.String         `tfsdk:"list_id"`
+	Name          types.String         `tfsdk:"name"`
+	Description   types.String         `tfsdk:"description"`
+	Type          types.String         `tfsdk:"type"`
+	NamespaceType types.String         `tfsdk:"namespace_type"`
+	OsTypes       types.Set            `tfsdk:"os_types"`
+	Tags          types.Set            `tfsdk:"tags"`
+	Meta          jsontypes.Normalized `tfsdk:"meta"`
+	Entries       types.List           `tfsdk:"entries"`
+	Comments      types.List           `tfsdk:"comments"`
+	ExpireTime    types.String         `tfsdk:"expire_time"`
+	CreatedAt     types.String         `tfsdk:"created_at"`
+	CreatedBy     types.String         `tfsdk:"created_by"`
+	UpdatedAt     types.String         `tfsdk:"updated_at"`
+	UpdatedBy     types.String         `tfsdk:"updated_by"`
+	TieBreakerID  types.String         `tfsdk:"tie_breaker_id"`
 }
 
 type CommentModel struct {
@@ -72,8 +75,7 @@ func convertEntriesToAPI(ctx context.Context, entries types.List) (kbapi.Securit
 		return nil, diags
 	}
 
-	var entryModels []EntryModel
-	diags.Append(entries.ElementsAs(ctx, &entryModels, false)...)
+	entryModels := utils.ListTypeAs[EntryModel](ctx, entries, path.Empty(), &diags)
 	if diags.HasError() {
 		return nil, diags
 	}
@@ -125,8 +127,7 @@ func convertEntryToAPI(ctx context.Context, entry EntryModel) (kbapi.SecurityExc
 			return result, diags
 		}
 
-		var values []string
-		diags.Append(entry.Values.ElementsAs(ctx, &values, false)...)
+		values := utils.ListTypeAs[string](ctx, entry.Values, path.Empty(), &diags)
 		if diags.HasError() {
 			return result, diags
 		}
@@ -207,8 +208,7 @@ func convertEntryToAPI(ctx context.Context, entry EntryModel) (kbapi.SecurityExc
 			return result, diags
 		}
 
-		var nestedEntries []NestedEntryModel
-		diags.Append(entry.Entries.ElementsAs(ctx, &nestedEntries, false)...)
+		nestedEntries := utils.ListTypeAs[NestedEntryModel](ctx, entry.Entries, path.Empty(), &diags)
 		if diags.HasError() {
 			return result, diags
 		}
@@ -278,8 +278,7 @@ func convertNestedEntryToAPI(ctx context.Context, entry NestedEntryModel) (kbapi
 			return result, diags
 		}
 
-		var values []string
-		diags.Append(entry.Values.ElementsAs(ctx, &values, false)...)
+		values := utils.ListTypeAs[string](ctx, entry.Values, path.Empty(), &diags)
 		if diags.HasError() {
 			return result, diags
 		}
@@ -572,10 +571,8 @@ func (m *ExceptionItemModel) toCreateRequest(ctx context.Context) (*kbapi.Create
 	}
 
 	// Set optional os_types
-	if utils.IsKnown(m.OsTypes) && !m.OsTypes.IsNull() {
-		var osTypes []string
-		d := m.OsTypes.ElementsAs(ctx, &osTypes, false)
-		diags.Append(d...)
+	if utils.IsKnown(m.OsTypes) {
+		osTypes := utils.SetTypeAs[string](ctx, m.OsTypes, path.Empty(), &diags)
 		if diags.HasError() {
 			return nil, diags
 		}
@@ -589,10 +586,8 @@ func (m *ExceptionItemModel) toCreateRequest(ctx context.Context) (*kbapi.Create
 	}
 
 	// Set optional tags
-	if utils.IsKnown(m.Tags) && !m.Tags.IsNull() {
-		var tags []string
-		d := m.Tags.ElementsAs(ctx, &tags, false)
-		diags.Append(d...)
+	if utils.IsKnown(m.Tags) {
+		tags := utils.SetTypeAs[string](ctx, m.Tags, path.Empty(), &diags)
 		if diags.HasError() {
 			return nil, diags
 		}
@@ -603,10 +598,11 @@ func (m *ExceptionItemModel) toCreateRequest(ctx context.Context) (*kbapi.Create
 	}
 
 	// Set optional meta
-	if utils.IsKnown(m.Meta) && !m.Meta.IsNull() {
+	if utils.IsKnown(m.Meta) {
 		var meta kbapi.SecurityExceptionsAPIExceptionListItemMeta
-		if err := json.Unmarshal([]byte(m.Meta.ValueString()), &meta); err != nil {
-			diags.AddError("Failed to parse meta JSON", err.Error())
+		unmarshalDiags := m.Meta.Unmarshal(&meta)
+		diags.Append(unmarshalDiags...)
+		if diags.HasError() {
 			return nil, diags
 		}
 		req.Meta = &meta
@@ -614,9 +610,7 @@ func (m *ExceptionItemModel) toCreateRequest(ctx context.Context) (*kbapi.Create
 
 	// Set optional comments
 	if utils.IsKnown(m.Comments) && !m.Comments.IsNull() {
-		var comments []CommentModel
-		d := m.Comments.ElementsAs(ctx, &comments, false)
-		diags.Append(d...)
+		comments := utils.ListTypeAs[CommentModel](ctx, m.Comments, path.Empty(), &diags)
 		if diags.HasError() {
 			return nil, diags
 		}
@@ -672,10 +666,8 @@ func (m *ExceptionItemModel) toUpdateRequest(ctx context.Context, resourceId str
 	}
 
 	// Set optional os_types
-	if utils.IsKnown(m.OsTypes) && !m.OsTypes.IsNull() {
-		var osTypes []string
-		d := m.OsTypes.ElementsAs(ctx, &osTypes, false)
-		diags.Append(d...)
+	if utils.IsKnown(m.OsTypes) {
+		osTypes := utils.SetTypeAs[string](ctx, m.OsTypes, path.Empty(), &diags)
 		if diags.HasError() {
 			return nil, diags
 		}
@@ -689,10 +681,8 @@ func (m *ExceptionItemModel) toUpdateRequest(ctx context.Context, resourceId str
 	}
 
 	// Set optional tags
-	if utils.IsKnown(m.Tags) && !m.Tags.IsNull() {
-		var tags []string
-		d := m.Tags.ElementsAs(ctx, &tags, false)
-		diags.Append(d...)
+	if utils.IsKnown(m.Tags) {
+		tags := utils.SetTypeAs[string](ctx, m.Tags, path.Empty(), &diags)
 		if diags.HasError() {
 			return nil, diags
 		}
@@ -703,10 +693,11 @@ func (m *ExceptionItemModel) toUpdateRequest(ctx context.Context, resourceId str
 	}
 
 	// Set optional meta
-	if utils.IsKnown(m.Meta) && !m.Meta.IsNull() {
+	if utils.IsKnown(m.Meta) {
 		var meta kbapi.SecurityExceptionsAPIExceptionListItemMeta
-		if err := json.Unmarshal([]byte(m.Meta.ValueString()), &meta); err != nil {
-			diags.AddError("Failed to parse meta JSON", err.Error())
+		unmarshalDiags := m.Meta.Unmarshal(&meta)
+		diags.Append(unmarshalDiags...)
+		if diags.HasError() {
 			return nil, diags
 		}
 		req.Meta = &meta
@@ -714,9 +705,7 @@ func (m *ExceptionItemModel) toUpdateRequest(ctx context.Context, resourceId str
 
 	// Set optional comments
 	if utils.IsKnown(m.Comments) && !m.Comments.IsNull() {
-		var comments []CommentModel
-		d := m.Comments.ElementsAs(ctx, &comments, false)
-		diags.Append(d...)
+		comments := utils.ListTypeAs[CommentModel](ctx, m.Comments, path.Empty(), &diags)
 		if diags.HasError() {
 			return nil, diags
 		}
@@ -749,13 +738,13 @@ func (m *ExceptionItemModel) toUpdateRequest(ctx context.Context, resourceId str
 func (m *ExceptionItemModel) fromAPI(ctx context.Context, apiResp *kbapi.SecurityExceptionsAPIExceptionListItem) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	m.ID = types.StringValue(string(apiResp.Id))
-	m.ItemID = types.StringValue(string(apiResp.ItemId))
-	m.ListID = types.StringValue(string(apiResp.ListId))
-	m.Name = types.StringValue(string(apiResp.Name))
-	m.Description = types.StringValue(string(apiResp.Description))
-	m.Type = types.StringValue(string(apiResp.Type))
-	m.NamespaceType = types.StringValue(string(apiResp.NamespaceType))
+	m.ID = typeutils.StringishValue(apiResp.Id)
+	m.ItemID = typeutils.StringishValue(apiResp.ItemId)
+	m.ListID = typeutils.StringishValue(apiResp.ListId)
+	m.Name = typeutils.StringishValue(apiResp.Name)
+	m.Description = typeutils.StringishValue(apiResp.Description)
+	m.Type = typeutils.StringishValue(apiResp.Type)
+	m.NamespaceType = typeutils.StringishValue(apiResp.NamespaceType)
 	m.CreatedAt = types.StringValue(apiResp.CreatedAt.Format("2006-01-02T15:04:05.000Z"))
 	m.CreatedBy = types.StringValue(apiResp.CreatedBy)
 	m.UpdatedAt = types.StringValue(apiResp.UpdatedAt.Format("2006-01-02T15:04:05.000Z"))
@@ -775,32 +764,32 @@ func (m *ExceptionItemModel) fromAPI(ctx context.Context, apiResp *kbapi.Securit
 		for i, osType := range *apiResp.OsTypes {
 			osTypes[i] = string(osType)
 		}
-		list, d := types.ListValueFrom(ctx, types.StringType, osTypes)
+		set, d := types.SetValueFrom(ctx, types.StringType, osTypes)
 		diags.Append(d...)
-		m.OsTypes = list
+		m.OsTypes = set
 	} else {
-		m.OsTypes = types.ListNull(types.StringType)
+		m.OsTypes = types.SetNull(types.StringType)
 	}
 
 	// Set optional tags
 	if apiResp.Tags != nil && len(*apiResp.Tags) > 0 {
-		list, d := types.ListValueFrom(ctx, types.StringType, *apiResp.Tags)
+		set, d := types.SetValueFrom(ctx, types.StringType, *apiResp.Tags)
 		diags.Append(d...)
-		m.Tags = list
+		m.Tags = set
 	} else {
-		m.Tags = types.ListNull(types.StringType)
+		m.Tags = types.SetNull(types.StringType)
 	}
 
 	// Set optional meta
 	if apiResp.Meta != nil {
-		metaJSON, err := json.Marshal(apiResp.Meta)
+		metaBytes, err := json.Marshal(apiResp.Meta)
 		if err != nil {
-			diags.AddError("Failed to serialize meta", err.Error())
+			diags.AddError("Failed to marshal meta field from API response to JSON", err.Error())
 			return diags
 		}
-		m.Meta = types.StringValue(string(metaJSON))
+		m.Meta = jsontypes.NewNormalizedValue(string(metaBytes))
 	} else {
-		m.Meta = types.StringNull()
+		m.Meta = jsontypes.NewNormalizedNull()
 	}
 
 	// Set entries (convert from API model to Terraform model)
@@ -813,8 +802,8 @@ func (m *ExceptionItemModel) fromAPI(ctx context.Context, apiResp *kbapi.Securit
 		comments := make([]CommentModel, len(apiResp.Comments))
 		for i, comment := range apiResp.Comments {
 			comments[i] = CommentModel{
-				ID:      types.StringValue(string(comment.Id)),
-				Comment: types.StringValue(string(comment.Comment)),
+				ID:      typeutils.StringishValue(comment.Id),
+				Comment: typeutils.StringishValue(comment.Comment),
 			}
 		}
 		list, d := types.ListValueFrom(ctx, types.ObjectType{
