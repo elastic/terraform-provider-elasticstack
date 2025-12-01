@@ -10,6 +10,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-version"
@@ -544,6 +545,7 @@ func TestAccResourceExceptionItem_Complex(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "tags.#", "2"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_exception_item.test", "tags.*", "test"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_exception_item.test", "tags.*", "complex"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "expire_time", "2025-12-31T23:59:59Z"),
 				),
 			},
 			{
@@ -585,7 +587,10 @@ func checkResourceExceptionItemDestroy(s *terraform.State) error {
 			continue
 		}
 
-		compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
+		compId, compDiags := clients.CompositeIdFromStr(rs.Primary.ID)
+		if compDiags.HasError() {
+			return diagutil.SdkDiagsAsError(compDiags)
+		}
 
 		// Try to read the exception item
 		id := kbapi.SecurityExceptionsAPIExceptionListItemId(compId.ResourceId)

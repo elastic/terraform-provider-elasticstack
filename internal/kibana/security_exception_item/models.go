@@ -427,8 +427,7 @@ func convertEntriesFromAPI(ctx context.Context, apiEntries kbapi.SecurityExcepti
 }
 
 // convertMatchOrWildcardEntryFromAPI converts match or wildcard entries from API format
-func convertMatchOrWildcardEntryFromAPI(entryMap map[string]interface{}) EntryModel {
-	var entry EntryModel
+func convertMatchOrWildcardEntryFromAPI(entryMap map[string]interface{}, entry *EntryModel) {
 	if value, ok := entryMap["value"].(string); ok {
 		entry.Value = types.StringValue(value)
 	} else {
@@ -437,13 +436,11 @@ func convertMatchOrWildcardEntryFromAPI(entryMap map[string]interface{}) EntryMo
 	entry.Values = types.ListNull(types.StringType)
 	entry.List = types.ObjectNull(getListAttrTypes())
 	entry.Entries = types.ListNull(types.ObjectType{AttrTypes: getNestedEntryAttrTypes()})
-	return entry
 }
 
 // convertMatchAnyEntryFromAPI converts match_any entries from API format
-func convertMatchAnyEntryFromAPI(ctx context.Context, entryMap map[string]interface{}) (EntryModel, diag.Diagnostics) {
+func convertMatchAnyEntryFromAPI(ctx context.Context, entryMap map[string]interface{}, entry *EntryModel) diag.Diagnostics {
 	var diags diag.Diagnostics
-	var entry EntryModel
 
 	if values, ok := entryMap["value"].([]interface{}); ok {
 		strValues := make([]string, 0, len(values))
@@ -461,13 +458,12 @@ func convertMatchAnyEntryFromAPI(ctx context.Context, entryMap map[string]interf
 	entry.Value = types.StringNull()
 	entry.List = types.ObjectNull(getListAttrTypes())
 	entry.Entries = types.ListNull(types.ObjectType{AttrTypes: getNestedEntryAttrTypes()})
-	return entry, diags
+	return diags
 }
 
 // convertListEntryFromAPI converts list entries from API format
-func convertListEntryFromAPI(ctx context.Context, entryMap map[string]interface{}) (EntryModel, diag.Diagnostics) {
+func convertListEntryFromAPI(ctx context.Context, entryMap map[string]interface{}, entry *EntryModel) diag.Diagnostics {
 	var diags diag.Diagnostics
-	var entry EntryModel
 
 	if listData, ok := entryMap["list"].(map[string]interface{}); ok {
 		listModel := EntryListModel{
@@ -483,23 +479,20 @@ func convertListEntryFromAPI(ctx context.Context, entryMap map[string]interface{
 	entry.Value = types.StringNull()
 	entry.Values = types.ListNull(types.StringType)
 	entry.Entries = types.ListNull(types.ObjectType{AttrTypes: getNestedEntryAttrTypes()})
-	return entry, diags
+	return diags
 }
 
 // convertExistsEntryFromAPI converts exists entries from API format
-func convertExistsEntryFromAPI() EntryModel {
-	var entry EntryModel
+func convertExistsEntryFromAPI(entry *EntryModel) {
 	entry.Value = types.StringNull()
 	entry.Values = types.ListNull(types.StringType)
 	entry.List = types.ObjectNull(getListAttrTypes())
 	entry.Entries = types.ListNull(types.ObjectType{AttrTypes: getNestedEntryAttrTypes()})
-	return entry
 }
 
 // convertNestedEntryFromAPI converts nested entries from API format
-func convertNestedEntryFromAPI(ctx context.Context, entryMap map[string]interface{}) (EntryModel, diag.Diagnostics) {
+func convertNestedEntryFromAPI(ctx context.Context, entryMap map[string]interface{}, entry *EntryModel) diag.Diagnostics {
 	var diags diag.Diagnostics
-	var entry EntryModel
 
 	// Nested entries don't have an operator field in the API
 	entry.Operator = types.StringNull()
@@ -523,7 +516,7 @@ func convertNestedEntryFromAPI(ctx context.Context, entryMap map[string]interfac
 	entry.Value = types.StringNull()
 	entry.Values = types.ListNull(types.StringType)
 	entry.List = types.ObjectNull(getListAttrTypes())
-	return entry, diags
+	return diags
 }
 
 // convertEntryFromAPI converts a single API entry to a Terraform entry model
@@ -561,20 +554,17 @@ func convertEntryFromAPI(ctx context.Context, apiEntry kbapi.SecurityExceptionsA
 
 	switch entryType {
 	case "match", "wildcard":
-		entry = convertMatchOrWildcardEntryFromAPI(entryMap)
+		convertMatchOrWildcardEntryFromAPI(entryMap, &entry)
 	case "match_any":
-		var d diag.Diagnostics
-		entry, d = convertMatchAnyEntryFromAPI(ctx, entryMap)
+		d := convertMatchAnyEntryFromAPI(ctx, entryMap, &entry)
 		diags.Append(d...)
 	case "list":
-		var d diag.Diagnostics
-		entry, d = convertListEntryFromAPI(ctx, entryMap)
+		d := convertListEntryFromAPI(ctx, entryMap, &entry)
 		diags.Append(d...)
 	case "exists":
-		entry = convertExistsEntryFromAPI()
+		convertExistsEntryFromAPI(&entry)
 	case "nested":
-		var d diag.Diagnostics
-		entry, d = convertNestedEntryFromAPI(ctx, entryMap)
+		d := convertNestedEntryFromAPI(ctx, entryMap, &entry)
 		diags.Append(d...)
 	}
 

@@ -23,6 +23,7 @@ resource "elasticstack_kibana_security_exception_item" "test" {
   namespace_type = "single"
   os_types       = ["linux", "macos"]
   tags           = ["test", "complex"]
+  expire_time    = "2025-12-31T23:59:59Z"
 
   entries = [{
     type     = "match"
