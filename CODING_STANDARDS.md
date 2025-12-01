@@ -41,6 +41,7 @@ This document outlines the coding standards and conventions used in the terrafor
 
 ## Schema Definitions
 
+- The id field is an internal identifier. It should use the composite id pattern. See 
 - Use custom types to model attribute specific behaviour.
     - Use [`jsontypes.NormalizedType{}`](https://github.com/hashicorp/terraform-plugin-framework-jsontypes/blob/main/jsontypes/normalized_type.go) custom type for string attributes containing JSON blobs.
     - Use [`customtypes.DurationType{}`](./internal/utils/customtypes/duration_type.go) for duration-based string attributes.
@@ -76,6 +77,12 @@ This document outlines the coding standards and conventions used in the terrafor
   - Define any required variables within the module
   - Reference the test code via `ConfigDirectory: acctest.NamedTestCaseDirectory("<step description>")`
   - Define any required variables via `ConfigVariables`
+- Resources should include tests for the following
+  - Creating a resource
+  - Updating a resource
+  - Deleting a resource
+  - Importing a resource
+  - Creating a resoure in another space (if applicable)
 
 ## API Client Usage
 
