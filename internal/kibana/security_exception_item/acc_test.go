@@ -184,6 +184,65 @@ func TestAccResourceExceptionItemWithSpace(t *testing.T) {
 	})
 }
 
+func TestAccResourceExceptionItemNamespaceType_Agnostic(t *testing.T) {
+	listID := fmt.Sprintf("test-exception-list-agnostic-%s", uuid.New().String()[:8])
+	itemID := fmt.Sprintf("test-exception-item-agnostic-%s", uuid.New().String()[:8])
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceExceptionItemDestroy,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("agnostic_create"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"item_id": config.StringVariable(itemID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "item_id", itemID),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "name", "Test Exception Item - Agnostic"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "description", "Test exception item with agnostic namespace type"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "type", "simple"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "namespace_type", "agnostic"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_exception_item.test", "id"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_exception_item.test", "entries.#"),
+				),
+			},
+			{
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("agnostic_update"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"item_id": config.StringVariable(itemID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "name", "Test Exception Item - Agnostic Updated"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "description", "Updated agnostic exception item"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "namespace_type", "agnostic"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "tags.#", "2"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_exception_item.test", "tags.*", "test"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_exception_item.test", "tags.*", "updated"),
+				),
+			},
+			{ // Import
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("agnostic_update"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"item_id": config.StringVariable(itemID),
+				},
+				ResourceName:      "elasticstack_kibana_security_exception_item.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 func TestAccResourceExceptionItemEntryType_Match(t *testing.T) {
 	listID := fmt.Sprintf("test-exception-list-match-%s", uuid.New().String()[:8])
 	itemID := fmt.Sprintf("test-exception-item-match-%s", uuid.New().String()[:8])

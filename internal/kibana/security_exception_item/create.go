@@ -5,6 +5,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
@@ -49,6 +50,12 @@ func (r *ExceptionItemResource) Create(ctx context.Context, req resource.CreateR
 	// Read back the created resource to get the final state
 	readParams := &kbapi.ReadExceptionListItemParams{
 		Id: (*kbapi.SecurityExceptionsAPIExceptionListItemId)(&createResp.Id),
+	}
+
+	// Include namespace_type if specified (required for agnostic items)
+	if utils.IsKnown(plan.NamespaceType) {
+		nsType := kbapi.SecurityExceptionsAPIExceptionNamespaceType(plan.NamespaceType.ValueString())
+		readParams.NamespaceType = &nsType
 	}
 
 	readResp, diags := kibana_oapi.GetExceptionListItem(ctx, client, plan.SpaceID.ValueString(), readParams)

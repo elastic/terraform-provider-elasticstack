@@ -6,6 +6,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -39,10 +40,28 @@ func (r *ExceptionItemResource) Read(ctx context.Context, req resource.ReadReque
 		Id: &id,
 	}
 
+	// Include namespace_type if specified (required for agnostic items)
+	if utils.IsKnown(state.NamespaceType) {
+		nsType := kbapi.SecurityExceptionsAPIExceptionNamespaceType(state.NamespaceType.ValueString())
+		params.NamespaceType = &nsType
+	}
+
 	readResp, diags := kibana_oapi.GetExceptionListItem(ctx, client, state.SpaceID.ValueString(), params)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
+	}
+
+	// If namespace_type was not known (e.g., during import) and the item was not found,
+	// try reading with namespace_type=agnostic
+	if readResp == nil && !utils.IsKnown(state.NamespaceType) {
+		agnosticNsType := kbapi.SecurityExceptionsAPIExceptionNamespaceType("agnostic")
+		params.NamespaceType = &agnosticNsType
+		readResp, diags = kibana_oapi.GetExceptionListItem(ctx, client, state.SpaceID.ValueString(), params)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 	}
 
 	if readResp == nil {
