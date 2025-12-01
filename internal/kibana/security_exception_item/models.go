@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -887,7 +888,13 @@ func (m *ExceptionItemModel) toUpdateRequest(ctx context.Context, resourceId str
 func (m *ExceptionItemModel) fromAPI(ctx context.Context, apiResp *kbapi.SecurityExceptionsAPIExceptionListItem) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	m.ID = typeutils.StringishValue(apiResp.Id)
+	// Create composite ID from space_id and item id
+	compId := clients.CompositeId{
+		ClusterId:  m.SpaceID.ValueString(),
+		ResourceId: typeutils.StringishValue(apiResp.Id).ValueString(),
+	}
+	m.ID = types.StringValue(compId.String())
+
 	m.ItemID = typeutils.StringishValue(apiResp.ItemId)
 	m.ListID = typeutils.StringishValue(apiResp.ListId)
 	m.Name = typeutils.StringishValue(apiResp.Name)

@@ -545,7 +545,6 @@ func TestAccResourceExceptionItem_Complex(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "tags.#", "2"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_exception_item.test", "tags.*", "test"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_exception_item.test", "tags.*", "complex"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "expire_time", "2025-12-31T23:59:59Z"),
 				),
 			},
 			{

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -17,6 +18,13 @@ func (r *ExceptionItemResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
+	// Parse composite ID to get space_id and resource_id
+	compId, compIdDiags := clients.CompositeIdFromStrFw(plan.ID.ValueString())
+	resp.Diagnostics.Append(compIdDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	client, err := r.client.GetKibanaOapiClient()
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get Kibana client", err.Error())
@@ -24,7 +32,7 @@ func (r *ExceptionItemResource) Update(ctx context.Context, req resource.UpdateR
 	}
 
 	// Build the update request body using model method
-	body, diags := plan.toUpdateRequest(ctx, plan.ID.ValueString())
+	body, diags := plan.toUpdateRequest(ctx, compId.ResourceId)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
