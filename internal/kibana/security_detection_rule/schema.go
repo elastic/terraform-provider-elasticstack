@@ -970,11 +970,10 @@ func (r securityDetectionRuleResource) ValidateConfig(ctx context.Context, req r
 
 	}
 
-	if !utils.IsKnown(data.Index) && !utils.IsKnown(data.DataViewId) {
+	if data.Index.IsNull() && data.DataViewId.IsNull() {
 		resp.Diagnostics.AddError(
 			"Invalid Configuration",
 			"One of 'index' or 'data_view_id' must be set.",
 		)
-
 	}
 }
