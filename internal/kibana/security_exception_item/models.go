@@ -539,6 +539,14 @@ func getNestedEntryAttrTypes() map[string]attr.Type {
 	}
 }
 
+// getCommentAttrTypes returns the attribute types for comment objects
+func getCommentAttrTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"id":      types.StringType,
+		"comment": types.StringType,
+	}
+}
+
 // toCreateRequest converts the Terraform model to API create request
 func (m *ExceptionItemModel) toCreateRequest(ctx context.Context) (*kbapi.CreateExceptionListItemJSONRequestBody, diag.Diagnostics) {
 	var diags diag.Diagnostics
@@ -807,19 +815,13 @@ func (m *ExceptionItemModel) fromAPI(ctx context.Context, apiResp *kbapi.Securit
 			}
 		}
 		list, d := types.ListValueFrom(ctx, types.ObjectType{
-			AttrTypes: map[string]attr.Type{
-				"id":      types.StringType,
-				"comment": types.StringType,
-			},
+			AttrTypes: getCommentAttrTypes(),
 		}, comments)
 		diags.Append(d...)
 		m.Comments = list
 	} else {
 		m.Comments = types.ListNull(types.ObjectType{
-			AttrTypes: map[string]attr.Type{
-				"id":      types.StringType,
-				"comment": types.StringType,
-			},
+			AttrTypes: getCommentAttrTypes(),
 		})
 	}
 
