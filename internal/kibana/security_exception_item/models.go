@@ -718,7 +718,7 @@ func (m *ExceptionItemModel) toCreateRequest(ctx context.Context) (*kbapi.Create
 	}
 
 	// Set optional item_id
-	if utils.IsKnown(m.ItemID) && !m.ItemID.IsNull() {
+	if utils.IsKnown(m.ItemID) {
 		itemID := kbapi.SecurityExceptionsAPIExceptionListItemHumanId(m.ItemID.ValueString())
 		req.ItemId = &itemID
 	}
@@ -768,7 +768,7 @@ func (m *ExceptionItemModel) toCreateRequest(ctx context.Context) (*kbapi.Create
 	}
 
 	// Set optional comments
-	if utils.IsKnown(m.Comments) && !m.Comments.IsNull() {
+	if utils.IsKnown(m.Comments) {
 		comments := utils.ListTypeAs[CommentModel](ctx, m.Comments, path.Empty(), &diags)
 		if diags.HasError() {
 			return nil, diags
@@ -785,7 +785,7 @@ func (m *ExceptionItemModel) toCreateRequest(ctx context.Context) (*kbapi.Create
 	}
 
 	// Set optional expire_time
-	if utils.IsKnown(m.ExpireTime) && !m.ExpireTime.IsNull() {
+	if utils.IsKnown(m.ExpireTime) {
 		expireTime, d := m.ExpireTime.ValueRFC3339Time()
 		diags.Append(d...)
 		if diags.HasError() {
@@ -863,7 +863,7 @@ func (m *ExceptionItemModel) toUpdateRequest(ctx context.Context, resourceId str
 	}
 
 	// Set optional comments
-	if utils.IsKnown(m.Comments) && !m.Comments.IsNull() {
+	if utils.IsKnown(m.Comments) {
 		comments := utils.ListTypeAs[CommentModel](ctx, m.Comments, path.Empty(), &diags)
 		if diags.HasError() {
 			return nil, diags
@@ -880,7 +880,7 @@ func (m *ExceptionItemModel) toUpdateRequest(ctx context.Context, resourceId str
 	}
 
 	// Set optional expire_time
-	if utils.IsKnown(m.ExpireTime) && !m.ExpireTime.IsNull() {
+	if utils.IsKnown(m.ExpireTime) {
 		expireTime, d := m.ExpireTime.ValueRFC3339Time()
 		diags.Append(d...)
 		if diags.HasError() {
