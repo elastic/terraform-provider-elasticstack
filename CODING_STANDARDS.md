@@ -40,6 +40,7 @@ This document outlines the coding standards and conventions used in the terrafor
 - The final state for a resource should be derived from a read request following a mutative request (eg create or update). We should not use the response from a mutative request to build the final resource state.
 
 ## Schema Definitions
+
 - Use custom types to model attribute specific behaviour.
     - Use [`jsontypes.NormalizedType{}`](https://github.com/hashicorp/terraform-plugin-framework-jsontypes/blob/main/jsontypes/normalized_type.go) custom type for string attributes containing JSON blobs.
     - Use [`customtypes.DurationType{}`](./internal/utils/customtypes/duration_type.go) for duration-based string attributes.
