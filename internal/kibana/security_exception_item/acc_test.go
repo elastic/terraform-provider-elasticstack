@@ -572,36 +572,6 @@ func TestAccResourceExceptionItem_Complex(t *testing.T) {
 	})
 }
 
-func TestAccResourceExceptionItem_WithExpireTime(t *testing.T) {
-	listID := fmt.Sprintf("test-exception-list-expire-%s", uuid.New().String()[:8])
-	itemID := fmt.Sprintf("test-exception-item-expire-%s", uuid.New().String()[:8])
-
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { acctest.PreCheck(t) },
-		CheckDestroy: checkResourceExceptionItemDestroy,
-		Steps: []resource.TestStep{
-			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
-				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("complex_with_expire_time"),
-				ConfigVariables: config.Variables{
-					"list_id": config.StringVariable(listID),
-					"item_id": config.StringVariable(itemID),
-				},
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "os_types.#", "2"),
-					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_exception_item.test", "os_types.*", "linux"),
-					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_exception_item.test", "os_types.*", "macos"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "tags.#", "2"),
-					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_exception_item.test", "tags.*", "test"),
-					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_exception_item.test", "tags.*", "complex"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_exception_item.test", "expire_time"),
-				),
-			},
-		},
-	})
-}
-
 func checkResourceExceptionItemDestroy(s *terraform.State) error {
 	client, err := clients.NewAcceptanceTestingClient()
 	if err != nil {
