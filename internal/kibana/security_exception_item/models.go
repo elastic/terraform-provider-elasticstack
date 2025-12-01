@@ -72,7 +72,7 @@ type NestedEntryModel struct {
 func convertEntriesToAPI(ctx context.Context, entries types.List) (kbapi.SecurityExceptionsAPIExceptionListItemEntryArray, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	if entries.IsNull() || entries.IsUnknown() {
+	if !utils.IsKnown(entries) {
 		return nil, diags
 	}
 
@@ -106,7 +106,7 @@ func convertEntryToAPI(ctx context.Context, entry EntryModel) (kbapi.SecurityExc
 	switch entryType {
 	case "match":
 		// Validate required field
-		if entry.Value.IsNull() || entry.Value.IsUnknown() || entry.Value.ValueString() == "" {
+		if !utils.IsKnown(entry.Value) || entry.Value.ValueString() == "" {
 			diags.AddError("Invalid Configuration", "Attribute 'value' is required when type is 'match'")
 			return result, diags
 		}
@@ -123,7 +123,7 @@ func convertEntryToAPI(ctx context.Context, entry EntryModel) (kbapi.SecurityExc
 
 	case "match_any":
 		// Validate required field
-		if entry.Values.IsNull() || entry.Values.IsUnknown() {
+		if !utils.IsKnown(entry.Values) {
 			diags.AddError("Invalid Configuration", "Attribute 'values' is required when type is 'match_any'")
 			return result, diags
 		}
@@ -154,7 +154,7 @@ func convertEntryToAPI(ctx context.Context, entry EntryModel) (kbapi.SecurityExc
 
 	case "list":
 		// Validate required field
-		if entry.List.IsNull() || entry.List.IsUnknown() {
+		if !utils.IsKnown(entry.List) {
 			diags.AddError("Invalid Configuration", "Attribute 'list' is required when type is 'list'")
 			return result, diags
 		}
@@ -187,7 +187,7 @@ func convertEntryToAPI(ctx context.Context, entry EntryModel) (kbapi.SecurityExc
 
 	case "wildcard":
 		// Validate required field
-		if entry.Value.IsNull() || entry.Value.IsUnknown() || entry.Value.ValueString() == "" {
+		if !utils.IsKnown(entry.Value) || entry.Value.ValueString() == "" {
 			diags.AddError("Invalid Configuration", "Attribute 'value' is required when type is 'wildcard'")
 			return result, diags
 		}
@@ -204,7 +204,7 @@ func convertEntryToAPI(ctx context.Context, entry EntryModel) (kbapi.SecurityExc
 
 	case "nested":
 		// Validate required field
-		if entry.Entries.IsNull() || entry.Entries.IsUnknown() {
+		if !utils.IsKnown(entry.Entries) {
 			diags.AddError("Invalid Configuration", "Attribute 'entries' is required when type is 'nested'")
 			return result, diags
 		}
@@ -257,7 +257,7 @@ func convertNestedEntryToAPI(ctx context.Context, entry NestedEntryModel) (kbapi
 	switch entryType {
 	case "match":
 		// Validate required field
-		if entry.Value.IsNull() || entry.Value.IsUnknown() || entry.Value.ValueString() == "" {
+		if !utils.IsKnown(entry.Value) || entry.Value.ValueString() == "" {
 			diags.AddError("Invalid Configuration", "Attribute 'value' is required for nested entry when type is 'match'")
 			return result, diags
 		}
@@ -274,7 +274,7 @@ func convertNestedEntryToAPI(ctx context.Context, entry NestedEntryModel) (kbapi
 
 	case "match_any":
 		// Validate required field
-		if entry.Values.IsNull() || entry.Values.IsUnknown() {
+		if !utils.IsKnown(entry.Values) {
 			diags.AddError("Invalid Configuration", "Attribute 'values' is required for nested entry when type is 'match_any'")
 			return result, diags
 		}
