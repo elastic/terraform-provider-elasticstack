@@ -35,13 +35,13 @@ func (r *ExceptionItemResource) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
-	if readResp == nil || readResp.JSON200 == nil {
+	if readResp == nil {
 		resp.State.RemoveResource(ctx)
 		return
 	}
 
 	// Update state with response
-	diags = r.updateStateFromAPIResponse(ctx, &state, readResp.JSON200)
+	diags = r.updateStateFromAPIResponse(ctx, &state, readResp)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

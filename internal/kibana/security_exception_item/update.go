@@ -127,7 +127,7 @@ func (r *ExceptionItemResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
-	if updateResp == nil || updateResp.JSON200 == nil {
+	if updateResp == nil {
 		resp.Diagnostics.AddError("Failed to update exception item", "API returned empty response")
 		return
 	}
@@ -138,7 +138,7 @@ func (r *ExceptionItemResource) Update(ctx context.Context, req resource.UpdateR
 	 */
 	// Read back the updated resource to get the final state
 	readParams := &kbapi.ReadExceptionListItemParams{
-		Id: (*kbapi.SecurityExceptionsAPIExceptionListItemId)(&updateResp.JSON200.Id),
+		Id: (*kbapi.SecurityExceptionsAPIExceptionListItemId)(&updateResp.Id),
 	}
 
 	readResp, diags := kibana_oapi.GetExceptionListItem(ctx, client, plan.SpaceID.ValueString(), readParams)
@@ -147,13 +147,13 @@ func (r *ExceptionItemResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
-	if readResp == nil || readResp.JSON200 == nil {
+	if readResp == nil {
 		resp.State.RemoveResource(ctx)
 		return
 	}
 
 	// Update state with read response
-	diags = r.updateStateFromAPIResponse(ctx, &plan, readResp.JSON200)
+	diags = r.updateStateFromAPIResponse(ctx, &plan, readResp)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
