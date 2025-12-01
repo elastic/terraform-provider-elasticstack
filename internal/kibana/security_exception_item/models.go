@@ -10,6 +10,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -31,7 +32,7 @@ type ExceptionItemModel struct {
 	Meta          jsontypes.Normalized `tfsdk:"meta"`
 	Entries       types.List           `tfsdk:"entries"`
 	Comments      types.List           `tfsdk:"comments"`
-	ExpireTime    types.String         `tfsdk:"expire_time"`
+	ExpireTime    timetypes.RFC3339    `tfsdk:"expire_time"`
 	CreatedAt     types.String         `tfsdk:"created_at"`
 	CreatedBy     types.String         `tfsdk:"created_by"`
 	UpdatedAt     types.String         `tfsdk:"updated_at"`
@@ -635,9 +636,9 @@ func (m *ExceptionItemModel) toCreateRequest(ctx context.Context) (*kbapi.Create
 
 	// Set optional expire_time
 	if utils.IsKnown(m.ExpireTime) && !m.ExpireTime.IsNull() {
-		expireTime, err := time.Parse(time.RFC3339, m.ExpireTime.ValueString())
-		if err != nil {
-			diags.AddError("Failed to parse expire_time", err.Error())
+		expireTime, d := m.ExpireTime.ValueRFC3339Time()
+		diags.Append(d...)
+		if diags.HasError() {
 			return nil, diags
 		}
 		expireTimeAPI := kbapi.SecurityExceptionsAPIExceptionListItemExpireTime(expireTime)
@@ -730,9 +731,9 @@ func (m *ExceptionItemModel) toUpdateRequest(ctx context.Context, resourceId str
 
 	// Set optional expire_time
 	if utils.IsKnown(m.ExpireTime) && !m.ExpireTime.IsNull() {
-		expireTime, err := time.Parse(time.RFC3339, m.ExpireTime.ValueString())
-		if err != nil {
-			diags.AddError("Failed to parse expire_time", err.Error())
+		expireTime, d := m.ExpireTime.ValueRFC3339Time()
+		diags.Append(d...)
+		if diags.HasError() {
 			return nil, diags
 		}
 		expireTimeAPI := kbapi.SecurityExceptionsAPIExceptionListItemExpireTime(expireTime)
@@ -761,9 +762,9 @@ func (m *ExceptionItemModel) fromAPI(ctx context.Context, apiResp *kbapi.Securit
 
 	// Set optional expire_time
 	if apiResp.ExpireTime != nil {
-		m.ExpireTime = types.StringValue(time.Time(*apiResp.ExpireTime).Format(time.RFC3339))
+		m.ExpireTime = timetypes.NewRFC3339TimeValue(time.Time(*apiResp.ExpireTime))
 	} else {
-		m.ExpireTime = types.StringNull()
+		m.ExpireTime = timetypes.NewRFC3339Null()
 	}
 
 	// Set optional os_types

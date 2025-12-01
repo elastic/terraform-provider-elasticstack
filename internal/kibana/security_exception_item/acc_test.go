@@ -472,3 +472,50 @@ func TestAccResourceExceptionItemValidation(t *testing.T) {
 		},
 	})
 }
+
+func TestAccResourceExceptionItem_Complex(t *testing.T) {
+	listID := fmt.Sprintf("test-exception-list-complex-%s", uuid.New().String()[:8])
+	itemID := fmt.Sprintf("test-exception-item-complex-%s", uuid.New().String()[:8])
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("complex_create"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"item_id": config.StringVariable(itemID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "os_types.#", "2"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_exception_item.test", "os_types.*", "linux"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_exception_item.test", "os_types.*", "macos"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "tags.#", "2"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_exception_item.test", "tags.*", "test"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_exception_item.test", "tags.*", "complex"),
+				),
+			},
+			{
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("complex_update"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"item_id": config.StringVariable(itemID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "os_types.#", "3"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_exception_item.test", "os_types.*", "linux"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_exception_item.test", "os_types.*", "macos"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_exception_item.test", "os_types.*", "windows"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "tags.#", "3"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_exception_item.test", "tags.*", "test"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_exception_item.test", "tags.*", "complex"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_exception_item.test", "tags.*", "updated"),
+				),
+			},
+		},
+	})
+}

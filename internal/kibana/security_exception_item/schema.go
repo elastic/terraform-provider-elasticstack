@@ -6,6 +6,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -222,6 +223,8 @@ func (r *ExceptionItemResource) Schema(_ context.Context, _ resource.SchemaReque
 			"expire_time": schema.StringAttribute{
 				MarkdownDescription: "The exception item's expiration date in RFC3339 format. This field is only available for regular exception items, not endpoint exceptions.",
 				Optional:            true,
+				Computed:            true,
+				CustomType:          timetypes.RFC3339Type{},
 			},
 			"created_at": schema.StringAttribute{
 				MarkdownDescription: "The timestamp of when the exception item was created.",
