@@ -8,7 +8,7 @@ variable "item_id" {
 
 variable "expire_time" {
   type = string
-} 
+}
 
 resource "elasticstack_kibana_security_exception_list" "test" {
   name           = "test exception list for complex item"
