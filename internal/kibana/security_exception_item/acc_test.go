@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"regexp"
 	"testing"
+	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -20,6 +21,7 @@ import (
 )
 
 var minExceptionItemAPISupport = version.Must(version.NewVersion("7.9.0"))
+var MinVersionExpireTime = version.Must(version.NewVersion("8.7.2"))
 
 func TestAccResourceExceptionItem(t *testing.T) {
 	resource.Test(t, resource.TestCase{
@@ -584,6 +586,7 @@ func TestAccResourceExceptionItemValidation(t *testing.T) {
 func TestAccResourceExceptionItem_Complex(t *testing.T) {
 	listID := fmt.Sprintf("test-exception-list-complex-%s", uuid.New().String()[:8])
 	itemID := fmt.Sprintf("test-exception-item-complex-%s", uuid.New().String()[:8])
+	expireTime := time.Now().AddDate(2, 0, 0).UTC().Format("2006-01-02T15:04:05.000Z")
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -604,7 +607,6 @@ func TestAccResourceExceptionItem_Complex(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "tags.#", "2"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_exception_item.test", "tags.*", "test"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_exception_item.test", "tags.*", "complex"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "expire_time", "2026-12-31T23:59:59.001Z"),
 				),
 			},
 			{
@@ -624,7 +626,27 @@ func TestAccResourceExceptionItem_Complex(t *testing.T) {
 					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_exception_item.test", "tags.*", "test"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_exception_item.test", "tags.*", "complex"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_exception_item.test", "tags.*", "updated"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "expire_time", "2027-12-31T23:59:59.001Z"),
+				),
+			},
+			{
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(MinVersionExpireTime),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("complex_update_expire_time"),
+				ConfigVariables: config.Variables{
+					"list_id":     config.StringVariable(listID),
+					"item_id":     config.StringVariable(itemID),
+					"expire_time": config.StringVariable(expireTime),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "os_types.#", "3"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_exception_item.test", "os_types.*", "linux"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_exception_item.test", "os_types.*", "macos"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_exception_item.test", "os_types.*", "windows"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "tags.#", "3"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_exception_item.test", "tags.*", "test"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_exception_item.test", "tags.*", "complex"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_exception_item.test", "tags.*", "updated"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "expire_time", expireTime),
 				),
 			},
 		},

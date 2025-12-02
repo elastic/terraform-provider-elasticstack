@@ -6,6 +6,10 @@ variable "item_id" {
   type = string
 }
 
+variable "expire_time" {
+  type = string
+} 
+
 resource "elasticstack_kibana_security_exception_list" "test" {
   name           = "test exception list for complex item"
   description    = "test exception list for complex item"
@@ -23,6 +27,7 @@ resource "elasticstack_kibana_security_exception_item" "test" {
   namespace_type = "single"
   os_types       = ["linux", "macos", "windows"]
   tags           = ["test", "complex", "updated"]
+  expire_time    = var.expire_time
 
   entries = [{
     type     = "match"
