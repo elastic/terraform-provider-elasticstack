@@ -716,16 +716,12 @@ func (m *ExceptionItemModel) toCreateRequest(ctx context.Context, client clients
 
 	// Set optional os_types
 	if utils.IsKnown(m.OsTypes) {
-		osTypes := utils.SetTypeAs[string](ctx, m.OsTypes, path.Empty(), &diags)
+		osTypes := utils.SetTypeAs[kbapi.SecurityExceptionsAPIExceptionListOsType](ctx, m.OsTypes, path.Empty(), &diags)
 		if diags.HasError() {
 			return nil, diags
 		}
 		if len(osTypes) > 0 {
-			osTypesArray := make(kbapi.SecurityExceptionsAPIExceptionListItemOsTypeArray, len(osTypes))
-			for i, osType := range osTypes {
-				osTypesArray[i] = kbapi.SecurityExceptionsAPIExceptionListOsType(osType)
-			}
-			req.OsTypes = &osTypesArray
+			req.OsTypes = &osTypes
 		}
 	}
 
@@ -822,16 +818,12 @@ func (m *ExceptionItemModel) toUpdateRequest(ctx context.Context, resourceId str
 
 	// Set optional os_types
 	if utils.IsKnown(m.OsTypes) {
-		osTypes := utils.SetTypeAs[string](ctx, m.OsTypes, path.Empty(), &diags)
+		osTypes := utils.SetTypeAs[kbapi.SecurityExceptionsAPIExceptionListOsType](ctx, m.OsTypes, path.Empty(), &diags)
 		if diags.HasError() {
 			return nil, diags
 		}
 		if len(osTypes) > 0 {
-			osTypesArray := make(kbapi.SecurityExceptionsAPIExceptionListItemOsTypeArray, len(osTypes))
-			for i, osType := range osTypes {
-				osTypesArray[i] = kbapi.SecurityExceptionsAPIExceptionListOsType(osType)
-			}
-			req.OsTypes = &osTypesArray
+			req.OsTypes = &osTypes
 		}
 	}
 
