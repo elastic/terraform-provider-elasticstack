@@ -20,8 +20,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-var minExceptionItemAPISupport = version.Must(version.NewVersion("7.9.0"))
 var MinVersionExpireTime = version.Must(version.NewVersion("8.7.2"))
+
+// https://github.com/elastic/kibana/pull/159223
+// These versions don't respect item_id which breaks most tests
+const exceptionItemBugVersionConstraint = "!=8.7.0,!=8.7.1"
+const minExceptionItemAPISupportConstraint = ">=7.9.0"
+
+var allTestsVersionsConstraint, _ = version.NewConstraint(exceptionItemBugVersionConstraint + "," + minExceptionItemAPISupportConstraint)
 
 func TestAccResourceExceptionItem(t *testing.T) {
 	resource.Test(t, resource.TestCase{
@@ -29,7 +35,7 @@ func TestAccResourceExceptionItem(t *testing.T) {
 		CheckDestroy: checkResourceExceptionItemDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
+				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -55,7 +61,7 @@ func TestAccResourceExceptionItem(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
+				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
@@ -75,7 +81,7 @@ func TestAccResourceExceptionItem(t *testing.T) {
 				),
 			},
 			{ // Import
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
+				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
@@ -106,7 +112,7 @@ func TestAccResourceExceptionItemWithSpace(t *testing.T) {
 		CheckDestroy:             checkResourceExceptionItemDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
+				SkipFunc:        versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"space_id":       config.StringVariable(spaceID),
@@ -139,7 +145,7 @@ func TestAccResourceExceptionItemWithSpace(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
+				SkipFunc:        versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"space_id":       config.StringVariable(spaceID),
@@ -166,7 +172,7 @@ func TestAccResourceExceptionItemWithSpace(t *testing.T) {
 				),
 			},
 			{ // Import
-				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
+				SkipFunc:        versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"space_id":       config.StringVariable(spaceID),
@@ -195,7 +201,7 @@ func TestAccResourceExceptionItemNamespaceType_Agnostic(t *testing.T) {
 		CheckDestroy: checkResourceExceptionItemDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
+				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("agnostic_create"),
 				ConfigVariables: config.Variables{
@@ -213,7 +219,7 @@ func TestAccResourceExceptionItemNamespaceType_Agnostic(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
+				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("agnostic_update"),
 				ConfigVariables: config.Variables{
@@ -230,7 +236,7 @@ func TestAccResourceExceptionItemNamespaceType_Agnostic(t *testing.T) {
 				),
 			},
 			{ // Import
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
+				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("agnostic_update"),
 				ConfigVariables: config.Variables{
@@ -254,7 +260,7 @@ func TestAccResourceExceptionItemEntryType_Match(t *testing.T) {
 		CheckDestroy: checkResourceExceptionItemDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
+				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("match"),
 				ConfigVariables: config.Variables{
@@ -281,7 +287,7 @@ func TestAccResourceExceptionItemEntryType_MatchAny(t *testing.T) {
 		CheckDestroy: checkResourceExceptionItemDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
+				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("match_any"),
 				ConfigVariables: config.Variables{
@@ -312,7 +318,7 @@ func TestAccResourceExceptionItemEntryType_List(t *testing.T) {
 		CheckDestroy: checkResourceExceptionItemDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
+				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("list"),
 				ConfigVariables: config.Variables{
@@ -342,7 +348,7 @@ func TestAccResourceExceptionItemEntryType_Exists(t *testing.T) {
 		CheckDestroy: checkResourceExceptionItemDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
+				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("exists"),
 				ConfigVariables: config.Variables{
@@ -368,7 +374,7 @@ func TestAccResourceExceptionItemEntryType_Nested(t *testing.T) {
 		CheckDestroy: checkResourceExceptionItemDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
+				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("nested"),
 				ConfigVariables: config.Variables{
@@ -397,7 +403,7 @@ func TestAccResourceExceptionItemEntryType_Wildcard(t *testing.T) {
 		CheckDestroy: checkResourceExceptionItemDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
+				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("wildcard"),
 				ConfigVariables: config.Variables{
@@ -425,7 +431,7 @@ func TestAccResourceExceptionItemValidation(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Test 1: Match entry missing value
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
+				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("validation_match_missing_value"),
 				ConfigVariables: config.Variables{
@@ -437,7 +443,7 @@ func TestAccResourceExceptionItemValidation(t *testing.T) {
 			},
 			// Test 2: Match entry missing operator
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
+				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("validation_match_missing_operator"),
 				ConfigVariables: config.Variables{
@@ -449,7 +455,7 @@ func TestAccResourceExceptionItemValidation(t *testing.T) {
 			},
 			// Test 3: Wildcard entry missing value
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
+				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("validation_wildcard_missing_value"),
 				ConfigVariables: config.Variables{
@@ -461,7 +467,7 @@ func TestAccResourceExceptionItemValidation(t *testing.T) {
 			},
 			// Test 4: MatchAny entry missing values
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
+				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("validation_match_any_missing_values"),
 				ConfigVariables: config.Variables{
@@ -473,7 +479,7 @@ func TestAccResourceExceptionItemValidation(t *testing.T) {
 			},
 			// Test 5: MatchAny entry missing operator
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
+				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("validation_match_any_missing_operator"),
 				ConfigVariables: config.Variables{
@@ -485,7 +491,7 @@ func TestAccResourceExceptionItemValidation(t *testing.T) {
 			},
 			// Test 6: List entry missing list object
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
+				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("validation_list_missing_list_object"),
 				ConfigVariables: config.Variables{
@@ -497,7 +503,7 @@ func TestAccResourceExceptionItemValidation(t *testing.T) {
 			},
 			// Test 7: List entry missing list.id
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
+				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("validation_list_missing_list_id"),
 				ConfigVariables: config.Variables{
@@ -509,7 +515,7 @@ func TestAccResourceExceptionItemValidation(t *testing.T) {
 			},
 			// Test 8: List entry missing list.type
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
+				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("validation_list_missing_list_type"),
 				ConfigVariables: config.Variables{
@@ -521,7 +527,7 @@ func TestAccResourceExceptionItemValidation(t *testing.T) {
 			},
 			// Test 9: Exists entry missing operator
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
+				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("validation_exists_missing_operator"),
 				ConfigVariables: config.Variables{
@@ -533,7 +539,7 @@ func TestAccResourceExceptionItemValidation(t *testing.T) {
 			},
 			// Test 10: Nested entry missing entries
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
+				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("validation_nested_missing_entries"),
 				ConfigVariables: config.Variables{
@@ -545,7 +551,7 @@ func TestAccResourceExceptionItemValidation(t *testing.T) {
 			},
 			// Test 11: Nested entry with invalid entry type
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
+				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("validation_nested_invalid_entry_type"),
 				ConfigVariables: config.Variables{
@@ -557,7 +563,7 @@ func TestAccResourceExceptionItemValidation(t *testing.T) {
 			},
 			// Test 12: Nested match entry missing value
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
+				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("validation_nested_entry_missing_value"),
 				ConfigVariables: config.Variables{
@@ -569,7 +575,7 @@ func TestAccResourceExceptionItemValidation(t *testing.T) {
 			},
 			// Test 13: Nested entry missing operator
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
+				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("validation_nested_entry_missing_operator"),
 				ConfigVariables: config.Variables{
@@ -597,7 +603,7 @@ func TestAccResourceExceptionItem_Complex(t *testing.T) {
 		CheckDestroy: checkResourceExceptionItemDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
+				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("complex_create"),
 				ConfigVariables: config.Variables{
@@ -614,7 +620,7 @@ func TestAccResourceExceptionItem_Complex(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionItemAPISupport),
+				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("complex_update"),
 				ConfigVariables: config.Variables{
