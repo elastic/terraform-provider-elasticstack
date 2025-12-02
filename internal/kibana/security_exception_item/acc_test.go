@@ -21,6 +21,7 @@ import (
 )
 
 var MinVersionExpireTime = version.Must(version.NewVersion("8.7.2"))
+var MinExceptionItemVersion = version.Must(version.NewVersion("7.9.0"))
 
 // https://github.com/elastic/kibana/pull/159223
 // These versions don't respect item_id which breaks most tests
@@ -89,6 +90,76 @@ func TestAccResourceExceptionItem(t *testing.T) {
 					"item_id":        config.StringVariable("test-exception-item"),
 					"name":           config.StringVariable("Test Exception Item Updated"),
 					"description":    config.StringVariable("Updated description"),
+					"type":           config.StringVariable("simple"),
+					"namespace_type": config.StringVariable("single"),
+					"tags":           config.ListVariable(config.StringVariable("test"), config.StringVariable("updated")),
+				},
+				ResourceName:      "elasticstack_kibana_security_exception_item.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccResourceExceptionItem_BasicUsage(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceExceptionItemDestroy,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(MinExceptionItemVersion),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic_create"),
+				ConfigVariables: config.Variables{
+					"list_id":        config.StringVariable("test-exception-list-basic"),
+					"name":           config.StringVariable("Test Exception Item - Basic"),
+					"description":    config.StringVariable("Test exception item without explicit item_id"),
+					"type":           config.StringVariable("simple"),
+					"namespace_type": config.StringVariable("single"),
+					"tags":           config.ListVariable(config.StringVariable("test")),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_exception_item.test", "item_id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "name", "Test Exception Item - Basic"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "description", "Test exception item without explicit item_id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "type", "simple"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "namespace_type", "single"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "tags.0", "test"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_exception_item.test", "id"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_exception_item.test", "entries.#"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_exception_item.test", "created_at"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_exception_item.test", "created_by"),
+				),
+			},
+			{
+				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic_update"),
+				ConfigVariables: config.Variables{
+					"list_id":        config.StringVariable("test-exception-list-basic"),
+					"name":           config.StringVariable("Test Exception Item - Basic Updated"),
+					"description":    config.StringVariable("Updated basic exception item"),
+					"type":           config.StringVariable("simple"),
+					"namespace_type": config.StringVariable("single"),
+					"tags":           config.ListVariable(config.StringVariable("test"), config.StringVariable("updated")),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_exception_item.test", "item_id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "name", "Test Exception Item - Basic Updated"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "description", "Updated basic exception item"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "tags.0", "test"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "tags.1", "updated"),
+				),
+			},
+			{ // Import
+				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic_update"),
+				ConfigVariables: config.Variables{
+					"list_id":        config.StringVariable("test-exception-list-basic"),
+					"name":           config.StringVariable("Test Exception Item - Basic Updated"),
+					"description":    config.StringVariable("Updated basic exception item"),
 					"type":           config.StringVariable("simple"),
 					"namespace_type": config.StringVariable("single"),
 					"tags":           config.ListVariable(config.StringVariable("test"), config.StringVariable("updated")),
