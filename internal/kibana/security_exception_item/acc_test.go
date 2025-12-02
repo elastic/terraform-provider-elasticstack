@@ -586,7 +586,11 @@ func TestAccResourceExceptionItemValidation(t *testing.T) {
 func TestAccResourceExceptionItem_Complex(t *testing.T) {
 	listID := fmt.Sprintf("test-exception-list-complex-%s", uuid.New().String()[:8])
 	itemID := fmt.Sprintf("test-exception-item-complex-%s", uuid.New().String()[:8])
-	expireTime := time.Now().AddDate(2, 0, 0).UTC().Format("2006-01-02T15:04:05.000Z")
+
+	// Generate an expiration time 2 days from now with milliseconds set to 0
+	// since default go time formatting may truncate milliseconds in date serialization
+	// resulting in 4xx responses from Kibana
+	expireTime := time.Now().AddDate(0, 0, 2).UTC().Truncate(24 * time.Hour).Format("2006-01-02T15:04:05.000Z")
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },

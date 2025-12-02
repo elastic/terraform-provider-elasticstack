@@ -797,7 +797,8 @@ func (m *ExceptionItemModel) toCreateRequest(ctx context.Context, client clients
 		if diags.HasError() {
 			return nil, diags
 		}
-		expireTimeAPI := kbapi.SecurityExceptionsAPIExceptionListItemExpireTime(expireTime)
+
+		expireTimeAPI := kbapi.SecurityExceptionsAPIExceptionListItemExpireTime(expireTime.Format("2006-01-02T15:04:05.000Z"))
 		req.ExpireTime = &expireTimeAPI
 	}
 
@@ -902,7 +903,7 @@ func (m *ExceptionItemModel) toUpdateRequest(ctx context.Context, resourceId str
 		if diags.HasError() {
 			return nil, diags
 		}
-		expireTimeAPI := kbapi.SecurityExceptionsAPIExceptionListItemExpireTime(expireTime)
+		expireTimeAPI := kbapi.SecurityExceptionsAPIExceptionListItemExpireTime(expireTime.Format("2006-01-02T15:04:05.000Z"))
 		req.ExpireTime = &expireTimeAPI
 	}
 
@@ -934,7 +935,13 @@ func (m *ExceptionItemModel) fromAPI(ctx context.Context, apiResp *kbapi.Securit
 
 	// Set optional expire_time
 	if apiResp.ExpireTime != nil {
-		m.ExpireTime = timetypes.NewRFC3339TimeValue(time.Time(*apiResp.ExpireTime))
+		expireTime, err := time.Parse(time.RFC3339, string(*apiResp.ExpireTime))
+		if err != nil {
+			diags.AddError("Failed to parse expire_time from API response", err.Error())
+			m.ExpireTime = timetypes.NewRFC3339Null()
+		} else {
+			m.ExpireTime = timetypes.NewRFC3339TimeValue(expireTime)
+		}
 	} else {
 		m.ExpireTime = timetypes.NewRFC3339Null()
 	}

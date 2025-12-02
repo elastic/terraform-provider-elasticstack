@@ -870,6 +870,7 @@ func transformKibanaPaths(schema *Schema) {
 		},
 		"propertyName": "action_type_id",
 	})
+	schema.Components.Delete("schemas.Security_Exceptions_API_ExceptionListItemExpireTime.format")
 
 }
 
