@@ -683,13 +683,144 @@ func getCommentAttrTypes() map[string]attr.Type {
 	}
 }
 
+// convertEntriesToAPIWithDiags converts entries and handles diagnostics
+func (m *ExceptionItemModel) convertEntriesToAPIWithDiags(ctx context.Context, diags *diag.Diagnostics) kbapi.SecurityExceptionsAPIExceptionListItemEntryArray {
+	entries, d := convertEntriesToAPI(ctx, m.Entries)
+	diags.Append(d...)
+	return entries
+}
+
+// CommonExceptionItemProps holds pointers to common fields across create/update requests
+type CommonExceptionItemProps struct {
+	NamespaceType *kbapi.SecurityExceptionsAPIExceptionNamespaceType
+	OsTypes       *[]kbapi.SecurityExceptionsAPIExceptionListOsType
+	Tags          *kbapi.SecurityExceptionsAPIExceptionListItemTags
+	Meta          *kbapi.SecurityExceptionsAPIExceptionListItemMeta
+	ExpireTime    *kbapi.SecurityExceptionsAPIExceptionListItemExpireTime
+}
+
+// setCommonProps sets common fields across create and update requests
+func (m *ExceptionItemModel) setCommonProps(
+	ctx context.Context,
+	props *CommonExceptionItemProps,
+	diags *diag.Diagnostics,
+	client clients.MinVersionEnforceable,
+) {
+	// Set optional namespace_type
+	if utils.IsKnown(m.NamespaceType) {
+		nsType := kbapi.SecurityExceptionsAPIExceptionNamespaceType(m.NamespaceType.ValueString())
+		*props.NamespaceType = nsType
+	}
+
+	// Set optional os_types
+	if utils.IsKnown(m.OsTypes) {
+		osTypes := utils.SetTypeAs[kbapi.SecurityExceptionsAPIExceptionListOsType](ctx, m.OsTypes, path.Empty(), diags)
+		if diags.HasError() {
+			return
+		}
+		if len(osTypes) > 0 {
+			*props.OsTypes = osTypes
+		}
+	}
+
+	// Set optional tags
+	if utils.IsKnown(m.Tags) {
+		tags := utils.SetTypeAs[string](ctx, m.Tags, path.Empty(), diags)
+		if diags.HasError() {
+			return
+		}
+		if len(tags) > 0 {
+			tagsArray := kbapi.SecurityExceptionsAPIExceptionListItemTags(tags)
+			*props.Tags = tagsArray
+		}
+	}
+
+	// Set optional meta
+	if utils.IsKnown(m.Meta) {
+		var meta kbapi.SecurityExceptionsAPIExceptionListItemMeta
+		unmarshalDiags := m.Meta.Unmarshal(&meta)
+		diags.Append(unmarshalDiags...)
+		if diags.HasError() {
+			return
+		}
+		*props.Meta = meta
+	}
+
+	// Set optional expire_time
+	if utils.IsKnown(m.ExpireTime) {
+		// Check version support for expire_time
+		if supported, versionDiags := client.EnforceMinVersion(ctx, MinVersionExpireTime); versionDiags.HasError() {
+			diags.Append(diagutil.FrameworkDiagsFromSDK(versionDiags)...)
+			return
+		} else if !supported {
+			diags.AddError("expire_time is unsupported",
+				fmt.Sprintf("expire_time requires server version %s or higher", MinVersionExpireTime.String()))
+			return
+		}
+
+		expireTime, d := m.ExpireTime.ValueRFC3339Time()
+		diags.Append(d...)
+		if diags.HasError() {
+			return
+		}
+
+		expireTimeAPI := kbapi.SecurityExceptionsAPIExceptionListItemExpireTime(expireTime.Format("2006-01-02T15:04:05.000Z"))
+		*props.ExpireTime = expireTimeAPI
+	}
+}
+
+// commentsToCreateAPI converts comments to create API format
+func (m *ExceptionItemModel) commentsToCreateAPI(
+	ctx context.Context,
+	diags *diag.Diagnostics,
+) *kbapi.SecurityExceptionsAPICreateExceptionListItemCommentArray {
+	if !utils.IsKnown(m.Comments) {
+		return nil
+	}
+
+	comments := utils.ListTypeAs[CommentModel](ctx, m.Comments, path.Empty(), diags)
+	if diags.HasError() || len(comments) == 0 {
+		return nil
+	}
+
+	commentsArray := make(kbapi.SecurityExceptionsAPICreateExceptionListItemCommentArray, len(comments))
+	for i, comment := range comments {
+		commentsArray[i] = kbapi.SecurityExceptionsAPICreateExceptionListItemComment{
+			Comment: kbapi.SecurityExceptionsAPINonEmptyString(comment.Comment.ValueString()),
+		}
+	}
+	return &commentsArray
+}
+
+// commentsToUpdateAPI converts comments to update API format
+func (m *ExceptionItemModel) commentsToUpdateAPI(
+	ctx context.Context,
+	diags *diag.Diagnostics,
+) *kbapi.SecurityExceptionsAPIUpdateExceptionListItemCommentArray {
+	if !utils.IsKnown(m.Comments) {
+		return nil
+	}
+
+	comments := utils.ListTypeAs[CommentModel](ctx, m.Comments, path.Empty(), diags)
+	if diags.HasError() || len(comments) == 0 {
+		return nil
+	}
+
+	commentsArray := make(kbapi.SecurityExceptionsAPIUpdateExceptionListItemCommentArray, len(comments))
+	for i, comment := range comments {
+		commentsArray[i] = kbapi.SecurityExceptionsAPIUpdateExceptionListItemComment{
+			Comment: kbapi.SecurityExceptionsAPINonEmptyString(comment.Comment.ValueString()),
+		}
+	}
+	return &commentsArray
+}
+
 // toCreateRequest converts the Terraform model to API create request
 func (m *ExceptionItemModel) toCreateRequest(ctx context.Context, client clients.MinVersionEnforceable) (*kbapi.CreateExceptionListItemJSONRequestBody, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	// Convert entries from Terraform model to API model
-	entries, d := convertEntriesToAPI(ctx, m.Entries)
-	diags.Append(d...)
+	entries := m.convertEntriesToAPIWithDiags(ctx, &diags)
 	if diags.HasError() {
 		return nil, diags
 	}
@@ -708,83 +839,47 @@ func (m *ExceptionItemModel) toCreateRequest(ctx context.Context, client clients
 		req.ItemId = &itemID
 	}
 
-	// Set optional namespace_type
+	// Set common properties
+	var nsType kbapi.SecurityExceptionsAPIExceptionNamespaceType
+	var osTypes []kbapi.SecurityExceptionsAPIExceptionListOsType
+	var tags kbapi.SecurityExceptionsAPIExceptionListItemTags
+	var meta kbapi.SecurityExceptionsAPIExceptionListItemMeta
+	var expireTime kbapi.SecurityExceptionsAPIExceptionListItemExpireTime
+
+	m.setCommonProps(ctx, &CommonExceptionItemProps{
+		NamespaceType: &nsType,
+		OsTypes:       &osTypes,
+		Tags:          &tags,
+		Meta:          &meta,
+		ExpireTime:    &expireTime,
+	}, &diags, client)
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	// Assign common properties to request if they were set
 	if utils.IsKnown(m.NamespaceType) {
-		nsType := kbapi.SecurityExceptionsAPIExceptionNamespaceType(m.NamespaceType.ValueString())
 		req.NamespaceType = &nsType
 	}
-
-	// Set optional os_types
-	if utils.IsKnown(m.OsTypes) {
-		osTypes := utils.SetTypeAs[kbapi.SecurityExceptionsAPIExceptionListOsType](ctx, m.OsTypes, path.Empty(), &diags)
-		if diags.HasError() {
-			return nil, diags
-		}
-		if len(osTypes) > 0 {
-			req.OsTypes = &osTypes
-		}
+	if utils.IsKnown(m.OsTypes) && len(osTypes) > 0 {
+		req.OsTypes = &osTypes
 	}
-
-	// Set optional tags
-	if utils.IsKnown(m.Tags) {
-		tags := utils.SetTypeAs[string](ctx, m.Tags, path.Empty(), &diags)
-		if diags.HasError() {
-			return nil, diags
-		}
-		if len(tags) > 0 {
-			tagsArray := kbapi.SecurityExceptionsAPIExceptionListItemTags(tags)
-			req.Tags = &tagsArray
-		}
+	if utils.IsKnown(m.Tags) && len(tags) > 0 {
+		req.Tags = &tags
 	}
-
-	// Set optional meta
 	if utils.IsKnown(m.Meta) {
-		var meta kbapi.SecurityExceptionsAPIExceptionListItemMeta
-		unmarshalDiags := m.Meta.Unmarshal(&meta)
-		diags.Append(unmarshalDiags...)
-		if diags.HasError() {
-			return nil, diags
-		}
 		req.Meta = &meta
+	}
+	if utils.IsKnown(m.ExpireTime) {
+		req.ExpireTime = &expireTime
 	}
 
 	// Set optional comments
-	if utils.IsKnown(m.Comments) {
-		comments := utils.ListTypeAs[CommentModel](ctx, m.Comments, path.Empty(), &diags)
-		if diags.HasError() {
-			return nil, diags
-		}
-		if len(comments) > 0 {
-			commentsArray := make(kbapi.SecurityExceptionsAPICreateExceptionListItemCommentArray, len(comments))
-			for i, comment := range comments {
-				commentsArray[i] = kbapi.SecurityExceptionsAPICreateExceptionListItemComment{
-					Comment: kbapi.SecurityExceptionsAPINonEmptyString(comment.Comment.ValueString()),
-				}
-			}
-			req.Comments = &commentsArray
-		}
+	if comments := m.commentsToCreateAPI(ctx, &diags); comments != nil {
+		req.Comments = comments
 	}
-
-	// Set optional expire_time
-	if utils.IsKnown(m.ExpireTime) {
-		// Check version support for expire_time
-		if supported, versionDiags := client.EnforceMinVersion(ctx, MinVersionExpireTime); versionDiags.HasError() {
-			diags.Append(diagutil.FrameworkDiagsFromSDK(versionDiags)...)
-			return nil, diags
-		} else if !supported {
-			diags.AddError("expire_time is unsupported",
-				fmt.Sprintf("expire_time requires server version %s or higher", MinVersionExpireTime.String()))
-			return nil, diags
-		}
-
-		expireTime, d := m.ExpireTime.ValueRFC3339Time()
-		diags.Append(d...)
-		if diags.HasError() {
-			return nil, diags
-		}
-
-		expireTimeAPI := kbapi.SecurityExceptionsAPIExceptionListItemExpireTime(expireTime.Format("2006-01-02T15:04:05.000Z"))
-		req.ExpireTime = &expireTimeAPI
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	return req, diags
@@ -795,8 +890,7 @@ func (m *ExceptionItemModel) toUpdateRequest(ctx context.Context, resourceId str
 	var diags diag.Diagnostics
 
 	// Convert entries from Terraform model to API model
-	entries, d := convertEntriesToAPI(ctx, m.Entries)
-	diags.Append(d...)
+	entries := m.convertEntriesToAPIWithDiags(ctx, &diags)
 	if diags.HasError() {
 		return nil, diags
 	}
@@ -810,82 +904,47 @@ func (m *ExceptionItemModel) toUpdateRequest(ctx context.Context, resourceId str
 		Entries:     entries,
 	}
 
-	// Set optional namespace_type
+	// Set common properties
+	var nsType kbapi.SecurityExceptionsAPIExceptionNamespaceType
+	var osTypes []kbapi.SecurityExceptionsAPIExceptionListOsType
+	var tags kbapi.SecurityExceptionsAPIExceptionListItemTags
+	var meta kbapi.SecurityExceptionsAPIExceptionListItemMeta
+	var expireTime kbapi.SecurityExceptionsAPIExceptionListItemExpireTime
+
+	m.setCommonProps(ctx, &CommonExceptionItemProps{
+		NamespaceType: &nsType,
+		OsTypes:       &osTypes,
+		Tags:          &tags,
+		Meta:          &meta,
+		ExpireTime:    &expireTime,
+	}, &diags, client)
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	// Assign common properties to request if they were set
 	if utils.IsKnown(m.NamespaceType) {
-		nsType := kbapi.SecurityExceptionsAPIExceptionNamespaceType(m.NamespaceType.ValueString())
 		req.NamespaceType = &nsType
 	}
-
-	// Set optional os_types
-	if utils.IsKnown(m.OsTypes) {
-		osTypes := utils.SetTypeAs[kbapi.SecurityExceptionsAPIExceptionListOsType](ctx, m.OsTypes, path.Empty(), &diags)
-		if diags.HasError() {
-			return nil, diags
-		}
-		if len(osTypes) > 0 {
-			req.OsTypes = &osTypes
-		}
+	if utils.IsKnown(m.OsTypes) && len(osTypes) > 0 {
+		req.OsTypes = &osTypes
 	}
-
-	// Set optional tags
-	if utils.IsKnown(m.Tags) {
-		tags := utils.SetTypeAs[string](ctx, m.Tags, path.Empty(), &diags)
-		if diags.HasError() {
-			return nil, diags
-		}
-		if len(tags) > 0 {
-			tagsArray := kbapi.SecurityExceptionsAPIExceptionListItemTags(tags)
-			req.Tags = &tagsArray
-		}
+	if utils.IsKnown(m.Tags) && len(tags) > 0 {
+		req.Tags = &tags
 	}
-
-	// Set optional meta
 	if utils.IsKnown(m.Meta) {
-		var meta kbapi.SecurityExceptionsAPIExceptionListItemMeta
-		unmarshalDiags := m.Meta.Unmarshal(&meta)
-		diags.Append(unmarshalDiags...)
-		if diags.HasError() {
-			return nil, diags
-		}
 		req.Meta = &meta
+	}
+	if utils.IsKnown(m.ExpireTime) {
+		req.ExpireTime = &expireTime
 	}
 
 	// Set optional comments
-	if utils.IsKnown(m.Comments) {
-		comments := utils.ListTypeAs[CommentModel](ctx, m.Comments, path.Empty(), &diags)
-		if diags.HasError() {
-			return nil, diags
-		}
-		if len(comments) > 0 {
-			commentsArray := make(kbapi.SecurityExceptionsAPIUpdateExceptionListItemCommentArray, len(comments))
-			for i, comment := range comments {
-				commentsArray[i] = kbapi.SecurityExceptionsAPIUpdateExceptionListItemComment{
-					Comment: kbapi.SecurityExceptionsAPINonEmptyString(comment.Comment.ValueString()),
-				}
-			}
-			req.Comments = &commentsArray
-		}
+	if comments := m.commentsToUpdateAPI(ctx, &diags); comments != nil {
+		req.Comments = comments
 	}
-
-	// Set optional expire_time
-	if utils.IsKnown(m.ExpireTime) {
-		// Check version support for expire_time
-		if supported, versionDiags := client.EnforceMinVersion(ctx, MinVersionExpireTime); versionDiags.HasError() {
-			diags.Append(diagutil.FrameworkDiagsFromSDK(versionDiags)...)
-			return nil, diags
-		} else if !supported {
-			diags.AddError("expire_time is unsupported",
-				fmt.Sprintf("expire_time requires server version %s or higher", MinVersionExpireTime.String()))
-			return nil, diags
-		}
-
-		expireTime, d := m.ExpireTime.ValueRFC3339Time()
-		diags.Append(d...)
-		if diags.HasError() {
-			return nil, diags
-		}
-		expireTimeAPI := kbapi.SecurityExceptionsAPIExceptionListItemExpireTime(expireTime.Format("2006-01-02T15:04:05.000Z"))
-		req.ExpireTime = &expireTimeAPI
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	return req, diags
