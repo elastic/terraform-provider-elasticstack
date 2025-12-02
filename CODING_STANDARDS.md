@@ -81,7 +81,7 @@ This document outlines the coding standards and conventions used in the terrafor
   - Updating a resource
   - Deleting a resource
   - Importing a resource
-  - Creating a resoure in another space (if applicable)
+  - Creating a resource in another space (if applicable)
 
 ## API Client Usage
 
