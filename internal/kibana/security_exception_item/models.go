@@ -578,21 +578,18 @@ func convertEntryFromAPI(ctx context.Context, apiEntry kbapi.SecurityExceptionsA
 }
 
 // convertNestedMatchFromMap converts nested match entries from map format
-func convertNestedMatchFromMap(entryMap map[string]interface{}) NestedEntryModel {
-	var entry NestedEntryModel
+func convertNestedMatchFromMap(entryMap map[string]interface{}, entry *NestedEntryModel) {
 	if value, ok := entryMap["value"].(string); ok {
 		entry.Value = types.StringValue(value)
 	} else {
 		entry.Value = types.StringNull()
 	}
 	entry.Values = types.ListNull(types.StringType)
-	return entry
 }
 
 // convertNestedMatchAnyFromMap converts nested match_any entries from map format
-func convertNestedMatchAnyFromMap(ctx context.Context, entryMap map[string]interface{}) (NestedEntryModel, diag.Diagnostics) {
+func convertNestedMatchAnyFromMap(ctx context.Context, entryMap map[string]interface{}, entry *NestedEntryModel) diag.Diagnostics {
 	var diags diag.Diagnostics
-	var entry NestedEntryModel
 
 	if values, ok := entryMap["value"].([]interface{}); ok {
 		strValues := make([]string, 0, len(values))
@@ -608,15 +605,13 @@ func convertNestedMatchAnyFromMap(ctx context.Context, entryMap map[string]inter
 		entry.Values = types.ListNull(types.StringType)
 	}
 	entry.Value = types.StringNull()
-	return entry, diags
+	return diags
 }
 
 // convertNestedExistsFromMap converts nested exists entries from map format
-func convertNestedExistsFromMap() NestedEntryModel {
-	var entry NestedEntryModel
+func convertNestedExistsFromMap(entry *NestedEntryModel) {
 	entry.Value = types.StringNull()
 	entry.Values = types.ListNull(types.StringType)
-	return entry
 }
 
 // convertNestedEntryFromMap converts a map representation of nested entry to a model
@@ -637,18 +632,12 @@ func convertNestedEntryFromMap(ctx context.Context, entryMap map[string]interfac
 	entryType := entry.Type.ValueString()
 	switch entryType {
 	case "match":
-		nestedEntry := convertNestedMatchFromMap(entryMap)
-		entry.Value = nestedEntry.Value
-		entry.Values = nestedEntry.Values
+		convertNestedMatchFromMap(entryMap, &entry)
 	case "match_any":
-		nestedEntry, d := convertNestedMatchAnyFromMap(ctx, entryMap)
+		d := convertNestedMatchAnyFromMap(ctx, entryMap, &entry)
 		diags.Append(d...)
-		entry.Value = nestedEntry.Value
-		entry.Values = nestedEntry.Values
 	case "exists":
-		nestedEntry := convertNestedExistsFromMap()
-		entry.Value = nestedEntry.Value
-		entry.Values = nestedEntry.Values
+		convertNestedExistsFromMap(&entry)
 	}
 
 	return entry, diags
