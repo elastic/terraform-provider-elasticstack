@@ -25,7 +25,7 @@ func (r *ExceptionItemResource) Create(ctx context.Context, req resource.CreateR
 	}
 
 	// Build the request body using model method
-	body, diags := plan.toCreateRequest(ctx)
+	body, diags := plan.toCreateRequest(ctx, r.client)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

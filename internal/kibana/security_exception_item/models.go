@@ -8,8 +8,10 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -18,6 +20,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
+
+// MinVersionExpireTime defines the minimum server version required for expire_time field
+var MinVersionExpireTime = version.Must(version.NewVersion("8.7.2"))
 
 type ExceptionItemModel struct {
 	ID            types.String         `tfsdk:"id"`
@@ -690,7 +695,7 @@ func getCommentAttrTypes() map[string]attr.Type {
 }
 
 // toCreateRequest converts the Terraform model to API create request
-func (m *ExceptionItemModel) toCreateRequest(ctx context.Context) (*kbapi.CreateExceptionListItemJSONRequestBody, diag.Diagnostics) {
+func (m *ExceptionItemModel) toCreateRequest(ctx context.Context, client clients.MinVersionEnforceable) (*kbapi.CreateExceptionListItemJSONRequestBody, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	// Convert entries from Terraform model to API model
@@ -777,6 +782,16 @@ func (m *ExceptionItemModel) toCreateRequest(ctx context.Context) (*kbapi.Create
 
 	// Set optional expire_time
 	if utils.IsKnown(m.ExpireTime) {
+		// Check version support for expire_time
+		if supported, versionDiags := client.EnforceMinVersion(ctx, MinVersionExpireTime); versionDiags.HasError() {
+			diags.Append(diagutil.FrameworkDiagsFromSDK(versionDiags)...)
+			return nil, diags
+		} else if !supported {
+			diags.AddError("expire_time is unsupported",
+				fmt.Sprintf("expire_time requires server version %s or higher", MinVersionExpireTime.String()))
+			return nil, diags
+		}
+
 		expireTime, d := m.ExpireTime.ValueRFC3339Time()
 		diags.Append(d...)
 		if diags.HasError() {
@@ -790,7 +805,7 @@ func (m *ExceptionItemModel) toCreateRequest(ctx context.Context) (*kbapi.Create
 }
 
 // toUpdateRequest converts the Terraform model to API update request
-func (m *ExceptionItemModel) toUpdateRequest(ctx context.Context, resourceId string) (*kbapi.UpdateExceptionListItemJSONRequestBody, diag.Diagnostics) {
+func (m *ExceptionItemModel) toUpdateRequest(ctx context.Context, resourceId string, client clients.MinVersionEnforceable) (*kbapi.UpdateExceptionListItemJSONRequestBody, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	// Convert entries from Terraform model to API model
@@ -872,6 +887,16 @@ func (m *ExceptionItemModel) toUpdateRequest(ctx context.Context, resourceId str
 
 	// Set optional expire_time
 	if utils.IsKnown(m.ExpireTime) {
+		// Check version support for expire_time
+		if supported, versionDiags := client.EnforceMinVersion(ctx, MinVersionExpireTime); versionDiags.HasError() {
+			diags.Append(diagutil.FrameworkDiagsFromSDK(versionDiags)...)
+			return nil, diags
+		} else if !supported {
+			diags.AddError("expire_time is unsupported",
+				fmt.Sprintf("expire_time requires server version %s or higher", MinVersionExpireTime.String()))
+			return nil, diags
+		}
+
 		expireTime, d := m.ExpireTime.ValueRFC3339Time()
 		diags.Append(d...)
 		if diags.HasError() {

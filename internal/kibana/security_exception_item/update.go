@@ -33,7 +33,7 @@ func (r *ExceptionItemResource) Update(ctx context.Context, req resource.UpdateR
 	}
 
 	// Build the update request body using model method
-	body, diags := plan.toUpdateRequest(ctx, compId.ResourceId)
+	body, diags := plan.toUpdateRequest(ctx, compId.ResourceId, r.client)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
