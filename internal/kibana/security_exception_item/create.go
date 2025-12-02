@@ -43,10 +43,9 @@ func (r *ExceptionItemResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
-	/*
-	 * In create/update paths we typically follow the write operation with a read, and then set the state from the read.
-	 * We want to avoid a dirty plan immediately after an apply.
-	 */
+	// In create/update paths we typically follow the write operation with a read, and then set the state from the read.
+	// We want to avoid a dirty plan immediately after an apply.
+
 	// Read back the created resource to get the final state
 	readParams := &kbapi.ReadExceptionListItemParams{
 		Id: (*kbapi.SecurityExceptionsAPIExceptionListItemId)(&createResp.Id),
