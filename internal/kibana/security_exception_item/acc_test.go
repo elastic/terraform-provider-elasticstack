@@ -461,6 +461,41 @@ func TestAccResourceExceptionItemEntryType_Nested(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "entries.0.entries.0.value", "nested-value"),
 				),
 			},
+			{
+				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("nested_match_any"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"item_id": config.StringVariable(itemID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "entries.0.type", "nested"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "entries.0.field", "parent.field"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "entries.0.entries.0.type", "match_any"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "entries.0.entries.0.field", "nested.field"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "entries.0.entries.0.operator", "included"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "entries.0.entries.0.values.0", "value1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "entries.0.entries.0.values.1", "value2"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "entries.0.entries.0.values.2", "value3"),
+				),
+			},
+			{
+				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("nested_exists"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"item_id": config.StringVariable(itemID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "entries.0.type", "nested"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "entries.0.field", "parent.field"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "entries.0.entries.0.type", "exists"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "entries.0.entries.0.field", "nested.field"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "entries.0.entries.0.operator", "included"),
+				),
+			},
 		},
 	})
 }
