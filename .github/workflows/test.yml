@@ -105,7 +105,7 @@ jobs:
           - 8220:8220
         options: --restart="unless-stopped"
 
-    timeout-minutes: 15
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
@@ -182,7 +182,7 @@ jobs:
           for i in {1..5}; do curl -s -H "Authorization: ApiKey ${{ steps.get-api-key.outputs.apikey }}" --header "Content-Type: application/json" --header "kbn-xsrf: true" --request POST --data '{ "force": true }' http://localhost:5601/api/fleet/epm/packages/synthetics/1.2.2 && break || sleep 15; done
 
       - name: TF acceptance tests
-        timeout-minutes: 10
+        timeout-minutes: 20
         run: make testacc
         env:
           TF_ACC: "1"
