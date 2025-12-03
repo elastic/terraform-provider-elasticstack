@@ -456,7 +456,7 @@ func resourceSecurityRolePut(ctx context.Context, d *schema.ResourceData, meta i
 		for i, run := range definedRuns.List() {
 			runs[i] = run.(string)
 		}
-		role.RusAs = runs
+		role.RunAs = runs
 	}
 
 	if diags := elasticsearch.PutRole(ctx, client, &role); diags.HasError() {
@@ -539,7 +539,7 @@ func resourceSecurityRoleRead(ctx context.Context, d *schema.ResourceData, meta 
 		}
 	}
 
-	if err := d.Set("run_as", role.RusAs); err != nil {
+	if err := d.Set("run_as", role.RunAs); err != nil {
 		return diag.FromErr(err)
 	}
 

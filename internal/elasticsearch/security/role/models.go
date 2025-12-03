@@ -269,7 +269,7 @@ func (data *RoleData) toAPIModel(ctx context.Context) (*models.Role, diag.Diagno
 		if diags.HasError() {
 			return nil, diags
 		}
-		role.RusAs = runAs
+		role.RunAs = runAs
 	}
 
 	return &role, diags
@@ -533,8 +533,8 @@ func (data *RoleData) fromAPIModel(ctx context.Context, role *models.Role) diag.
 	}
 
 	// Run As
-	if len(role.RusAs) > 0 {
-		runAsSet, d := types.SetValueFrom(ctx, types.StringType, role.RusAs)
+	if len(role.RunAs) > 0 {
+		runAsSet, d := types.SetValueFrom(ctx, types.StringType, role.RunAs)
 		diags.Append(d...)
 		if diags.HasError() {
 			return diags

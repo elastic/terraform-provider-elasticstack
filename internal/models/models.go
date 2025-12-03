@@ -81,7 +81,7 @@ type Role struct {
 	Indices       []IndexPerms           `json:"indices,omitempty"`
 	RemoteIndices []RemoteIndexPerms     `json:"remote_indices,omitempty"`
 	Metadata      map[string]interface{} `json:"metadata,omitempty"`
-	RusAs         []string               `json:"run_as,omitempty"`
+	RunAs         []string               `json:"run_as,omitempty"`
 }
 
 type ApiKeyRoleDescriptor struct {
@@ -92,7 +92,7 @@ type ApiKeyRoleDescriptor struct {
 	Indices       []IndexPerms           `json:"indices,omitempty"`
 	RemoteIndices []RemoteIndexPerms     `json:"remote_indices,omitempty"`
 	Metadata      map[string]interface{} `json:"metadata,omitempty"`
-	RusAs         []string               `json:"run_as,omitempty"`
+	RunAs         []string               `json:"run_as,omitempty"`
 	Restriction   *Restriction           `json:"restriction,omitempty"`
 }
 
