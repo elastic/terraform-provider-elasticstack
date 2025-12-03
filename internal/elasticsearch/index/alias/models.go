@@ -98,9 +98,9 @@ func indexFromAlias(indexName string, aliasData models.IndexAlias) (indexModel, 
 	index := indexModel{
 		Name:          types.StringValue(indexName),
 		IsHidden:      types.BoolValue(aliasData.IsHidden),
-		IndexRouting:  typeutils.NonEmptyStringValue(aliasData.IndexRouting),
-		Routing:       typeutils.NonEmptyStringValue(aliasData.Routing),
-		SearchRouting: typeutils.NonEmptyStringValue(aliasData.SearchRouting),
+		IndexRouting:  typeutils.NonEmptyStringishValue(aliasData.IndexRouting),
+		Routing:       typeutils.NonEmptyStringishValue(aliasData.Routing),
+		SearchRouting: typeutils.NonEmptyStringishValue(aliasData.SearchRouting),
 	}
 
 	if aliasData.Filter != nil {

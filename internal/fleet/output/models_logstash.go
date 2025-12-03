@@ -18,7 +18,7 @@ func (model *outputModel) fromAPILogstashModel(ctx context.Context, data *kbapi.
 	model.Type = types.StringValue(string(data.Type))
 	model.Hosts = utils.SliceToListType_String(ctx, data.Hosts, path.Root("hosts"), &diags)
 	model.CaSha256 = types.StringPointerValue(data.CaSha256)
-	model.CaTrustedFingerprint = typeutils.NonEmptyStringPointerValue(data.CaTrustedFingerprint)
+	model.CaTrustedFingerprint = typeutils.NonEmptyStringishPointerValue(data.CaTrustedFingerprint)
 	model.DefaultIntegrations = types.BoolPointerValue(data.IsDefault)
 	model.DefaultMonitoring = types.BoolPointerValue(data.IsDefaultMonitoring)
 	model.ConfigYaml = types.StringPointerValue(data.ConfigYaml)

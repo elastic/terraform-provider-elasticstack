@@ -59,8 +59,8 @@ func sslToObjectValue(ctx context.Context, ssl *kbapi.OutputSsl) (types.Object, 
 
 	var diags diag.Diagnostics
 	sslModel := outputSslModel{
-		Certificate: typeutils.NonEmptyStringPointerValue(ssl.Certificate),
-		Key:         typeutils.NonEmptyStringPointerValue(ssl.Key),
+		Certificate: typeutils.NonEmptyStringishPointerValue(ssl.Certificate),
+		Key:         typeutils.NonEmptyStringishPointerValue(ssl.Key),
 	}
 
 	if cas := utils.Deref(ssl.CertificateAuthorities); len(cas) > 0 {

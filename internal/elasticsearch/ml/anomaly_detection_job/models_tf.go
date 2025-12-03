@@ -301,7 +301,7 @@ func (tfModel *AnomalyDetectionJobTFModel) fromAPIModel(ctx context.Context, api
 
 	// Convert optional fields
 	tfModel.AllowLazyOpen = types.BoolPointerValue(apiModel.AllowLazyOpen)
-	tfModel.BackgroundPersistInterval = typeutils.NonEmptyStringValue(apiModel.BackgroundPersistInterval)
+	tfModel.BackgroundPersistInterval = typeutils.NonEmptyStringishValue(apiModel.BackgroundPersistInterval)
 
 	if apiModel.CustomSettings != nil {
 		customSettingsJSON, err := json.Marshal(apiModel.CustomSettings)
@@ -322,7 +322,7 @@ func (tfModel *AnomalyDetectionJobTFModel) fromAPIModel(ctx context.Context, api
 		tfModel.RenormalizationWindowDays = types.Int64Value(*apiModel.RenormalizationWindowDays)
 	}
 
-	tfModel.ResultsIndexName = typeutils.NonEmptyStringValue(apiModel.ResultsIndexName)
+	tfModel.ResultsIndexName = typeutils.NonEmptyStringishValue(apiModel.ResultsIndexName)
 	tfModel.ResultsRetentionDays = types.Int64PointerValue(apiModel.ResultsRetentionDays)
 
 	// Convert analysis_config
@@ -358,10 +358,10 @@ func (tfModel *AnomalyDetectionJobTFModel) convertAnalysisConfigFromAPI(ctx cont
 	}
 
 	// Convert optional string fields
-	analysisConfigTF.CategorizationFieldName = typeutils.NonEmptyStringValue(apiConfig.CategorizationFieldName)
-	analysisConfigTF.Latency = typeutils.NonEmptyStringValue(apiConfig.Latency)
-	analysisConfigTF.ModelPruneWindow = typeutils.NonEmptyStringValue(apiConfig.ModelPruneWindow)
-	analysisConfigTF.SummaryCountFieldName = typeutils.NonEmptyStringValue(apiConfig.SummaryCountFieldName)
+	analysisConfigTF.CategorizationFieldName = typeutils.NonEmptyStringishValue(apiConfig.CategorizationFieldName)
+	analysisConfigTF.Latency = typeutils.NonEmptyStringishValue(apiConfig.Latency)
+	analysisConfigTF.ModelPruneWindow = typeutils.NonEmptyStringishValue(apiConfig.ModelPruneWindow)
+	analysisConfigTF.SummaryCountFieldName = typeutils.NonEmptyStringishValue(apiConfig.SummaryCountFieldName)
 
 	// Convert boolean fields
 	analysisConfigTF.MultivariateByFields = types.BoolPointerValue(apiConfig.MultivariateByFields)
@@ -393,12 +393,12 @@ func (tfModel *AnomalyDetectionJobTFModel) convertAnalysisConfigFromAPI(ctx cont
 			}
 
 			// Convert optional string fields
-			detectorsTF[i].FieldName = typeutils.NonEmptyStringValue(detector.FieldName)
-			detectorsTF[i].ByFieldName = typeutils.NonEmptyStringValue(detector.ByFieldName)
-			detectorsTF[i].OverFieldName = typeutils.NonEmptyStringValue(detector.OverFieldName)
-			detectorsTF[i].PartitionFieldName = typeutils.NonEmptyStringValue(detector.PartitionFieldName)
-			detectorsTF[i].DetectorDescription = typeutils.NonEmptyStringValue(detector.DetectorDescription)
-			detectorsTF[i].ExcludeFrequent = typeutils.NonEmptyStringValue(detector.ExcludeFrequent)
+			detectorsTF[i].FieldName = typeutils.NonEmptyStringishValue(detector.FieldName)
+			detectorsTF[i].ByFieldName = typeutils.NonEmptyStringishValue(detector.ByFieldName)
+			detectorsTF[i].OverFieldName = typeutils.NonEmptyStringishValue(detector.OverFieldName)
+			detectorsTF[i].PartitionFieldName = typeutils.NonEmptyStringishValue(detector.PartitionFieldName)
+			detectorsTF[i].DetectorDescription = typeutils.NonEmptyStringishValue(detector.DetectorDescription)
+			detectorsTF[i].ExcludeFrequent = typeutils.NonEmptyStringishValue(detector.ExcludeFrequent)
 
 			// Convert boolean field
 			detectorsTF[i].UseNull = types.BoolPointerValue(detector.UseNull)
@@ -478,8 +478,8 @@ func (tfModel *AnomalyDetectionJobTFModel) convertDataDescriptionFromAPI(ctx con
 	}
 
 	dataDescriptionTF := DataDescriptionTFModel{
-		TimeField:  typeutils.NonEmptyStringValue(apiDataDescription.TimeField),
-		TimeFormat: typeutils.NonEmptyStringValue(apiDataDescription.TimeFormat),
+		TimeField:  typeutils.NonEmptyStringishValue(apiDataDescription.TimeField),
+		TimeFormat: typeutils.NonEmptyStringishValue(apiDataDescription.TimeFormat),
 	}
 
 	dataDescriptionObjectValue, d := types.ObjectValueFrom(ctx, getDataDescriptionAttrTypes(), dataDescriptionTF)
@@ -514,7 +514,7 @@ func (tfModel *AnomalyDetectionJobTFModel) convertModelPlotConfigFromAPI(ctx con
 
 	modelPlotConfigTF := ModelPlotConfigTFModel{
 		Enabled: types.BoolValue(apiModelPlotConfig.Enabled),
-		Terms:   typeutils.NonEmptyStringValue(apiModelPlotConfig.Terms),
+		Terms:   typeutils.NonEmptyStringishValue(apiModelPlotConfig.Terms),
 	}
 
 	modelPlotConfigTF.AnnotationsEnabled = types.BoolPointerValue(apiModelPlotConfig.AnnotationsEnabled)

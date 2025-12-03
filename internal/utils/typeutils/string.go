@@ -15,16 +15,16 @@ func StringishValue[T ~string](value T) types.String {
 	return types.StringValue(string(value))
 }
 
-func NonEmptyStringValue[T ~string](value T) types.String {
+func NonEmptyStringishValue[T ~string](value T) types.String {
 	if value == "" {
 		return types.StringNull()
 	}
 	return types.StringValue(string(value))
 }
 
-func NonEmptyStringPointerValue[T ~string](ptr *T) types.String {
+func NonEmptyStringishPointerValue[T ~string](ptr *T) types.String {
 	if ptr == nil {
 		return types.StringNull()
 	}
-	return NonEmptyStringValue(*ptr)
+	return NonEmptyStringishValue(*ptr)
 }
