@@ -34,6 +34,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/import_saved_objects"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/maintenance_window"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_detection_rule"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_exception_item"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_exception_list"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_list"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_list_item"
@@ -156,6 +157,7 @@ func (p *Provider) experimentalResources(ctx context.Context) []func() resource.
 		security_list_item.NewResource,
 		security_list.NewResource,
 		security_exception_list.NewResource,
+		security_exception_item.NewResource,
 	}
 }
 
