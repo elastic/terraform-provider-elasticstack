@@ -6,6 +6,7 @@ import (
 	"reflect"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -95,19 +96,13 @@ func (model *tfModel) populateFromAPI(ctx context.Context, aliasName string, ind
 // indexFromAlias converts a models.IndexAlias to an indexModel
 func indexFromAlias(indexName string, aliasData models.IndexAlias) (indexModel, diag.Diagnostics) {
 	index := indexModel{
-		Name:     types.StringValue(indexName),
-		IsHidden: types.BoolValue(aliasData.IsHidden),
+		Name:          types.StringValue(indexName),
+		IsHidden:      types.BoolValue(aliasData.IsHidden),
+		IndexRouting:  typeutils.NonEmptyStringValue(aliasData.IndexRouting),
+		Routing:       typeutils.NonEmptyStringValue(aliasData.Routing),
+		SearchRouting: typeutils.NonEmptyStringValue(aliasData.SearchRouting),
 	}
 
-	if aliasData.IndexRouting != "" {
-		index.IndexRouting = types.StringValue(aliasData.IndexRouting)
-	}
-	if aliasData.Routing != "" {
-		index.Routing = types.StringValue(aliasData.Routing)
-	}
-	if aliasData.SearchRouting != "" {
-		index.SearchRouting = types.StringValue(aliasData.SearchRouting)
-	}
 	if aliasData.Filter != nil {
 		filterBytes, err := json.Marshal(aliasData.Filter)
 		if err != nil {
