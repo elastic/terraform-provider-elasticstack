@@ -49,7 +49,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
-const IncludeExperimentalEnvVar = "TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL"
+const (
+	IncludeExperimentalEnvVar = "TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL"
+	AccTestVersion            = "acctest"
+)
 
 // Ensure the implementation satisfies the expected interfaces.
 var (
@@ -103,7 +106,7 @@ func (p *Provider) Configure(ctx context.Context, req fwprovider.ConfigureReques
 func (p *Provider) DataSources(ctx context.Context) []func() datasource.DataSource {
 	datasources := p.dataSources(ctx)
 
-	if os.Getenv(IncludeExperimentalEnvVar) == "true" {
+	if p.version == AccTestVersion || os.Getenv(IncludeExperimentalEnvVar) == "true" {
 		datasources = append(datasources, p.experimentalDataSources(ctx)...)
 	}
 
@@ -113,7 +116,7 @@ func (p *Provider) DataSources(ctx context.Context) []func() datasource.DataSour
 func (p *Provider) Resources(ctx context.Context) []func() resource.Resource {
 	resources := p.resources(ctx)
 
-	if os.Getenv(IncludeExperimentalEnvVar) == "true" {
+	if p.version == AccTestVersion || os.Getenv(IncludeExperimentalEnvVar) == "true" {
 		resources = append(resources, p.experimentalResources(ctx)...)
 	}
 
