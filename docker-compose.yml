@@ -99,7 +99,7 @@ services:
     depends_on:
       fleet_settings:
         condition: service_completed_successfully
-    image: elastic/elastic-agent:${STACK_VERSION}
+    image: docker.elastic.co/elastic-agent/elastic-agent:${STACK_VERSION}
     container_name: ${FLEET_CONTAINER_NAME}
     restart: unless-stopped
     volumes:
