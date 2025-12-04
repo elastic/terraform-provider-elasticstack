@@ -5,6 +5,7 @@ package main
 
 import (
 	"bytes"
+	_ "embed"
 	"errors"
 	"flag"
 	"fmt"
@@ -556,6 +557,7 @@ func (s Slice) atoi(key string) int {
 type TransformFunc func(schema *Schema)
 
 var transformers = []TransformFunc{
+	mergeDashboardsSchema,
 	transformRemoveKbnXsrf,
 	transformRemoveApiVersionParam,
 	transformSimplifyContentType,
@@ -571,6 +573,35 @@ var transformers = []TransformFunc{
 	transformRemoveExamples,
 	transformRemoveUnusedComponents,
 	transformOmitEmptyNullable,
+}
+
+//go:embed dashboards.yaml
+var dashboardsYaml string
+
+func mergeDashboardsSchema(schema *Schema) {
+	var dashboardsSchema Schema
+	err := yaml.Unmarshal([]byte(dashboardsYaml), &dashboardsSchema)
+	if err != nil {
+		log.Fatalf("failed to unmarshal schema from dashboards.yaml: %v", err)
+	}
+
+	// Merge paths
+	for path, pathInfo := range dashboardsSchema.Paths {
+		// Only add the path if it doesn't already exist
+		if _, ok := schema.Paths[path]; !ok {
+			schema.Paths[path] = pathInfo
+		}
+	}
+
+	// Merge component schemas
+	dashboardSchemas := dashboardsSchema.Components.MustGetMap("schemas")
+	schemaSchemas := schema.Components.MustGetMap("schemas")
+	for key, schemaInfo := range dashboardSchemas {
+		// Only add the schema if it doesn't already exist
+		if _, ok := schemaSchemas[key]; !ok {
+			schemaSchemas[key] = schemaInfo
+		}
+	}
 }
 
 // transformRemoveKbnXsrf removes the kbn-xsrf header as it	is already applied
