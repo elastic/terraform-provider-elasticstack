@@ -40,6 +40,7 @@ alias = [
 
 ### Changes
 
+- Fix an issue where the `elasticstack_fleet_output` resource would error due to inconsistent state after an ouptut was edited in the Kibana UI ([#1506](https://github.com/elastic/terraform-provider-elasticstack/pull/1506))
 - Allow `index` and `data_view_id` values to both be unknown during planning in `elasticstack_kibana_security_detection_rule` ([#1499](https://github.com/elastic/terraform-provider-elasticstack/pull/1499))
 - Support `.bedrock` and `.gen-ai` connectors ([#1467](https://github.com/elastic/terraform-provider-elasticstack/pull/1467))
 - Support the `solution` attribute in `elasticstack_kibana_space` from 8.16 ([#1486](https://github.com/elastic/terraform-provider-elasticstack/pull/1486)) 
