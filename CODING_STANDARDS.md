@@ -36,6 +36,7 @@ This document outlines the coding standards and conventions used in the terrafor
 - Prefer using existing util functions over longer form, duplicated code:
   - `utils.IsKnown(val)` instead of `!val.IsNull() && !val.IsUnknown()`
   - `utils.ListTypeAs` instead of `val.ElementsAs` or similar for other collection types
+  - `typeutils.StringishValue` instead of casting to a string e.g. `types.StringValue(string(apiResp.Id))`. Use `typeutils.StringishPointerValue` for pointers
 - The final state for a resource should be derived from a read request following a mutative request (eg create or update). We should not use the response from a mutative request to build the final resource state.
 
 ## Schema Definitions
@@ -75,6 +76,12 @@ This document outlines the coding standards and conventions used in the terrafor
   - Define any required variables within the module
   - Reference the test code via `ConfigDirectory: acctest.NamedTestCaseDirectory("<step description>")`
   - Define any required variables via `ConfigVariables`
+- Resources should include tests for the following
+  - Creating a resource
+  - Updating a resource
+  - Deleting a resource
+  - Importing a resource
+  - Creating a resource in another space (if applicable)
 
 ## API Client Usage
 

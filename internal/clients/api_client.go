@@ -451,7 +451,9 @@ func (a *ApiClient) flavorFromKibana() (string, diag.Diagnostics) {
 
 	serverFlavor, ok := vMap["build_flavor"].(string)
 	if !ok {
-		return "", diag.Errorf("failed to get build flavor from Kibana status")
+		// build_flavor field is not present in older Kibana versions (pre-serverless)
+		// Default to empty string to indicate traditional/stateful deployment
+		return "", nil
 	}
 
 	return serverFlavor, nil

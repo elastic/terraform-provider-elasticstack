@@ -35,6 +35,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/import_saved_objects"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/maintenance_window"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_detection_rule"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_exception_item"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_exception_list"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_list"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_list_item"
@@ -49,7 +50,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
-const IncludeExperimentalEnvVar = "TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL"
+const (
+	IncludeExperimentalEnvVar = "TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL"
+	AccTestVersion            = "acctest"
+)
 
 // Ensure the implementation satisfies the expected interfaces.
 var (
@@ -103,7 +107,7 @@ func (p *Provider) Configure(ctx context.Context, req fwprovider.ConfigureReques
 func (p *Provider) DataSources(ctx context.Context) []func() datasource.DataSource {
 	datasources := p.dataSources(ctx)
 
-	if os.Getenv(IncludeExperimentalEnvVar) == "true" {
+	if p.version == AccTestVersion || os.Getenv(IncludeExperimentalEnvVar) == "true" {
 		datasources = append(datasources, p.experimentalDataSources(ctx)...)
 	}
 
@@ -113,7 +117,7 @@ func (p *Provider) DataSources(ctx context.Context) []func() datasource.DataSour
 func (p *Provider) Resources(ctx context.Context) []func() resource.Resource {
 	resources := p.resources(ctx)
 
-	if os.Getenv(IncludeExperimentalEnvVar) == "true" {
+	if p.version == AccTestVersion || os.Getenv(IncludeExperimentalEnvVar) == "true" {
 		resources = append(resources, p.experimentalResources(ctx)...)
 	}
 
@@ -158,6 +162,7 @@ func (p *Provider) experimentalResources(ctx context.Context) []func() resource.
 		security_list_item.NewResource,
 		security_list.NewResource,
 		security_exception_list.NewResource,
+		security_exception_item.NewResource,
 	}
 }
 

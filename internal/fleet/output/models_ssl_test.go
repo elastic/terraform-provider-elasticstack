@@ -123,6 +123,28 @@ func Test_sslToObjectValue(t *testing.T) {
 			want: types.ObjectNull(getSslAttrTypes()),
 		},
 		{
+			name: "returns null object when ssl has all empty fields",
+			args: args{
+				ssl: &kbapi.OutputSsl{
+					Certificate:            nil,
+					CertificateAuthorities: nil,
+					Key:                    nil,
+				},
+			},
+			want: types.ObjectNull(getSslAttrTypes()),
+		},
+		{
+			name: "returns null object when ssl has empty string pointers and empty slice",
+			args: args{
+				ssl: &kbapi.OutputSsl{
+					Certificate:            utils.Pointer(""),
+					CertificateAuthorities: &[]string{},
+					Key:                    utils.Pointer(""),
+				},
+			},
+			want: types.ObjectNull(getSslAttrTypes()),
+		},
+		{
 			name: "returns an object when populated",
 			args: args{
 				ssl: &kbapi.OutputSsl{

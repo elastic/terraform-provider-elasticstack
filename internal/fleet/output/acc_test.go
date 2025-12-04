@@ -2,6 +2,7 @@ package output_test
 
 import (
 	"context"
+	_ "embed"
 	"fmt"
 	"testing"
 
@@ -12,12 +13,16 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/output"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 var minVersionOutput = version.Must(version.NewVersion("8.6.0"))
+
+//go:embed testdata/TestAccResourceOutputElasticsearchFromSDK/create/output.tf
+var sdkCreateTestConfig string
 
 func TestAccResourceOutputElasticsearchFromSDK(t *testing.T) {
 	policyName := sdkacctest.RandString(22)
@@ -34,7 +39,10 @@ func TestAccResourceOutputElasticsearchFromSDK(t *testing.T) {
 					},
 				},
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
-				Config:   testAccResourceOutputCreateElasticsearch(policyName),
+				Config:   sdkCreateTestConfig,
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "name", fmt.Sprintf("Elasticsearch Output %s", policyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "id", fmt.Sprintf("%s-elasticsearch-output", policyName)),
@@ -48,7 +56,10 @@ func TestAccResourceOutputElasticsearchFromSDK(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
-				Config:                   testAccResourceOutputCreateElasticsearch(policyName),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "name", fmt.Sprintf("Elasticsearch Output %s", policyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "id", fmt.Sprintf("%s-elasticsearch-output", policyName)),
@@ -67,13 +78,16 @@ func TestAccResourceOutputElasticsearch(t *testing.T) {
 	policyName := sdkacctest.RandString(22)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceOutputDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceOutputDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
-				Config:   testAccResourceOutputCreateElasticsearch(policyName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "name", fmt.Sprintf("Elasticsearch Output %s", policyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "id", fmt.Sprintf("%s-elasticsearch-output", policyName)),
@@ -85,8 +99,12 @@ func TestAccResourceOutputElasticsearch(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
-				Config:   testAccResourceOutputUpdateElasticsearch(policyName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "name", fmt.Sprintf("Updated Elasticsearch Output %s", policyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "id", fmt.Sprintf("%s-elasticsearch-output", policyName)),
@@ -98,8 +116,12 @@ func TestAccResourceOutputElasticsearch(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:          versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
-				Config:            testAccResourceOutputUpdateElasticsearch(policyName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
 				ResourceName:      "elasticstack_fleet_output.test_output",
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -107,6 +129,9 @@ func TestAccResourceOutputElasticsearch(t *testing.T) {
 		},
 	})
 }
+
+//go:embed testdata/TestAccResourceOutputLogstashFromSDK/create/output.tf
+var logstashSDKCreateTestConfig string
 
 func TestAccResourceOutputLogstashFromSDK(t *testing.T) {
 	policyName := sdkacctest.RandString(22)
@@ -123,7 +148,10 @@ func TestAccResourceOutputLogstashFromSDK(t *testing.T) {
 					},
 				},
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
-				Config:   testAccResourceOutputCreateLogstash(policyName, true),
+				Config:   logstashSDKCreateTestConfig,
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "name", fmt.Sprintf("Logstash Output %s", policyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "id", fmt.Sprintf("%s-logstash-output", policyName)),
@@ -140,7 +168,10 @@ func TestAccResourceOutputLogstashFromSDK(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
-				Config:                   testAccResourceOutputCreateLogstash(policyName, false),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "name", fmt.Sprintf("Logstash Output %s", policyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "id", fmt.Sprintf("%s-logstash-output", policyName)),
@@ -162,13 +193,16 @@ func TestAccResourceOutputLogstash(t *testing.T) {
 	policyName := sdkacctest.RandString(22)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceOutputDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceOutputDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
-				Config:   testAccResourceOutputCreateLogstash(policyName, false),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "name", fmt.Sprintf("Logstash Output %s", policyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "id", fmt.Sprintf("%s-logstash-output", policyName)),
@@ -183,8 +217,12 @@ func TestAccResourceOutputLogstash(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
-				Config:   testAccResourceOutputUpdateLogstash(policyName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "name", fmt.Sprintf("Updated Logstash Output %s", policyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "id", fmt.Sprintf("%s-logstash-output", policyName)),
@@ -206,13 +244,16 @@ func TestAccResourceOutputKafka(t *testing.T) {
 	policyName := sdkacctest.RandString(22)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceOutputDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceOutputDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(output.MinVersionOutputKafka),
-				Config:   testAccResourceOutputCreateKafka(policyName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(output.MinVersionOutputKafka),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "name", fmt.Sprintf("Kafka Output %s", policyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "id", fmt.Sprintf("%s-kafka-output", policyName)),
@@ -233,8 +274,12 @@ func TestAccResourceOutputKafka(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(output.MinVersionOutputKafka),
-				Config:   testAccResourceOutputUpdateKafka(policyName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(output.MinVersionOutputKafka),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "name", fmt.Sprintf("Updated Kafka Output %s", policyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "id", fmt.Sprintf("%s-kafka-output", policyName)),
@@ -259,13 +304,16 @@ func TestAccResourceOutputKafkaComplex(t *testing.T) {
 	policyName := sdkacctest.RandString(22)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceOutputDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceOutputDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(output.MinVersionOutputKafka),
-				Config:   testAccResourceOutputCreateKafkaComplex(policyName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(output.MinVersionOutputKafka),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "name", fmt.Sprintf("Complex Kafka Output %s", policyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "type", "kafka"),
@@ -288,242 +336,6 @@ func TestAccResourceOutputKafkaComplex(t *testing.T) {
 			},
 		},
 	})
-}
-
-func testAccResourceOutputCreateElasticsearch(id string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_fleet_output" "test_output" {
-  name                 = "Elasticsearch Output %s"
-  output_id            = "%s-elasticsearch-output"
-  type                 = "elasticsearch"
-  config_yaml = yamlencode({
-    "ssl.verification_mode" : "none"
-  })
-  default_integrations = false
-  default_monitoring   = false
-  hosts = [
-    "https://elasticsearch:9200"
-  ]
-}
-`, id, id)
-}
-
-func testAccResourceOutputUpdateElasticsearch(id string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_fleet_output" "test_output" {
-  name                 = "Updated Elasticsearch Output %s"
-  output_id            = "%s-elasticsearch-output"
-  type                 = "elasticsearch"
-  config_yaml = yamlencode({
-    "ssl.verification_mode" : "none"
-  })
-  default_integrations = false
-  default_monitoring   = false
-  hosts = [
-    "https://elasticsearch:9200"
-  ]
-}
-`, id, id)
-}
-
-func testAccResourceOutputCreateLogstash(id string, forSDK bool) string {
-	sslInfix := ""
-	if !forSDK {
-		sslInfix = "="
-	}
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_fleet_output" "test_output" {
-  name                 = "Logstash Output %s"
-  type                 = "logstash"
-  output_id            = "%s-logstash-output"
-  config_yaml = yamlencode({
-    "ssl.verification_mode" : "none"
-  })
-  default_integrations = false
-  default_monitoring   = false
-  hosts = [
-    "logstash:5044"
-  ]
-  ssl %s {
-	certificate_authorities = ["placeholder"]
-	certificate             = "placeholder"
-	key                     = "placeholder"
-  }
-}
-`, id, id, sslInfix)
-}
-
-func testAccResourceOutputUpdateLogstash(id string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_fleet_output" "test_output" {
-  name                 = "Updated Logstash Output %s"
-  output_id            = "%s-logstash-output"
-  type                 = "logstash"
-  config_yaml = yamlencode({
-    "ssl.verification_mode" : "none"
-  })
-  default_integrations = false
-  default_monitoring   = false
-  hosts = [
-    "logstash:5044"
-  ]
-  ssl = {
-	certificate_authorities = ["placeholder"]
-	certificate             = "placeholder"
-	key                     = "placeholder"
-  }
-}
-`, id, id)
-}
-
-func testAccResourceOutputCreateKafka(id string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_fleet_output" "test_output" {
-  name                 = "Kafka Output %s"
-  output_id            = "%s-kafka-output"
-  type                 = "kafka"
-  config_yaml = yamlencode({
-    "ssl.verification_mode" : "none"
-  })
-  default_integrations = false
-  default_monitoring   = false
-  hosts = [
-    "kafka:9092"
-  ]
-  
-  # Kafka-specific configuration
-  kafka = {
-	auth_type         = "none"
-	topic             = "beats"
-	partition         = "hash"
-	compression       = "gzip"
-	compression_level = 6
-	connection_type   = "plaintext"
-	required_acks     = 1
-  
-	headers = [{
-		key   = "environment"
-		value = "test"
-	}]
-  }
-}
-`, id, id)
-}
-
-func testAccResourceOutputUpdateKafka(id string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_fleet_output" "test_output" {
-  name                 = "Updated Kafka Output %s"
-  output_id            = "%s-kafka-output"
-  type                 = "kafka"
-  config_yaml = yamlencode({
-    "ssl.verification_mode" : "none"
-  })
-  default_integrations = false
-  default_monitoring   = false
-  hosts = [
-    "kafka:9092"
-  ]
-  
-  # Updated Kafka-specific configuration
-  kafka = {
-	auth_type         = "none"
-	topic             = "logs"
-	partition         = "round_robin"
-	compression       = "snappy"
-	connection_type   = "encryption"
-	required_acks     = -1
-  }
-}
-`, id, id)
-}
-
-func testAccResourceOutputCreateKafkaComplex(id string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_fleet_output" "test_output" {
-  name                 = "Complex Kafka Output %s"
-  output_id            = "%s-kafka-complex-output"
-  type                 = "kafka"
-  config_yaml = yamlencode({
-    "ssl.verification_mode" : "none"
-  })
-  default_integrations = false
-  default_monitoring   = false
-  hosts = [
-    "kafka1:9092",
-    "kafka2:9092",
-    "kafka3:9092"
-  ]
-  
-  # Complex Kafka configuration showcasing all options
-  kafka = {
-    auth_type         = "none"
-    topic             = "complex-topic"
-    partition         = "hash"
-    compression       = "lz4"
-    connection_type   = "encryption"
-    required_acks     = 0
-    broker_timeout    = 10
-    timeout           = 30
-    version           = "2.6.0"
-  
-    headers = [
-      {
-        key   = "datacenter"
-        value = "us-west-1"
-      },
-      {
-        key   = "service"
-        value = "beats"
-      }
-    ]
-  
-    hash = {
-      hash   = "event.hash"
-      random = false
-    }
-  
-    sasl = {
-      mechanism = "SCRAM-SHA-256"
-    }
-  }
-}
-`, id, id)
 }
 
 func checkResourceOutputDestroy(s *terraform.State) error {
