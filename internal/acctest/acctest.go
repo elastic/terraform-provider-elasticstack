@@ -15,7 +15,7 @@ import (
 var Providers map[string]func() (tfprotov6.ProviderServer, error)
 
 func init() {
-	providerServerFactory, err := provider.ProtoV6ProviderServerFactory(context.Background(), "dev")
+	providerServerFactory, err := provider.ProtoV6ProviderServerFactory(context.Background(), provider.AccTestVersion)
 	if err != nil {
 		log.Fatal(err)
 	}
