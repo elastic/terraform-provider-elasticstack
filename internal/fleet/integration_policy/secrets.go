@@ -3,6 +3,7 @@ package integration_policy
 import (
 	"context"
 	"encoding/json"
+	"maps"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
@@ -113,15 +114,46 @@ func HandleRespSecrets(ctx context.Context, resp *kbapi.PackagePolicy, private p
 	}
 
 	handleVars(utils.Deref(resp.Vars))
-	for _, input := range resp.Inputs {
-		handleVars(utils.Deref(input.Vars))
-		for _, stream := range utils.Deref(input.Streams) {
-			handleVars(utils.Deref(stream.Vars))
+
+	// Mapped inputs: extract, mutate, and write back
+	mappedInputs, _ := resp.Inputs.AsPackagePolicyMappedInputs()
+	typedInputs, _ := resp.Inputs.AsPackagePolicyTypedInputs()
+	if mappedInputs != nil {
+		for _, input := range mappedInputs {
+			if input.Vars != nil {
+				handleVars(*input.Vars)
+			}
+
+			if input.Streams != nil {
+				for _, stream := range *input.Streams {
+					if stream.Vars != nil {
+						handleVars(*stream.Vars)
+					}
+				}
+			}
+		}
+		// Write back the mutated data
+		if err := resp.Inputs.FromPackagePolicyMappedInputs(mappedInputs); err != nil {
+			diags.AddError("could not write back mapped inputs", err.Error())
+		}
+	} else if typedInputs != nil {
+		// Typed inputs: mutate in place through pointers
+		for i := range typedInputs {
+			if typedInputs[i].Vars != nil {
+				handleVars(*typedInputs[i].Vars)
+			}
+			for j := range typedInputs[i].Streams {
+				if typedInputs[i].Streams[j].Vars != nil {
+					handleVars(*typedInputs[i].Streams[j].Vars)
+				}
+			}
+		}
+		if err := resp.Inputs.FromPackagePolicyTypedInputs(typedInputs); err != nil {
+			diags.AddError("could not write back typed inputs", err.Error())
 		}
 	}
 
-	nd = secrets.Save(ctx, private)
-	diags.Append(nd...)
+	diags.Append(secrets.Save(ctx, private)...)
 
 	return
 }
@@ -188,19 +220,46 @@ func HandleReqRespSecrets(ctx context.Context, req kbapi.PackagePolicyRequest, r
 		}
 	}
 
-	handleVars(utils.Deref(req.Vars), utils.Deref(resp.Vars))
-	for inputID, inputReq := range utils.Deref(req.Inputs) {
-		inputResp := resp.Inputs[inputID]
-		handleVars(utils.Deref(inputReq.Vars), utils.Deref(inputResp.Vars))
-		streamsResp := utils.Deref(inputResp.Streams)
-		for streamID, streamReq := range utils.Deref(inputReq.Streams) {
-			streamResp := streamsResp[streamID]
-			handleVars(utils.Deref(streamReq.Vars), utils.Deref(streamResp.Vars))
+	mappedReq, _ := req.AsPackagePolicyRequestMappedInputs()
+	typedReq, _ := req.AsPackagePolicyRequestTypedInputs()
+
+	reqVars := map[string]any{}
+	maps.Copy(reqVars, utils.Deref(mappedReq.Vars))
+	maps.Copy(reqVars, utils.Deref(typedReq.Vars))
+	// Policy-level vars
+	if resp.Vars != nil {
+		handleVars(reqVars, utils.Deref(resp.Vars))
+	}
+
+	respMappedInputs, _ := resp.Inputs.AsPackagePolicyMappedInputs()
+	respTypedInputs, _ := resp.Inputs.AsPackagePolicyTypedInputs()
+	if respMappedInputs != nil {
+		for inputID, inputReq := range utils.Deref(mappedReq.Inputs) {
+			inputResp := respMappedInputs[inputID]
+			handleVars(utils.Deref(inputReq.Vars), utils.Deref(inputResp.Vars))
+
+			streamsResp := utils.Deref(inputResp.Streams)
+			for streamID, streamReq := range utils.Deref(inputReq.Streams) {
+				handleVars(utils.Deref(streamReq.Vars), utils.Deref(streamsResp[streamID].Vars))
+			}
+		}
+		if err := resp.Inputs.FromPackagePolicyMappedInputs(respMappedInputs); err != nil {
+			diags.AddError("failed to update mapped inputs", err.Error())
+		}
+	} else if respTypedInputs != nil {
+		for inputIdx, inputReq := range utils.Deref(typedReq.Inputs) {
+			inputResp := respTypedInputs[inputIdx]
+			handleVars(utils.Deref(inputReq.Vars), utils.Deref(inputResp.Vars))
+			for streamIdx, streamReq := range utils.Deref(inputReq.Streams) {
+				handleVars(utils.Deref(streamReq.Vars), utils.Deref(inputResp.Streams[streamIdx].Vars))
+			}
+		}
+		if err := resp.Inputs.FromPackagePolicyTypedInputs(respTypedInputs); err != nil {
+			diags.AddError("failed to update typed inputs", err.Error())
 		}
 	}
 
-	nd = secrets.Save(ctx, private)
-	diags.Append(nd...)
+	diags.Append(secrets.Save(ctx, private)...)
 
 	return
 }
