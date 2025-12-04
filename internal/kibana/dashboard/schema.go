@@ -1,0 +1,138 @@
+package dashboard
+
+import (
+	"context"
+
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+)
+
+func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+	resp.Schema = getSchema()
+}
+
+func getSchema() schema.Schema {
+	return schema.Schema{
+		MarkdownDescription: "Manages Kibana [dashboards](https://www.elastic.co/docs/api/doc/kibana). This functionality is in technical preview and may be changed or removed in a future release.",
+		Attributes: map[string]schema.Attribute{
+			"id": schema.StringAttribute{
+				Computed:            true,
+				MarkdownDescription: "Generated composite identifier for the dashboard.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"space_id": schema.StringAttribute{
+				MarkdownDescription: "An identifier for the space. If space_id is not provided, the default space is used.",
+				Optional:            true,
+				Computed:            true,
+				Default:             stringdefault.StaticString("default"),
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
+			},
+			"dashboard_id": schema.StringAttribute{
+				MarkdownDescription: "A unique identifier for the dashboard. If not provided, one will be generated.",
+				Optional:            true,
+				Computed:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"title": schema.StringAttribute{
+				MarkdownDescription: "A human-readable title for the dashboard.",
+				Required:            true,
+			},
+			"description": schema.StringAttribute{
+				MarkdownDescription: "A short description of the dashboard.",
+				Optional:            true,
+			},
+			"time_from": schema.StringAttribute{
+				MarkdownDescription: "The start time for the dashboard's time range (e.g., 'now-15m', '2023-01-01T00:00:00Z').",
+				Required:            true,
+			},
+			"time_to": schema.StringAttribute{
+				MarkdownDescription: "The end time for the dashboard's time range (e.g., 'now', '2023-12-31T23:59:59Z').",
+				Required:            true,
+			},
+			"time_range_mode": schema.StringAttribute{
+				MarkdownDescription: "The time range mode. Valid values are 'absolute' or 'relative'.",
+				Optional:            true,
+				Validators: []validator.String{
+					stringvalidator.OneOf("absolute", "relative"),
+				},
+			},
+			"refresh_interval_pause": schema.BoolAttribute{
+				MarkdownDescription: "Set to false to auto-refresh data on an interval.",
+				Required:            true,
+			},
+			"refresh_interval_value": schema.Int64Attribute{
+				MarkdownDescription: "A numeric value indicating refresh frequency in milliseconds.",
+				Required:            true,
+			},
+			"query_language": schema.StringAttribute{
+				MarkdownDescription: "The query language (e.g., 'kuery', 'lucene').",
+				Required:            true,
+			},
+			"query_text": schema.StringAttribute{
+				MarkdownDescription: "The query text for text-based queries such as Kibana Query Language (KQL) or Lucene query language. Mutually exclusive with `query_json`.",
+				Optional:            true,
+			},
+			"query_json": schema.StringAttribute{
+				MarkdownDescription: "The query as a JSON object for structured queries. Mutually exclusive with `query_text`.",
+				CustomType:          jsontypes.NormalizedType{},
+				Optional:            true,
+			},
+			"tags": schema.ListAttribute{
+				MarkdownDescription: "An array of tag IDs applied to this dashboard.",
+				ElementType:         types.StringType,
+				Optional:            true,
+			},
+			"options": schema.SingleNestedAttribute{
+				MarkdownDescription: "Display options for the dashboard.",
+				Optional:            true,
+				Attributes: map[string]schema.Attribute{
+					"hide_panel_titles": schema.BoolAttribute{
+						MarkdownDescription: "Hide the panel titles in the dashboard.",
+						Optional:            true,
+					},
+					"use_margins": schema.BoolAttribute{
+						MarkdownDescription: "Show margins between panels in the dashboard layout.",
+						Optional:            true,
+					},
+					"sync_colors": schema.BoolAttribute{
+						MarkdownDescription: "Synchronize colors between related panels in the dashboard.",
+						Optional:            true,
+					},
+					"sync_tooltips": schema.BoolAttribute{
+						MarkdownDescription: "Synchronize tooltips between related panels in the dashboard.",
+						Optional:            true,
+					},
+					"sync_cursor": schema.BoolAttribute{
+						MarkdownDescription: "Synchronize cursor position between related panels in the dashboard.",
+						Optional:            true,
+					},
+				},
+			},
+		},
+	}
+}
+
+func getOptionsAttrTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"hide_panel_titles": types.BoolType,
+		"use_margins":       types.BoolType,
+		"sync_colors":       types.BoolType,
+		"sync_tooltips":     types.BoolType,
+		"sync_cursor":       types.BoolType,
+	}
+}
