@@ -115,3 +115,23 @@ func TestAccResourceMLJobStateImport(t *testing.T) {
 		},
 	})
 }
+
+func TestAccResourceMLJobState_timeouts(t *testing.T) {
+	jobID := fmt.Sprintf("test-job-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	indexName := fmt.Sprintf("test-datafeed-index-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("timeouts"),
+				ConfigVariables: config.Variables{
+					"job_id":     config.StringVariable(jobID),
+					"index_name": config.StringVariable(indexName),
+				},
+				ExpectError: regexp.MustCompile("Operation timed out"),
+			},
+		},
+	})
+}

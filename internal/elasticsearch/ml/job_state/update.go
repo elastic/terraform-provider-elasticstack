@@ -7,6 +7,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
@@ -30,6 +31,10 @@ func (r *mlJobStateResource) Update(ctx context.Context, req resource.UpdateRequ
 	}
 
 	diags = r.update(ctx, req.Plan, &resp.State, updateTimeout)
+	if diagutil.ContainsContextDeadlineExceeded(ctx, diags) {
+		diags.AddError("Operation timed out", fmt.Sprintf("The operation to update the ML job state timed out after %s. You may need to allocate more free memory within ML nodes by either closing other jobs, or increasing the overall ML memory. You may retry the operation.", updateTimeout))
+	}
+
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -72,7 +77,7 @@ func (r *mlJobStateResource) update(ctx context.Context, plan tfsdk.Plan, state 
 	}
 
 	// Perform state transition if needed
-	fwDiags = r.performStateTransition(ctx, client, data, *currentState, operationTimeout)
+	fwDiags = r.performStateTransition(ctx, client, data, *currentState)
 	diags.Append(fwDiags...)
 	if diags.HasError() {
 		return diags
@@ -97,7 +102,7 @@ func (r *mlJobStateResource) update(ctx context.Context, plan tfsdk.Plan, state 
 }
 
 // performStateTransition handles the ML job state transition process
-func (r *mlJobStateResource) performStateTransition(ctx context.Context, client *clients.ApiClient, data MLJobStateData, currentState string, operationTimeout time.Duration) diag.Diagnostics {
+func (r *mlJobStateResource) performStateTransition(ctx context.Context, client *clients.ApiClient, data MLJobStateData, currentState string) diag.Diagnostics {
 	jobId := data.JobId.ValueString()
 	desiredState := data.State.ValueString()
 	force := data.Force.ValueBool()

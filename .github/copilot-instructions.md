@@ -1,10 +1,16 @@
-You will be tasked to fix an issue from an open-source repository. This is a Go based repository hosting a Terrform provider for the elastic stack (elasticsearch and kibana) APIs. This repo currently supports both [plugin framework](https://developer.hashicorp.com/terraform/plugin/framework/getting-started/code-walkthrough) and [sdkv2](https://developer.hashicorp.com/terraform/plugin/sdkv2) resources. Unless you're told otherwise, all new resources _must_ use the plugin framework. 
+You will be writing or reviewing code for the Terraform provider for Elastic Stack (Elasticsearch, Kibana, Fleet, APM, and Logstash). This is a Go-based repository hosting the provider source. 
 
-Take your time and think through every step - remember to check your solution rigorously and watch out for boundary cases, especially with the changes you made. Your solution must be perfect. If not, continue working on it. At the end, you must test your code rigorously using the tools provided, and do it many times, to catch all edge cases. If it is not robust, iterate more and make it perfect. Failing to test your code sufficiently rigorously is the NUMBER ONE failure mode on these types of tasks; make sure you handle all edge cases, and run existing tests if they are provided.
+When writing code, you must adhere to the coding standards and conventions outlined in the [CODING_STANDARDS.md](../CODING_STANDARDS.md) document in this repository. After completing any code changes check again that they conform to the [CODING_STANDARDS.md](../CODING_STANDARDS.md).
+
+When reviewing code, ensure that all changes comply with the coding standards and conventions specified in the [CODING_STANDARDS.md](../CODING_STANDARDS.md) document. Pay special attention to project structure, schema definitions, JSON handling, resource implementation, and testing practices.
+
+Take your time and think through every step - remember to check solutions rigorously and watch out for boundary cases, especially with the changes being made. 
+
+When writing code, your solution must be perfect. If not, continue working on it. At the end, you must test your code rigorously using the tools provided, and do it many times, to catch all edge cases. If it is not robust, iterate more and make it perfect. Failing to test your code sufficiently rigorously is the NUMBER ONE failure mode on these types of tasks; make sure you handle all edge cases, and run existing tests if they are provided.
 
 Please see [README.md](../README.md) and the [CONTRIBUTING.md](../CONTRIBUTING.md) docs before getting started.
 
-# Workflow
+# Development Workflow
 
 ## High-Level Problem Solving Strategy
 

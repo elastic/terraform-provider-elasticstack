@@ -13,6 +13,7 @@ services:
       xpack.security.http.ssl.enabled: false
       xpack.license.self_generated.type: trial
       xpack.ml.use_auto_machine_memory_percent: true
+      xpack.ml.max_model_memory_limit: 2g
       xpack.security.authc.api_key.enabled: true
       xpack.security.authc.token.enabled: true
       xpack.watcher.enabled: true
@@ -98,7 +99,7 @@ services:
     depends_on:
       fleet_settings:
         condition: service_completed_successfully
-    image: elastic/elastic-agent:${STACK_VERSION}
+    image: docker.elastic.co/elastic-agent/elastic-agent:${STACK_VERSION}
     container_name: ${FLEET_CONTAINER_NAME}
     restart: unless-stopped
     volumes:
@@ -133,7 +134,8 @@ services:
       ELASTICSEARCH_USERNAME: elastic
       ELASTICSEARCH_PASSWORD: ${ELASTICSEARCH_PASSWORD}
       TF_LOG: ${TF_LOG:-info}
-    command: make testacc TESTARGS=${TESTARGS:-}
+      TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL: "true"
+    command: make testacc TESTARGS='${TESTARGS:-}'
 
   token-acceptance-tests:
     profiles: ["token-acceptance-tests"]

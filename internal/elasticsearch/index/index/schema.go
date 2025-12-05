@@ -34,9 +34,66 @@ func getSchema() schema.Schema {
 		Description: "Creates Elasticsearch indices. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-index.html",
 		Blocks: map[string]schema.Block{
 			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock("elasticsearch_connection", false),
-			"alias": schema.SetNestedBlock{
-				Description: "Aliases for the index.",
+			"settings": schema.ListNestedBlock{
+				Description: `DEPRECATED: Please use dedicated setting field. Configuration options for the index. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#index-modules-settings.
+**NOTE:** Static index settings (see: https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#_static_index_settings) can be only set on the index creation and later cannot be removed or updated - _apply_ will return error`,
+				DeprecationMessage: "Using settings makes it easier to misconfigure.  Use dedicated field for the each setting instead.",
+				Validators: []validator.List{
+					listvalidator.SizeBetween(1, 1),
+				},
 				NestedObject: schema.NestedBlockObject{
+					Blocks: map[string]schema.Block{
+						"setting": schema.SetNestedBlock{
+							Description: "Defines the setting for the index.",
+							Validators: []validator.Set{
+								setvalidator.SizeAtLeast(1),
+							},
+							NestedObject: schema.NestedBlockObject{
+								Attributes: map[string]schema.Attribute{
+									"name": schema.StringAttribute{
+										Description: "The name of the setting to set and track.",
+										Required:    true,
+									},
+									"value": schema.StringAttribute{
+										Description: "The value of the setting to set and track.",
+										Required:    true,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		Attributes: map[string]schema.Attribute{
+			"id": schema.StringAttribute{
+				Description: "Internal identifier of the resource",
+				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"name": schema.StringAttribute{
+				Description: "Name of the index you wish to create.",
+				Required:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
+				Validators: []validator.String{
+					stringvalidator.LengthBetween(1, 255),
+					stringvalidator.NoneOf(".", ".."),
+					stringvalidator.RegexMatches(regexp.MustCompile(`^[^-_+]`), "cannot start with -, _, +"),
+					stringvalidator.RegexMatches(regexp.MustCompile(`^[a-z0-9!$%&'()+.;=@[\]^{}~_-]+$`), "must contain lower case alphanumeric characters and selected punctuation, see: https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-index.html#indices-create-api-path-params"),
+				},
+			},
+			"alias": schema.SetNestedAttribute{
+				Description: "Aliases for the index.",
+				Optional:    true,
+				Computed:    true,
+				PlanModifiers: []planmodifier.Set{
+					setplanmodifier.UseStateForUnknown(),
+				},
+				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"name": schema.StringAttribute{
 							Description: "Index alias name.",
@@ -93,58 +150,6 @@ func getSchema() schema.Schema {
 							},
 						},
 					},
-				},
-			},
-			"settings": schema.ListNestedBlock{
-				Description: `DEPRECATED: Please use dedicated setting field. Configuration options for the index. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#index-modules-settings.
-**NOTE:** Static index settings (see: https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#_static_index_settings) can be only set on the index creation and later cannot be removed or updated - _apply_ will return error`,
-				DeprecationMessage: "Using settings makes it easier to misconfigure.  Use dedicated field for the each setting instead.",
-				Validators: []validator.List{
-					listvalidator.SizeBetween(1, 1),
-				},
-				NestedObject: schema.NestedBlockObject{
-					Blocks: map[string]schema.Block{
-						"setting": schema.SetNestedBlock{
-							Description: "Defines the setting for the index.",
-							Validators: []validator.Set{
-								setvalidator.SizeAtLeast(1),
-							},
-							NestedObject: schema.NestedBlockObject{
-								Attributes: map[string]schema.Attribute{
-									"name": schema.StringAttribute{
-										Description: "The name of the setting to set and track.",
-										Required:    true,
-									},
-									"value": schema.StringAttribute{
-										Description: "The value of the setting to set and track.",
-										Required:    true,
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				Description: "Internal identifier of the resource",
-				Computed:    true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
-			},
-			"name": schema.StringAttribute{
-				Description: "Name of the index you wish to create.",
-				Required:    true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
-				Validators: []validator.String{
-					stringvalidator.LengthBetween(1, 255),
-					stringvalidator.NoneOf(".", ".."),
-					stringvalidator.RegexMatches(regexp.MustCompile(`^[^-_+]`), "cannot start with -, _, +"),
-					stringvalidator.RegexMatches(regexp.MustCompile(`^[a-z0-9!$%&'()+.;=@[\]^{}~_-]+$`), "must contain lower case alphanumeric characters and selected punctuation, see: https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-index.html#indices-create-api-path-params"),
 				},
 			},
 			// Static settings that can only be set on creation
@@ -221,6 +226,10 @@ func getSchema() schema.Schema {
 				},
 			},
 			// Dynamic settings that can be changed at runtime
+			"mapping_total_fields_limit": schema.Int64Attribute{
+				Description: "The maximum number of fields in an index. Field type parameters count towards this limit. The default value is 1000.",
+				Optional:    true,
+			},
 			"number_of_replicas": schema.Int64Attribute{
 				Description: "Number of shard replicas.",
 				Optional:    true,
@@ -511,7 +520,7 @@ func getSchema() schema.Schema {
 }
 
 func aliasElementType() attr.Type {
-	return getSchema().Blocks["alias"].Type().(attr.TypeWithElementType).ElementType()
+	return getSchema().Attributes["alias"].GetType().(attr.TypeWithElementType).ElementType()
 }
 
 func settingsElementType() attr.Type {
