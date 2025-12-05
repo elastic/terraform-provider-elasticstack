@@ -73,6 +73,7 @@ func GetSchema() schema.Schema {
 				MarkdownDescription: "Write-only password attribute for use with ephemeral resources. Passwords must be at least 6 characters long. This attribute is designed for use with ephemeral resources like `vault_kv_secret_v2` to prevent secrets from being stored in the Terraform state. Must be used with `password_wo_version`.",
 				Optional:            true,
 				Sensitive:           true,
+				WriteOnly:           true,
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(6, 128),
 					stringvalidator.ConflictsWith(path.MatchRoot("password"), path.MatchRoot("password_hash")),
