@@ -18,11 +18,6 @@ provider "elasticstack" {
   elasticsearch {}
 }
 
-ephemeral "random_password" "db_password" {
-  length           = 16
-  override_special = "!#$%&*()-_=+[]{}<>:?"
-}
-
 resource "elasticstack_elasticsearch_security_user" "test" {
   username            = var.username
   roles               = ["kibana_user"]
