@@ -117,9 +117,9 @@ func (model *integrationPolicyModel) populateFromAPI(ctx context.Context, data *
 
 func (model *integrationPolicyModel) populateInputsFromAPI(ctx context.Context, inputs map[string]kbapi.PackagePolicyInput, diags *diag.Diagnostics) {
 	// Handle input population based on context:
-	// 1. If model.Input is unknown: we're importing or reading fresh state → populate from API
-	// 2. If model.Input is known and null/empty: user explicitly didn't configure inputs → don't populate (avoid inconsistent state)
-	// 3. If model.Input is known and has values: user configured inputs → populate from API
+	// 1. If model.Inputs is unknown: we're importing or reading fresh state → populate from API
+	// 2. If model.Inputs is known and null/empty: user explicitly didn't configure inputs → don't populate (avoid inconsistent state)
+	// 3. If model.Inputs is known and has values: user configured inputs → populate from API
 
 	isInputKnown := utils.IsKnown(model.Inputs)
 	isInputNullOrEmpty := model.Inputs.IsNull() || (isInputKnown && len(model.Inputs.Elements()) == 0)
