@@ -56,10 +56,9 @@ func GetSchema(version int64) schema.Schema {
 			"indices": schema.SetNestedBlock{
 				MarkdownDescription: "A list of indices permissions entries.",
 				NestedObject: schema.NestedBlockObject{
-					Attributes: map[string]schema.Attribute{
-						"field_security": schema.SingleNestedAttribute{
+					Blocks: map[string]schema.Block{
+						"field_security": schema.SingleNestedBlock{
 							MarkdownDescription: "The document fields that the owners of the role have read access to.",
-							Optional:            true,
 							Attributes: map[string]schema.Attribute{
 								"grant": schema.SetAttribute{
 									MarkdownDescription: "List of the fields to grant the access to.",
@@ -69,10 +68,16 @@ func GetSchema(version int64) schema.Schema {
 								"except": schema.SetAttribute{
 									MarkdownDescription: "List of the fields to which the grants will not be applied.",
 									Optional:            true,
+									Computed:            true,
 									ElementType:         types.StringType,
+									PlanModifiers: []planmodifier.Set{
+										setplanmodifier.UseStateForUnknown(),
+									},
 								},
 							},
 						},
+					},
+					Attributes: map[string]schema.Attribute{
 						"names": schema.SetAttribute{
 							MarkdownDescription: "A list of indices (or index name patterns) to which the permissions in this entry apply.",
 							Required:            true,
@@ -200,7 +205,7 @@ func getApplicationAttrTypes() map[string]attr.Type {
 }
 
 func getFieldSecurityAttrTypes() map[string]attr.Type {
-	attrs := GetSchema(CurrentSchemaVersion).Blocks["indices"].(schema.SetNestedBlock).NestedObject.Attributes["field_security"].(schema.SingleNestedAttribute).Attributes
+	attrs := GetSchema(CurrentSchemaVersion).Blocks["indices"].(schema.SetNestedBlock).NestedObject.Blocks["field_security"].(schema.SingleNestedBlock).Attributes
 	result := make(map[string]attr.Type)
 	for name, attr := range attrs {
 		result[name] = attr.GetType()
@@ -211,8 +216,21 @@ func getFieldSecurityAttrTypes() map[string]attr.Type {
 func getIndexPermsAttrTypes() map[string]attr.Type {
 	nestedObj := GetSchema(CurrentSchemaVersion).Blocks["indices"].(schema.SetNestedBlock).NestedObject
 	result := make(map[string]attr.Type)
+	// Add attributes
 	for name, attr := range nestedObj.Attributes {
 		result[name] = attr.GetType()
+	}
+	// Add blocks as attributes (field_security is a block in indices)
+	for name, block := range nestedObj.Blocks {
+		switch b := block.(type) {
+		case schema.SingleNestedBlock:
+			// For SingleNestedBlock, the type is ObjectType
+			blockAttrs := make(map[string]attr.Type)
+			for attrName, attr := range b.Attributes {
+				blockAttrs[attrName] = attr.GetType()
+			}
+			result[name] = types.ObjectType{AttrTypes: blockAttrs}
+		}
 	}
 	return result
 }
