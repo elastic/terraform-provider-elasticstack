@@ -65,7 +65,7 @@ jobs:
           xpack.security.authc.api_key.enabled: true
           xpack.security.authc.token.enabled: true
           xpack.ml.use_auto_machine_memory_percent: true
-          xpack.ml.max_model_memory_limit: 2g
+          xpack.ml.max_model_memory_limit: 500mb
           xpack.watcher.enabled: true
           xpack.license.self_generated.type: trial
           repositories.url.allowed_urls: https://example.com/*

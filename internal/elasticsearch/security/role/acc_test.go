@@ -136,7 +136,7 @@ func TestAccResourceSecurityRoleFromSDK(t *testing.T) {
 				ExternalProviders: map[string]resource.ExternalProvider{
 					"elasticstack": {
 						Source:            "elastic/elasticstack",
-						VersionConstraint: "0.11.17",
+						VersionConstraint: "0.12.2",
 					},
 				},
 				Config: sdkCreateTestConfig,
