@@ -80,9 +80,9 @@ resource "elasticstack_kibana_action_connector" "webhook" {
   name              = "webhook"
   connector_type_id = ".webhook"
   config = jsonencode({
-    url      = "<your-webhookUrl>",
-    authType = "webhook-authentication-basic",
-    hasAuth  = true,
+    url      = "<your-webhookUrl>"
+    authType = "webhook-authentication-basic"
+    hasAuth  = true
     method   = "post"
   })
   secrets = jsonencode({
