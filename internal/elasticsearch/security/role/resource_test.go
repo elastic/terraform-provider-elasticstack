@@ -182,32 +182,6 @@ func TestV0ToV1(t *testing.T) {
 			},
 		},
 		{
-			name: "indices_not_array",
-			input: map[string]interface{}{
-				"name":        "test-role",
-				"description": "Test role",
-				"indices":     "not-an-array",
-			},
-			expected: map[string]interface{}{
-				"name":        "test-role",
-				"description": "Test role",
-				"indices":     "not-an-array", // Should be preserved as-is if not an array
-			},
-		},
-		{
-			name: "remote_indices_not_array",
-			input: map[string]interface{}{
-				"name":           "test-role",
-				"description":    "Test role",
-				"remote_indices": "not-an-array",
-			},
-			expected: map[string]interface{}{
-				"name":           "test-role",
-				"description":    "Test role",
-				"remote_indices": "not-an-array", // Should be preserved as-is if not an array
-			},
-		},
-		{
 			name: "index_item_not_map",
 			input: map[string]interface{}{
 				"name":        "test-role",
@@ -262,7 +236,7 @@ func TestV0ToV1(t *testing.T) {
 			},
 		},
 		{
-			name: "nil_global_and_metadata_preserved",
+			name: "nil_global_and_metadata_removed",
 			input: map[string]interface{}{
 				"name":        "test-role",
 				"description": "Test role",
@@ -273,8 +247,6 @@ func TestV0ToV1(t *testing.T) {
 			expected: map[string]interface{}{
 				"name":        "test-role",
 				"description": "Test role",
-				"global":      nil,
-				"metadata":    nil,
 				"cluster":     []interface{}{"all"},
 			},
 		},

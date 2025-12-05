@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 type RoleData struct {
@@ -33,20 +34,21 @@ type ApplicationData struct {
 	Resources   types.Set    `tfsdk:"resources"`
 }
 
+type CommonIndexPermsData struct {
+	FieldSecurity types.Object         `tfsdk:"field_security"`
+	Names         types.Set            `tfsdk:"names"`
+	Privileges    types.Set            `tfsdk:"privileges"`
+	Query         jsontypes.Normalized `tfsdk:"query"`
+}
+
 type IndexPermsData struct {
-	FieldSecurity          types.List           `tfsdk:"field_security"`
-	Names                  types.Set            `tfsdk:"names"`
-	Privileges             types.Set            `tfsdk:"privileges"`
-	Query                  jsontypes.Normalized `tfsdk:"query"`
-	AllowRestrictedIndices types.Bool           `tfsdk:"allow_restricted_indices"`
+	CommonIndexPermsData
+	AllowRestrictedIndices types.Bool `tfsdk:"allow_restricted_indices"`
 }
 
 type RemoteIndexPermsData struct {
-	Clusters      types.Set            `tfsdk:"clusters"`
-	FieldSecurity types.List           `tfsdk:"field_security"`
-	Query         jsontypes.Normalized `tfsdk:"query"`
-	Names         types.Set            `tfsdk:"names"`
-	Privileges    types.Set            `tfsdk:"privileges"`
+	CommonIndexPermsData
+	Clusters types.Set `tfsdk:"clusters"`
 }
 
 type FieldSecurityData struct {
@@ -123,62 +125,14 @@ func (data *RoleData) toAPIModel(ctx context.Context) (*models.Role, diag.Diagno
 
 		indices := make([]models.IndexPerms, len(indicesList))
 		for i, idx := range indicesList {
-			var names, privileges []string
-			diags.Append(idx.Names.ElementsAs(ctx, &names, false)...)
-			diags.Append(idx.Privileges.ElementsAs(ctx, &privileges, false)...)
+			newIndex, diags := indexPermissionsToAPIModel(ctx, idx.CommonIndexPermsData)
 			if diags.HasError() {
 				return nil, diags
 			}
 
-			newIndex := models.IndexPerms{
-				Names:      names,
-				Privileges: privileges,
-			}
-
-			if utils.IsKnown(idx.Query) {
-				query := idx.Query.ValueString()
-				newIndex.Query = &query
-			}
-
-			// Field Security
-			if utils.IsKnown(idx.FieldSecurity) {
-				var fieldSecList []FieldSecurityData
-				diags.Append(idx.FieldSecurity.ElementsAs(ctx, &fieldSecList, false)...)
-				if diags.HasError() {
-					return nil, diags
-				}
-
-				if len(fieldSecList) > 0 {
-					fieldSec := fieldSecList[0]
-					fieldSecurity := models.FieldSecurity{}
-
-					if utils.IsKnown(fieldSec.Grant) {
-						var grants []string
-						diags.Append(fieldSec.Grant.ElementsAs(ctx, &grants, false)...)
-						if diags.HasError() {
-							return nil, diags
-						}
-						fieldSecurity.Grant = grants
-					}
-
-					if utils.IsKnown(fieldSec.Except) {
-						var excepts []string
-						diags.Append(fieldSec.Except.ElementsAs(ctx, &excepts, false)...)
-						if diags.HasError() {
-							return nil, diags
-						}
-						fieldSecurity.Except = excepts
-					}
-
-					newIndex.FieldSecurity = &fieldSecurity
-				}
-			}
-
 			if utils.IsKnown(idx.AllowRestrictedIndices) {
-				allowRestrictedIndices := idx.AllowRestrictedIndices.ValueBool()
-				newIndex.AllowRestrictedIndices = &allowRestrictedIndices
+				newIndex.AllowRestrictedIndices = idx.AllowRestrictedIndices.ValueBoolPointer()
 			}
-
 			indices[i] = newIndex
 		}
 		role.Indices = indices
@@ -194,57 +148,19 @@ func (data *RoleData) toAPIModel(ctx context.Context) (*models.Role, diag.Diagno
 
 		remoteIndices := make([]models.RemoteIndexPerms, len(remoteIndicesList))
 		for i, remoteIdx := range remoteIndicesList {
-			var names, clusters, privileges []string
-			diags.Append(remoteIdx.Names.ElementsAs(ctx, &names, false)...)
+			idx, diags := indexPermissionsToAPIModel(ctx, remoteIdx.CommonIndexPermsData)
+			if diags.HasError() {
+				return nil, diags
+			}
+			var clusters []string
 			diags.Append(remoteIdx.Clusters.ElementsAs(ctx, &clusters, false)...)
-			diags.Append(remoteIdx.Privileges.ElementsAs(ctx, &privileges, false)...)
 			if diags.HasError() {
 				return nil, diags
 			}
 
 			newRemoteIndex := models.RemoteIndexPerms{
-				Names:      names,
+				IndexPerms: idx,
 				Clusters:   clusters,
-				Privileges: privileges,
-			}
-
-			if utils.IsKnown(remoteIdx.Query) {
-				query := remoteIdx.Query.ValueString()
-				newRemoteIndex.Query = &query
-			}
-
-			// Field Security
-			if utils.IsKnown(remoteIdx.FieldSecurity) {
-				var fieldSecList []FieldSecurityData
-				diags.Append(remoteIdx.FieldSecurity.ElementsAs(ctx, &fieldSecList, false)...)
-				if diags.HasError() {
-					return nil, diags
-				}
-
-				if len(fieldSecList) > 0 {
-					fieldSec := fieldSecList[0]
-					remoteFieldSecurity := models.FieldSecurity{}
-
-					if utils.IsKnown(fieldSec.Grant) {
-						var grants []string
-						diags.Append(fieldSec.Grant.ElementsAs(ctx, &grants, false)...)
-						if diags.HasError() {
-							return nil, diags
-						}
-						remoteFieldSecurity.Grant = grants
-					}
-
-					if utils.IsKnown(fieldSec.Except) {
-						var excepts []string
-						diags.Append(fieldSec.Except.ElementsAs(ctx, &excepts, false)...)
-						if diags.HasError() {
-							return nil, diags
-						}
-						remoteFieldSecurity.Except = excepts
-					}
-
-					newRemoteIndex.FieldSecurity = &remoteFieldSecurity
-				}
 			}
 
 			remoteIndices[i] = newRemoteIndex
@@ -273,6 +189,63 @@ func (data *RoleData) toAPIModel(ctx context.Context) (*models.Role, diag.Diagno
 	}
 
 	return &role, diags
+}
+
+func indexPermissionsToAPIModel(ctx context.Context, data CommonIndexPermsData) (models.IndexPerms, diag.Diagnostics) {
+	var names, privileges []string
+	diags := data.Names.ElementsAs(ctx, &names, false)
+	diags.Append(data.Privileges.ElementsAs(ctx, &privileges, false)...)
+	if diags.HasError() {
+		return models.IndexPerms{}, diags
+	}
+
+	newIndex := models.IndexPerms{
+		Names:      names,
+		Privileges: privileges,
+	}
+
+	if utils.IsKnown(data.Query) {
+		query := data.Query.ValueString()
+		newIndex.Query = &query
+	}
+
+	// Field Security
+	if utils.IsKnown(data.FieldSecurity) {
+		newIndex.FieldSecurity, diags = fieldSecurityToAPIModel(ctx, data.FieldSecurity)
+		if diags.HasError() {
+			return models.IndexPerms{}, diags
+		}
+	}
+
+	return newIndex, diags
+}
+
+func fieldSecurityToAPIModel(ctx context.Context, data types.Object) (*models.FieldSecurity, diag.Diagnostics) {
+	var fieldSec FieldSecurityData
+	diags := data.As(ctx, &fieldSec, basetypes.ObjectAsOptions{})
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	fieldSecurity := models.FieldSecurity{}
+	if utils.IsKnown(fieldSec.Grant) {
+		var grants []string
+		diags.Append(fieldSec.Grant.ElementsAs(ctx, &grants, false)...)
+		if diags.HasError() {
+			return nil, diags
+		}
+		fieldSecurity.Grant = grants
+	}
+
+	if utils.IsKnown(fieldSec.Except) {
+		var excepts []string
+		diags.Append(fieldSec.Except.ElementsAs(ctx, &excepts, false)...)
+		if diags.HasError() {
+			return nil, diags
+		}
+		fieldSecurity.Except = excepts
+	}
+	return &fieldSecurity, diags
 }
 
 // fromAPIModel converts the API model to the Terraform model
@@ -377,7 +350,7 @@ func (data *RoleData) fromAPIModel(ctx context.Context, role *models.Role) diag.
 				allowRestrictedVal = types.BoolNull()
 			}
 
-			var fieldSecList types.List
+			var fieldSecObj types.Object
 			if index.FieldSecurity != nil {
 				grantSet, d := types.SetValueFrom(ctx, types.StringType, index.FieldSecurity.Grant)
 				diags.Append(d...)
@@ -391,7 +364,7 @@ func (data *RoleData) fromAPIModel(ctx context.Context, role *models.Role) diag.
 					return diags
 				}
 
-				fieldSecObj, d := types.ObjectValue(getFieldSecurityAttrTypes(), map[string]attr.Value{
+				fieldSecObj, d = types.ObjectValue(getFieldSecurityAttrTypes(), map[string]attr.Value{
 					"grant":  grantSet,
 					"except": exceptSet,
 				})
@@ -399,18 +372,12 @@ func (data *RoleData) fromAPIModel(ctx context.Context, role *models.Role) diag.
 				if diags.HasError() {
 					return diags
 				}
-
-				fieldSecList, d = types.ListValue(types.ObjectType{AttrTypes: getFieldSecurityAttrTypes()}, []attr.Value{fieldSecObj})
-				diags.Append(d...)
-				if diags.HasError() {
-					return diags
-				}
 			} else {
-				fieldSecList = types.ListNull(types.ObjectType{AttrTypes: getFieldSecurityAttrTypes()})
+				fieldSecObj = types.ObjectNull(getFieldSecurityAttrTypes())
 			}
 
 			indexObj, d := types.ObjectValue(getIndexPermsAttrTypes(), map[string]attr.Value{
-				"field_security":           fieldSecList,
+				"field_security":           fieldSecObj,
 				"names":                    namesSet,
 				"privileges":               privSet,
 				"query":                    queryVal,
@@ -463,7 +430,7 @@ func (data *RoleData) fromAPIModel(ctx context.Context, role *models.Role) diag.
 				queryVal = jsontypes.NewNormalizedNull()
 			}
 
-			var fieldSecList types.List
+			var fieldSecObj types.Object
 			if remoteIndex.FieldSecurity != nil {
 				grantSet, d := types.SetValueFrom(ctx, types.StringType, utils.NonNilSlice(remoteIndex.FieldSecurity.Grant))
 				diags.Append(d...)
@@ -477,7 +444,7 @@ func (data *RoleData) fromAPIModel(ctx context.Context, role *models.Role) diag.
 					return diags
 				}
 
-				fieldSecObj, d := types.ObjectValue(getRemoteFieldSecurityAttrTypes(), map[string]attr.Value{
+				fieldSecObj, d = types.ObjectValue(getRemoteFieldSecurityAttrTypes(), map[string]attr.Value{
 					"grant":  grantSet,
 					"except": exceptSet,
 				})
@@ -485,19 +452,13 @@ func (data *RoleData) fromAPIModel(ctx context.Context, role *models.Role) diag.
 				if diags.HasError() {
 					return diags
 				}
-
-				fieldSecList, d = types.ListValue(types.ObjectType{AttrTypes: getRemoteFieldSecurityAttrTypes()}, []attr.Value{fieldSecObj})
-				diags.Append(d...)
-				if diags.HasError() {
-					return diags
-				}
 			} else {
-				fieldSecList = types.ListNull(types.ObjectType{AttrTypes: getRemoteFieldSecurityAttrTypes()})
+				fieldSecObj = types.ObjectNull(getRemoteFieldSecurityAttrTypes())
 			}
 
 			remoteIndexObj, d := types.ObjectValue(getRemoteIndexPermsAttrTypes(), map[string]attr.Value{
 				"clusters":       clustersSet,
-				"field_security": fieldSecList,
+				"field_security": fieldSecObj,
 				"query":          queryVal,
 				"names":          namesSet,
 				"privileges":     privSet,

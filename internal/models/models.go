@@ -173,12 +173,8 @@ type IndexPerms struct {
 }
 
 type RemoteIndexPerms struct {
-	FieldSecurity          *FieldSecurity `json:"field_security,omitempty"`
-	Names                  []string       `json:"names"`
-	Clusters               []string       `json:"clusters"`
-	Privileges             []string       `json:"privileges"`
-	Query                  *string        `json:"query,omitempty"`
-	AllowRestrictedIndices *bool          `json:"allow_restricted_indices,omitempty"`
+	IndexPerms
+	Clusters []string `json:"clusters"`
 }
 
 type FieldSecurity struct {

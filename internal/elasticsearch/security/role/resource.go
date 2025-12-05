@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
@@ -42,7 +41,6 @@ func (r *roleResource) ImportState(ctx context.Context, req resource.ImportState
 func (r *roleResource) UpgradeState(_ context.Context) map[int64]resource.StateUpgrader {
 	return map[int64]resource.StateUpgrader{
 		0: {
-			PriorSchema:   utils.Pointer(GetSchema(0)),
 			StateUpgrader: v0ToV1,
 		},
 	}
@@ -56,44 +54,22 @@ func v0ToV1(ctx context.Context, req resource.UpgradeStateRequest, resp *resourc
 		return
 	}
 
-	if priorState["global"] == "" {
+	if global := priorState["global"]; global == nil || global == "" {
 		delete(priorState, "global")
 	}
 
-	if priorState["metadata"] == "" {
+	if metadata := priorState["metadata"]; metadata == nil || metadata == "" {
 		delete(priorState, "metadata")
 	}
 
 	indices, ok := priorState["indices"]
 	if ok {
-		indicesSlice, ok := indices.([]interface{})
-		if ok {
-			for i, index := range indicesSlice {
-				indexMap, ok := index.(map[string]interface{})
-				if ok {
-					if indexMap["query"] == "" {
-						delete(indexMap, "query")
-					}
-					indicesSlice[i] = indexMap
-				}
-			}
-		}
+		priorState["indices"] = convertV0Indices(indices)
 	}
 
 	remoteIndices, ok := priorState["remote_indices"]
 	if ok {
-		remoteIndicesSlice, ok := remoteIndices.([]interface{})
-		if ok {
-			for i, remoteIndex := range remoteIndicesSlice {
-				remoteIndexMap, ok := remoteIndex.(map[string]interface{})
-				if ok {
-					if remoteIndexMap["query"] == "" {
-						delete(remoteIndexMap, "query")
-					}
-					remoteIndicesSlice[i] = remoteIndexMap
-				}
-			}
-		}
+		priorState["remote_indices"] = convertV0Indices(remoteIndices)
 	}
 
 	stateJSON, err := json.Marshal(priorState)
@@ -104,4 +80,29 @@ func v0ToV1(ctx context.Context, req resource.UpgradeStateRequest, resp *resourc
 	resp.DynamicValue = &tfprotov6.DynamicValue{
 		JSON: stateJSON,
 	}
+}
+
+func convertV0Indices(indices interface{}) interface{} {
+	indicesSlice, ok := indices.([]interface{})
+	if ok {
+		for i, index := range indicesSlice {
+			indexMap, ok := index.(map[string]interface{})
+			if ok {
+				if indexMap["query"] == "" {
+					delete(indexMap, "query")
+				}
+				// Convert field_security from a list to an object
+				if fs, ok := indexMap["field_security"]; ok {
+					fsList, ok := fs.([]interface{})
+					if ok && len(fsList) > 0 {
+						indexMap["field_security"] = fsList[0]
+					} else {
+						delete(indexMap, "field_security")
+					}
+				}
+				indicesSlice[i] = indexMap
+			}
+		}
+	}
+	return indicesSlice
 }
