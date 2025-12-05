@@ -88,7 +88,6 @@ func New(version string) *schema.Provider {
 			"elasticstack_elasticsearch_index_template":      index.ResourceTemplate(),
 			"elasticstack_elasticsearch_ingest_pipeline":     ingest.ResourceIngestPipeline(),
 			"elasticstack_elasticsearch_logstash_pipeline":   logstash.ResourceLogstashPipeline(),
-			"elasticstack_elasticsearch_security_role":       security.ResourceRole(),
 			"elasticstack_elasticsearch_snapshot_lifecycle":  cluster.ResourceSlm(),
 			"elasticstack_elasticsearch_snapshot_repository": cluster.ResourceSnapshotRepository(),
 			"elasticstack_elasticsearch_transform":           transform.ResourceTransform(),
