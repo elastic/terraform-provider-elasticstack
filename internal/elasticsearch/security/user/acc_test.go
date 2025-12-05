@@ -1,7 +1,8 @@
-package security_test
+package user_test
 
 import (
 	"context"
+	_ "embed"
 	"fmt"
 	"io"
 	"strings"
@@ -10,6 +11,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest/checks"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -20,12 +22,15 @@ func TestAccResourceSecurityUser(t *testing.T) {
 	username := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceSecurityUserDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceSecurityUserDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceSecurityUserCreate(username),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"username": config.StringVariable(username),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_user.test", "username", username),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_user.test", "roles.*", "kibana_user"),
@@ -33,8 +38,13 @@ func TestAccResourceSecurityUser(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccResourceSecurityUpdate(username, "kibana_user"),
-				Check:  resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_user.test", "email", "test@example.com"),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"username": config.StringVariable(username),
+					"role":     config.StringVariable("kibana_user"),
+				},
+				Check: resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_user.test", "email", "test@example.com"),
 			},
 		},
 	})
@@ -46,12 +56,15 @@ func TestAccImportedUserDoesNotResetPassword(t *testing.T) {
 	userUpdatedPassword := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceSecurityUserDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceSecurityUserDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceSecurityUserUpdateNoPassword(username),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("no_password"),
+				ConfigVariables: config.Variables{
+					"username": config.StringVariable(username),
+				},
 				SkipFunc: func() (bool, error) {
 					client, err := clients.NewAcceptanceTestingClient()
 					if err != nil {
@@ -106,7 +119,11 @@ func TestAccImportedUserDoesNotResetPassword(t *testing.T) {
 				Check: checks.CheckUserCanAuthenticate(username, initialPassword),
 			},
 			{
-				Config: testAccResourceSecurityUserUpdateNoPassword(username),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("no_password"),
+				ConfigVariables: config.Variables{
+					"username": config.StringVariable(username),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_user.test", "username", username),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_user.test", "roles.*", "kibana_admin"),
@@ -116,7 +133,12 @@ func TestAccImportedUserDoesNotResetPassword(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccResourceSecurityUpdate(username, "kibana_admin"),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"username": config.StringVariable(username),
+					"role":     config.StringVariable("kibana_admin"),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_user.test", "email", "test@example.com"),
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_user.test", "password"),
@@ -148,7 +170,12 @@ func TestAccImportedUserDoesNotResetPassword(t *testing.T) {
 					}
 					return false, err
 				},
-				Config: testAccResourceSecurityUpdate(username, "kibana_user"),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"username": config.StringVariable(username),
+					"role":     config.StringVariable("kibana_user"),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_user.test", "email", "test@example.com"),
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_user.test", "password"),
@@ -160,49 +187,88 @@ func TestAccImportedUserDoesNotResetPassword(t *testing.T) {
 	})
 }
 
-func testAccResourceSecurityUserCreate(username string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
+//go:embed testdata/TestAccResourceSecurityUserFromSDK/create/user.tf
+var sdkCreateConfig string
+
+func TestAccResourceSecurityUserFromSDK(t *testing.T) {
+	username := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				// Create the user with the last provider version where the user resource was built on the SDK
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"elasticstack": {
+						Source:            "elastic/elasticstack",
+						VersionConstraint: "0.12.1",
+					},
+				},
+				Config: sdkCreateConfig,
+				ConfigVariables: config.Variables{
+					"username": config.StringVariable(username),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_user.test", "username", username),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_user.test", "roles.*", "kibana_user"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"username": config.StringVariable(username),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_user.test", "username", username),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_user.test", "roles.*", "kibana_user"),
+				),
+			},
+		},
+	})
 }
 
-resource "elasticstack_elasticsearch_security_user" "test" {
-  username  = "%s"
-  roles     = ["kibana_user"]
-  full_name = "Test User"
-  password  = "qwerty123"
-}
-	`, username)
-}
+func TestAccResourceSecurityUserWithPasswordWo(t *testing.T) {
+	username := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	password1 := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	password2 := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
-func testAccResourceSecurityUserUpdateNoPassword(username string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_security_user" "test" {
-  username  = "%s"
-  roles     = ["kibana_admin"]
-  full_name = "Test User"
-}
-	`, username)
-}
-
-func testAccResourceSecurityUpdate(username string, role string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_security_user" "test" {
-  username  = "%s"
-  roles     = ["%s"]
-  full_name = "Test User"
-  email     = "test@example.com"
-  password  = "qwerty123"
-}
-	`, username, role)
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceSecurityUserDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"username":         config.StringVariable(username),
+					"password":         config.StringVariable(password1),
+					"password_version": config.StringVariable("v1"),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_user.test", "username", username),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_user.test", "roles.*", "kibana_user"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_user.test", "password_wo_version", "v1"),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_security_user.test", "password"),
+					checks.CheckUserCanAuthenticate(username, password1),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"username":         config.StringVariable(username),
+					"password":         config.StringVariable(password2),
+					"password_version": config.StringVariable("v2"),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_user.test", "username", username),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_user.test", "password_wo_version", "v2"),
+					checks.CheckUserCanAuthenticate(username, password2),
+				),
+			},
+		},
+	})
 }
 
 func checkResourceSecurityUserDestroy(s *terraform.State) error {
