@@ -35,8 +35,8 @@ func (r *roleResource) update(ctx context.Context, plan tfsdk.Plan, state *tfsdk
 		return diags
 	}
 
-	client, diags := clients.MaybeNewApiClientFromFrameworkResource(ctx, data.ElasticsearchConnection, r.client)
-	diags.Append(diags...)
+	client, clientDiags := clients.MaybeNewApiClientFromFrameworkResource(ctx, data.ElasticsearchConnection, r.client)
+	diags.Append(clientDiags...)
 	if diags.HasError() {
 		return diags
 	}
@@ -65,7 +65,8 @@ func (r *roleResource) update(ctx context.Context, plan tfsdk.Plan, state *tfsdk
 	}
 
 	// Convert to API model
-	role, diags := data.toAPIModel(ctx)
+	role, modelDiags := data.toAPIModel(ctx)
+	diags.Append(modelDiags...)
 	if diags.HasError() {
 		return diags
 	}

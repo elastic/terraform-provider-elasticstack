@@ -36,14 +36,13 @@ func (r *roleResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 
 func (r *roleResource) read(ctx context.Context, data RoleData) (*RoleData, diag.Diagnostics) {
 	compId, diags := clients.CompositeIdFromStrFw(data.Id.ValueString())
-	diags.Append(diags...)
 	if diags.HasError() {
 		return nil, diags
 	}
 	roleId := compId.ResourceId
 
-	client, diags := clients.MaybeNewApiClientFromFrameworkResource(ctx, data.ElasticsearchConnection, r.client)
-	diags.Append(diags...)
+	client, clientDiags := clients.MaybeNewApiClientFromFrameworkResource(ctx, data.ElasticsearchConnection, r.client)
+	diags.Append(clientDiags...)
 	if diags.HasError() {
 		return nil, diags
 	}
