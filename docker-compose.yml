@@ -12,7 +12,8 @@ services:
       xpack.security.enabled: true
       xpack.security.http.ssl.enabled: false
       xpack.license.self_generated.type: trial
-      xpack.ml.use_auto_machine_memory_percent: true
+      xpack.ml.use_auto_machine_memory_percent: false
+      xpack.ml.max_machine_memory_percent: 10
       xpack.ml.max_model_memory_limit: 2g
       xpack.security.authc.api_key.enabled: true
       xpack.security.authc.token.enabled: true
