@@ -139,7 +139,8 @@ func TestAccResourceSecurityRoleFromSDK(t *testing.T) {
 						VersionConstraint: "0.12.2",
 					},
 				},
-				Config: sdkCreateTestConfig,
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(role.MinSupportedRemoteIndicesVersion),
+				Config:   sdkCreateTestConfig,
 				ConfigVariables: config.Variables{
 					"role_name": config.StringVariable(roleName),
 				},
@@ -158,6 +159,7 @@ func TestAccResourceSecurityRoleFromSDK(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"role_name": config.StringVariable(roleName),
 				},
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(role.MinSupportedRemoteIndicesVersion),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "name", roleName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "indices.0.allow_restricted_indices", "true"),
