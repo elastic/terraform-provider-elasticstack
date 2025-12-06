@@ -75,3 +75,18 @@ resource "elasticstack_kibana_action_connector" "genai-azure-connector" {
     apiKey = "<your-azure-api-key>"
   })
 }
+
+resource "elasticstack_kibana_action_connector" "webhook" {
+  name              = "webhook"
+  connector_type_id = ".webhook"
+  config = jsonencode({
+    url      = "<your-webhookUrl>"
+    authType = "webhook-authentication-basic"
+    hasAuth  = true
+    method   = "post"
+  })
+  secrets = jsonencode({
+    user     = "<your-user>"
+    password = "<your-password>"
+  })
+}
