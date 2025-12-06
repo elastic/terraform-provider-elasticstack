@@ -22,12 +22,12 @@ import (
 var integrationPolicyDescription string
 
 func (r *integrationPolicyResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = getSchemaV1()
+	resp.Schema = getSchemaV2()
 }
 
-func getSchemaV1() schema.Schema {
+func getSchemaV2() schema.Schema {
 	return schema.Schema{
-		Version:     1,
+		Version:     2,
 		Description: integrationPolicyDescription,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -109,35 +109,44 @@ func getSchemaV1() schema.Schema {
 				Optional:    true,
 				Computed:    true,
 			},
-		},
-		Blocks: map[string]schema.Block{
-			"input": schema.ListNestedBlock{
-				Description: "Integration inputs.",
-				NestedObject: schema.NestedBlockObject{
+			"inputs": schema.MapNestedAttribute{
+				Description: "Integration inputs mapped by input ID.",
+				Computed:    true,
+				Optional:    true,
+				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
-						"input_id": schema.StringAttribute{
-							Description: "The identifier of the input.",
-							Required:    true,
-						},
 						"enabled": schema.BoolAttribute{
 							Description: "Enable the input.",
 							Computed:    true,
 							Optional:    true,
 							Default:     booldefault.StaticBool(true),
 						},
-						"streams_json": schema.StringAttribute{
-							Description: "Input streams as JSON.",
+						"vars": schema.StringAttribute{
+							Description: "Input-level variables as JSON.",
 							CustomType:  jsontypes.NormalizedType{},
-							Computed:    true,
 							Optional:    true,
 							Sensitive:   true,
 						},
-						"vars_json": schema.StringAttribute{
-							Description: "Input variables as JSON.",
-							CustomType:  jsontypes.NormalizedType{},
+						"streams": schema.MapNestedAttribute{
+							Description: "Input streams mapped by stream ID.",
 							Computed:    true,
 							Optional:    true,
-							Sensitive:   true,
+							NestedObject: schema.NestedAttributeObject{
+								Attributes: map[string]schema.Attribute{
+									"enabled": schema.BoolAttribute{
+										Description: "Enable the stream.",
+										Computed:    true,
+										Optional:    true,
+										Default:     booldefault.StaticBool(true),
+									},
+									"vars": schema.StringAttribute{
+										Description: "Stream-level variables as JSON.",
+										CustomType:  jsontypes.NormalizedType{},
+										Optional:    true,
+										Sensitive:   true,
+									},
+								},
+							},
 						},
 					},
 				},
@@ -146,6 +155,14 @@ func getSchemaV1() schema.Schema {
 	}
 }
 
-func getInputTypeV1() attr.Type {
-	return getSchemaV1().Blocks["input"].Type().(attr.TypeWithElementType).ElementType()
+func getInputsTypes() attr.Type {
+	return getSchemaV2().Attributes["inputs"].GetType().(attr.TypeWithElementType).ElementType()
+}
+
+func getInputsAttributeTypes() map[string]attr.Type {
+	return getInputsTypes().(attr.TypeWithAttributeTypes).AttributeTypes()
+}
+
+func getInputStreamType() attr.Type {
+	return getInputsAttributeTypes()["streams"].(attr.TypeWithElementType).ElementType()
 }

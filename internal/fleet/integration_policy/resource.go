@@ -49,7 +49,8 @@ func (r *integrationPolicyResource) ImportState(ctx context.Context, req resourc
 
 func (r *integrationPolicyResource) UpgradeState(context.Context) map[int64]resource.StateUpgrader {
 	return map[int64]resource.StateUpgrader{
-		0: {PriorSchema: getSchemaV0(), StateUpgrader: upgradeV0},
+		0: {PriorSchema: getSchemaV0(), StateUpgrader: upgradeV0ToV2},
+		1: {PriorSchema: getSchemaV1(), StateUpgrader: upgradeV1ToV2},
 	}
 }
 
