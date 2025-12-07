@@ -5,6 +5,8 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/float32validator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/int32validator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/mapvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -153,6 +155,11 @@ func getSchema() schema.Schema {
 				Computed:    true,
 				PlanModifiers: []planmodifier.Map{
 					mapplanmodifier.UseStateForUnknown(),
+				},
+				Validators: []validator.Map{
+					mapvalidator.ValueInt32sAre(
+						int32validator.Between(0, 100),
+					),
 				},
 			},
 		}}
