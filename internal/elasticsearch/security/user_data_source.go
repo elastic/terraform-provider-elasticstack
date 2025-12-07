@@ -2,8 +2,10 @@ package security
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -74,5 +76,39 @@ func dataSourceSecurityUserRead(ctx context.Context, d *schema.ResourceData, met
 	}
 	d.SetId(id.String())
 
-	return resourceSecurityUserRead(ctx, d, meta)
+	user, diags := elasticsearch.GetUser(ctx, client, usernameId)
+	if user == nil && diags == nil {
+		d.SetId("")
+		return diags
+	}
+	if diags.HasError() {
+		return diags
+	}
+
+	metadata, err := json.Marshal(user.Metadata)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	// set the fields
+	if err := d.Set("username", usernameId); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("email", user.Email); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("full_name", user.FullName); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("roles", user.Roles); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("metadata", string(metadata)); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("enabled", user.Enabled); err != nil {
+		return diag.FromErr(err)
+	}
+
+	return diags
 }
