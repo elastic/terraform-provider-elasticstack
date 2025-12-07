@@ -35,7 +35,7 @@ func (r *securityDetectionRuleResource) Update(ctx context.Context, req resource
 	}
 
 	// Update the rule
-	response, err := kbClient.API.UpdateRuleWithResponse(ctx, updateProps)
+	response, err := kbClient.API.UpdateRuleWithResponse(ctx, data.SpaceId.ValueString(), updateProps)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error updating security detection rule",

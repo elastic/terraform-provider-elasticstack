@@ -2,11 +2,21 @@ package security
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+)
+
+var (
+	MinSupportedDescriptionVersion = version.Must(version.NewVersion("8.15.0"))
 )
 
 func DataSourceRole() *schema.Resource {
@@ -229,5 +239,127 @@ func dataSourceSecurityRoleRead(ctx context.Context, d *schema.ResourceData, met
 	}
 	d.SetId(id.String())
 
-	return resourceSecurityRoleRead(ctx, d, meta)
+	role, diags := elasticsearch.GetRole(ctx, client, roleId)
+	if role == nil && diags == nil {
+		tflog.Warn(ctx, fmt.Sprintf(`Role "%s" not found, removing from state`, roleId))
+		d.SetId("")
+		return diags
+	}
+	if diags.HasError() {
+		return diags
+	}
+
+	// set the fields
+	if err := d.Set("name", roleId); err != nil {
+		return diag.FromErr(err)
+	}
+
+	// Set the description if it exists
+	if role.Description != nil {
+		if err := d.Set("description", *role.Description); err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
+	apps := role.Applications
+	applications := flattenApplicationsData(&apps)
+	if err := d.Set("applications", applications); err != nil {
+		return diag.FromErr(err)
+	}
+
+	if err := d.Set("cluster", role.Cluster); err != nil {
+		return diag.FromErr(err)
+	}
+
+	if role.Global != nil {
+		global, err := json.Marshal(role.Global)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+		if err := d.Set("global", string(global)); err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
+	indices := flattenIndicesData(role.Indices)
+	if err := d.Set("indices", indices); err != nil {
+		return diag.FromErr(err)
+	}
+	remoteIndices := flattenRemoteIndicesData(role.RemoteIndices)
+	if err := d.Set("remote_indices", remoteIndices); err != nil {
+		return diag.FromErr(err)
+	}
+
+	if role.Metadata != nil {
+		metadata, err := json.Marshal(role.Metadata)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+		if err := d.Set("metadata", string(metadata)); err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
+	if err := d.Set("run_as", role.RunAs); err != nil {
+		return diag.FromErr(err)
+	}
+
+	return diags
+}
+
+func flattenApplicationsData(apps *[]models.Application) []interface{} {
+	if apps != nil {
+		oapps := make([]interface{}, len(*apps))
+		for i, app := range *apps {
+			oa := make(map[string]interface{})
+			oa["application"] = app.Name
+			oa["privileges"] = app.Privileges
+			oa["resources"] = app.Resources
+			oapps[i] = oa
+		}
+		return oapps
+	}
+	return make([]interface{}, 0)
+}
+
+func flattenIndicesData(indices []models.IndexPerms) []interface{} {
+	oindx := make([]interface{}, len(indices))
+
+	for i, index := range indices {
+		oi := make(map[string]interface{})
+		oi["names"] = index.Names
+		oi["privileges"] = index.Privileges
+		oi["query"] = index.Query
+		oi["allow_restricted_indices"] = index.AllowRestrictedIndices
+
+		if index.FieldSecurity != nil {
+			fsec := make(map[string]interface{})
+			fsec["grant"] = index.FieldSecurity.Grant
+			fsec["except"] = index.FieldSecurity.Except
+			oi["field_security"] = []interface{}{fsec}
+		}
+		oindx[i] = oi
+	}
+	return oindx
+}
+
+func flattenRemoteIndicesData(remoteIndices []models.RemoteIndexPerms) []interface{} {
+	oRemoteIndx := make([]interface{}, len(remoteIndices))
+
+	for i, remoteIndex := range remoteIndices {
+		oi := make(map[string]interface{})
+		oi["names"] = remoteIndex.Names
+		oi["clusters"] = remoteIndex.Clusters
+		oi["privileges"] = remoteIndex.Privileges
+		oi["query"] = remoteIndex.Query
+
+		if remoteIndex.FieldSecurity != nil {
+			fsec := make(map[string]interface{})
+			fsec["grant"] = remoteIndex.FieldSecurity.Grant
+			fsec["except"] = remoteIndex.FieldSecurity.Except
+			oi["field_security"] = []interface{}{fsec}
+		}
+		oRemoteIndx[i] = oi
+	}
+	return oRemoteIndx
 }

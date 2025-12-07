@@ -12,7 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-var SpaceSolutionMinVersion = version.Must(version.NewVersion("8.18.0"))
+var spaceSolutionMinVersion = version.Must(version.NewVersion("8.16.0"))
 
 func ResourceSpace() *schema.Resource {
 	apikeySchema := map[string]*schema.Schema{
@@ -108,8 +108,8 @@ func resourceSpaceUpsert(ctx context.Context, d *schema.ResourceData, meta inter
 			return diags
 		}
 
-		if !serverVersion.GreaterThanOrEqual(SpaceSolutionMinVersion) {
-			return diag.Errorf("solution field is not supported in this version of the Elastic Stack. Solution field requires %s or higher", SpaceSolutionMinVersion)
+		if !serverVersion.GreaterThanOrEqual(spaceSolutionMinVersion) {
+			return diag.Errorf("solution field is not supported in this version of the Elastic Stack. Solution field requires %s or higher", spaceSolutionMinVersion)
 		}
 	}
 

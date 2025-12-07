@@ -6,6 +6,8 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -81,8 +83,8 @@ type RuleConditionTFModel struct {
 
 // AnalysisLimitsTFModel represents analysis limits configuration
 type AnalysisLimitsTFModel struct {
-	CategorizationExamplesLimit types.Int64  `tfsdk:"categorization_examples_limit"`
-	ModelMemoryLimit            types.String `tfsdk:"model_memory_limit"`
+	CategorizationExamplesLimit types.Int64            `tfsdk:"categorization_examples_limit"`
+	ModelMemoryLimit            customtypes.MemorySize `tfsdk:"model_memory_limit"`
 }
 
 // DataDescriptionTFModel represents data description configuration
@@ -299,10 +301,7 @@ func (tfModel *AnomalyDetectionJobTFModel) fromAPIModel(ctx context.Context, api
 
 	// Convert optional fields
 	tfModel.AllowLazyOpen = types.BoolPointerValue(apiModel.AllowLazyOpen)
-
-	if apiModel.BackgroundPersistInterval != "" {
-		tfModel.BackgroundPersistInterval = types.StringValue(apiModel.BackgroundPersistInterval)
-	}
+	tfModel.BackgroundPersistInterval = typeutils.NonEmptyStringishValue(apiModel.BackgroundPersistInterval)
 
 	if apiModel.CustomSettings != nil {
 		customSettingsJSON, err := json.Marshal(apiModel.CustomSettings)
@@ -323,10 +322,7 @@ func (tfModel *AnomalyDetectionJobTFModel) fromAPIModel(ctx context.Context, api
 		tfModel.RenormalizationWindowDays = types.Int64Value(*apiModel.RenormalizationWindowDays)
 	}
 
-	if apiModel.ResultsIndexName != "" {
-		tfModel.ResultsIndexName = types.StringValue(apiModel.ResultsIndexName)
-	}
-
+	tfModel.ResultsIndexName = typeutils.NonEmptyStringishValue(apiModel.ResultsIndexName)
 	tfModel.ResultsRetentionDays = types.Int64PointerValue(apiModel.ResultsRetentionDays)
 
 	// Convert analysis_config
@@ -362,29 +358,10 @@ func (tfModel *AnomalyDetectionJobTFModel) convertAnalysisConfigFromAPI(ctx cont
 	}
 
 	// Convert optional string fields
-	if apiConfig.CategorizationFieldName != "" {
-		analysisConfigTF.CategorizationFieldName = types.StringValue(apiConfig.CategorizationFieldName)
-	} else {
-		analysisConfigTF.CategorizationFieldName = types.StringNull()
-	}
-
-	if apiConfig.Latency != "" {
-		analysisConfigTF.Latency = types.StringValue(apiConfig.Latency)
-	} else {
-		analysisConfigTF.Latency = types.StringNull()
-	}
-
-	if apiConfig.ModelPruneWindow != "" {
-		analysisConfigTF.ModelPruneWindow = types.StringValue(apiConfig.ModelPruneWindow)
-	} else {
-		analysisConfigTF.ModelPruneWindow = types.StringNull()
-	}
-
-	if apiConfig.SummaryCountFieldName != "" {
-		analysisConfigTF.SummaryCountFieldName = types.StringValue(apiConfig.SummaryCountFieldName)
-	} else {
-		analysisConfigTF.SummaryCountFieldName = types.StringNull()
-	}
+	analysisConfigTF.CategorizationFieldName = typeutils.NonEmptyStringishValue(apiConfig.CategorizationFieldName)
+	analysisConfigTF.Latency = typeutils.NonEmptyStringishValue(apiConfig.Latency)
+	analysisConfigTF.ModelPruneWindow = typeutils.NonEmptyStringishValue(apiConfig.ModelPruneWindow)
+	analysisConfigTF.SummaryCountFieldName = typeutils.NonEmptyStringishValue(apiConfig.SummaryCountFieldName)
 
 	// Convert boolean fields
 	analysisConfigTF.MultivariateByFields = types.BoolPointerValue(apiConfig.MultivariateByFields)
@@ -416,41 +393,12 @@ func (tfModel *AnomalyDetectionJobTFModel) convertAnalysisConfigFromAPI(ctx cont
 			}
 
 			// Convert optional string fields
-			if detector.FieldName != "" {
-				detectorsTF[i].FieldName = types.StringValue(detector.FieldName)
-			} else {
-				detectorsTF[i].FieldName = types.StringNull()
-			}
-
-			if detector.ByFieldName != "" {
-				detectorsTF[i].ByFieldName = types.StringValue(detector.ByFieldName)
-			} else {
-				detectorsTF[i].ByFieldName = types.StringNull()
-			}
-
-			if detector.OverFieldName != "" {
-				detectorsTF[i].OverFieldName = types.StringValue(detector.OverFieldName)
-			} else {
-				detectorsTF[i].OverFieldName = types.StringNull()
-			}
-
-			if detector.PartitionFieldName != "" {
-				detectorsTF[i].PartitionFieldName = types.StringValue(detector.PartitionFieldName)
-			} else {
-				detectorsTF[i].PartitionFieldName = types.StringNull()
-			}
-
-			if detector.DetectorDescription != "" {
-				detectorsTF[i].DetectorDescription = types.StringValue(detector.DetectorDescription)
-			} else {
-				detectorsTF[i].DetectorDescription = types.StringNull()
-			}
-
-			if detector.ExcludeFrequent != "" {
-				detectorsTF[i].ExcludeFrequent = types.StringValue(detector.ExcludeFrequent)
-			} else {
-				detectorsTF[i].ExcludeFrequent = types.StringNull()
-			}
+			detectorsTF[i].FieldName = typeutils.NonEmptyStringishValue(detector.FieldName)
+			detectorsTF[i].ByFieldName = typeutils.NonEmptyStringishValue(detector.ByFieldName)
+			detectorsTF[i].OverFieldName = typeutils.NonEmptyStringishValue(detector.OverFieldName)
+			detectorsTF[i].PartitionFieldName = typeutils.NonEmptyStringishValue(detector.PartitionFieldName)
+			detectorsTF[i].DetectorDescription = typeutils.NonEmptyStringishValue(detector.DetectorDescription)
+			detectorsTF[i].ExcludeFrequent = typeutils.NonEmptyStringishValue(detector.ExcludeFrequent)
 
 			// Convert boolean field
 			detectorsTF[i].UseNull = types.BoolPointerValue(detector.UseNull)
@@ -529,18 +477,9 @@ func (tfModel *AnomalyDetectionJobTFModel) convertDataDescriptionFromAPI(ctx con
 		return types.ObjectNull(getDataDescriptionAttrTypes())
 	}
 
-	dataDescriptionTF := DataDescriptionTFModel{}
-
-	if apiDataDescription.TimeField != "" {
-		dataDescriptionTF.TimeField = types.StringValue(apiDataDescription.TimeField)
-	} else {
-		dataDescriptionTF.TimeField = types.StringNull()
-	}
-
-	if apiDataDescription.TimeFormat != "" {
-		dataDescriptionTF.TimeFormat = types.StringValue(apiDataDescription.TimeFormat)
-	} else {
-		dataDescriptionTF.TimeFormat = types.StringNull()
+	dataDescriptionTF := DataDescriptionTFModel{
+		TimeField:  typeutils.NonEmptyStringishValue(apiDataDescription.TimeField),
+		TimeFormat: typeutils.NonEmptyStringishValue(apiDataDescription.TimeFormat),
 	}
 
 	dataDescriptionObjectValue, d := types.ObjectValueFrom(ctx, getDataDescriptionAttrTypes(), dataDescriptionTF)
@@ -558,9 +497,9 @@ func (tfModel *AnomalyDetectionJobTFModel) convertAnalysisLimitsFromAPI(ctx cont
 	}
 
 	if apiLimits.ModelMemoryLimit != "" {
-		analysisLimitsTF.ModelMemoryLimit = types.StringValue(apiLimits.ModelMemoryLimit)
+		analysisLimitsTF.ModelMemoryLimit = customtypes.NewMemorySizeValue(apiLimits.ModelMemoryLimit)
 	} else {
-		analysisLimitsTF.ModelMemoryLimit = types.StringNull()
+		analysisLimitsTF.ModelMemoryLimit = customtypes.NewMemorySizeNull()
 	}
 
 	analysisLimitsObjectValue, d := types.ObjectValueFrom(ctx, getAnalysisLimitsAttrTypes(), analysisLimitsTF)
@@ -575,12 +514,7 @@ func (tfModel *AnomalyDetectionJobTFModel) convertModelPlotConfigFromAPI(ctx con
 
 	modelPlotConfigTF := ModelPlotConfigTFModel{
 		Enabled: types.BoolValue(apiModelPlotConfig.Enabled),
-	}
-
-	if apiModelPlotConfig.Terms != "" {
-		modelPlotConfigTF.Terms = types.StringValue(apiModelPlotConfig.Terms)
-	} else {
-		modelPlotConfigTF.Terms = types.StringNull()
+		Terms:   typeutils.NonEmptyStringishValue(apiModelPlotConfig.Terms),
 	}
 
 	modelPlotConfigTF.AnnotationsEnabled = types.BoolPointerValue(apiModelPlotConfig.AnnotationsEnabled)

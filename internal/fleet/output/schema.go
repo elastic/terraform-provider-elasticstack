@@ -60,7 +60,7 @@ func getSchema() schema.Schema {
 			},
 			"hosts": schema.ListAttribute{
 				Description: "A list of hosts.",
-				Optional:    true,
+				Required:    true,
 				Validators: []validator.List{
 					listvalidator.SizeAtLeast(1),
 				},
@@ -108,15 +108,24 @@ func getSchema() schema.Schema {
 						Description: "Server SSL certificate authorities.",
 						Optional:    true,
 						ElementType: types.StringType,
+						Validators: []validator.List{
+							listvalidator.SizeAtLeast(1),
+						},
 					},
 					"certificate": schema.StringAttribute{
 						Description: "Client SSL certificate.",
 						Required:    true,
+						Validators: []validator.String{
+							stringvalidator.LengthAtLeast(1),
+						},
 					},
 					"key": schema.StringAttribute{
 						Description: "Client SSL certificate key.",
 						Required:    true,
 						Sensitive:   true,
+						Validators: []validator.String{
+							stringvalidator.LengthAtLeast(1),
+						},
 					},
 				},
 			},

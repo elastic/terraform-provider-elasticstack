@@ -2,7 +2,6 @@ package datafeed
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -44,22 +43,18 @@ func (r *datafeedResource) delete(ctx context.Context, req resource.DeleteReques
 }
 
 func (r *datafeedResource) maybeStopDatafeed(ctx context.Context, datafeedId string) (bool, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
 	// Check current state
-	currentState, err := r.getDatafeedState(ctx, datafeedId)
-	if err != nil {
-		// If we can't get the state, try to extract the error details
-		if err.Error() == fmt.Sprintf("datafeed %s not found", datafeedId) {
-			// Datafeed does not exist, nothing to stop
-			return false, diags
-		}
-		diags.AddError("Failed to get datafeed state", err.Error())
+	currentState, diags := GetDatafeedState(ctx, r.client, datafeedId)
+	if diags.HasError() {
 		return false, diags
 	}
 
+	if currentState == nil {
+		return false, nil
+	}
+
 	// If the datafeed is not running, nothing to stop
-	if currentState != "started" && currentState != "starting" {
+	if *currentState != StateStarted && *currentState != StateStarting {
 		return false, diags
 	}
 
@@ -71,9 +66,9 @@ func (r *datafeedResource) maybeStopDatafeed(ctx context.Context, datafeedId str
 	}
 
 	// Wait for the datafeed to reach stopped state
-	err = r.waitForDatafeedState(ctx, datafeedId, "stopped")
-	if err != nil {
-		diags.AddError("Failed to wait for datafeed to stop", fmt.Sprintf("Datafeed %s did not stop within timeout: %s", datafeedId, err.Error()))
+	_, waitDiags := WaitForDatafeedState(ctx, r.client, datafeedId, StateStopped)
+	diags.Append(waitDiags...)
+	if diags.HasError() {
 		return true, diags
 	}
 

@@ -1,10 +1,66 @@
 ## [Unreleased]
 
+### Breaking changes
+
+#### `elasticstack_elasticsearch_index.alias` block has changed to a set attribute. 
+
+The `alias` block in the `elasticstack_elasticsearch_index` resource has been moved to an attribute. 
+This transition provides better support for future changes in both the provider and the underlying Terraform framework. 
+
+Existing usage of the `alias` block must be migrated to the attribute syntax. For example:
+
+```hcl
+alias {
+  name = "my_alias_1"
+}
+
+alias {
+  name = "my_alias_2"
+  filter = jsonencode({
+    term = { "user.id" = "developer" }
+  })
+}
+```
+
+becomes 
+
+```hcl
+alias = [
+  {
+    name = "my_alias_1"
+  },
+  {
+    name = "my_alias_2"
+    filter = jsonencode({
+      term = { "user.id" = "developer" }
+    })
+  }
+]
+```
+
+### Changes
+
 - Add `required_versions` to `elasticstack_fleet_agent_policy` ([#1436](https://github.com/elastic/terraform-provider-elasticstack/pull/1436))
+- Migrate `elasticstack_elasticsearch_security_role` resource to Terraform Plugin Framework ([#1330](https://github.com/elastic/terraform-provider-elasticstack/pull/1330))
+- Fix an issue where the `elasticstack_fleet_output` resource would error due to inconsistent state after an ouptut was edited in the Kibana UI ([#1506](https://github.com/elastic/terraform-provider-elasticstack/pull/1506))
+- Allow `index` and `data_view_id` values to both be unknown during planning in `elasticstack_kibana_security_detection_rule` ([#1499](https://github.com/elastic/terraform-provider-elasticstack/pull/1499))
+- Support `.bedrock` and `.gen-ai` connectors ([#1467](https://github.com/elastic/terraform-provider-elasticstack/pull/1467))
+- Support the `solution` attribute in `elasticstack_kibana_space` from 8.16 ([#1486](https://github.com/elastic/terraform-provider-elasticstack/pull/1486)) 
+- Add `elasticstack_elasticsearch_alias` resource ([#1343](https://github.com/elastic/terraform-provider-elasticstack/pull/1343))
+- Add `mapping_total_fields_limit` to `elasticstack_elasticsearch_index` ([#1494](https://github.com/elastic/terraform-provider-elasticstack/pull/1494))
+- Add `elasticstack_kibana_default_data_view` resource ([#1379](https://github.com/elastic/terraform-provider-elasticstack/pull/1379))
+
+## [0.12.2] - 2025-11-19
 - Fix `elasticstack_elasticsearch_snapshot_lifecycle` metadata type conversion causing terraform apply to fail ([#1409](https://github.com/elastic/terraform-provider-elasticstack/issues/1409))
 - Add new `elasticstack_elasticsearch_ml_anomaly_detection_job` resource ([#1329](https://github.com/elastic/terraform-provider-elasticstack/pull/1329))
-- Add new `elasticstack_elasticsearch_ml_datafeed` resource ([1340](https://github.com/elastic/terraform-provider-elasticstack/pull/1340))
+- Add new `elasticstack_elasticsearch_ml_datafeed` resource ([#1340](https://github.com/elastic/terraform-provider-elasticstack/pull/1340))
 - Add `space_ids` attribute to all Fleet resources to support space-aware Fleet resource management ([#1390](https://github.com/elastic/terraform-provider-elasticstack/pull/1390))
+- Add back missing import support for `elasticstack_elasticsearch_security_role_mapping` ([#1441](https://github.com/elastic/terraform-provider-elasticstack/pull/1441))
+- Add new `elasticstack_elasticsearch_ml_job_state` resource ([#1337](https://github.com/elastic/terraform-provider-elasticstack/pull/1337))
+- Add new `elasticstack_elasticsearch_ml_datafeed_state` resource ([#1422](https://github.com/elastic/terraform-provider-elasticstack/pull/1422))
+- Add `output_id` to `elasticstack_fleet_integration_policy` resource ([#1445](https://github.com/elastic/terraform-provider-elasticstack/pull/1445))
+- Make `hosts` attribute required in `elasticstack_fleet_output` resource ([#1450](https://github.com/elastic/terraform-provider-elasticstack/pull/1450/files)) 
+- Fix `elasticstack_kibana_security_detection_rule` to properly respect `space_id`
 
 ## [0.12.1] - 2025-10-22
 - Fix regression restricting the characters in an `elasticstack_elasticsearch_role_mapping` `name`. ([#1373](https://github.com/elastic/terraform-provider-elasticstack/pull/1373))
@@ -533,7 +589,8 @@ resource "elasticstack_fleet_output" "output" {
 - Initial set of docs
 - CI integration
 
-[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.12.1...HEAD
+[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.12.2...HEAD
+[0.12.2]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.12.1...v0.12.2
 [0.12.1]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.12.0...v0.12.1
 [0.12.0]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.18...v0.12.0
 [0.11.19]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.18...v0.11.19
