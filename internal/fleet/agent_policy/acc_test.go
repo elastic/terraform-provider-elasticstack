@@ -22,7 +22,6 @@ import (
 )
 
 var minVersionAgentPolicy = version.Must(version.NewVersion("8.6.0"))
-var minVersionRequiredVersions = version.Must(version.NewVersion("9.1.0"))
 
 //go:embed testdata/TestAccResourceAgentPolicyFromSDK/main.tf
 var sdkCreateTestConfig string
@@ -535,7 +534,7 @@ func TestAccResourceAgentPolicyWithRequiredVersions(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionRequiredVersions),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionRequiredVersions),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
@@ -549,7 +548,7 @@ func TestAccResourceAgentPolicyWithRequiredVersions(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionRequiredVersions),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionRequiredVersions),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_percentage"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
@@ -563,7 +562,7 @@ func TestAccResourceAgentPolicyWithRequiredVersions(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionRequiredVersions),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionRequiredVersions),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("add_version"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
@@ -578,7 +577,7 @@ func TestAccResourceAgentPolicyWithRequiredVersions(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionRequiredVersions),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionRequiredVersions),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("unset_versions"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
@@ -593,7 +592,7 @@ func TestAccResourceAgentPolicyWithRequiredVersions(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionRequiredVersions),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionRequiredVersions),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("remove_versions"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),

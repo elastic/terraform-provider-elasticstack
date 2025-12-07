@@ -16,7 +16,3 @@ resource "elasticstack_fleet_agent_policy" "test_policy" {
   monitor_metrics = false
   skip_destroy    = false
 }
-
-data "elasticstack_fleet_enrollment_tokens" "test_policy" {
-  policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
-}

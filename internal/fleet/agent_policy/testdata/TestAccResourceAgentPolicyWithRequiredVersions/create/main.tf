@@ -19,7 +19,3 @@ resource "elasticstack_fleet_agent_policy" "test_policy" {
     "8.15.0" = 100
   }
 }
-
-data "elasticstack_fleet_enrollment_tokens" "test_policy" {
-  policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
-}

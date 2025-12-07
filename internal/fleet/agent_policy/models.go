@@ -209,7 +209,7 @@ func (model *agentPolicyModel) convertGlobalDataTags(ctx context.Context, feat f
 }
 
 // convertRequiredVersions converts the required versions from terraform model to API model
-func (model *agentPolicyModel) convertRequiredVersions(ctx context.Context, feat features) (*[]struct {
+func (model *agentPolicyModel) convertRequiredVersions(feat features) (*[]struct {
 	Percentage float32 `json:"percentage"`
 	Version    string  `json:"version"`
 }, diag.Diagnostics) {
@@ -371,7 +371,7 @@ func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, feat featur
 	}
 
 	// Handle required_versions
-	requiredVersions, d := model.convertRequiredVersions(ctx, feat)
+	requiredVersions, d := model.convertRequiredVersions(feat)
 	if d.HasError() {
 		return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, d
 	}
@@ -475,7 +475,7 @@ func (model *agentPolicyModel) toAPIUpdateModel(ctx context.Context, feat featur
 	}
 
 	// Handle required_versions
-	requiredVersions, d := model.convertRequiredVersions(ctx, feat)
+	requiredVersions, d := model.convertRequiredVersions(feat)
 	if d.HasError() {
 		return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, d
 	}
