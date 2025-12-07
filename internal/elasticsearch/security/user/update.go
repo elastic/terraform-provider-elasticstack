@@ -3,7 +3,6 @@ package user
 import (
 	"context"
 	"encoding/json"
-	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
@@ -17,6 +16,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
+
+func (r *userResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	resp.Diagnostics.Append(r.update(ctx, req.Plan, req.Config, &resp.State)...)
+}
 
 func (r *userResource) update(ctx context.Context, plan tfsdk.Plan, config tfsdk.Config, state *tfsdk.State) diag.Diagnostics {
 	var planData UserData
@@ -90,8 +93,9 @@ func (r *userResource) update(ctx context.Context, plan tfsdk.Plan, config tfsdk
 	user.Roles = roles
 
 	if !planData.Metadata.IsNull() && !planData.Metadata.IsUnknown() {
-		metadata := make(map[string]interface{})
-		if err := json.NewDecoder(strings.NewReader(planData.Metadata.ValueString())).Decode(&metadata); err != nil {
+		var metadata map[string]interface{}
+		err := json.Unmarshal([]byte(planData.Metadata.ValueString()), &metadata)
+		if err != nil {
 			diags.AddError("Failed to decode metadata", err.Error())
 			return diags
 		}
@@ -107,6 +111,11 @@ func (r *userResource) update(ctx context.Context, plan tfsdk.Plan, config tfsdk
 	readUser, sdkDiags := elasticsearch.GetUser(ctx, client, usernameId)
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
+		return diags
+	}
+
+	if readUser == nil {
+		diags.AddError("Failed to read user after update", "The user was not found after the update operation.")
 		return diags
 	}
 
@@ -126,8 +135,4 @@ func (r *userResource) update(ctx context.Context, plan tfsdk.Plan, config tfsdk
 
 	diags.Append(state.Set(ctx, &planData)...)
 	return diags
-}
-
-func (r *userResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	resp.Diagnostics.Append(r.update(ctx, req.Plan, req.Config, &resp.State)...)
 }
