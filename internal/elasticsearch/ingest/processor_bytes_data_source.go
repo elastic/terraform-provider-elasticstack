@@ -2,6 +2,7 @@ package ingest
 
 import (
 	"context"
+	_ "embed"
 	"encoding/json"
 	"strings"
 
@@ -11,6 +12,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
+
+//go:embed processor_bytes_data_source.md
+var bytesDataSourceDescription string
 
 func DataSourceProcessorBytes() *schema.Resource {
 	processorSchema := map[string]*schema.Schema{
@@ -75,7 +79,7 @@ func DataSourceProcessorBytes() *schema.Resource {
 	}
 
 	return &schema.Resource{
-		Description: "Converts a human readable byte value (e.g. 1kb) to its value in bytes (e.g. 1024). See: https://www.elastic.co/guide/en/elasticsearch/reference/current/bytes-processor.html",
+		Description: bytesDataSourceDescription,
 
 		ReadContext: dataSourceProcessorBytesRead,
 

@@ -2,7 +2,6 @@ package role_mapping
 
 import (
 	"context"
-	"regexp"
 
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -25,7 +24,7 @@ func (r *roleMappingResource) Schema(_ context.Context, _ resource.SchemaRequest
 
 func GetSchema() schema.Schema {
 	return schema.Schema{
-		MarkdownDescription: "Manage role mappings. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-put-role-mapping.html",
+		MarkdownDescription: "Manage role mappings. See the [role mapping API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-put-role-mapping.html) for more details.",
 		Blocks: map[string]schema.Block{
 			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock("elasticsearch_connection", false),
 		},
@@ -39,10 +38,6 @@ func GetSchema() schema.Schema {
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
-				},
-				Validators: []validator.String{
-					stringvalidator.LengthBetween(1, 1024),
-					stringvalidator.RegexMatches(regexp.MustCompile(`^[[:graph:]]+$`), "must contain printable characters and no spaces"),
 				},
 			},
 			"enabled": schema.BoolAttribute{

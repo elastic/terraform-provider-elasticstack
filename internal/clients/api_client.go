@@ -15,6 +15,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/go-version"
@@ -53,7 +54,7 @@ func CompositeIdFromStr(id string) (*CompositeId, diag.Diagnostics) {
 
 func CompositeIdFromStrFw(id string) (*CompositeId, fwdiags.Diagnostics) {
 	composite, diags := CompositeIdFromStr(id)
-	return composite, utils.FrameworkDiagsFromSDK(diags)
+	return composite, diagutil.FrameworkDiagsFromSDK(diags)
 }
 
 func ResourceIDFromStr(id string) (string, diag.Diagnostics) {
@@ -323,7 +324,7 @@ func (a *ApiClient) serverInfo(ctx context.Context) (*models.ClusterInfo, diag.D
 		return nil, diag.FromErr(err)
 	}
 	defer res.Body.Close()
-	if diags := utils.CheckError(res, "Unable to connect to the Elasticsearch cluster"); diags.HasError() {
+	if diags := diagutil.CheckError(res, "Unable to connect to the Elasticsearch cluster"); diags.HasError() {
 		return nil, diags
 	}
 
@@ -353,6 +354,10 @@ func (a *ApiClient) EnforceMinVersion(ctx context.Context, minVersion *version.V
 	}
 
 	return serverVersion.GreaterThanOrEqual(minVersion), nil
+}
+
+type MinVersionEnforceable interface {
+	EnforceMinVersion(ctx context.Context, minVersion *version.Version) (bool, diag.Diagnostics)
 }
 
 func (a *ApiClient) ServerVersion(ctx context.Context) (*version.Version, diag.Diagnostics) {
@@ -446,7 +451,9 @@ func (a *ApiClient) flavorFromKibana() (string, diag.Diagnostics) {
 
 	serverFlavor, ok := vMap["build_flavor"].(string)
 	if !ok {
-		return "", diag.Errorf("failed to get build flavor from Kibana status")
+		// build_flavor field is not present in older Kibana versions (pre-serverless)
+		// Default to empty string to indicate traditional/stateful deployment
+		return "", nil
 	}
 
 	return serverFlavor, nil

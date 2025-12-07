@@ -24,7 +24,7 @@ func (r *DataViewResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 
 func getSchema() schema.Schema {
 	return schema.Schema{
-		Description: "Manages Kibana data views",
+		MarkdownDescription: "Manages Kibana [data views](https://www.elastic.co/guide/en/kibana/current/data-views-api.html)",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,
@@ -134,6 +134,7 @@ func getSchema() schema.Schema {
 								},
 								"params": schema.SingleNestedAttribute{
 									Optional: true,
+									Computed: true,
 									Attributes: map[string]schema.Attribute{
 										"pattern": schema.StringAttribute{
 											Optional:            true,

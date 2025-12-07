@@ -2,6 +2,7 @@ package ingest
 
 import (
 	"context"
+	_ "embed"
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
@@ -9,6 +10,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
+
+//go:embed processor_geoip_data_source.md
+var geoipDataSourceDescription string
 
 func DataSourceProcessorGeoip() *schema.Resource {
 	processorSchema := map[string]*schema.Schema{
@@ -61,7 +65,7 @@ func DataSourceProcessorGeoip() *schema.Resource {
 	}
 
 	return &schema.Resource{
-		Description: "The geoip processor adds information about the geographical location of an IPv4 or IPv6 address. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/geoip-processor.html",
+		Description: geoipDataSourceDescription,
 
 		ReadContext: dataSourceProcessorGeoipRead,
 

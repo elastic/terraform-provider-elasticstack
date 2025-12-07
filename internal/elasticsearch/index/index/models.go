@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
@@ -35,6 +36,7 @@ var (
 		"auto_expand_replicas",
 		"refresh_interval",
 		"search.idle.after",
+		"mapping.total_fields.limit",
 		"max_result_window",
 		"max_inner_result_window",
 		"max_rescore_window",
@@ -96,6 +98,7 @@ type tfModel struct {
 	SortField                          types.Set            `tfsdk:"sort_field"`
 	SortOrder                          types.List           `tfsdk:"sort_order"`
 	MappingCoerce                      types.Bool           `tfsdk:"mapping_coerce"`
+	MappingTotalFieldsLimit            types.Int64          `tfsdk:"mapping_total_fields_limit"`
 	NumberOfReplicas                   types.Int64          `tfsdk:"number_of_replicas"`
 	AutoExpandReplicas                 types.String         `tfsdk:"auto_expand_replicas"`
 	SearchIdleAfter                    types.String         `tfsdk:"search_idle_after"`
@@ -300,7 +303,7 @@ func (model tfModel) toPutIndexParams(serverFlavor string) models.PutIndexParams
 func (model tfModel) GetID() (*clients.CompositeId, diag.Diagnostics) {
 	compId, sdkDiags := clients.CompositeIdFromStr(model.ID.ValueString())
 	if sdkDiags.HasError() {
-		return nil, utils.FrameworkDiagsFromSDK(sdkDiags)
+		return nil, diagutil.FrameworkDiagsFromSDK(sdkDiags)
 	}
 
 	return compId, nil

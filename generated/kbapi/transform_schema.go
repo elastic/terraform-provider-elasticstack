@@ -5,6 +5,7 @@ package main
 
 import (
 	"bytes"
+	_ "embed"
 	"errors"
 	"flag"
 	"fmt"
@@ -556,6 +557,7 @@ func (s Slice) atoi(key string) int {
 type TransformFunc func(schema *Schema)
 
 var transformers = []TransformFunc{
+	mergeDashboardsSchema,
 	transformRemoveKbnXsrf,
 	transformRemoveApiVersionParam,
 	transformSimplifyContentType,
@@ -566,9 +568,40 @@ var transformers = []TransformFunc{
 	fixPutSecurityRoleName,
 	fixGetSpacesParams,
 	fixGetSyntheticsMonitorsParams,
+	fixGetMaintenanceWindowFindParams,
+	removeDuplicateOneOfRefs,
 	transformRemoveExamples,
 	transformRemoveUnusedComponents,
 	transformOmitEmptyNullable,
+}
+
+//go:embed dashboards.yaml
+var dashboardsYaml string
+
+func mergeDashboardsSchema(schema *Schema) {
+	var dashboardsSchema Schema
+	err := yaml.Unmarshal([]byte(dashboardsYaml), &dashboardsSchema)
+	if err != nil {
+		log.Fatalf("failed to unmarshal schema from dashboards.yaml: %v", err)
+	}
+
+	// Merge paths
+	for path, pathInfo := range dashboardsSchema.Paths {
+		// Only add the path if it doesn't already exist
+		if _, ok := schema.Paths[path]; !ok {
+			schema.Paths[path] = pathInfo
+		}
+	}
+
+	// Merge component schemas
+	dashboardSchemas := dashboardsSchema.Components.MustGetMap("schemas")
+	schemaSchemas := schema.Components.MustGetMap("schemas")
+	for key, schemaInfo := range dashboardSchemas {
+		// Only add the schema if it doesn't already exist
+		if _, ok := schemaSchemas[key]; !ok {
+			schemaSchemas[key] = schemaInfo
+		}
+	}
 }
 
 // transformRemoveKbnXsrf removes the kbn-xsrf header as it	is already applied
@@ -689,6 +722,13 @@ func transformKibanaPaths(schema *Schema) {
 		"/api/maintenance_window/{id}",
 		"/api/actions/connector/{id}",
 		"/api/actions/connectors",
+		"/api/data_views/default",
+		"/api/detection_engine/rules",
+		"/api/exception_lists",
+		"/api/exception_lists/items",
+		"/api/lists",
+		"/api/lists/index",
+		"/api/lists/items",
 	}
 
 	// Add a spaceId parameter if not already present
@@ -812,6 +852,57 @@ func transformKibanaPaths(schema *Schema) {
 	schema.Components.CreateRef(schema, "Data_views_create_data_view_request_object_inner", "schemas.Data_views_create_data_view_request_object.properties.data_view")
 	schema.Components.CreateRef(schema, "Data_views_update_data_view_request_object_inner", "schemas.Data_views_update_data_view_request_object.properties.data_view")
 
+	schema.Components.Set("schemas.Security_Detections_API_RuleResponse.discriminator", Map{
+		"mapping": Map{
+			"eql":              "#/components/schemas/Security_Detections_API_EqlRule",
+			"esql":             "#/components/schemas/Security_Detections_API_EsqlRule",
+			"machine_learning": "#/components/schemas/Security_Detections_API_MachineLearningRule",
+			"new_terms":        "#/components/schemas/Security_Detections_API_NewTermsRule",
+			"query":            "#/components/schemas/Security_Detections_API_QueryRule",
+			"saved_query":      "#/components/schemas/Security_Detections_API_SavedQueryRule",
+			"threat_match":     "#/components/schemas/Security_Detections_API_ThreatMatchRule",
+			"threshold":        "#/components/schemas/Security_Detections_API_ThresholdRule",
+		},
+		"propertyName": "type",
+	})
+
+	schema.Components.Set("schemas.Security_Detections_API_RuleCreateProps.discriminator", Map{
+		"mapping": Map{
+			"eql":              "#/components/schemas/Security_Detections_API_EqlRuleCreateProps",
+			"esql":             "#/components/schemas/Security_Detections_API_EsqlRuleCreateProps",
+			"machine_learning": "#/components/schemas/Security_Detections_API_MachineLearningRuleCreateProps",
+			"new_terms":        "#/components/schemas/Security_Detections_API_NewTermsRuleCreateProps",
+			"query":            "#/components/schemas/Security_Detections_API_QueryRuleCreateProps",
+			"saved_query":      "#/components/schemas/Security_Detections_API_SavedQueryRuleCreateProps",
+			"threat_match":     "#/components/schemas/Security_Detections_API_ThreatMatchRuleCreateProps",
+			"threshold":        "#/components/schemas/Security_Detections_API_ThresholdRuleCreateProps",
+		},
+		"propertyName": "type",
+	})
+
+	schema.Components.Set("schemas.Security_Detections_API_RuleUpdateProps.discriminator", Map{
+		"mapping": Map{
+			"eql":              "#/components/schemas/Security_Detections_API_EqlRuleUpdateProps",
+			"esql":             "#/components/schemas/Security_Detections_API_EsqlRuleUpdateProps",
+			"machine_learning": "#/components/schemas/Security_Detections_API_MachineLearningRuleUpdateProps",
+			"new_terms":        "#/components/schemas/Security_Detections_API_NewTermsRuleUpdateProps",
+			"query":            "#/components/schemas/Security_Detections_API_QueryRuleUpdateProps",
+			"saved_query":      "#/components/schemas/Security_Detections_API_SavedQueryRuleUpdateProps",
+			"threat_match":     "#/components/schemas/Security_Detections_API_ThreatMatchRuleUpdateProps",
+			"threshold":        "#/components/schemas/Security_Detections_API_ThresholdRuleUpdateProps",
+		},
+		"propertyName": "type",
+	})
+
+	schema.Components.Set("schemas.Security_Detections_API_ResponseAction.discriminator", Map{
+		"mapping": Map{
+			".osquery":  "#/components/schemas/Security_Detections_API_OsqueryResponseAction",
+			".endpoint": "#/components/schemas/Security_Detections_API_EndpointResponseAction",
+		},
+		"propertyName": "action_type_id",
+	})
+	schema.Components.Delete("schemas.Security_Exceptions_API_ExceptionListItemExpireTime.format")
+
 }
 
 func removeBrokenDiscriminator(schema *Schema) {
@@ -826,12 +917,10 @@ func removeBrokenDiscriminator(schema *Schema) {
 		"Security_AI_Assistant_API_KnowledgeBaseEntryResponse",
 		"Security_AI_Assistant_API_KnowledgeBaseEntryUpdateProps",
 		"Security_AI_Assistant_API_KnowledgeBaseEntryUpdateRouteProps",
-		"Security_Detections_API_RuleCreateProps",
-		"Security_Detections_API_RuleResponse",
 		"Security_Detections_API_RuleSource",
-		"Security_Detections_API_RuleUpdateProps",
 		"Security_Endpoint_Exceptions_API_ExceptionListItemEntry",
 		"Security_Exceptions_API_ExceptionListItemEntry",
+		"Security_Endpoint_Management_API_ActionDetailsResponse",
 	}
 
 	for _, component := range brokenDiscriminatorComponents {
@@ -860,6 +949,54 @@ func fixGetSpacesParams(schema *Schema) {
 
 func fixGetSyntheticsMonitorsParams(schema *Schema) {
 	schema.MustGetPath("/api/synthetics/monitors").MustGetEndpoint("get").Move("parameters.12.schema.oneOf.1", "parameters.12.schema")
+}
+
+func fixGetMaintenanceWindowFindParams(schema *Schema) {
+	schema.MustGetPath("/api/maintenance_window/_find").MustGetEndpoint("get").Move("parameters.2.schema.anyOf.1", "parameters.2.schema")
+}
+
+func removeDuplicateOneOfRefs(schema *Schema) {
+	componentSchemas := schema.Components.MustGetMap("schemas")
+	componentSchemas.Iterate(removeDuplicateOneOfRefsFromNode)
+}
+
+// https://github.com/elastic/kibana/issues/244264
+func removeDuplicateOneOfRefsFromNode(key string, node Map) {
+	maybeOneOf, hasOneOf := node.GetSlice("oneOf")
+	if hasOneOf {
+		// Check for duplicate $ref entries
+		seenRefs := map[string]bool{}
+		newOneOf := Slice{}
+		for _, item := range maybeOneOf {
+			itemMap, ok := item.(Map)
+			if !ok {
+				newOneOf = append(newOneOf, item)
+				continue
+			}
+			refValue, hasRef := itemMap["$ref"]
+			if hasRef {
+				refStr, ok := refValue.(string)
+				if !ok {
+					newOneOf = append(newOneOf, item)
+					continue
+				}
+				if _, seen := seenRefs[refStr]; seen {
+					// Duplicate found, skip it
+					continue
+				}
+				seenRefs[refStr] = true
+			}
+			newOneOf = append(newOneOf, item)
+		}
+		node["oneOf"] = newOneOf
+	}
+
+	properties, hasProperties := node.GetMap("properties")
+	if !hasProperties {
+		return
+	}
+
+	properties.Iterate(removeDuplicateOneOfRefsFromNode)
 }
 
 // transformFleetPaths fixes the fleet paths.
@@ -926,10 +1063,11 @@ func transformFleetPaths(schema *Schema) {
 
 	for _, name := range []string{"output", "new_output", "update_output"} {
 		// Ref each index in the anyOf union
+		kafkaComponent := fmt.Sprintf("%s_kafka", name)
 		schema.Components.CreateRef(schema, fmt.Sprintf("%s_elasticsearch", name), fmt.Sprintf("schemas.%s_union.anyOf.0", name))
 		schema.Components.CreateRef(schema, fmt.Sprintf("%s_remote_elasticsearch", name), fmt.Sprintf("schemas.%s_union.anyOf.1", name))
 		schema.Components.CreateRef(schema, fmt.Sprintf("%s_logstash", name), fmt.Sprintf("schemas.%s_union.anyOf.2", name))
-		schema.Components.CreateRef(schema, fmt.Sprintf("%s_kafka", name), fmt.Sprintf("schemas.%s_union.anyOf.3", name))
+		schema.Components.CreateRef(schema, kafkaComponent, fmt.Sprintf("schemas.%s_union.anyOf.3", name))
 
 		// Extract child structs
 		for _, typ := range []string{"elasticsearch", "remote_elasticsearch", "logstash", "kafka"} {
@@ -954,10 +1092,24 @@ func transformFleetPaths(schema *Schema) {
 			  - not: {}
 		*/
 
-		props := schema.Components.MustGetMap(fmt.Sprintf("schemas.%s_kafka.properties", name))
-		for _, key := range []string{"compression_level", "connection_type", "password", "username"} {
-			props.Set(key, Map{})
+		// https://github.com/elastic/kibana/issues/197153
+		kafkaRequiredName := fmt.Sprintf("schemas.%s.required", kafkaComponent)
+		props := schema.Components.MustGetMap(fmt.Sprintf("schemas.%s.properties", kafkaComponent))
+		required := schema.Components.MustGetSlice(kafkaRequiredName)
+		for key, apiType := range map[string]string{"compression_level": "integer", "connection_type": "string", "password": "string", "username": "string"} {
+			props.Set(key, Map{
+				"type": apiType,
+			})
+			required = slices.DeleteFunc(required, func(item any) bool {
+				itemStr, ok := item.(string)
+				if !ok {
+					return false
+				}
+
+				return itemStr == key
+			})
 		}
+		schema.Components.Set(kafkaRequiredName, required)
 	}
 
 	// Add the missing discriminator to the response union

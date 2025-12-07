@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -19,8 +19,12 @@ var (
 )
 
 var (
-	MinVersionGlobalDataTags    = version.Must(version.NewVersion("8.15.0"))
-	MinSupportsAgentlessVersion = version.Must(version.NewVersion("8.15.0"))
+	MinVersionGlobalDataTags      = version.Must(version.NewVersion("8.15.0"))
+	MinSupportsAgentlessVersion   = version.Must(version.NewVersion("8.15.0"))
+	MinVersionInactivityTimeout   = version.Must(version.NewVersion("8.7.0"))
+	MinVersionUnenrollmentTimeout = version.Must(version.NewVersion("8.15.0"))
+	MinVersionSpaceIds            = version.Must(version.NewVersion("9.1.0"))
+	MinVersionRequiredVersions    = version.Must(version.NewVersion("9.1.0"))
 )
 
 // NewResource is a helper function to simplify the provider implementation.
@@ -49,16 +53,40 @@ func (r *agentPolicyResource) ImportState(ctx context.Context, req resource.Impo
 func (r *agentPolicyResource) buildFeatures(ctx context.Context) (features, diag.Diagnostics) {
 	supportsGDT, diags := r.client.EnforceMinVersion(ctx, MinVersionGlobalDataTags)
 	if diags.HasError() {
-		return features{}, utils.FrameworkDiagsFromSDK(diags)
+		return features{}, diagutil.FrameworkDiagsFromSDK(diags)
 	}
 
 	supportsSupportsAgentless, diags := r.client.EnforceMinVersion(ctx, MinSupportsAgentlessVersion)
 	if diags.HasError() {
-		return features{}, utils.FrameworkDiagsFromSDK(diags)
+		return features{}, diagutil.FrameworkDiagsFromSDK(diags)
+	}
+
+	supportsInactivityTimeout, diags := r.client.EnforceMinVersion(ctx, MinVersionInactivityTimeout)
+	if diags.HasError() {
+		return features{}, diagutil.FrameworkDiagsFromSDK(diags)
+	}
+
+	supportsUnenrollmentTimeout, diags := r.client.EnforceMinVersion(ctx, MinVersionUnenrollmentTimeout)
+	if diags.HasError() {
+		return features{}, diagutil.FrameworkDiagsFromSDK(diags)
+	}
+
+	supportsSpaceIds, diags := r.client.EnforceMinVersion(ctx, MinVersionSpaceIds)
+	if diags.HasError() {
+		return features{}, diagutil.FrameworkDiagsFromSDK(diags)
+	}
+
+	supportsRequiredVersions, diags := r.client.EnforceMinVersion(ctx, MinVersionRequiredVersions)
+	if diags.HasError() {
+		return features{}, diagutil.FrameworkDiagsFromSDK(diags)
 	}
 
 	return features{
-		SupportsGlobalDataTags:    supportsGDT,
-		SupportsSupportsAgentless: supportsSupportsAgentless,
+		SupportsGlobalDataTags:      supportsGDT,
+		SupportsSupportsAgentless:   supportsSupportsAgentless,
+		SupportsInactivityTimeout:   supportsInactivityTimeout,
+		SupportsUnenrollmentTimeout: supportsUnenrollmentTimeout,
+		SupportsSpaceIds:            supportsSpaceIds,
+		SupportsRequiredVersions:    supportsRequiredVersions,
 	}, nil
 }

@@ -1,7 +1,7 @@
 .DEFAULT_GOAL = help
 SHELL := /bin/bash
 
-VERSION ?= 0.11.17
+VERSION ?= 0.12.2
 
 NAME = elasticstack
 BINARY = terraform-provider-${NAME}
@@ -11,29 +11,22 @@ ACCTEST_PARALLELISM ?= 10
 ACCTEST_TIMEOUT = 120m
 ACCTEST_COUNT = 1
 TEST ?= ./...
-SWAGGER_VERSION ?= 8.7
 
-GOVERSION ?= $(shell grep -e '^go' go.mod | cut -f 2 -d ' ')
+USE_TLS ?= 0
+COMPOSE_FILE := docker-compose.yml
+ifeq ($(USE_TLS),1)
+	COMPOSE_FILE := docker-compose.tls.yml
+endif
 
-STACK_VERSION ?= 9.0.3
-
-ELASTICSEARCH_NAME ?= terraform-elasticstack-es
-ELASTICSEARCH_ENDPOINTS ?= http://$(ELASTICSEARCH_NAME):9200
 ELASTICSEARCH_USERNAME ?= elastic
 ELASTICSEARCH_PASSWORD ?= password
-ELASTICSEARCH_NETWORK ?= elasticstack-network
-ELASTICSEARCH_MEM ?= 2048m
 
-KIBANA_NAME ?= terraform-elasticstack-kb
-KIBANA_ENDPOINT ?= http://$(KIBANA_NAME):5601
 KIBANA_SYSTEM_USERNAME ?= kibana_system
 KIBANA_SYSTEM_PASSWORD ?= password
 KIBANA_API_KEY_NAME ?= kibana-api-key
 
 FLEET_NAME ?= terraform-elasticstack-fleet
 FLEET_ENDPOINT ?= https://$(FLEET_NAME):8220
-
-SOURCE_LOCATION ?= $(shell pwd)
 
 export GOBIN = $(shell pwd)/bin
 
@@ -52,152 +45,46 @@ build-ci: ## build the terraform provider
 .PHONY: build
 build: lint build-ci ## build the terraform provider
 
+# run acceptance tests against the docker container that has been started with `make docker-kibana` (or `make docker-elasticsearch`)
+# To run specific test (e.g. TestAccResourceActionConnector) execute `make testacc-vs-docker TESTARGS='-run ^TestAccResourceKibanaConnectorBedrock$$'`
+.PHONY: testacc-vs-docker
+testacc-vs-docker:
+	@ ELASTICSEARCH_ENDPOINTS=http://localhost:9200 KIBANA_ENDPOINT=http://localhost:5601 ELASTICSEARCH_USERNAME=$(ELASTICSEARCH_USERNAME) ELASTICSEARCH_PASSWORD=$(ELASTICSEARCH_PASSWORD) make testacc
 
 .PHONY: testacc
 testacc: ## Run acceptance tests
-	TF_ACC=1 go test -v ./... -count $(ACCTEST_COUNT) -parallel $(ACCTEST_PARALLELISM) $(TESTARGS) -timeout $(ACCTEST_TIMEOUT)
+	TF_ACC=1 go tool gotestsum --format testname --rerun-fails=3 --packages="-v ./..." -- -count $(ACCTEST_COUNT) -parallel $(ACCTEST_PARALLELISM) $(TESTARGS) -timeout $(ACCTEST_TIMEOUT)
 
 .PHONY: test
 test: ## Run unit tests
 	go test -v $(TEST) $(TESTARGS) -timeout=5m -parallel=4
-
-# Retry command - first argument is how many attempts are required, second argument is the command to run
-# Backoff starts with 1 second and double with next iteration
-retry = until [ $$(if [ -z "$$attempt" ]; then echo -n "0"; else echo -n "$$attempt"; fi) -ge $(1) ]; do \
-		backoff=$$(if [ -z "$$backoff" ]; then echo "1"; else echo "$$backoff"; fi); \
-		sleep $$backoff; \
-		$(2) && break; \
-		attempt=$$((attempt + 1)); \
-		backoff=$$((backoff * 2)); \
-	done
-
-# wait_until_healthy command - first argument is the container name
-wait_until_healthy = $(call retry, 5, [ "$$(docker inspect -f '{{ .State.Health.Status }}' $(1))" == "healthy" ])
 
 CURL_OPTS = -sS --retry 5 --retry-all-errors -X POST -u $(ELASTICSEARCH_USERNAME):$(ELASTICSEARCH_PASSWORD) -H "Content-Type: application/json"
 
 # To run specific test (e.g. TestAccResourceActionConnector) execute `make docker-testacc TESTARGS='-run ^TestAccResourceActionConnector$$'`
 # To enable tracing (or debugging), execute `make docker-testacc TF_LOG=TRACE`
 .PHONY: docker-testacc
-docker-testacc: docker-elasticsearch docker-kibana docker-fleet ## Run acceptance tests in the docker container
-	@ docker run --rm \
-		-e ELASTICSEARCH_ENDPOINTS="$(ELASTICSEARCH_ENDPOINTS)" \
-		-e KIBANA_ENDPOINT="$(KIBANA_ENDPOINT)" \
-		-e ELASTICSEARCH_USERNAME="$(ELASTICSEARCH_USERNAME)" \
-		-e ELASTICSEARCH_PASSWORD="$(ELASTICSEARCH_PASSWORD)" \
-		-e TF_LOG="$(TF_LOG)" \
-		--network $(ELASTICSEARCH_NETWORK) \
-		-w "/provider" \
-		-v "$(SOURCE_LOCATION):/provider" \
-		golang:$(GOVERSION) make testacc TESTARGS="$(TESTARGS)"
+docker-testacc: docker-fleet ## Run acceptance tests in the docker container
+	@ docker compose -f $(COMPOSE_FILE) --profile acceptance-tests up --quiet-pull acceptance-tests
 
 # To run specific test (e.g. TestAccResourceActionConnector) execute `make docker-testacc TESTARGS='-run ^TestAccResourceActionConnector$$'`
 # To enable tracing (or debugging), execute `make docker-testacc TF_LOG=TRACE`
 .PHONY: docker-testacc-with-token
-docker-testacc-with-token:
-	@ docker run --rm \
-		-e ELASTICSEARCH_ENDPOINTS="$(ELASTICSEARCH_ENDPOINTS)" \
-		-e KIBANA_ENDPOINT="$(KIBANA_ENDPOINT)" \
-		-e ELASTICSEARCH_BEARER_TOKEN="$(ELASTICSEARCH_BEARER_TOKEN)" \
-		-e KIBANA_USERNAME="$(ELASTICSEARCH_USERNAME)" \
-		-e KIBANA_PASSWORD="$(ELASTICSEARCH_PASSWORD)" \
-		-e TF_LOG="$(TF_LOG)" \
-		--network $(ELASTICSEARCH_NETWORK) \
-		-w "/provider" \
-		-v "$(SOURCE_LOCATION):/provider" \
-		golang:$(GOVERSION) make testacc TESTARGS="$(TESTARGS)"
+docker-testacc-with-token: docker-fleet
+	@ export ELASTICSEARCH_BEARER_TOKEN=$(shell $(MAKE) create-es-bearer-token | jq -r .access_token); \
+	docker compose -f $(COMPOSE_FILE) --profile token-acceptance-tests up --quiet-pull token-acceptance-tests;
 
 .PHONY: docker-elasticsearch
-docker-elasticsearch: docker-network ## Start Elasticsearch single node cluster in docker container
-	@ docker rm -f $(ELASTICSEARCH_NAME) &> /dev/null || true
-	@ docker run -d \
-		--memory $(ELASTICSEARCH_MEM) \
-		-p 9200:9200 -p 9300:9300 \
-		-e "discovery.type=single-node" \
-		-e "xpack.security.enabled=true" \
-		-e "xpack.security.authc.api_key.enabled=true" \
-		-e "xpack.security.authc.token.enabled=true" \
-		-e "xpack.watcher.enabled=true" \
-		-e "xpack.license.self_generated.type=trial" \
-		-e "repositories.url.allowed_urls=https://example.com/*" \
-		-e "path.repo=/tmp" \
-		-e ELASTIC_PASSWORD=$(ELASTICSEARCH_PASSWORD) \
-		--name $(ELASTICSEARCH_NAME) \
-		--network $(ELASTICSEARCH_NETWORK) \
-		--health-cmd="curl http://localhost:9200/_cluster/health" \
-		--health-interval=10s --health-timeout=5s --health-retries=10 \
-		docker.elastic.co/elasticsearch/elasticsearch:$(STACK_VERSION)
-	@ $(call wait_until_healthy, $(ELASTICSEARCH_NAME))
+docker-elasticsearch: ## Start Elasticsearch single node cluster in docker container
+	@ docker compose -f $(COMPOSE_FILE) up --quiet-pull -d elasticsearch
 
 .PHONY: docker-kibana
-docker-kibana: docker-network docker-elasticsearch set-kibana-password ## Start Kibana node in docker container
-	@ docker rm -f $(KIBANA_NAME)  &> /dev/null || true
-	@ docker run -d \
-		-p 5601:5601 \
-		-e SERVER_NAME=kibana \
-		-e ELASTICSEARCH_HOSTS=$(ELASTICSEARCH_ENDPOINTS) \
-		-e ELASTICSEARCH_USERNAME=$(KIBANA_SYSTEM_USERNAME) \
-		-e ELASTICSEARCH_PASSWORD=$(KIBANA_SYSTEM_PASSWORD) \
-		-e XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=a7a6311933d3503b89bc2dbc36572c33a6c10925682e591bffcab6911c06786d \
-		-e LOGGING_ROOT_LEVEL=debug \
-		--name $(KIBANA_NAME) \
-		--network $(ELASTICSEARCH_NETWORK) \
-		--health-cmd="curl http://localhost:5601/api/status" \
-		--health-interval=10s --health-timeout=5s --health-retries=10 \
-		docker.elastic.co/kibana/kibana:$(STACK_VERSION)
-	@ $(call wait_until_healthy, $(KIBANA_NAME))
-
-.PHONY: docker-kibana-with-tls
-docker-kibana-with-tls: docker-network docker-elasticsearch set-kibana-password
-	@ docker rm -f $(KIBANA_NAME)  &> /dev/null || true
-	@ mkdir -p certs
-	@ CAROOT=certs mkcert localhost $(KIBANA_NAME)
-	@ mv localhost*.pem certs/
-	@ docker run -d \
-		-p 5601:5601 \
-		-v $(shell pwd)/certs:/certs \
-		-e SERVER_NAME=kibana \
-		-e ELASTICSEARCH_HOSTS=$(ELASTICSEARCH_ENDPOINTS) \
-		-e ELASTICSEARCH_USERNAME=$(KIBANA_SYSTEM_USERNAME) \
-		-e ELASTICSEARCH_PASSWORD=$(KIBANA_SYSTEM_PASSWORD) \
-		-e XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=a7a6311933d3503b89bc2dbc36572c33a6c10925682e591bffcab6911c06786d \
-		-e SERVER_SSL_CERTIFICATE=/certs/localhost+1.pem \
-		-e SERVER_SSL_KEY=/certs/localhost+1-key.pem \
-		-e SERVER_SSL_ENABLED=true \
-		-e LOGGING_ROOT_LEVEL=debug \
-		--name $(KIBANA_NAME) \
-		--network $(ELASTICSEARCH_NETWORK) \
-		--health-cmd="curl -k https://localhost:5601/api/status" \
-		--health-interval=10s --health-timeout=5s --health-retries=10 \
-		docker.elastic.co/kibana/kibana:$(STACK_VERSION)
-	@ $(call wait_until_healthy, $(KIBANA_NAME))
+docker-kibana:  ## Start Kibana node in docker container
+	@ docker compose -f $(COMPOSE_FILE) up --quiet-pull -d kibana
 
 .PHONY: docker-fleet
-docker-fleet: docker-network docker-elasticsearch docker-kibana setup-kibana-fleet ## Start Fleet node in docker container
-	@ docker rm -f $(FLEET_NAME)  &> /dev/null || true
-	@ docker run -d \
-		-p 8220:8220 \
-		-e SERVER_NAME=fleet \
-      	-e FLEET_ENROLL=1 \
-      	-e FLEET_URL=$(FLEET_ENDPOINT) \
-      	-e FLEET_INSECURE=true \
-      	-e FLEET_SERVER_ENABLE=1 \
-      	-e FLEET_SERVER_POLICY_ID=fleet-server \
-      	-e FLEET_SERVER_ELASTICSEARCH_HOST=$(ELASTICSEARCH_ENDPOINTS) \
-      	-e FLEET_SERVER_ELASTICSEARCH_INSECURE=true \
-      	-e FLEET_SERVER_INSECURE_HTTP=true \
-      	-e KIBANA_HOST=$(KIBANA_ENDPOINT) \
-      	-e KIBANA_FLEET_SETUP=1 \
-      	-e KIBANA_FLEET_USERNAME=$(ELASTICSEARCH_USERNAME) \
-      	-e KIBANA_FLEET_PASSWORD=$(ELASTICSEARCH_PASSWORD) \
-		--name $(FLEET_NAME) \
-		--network $(ELASTICSEARCH_NETWORK) \
-		elastic/elastic-agent:$(STACK_VERSION)
-
-
-.PHONY: docker-network
-docker-network: ## Create a dedicated network for ES and test runs
-	@ docker network inspect $(ELASTICSEARCH_NETWORK) >/dev/null 2>&1 || docker network create $(ELASTICSEARCH_NETWORK)
+docker-fleet: ## Start Fleet node in docker container
+	@ docker compose -f $(COMPOSE_FILE) up --quiet-pull -d fleet
 
 .PHONY: set-kibana-password
 set-kibana-password: ## Sets the ES KIBANA_SYSTEM_USERNAME's password to KIBANA_SYSTEM_PASSWORD. This expects Elasticsearch to be available at localhost:9200
@@ -219,13 +106,15 @@ setup-kibana-fleet: ## Creates the agent and integration policies required to ru
 
 .PHONY: docker-clean
 docker-clean: ## Try to remove provisioned nodes and assigned network
-	@ docker rm -f $(ELASTICSEARCH_NAME) $(KIBANA_NAME) $(FLEET_NAME) || true
-	@ docker network rm $(ELASTICSEARCH_NETWORK) || true
+	@ docker compose -f $(COMPOSE_FILE) down -v
 
+.PHONY: copy-kibana-ca
+copy-kibana-ca: ## Copy Kibana CA certificate to local machine
+	@ docker compose -f $(COMPOSE_FILE) cp kibana:/certs/rootCA.pem ./kibana-ca.pem
 
 .PHONY: docs-generate
 docs-generate: tools ## Generate documentation for the provider
-	@ go tool github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate --provider-name elasticstack
+	@ go tool github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate --provider-name terraform-provider-elasticstack
 
 
 .PHONY: gen
@@ -246,7 +135,7 @@ install: build ## Install built provider into the local terraform cache
 
 .PHONY: tools
 tools: $(GOBIN)  ## Download golangci-lint locally if necessary.
-	@[[ -f $(GOBIN)/golangci-lint ]] || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOBIN) v2.4.0
+	@[[ -f $(GOBIN)/golangci-lint ]] || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOBIN) v2.7.1
 
 .PHONY: golangci-lint
 golangci-lint:
@@ -254,7 +143,10 @@ golangci-lint:
 
 
 .PHONY: lint
-lint: setup golangci-lint check-fmt check-docs ## Run lints to check the spelling and common go patterns
+lint: setup golangci-lint fmt docs-generate ## Run lints to check the spelling and common go patterns
+
+.PHONY: check-lint
+check-lint: setup golangci-lint check-fmt check-docs
 
 .PHONY: fmt
 fmt: ## Format code
@@ -330,11 +222,6 @@ generate-alerting-client: ## generate Kibana alerting client
 	@ rm -rf generated/alerting/go.mod generated/alerting/go.sum generated/alerting/test
 	@ go fmt ./generated/alerting/...
 
-.PHONY: generate-connectors-client
-generate-connectors-client: tools ## generate Kibana connectors client
-	@ cd tools && go generate
-	@ go fmt ./generated/connectors/...
-
 .PHONY: generate-slo-client
 generate-slo-client: tools ## generate Kibana slo client
 	@ rm -rf generated/slo
@@ -350,7 +237,7 @@ generate-slo-client: tools ## generate Kibana slo client
 		-o /local/generated/slo \
 		 --type-mappings=float32=float64
 	@ rm -rf generated/slo/go.mod generated/slo/go.sum generated/slo/test
-	@ go fmt ./generated/...
+	@ go fmt ./generated/slo/...
 
 .PHONY: generate-clients
-generate-clients: generate-alerting-client generate-slo-client generate-connectors-client ## generate all clients
+generate-clients: generate-alerting-client generate-slo-client ## generate all clients

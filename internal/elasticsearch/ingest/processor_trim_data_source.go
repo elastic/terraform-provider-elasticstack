@@ -75,7 +75,7 @@ func DataSourceProcessorTrim() *schema.Resource {
 	}
 
 	return &schema.Resource{
-		Description: "Trims whitespace from field. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/trim-processor.html",
+		Description: "Helper data source which can be used to create the configuration for a trim processor. This processor trims whitespace from field. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/trim-processor.html",
 
 		ReadContext: dataSourceProcessorTrimRead,
 

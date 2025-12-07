@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -76,7 +76,7 @@ type clusterVersionPrivateData struct {
 
 func (r *Resource) saveClusterVersion(ctx context.Context, client *clients.ApiClient, priv privateData) diag.Diagnostics {
 	version, sdkDiags := client.ServerVersion(ctx)
-	diags := utils.FrameworkDiagsFromSDK(sdkDiags)
+	diags := diagutil.FrameworkDiagsFromSDK(sdkDiags)
 	if diags.HasError() {
 		return diags
 	}

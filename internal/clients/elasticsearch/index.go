@@ -10,8 +10,8 @@ import (
 
 	"github.com/elastic/go-elasticsearch/v8/esapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
@@ -32,7 +32,7 @@ func PutIlm(ctx context.Context, apiClient *clients.ApiClient, policy *models.Po
 		return diag.FromErr(err)
 	}
 	defer res.Body.Close()
-	if diags := utils.CheckError(res, "Unable to create or update the ILM policy"); diags.HasError() {
+	if diags := diagutil.CheckError(res, "Unable to create or update the ILM policy"); diags.HasError() {
 		return diags
 	}
 	return diags
@@ -53,7 +53,7 @@ func GetIlm(ctx context.Context, apiClient *clients.ApiClient, policyName string
 	if res.StatusCode == http.StatusNotFound {
 		return nil, nil
 	}
-	if diags := utils.CheckError(res, "Unable to fetch ILM policy from the cluster."); diags.HasError() {
+	if diags := diagutil.CheckError(res, "Unable to fetch ILM policy from the cluster."); diags.HasError() {
 		return nil, diags
 	}
 
@@ -86,7 +86,7 @@ func DeleteIlm(ctx context.Context, apiClient *clients.ApiClient, policyName str
 		return diag.FromErr(err)
 	}
 	defer res.Body.Close()
-	if diags := utils.CheckError(res, "Unable to delete ILM policy."); diags.HasError() {
+	if diags := diagutil.CheckError(res, "Unable to delete ILM policy."); diags.HasError() {
 		return diags
 	}
 	return diags
@@ -108,7 +108,7 @@ func PutComponentTemplate(ctx context.Context, apiClient *clients.ApiClient, tem
 		return diag.FromErr(err)
 	}
 	defer res.Body.Close()
-	if diags := utils.CheckError(res, "Unable to create component template"); diags.HasError() {
+	if diags := diagutil.CheckError(res, "Unable to create component template"); diags.HasError() {
 		return diags
 	}
 
@@ -130,7 +130,7 @@ func GetComponentTemplate(ctx context.Context, apiClient *clients.ApiClient, tem
 	if res.StatusCode == http.StatusNotFound {
 		return nil, nil
 	}
-	if diags := utils.CheckError(res, "Unable to request index template."); diags.HasError() {
+	if diags := diagutil.CheckError(res, "Unable to request index template."); diags.HasError() {
 		return nil, diags
 	}
 
@@ -163,7 +163,7 @@ func DeleteComponentTemplate(ctx context.Context, apiClient *clients.ApiClient, 
 		return diag.FromErr(err)
 	}
 	defer res.Body.Close()
-	if diags := utils.CheckError(res, "Unable to delete component template"); diags.HasError() {
+	if diags := diagutil.CheckError(res, "Unable to delete component template"); diags.HasError() {
 		return diags
 	}
 	return diags
@@ -185,7 +185,7 @@ func PutIndexTemplate(ctx context.Context, apiClient *clients.ApiClient, templat
 		return diag.FromErr(err)
 	}
 	defer res.Body.Close()
-	if diags := utils.CheckError(res, "Unable to create index template"); diags.HasError() {
+	if diags := diagutil.CheckError(res, "Unable to create index template"); diags.HasError() {
 		return diags
 	}
 
@@ -207,7 +207,7 @@ func GetIndexTemplate(ctx context.Context, apiClient *clients.ApiClient, templat
 	if res.StatusCode == http.StatusNotFound {
 		return nil, nil
 	}
-	if diags := utils.CheckError(res, "Unable to request index template."); diags.HasError() {
+	if diags := diagutil.CheckError(res, "Unable to request index template."); diags.HasError() {
 		return nil, diags
 	}
 
@@ -240,7 +240,7 @@ func DeleteIndexTemplate(ctx context.Context, apiClient *clients.ApiClient, temp
 		return diag.FromErr(err)
 	}
 	defer res.Body.Close()
-	if diags := utils.CheckError(res, "Unable to delete index template"); diags.HasError() {
+	if diags := diagutil.CheckError(res, "Unable to delete index template"); diags.HasError() {
 		return diags
 	}
 	return diags
@@ -278,8 +278,8 @@ func PutIndex(ctx context.Context, apiClient *clients.ApiClient, index *models.I
 		}
 	}
 	defer res.Body.Close()
-	diags := utils.CheckError(res, fmt.Sprintf("Unable to create index: %s", index.Name))
-	return utils.FrameworkDiagsFromSDK(diags)
+	diags := diagutil.CheckError(res, fmt.Sprintf("Unable to create index: %s", index.Name))
+	return diagutil.FrameworkDiagsFromSDK(diags)
 }
 
 func DeleteIndex(ctx context.Context, apiClient *clients.ApiClient, name string) fwdiags.Diagnostics {
@@ -296,8 +296,8 @@ func DeleteIndex(ctx context.Context, apiClient *clients.ApiClient, name string)
 		}
 	}
 	defer res.Body.Close()
-	diags := utils.CheckError(res, fmt.Sprintf("Unable to delete the index: %s", name))
-	return utils.FrameworkDiagsFromSDK(diags)
+	diags := diagutil.CheckError(res, fmt.Sprintf("Unable to delete the index: %s", name))
+	return diagutil.FrameworkDiagsFromSDK(diags)
 }
 
 func GetIndex(ctx context.Context, apiClient *clients.ApiClient, name string) (*models.Index, fwdiags.Diagnostics) {
@@ -333,8 +333,8 @@ func GetIndices(ctx context.Context, apiClient *clients.ApiClient, name string) 
 		return nil, nil
 	}
 
-	if diags := utils.CheckError(res, fmt.Sprintf("Unable to get requested index: %s", name)); diags.HasError() {
-		return nil, utils.FrameworkDiagsFromSDK(diags)
+	if diags := diagutil.CheckError(res, fmt.Sprintf("Unable to get requested index: %s", name)); diags.HasError() {
+		return nil, diagutil.FrameworkDiagsFromSDK(diags)
 	}
 
 	indices := make(map[string]models.Index)
@@ -361,8 +361,8 @@ func DeleteIndexAlias(ctx context.Context, apiClient *clients.ApiClient, index s
 		}
 	}
 	defer res.Body.Close()
-	diags := utils.CheckError(res, fmt.Sprintf("Unable to delete aliases '%v' for index '%s'", index, aliases))
-	return utils.FrameworkDiagsFromSDK(diags)
+	diags := diagutil.CheckError(res, fmt.Sprintf("Unable to delete aliases '%v' for index '%s'", index, aliases))
+	return diagutil.FrameworkDiagsFromSDK(diags)
 }
 
 func UpdateIndexAlias(ctx context.Context, apiClient *clients.ApiClient, index string, alias *models.IndexAlias) fwdiags.Diagnostics {
@@ -386,8 +386,8 @@ func UpdateIndexAlias(ctx context.Context, apiClient *clients.ApiClient, index s
 		}
 	}
 	defer res.Body.Close()
-	diags := utils.CheckError(res, fmt.Sprintf("Unable to update alias '%v' for index '%s'", index, alias.Name))
-	return utils.FrameworkDiagsFromSDK(diags)
+	diags := diagutil.CheckError(res, fmt.Sprintf("Unable to update alias '%v' for index '%s'", index, alias.Name))
+	return diagutil.FrameworkDiagsFromSDK(diags)
 }
 
 func UpdateIndexSettings(ctx context.Context, apiClient *clients.ApiClient, index string, settings map[string]interface{}) fwdiags.Diagnostics {
@@ -411,8 +411,8 @@ func UpdateIndexSettings(ctx context.Context, apiClient *clients.ApiClient, inde
 		}
 	}
 	defer res.Body.Close()
-	diags := utils.CheckError(res, "Unable to update index settings")
-	return utils.FrameworkDiagsFromSDK(diags)
+	diags := diagutil.CheckError(res, "Unable to update index settings")
+	return diagutil.FrameworkDiagsFromSDK(diags)
 }
 
 func UpdateIndexMappings(ctx context.Context, apiClient *clients.ApiClient, index, mappings string) fwdiags.Diagnostics {
@@ -429,8 +429,8 @@ func UpdateIndexMappings(ctx context.Context, apiClient *clients.ApiClient, inde
 		}
 	}
 	defer res.Body.Close()
-	diags := utils.CheckError(res, "Unable to update index mappings")
-	return utils.FrameworkDiagsFromSDK(diags)
+	diags := diagutil.CheckError(res, "Unable to update index mappings")
+	return diagutil.FrameworkDiagsFromSDK(diags)
 }
 
 func PutDataStream(ctx context.Context, apiClient *clients.ApiClient, dataStreamName string) diag.Diagnostics {
@@ -445,7 +445,7 @@ func PutDataStream(ctx context.Context, apiClient *clients.ApiClient, dataStream
 		return diag.FromErr(err)
 	}
 	defer res.Body.Close()
-	if diags := utils.CheckError(res, fmt.Sprintf("Unable to create DataStream: %s", dataStreamName)); diags.HasError() {
+	if diags := diagutil.CheckError(res, fmt.Sprintf("Unable to create DataStream: %s", dataStreamName)); diags.HasError() {
 		return diags
 	}
 
@@ -467,7 +467,7 @@ func GetDataStream(ctx context.Context, apiClient *clients.ApiClient, dataStream
 	if res.StatusCode == http.StatusNotFound {
 		return nil, nil
 	}
-	if diags := utils.CheckError(res, fmt.Sprintf("Unable to get requested DataStream: %s", dataStreamName)); diags.HasError() {
+	if diags := diagutil.CheckError(res, fmt.Sprintf("Unable to get requested DataStream: %s", dataStreamName)); diags.HasError() {
 		return nil, diags
 	}
 
@@ -492,7 +492,7 @@ func DeleteDataStream(ctx context.Context, apiClient *clients.ApiClient, dataStr
 		return diag.FromErr(err)
 	}
 	defer res.Body.Close()
-	if diags := utils.CheckError(res, fmt.Sprintf("Unable to delete DataStream: %s", dataStreamName)); diags.HasError() {
+	if diags := diagutil.CheckError(res, fmt.Sprintf("Unable to delete DataStream: %s", dataStreamName)); diags.HasError() {
 		return diags
 	}
 
@@ -503,12 +503,12 @@ func PutDataStreamLifecycle(ctx context.Context, apiClient *clients.ApiClient, d
 
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
-		return utils.FrameworkDiagFromError(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 
 	lifecycleBytes, err := json.Marshal(lifecycle)
 	if err != nil {
-		return utils.FrameworkDiagFromError(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 
 	opts := []func(*esapi.IndicesPutDataLifecycleRequest){
@@ -518,11 +518,11 @@ func PutDataStreamLifecycle(ctx context.Context, apiClient *clients.ApiClient, d
 	}
 	res, err := esClient.Indices.PutDataLifecycle([]string{dataStreamName}, opts...)
 	if err != nil {
-		return utils.FrameworkDiagFromError(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 	defer res.Body.Close()
-	if diags := utils.CheckError(res, fmt.Sprintf("Unable to create DataStreamLifecycle: %s", dataStreamName)); diags.HasError() {
-		return utils.FrameworkDiagsFromSDK(diags)
+	if diags := diagutil.CheckError(res, fmt.Sprintf("Unable to create DataStreamLifecycle: %s", dataStreamName)); diags.HasError() {
+		return diagutil.FrameworkDiagsFromSDK(diags)
 	}
 	return nil
 }
@@ -530,7 +530,7 @@ func PutDataStreamLifecycle(ctx context.Context, apiClient *clients.ApiClient, d
 func GetDataStreamLifecycle(ctx context.Context, apiClient *clients.ApiClient, dataStreamName string, expand_wildcards string) (*[]models.DataStreamLifecycle, fwdiags.Diagnostics) {
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
-		return nil, utils.FrameworkDiagFromError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 	opts := []func(*esapi.IndicesGetDataLifecycleRequest){
 		esClient.Indices.GetDataLifecycle.WithContext(ctx),
@@ -538,14 +538,14 @@ func GetDataStreamLifecycle(ctx context.Context, apiClient *clients.ApiClient, d
 	}
 	res, err := esClient.Indices.GetDataLifecycle([]string{dataStreamName}, opts...)
 	if err != nil {
-		return nil, utils.FrameworkDiagFromError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 	defer res.Body.Close()
 	if res.StatusCode == http.StatusNotFound {
 		return nil, nil
 	}
-	if diags := utils.CheckError(res, fmt.Sprintf("Unable to get requested DataStreamLifecycle: %s", dataStreamName)); diags.HasError() {
-		return nil, utils.FrameworkDiagsFromSDK(diags)
+	if diags := diagutil.CheckError(res, fmt.Sprintf("Unable to get requested DataStreamLifecycle: %s", dataStreamName)); diags.HasError() {
+		return nil, diagutil.FrameworkDiagsFromSDK(diags)
 	}
 
 	dStreams := struct {
@@ -553,7 +553,7 @@ func GetDataStreamLifecycle(ctx context.Context, apiClient *clients.ApiClient, d
 	}{}
 
 	if err := json.NewDecoder(res.Body).Decode(&dStreams); err != nil {
-		return nil, utils.FrameworkDiagFromError(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 	ds := dStreams.DataStreams
 	return &ds, nil
@@ -563,7 +563,7 @@ func DeleteDataStreamLifecycle(ctx context.Context, apiClient *clients.ApiClient
 
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
-		return utils.FrameworkDiagFromError(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 	opts := []func(*esapi.IndicesDeleteDataLifecycleRequest){
 		esClient.Indices.DeleteDataLifecycle.WithContext(ctx),
@@ -571,14 +571,141 @@ func DeleteDataStreamLifecycle(ctx context.Context, apiClient *clients.ApiClient
 	}
 	res, err := esClient.Indices.DeleteDataLifecycle([]string{dataStreamName}, opts...)
 	if err != nil {
-		return utils.FrameworkDiagFromError(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 	defer res.Body.Close()
-	if diags := utils.CheckError(res, fmt.Sprintf("Unable to delete DataStreamLifecycle: %s", dataStreamName)); diags.HasError() {
-		return utils.FrameworkDiagsFromSDK(diags)
+	if diags := diagutil.CheckError(res, fmt.Sprintf("Unable to delete DataStreamLifecycle: %s", dataStreamName)); diags.HasError() {
+		return diagutil.FrameworkDiagsFromSDK(diags)
 	}
 
 	return nil
+}
+
+func GetAlias(ctx context.Context, apiClient *clients.ApiClient, aliasName string) (map[string]models.Index, fwdiags.Diagnostics) {
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return nil, fwdiags.Diagnostics{
+			fwdiags.NewErrorDiagnostic(err.Error(), err.Error()),
+		}
+	}
+
+	res, err := esClient.Indices.GetAlias(
+		esClient.Indices.GetAlias.WithName(aliasName),
+		esClient.Indices.GetAlias.WithContext(ctx),
+	)
+	if err != nil {
+		return nil, fwdiags.Diagnostics{
+			fwdiags.NewErrorDiagnostic(err.Error(), err.Error()),
+		}
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode == http.StatusNotFound {
+		return nil, nil
+	}
+
+	diags := diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to get alias '%s'", aliasName))
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	indices := make(map[string]models.Index)
+	if err := json.NewDecoder(res.Body).Decode(&indices); err != nil {
+		return nil, fwdiags.Diagnostics{
+			fwdiags.NewErrorDiagnostic(err.Error(), err.Error()),
+		}
+	}
+
+	return indices, nil
+}
+
+// AliasAction represents a single action in an atomic alias update operation
+type AliasAction struct {
+	Type          string // "add" or "remove"
+	Index         string
+	Alias         string
+	IsWriteIndex  bool
+	Filter        map[string]interface{}
+	IndexRouting  string
+	IsHidden      bool
+	Routing       string
+	SearchRouting string
+}
+
+// UpdateAliasesAtomic performs atomic alias updates using multiple actions
+func UpdateAliasesAtomic(ctx context.Context, apiClient *clients.ApiClient, actions []AliasAction) fwdiags.Diagnostics {
+	esClient, err := apiClient.GetESClient()
+	if err != nil {
+		return fwdiags.Diagnostics{
+			fwdiags.NewErrorDiagnostic(err.Error(), err.Error()),
+		}
+	}
+
+	var aliasActions []map[string]interface{}
+
+	for _, action := range actions {
+		switch action.Type {
+		case "remove":
+			aliasActions = append(aliasActions, map[string]interface{}{
+				"remove": map[string]interface{}{
+					"index": action.Index,
+					"alias": action.Alias,
+				},
+			})
+		case "add":
+			addDetails := map[string]interface{}{
+				"index": action.Index,
+				"alias": action.Alias,
+			}
+
+			if action.IsWriteIndex {
+				addDetails["is_write_index"] = true
+			}
+			if action.Filter != nil {
+				addDetails["filter"] = action.Filter
+			}
+			if action.IndexRouting != "" {
+				addDetails["index_routing"] = action.IndexRouting
+			}
+			if action.SearchRouting != "" {
+				addDetails["search_routing"] = action.SearchRouting
+			}
+			if action.Routing != "" {
+				addDetails["routing"] = action.Routing
+			}
+			if action.IsHidden {
+				addDetails["is_hidden"] = action.IsHidden
+			}
+
+			aliasActions = append(aliasActions, map[string]interface{}{
+				"add": addDetails,
+			})
+		}
+	}
+
+	requestBody := map[string]interface{}{
+		"actions": aliasActions,
+	}
+
+	aliasBytes, err := json.Marshal(requestBody)
+	if err != nil {
+		return fwdiags.Diagnostics{
+			fwdiags.NewErrorDiagnostic(err.Error(), err.Error()),
+		}
+	}
+
+	res, err := esClient.Indices.UpdateAliases(
+		bytes.NewReader(aliasBytes),
+		esClient.Indices.UpdateAliases.WithContext(ctx),
+	)
+	if err != nil {
+		return fwdiags.Diagnostics{
+			fwdiags.NewErrorDiagnostic(err.Error(), err.Error()),
+		}
+	}
+	defer res.Body.Close()
+
+	return diagutil.CheckErrorFromFW(res, "Unable to update aliases atomically")
 }
 
 func PutIngestPipeline(ctx context.Context, apiClient *clients.ApiClient, pipeline *models.IngestPipeline) diag.Diagnostics {
@@ -597,7 +724,7 @@ func PutIngestPipeline(ctx context.Context, apiClient *clients.ApiClient, pipeli
 		return diag.FromErr(err)
 	}
 	defer res.Body.Close()
-	if diags := utils.CheckError(res, fmt.Sprintf("Unable to create or update ingest pipeline: %s", pipeline.Name)); diags.HasError() {
+	if diags := diagutil.CheckError(res, fmt.Sprintf("Unable to create or update ingest pipeline: %s", pipeline.Name)); diags.HasError() {
 		return diags
 	}
 
@@ -619,7 +746,7 @@ func GetIngestPipeline(ctx context.Context, apiClient *clients.ApiClient, name *
 	if res.StatusCode == http.StatusNotFound {
 		return nil, nil
 	}
-	if diags := utils.CheckError(res, fmt.Sprintf("Unable to get requested ingest pipeline: %s", *name)); diags.HasError() {
+	if diags := diagutil.CheckError(res, fmt.Sprintf("Unable to get requested ingest pipeline: %s", *name)); diags.HasError() {
 		return nil, diags
 	}
 
@@ -645,7 +772,7 @@ func DeleteIngestPipeline(ctx context.Context, apiClient *clients.ApiClient, nam
 		return diags
 	}
 	defer res.Body.Close()
-	if diags := utils.CheckError(res, fmt.Sprintf("Unable to delete ingest pipeline: %s", *name)); diags.HasError() {
+	if diags := diagutil.CheckError(res, fmt.Sprintf("Unable to delete ingest pipeline: %s", *name)); diags.HasError() {
 		return diags
 	}
 	return diags

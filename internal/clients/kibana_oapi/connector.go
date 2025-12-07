@@ -9,16 +9,18 @@ import (
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	sdkdiag "github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
-func CreateConnector(ctx context.Context, client *Client, connectorOld models.KibanaActionConnector) (string, diag.Diagnostics) {
+func CreateConnector(ctx context.Context, client *Client, connectorOld models.KibanaActionConnector) (string, fwdiag.Diagnostics) {
 	body, err := createConnectorRequestBody(connectorOld)
 	if err != nil {
-		return "", diag.FromErr(err)
+		return "", fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Failed to create connector request body", err.Error())}
 	}
 
 	resp, err := client.API.PostActionsConnectorIdWithResponse(
@@ -35,40 +37,40 @@ func CreateConnector(ctx context.Context, client *Client, connectorOld models.Ki
 		},
 	)
 	if err != nil {
-		return "", diag.FromErr(err)
+		return "", fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("HTTP request failed", err.Error())}
 	}
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
 		return resp.JSON200.Id, nil
 	default:
-		return "", reportUnknownErrorSDK(resp.StatusCode(), resp.Body)
+		return "", reportUnknownError(resp.StatusCode(), resp.Body)
 	}
 }
 
-func UpdateConnector(ctx context.Context, client *Client, connectorOld models.KibanaActionConnector) (string, diag.Diagnostics) {
+func UpdateConnector(ctx context.Context, client *Client, connectorOld models.KibanaActionConnector) (string, fwdiag.Diagnostics) {
 	body, err := updateConnectorRequestBody(connectorOld)
 	if err != nil {
-		return "", diag.FromErr(err)
+		return "", fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Failed to create update request body", err.Error())}
 	}
 
 	resp, err := client.API.PutActionsConnectorIdWithResponse(ctx, connectorOld.SpaceID, connectorOld.ConnectorID, body)
 	if err != nil {
-		return "", diag.Errorf("unable to update connector: [%v]", err)
+		return "", fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Unable to update connector", err.Error())}
 	}
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
 		return resp.JSON200.Id, nil
 	default:
-		return "", reportUnknownErrorSDK(resp.StatusCode(), resp.Body)
+		return "", reportUnknownError(resp.StatusCode(), resp.Body)
 	}
 }
 
-func GetConnector(ctx context.Context, client *Client, connectorID, spaceID string) (*models.KibanaActionConnector, diag.Diagnostics) {
+func GetConnector(ctx context.Context, client *Client, connectorID, spaceID string) (*models.KibanaActionConnector, fwdiag.Diagnostics) {
 	resp, err := client.API.GetActionsConnectorIdWithResponse(ctx, spaceID, connectorID)
 	if err != nil {
-		return nil, diag.Errorf("unable to get connector: [%v]", err)
+		return nil, fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Unable to get connector", err.Error())}
 	}
 
 	switch resp.StatusCode() {
@@ -77,14 +79,14 @@ func GetConnector(ctx context.Context, client *Client, connectorID, spaceID stri
 	case http.StatusNotFound:
 		return nil, nil
 	default:
-		return nil, reportUnknownErrorSDK(resp.StatusCode(), resp.Body)
+		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
 	}
 }
 
-func SearchConnectors(ctx context.Context, client *Client, connectorName, spaceID, connectorTypeID string) ([]*models.KibanaActionConnector, diag.Diagnostics) {
+func SearchConnectors(ctx context.Context, client *Client, connectorName, spaceID, connectorTypeID string) ([]*models.KibanaActionConnector, sdkdiag.Diagnostics) {
 	resp, err := client.API.GetActionsConnectorsWithResponse(ctx, spaceID)
 	if err != nil {
-		return nil, diag.Errorf("unable to get connectors: [%v]", err)
+		return nil, sdkdiag.Errorf("unable to get connectors: [%v]", err)
 	}
 
 	if resp.StatusCode() != http.StatusOK {
@@ -101,9 +103,9 @@ func SearchConnectors(ctx context.Context, client *Client, connectorName, spaceI
 			continue
 		}
 
-		c, diags := ConnectorResponseToModel(spaceID, &connector)
-		if diags.HasError() {
-			return nil, diags
+		c, fwDiags := ConnectorResponseToModel(spaceID, &connector)
+		if fwDiags.HasError() {
+			return nil, diagutil.SDKDiagsFromFramework(fwDiags)
 		}
 
 		foundConnectors = append(foundConnectors, c)
@@ -115,9 +117,9 @@ func SearchConnectors(ctx context.Context, client *Client, connectorName, spaceI
 	return foundConnectors, nil
 }
 
-func ConnectorResponseToModel(spaceID string, connector *kbapi.ConnectorResponse) (*models.KibanaActionConnector, diag.Diagnostics) {
+func ConnectorResponseToModel(spaceID string, connector *kbapi.ConnectorResponse) (*models.KibanaActionConnector, fwdiag.Diagnostics) {
 	if connector == nil {
-		return nil, diag.Errorf("connector response is nil")
+		return nil, fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Invalid connector response", "connector response is nil")}
 	}
 
 	var configJSON []byte
@@ -132,7 +134,7 @@ func ConnectorResponseToModel(spaceID string, connector *kbapi.ConnectorResponse
 		var err error
 		configJSON, err = json.Marshal(configMap)
 		if err != nil {
-			return nil, diag.Errorf("unable to marshal config: %v", err)
+			return nil, fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Unable to marshal config", err.Error())}
 		}
 
 		// If we have a specific config type, marshal into and out of that to
@@ -141,7 +143,7 @@ func ConnectorResponseToModel(spaceID string, connector *kbapi.ConnectorResponse
 		if ok {
 			configJSONString, err := handler.remarshalConfig(string(configJSON))
 			if err != nil {
-				return nil, diag.Errorf("failed to remarshal config: %v", err)
+				return nil, fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Failed to remarshal config", err.Error())}
 			}
 
 			configJSON = []byte(configJSONString)
@@ -165,21 +167,21 @@ func ConnectorResponseToModel(spaceID string, connector *kbapi.ConnectorResponse
 	return model, nil
 }
 
-func DeleteConnector(ctx context.Context, client *Client, connectorID string, spaceID string) diag.Diagnostics {
+func DeleteConnector(ctx context.Context, client *Client, connectorID string, spaceID string) fwdiag.Diagnostics {
 	resp, err := client.API.DeleteActionsConnectorIdWithResponse(ctx, spaceID, connectorID)
 	if err != nil {
-		return diag.Errorf("unable to delete connector: [%v]", err)
+		return fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Unable to delete connector", err.Error())}
 	}
 
 	if resp.StatusCode() != http.StatusOK && resp.StatusCode() != http.StatusNoContent {
-		return reportUnknownErrorSDK(resp.StatusCode(), resp.Body)
+		return reportUnknownError(resp.StatusCode(), resp.Body)
 	}
 
 	return nil
 }
 
 type connectorConfigHandler struct {
-	defaults        func(plan, backend string) (string, error)
+	defaults        func(plan string) (string, error)
 	remarshalConfig func(config string) (string, error)
 }
 
@@ -192,8 +194,15 @@ var connectorConfigHandlers = map[string]connectorConfigHandler{
 		defaults:        connectorConfigWithDefaultsEmail,
 		remarshalConfig: remarshalConfig[kbapi.EmailConfig],
 	},
+	".bedrock": {
+		defaults:        connectorConfigWithDefaultsBedrock,
+		remarshalConfig: remarshalConfig[kbapi.BedrockConfig],
+	},
+	".gen-ai": {
+		defaults:        connectorConfigWithDefaultsGenAi,
+		remarshalConfig: remarshalConfigGenAi,
+	},
 	".gemini": {
-		defaults:        connectorConfigWithDefaultsGemini,
 		remarshalConfig: remarshalConfig[kbapi.GeminiConfig],
 	},
 	".index": {
@@ -205,7 +214,6 @@ var connectorConfigHandlers = map[string]connectorConfigHandler{
 		remarshalConfig: remarshalConfig[kbapi.JiraConfig],
 	},
 	".opsgenie": {
-		defaults:        connectorConfigWithDefaultsOpsgenie,
 		remarshalConfig: remarshalConfig[kbapi.OpsgenieConfig],
 	},
 	".pagerduty": {
@@ -213,7 +221,6 @@ var connectorConfigHandlers = map[string]connectorConfigHandler{
 		remarshalConfig: remarshalConfig[kbapi.PagerdutyConfig],
 	},
 	".resilient": {
-		defaults:        connectorConfigWithDefaultsResilient,
 		remarshalConfig: remarshalConfig[kbapi.ResilientConfig],
 	},
 	".servicenow": {
@@ -228,16 +235,17 @@ var connectorConfigHandlers = map[string]connectorConfigHandler{
 		defaults:        connectorConfigWithDefaultsServicenowSir,
 		remarshalConfig: remarshalConfig[kbapi.ServicenowConfig],
 	},
+	".slack_api": {
+		remarshalConfig: remarshalConfig[kbapi.SlackApiConfig],
+	},
 	".swimlane": {
 		defaults:        connectorConfigWithDefaultsSwimlane,
 		remarshalConfig: remarshalConfig[kbapi.SwimlaneConfig],
 	},
 	".tines": {
-		defaults:        connectorConfigWithDefaultsTines,
 		remarshalConfig: remarshalConfig[kbapi.TinesConfig],
 	},
 	".webhook": {
-		defaults:        connectorConfigWithDefaultsWebhook,
 		remarshalConfig: remarshalConfig[kbapi.WebhookConfig],
 	},
 	".xmatters": {
@@ -246,13 +254,17 @@ var connectorConfigHandlers = map[string]connectorConfigHandler{
 	},
 }
 
-func ConnectorConfigWithDefaults(connectorTypeID, plan, backend, state string) (string, error) {
+func ConnectorConfigWithDefaults(connectorTypeID, plan string) (string, error) {
 	handler, ok := connectorConfigHandlers[connectorTypeID]
 	if !ok {
 		return plan, errors.New("unknown connector type ID: " + connectorTypeID)
 	}
 
-	return handler.defaults(plan, backend)
+	if handler.defaults == nil {
+		return plan, nil
+	}
+
+	return handler.defaults(plan)
 }
 
 // User can omit optonal fields in config JSON.
@@ -271,7 +283,97 @@ func remarshalConfig[T any](plan string) (string, error) {
 	return string(customJSON), nil
 }
 
-func connectorConfigWithDefaultsCasesWebhook(plan, _ string) (string, error) {
+// remarshalConfigGenAi handles config for .gen-ai connectors.
+// The .gen-ai connector type has multiple possible config structures depending on the apiProvider
+// (GenaiOpenaiConfig, GenaiAzureConfig, GenaiOpenaiOtherConfig). This function unmarshals to the
+// appropriate type based on the apiProvider field. By unmarshaling to a typed struct and marshaling
+// back, unknown fields are automatically filtered out.
+func remarshalConfigGenAi(plan string) (string, error) {
+	// First, unmarshal to a map to check the apiProvider
+	var configMap map[string]interface{}
+	if err := json.Unmarshal([]byte(plan), &configMap); err != nil {
+		return "", err
+	}
+
+	apiProvider, ok := configMap["apiProvider"].(string)
+	if !ok {
+		// apiProvider is required for .gen-ai connectors
+		return "", errors.New("apiProvider is required for .gen-ai connector type")
+	}
+
+	// Unmarshal to the appropriate specific type based on apiProvider.
+	// By unmarshaling (which ignores unknown fields) and then marshaling back,
+	// we automatically filter out any fields that aren't defined in the specific config type.
+	switch apiProvider {
+	case "OpenAI":
+		return remarshalConfig[kbapi.GenaiOpenaiConfig](plan)
+	case "Azure OpenAI":
+		return remarshalConfig[kbapi.GenaiAzureConfig](plan)
+	case "Other":
+		return remarshalConfig[kbapi.GenaiOpenaiOtherConfig](plan)
+	default:
+		return "", fmt.Errorf("unsupported apiProvider %q for .gen-ai connector type, must be one of: OpenAI, Azure OpenAI, Other", apiProvider)
+	}
+}
+
+func connectorConfigWithDefaultsBedrock(plan string) (string, error) {
+	var custom kbapi.BedrockConfig
+	if err := json.Unmarshal([]byte(plan), &custom); err != nil {
+		return "", err
+	}
+	if custom.DefaultModel == nil {
+		custom.DefaultModel = utils.Pointer("us.anthropic.claude-sonnet-4-5-20250929-v1:0")
+	}
+	customJSON, err := json.Marshal(custom)
+	if err != nil {
+		return "", err
+	}
+	return string(customJSON), nil
+}
+
+func connectorConfigWithDefaultsGenAi(plan string) (string, error) {
+	// First unmarshal to check the apiProvider
+	var configMap map[string]interface{}
+	if err := json.Unmarshal([]byte(plan), &configMap); err != nil {
+		return "", err
+	}
+
+	apiProvider, ok := configMap["apiProvider"].(string)
+	if !ok {
+		// apiProvider is required for .gen-ai connectors
+		return "", errors.New("apiProvider is required for .gen-ai connector type")
+	}
+
+	// Apply defaults and filter fields based on the specific config type.
+	// By unmarshaling (which ignores unknown fields) and marshaling back,
+	// unknown fields are automatically filtered out.
+	switch apiProvider {
+	case "OpenAI":
+		// No defaults to apply for OpenAI
+		return remarshalConfig[kbapi.GenaiOpenaiConfig](plan)
+	case "Azure OpenAI":
+		// No defaults to apply for Azure
+		return remarshalConfig[kbapi.GenaiAzureConfig](plan)
+	case "Other":
+		var config kbapi.GenaiOpenaiOtherConfig
+		if err := json.Unmarshal([]byte(plan), &config); err != nil {
+			return "", err
+		}
+		// Apply verificationMode default for "Other" provider
+		if config.VerificationMode == nil {
+			config.VerificationMode = utils.Pointer(kbapi.GenaiOpenaiOtherConfigVerificationModeFull)
+		}
+		customJSON, err := json.Marshal(config)
+		if err != nil {
+			return "", err
+		}
+		return string(customJSON), nil
+	default:
+		return "", fmt.Errorf("unsupported apiProvider %q for .gen-ai connector type, must be one of: OpenAI, Azure OpenAI, Other", apiProvider)
+	}
+}
+
+func connectorConfigWithDefaultsCasesWebhook(plan string) (string, error) {
 	var custom kbapi.CasesWebhookConfig
 	if err := json.Unmarshal([]byte(plan), &custom); err != nil {
 		return "", err
@@ -292,7 +394,7 @@ func connectorConfigWithDefaultsCasesWebhook(plan, _ string) (string, error) {
 	return string(customJSON), nil
 }
 
-func connectorConfigWithDefaultsEmail(plan, _ string) (string, error) {
+func connectorConfigWithDefaultsEmail(plan string) (string, error) {
 	var custom kbapi.EmailConfig
 	if err := json.Unmarshal([]byte(plan), &custom); err != nil {
 		return "", err
@@ -310,11 +412,7 @@ func connectorConfigWithDefaultsEmail(plan, _ string) (string, error) {
 	return string(customJSON), nil
 }
 
-func connectorConfigWithDefaultsGemini(plan, _ string) (string, error) {
-	return plan, nil
-}
-
-func connectorConfigWithDefaultsIndex(plan, _ string) (string, error) {
+func connectorConfigWithDefaultsIndex(plan string) (string, error) {
 	var custom kbapi.IndexConfig
 	if err := json.Unmarshal([]byte(plan), &custom); err != nil {
 		return "", err
@@ -329,32 +427,20 @@ func connectorConfigWithDefaultsIndex(plan, _ string) (string, error) {
 	return string(customJSON), nil
 }
 
-func connectorConfigWithDefaultsJira(plan, _ string) (string, error) {
+func connectorConfigWithDefaultsJira(plan string) (string, error) {
 	return remarshalConfig[kbapi.JiraConfig](plan)
 }
 
-func connectorConfigWithDefaultsOpsgenie(plan, _ string) (string, error) {
-	return plan, nil
-}
-
-func connectorConfigWithDefaultsPagerduty(plan, _ string) (string, error) {
+func connectorConfigWithDefaultsPagerduty(plan string) (string, error) {
 	return remarshalConfig[kbapi.PagerdutyConfig](plan)
 }
 
-func connectorConfigWithDefaultsResilient(plan, _ string) (string, error) {
-	return plan, nil
-}
-
-func connectorConfigWithDefaultsServicenow(plan, backend string) (string, error) {
+func connectorConfigWithDefaultsServicenow(plan string) (string, error) {
 	var planConfig kbapi.ServicenowConfig
 	if err := json.Unmarshal([]byte(plan), &planConfig); err != nil {
 		return "", err
 	}
-	var backendConfig kbapi.ServicenowConfig
-	if err := json.Unmarshal([]byte(backend), &backendConfig); err != nil {
-		return "", err
-	}
-	if planConfig.IsOAuth == nil && backendConfig.IsOAuth != nil && !*backendConfig.IsOAuth {
+	if planConfig.IsOAuth == nil {
 		planConfig.IsOAuth = utils.Pointer(false)
 	}
 	if planConfig.UsesTableApi == nil {
@@ -367,7 +453,7 @@ func connectorConfigWithDefaultsServicenow(plan, backend string) (string, error)
 	return string(customJSON), nil
 }
 
-func connectorConfigWithDefaultsServicenowItom(plan, _ string) (string, error) {
+func connectorConfigWithDefaultsServicenowItom(plan string) (string, error) {
 	var custom kbapi.ServicenowItomConfig
 	if err := json.Unmarshal([]byte(plan), &custom); err != nil {
 		return "", err
@@ -382,11 +468,11 @@ func connectorConfigWithDefaultsServicenowItom(plan, _ string) (string, error) {
 	return string(customJSON), nil
 }
 
-func connectorConfigWithDefaultsServicenowSir(plan, backend string) (string, error) {
-	return connectorConfigWithDefaultsServicenow(plan, backend)
+func connectorConfigWithDefaultsServicenowSir(plan string) (string, error) {
+	return connectorConfigWithDefaultsServicenow(plan)
 }
 
-func connectorConfigWithDefaultsSwimlane(plan, _ string) (string, error) {
+func connectorConfigWithDefaultsSwimlane(plan string) (string, error) {
 	var custom kbapi.SwimlaneConfig
 	if err := json.Unmarshal([]byte(plan), &custom); err != nil {
 		return "", err
@@ -444,15 +530,7 @@ func connectorConfigWithDefaultsSwimlane(plan, _ string) (string, error) {
 	return string(customJSON), nil
 }
 
-func connectorConfigWithDefaultsTines(plan, _ string) (string, error) {
-	return plan, nil
-}
-
-func connectorConfigWithDefaultsWebhook(plan, _ string) (string, error) {
-	return plan, nil
-}
-
-func connectorConfigWithDefaultsXmatters(plan, _ string) (string, error) {
+func connectorConfigWithDefaultsXmatters(plan string) (string, error) {
 	var custom kbapi.XmattersConfig
 	if err := json.Unmarshal([]byte(plan), &custom); err != nil {
 		return "", err

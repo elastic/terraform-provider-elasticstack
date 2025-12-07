@@ -139,7 +139,7 @@ func ResourceSlm() *schema.Resource {
 	utils.AddConnectionSchema(slmSchema)
 
 	return &schema.Resource{
-		Description: "Creates or updates a snapshot lifecycle policy. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/slm-api-put-policy.html",
+		Description: "Creates or updates a snapshot lifecycle policy. See the [SLM API policy documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/slm-api-put-policy.html) for more details.",
 
 		CreateContext: resourceSlmPut,
 		UpdateContext: resourceSlmPut,
@@ -313,7 +313,7 @@ func resourceSlmRead(ctx context.Context, d *schema.ResourceData, meta interface
 			if err != nil {
 				return diag.FromErr(err)
 			}
-			if err := d.Set("metadata", meta); err != nil {
+			if err := d.Set("metadata", string(meta)); err != nil {
 				return diag.FromErr(err)
 			}
 		}

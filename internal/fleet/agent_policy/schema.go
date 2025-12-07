@@ -3,7 +3,10 @@ package agent_policy
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/float32validator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/int32validator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/mapvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -12,6 +15,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapdefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -97,6 +101,18 @@ func getSchema() schema.Schema {
 					boolplanmodifier.RequiresReplace(),
 				},
 			},
+			"inactivity_timeout": schema.StringAttribute{
+				Description: "The inactivity timeout for the agent policy. If an agent does not report within this time period, it will be considered inactive. Supports duration strings (e.g., '30s', '2m', '1h').",
+				Computed:    true,
+				Optional:    true,
+				CustomType:  customtypes.DurationType{},
+			},
+			"unenrollment_timeout": schema.StringAttribute{
+				Description: "The unenrollment timeout for the agent policy. If an agent is inactive for this period, it will be automatically unenrolled. Supports duration strings (e.g., '30s', '2m', '1h').",
+				Computed:    true,
+				Optional:    true,
+				CustomType:  customtypes.DurationType{},
+			},
 			"global_data_tags": schema.MapNestedAttribute{
 				Description: "User-defined data tags to apply to all inputs. Values can be strings (string_value) or numbers (number_value) but not both. Example -- key1 = {string_value = value1}, key2 = {number_value = 42}",
 				NestedObject: schema.NestedAttributeObject{
@@ -125,6 +141,26 @@ func getSchema() schema.Schema {
 						"number_value": types.Float32Type,
 					},
 				}, map[string]attr.Value{})),
+			},
+			"space_ids": schema.SetAttribute{
+				Description: "The Kibana space IDs that this agent policy should be available in. When not specified, defaults to [\"default\"]. Note: The order of space IDs does not matter as this is a set.",
+				ElementType: types.StringType,
+				Optional:    true,
+				Computed:    true,
+			},
+			"required_versions": schema.MapAttribute{
+				Description: "Map of agent versions to target percentages for automatic upgrade. The key is the target version and the value is the percentage of agents to upgrade to that version.",
+				ElementType: types.Int32Type,
+				Optional:    true,
+				Computed:    true,
+				PlanModifiers: []planmodifier.Map{
+					mapplanmodifier.UseStateForUnknown(),
+				},
+				Validators: []validator.Map{
+					mapvalidator.ValueInt32sAre(
+						int32validator.Between(0, 100),
+					),
+				},
 			},
 		}}
 }

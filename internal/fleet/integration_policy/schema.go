@@ -2,15 +2,24 @@ package integration_policy
 
 import (
 	"context"
+	_ "embed"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
+
+//go:embed resource-description.md
+var integrationPolicyDescription string
 
 func (r *integrationPolicyResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = getSchemaV1()
@@ -19,7 +28,7 @@ func (r *integrationPolicyResource) Schema(ctx context.Context, req resource.Sch
 func getSchemaV1() schema.Schema {
 	return schema.Schema{
 		Version:     1,
-		Description: "Creates a new Fleet Integration Policy. See https://www.elastic.co/guide/en/fleet/current/add-integration-to-policy.html",
+		Description: integrationPolicyDescription,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description: "The ID of this resource.",
@@ -47,7 +56,19 @@ func getSchemaV1() schema.Schema {
 			},
 			"agent_policy_id": schema.StringAttribute{
 				Description: "ID of the agent policy.",
-				Required:    true,
+				Optional:    true,
+				Validators: []validator.String{
+					stringvalidator.ConflictsWith(path.Root("agent_policy_ids").Expression()),
+				},
+			},
+			"agent_policy_ids": schema.ListAttribute{
+				Description: "List of agent policy IDs.",
+				ElementType: types.StringType,
+				Optional:    true,
+				Validators: []validator.List{
+					listvalidator.ConflictsWith(path.Root("agent_policy_id").Expression()),
+					listvalidator.SizeAtLeast(1),
+				},
 			},
 			"description": schema.StringAttribute{
 				Description: "The description of the integration policy.",
@@ -71,12 +92,22 @@ func getSchemaV1() schema.Schema {
 				Description: "The version of the integration package.",
 				Required:    true,
 			},
+			"output_id": schema.StringAttribute{
+				Description: "The ID of the output to send data to. When not specified, the default output of the agent policy will be used.",
+				Optional:    true,
+			},
 			"vars_json": schema.StringAttribute{
 				Description: "Integration-level variables as JSON.",
 				CustomType:  jsontypes.NormalizedType{},
 				Computed:    true,
 				Optional:    true,
 				Sensitive:   true,
+			},
+			"space_ids": schema.SetAttribute{
+				Description: "The Kibana space IDs where this integration policy is available. When set, must match the space_ids of the referenced agent policy. If not set, will be inherited from the agent policy. Note: The order of space IDs does not matter as this is a set.",
+				ElementType: types.StringType,
+				Optional:    true,
+				Computed:    true,
 			},
 		},
 		Blocks: map[string]schema.Block{

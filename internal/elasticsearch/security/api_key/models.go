@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -31,24 +33,24 @@ type accessModel struct {
 }
 
 type tfModel struct {
-	ID                      types.String         `tfsdk:"id"`
-	ElasticsearchConnection types.List           `tfsdk:"elasticsearch_connection"`
-	KeyID                   types.String         `tfsdk:"key_id"`
-	Name                    types.String         `tfsdk:"name"`
-	Type                    types.String         `tfsdk:"type"`
-	RoleDescriptors         jsontypes.Normalized `tfsdk:"role_descriptors"`
-	Expiration              types.String         `tfsdk:"expiration"`
-	ExpirationTimestamp     types.Int64          `tfsdk:"expiration_timestamp"`
-	Metadata                jsontypes.Normalized `tfsdk:"metadata"`
-	Access                  types.Object         `tfsdk:"access"`
-	APIKey                  types.String         `tfsdk:"api_key"`
-	Encoded                 types.String         `tfsdk:"encoded"`
+	ID                      types.String                                                              `tfsdk:"id"`
+	ElasticsearchConnection types.List                                                                `tfsdk:"elasticsearch_connection"`
+	KeyID                   types.String                                                              `tfsdk:"key_id"`
+	Name                    types.String                                                              `tfsdk:"name"`
+	Type                    types.String                                                              `tfsdk:"type"`
+	RoleDescriptors         customtypes.JSONWithDefaultsValue[map[string]models.ApiKeyRoleDescriptor] `tfsdk:"role_descriptors"`
+	Expiration              types.String                                                              `tfsdk:"expiration"`
+	ExpirationTimestamp     types.Int64                                                               `tfsdk:"expiration_timestamp"`
+	Metadata                jsontypes.Normalized                                                      `tfsdk:"metadata"`
+	Access                  types.Object                                                              `tfsdk:"access"`
+	APIKey                  types.String                                                              `tfsdk:"api_key"`
+	Encoded                 types.String                                                              `tfsdk:"encoded"`
 }
 
 func (model tfModel) GetID() (*clients.CompositeId, diag.Diagnostics) {
 	compId, sdkDiags := clients.CompositeIdFromStr(model.ID.ValueString())
 	if sdkDiags.HasError() {
-		return nil, utils.FrameworkDiagsFromSDK(sdkDiags)
+		return nil, diagutil.FrameworkDiagsFromSDK(sdkDiags)
 	}
 
 	return compId, nil
@@ -205,7 +207,7 @@ func (model *tfModel) populateFromAPI(apiKey models.ApiKeyResponse, serverVersio
 	model.Metadata = jsontypes.NewNormalizedNull()
 
 	if serverVersion.GreaterThanOrEqual(MinVersionReturningRoleDescriptors) {
-		model.RoleDescriptors = jsontypes.NewNormalizedNull()
+		model.RoleDescriptors = customtypes.NewJSONWithDefaultsNull(populateRoleDescriptorsDefaults)
 
 		if apiKey.RolesDescriptors != nil {
 			descriptors, diags := marshalNormalizedJsonValue(apiKey.RolesDescriptors)
@@ -213,7 +215,7 @@ func (model *tfModel) populateFromAPI(apiKey models.ApiKeyResponse, serverVersio
 				return diags
 			}
 
-			model.RoleDescriptors = descriptors
+			model.RoleDescriptors = customtypes.NewJSONWithDefaultsValue(descriptors.ValueString(), populateRoleDescriptorsDefaults)
 		}
 	}
 
@@ -232,7 +234,7 @@ func (model *tfModel) populateFromAPI(apiKey models.ApiKeyResponse, serverVersio
 func marshalNormalizedJsonValue(item any) (jsontypes.Normalized, diag.Diagnostics) {
 	jsonBytes, err := json.Marshal(item)
 	if err != nil {
-		return jsontypes.Normalized{}, utils.FrameworkDiagFromError(err)
+		return jsontypes.Normalized{}, diagutil.FrameworkDiagFromError(err)
 	}
 
 	return jsontypes.NewNormalizedValue(string(jsonBytes)), nil

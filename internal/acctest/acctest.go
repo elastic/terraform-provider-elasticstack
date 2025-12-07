@@ -4,16 +4,18 @@ import (
 	"context"
 	"log"
 	"os"
+	"path"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/provider"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 )
 
 var Providers map[string]func() (tfprotov6.ProviderServer, error)
 
 func init() {
-	providerServerFactory, err := provider.ProtoV6ProviderServerFactory(context.Background(), "dev")
+	providerServerFactory, err := provider.ProtoV6ProviderServerFactory(context.Background(), provider.AccTestVersion)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -45,5 +47,11 @@ func PreCheck(t *testing.T) {
 	authOk := (userOk && passOk) || (kbUserOk && kbPassOk) || apiKeyOk || kbApiKeyOk
 	if !authOk {
 		t.Fatal("ELASTICSEARCH_USERNAME and ELASTICSEARCH_PASSWORD, or KIBANA_USERNAME and KIBANA_PASSWORD, or ELASTICSEARCH_API_KEY, or KIBANA_API_KEY must be set for acceptance tests to run")
+	}
+}
+
+func NamedTestCaseDirectory(name string) config.TestStepConfigFunc {
+	return func(tscr config.TestStepConfigRequest) string {
+		return path.Join(config.TestNameDirectory()(tscr), name)
 	}
 }

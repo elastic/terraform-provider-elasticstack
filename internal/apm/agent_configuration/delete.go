@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
@@ -50,7 +50,7 @@ func (r *resourceAgentConfiguration) Delete(ctx context.Context, req resource.De
 	}
 	defer apiResp.Body.Close()
 
-	if diags := utils.CheckHttpErrorFromFW(apiResp, "Failed to delete APM agent configuration"); diags.HasError() {
+	if diags := diagutil.CheckHttpErrorFromFW(apiResp, "Failed to delete APM agent configuration"); diags.HasError() {
 		resp.Diagnostics.Append(diags...)
 		return
 	}

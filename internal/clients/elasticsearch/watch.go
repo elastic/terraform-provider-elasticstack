@@ -7,8 +7,8 @@ import (
 	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
@@ -29,7 +29,7 @@ func PutWatch(ctx context.Context, apiClient *clients.ApiClient, watch *models.P
 		return diag.FromErr(err)
 	}
 	defer res.Body.Close()
-	if diags := utils.CheckError(res, "Unable to create or update watch"); diags.HasError() {
+	if diags := diagutil.CheckError(res, "Unable to create or update watch"); diags.HasError() {
 		return diags
 	}
 
@@ -52,7 +52,7 @@ func GetWatch(ctx context.Context, apiClient *clients.ApiClient, watchID string)
 	if res.StatusCode == http.StatusNotFound {
 		return nil, nil
 	}
-	if diags := utils.CheckError(res, "Unable to find watch on cluster."); diags.HasError() {
+	if diags := diagutil.CheckError(res, "Unable to find watch on cluster."); diags.HasError() {
 		return nil, diags
 	}
 
@@ -77,7 +77,7 @@ func DeleteWatch(ctx context.Context, apiClient *clients.ApiClient, watchID stri
 		return diag.FromErr(err)
 	}
 	defer res.Body.Close()
-	if diags := utils.CheckError(res, "Unable to delete watch"); diags.HasError() {
+	if diags := diagutil.CheckError(res, "Unable to delete watch"); diags.HasError() {
 		return diags
 	}
 	return diags

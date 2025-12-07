@@ -19,7 +19,7 @@ import (
 
 func (r *MaintenanceWindowResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Manages Kibana maintenance windows",
+		MarkdownDescription: "Creates and manages Kibana [maintenance windows](https://www.elastic.co/docs/api/doc/kibana/group/endpoint-maintenance-window)",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,

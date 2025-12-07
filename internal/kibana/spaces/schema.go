@@ -11,7 +11,7 @@ import (
 // Schema defines the schema for the data source.
 func (d *dataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Manages Kibana spaces",
+		Description: "Use this data source to retrieve and get information about all existing Kibana spaces. See https://www.elastic.co/guide/en/kibana/master/spaces-api-get-all.html",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description: "Generated ID for the spaces.",
