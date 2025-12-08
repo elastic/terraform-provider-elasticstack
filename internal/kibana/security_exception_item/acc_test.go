@@ -381,8 +381,9 @@ func TestAccResourceExceptionItemEntryType_MatchAny(t *testing.T) {
 func TestAccResourceExceptionItemEntryType_List(t *testing.T) {
 	exceptionListID := fmt.Sprintf("test-exception-list-list-entry-%s", uuid.New().String()[:8])
 	itemID := fmt.Sprintf("test-exception-item-list-entry-%s", uuid.New().String()[:8])
-	valueListID := fmt.Sprintf("test-value-list-%s", uuid.New().String()[:8])
-	valueListValue := "192.168.1.1"
+	valueListIDIP := fmt.Sprintf("test-value-list-ip-%s", uuid.New().String()[:8])
+	valueListIDKeyword := fmt.Sprintf("test-value-list-keyword-%s", uuid.New().String()[:8])
+	valueListIDIPRange := fmt.Sprintf("test-value-list-ip-range-%s", uuid.New().String()[:8])
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -395,15 +396,51 @@ func TestAccResourceExceptionItemEntryType_List(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"exception_list_id": config.StringVariable(exceptionListID),
 					"item_id":           config.StringVariable(itemID),
-					"value_list_id":     config.StringVariable(valueListID),
-					"value_list_value":  config.StringVariable(valueListValue),
+					"value_list_id":     config.StringVariable(valueListIDIP),
+					"value_list_value":  config.StringVariable("192.168.1.1"),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "entries.0.type", "list"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "entries.0.field", "source.ip"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "entries.0.operator", "included"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "entries.0.list.id", valueListID),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "entries.0.list.id", valueListIDIP),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "entries.0.list.type", "ip"),
+				),
+			},
+			{
+				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("list_keyword"),
+				ConfigVariables: config.Variables{
+					"exception_list_id": config.StringVariable(exceptionListID),
+					"item_id":           config.StringVariable(itemID),
+					"value_list_id":     config.StringVariable(valueListIDKeyword),
+					"value_list_value":  config.StringVariable("test-process"),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "entries.0.type", "list"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "entries.0.field", "process.name"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "entries.0.operator", "included"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "entries.0.list.id", valueListIDKeyword),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "entries.0.list.type", "keyword"),
+				),
+			},
+			{
+				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("list_ip_range"),
+				ConfigVariables: config.Variables{
+					"exception_list_id": config.StringVariable(exceptionListID),
+					"item_id":           config.StringVariable(itemID),
+					"value_list_id":     config.StringVariable(valueListIDIPRange),
+					"value_list_value":  config.StringVariable("192.168.1.0/24"),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "entries.0.type", "list"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "entries.0.field", "destination.ip"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "entries.0.operator", "included"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "entries.0.list.id", valueListIDIPRange),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "entries.0.list.type", "ip_range"),
 				),
 			},
 		},
