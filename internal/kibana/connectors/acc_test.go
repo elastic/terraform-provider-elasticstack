@@ -134,19 +134,7 @@ func TestAccResourceKibanaConnectorCasesWebhook(t *testing.T) {
 							resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"updateIncidentJson\":\"{}\"`)),
 							resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"updateIncidentUrl\":\"https://www\.elastic\.co/\"`)),
 							resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"viewIncidentUrl\":\"https://www\.elastic\.co/\"`)),
-							// Verify that null headers field is removed from the config
-							func(s *terraform.State) error {
-								rs, ok := s.RootModule().Resources["elasticstack_kibana_action_connector.test"]
-								if !ok {
-									return fmt.Errorf("resource not found")
-								}
-								configStr := rs.Primary.Attributes["config"]
-								if regexp.MustCompile(`\"headers\"`).MatchString(configStr) {
-									return fmt.Errorf("headers field should not be present in config when null, got: %s", configStr)
-								}
-								return nil
-							},
-
+							resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "config", regexp.MustCompile(`\"headers\":null`)),
 							resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "secrets", regexp.MustCompile(`\"user\":\"user1\"`)),
 							resource.TestMatchResourceAttr("elasticstack_kibana_action_connector.test", "secrets", regexp.MustCompile(`\"password\":\"password1\"`)),
 						),
