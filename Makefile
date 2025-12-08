@@ -11,7 +11,6 @@ ACCTEST_PARALLELISM ?= 10
 ACCTEST_TIMEOUT = 120m
 ACCTEST_COUNT = 1
 TEST ?= ./...
-SWAGGER_VERSION ?= 8.7
 
 USE_TLS ?= 0
 COMPOSE_FILE := docker-compose.yml
@@ -45,6 +44,12 @@ build-ci: ## build the terraform provider
 
 .PHONY: build
 build: lint build-ci ## build the terraform provider
+
+# run acceptance tests against the docker container that has been started with `make docker-kibana` (or `make docker-elasticsearch`)
+# To run specific test (e.g. TestAccResourceActionConnector) execute `make testacc-vs-docker TESTARGS='-run ^TestAccResourceKibanaConnectorBedrock$$'`
+.PHONY: testacc-vs-docker
+testacc-vs-docker:
+	@ ELASTICSEARCH_ENDPOINTS=http://localhost:9200 KIBANA_ENDPOINT=http://localhost:5601 ELASTICSEARCH_USERNAME=$(ELASTICSEARCH_USERNAME) ELASTICSEARCH_PASSWORD=$(ELASTICSEARCH_PASSWORD) make testacc
 
 .PHONY: testacc
 testacc: ## Run acceptance tests
@@ -130,7 +135,7 @@ install: build ## Install built provider into the local terraform cache
 
 .PHONY: tools
 tools: $(GOBIN)  ## Download golangci-lint locally if necessary.
-	@[[ -f $(GOBIN)/golangci-lint ]] || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOBIN) v2.6.2
+	@[[ -f $(GOBIN)/golangci-lint ]] || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOBIN) v2.7.2
 
 .PHONY: golangci-lint
 golangci-lint:

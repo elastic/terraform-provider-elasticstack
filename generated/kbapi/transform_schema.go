@@ -5,6 +5,7 @@ package main
 
 import (
 	"bytes"
+	_ "embed"
 	"errors"
 	"flag"
 	"fmt"
@@ -556,6 +557,7 @@ func (s Slice) atoi(key string) int {
 type TransformFunc func(schema *Schema)
 
 var transformers = []TransformFunc{
+	mergeDashboardsSchema,
 	transformRemoveKbnXsrf,
 	transformRemoveApiVersionParam,
 	transformSimplifyContentType,
@@ -567,9 +569,39 @@ var transformers = []TransformFunc{
 	fixGetSpacesParams,
 	fixGetSyntheticsMonitorsParams,
 	fixGetMaintenanceWindowFindParams,
+	removeDuplicateOneOfRefs,
 	transformRemoveExamples,
 	transformRemoveUnusedComponents,
 	transformOmitEmptyNullable,
+}
+
+//go:embed dashboards.yaml
+var dashboardsYaml string
+
+func mergeDashboardsSchema(schema *Schema) {
+	var dashboardsSchema Schema
+	err := yaml.Unmarshal([]byte(dashboardsYaml), &dashboardsSchema)
+	if err != nil {
+		log.Fatalf("failed to unmarshal schema from dashboards.yaml: %v", err)
+	}
+
+	// Merge paths
+	for path, pathInfo := range dashboardsSchema.Paths {
+		// Only add the path if it doesn't already exist
+		if _, ok := schema.Paths[path]; !ok {
+			schema.Paths[path] = pathInfo
+		}
+	}
+
+	// Merge component schemas
+	dashboardSchemas := dashboardsSchema.Components.MustGetMap("schemas")
+	schemaSchemas := schema.Components.MustGetMap("schemas")
+	for key, schemaInfo := range dashboardSchemas {
+		// Only add the schema if it doesn't already exist
+		if _, ok := schemaSchemas[key]; !ok {
+			schemaSchemas[key] = schemaInfo
+		}
+	}
 }
 
 // transformRemoveKbnXsrf removes the kbn-xsrf header as it	is already applied
@@ -690,7 +722,13 @@ func transformKibanaPaths(schema *Schema) {
 		"/api/maintenance_window/{id}",
 		"/api/actions/connector/{id}",
 		"/api/actions/connectors",
+		"/api/data_views/default",
 		"/api/detection_engine/rules",
+		"/api/exception_lists",
+		"/api/exception_lists/items",
+		"/api/lists",
+		"/api/lists/index",
+		"/api/lists/items",
 	}
 
 	// Add a spaceId parameter if not already present
@@ -863,6 +901,7 @@ func transformKibanaPaths(schema *Schema) {
 		},
 		"propertyName": "action_type_id",
 	})
+	schema.Components.Delete("schemas.Security_Exceptions_API_ExceptionListItemExpireTime.format")
 
 }
 
@@ -881,6 +920,7 @@ func removeBrokenDiscriminator(schema *Schema) {
 		"Security_Detections_API_RuleSource",
 		"Security_Endpoint_Exceptions_API_ExceptionListItemEntry",
 		"Security_Exceptions_API_ExceptionListItemEntry",
+		"Security_Endpoint_Management_API_ActionDetailsResponse",
 	}
 
 	for _, component := range brokenDiscriminatorComponents {
@@ -913,6 +953,50 @@ func fixGetSyntheticsMonitorsParams(schema *Schema) {
 
 func fixGetMaintenanceWindowFindParams(schema *Schema) {
 	schema.MustGetPath("/api/maintenance_window/_find").MustGetEndpoint("get").Move("parameters.2.schema.anyOf.1", "parameters.2.schema")
+}
+
+func removeDuplicateOneOfRefs(schema *Schema) {
+	componentSchemas := schema.Components.MustGetMap("schemas")
+	componentSchemas.Iterate(removeDuplicateOneOfRefsFromNode)
+}
+
+// https://github.com/elastic/kibana/issues/244264
+func removeDuplicateOneOfRefsFromNode(key string, node Map) {
+	maybeOneOf, hasOneOf := node.GetSlice("oneOf")
+	if hasOneOf {
+		// Check for duplicate $ref entries
+		seenRefs := map[string]bool{}
+		newOneOf := Slice{}
+		for _, item := range maybeOneOf {
+			itemMap, ok := item.(Map)
+			if !ok {
+				newOneOf = append(newOneOf, item)
+				continue
+			}
+			refValue, hasRef := itemMap["$ref"]
+			if hasRef {
+				refStr, ok := refValue.(string)
+				if !ok {
+					newOneOf = append(newOneOf, item)
+					continue
+				}
+				if _, seen := seenRefs[refStr]; seen {
+					// Duplicate found, skip it
+					continue
+				}
+				seenRefs[refStr] = true
+			}
+			newOneOf = append(newOneOf, item)
+		}
+		node["oneOf"] = newOneOf
+	}
+
+	properties, hasProperties := node.GetMap("properties")
+	if !hasProperties {
+		return
+	}
+
+	properties.Iterate(removeDuplicateOneOfRefsFromNode)
 }
 
 // transformFleetPaths fixes the fleet paths.

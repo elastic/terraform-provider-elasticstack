@@ -5,16 +5,14 @@ provider "elasticstack" {
 resource "elasticstack_elasticsearch_index" "my_index" {
   name = "my-index"
 
-  alias {
+  alias = [{
     name = "my_alias_1"
-  }
-
-  alias {
+    }, {
     name = "my_alias_2"
     filter = jsonencode({
       term = { "user.id" = "developer" }
     })
-  }
+  }]
 
   mappings = jsonencode({
     properties = {

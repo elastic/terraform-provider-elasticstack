@@ -524,3 +524,85 @@ func checkResourceAgentPolicySkipDestroy(s *terraform.State) error {
 	}
 	return nil
 }
+
+func TestAccResourceAgentPolicyWithRequiredVersions(t *testing.T) {
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceAgentPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionRequiredVersions),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "required_versions.%", "1"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "required_versions.8.15.0", "100"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionRequiredVersions),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_percentage"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "required_versions.%", "1"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "required_versions.8.15.0", "50"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionRequiredVersions),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("add_version"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "required_versions.%", "2"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "required_versions.8.15.0", "50"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "required_versions.8.16.0", "50"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionRequiredVersions),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("unset_versions"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "required_versions.%", "2"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "required_versions.8.15.0", "50"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "required_versions.8.16.0", "50"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionRequiredVersions),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("remove_versions"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "required_versions.%", "0"),
+				),
+			},
+		},
+	})
+}

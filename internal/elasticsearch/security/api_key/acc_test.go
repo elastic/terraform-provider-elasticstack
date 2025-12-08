@@ -135,10 +135,12 @@ func TestAccResourceSecurityApiKeyWithRemoteIndices(t *testing.T) {
 									AllowRestrictedIndices: utils.Pointer(false),
 								}},
 								RemoteIndices: []models.RemoteIndexPerms{{
-									Clusters:               []string{"*"},
-									Names:                  []string{"index-a*"},
-									Privileges:             []string{"read"},
-									AllowRestrictedIndices: utils.Pointer(true),
+									Clusters: []string{"*"},
+									IndexPerms: models.IndexPerms{
+										Names:                  []string{"index-a*"},
+										Privileges:             []string{"read"},
+										AllowRestrictedIndices: utils.Pointer(true),
+									},
 								}},
 							},
 						}
