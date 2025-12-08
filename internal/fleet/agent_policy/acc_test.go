@@ -535,7 +535,7 @@ func TestAccResourceAgentPolicyWithHostNameFormat(t *testing.T) {
 			{
 				// Step 1: Create with host_name_format = "fqdn"
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionAgentPolicy),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionAgentFeatures),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_with_fqdn"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),

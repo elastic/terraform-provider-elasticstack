@@ -39,6 +39,7 @@ type features struct {
 	SupportsUnenrollmentTimeout bool
 	SupportsSpaceIds            bool
 	SupportsRequiredVersions    bool
+	SupportsAgentFeatures       bool
 }
 
 type globalDataTagsItemModel struct {
@@ -409,6 +410,15 @@ func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, feat featur
 
 	// Handle host_name_format via AgentFeatures
 	if feature := model.convertHostNameFormatToAgentFeature(); feature != nil {
+		if !feat.SupportsAgentFeatures {
+			return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diag.Diagnostics{
+				diag.NewAttributeErrorDiagnostic(
+					path.Root("host_name_format"),
+					"Unsupported Elasticsearch version",
+					fmt.Sprintf("host_name_format (agent_features) is only supported in Elastic Stack %s and above", MinVersionAgentFeatures),
+				),
+			}
+		}
 		body.AgentFeatures = &[]apiAgentFeature{*feature}
 	}
 
@@ -517,7 +527,21 @@ func (model *agentPolicyModel) toAPIUpdateModel(ctx context.Context, feat featur
 	body.RequiredVersions = requiredVersions
 
 	// Handle host_name_format via AgentFeatures, preserving other existing features
-	body.AgentFeatures = mergeAgentFeature(existingFeatures, model.convertHostNameFormatToAgentFeature())
+	if feature := model.convertHostNameFormatToAgentFeature(); feature != nil {
+		if !feat.SupportsAgentFeatures {
+			return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diag.Diagnostics{
+				diag.NewAttributeErrorDiagnostic(
+					path.Root("host_name_format"),
+					"Unsupported Elasticsearch version",
+					fmt.Sprintf("host_name_format (agent_features) is only supported in Elastic Stack %s and above", MinVersionAgentFeatures),
+				),
+			}
+		}
+		body.AgentFeatures = mergeAgentFeature(existingFeatures, feature)
+	} else if feat.SupportsAgentFeatures && len(existingFeatures) > 0 {
+		// Preserve existing features even when host_name_format is not set
+		body.AgentFeatures = &existingFeatures
+	}
 
 	return body, nil
 }
