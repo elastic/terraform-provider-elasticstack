@@ -1,11 +1,3 @@
----
-subcategory: "Kibana"
-layout: ""
-page_title: "Elasticstack: elasticstack_kibana_security_list_data_streams Resource"
-description: |-
-  Creates and manages `.lists` and `.items` data streams for security lists in Kibana.
----
-
 # Resource: elasticstack_kibana_security_list_data_streams
 
 Creates `.lists` and `.items` data streams in the relevant Kibana space. These data streams are required before you can start using security lists and exceptions that reference value lists.
