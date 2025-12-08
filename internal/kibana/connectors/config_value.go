@@ -82,8 +82,12 @@ func removeNulls(m map[string]interface{}) {
 	for key, value := range m {
 		if value == nil {
 			delete(m, key)
-		} else if nestedMap, ok := value.(map[string]interface{}); ok {
+			continue
+		}
+
+		if nestedMap, ok := value.(map[string]interface{}); ok {
 			removeNulls(nestedMap)
+			continue
 		}
 	}
 }
