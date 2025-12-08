@@ -28,14 +28,14 @@ resource "elasticstack_kibana_install_prebuilt_rules" "example" {
 
 ### Optional
 
-- `rules_not_installed` (Number) Number of prebuilt rules that are not installed.
-- `rules_not_updated` (Number) Number of prebuilt rules that have updates available.
 - `space_id` (String) An identifier for the space. If space_id is not provided, the default space is used.
-- `timelines_not_installed` (Number) Number of prebuilt timelines that are not installed.
-- `timelines_not_updated` (Number) Number of prebuilt timelines that have updates available.
 
 ### Read-Only
 
 - `id` (String) The ID of this resource.
 - `rules_installed` (Number) Number of prebuilt rules that are installed.
+- `rules_not_installed` (Number) Number of prebuilt rules that are not installed.
+- `rules_not_updated` (Number) Number of prebuilt rules that have updates available.
 - `timelines_installed` (Number) Number of prebuilt timelines that are installed.
+- `timelines_not_installed` (Number) Number of prebuilt timelines that are not installed.
+- `timelines_not_updated` (Number) Number of prebuilt timelines that have updates available.
