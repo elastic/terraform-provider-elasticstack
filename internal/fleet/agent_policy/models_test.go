@@ -143,4 +143,3 @@ func TestConvertHostNameFormatToAgentFeature(t *testing.T) {
 		})
 	}
 }
-
