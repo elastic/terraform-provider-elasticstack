@@ -91,10 +91,10 @@ func testAccResourcePrebuiltRules(t *testing.T, spaceID string) {
 }
 
 func deleteSingleDetectionRule(t *testing.T, spaceID string) {
-	supported, err := versionutils.CheckIfVersionIsUnsupported(minVersionPrebuiltRules)()
+	unsupported, err := versionutils.CheckIfVersionIsUnsupported(minVersionPrebuiltRules)()
 	require.NoError(t, err)
 
-	if !supported {
+	if unsupported {
 		return
 	}
 
