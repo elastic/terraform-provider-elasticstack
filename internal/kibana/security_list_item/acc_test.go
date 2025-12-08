@@ -1,12 +1,9 @@
 package security_list_item_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -18,10 +15,7 @@ func TestAccResourceSecurityListItem(t *testing.T) {
 	valueUpdated := "test-value-updated"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			acctest.PreCheck(t)
-			ensureListIndexExistsInSpace(t, "default")
-		},
+		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{ // Create
@@ -70,10 +64,7 @@ func TestAccResourceSecurityListItem_WithMeta(t *testing.T) {
 	meta2 := `{"category":"malicious","notes":"Updated metadata","severity":"critical"}`
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			acctest.PreCheck(t)
-			ensureListIndexExistsInSpace(t, "default")
-		},
+		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{ // Create with meta
@@ -130,10 +121,7 @@ func TestAccResourceSecurityListItem_Space(t *testing.T) {
 	value2 := "10.0.0.1"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			acctest.PreCheck(t)
-			ensureListIndexExistsInSpace(t, spaceID)
-		},
+		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{ // Create space, list, and list item
@@ -196,10 +184,7 @@ func TestAccResourceSecurityListItem_WithListItemID(t *testing.T) {
 	value2 := "test-value-2"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			acctest.PreCheck(t)
-			ensureListIndexExistsInSpace(t, "default")
-		},
+		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{ // Create with custom list_item_id
@@ -244,26 +229,4 @@ func TestAccResourceSecurityListItem_WithListItemID(t *testing.T) {
 			},
 		},
 	})
-}
-
-func ensureListIndexExistsInSpace(t *testing.T, spaceID string) {
-	client, err := clients.NewAcceptanceTestingClient()
-	if err != nil {
-		t.Fatalf("Failed to create client: %v", err)
-	}
-
-	kibanaClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		t.Fatalf("Failed to get Kibana client: %v", err)
-	}
-
-	diags := kibana_oapi.CreateListIndex(context.Background(), kibanaClient, spaceID)
-	if diags.HasError() {
-		// It's OK if it already exists, we'll only fail on other errors
-		for _, d := range diags {
-			if d.Summary() != "Unexpected status code from server: got HTTP 409" {
-				t.Fatalf("Failed to create list index in space %s: %v", spaceID, d.Detail())
-			}
-		}
-	}
 }

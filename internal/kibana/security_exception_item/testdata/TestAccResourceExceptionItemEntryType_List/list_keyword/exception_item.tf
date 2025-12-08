@@ -22,6 +22,9 @@ provider "elasticstack" {
   kibana {}
 }
 
+resource "elasticstack_kibana_security_list_data_streams" "test" {
+}
+
 resource "elasticstack_kibana_security_exception_list" "test" {
   list_id        = var.exception_list_id
   name           = "Test Exception List for List Entry - Keyword"
@@ -37,6 +40,8 @@ resource "elasticstack_kibana_security_list" "test-keyword" {
   description = "Test value list for list entry type with keyword"
   type        = "keyword"
 
+  depends_on = [elasticstack_kibana_security_list_data_streams.test]
+
   lifecycle {
     create_before_destroy = true
   }
@@ -45,6 +50,8 @@ resource "elasticstack_kibana_security_list" "test-keyword" {
 resource "elasticstack_kibana_security_list_item" "test-item" {
   list_id = elasticstack_kibana_security_list.test-keyword.list_id
   value   = var.value_list_value
+
+  depends_on = [elasticstack_kibana_security_list_data_streams.test]
 }
 
 resource "elasticstack_kibana_security_exception_item" "test" {

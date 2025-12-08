@@ -22,6 +22,9 @@ variable "deserializer" {
   type = string
 }
 
+resource "elasticstack_kibana_security_list_data_streams" "test" {
+}
+
 resource "elasticstack_kibana_security_list" "test" {
   list_id      = var.list_id
   name         = var.name
@@ -29,4 +32,6 @@ resource "elasticstack_kibana_security_list" "test" {
   type         = var.type
   serializer   = var.serializer
   deserializer = var.deserializer
+
+  depends_on = [elasticstack_kibana_security_list_data_streams.test]
 }
