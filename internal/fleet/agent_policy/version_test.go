@@ -2,10 +2,11 @@ package agent_policy
 
 import (
 	"context"
+	"testing"
+
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"testing"
 )
 
 func TestMinVersionInactivityTimeout(t *testing.T) {
@@ -84,7 +85,7 @@ func TestInactivityTimeoutVersionValidation(t *testing.T) {
 	}
 
 	// Test toAPIUpdateModel - should return error when inactivity_timeout is used but not supported
-	_, diags = model.toAPIUpdateModel(ctx, feat)
+	_, diags = model.toAPIUpdateModel(ctx, feat, nil)
 	if !diags.HasError() {
 		t.Error("Expected error when using inactivity_timeout on unsupported version in update, but got none")
 	}
@@ -101,7 +102,7 @@ func TestInactivityTimeoutVersionValidation(t *testing.T) {
 	}
 
 	// Test toAPIUpdateModel - should NOT return error when inactivity_timeout is supported
-	_, diags = model.toAPIUpdateModel(ctx, featSupported)
+	_, diags = model.toAPIUpdateModel(ctx, featSupported, nil)
 	if diags.HasError() {
 		t.Errorf("Did not expect error when using inactivity_timeout on supported version in update: %v", diags)
 	}
@@ -120,7 +121,7 @@ func TestInactivityTimeoutVersionValidation(t *testing.T) {
 	}
 
 	// Test toAPIUpdateModel - should NOT return error when inactivity_timeout is not set, even on unsupported version
-	_, diags = modelWithoutTimeout.toAPIUpdateModel(ctx, feat)
+	_, diags = modelWithoutTimeout.toAPIUpdateModel(ctx, feat, nil)
 	if diags.HasError() {
 		t.Errorf("Did not expect error when inactivity_timeout is not set in update: %v", diags)
 	}
@@ -160,7 +161,7 @@ func TestUnenrollmentTimeoutVersionValidation(t *testing.T) {
 	}
 
 	// Test toAPIUpdateModel - should return error when unenrollment_timeout is used but not supported
-	_, diags = model.toAPIUpdateModel(ctx, feat)
+	_, diags = model.toAPIUpdateModel(ctx, feat, nil)
 	if !diags.HasError() {
 		t.Error("Expected error when using unenrollment_timeout on unsupported version in update, but got none")
 	}
@@ -177,7 +178,7 @@ func TestUnenrollmentTimeoutVersionValidation(t *testing.T) {
 	}
 
 	// Test toAPIUpdateModel - should NOT return error when unenrollment_timeout is supported
-	_, diags = model.toAPIUpdateModel(ctx, featSupported)
+	_, diags = model.toAPIUpdateModel(ctx, featSupported, nil)
 	if diags.HasError() {
 		t.Errorf("Did not expect error when using unenrollment_timeout on supported version in update: %v", diags)
 	}
@@ -196,7 +197,7 @@ func TestUnenrollmentTimeoutVersionValidation(t *testing.T) {
 	}
 
 	// Test toAPIUpdateModel - should NOT return error when unenrollment_timeout is not set, even on unsupported version
-	_, diags = modelWithoutTimeout.toAPIUpdateModel(ctx, feat)
+	_, diags = modelWithoutTimeout.toAPIUpdateModel(ctx, feat, nil)
 	if diags.HasError() {
 		t.Errorf("Did not expect error when unenrollment_timeout is not set in update: %v", diags)
 	}
@@ -258,7 +259,7 @@ func TestSpaceIdsVersionValidation(t *testing.T) {
 	}
 
 	// Test toAPIUpdateModel - should return error when space_ids is used but not supported
-	_, diags = model.toAPIUpdateModel(ctx, feat)
+	_, diags = model.toAPIUpdateModel(ctx, feat, nil)
 	if !diags.HasError() {
 		t.Error("Expected error when using space_ids on unsupported version in update, but got none")
 	}
@@ -275,7 +276,7 @@ func TestSpaceIdsVersionValidation(t *testing.T) {
 	}
 
 	// Test toAPIUpdateModel - should NOT return error when space_ids is supported
-	_, diags = model.toAPIUpdateModel(ctx, featSupported)
+	_, diags = model.toAPIUpdateModel(ctx, featSupported, nil)
 	if diags.HasError() {
 		t.Errorf("Did not expect error when using space_ids on supported version in update: %v", diags)
 	}
@@ -294,7 +295,7 @@ func TestSpaceIdsVersionValidation(t *testing.T) {
 	}
 
 	// Test toAPIUpdateModel - should NOT return error when space_ids is not set, even on unsupported version
-	_, diags = modelWithoutSpaceIds.toAPIUpdateModel(ctx, feat)
+	_, diags = modelWithoutSpaceIds.toAPIUpdateModel(ctx, feat, nil)
 	if diags.HasError() {
 		t.Errorf("Did not expect error when space_ids is not set in update: %v", diags)
 	}

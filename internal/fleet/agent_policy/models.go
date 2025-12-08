@@ -17,6 +17,21 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+const (
+	// HostNameFormatHostname represents the short hostname format (e.g., "myhost")
+	HostNameFormatHostname = "hostname"
+	// HostNameFormatFQDN represents the fully qualified domain name format (e.g., "myhost.example.com")
+	HostNameFormatFQDN = "fqdn"
+	// agentFeatureFQDN is the name of the agent feature that enables FQDN host name format
+	agentFeatureFQDN = "fqdn"
+)
+
+// apiAgentFeature is the type expected by the generated API for agent features
+type apiAgentFeature = struct {
+	Enabled bool   `json:"enabled"`
+	Name    string `json:"name"`
+}
+
 type features struct {
 	SupportsGlobalDataTags      bool
 	SupportsSupportsAgentless   bool
@@ -45,6 +60,7 @@ type agentPolicyModel struct {
 	MonitorMetrics      types.Bool           `tfsdk:"monitor_metrics"`
 	SysMonitoring       types.Bool           `tfsdk:"sys_monitoring"`
 	SkipDestroy         types.Bool           `tfsdk:"skip_destroy"`
+	HostNameFormat      types.String         `tfsdk:"host_name_format"`
 	SupportsAgentless   types.Bool           `tfsdk:"supports_agentless"`
 	InactivityTimeout   customtypes.Duration `tfsdk:"inactivity_timeout"`
 	UnenrollmentTimeout customtypes.Duration `tfsdk:"unenrollment_timeout"`
@@ -84,6 +100,20 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 	model.Name = types.StringValue(data.Name)
 	model.Namespace = types.StringValue(data.Namespace)
 	model.SupportsAgentless = types.BoolPointerValue(data.SupportsAgentless)
+
+	// Determine host_name_format from AgentFeatures
+	// If AgentFeatures contains {"enabled": true, "name": "fqdn"}, then host_name_format is "fqdn"
+	// Otherwise, it defaults to "hostname"
+	model.HostNameFormat = types.StringValue(HostNameFormatHostname)
+	if data.AgentFeatures != nil {
+		for _, feature := range *data.AgentFeatures {
+			if feature.Name == agentFeatureFQDN && feature.Enabled {
+				model.HostNameFormat = types.StringValue(HostNameFormatFQDN)
+				break
+			}
+		}
+	}
+
 	if data.InactivityTimeout != nil {
 		// Convert seconds to duration string
 		seconds := int64(*data.InactivityTimeout)
@@ -377,10 +407,15 @@ func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, feat featur
 	}
 	body.RequiredVersions = requiredVersions
 
+	// Handle host_name_format via AgentFeatures
+	if feature := model.convertHostNameFormatToAgentFeature(); feature != nil {
+		body.AgentFeatures = &[]apiAgentFeature{*feature}
+	}
+
 	return body, nil
 }
 
-func (model *agentPolicyModel) toAPIUpdateModel(ctx context.Context, feat features) (kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody, diag.Diagnostics) {
+func (model *agentPolicyModel) toAPIUpdateModel(ctx context.Context, feat features, existingFeatures []apiAgentFeature) (kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody, diag.Diagnostics) {
 	monitoring := make([]kbapi.PutFleetAgentPoliciesAgentpolicyidJSONBodyMonitoringEnabled, 0, 2)
 	if model.MonitorLogs.ValueBool() {
 		monitoring = append(monitoring, kbapi.PutFleetAgentPoliciesAgentpolicyidJSONBodyMonitoringEnabledLogs)
@@ -481,5 +516,56 @@ func (model *agentPolicyModel) toAPIUpdateModel(ctx context.Context, feat featur
 	}
 	body.RequiredVersions = requiredVersions
 
+	// Handle host_name_format via AgentFeatures, preserving other existing features
+	body.AgentFeatures = mergeAgentFeature(existingFeatures, model.convertHostNameFormatToAgentFeature())
+
 	return body, nil
+}
+
+// convertHostNameFormatToAgentFeature converts the host_name_format field to a single AgentFeature.
+// - When host_name_format is "fqdn": returns {"name": "fqdn", "enabled": true}
+// - When host_name_format is "hostname": returns {"name": "fqdn", "enabled": false} to explicitly disable
+// - When not set: returns nil (no change to existing features)
+func (model *agentPolicyModel) convertHostNameFormatToAgentFeature() *apiAgentFeature {
+	// If host_name_format is not set or unknown, don't modify AgentFeatures
+	if model.HostNameFormat.IsNull() || model.HostNameFormat.IsUnknown() {
+		return nil
+	}
+
+	// Explicitly set enabled based on the host_name_format value
+	// We need to send enabled: false when hostname is selected to override any existing fqdn setting
+	return &apiAgentFeature{
+		Enabled: model.HostNameFormat.ValueString() == HostNameFormatFQDN,
+		Name:    agentFeatureFQDN,
+	}
+}
+
+// mergeAgentFeature merges a single feature into existing features, replacing any feature with the same name.
+// If newFeature is nil, returns existing features unchanged (nil if existing is empty).
+func mergeAgentFeature(existing []apiAgentFeature, newFeature *apiAgentFeature) *[]apiAgentFeature {
+	if newFeature == nil {
+		if len(existing) == 0 {
+			return nil
+		}
+		return &existing
+	}
+
+	// Check if the feature already exists and replace it, otherwise append
+	result := make([]apiAgentFeature, 0, len(existing)+1)
+	found := false
+
+	for _, f := range existing {
+		if f.Name == newFeature.Name {
+			result = append(result, *newFeature)
+			found = true
+		} else {
+			result = append(result, f)
+		}
+	}
+
+	if !found {
+		result = append(result, *newFeature)
+	}
+
+	return &result
 }

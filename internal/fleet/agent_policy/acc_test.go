@@ -525,6 +525,62 @@ func checkResourceAgentPolicySkipDestroy(s *terraform.State) error {
 	return nil
 }
 
+func TestAccResourceAgentPolicyWithHostNameFormat(t *testing.T) {
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceAgentPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				// Step 1: Create with host_name_format = "fqdn"
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionAgentPolicy),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_with_fqdn"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "description", "Test Agent Policy with FQDN host name format"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "host_name_format", "fqdn"),
+				),
+			},
+			{
+				// Step 2: Remove host_name_format from config - should use default "hostname"
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionAgentPolicy),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("remove_host_name_format"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "description", "Test Agent Policy without host_name_format"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "host_name_format", "hostname"),
+				),
+			},
+			{
+				// Step 3: Explicitly set host_name_format = "hostname"
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionAgentPolicy),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_to_hostname"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "description", "Test Agent Policy with hostname format"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "host_name_format", "hostname"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccResourceAgentPolicyWithRequiredVersions(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
