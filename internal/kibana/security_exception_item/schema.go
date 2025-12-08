@@ -151,6 +151,9 @@ func (r *ExceptionItemResource) Schema(_ context.Context, _ resource.SchemaReque
 								"type": schema.StringAttribute{
 									MarkdownDescription: "The value list type (e.g., `keyword`, `ip`, `ip_range`).",
 									Required:            true,
+									Validators: []validator.String{
+										stringvalidator.OneOf("keyword", "ip", "ip_range"),
+									},
 								},
 							},
 						},
