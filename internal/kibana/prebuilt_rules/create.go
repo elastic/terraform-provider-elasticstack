@@ -3,56 +3,9 @@ package prebuilt_rules
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
-	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
 func (r *PrebuiltRuleResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var model prebuiltRuleModel
-
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &model)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	serverVersion, sdkDiags := r.client.ServerVersion(ctx)
-	resp.Diagnostics.Append(utils.FrameworkDiagsFromSDK(sdkDiags)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	minVersion := version.Must(version.NewVersion("8.0.0"))
-	if serverVersion.LessThan(minVersion) {
-		resp.Diagnostics.AddError("Unsupported server version", "Prebuilt rules are not supported until Elastic Stack v8.0.0. Upgrade the target server to use this resource")
-		return
-	}
-
-	client, err := r.client.GetKibanaOapiClient()
-	if err != nil {
-		resp.Diagnostics.AddError(err.Error(), "")
-		return
-	}
-
-	spaceID := model.SpaceID.ValueString()
-
-	// Install/update prebuilt rules and timelines
-	resp.Diagnostics.Append(installPrebuiltRules(ctx, client, spaceID)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Set the resource ID to the space ID
-	model.ID = model.SpaceID
-
-	// Read the current status to populate computed attributes
-	status, statusDiags := getPrebuiltRulesStatus(ctx, client, spaceID)
-	resp.Diagnostics.Append(statusDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	model.populateFromStatus(ctx, status)
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
+	resp.Diagnostics.Append(r.upsert(ctx, req.Plan, &resp.State)...)
 }

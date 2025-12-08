@@ -3,7 +3,8 @@ package prebuilt_rules
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -17,7 +18,7 @@ func (r *PrebuiltRuleResource) Read(ctx context.Context, req resource.ReadReques
 	}
 
 	serverVersion, sdkDiags := r.client.ServerVersion(ctx)
-	resp.Diagnostics.Append(utils.FrameworkDiagsFromSDK(sdkDiags)...)
+	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -37,20 +38,13 @@ func (r *PrebuiltRuleResource) Read(ctx context.Context, req resource.ReadReques
 	spaceID := model.ID.ValueString()
 
 	// Get current status
-	status, statusDiags := getPrebuiltRulesStatus(ctx, client, spaceID)
+	status, statusDiags := kibana_oapi.GetPrebuiltRulesStatus(ctx, client, spaceID)
 	resp.Diagnostics.Append(statusDiags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	model.populateFromStatus(ctx, status)
-
-	if needsRuleUpdate(ctx, client, spaceID) {
-		resp.Diagnostics.Append(installPrebuiltRules(ctx, client, spaceID)...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-	}
+	model.populateFromStatus(status)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
 }

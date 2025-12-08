@@ -3,55 +3,60 @@ package prebuilt_rules
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 )
 
 func (r *PrebuiltRuleResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var model prebuiltRuleModel
-	var priorModel prebuiltRuleModel
+	resp.Diagnostics.Append(r.upsert(ctx, req.Plan, &resp.State)...)
+}
 
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &model)...)
-	resp.Diagnostics.Append(req.State.Get(ctx, &priorModel)...)
-	if resp.Diagnostics.HasError() {
-		return
+func (r *PrebuiltRuleResource) upsert(ctx context.Context, plan tfsdk.Plan, state *tfsdk.State) diag.Diagnostics {
+	var model prebuiltRuleModel
+
+	diags := plan.Get(ctx, &model)
+	if diags.HasError() {
+		return diags
 	}
 
 	serverVersion, sdkDiags := r.client.ServerVersion(ctx)
-	resp.Diagnostics.Append(utils.FrameworkDiagsFromSDK(sdkDiags)...)
-	if resp.Diagnostics.HasError() {
-		return
+	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	if diags.HasError() {
+		return diags
 	}
 
 	minVersion := version.Must(version.NewVersion("8.0.0"))
 	if serverVersion.LessThan(minVersion) {
-		resp.Diagnostics.AddError("Unsupported server version", "Prebuilt rules are not supported until Elastic Stack v8.0.0. Upgrade the target server to use this resource")
-		return
+		diags.AddError("Unsupported server version", "Prebuilt rules are not supported until Elastic Stack v8.0.0. Upgrade the target server to use this resource")
+		return diags
 	}
 
 	client, err := r.client.GetKibanaOapiClient()
 	if err != nil {
-		resp.Diagnostics.AddError(err.Error(), "")
-		return
+		diags.AddError(err.Error(), "Failed to get Kibana client")
+		return diags
 	}
 
 	spaceID := model.SpaceID.ValueString()
+	model.ID = model.SpaceID
 
-	if needsRuleUpdate(ctx, client, spaceID) {
-		resp.Diagnostics.Append(installPrebuiltRules(ctx, client, spaceID)...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
+	diags.Append(kibana_oapi.InstallPrebuiltRules(ctx, client, spaceID)...)
+	if diags.HasError() {
+		return diags
 	}
 
-	status, statusDiags := getPrebuiltRulesStatus(ctx, client, spaceID)
-	resp.Diagnostics.Append(statusDiags...)
-	if resp.Diagnostics.HasError() {
-		return
+	status, statusDiags := kibana_oapi.GetPrebuiltRulesStatus(ctx, client, spaceID)
+	diags.Append(statusDiags...)
+	if diags.HasError() {
+		return diags
 	}
 
-	model.populateFromStatus(ctx, status)
+	model.populateFromStatus(status)
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
+	diags.Append(state.Set(ctx, model)...)
+	return diags
 }
