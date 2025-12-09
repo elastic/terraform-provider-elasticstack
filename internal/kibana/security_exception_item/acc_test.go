@@ -384,6 +384,7 @@ func TestAccResourceExceptionItemEntryType_List(t *testing.T) {
 	valueListIDIP := fmt.Sprintf("test-value-list-ip-%s", uuid.New().String()[:8])
 	valueListIDKeyword := fmt.Sprintf("test-value-list-keyword-%s", uuid.New().String()[:8])
 	valueListIDIPRange := fmt.Sprintf("test-value-list-ip-range-%s", uuid.New().String()[:8])
+	spaceID := fmt.Sprintf("test-space-%s", uuid.New().String()[:8])
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -394,6 +395,7 @@ func TestAccResourceExceptionItemEntryType_List(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("list"),
 				ConfigVariables: config.Variables{
+					"space_id":          config.StringVariable(spaceID),
 					"exception_list_id": config.StringVariable(exceptionListID),
 					"item_id":           config.StringVariable(itemID),
 					"value_list_id":     config.StringVariable(valueListIDIP),
@@ -412,6 +414,7 @@ func TestAccResourceExceptionItemEntryType_List(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("list_update"),
 				ConfigVariables: config.Variables{
+					"space_id":           config.StringVariable(spaceID),
 					"exception_list_id":  config.StringVariable(exceptionListID),
 					"item_id":            config.StringVariable(itemID),
 					"value_list_id":      config.StringVariable(valueListIDIP),
@@ -431,6 +434,7 @@ func TestAccResourceExceptionItemEntryType_List(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("list_keyword"),
 				ConfigVariables: config.Variables{
+					"space_id":          config.StringVariable(spaceID),
 					"exception_list_id": config.StringVariable(exceptionListID),
 					"item_id":           config.StringVariable(itemID),
 					"value_list_id":     config.StringVariable(valueListIDKeyword),
@@ -449,6 +453,7 @@ func TestAccResourceExceptionItemEntryType_List(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("list_keyword_update"),
 				ConfigVariables: config.Variables{
+					"space_id":           config.StringVariable(spaceID),
 					"exception_list_id":  config.StringVariable(exceptionListID),
 					"item_id":            config.StringVariable(itemID),
 					"value_list_id":      config.StringVariable(valueListIDKeyword),
@@ -468,6 +473,7 @@ func TestAccResourceExceptionItemEntryType_List(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("list_ip_range"),
 				ConfigVariables: config.Variables{
+					"space_id":          config.StringVariable(spaceID),
 					"exception_list_id": config.StringVariable(exceptionListID),
 					"item_id":           config.StringVariable(itemID),
 					"value_list_id":     config.StringVariable(valueListIDIPRange),
@@ -486,6 +492,7 @@ func TestAccResourceExceptionItemEntryType_List(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("list_ip_range_update"),
 				ConfigVariables: config.Variables{
+					"space_id":           config.StringVariable(spaceID),
 					"exception_list_id":  config.StringVariable(exceptionListID),
 					"item_id":            config.StringVariable(itemID),
 					"value_list_id":      config.StringVariable(valueListIDIPRange),

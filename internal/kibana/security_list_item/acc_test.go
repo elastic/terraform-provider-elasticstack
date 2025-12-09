@@ -11,6 +11,7 @@ import (
 
 func TestAccResourceSecurityListItem(t *testing.T) {
 	listID := "test-list-items-" + uuid.New().String()
+	spaceID := "test-space-" + uuid.New().String()[:8]
 	value1 := "test-value-1"
 	valueUpdated := "test-value-updated"
 
@@ -21,8 +22,9 @@ func TestAccResourceSecurityListItem(t *testing.T) {
 			{ // Create
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
-					"list_id": config.StringVariable(listID),
-					"value":   config.StringVariable(value1),
+					"space_id": config.StringVariable(spaceID),
+					"list_id":  config.StringVariable(listID),
+					"value":    config.StringVariable(value1),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_list_item.test", "id"),
@@ -36,8 +38,9 @@ func TestAccResourceSecurityListItem(t *testing.T) {
 			{ // Update
 				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
-					"list_id": config.StringVariable(listID),
-					"value":   config.StringVariable(valueUpdated),
+					"space_id": config.StringVariable(spaceID),
+					"list_id":  config.StringVariable(listID),
+					"value":    config.StringVariable(valueUpdated),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_item.test", "value", valueUpdated),
@@ -46,8 +49,9 @@ func TestAccResourceSecurityListItem(t *testing.T) {
 			{ // Import
 				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
-					"list_id": config.StringVariable(listID),
-					"value":   config.StringVariable(valueUpdated),
+					"space_id": config.StringVariable(spaceID),
+					"list_id":  config.StringVariable(listID),
+					"value":    config.StringVariable(valueUpdated),
 				},
 				ResourceName:      "elasticstack_kibana_security_list_item.test",
 				ImportState:       true,
@@ -59,6 +63,7 @@ func TestAccResourceSecurityListItem(t *testing.T) {
 
 func TestAccResourceSecurityListItem_WithMeta(t *testing.T) {
 	listID := "test-list-items-meta-" + uuid.New().String()
+	spaceID := "test-space-" + uuid.New().String()[:8]
 	value := "test-value-with-meta"
 	meta1 := `{"category":"suspicious","severity":"high"}`
 	meta2 := `{"category":"malicious","notes":"Updated metadata","severity":"critical"}`
@@ -70,9 +75,10 @@ func TestAccResourceSecurityListItem_WithMeta(t *testing.T) {
 			{ // Create with meta
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
-					"list_id": config.StringVariable(listID),
-					"value":   config.StringVariable(value),
-					"meta":    config.StringVariable(meta1),
+					"space_id": config.StringVariable(spaceID),
+					"list_id":  config.StringVariable(listID),
+					"value":    config.StringVariable(value),
+					"meta":     config.StringVariable(meta1),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_list_item.test", "id"),
@@ -87,9 +93,10 @@ func TestAccResourceSecurityListItem_WithMeta(t *testing.T) {
 			{ // Update meta
 				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
-					"list_id": config.StringVariable(listID),
-					"value":   config.StringVariable(value),
-					"meta":    config.StringVariable(meta2),
+					"space_id": config.StringVariable(spaceID),
+					"list_id":  config.StringVariable(listID),
+					"value":    config.StringVariable(value),
+					"meta":     config.StringVariable(meta2),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_item.test", "value", value),
@@ -99,9 +106,10 @@ func TestAccResourceSecurityListItem_WithMeta(t *testing.T) {
 			{ // Import
 				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
-					"list_id": config.StringVariable(listID),
-					"value":   config.StringVariable(value),
-					"meta":    config.StringVariable(meta2),
+					"space_id": config.StringVariable(spaceID),
+					"list_id":  config.StringVariable(listID),
+					"value":    config.StringVariable(value),
+					"meta":     config.StringVariable(meta2),
 				},
 				ResourceName:      "elasticstack_kibana_security_list_item.test",
 				ImportState:       true,
@@ -178,6 +186,7 @@ func TestAccResourceSecurityListItem_Space(t *testing.T) {
 
 func TestAccResourceSecurityListItem_WithListItemID(t *testing.T) {
 	listID := "test-list-items-with-id-" + uuid.New().String()
+	spaceID := "test-space-" + uuid.New().String()[:8]
 	listItemID1 := "custom-item-id-1"
 	listItemID2 := "custom-item-id-2"
 	value1 := "test-value-1"
@@ -190,6 +199,7 @@ func TestAccResourceSecurityListItem_WithListItemID(t *testing.T) {
 			{ // Create with custom list_item_id
 				ConfigDirectory: acctest.NamedTestCaseDirectory("with_list_item_id_create"),
 				ConfigVariables: config.Variables{
+					"space_id":     config.StringVariable(spaceID),
 					"list_id":      config.StringVariable(listID),
 					"list_item_id": config.StringVariable(listItemID1),
 					"value":        config.StringVariable(value1),
@@ -207,6 +217,7 @@ func TestAccResourceSecurityListItem_WithListItemID(t *testing.T) {
 			{ // Update list_item_id (should force replacement)
 				ConfigDirectory: acctest.NamedTestCaseDirectory("with_list_item_id_update"),
 				ConfigVariables: config.Variables{
+					"space_id":     config.StringVariable(spaceID),
 					"list_id":      config.StringVariable(listID),
 					"list_item_id": config.StringVariable(listItemID2),
 					"value":        config.StringVariable(value2),
@@ -219,6 +230,7 @@ func TestAccResourceSecurityListItem_WithListItemID(t *testing.T) {
 			{ // Import
 				ConfigDirectory: acctest.NamedTestCaseDirectory("with_list_item_id_update"),
 				ConfigVariables: config.Variables{
+					"space_id":     config.StringVariable(spaceID),
 					"list_id":      config.StringVariable(listID),
 					"list_item_id": config.StringVariable(listItemID2),
 					"value":        config.StringVariable(value2),

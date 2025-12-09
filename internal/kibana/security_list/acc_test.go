@@ -11,6 +11,7 @@ import (
 
 func TestAccResourceSecurityList(t *testing.T) {
 	listID := "test-list-" + uuid.New().String()
+	spaceID := "test-space-" + uuid.New().String()[:8]
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV6ProviderFactories: acctest.Providers,
@@ -18,6 +19,7 @@ func TestAccResourceSecurityList(t *testing.T) {
 			{ // Create
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
+					"space_id":    config.StringVariable(spaceID),
 					"list_id":     config.StringVariable(listID),
 					"name":        config.StringVariable("Test Security List"),
 					"description": config.StringVariable("A test security list for IP addresses"),
@@ -37,6 +39,7 @@ func TestAccResourceSecurityList(t *testing.T) {
 			{ // Update
 				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
+					"space_id":    config.StringVariable(spaceID),
 					"list_id":     config.StringVariable(listID),
 					"name":        config.StringVariable("Updated Security List"),
 					"description": config.StringVariable("An updated test security list"),
@@ -50,6 +53,7 @@ func TestAccResourceSecurityList(t *testing.T) {
 			{ // Import
 				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
+					"space_id":    config.StringVariable(spaceID),
 					"list_id":     config.StringVariable(listID),
 					"name":        config.StringVariable("Updated Security List"),
 					"description": config.StringVariable("An updated test security list"),
@@ -65,6 +69,7 @@ func TestAccResourceSecurityList(t *testing.T) {
 
 func TestAccResourceSecurityList_KeywordType(t *testing.T) {
 	listID := "keyword-list-" + uuid.New().String()
+	spaceID := "test-space-" + uuid.New().String()[:8]
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV6ProviderFactories: acctest.Providers,
@@ -72,6 +77,7 @@ func TestAccResourceSecurityList_KeywordType(t *testing.T) {
 			{
 				ConfigDirectory: acctest.NamedTestCaseDirectory("keyword_type"),
 				ConfigVariables: config.Variables{
+					"space_id":    config.StringVariable(spaceID),
 					"list_id":     config.StringVariable(listID),
 					"name":        config.StringVariable("Keyword Security List"),
 					"description": config.StringVariable("A test security list for keywords"),
@@ -87,6 +93,7 @@ func TestAccResourceSecurityList_KeywordType(t *testing.T) {
 
 func TestAccResourceSecurityList_SerializerDeserializer(t *testing.T) {
 	listID := "serializer-list-" + uuid.New().String()
+	spaceID := "test-space-" + uuid.New().String()[:8]
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV6ProviderFactories: acctest.Providers,
@@ -94,6 +101,7 @@ func TestAccResourceSecurityList_SerializerDeserializer(t *testing.T) {
 			{ // Create with serializer and deserializer
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
+					"space_id":     config.StringVariable(spaceID),
 					"list_id":      config.StringVariable(listID),
 					"name":         config.StringVariable("Custom Serializer List"),
 					"description":  config.StringVariable("A test list with custom serializer and deserializer"),
@@ -112,6 +120,7 @@ func TestAccResourceSecurityList_SerializerDeserializer(t *testing.T) {
 			{ // Update name and description (serializer/deserializer are immutable)
 				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
+					"space_id":     config.StringVariable(spaceID),
 					"list_id":      config.StringVariable(listID),
 					"name":         config.StringVariable("Updated Serializer List"),
 					"description":  config.StringVariable("Updated test list description"),
@@ -132,6 +141,7 @@ func TestAccResourceSecurityList_SerializerDeserializer(t *testing.T) {
 
 func TestAccResourceSecurityList_WithMetadata(t *testing.T) {
 	listID := "meta-list-" + uuid.New().String()
+	spaceID := "test-space-" + uuid.New().String()[:8]
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV6ProviderFactories: acctest.Providers,
@@ -139,6 +149,7 @@ func TestAccResourceSecurityList_WithMetadata(t *testing.T) {
 			{ // Create with metadata
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create_with_meta"),
 				ConfigVariables: config.Variables{
+					"space_id":    config.StringVariable(spaceID),
 					"list_id":     config.StringVariable(listID),
 					"name":        config.StringVariable("List with Metadata"),
 					"description": config.StringVariable("A test list with metadata"),
@@ -154,6 +165,7 @@ func TestAccResourceSecurityList_WithMetadata(t *testing.T) {
 			{ // Update metadata
 				ConfigDirectory: acctest.NamedTestCaseDirectory("update_meta"),
 				ConfigVariables: config.Variables{
+					"space_id":    config.StringVariable(spaceID),
 					"list_id":     config.StringVariable(listID),
 					"name":        config.StringVariable("List with Metadata"),
 					"description": config.StringVariable("A test list with updated metadata"),
