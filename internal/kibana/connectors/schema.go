@@ -66,7 +66,7 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 			"config": schema.StringAttribute{
 				CustomType: ConfigType{},
 				Description: fmt.Sprintf(`The configuration for the connector. Configuration properties vary depending on the connector type.
-				
+
 The provider injects the '%s' property into this JSON object. In most cases this field will be ignored when computing the difference between the current and desired state. In some cases however, this property may be shown in the Terraform plan. Any changes to the '%s' property can be safely ignored. This property is used internally by the provider, and you should not set this property within your Terraform configuration.`, connectorTypeIDKey, connectorTypeIDKey),
 				Optional: true,
 				Computed: true,
