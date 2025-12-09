@@ -325,7 +325,7 @@ func TestMinVersionAgentFeatures(t *testing.T) {
 func TestAgentFeaturesVersionValidation(t *testing.T) {
 	ctx := context.Background()
 
-	// Test case where agent_features is not supported (older version)
+	// Test case where agent_features is not supported (older version) with FQDN
 	model := &agentPolicyModel{
 		Name:           types.StringValue("test"),
 		Namespace:      types.StringValue("default"),
@@ -337,10 +337,10 @@ func TestAgentFeaturesVersionValidation(t *testing.T) {
 		SupportsAgentFeatures: false,
 	}
 
-	// Test toAPICreateModel - should return error when host_name_format is used but agent_features not supported
+	// Test toAPICreateModel - should return error when host_name_format=fqdn on unsupported version
 	_, diags := model.toAPICreateModel(ctx, feat)
 	if !diags.HasError() {
-		t.Error("Expected error when using host_name_format on unsupported version, but got none")
+		t.Error("Expected error when using host_name_format=fqdn on unsupported version, but got none")
 	}
 
 	// Check that the error message contains the expected text
@@ -355,10 +355,29 @@ func TestAgentFeaturesVersionValidation(t *testing.T) {
 		t.Error("Expected 'Unsupported Elasticsearch version' error, but didn't find it")
 	}
 
-	// Test toAPIUpdateModel - should return error when host_name_format is used but agent_features not supported
+	// Test toAPIUpdateModel - should return error when host_name_format=fqdn on unsupported version
 	_, diags = model.toAPIUpdateModel(ctx, feat, nil)
 	if !diags.HasError() {
-		t.Error("Expected error when using host_name_format on unsupported version in update, but got none")
+		t.Error("Expected error when using host_name_format=fqdn on unsupported version in update, but got none")
+	}
+
+	// Test case where host_name_format=hostname (default) on unsupported version - should NOT error
+	modelWithHostname := &agentPolicyModel{
+		Name:           types.StringValue("test"),
+		Namespace:      types.StringValue("default"),
+		HostNameFormat: types.StringValue(HostNameFormatHostname),
+	}
+
+	// Test toAPICreateModel - should NOT return error for hostname (default) on unsupported version
+	_, diags = modelWithHostname.toAPICreateModel(ctx, feat)
+	if diags.HasError() {
+		t.Errorf("Did not expect error when using host_name_format=hostname on unsupported version: %v", diags)
+	}
+
+	// Test toAPIUpdateModel - should NOT return error for hostname (default) on unsupported version
+	_, diags = modelWithHostname.toAPIUpdateModel(ctx, feat, nil)
+	if diags.HasError() {
+		t.Errorf("Did not expect error when using host_name_format=hostname on unsupported version in update: %v", diags)
 	}
 
 	// Test case where agent_features IS supported (newer version)

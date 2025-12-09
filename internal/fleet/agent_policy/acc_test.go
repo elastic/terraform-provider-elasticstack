@@ -550,7 +550,7 @@ func TestAccResourceAgentPolicyWithHostNameFormat(t *testing.T) {
 			{
 				// Step 2: Remove host_name_format from config - should use default "hostname"
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionAgentPolicy),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionAgentFeatures),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("remove_host_name_format"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
@@ -565,7 +565,7 @@ func TestAccResourceAgentPolicyWithHostNameFormat(t *testing.T) {
 			{
 				// Step 3: Explicitly set host_name_format = "hostname"
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionAgentPolicy),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionAgentFeatures),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_to_hostname"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),

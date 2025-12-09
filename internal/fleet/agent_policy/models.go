@@ -409,17 +409,23 @@ func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, feat featur
 	body.RequiredVersions = requiredVersions
 
 	// Handle host_name_format via AgentFeatures
-	if feature := model.convertHostNameFormatToAgentFeature(); feature != nil {
+	if agentFeature := model.convertHostNameFormatToAgentFeature(); agentFeature != nil {
 		if !feat.SupportsAgentFeatures {
-			return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diag.Diagnostics{
-				diag.NewAttributeErrorDiagnostic(
-					path.Root("host_name_format"),
-					"Unsupported Elasticsearch version",
-					fmt.Sprintf("host_name_format (agent_features) is only supported in Elastic Stack %s and above", MinVersionAgentFeatures),
-				),
+			// Only error if user explicitly requests FQDN on unsupported version
+			// Default "hostname" is fine - just don't send agent_features
+			if agentFeature.Enabled {
+				return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diag.Diagnostics{
+					diag.NewAttributeErrorDiagnostic(
+						path.Root("host_name_format"),
+						"Unsupported Elasticsearch version",
+						fmt.Sprintf("host_name_format (agent_features) is only supported in Elastic Stack %s and above", MinVersionAgentFeatures),
+					),
+				}
 			}
+			// On unsupported version with default "hostname", don't send agent_features
+		} else {
+			body.AgentFeatures = &[]apiAgentFeature{*agentFeature}
 		}
-		body.AgentFeatures = &[]apiAgentFeature{*feature}
 	}
 
 	return body, nil
@@ -527,17 +533,23 @@ func (model *agentPolicyModel) toAPIUpdateModel(ctx context.Context, feat featur
 	body.RequiredVersions = requiredVersions
 
 	// Handle host_name_format via AgentFeatures, preserving other existing features
-	if feature := model.convertHostNameFormatToAgentFeature(); feature != nil {
+	if agentFeature := model.convertHostNameFormatToAgentFeature(); agentFeature != nil {
 		if !feat.SupportsAgentFeatures {
-			return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diag.Diagnostics{
-				diag.NewAttributeErrorDiagnostic(
-					path.Root("host_name_format"),
-					"Unsupported Elasticsearch version",
-					fmt.Sprintf("host_name_format (agent_features) is only supported in Elastic Stack %s and above", MinVersionAgentFeatures),
-				),
+			// Only error if user explicitly requests FQDN on unsupported version
+			// Default "hostname" is fine - just don't send agent_features
+			if agentFeature.Enabled {
+				return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diag.Diagnostics{
+					diag.NewAttributeErrorDiagnostic(
+						path.Root("host_name_format"),
+						"Unsupported Elasticsearch version",
+						fmt.Sprintf("host_name_format (agent_features) is only supported in Elastic Stack %s and above", MinVersionAgentFeatures),
+					),
+				}
 			}
+			// On unsupported version with default "hostname", don't send agent_features
+		} else {
+			body.AgentFeatures = mergeAgentFeature(existingFeatures, agentFeature)
 		}
-		body.AgentFeatures = mergeAgentFeature(existingFeatures, feature)
 	} else if feat.SupportsAgentFeatures && len(existingFeatures) > 0 {
 		// Preserve existing features even when host_name_format is not set
 		body.AgentFeatures = &existingFeatures
