@@ -218,6 +218,39 @@ func CreateAlertingRule(ctx context.Context, apiClient ApiClient, rule models.Al
 
 	rule.RuleID = ruleRes.Id
 
+	// Handle enable/disable state explicitly after creation if the user set it.
+	// The Kibana API may not honor the enabled field during creation,
+	// so we ensure the correct state by calling enable/disable APIs.
+	if rule.Enabled != nil {
+		shouldBeEnabled := *rule.Enabled
+
+		if shouldBeEnabled && !ruleRes.Enabled {
+			res, err := client.EnableRule(ctxWithAuth, rule.RuleID, rule.SpaceID).KbnXsrf("true").Execute()
+			if err != nil && res == nil {
+				return nil, diag.FromErr(err)
+			}
+
+			defer res.Body.Close()
+
+			if diags := diagutil.CheckHttpError(res, "Unable to enable alerting rule"); diags.HasError() {
+				return nil, diags
+			}
+		}
+
+		if !shouldBeEnabled && ruleRes.Enabled {
+			res, err := client.DisableRule(ctxWithAuth, rule.RuleID, rule.SpaceID).KbnXsrf("true").Execute()
+			if err != nil && res == nil {
+				return nil, diag.FromErr(err)
+			}
+
+			defer res.Body.Close()
+
+			if diags := diagutil.CheckHttpError(res, "Unable to disable alerting rule"); diags.HasError() {
+				return nil, diags
+			}
+		}
+	}
+
 	return ruleResponseToModel(rule.SpaceID, ruleRes), nil
 }
 
