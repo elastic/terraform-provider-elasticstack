@@ -34,11 +34,5 @@ func (r *securityListDataStreamsResource) Configure(_ context.Context, req resou
 }
 
 func (r *securityListDataStreamsResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	// The import ID is the space_id
-	// spaceID := req.ID
-	// resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), spaceID)...)
-	// resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("space_id"), spaceID)...)
-	// resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("acknowledged"), true)...)
-
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
