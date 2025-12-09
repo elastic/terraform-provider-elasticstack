@@ -1021,6 +1021,52 @@ func TestAccResourceExceptionItem_Complex(t *testing.T) {
 				),
 			},
 			{
+				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("complex_multiple_items"),
+				ConfigVariables: config.Variables{
+					"list_id":   config.StringVariable(listID),
+					"item_id_1": config.StringVariable(itemID + "-1"),
+					"item_id_2": config.StringVariable(itemID + "-2"),
+					"item_id_3": config.StringVariable(itemID + "-3"),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					// Check first item
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test1", "item_id", itemID+"-1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test1", "name", "Test Exception Item 1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test1", "entries.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test1", "entries.0.type", "match"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test1", "entries.0.field", "process.name"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test1", "entries.0.value", "process1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test1", "os_types.#", "1"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_exception_item.test1", "os_types.*", "linux"),
+
+					// Check second item
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test2", "item_id", itemID+"-2"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test2", "name", "Test Exception Item 2"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test2", "entries.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test2", "entries.0.type", "match_any"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test2", "entries.0.field", "user.name"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test2", "entries.0.values.#", "2"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test2", "os_types.#", "2"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_exception_item.test2", "os_types.*", "linux"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_exception_item.test2", "os_types.*", "macos"),
+
+					// Check third item
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test3", "item_id", itemID+"-3"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test3", "name", "Test Exception Item 3"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test3", "entries.#", "2"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test3", "entries.0.type", "wildcard"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test3", "entries.0.field", "file.path"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test3", "entries.1.type", "exists"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test3", "entries.1.field", "file.hash.sha256"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test3", "os_types.#", "3"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_exception_item.test3", "os_types.*", "linux"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_exception_item.test3", "os_types.*", "macos"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_exception_item.test3", "os_types.*", "windows"),
+				),
+			},
+			{
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(MinVersionExpireTime),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("complex_update_expire_time"),
