@@ -97,7 +97,7 @@ func getSchema() schema.Schema {
 				Optional:    true,
 				Default:     stringdefault.StaticString("hostname"),
 				Validators: []validator.String{
-					stringvalidator.OneOf("hostname", "fqdn"),
+					stringvalidator.OneOf(HostNameFormatHostname, HostNameFormatFQDN),
 				},
 			},
 			"supports_agentless": schema.BoolAttribute{
