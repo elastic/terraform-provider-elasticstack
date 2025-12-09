@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func (r *securityListDataStreamsResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -16,10 +16,8 @@ func (r *securityListDataStreamsResource) Read(ctx context.Context, req resource
 	}
 
 	// During import, space_id might not be set yet, derive it from ID
-	if state.SpaceID.IsNull() || state.SpaceID.IsUnknown() {
-		if !state.ID.IsNull() && !state.ID.IsUnknown() {
-			state.SpaceID = state.ID
-		}
+	if !utils.IsKnown(state.SpaceID) && utils.IsKnown(state.ID) {
+		state.SpaceID = state.ID
 	}
 
 	spaceID := state.SpaceID.ValueString()
@@ -44,10 +42,8 @@ func (r *securityListDataStreamsResource) Read(ctx context.Context, req resource
 		return
 	}
 
-	// Data streams exist, update state
-	state.ID = types.StringValue(spaceID)
-	state.ListIndex = types.BoolValue(listIndex)
-	state.ListItemIndex = types.BoolValue(listItemIndex)
+	// Data streams exist, update state using the fromAPIResponse helper method
+	state.fromAPIResponse(spaceID, listIndex, listItemIndex)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }

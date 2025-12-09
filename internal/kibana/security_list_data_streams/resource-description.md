@@ -26,7 +26,8 @@ resource "elasticstack_kibana_security_list_data_streams" "custom" {
 In addition to the arguments above, the following attributes are exported:
 
 * `id` - The unique identifier for the data streams (same as `space_id`).
-* `acknowledged` - Indicates whether the data streams were successfully created.
+* `list_index` - Indicates whether the `.lists` data stream exists.
+* `list_item_index` - Indicates whether the `.items` data stream exists.
 
 ## Import
 

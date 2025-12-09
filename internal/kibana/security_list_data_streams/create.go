@@ -5,7 +5,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func (r *securityListDataStreamsResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -45,10 +44,8 @@ func (r *securityListDataStreamsResource) Create(ctx context.Context, req resour
 		return
 	}
 
-	// Set the ID to the space_id since this is a singleton resource per space
-	plan.ID = types.StringValue(spaceID)
-	plan.ListIndex = types.BoolValue(listIndex)
-	plan.ListItemIndex = types.BoolValue(listItemIndex)
+	// Populate state using the fromAPIResponse helper method
+	plan.fromAPIResponse(spaceID, listIndex, listItemIndex)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }
