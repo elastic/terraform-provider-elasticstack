@@ -183,6 +183,34 @@ func TestAccResourceAlertingRule(t *testing.T) {
 	})
 }
 
+func TestAccResourceAlertingRuleEnabledFalseOnCreate(t *testing.T) {
+	minSupportedVersion := version.Must(version.NewSemver("7.14.0"))
+
+	t.Setenv("KIBANA_API_KEY", "")
+
+	ruleName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceAlertingRuleDestroy,
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				Config:   testAccResourceAlertingRuleCreateDisabled(ruleName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule_disabled", "name", ruleName),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule_disabled", "rule_id", "disabled-rule-test-id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule_disabled", "consumer", "alerts"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule_disabled", "rule_type_id", ".index-threshold"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule_disabled", "interval", "1m"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule_disabled", "enabled", "false"),
+				),
+			},
+		},
+	})
+}
+
 func testAccResourceAlertingRuleCreate(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
@@ -620,6 +648,37 @@ resource "elasticstack_kibana_alerting_rule" "test_rule" {
   }
 
   alert_delay  = 10
+}
+	`, name)
+}
+
+func testAccResourceAlertingRuleCreateDisabled(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  kibana {}
+}
+
+resource "elasticstack_kibana_alerting_rule" "test_rule_disabled" {
+  name         = "%s"
+  rule_id      = "disabled-rule-test-id"
+  consumer     = "alerts"
+  notify_when  = "onActiveAlert"
+  params       = jsonencode({
+	aggType             = "avg"
+	groupBy             = "top"
+	termSize            = 10
+	timeWindowSize      = 10
+	timeWindowUnit      = "s"
+	threshold           = [10]
+	thresholdComparator = ">"
+	index               = ["test-index"]
+	timeField           = "@timestamp"
+	aggField            = "version"
+	termField           = "name"
+  })
+  rule_type_id = ".index-threshold"
+  interval     = "1m"
+  enabled      = false
 }
 	`, name)
 }
