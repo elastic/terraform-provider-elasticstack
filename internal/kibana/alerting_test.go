@@ -200,7 +200,7 @@ func TestAccResourceAlertingRuleEnabledFalseOnCreate(t *testing.T) {
 				Config:   testAccResourceAlertingRuleCreateDisabled(ruleName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule_disabled", "name", ruleName),
-					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule_disabled", "rule_id", "disabled-rule-test-id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule_disabled", "rule_id", "af22bd1c-8fb3-4020-9249-a4ac5471624c"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule_disabled", "consumer", "alerts"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule_disabled", "rule_type_id", ".index-threshold"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule_disabled", "interval", "1m"),
@@ -660,7 +660,7 @@ provider "elasticstack" {
 
 resource "elasticstack_kibana_alerting_rule" "test_rule_disabled" {
   name         = "%s"
-  rule_id      = "disabled-rule-test-id"
+  rule_id      = "af22bd1c-8fb3-4020-9249-a4ac5471624c"
   consumer     = "alerts"
   notify_when  = "onActiveAlert"
   params       = jsonencode({
