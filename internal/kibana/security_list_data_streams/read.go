@@ -32,13 +32,13 @@ func (r *securityListDataStreamsResource) Read(ctx context.Context, req resource
 	}
 
 	// Check if the data streams exist
-	exists, diags := kibana_oapi.ReadListIndex(ctx, client, spaceID)
+	listIndex, listItemIndex, diags := kibana_oapi.ReadListIndex(ctx, client, spaceID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	if !exists {
+	if !listIndex || !listItemIndex {
 		// Data streams don't exist, remove from state
 		resp.State.RemoveResource(ctx)
 		return
@@ -46,7 +46,8 @@ func (r *securityListDataStreamsResource) Read(ctx context.Context, req resource
 
 	// Data streams exist, update state
 	state.ID = types.StringValue(spaceID)
-	state.Acknowledged = types.BoolValue(true)
+	state.ListIndex = types.BoolValue(listIndex)
+	state.ListItemIndex = types.BoolValue(listItemIndex)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }

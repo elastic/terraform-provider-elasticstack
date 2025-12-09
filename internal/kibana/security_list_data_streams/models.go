@@ -5,7 +5,8 @@ import (
 )
 
 type SecurityListDataStreamsModel struct {
-	ID           types.String `tfsdk:"id"`
-	SpaceID      types.String `tfsdk:"space_id"`
-	Acknowledged types.Bool   `tfsdk:"acknowledged"`
+	ID            types.String `tfsdk:"id"`
+	SpaceID       types.String `tfsdk:"space_id"`
+	ListIndex     types.Bool   `tfsdk:"list_index"`
+	ListItemIndex types.Bool   `tfsdk:"list_item_index"`
 }

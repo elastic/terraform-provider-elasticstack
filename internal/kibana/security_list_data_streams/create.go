@@ -31,13 +31,13 @@ func (r *securityListDataStreamsResource) Create(ctx context.Context, req resour
 	}
 
 	// Read the data streams to get the actual state
-	exists, diags := kibana_oapi.ReadListIndex(ctx, client, spaceID)
+	listIndex, listItemIndex, diags := kibana_oapi.ReadListIndex(ctx, client, spaceID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	if !exists {
+	if !listIndex || !listItemIndex {
 		resp.Diagnostics.AddError(
 			"Failed to verify list data streams",
 			"List data streams were created but could not be verified",
@@ -47,7 +47,8 @@ func (r *securityListDataStreamsResource) Create(ctx context.Context, req resour
 
 	// Set the ID to the space_id since this is a singleton resource per space
 	plan.ID = types.StringValue(spaceID)
-	plan.Acknowledged = types.BoolValue(exists)
+	plan.ListIndex = types.BoolValue(listIndex)
+	plan.ListItemIndex = types.BoolValue(listItemIndex)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }

@@ -34,8 +34,12 @@ func (r *securityListDataStreamsResource) Schema(_ context.Context, _ resource.S
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
-			"acknowledged": schema.BoolAttribute{
-				MarkdownDescription: "Indicates whether the data streams were successfully created or deleted.",
+			"list_index": schema.BoolAttribute{
+				MarkdownDescription: "Indicates whether the `.lists` data stream exists.",
+				Computed:            true,
+			},
+			"list_item_index": schema.BoolAttribute{
+				MarkdownDescription: "Indicates whether the `.items` data stream exists.",
 				Computed:            true,
 			},
 		},

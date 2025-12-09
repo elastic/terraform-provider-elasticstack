@@ -34,25 +34,24 @@ func CreateListIndex(ctx context.Context, client *Client, spaceId string) (bool,
 }
 
 // ReadListIndex reads the status of .lists and .items data streams for a space.
-// Returns true if both data streams exist, false if they don't exist, and diagnostics on error.
-func ReadListIndex(ctx context.Context, client *Client, spaceId string) (bool, diag.Diagnostics) {
+// Returns the status of list_index and list_item_index separately, and diagnostics on error.
+func ReadListIndex(ctx context.Context, client *Client, spaceId string) (listIndex bool, listItemIndex bool, diags diag.Diagnostics) {
 	resp, err := client.API.ReadListIndexWithResponse(ctx, kbapi.SpaceId(spaceId))
 	if err != nil {
-		return false, diagutil.FrameworkDiagFromError(err)
+		return false, false, diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
 		if resp.JSON200 != nil {
-			// Both list_index and list_item_index should exist
-			return resp.JSON200.ListIndex && resp.JSON200.ListItemIndex, nil
+			return resp.JSON200.ListIndex, resp.JSON200.ListItemIndex, nil
 		}
-		return false, nil
+		return false, false, nil
 	case http.StatusNotFound:
 		// Data streams don't exist
-		return false, nil
+		return false, false, nil
 	default:
-		return false, reportUnknownError(resp.StatusCode(), resp.Body)
+		return false, false, reportUnknownError(resp.StatusCode(), resp.Body)
 	}
 }
 

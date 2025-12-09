@@ -30,7 +30,8 @@ func TestAccResourceSecurityListDataStreams(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_data_streams.test", "space_id", "default"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_data_streams.test", "id", "default"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_data_streams.test", "acknowledged", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_data_streams.test", "list_index", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_data_streams.test", "list_item_index", "true"),
 				),
 			},
 			{ // Import
@@ -61,7 +62,8 @@ func TestAccResourceSecurityListDataStreamsWithSpace(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_data_streams.test", "space_id", spaceID),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_data_streams.test", "id", spaceID),
-					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_data_streams.test", "acknowledged", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_data_streams.test", "list_index", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_data_streams.test", "list_item_index", "true"),
 				),
 			},
 			{ // Import
@@ -98,7 +100,7 @@ func checkResourceListDataStreamsDestroy(s *terraform.State) error {
 		spaceID := rs.Primary.ID
 
 		// Check if the data streams still exist
-		exists, diags := kibana_oapi.ReadListIndex(context.Background(), oapiClient, spaceID)
+		listIndex, listItemIndex, diags := kibana_oapi.ReadListIndex(context.Background(), oapiClient, spaceID)
 		if diags.HasError() {
 			// All errors must be 404s (resource doesn't exist), which is what we want
 			// Any other error should fail the test
@@ -111,7 +113,7 @@ func checkResourceListDataStreamsDestroy(s *terraform.State) error {
 			continue
 		}
 
-		if exists {
+		if listIndex || listItemIndex {
 			return fmt.Errorf("List data streams still exist in space (%s)", spaceID)
 		}
 	}
