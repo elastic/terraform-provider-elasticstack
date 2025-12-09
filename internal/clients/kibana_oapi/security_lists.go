@@ -26,7 +26,7 @@ func CreateListIndex(ctx context.Context, client *Client, spaceId string) (bool,
 		}
 		return true, nil
 	case http.StatusConflict:
-		// Data streams already exist, which is fine for our purposes
+		// Data streams already exist ([docs](https://www.elastic.co/docs/api/doc/kibana/operation/operation-createlistindex#operation-createlistindex-409))
 		return true, nil
 	default:
 		return false, reportUnknownError(resp.StatusCode(), resp.Body)
