@@ -190,6 +190,7 @@ func ResourceAlertingRule() *schema.Resource {
 			Description: "Indicates if you want to run the rule on an interval basis.",
 			Type:        schema.TypeBool,
 			Optional:    true,
+			Default:     true,
 		},
 		"tags": {
 			Description: "A list of tag names that are applied to the rule.",
@@ -266,10 +267,9 @@ func getAlertingRuleFromResourceData(d *schema.ResourceData, serverVersion *vers
 	}
 	rule.Params = params
 
-	if v, ok := d.GetOk("enabled"); ok {
-		e := v.(bool)
-		rule.Enabled = &e
-	}
+	// Enabled always has a value since we have a Default in the schema
+	e := d.Get("enabled").(bool)
+	rule.Enabled = &e
 
 	if v, ok := d.GetOk("throttle"); ok {
 		t := v.(string)
