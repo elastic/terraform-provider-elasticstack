@@ -887,11 +887,11 @@ func (model *agentPolicyModel) convertHttpMonitoringEndpointToAPI(ctx context.Co
 	amo.HttpMonitoringEndpoint.As(ctx, &http, basetypes.ObjectAsOptions{})
 
 	// Check if any values differ from defaults
-	hasNonDefaultValues := http.Enabled.ValueBool() != defaultHttpMonitoringEnabled ||
+	hasNonDefaultValues := http.Enabled.ValueBool() ||
 		http.Host.ValueString() != defaultHttpMonitoringHost ||
 		http.Port.ValueInt32() != defaultHttpMonitoringPort ||
-		http.BufferEnabled.ValueBool() != defaultHttpMonitoringBufferEnabled ||
-		http.PprofEnabled.ValueBool() != defaultHttpMonitoringPprofEnabled
+		http.BufferEnabled.ValueBool() ||
+		http.PprofEnabled.ValueBool()
 
 	if !hasNonDefaultValues {
 		return nil, nil
@@ -948,11 +948,11 @@ func (model *agentPolicyModel) convertHttpMonitoringEndpointToAPIUpdate(ctx cont
 	amo.HttpMonitoringEndpoint.As(ctx, &http, basetypes.ObjectAsOptions{})
 
 	// Check if any values differ from defaults
-	hasNonDefaultValues := http.Enabled.ValueBool() != defaultHttpMonitoringEnabled ||
+	hasNonDefaultValues := http.Enabled.ValueBool() ||
 		http.Host.ValueString() != defaultHttpMonitoringHost ||
 		http.Port.ValueInt32() != defaultHttpMonitoringPort ||
-		http.BufferEnabled.ValueBool() != defaultHttpMonitoringBufferEnabled ||
-		http.PprofEnabled.ValueBool() != defaultHttpMonitoringPprofEnabled
+		http.BufferEnabled.ValueBool() ||
+		http.PprofEnabled.ValueBool()
 
 	if !hasNonDefaultValues {
 		return nil, nil
