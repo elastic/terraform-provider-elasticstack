@@ -6,12 +6,12 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 // dashboardModel is the top-level Terraform model
@@ -105,58 +105,17 @@ func (m *dashboardModel) populateFromAPI(ctx context.Context, resp *kbapi.GetDas
 	}
 
 	// Map options
-	if data.Data.Options != nil {
-		// Convert via JSON to get proper types
-		optBytes, _ := json.Marshal(data.Data.Options)
-		var options struct {
-			HidePanelTitles *bool `json:"hidePanelTitles,omitempty"`
-			SyncColors      *bool `json:"syncColors,omitempty"`
-			SyncCursor      *bool `json:"syncCursor,omitempty"`
-			SyncTooltips    *bool `json:"syncTooltips,omitempty"`
-			UseMargins      *bool `json:"useMargins,omitempty"`
-		}
-		if err := json.Unmarshal(optBytes, &options); err != nil {
-			diags.AddError("Failed to unmarshal options", err.Error())
-			m.Options = types.ObjectNull(getOptionsAttrTypes())
-		} else {
-			m.Options = m.mapOptionsFromAPI(ctx, &options, &diags)
-		}
-	} else {
-		m.Options = types.ObjectNull(getOptionsAttrTypes())
-	}
+	options, optDiags := m.mapOptionsFromAPI(ctx, data.Data.Options)
+	diags.Append(optDiags...)
+	m.Options = options
 
 	return diags
-}
-
-func (m *dashboardModel) mapOptionsFromAPI(ctx context.Context, options *struct {
-	HidePanelTitles *bool `json:"hidePanelTitles,omitempty"`
-	SyncColors      *bool `json:"syncColors,omitempty"`
-	SyncCursor      *bool `json:"syncCursor,omitempty"`
-	SyncTooltips    *bool `json:"syncTooltips,omitempty"`
-	UseMargins      *bool `json:"useMargins,omitempty"`
-}, diags *diag.Diagnostics) types.Object {
-	if options == nil {
-		return types.ObjectNull(getOptionsAttrTypes())
-	}
-
-	model := optionsModel{
-		HidePanelTitles: types.BoolPointerValue(options.HidePanelTitles),
-		UseMargins:      types.BoolPointerValue(options.UseMargins),
-		SyncColors:      types.BoolPointerValue(options.SyncColors),
-		SyncTooltips:    types.BoolPointerValue(options.SyncTooltips),
-		SyncCursor:      types.BoolPointerValue(options.SyncCursor),
-	}
-
-	obj, d := types.ObjectValueFrom(ctx, getOptionsAttrTypes(), model)
-	diags.Append(d...)
-	return obj
 }
 
 // toAPICreateRequest converts the Terraform model to an API create request
 func (m *dashboardModel) toAPICreateRequest(ctx context.Context, diags *diag.Diagnostics) kbapi.PostDashboardsDashboardJSONRequestBody {
 	req := kbapi.PostDashboardsDashboardJSONRequestBody{}
 	req.Data.Title = m.Title.ValueString()
-	req.Data.Query.Language = m.QueryLanguage.ValueString()
 	req.Data.RefreshInterval.Pause = m.RefreshIntervalPause.ValueBool()
 	req.Data.RefreshInterval.Value = float32(m.RefreshIntervalValue.ValueInt64())
 	req.Data.TimeRange.From = m.TimeFrom.ValueString()
@@ -184,20 +143,9 @@ func (m *dashboardModel) toAPICreateRequest(ctx context.Context, diags *diag.Dia
 	}
 
 	// Set query text - Query is a union type with json.RawMessage
-	if utils.IsKnown(m.QueryText) {
-		err := req.Data.Query.Query.FromKbnEsQueryServerQuerySchemaQuery0(m.QueryText.ValueString())
-		if err != nil {
-			diags.AddError("Failed to set query text", err.Error())
-		}
-	} else if utils.IsKnown(m.QueryJSON) {
-		// For JSON queries, use the raw JSON directly
-		var qj map[string]interface{}
-		diags.Append(m.QueryJSON.Unmarshal(&qj)...)
-		err := req.Data.Query.Query.FromKbnEsQueryServerQuerySchemaQuery1(qj)
-		if err != nil {
-			diags.AddError("Failed to set query JSON", err.Error())
-		}
-	}
+	queryModel, queryDiags := m.queryToAPI()
+	diags.Append(queryDiags...)
+	req.Data.Query = queryModel
 
 	// Set tags
 	if utils.IsKnown(m.Tags) {
@@ -208,34 +156,9 @@ func (m *dashboardModel) toAPICreateRequest(ctx context.Context, diags *diag.Dia
 	}
 
 	// Set options
-	if utils.IsKnown(m.Options) {
-		var optModel optionsModel
-		diags.Append(m.Options.As(ctx, &optModel, basetypes.ObjectAsOptions{})...)
-		if !diags.HasError() {
-			req.Data.Options = &struct {
-				HidePanelTitles *bool `json:"hidePanelTitles,omitempty"`
-				SyncColors      *bool `json:"syncColors,omitempty"`
-				SyncCursor      *bool `json:"syncCursor,omitempty"`
-				SyncTooltips    *bool `json:"syncTooltips,omitempty"`
-				UseMargins      *bool `json:"useMargins,omitempty"`
-			}{}
-			if utils.IsKnown(optModel.HidePanelTitles) {
-				req.Data.Options.HidePanelTitles = optModel.HidePanelTitles.ValueBoolPointer()
-			}
-			if utils.IsKnown(optModel.UseMargins) {
-				req.Data.Options.UseMargins = optModel.UseMargins.ValueBoolPointer()
-			}
-			if utils.IsKnown(optModel.SyncColors) {
-				req.Data.Options.SyncColors = optModel.SyncColors.ValueBoolPointer()
-			}
-			if utils.IsKnown(optModel.SyncTooltips) {
-				req.Data.Options.SyncTooltips = optModel.SyncTooltips.ValueBoolPointer()
-			}
-			if utils.IsKnown(optModel.SyncCursor) {
-				req.Data.Options.SyncCursor = optModel.SyncCursor.ValueBoolPointer()
-			}
-		}
-	}
+	options, optionsDiags := m.optionsToAPI(ctx)
+	diags.Append(optionsDiags...)
+	req.Data.Options = options
 
 	return req
 }
@@ -244,7 +167,6 @@ func (m *dashboardModel) toAPICreateRequest(ctx context.Context, diags *diag.Dia
 func (m *dashboardModel) toAPIUpdateRequest(ctx context.Context, diags *diag.Diagnostics) kbapi.PutDashboardsDashboardIdJSONRequestBody {
 	req := kbapi.PutDashboardsDashboardIdJSONRequestBody{}
 	req.Data.Title = m.Title.ValueString()
-	req.Data.Query.Language = m.QueryLanguage.ValueString()
 	req.Data.RefreshInterval.Pause = m.RefreshIntervalPause.ValueBool()
 	req.Data.RefreshInterval.Value = float32(m.RefreshIntervalValue.ValueInt64())
 	req.Data.TimeRange.From = m.TimeFrom.ValueString()
@@ -262,20 +184,9 @@ func (m *dashboardModel) toAPIUpdateRequest(ctx context.Context, diags *diag.Dia
 	}
 
 	// Set query text - Query is a union type with json.RawMessage
-	if utils.IsKnown(m.QueryText) {
-		err := req.Data.Query.Query.FromKbnEsQueryServerQuerySchemaQuery0(m.QueryText.ValueString())
-		if err != nil {
-			diags.AddError("Failed to set query text", err.Error())
-		}
-	} else if utils.IsKnown(m.QueryJSON) {
-		// For JSON queries, use the raw JSON directly
-		var qj map[string]interface{}
-		diags.Append(m.QueryJSON.Unmarshal(&qj)...)
-		err := req.Data.Query.Query.FromKbnEsQueryServerQuerySchemaQuery1(qj)
-		if err != nil {
-			diags.AddError("Failed to set query JSON", err.Error())
-		}
-	}
+	queryModel, queryDiags := m.queryToAPI()
+	diags.Append(queryDiags...)
+	req.Data.Query = queryModel
 
 	// Set tags
 	if utils.IsKnown(m.Tags) {
@@ -286,34 +197,36 @@ func (m *dashboardModel) toAPIUpdateRequest(ctx context.Context, diags *diag.Dia
 	}
 
 	// Set options
-	if utils.IsKnown(m.Options) {
-		var optModel optionsModel
-		diags.Append(m.Options.As(ctx, &optModel, basetypes.ObjectAsOptions{})...)
-		if !diags.HasError() {
-			req.Data.Options = &struct {
-				HidePanelTitles *bool `json:"hidePanelTitles,omitempty"`
-				SyncColors      *bool `json:"syncColors,omitempty"`
-				SyncCursor      *bool `json:"syncCursor,omitempty"`
-				SyncTooltips    *bool `json:"syncTooltips,omitempty"`
-				UseMargins      *bool `json:"useMargins,omitempty"`
-			}{}
-			if utils.IsKnown(optModel.HidePanelTitles) {
-				req.Data.Options.HidePanelTitles = optModel.HidePanelTitles.ValueBoolPointer()
-			}
-			if utils.IsKnown(optModel.UseMargins) {
-				req.Data.Options.UseMargins = optModel.UseMargins.ValueBoolPointer()
-			}
-			if utils.IsKnown(optModel.SyncColors) {
-				req.Data.Options.SyncColors = optModel.SyncColors.ValueBoolPointer()
-			}
-			if utils.IsKnown(optModel.SyncTooltips) {
-				req.Data.Options.SyncTooltips = optModel.SyncTooltips.ValueBoolPointer()
-			}
-			if utils.IsKnown(optModel.SyncCursor) {
-				req.Data.Options.SyncCursor = optModel.SyncCursor.ValueBoolPointer()
-			}
+	options, optionsDiags := m.optionsToAPI(ctx)
+	diags.Append(optionsDiags...)
+	req.Data.Options = options
+
+	return req
+}
+
+func (m *dashboardModel) queryToAPI() (kbapi.KbnEsQueryServerQuerySchema, diag.Diagnostics) {
+	query := kbapi.KbnEsQueryServerQuerySchema{
+		Language: m.QueryLanguage.ValueString(),
+	}
+	// Set query text - Query is a union type with json.RawMessage
+	if utils.IsKnown(m.QueryText) {
+		err := query.Query.FromKbnEsQueryServerQuerySchemaQuery0(m.QueryText.ValueString())
+		if err != nil {
+			return query, diagutil.FrameworkDiagFromError(err)
+		}
+	} else if utils.IsKnown(m.QueryJSON) {
+		// For JSON queries, use the raw JSON directly
+		var qj map[string]interface{}
+		diags := m.QueryJSON.Unmarshal(&qj)
+		if diags.HasError() {
+			return query, diags
+		}
+
+		err := query.Query.FromKbnEsQueryServerQuerySchemaQuery1(qj)
+		if err != nil {
+			return query, diagutil.FrameworkDiagFromError(err)
 		}
 	}
 
-	return req
+	return query, nil
 }
