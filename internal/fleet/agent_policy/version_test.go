@@ -203,6 +203,133 @@ func TestUnenrollmentTimeoutVersionValidation(t *testing.T) {
 	}
 }
 
+func TestMinVersionAdvancedMonitoring(t *testing.T) {
+	// Test that the MinVersionAdvancedMonitoring constant is set correctly
+	expected := "8.16.0"
+	actual := MinVersionAdvancedMonitoring.String()
+	if actual != expected {
+		t.Errorf("Expected MinVersionAdvancedMonitoring to be '%s', got '%s'", expected, actual)
+	}
+
+	// Test version comparison - should be greater than 8.15.0
+	olderVersion := version.Must(version.NewVersion("8.15.0"))
+	if MinVersionAdvancedMonitoring.LessThan(olderVersion) {
+		t.Errorf("MinVersionAdvancedMonitoring (%s) should be greater than %s", MinVersionAdvancedMonitoring.String(), olderVersion.String())
+	}
+
+	// Test version comparison - should be less than 8.17.0
+	newerVersion := version.Must(version.NewVersion("8.17.0"))
+	if MinVersionAdvancedMonitoring.GreaterThan(newerVersion) {
+		t.Errorf("MinVersionAdvancedMonitoring (%s) should be less than %s", MinVersionAdvancedMonitoring.String(), newerVersion.String())
+	}
+}
+
+func TestAdvancedMonitoringVersionValidation(t *testing.T) {
+	ctx := context.Background()
+
+	// Create advanced_monitoring_options object
+	httpEndpoint, _ := types.ObjectValueFrom(ctx, httpMonitoringEndpointAttrTypes(), httpMonitoringEndpointModel{
+		Enabled:       types.BoolValue(true),
+		Host:          types.StringValue("localhost"),
+		Port:          types.Int32Value(6791),
+		BufferEnabled: types.BoolValue(false),
+		PprofEnabled:  types.BoolValue(false),
+	})
+
+	rateLimits, _ := types.ObjectValueFrom(ctx, rateLimitsAttrTypes(), rateLimitsModel{
+		Interval: types.StringValue("1m"),
+		Burst:    types.Int32Value(1),
+	})
+
+	fileUploader, _ := types.ObjectValueFrom(ctx, fileUploaderAttrTypes(), fileUploaderModel{
+		InitDuration:    types.StringValue("1s"),
+		BackoffDuration: types.StringValue("1m"),
+		MaxRetries:      types.Int32Value(10),
+	})
+
+	diagnostics, _ := types.ObjectValueFrom(ctx, diagnosticsAttrTypes(), diagnosticsModel{
+		RateLimits:   rateLimits,
+		FileUploader: fileUploader,
+	})
+
+	advancedMonitoringOptions, _ := types.ObjectValueFrom(ctx, advancedMonitoringOptionsAttrTypes(), advancedMonitoringOptionsModel{
+		HttpMonitoringEndpoint: httpEndpoint,
+		Diagnostics:            diagnostics,
+	})
+
+	// Test case where advanced_monitoring_options is not supported (older version)
+	model := &agentPolicyModel{
+		Name:                      types.StringValue("test"),
+		Namespace:                 types.StringValue("default"),
+		AdvancedMonitoringOptions: advancedMonitoringOptions,
+	}
+
+	// Create features with advanced_monitoring NOT supported
+	feat := features{
+		SupportsAdvancedMonitoring: false,
+	}
+
+	// Test toAPICreateModel - should return error when advanced_monitoring_options is used but not supported
+	_, diags := model.toAPICreateModel(ctx, feat)
+	if !diags.HasError() {
+		t.Error("Expected error when using advanced_monitoring_options on unsupported version, but got none")
+	}
+
+	// Check that the error message contains the expected text
+	found := false
+	for _, diag := range diags {
+		if diag.Summary() == "Unsupported Elasticsearch version" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("Expected 'Unsupported Elasticsearch version' error, but didn't find it")
+	}
+
+	// Test toAPIUpdateModel - should return error when advanced_monitoring_options is used but not supported
+	_, diags = model.toAPIUpdateModel(ctx, feat, nil)
+	if !diags.HasError() {
+		t.Error("Expected error when using advanced_monitoring_options on unsupported version in update, but got none")
+	}
+
+	// Test case where advanced_monitoring_options IS supported (newer version)
+	featSupported := features{
+		SupportsAdvancedMonitoring: true,
+	}
+
+	// Test toAPICreateModel - should NOT return error when advanced_monitoring_options is supported
+	_, diags = model.toAPICreateModel(ctx, featSupported)
+	if diags.HasError() {
+		t.Errorf("Did not expect error when using advanced_monitoring_options on supported version: %v", diags)
+	}
+
+	// Test toAPIUpdateModel - should NOT return error when advanced_monitoring_options is supported
+	_, diags = model.toAPIUpdateModel(ctx, featSupported, nil)
+	if diags.HasError() {
+		t.Errorf("Did not expect error when using advanced_monitoring_options on supported version in update: %v", diags)
+	}
+
+	// Test case where advanced_monitoring_options is not set (should not cause validation errors)
+	modelWithoutAdvancedMonitoring := &agentPolicyModel{
+		Name:      types.StringValue("test"),
+		Namespace: types.StringValue("default"),
+		// AdvancedMonitoringOptions is not set (null/unknown)
+	}
+
+	// Test toAPICreateModel - should NOT return error when advanced_monitoring_options is not set, even on unsupported version
+	_, diags = modelWithoutAdvancedMonitoring.toAPICreateModel(ctx, feat)
+	if diags.HasError() {
+		t.Errorf("Did not expect error when advanced_monitoring_options is not set: %v", diags)
+	}
+
+	// Test toAPIUpdateModel - should NOT return error when advanced_monitoring_options is not set, even on unsupported version
+	_, diags = modelWithoutAdvancedMonitoring.toAPIUpdateModel(ctx, feat, nil)
+	if diags.HasError() {
+		t.Errorf("Did not expect error when advanced_monitoring_options is not set in update: %v", diags)
+	}
+}
+
 func TestMinVersionSpaceIds(t *testing.T) {
 	// Test that the MinVersionSpaceIds constant is set correctly
 	expected := "9.1.0"
