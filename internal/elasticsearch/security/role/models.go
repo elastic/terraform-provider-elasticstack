@@ -297,16 +297,12 @@ func (data *RoleData) fromAPIModel(ctx context.Context, role *models.Role) diag.
 	}
 
 	// Cluster
-	if len(role.Cluster) > 0 {
-		clusterSet, d := types.SetValueFrom(ctx, types.StringType, role.Cluster)
-		diags.Append(d...)
-		if diags.HasError() {
-			return diags
-		}
-		data.Cluster = clusterSet
-	} else {
-		data.Cluster = types.SetNull(types.StringType)
+	clusterSet, d := types.SetValueFrom(ctx, types.StringType, role.Cluster)
+	diags.Append(d...)
+	if diags.HasError() {
+		return diags
 	}
+	data.Cluster = clusterSet
 
 	// Global
 	if role.Global != nil {
@@ -494,16 +490,12 @@ func (data *RoleData) fromAPIModel(ctx context.Context, role *models.Role) diag.
 	}
 
 	// Run As
-	if len(role.RunAs) > 0 {
-		runAsSet, d := types.SetValueFrom(ctx, types.StringType, role.RunAs)
-		diags.Append(d...)
-		if diags.HasError() {
-			return diags
-		}
-		data.RunAs = runAsSet
-	} else {
-		data.RunAs = types.SetNull(types.StringType)
+	runAsSet, d := types.SetValueFrom(ctx, types.StringType, role.RunAs)
+	diags.Append(d...)
+	if diags.HasError() {
+		return diags
 	}
+	data.RunAs = runAsSet
 
 	return diags
 }

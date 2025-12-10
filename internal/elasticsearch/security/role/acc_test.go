@@ -119,6 +119,19 @@ func TestAccResourceSecurityRole(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "description", "updated test description"),
 				),
 			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty_arrays_create"),
+				ConfigVariables: config.Variables{
+					"role_name": config.StringVariable(sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "cluster.#", "0"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "run_as.#", "0"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "indices.*.names.*", "cluster-*"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "indices.*.names.*", "logs-*"),
+				),
+			},
 		},
 	})
 }
