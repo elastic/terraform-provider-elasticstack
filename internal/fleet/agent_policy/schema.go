@@ -201,7 +201,7 @@ func getSchema() schema.Schema {
 								Computed:    true,
 								Default:     int32default.StaticInt32(6791),
 								Validators: []validator.Int32{
-									int32validator.Between(0, 65353),
+									int32validator.Between(0, 65535),
 								},
 							},
 							"buffer_enabled": schema.BoolAttribute{
