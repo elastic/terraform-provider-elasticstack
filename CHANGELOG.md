@@ -40,6 +40,7 @@ alias = [
 
 ### Changes
 
+- Add `advanced_monitoring_options` to `elasticstack_fleet_agent_policy` to configure HTTP monitoring endpoint and diagnostics settings ([#1537](https://github.com/elastic/terraform-provider-elasticstack/pull/1537))
 - Add `host_name_format` to `elasticstack_fleet_agent_policy` to configure host name format (hostname or FQDN) ([#1312](https://github.com/elastic/terraform-provider-elasticstack/pull/1312))
 - Create `elasticstack_kibana_prebuilt_rule` resource ([#1296](https://github.com/elastic/terraform-provider-elasticstack/pull/1296))
 - Add `required_versions` to `elasticstack_fleet_agent_policy` ([#1436](https://github.com/elastic/terraform-provider-elasticstack/pull/1436))
