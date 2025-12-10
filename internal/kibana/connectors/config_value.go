@@ -67,6 +67,7 @@ func (v ConfigValue) SanitizedValue() (string, diag.Diagnostics) {
 	}
 
 	delete(unsanitizedMap, connectorTypeIDKey)
+	removeNulls(unsanitizedMap)
 	sanitizedValue, err := json.Marshal(unsanitizedMap)
 	if err != nil {
 		diags.AddError("Failed to marshal sanitized config value", err.Error())
@@ -74,6 +75,21 @@ func (v ConfigValue) SanitizedValue() (string, diag.Diagnostics) {
 	}
 
 	return string(sanitizedValue), diags
+}
+
+// removeNulls recursively removes all null values from the map
+func removeNulls(m map[string]interface{}) {
+	for key, value := range m {
+		if value == nil {
+			delete(m, key)
+			continue
+		}
+
+		if nestedMap, ok := value.(map[string]interface{}); ok {
+			removeNulls(nestedMap)
+			continue
+		}
+	}
 }
 
 // StringSemanticEquals returns true if the given config object value is semantically equal to the current config object value.

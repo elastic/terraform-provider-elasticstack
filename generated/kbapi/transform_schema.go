@@ -569,6 +569,7 @@ var transformers = []TransformFunc{
 	fixGetSpacesParams,
 	fixGetSyntheticsMonitorsParams,
 	fixGetMaintenanceWindowFindParams,
+	fixSecurityAPIPageSize,
 	removeDuplicateOneOfRefs,
 	transformRemoveExamples,
 	transformRemoveUnusedComponents,
@@ -953,6 +954,11 @@ func fixGetSyntheticsMonitorsParams(schema *Schema) {
 
 func fixGetMaintenanceWindowFindParams(schema *Schema) {
 	schema.MustGetPath("/api/maintenance_window/_find").MustGetEndpoint("get").Move("parameters.2.schema.anyOf.1", "parameters.2.schema")
+}
+
+func fixSecurityAPIPageSize(schema *Schema) {
+	apiPageSize := schema.Components.MustGetMap("schemas.Security_Endpoint_Management_API_ApiPageSize")
+	schema.Components.Set("schemas.Security_Endpoint_Management_API_ApiPageSize", apiPageSize.MustGetMap("allOf.0"))
 }
 
 func removeDuplicateOneOfRefs(schema *Schema) {

@@ -18,13 +18,14 @@ provider "elasticstack" {
 }
 
 resource "elasticstack_fleet_agent_policy" "test_policy" {
-  name            = "Test Policy"
-  namespace       = "default"
-  description     = "Test Agent Policy"
-  sys_monitoring  = true
-  monitor_logs    = true
-  monitor_metrics = true
-  space_ids       = ["default"]
+  name             = "Test Policy"
+  namespace        = "default"
+  description      = "Test Agent Policy"
+  sys_monitoring   = true
+  monitor_logs     = true
+  monitor_metrics  = true
+  space_ids        = ["default"]
+  host_name_format = "hostname" # or "fqdn" for fully qualified domain names
 
   global_data_tags = {
     first_tag = {
@@ -52,6 +53,7 @@ resource "elasticstack_fleet_agent_policy" "test_policy" {
 - `download_source_id` (String) The identifier for the Elastic Agent binary download server.
 - `fleet_server_host_id` (String) The identifier for the Fleet server host.
 - `global_data_tags` (Attributes Map) User-defined data tags to apply to all inputs. Values can be strings (string_value) or numbers (number_value) but not both. Example -- key1 = {string_value = value1}, key2 = {number_value = 42} (see [below for nested schema](#nestedatt--global_data_tags))
+- `host_name_format` (String) Determines the format of the host.name field in events. Can be 'hostname' (short hostname, e.g., 'myhost') or 'fqdn' (fully qualified domain name, e.g., 'myhost.example.com'). Defaults to 'hostname'.
 - `inactivity_timeout` (String) The inactivity timeout for the agent policy. If an agent does not report within this time period, it will be considered inactive. Supports duration strings (e.g., '30s', '2m', '1h').
 - `monitor_logs` (Boolean) Enable collection of agent logs.
 - `monitor_metrics` (Boolean) Enable collection of agent metrics.

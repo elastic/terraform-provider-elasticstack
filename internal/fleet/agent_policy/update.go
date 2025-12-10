@@ -29,13 +29,6 @@ func (r *agentPolicyResource) Update(ctx context.Context, req resource.UpdateReq
 		return
 	}
 
-	body, diags := planModel.toAPIUpdateModel(ctx, feat)
-
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	policyID := planModel.PolicyID.ValueString()
 
 	// Read the existing spaces from state to avoid updating the policy
@@ -44,6 +37,25 @@ func (r *agentPolicyResource) Update(ctx context.Context, req resource.UpdateReq
 	// e.g., ["space-a"] → ["space-b", "space-a"] would fail if we queried "space-b"
 	// because the policy doesn't exist there yet.
 	spaceID, diags := fleetutils.GetOperationalSpaceFromState(ctx, req.State)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Read current policy to get existing AgentFeatures (so we can preserve other features)
+	currentPolicy, diags := fleet.GetAgentPolicy(ctx, client, policyID, spaceID)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var existingFeatures []apiAgentFeature
+	if currentPolicy != nil && currentPolicy.AgentFeatures != nil {
+		existingFeatures = *currentPolicy.AgentFeatures
+	}
+
+	body, diags := planModel.toAPIUpdateModel(ctx, feat, existingFeatures)
+
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

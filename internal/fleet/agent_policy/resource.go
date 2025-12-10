@@ -25,6 +25,7 @@ var (
 	MinVersionUnenrollmentTimeout = version.Must(version.NewVersion("8.15.0"))
 	MinVersionSpaceIds            = version.Must(version.NewVersion("9.1.0"))
 	MinVersionRequiredVersions    = version.Must(version.NewVersion("9.1.0"))
+	MinVersionAgentFeatures       = version.Must(version.NewVersion("8.7.0"))
 )
 
 // NewResource is a helper function to simplify the provider implementation.
@@ -81,6 +82,11 @@ func (r *agentPolicyResource) buildFeatures(ctx context.Context) (features, diag
 		return features{}, diagutil.FrameworkDiagsFromSDK(diags)
 	}
 
+	supportsAgentFeatures, diags := r.client.EnforceMinVersion(ctx, MinVersionAgentFeatures)
+	if diags.HasError() {
+		return features{}, diagutil.FrameworkDiagsFromSDK(diags)
+	}
+
 	return features{
 		SupportsGlobalDataTags:      supportsGDT,
 		SupportsSupportsAgentless:   supportsSupportsAgentless,
@@ -88,5 +94,6 @@ func (r *agentPolicyResource) buildFeatures(ctx context.Context) (features, diag
 		SupportsUnenrollmentTimeout: supportsUnenrollmentTimeout,
 		SupportsSpaceIds:            supportsSpaceIds,
 		SupportsRequiredVersions:    supportsRequiredVersions,
+		SupportsAgentFeatures:       supportsAgentFeatures,
 	}, nil
 }
