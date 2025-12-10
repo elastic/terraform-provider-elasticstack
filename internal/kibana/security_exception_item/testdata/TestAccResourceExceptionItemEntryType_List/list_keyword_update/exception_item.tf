@@ -1,0 +1,104 @@
+variable "space_id" {
+  description = "The space ID"
+  type        = string
+}
+
+variable "exception_list_id" {
+  description = "The exception list ID"
+  type        = string
+}
+
+variable "item_id" {
+  description = "The exception item ID"
+  type        = string
+}
+
+variable "value_list_id" {
+  description = "The value list ID"
+  type        = string
+}
+variable "value_list_value" {
+  description = "The value list value"
+  type        = string
+}
+
+variable "value_list_value_2" {
+  description = "The second value list value"
+  type        = string
+}
+
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_kibana_space" "test" {
+  space_id = var.space_id
+  name     = "Test Space for List Entry"
+}
+
+resource "elasticstack_kibana_security_list_data_streams" "test" {
+  space_id = elasticstack_kibana_space.test.space_id
+}
+
+resource "elasticstack_kibana_security_exception_list" "test" {
+  space_id       = elasticstack_kibana_space.test.space_id
+  list_id        = var.exception_list_id
+  name           = "Test Exception List for List Entry - Keyword"
+  description    = "Test exception list for list entry type with keyword"
+  type           = "detection"
+  namespace_type = "single"
+}
+
+# Create a value list to reference in the exception item
+resource "elasticstack_kibana_security_list" "test-keyword" {
+  space_id    = elasticstack_kibana_space.test.space_id
+  list_id     = var.value_list_id
+  name        = "Test Value List - Keyword"
+  description = "Test value list for list entry type with keyword"
+  type        = "keyword"
+
+  depends_on = [elasticstack_kibana_security_list_data_streams.test]
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+resource "elasticstack_kibana_security_list_item" "test-item" {
+  space_id = elasticstack_kibana_space.test.space_id
+  list_id  = elasticstack_kibana_security_list.test-keyword.list_id
+  value    = var.value_list_value
+
+  depends_on = [elasticstack_kibana_security_list_data_streams.test]
+}
+
+resource "elasticstack_kibana_security_list_item" "test-item-2" {
+  space_id = elasticstack_kibana_space.test.space_id
+  list_id  = elasticstack_kibana_security_list.test-keyword.list_id
+  value    = var.value_list_value_2
+
+  depends_on = [elasticstack_kibana_security_list_data_streams.test]
+}
+
+resource "elasticstack_kibana_security_exception_item" "test" {
+  space_id       = elasticstack_kibana_space.test.space_id
+  list_id        = elasticstack_kibana_security_exception_list.test.list_id
+  item_id        = var.item_id
+  name           = "Test Exception Item - List Entry Keyword"
+  description    = "Test exception item with list entry type using keyword"
+  type           = "simple"
+  namespace_type = "single"
+  entries = [
+    {
+      type     = "list"
+      field    = "process.name"
+      operator = "included"
+      list = {
+        id   = elasticstack_kibana_security_list.test-keyword.list_id
+        type = "keyword"
+      }
+    }
+  ]
+  tags = ["test", "list", "keyword"]
+}

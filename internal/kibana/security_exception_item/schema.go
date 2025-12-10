@@ -7,6 +7,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
+	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -105,6 +106,9 @@ func (r *ExceptionItemResource) Schema(_ context.Context, _ resource.SchemaReque
 			"entries": schema.ListNestedAttribute{
 				MarkdownDescription: "The exception item entries. This defines the conditions under which the exception applies.",
 				Required:            true,
+				Validators: []validator.List{
+					listvalidator.SizeAtLeast(1),
+				},
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"type": schema.StringAttribute{
@@ -151,6 +155,9 @@ func (r *ExceptionItemResource) Schema(_ context.Context, _ resource.SchemaReque
 								"type": schema.StringAttribute{
 									MarkdownDescription: "The value list type (e.g., `keyword`, `ip`, `ip_range`).",
 									Required:            true,
+									Validators: []validator.String{
+										stringvalidator.OneOf("keyword", "ip", "ip_range"),
+									},
 								},
 							},
 						},
