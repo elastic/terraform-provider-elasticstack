@@ -46,10 +46,6 @@ resource "elasticstack_fleet_agent_policy" "test_policy" {
   skip_destroy    = false
 }
 
-data "elasticstack_fleet_enrollment_tokens" "test_policy" {
-  policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
-}
-
 resource "elasticstack_fleet_integration_policy" "test_policy" {
   name                = var.policy_name
   namespace           = "default"
@@ -66,51 +62,50 @@ resource "elasticstack_fleet_integration_policy" "test_policy" {
     "default_region" : var.default_region
   })
 
-  input {
-    input_id = "aws_logs-aws-cloudwatch"
-    enabled  = false
-    streams_json = jsonencode({
-      "aws_logs.generic" = {
-        enabled = false
-        vars = {
-          "number_of_workers" : 1,
-          "log_streams" : [],
-          "start_position" : "beginning",
-          "scan_frequency" : "2m",
-          "api_timeput" : "120s",
-          "api_sleep" : "200ms",
-          "tags" : ["forwarded"],
-          "preserve_original_event" : false,
-          "data_stream.dataset" : "aws_logs.generic",
-          "custom" : "",
+  inputs = {
+    "aws_logs-aws-cloudwatch" = {
+      enabled = false
+      streams = {
+        "aws_logs.generic" = {
+          enabled = false
+          vars = jsonencode({
+            "number_of_workers" : 1,
+            "log_streams" : [],
+            "start_position" : "beginning",
+            "scan_frequency" : "2m",
+            "api_timeput" : "120s",
+            "api_sleep" : "200ms",
+            "tags" : ["forwarded"],
+            "preserve_original_event" : false,
+            "data_stream.dataset" : "aws_logs.generic",
+            "custom" : "",
+          })
         }
       }
-    })
-  }
-
-  input {
-    input_id = "aws_logs-aws-s3"
-    enabled  = false
-    streams_json = jsonencode({
-      "aws_logs.generic" = {
-        enabled = false
-        vars = {
-          "number_of_workers" : 1,
-          "bucket_list_interval" : "120s",
-          "file_selectors" : "",
-          "fips_enabled" : false,
-          "include_s3_metadata" : [],
-          "max_bytes" : "20MiB",
-          "max_number_of_messages" : 5,
-          "parsers" : "",
-          "sqs.max_receive_count" : 5,
-          "sqs.wait_time" : "20s",
-          "tags" : ["forwarded"],
-          "preserve_original_event" : false,
-          "data_stream.dataset" : "aws_logs.generic",
-          "custom" : "",
+    }
+    "aws_logs-aws-s3" = {
+      enabled = false
+      streams = {
+        "aws_logs.generic" = {
+          enabled = false
+          vars = jsonencode({
+            "number_of_workers" : 1,
+            "bucket_list_interval" : "120s",
+            "file_selectors" : "",
+            "fips_enabled" : false,
+            "include_s3_metadata" : [],
+            "max_bytes" : "20MiB",
+            "max_number_of_messages" : 5,
+            "parsers" : "",
+            "sqs.max_receive_count" : 5,
+            "sqs.wait_time" : "20s",
+            "tags" : ["forwarded"],
+            "preserve_original_event" : false,
+            "data_stream.dataset" : "aws_logs.generic",
+            "custom" : "",
+          })
         }
       }
-    })
+    }
   }
 }

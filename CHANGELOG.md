@@ -2,6 +2,75 @@
 
 ### Breaking changes
 
+#### `elasticstack_fleet_integration_policy` input block has changed to a map attribute. 
+
+The `input` block in the `elasticstack_fleet_integration_policy` resource has been restructured into the `inputs` map attribute. 
+This transition:
+* Allows the provider to implement semantic equality checking across all inputs within the integration policy. This change:
+  * Prevents several state consistency errors experienced whilst using this resource
+  * Allow practitioners to only define configuration for the inputs, streams, and variables that differ from the package defined defaults.
+* Reduces the scope of the large `streams_json` string. Instead allowing each stream to be defined as it's own object for Terraform drift checking. 
+
+Existing usage of the `input` block must be migrated to the attribute syntax. Some [examples](https://github.com/elastic/terraform-provider-elasticstack/compare/input-attribute?expand=1#diff-3346189f5ed24da90a529a5fa0d06be1745ee9013775c4b8e42a0e909155e5b6) of this migration can be seen in the changes to the provider automated tests. As a step-by-step guide however:
+
+1. `input` blocks are merged together into a single `inputs` attribute
+2. The `input_id` attribute is removed, and instead used as the map key when defining an input
+3. `streams_json` is removed, with the contents becoming a `streams` map attribute
+
+Combined, this looks like:
+
+```hcl
+input {
+  input_id = "tcp-tcp"
+  enabled  = false
+  streams_json = jsonencode({
+    "tcp.generic" : {
+      "enabled" : false
+      "vars" : {
+        "listen_address" : "localhost"
+        "listen_port" : 8085
+        "data_stream.dataset" : "tcp.generic"
+        "tags" : []
+        "syslog_options" : "field: message"
+        "ssl" : ""
+        "custom" : ""
+      }
+    }
+  })
+}
+```
+
+becoming
+
+```hcl
+inputs = {
+  "tcp-tcp" = {
+    enabled = false
+    streams = {
+      "tcp.generic" = {
+        enabled = false
+        vars = jsonencode({
+          "listen_address" : "localhost"
+          "listen_port" : 8085
+          "data_stream.dataset" : "tcp.generic"
+          "tags" : []
+          "syslog_options" : "field: message"
+          "ssl" : ""
+          "custom" : ""
+        })
+      }
+    }
+  }
+}
+```
+
+### Changes
+- Move the `input` block to an `inputs` map in `elasticstack_fleet_integration_policy` ([#1482](https://github.com/elastic/terraform-provider-elasticstack/pull/1482))
+
+## [0.13.0] - 2025-12-10
+
+### Breaking changes
+
 #### `elasticstack_elasticsearch_index.alias` block has changed to a set attribute. 
 
 The `alias` block in the `elasticstack_elasticsearch_index` resource has been moved to an attribute. 
@@ -41,6 +110,7 @@ alias = [
 ### Changes
 
 - Add `advanced_monitoring_options` to `elasticstack_fleet_agent_policy` to configure HTTP monitoring endpoint and diagnostics settings ([#1537](https://github.com/elastic/terraform-provider-elasticstack/pull/1537))
+- Fix `elasticstack_kibana_action_connector` failing with "inconsistent result after apply" when config contains null values ([#1524](https://github.com/elastic/terraform-provider-elasticstack/pull/1524))
 - Add `host_name_format` to `elasticstack_fleet_agent_policy` to configure host name format (hostname or FQDN) ([#1312](https://github.com/elastic/terraform-provider-elasticstack/pull/1312))
 - Create `elasticstack_kibana_prebuilt_rule` resource ([#1296](https://github.com/elastic/terraform-provider-elasticstack/pull/1296))
 - Add `required_versions` to `elasticstack_fleet_agent_policy` ([#1436](https://github.com/elastic/terraform-provider-elasticstack/pull/1436))
@@ -52,6 +122,12 @@ alias = [
 - Add `elasticstack_elasticsearch_alias` resource ([#1343](https://github.com/elastic/terraform-provider-elasticstack/pull/1343))
 - Add `mapping_total_fields_limit` to `elasticstack_elasticsearch_index` ([#1494](https://github.com/elastic/terraform-provider-elasticstack/pull/1494))
 - Add `elasticstack_kibana_default_data_view` resource ([#1379](https://github.com/elastic/terraform-provider-elasticstack/pull/1379))
+- Add support for [Security Exceptions](https://github.com/elastic/terraform-provider-elasticstack/issues/1332)
+  - Add `elasticstack_kibana_security_exception_item` resource ([#1496](https://github.com/elastic/terraform-provider-elasticstack/pull/1496))
+  - Add `elasticstack_kibana_security_exception_list` resource ([#1495](https://github.com/elastic/terraform-provider-elasticstack/pull/1495))
+  - Add `elasticstack_kibana_security_list` resource ([#1489](https://github.com/elastic/terraform-provider-elasticstack/pull/1489))
+  - Add `elasticstack_kibana_security_list_item` resource ([#1492](https://github.com/elastic/terraform-provider-elasticstack/pull/1492))
+  - Add `elasticstack_kibana_security_list_data_streams` resource ([#1525](https://github.com/elastic/terraform-provider-elasticstack/pull/1525))
 
 ## [0.12.2] - 2025-11-19
 - Fix `elasticstack_elasticsearch_snapshot_lifecycle` metadata type conversion causing terraform apply to fail ([#1409](https://github.com/elastic/terraform-provider-elasticstack/issues/1409))
@@ -592,7 +668,8 @@ resource "elasticstack_fleet_output" "output" {
 - Initial set of docs
 - CI integration
 
-[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.12.2...HEAD
+[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.13.0...HEAD
+[0.13.0]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.12.2...v0.13.0
 [0.12.2]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.12.1...v0.12.2
 [0.12.1]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.12.0...v0.12.1
 [0.12.0]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.18...v0.12.0
