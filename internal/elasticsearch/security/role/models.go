@@ -248,11 +248,32 @@ func fieldSecurityToAPIModel(ctx context.Context, data types.Object) (*models.Fi
 	return &fieldSecurity, diags
 }
 
+// preserveNullForEmptyStringSlice converts a string slice to a Terraform set,
+// but preserves the original null value if the original was null and the slice is empty.
+// This handles the distinction between:
+// - User doesn't set attribute (null) - remains null even if API returns empty array
+// - User explicitly sets empty array ([]) - becomes empty set
+func preserveNullForEmptyStringSlice(ctx context.Context, original types.Set, slice []string) (types.Set, diag.Diagnostics) {
+	setValue, diags := types.SetValueFrom(ctx, types.StringType, slice)
+	if diags.HasError() {
+		return types.SetNull(types.StringType), diags
+	}
+
+	// Preserve null if the original was null and API returned empty array
+	if original.IsNull() && len(slice) == 0 {
+		return original, diags
+	}
+
+	return setValue, diags
+}
+
 // fromAPIModel converts the API model to the Terraform model
 func (data *RoleData) fromAPIModel(ctx context.Context, role *models.Role) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	// Preserve original null values for optional attributes that may be null in config
+	// Preserve original null values for optional attributes to distinguish between:
+	// - User doesn't set attribute (null) - should remain null even if API returns empty array
+	// - User explicitly sets empty array ([]) - should become empty set
 	originalCluster := data.Cluster
 	originalRunAs := data.RunAs
 
@@ -301,16 +322,11 @@ func (data *RoleData) fromAPIModel(ctx context.Context, role *models.Role) diag.
 	}
 
 	// Cluster
-	clusterSet, d := types.SetValueFrom(ctx, types.StringType, role.Cluster)
-	diags.Append(d...)
+	var clusterDiags diag.Diagnostics
+	data.Cluster, clusterDiags = preserveNullForEmptyStringSlice(ctx, originalCluster, role.Cluster)
+	diags.Append(clusterDiags...)
 	if diags.HasError() {
 		return diags
-	}
-	// Preserve null if the original was null and API returned empty array
-	if originalCluster.IsNull() && len(role.Cluster) == 0 {
-		data.Cluster = originalCluster
-	} else {
-		data.Cluster = clusterSet
 	}
 
 	// Global
@@ -499,16 +515,11 @@ func (data *RoleData) fromAPIModel(ctx context.Context, role *models.Role) diag.
 	}
 
 	// Run As
-	runAsSet, d := types.SetValueFrom(ctx, types.StringType, role.RunAs)
-	diags.Append(d...)
+	var runAsDiags diag.Diagnostics
+	data.RunAs, runAsDiags = preserveNullForEmptyStringSlice(ctx, originalRunAs, role.RunAs)
+	diags.Append(runAsDiags...)
 	if diags.HasError() {
 		return diags
-	}
-	// Preserve null if the original was null and API returned empty array
-	if originalRunAs.IsNull() && len(role.RunAs) == 0 {
-		data.RunAs = originalRunAs
-	} else {
-		data.RunAs = runAsSet
 	}
 
 	return diags
