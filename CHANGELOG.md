@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+## [0.13.0] - 2025-12-10
+
 ### Breaking changes
 
 #### `elasticstack_elasticsearch_index.alias` block has changed to a set attribute. 
@@ -40,6 +42,8 @@ alias = [
 
 ### Changes
 
+- Fix `elasticstack_kibana_action_connector` failing with "inconsistent result after apply" when config contains null values ([#1524](https://github.com/elastic/terraform-provider-elasticstack/pull/1524))
+- Add `host_name_format` to `elasticstack_fleet_agent_policy` to configure host name format (hostname or FQDN) ([#1312](https://github.com/elastic/terraform-provider-elasticstack/pull/1312))
 - Create `elasticstack_kibana_prebuilt_rule` resource ([#1296](https://github.com/elastic/terraform-provider-elasticstack/pull/1296))
 - Add `required_versions` to `elasticstack_fleet_agent_policy` ([#1436](https://github.com/elastic/terraform-provider-elasticstack/pull/1436))
 - Migrate `elasticstack_elasticsearch_security_role` resource to Terraform Plugin Framework ([#1330](https://github.com/elastic/terraform-provider-elasticstack/pull/1330))
@@ -50,6 +54,12 @@ alias = [
 - Add `elasticstack_elasticsearch_alias` resource ([#1343](https://github.com/elastic/terraform-provider-elasticstack/pull/1343))
 - Add `mapping_total_fields_limit` to `elasticstack_elasticsearch_index` ([#1494](https://github.com/elastic/terraform-provider-elasticstack/pull/1494))
 - Add `elasticstack_kibana_default_data_view` resource ([#1379](https://github.com/elastic/terraform-provider-elasticstack/pull/1379))
+- Add support for [Security Exceptions](https://github.com/elastic/terraform-provider-elasticstack/issues/1332)
+  - Add `elasticstack_kibana_security_exception_item` resource ([#1496](https://github.com/elastic/terraform-provider-elasticstack/pull/1496))
+  - Add `elasticstack_kibana_security_exception_list` resource ([#1495](https://github.com/elastic/terraform-provider-elasticstack/pull/1495))
+  - Add `elasticstack_kibana_security_list` resource ([#1489](https://github.com/elastic/terraform-provider-elasticstack/pull/1489))
+  - Add `elasticstack_kibana_security_list_item` resource ([#1492](https://github.com/elastic/terraform-provider-elasticstack/pull/1492))
+  - Add `elasticstack_kibana_security_list_data_streams` resource ([#1525](https://github.com/elastic/terraform-provider-elasticstack/pull/1525))
 
 ## [0.12.2] - 2025-11-19
 - Fix `elasticstack_elasticsearch_snapshot_lifecycle` metadata type conversion causing terraform apply to fail ([#1409](https://github.com/elastic/terraform-provider-elasticstack/issues/1409))
@@ -590,7 +600,8 @@ resource "elasticstack_fleet_output" "output" {
 - Initial set of docs
 - CI integration
 
-[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.12.2...HEAD
+[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.13.0...HEAD
+[0.13.0]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.12.2...v0.13.0
 [0.12.2]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.12.1...v0.12.2
 [0.12.1]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.12.0...v0.12.1
 [0.12.0]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.18...v0.12.0

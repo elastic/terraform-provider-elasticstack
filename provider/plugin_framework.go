@@ -41,6 +41,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_exception_item"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_exception_list"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_list"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_list_data_streams"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_list_item"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/spaces"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics/monitor"
@@ -159,15 +160,16 @@ func (p *Provider) resources(ctx context.Context) []func() resource.Resource {
 		job_state.NewMLJobStateResource,
 		datafeed_state.NewMLDatafeedStateResource,
 		prebuilt_rules.NewResource,
+		security_list_item.NewResource,
+		security_list.NewResource,
+		security_list_data_streams.NewResource,
+		security_exception_list.NewResource,
+		security_exception_item.NewResource,
 	}
 }
 
 func (p *Provider) experimentalResources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
-		security_list_item.NewResource,
-		security_list.NewResource,
-		security_exception_list.NewResource,
-		security_exception_item.NewResource,
 		dashboard.NewResource,
 	}
 }
