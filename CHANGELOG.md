@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+## [0.13.0] - 2025-12-10
+
 ### Breaking changes
 
 #### `elasticstack_elasticsearch_index.alias` block has changed to a set attribute. 
