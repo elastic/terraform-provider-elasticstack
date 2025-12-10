@@ -806,10 +806,10 @@ func (model *agentPolicyModel) toAPIUpdateModel(ctx context.Context, feat featur
 			}
 		}
 
-		monitoringHttp, pprofEnabled := model.convertHttpMonitoringEndpointToAPIUpdate(ctx)
+		monitoringHttp, pprofEnabled := model.convertHttpMonitoringEndpointToAPI(ctx)
 		body.MonitoringHttp = monitoringHttp
 		body.MonitoringPprofEnabled = pprofEnabled
-		body.MonitoringDiagnostics = model.convertDiagnosticsToAPIUpdate(ctx)
+		body.MonitoringDiagnostics = model.convertDiagnosticsToAPI(ctx)
 	}
 
 	return body, nil
@@ -863,7 +863,7 @@ func mergeAgentFeature(existing []apiAgentFeature, newFeature *apiAgentFeature) 
 	return &result
 }
 
-// convertHttpMonitoringEndpointToAPI converts the HTTP monitoring endpoint config to API format for create
+// convertHttpMonitoringEndpointToAPI converts the HTTP monitoring endpoint config to API format
 func (model *agentPolicyModel) convertHttpMonitoringEndpointToAPI(ctx context.Context) (*struct {
 	Buffer *struct {
 		Enabled *bool `json:"enabled,omitempty"`
@@ -924,167 +924,8 @@ func (model *agentPolicyModel) convertHttpMonitoringEndpointToAPI(ctx context.Co
 	return result, &pprofEnabled
 }
 
-// convertHttpMonitoringEndpointToAPIUpdate converts the HTTP monitoring endpoint config to API format for update
-func (model *agentPolicyModel) convertHttpMonitoringEndpointToAPIUpdate(ctx context.Context) (*struct {
-	Buffer *struct {
-		Enabled *bool `json:"enabled,omitempty"`
-	} `json:"buffer,omitempty"`
-	Enabled *bool    `json:"enabled,omitempty"`
-	Host    *string  `json:"host,omitempty"`
-	Port    *float32 `json:"port,omitempty"`
-}, *bool) {
-	if !utils.IsKnown(model.AdvancedMonitoringOptions) {
-		return nil, nil
-	}
-
-	var amo advancedMonitoringOptionsModel
-	model.AdvancedMonitoringOptions.As(ctx, &amo, basetypes.ObjectAsOptions{})
-
-	if !utils.IsKnown(amo.HttpMonitoringEndpoint) {
-		return nil, nil
-	}
-
-	var http httpMonitoringEndpointModel
-	amo.HttpMonitoringEndpoint.As(ctx, &http, basetypes.ObjectAsOptions{})
-
-	// Check if any values differ from defaults
-	hasNonDefaultValues := http.Enabled.ValueBool() ||
-		http.Host.ValueString() != defaultHttpMonitoringHost ||
-		http.Port.ValueInt32() != defaultHttpMonitoringPort ||
-		http.BufferEnabled.ValueBool() ||
-		http.PprofEnabled.ValueBool()
-
-	if !hasNonDefaultValues {
-		return nil, nil
-	}
-
-	enabled := http.Enabled.ValueBool()
-	host := http.Host.ValueString()
-	port := float32(http.Port.ValueInt32())
-	bufferEnabled := http.BufferEnabled.ValueBool()
-	pprofEnabled := http.PprofEnabled.ValueBool()
-
-	result := &struct {
-		Buffer *struct {
-			Enabled *bool `json:"enabled,omitempty"`
-		} `json:"buffer,omitempty"`
-		Enabled *bool    `json:"enabled,omitempty"`
-		Host    *string  `json:"host,omitempty"`
-		Port    *float32 `json:"port,omitempty"`
-	}{
-		Enabled: &enabled,
-		Host:    &host,
-		Port:    &port,
-		Buffer: &struct {
-			Enabled *bool `json:"enabled,omitempty"`
-		}{
-			Enabled: &bufferEnabled,
-		},
-	}
-
-	return result, &pprofEnabled
-}
-
-// convertDiagnosticsToAPI converts the diagnostics config to API format for create
+// convertDiagnosticsToAPI converts the diagnostics config to API format
 func (model *agentPolicyModel) convertDiagnosticsToAPI(ctx context.Context) *struct {
-	Limit *struct {
-		Burst    *float32 `json:"burst,omitempty"`
-		Interval *string  `json:"interval,omitempty"`
-	} `json:"limit,omitempty"`
-	Uploader *struct {
-		InitDur    *string  `json:"init_dur,omitempty"`
-		MaxDur     *string  `json:"max_dur,omitempty"`
-		MaxRetries *float32 `json:"max_retries,omitempty"`
-	} `json:"uploader,omitempty"`
-} {
-	if !utils.IsKnown(model.AdvancedMonitoringOptions) {
-		return nil
-	}
-
-	var amo advancedMonitoringOptionsModel
-	model.AdvancedMonitoringOptions.As(ctx, &amo, basetypes.ObjectAsOptions{})
-
-	if !utils.IsKnown(amo.Diagnostics) {
-		return nil
-	}
-
-	var diag diagnosticsModel
-	amo.Diagnostics.As(ctx, &diag, basetypes.ObjectAsOptions{})
-
-	// Check if any values differ from defaults
-	hasNonDefaultValues := false
-
-	if utils.IsKnown(diag.RateLimits) {
-		var rateLimits rateLimitsModel
-		diag.RateLimits.As(ctx, &rateLimits, basetypes.ObjectAsOptions{})
-		if rateLimits.Interval.ValueString() != defaultDiagnosticsInterval ||
-			rateLimits.Burst.ValueInt32() != defaultDiagnosticsBurst {
-			hasNonDefaultValues = true
-		}
-	}
-
-	if utils.IsKnown(diag.FileUploader) {
-		var fileUploader fileUploaderModel
-		diag.FileUploader.As(ctx, &fileUploader, basetypes.ObjectAsOptions{})
-		if fileUploader.InitDuration.ValueString() != defaultDiagnosticsInitDuration ||
-			fileUploader.BackoffDuration.ValueString() != defaultDiagnosticsBackoffDuration ||
-			fileUploader.MaxRetries.ValueInt32() != defaultDiagnosticsMaxRetries {
-			hasNonDefaultValues = true
-		}
-	}
-
-	if !hasNonDefaultValues {
-		return nil
-	}
-
-	result := &struct {
-		Limit *struct {
-			Burst    *float32 `json:"burst,omitempty"`
-			Interval *string  `json:"interval,omitempty"`
-		} `json:"limit,omitempty"`
-		Uploader *struct {
-			InitDur    *string  `json:"init_dur,omitempty"`
-			MaxDur     *string  `json:"max_dur,omitempty"`
-			MaxRetries *float32 `json:"max_retries,omitempty"`
-		} `json:"uploader,omitempty"`
-	}{}
-
-	if utils.IsKnown(diag.RateLimits) {
-		var rateLimits rateLimitsModel
-		diag.RateLimits.As(ctx, &rateLimits, basetypes.ObjectAsOptions{})
-		interval := rateLimits.Interval.ValueString()
-		burst := float32(rateLimits.Burst.ValueInt32())
-		result.Limit = &struct {
-			Burst    *float32 `json:"burst,omitempty"`
-			Interval *string  `json:"interval,omitempty"`
-		}{
-			Interval: &interval,
-			Burst:    &burst,
-		}
-	}
-
-	if utils.IsKnown(diag.FileUploader) {
-		var fileUploader fileUploaderModel
-		diag.FileUploader.As(ctx, &fileUploader, basetypes.ObjectAsOptions{})
-		initDur := fileUploader.InitDuration.ValueString()
-		maxDur := fileUploader.BackoffDuration.ValueString()
-		maxRetries := float32(fileUploader.MaxRetries.ValueInt32())
-		result.Uploader = &struct {
-			InitDur    *string  `json:"init_dur,omitempty"`
-			MaxDur     *string  `json:"max_dur,omitempty"`
-			MaxRetries *float32 `json:"max_retries,omitempty"`
-		}{
-			InitDur:    &initDur,
-			MaxDur:     &maxDur,
-			MaxRetries: &maxRetries,
-		}
-	}
-
-	return result
-}
-
-// convertDiagnosticsToAPIUpdate converts the diagnostics config to API format for update
-func (model *agentPolicyModel) convertDiagnosticsToAPIUpdate(ctx context.Context) *struct {
 	Limit *struct {
 		Burst    *float32 `json:"burst,omitempty"`
 		Interval *string  `json:"interval,omitempty"`
