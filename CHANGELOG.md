@@ -41,6 +41,7 @@ alias = [
 ### Changes
 
 - Fix `elasticstack_kibana_action_connector` failing with "inconsistent result after apply" when config contains null values ([#1524](https://github.com/elastic/terraform-provider-elasticstack/pull/1524))
+- Add `host_name_format` to `elasticstack_fleet_agent_policy` to configure host name format (hostname or FQDN) ([#1312](https://github.com/elastic/terraform-provider-elasticstack/pull/1312))
 - Create `elasticstack_kibana_prebuilt_rule` resource ([#1296](https://github.com/elastic/terraform-provider-elasticstack/pull/1296))
 - Add `required_versions` to `elasticstack_fleet_agent_policy` ([#1436](https://github.com/elastic/terraform-provider-elasticstack/pull/1436))
 - Migrate `elasticstack_elasticsearch_security_role` resource to Terraform Plugin Framework ([#1330](https://github.com/elastic/terraform-provider-elasticstack/pull/1330))

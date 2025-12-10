@@ -17,6 +17,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -89,6 +90,15 @@ func getSchema() schema.Schema {
 			"skip_destroy": schema.BoolAttribute{
 				Description: "Set to true if you do not wish the agent policy to be deleted at destroy time, and instead just remove the agent policy from the Terraform state.",
 				Optional:    true,
+			},
+			"host_name_format": schema.StringAttribute{
+				Description: "Determines the format of the host.name field in events. Can be 'hostname' (short hostname, e.g., 'myhost') or 'fqdn' (fully qualified domain name, e.g., 'myhost.example.com'). Defaults to 'hostname'.",
+				Computed:    true,
+				Optional:    true,
+				Default:     stringdefault.StaticString(HostNameFormatHostname),
+				Validators: []validator.String{
+					stringvalidator.OneOf(HostNameFormatHostname, HostNameFormatFQDN),
+				},
 			},
 			"supports_agentless": schema.BoolAttribute{
 				Description: "Set to true to enable agentless data collection.",
