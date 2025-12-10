@@ -24,24 +24,6 @@ import (
 //go:embed resource-description.md
 var integrationPolicyDescription string
 
-func getInputsElementType() attr.Type {
-	// Define the element type for the inputs map
-	return types.ObjectType{
-		AttrTypes: map[string]attr.Type{
-			"enabled": types.BoolType,
-			"vars":    jsontypes.NormalizedType{},
-			"streams": types.MapType{
-				ElemType: types.ObjectType{
-					AttrTypes: map[string]attr.Type{
-						"enabled": types.BoolType,
-						"vars":    jsontypes.NormalizedType{},
-					},
-				},
-			},
-		},
-	}
-}
-
 func (r *integrationPolicyResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = getSchemaV2()
 }
@@ -132,57 +114,65 @@ func getSchemaV2() schema.Schema {
 				Computed:    true,
 			},
 			"inputs": schema.MapNestedAttribute{
-				Description: "Integration inputs mapped by input ID.",
-				CustomType:  NewInputsType(getInputsElementType()),
-				Computed:    true,
-				Optional:    true,
-				NestedObject: schema.NestedAttributeObject{
-					Attributes: map[string]schema.Attribute{
-						"enabled": schema.BoolAttribute{
-							Description: "Enable the input.",
-							Computed:    true,
-							Optional:    true,
-							Default:     booldefault.StaticBool(true),
-						},
-						"vars": schema.StringAttribute{
-							Description: "Input-level variables as JSON.",
-							CustomType:  jsontypes.NormalizedType{},
-							Optional:    true,
-							Sensitive:   varsAreSensitive,
-						},
-						"streams": schema.MapNestedAttribute{
-							Description: "Input streams mapped by stream ID.",
-							Optional:    true,
-							Computed:    true,
-							Default:     mapdefault.StaticValue(types.MapNull(getInputStreamType())),
-							NestedObject: schema.NestedAttributeObject{
-								Attributes: map[string]schema.Attribute{
-									"enabled": schema.BoolAttribute{
-										Description: "Enable the stream.",
-										Computed:    true,
-										Optional:    true,
-										Default:     booldefault.StaticBool(true),
-									},
-									"vars": schema.StringAttribute{
-										Description: "Stream-level variables as JSON.",
-										CustomType:  jsontypes.NormalizedType{},
-										Optional:    true,
-										Sensitive:   varsAreSensitive,
-									},
-								},
-							},
-						},
-					},
-				},
+				Description:  "Integration inputs mapped by input ID.",
+				CustomType:   NewInputsType(getInputsElementType()),
+				Computed:     true,
+				Optional:     true,
+				NestedObject: getInputsNestedObject(varsAreSensitive),
 			},
 		},
 	}
 }
 
-func getInputsAttributeTypes() map[string]attr.Type {
-	return getInputsElementType().(attr.TypeWithAttributeTypes).AttributeTypes()
+func getInputsNestedObject(varsAreSensitive bool) schema.NestedAttributeObject {
+	return schema.NestedAttributeObject{
+		Attributes: map[string]schema.Attribute{
+			"enabled": schema.BoolAttribute{
+				Description: "Enable the input.",
+				Computed:    true,
+				Optional:    true,
+				Default:     booldefault.StaticBool(true),
+			},
+			"vars": schema.StringAttribute{
+				Description: "Input-level variables as JSON.",
+				CustomType:  jsontypes.NormalizedType{},
+				Optional:    true,
+				Sensitive:   varsAreSensitive,
+			},
+			"streams": schema.MapNestedAttribute{
+				Description:  "Input streams mapped by stream ID.",
+				Optional:     true,
+				Computed:     true,
+				Default:      mapdefault.StaticValue(types.MapNull(getInputStreamType())),
+				NestedObject: getInputStreamNestedObject(varsAreSensitive),
+			},
+		},
+	}
+}
+
+func getInputStreamNestedObject(varsAreSensitive bool) schema.NestedAttributeObject {
+	return schema.NestedAttributeObject{
+		Attributes: map[string]schema.Attribute{
+			"enabled": schema.BoolAttribute{
+				Description: "Enable the stream.",
+				Computed:    true,
+				Optional:    true,
+				Default:     booldefault.StaticBool(true),
+			},
+			"vars": schema.StringAttribute{
+				Description: "Stream-level variables as JSON.",
+				CustomType:  jsontypes.NormalizedType{},
+				Optional:    true,
+				Sensitive:   varsAreSensitive,
+			},
+		},
+	}
+}
+
+func getInputsElementType() attr.Type {
+	return getInputsNestedObject(false).Type()
 }
 
 func getInputStreamType() attr.Type {
-	return getInputsAttributeTypes()["streams"].(attr.TypeWithElementType).ElementType()
+	return getInputStreamNestedObject(false).Type()
 }
