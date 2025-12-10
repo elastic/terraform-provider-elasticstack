@@ -41,22 +41,24 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 	}
 
 	// Update the dashboard
-	updateResp, diags := kibana_oapi.UpdateDashboard(ctx, kibanaClient, spaceID, dashboardID, apiReq)
+	_, diags = kibana_oapi.UpdateDashboard(ctx, kibanaClient, spaceID, dashboardID, apiReq)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// Populate the model from the API response
-	if updateResp.JSON200 != nil {
-		diags = planModel.populateFromAPI(ctx, updateResp, dashboardID, spaceID)
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
+	readModel, diags := r.read(ctx, planModel)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if readModel == nil {
+		resp.Diagnostics.AddError("Error reading dashboard after update", "The dashboard was updated but could not be read.")
+		return
 	}
 
 	// Set state
-	diags = resp.State.Set(ctx, planModel)
+	diags = resp.State.Set(ctx, *readModel)
 	resp.Diagnostics.Append(diags...)
 }

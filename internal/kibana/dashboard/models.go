@@ -3,7 +3,6 @@ package dashboard
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -43,83 +42,9 @@ type optionsModel struct {
 }
 
 // populateFromAPI populates the Terraform model from the API response
-// It accepts any of the dashboard API response types (GET, POST, PUT)
-func (m *dashboardModel) populateFromAPI(ctx context.Context, resp interface{}, dashboardID string, spaceID string) diag.Diagnostics {
+func (m *dashboardModel) populateFromAPI(ctx context.Context, resp *kbapi.GetDashboardsDashboardIdResponse, dashboardID string, spaceID string) diag.Diagnostics {
 	var diags diag.Diagnostics
-
-	// Extract the JSON200 data based on response type
-	var data struct {
-		Data struct {
-			ControlGroupInput *struct {
-				AutoApplySelections  *bool
-				ChainingSystem       interface{}
-				Controls             interface{}
-				Enhancements         *map[string]interface{}
-				IgnoreParentSettings *struct {
-					IgnoreFilters     *bool
-					IgnoreQuery       *bool
-					IgnoreTimerange   *bool
-					IgnoreValidations *bool
-				}
-				LabelPosition interface{}
-			}
-			Description *string
-			Filters     *[]kbapi.KbnEsQueryServerStoredFilterSchema
-			Options     *struct {
-				HidePanelTitles *bool
-				SyncColors      *bool
-				SyncCursor      *bool
-				SyncTooltips    *bool
-				UseMargins      *bool
-			}
-			Panels          interface{}
-			Query           kbapi.KbnEsQueryServerQuerySchema
-			RefreshInterval kbapi.KbnDataServiceServerRefreshIntervalSchema
-			Tags            *[]string
-			TimeRange       kbapi.KbnEsQueryServerTimeRangeSchema
-			Title           string
-			Version         *float32
-		}
-		References []kbapi.KbnContentManagementUtilsReferenceSchema
-	}
-
-	// Use type switch to handle different response types
-	switch v := resp.(type) {
-	case *kbapi.PostDashboardsDashboardResponse:
-		if v == nil || v.JSON200 == nil {
-			diags.AddError("Invalid API response", "Response or JSON200 is nil")
-			return diags
-		}
-		// Marshal and unmarshal to convert to our generic struct
-		respBytes, _ := json.Marshal(v.JSON200)
-		if err := json.Unmarshal(respBytes, &data); err != nil {
-			diags.AddError("Failed to unmarshal response", err.Error())
-			return diags
-		}
-	case *kbapi.GetDashboardsDashboardIdResponse:
-		if v == nil || v.JSON200 == nil {
-			diags.AddError("Invalid API response", "Response or JSON200 is nil")
-			return diags
-		}
-		respBytes, _ := json.Marshal(v.JSON200)
-		if err := json.Unmarshal(respBytes, &data); err != nil {
-			diags.AddError("Failed to unmarshal response", err.Error())
-			return diags
-		}
-	case *kbapi.PutDashboardsDashboardIdResponse:
-		if v == nil || v.JSON200 == nil {
-			diags.AddError("Invalid API response", "Response or JSON200 is nil")
-			return diags
-		}
-		respBytes, _ := json.Marshal(v.JSON200)
-		if err := json.Unmarshal(respBytes, &data); err != nil {
-			diags.AddError("Failed to unmarshal response", err.Error())
-			return diags
-		}
-	default:
-		diags.AddError("Invalid response type", fmt.Sprintf("Unexpected type %T", resp))
-		return diags
-	}
+	data := resp.JSON200
 
 	// Set composite ID
 	resourceID := clients.CompositeId{ClusterId: spaceID, ResourceId: dashboardID}
@@ -214,36 +139,12 @@ func (m *dashboardModel) mapOptionsFromAPI(ctx context.Context, options *struct 
 		return types.ObjectNull(getOptionsAttrTypes())
 	}
 
-	model := optionsModel{}
-
-	if options.HidePanelTitles != nil {
-		model.HidePanelTitles = types.BoolValue(*options.HidePanelTitles)
-	} else {
-		model.HidePanelTitles = types.BoolNull()
-	}
-
-	if options.UseMargins != nil {
-		model.UseMargins = types.BoolValue(*options.UseMargins)
-	} else {
-		model.UseMargins = types.BoolNull()
-	}
-
-	if options.SyncColors != nil {
-		model.SyncColors = types.BoolValue(*options.SyncColors)
-	} else {
-		model.SyncColors = types.BoolNull()
-	}
-
-	if options.SyncTooltips != nil {
-		model.SyncTooltips = types.BoolValue(*options.SyncTooltips)
-	} else {
-		model.SyncTooltips = types.BoolNull()
-	}
-
-	if options.SyncCursor != nil {
-		model.SyncCursor = types.BoolValue(*options.SyncCursor)
-	} else {
-		model.SyncCursor = types.BoolNull()
+	model := optionsModel{
+		HidePanelTitles: types.BoolPointerValue(options.HidePanelTitles),
+		UseMargins:      types.BoolPointerValue(options.UseMargins),
+		SyncColors:      types.BoolPointerValue(options.SyncColors),
+		SyncTooltips:    types.BoolPointerValue(options.SyncTooltips),
+		SyncCursor:      types.BoolPointerValue(options.SyncCursor),
 	}
 
 	obj, d := types.ObjectValueFrom(ctx, getOptionsAttrTypes(), model)

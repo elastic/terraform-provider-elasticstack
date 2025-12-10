@@ -3,8 +3,10 @@ package dashboard
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -38,16 +40,24 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 		return
 	}
 
-	// Populate state from API response
-	if createResp.JSON200 != nil {
-		diags = planModel.populateFromAPI(ctx, createResp, createResp.JSON200.Id, spaceID)
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
+	compID := clients.CompositeId{
+		ClusterId:  spaceID,
+		ResourceId: createResp.JSON200.Id,
+	}
+	planModel.ID = types.StringValue(compID.String())
+
+	readModel, diags := r.read(ctx, planModel)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if readModel == nil {
+		resp.Diagnostics.AddError("Error reading dashboard after creation", "The dashboard was created but could not be read.")
+		return
 	}
 
 	// Set state
-	diags = resp.State.Set(ctx, planModel)
+	diags = resp.State.Set(ctx, *readModel)
 	resp.Diagnostics.Append(diags...)
 }

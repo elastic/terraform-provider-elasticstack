@@ -5,6 +5,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
@@ -17,11 +18,27 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 		return
 	}
 
-	// Parse composite ID
-	composite, diags := clients.CompositeIdFromStrFw(stateModel.ID.ValueString())
+	readModel, diags := r.read(ctx, stateModel)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
+	}
+
+	if readModel == nil {
+		// Dashboard not found, remove from state
+		resp.State.RemoveResource(ctx)
+		return
+	}
+
+	// Set state
+	resp.Diagnostics.Append(resp.State.Set(ctx, *readModel)...)
+}
+
+func (r *Resource) read(ctx context.Context, stateModel dashboardModel) (*dashboardModel, diag.Diagnostics) {
+	// Parse composite ID
+	composite, diags := clients.CompositeIdFromStrFw(stateModel.ID.ValueString())
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	dashboardID := composite.ResourceId
@@ -30,33 +47,26 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 	// Get the Kibana client
 	kibanaClient, err := r.client.GetKibanaOapiClient()
 	if err != nil {
-		resp.Diagnostics.AddError("Unable to get Kibana client", err.Error())
-		return
+		diags.AddError("Unable to get Kibana client", err.Error())
+		return nil, diags
 	}
 
 	// Get the dashboard
-	getResp, diags := kibana_oapi.GetDashboard(ctx, kibanaClient, spaceID, dashboardID)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	getResp, getDiags := kibana_oapi.GetDashboard(ctx, kibanaClient, spaceID, dashboardID)
+	diags.Append(getDiags...)
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	if getResp == nil {
-		// Dashboard not found, remove from state
-		resp.State.RemoveResource(ctx)
-		return
+		return nil, diags
 	}
 
-	// Populate the model from the API response
-	if getResp.JSON200 != nil {
-		diags = stateModel.populateFromAPI(ctx, getResp, dashboardID, spaceID)
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
+	if getResp.JSON200 == nil {
+		diags.AddError("Empty response when getting dashboard", "GET dashboard was successful, however contained an empty response")
+		return nil, diags
 	}
 
-	// Set state
-	diags = resp.State.Set(ctx, stateModel)
-	resp.Diagnostics.Append(diags...)
+	diags.Append(stateModel.populateFromAPI(ctx, getResp, dashboardID, spaceID)...)
+	return &stateModel, diags
 }

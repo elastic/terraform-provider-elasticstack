@@ -28,6 +28,7 @@ func spaceAwarePathRequestEditor(spaceID string) func(ctx context.Context, req *
 	}
 }
 
+// These headers and query parameters appear to be required by the Dashboard API at the moment.
 func addApiVersionQueryParamRequestEditor() func(ctx context.Context, req *http.Request) error {
 	return func(ctx context.Context, req *http.Request) error {
 		req.Header.Add("x-elastic-internal-origin", "Kibana")
