@@ -5,12 +5,13 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
+	v2 "github.com/elastic/terraform-provider-elasticstack/internal/fleet/integration_policy/models/v2"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
 func (r *integrationPolicyResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var stateModel integrationPolicyModel
+	var stateModel v2.IntegrationPolicyModel
 
 	diags := req.State.Get(ctx, &stateModel)
 	resp.Diagnostics.Append(diags...)
@@ -59,7 +60,7 @@ func (r *integrationPolicyResource) Read(ctx context.Context, req resource.ReadR
 	isImport := stateModel.PolicyID.ValueString() != "" &&
 		(stateModel.Name.IsNull() || stateModel.Name.IsUnknown())
 
-	diags = stateModel.populateFromAPI(ctx, policy)
+	diags = stateModel.PopulateFromAPI(ctx, policy)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -69,7 +70,7 @@ func (r *integrationPolicyResource) Read(ctx context.Context, req resource.ReadR
 	// This prevents "Provider produced inconsistent result" errors during refresh
 	// However, during import we should always populate inputs from the API
 	if !stateHadInput && !isImport {
-		stateModel.Inputs = NewInputsNull(getInputsElementType())
+		stateModel.Inputs = v2.NewInputsNull(v2.GetInputsElementType())
 	}
 
 	diags = resp.State.Set(ctx, stateModel)

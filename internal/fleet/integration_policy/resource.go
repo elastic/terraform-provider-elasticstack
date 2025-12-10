@@ -5,9 +5,7 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/hashicorp/go-version"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
+	v2 "github.com/elastic/terraform-provider-elasticstack/internal/fleet/integration_policy/models/v2"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -17,11 +15,6 @@ var (
 	_ resource.ResourceWithConfigure    = &integrationPolicyResource{}
 	_ resource.ResourceWithImportState  = &integrationPolicyResource{}
 	_ resource.ResourceWithUpgradeState = &integrationPolicyResource{}
-)
-
-var (
-	MinVersionPolicyIds = version.Must(version.NewVersion("8.15.0"))
-	MinVersionOutputId  = version.Must(version.NewVersion("8.16.0"))
 )
 
 // NewResource is a helper function to simplify the provider implementation.
@@ -47,26 +40,6 @@ func (r *integrationPolicyResource) ImportState(ctx context.Context, req resourc
 	resource.ImportStatePassthroughID(ctx, path.Root("policy_id"), req, resp)
 }
 
-func (r *integrationPolicyResource) UpgradeState(context.Context) map[int64]resource.StateUpgrader {
-	return map[int64]resource.StateUpgrader{
-		0: {PriorSchema: getSchemaV0(), StateUpgrader: upgradeV0ToV2},
-		1: {PriorSchema: getSchemaV1(), StateUpgrader: upgradeV1ToV2},
-	}
-}
-
-func (r *integrationPolicyResource) buildFeatures(ctx context.Context) (features, diag.Diagnostics) {
-	supportsPolicyIds, diags := r.client.EnforceMinVersion(ctx, MinVersionPolicyIds)
-	if diags.HasError() {
-		return features{}, diagutil.FrameworkDiagsFromSDK(diags)
-	}
-
-	supportsOutputId, outputIdDiags := r.client.EnforceMinVersion(ctx, MinVersionOutputId)
-	if outputIdDiags.HasError() {
-		return features{}, diagutil.FrameworkDiagsFromSDK(outputIdDiags)
-	}
-
-	return features{
-		SupportsPolicyIds: supportsPolicyIds,
-		SupportsOutputId:  supportsOutputId,
-	}, nil
+func (r *integrationPolicyResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+	resp.Schema = v2.GetSchema()
 }

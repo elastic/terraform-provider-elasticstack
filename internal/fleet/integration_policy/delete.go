@@ -5,11 +5,12 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
+	v2 "github.com/elastic/terraform-provider-elasticstack/internal/fleet/integration_policy/models/v2"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
 func (r *integrationPolicyResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var stateModel integrationPolicyModel
+	var stateModel v2.IntegrationPolicyModel
 
 	diags := req.State.Get(ctx, &stateModel)
 	resp.Diagnostics.Append(diags...)

@@ -5,14 +5,16 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/integration_policy/models"
+	v2 "github.com/elastic/terraform-provider-elasticstack/internal/fleet/integration_policy/models/v2"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func (r *integrationPolicyResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var planModel integrationPolicyModel
-	var stateModel integrationPolicyModel
+	var planModel v2.IntegrationPolicyModel
+	var stateModel v2.IntegrationPolicyModel
 
 	diags := req.Plan.Get(ctx, &planModel)
 	resp.Diagnostics.Append(diags...)
@@ -32,13 +34,13 @@ func (r *integrationPolicyResource) Update(ctx context.Context, req resource.Upd
 		return
 	}
 
-	feat, diags := r.buildFeatures(ctx)
+	feat, diags := models.NewFeatures(ctx, r.client)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	body, diags := planModel.toAPIModel(ctx, true, feat)
+	body, diags := planModel.ToAPIModel(ctx, true, feat)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -76,7 +78,7 @@ func (r *integrationPolicyResource) Update(ctx context.Context, req resource.Upd
 	// Remember the input configuration from state
 	stateHadInput := utils.IsKnown(stateModel.Inputs) && !stateModel.Inputs.IsNull() && len(stateModel.Inputs.Elements()) > 0
 
-	diags = planModel.populateFromAPI(ctx, policy)
+	diags = planModel.PopulateFromAPI(ctx, policy)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -102,7 +104,7 @@ func (r *integrationPolicyResource) Update(ctx context.Context, req resource.Upd
 
 	// If state didn't have input configured, ensure we don't add it now
 	if !stateHadInput && (planModel.Inputs.IsNull() || len(planModel.Inputs.Elements()) == 0) {
-		planModel.Inputs = NewInputsNull(getInputsElementType())
+		planModel.Inputs = v2.NewInputsNull(v2.GetInputsElementType())
 	}
 
 	diags = resp.State.Set(ctx, planModel)

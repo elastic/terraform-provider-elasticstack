@@ -1,4 +1,4 @@
-package integration_policy
+package v2
 
 import (
 	"context"

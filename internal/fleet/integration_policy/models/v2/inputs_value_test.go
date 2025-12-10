@@ -1,4 +1,4 @@
-package integration_policy
+package v2
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 
 func TestInputsValue_MapSemanticEquals(t *testing.T) {
 	ctx := context.Background()
-	elemType := getInputsElementType()
+	elemType := GetInputsElementType()
 
 	tests := []struct {
 		name        string
@@ -45,14 +45,14 @@ func TestInputsValue_MapSemanticEquals(t *testing.T) {
 				"input1": {
 					Enabled: types.BoolValue(true),
 					Vars:    jsontypes.NewNormalizedValue(`{"key": "value"}`),
-					Streams: types.MapNull(getInputStreamType()),
+					Streams: types.MapNull(GetInputStreamType()),
 				},
 			}),
 			value2: mustNewInputsValue(ctx, t, map[string]integrationPolicyInputsModel{
 				"input1": {
 					Enabled: types.BoolValue(true),
 					Vars:    jsontypes.NewNormalizedValue(`{"key": "value"}`),
-					Streams: types.MapNull(getInputStreamType()),
+					Streams: types.MapNull(GetInputStreamType()),
 				},
 			}),
 			expected: true,
@@ -63,19 +63,19 @@ func TestInputsValue_MapSemanticEquals(t *testing.T) {
 				"input1": {
 					Enabled: types.BoolValue(false),
 					Vars:    jsontypes.NewNormalizedValue(`{"key": "old_value"}`),
-					Streams: types.MapNull(getInputStreamType()),
+					Streams: types.MapNull(GetInputStreamType()),
 				},
 				"input2": {
 					Enabled: types.BoolValue(true),
 					Vars:    jsontypes.NewNormalizedValue(`{"key": "value2"}`),
-					Streams: types.MapNull(getInputStreamType()),
+					Streams: types.MapNull(GetInputStreamType()),
 				},
 			}),
 			value2: mustNewInputsValue(ctx, t, map[string]integrationPolicyInputsModel{
 				"input2": {
 					Enabled: types.BoolValue(true),
 					Vars:    jsontypes.NewNormalizedValue(`{"key": "value2"}`),
-					Streams: types.MapNull(getInputStreamType()),
+					Streams: types.MapNull(GetInputStreamType()),
 				},
 			}),
 			expected: true,
@@ -86,19 +86,19 @@ func TestInputsValue_MapSemanticEquals(t *testing.T) {
 				"input1": {
 					Enabled: types.BoolValue(true),
 					Vars:    jsontypes.NewNormalizedValue(`{"key": "value1"}`),
-					Streams: types.MapNull(getInputStreamType()),
+					Streams: types.MapNull(GetInputStreamType()),
 				},
 			}),
 			value2: mustNewInputsValue(ctx, t, map[string]integrationPolicyInputsModel{
 				"input1": {
 					Enabled: types.BoolValue(true),
 					Vars:    jsontypes.NewNormalizedValue(`{"key": "value1"}`),
-					Streams: types.MapNull(getInputStreamType()),
+					Streams: types.MapNull(GetInputStreamType()),
 				},
 				"input2": {
 					Enabled: types.BoolValue(false),
 					Vars:    jsontypes.NewNormalizedValue(`{"key": "ignored"}`),
-					Streams: types.MapNull(getInputStreamType()),
+					Streams: types.MapNull(GetInputStreamType()),
 				},
 			}),
 			expected: true,
@@ -109,24 +109,24 @@ func TestInputsValue_MapSemanticEquals(t *testing.T) {
 				"input1": {
 					Enabled: types.BoolValue(true),
 					Vars:    jsontypes.NewNormalizedValue(`{"key": "value1"}`),
-					Streams: types.MapNull(getInputStreamType()),
+					Streams: types.MapNull(GetInputStreamType()),
 				},
 				"input2": {
 					Enabled: types.BoolValue(false),
 					Vars:    jsontypes.NewNormalizedValue(`{"key": "disabled_old"}`),
-					Streams: types.MapNull(getInputStreamType()),
+					Streams: types.MapNull(GetInputStreamType()),
 				},
 			}),
 			value2: mustNewInputsValue(ctx, t, map[string]integrationPolicyInputsModel{
 				"input1": {
 					Enabled: types.BoolValue(true),
 					Vars:    jsontypes.NewNormalizedValue(`{"key": "value1"}`),
-					Streams: types.MapNull(getInputStreamType()),
+					Streams: types.MapNull(GetInputStreamType()),
 				},
 				"input3": {
 					Enabled: types.BoolValue(false),
 					Vars:    jsontypes.NewNormalizedValue(`{"key": "disabled_new"}`),
-					Streams: types.MapNull(getInputStreamType()),
+					Streams: types.MapNull(GetInputStreamType()),
 				},
 			}),
 			expected: true,
@@ -137,14 +137,14 @@ func TestInputsValue_MapSemanticEquals(t *testing.T) {
 				"input1": {
 					Enabled: types.BoolValue(true),
 					Vars:    jsontypes.NewNormalizedValue(`{"key": "value1"}`),
-					Streams: types.MapNull(getInputStreamType()),
+					Streams: types.MapNull(GetInputStreamType()),
 				},
 			}),
 			value2: mustNewInputsValue(ctx, t, map[string]integrationPolicyInputsModel{
 				"input1": {
 					Enabled: types.BoolValue(true),
 					Vars:    jsontypes.NewNormalizedValue(`{"key": "value2"}`),
-					Streams: types.MapNull(getInputStreamType()),
+					Streams: types.MapNull(GetInputStreamType()),
 				},
 			}),
 			expected: false,
@@ -155,19 +155,19 @@ func TestInputsValue_MapSemanticEquals(t *testing.T) {
 				"input1": {
 					Enabled: types.BoolValue(true),
 					Vars:    jsontypes.NewNormalizedValue(`{"key": "value1"}`),
-					Streams: types.MapNull(getInputStreamType()),
+					Streams: types.MapNull(GetInputStreamType()),
 				},
 			}),
 			value2: mustNewInputsValue(ctx, t, map[string]integrationPolicyInputsModel{
 				"input1": {
 					Enabled: types.BoolValue(true),
 					Vars:    jsontypes.NewNormalizedValue(`{"key": "value1"}`),
-					Streams: types.MapNull(getInputStreamType()),
+					Streams: types.MapNull(GetInputStreamType()),
 				},
 				"input2": {
 					Enabled: types.BoolValue(true),
 					Vars:    jsontypes.NewNormalizedValue(`{"key": "value2"}`),
-					Streams: types.MapNull(getInputStreamType()),
+					Streams: types.MapNull(GetInputStreamType()),
 				},
 			}),
 			expected: false,
@@ -214,14 +214,14 @@ func TestInputsValue_MapSemanticEquals(t *testing.T) {
 				"input1": {
 					Enabled: types.BoolValue(true),
 					Vars:    jsontypes.NewNormalizedValue(`{"key":"value"}`),
-					Streams: types.MapNull(getInputStreamType()),
+					Streams: types.MapNull(GetInputStreamType()),
 				},
 			}),
 			value2: mustNewInputsValue(ctx, t, map[string]integrationPolicyInputsModel{
 				"input1": {
 					Enabled: types.BoolValue(true),
 					Vars:    jsontypes.NewNormalizedValue(`{"key": "value"}`),
-					Streams: types.MapNull(getInputStreamType()),
+					Streams: types.MapNull(GetInputStreamType()),
 				},
 			}),
 			expected: true,
@@ -244,14 +244,14 @@ func TestInputsValue_MapSemanticEquals(t *testing.T) {
 
 func mustNewInputsValue(ctx context.Context, t *testing.T, inputs map[string]integrationPolicyInputsModel) InputsValue {
 	t.Helper()
-	value, diags := NewInputsValueFrom(ctx, getInputsElementType(), inputs)
+	value, diags := NewInputsValueFrom(ctx, GetInputsElementType(), inputs)
 	require.False(t, diags.HasError(), "Failed to create InputsValue: %v", diags)
 	return value
 }
 
 func mustNewStreamsMap(ctx context.Context, t *testing.T, streams map[string]integrationPolicyInputStreamModel) types.Map {
 	t.Helper()
-	value, diags := types.MapValueFrom(ctx, getInputStreamType(), streams)
+	value, diags := types.MapValueFrom(ctx, GetInputStreamType(), streams)
 	require.False(t, diags.HasError(), "Failed to create streams map: %v", diags)
 	return value
 }

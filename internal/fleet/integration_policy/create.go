@@ -4,6 +4,8 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/integration_policy/models"
+	v2 "github.com/elastic/terraform-provider-elasticstack/internal/fleet/integration_policy/models/v2"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -12,7 +14,7 @@ import (
 )
 
 func (r *integrationPolicyResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var planModel integrationPolicyModel
+	var planModel v2.IntegrationPolicyModel
 
 	diags := req.Plan.Get(ctx, &planModel)
 	resp.Diagnostics.Append(diags...)
@@ -26,13 +28,13 @@ func (r *integrationPolicyResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
-	feat, diags := r.buildFeatures(ctx)
+	feat, diags := models.NewFeatures(ctx, r.client)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	body, diags := planModel.toAPIModel(ctx, false, feat)
+	body, diags := planModel.ToAPIModel(ctx, false, feat)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -67,7 +69,7 @@ func (r *integrationPolicyResource) Create(ctx context.Context, req resource.Cre
 	// Remember if the user configured input in the plan
 	planHadInput := utils.IsKnown(planModel.Inputs) && !planModel.Inputs.IsNull() && len(planModel.Inputs.Elements()) > 0
 
-	diags = planModel.populateFromAPI(ctx, policy)
+	diags = planModel.PopulateFromAPI(ctx, policy)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -76,7 +78,7 @@ func (r *integrationPolicyResource) Create(ctx context.Context, req resource.Cre
 	// If plan didn't have input configured, ensure we don't add it now
 	// This prevents "Provider produced inconsistent result" errors
 	if !planHadInput {
-		planModel.Inputs = NewInputsNull(getInputsElementType())
+		planModel.Inputs = v2.NewInputsNull(v2.GetInputsElementType())
 	}
 
 	diags = resp.State.Set(ctx, planModel)

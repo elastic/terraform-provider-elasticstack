@@ -1,4 +1,4 @@
-package integration_policy
+package v2
 
 import (
 	"context"
@@ -6,12 +6,87 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/integration_policy/models"
+	v1 "github.com/elastic/terraform-provider-elasticstack/internal/fleet/integration_policy/models/v1"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestOutputIdHandling(t *testing.T) {
+	t.Run("populateFromAPI", func(t *testing.T) {
+		model := &IntegrationPolicyModel{}
+		outputId := "test-output-id"
+		data := &kbapi.PackagePolicy{
+			Id:      "test-id",
+			Name:    "test-policy",
+			Enabled: true,
+			Package: &struct {
+				ExperimentalDataStreamFeatures *[]struct {
+					DataStream string `json:"data_stream"`
+					Features   struct {
+						DocValueOnlyNumeric *bool `json:"doc_value_only_numeric,omitempty"`
+						DocValueOnlyOther   *bool `json:"doc_value_only_other,omitempty"`
+						SyntheticSource     *bool `json:"synthetic_source,omitempty"`
+						Tsdb                *bool `json:"tsdb,omitempty"`
+					} `json:"features"`
+				} `json:"experimental_data_stream_features,omitempty"`
+				FipsCompatible *bool   `json:"fips_compatible,omitempty"`
+				Name           string  `json:"name"`
+				RequiresRoot   *bool   `json:"requires_root,omitempty"`
+				Title          *string `json:"title,omitempty"`
+				Version        string  `json:"version"`
+			}{
+				Name:    "test-integration",
+				Version: "1.0.0",
+			},
+			OutputId: &outputId,
+		}
+
+		diags := model.PopulateFromAPI(context.Background(), data)
+		require.Empty(t, diags)
+		require.Equal(t, "test-output-id", model.OutputID.ValueString())
+	})
+
+	t.Run("toAPIModel", func(t *testing.T) {
+		model := IntegrationPolicyModel{
+			Name:               types.StringValue("test-policy"),
+			IntegrationName:    types.StringValue("test-integration"),
+			IntegrationVersion: types.StringValue("1.0.0"),
+			OutputID:           types.StringValue("test-output-id"),
+		}
+
+		feat := models.Features{
+			SupportsPolicyIds: true,
+			SupportsOutputId:  true,
+		}
+
+		result, diags := model.ToAPIModel(context.Background(), false, feat)
+		require.Empty(t, diags)
+		require.NotNil(t, result.OutputId)
+		require.Equal(t, "test-output-id", *result.OutputId)
+	})
+
+	t.Run("toAPIModel_unsupported_version", func(t *testing.T) {
+		model := IntegrationPolicyModel{
+			Name:               types.StringValue("test-policy"),
+			IntegrationName:    types.StringValue("test-integration"),
+			IntegrationVersion: types.StringValue("1.0.0"),
+			OutputID:           types.StringValue("test-output-id"),
+		}
+
+		feat := models.Features{
+			SupportsPolicyIds: true,
+			SupportsOutputId:  false, // Simulate unsupported version
+		}
+
+		_, diags := model.ToAPIModel(context.Background(), false, feat)
+		require.Len(t, diags, 1)
+		require.Equal(t, "Unsupported Elasticsearch version", diags[0].Summary())
+		require.Contains(t, diags[0].Detail(), "Output ID is only supported in Elastic Stack")
+	})
+}
 
 func TestUpdateStreamsV1ToV2(t *testing.T) {
 	ctx := context.Background()
@@ -162,7 +237,7 @@ func TestIntegrationPolicyModelV1ToV2(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("basic model conversion", func(t *testing.T) {
-		v1Model := integrationPolicyModelV1{
+		v1Model := v1.IntegrationPolicyModel{
 			ID:                 types.StringValue("test-id"),
 			PolicyID:           types.StringValue("test-policy-id"),
 			Name:               types.StringValue("test-name"),
@@ -174,10 +249,10 @@ func TestIntegrationPolicyModelV1ToV2(t *testing.T) {
 			IntegrationName:    types.StringValue("test-integration"),
 			IntegrationVersion: types.StringValue("1.0.0"),
 			VarsJson:           jsontypes.NewNormalizedValue(`{"var1":"value1"}`),
-			Input:              types.ListNull(getInputTypeV1()),
+			Input:              types.ListNull(v1.GetInputType()),
 		}
 
-		v2Model, diags := v1Model.toV2(ctx)
+		v2Model, diags := NewFromV1(t.Context(), v1Model)
 		require.Empty(t, diags)
 
 		assert.Equal(t, v1Model.ID, v2Model.ID)
@@ -197,17 +272,17 @@ func TestIntegrationPolicyModelV1ToV2(t *testing.T) {
 		policyIDs, diags := types.ListValueFrom(ctx, types.StringType, []string{"policy-1", "policy-2"})
 		require.Empty(t, diags)
 
-		v1Model := integrationPolicyModelV1{
+		v1Model := v1.IntegrationPolicyModel{
 			ID:                 types.StringValue("test-id"),
 			Name:               types.StringValue("test-name"),
 			Namespace:          types.StringValue("test-namespace"),
 			AgentPolicyIDs:     policyIDs,
 			IntegrationName:    types.StringValue("test-integration"),
 			IntegrationVersion: types.StringValue("1.0.0"),
-			Input:              types.ListNull(getInputTypeV1()),
+			Input:              types.ListNull(v1.GetInputType()),
 		}
 
-		v2Model, diags := v1Model.toV2(ctx)
+		v2Model, diags := NewFromV1(t.Context(), v1Model)
 		require.Empty(t, diags)
 
 		assert.Equal(t, v1Model.AgentPolicyIDs, v2Model.AgentPolicyIDs)
@@ -217,7 +292,7 @@ func TestIntegrationPolicyModelV1ToV2(t *testing.T) {
 		spaceIDs, diags := types.SetValueFrom(ctx, types.StringType, []string{"space-1", "space-2"})
 		require.Empty(t, diags)
 
-		v1Model := integrationPolicyModelV1{
+		v1Model := v1.IntegrationPolicyModel{
 			ID:                 types.StringValue("test-id"),
 			Name:               types.StringValue("test-name"),
 			Namespace:          types.StringValue("test-namespace"),
@@ -225,34 +300,34 @@ func TestIntegrationPolicyModelV1ToV2(t *testing.T) {
 			IntegrationName:    types.StringValue("test-integration"),
 			IntegrationVersion: types.StringValue("1.0.0"),
 			SpaceIds:           spaceIDs,
-			Input:              types.ListNull(getInputTypeV1()),
+			Input:              types.ListNull(v1.GetInputType()),
 		}
 
-		v2Model, diags := v1Model.toV2(ctx)
+		v2Model, diags := NewFromV1(t.Context(), v1Model)
 		require.Empty(t, diags)
 
 		assert.Equal(t, v1Model.SpaceIds, v2Model.SpaceIds)
 	})
 
 	t.Run("conversion with empty inputs", func(t *testing.T) {
-		v1Model := integrationPolicyModelV1{
+		v1Model := v1.IntegrationPolicyModel{
 			ID:                 types.StringValue("test-id"),
 			Name:               types.StringValue("test-name"),
 			Namespace:          types.StringValue("test-namespace"),
 			AgentPolicyID:      types.StringValue("agent-policy-1"),
 			IntegrationName:    types.StringValue("test-integration"),
 			IntegrationVersion: types.StringValue("1.0.0"),
-			Input:              types.ListNull(getInputTypeV1()),
+			Input:              types.ListNull(v1.GetInputType()),
 		}
 
-		v2Model, diags := v1Model.toV2(ctx)
+		v2Model, diags := NewFromV1(t.Context(), v1Model)
 		require.Empty(t, diags)
 
 		assert.True(t, v2Model.Inputs.IsNull() || len(v2Model.Inputs.Elements()) == 0)
 	})
 
 	t.Run("conversion with single input without streams", func(t *testing.T) {
-		inputsV1 := []integrationPolicyInputModelV1{
+		inputsV1 := []v1.IntegrationPolicyInputModel{
 			{
 				InputID:     types.StringValue("input-1"),
 				Enabled:     types.BoolValue(true),
@@ -260,10 +335,10 @@ func TestIntegrationPolicyModelV1ToV2(t *testing.T) {
 				StreamsJson: jsontypes.NewNormalizedNull(),
 			},
 		}
-		inputList, diags := types.ListValueFrom(ctx, getInputTypeV1(), inputsV1)
+		inputList, diags := types.ListValueFrom(ctx, v1.GetInputType(), inputsV1)
 		require.Empty(t, diags)
 
-		v1Model := integrationPolicyModelV1{
+		v1Model := v1.IntegrationPolicyModel{
 			ID:                 types.StringValue("test-id"),
 			Name:               types.StringValue("test-name"),
 			Namespace:          types.StringValue("test-namespace"),
@@ -273,7 +348,7 @@ func TestIntegrationPolicyModelV1ToV2(t *testing.T) {
 			Input:              inputList,
 		}
 
-		v2Model, diags := v1Model.toV2(ctx)
+		v2Model, diags := NewFromV1(t.Context(), v1Model)
 		require.Empty(t, diags)
 		assert.False(t, v2Model.Inputs.IsNull())
 
@@ -301,7 +376,7 @@ func TestIntegrationPolicyModelV1ToV2(t *testing.T) {
 		streamsJSON, err := json.Marshal(apiStreams)
 		require.NoError(t, err)
 
-		inputsV1 := []integrationPolicyInputModelV1{
+		inputsV1 := []v1.IntegrationPolicyInputModel{
 			{
 				InputID:     types.StringValue("input-1"),
 				Enabled:     types.BoolValue(true),
@@ -309,10 +384,10 @@ func TestIntegrationPolicyModelV1ToV2(t *testing.T) {
 				StreamsJson: jsontypes.NewNormalizedValue(string(streamsJSON)),
 			},
 		}
-		inputList, diags := types.ListValueFrom(ctx, getInputTypeV1(), inputsV1)
+		inputList, diags := types.ListValueFrom(ctx, v1.GetInputType(), inputsV1)
 		require.Empty(t, diags)
 
-		v1Model := integrationPolicyModelV1{
+		v1Model := v1.IntegrationPolicyModel{
 			ID:                 types.StringValue("test-id"),
 			Name:               types.StringValue("test-name"),
 			Namespace:          types.StringValue("test-namespace"),
@@ -322,7 +397,7 @@ func TestIntegrationPolicyModelV1ToV2(t *testing.T) {
 			Input:              inputList,
 		}
 
-		v2Model, diags := v1Model.toV2(ctx)
+		v2Model, diags := NewFromV1(t.Context(), v1Model)
 		require.Empty(t, diags)
 		assert.False(t, v2Model.Inputs.IsNull())
 
@@ -365,7 +440,7 @@ func TestIntegrationPolicyModelV1ToV2(t *testing.T) {
 		streamsJSON2, err := json.Marshal(apiStreams2)
 		require.NoError(t, err)
 
-		inputsV1 := []integrationPolicyInputModelV1{
+		inputsV1 := []v1.IntegrationPolicyInputModel{
 			{
 				InputID:     types.StringValue("input-1"),
 				Enabled:     types.BoolValue(true),
@@ -379,10 +454,10 @@ func TestIntegrationPolicyModelV1ToV2(t *testing.T) {
 				StreamsJson: jsontypes.NewNormalizedValue(string(streamsJSON2)),
 			},
 		}
-		inputList, diags := types.ListValueFrom(ctx, getInputTypeV1(), inputsV1)
+		inputList, diags := types.ListValueFrom(ctx, v1.GetInputType(), inputsV1)
 		require.Empty(t, diags)
 
-		v1Model := integrationPolicyModelV1{
+		v1Model := v1.IntegrationPolicyModel{
 			ID:                 types.StringValue("test-id"),
 			Name:               types.StringValue("test-name"),
 			Namespace:          types.StringValue("test-namespace"),
@@ -392,7 +467,7 @@ func TestIntegrationPolicyModelV1ToV2(t *testing.T) {
 			Input:              inputList,
 		}
 
-		v2Model, diags := v1Model.toV2(ctx)
+		v2Model, diags := NewFromV1(t.Context(), v1Model)
 		require.Empty(t, diags)
 		assert.False(t, v2Model.Inputs.IsNull())
 
@@ -420,7 +495,7 @@ func TestIntegrationPolicyModelV1ToV2(t *testing.T) {
 
 	t.Run("conversion with invalid streams JSON", func(t *testing.T) {
 		// Use valid JSON that doesn't match the expected structure
-		inputsV1 := []integrationPolicyInputModelV1{
+		inputsV1 := []v1.IntegrationPolicyInputModel{
 			{
 				InputID:     types.StringValue("input-1"),
 				Enabled:     types.BoolValue(true),
@@ -428,10 +503,10 @@ func TestIntegrationPolicyModelV1ToV2(t *testing.T) {
 				StreamsJson: jsontypes.NewNormalizedValue(`["array", "instead", "of", "map"]`),
 			},
 		}
-		inputList, diags := types.ListValueFrom(ctx, getInputTypeV1(), inputsV1)
+		inputList, diags := types.ListValueFrom(ctx, v1.GetInputType(), inputsV1)
 		require.Empty(t, diags)
 
-		v1Model := integrationPolicyModelV1{
+		v1Model := v1.IntegrationPolicyModel{
 			ID:                 types.StringValue("test-id"),
 			Name:               types.StringValue("test-name"),
 			Namespace:          types.StringValue("test-namespace"),
@@ -441,13 +516,13 @@ func TestIntegrationPolicyModelV1ToV2(t *testing.T) {
 			Input:              inputList,
 		}
 
-		_, diags = v1Model.toV2(ctx)
+		_, diags = NewFromV1(t.Context(), v1Model)
 		require.NotEmpty(t, diags)
 		assert.True(t, diags.HasError())
 	})
 
 	t.Run("conversion preserves null and unknown values", func(t *testing.T) {
-		v1Model := integrationPolicyModelV1{
+		v1Model := v1.IntegrationPolicyModel{
 			ID:                 types.StringValue("test-id"),
 			Name:               types.StringValue("test-name"),
 			Namespace:          types.StringValue("test-namespace"),
@@ -457,29 +532,14 @@ func TestIntegrationPolicyModelV1ToV2(t *testing.T) {
 			Description:        types.StringNull(),
 			VarsJson:           jsontypes.NewNormalizedNull(),
 			SpaceIds:           types.SetNull(types.StringType),
-			Input:              types.ListNull(getInputTypeV1()),
+			Input:              types.ListNull(v1.GetInputType()),
 		}
 
-		v2Model, diags := v1Model.toV2(ctx)
+		v2Model, diags := NewFromV1(t.Context(), v1Model)
 		require.Empty(t, diags)
 
 		assert.True(t, v2Model.Description.IsNull())
 		assert.True(t, v2Model.VarsJson.IsNull())
 		assert.True(t, v2Model.SpaceIds.IsNull())
 	})
-}
-
-func TestGetInputTypeV1(t *testing.T) {
-	inputType := getInputTypeV1()
-	require.NotNil(t, inputType)
-
-	// Verify it's an object type with the expected attributes
-	objType, ok := inputType.(attr.TypeWithAttributeTypes)
-	require.True(t, ok, "input type should be an object type with attributes")
-
-	attrTypes := objType.AttributeTypes()
-	require.Contains(t, attrTypes, "input_id")
-	require.Contains(t, attrTypes, "enabled")
-	require.Contains(t, attrTypes, "streams_json")
-	require.Contains(t, attrTypes, "vars_json")
 }
