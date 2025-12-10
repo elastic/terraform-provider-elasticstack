@@ -4,6 +4,6 @@ steps:
       image: "golang:1.25.5@sha256:0ece421d4bb2525b7c0b4cad5791d52be38edf4807582407525ca353a429eccc"
       cpu: "16"
       memory: "24G"
-      ephemeralStorage: "20G"
+      ephemeralStorage: "40G"
     command:
       - ".buildkite/scripts/release.sh"
