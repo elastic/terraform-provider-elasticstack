@@ -46,10 +46,6 @@ resource "elasticstack_fleet_agent_policy" "test_policy" {
   skip_destroy    = false
 }
 
-data "elasticstack_fleet_enrollment_tokens" "test_policy" {
-  policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
-}
-
 resource "elasticstack_fleet_integration_policy" "test_policy" {
   name                = var.policy_name
   namespace           = "default"
