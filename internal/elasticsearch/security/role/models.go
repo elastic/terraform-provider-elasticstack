@@ -252,6 +252,10 @@ func fieldSecurityToAPIModel(ctx context.Context, data types.Object) (*models.Fi
 func (data *RoleData) fromAPIModel(ctx context.Context, role *models.Role) diag.Diagnostics {
 	var diags diag.Diagnostics
 
+	// Preserve original null values for optional attributes that may be null in config
+	originalCluster := data.Cluster
+	originalRunAs := data.RunAs
+
 	data.Name = types.StringValue(role.Name)
 
 	// Description
@@ -302,7 +306,12 @@ func (data *RoleData) fromAPIModel(ctx context.Context, role *models.Role) diag.
 	if diags.HasError() {
 		return diags
 	}
-	data.Cluster = clusterSet
+	// Preserve null if the original was null and API returned empty array
+	if originalCluster.IsNull() && len(role.Cluster) == 0 {
+		data.Cluster = originalCluster
+	} else {
+		data.Cluster = clusterSet
+	}
 
 	// Global
 	if role.Global != nil {
@@ -495,7 +504,12 @@ func (data *RoleData) fromAPIModel(ctx context.Context, role *models.Role) diag.
 	if diags.HasError() {
 		return diags
 	}
-	data.RunAs = runAsSet
+	// Preserve null if the original was null and API returned empty array
+	if originalRunAs.IsNull() && len(role.RunAs) == 0 {
+		data.RunAs = originalRunAs
+	} else {
+		data.RunAs = runAsSet
+	}
 
 	return diags
 }
