@@ -12,14 +12,61 @@ import (
 
 // CreateListIndex creates the .lists and .items data streams for a space if they don't exist.
 // This is required before any list operations can be performed.
-func CreateListIndex(ctx context.Context, client *Client, spaceId string) diag.Diagnostics {
+// Returns true if acknowledged, and diagnostics if there was an error.
+func CreateListIndex(ctx context.Context, client *Client, spaceId string) (bool, diag.Diagnostics) {
 	resp, err := client.API.CreateListIndexWithResponse(ctx, kbapi.SpaceId(spaceId))
+	if err != nil {
+		return false, diagutil.FrameworkDiagFromError(err)
+	}
+
+	switch resp.StatusCode() {
+	case http.StatusOK:
+		if resp.JSON200 != nil {
+			return resp.JSON200.Acknowledged, nil
+		}
+		return true, nil
+	case http.StatusConflict:
+		// Data streams already exist ([docs](https://www.elastic.co/docs/api/doc/kibana/operation/operation-createlistindex#operation-createlistindex-409))
+		return true, nil
+	default:
+		return false, reportUnknownError(resp.StatusCode(), resp.Body)
+	}
+}
+
+// ReadListIndex reads the status of .lists and .items data streams for a space.
+// Returns the status of list_index and list_item_index separately, and diagnostics on error.
+func ReadListIndex(ctx context.Context, client *Client, spaceId string) (listIndex bool, listItemIndex bool, diags diag.Diagnostics) {
+	resp, err := client.API.ReadListIndexWithResponse(ctx, kbapi.SpaceId(spaceId))
+	if err != nil {
+		return false, false, diagutil.FrameworkDiagFromError(err)
+	}
+
+	switch resp.StatusCode() {
+	case http.StatusOK:
+		if resp.JSON200 != nil {
+			return resp.JSON200.ListIndex, resp.JSON200.ListItemIndex, nil
+		}
+		return false, false, nil
+	case http.StatusNotFound:
+		// Data streams don't exist
+		return false, false, nil
+	default:
+		return false, false, reportUnknownError(resp.StatusCode(), resp.Body)
+	}
+}
+
+// DeleteListIndex deletes the .lists and .items data streams for a space.
+// Returns diagnostics if there was an error.
+func DeleteListIndex(ctx context.Context, client *Client, spaceId string) diag.Diagnostics {
+	resp, err := client.API.DeleteListIndexWithResponse(ctx, kbapi.SpaceId(spaceId))
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
+		return nil
+	case http.StatusNotFound:
 		return nil
 	default:
 		return reportUnknownError(resp.StatusCode(), resp.Body)

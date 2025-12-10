@@ -9,6 +9,10 @@ resource "elasticstack_kibana_space" "test" {
   description = "A test space for security lists and list items"
 }
 
+resource "elasticstack_kibana_security_list_data_streams" "test" {
+  space_id = elasticstack_kibana_space.test.space_id
+}
+
 # Create a security list in the space
 resource "elasticstack_kibana_security_list" "test" {
   space_id    = elasticstack_kibana_space.test.space_id
@@ -16,6 +20,8 @@ resource "elasticstack_kibana_security_list" "test" {
   name        = "IP Blocklist"
   description = "A test security list for blocking IP addresses"
   type        = "ip"
+
+  depends_on = [elasticstack_kibana_security_list_data_streams.test]
 }
 
 # Update the list item value
@@ -23,4 +29,6 @@ resource "elasticstack_kibana_security_list_item" "test" {
   space_id = elasticstack_kibana_space.test.space_id
   list_id  = elasticstack_kibana_security_list.test.list_id
   value    = var.value
+
+  depends_on = [elasticstack_kibana_security_list_data_streams.test]
 }

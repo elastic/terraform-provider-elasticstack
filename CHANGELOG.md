@@ -51,6 +51,12 @@ alias = [
 - Add `elasticstack_elasticsearch_alias` resource ([#1343](https://github.com/elastic/terraform-provider-elasticstack/pull/1343))
 - Add `mapping_total_fields_limit` to `elasticstack_elasticsearch_index` ([#1494](https://github.com/elastic/terraform-provider-elasticstack/pull/1494))
 - Add `elasticstack_kibana_default_data_view` resource ([#1379](https://github.com/elastic/terraform-provider-elasticstack/pull/1379))
+- Add support for [Security Exceptions](https://github.com/elastic/terraform-provider-elasticstack/issues/1332)
+  - Add `elasticstack_kibana_security_exception_item` resource ([#1496](https://github.com/elastic/terraform-provider-elasticstack/pull/1496))
+  - Add `elasticstack_kibana_security_exception_list` resource ([#1495](https://github.com/elastic/terraform-provider-elasticstack/pull/1495))
+  - Add `elasticstack_kibana_security_list` resource ([#1489](https://github.com/elastic/terraform-provider-elasticstack/pull/1489))
+  - Add `elasticstack_kibana_security_list_item` resource ([#1492](https://github.com/elastic/terraform-provider-elasticstack/pull/1492))
+  - Add `elasticstack_kibana_security_list_data_streams` resource ([#1525](https://github.com/elastic/terraform-provider-elasticstack/pull/1525))
 
 ## [0.12.2] - 2025-11-19
 - Fix `elasticstack_elasticsearch_snapshot_lifecycle` metadata type conversion causing terraform apply to fail ([#1409](https://github.com/elastic/terraform-provider-elasticstack/issues/1409))
