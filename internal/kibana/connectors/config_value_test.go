@@ -125,6 +125,47 @@ func TestConfigValue_SanitizedValue(t *testing.T) {
 			expectError:   true,
 			errorContains: "Failed to unmarshal config value",
 		},
+		{
+			name: "JSON with null values gets sanitized - top level",
+			configValue: ConfigValue{
+				Normalized: jsontypes.NewNormalizedValue(`{"key": "value", "nullField": null, "another": "field"}`),
+			},
+			expectedResult: `{"another":"field","key":"value"}`,
+			expectError:    false,
+		},
+		{
+			name: "JSON with null values gets sanitized - nested",
+			configValue: ConfigValue{
+				Normalized: jsontypes.NewNormalizedValue(`{"key": "value", "nested": {"field": "value", "nullField": null}}`),
+			},
+			expectedResult: `{"key":"value","nested":{"field":"value"}}`,
+			expectError:    false,
+		},
+		{
+			name: "JSON with null values gets sanitized - mixed",
+			configValue: ConfigValue{
+				Normalized: jsontypes.NewNormalizedValue(`{"key": "value", "nullTop": null, "nested": {"field": "value", "nullNested": null}, "another": null}`),
+			},
+			expectedResult: `{"key":"value","nested":{"field":"value"}}`,
+			expectError:    false,
+		},
+		{
+			name: "JSON with only null values results in empty object",
+			configValue: ConfigValue{
+				Normalized: jsontypes.NewNormalizedValue(`{"nullField1": null, "nullField2": null}`),
+			},
+			expectedResult: `{}`,
+			expectError:    false,
+		},
+		{
+			name: "JSON with null and connector type ID gets both sanitized",
+			configValue: ConfigValue{
+				Normalized:      jsontypes.NewNormalizedValue(`{"key": "value", "nullField": null, "__tf_provider_connector_type_id": "test-connector"}`),
+				connectorTypeID: "test-connector",
+			},
+			expectedResult: `{"key":"value"}`,
+			expectError:    false,
+		},
 	}
 
 	for _, tt := range tests {

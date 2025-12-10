@@ -5,6 +5,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -68,20 +69,37 @@ func getSchemaV0() *schema.Schema {
 	}
 }
 
-// The schema between V0 and V1 is mostly the same, however vars_json and
-// streams_json saved "" values to the state when null values were in the
-// config. jsontypes.Normalized correctly states this is invalid JSON.
-func upgradeV0(ctx context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
-	var stateModelV0 integrationPolicyModelV0
-
-	diags := req.State.Get(ctx, &stateModelV0)
+// This function first upgrades v0 to v1, and then re-uses the v1 to v2 upgrader.
+func upgradeV0ToV2(ctx context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
+	stateModelV1, diags := upgradeV0ToV1(ctx, req)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
+	stateModelV2, diags := stateModelV1.toV2(ctx)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	diags = resp.State.Set(ctx, stateModelV2)
+	resp.Diagnostics.Append(diags...)
+}
+
+// The schema between V0 and V1 is mostly the same, however vars_json and
+// streams_json saved "" values to the state when null values were in the
+// config. jsontypes.Normalized correctly states this is invalid JSON.
+func upgradeV0ToV1(ctx context.Context, req resource.UpgradeStateRequest) (integrationPolicyModelV1, diag.Diagnostics) {
+	var stateModelV0 integrationPolicyModelV0
+
+	diags := req.State.Get(ctx, &stateModelV0)
+	if diags.HasError() {
+		return integrationPolicyModelV1{}, diags
+	}
+
 	// Convert V0 model to V1 model
-	stateModelV1 := integrationPolicyModel{
+	stateModelV1 := integrationPolicyModelV1{
 		ID:                 stateModelV0.ID,
 		PolicyID:           stateModelV0.PolicyID,
 		Name:               stateModelV0.Name,
@@ -108,11 +126,11 @@ func upgradeV0(ctx context.Context, req resource.UpgradeStateRequest, resp *reso
 	}
 
 	// Convert inputs from V0 to V1
-	inputsV0 := utils.ListTypeAs[integrationPolicyInputModelV0](ctx, stateModelV0.Input, path.Root("input"), &resp.Diagnostics)
-	var inputsV1 []integrationPolicyInputModel
+	inputsV0 := utils.ListTypeAs[integrationPolicyInputModelV0](ctx, stateModelV0.Input, path.Root("input"), &diags)
+	var inputsV1 []integrationPolicyInputModelV1
 
 	for _, inputV0 := range inputsV0 {
-		inputV1 := integrationPolicyInputModel{
+		inputV1 := integrationPolicyInputModelV1{
 			InputID: inputV0.InputID,
 			Enabled: inputV0.Enabled,
 		}
@@ -142,11 +160,6 @@ func upgradeV0(ctx context.Context, req resource.UpgradeStateRequest, resp *reso
 		inputsV1 = append(inputsV1, inputV1)
 	}
 
-	stateModelV1.Input = utils.ListValueFrom(ctx, inputsV1, getInputTypeV1(), path.Root("input"), &resp.Diagnostics)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	diags = resp.State.Set(ctx, stateModelV1)
-	resp.Diagnostics.Append(diags...)
+	stateModelV1.Input = utils.ListValueFrom(ctx, inputsV1, getInputTypeV1(), path.Root("input"), &diags)
+	return stateModelV1, diags
 }

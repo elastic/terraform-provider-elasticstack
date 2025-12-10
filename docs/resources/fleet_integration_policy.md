@@ -66,22 +66,24 @@ resource "elasticstack_fleet_integration_policy" "sample" {
   // Optional: specify a custom output to send data to
   // output_id           = "my-custom-output-id"
 
-  input {
-    input_id = "tcp-tcp"
-    streams_json = jsonencode({
-      "tcp.generic" : {
-        "enabled" : true,
-        "vars" : {
-          "listen_address" : "localhost",
-          "listen_port" : 8080,
-          "data_stream.dataset" : "tcp.generic",
-          "tags" : [],
-          "syslog_options" : "field: message\n#format: auto\n#timezone: Local\n",
-          "ssl" : "#certificate: |\n#    -----BEGIN CERTIFICATE-----\n#    ...\n#    -----END CERTIFICATE-----\n#key: |\n#    -----BEGIN PRIVATE KEY-----\n#    ...\n#    -----END PRIVATE KEY-----\n",
-          "custom" : ""
+  inputs = {
+    "tcp-tcp" = {
+      enabled = true
+      streams = {
+        "tcp.generic" = {
+          enabled = true,
+          vars = jsonencode({
+            "listen_address" : "localhost",
+            "listen_port" : 8080,
+            "data_stream.dataset" : "tcp.generic",
+            "tags" : [],
+            "syslog_options" : "field: message\n#format: auto\n#timezone: Local\n",
+            "ssl" : "#certificate: |\n#    -----BEGIN CERTIFICATE-----\n#    ...\n#    -----END CERTIFICATE-----\n#key: |\n#    -----BEGIN PRIVATE KEY-----\n#    ...\n#    -----END PRIVATE KEY-----\n",
+            "custom" : ""
+          })
         }
       }
-    })
+    }
   }
 }
 ```
@@ -103,7 +105,7 @@ resource "elasticstack_fleet_integration_policy" "sample" {
 - `description` (String) The description of the integration policy.
 - `enabled` (Boolean) Enable the integration policy.
 - `force` (Boolean) Force operations, such as creation and deletion, to occur.
-- `input` (Block List) Integration inputs. (see [below for nested schema](#nestedblock--input))
+- `inputs` (Attributes Map) Integration inputs mapped by input ID. (see [below for nested schema](#nestedatt--inputs))
 - `output_id` (String) The ID of the output to send data to. When not specified, the default output of the agent policy will be used.
 - `policy_id` (String) Unique identifier of the integration policy.
 - `space_ids` (Set of String) The Kibana space IDs where this integration policy is available. When set, must match the space_ids of the referenced agent policy. If not set, will be inherited from the agent policy. Note: The order of space IDs does not matter as this is a set.
@@ -113,18 +115,22 @@ resource "elasticstack_fleet_integration_policy" "sample" {
 
 - `id` (String) The ID of this resource.
 
-<a id="nestedblock--input"></a>
-### Nested Schema for `input`
-
-Required:
-
-- `input_id` (String) The identifier of the input.
+<a id="nestedatt--inputs"></a>
+### Nested Schema for `inputs`
 
 Optional:
 
 - `enabled` (Boolean) Enable the input.
-- `streams_json` (String, Sensitive) Input streams as JSON.
-- `vars_json` (String, Sensitive) Input variables as JSON.
+- `streams` (Attributes Map) Input streams mapped by stream ID. (see [below for nested schema](#nestedatt--inputs--streams))
+- `vars` (String, Sensitive) Input-level variables as JSON.
+
+<a id="nestedatt--inputs--streams"></a>
+### Nested Schema for `inputs.streams`
+
+Optional:
+
+- `enabled` (Boolean) Enable the stream.
+- `vars` (String, Sensitive) Stream-level variables as JSON.
 
 ## Import
 

@@ -1,0 +1,3 @@
+Creates `.lists` and `.items` data streams in the relevant Kibana space. These data streams are required before you can start using security lists and exceptions that reference value lists.
+
+Before you can start working with exceptions that use value lists, you must create the `.lists` and `.items` data streams for the relevant Kibana space. Once these data streams are created, your role needs privileges to manage rules.

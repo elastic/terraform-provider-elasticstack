@@ -1,51 +1,25 @@
 package security_list_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-func ensureListIndexExists(t *testing.T) {
-	client, err := clients.NewAcceptanceTestingClient()
-	if err != nil {
-		t.Fatalf("Failed to create client: %v", err)
-	}
-
-	kibanaClient, err := client.GetKibanaOapiClient()
-	if err != nil {
-		t.Fatalf("Failed to get Kibana client: %v", err)
-	}
-
-	diags := kibana_oapi.CreateListIndex(context.Background(), kibanaClient, "default")
-	if diags.HasError() {
-		// It's OK if it already exists, we'll only fail on other errors
-		for _, d := range diags {
-			if d.Summary() != "Unexpected status code from server: got HTTP 409" {
-				t.Fatalf("Failed to create list index: %v", d.Detail())
-			}
-		}
-	}
-}
-
 func TestAccResourceSecurityList(t *testing.T) {
 	listID := "test-list-" + uuid.New().String()
+	spaceID := "test-space-" + uuid.New().String()[:8]
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			acctest.PreCheck(t)
-			ensureListIndexExists(t)
-		},
+		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{ // Create
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
+					"space_id":    config.StringVariable(spaceID),
 					"list_id":     config.StringVariable(listID),
 					"name":        config.StringVariable("Test Security List"),
 					"description": config.StringVariable("A test security list for IP addresses"),
@@ -65,6 +39,7 @@ func TestAccResourceSecurityList(t *testing.T) {
 			{ // Update
 				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
+					"space_id":    config.StringVariable(spaceID),
 					"list_id":     config.StringVariable(listID),
 					"name":        config.StringVariable("Updated Security List"),
 					"description": config.StringVariable("An updated test security list"),
@@ -78,6 +53,7 @@ func TestAccResourceSecurityList(t *testing.T) {
 			{ // Import
 				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
+					"space_id":    config.StringVariable(spaceID),
 					"list_id":     config.StringVariable(listID),
 					"name":        config.StringVariable("Updated Security List"),
 					"description": config.StringVariable("An updated test security list"),
@@ -93,16 +69,15 @@ func TestAccResourceSecurityList(t *testing.T) {
 
 func TestAccResourceSecurityList_KeywordType(t *testing.T) {
 	listID := "keyword-list-" + uuid.New().String()
+	spaceID := "test-space-" + uuid.New().String()[:8]
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			acctest.PreCheck(t)
-			ensureListIndexExists(t)
-		},
+		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
 				ConfigDirectory: acctest.NamedTestCaseDirectory("keyword_type"),
 				ConfigVariables: config.Variables{
+					"space_id":    config.StringVariable(spaceID),
 					"list_id":     config.StringVariable(listID),
 					"name":        config.StringVariable("Keyword Security List"),
 					"description": config.StringVariable("A test security list for keywords"),
@@ -118,16 +93,15 @@ func TestAccResourceSecurityList_KeywordType(t *testing.T) {
 
 func TestAccResourceSecurityList_SerializerDeserializer(t *testing.T) {
 	listID := "serializer-list-" + uuid.New().String()
+	spaceID := "test-space-" + uuid.New().String()[:8]
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			acctest.PreCheck(t)
-			ensureListIndexExists(t)
-		},
+		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{ // Create with serializer and deserializer
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
+					"space_id":     config.StringVariable(spaceID),
 					"list_id":      config.StringVariable(listID),
 					"name":         config.StringVariable("Custom Serializer List"),
 					"description":  config.StringVariable("A test list with custom serializer and deserializer"),
@@ -146,6 +120,7 @@ func TestAccResourceSecurityList_SerializerDeserializer(t *testing.T) {
 			{ // Update name and description (serializer/deserializer are immutable)
 				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
+					"space_id":     config.StringVariable(spaceID),
 					"list_id":      config.StringVariable(listID),
 					"name":         config.StringVariable("Updated Serializer List"),
 					"description":  config.StringVariable("Updated test list description"),
@@ -166,16 +141,15 @@ func TestAccResourceSecurityList_SerializerDeserializer(t *testing.T) {
 
 func TestAccResourceSecurityList_WithMetadata(t *testing.T) {
 	listID := "meta-list-" + uuid.New().String()
+	spaceID := "test-space-" + uuid.New().String()[:8]
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			acctest.PreCheck(t)
-			ensureListIndexExists(t)
-		},
+		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{ // Create with metadata
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create_with_meta"),
 				ConfigVariables: config.Variables{
+					"space_id":    config.StringVariable(spaceID),
 					"list_id":     config.StringVariable(listID),
 					"name":        config.StringVariable("List with Metadata"),
 					"description": config.StringVariable("A test list with metadata"),
@@ -191,6 +165,7 @@ func TestAccResourceSecurityList_WithMetadata(t *testing.T) {
 			{ // Update metadata
 				ConfigDirectory: acctest.NamedTestCaseDirectory("update_meta"),
 				ConfigVariables: config.Variables{
+					"space_id":    config.StringVariable(spaceID),
 					"list_id":     config.StringVariable(listID),
 					"name":        config.StringVariable("List with Metadata"),
 					"description": config.StringVariable("A test list with updated metadata"),
