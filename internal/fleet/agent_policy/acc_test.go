@@ -662,3 +662,75 @@ func TestAccResourceAgentPolicyWithRequiredVersions(t *testing.T) {
 		},
 	})
 }
+
+func TestAccResourceAgentPolicyWithAdvancedMonitoring(t *testing.T) {
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceAgentPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				// Step 1: Create with HTTP monitoring endpoint only
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionAdvancedMonitoring),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_with_http_monitoring"),
+				ConfigVariables: config.Variables{
+					"policy_name":  config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+					"skip_destroy": config.BoolVariable(false),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "description", "Test Agent Policy with Advanced Monitoring"),
+					// HTTP monitoring endpoint checks
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_monitoring_options.http_monitoring_endpoint.enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_monitoring_options.http_monitoring_endpoint.host", "localhost"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_monitoring_options.http_monitoring_endpoint.port", "6791"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_monitoring_options.http_monitoring_endpoint.buffer_enabled", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_monitoring_options.http_monitoring_endpoint.pprof_enabled", "false"),
+				),
+			},
+			{
+				// Step 2: Update with full advanced_monitoring_options (http + diagnostics)
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionAdvancedMonitoring),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_with_diagnostics"),
+				ConfigVariables: config.Variables{
+					"policy_name":  config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+					"skip_destroy": config.BoolVariable(false),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "description", "Test Agent Policy with Full Advanced Monitoring"),
+					// HTTP monitoring endpoint checks - updated values
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_monitoring_options.http_monitoring_endpoint.enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_monitoring_options.http_monitoring_endpoint.host", "0.0.0.0"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_monitoring_options.http_monitoring_endpoint.port", "8080"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_monitoring_options.http_monitoring_endpoint.buffer_enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_monitoring_options.http_monitoring_endpoint.pprof_enabled", "true"),
+					// Diagnostics - custom values
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_monitoring_options.diagnostics.rate_limits.interval", "2m"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_monitoring_options.diagnostics.rate_limits.burst", "5"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_monitoring_options.diagnostics.file_uploader.init_duration", "2s"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_monitoring_options.diagnostics.file_uploader.backoff_duration", "2m"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_monitoring_options.diagnostics.file_uploader.max_retries", "15"),
+				),
+			},
+			{
+				// Step 3: Import state verification
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionAdvancedMonitoring),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_with_diagnostics"),
+				ConfigVariables: config.Variables{
+					"policy_name":  config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+					"skip_destroy": config.BoolVariable(false),
+				},
+				ResourceName:            "elasticstack_fleet_agent_policy.test_policy",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"skip_destroy"},
+			},
+		},
+	})
+}

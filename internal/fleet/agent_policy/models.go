@@ -15,6 +15,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 const (
@@ -40,6 +41,7 @@ type features struct {
 	SupportsSpaceIds            bool
 	SupportsRequiredVersions    bool
 	SupportsAgentFeatures       bool
+	SupportsAdvancedMonitoring  bool
 }
 
 type globalDataTagsItemModel struct {
@@ -47,27 +49,72 @@ type globalDataTagsItemModel struct {
 	NumberValue types.Float32 `tfsdk:"number_value"`
 }
 
+// Advanced Monitoring Options models
+type advancedMonitoringOptionsModel struct {
+	HttpMonitoringEndpoint types.Object `tfsdk:"http_monitoring_endpoint"`
+	Diagnostics            types.Object `tfsdk:"diagnostics"`
+}
+
+type httpMonitoringEndpointModel struct {
+	Enabled       types.Bool   `tfsdk:"enabled"`
+	Host          types.String `tfsdk:"host"`
+	Port          types.Int32  `tfsdk:"port"`
+	BufferEnabled types.Bool   `tfsdk:"buffer_enabled"`
+	PprofEnabled  types.Bool   `tfsdk:"pprof_enabled"`
+}
+
+type diagnosticsModel struct {
+	RateLimits   types.Object `tfsdk:"rate_limits"`
+	FileUploader types.Object `tfsdk:"file_uploader"`
+}
+
+type rateLimitsModel struct {
+	Interval types.String `tfsdk:"interval"`
+	Burst    types.Int32  `tfsdk:"burst"`
+}
+
+type fileUploaderModel struct {
+	InitDuration    types.String `tfsdk:"init_duration"`
+	BackoffDuration types.String `tfsdk:"backoff_duration"`
+	MaxRetries      types.Int32  `tfsdk:"max_retries"`
+}
+
+// Default values for advanced monitoring options
+const (
+	defaultHttpMonitoringEnabled       = false
+	defaultHttpMonitoringHost          = "localhost"
+	defaultHttpMonitoringPort          = 6791
+	defaultHttpMonitoringBufferEnabled = false
+	defaultHttpMonitoringPprofEnabled  = false
+	defaultDiagnosticsInterval         = "1m"
+	defaultDiagnosticsBurst            = 1
+	defaultDiagnosticsInitDuration     = "1s"
+	defaultDiagnosticsBackoffDuration  = "1m"
+	defaultDiagnosticsMaxRetries       = 10
+)
+
 type agentPolicyModel struct {
-	ID                  types.String         `tfsdk:"id"`
-	PolicyID            types.String         `tfsdk:"policy_id"`
-	Name                types.String         `tfsdk:"name"`
-	Namespace           types.String         `tfsdk:"namespace"`
-	Description         types.String         `tfsdk:"description"`
-	DataOutputId        types.String         `tfsdk:"data_output_id"`
-	MonitoringOutputId  types.String         `tfsdk:"monitoring_output_id"`
-	FleetServerHostId   types.String         `tfsdk:"fleet_server_host_id"`
-	DownloadSourceId    types.String         `tfsdk:"download_source_id"`
-	MonitorLogs         types.Bool           `tfsdk:"monitor_logs"`
-	MonitorMetrics      types.Bool           `tfsdk:"monitor_metrics"`
-	SysMonitoring       types.Bool           `tfsdk:"sys_monitoring"`
-	SkipDestroy         types.Bool           `tfsdk:"skip_destroy"`
-	HostNameFormat      types.String         `tfsdk:"host_name_format"`
-	SupportsAgentless   types.Bool           `tfsdk:"supports_agentless"`
-	InactivityTimeout   customtypes.Duration `tfsdk:"inactivity_timeout"`
-	UnenrollmentTimeout customtypes.Duration `tfsdk:"unenrollment_timeout"`
-	GlobalDataTags      types.Map            `tfsdk:"global_data_tags"` //> globalDataTagsModel
-	SpaceIds            types.Set            `tfsdk:"space_ids"`
-	RequiredVersions    types.Map            `tfsdk:"required_versions"`
+	ID                        types.String         `tfsdk:"id"`
+	PolicyID                  types.String         `tfsdk:"policy_id"`
+	Name                      types.String         `tfsdk:"name"`
+	Namespace                 types.String         `tfsdk:"namespace"`
+	Description               types.String         `tfsdk:"description"`
+	DataOutputId              types.String         `tfsdk:"data_output_id"`
+	MonitoringOutputId        types.String         `tfsdk:"monitoring_output_id"`
+	FleetServerHostId         types.String         `tfsdk:"fleet_server_host_id"`
+	DownloadSourceId          types.String         `tfsdk:"download_source_id"`
+	MonitorLogs               types.Bool           `tfsdk:"monitor_logs"`
+	MonitorMetrics            types.Bool           `tfsdk:"monitor_metrics"`
+	SysMonitoring             types.Bool           `tfsdk:"sys_monitoring"`
+	SkipDestroy               types.Bool           `tfsdk:"skip_destroy"`
+	HostNameFormat            types.String         `tfsdk:"host_name_format"`
+	SupportsAgentless         types.Bool           `tfsdk:"supports_agentless"`
+	InactivityTimeout         customtypes.Duration `tfsdk:"inactivity_timeout"`
+	UnenrollmentTimeout       customtypes.Duration `tfsdk:"unenrollment_timeout"`
+	GlobalDataTags            types.Map            `tfsdk:"global_data_tags"` //> globalDataTagsModel
+	SpaceIds                  types.Set            `tfsdk:"space_ids"`
+	RequiredVersions          types.Map            `tfsdk:"required_versions"`
+	AdvancedMonitoringOptions types.Object         `tfsdk:"advanced_monitoring_options"`
 }
 
 func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.AgentPolicy) diag.Diagnostics {
@@ -187,7 +234,181 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 		model.RequiredVersions = types.MapNull(types.Int32Type)
 	}
 
+	// Handle advanced monitoring options
+	if diags := model.populateAdvancedMonitoringFromAPI(ctx, data); diags.HasError() {
+		return diags
+	}
+
 	return nil
+}
+
+// populateAdvancedMonitoringFromAPI populates the advanced monitoring options from API response
+func (model *agentPolicyModel) populateAdvancedMonitoringFromAPI(ctx context.Context, data *kbapi.AgentPolicy) diag.Diagnostics {
+	// Check if any advanced monitoring data exists in the API response
+	hasHttpMonitoring := data.MonitoringHttp != nil
+	hasPprofEnabled := data.MonitoringPprofEnabled != nil
+	hasDiagnostics := data.MonitoringDiagnostics != nil
+
+	if !hasHttpMonitoring && !hasPprofEnabled && !hasDiagnostics {
+		// No advanced monitoring options in API response
+		model.AdvancedMonitoringOptions = types.ObjectNull(advancedMonitoringOptionsAttrTypes())
+		return nil
+	}
+
+	var httpEndpointObj types.Object
+	var diagnosticsObj types.Object
+
+	// Populate HTTP monitoring endpoint
+	if hasHttpMonitoring || hasPprofEnabled {
+		httpEndpoint := httpMonitoringEndpointModel{
+			Enabled:       types.BoolValue(defaultHttpMonitoringEnabled),
+			Host:          types.StringValue(defaultHttpMonitoringHost),
+			Port:          types.Int32Value(defaultHttpMonitoringPort),
+			BufferEnabled: types.BoolValue(defaultHttpMonitoringBufferEnabled),
+			PprofEnabled:  types.BoolValue(defaultHttpMonitoringPprofEnabled),
+		}
+
+		if data.MonitoringHttp != nil {
+			if data.MonitoringHttp.Enabled != nil {
+				httpEndpoint.Enabled = types.BoolValue(*data.MonitoringHttp.Enabled)
+			}
+			if data.MonitoringHttp.Host != nil {
+				httpEndpoint.Host = types.StringValue(*data.MonitoringHttp.Host)
+			}
+			if data.MonitoringHttp.Port != nil {
+				httpEndpoint.Port = types.Int32Value(int32(*data.MonitoringHttp.Port))
+			}
+			if data.MonitoringHttp.Buffer != nil && data.MonitoringHttp.Buffer.Enabled != nil {
+				httpEndpoint.BufferEnabled = types.BoolValue(*data.MonitoringHttp.Buffer.Enabled)
+			}
+		}
+
+		if data.MonitoringPprofEnabled != nil {
+			httpEndpoint.PprofEnabled = types.BoolValue(*data.MonitoringPprofEnabled)
+		}
+
+		obj, diags := types.ObjectValueFrom(ctx, httpMonitoringEndpointAttrTypes(), httpEndpoint)
+		if diags.HasError() {
+			return diags
+		}
+		httpEndpointObj = obj
+	} else {
+		httpEndpointObj = types.ObjectNull(httpMonitoringEndpointAttrTypes())
+	}
+
+	// Populate diagnostics
+	if hasDiagnostics {
+		var rateLimitsObj types.Object
+		var fileUploaderObj types.Object
+
+		if data.MonitoringDiagnostics.Limit != nil {
+			rateLimits := rateLimitsModel{
+				Interval: types.StringValue(defaultDiagnosticsInterval),
+				Burst:    types.Int32Value(defaultDiagnosticsBurst),
+			}
+			if data.MonitoringDiagnostics.Limit.Interval != nil {
+				rateLimits.Interval = types.StringValue(*data.MonitoringDiagnostics.Limit.Interval)
+			}
+			if data.MonitoringDiagnostics.Limit.Burst != nil {
+				rateLimits.Burst = types.Int32Value(int32(*data.MonitoringDiagnostics.Limit.Burst))
+			}
+			obj, diags := types.ObjectValueFrom(ctx, rateLimitsAttrTypes(), rateLimits)
+			if diags.HasError() {
+				return diags
+			}
+			rateLimitsObj = obj
+		} else {
+			rateLimitsObj = types.ObjectNull(rateLimitsAttrTypes())
+		}
+
+		if data.MonitoringDiagnostics.Uploader != nil {
+			fileUploader := fileUploaderModel{
+				InitDuration:    types.StringValue(defaultDiagnosticsInitDuration),
+				BackoffDuration: types.StringValue(defaultDiagnosticsBackoffDuration),
+				MaxRetries:      types.Int32Value(defaultDiagnosticsMaxRetries),
+			}
+			if data.MonitoringDiagnostics.Uploader.InitDur != nil {
+				fileUploader.InitDuration = types.StringValue(*data.MonitoringDiagnostics.Uploader.InitDur)
+			}
+			if data.MonitoringDiagnostics.Uploader.MaxDur != nil {
+				fileUploader.BackoffDuration = types.StringValue(*data.MonitoringDiagnostics.Uploader.MaxDur)
+			}
+			if data.MonitoringDiagnostics.Uploader.MaxRetries != nil {
+				fileUploader.MaxRetries = types.Int32Value(int32(*data.MonitoringDiagnostics.Uploader.MaxRetries))
+			}
+			obj, diags := types.ObjectValueFrom(ctx, fileUploaderAttrTypes(), fileUploader)
+			if diags.HasError() {
+				return diags
+			}
+			fileUploaderObj = obj
+		} else {
+			fileUploaderObj = types.ObjectNull(fileUploaderAttrTypes())
+		}
+
+		diagModel := diagnosticsModel{
+			RateLimits:   rateLimitsObj,
+			FileUploader: fileUploaderObj,
+		}
+		obj, diags := types.ObjectValueFrom(ctx, diagnosticsAttrTypes(), diagModel)
+		if diags.HasError() {
+			return diags
+		}
+		diagnosticsObj = obj
+	} else {
+		diagnosticsObj = types.ObjectNull(diagnosticsAttrTypes())
+	}
+
+	amo := advancedMonitoringOptionsModel{
+		HttpMonitoringEndpoint: httpEndpointObj,
+		Diagnostics:            diagnosticsObj,
+	}
+
+	obj, diags := types.ObjectValueFrom(ctx, advancedMonitoringOptionsAttrTypes(), amo)
+	if diags.HasError() {
+		return diags
+	}
+	model.AdvancedMonitoringOptions = obj
+	return nil
+}
+
+// Attribute type helpers for advanced monitoring options
+func advancedMonitoringOptionsAttrTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"http_monitoring_endpoint": types.ObjectType{AttrTypes: httpMonitoringEndpointAttrTypes()},
+		"diagnostics":              types.ObjectType{AttrTypes: diagnosticsAttrTypes()},
+	}
+}
+
+func httpMonitoringEndpointAttrTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"enabled":        types.BoolType,
+		"host":           types.StringType,
+		"port":           types.Int32Type,
+		"buffer_enabled": types.BoolType,
+		"pprof_enabled":  types.BoolType,
+	}
+}
+
+func diagnosticsAttrTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"rate_limits":   types.ObjectType{AttrTypes: rateLimitsAttrTypes()},
+		"file_uploader": types.ObjectType{AttrTypes: fileUploaderAttrTypes()},
+	}
+}
+
+func rateLimitsAttrTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"interval": types.StringType,
+		"burst":    types.Int32Type,
+	}
+}
+
+func fileUploaderAttrTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"init_duration":    types.StringType,
+		"backoff_duration": types.StringType,
+		"max_retries":      types.Int32Type,
+	}
 }
 
 // convertGlobalDataTags converts the global data tags from terraform model to API model
@@ -246,7 +467,7 @@ func (model *agentPolicyModel) convertRequiredVersions(feat features) (*[]struct
 }, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	if model.RequiredVersions.IsNull() || model.RequiredVersions.IsUnknown() {
+	if !utils.IsKnown(model.RequiredVersions) {
 		return nil, diags
 	}
 
@@ -284,7 +505,7 @@ func (model *agentPolicyModel) convertRequiredVersions(feat features) (*[]struct
 			continue
 		}
 
-		if percentageInt32.IsNull() || percentageInt32.IsUnknown() {
+		if !utils.IsKnown(percentageInt32) {
 			diags.AddError("required_versions validation error", "percentage cannot be null or unknown")
 			continue
 		}
@@ -428,6 +649,24 @@ func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, feat featur
 		}
 	}
 
+	// Handle advanced monitoring options
+	if utils.IsKnown(model.AdvancedMonitoringOptions) {
+		if !feat.SupportsAdvancedMonitoring {
+			return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diag.Diagnostics{
+				diag.NewAttributeErrorDiagnostic(
+					path.Root("advanced_monitoring_options"),
+					"Unsupported Elasticsearch version",
+					fmt.Sprintf("Advanced monitoring options are only supported in Elastic Stack %s and above", MinVersionAdvancedMonitoring),
+				),
+			}
+		}
+
+		monitoringHttp, pprofEnabled := model.convertHttpMonitoringEndpointToAPI(ctx)
+		body.MonitoringHttp = monitoringHttp
+		body.MonitoringPprofEnabled = pprofEnabled
+		body.MonitoringDiagnostics = model.convertDiagnosticsToAPI(ctx)
+	}
+
 	return body, nil
 }
 
@@ -555,6 +794,24 @@ func (model *agentPolicyModel) toAPIUpdateModel(ctx context.Context, feat featur
 		body.AgentFeatures = &existingFeatures
 	}
 
+	// Handle advanced monitoring options
+	if utils.IsKnown(model.AdvancedMonitoringOptions) {
+		if !feat.SupportsAdvancedMonitoring {
+			return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diag.Diagnostics{
+				diag.NewAttributeErrorDiagnostic(
+					path.Root("advanced_monitoring_options"),
+					"Unsupported Elasticsearch version",
+					fmt.Sprintf("Advanced monitoring options are only supported in Elastic Stack %s and above", MinVersionAdvancedMonitoring),
+				),
+			}
+		}
+
+		monitoringHttp, pprofEnabled := model.convertHttpMonitoringEndpointToAPIUpdate(ctx)
+		body.MonitoringHttp = monitoringHttp
+		body.MonitoringPprofEnabled = pprofEnabled
+		body.MonitoringDiagnostics = model.convertDiagnosticsToAPIUpdate(ctx)
+	}
+
 	return body, nil
 }
 
@@ -564,7 +821,7 @@ func (model *agentPolicyModel) toAPIUpdateModel(ctx context.Context, feat featur
 // - When not set: returns nil (no change to existing features)
 func (model *agentPolicyModel) convertHostNameFormatToAgentFeature() *apiAgentFeature {
 	// If host_name_format is not set or unknown, don't modify AgentFeatures
-	if model.HostNameFormat.IsNull() || model.HostNameFormat.IsUnknown() {
+	if !utils.IsKnown(model.HostNameFormat) {
 		return nil
 	}
 
@@ -604,4 +861,322 @@ func mergeAgentFeature(existing []apiAgentFeature, newFeature *apiAgentFeature) 
 	}
 
 	return &result
+}
+
+// convertHttpMonitoringEndpointToAPI converts the HTTP monitoring endpoint config to API format for create
+func (model *agentPolicyModel) convertHttpMonitoringEndpointToAPI(ctx context.Context) (*struct {
+	Buffer *struct {
+		Enabled *bool `json:"enabled,omitempty"`
+	} `json:"buffer,omitempty"`
+	Enabled *bool    `json:"enabled,omitempty"`
+	Host    *string  `json:"host,omitempty"`
+	Port    *float32 `json:"port,omitempty"`
+}, *bool) {
+	if !utils.IsKnown(model.AdvancedMonitoringOptions) {
+		return nil, nil
+	}
+
+	var amo advancedMonitoringOptionsModel
+	model.AdvancedMonitoringOptions.As(ctx, &amo, basetypes.ObjectAsOptions{})
+
+	if !utils.IsKnown(amo.HttpMonitoringEndpoint) {
+		return nil, nil
+	}
+
+	var http httpMonitoringEndpointModel
+	amo.HttpMonitoringEndpoint.As(ctx, &http, basetypes.ObjectAsOptions{})
+
+	// Check if any values differ from defaults
+	hasNonDefaultValues := http.Enabled.ValueBool() != defaultHttpMonitoringEnabled ||
+		http.Host.ValueString() != defaultHttpMonitoringHost ||
+		http.Port.ValueInt32() != defaultHttpMonitoringPort ||
+		http.BufferEnabled.ValueBool() != defaultHttpMonitoringBufferEnabled ||
+		http.PprofEnabled.ValueBool() != defaultHttpMonitoringPprofEnabled
+
+	if !hasNonDefaultValues {
+		return nil, nil
+	}
+
+	enabled := http.Enabled.ValueBool()
+	host := http.Host.ValueString()
+	port := float32(http.Port.ValueInt32())
+	bufferEnabled := http.BufferEnabled.ValueBool()
+	pprofEnabled := http.PprofEnabled.ValueBool()
+
+	result := &struct {
+		Buffer *struct {
+			Enabled *bool `json:"enabled,omitempty"`
+		} `json:"buffer,omitempty"`
+		Enabled *bool    `json:"enabled,omitempty"`
+		Host    *string  `json:"host,omitempty"`
+		Port    *float32 `json:"port,omitempty"`
+	}{
+		Enabled: &enabled,
+		Host:    &host,
+		Port:    &port,
+		Buffer: &struct {
+			Enabled *bool `json:"enabled,omitempty"`
+		}{
+			Enabled: &bufferEnabled,
+		},
+	}
+
+	return result, &pprofEnabled
+}
+
+// convertHttpMonitoringEndpointToAPIUpdate converts the HTTP monitoring endpoint config to API format for update
+func (model *agentPolicyModel) convertHttpMonitoringEndpointToAPIUpdate(ctx context.Context) (*struct {
+	Buffer *struct {
+		Enabled *bool `json:"enabled,omitempty"`
+	} `json:"buffer,omitempty"`
+	Enabled *bool    `json:"enabled,omitempty"`
+	Host    *string  `json:"host,omitempty"`
+	Port    *float32 `json:"port,omitempty"`
+}, *bool) {
+	if !utils.IsKnown(model.AdvancedMonitoringOptions) {
+		return nil, nil
+	}
+
+	var amo advancedMonitoringOptionsModel
+	model.AdvancedMonitoringOptions.As(ctx, &amo, basetypes.ObjectAsOptions{})
+
+	if !utils.IsKnown(amo.HttpMonitoringEndpoint) {
+		return nil, nil
+	}
+
+	var http httpMonitoringEndpointModel
+	amo.HttpMonitoringEndpoint.As(ctx, &http, basetypes.ObjectAsOptions{})
+
+	// Check if any values differ from defaults
+	hasNonDefaultValues := http.Enabled.ValueBool() != defaultHttpMonitoringEnabled ||
+		http.Host.ValueString() != defaultHttpMonitoringHost ||
+		http.Port.ValueInt32() != defaultHttpMonitoringPort ||
+		http.BufferEnabled.ValueBool() != defaultHttpMonitoringBufferEnabled ||
+		http.PprofEnabled.ValueBool() != defaultHttpMonitoringPprofEnabled
+
+	if !hasNonDefaultValues {
+		return nil, nil
+	}
+
+	enabled := http.Enabled.ValueBool()
+	host := http.Host.ValueString()
+	port := float32(http.Port.ValueInt32())
+	bufferEnabled := http.BufferEnabled.ValueBool()
+	pprofEnabled := http.PprofEnabled.ValueBool()
+
+	result := &struct {
+		Buffer *struct {
+			Enabled *bool `json:"enabled,omitempty"`
+		} `json:"buffer,omitempty"`
+		Enabled *bool    `json:"enabled,omitempty"`
+		Host    *string  `json:"host,omitempty"`
+		Port    *float32 `json:"port,omitempty"`
+	}{
+		Enabled: &enabled,
+		Host:    &host,
+		Port:    &port,
+		Buffer: &struct {
+			Enabled *bool `json:"enabled,omitempty"`
+		}{
+			Enabled: &bufferEnabled,
+		},
+	}
+
+	return result, &pprofEnabled
+}
+
+// convertDiagnosticsToAPI converts the diagnostics config to API format for create
+func (model *agentPolicyModel) convertDiagnosticsToAPI(ctx context.Context) *struct {
+	Limit *struct {
+		Burst    *float32 `json:"burst,omitempty"`
+		Interval *string  `json:"interval,omitempty"`
+	} `json:"limit,omitempty"`
+	Uploader *struct {
+		InitDur    *string  `json:"init_dur,omitempty"`
+		MaxDur     *string  `json:"max_dur,omitempty"`
+		MaxRetries *float32 `json:"max_retries,omitempty"`
+	} `json:"uploader,omitempty"`
+} {
+	if !utils.IsKnown(model.AdvancedMonitoringOptions) {
+		return nil
+	}
+
+	var amo advancedMonitoringOptionsModel
+	model.AdvancedMonitoringOptions.As(ctx, &amo, basetypes.ObjectAsOptions{})
+
+	if !utils.IsKnown(amo.Diagnostics) {
+		return nil
+	}
+
+	var diag diagnosticsModel
+	amo.Diagnostics.As(ctx, &diag, basetypes.ObjectAsOptions{})
+
+	// Check if any values differ from defaults
+	hasNonDefaultValues := false
+
+	if utils.IsKnown(diag.RateLimits) {
+		var rateLimits rateLimitsModel
+		diag.RateLimits.As(ctx, &rateLimits, basetypes.ObjectAsOptions{})
+		if rateLimits.Interval.ValueString() != defaultDiagnosticsInterval ||
+			rateLimits.Burst.ValueInt32() != defaultDiagnosticsBurst {
+			hasNonDefaultValues = true
+		}
+	}
+
+	if utils.IsKnown(diag.FileUploader) {
+		var fileUploader fileUploaderModel
+		diag.FileUploader.As(ctx, &fileUploader, basetypes.ObjectAsOptions{})
+		if fileUploader.InitDuration.ValueString() != defaultDiagnosticsInitDuration ||
+			fileUploader.BackoffDuration.ValueString() != defaultDiagnosticsBackoffDuration ||
+			fileUploader.MaxRetries.ValueInt32() != defaultDiagnosticsMaxRetries {
+			hasNonDefaultValues = true
+		}
+	}
+
+	if !hasNonDefaultValues {
+		return nil
+	}
+
+	result := &struct {
+		Limit *struct {
+			Burst    *float32 `json:"burst,omitempty"`
+			Interval *string  `json:"interval,omitempty"`
+		} `json:"limit,omitempty"`
+		Uploader *struct {
+			InitDur    *string  `json:"init_dur,omitempty"`
+			MaxDur     *string  `json:"max_dur,omitempty"`
+			MaxRetries *float32 `json:"max_retries,omitempty"`
+		} `json:"uploader,omitempty"`
+	}{}
+
+	if utils.IsKnown(diag.RateLimits) {
+		var rateLimits rateLimitsModel
+		diag.RateLimits.As(ctx, &rateLimits, basetypes.ObjectAsOptions{})
+		interval := rateLimits.Interval.ValueString()
+		burst := float32(rateLimits.Burst.ValueInt32())
+		result.Limit = &struct {
+			Burst    *float32 `json:"burst,omitempty"`
+			Interval *string  `json:"interval,omitempty"`
+		}{
+			Interval: &interval,
+			Burst:    &burst,
+		}
+	}
+
+	if utils.IsKnown(diag.FileUploader) {
+		var fileUploader fileUploaderModel
+		diag.FileUploader.As(ctx, &fileUploader, basetypes.ObjectAsOptions{})
+		initDur := fileUploader.InitDuration.ValueString()
+		maxDur := fileUploader.BackoffDuration.ValueString()
+		maxRetries := float32(fileUploader.MaxRetries.ValueInt32())
+		result.Uploader = &struct {
+			InitDur    *string  `json:"init_dur,omitempty"`
+			MaxDur     *string  `json:"max_dur,omitempty"`
+			MaxRetries *float32 `json:"max_retries,omitempty"`
+		}{
+			InitDur:    &initDur,
+			MaxDur:     &maxDur,
+			MaxRetries: &maxRetries,
+		}
+	}
+
+	return result
+}
+
+// convertDiagnosticsToAPIUpdate converts the diagnostics config to API format for update
+func (model *agentPolicyModel) convertDiagnosticsToAPIUpdate(ctx context.Context) *struct {
+	Limit *struct {
+		Burst    *float32 `json:"burst,omitempty"`
+		Interval *string  `json:"interval,omitempty"`
+	} `json:"limit,omitempty"`
+	Uploader *struct {
+		InitDur    *string  `json:"init_dur,omitempty"`
+		MaxDur     *string  `json:"max_dur,omitempty"`
+		MaxRetries *float32 `json:"max_retries,omitempty"`
+	} `json:"uploader,omitempty"`
+} {
+	if !utils.IsKnown(model.AdvancedMonitoringOptions) {
+		return nil
+	}
+
+	var amo advancedMonitoringOptionsModel
+	model.AdvancedMonitoringOptions.As(ctx, &amo, basetypes.ObjectAsOptions{})
+
+	if !utils.IsKnown(amo.Diagnostics) {
+		return nil
+	}
+
+	var diag diagnosticsModel
+	amo.Diagnostics.As(ctx, &diag, basetypes.ObjectAsOptions{})
+
+	// Check if any values differ from defaults
+	hasNonDefaultValues := false
+
+	if utils.IsKnown(diag.RateLimits) {
+		var rateLimits rateLimitsModel
+		diag.RateLimits.As(ctx, &rateLimits, basetypes.ObjectAsOptions{})
+		if rateLimits.Interval.ValueString() != defaultDiagnosticsInterval ||
+			rateLimits.Burst.ValueInt32() != defaultDiagnosticsBurst {
+			hasNonDefaultValues = true
+		}
+	}
+
+	if utils.IsKnown(diag.FileUploader) {
+		var fileUploader fileUploaderModel
+		diag.FileUploader.As(ctx, &fileUploader, basetypes.ObjectAsOptions{})
+		if fileUploader.InitDuration.ValueString() != defaultDiagnosticsInitDuration ||
+			fileUploader.BackoffDuration.ValueString() != defaultDiagnosticsBackoffDuration ||
+			fileUploader.MaxRetries.ValueInt32() != defaultDiagnosticsMaxRetries {
+			hasNonDefaultValues = true
+		}
+	}
+
+	if !hasNonDefaultValues {
+		return nil
+	}
+
+	result := &struct {
+		Limit *struct {
+			Burst    *float32 `json:"burst,omitempty"`
+			Interval *string  `json:"interval,omitempty"`
+		} `json:"limit,omitempty"`
+		Uploader *struct {
+			InitDur    *string  `json:"init_dur,omitempty"`
+			MaxDur     *string  `json:"max_dur,omitempty"`
+			MaxRetries *float32 `json:"max_retries,omitempty"`
+		} `json:"uploader,omitempty"`
+	}{}
+
+	if utils.IsKnown(diag.RateLimits) {
+		var rateLimits rateLimitsModel
+		diag.RateLimits.As(ctx, &rateLimits, basetypes.ObjectAsOptions{})
+		interval := rateLimits.Interval.ValueString()
+		burst := float32(rateLimits.Burst.ValueInt32())
+		result.Limit = &struct {
+			Burst    *float32 `json:"burst,omitempty"`
+			Interval *string  `json:"interval,omitempty"`
+		}{
+			Interval: &interval,
+			Burst:    &burst,
+		}
+	}
+
+	if utils.IsKnown(diag.FileUploader) {
+		var fileUploader fileUploaderModel
+		diag.FileUploader.As(ctx, &fileUploader, basetypes.ObjectAsOptions{})
+		initDur := fileUploader.InitDuration.ValueString()
+		maxDur := fileUploader.BackoffDuration.ValueString()
+		maxRetries := float32(fileUploader.MaxRetries.ValueInt32())
+		result.Uploader = &struct {
+			InitDur    *string  `json:"init_dur,omitempty"`
+			MaxDur     *string  `json:"max_dur,omitempty"`
+			MaxRetries *float32 `json:"max_retries,omitempty"`
+		}{
+			InitDur:    &initDur,
+			MaxDur:     &maxDur,
+			MaxRetries: &maxRetries,
+		}
+	}
+
+	return result
 }
