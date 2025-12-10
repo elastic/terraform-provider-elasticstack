@@ -1,5 +1,9 @@
 ## [Unreleased]
 
+### Changes
+
+- Fix the enabled property being ignored in `elasticstack_kibana_alerting_rule` ([#1527](https://github.com/elastic/terraform-provider-elasticstack/pull/1527))
+
 ## [0.13.0] - 2025-12-10
 
 ### Breaking changes
@@ -42,7 +46,6 @@ alias = [
 
 ### Changes
 
-- Fix the enabled property being ignored in `elasticstack_kibana_alerting_rule` ([#1527](https://github.com/elastic/terraform-provider-elasticstack/pull/1527))
 - Fix `elasticstack_kibana_action_connector` failing with "inconsistent result after apply" when config contains null values ([#1524](https://github.com/elastic/terraform-provider-elasticstack/pull/1524))
 - Add `host_name_format` to `elasticstack_fleet_agent_policy` to configure host name format (hostname or FQDN) ([#1312](https://github.com/elastic/terraform-provider-elasticstack/pull/1312))
 - Create `elasticstack_kibana_prebuilt_rule` resource ([#1296](https://github.com/elastic/terraform-provider-elasticstack/pull/1296))
