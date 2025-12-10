@@ -69,15 +69,8 @@ func (v InputsValue) MapSemanticEquals(ctx context.Context, newValuable basetype
 	}
 
 	// Filter out disabled inputs from both maps
-	enabledOldInputs := filterEnabledInputs(ctx, oldInputsMap, &diags)
-	if diags.HasError() {
-		return false, diags
-	}
-
-	enabledNewInputs := filterEnabledInputs(ctx, newInputsMap, &diags)
-	if diags.HasError() {
-		return false, diags
-	}
+	enabledOldInputs := filterEnabledInputs(ctx, oldInputsMap)
+	enabledNewInputs := filterEnabledInputs(ctx, newInputsMap)
 
 	// Check if the number of enabled inputs is the same
 	if len(enabledOldInputs) != len(enabledNewInputs) {
@@ -126,7 +119,7 @@ func (v InputsValue) MapSemanticEquals(ctx context.Context, newValuable basetype
 }
 
 // filterEnabledInputs returns a map of only the enabled inputs
-func filterEnabledInputs(ctx context.Context, inputs map[string]integrationPolicyInputsModel, diags *diag.Diagnostics) map[string]integrationPolicyInputsModel {
+func filterEnabledInputs(ctx context.Context, inputs map[string]integrationPolicyInputsModel) map[string]integrationPolicyInputsModel {
 	if inputs == nil {
 		return nil
 	}
@@ -170,14 +163,7 @@ func compareStreams(ctx context.Context, oldStreams, newStreams basetypes.MapVal
 
 	// Filter out disabled streams from both maps
 	enabledOldStreams := filterEnabledStreams(oldStreamsMap)
-	if diags.HasError() {
-		return false, diags
-	}
-
 	enabledNewStreams := filterEnabledStreams(newStreamsMap)
-	if diags.HasError() {
-		return false, diags
-	}
 
 	// Check if the number of enabled streams is the same
 	if len(enabledOldStreams) != len(enabledNewStreams) {

@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -152,6 +153,8 @@ func getSchemaV2() schema.Schema {
 						"streams": schema.MapNestedAttribute{
 							Description: "Input streams mapped by stream ID.",
 							Optional:    true,
+							Computed:    true,
+							Default:     mapdefault.StaticValue(types.MapNull(getInputStreamType())),
 							NestedObject: schema.NestedAttributeObject{
 								Attributes: map[string]schema.Attribute{
 									"enabled": schema.BoolAttribute{
