@@ -40,10 +40,6 @@ resource "elasticstack_fleet_agent_policy" "test_policy" {
   skip_destroy    = false
 }
 
-data "elasticstack_fleet_enrollment_tokens" "test_policy" {
-  policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
-}
-
 resource "elasticstack_fleet_integration_policy" "test_policy" {
   name                = var.policy_name
   namespace           = "default"
@@ -52,23 +48,24 @@ resource "elasticstack_fleet_integration_policy" "test_policy" {
   integration_name    = elasticstack_fleet_integration.test_policy.name
   integration_version = elasticstack_fleet_integration.test_policy.version
 
-  input {
-    input_id = "sql-sql/metrics"
-    enabled  = true
-    streams_json = jsonencode({
-      "sql.sql" : {
-        "enabled" : true,
-        "vars" : {
-          "hosts" : ["root:test@tcp(127.0.0.1:3306)/"],
-          "period" : "1m",
-          "driver" : "mysql",
-          "sql_queries" : "- query: SHOW GLOBAL STATUS LIKE 'Innodb_system%'\n  response_format: variables\n        \n",
-          "merge_results" : false,
-          "ssl" : "",
-          "data_stream.dataset" : "sql",
-          "processors" : ""
+  inputs = {
+    "sql-sql/metrics" = {
+      enabled = true
+      streams = {
+        "sql.sql" = {
+          enabled = true
+          vars = jsonencode({
+            "hosts" : ["root:test@tcp(127.0.0.1:3306)/"],
+            "period" : "1m",
+            "driver" : "mysql",
+            "sql_queries" : "- query: SHOW GLOBAL STATUS LIKE 'Innodb_system%'\n  response_format: variables\n        \n",
+            "merge_results" : false,
+            "ssl" : "",
+            "data_stream.dataset" : "sql",
+            "processors" : ""
+          })
         }
       }
-    })
+    }
   }
 }
