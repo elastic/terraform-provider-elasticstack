@@ -7,6 +7,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -303,7 +304,7 @@ func (data *RoleData) fromAPIModel(ctx context.Context, role *models.Role) diag.
 
 	// Cluster
 	var clusterDiags diag.Diagnostics
-	data.Cluster, clusterDiags = preserveNullForEmptyStringSlice(ctx, originalCluster, role.Cluster)
+	data.Cluster, clusterDiags = typeutils.NonEmptySetOrDefault(ctx, originalCluster, types.StringType, role.Cluster)
 	diags.Append(clusterDiags...)
 	if diags.HasError() {
 		return diags
@@ -496,27 +497,8 @@ func (data *RoleData) fromAPIModel(ctx context.Context, role *models.Role) diag.
 
 	// Run As
 	var runAsDiags diag.Diagnostics
-	data.RunAs, runAsDiags = preserveNullForEmptyStringSlice(ctx, originalRunAs, role.RunAs)
+	data.RunAs, runAsDiags = typeutils.NonEmptySetOrDefault(ctx, originalRunAs, types.StringType, role.RunAs)
 	diags.Append(runAsDiags...)
 
 	return diags
-}
-
-// preserveNullForEmptyStringSlice converts a string slice to a Terraform set,
-// but preserves the original null value if the original was null and the slice is empty.
-// This handles the distinction between:
-// - User doesn't set attribute (null) - remains null even if API returns empty array
-// - User explicitly sets empty array ([]) - becomes empty set
-func preserveNullForEmptyStringSlice(ctx context.Context, original types.Set, slice []string) (types.Set, diag.Diagnostics) {
-	setValue, diags := types.SetValueFrom(ctx, types.StringType, slice)
-	if diags.HasError() {
-		return types.SetNull(types.StringType), diags
-	}
-
-	// Preserve null if the original was null and API returned empty array
-	if original.IsNull() && len(slice) == 0 {
-		return original, diags
-	}
-
-	return setValue, diags
 }

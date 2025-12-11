@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectplanmodifier"
@@ -56,6 +57,9 @@ func GetSchema() schema.Schema {
 			"description": schema.StringAttribute{
 				MarkdownDescription: "A description of the job.",
 				Optional:            true,
+				Validators: []validator.String{
+					stringvalidator.LengthAtLeast(1),
+				},
 			},
 			"groups": schema.SetAttribute{
 				MarkdownDescription: "A set of job groups. A job can belong to no groups or many.",
@@ -133,6 +137,7 @@ func GetSchema() schema.Schema {
 									MarkdownDescription: "Defines whether a new series is used as the null series when there is no value for the by or partition fields.",
 									Optional:            true,
 									Computed:            true,
+									Default:             booldefault.StaticBool(false),
 									PlanModifiers: []planmodifier.Bool{
 										boolplanmodifier.UseStateForUnknown(),
 									},
@@ -417,12 +422,6 @@ func getRuleConditionAttrTypes() map[string]attr.Type {
 	conditionsList := customRuleAttrs["conditions"].(types.ListType)
 	conditionsObj := conditionsList.ElemType.(types.ObjectType)
 	return conditionsObj.AttrTypes
-}
-
-func getPerPartitionCategorizationAttrTypes() map[string]attr.Type {
-	analysisConfigAttrs := getAnalysisConfigAttrTypes()
-	perPartitionObj := analysisConfigAttrs["per_partition_categorization"].(types.ObjectType)
-	return perPartitionObj.AttrTypes
 }
 
 func getAnalysisLimitsAttrTypes() map[string]attr.Type {
