@@ -1,6 +1,6 @@
 ## [Unreleased]
 
-### Changes
+## [0.13.1] - 2025-12-12
 
 - Fix handling empty types in `elasticstack_elasticsearch_ml_anomaly_detection_job` ([#1544](https://github.com/elastic/terraform-provider-elasticstack/pull/1544))
 - Fix handling empty `clusters` and `run_as` attributes in `elasticstack_elasticsearch_security_role` resource ([#1542](https://github.com/elastic/terraform-provider-elasticstack/pull/1542))
