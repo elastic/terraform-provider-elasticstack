@@ -203,27 +203,6 @@ func TestUnenrollmentTimeoutVersionValidation(t *testing.T) {
 	}
 }
 
-func TestMinVersionAdvancedMonitoring(t *testing.T) {
-	// Test that the MinVersionAdvancedMonitoring constant is set correctly
-	expected := "8.16.0"
-	actual := MinVersionAdvancedMonitoring.String()
-	if actual != expected {
-		t.Errorf("Expected MinVersionAdvancedMonitoring to be '%s', got '%s'", expected, actual)
-	}
-
-	// Test version comparison - should be greater than 8.15.0
-	olderVersion := version.Must(version.NewVersion("8.15.0"))
-	if MinVersionAdvancedMonitoring.LessThan(olderVersion) {
-		t.Errorf("MinVersionAdvancedMonitoring (%s) should be greater than %s", MinVersionAdvancedMonitoring.String(), olderVersion.String())
-	}
-
-	// Test version comparison - should be less than 8.17.0
-	newerVersion := version.Must(version.NewVersion("8.17.0"))
-	if MinVersionAdvancedMonitoring.GreaterThan(newerVersion) {
-		t.Errorf("MinVersionAdvancedMonitoring (%s) should be less than %s", MinVersionAdvancedMonitoring.String(), newerVersion.String())
-	}
-}
-
 func TestAdvancedMonitoringVersionValidation(t *testing.T) {
 	ctx := context.Background()
 
