@@ -15,6 +15,7 @@ resource "elasticstack_kibana_action_connector" "test" {
     updateIncidentUrl                   = "https://elasticsearch.com/"
     viewIncidentUrl                     = "https://www.elastic.co/"
     createIncidentMethod                = "put"
+    "__tf_provider_connector_type_id"   = ".cases-webhook"
   })
   secrets = jsonencode({
     user     = "user2"

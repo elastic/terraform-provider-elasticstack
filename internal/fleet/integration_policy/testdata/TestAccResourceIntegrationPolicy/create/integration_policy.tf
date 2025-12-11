@@ -35,10 +35,6 @@ resource "elasticstack_fleet_agent_policy" "test_policy" {
   skip_destroy    = false
 }
 
-data "elasticstack_fleet_enrollment_tokens" "test_policy" {
-  policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
-}
-
 resource "elasticstack_fleet_integration_policy" "test_policy" {
   name                = var.policy_name
   namespace           = "default"
@@ -47,22 +43,23 @@ resource "elasticstack_fleet_integration_policy" "test_policy" {
   integration_name    = elasticstack_fleet_integration.test_policy.name
   integration_version = elasticstack_fleet_integration.test_policy.version
 
-  input {
-    input_id = "tcp-tcp"
-    enabled  = true
-    streams_json = jsonencode({
-      "tcp.generic" : {
-        "enabled" : true
-        "vars" : {
-          "listen_address" : "localhost"
-          "listen_port" : 8080
-          "data_stream.dataset" : "tcp.generic"
-          "tags" : []
-          "syslog_options" : "field: message"
-          "ssl" : ""
-          "custom" : ""
+  inputs = {
+    "tcp-tcp" = {
+      enabled = true
+      streams = {
+        "tcp.generic" = {
+          enabled = true
+          vars = jsonencode({
+            "listen_address" : "localhost"
+            "listen_port" : 8080
+            "data_stream.dataset" : "tcp.generic"
+            "tags" : []
+            "syslog_options" : "field: message"
+            "ssl" : ""
+            "custom" : ""
+          })
         }
       }
-    })
+    }
   }
 }

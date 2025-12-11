@@ -42,7 +42,11 @@ func (model tfModel) toAPIModel() (models.KibanaActionConnector, diag.Diagnostic
 	}
 
 	if utils.IsKnown(model.Config) {
-		apiModel.ConfigJSON = model.Config.ValueString()
+		sanitizedConfig, diags := model.Config.SanitizedValue()
+		if diags.HasError() {
+			return models.KibanaActionConnector{}, diags
+		}
+		apiModel.ConfigJSON = sanitizedConfig
 	}
 
 	if utils.IsKnown(model.Secrets) {

@@ -52,7 +52,7 @@ func TestAccResourceSecurityRole(t *testing.T) {
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "indices.*.names.*", "index1"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "indices.*.names.*", "index2"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "cluster.*", "all"),
-					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_security_role.test", "run_as.#"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "run_as.#", "0"),
 					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_security_role.test", "global"),
 					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_security_role.test", "applications.#"),
 				),
@@ -117,6 +117,35 @@ func TestAccResourceSecurityRole(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "name", roleNameDescription),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "description", "updated test description"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceSecurityRoleEmptySets(t *testing.T) {
+	// generate a random username
+	roleName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceSecurityRoleDestroy,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(role.MinSupportedRemoteIndicesVersion),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"role_name": config.StringVariable(roleName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "name", roleName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "indices.0.allow_restricted_indices", "false"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "indices.*.names.*", "index1"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "indices.*.names.*", "index2"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "cluster.#", "0"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "run_as.#", "0"),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_security_role.test", "global"),
 				),
 			},
 		},

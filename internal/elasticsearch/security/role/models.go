@@ -7,6 +7,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -251,6 +252,11 @@ func fieldSecurityToAPIModel(ctx context.Context, data types.Object) (*models.Fi
 // fromAPIModel converts the API model to the Terraform model
 func (data *RoleData) fromAPIModel(ctx context.Context, role *models.Role) diag.Diagnostics {
 	var diags diag.Diagnostics
+	// Preserve original null values for optional attributes to distinguish between:
+	// - User doesn't set attribute (null) - should remain null even if API returns empty array
+	// - User explicitly sets empty array ([]) - should become empty set
+	originalCluster := data.Cluster
+	originalRunAs := data.RunAs
 
 	data.Name = types.StringValue(role.Name)
 
@@ -297,15 +303,11 @@ func (data *RoleData) fromAPIModel(ctx context.Context, role *models.Role) diag.
 	}
 
 	// Cluster
-	if len(role.Cluster) > 0 {
-		clusterSet, d := types.SetValueFrom(ctx, types.StringType, role.Cluster)
-		diags.Append(d...)
-		if diags.HasError() {
-			return diags
-		}
-		data.Cluster = clusterSet
-	} else {
-		data.Cluster = types.SetNull(types.StringType)
+	var clusterDiags diag.Diagnostics
+	data.Cluster, clusterDiags = typeutils.NonEmptySetOrDefault(ctx, originalCluster, types.StringType, role.Cluster)
+	diags.Append(clusterDiags...)
+	if diags.HasError() {
+		return diags
 	}
 
 	// Global
@@ -494,16 +496,9 @@ func (data *RoleData) fromAPIModel(ctx context.Context, role *models.Role) diag.
 	}
 
 	// Run As
-	if len(role.RunAs) > 0 {
-		runAsSet, d := types.SetValueFrom(ctx, types.StringType, role.RunAs)
-		diags.Append(d...)
-		if diags.HasError() {
-			return diags
-		}
-		data.RunAs = runAsSet
-	} else {
-		data.RunAs = types.SetNull(types.StringType)
-	}
+	var runAsDiags diag.Diagnostics
+	data.RunAs, runAsDiags = typeutils.NonEmptySetOrDefault(ctx, originalRunAs, types.StringType, role.RunAs)
+	diags.Append(runAsDiags...)
 
 	return diags
 }
