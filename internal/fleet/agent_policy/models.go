@@ -851,15 +851,19 @@ func mergeAgentFeature(existing []apiAgentFeature, newFeature *apiAgentFeature) 
 	return &result
 }
 
-// convertHttpMonitoringEndpointToAPI converts the HTTP monitoring endpoint config to API format
-func (model *agentPolicyModel) convertHttpMonitoringEndpointToAPI(ctx context.Context) (*struct {
+// httpMonitoringEndpointAPIResult is the return type for convertHttpMonitoringEndpointToAPI
+// This type alias matches the inline struct expected by kbapi.PostFleetAgentPoliciesJSONRequestBody.MonitoringHttp
+type httpMonitoringEndpointAPIResult = struct {
 	Buffer *struct {
 		Enabled *bool `json:"enabled,omitempty"`
 	} `json:"buffer,omitempty"`
 	Enabled *bool    `json:"enabled,omitempty"`
 	Host    *string  `json:"host,omitempty"`
 	Port    *float32 `json:"port,omitempty"`
-}, *bool) {
+}
+
+// convertHttpMonitoringEndpointToAPI converts the HTTP monitoring endpoint config to API format
+func (model *agentPolicyModel) convertHttpMonitoringEndpointToAPI(ctx context.Context) (*httpMonitoringEndpointAPIResult, *bool) {
 	if !utils.IsKnown(model.AdvancedMonitoringOptions) {
 		return nil, nil
 	}
@@ -891,14 +895,7 @@ func (model *agentPolicyModel) convertHttpMonitoringEndpointToAPI(ctx context.Co
 	bufferEnabled := http.BufferEnabled.ValueBool()
 	pprofEnabled := http.PprofEnabled.ValueBool()
 
-	result := &struct {
-		Buffer *struct {
-			Enabled *bool `json:"enabled,omitempty"`
-		} `json:"buffer,omitempty"`
-		Enabled *bool    `json:"enabled,omitempty"`
-		Host    *string  `json:"host,omitempty"`
-		Port    *float32 `json:"port,omitempty"`
-	}{
+	result := &httpMonitoringEndpointAPIResult{
 		Enabled: &enabled,
 		Host:    &host,
 		Port:    &port,
@@ -912,8 +909,9 @@ func (model *agentPolicyModel) convertHttpMonitoringEndpointToAPI(ctx context.Co
 	return result, &pprofEnabled
 }
 
-// convertDiagnosticsToAPI converts the diagnostics config to API format
-func (model *agentPolicyModel) convertDiagnosticsToAPI(ctx context.Context) *struct {
+// diagnosticsAPIResult is the return type for convertDiagnosticsToAPI
+// This type alias matches the inline struct expected by kbapi.PostFleetAgentPoliciesJSONRequestBody.MonitoringDiagnostics
+type diagnosticsAPIResult = struct {
 	Limit *struct {
 		Burst    *float32 `json:"burst,omitempty"`
 		Interval *string  `json:"interval,omitempty"`
@@ -923,7 +921,10 @@ func (model *agentPolicyModel) convertDiagnosticsToAPI(ctx context.Context) *str
 		MaxDur     *string  `json:"max_dur,omitempty"`
 		MaxRetries *float32 `json:"max_retries,omitempty"`
 	} `json:"uploader,omitempty"`
-} {
+}
+
+// convertDiagnosticsToAPI converts the diagnostics config to API format
+func (model *agentPolicyModel) convertDiagnosticsToAPI(ctx context.Context) *diagnosticsAPIResult {
 	if !utils.IsKnown(model.AdvancedMonitoringOptions) {
 		return nil
 	}
@@ -964,17 +965,7 @@ func (model *agentPolicyModel) convertDiagnosticsToAPI(ctx context.Context) *str
 		return nil
 	}
 
-	result := &struct {
-		Limit *struct {
-			Burst    *float32 `json:"burst,omitempty"`
-			Interval *string  `json:"interval,omitempty"`
-		} `json:"limit,omitempty"`
-		Uploader *struct {
-			InitDur    *string  `json:"init_dur,omitempty"`
-			MaxDur     *string  `json:"max_dur,omitempty"`
-			MaxRetries *float32 `json:"max_retries,omitempty"`
-		} `json:"uploader,omitempty"`
-	}{}
+	result := &diagnosticsAPIResult{}
 
 	if utils.IsKnown(diag.RateLimits) {
 		var rateLimits rateLimitsModel
