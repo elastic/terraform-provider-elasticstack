@@ -387,7 +387,7 @@ func (tfModel *AnomalyDetectionJobTFModel) convertAnalysisConfigFromAPI(ctx cont
 			}
 
 			// Convert custom rules
-			
+
 			customRulesTF := make([]CustomRuleTFModel, len(detector.CustomRules))
 			for j, rule := range detector.CustomRules {
 				// Convert actions
