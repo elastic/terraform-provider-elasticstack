@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
@@ -216,4 +217,8 @@ func getSchema() schema.Schema {
 			},
 		},
 	}
+}
+
+func controlGroupInputControlsType() basetypes.ObjectTypable {
+	return getSchema().Attributes["control_group_input"].(schema.SingleNestedAttribute).Attributes["controls"].(schema.ListNestedAttribute).NestedObject.Type()
 }

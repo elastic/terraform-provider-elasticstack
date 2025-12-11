@@ -8,32 +8,53 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func newControlGroupInputFromAPI(ctx context.Context, cgi *struct {
+type controlGroupInputAPIGET = struct {
 	AutoApplySelections  *bool                                                                      `json:"autoApplySelections,omitempty"`
 	ChainingSystem       *kbapi.GetDashboardsDashboardId200DataControlGroupInputChainingSystem      `json:"chainingSystem,omitempty"`
 	Controls             *[]kbapi.GetDashboardsDashboardId_200_Data_ControlGroupInput_Controls_Item `json:"controls,omitempty"`
 	Enhancements         *map[string]interface{}                                                    `json:"enhancements,omitempty"`
-	IgnoreParentSettings *struct {
-		IgnoreFilters     *bool `json:"ignoreFilters,omitempty"`
-		IgnoreQuery       *bool `json:"ignoreQuery,omitempty"`
-		IgnoreTimerange   *bool `json:"ignoreTimerange,omitempty"`
-		IgnoreValidations *bool `json:"ignoreValidations,omitempty"`
-	} `json:"ignoreParentSettings,omitempty"`
-	LabelPosition *kbapi.GetDashboardsDashboardId200DataControlGroupInputLabelPosition `json:"labelPosition,omitempty"`
-}, diags *diag.Diagnostics) *controlGroupInputModel {
+	IgnoreParentSettings *ignoreParentSettingsAPI                                                   `json:"ignoreParentSettings,omitempty"`
+	LabelPosition        *kbapi.GetDashboardsDashboardId200DataControlGroupInputLabelPosition       `json:"labelPosition,omitempty"`
+}
+
+type controlGroupInputAPIPOST = struct {
+	AutoApplySelections  *bool                                                                         `json:"autoApplySelections,omitempty"`
+	ChainingSystem       *kbapi.PostDashboardsDashboardJSONBodyDataControlGroupInputChainingSystem     `json:"chainingSystem,omitempty"`
+	Controls             *[]kbapi.PostDashboardsDashboardJSONBody_Data_ControlGroupInput_Controls_Item `json:"controls,omitempty"`
+	Enhancements         *map[string]interface{}                                                       `json:"enhancements,omitempty"`
+	IgnoreParentSettings *ignoreParentSettingsAPI                                                      `json:"ignoreParentSettings,omitempty"`
+	LabelPosition        *kbapi.PostDashboardsDashboardJSONBodyDataControlGroupInputLabelPosition      `json:"labelPosition,omitempty"`
+}
+
+type controlGroupInputAPIPUT = struct {
+	AutoApplySelections  *bool                                                                          `json:"autoApplySelections,omitempty"`
+	ChainingSystem       *kbapi.PutDashboardsDashboardIdJSONBodyDataControlGroupInputChainingSystem     `json:"chainingSystem,omitempty"`
+	Controls             *[]kbapi.PutDashboardsDashboardIdJSONBody_Data_ControlGroupInput_Controls_Item `json:"controls,omitempty"`
+	Enhancements         *map[string]interface{}                                                        `json:"enhancements,omitempty"`
+	IgnoreParentSettings *ignoreParentSettingsAPI                                                       `json:"ignoreParentSettings,omitempty"`
+	LabelPosition        *kbapi.PutDashboardsDashboardIdJSONBodyDataControlGroupInputLabelPosition      `json:"labelPosition,omitempty"`
+}
+
+type ignoreParentSettingsAPI = struct {
+	IgnoreFilters     *bool `json:"ignoreFilters,omitempty"`
+	IgnoreQuery       *bool `json:"ignoreQuery,omitempty"`
+	IgnoreTimerange   *bool `json:"ignoreTimerange,omitempty"`
+	IgnoreValidations *bool `json:"ignoreValidations,omitempty"`
+}
+
+func newControlGroupInputFromAPI(ctx context.Context, cgi *controlGroupInputAPIGET, diags *diag.Diagnostics) *controlGroupInputModel {
 	if cgi == nil {
 		return nil
 	}
 
 	model := &controlGroupInputModel{
 		AutoApplySelections: types.BoolPointerValue(cgi.AutoApplySelections),
-		ChainingSystem:      typeutils.StringishPointerValue((*string)(cgi.ChainingSystem)),
-		LabelPosition:       typeutils.StringishPointerValue((*string)(cgi.LabelPosition)),
+		ChainingSystem:      typeutils.StringishPointerValue(cgi.ChainingSystem),
+		LabelPosition:       typeutils.StringishPointerValue(cgi.LabelPosition),
 	}
 
 	// Map enhancements
@@ -81,40 +102,17 @@ func newControlGroupInputFromAPI(ctx context.Context, cgi *struct {
 		}
 
 		// Convert to types.List
-		controlsList, listDiags := types.ListValueFrom(ctx, types.ObjectType{
-			AttrTypes: map[string]attr.Type{
-				"id":             types.StringType,
-				"type":           types.StringType,
-				"order":          types.Float64Type,
-				"width":          types.StringType,
-				"grow":           types.BoolType,
-				"control_config": jsontypes.Normalized{}.Type(ctx),
-			},
-		}, controls)
+		controlsList, listDiags := types.ListValueFrom(ctx, controlGroupInputControlsType(), controls)
 		diags.Append(listDiags...)
 		model.Controls = controlsList
 	} else {
-		model.Controls = types.ListNull(types.ObjectType{
-			AttrTypes: map[string]attr.Type{
-				"id":             types.StringType,
-				"type":           types.StringType,
-				"order":          types.Float64Type,
-				"width":          types.StringType,
-				"grow":           types.BoolType,
-				"control_config": jsontypes.Normalized{}.Type(ctx),
-			},
-		})
+		model.Controls = types.ListNull(controlGroupInputControlsType())
 	}
 
 	return model
 }
 
-func newIgnoreParentSettingsFromAPI(ips *struct {
-	IgnoreFilters     *bool `json:"ignoreFilters,omitempty"`
-	IgnoreQuery       *bool `json:"ignoreQuery,omitempty"`
-	IgnoreTimerange   *bool `json:"ignoreTimerange,omitempty"`
-	IgnoreValidations *bool `json:"ignoreValidations,omitempty"`
-}) *ignoreParentSettingsModel {
+func newIgnoreParentSettingsFromAPI(ips *ignoreParentSettingsAPI) *ignoreParentSettingsModel {
 	if ips == nil {
 		return nil
 	}
@@ -127,36 +125,12 @@ func newIgnoreParentSettingsFromAPI(ips *struct {
 	}
 }
 
-func (m *controlGroupInputModel) toAPICreate() *struct {
-	AutoApplySelections  *bool                                                                         `json:"autoApplySelections,omitempty"`
-	ChainingSystem       *kbapi.PostDashboardsDashboardJSONBodyDataControlGroupInputChainingSystem     `json:"chainingSystem,omitempty"`
-	Controls             *[]kbapi.PostDashboardsDashboardJSONBody_Data_ControlGroupInput_Controls_Item `json:"controls,omitempty"`
-	Enhancements         *map[string]interface{}                                                       `json:"enhancements,omitempty"`
-	IgnoreParentSettings *struct {
-		IgnoreFilters     *bool `json:"ignoreFilters,omitempty"`
-		IgnoreQuery       *bool `json:"ignoreQuery,omitempty"`
-		IgnoreTimerange   *bool `json:"ignoreTimerange,omitempty"`
-		IgnoreValidations *bool `json:"ignoreValidations,omitempty"`
-	} `json:"ignoreParentSettings,omitempty"`
-	LabelPosition *kbapi.PostDashboardsDashboardJSONBodyDataControlGroupInputLabelPosition `json:"labelPosition,omitempty"`
-} {
+func (m *controlGroupInputModel) toAPICreate() *controlGroupInputAPIPOST {
 	if m == nil {
 		return nil
 	}
 
-	result := &struct {
-		AutoApplySelections  *bool                                                                         `json:"autoApplySelections,omitempty"`
-		ChainingSystem       *kbapi.PostDashboardsDashboardJSONBodyDataControlGroupInputChainingSystem     `json:"chainingSystem,omitempty"`
-		Controls             *[]kbapi.PostDashboardsDashboardJSONBody_Data_ControlGroupInput_Controls_Item `json:"controls,omitempty"`
-		Enhancements         *map[string]interface{}                                                       `json:"enhancements,omitempty"`
-		IgnoreParentSettings *struct {
-			IgnoreFilters     *bool `json:"ignoreFilters,omitempty"`
-			IgnoreQuery       *bool `json:"ignoreQuery,omitempty"`
-			IgnoreTimerange   *bool `json:"ignoreTimerange,omitempty"`
-			IgnoreValidations *bool `json:"ignoreValidations,omitempty"`
-		} `json:"ignoreParentSettings,omitempty"`
-		LabelPosition *kbapi.PostDashboardsDashboardJSONBodyDataControlGroupInputLabelPosition `json:"labelPosition,omitempty"`
-	}{}
+	result := &controlGroupInputAPIPOST{}
 
 	if utils.IsKnown(m.AutoApplySelections) {
 		result.AutoApplySelections = m.AutoApplySelections.ValueBoolPointer()
@@ -183,7 +157,7 @@ func (m *controlGroupInputModel) toAPICreate() *struct {
 
 	// Map ignore parent settings
 	if m.IgnoreParentSettings != nil {
-		result.IgnoreParentSettings = m.IgnoreParentSettings.toAPICreate()
+		result.IgnoreParentSettings = m.IgnoreParentSettings.toAPI()
 	}
 
 	// Map controls
@@ -231,159 +205,46 @@ func (m *controlGroupInputModel) toAPICreate() *struct {
 	return result
 }
 
-func (m *controlGroupInputModel) toAPIUpdate() *struct {
-	AutoApplySelections  *bool                                                                          `json:"autoApplySelections,omitempty"`
-	ChainingSystem       *kbapi.PutDashboardsDashboardIdJSONBodyDataControlGroupInputChainingSystem     `json:"chainingSystem,omitempty"`
-	Controls             *[]kbapi.PutDashboardsDashboardIdJSONBody_Data_ControlGroupInput_Controls_Item `json:"controls,omitempty"`
-	Enhancements         *map[string]interface{}                                                        `json:"enhancements,omitempty"`
-	IgnoreParentSettings *struct {
-		IgnoreFilters     *bool `json:"ignoreFilters,omitempty"`
-		IgnoreQuery       *bool `json:"ignoreQuery,omitempty"`
-		IgnoreTimerange   *bool `json:"ignoreTimerange,omitempty"`
-		IgnoreValidations *bool `json:"ignoreValidations,omitempty"`
-	} `json:"ignoreParentSettings,omitempty"`
-	LabelPosition *kbapi.PutDashboardsDashboardIdJSONBodyDataControlGroupInputLabelPosition `json:"labelPosition,omitempty"`
-} {
+func (m *controlGroupInputModel) toAPIUpdate() *controlGroupInputAPIPUT {
 	if m == nil {
 		return nil
 	}
 
-	result := &struct {
-		AutoApplySelections  *bool                                                                          `json:"autoApplySelections,omitempty"`
-		ChainingSystem       *kbapi.PutDashboardsDashboardIdJSONBodyDataControlGroupInputChainingSystem     `json:"chainingSystem,omitempty"`
-		Controls             *[]kbapi.PutDashboardsDashboardIdJSONBody_Data_ControlGroupInput_Controls_Item `json:"controls,omitempty"`
-		Enhancements         *map[string]interface{}                                                        `json:"enhancements,omitempty"`
-		IgnoreParentSettings *struct {
-			IgnoreFilters     *bool `json:"ignoreFilters,omitempty"`
-			IgnoreQuery       *bool `json:"ignoreQuery,omitempty"`
-			IgnoreTimerange   *bool `json:"ignoreTimerange,omitempty"`
-			IgnoreValidations *bool `json:"ignoreValidations,omitempty"`
-		} `json:"ignoreParentSettings,omitempty"`
-		LabelPosition *kbapi.PutDashboardsDashboardIdJSONBodyDataControlGroupInputLabelPosition `json:"labelPosition,omitempty"`
-	}{}
-
-	if utils.IsKnown(m.AutoApplySelections) {
-		result.AutoApplySelections = m.AutoApplySelections.ValueBoolPointer()
+	postModel := m.toAPICreate()
+	result := &controlGroupInputAPIPUT{
+		AutoApplySelections:  postModel.AutoApplySelections,
+		ChainingSystem:       (*kbapi.PutDashboardsDashboardIdJSONBodyDataControlGroupInputChainingSystem)(postModel.ChainingSystem),
+		LabelPosition:        (*kbapi.PutDashboardsDashboardIdJSONBodyDataControlGroupInputLabelPosition)(postModel.LabelPosition),
+		Enhancements:         postModel.Enhancements,
+		IgnoreParentSettings: postModel.IgnoreParentSettings,
 	}
 
-	if utils.IsKnown(m.ChainingSystem) {
-		chainingSystem := kbapi.PutDashboardsDashboardIdJSONBodyDataControlGroupInputChainingSystem(m.ChainingSystem.ValueString())
-		result.ChainingSystem = &chainingSystem
-	}
-
-	if utils.IsKnown(m.LabelPosition) {
-		labelPosition := kbapi.PutDashboardsDashboardIdJSONBodyDataControlGroupInputLabelPosition(m.LabelPosition.ValueString())
-		result.LabelPosition = &labelPosition
-	}
-
-	// Map enhancements
-	if utils.IsKnown(m.Enhancements) {
-		var enhancements map[string]interface{}
-		diags := m.Enhancements.Unmarshal(&enhancements)
-		if !diags.HasError() {
-			result.Enhancements = &enhancements
-		}
-	}
-
-	// Map ignore parent settings
-	if m.IgnoreParentSettings != nil {
-		result.IgnoreParentSettings = m.IgnoreParentSettings.toAPIUpdate()
-	}
-
-	// Map controls
-	if utils.IsKnown(m.Controls) && !m.Controls.IsNull() {
-		var controls []controlModel
-		// Extract controls from the list
-		m.Controls.ElementsAs(context.Background(), &controls, false)
-
-		var apiControls []kbapi.PutDashboardsDashboardIdJSONBody_Data_ControlGroupInput_Controls_Item
-		for _, ctrl := range controls {
+	if postModel.Controls != nil {
+		controls := []kbapi.PutDashboardsDashboardIdJSONBody_Data_ControlGroupInput_Controls_Item{}
+		for _, ctrl := range *postModel.Controls {
 			apiCtrl := kbapi.PutDashboardsDashboardIdJSONBody_Data_ControlGroupInput_Controls_Item{
-				Type:  ctrl.Type.ValueString(),
-				Order: float32(ctrl.Order.ValueFloat64()),
+				ControlConfig: ctrl.ControlConfig,
+				Grow:          ctrl.Grow,
+				Id:            ctrl.Id,
+				Width:         (*kbapi.PutDashboardsDashboardIdJSONBodyDataControlGroupInputControlsWidth)(ctrl.Width),
+				Type:          ctrl.Type,
+				Order:         ctrl.Order,
 			}
-
-			if utils.IsKnown(ctrl.ID) {
-				apiCtrl.Id = utils.Pointer(ctrl.ID.ValueString())
-			}
-
-			if utils.IsKnown(ctrl.Width) {
-				width := kbapi.PutDashboardsDashboardIdJSONBodyDataControlGroupInputControlsWidth(ctrl.Width.ValueString())
-				apiCtrl.Width = &width
-			}
-
-			if utils.IsKnown(ctrl.Grow) {
-				apiCtrl.Grow = ctrl.Grow.ValueBoolPointer()
-			}
-
-			if utils.IsKnown(ctrl.ControlConfig) {
-				var config map[string]interface{}
-				diags := ctrl.ControlConfig.Unmarshal(&config)
-				if !diags.HasError() {
-					apiCtrl.ControlConfig = &config
-				}
-			}
-
-			apiControls = append(apiControls, apiCtrl)
+			controls = append(controls, apiCtrl)
 		}
 
-		if len(apiControls) > 0 {
-			result.Controls = &apiControls
-		}
+		result.Controls = &controls
 	}
 
 	return result
 }
 
-func (m *ignoreParentSettingsModel) toAPICreate() *struct {
-	IgnoreFilters     *bool `json:"ignoreFilters,omitempty"`
-	IgnoreQuery       *bool `json:"ignoreQuery,omitempty"`
-	IgnoreTimerange   *bool `json:"ignoreTimerange,omitempty"`
-	IgnoreValidations *bool `json:"ignoreValidations,omitempty"`
-} {
+func (m *ignoreParentSettingsModel) toAPI() *ignoreParentSettingsAPI {
 	if m == nil {
 		return nil
 	}
 
-	result := &struct {
-		IgnoreFilters     *bool `json:"ignoreFilters,omitempty"`
-		IgnoreQuery       *bool `json:"ignoreQuery,omitempty"`
-		IgnoreTimerange   *bool `json:"ignoreTimerange,omitempty"`
-		IgnoreValidations *bool `json:"ignoreValidations,omitempty"`
-	}{}
-
-	if utils.IsKnown(m.IgnoreFilters) {
-		result.IgnoreFilters = m.IgnoreFilters.ValueBoolPointer()
-	}
-	if utils.IsKnown(m.IgnoreQuery) {
-		result.IgnoreQuery = m.IgnoreQuery.ValueBoolPointer()
-	}
-	if utils.IsKnown(m.IgnoreTimerange) {
-		result.IgnoreTimerange = m.IgnoreTimerange.ValueBoolPointer()
-	}
-	if utils.IsKnown(m.IgnoreValidations) {
-		result.IgnoreValidations = m.IgnoreValidations.ValueBoolPointer()
-	}
-
-	return result
-}
-
-func (m *ignoreParentSettingsModel) toAPIUpdate() *struct {
-	IgnoreFilters     *bool `json:"ignoreFilters,omitempty"`
-	IgnoreQuery       *bool `json:"ignoreQuery,omitempty"`
-	IgnoreTimerange   *bool `json:"ignoreTimerange,omitempty"`
-	IgnoreValidations *bool `json:"ignoreValidations,omitempty"`
-} {
-	if m == nil {
-		return nil
-	}
-
-	result := &struct {
-		IgnoreFilters     *bool `json:"ignoreFilters,omitempty"`
-		IgnoreQuery       *bool `json:"ignoreQuery,omitempty"`
-		IgnoreTimerange   *bool `json:"ignoreTimerange,omitempty"`
-		IgnoreValidations *bool `json:"ignoreValidations,omitempty"`
-	}{}
+	result := &ignoreParentSettingsAPI{}
 
 	if utils.IsKnown(m.IgnoreFilters) {
 		result.IgnoreFilters = m.IgnoreFilters.ValueBoolPointer()
