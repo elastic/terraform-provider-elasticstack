@@ -14,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
@@ -371,44 +372,31 @@ func (model *agentPolicyModel) populateAdvancedMonitoringFromAPI(ctx context.Con
 	return nil
 }
 
-// Attribute type helpers for advanced monitoring options
+// Attribute type helpers for advanced monitoring options - pulled from schema to avoid duplication
 func advancedMonitoringOptionsAttrTypes() map[string]attr.Type {
-	return map[string]attr.Type{
-		"http_monitoring_endpoint": types.ObjectType{AttrTypes: httpMonitoringEndpointAttrTypes()},
-		"diagnostics":              types.ObjectType{AttrTypes: diagnosticsAttrTypes()},
-	}
+	return getSchema().Attributes["advanced_monitoring_options"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
 func httpMonitoringEndpointAttrTypes() map[string]attr.Type {
-	return map[string]attr.Type{
-		"enabled":        types.BoolType,
-		"host":           types.StringType,
-		"port":           types.Int32Type,
-		"buffer_enabled": types.BoolType,
-		"pprof_enabled":  types.BoolType,
-	}
+	amoAttr := getSchema().Attributes["advanced_monitoring_options"].(schema.SingleNestedAttribute)
+	return amoAttr.Attributes["http_monitoring_endpoint"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
 func diagnosticsAttrTypes() map[string]attr.Type {
-	return map[string]attr.Type{
-		"rate_limits":   types.ObjectType{AttrTypes: rateLimitsAttrTypes()},
-		"file_uploader": types.ObjectType{AttrTypes: fileUploaderAttrTypes()},
-	}
+	amoAttr := getSchema().Attributes["advanced_monitoring_options"].(schema.SingleNestedAttribute)
+	return amoAttr.Attributes["diagnostics"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
 func rateLimitsAttrTypes() map[string]attr.Type {
-	return map[string]attr.Type{
-		"interval": customtypes.DurationType{},
-		"burst":    types.Int32Type,
-	}
+	amoAttr := getSchema().Attributes["advanced_monitoring_options"].(schema.SingleNestedAttribute)
+	diagAttr := amoAttr.Attributes["diagnostics"].(schema.SingleNestedAttribute)
+	return diagAttr.Attributes["rate_limits"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
 func fileUploaderAttrTypes() map[string]attr.Type {
-	return map[string]attr.Type{
-		"init_duration":    customtypes.DurationType{},
-		"backoff_duration": customtypes.DurationType{},
-		"max_retries":      types.Int32Type,
-	}
+	amoAttr := getSchema().Attributes["advanced_monitoring_options"].(schema.SingleNestedAttribute)
+	diagAttr := amoAttr.Attributes["diagnostics"].(schema.SingleNestedAttribute)
+	return diagAttr.Attributes["file_uploader"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
 // convertGlobalDataTags converts the global data tags from terraform model to API model
