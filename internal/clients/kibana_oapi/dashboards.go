@@ -34,6 +34,7 @@ func addApiVersionQueryParamRequestEditor() func(ctx context.Context, req *http.
 		req.Header.Add("x-elastic-internal-origin", "Kibana")
 		query := req.URL.Query()
 		query.Add("apiVersion", "1")
+		query.Add("allowUnmappedKeys", "true")
 		req.URL.RawQuery = query.Encode()
 		return nil
 	}

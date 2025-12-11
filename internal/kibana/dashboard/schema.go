@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -96,6 +96,97 @@ func getSchema() schema.Schema {
 				MarkdownDescription: "An array of tag IDs applied to this dashboard.",
 				ElementType:         types.StringType,
 				Optional:            true,
+				Validators: []validator.List{
+					listvalidator.SizeAtLeast(1),
+				},
+			},
+			"control_group_input": schema.SingleNestedAttribute{
+				MarkdownDescription: "Configuration for dashboard controls (filters, time range selectors, etc.).",
+				Optional:            true,
+				Attributes: map[string]schema.Attribute{
+					"auto_apply_selections": schema.BoolAttribute{
+						MarkdownDescription: "Show apply selections button in controls.",
+						Optional:            true,
+					},
+					"chaining_system": schema.StringAttribute{
+						MarkdownDescription: "The chaining strategy for multiple controls. Valid values are 'HIERARCHICAL' or 'NONE'.",
+						Optional:            true,
+						Validators: []validator.String{
+							stringvalidator.OneOf("HIERARCHICAL", "NONE"),
+						},
+					},
+					"label_position": schema.StringAttribute{
+						MarkdownDescription: "Position of the labels for controls. Valid values are 'oneLine' or 'twoLine'.",
+						Optional:            true,
+						Validators: []validator.String{
+							stringvalidator.OneOf("oneLine", "twoLine"),
+						},
+					},
+					"ignore_parent_settings": schema.SingleNestedAttribute{
+						MarkdownDescription: "Settings to ignore global dashboard settings in controls.",
+						Optional:            true,
+						Attributes: map[string]schema.Attribute{
+							"ignore_filters": schema.BoolAttribute{
+								MarkdownDescription: "Ignore global filters in controls.",
+								Optional:            true,
+							},
+							"ignore_query": schema.BoolAttribute{
+								MarkdownDescription: "Ignore the global query bar in controls.",
+								Optional:            true,
+							},
+							"ignore_timerange": schema.BoolAttribute{
+								MarkdownDescription: "Ignore the global time range in controls.",
+								Optional:            true,
+							},
+							"ignore_validations": schema.BoolAttribute{
+								MarkdownDescription: "Ignore validations in controls.",
+								Optional:            true,
+							},
+						},
+					},
+					"controls": schema.ListNestedAttribute{
+						MarkdownDescription: "An array of control panels and their state in the control group.",
+						Optional:            true,
+						NestedObject: schema.NestedAttributeObject{
+							Attributes: map[string]schema.Attribute{
+								"id": schema.StringAttribute{
+									MarkdownDescription: "The unique ID of the control.",
+									Optional:            true,
+									Computed:            true,
+								},
+								"type": schema.StringAttribute{
+									MarkdownDescription: "The type of the control panel.",
+									Required:            true,
+								},
+								"order": schema.Float64Attribute{
+									MarkdownDescription: "The order of the control panel in the control group.",
+									Required:            true,
+								},
+								"width": schema.StringAttribute{
+									MarkdownDescription: "Minimum width of the control panel in the control group. Valid values are 'small', 'medium', or 'large'.",
+									Optional:            true,
+									Validators: []validator.String{
+										stringvalidator.OneOf("small", "medium", "large"),
+									},
+								},
+								"grow": schema.BoolAttribute{
+									MarkdownDescription: "Expand width of the control panel to fit available space.",
+									Optional:            true,
+								},
+								"control_config": schema.StringAttribute{
+									MarkdownDescription: "The control configuration as a JSON object.",
+									CustomType:          jsontypes.NormalizedType{},
+									Optional:            true,
+								},
+							},
+						},
+					},
+					"enhancements": schema.StringAttribute{
+						MarkdownDescription: "Enhancements configuration as a JSON object.",
+						CustomType:          jsontypes.NormalizedType{},
+						Optional:            true,
+					},
+				},
 			},
 			"options": schema.SingleNestedAttribute{
 				MarkdownDescription: "Display options for the dashboard.",
@@ -124,15 +215,5 @@ func getSchema() schema.Schema {
 				},
 			},
 		},
-	}
-}
-
-func getOptionsAttrTypes() map[string]attr.Type {
-	return map[string]attr.Type{
-		"hide_panel_titles": types.BoolType,
-		"use_margins":       types.BoolType,
-		"sync_colors":       types.BoolType,
-		"sync_tooltips":     types.BoolType,
-		"sync_cursor":       types.BoolType,
 	}
 }

@@ -92,6 +92,83 @@ func TestAccResourceEmptyDashboard(t *testing.T) {
 	})
 }
 
+func TestAccResourceDashboardWithControlGroupInput(t *testing.T) {
+	dashboardTitle := "Test Dashboard CGI " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_control_group_input"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "dashboard_id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "title", dashboardTitle),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "description", "Test dashboard with control group input"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "control_group_input.auto_apply_selections", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "control_group_input.chaining_system", "HIERARCHICAL"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "control_group_input.label_position", "oneLine"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "control_group_input.ignore_parent_settings.ignore_filters", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "control_group_input.ignore_parent_settings.ignore_query", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "control_group_input.ignore_parent_settings.ignore_timerange", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "control_group_input.ignore_parent_settings.ignore_validations", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "control_group_input.controls.#", "2"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "control_group_input.controls.0.type", "optionsListControl"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "control_group_input.controls.0.order", "0"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "control_group_input.controls.0.width", "medium"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "control_group_input.controls.0.grow", "false"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "control_group_input.controls.0.control_config"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "control_group_input.controls.1.type", "rangeSliderControl"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "control_group_input.controls.1.order", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "control_group_input.controls.1.width", "large"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "control_group_input.controls.1.grow", "true"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "control_group_input.controls.1.control_config"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("control_group_updated"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle + " Updated"),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "title", dashboardTitle+" Updated"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "control_group_input.auto_apply_selections", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "control_group_input.chaining_system", "NONE"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "control_group_input.label_position", "twoLine"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "control_group_input.ignore_parent_settings.ignore_filters", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "control_group_input.ignore_parent_settings.ignore_query", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "control_group_input.ignore_parent_settings.ignore_timerange", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "control_group_input.ignore_parent_settings.ignore_validations", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "control_group_input.controls.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "control_group_input.controls.0.type", "optionsListControl"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "control_group_input.controls.0.order", "0"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "control_group_input.controls.0.width", "small"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "control_group_input.controls.0.grow", "true"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("control_group_updated"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle + " Updated"),
+				},
+				ResourceName:      "elasticstack_kibana_dashboard.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 func TestAccResourceDashboardInSpace(t *testing.T) {
 	spaceName := "test-space-" + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 	dashboardTitle := "Test Dashboard in Space " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)

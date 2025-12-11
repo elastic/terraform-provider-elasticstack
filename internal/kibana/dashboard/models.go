@@ -8,6 +8,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -16,21 +17,47 @@ import (
 
 // dashboardModel is the top-level Terraform model
 type dashboardModel struct {
-	ID                   types.String         `tfsdk:"id"`
-	SpaceID              types.String         `tfsdk:"space_id"`
-	DashboardID          types.String         `tfsdk:"dashboard_id"`
-	Title                types.String         `tfsdk:"title"`
-	Description          types.String         `tfsdk:"description"`
-	TimeFrom             types.String         `tfsdk:"time_from"`
-	TimeTo               types.String         `tfsdk:"time_to"`
-	TimeRangeMode        types.String         `tfsdk:"time_range_mode"`
-	RefreshIntervalPause types.Bool           `tfsdk:"refresh_interval_pause"`
-	RefreshIntervalValue types.Int64          `tfsdk:"refresh_interval_value"`
-	QueryLanguage        types.String         `tfsdk:"query_language"`
-	QueryText            types.String         `tfsdk:"query_text"`
-	QueryJSON            jsontypes.Normalized `tfsdk:"query_json"`
-	Tags                 types.List           `tfsdk:"tags"`
-	Options              types.Object         `tfsdk:"options"`
+	ID                   types.String            `tfsdk:"id"`
+	SpaceID              types.String            `tfsdk:"space_id"`
+	DashboardID          types.String            `tfsdk:"dashboard_id"`
+	Title                types.String            `tfsdk:"title"`
+	Description          types.String            `tfsdk:"description"`
+	TimeFrom             types.String            `tfsdk:"time_from"`
+	TimeTo               types.String            `tfsdk:"time_to"`
+	TimeRangeMode        types.String            `tfsdk:"time_range_mode"`
+	RefreshIntervalPause types.Bool              `tfsdk:"refresh_interval_pause"`
+	RefreshIntervalValue types.Int64             `tfsdk:"refresh_interval_value"`
+	QueryLanguage        types.String            `tfsdk:"query_language"`
+	QueryText            types.String            `tfsdk:"query_text"`
+	QueryJSON            jsontypes.Normalized    `tfsdk:"query_json"`
+	Tags                 types.List              `tfsdk:"tags"`
+	ControlGroupInput    *controlGroupInputModel `tfsdk:"control_group_input"`
+	Options              *optionsModel           `tfsdk:"options"`
+}
+
+type controlGroupInputModel struct {
+	AutoApplySelections  types.Bool                 `tfsdk:"auto_apply_selections"`
+	ChainingSystem       types.String               `tfsdk:"chaining_system"`
+	LabelPosition        types.String               `tfsdk:"label_position"`
+	IgnoreParentSettings *ignoreParentSettingsModel `tfsdk:"ignore_parent_settings"`
+	Controls             types.List                 `tfsdk:"controls"` // List of controlModel
+	Enhancements         jsontypes.Normalized       `tfsdk:"enhancements"`
+}
+
+type ignoreParentSettingsModel struct {
+	IgnoreFilters     types.Bool `tfsdk:"ignore_filters"`
+	IgnoreQuery       types.Bool `tfsdk:"ignore_query"`
+	IgnoreTimerange   types.Bool `tfsdk:"ignore_timerange"`
+	IgnoreValidations types.Bool `tfsdk:"ignore_validations"`
+}
+
+type controlModel struct {
+	ID            types.String         `tfsdk:"id"`
+	Type          types.String         `tfsdk:"type"`
+	Order         types.Float64        `tfsdk:"order"`
+	Width         types.String         `tfsdk:"width"`
+	Grow          types.Bool           `tfsdk:"grow"`
+	ControlConfig jsontypes.Normalized `tfsdk:"control_config"`
 }
 
 type optionsModel struct {
@@ -54,12 +81,7 @@ func (m *dashboardModel) populateFromAPI(ctx context.Context, resp *kbapi.GetDas
 
 	// Map the dashboard data fields
 	m.Title = types.StringValue(data.Data.Title)
-
-	if data.Data.Description != nil {
-		m.Description = types.StringValue(*data.Data.Description)
-	} else {
-		m.Description = types.StringNull()
-	}
+	m.Description = typeutils.NonEmptyStringishPointerValue(data.Data.Description)
 
 	// Map time range
 	m.TimeFrom = types.StringValue(data.Data.TimeRange.From)
@@ -105,9 +127,10 @@ func (m *dashboardModel) populateFromAPI(ctx context.Context, resp *kbapi.GetDas
 	}
 
 	// Map options
-	options, optDiags := m.mapOptionsFromAPI(ctx, data.Data.Options)
-	diags.Append(optDiags...)
-	m.Options = options
+	m.Options = newOptionsFromAPI(data.Data.Options)
+
+	// Map control group input
+	m.ControlGroupInput = newControlGroupInputFromAPI(ctx, data.Data.ControlGroupInput, &diags)
 
 	return diags
 }
@@ -155,10 +178,11 @@ func (m *dashboardModel) toAPICreateRequest(ctx context.Context, diags *diag.Dia
 		}
 	}
 
+	// Set control group input
+	req.Data.ControlGroupInput = m.ControlGroupInput.toAPICreate()
+
 	// Set options
-	options, optionsDiags := m.optionsToAPI(ctx)
-	diags.Append(optionsDiags...)
-	req.Data.Options = options
+	req.Data.Options = m.Options.toAPI()
 
 	return req
 }
@@ -196,10 +220,11 @@ func (m *dashboardModel) toAPIUpdateRequest(ctx context.Context, diags *diag.Dia
 		}
 	}
 
+	// Set control group input
+	req.Data.ControlGroupInput = m.ControlGroupInput.toAPIUpdate()
+
 	// Set options
-	options, optionsDiags := m.optionsToAPI(ctx)
-	diags.Append(optionsDiags...)
-	req.Data.Options = options
+	req.Data.Options = m.Options.toAPI()
 
 	return req
 }

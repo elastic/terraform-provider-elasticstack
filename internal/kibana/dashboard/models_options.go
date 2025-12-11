@@ -1,27 +1,9 @@
 package dashboard
 
 import (
-	"context"
-
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
-
-func (m *dashboardModel) optionsToAPI(ctx context.Context) (*optionsAPIModel, diag.Diagnostics) {
-	if !utils.IsKnown(m.Options) {
-		return nil, nil
-	}
-
-	var optModel optionsModel
-	diags := m.Options.As(ctx, &optModel, basetypes.ObjectAsOptions{})
-	if diags.HasError() {
-		return nil, diags
-	}
-
-	return optModel.toAPI(), diags
-}
 
 // optionsAPIModel introduces a type alias for the generated API model.
 // The current API spec defines these types inline, resulting in anonymous structs.
@@ -34,23 +16,25 @@ type optionsAPIModel = struct {
 	UseMargins      *bool `json:"useMargins,omitempty"`
 }
 
-func (m *dashboardModel) mapOptionsFromAPI(ctx context.Context, options *optionsAPIModel) (types.Object, diag.Diagnostics) {
+func newOptionsFromAPI(options *optionsAPIModel) *optionsModel {
 	if options == nil {
-		return types.ObjectNull(getOptionsAttrTypes()), nil
+		return nil
 	}
 
-	model := optionsModel{
+	return &optionsModel{
 		HidePanelTitles: types.BoolPointerValue(options.HidePanelTitles),
 		UseMargins:      types.BoolPointerValue(options.UseMargins),
 		SyncColors:      types.BoolPointerValue(options.SyncColors),
 		SyncTooltips:    types.BoolPointerValue(options.SyncTooltips),
 		SyncCursor:      types.BoolPointerValue(options.SyncCursor),
 	}
-
-	return types.ObjectValueFrom(ctx, getOptionsAttrTypes(), model)
 }
 
-func (m optionsModel) toAPI() *optionsAPIModel {
+func (m *optionsModel) toAPI() *optionsAPIModel {
+	if m == nil {
+		return nil
+	}
+
 	options := optionsAPIModel{}
 	if utils.IsKnown(m.HidePanelTitles) {
 		options.HidePanelTitles = m.HidePanelTitles.ValueBoolPointer()
