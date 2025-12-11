@@ -65,6 +65,8 @@ inputs = {
 ```
 
 ### Changes
+
+- Fix handling empty types in `elasticstack_elasticsearch_ml_anomaly_detection_job` ([#1544](https://github.com/elastic/terraform-provider-elasticstack/pull/1544))
 - Move the `input` block to an `inputs` map in `elasticstack_fleet_integration_policy` ([#1482](https://github.com/elastic/terraform-provider-elasticstack/pull/1482))
 - Fix handling empty `clusters` and `run_as` attributes in `elasticstack_elasticsearch_security_role` resource ([#1542](https://github.com/elastic/terraform-provider-elasticstack/pull/1542))
 
