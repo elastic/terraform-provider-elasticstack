@@ -216,13 +216,13 @@ func TestAdvancedMonitoringVersionValidation(t *testing.T) {
 	})
 
 	rateLimits, _ := types.ObjectValueFrom(ctx, rateLimitsAttrTypes(), rateLimitsModel{
-		Interval: types.StringValue("1m"),
+		Interval: customtypes.NewDurationValue("1m"),
 		Burst:    types.Int32Value(1),
 	})
 
 	fileUploader, _ := types.ObjectValueFrom(ctx, fileUploaderAttrTypes(), fileUploaderModel{
-		InitDuration:    types.StringValue("1s"),
-		BackoffDuration: types.StringValue("1m"),
+		InitDuration:    customtypes.NewDurationValue("1s"),
+		BackoffDuration: customtypes.NewDurationValue("1m"),
 		MaxRetries:      types.Int32Value(10),
 	})
 

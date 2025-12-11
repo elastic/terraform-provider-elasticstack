@@ -69,14 +69,14 @@ type diagnosticsModel struct {
 }
 
 type rateLimitsModel struct {
-	Interval types.String `tfsdk:"interval"`
-	Burst    types.Int32  `tfsdk:"burst"`
+	Interval customtypes.Duration `tfsdk:"interval"`
+	Burst    types.Int32          `tfsdk:"burst"`
 }
 
 type fileUploaderModel struct {
-	InitDuration    types.String `tfsdk:"init_duration"`
-	BackoffDuration types.String `tfsdk:"backoff_duration"`
-	MaxRetries      types.Int32  `tfsdk:"max_retries"`
+	InitDuration    customtypes.Duration `tfsdk:"init_duration"`
+	BackoffDuration customtypes.Duration `tfsdk:"backoff_duration"`
+	MaxRetries      types.Int32          `tfsdk:"max_retries"`
 }
 
 // Default values for advanced monitoring options
@@ -303,11 +303,11 @@ func (model *agentPolicyModel) populateAdvancedMonitoringFromAPI(ctx context.Con
 
 		if data.MonitoringDiagnostics.Limit != nil {
 			rateLimits := rateLimitsModel{
-				Interval: types.StringValue(defaultDiagnosticsInterval),
+				Interval: customtypes.NewDurationValue(defaultDiagnosticsInterval),
 				Burst:    types.Int32Value(defaultDiagnosticsBurst),
 			}
 			if data.MonitoringDiagnostics.Limit.Interval != nil {
-				rateLimits.Interval = types.StringValue(*data.MonitoringDiagnostics.Limit.Interval)
+				rateLimits.Interval = customtypes.NewDurationValue(*data.MonitoringDiagnostics.Limit.Interval)
 			}
 			if data.MonitoringDiagnostics.Limit.Burst != nil {
 				rateLimits.Burst = types.Int32Value(int32(*data.MonitoringDiagnostics.Limit.Burst))
@@ -323,15 +323,15 @@ func (model *agentPolicyModel) populateAdvancedMonitoringFromAPI(ctx context.Con
 
 		if data.MonitoringDiagnostics.Uploader != nil {
 			fileUploader := fileUploaderModel{
-				InitDuration:    types.StringValue(defaultDiagnosticsInitDuration),
-				BackoffDuration: types.StringValue(defaultDiagnosticsBackoffDuration),
+				InitDuration:    customtypes.NewDurationValue(defaultDiagnosticsInitDuration),
+				BackoffDuration: customtypes.NewDurationValue(defaultDiagnosticsBackoffDuration),
 				MaxRetries:      types.Int32Value(defaultDiagnosticsMaxRetries),
 			}
 			if data.MonitoringDiagnostics.Uploader.InitDur != nil {
-				fileUploader.InitDuration = types.StringValue(*data.MonitoringDiagnostics.Uploader.InitDur)
+				fileUploader.InitDuration = customtypes.NewDurationValue(*data.MonitoringDiagnostics.Uploader.InitDur)
 			}
 			if data.MonitoringDiagnostics.Uploader.MaxDur != nil {
-				fileUploader.BackoffDuration = types.StringValue(*data.MonitoringDiagnostics.Uploader.MaxDur)
+				fileUploader.BackoffDuration = customtypes.NewDurationValue(*data.MonitoringDiagnostics.Uploader.MaxDur)
 			}
 			if data.MonitoringDiagnostics.Uploader.MaxRetries != nil {
 				fileUploader.MaxRetries = types.Int32Value(int32(*data.MonitoringDiagnostics.Uploader.MaxRetries))
@@ -398,15 +398,15 @@ func diagnosticsAttrTypes() map[string]attr.Type {
 
 func rateLimitsAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"interval": types.StringType,
+		"interval": customtypes.DurationType{},
 		"burst":    types.Int32Type,
 	}
 }
 
 func fileUploaderAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"init_duration":    types.StringType,
-		"backoff_duration": types.StringType,
+		"init_duration":    customtypes.DurationType{},
+		"backoff_duration": customtypes.DurationType{},
 		"max_retries":      types.Int32Type,
 	}
 }

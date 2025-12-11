@@ -232,6 +232,7 @@ func getSchema() schema.Schema {
 										Description: "Rate limiting interval for diagnostics requests (e.g., '1m', '30s').",
 										Optional:    true,
 										Computed:    true,
+										CustomType:  customtypes.DurationType{},
 										Default:     stringdefault.StaticString("1m"),
 									},
 									"burst": schema.Int32Attribute{
@@ -251,12 +252,14 @@ func getSchema() schema.Schema {
 										Description: "Initial duration before the first retry attempt (e.g., '1s', '500ms').",
 										Optional:    true,
 										Computed:    true,
+										CustomType:  customtypes.DurationType{},
 										Default:     stringdefault.StaticString("1s"),
 									},
 									"backoff_duration": schema.StringAttribute{
 										Description: "Maximum backoff duration between retry attempts (e.g., '1m', '30s').",
 										Optional:    true,
 										Computed:    true,
+										CustomType:  customtypes.DurationType{},
 										Default:     stringdefault.StaticString("1m"),
 									},
 									"max_retries": schema.Int32Attribute{

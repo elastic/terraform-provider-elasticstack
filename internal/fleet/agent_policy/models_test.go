@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 )
@@ -312,7 +313,7 @@ func TestConvertDiagnosticsToAPI(t *testing.T) {
 			name: "default rate limits values returns nil (omit from payload)",
 			amo: createAmoObject(createDiagnosticsObject(
 				createRateLimitsObject(rateLimitsModel{
-					Interval: types.StringValue("1m"),
+					Interval: customtypes.NewDurationValue("1m"),
 					Burst:    types.Int32Value(1),
 				}),
 				types.ObjectNull(fileUploaderAttrTypes()),
@@ -324,8 +325,8 @@ func TestConvertDiagnosticsToAPI(t *testing.T) {
 			amo: createAmoObject(createDiagnosticsObject(
 				types.ObjectNull(rateLimitsAttrTypes()),
 				createFileUploaderObject(fileUploaderModel{
-					InitDuration:    types.StringValue("1s"),
-					BackoffDuration: types.StringValue("1m"),
+					InitDuration:    customtypes.NewDurationValue("1s"),
+					BackoffDuration: customtypes.NewDurationValue("1m"),
 					MaxRetries:      types.Int32Value(10),
 				}),
 			)),
@@ -335,7 +336,7 @@ func TestConvertDiagnosticsToAPI(t *testing.T) {
 			name: "custom rate limits interval returns values",
 			amo: createAmoObject(createDiagnosticsObject(
 				createRateLimitsObject(rateLimitsModel{
-					Interval: types.StringValue("2m"),
+					Interval: customtypes.NewDurationValue("2m"),
 					Burst:    types.Int32Value(1),
 				}),
 				types.ObjectNull(fileUploaderAttrTypes()),
@@ -347,7 +348,7 @@ func TestConvertDiagnosticsToAPI(t *testing.T) {
 			name: "custom rate limits burst returns values",
 			amo: createAmoObject(createDiagnosticsObject(
 				createRateLimitsObject(rateLimitsModel{
-					Interval: types.StringValue("1m"),
+					Interval: customtypes.NewDurationValue("1m"),
 					Burst:    types.Int32Value(5),
 				}),
 				types.ObjectNull(fileUploaderAttrTypes()),
@@ -360,8 +361,8 @@ func TestConvertDiagnosticsToAPI(t *testing.T) {
 			amo: createAmoObject(createDiagnosticsObject(
 				types.ObjectNull(rateLimitsAttrTypes()),
 				createFileUploaderObject(fileUploaderModel{
-					InitDuration:    types.StringValue("1s"),
-					BackoffDuration: types.StringValue("1m"),
+					InitDuration:    customtypes.NewDurationValue("1s"),
+					BackoffDuration: customtypes.NewDurationValue("1m"),
 					MaxRetries:      types.Int32Value(20),
 				}),
 			)),
