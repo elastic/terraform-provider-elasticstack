@@ -56,7 +56,7 @@ func (t InputsType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (a
 
 	mapValue, ok := attrValue.(basetypes.MapValue)
 	if !ok {
-		return nil, err
+		return nil, fmt.Errorf("unexpected type %T, expected basetypes.MapValue", attrValue)
 	}
 
 	return InputsValue{
