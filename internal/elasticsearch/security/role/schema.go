@@ -203,11 +203,7 @@ func GetSchema(version int64) schema.Schema {
 			"cluster": schema.SetAttribute{
 				MarkdownDescription: "A list of cluster privileges. These privileges define the cluster level actions that users with this role are able to execute.",
 				Optional:            true,
-				Computed:            true,
 				ElementType:         types.StringType,
-				PlanModifiers: []planmodifier.Set{
-					setplanmodifier.UseStateForUnknown(),
-				},
 			},
 			"metadata": schema.StringAttribute{
 				MarkdownDescription: "Optional meta-data.",
@@ -218,11 +214,7 @@ func GetSchema(version int64) schema.Schema {
 			"run_as": schema.SetAttribute{
 				MarkdownDescription: "A list of users that the owners of this role can impersonate.",
 				Optional:            true,
-				Computed:            true,
 				ElementType:         types.StringType,
-				PlanModifiers: []planmodifier.Set{
-					setplanmodifier.UseStateForUnknown(),
-				},
 			},
 		},
 	}

@@ -52,7 +52,7 @@ func TestAccResourceSecurityRole(t *testing.T) {
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "indices.*.names.*", "index1"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "indices.*.names.*", "index2"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "cluster.*", "all"),
-					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_security_role.test", "run_as.#"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "run_as.#", "0"),
 					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_security_role.test", "global"),
 					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_security_role.test", "applications.#"),
 				),
