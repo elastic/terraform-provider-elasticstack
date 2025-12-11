@@ -1,5 +1,8 @@
 ## [Unreleased]
 
+### Changes
+- Fix handling empty `clusters` and `run_as` attributes in `elasticstack_elasticsearch_security_role` resource ([#1542](https://github.com/elastic/terraform-provider-elasticstack/pull/1542))
+
 ## [0.13.0] - 2025-12-10
 
 ### Breaking changes

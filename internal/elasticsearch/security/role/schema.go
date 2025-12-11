@@ -5,6 +5,7 @@ import (
 	_ "embed"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -12,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
@@ -44,11 +46,17 @@ func GetSchema(version int64) schema.Schema {
 							MarkdownDescription: "A list of strings, where each element is the name of an application privilege or action.",
 							Required:            true,
 							ElementType:         types.StringType,
+							Validators: []validator.Set{
+								setvalidator.SizeAtLeast(1),
+							},
 						},
 						"resources": schema.SetAttribute{
 							MarkdownDescription: "A list resources to which the privileges are applied.",
 							Required:            true,
 							ElementType:         types.StringType,
+							Validators: []validator.Set{
+								setvalidator.SizeAtLeast(1),
+							},
 						},
 					},
 				},
@@ -64,6 +72,9 @@ func GetSchema(version int64) schema.Schema {
 									MarkdownDescription: "List of the fields to grant the access to.",
 									Optional:            true,
 									ElementType:         types.StringType,
+									Validators: []validator.Set{
+										setvalidator.SizeAtLeast(1),
+									},
 								},
 								"except": schema.SetAttribute{
 									MarkdownDescription: "List of the fields to which the grants will not be applied.",
@@ -82,11 +93,17 @@ func GetSchema(version int64) schema.Schema {
 							MarkdownDescription: "A list of indices (or index name patterns) to which the permissions in this entry apply.",
 							Required:            true,
 							ElementType:         types.StringType,
+							Validators: []validator.Set{
+								setvalidator.SizeAtLeast(1),
+							},
 						},
 						"privileges": schema.SetAttribute{
 							MarkdownDescription: "The index level privileges that the owners of the role have on the specified indices.",
 							Required:            true,
 							ElementType:         types.StringType,
+							Validators: []validator.Set{
+								setvalidator.SizeAtLeast(1),
+							},
 						},
 						"query": schema.StringAttribute{
 							MarkdownDescription: "A search query that defines the documents the owners of the role have read access to.",
@@ -115,6 +132,9 @@ func GetSchema(version int64) schema.Schema {
 									MarkdownDescription: "List of the fields to grant the access to.",
 									Optional:            true,
 									ElementType:         types.StringType,
+									Validators: []validator.Set{
+										setvalidator.SizeAtLeast(1),
+									},
 								},
 								"except": schema.SetAttribute{
 									MarkdownDescription: "List of the fields to which the grants will not be applied.",
@@ -143,11 +163,17 @@ func GetSchema(version int64) schema.Schema {
 							MarkdownDescription: "A list of indices (or index name patterns) to which the permissions in this entry apply.",
 							Required:            true,
 							ElementType:         types.StringType,
+							Validators: []validator.Set{
+								setvalidator.SizeAtLeast(1),
+							},
 						},
 						"privileges": schema.SetAttribute{
 							MarkdownDescription: "The index level privileges that the owners of the role have on the specified indices.",
 							Required:            true,
 							ElementType:         types.StringType,
+							Validators: []validator.Set{
+								setvalidator.SizeAtLeast(1),
+							},
 						},
 					},
 				},
