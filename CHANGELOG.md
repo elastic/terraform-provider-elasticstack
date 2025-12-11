@@ -1,5 +1,9 @@
 ## [Unreleased]
 
+### Added
+
+- Add `advanced_settings` to `elasticstack_fleet_agent_policy` to configure agent logging, CPU limits, and download settings ([#1116](https://github.com/elastic/terraform-provider-elasticstack/issues/1116))
+
 ### Breaking changes
 
 #### `elasticstack_fleet_integration_policy` input block has changed to a map attribute. 

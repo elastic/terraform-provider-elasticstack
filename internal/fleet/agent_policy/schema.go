@@ -172,6 +172,75 @@ func getSchema() schema.Schema {
 					),
 				},
 			},
+			"advanced_settings": schema.SingleNestedAttribute{
+				Description: "Advanced agent settings for logging, resource limits, and downloads. These settings configure the behavior of Elastic Agents enrolled in this policy.",
+				Optional:    true,
+				Computed:    true,
+				Attributes: map[string]schema.Attribute{
+					"logging_level": schema.StringAttribute{
+						Description: "Logging level for the agent. Valid values: debug, info, warning, error.",
+						Optional:    true,
+						Computed:    true,
+						Validators: []validator.String{
+							stringvalidator.OneOf("debug", "info", "warning", "error"),
+						},
+					},
+					"logging_to_files": schema.BoolAttribute{
+						Description: "Enable logging to files.",
+						Optional:    true,
+						Computed:    true,
+					},
+					"logging_files_interval": schema.StringAttribute{
+						Description: "Interval for log file rotation (e.g., '30s', '1m', '1h').",
+						Optional:    true,
+						Computed:    true,
+						CustomType:  customtypes.DurationType{},
+					},
+					"logging_files_keepfiles": schema.Int32Attribute{
+						Description: "Number of rotated log files to keep.",
+						Optional:    true,
+						Computed:    true,
+						Validators: []validator.Int32{
+							int32validator.AtLeast(0),
+						},
+					},
+					"logging_files_rotateeverybytes": schema.Int64Attribute{
+						Description: "Rotate log files when they reach this size in bytes.",
+						Optional:    true,
+						Computed:    true,
+					},
+					"logging_metrics_period": schema.StringAttribute{
+						Description: "Period for logging agent metrics (e.g., '30s', '1m').",
+						Optional:    true,
+						Computed:    true,
+						CustomType:  customtypes.DurationType{},
+					},
+					"go_max_procs": schema.Int32Attribute{
+						Description: "Maximum number of CPUs that the agent can use (GOMAXPROCS). Set to 0 to use all available CPUs.",
+						Optional:    true,
+						Computed:    true,
+						Validators: []validator.Int32{
+							int32validator.AtLeast(0),
+						},
+					},
+					"download_timeout": schema.StringAttribute{
+						Description: "Timeout for downloading agent updates (e.g., '2h', '30m').",
+						Optional:    true,
+						Computed:    true,
+						CustomType:  customtypes.DurationType{},
+					},
+					"download_target_directory": schema.StringAttribute{
+						Description: "Target directory for downloading agent updates.",
+						Optional:    true,
+						Computed:    true,
+					},
+					"monitoring_runtime_experimental": schema.BoolAttribute{
+						Description: "Enable experimental runtime monitoring.",
+						Optional:    true,
+						Computed:    true,
+					},
+				},
+			},
 		}}
 }
 func getGlobalDataTagsAttrTypes() attr.Type {
