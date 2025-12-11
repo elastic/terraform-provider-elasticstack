@@ -333,7 +333,7 @@ func (tfModel *AnomalyDetectionJobTFModel) fromAPIModel(ctx context.Context, api
 // Conversion helper methods
 func (tfModel *AnomalyDetectionJobTFModel) convertAnalysisConfigFromAPI(ctx context.Context, apiConfig *AnalysisConfigAPIModel, diags *diag.Diagnostics) AnalysisConfigTFModel {
 	if apiConfig == nil || apiConfig.BucketSpan == "" {
-		return tfModel.AnalysisConfig
+		return AnalysisConfigTFModel{}
 	}
 
 	analysisConfigTF := tfModel.AnalysisConfig
