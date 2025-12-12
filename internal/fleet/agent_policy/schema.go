@@ -14,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int32default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -238,6 +239,107 @@ func getSchema() schema.Schema {
 						Description: "Enable experimental runtime monitoring.",
 						Optional:    true,
 						Computed:    true,
+					},
+				},
+			},
+			"advanced_monitoring_options": schema.SingleNestedAttribute{
+				Description: "Advanced monitoring options for the agent policy. Includes HTTP monitoring endpoint configuration and diagnostic settings.",
+				Optional:    true,
+				Computed:    true,
+				Attributes: map[string]schema.Attribute{
+					"http_monitoring_endpoint": schema.SingleNestedAttribute{
+						Description: "HTTP monitoring endpoint configuration for agent health checks and liveness probes.",
+						Optional:    true,
+						Computed:    true,
+						Attributes: map[string]schema.Attribute{
+							"enabled": schema.BoolAttribute{
+								Description: "Enable the HTTP monitoring endpoint. When enabled, exposes a /liveness endpoint for health checks.",
+								Optional:    true,
+								Computed:    true,
+								Default:     booldefault.StaticBool(false),
+							},
+							"host": schema.StringAttribute{
+								Description: "Host for the HTTP monitoring endpoint.",
+								Optional:    true,
+								Computed:    true,
+								Default:     stringdefault.StaticString("localhost"),
+							},
+							"port": schema.Int32Attribute{
+								Description: "Port for the HTTP monitoring endpoint.",
+								Optional:    true,
+								Computed:    true,
+								Default:     int32default.StaticInt32(6791),
+								Validators: []validator.Int32{
+									int32validator.Between(0, 65535),
+								},
+							},
+							"buffer_enabled": schema.BoolAttribute{
+								Description: "Enable monitoring buffer for the HTTP endpoint.",
+								Optional:    true,
+								Computed:    true,
+								Default:     booldefault.StaticBool(false),
+							},
+							"pprof_enabled": schema.BoolAttribute{
+								Description: "Enable /debug/pprof/* profiling endpoints. Warning: enabling this may pose a security risk if the monitoring endpoint is accessible over a network.",
+								Optional:    true,
+								Computed:    true,
+								Default:     booldefault.StaticBool(false),
+							},
+						},
+					},
+					"diagnostics": schema.SingleNestedAttribute{
+						Description: "Diagnostic settings for rate limiting and file upload behavior.",
+						Optional:    true,
+						Computed:    true,
+						Attributes: map[string]schema.Attribute{
+							"rate_limits": schema.SingleNestedAttribute{
+								Description: "Rate limiting configuration for diagnostics requests from Fleet.",
+								Optional:    true,
+								Computed:    true,
+								Attributes: map[string]schema.Attribute{
+									"interval": schema.StringAttribute{
+										Description: "Rate limiting interval for diagnostics requests (e.g., '1m', '30s').",
+										Optional:    true,
+										Computed:    true,
+										CustomType:  customtypes.DurationType{},
+										Default:     stringdefault.StaticString("1m"),
+									},
+									"burst": schema.Int32Attribute{
+										Description: "Rate limiting burst count for diagnostics requests.",
+										Optional:    true,
+										Computed:    true,
+										Default:     int32default.StaticInt32(1),
+									},
+								},
+							},
+							"file_uploader": schema.SingleNestedAttribute{
+								Description: "Diagnostic file upload retry configuration.",
+								Optional:    true,
+								Computed:    true,
+								Attributes: map[string]schema.Attribute{
+									"init_duration": schema.StringAttribute{
+										Description: "Initial duration before the first retry attempt (e.g., '1s', '500ms').",
+										Optional:    true,
+										Computed:    true,
+										CustomType:  customtypes.DurationType{},
+										Default:     stringdefault.StaticString("1s"),
+									},
+									"backoff_duration": schema.StringAttribute{
+										Description: "Maximum backoff duration between retry attempts (e.g., '1m', '30s').",
+										Optional:    true,
+										Computed:    true,
+										CustomType:  customtypes.DurationType{},
+										Default:     stringdefault.StaticString("1m"),
+									},
+									"max_retries": schema.Int32Attribute{
+										Description: "Maximum number of retry attempts for file uploads.",
+										Optional:    true,
+										Computed:    true,
+										Default:     int32default.StaticInt32(10),
+									},
+								},
+							},
+						},
 					},
 				},
 			},

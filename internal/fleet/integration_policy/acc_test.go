@@ -333,6 +333,102 @@ func TestAccResourceIntegrationPolicySecrets(t *testing.T) {
 	})
 }
 
+func TestAccIntegrationPolicyInputs(t *testing.T) {
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIntegrationPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "description", "Kafka Integration Policy"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_name", "kafka"),
+					// Check enabled inputs
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-logfile.enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-kafka/metrics.enabled", "true"),
+					// Check enabled streams
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-logfile.streams.kafka.log.enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-kafka/metrics.streams.kafka.broker.enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-kafka/metrics.streams.kafka.consumergroup.enabled", "true"),
+					// Check disabled stream
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-kafka/metrics.streams.kafka.partition.enabled", "false"),
+					// Check vars
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-kafka/metrics.vars", `{"hosts":["localhost:9092"],"period":"10s","ssl.certificate_authorities":[]}`),
+					// Check unspecified, disabled by default input
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-jolokia/metrics"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_disabled_input"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "description", "Kafka Integration Policy - Updated"),
+					// Check that disabling an input works correctly
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-logfile.enabled", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-kafka/metrics.enabled", "true"),
+					// Vars should remain the same since we didn't change them
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-kafka/metrics.vars", `{"hosts":["localhost:9092"],"period":"10s","ssl.certificate_authorities":[]}`),
+
+					// Disabled input should have no vars/streams in state
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-logfile.vars"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-logfile.streams"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_enabled_input"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName),
+					// Check that updating an enabled input's vars triggers a change
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-kafka/metrics.streams.kafka.consumergroup.vars", `{"topics":["don't mention the war, I mentioned it once but I think I got away with it"]}`),
+					// Disabled input should remain disabled
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-logfile.enabled", "false"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_reenable_input"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "description", "Kafka Integration Policy - Re-enabled"),
+					// Check that the kafka-logfile input is re-enabled
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-logfile.enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-logfile.streams.kafka.log.enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-logfile.streams.kafka.log.vars", `{"kafka_home":"/opt/kafka*","paths":["/logs/controller.log*","/logs/server.log*","/logs/state-change.log*","/logs/kafka-*.log*"],"preserve_original_event":false,"tags":["kafka-log"]}`),
+					// Check that the kafka/metrics input remains enabled
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-kafka/metrics.enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-kafka/metrics.vars", `{"hosts":["localhost:9092"],"period":"10s","ssl.certificate_authorities":[]}`),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-kafka/metrics.streams.kafka.broker.enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-kafka/metrics.streams.kafka.consumergroup.enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-kafka/metrics.streams.kafka.consumergroup.vars", `{"topics":["don't mention the war, I mentioned it once but I think I got away with it"]}`),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-kafka/metrics.streams.kafka.partition.enabled", "false"),
+				),
+			},
+		},
+	})
+}
+
 func checkResourceIntegrationPolicyDestroy(s *terraform.State) error {
 	client, err := clients.NewAcceptanceTestingClient()
 	if err != nil {

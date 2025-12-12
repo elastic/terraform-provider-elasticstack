@@ -69,7 +69,13 @@ inputs = {
 ```
 
 ### Changes
+
+- Add `advanced_monitoring_options` to `elasticstack_fleet_agent_policy` to configure HTTP monitoring endpoint and diagnostics settings ([#1537](https://github.com/elastic/terraform-provider-elasticstack/pull/1537))
 - Move the `input` block to an `inputs` map in `elasticstack_fleet_integration_policy` ([#1482](https://github.com/elastic/terraform-provider-elasticstack/pull/1482))
+
+## [0.13.1] - 2025-12-12
+
+- Fix handling empty types in `elasticstack_elasticsearch_ml_anomaly_detection_job` ([#1544](https://github.com/elastic/terraform-provider-elasticstack/pull/1544))
 - Fix handling empty `clusters` and `run_as` attributes in `elasticstack_elasticsearch_security_role` resource ([#1542](https://github.com/elastic/terraform-provider-elasticstack/pull/1542))
 
 ## [0.13.0] - 2025-12-10
@@ -672,7 +678,8 @@ resource "elasticstack_fleet_output" "output" {
 - Initial set of docs
 - CI integration
 
-[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.13.0...HEAD
+[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.13.1...HEAD
+[0.13.1]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.13.0...v0.13.1
 [0.13.0]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.12.2...v0.13.0
 [0.12.2]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.12.1...v0.12.2
 [0.12.1]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.12.0...v0.12.1

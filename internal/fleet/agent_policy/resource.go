@@ -26,6 +26,7 @@ var (
 	MinVersionSpaceIds            = version.Must(version.NewVersion("9.1.0"))
 	MinVersionRequiredVersions    = version.Must(version.NewVersion("9.1.0"))
 	MinVersionAgentFeatures       = version.Must(version.NewVersion("8.7.0"))
+	MinVersionAdvancedMonitoring  = version.Must(version.NewVersion("8.16.0"))
 )
 
 // NewResource is a helper function to simplify the provider implementation.
@@ -87,6 +88,11 @@ func (r *agentPolicyResource) buildFeatures(ctx context.Context) (features, diag
 		return features{}, diagutil.FrameworkDiagsFromSDK(diags)
 	}
 
+	supportsAdvancedMonitoring, diags := r.client.EnforceMinVersion(ctx, MinVersionAdvancedMonitoring)
+	if diags.HasError() {
+		return features{}, diagutil.FrameworkDiagsFromSDK(diags)
+	}
+
 	return features{
 		SupportsGlobalDataTags:      supportsGDT,
 		SupportsSupportsAgentless:   supportsSupportsAgentless,
@@ -95,5 +101,6 @@ func (r *agentPolicyResource) buildFeatures(ctx context.Context) (features, diag
 		SupportsSpaceIds:            supportsSpaceIds,
 		SupportsRequiredVersions:    supportsRequiredVersions,
 		SupportsAgentFeatures:       supportsAgentFeatures,
+		SupportsAdvancedMonitoring:  supportsAdvancedMonitoring,
 	}, nil
 }
