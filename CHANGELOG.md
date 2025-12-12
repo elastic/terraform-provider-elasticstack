@@ -2,7 +2,7 @@
 
 ### Added
 
-- Add `advanced_settings` to `elasticstack_fleet_agent_policy` to configure agent logging, CPU limits, and download settings ([#1116](https://github.com/elastic/terraform-provider-elasticstack/issues/1116))
+- Add `advanced_settings` to `elasticstack_fleet_agent_policy` to configure agent logging, CPU limits, and download settings ([#1545](https://github.com/elastic/terraform-provider-elasticstack/pull/1545))
 
 ### Breaking changes
 
