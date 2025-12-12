@@ -160,7 +160,7 @@ Optional:
 - `logging_level` (String) Logging level for the agent. Valid values: debug, info, warning, error.
 - `logging_metrics_period` (String) Period for logging agent metrics (e.g., '30s', '1m').
 - `logging_to_files` (Boolean) Enable logging to files.
-- `monitoring_runtime_experimental` (Boolean) Enable experimental runtime monitoring.
+- `monitoring_runtime_experimental` (String) Experimental runtime monitoring mode. Valid values: '' (empty string to disable), 'process', 'otel'.
 
 
 <a id="nestedatt--global_data_tags"></a>
