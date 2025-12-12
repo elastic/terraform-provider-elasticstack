@@ -10,5 +10,7 @@ resource "elasticstack_fleet_agent_policy" "test_policy" {
   monitor_logs    = true
   monitor_metrics = true
   skip_destroy    = var.skip_destroy
+
+  # advanced_monitoring_options removed entirely - UseStateForUnknown preserves state
 }
 

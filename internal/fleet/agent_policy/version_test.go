@@ -323,7 +323,7 @@ func TestAdvancedSettingsVersionValidation(t *testing.T) {
 		GoMaxProcs:                    types.Int32Value(4),
 		DownloadTimeout:               customtypes.NewDurationNull(),
 		DownloadTargetDirectory:       types.StringNull(),
-		MonitoringRuntimeExperimental: types.BoolNull(),
+		MonitoringRuntimeExperimental: types.StringNull(),
 	})
 
 	// Test case where advanced_settings is not supported (older version)

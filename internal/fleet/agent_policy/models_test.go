@@ -177,7 +177,7 @@ func TestConvertAdvancedSettingsToAPI(t *testing.T) {
 				GoMaxProcs:                    types.Int32Null(),
 				DownloadTimeout:               customtypes.NewDurationNull(),
 				DownloadTargetDirectory:       types.StringNull(),
-				MonitoringRuntimeExperimental: types.BoolNull(),
+				MonitoringRuntimeExperimental: types.StringNull(),
 			}),
 			wantNil: true,
 		},
@@ -193,7 +193,7 @@ func TestConvertAdvancedSettingsToAPI(t *testing.T) {
 				GoMaxProcs:                    types.Int32Null(),
 				DownloadTimeout:               customtypes.NewDurationNull(),
 				DownloadTargetDirectory:       types.StringNull(),
-				MonitoringRuntimeExperimental: types.BoolNull(),
+				MonitoringRuntimeExperimental: types.StringNull(),
 			}),
 			wantNil: false,
 			checkResult: func(t *testing.T, result *advancedSettingsAPIResult) {
@@ -213,7 +213,7 @@ func TestConvertAdvancedSettingsToAPI(t *testing.T) {
 				GoMaxProcs:                    types.Int32Value(4),
 				DownloadTimeout:               customtypes.NewDurationNull(),
 				DownloadTargetDirectory:       types.StringNull(),
-				MonitoringRuntimeExperimental: types.BoolNull(),
+				MonitoringRuntimeExperimental: types.StringNull(),
 			}),
 			wantNil: false,
 			checkResult: func(t *testing.T, result *advancedSettingsAPIResult) {
@@ -232,7 +232,7 @@ func TestConvertAdvancedSettingsToAPI(t *testing.T) {
 				GoMaxProcs:                    types.Int32Value(2),
 				DownloadTimeout:               customtypes.NewDurationValue("2h"),
 				DownloadTargetDirectory:       types.StringValue("/tmp/elastic"),
-				MonitoringRuntimeExperimental: types.BoolValue(false),
+				MonitoringRuntimeExperimental: types.StringValue(""),
 			}),
 			wantNil: false,
 			checkResult: func(t *testing.T, result *advancedSettingsAPIResult) {
@@ -245,7 +245,7 @@ func TestConvertAdvancedSettingsToAPI(t *testing.T) {
 				assert.Equal(t, int32(2), result.AgentLimitsGoMaxProcs)
 				assert.Equal(t, "2h", result.AgentDownloadTimeout)
 				assert.Equal(t, "/tmp/elastic", result.AgentDownloadTargetDirectory)
-				assert.Equal(t, false, result.AgentMonitoringRuntimeExperimental)
+				assert.Equal(t, "", result.AgentMonitoringRuntimeExperimental)
 			},
 		},
 	}
@@ -308,7 +308,7 @@ func TestConvertHttpMonitoringEndpointToAPI(t *testing.T) {
 			wantHttp: false,
 		},
 		{
-			name: "default values returns nil (omit from payload)",
+			name: "default values are sent (allows reset to defaults)",
 			amo: createAmoObject(createHttpEndpointObject(httpMonitoringEndpointModel{
 				Enabled:       types.BoolValue(false),
 				Host:          types.StringValue("localhost"),
@@ -316,7 +316,9 @@ func TestConvertHttpMonitoringEndpointToAPI(t *testing.T) {
 				BufferEnabled: types.BoolValue(false),
 				PprofEnabled:  types.BoolValue(false),
 			})),
-			wantHttp: false,
+			wantHttp:       true,
+			wantPprof:      true,
+			wantPprofValue: false,
 		},
 		{
 			name: "enabled http endpoint returns values",
@@ -435,7 +437,7 @@ func TestConvertDiagnosticsToAPI(t *testing.T) {
 			wantDiag: false,
 		},
 		{
-			name: "default rate limits values returns nil (omit from payload)",
+			name: "default rate limits values are sent (allows reset to defaults)",
 			amo: createAmoObject(createDiagnosticsObject(
 				createRateLimitsObject(rateLimitsModel{
 					Interval: customtypes.NewDurationValue("1m"),
@@ -443,10 +445,11 @@ func TestConvertDiagnosticsToAPI(t *testing.T) {
 				}),
 				types.ObjectNull(fileUploaderAttrTypes()),
 			)),
-			wantDiag: false,
+			wantDiag:       true,
+			wantRateLimits: true,
 		},
 		{
-			name: "default uploader values returns nil (omit from payload)",
+			name: "default uploader values are sent (allows reset to defaults)",
 			amo: createAmoObject(createDiagnosticsObject(
 				types.ObjectNull(rateLimitsAttrTypes()),
 				createFileUploaderObject(fileUploaderModel{
@@ -455,7 +458,8 @@ func TestConvertDiagnosticsToAPI(t *testing.T) {
 					MaxRetries:      types.Int32Value(10),
 				}),
 			)),
-			wantDiag: false,
+			wantDiag:     true,
+			wantUploader: true,
 		},
 		{
 			name: "custom rate limits interval returns values",

@@ -15,9 +15,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int32default"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -117,12 +120,18 @@ func getSchema() schema.Schema {
 				Computed:    true,
 				Optional:    true,
 				CustomType:  customtypes.DurationType{},
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"unenrollment_timeout": schema.StringAttribute{
 				Description: "The unenrollment timeout for the agent policy. If an agent is inactive for this period, it will be automatically unenrolled. Supports duration strings (e.g., '30s', '2m', '1h').",
 				Computed:    true,
 				Optional:    true,
 				CustomType:  customtypes.DurationType{},
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"global_data_tags": schema.MapNestedAttribute{
 				Description: "User-defined data tags to apply to all inputs. Values can be strings (string_value) or numbers (number_value) but not both. Example -- key1 = {string_value = value1}, key2 = {number_value = 42}",
@@ -158,6 +167,9 @@ func getSchema() schema.Schema {
 				ElementType: types.StringType,
 				Optional:    true,
 				Computed:    true,
+				PlanModifiers: []planmodifier.Set{
+					setplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"required_versions": schema.MapAttribute{
 				Description: "Map of agent versions to target percentages for automatic upgrade. The key is the target version and the value is the percentage of agents to upgrade to that version.",
@@ -177,11 +189,15 @@ func getSchema() schema.Schema {
 				Description: "Advanced agent settings for logging, resource limits, and downloads. These settings configure the behavior of Elastic Agents enrolled in this policy.",
 				Optional:    true,
 				Computed:    true,
+				PlanModifiers: []planmodifier.Object{
+					objectplanmodifier.UseStateForUnknown(),
+				},
 				Attributes: map[string]schema.Attribute{
 					"logging_level": schema.StringAttribute{
 						Description: "Logging level for the agent. Valid values: debug, info, warning, error.",
 						Optional:    true,
 						Computed:    true,
+						Default:     stringdefault.StaticString("info"),
 						Validators: []validator.String{
 							stringvalidator.OneOf("debug", "info", "warning", "error"),
 						},
@@ -190,17 +206,20 @@ func getSchema() schema.Schema {
 						Description: "Enable logging to files.",
 						Optional:    true,
 						Computed:    true,
+						Default:     booldefault.StaticBool(true),
 					},
 					"logging_files_interval": schema.StringAttribute{
 						Description: "Interval for log file rotation (e.g., '30s', '1m', '1h').",
 						Optional:    true,
 						Computed:    true,
 						CustomType:  customtypes.DurationType{},
+						Default:     stringdefault.StaticString("30s"),
 					},
 					"logging_files_keepfiles": schema.Int32Attribute{
 						Description: "Number of rotated log files to keep.",
 						Optional:    true,
 						Computed:    true,
+						Default:     int32default.StaticInt32(7),
 						Validators: []validator.Int32{
 							int32validator.AtLeast(0),
 						},
@@ -209,17 +228,20 @@ func getSchema() schema.Schema {
 						Description: "Rotate log files when they reach this size in bytes.",
 						Optional:    true,
 						Computed:    true,
+						Default:     int64default.StaticInt64(10485760),
 					},
 					"logging_metrics_period": schema.StringAttribute{
 						Description: "Period for logging agent metrics (e.g., '30s', '1m').",
 						Optional:    true,
 						Computed:    true,
 						CustomType:  customtypes.DurationType{},
+						Default:     stringdefault.StaticString("30s"),
 					},
 					"go_max_procs": schema.Int32Attribute{
 						Description: "Maximum number of CPUs that the agent can use (GOMAXPROCS). Set to 0 to use all available CPUs.",
 						Optional:    true,
 						Computed:    true,
+						Default:     int32default.StaticInt32(0),
 						Validators: []validator.Int32{
 							int32validator.AtLeast(0),
 						},
@@ -229,16 +251,21 @@ func getSchema() schema.Schema {
 						Optional:    true,
 						Computed:    true,
 						CustomType:  customtypes.DurationType{},
+						Default:     stringdefault.StaticString("2h"),
 					},
 					"download_target_directory": schema.StringAttribute{
 						Description: "Target directory for downloading agent updates.",
 						Optional:    true,
 						Computed:    true,
 					},
-					"monitoring_runtime_experimental": schema.BoolAttribute{
-						Description: "Enable experimental runtime monitoring.",
+					"monitoring_runtime_experimental": schema.StringAttribute{
+						Description: "Experimental runtime monitoring mode. Valid values: '' (empty string to disable), 'process', 'otel'.",
 						Optional:    true,
 						Computed:    true,
+						Default:     stringdefault.StaticString(""),
+						Validators: []validator.String{
+							stringvalidator.OneOf("", "process", "otel"),
+						},
 					},
 				},
 			},
@@ -246,11 +273,17 @@ func getSchema() schema.Schema {
 				Description: "Advanced monitoring options for the agent policy. Includes HTTP monitoring endpoint configuration and diagnostic settings.",
 				Optional:    true,
 				Computed:    true,
+				PlanModifiers: []planmodifier.Object{
+					objectplanmodifier.UseStateForUnknown(),
+				},
 				Attributes: map[string]schema.Attribute{
 					"http_monitoring_endpoint": schema.SingleNestedAttribute{
 						Description: "HTTP monitoring endpoint configuration for agent health checks and liveness probes.",
 						Optional:    true,
 						Computed:    true,
+						PlanModifiers: []planmodifier.Object{
+							objectplanmodifier.UseStateForUnknown(),
+						},
 						Attributes: map[string]schema.Attribute{
 							"enabled": schema.BoolAttribute{
 								Description: "Enable the HTTP monitoring endpoint. When enabled, exposes a /liveness endpoint for health checks.",
@@ -291,11 +324,17 @@ func getSchema() schema.Schema {
 						Description: "Diagnostic settings for rate limiting and file upload behavior.",
 						Optional:    true,
 						Computed:    true,
+						PlanModifiers: []planmodifier.Object{
+							objectplanmodifier.UseStateForUnknown(),
+						},
 						Attributes: map[string]schema.Attribute{
 							"rate_limits": schema.SingleNestedAttribute{
 								Description: "Rate limiting configuration for diagnostics requests from Fleet.",
 								Optional:    true,
 								Computed:    true,
+								PlanModifiers: []planmodifier.Object{
+									objectplanmodifier.UseStateForUnknown(),
+								},
 								Attributes: map[string]schema.Attribute{
 									"interval": schema.StringAttribute{
 										Description: "Rate limiting interval for diagnostics requests (e.g., '1m', '30s').",
@@ -316,6 +355,9 @@ func getSchema() schema.Schema {
 								Description: "Diagnostic file upload retry configuration.",
 								Optional:    true,
 								Computed:    true,
+								PlanModifiers: []planmodifier.Object{
+									objectplanmodifier.UseStateForUnknown(),
+								},
 								Attributes: map[string]schema.Attribute{
 									"init_duration": schema.StringAttribute{
 										Description: "Initial duration before the first retry attempt (e.g., '1s', '500ms').",

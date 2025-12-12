@@ -731,6 +731,30 @@ func TestAccResourceAgentPolicyWithAdvancedSettings(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
 				),
 			},
+			// Step 5: Set empty block - advanced_settings = {} applies schema defaults
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionAdvancedSettings),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("set_to_defaults"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "description", "Test Agent Policy with Default Advanced Settings"),
+					// Empty block applies schema defaults for flat attributes
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.logging_level", "info"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.logging_to_files", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.logging_files_interval", "30s"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.logging_files_keepfiles", "7"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.logging_files_rotateeverybytes", "10485760"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.logging_metrics_period", "30s"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.go_max_procs", "0"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.download_timeout", "2h"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.monitoring_runtime_experimental", ""),
+				),
+			},
 		},
 	})
 }
@@ -802,6 +826,48 @@ func TestAccResourceAgentPolicyWithAdvancedMonitoring(t *testing.T) {
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"skip_destroy"},
+			},
+			{
+				// Step 4: Remove advanced_monitoring_options from config
+				// UseStateForUnknown should preserve existing state values
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionAdvancedMonitoring),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("remove_advanced_monitoring"),
+				ConfigVariables: config.Variables{
+					"policy_name":  config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+					"skip_destroy": config.BoolVariable(false),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "description", "Test Agent Policy - No Advanced Monitoring"),
+				),
+			},
+			{
+				// Step 5: Set empty nested blocks - schema defaults are applied
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionAdvancedMonitoring),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("set_to_defaults"),
+				ConfigVariables: config.Variables{
+					"policy_name":  config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+					"skip_destroy": config.BoolVariable(false),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "description", "Test Agent Policy with Default Advanced Monitoring"),
+					// Empty nested blocks apply schema defaults for leaf attributes
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_monitoring_options.http_monitoring_endpoint.enabled", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_monitoring_options.http_monitoring_endpoint.host", "localhost"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_monitoring_options.http_monitoring_endpoint.port", "6791"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_monitoring_options.http_monitoring_endpoint.buffer_enabled", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_monitoring_options.http_monitoring_endpoint.pprof_enabled", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_monitoring_options.diagnostics.rate_limits.interval", "1m"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_monitoring_options.diagnostics.rate_limits.burst", "1"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_monitoring_options.diagnostics.file_uploader.init_duration", "1s"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_monitoring_options.diagnostics.file_uploader.backoff_duration", "1m"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_monitoring_options.diagnostics.file_uploader.max_retries", "10"),
+				),
 			},
 		},
 	})

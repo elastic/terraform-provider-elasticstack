@@ -61,7 +61,7 @@ type advancedSettingsModel struct {
 	GoMaxProcs                    types.Int32          `tfsdk:"go_max_procs"`
 	DownloadTimeout               customtypes.Duration `tfsdk:"download_timeout"`
 	DownloadTargetDirectory       types.String         `tfsdk:"download_target_directory"`
-	MonitoringRuntimeExperimental types.Bool           `tfsdk:"monitoring_runtime_experimental"`
+	MonitoringRuntimeExperimental types.String         `tfsdk:"monitoring_runtime_experimental"`
 }
 
 // Advanced Monitoring Options models
@@ -1014,13 +1014,13 @@ func (model *agentPolicyModel) populateAdvancedSettingsFromAPI(ctx context.Conte
 
 	// Monitoring runtime experimental
 	if data.AdvancedSettings.AgentMonitoringRuntimeExperimental != nil {
-		if b, ok := data.AdvancedSettings.AgentMonitoringRuntimeExperimental.(bool); ok {
-			settings.MonitoringRuntimeExperimental = types.BoolValue(b)
+		if str, ok := data.AdvancedSettings.AgentMonitoringRuntimeExperimental.(string); ok {
+			settings.MonitoringRuntimeExperimental = types.StringValue(str)
 		} else {
-			settings.MonitoringRuntimeExperimental = types.BoolNull()
+			settings.MonitoringRuntimeExperimental = types.StringNull()
 		}
 	} else {
-		settings.MonitoringRuntimeExperimental = types.BoolNull()
+		settings.MonitoringRuntimeExperimental = types.StringNull()
 	}
 
 	obj, diags := types.ObjectValueFrom(ctx, advancedSettingsAttrTypes(), settings)
@@ -1100,7 +1100,7 @@ func (model *agentPolicyModel) convertAdvancedSettingsToAPI(ctx context.Context)
 		result.AgentDownloadTargetDirectory = settings.DownloadTargetDirectory.ValueString()
 	}
 	if utils.IsKnown(settings.MonitoringRuntimeExperimental) {
-		result.AgentMonitoringRuntimeExperimental = settings.MonitoringRuntimeExperimental.ValueBool()
+		result.AgentMonitoringRuntimeExperimental = settings.MonitoringRuntimeExperimental.ValueString()
 	}
 
 	return result
@@ -1132,17 +1132,6 @@ func (model *agentPolicyModel) convertHttpMonitoringEndpointToAPI(ctx context.Co
 
 	var http httpMonitoringEndpointModel
 	amo.HttpMonitoringEndpoint.As(ctx, &http, basetypes.ObjectAsOptions{})
-
-	// Check if any values differ from defaults
-	hasNonDefaultValues := http.Enabled.ValueBool() ||
-		http.Host.ValueString() != defaultHttpMonitoringHost ||
-		http.Port.ValueInt32() != defaultHttpMonitoringPort ||
-		http.BufferEnabled.ValueBool() ||
-		http.PprofEnabled.ValueBool()
-
-	if !hasNonDefaultValues {
-		return nil, nil
-	}
 
 	enabled := http.Enabled.ValueBool()
 	host := http.Host.ValueString()
@@ -1193,32 +1182,6 @@ func (model *agentPolicyModel) convertDiagnosticsToAPI(ctx context.Context) *dia
 
 	var diag diagnosticsModel
 	amo.Diagnostics.As(ctx, &diag, basetypes.ObjectAsOptions{})
-
-	// Check if any values differ from defaults
-	hasNonDefaultValues := false
-
-	if utils.IsKnown(diag.RateLimits) {
-		var rateLimits rateLimitsModel
-		diag.RateLimits.As(ctx, &rateLimits, basetypes.ObjectAsOptions{})
-		if rateLimits.Interval.ValueString() != defaultDiagnosticsInterval ||
-			rateLimits.Burst.ValueInt32() != defaultDiagnosticsBurst {
-			hasNonDefaultValues = true
-		}
-	}
-
-	if utils.IsKnown(diag.FileUploader) {
-		var fileUploader fileUploaderModel
-		diag.FileUploader.As(ctx, &fileUploader, basetypes.ObjectAsOptions{})
-		if fileUploader.InitDuration.ValueString() != defaultDiagnosticsInitDuration ||
-			fileUploader.BackoffDuration.ValueString() != defaultDiagnosticsBackoffDuration ||
-			fileUploader.MaxRetries.ValueInt32() != defaultDiagnosticsMaxRetries {
-			hasNonDefaultValues = true
-		}
-	}
-
-	if !hasNonDefaultValues {
-		return nil
-	}
 
 	result := &diagnosticsAPIResult{}
 
