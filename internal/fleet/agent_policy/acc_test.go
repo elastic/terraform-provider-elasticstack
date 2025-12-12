@@ -752,7 +752,7 @@ func TestAccResourceAgentPolicyWithAdvancedSettings(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.logging_metrics_period", "30s"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.go_max_procs", "0"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.download_timeout", "2h"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.monitoring_runtime_experimental", ""),
+					// monitoring_runtime_experimental is not checked - it's null when not set (no default, UseStateForUnknown)
 				),
 			},
 		},

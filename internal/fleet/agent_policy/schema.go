@@ -253,12 +253,17 @@ func getSchema() schema.Schema {
 						Description: "Target directory for downloading agent updates.",
 						Optional:    true,
 						Computed:    true,
+						PlanModifiers: []planmodifier.String{
+							stringplanmodifier.UseStateForUnknown(),
+						},
 					},
 					"monitoring_runtime_experimental": schema.StringAttribute{
 						Description: "Experimental runtime monitoring mode. Valid values: '' (empty string to disable), 'process', 'otel'.",
 						Optional:    true,
 						Computed:    true,
-						Default:     stringdefault.StaticString(""),
+						PlanModifiers: []planmodifier.String{
+							stringplanmodifier.UseStateForUnknown(),
+						},
 						Validators: []validator.String{
 							stringvalidator.OneOf("", "process", "otel"),
 						},
