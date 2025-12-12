@@ -705,7 +705,20 @@ func TestAccResourceAgentPolicyWithAdvancedSettings(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.download_target_directory", "/tmp/elastic-agent"),
 				),
 			},
-			// Step 3: Remove settings
+			// Step 3: Import state verification
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionAdvancedSettings),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_settings"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+				},
+				ResourceName:            "elasticstack_fleet_agent_policy.test_policy",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"skip_destroy"},
+			},
+			// Step 4: Remove settings
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionAdvancedSettings),
