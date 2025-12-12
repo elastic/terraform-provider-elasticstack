@@ -9,6 +9,7 @@ resource "elasticstack_fleet_agent_policy" "test_policy" {
   description     = "Test Agent Policy without Advanced Settings"
   monitor_logs    = true
   monitor_metrics = true
+  space_ids       = ["default"]
 
   # advanced_settings removed entirely - UseStateForUnknown preserves state
 }

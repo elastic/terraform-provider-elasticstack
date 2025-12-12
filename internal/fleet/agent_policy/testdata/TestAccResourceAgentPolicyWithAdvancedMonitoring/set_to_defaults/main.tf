@@ -10,6 +10,7 @@ resource "elasticstack_fleet_agent_policy" "test_policy" {
   monitor_logs    = true
   monitor_metrics = true
   skip_destroy    = var.skip_destroy
+  space_ids       = ["default"]
 
   # Empty nested blocks - schema defaults are applied for leaf attributes
   advanced_monitoring_options = {
