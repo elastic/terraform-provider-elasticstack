@@ -146,6 +146,131 @@ func TestConvertHostNameFormatToAgentFeature(t *testing.T) {
 	}
 }
 
+func TestConvertAdvancedSettingsToAPI(t *testing.T) {
+	ctx := context.Background()
+
+	createAdvancedSettingsObject := func(settings advancedSettingsModel) types.Object {
+		obj, _ := types.ObjectValueFrom(ctx, advancedSettingsAttrTypes(), settings)
+		return obj
+	}
+
+	tests := []struct {
+		name             string
+		advancedSettings types.Object
+		wantNil          bool
+		checkResult      func(t *testing.T, result *advancedSettingsAPIResult)
+	}{
+		{
+			name:             "null advanced_settings returns nil",
+			advancedSettings: types.ObjectNull(advancedSettingsAttrTypes()),
+			wantNil:          true,
+		},
+		{
+			name: "all null values returns nil",
+			advancedSettings: createAdvancedSettingsObject(advancedSettingsModel{
+				LoggingLevel:                  types.StringNull(),
+				LoggingToFiles:                types.BoolNull(),
+				LoggingFilesInterval:          customtypes.NewDurationNull(),
+				LoggingFilesKeepfiles:         types.Int32Null(),
+				LoggingFilesRotateeverybytes:  types.Int64Null(),
+				LoggingMetricsPeriod:          customtypes.NewDurationNull(),
+				GoMaxProcs:                    types.Int32Null(),
+				DownloadTimeout:               customtypes.NewDurationNull(),
+				DownloadTargetDirectory:       types.StringNull(),
+				MonitoringRuntimeExperimental: types.StringNull(),
+			}),
+			wantNil: true,
+		},
+		{
+			name: "logging_level set returns value",
+			advancedSettings: createAdvancedSettingsObject(advancedSettingsModel{
+				LoggingLevel:                  types.StringValue("debug"),
+				LoggingToFiles:                types.BoolNull(),
+				LoggingFilesInterval:          customtypes.NewDurationNull(),
+				LoggingFilesKeepfiles:         types.Int32Null(),
+				LoggingFilesRotateeverybytes:  types.Int64Null(),
+				LoggingMetricsPeriod:          customtypes.NewDurationNull(),
+				GoMaxProcs:                    types.Int32Null(),
+				DownloadTimeout:               customtypes.NewDurationNull(),
+				DownloadTargetDirectory:       types.StringNull(),
+				MonitoringRuntimeExperimental: types.StringNull(),
+			}),
+			wantNil: false,
+			checkResult: func(t *testing.T, result *advancedSettingsAPIResult) {
+				assert.Equal(t, "debug", result.AgentLoggingLevel)
+				assert.Nil(t, result.AgentLoggingToFiles)
+			},
+		},
+		{
+			name: "go_max_procs set returns value",
+			advancedSettings: createAdvancedSettingsObject(advancedSettingsModel{
+				LoggingLevel:                  types.StringNull(),
+				LoggingToFiles:                types.BoolNull(),
+				LoggingFilesInterval:          customtypes.NewDurationNull(),
+				LoggingFilesKeepfiles:         types.Int32Null(),
+				LoggingFilesRotateeverybytes:  types.Int64Null(),
+				LoggingMetricsPeriod:          customtypes.NewDurationNull(),
+				GoMaxProcs:                    types.Int32Value(4),
+				DownloadTimeout:               customtypes.NewDurationNull(),
+				DownloadTargetDirectory:       types.StringNull(),
+				MonitoringRuntimeExperimental: types.StringNull(),
+			}),
+			wantNil: false,
+			checkResult: func(t *testing.T, result *advancedSettingsAPIResult) {
+				assert.Equal(t, int32(4), result.AgentLimitsGoMaxProcs)
+			},
+		},
+		{
+			name: "multiple values set returns all values",
+			advancedSettings: createAdvancedSettingsObject(advancedSettingsModel{
+				LoggingLevel:                  types.StringValue("info"),
+				LoggingToFiles:                types.BoolValue(true),
+				LoggingFilesInterval:          customtypes.NewDurationValue("30s"),
+				LoggingFilesKeepfiles:         types.Int32Value(7),
+				LoggingFilesRotateeverybytes:  types.Int64Value(10485760),
+				LoggingMetricsPeriod:          customtypes.NewDurationValue("1m"),
+				GoMaxProcs:                    types.Int32Value(2),
+				DownloadTimeout:               customtypes.NewDurationValue("2h"),
+				DownloadTargetDirectory:       types.StringValue("/tmp/elastic"),
+				MonitoringRuntimeExperimental: types.StringValue(""),
+			}),
+			wantNil: false,
+			checkResult: func(t *testing.T, result *advancedSettingsAPIResult) {
+				assert.Equal(t, "info", result.AgentLoggingLevel)
+				assert.Equal(t, true, result.AgentLoggingToFiles)
+				assert.Equal(t, "30s", result.AgentLoggingFilesInterval)
+				assert.Equal(t, int32(7), result.AgentLoggingFilesKeepfiles)
+				assert.Equal(t, int64(10485760), result.AgentLoggingFilesRotateeverybytes)
+				assert.Equal(t, "1m", result.AgentLoggingMetricsPeriod)
+				assert.Equal(t, int32(2), result.AgentLimitsGoMaxProcs)
+				assert.Equal(t, "2h", result.AgentDownloadTimeout)
+				assert.Equal(t, "/tmp/elastic", result.AgentDownloadTargetDirectory)
+				assert.Equal(t, "", result.AgentMonitoringRuntimeExperimental)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			model := &agentPolicyModel{
+				AdvancedSettings: tt.advancedSettings,
+			}
+
+			got := model.convertAdvancedSettingsToAPI(ctx)
+
+			if tt.wantNil {
+				assert.Nil(t, got)
+				return
+			}
+
+			assert.NotNil(t, got)
+			if tt.checkResult != nil {
+				tt.checkResult(t, got)
+			}
+		})
+	}
+}
+
 func TestConvertHttpMonitoringEndpointToAPI(t *testing.T) {
 	ctx := context.Background()
 
@@ -183,7 +308,7 @@ func TestConvertHttpMonitoringEndpointToAPI(t *testing.T) {
 			wantHttp: false,
 		},
 		{
-			name: "default values returns nil (omit from payload)",
+			name: "default values are sent (allows reset to defaults)",
 			amo: createAmoObject(createHttpEndpointObject(httpMonitoringEndpointModel{
 				Enabled:       types.BoolValue(false),
 				Host:          types.StringValue("localhost"),
@@ -191,7 +316,9 @@ func TestConvertHttpMonitoringEndpointToAPI(t *testing.T) {
 				BufferEnabled: types.BoolValue(false),
 				PprofEnabled:  types.BoolValue(false),
 			})),
-			wantHttp: false,
+			wantHttp:       true,
+			wantPprof:      true,
+			wantPprofValue: false,
 		},
 		{
 			name: "enabled http endpoint returns values",
@@ -310,7 +437,7 @@ func TestConvertDiagnosticsToAPI(t *testing.T) {
 			wantDiag: false,
 		},
 		{
-			name: "default rate limits values returns nil (omit from payload)",
+			name: "default rate limits values are sent (allows reset to defaults)",
 			amo: createAmoObject(createDiagnosticsObject(
 				createRateLimitsObject(rateLimitsModel{
 					Interval: customtypes.NewDurationValue("1m"),
@@ -318,10 +445,11 @@ func TestConvertDiagnosticsToAPI(t *testing.T) {
 				}),
 				types.ObjectNull(fileUploaderAttrTypes()),
 			)),
-			wantDiag: false,
+			wantDiag:       true,
+			wantRateLimits: true,
 		},
 		{
-			name: "default uploader values returns nil (omit from payload)",
+			name: "default uploader values are sent (allows reset to defaults)",
 			amo: createAmoObject(createDiagnosticsObject(
 				types.ObjectNull(rateLimitsAttrTypes()),
 				createFileUploaderObject(fileUploaderModel{
@@ -330,7 +458,8 @@ func TestConvertDiagnosticsToAPI(t *testing.T) {
 					MaxRetries:      types.Int32Value(10),
 				}),
 			)),
-			wantDiag: false,
+			wantDiag:     true,
+			wantUploader: true,
 		},
 		{
 			name: "custom rate limits interval returns values",
