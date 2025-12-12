@@ -673,7 +673,7 @@ func TestAccResourceAgentPolicyWithAdvancedSettings(t *testing.T) {
 			// Step 1: Create with logging settings
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionAgentPolicy),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionAdvancedSettings),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_with_logging"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
@@ -689,7 +689,7 @@ func TestAccResourceAgentPolicyWithAdvancedSettings(t *testing.T) {
 			// Step 2: Update settings
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionAgentPolicy),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionAdvancedSettings),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_settings"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
@@ -708,7 +708,7 @@ func TestAccResourceAgentPolicyWithAdvancedSettings(t *testing.T) {
 			// Step 3: Remove settings
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionAgentPolicy),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionAdvancedSettings),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("remove_settings"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),

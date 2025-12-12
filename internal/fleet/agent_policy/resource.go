@@ -27,6 +27,7 @@ var (
 	MinVersionRequiredVersions    = version.Must(version.NewVersion("9.1.0"))
 	MinVersionAgentFeatures       = version.Must(version.NewVersion("8.7.0"))
 	MinVersionAdvancedMonitoring  = version.Must(version.NewVersion("8.16.0"))
+	MinVersionAdvancedSettings    = version.Must(version.NewVersion("8.17.0"))
 )
 
 // NewResource is a helper function to simplify the provider implementation.
