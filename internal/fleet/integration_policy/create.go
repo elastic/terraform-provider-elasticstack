@@ -76,7 +76,7 @@ func (r *integrationPolicyResource) Create(ctx context.Context, req resource.Cre
 	// If plan didn't have input configured, ensure we don't add it now
 	// This prevents "Provider produced inconsistent result" errors
 	if !planHadInput {
-		planModel.Inputs = types.MapNull(getInputsTypes())
+		planModel.Inputs = NewInputsNull(getInputsElementType())
 	}
 
 	diags = resp.State.Set(ctx, planModel)
