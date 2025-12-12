@@ -519,5 +519,3 @@ func TestConvertDiagnosticsToAPI(t *testing.T) {
 		})
 	}
 }
-
-
