@@ -309,6 +309,96 @@ func TestAdvancedMonitoringVersionValidation(t *testing.T) {
 	}
 }
 
+func TestAdvancedSettingsVersionValidation(t *testing.T) {
+	ctx := context.Background()
+
+	// Create advanced_settings object with some values set
+	advancedSettings, _ := types.ObjectValueFrom(ctx, advancedSettingsAttrTypes(), advancedSettingsModel{
+		LoggingLevel:                  types.StringValue("debug"),
+		LoggingToFiles:                types.BoolValue(true),
+		LoggingFilesInterval:          customtypes.NewDurationNull(),
+		LoggingFilesKeepfiles:         types.Int32Value(7),
+		LoggingFilesRotateeverybytes:  types.Int64Null(),
+		LoggingMetricsPeriod:          customtypes.NewDurationNull(),
+		GoMaxProcs:                    types.Int32Value(4),
+		DownloadTimeout:               customtypes.NewDurationNull(),
+		DownloadTargetDirectory:       types.StringNull(),
+		MonitoringRuntimeExperimental: types.BoolNull(),
+	})
+
+	// Test case where advanced_settings is not supported (older version)
+	model := &agentPolicyModel{
+		Name:             types.StringValue("test"),
+		Namespace:        types.StringValue("default"),
+		AdvancedSettings: advancedSettings,
+	}
+
+	// Create features with advanced_settings NOT supported
+	feat := features{
+		SupportsAdvancedSettings: false,
+	}
+
+	// Test toAPICreateModel - should return error when advanced_settings is used but not supported
+	_, diags := model.toAPICreateModel(ctx, feat)
+	if !diags.HasError() {
+		t.Error("Expected error when using advanced_settings on unsupported version, but got none")
+	}
+
+	// Check that the error message contains the expected text
+	found := false
+	for _, diag := range diags {
+		if diag.Summary() == "Unsupported Elasticsearch version" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("Expected 'Unsupported Elasticsearch version' error, but didn't find it")
+	}
+
+	// Test toAPIUpdateModel - should return error when advanced_settings is used but not supported
+	_, diags = model.toAPIUpdateModel(ctx, feat, nil)
+	if !diags.HasError() {
+		t.Error("Expected error when using advanced_settings on unsupported version in update, but got none")
+	}
+
+	// Test case where advanced_settings IS supported (newer version)
+	featSupported := features{
+		SupportsAdvancedSettings: true,
+	}
+
+	// Test toAPICreateModel - should NOT return error when advanced_settings is supported
+	_, diags = model.toAPICreateModel(ctx, featSupported)
+	if diags.HasError() {
+		t.Errorf("Did not expect error when using advanced_settings on supported version: %v", diags)
+	}
+
+	// Test toAPIUpdateModel - should NOT return error when advanced_settings is supported
+	_, diags = model.toAPIUpdateModel(ctx, featSupported, nil)
+	if diags.HasError() {
+		t.Errorf("Did not expect error when using advanced_settings on supported version in update: %v", diags)
+	}
+
+	// Test case where advanced_settings is not set (should not cause validation errors)
+	modelWithoutAdvancedSettings := &agentPolicyModel{
+		Name:      types.StringValue("test"),
+		Namespace: types.StringValue("default"),
+		// AdvancedSettings is not set (null/unknown)
+	}
+
+	// Test toAPICreateModel - should NOT return error when advanced_settings is not set, even on unsupported version
+	_, diags = modelWithoutAdvancedSettings.toAPICreateModel(ctx, feat)
+	if diags.HasError() {
+		t.Errorf("Did not expect error when advanced_settings is not set: %v", diags)
+	}
+
+	// Test toAPIUpdateModel - should NOT return error when advanced_settings is not set, even on unsupported version
+	_, diags = modelWithoutAdvancedSettings.toAPIUpdateModel(ctx, feat, nil)
+	if diags.HasError() {
+		t.Errorf("Did not expect error when advanced_settings is not set in update: %v", diags)
+	}
+}
+
 func TestMinVersionSpaceIds(t *testing.T) {
 	// Test that the MinVersionSpaceIds constant is set correctly
 	expected := "9.1.0"

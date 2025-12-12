@@ -94,6 +94,11 @@ func (r *agentPolicyResource) buildFeatures(ctx context.Context) (features, diag
 		return features{}, diagutil.FrameworkDiagsFromSDK(diags)
 	}
 
+	supportsAdvancedSettings, diags := r.client.EnforceMinVersion(ctx, MinVersionAdvancedSettings)
+	if diags.HasError() {
+		return features{}, diagutil.FrameworkDiagsFromSDK(diags)
+	}
+
 	return features{
 		SupportsGlobalDataTags:      supportsGDT,
 		SupportsSupportsAgentless:   supportsSupportsAgentless,
@@ -103,5 +108,6 @@ func (r *agentPolicyResource) buildFeatures(ctx context.Context) (features, diag
 		SupportsRequiredVersions:    supportsRequiredVersions,
 		SupportsAgentFeatures:       supportsAgentFeatures,
 		SupportsAdvancedMonitoring:  supportsAdvancedMonitoring,
+		SupportsAdvancedSettings:    supportsAdvancedSettings,
 	}, nil
 }

@@ -43,6 +43,7 @@ type features struct {
 	SupportsRequiredVersions    bool
 	SupportsAgentFeatures       bool
 	SupportsAdvancedMonitoring  bool
+	SupportsAdvancedSettings    bool
 }
 
 type globalDataTagsItemModel struct {
@@ -657,7 +658,19 @@ func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, feat featur
 	}
 
 	// Handle advanced_settings
-	body.AdvancedSettings = model.convertAdvancedSettingsToAPI(ctx)
+	if utils.IsKnown(model.AdvancedSettings) {
+		if !feat.SupportsAdvancedSettings {
+			return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diag.Diagnostics{
+				diag.NewAttributeErrorDiagnostic(
+					path.Root("advanced_settings"),
+					"Unsupported Elasticsearch version",
+					fmt.Sprintf("Advanced settings are only supported in Elastic Stack %s and above", MinVersionAdvancedSettings),
+				),
+			}
+		}
+		body.AdvancedSettings = model.convertAdvancedSettingsToAPI(ctx)
+	}
+
 	// Handle advanced monitoring options
 	if utils.IsKnown(model.AdvancedMonitoringOptions) {
 		if !feat.SupportsAdvancedMonitoring {
@@ -804,7 +817,18 @@ func (model *agentPolicyModel) toAPIUpdateModel(ctx context.Context, feat featur
 	}
 
 	// Handle advanced_settings
-	body.AdvancedSettings = model.convertAdvancedSettingsToAPI(ctx)
+	if utils.IsKnown(model.AdvancedSettings) {
+		if !feat.SupportsAdvancedSettings {
+			return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diag.Diagnostics{
+				diag.NewAttributeErrorDiagnostic(
+					path.Root("advanced_settings"),
+					"Unsupported Elasticsearch version",
+					fmt.Sprintf("Advanced settings are only supported in Elastic Stack %s and above", MinVersionAdvancedSettings),
+				),
+			}
+		}
+		body.AdvancedSettings = model.convertAdvancedSettingsToAPI(ctx)
+	}
 
 	// Handle advanced monitoring options
 	if utils.IsKnown(model.AdvancedMonitoringOptions) {
