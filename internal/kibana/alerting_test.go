@@ -10,6 +10,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -26,13 +27,16 @@ func TestAccResourceAlertingRule(t *testing.T) {
 	ruleName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceAlertingRuleDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceAlertingRuleDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
-				Config:   testAccResourceAlertingRuleCreate(ruleName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(ruleName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "name", ruleName),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_id", "af22bd1c-8fb3-4020-9249-a4ac5471624b"),
@@ -44,8 +48,12 @@ func TestAccResourceAlertingRule(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
-				Config:   testAccResourceAlertingRuleUpdate(ruleName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(fmt.Sprintf("Updated %s", ruleName)),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "name", fmt.Sprintf("Updated %s", ruleName)),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_id", "af22bd1c-8fb3-4020-9249-a4ac5471624b"),
@@ -59,8 +67,12 @@ func TestAccResourceAlertingRule(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedFrequencyVersion),
-				Config:   testAccResourceAlertingRuleWithFrequencyCreate(ruleName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedFrequencyVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("frequency_create"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(ruleName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "name", ruleName),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_id", "af22bd1c-8fb3-4020-9249-a4ac5471624b"),
@@ -77,8 +89,12 @@ func TestAccResourceAlertingRule(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedFrequencyVersion),
-				Config:   testAccResourceAlertingRuleWithFrequencyUpdate(ruleName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedFrequencyVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("frequency_update"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(fmt.Sprintf("Updated %s", ruleName)),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "name", fmt.Sprintf("Updated %s", ruleName)),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_id", "af22bd1c-8fb3-4020-9249-a4ac5471624b"),
@@ -97,8 +113,12 @@ func TestAccResourceAlertingRule(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedAlertsFilterVersion),
-				Config:   testAccResourceAlertingRuleWithAlertsFilterCreate(ruleName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedAlertsFilterVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("alerts_filter_create"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(ruleName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "name", ruleName),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_id", "af22bd1c-8fb3-4020-9249-a4ac54716255"),
@@ -122,8 +142,12 @@ func TestAccResourceAlertingRule(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedAlertsFilterVersion),
-				Config:   testAccResourceAlertingRuleWithAlertsFilterUpdate(ruleName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedAlertsFilterVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("alerts_filter_update"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(ruleName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "name", ruleName),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_id", "af22bd1c-8fb3-4020-9249-a4ac54716255"),
@@ -142,8 +166,12 @@ func TestAccResourceAlertingRule(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedAlertDelayVersion),
-				Config:   testAccResourceAlertingRuleWithAlertDelayCreate(ruleName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedAlertDelayVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("alert_delay_create"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(ruleName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "name", ruleName),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_id", "af22bd1c-8fb3-4020-9249-a4ac54716255"),
@@ -161,8 +189,12 @@ func TestAccResourceAlertingRule(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedAlertDelayVersion),
-				Config:   testAccResourceAlertingRuleWithAlertDelayUpdate(ruleName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedAlertDelayVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("alert_delay_update"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(ruleName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "name", ruleName),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_id", "af22bd1c-8fb3-4020-9249-a4ac54716255"),
@@ -183,445 +215,35 @@ func TestAccResourceAlertingRule(t *testing.T) {
 	})
 }
 
-func testAccResourceAlertingRuleCreate(name string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  kibana {}
-}
+func TestAccResourceAlertingRuleEnabledFalseOnCreate(t *testing.T) {
+	minSupportedVersion := version.Must(version.NewSemver("7.14.0"))
 
-resource "elasticstack_kibana_alerting_rule" "test_rule" {
-  name         = "%s"
-  rule_id 	   = "af22bd1c-8fb3-4020-9249-a4ac5471624b"
-  consumer     = "alerts"
-  notify_when  = "onActiveAlert"
-  params       = jsonencode({
-	aggType             = "avg"
-	groupBy             = "top"
-	termSize            = 10
-	timeWindowSize      = 10
-	timeWindowUnit      = "s"
-	threshold           = [10]
-	thresholdComparator = ">"
-	index               = ["test-index"]
-	timeField           = "@timestamp"
-	aggField            = "version"
-	termField           = "name"
-  })
-  rule_type_id = ".index-threshold"
-  interval     = "1m"
-  enabled      = true
-}
-	`, name)
-}
+	t.Setenv("KIBANA_API_KEY", "")
 
-func testAccResourceAlertingRuleUpdate(name string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  kibana {}
-}
+	ruleName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
-resource "elasticstack_kibana_alerting_rule" "test_rule" {
-  name         = "Updated %s"
-  rule_id 	   = "af22bd1c-8fb3-4020-9249-a4ac5471624b"
-  consumer     = "alerts"
-  notify_when  = "onActiveAlert"
-  params       = jsonencode({
-	aggType             = "avg"
-	groupBy             = "top"
-	termSize            = 10
-	timeWindowSize      = 10
-	timeWindowUnit      = "s"
-	threshold           = [10]
-	thresholdComparator = ">"
-	index               = ["test-index"]
-	timeField           = "@timestamp"
-	aggField            = "version"
-	termField           = "name"
-  })
-  rule_type_id = ".index-threshold"
-  interval     = "1d"
-  enabled      = false
-  tags         = ["first", "second"]
-}
-	`, name)
-}
-
-// Frequency - v8.6.0
-
-func testAccResourceAlertingRuleWithFrequencyCreate(name string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  kibana {}
-}
-
-resource "elasticstack_kibana_action_connector" "index_example" {
-  name              = "my_index_connector"
-  connector_type_id = ".index"
-  config = jsonencode({
-    index              = "my-index"
-    executionTimeField = "alert_date"
-  })
-}
-
-resource "elasticstack_kibana_alerting_rule" "test_rule" {
-  name         = "%s"
-  rule_id 	   = "af22bd1c-8fb3-4020-9249-a4ac5471624b"
-  consumer     = "alerts"
-  params       = jsonencode({
-	aggType             = "avg"
-	groupBy             = "top"
-	termSize            = 10
-	timeWindowSize      = 10
-	timeWindowUnit      = "s"
-	threshold           = [10]
-	thresholdComparator = ">"
-	index               = ["test-index"]
-	timeField           = "@timestamp"
-	aggField            = "version"
-	termField           = "name"
-  })
-  rule_type_id = ".index-threshold"
-  interval     = "1m"
-  enabled      = true
-
-  actions {
-    id    = elasticstack_kibana_action_connector.index_example.connector_id
-    group = "threshold met"
-    params = jsonencode({
-      "documents" : [{
-        "rule_id" : "{{rule.id}}",
-        "rule_name" : "{{rule.name}}",
-        "message" : "{{context.message}}"
-      }]
-    })
-
-	frequency {
-	  summary     = true
-	  notify_when = "onActionGroupChange"
-      throttle    = "10m"
-	}
-  }
-}
-	`, name)
-}
-
-func testAccResourceAlertingRuleWithFrequencyUpdate(name string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  kibana {}
-}
-
-resource "elasticstack_kibana_action_connector" "index_example" {
-	name              = "my_index_connector"
-	connector_type_id = ".index"
-	config = jsonencode({
-	  index              = "my-index"
-	  executionTimeField = "alert_date"
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceAlertingRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(ruleName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule_disabled", "name", ruleName),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule_disabled", "rule_id", "af22bd1c-8fb3-4020-9249-a4ac5471624c"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule_disabled", "consumer", "alerts"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule_disabled", "rule_type_id", ".index-threshold"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule_disabled", "interval", "1m"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule_disabled", "enabled", "false"),
+				),
+			},
+		},
 	})
-  }
-
-resource "elasticstack_kibana_alerting_rule" "test_rule" {
-  name         = "Updated %s"
-  rule_id 	   = "af22bd1c-8fb3-4020-9249-a4ac5471624b"
-  consumer     = "alerts"
-  params       = jsonencode({
-	aggType             = "avg"
-	groupBy             = "top"
-	termSize            = 10
-	timeWindowSize      = 10
-	timeWindowUnit      = "s"
-	threshold           = [10]
-	thresholdComparator = ">"
-	index               = ["test-index"]
-	timeField           = "@timestamp"
-	aggField            = "version"
-	termField           = "name"
-  })
-  rule_type_id = ".index-threshold"
-  interval     = "10m"
-  enabled      = false
-  tags         = ["first", "second"]
-
-  actions {
-    id    = elasticstack_kibana_action_connector.index_example.connector_id
-    group = "threshold met"
-    params = jsonencode({
-      "documents" : [{
-        "rule_id" : "{{rule.id}} 1",
-        "rule_name" : "{{rule.name}} 2",
-        "message" : "{{context.message}} 3"
-      }]
-    })
-
-	frequency {
-	  summary     = false
-	  notify_when = "onActiveAlert"
-      throttle    = "2h"
-	}
-  }
-}
-	`, name)
-}
-
-// Alerts Filter - v8.9.0
-
-func testAccResourceAlertingRuleWithAlertsFilterCreate(name string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  kibana {}
-}
-
-resource "elasticstack_kibana_action_connector" "index_example" {
-  name              = "my_index_connector"
-  connector_type_id = ".index"
-  config = jsonencode({
-    index              = "my-index"
-    executionTimeField = "alert_date"
-  })
-}
-
-resource "elasticstack_kibana_alerting_rule" "test_rule" {
-  name         = "%s"
-  rule_id 	   = "af22bd1c-8fb3-4020-9249-a4ac54716255"
-  consumer     = "alerts"
-  params       = jsonencode({
-    "timeSize": 5,
-    "timeUnit": "m",
-    "logView": {
-      "type": "log-view-reference",
-      "logViewId": "default"
-    },
-    "count": {
-      "value": 75,
-      "comparator": "more than"
-    },
-    "criteria": [
-      {
-        "field": "_id",
-        "comparator": "matches",
-        "value": "33"
-      }
-    ]
-  })
-  rule_type_id = "logs.alert.document.count"
-  interval     = "1m"
-  enabled      = true
-
-  actions {
-    id    = elasticstack_kibana_action_connector.index_example.connector_id
-    group = "logs.threshold.fired"
-    params = jsonencode({
-      "documents" : [{
-        "rule_id" : "{{rule.id}}",
-        "rule_name" : "{{rule.name}}",
-        "message" : "{{context.message}}"
-      }]
-    })
-
-    frequency {
-      summary     = true
-      notify_when = "onActionGroupChange"
-        throttle    = "10m"
-    }
-
-    alerts_filter {
-      timeframe {
-        days        = [1,2,3]
-        timezone    = "Africa/Accra"
-        hours_start = "01:00"
-        hours_end   = "07:00"
-      }
-    }
-  }
-}
-	`, name)
-}
-
-func testAccResourceAlertingRuleWithAlertsFilterUpdate(name string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  kibana {}
-}
-
-resource "elasticstack_kibana_action_connector" "index_example" {
-  name              = "my_index_connector"
-  connector_type_id = ".index"
-  config = jsonencode({
-    index              = "my-index"
-    executionTimeField = "alert_date"
-  })
-}
-
-resource "elasticstack_kibana_alerting_rule" "test_rule" {
-  name         = "%s"
-  rule_id 	   = "af22bd1c-8fb3-4020-9249-a4ac54716255"
-  consumer     = "alerts"
-  params       = jsonencode({
-    "timeSize": 5,
-    "timeUnit": "m",
-    "logView": {
-      "type": "log-view-reference",
-      "logViewId": "default"
-    },
-    "count": {
-      "value": 75,
-      "comparator": "more than"
-    },
-    "criteria": [
-      {
-        "field": "_id",
-        "comparator": "matches",
-        "value": "33"
-      }
-    ]
-  })
-  rule_type_id = "logs.alert.document.count"
-  interval     = "1m"
-  enabled      = true
-
-  actions {
-    id    = elasticstack_kibana_action_connector.index_example.connector_id
-    group = "logs.threshold.fired"
-    params = jsonencode({
-      "documents" : [{
-        "rule_id" : "{{rule.id}}",
-        "rule_name" : "{{rule.name}}",
-        "message" : "{{context.message}}"
-      }]
-    })
-
-    frequency {
-      summary     = true
-      notify_when = "onActionGroupChange"
-        throttle    = "10m"
-    }
-
-    alerts_filter {
-      kql = "kibana.alert.action_group: \"slo.burnRate.alert\""
-    }
-  }
-}
-	`, name)
-}
-
-// Alert Delay - v8.13.0
-
-func testAccResourceAlertingRuleWithAlertDelayCreate(name string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  kibana {}
-}
-
-resource "elasticstack_kibana_action_connector" "index_example" {
-  name              = "my_index_connector"
-  connector_type_id = ".index"
-  config = jsonencode({
-    index              = "my-index"
-    executionTimeField = "alert_date"
-  })
-}
-
-resource "elasticstack_kibana_alerting_rule" "test_rule" {
-  name         = "%s"
-  rule_id 	   = "af22bd1c-8fb3-4020-9249-a4ac54716255"
-  consumer     = "alerts"
-  params       = jsonencode({
-	aggType             = "avg"
-	groupBy             = "top"
-	termSize            = 10
-	timeWindowSize      = 10
-	timeWindowUnit      = "s"
-	threshold           = [10]
-	thresholdComparator = ">"
-	index               = ["test-index"]
-	timeField           = "@timestamp"
-	aggField            = "version"
-	termField           = "name"
-  })
-  rule_type_id = ".index-threshold"
-  interval     = "1m"
-  enabled      = true
-
-  actions {
-    id    = elasticstack_kibana_action_connector.index_example.connector_id
-    group = "threshold met"
-    params = jsonencode({
-      "documents" : [{
-        "rule_id" : "{{rule.id}}",
-        "rule_name" : "{{rule.name}}",
-        "message" : "{{context.message}}"
-      }]
-    })
-
-    frequency {
-      summary     = true
-      notify_when = "onActionGroupChange"
-        throttle    = "10m"
-    }
-  }
-
-  alert_delay  = 4
-}
-	`, name)
-}
-
-func testAccResourceAlertingRuleWithAlertDelayUpdate(name string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  kibana {}
-}
-
-resource "elasticstack_kibana_action_connector" "index_example" {
-  name              = "my_index_connector"
-  connector_type_id = ".index"
-  config = jsonencode({
-    index              = "my-index"
-    executionTimeField = "alert_date"
-  })
-}
-
-resource "elasticstack_kibana_alerting_rule" "test_rule" {
-  name         = "%s"
-  rule_id 	   = "af22bd1c-8fb3-4020-9249-a4ac54716255"
-  consumer     = "alerts"
-  params       = jsonencode({
-	aggType             = "avg"
-	groupBy             = "top"
-	termSize            = 10
-	timeWindowSize      = 10
-	timeWindowUnit      = "s"
-	threshold           = [10]
-	thresholdComparator = ">"
-	index               = ["test-index"]
-	timeField           = "@timestamp"
-	aggField            = "version"
-	termField           = "name"
-  })
-  rule_type_id = ".index-threshold"
-  interval     = "1m"
-  enabled      = true
-
-  actions {
-    id    = elasticstack_kibana_action_connector.index_example.connector_id
-    group = "threshold met"
-    params = jsonencode({
-      "documents" : [{
-        "rule_id" : "{{rule.id}}",
-        "rule_name" : "{{rule.name}}",
-        "message" : "{{context.message}}"
-      }]
-    })
-
-    frequency {
-      summary     = true
-      notify_when = "onActionGroupChange"
-        throttle    = "10m"
-    }
-  }
-
-  alert_delay  = 10
-}
-	`, name)
 }
 
 func checkResourceAlertingRuleDestroy(s *terraform.State) error {

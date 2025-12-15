@@ -156,6 +156,30 @@ type ApiClient interface {
 	SetAlertingAuthContext(context.Context) context.Context
 }
 
+// enableAlertingRule enables an alerting rule using the Kibana API
+func enableAlertingRule(ctx context.Context, client alerting.AlertingAPI, ruleID, spaceID string) diag.Diagnostics {
+	res, err := client.EnableRule(ctx, ruleID, spaceID).KbnXsrf("true").Execute()
+	if err != nil && res == nil {
+		return diag.FromErr(err)
+	}
+
+	defer res.Body.Close()
+
+	return diagutil.CheckHttpError(res, "Unable to enable alerting rule")
+}
+
+// disableAlertingRule disables an alerting rule using the Kibana API
+func disableAlertingRule(ctx context.Context, client alerting.AlertingAPI, ruleID, spaceID string) diag.Diagnostics {
+	res, err := client.DisableRule(ctx, ruleID, spaceID).KbnXsrf("true").Execute()
+	if err != nil && res == nil {
+		return diag.FromErr(err)
+	}
+
+	defer res.Body.Close()
+
+	return diagutil.CheckHttpError(res, "Unable to disable alerting rule")
+}
+
 func CreateAlertingRule(ctx context.Context, apiClient ApiClient, rule models.AlertingRule) (*models.AlertingRule, diag.Diagnostics) {
 	client, err := apiClient.GetAlertingClient()
 	if err != nil {
@@ -278,24 +302,14 @@ func UpdateAlertingRule(ctx context.Context, apiClient ApiClient, rule models.Al
 	shouldBeEnabled := rule.Enabled != nil && *rule.Enabled
 
 	if shouldBeEnabled && !ruleRes.Enabled {
-		res, err := client.EnableRule(ctxWithAuth, rule.RuleID, rule.SpaceID).KbnXsrf("true").Execute()
-		if err != nil && res == nil {
-			return nil, diag.FromErr(err)
-		}
-
-		if diags := diagutil.CheckHttpError(res, "Unable to enable alerting rule"); diags.HasError() {
-			return nil, diag.FromErr(err)
+		if diags := enableAlertingRule(ctxWithAuth, client, rule.RuleID, rule.SpaceID); diags.HasError() {
+			return nil, diags
 		}
 	}
 
 	if !shouldBeEnabled && ruleRes.Enabled {
-		res, err := client.DisableRule(ctxWithAuth, rule.RuleID, rule.SpaceID).KbnXsrf("true").Execute()
-		if err != nil && res == nil {
-			return nil, diag.FromErr(err)
-		}
-
-		if diags := diagutil.CheckHttpError(res, "Unable to disable alerting rule"); diags.HasError() {
-			return nil, diag.FromErr(err)
+		if diags := disableAlertingRule(ctxWithAuth, client, rule.RuleID, rule.SpaceID); diags.HasError() {
+			return nil, diags
 		}
 	}
 
