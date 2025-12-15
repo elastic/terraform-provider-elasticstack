@@ -1035,6 +1035,7 @@ func (model *agentPolicyModel) populateAdvancedSettingsFromAPI(ctx context.Conte
 type advancedSettingsAPIResult = struct {
 	AgentDownloadTargetDirectory       interface{} `json:"agent_download_target_directory,omitempty"`
 	AgentDownloadTimeout               interface{} `json:"agent_download_timeout,omitempty"`
+	AgentInternal                      interface{} `json:"agent_internal,omitempty"`
 	AgentLimitsGoMaxProcs              interface{} `json:"agent_limits_go_max_procs,omitempty"`
 	AgentLoggingFilesInterval          interface{} `json:"agent_logging_files_interval,omitempty"`
 	AgentLoggingFilesKeepfiles         interface{} `json:"agent_logging_files_keepfiles,omitempty"`
