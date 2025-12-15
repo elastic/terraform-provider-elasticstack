@@ -9,7 +9,6 @@ resource "elasticstack_fleet_agent_policy" "test_policy" {
   description     = "Test Agent Policy with Default Advanced Settings"
   monitor_logs    = true
   monitor_metrics = true
-  space_ids       = ["default"]
 
   # Empty block - schema defaults are applied for flat attributes
   advanced_settings = {}
