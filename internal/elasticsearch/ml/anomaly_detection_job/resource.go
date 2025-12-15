@@ -2,6 +2,7 @@ package anomaly_detection_job
 
 import (
 	"context"
+	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
@@ -71,5 +72,11 @@ func (r *anomalyDetectionJobResource) resourceReady(diags *fwdiags.Diagnostics) 
 }
 
 func (r *anomalyDetectionJobResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	// Import is intentionally sparse: only IDs are set. Everything else is populated by Read().
+	raw := req.ID
+	parts := strings.Split(raw, "/")
+	jobID := parts[len(parts)-1]
+
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), jobID)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("job_id"), jobID)...)
 }
