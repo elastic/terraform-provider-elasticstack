@@ -233,4 +233,3 @@ func (model *agentPolicyModel) convertAdvancedSettingsToAPI(ctx context.Context)
 
 	return result
 }
-

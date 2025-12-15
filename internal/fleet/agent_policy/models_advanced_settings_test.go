@@ -133,4 +133,3 @@ func TestConvertAdvancedSettingsToAPI(t *testing.T) {
 		})
 	}
 }
-

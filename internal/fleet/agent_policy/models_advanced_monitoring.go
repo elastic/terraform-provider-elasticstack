@@ -326,4 +326,3 @@ func (model *agentPolicyModel) convertDiagnosticsToAPI(ctx context.Context) *dia
 
 	return result
 }
-
