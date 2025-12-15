@@ -74,6 +74,7 @@ resource "elasticstack_fleet_agent_policy" "test_policy" {
 ### Optional
 
 - `advanced_monitoring_options` (Attributes) Advanced monitoring options for the agent policy. Includes HTTP monitoring endpoint configuration and diagnostic settings. (see [below for nested schema](#nestedatt--advanced_monitoring_options))
+- `advanced_settings` (Attributes) Advanced agent settings for logging, resource limits, and downloads. These settings configure the behavior of Elastic Agents enrolled in this policy. (see [below for nested schema](#nestedatt--advanced_settings))
 - `data_output_id` (String) The identifier for the data output.
 - `description` (String) The description of the agent policy.
 - `download_source_id` (String) The identifier for the Elastic Agent binary download server.
@@ -143,6 +144,23 @@ Optional:
 - `port` (Number) Port for the HTTP monitoring endpoint.
 - `pprof_enabled` (Boolean) Enable /debug/pprof/* profiling endpoints. Warning: enabling this may pose a security risk if the monitoring endpoint is accessible over a network.
 
+
+
+<a id="nestedatt--advanced_settings"></a>
+### Nested Schema for `advanced_settings`
+
+Optional:
+
+- `download_target_directory` (String) Target directory for downloading agent updates.
+- `download_timeout` (String) Timeout for downloading agent updates (e.g., '2h', '30m').
+- `go_max_procs` (Number) Maximum number of CPUs that the agent can use (GOMAXPROCS). Set to 0 to use all available CPUs.
+- `logging_files_interval` (String) Interval for log file rotation (e.g., '30s', '1m', '1h').
+- `logging_files_keepfiles` (Number) Number of rotated log files to keep.
+- `logging_files_rotateeverybytes` (Number) Rotate log files when they reach this size in bytes.
+- `logging_level` (String) Logging level for the agent. Valid values: debug, info, warning, error.
+- `logging_metrics_period` (String) Period for logging agent metrics (e.g., '30s', '1m').
+- `logging_to_files` (Boolean) Enable logging to files.
+- `monitoring_runtime_experimental` (String) Experimental runtime monitoring mode. Valid values: '' (empty string to disable), 'process', 'otel'.
 
 
 <a id="nestedatt--global_data_tags"></a>

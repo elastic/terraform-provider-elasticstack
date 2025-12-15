@@ -6,11 +6,11 @@ provider "elasticstack" {
 resource "elasticstack_fleet_agent_policy" "test_policy" {
   name            = var.policy_name
   namespace       = "default"
-  description     = "Test Agent Policy - No Advanced Monitoring"
+  description     = "Test Agent Policy with Default Advanced Settings"
   monitor_logs    = true
   monitor_metrics = true
-  skip_destroy    = var.skip_destroy
 
-  # advanced_monitoring_options removed entirely - UseStateForUnknown preserves state
+  # Empty block - schema defaults are applied for flat attributes
+  advanced_settings = {}
 }
 

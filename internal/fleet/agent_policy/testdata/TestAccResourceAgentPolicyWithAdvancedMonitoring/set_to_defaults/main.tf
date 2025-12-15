@@ -6,18 +6,17 @@ provider "elasticstack" {
 resource "elasticstack_fleet_agent_policy" "test_policy" {
   name            = var.policy_name
   namespace       = "default"
-  description     = "Test Agent Policy - Diagnostics Removed"
+  description     = "Test Agent Policy with Default Advanced Monitoring"
   monitor_logs    = true
   monitor_metrics = true
   skip_destroy    = var.skip_destroy
 
+  # Empty nested blocks - schema defaults are applied for leaf attributes
   advanced_monitoring_options = {
-    http_monitoring_endpoint = {
-      enabled        = true
-      host           = "0.0.0.0"
-      port           = 8080
-      buffer_enabled = true
-      pprof_enabled  = true
+    http_monitoring_endpoint = {}
+    diagnostics = {
+      rate_limits   = {}
+      file_uploader = {}
     }
   }
 }

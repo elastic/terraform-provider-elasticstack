@@ -92,6 +92,10 @@ docker-fleet: ## Start Fleet node in docker container
 set-kibana-password: ## Sets the ES KIBANA_SYSTEM_USERNAME's password to KIBANA_SYSTEM_PASSWORD. This expects Elasticsearch to be available at localhost:9200
 	@ curl $(CURL_OPTS) http://localhost:9200/_security/user/$(KIBANA_SYSTEM_USERNAME)/_password -d '{"password":"$(KIBANA_SYSTEM_PASSWORD)"}'
 
+.PHONY: setup-synthetics
+setup-synthetics: ## Creates the synthetics policy required to run Synthetics. This expects Kibana to be available at localhost:5601
+	@ curl $(CURL_OPTS) -H "kbn-xsrf: true" http://localhost:5601/api/fleet/epm/packages/synthetics/1.2.2 -d '{"force": true}'
+
 .PHONY: create-es-api-key
 create-es-api-key: ## Creates and outputs a new API Key. This expects Elasticsearch to be available at localhost:9200
 	@ curl $(CURL_OPTS) http://localhost:9200/_security/api_key -d '{"name":"$(KIBANA_API_KEY_NAME)"}'
