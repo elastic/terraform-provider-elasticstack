@@ -950,15 +950,15 @@ func fixGetSpacesParams(schema *Schema) {
 }
 
 func fixGetSyntheticsMonitorsParams(schema *Schema) {
-	schema.MustGetPath("/api/synthetics/monitors").MustGetEndpoint("get").Move("parameters.12.schema.oneOf.1", "parameters.12.schema")
+	schema.MustGetPath("/api/synthetics/monitors").MustGetEndpoint("get").Set("parameters.12.schema.oneOf.1.x-go-type", "[]GetSyntheticMonitorsParamsUseLogicalAndFor0")
 }
 
 func fixGetMaintenanceWindowFindParams(schema *Schema) {
-	schema.MustGetPath("/api/maintenance_window/_find").MustGetEndpoint("get").Move("parameters.2.schema.anyOf.1", "parameters.2.schema")
+	schema.MustGetPath("/api/maintenance_window/_find").MustGetEndpoint("get").Set("parameters.2.schema.anyOf.1.x-go-type", "[]GetMaintenanceWindowFindParamsStatus0")
 }
 
 func fixGetStreamsAttachmentTypesParams(schema *Schema) {
-	schema.MustGetPath("/api/streams/{streamName}/attachments").MustGetEndpoint("get").Move("parameters.2.schema.anyOf.1", "parameters.2.schema")
+	schema.MustGetPath("/api/streams/{streamName}/attachments").MustGetEndpoint("get").Set("parameters.2.schema.anyOf.1.x-go-type", "[]GetStreamsStreamnameAttachmentsParamsAttachmentTypes0")
 }
 
 func fixSecurityAPIPageSize(schema *Schema) {
