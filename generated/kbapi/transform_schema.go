@@ -569,6 +569,7 @@ var transformers = []TransformFunc{
 	fixGetSpacesParams,
 	fixGetSyntheticsMonitorsParams,
 	fixGetMaintenanceWindowFindParams,
+	fixGetStreamsAttachmentTypesParams,
 	fixSecurityAPIPageSize,
 	removeDuplicateOneOfRefs,
 	transformRemoveExamples,
@@ -954,6 +955,10 @@ func fixGetSyntheticsMonitorsParams(schema *Schema) {
 
 func fixGetMaintenanceWindowFindParams(schema *Schema) {
 	schema.MustGetPath("/api/maintenance_window/_find").MustGetEndpoint("get").Move("parameters.2.schema.anyOf.1", "parameters.2.schema")
+}
+
+func fixGetStreamsAttachmentTypesParams(schema *Schema) {
+	schema.MustGetPath("/api/streams/{streamName}/attachments").MustGetEndpoint("get").Move("parameters.2.schema.anyOf.1", "parameters.2.schema")
 }
 
 func fixSecurityAPIPageSize(schema *Schema) {
