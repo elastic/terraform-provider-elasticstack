@@ -221,7 +221,7 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 
 	}
 
-	if data.SpaceIds != nil {
+	if data.SpaceIds != nil && len(*data.SpaceIds) > 0 {
 		spaceIds, d := types.SetValueFrom(ctx, types.StringType, *data.SpaceIds)
 		if d.HasError() {
 			return d
