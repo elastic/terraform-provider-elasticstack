@@ -56,6 +56,17 @@ func TestAccResourceAnomalyDetectionJobBasic(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "job_type", "anomaly_detector"),
 				),
 			},
+			// ImportState testing
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ResourceName:             "elasticstack_elasticsearch_ml_anomaly_detection_job.test",
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"job_id": config.StringVariable(jobID),
+				},
+			},
 		},
 	})
 }
