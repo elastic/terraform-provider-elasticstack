@@ -913,7 +913,11 @@ func TestAccResourceAgentPolicyNonDefaultSpace(t *testing.T) {
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"skip_destroy"},
 				ImportStateIdFunc: func(s *terraform.State) (string, error) {
-					return fmt.Sprintf("%s/%s", spaceID, s.RootModule().Resources["elasticstack_fleet_agent_policy.test_policy"].Primary.ID), nil
+					res := s.RootModule().Resources["elasticstack_fleet_agent_policy.test_policy"]
+					if res == nil || res.Primary == nil {
+						return "", fmt.Errorf("resource elasticstack_fleet_agent_policy.test_policy not found in state")
+					}
+					return fmt.Sprintf("%s/%s", spaceID, res.Primary.ID), nil
 				},
 			},
 		},
