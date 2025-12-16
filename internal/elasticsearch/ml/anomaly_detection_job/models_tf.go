@@ -362,23 +362,15 @@ func (tfModel *AnomalyDetectionJobTFModel) convertAnalysisConfigFromAPI(ctx cont
 	var categorizationFiltersDiags diag.Diagnostics
 	analysisConfigTF.CategorizationFilters, categorizationFiltersDiags = typeutils.NonEmptyListOrDefault(ctx, analysisConfigTF.CategorizationFilters, types.StringType, apiConfig.CategorizationFilters)
 	diags.Append(categorizationFiltersDiags...)
-	// If the existing value was an untyped zero-value list (common during import), force a typed null list.
-	if analysisConfigTF.CategorizationFilters.ElementType(ctx) == nil {
-		analysisConfigTF.CategorizationFilters = types.ListNull(types.StringType)
-	} else if _, ok := analysisConfigTF.CategorizationFilters.ElementType(ctx).(basetypes.DynamicType); ok {
-		analysisConfigTF.CategorizationFilters = types.ListNull(types.StringType)
-	}
+	// Ensure the list is properly typed (handles untyped zero-value lists from import)
+	analysisConfigTF.CategorizationFilters = typeutils.EnsureTypedList(ctx, analysisConfigTF.CategorizationFilters, types.StringType)
 
 	// Convert influencers
 	var influencersDiags diag.Diagnostics
 	analysisConfigTF.Influencers, influencersDiags = typeutils.NonEmptyListOrDefault(ctx, analysisConfigTF.Influencers, types.StringType, apiConfig.Influencers)
 	diags.Append(influencersDiags...)
-	// If the existing value was an untyped zero-value list (common during import), force a typed null list.
-	if analysisConfigTF.Influencers.ElementType(ctx) == nil {
-		analysisConfigTF.Influencers = types.ListNull(types.StringType)
-	} else if _, ok := analysisConfigTF.Influencers.ElementType(ctx).(basetypes.DynamicType); ok {
-		analysisConfigTF.Influencers = types.ListNull(types.StringType)
-	}
+	// Ensure the list is properly typed (handles untyped zero-value lists from import)
+	analysisConfigTF.Influencers = typeutils.EnsureTypedList(ctx, analysisConfigTF.Influencers, types.StringType)
 
 	// Convert detectors
 	if len(apiConfig.Detectors) > 0 {
@@ -449,12 +441,8 @@ func (tfModel *AnomalyDetectionJobTFModel) convertAnalysisConfigFromAPI(ctx cont
 			var customRulesDiags diag.Diagnostics
 			detectorsTF[i].CustomRules, customRulesDiags = typeutils.NonEmptyListOrDefault(ctx, originalDetector.CustomRules, types.ObjectType{AttrTypes: getCustomRuleAttrTypes()}, apiConfig.Detectors[i].CustomRules)
 			diags.Append(customRulesDiags...)
-			// If the existing value was an untyped zero-value list (common during import), force a typed null list.
-			if detectorsTF[i].CustomRules.ElementType(ctx) == nil {
-				detectorsTF[i].CustomRules = types.ListNull(types.ObjectType{AttrTypes: getCustomRuleAttrTypes()})
-			} else if _, ok := detectorsTF[i].CustomRules.ElementType(ctx).(basetypes.DynamicType); ok {
-				detectorsTF[i].CustomRules = types.ListNull(types.ObjectType{AttrTypes: getCustomRuleAttrTypes()})
-			}
+			// Ensure the list is properly typed (handles untyped zero-value lists from import)
+			detectorsTF[i].CustomRules = typeutils.EnsureTypedList(ctx, detectorsTF[i].CustomRules, types.ObjectType{AttrTypes: getCustomRuleAttrTypes()})
 		}
 		analysisConfigTF.Detectors = detectorsTF
 	}

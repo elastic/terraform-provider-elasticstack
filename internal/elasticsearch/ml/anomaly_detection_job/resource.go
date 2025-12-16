@@ -2,7 +2,6 @@ package anomaly_detection_job
 
 import (
 	"context"
-	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
