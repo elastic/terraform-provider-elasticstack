@@ -73,10 +73,12 @@ func (r *anomalyDetectionJobResource) resourceReady(diags *fwdiags.Diagnostics) 
 
 func (r *anomalyDetectionJobResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	// Import is intentionally sparse: only IDs are set. Everything else is populated by Read().
-	raw := req.ID
-	parts := strings.Split(raw, "/")
-	jobID := parts[len(parts)-1]
+	compID, diags := clients.CompositeIdFromStrFw(req.ID)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), jobID)...)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("job_id"), jobID)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("job_id"), compID.ResourceId)...)
 }
