@@ -26,7 +26,7 @@ func ResourceSpace() *schema.Resource {
 			Type:         schema.TypeString,
 			Required:     true,
 			ForceNew:     true,
-			ValidateFunc: validation.StringMatch(regexp.MustCompile("[a-z0-9_-]+"), "must only contain lowercase letters, numbers, hyphens, and underscores"),
+			ValidateFunc: validation.StringMatch(regexp.MustCompile("^[a-z0-9_-]+$"), "must only contain lowercase letters, numbers, hyphens, and underscores"),
 		},
 		"name": {
 			Description: "The display name for the space.",
