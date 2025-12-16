@@ -178,5 +178,5 @@ Import is supported using the following syntax:
 The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
 
 ```shell
-terraform import elasticstack_fleet_agent_policy.my_policy <fleet_agent_policy_id>
+terraform import elasticstack_fleet_agent_policy.my_policy <space_id>/<fleet_agent_policy_id>
 ```
