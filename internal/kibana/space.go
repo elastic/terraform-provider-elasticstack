@@ -22,10 +22,11 @@ func ResourceSpace() *schema.Resource {
 			Computed:    true,
 		},
 		"space_id": {
-			Description: "The space ID that is part of the Kibana URL when inside the space.",
-			Type:        schema.TypeString,
-			Required:    true,
-			ForceNew:    true,
+			Description:  "The space ID that is part of the Kibana URL when inside the space.",
+			Type:         schema.TypeString,
+			Required:     true,
+			ForceNew:     true,
+			ValidateFunc: validation.StringMatch(regexp.MustCompile("^[a-z0-9_-]+$"), "must only contain lowercase letters, numbers, hyphens, and underscores"),
 		},
 		"name": {
 			Description: "The display name for the space.",
