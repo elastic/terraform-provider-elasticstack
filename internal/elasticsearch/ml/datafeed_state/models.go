@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
@@ -47,20 +48,28 @@ func (d *MLDatafeedStateData) getTimeAttributeAsString(val timetypes.RFC3339) (s
 
 func (d *MLDatafeedStateData) SetStartAndEndFromAPI(datafeedStats *models.DatafeedStats) diag.Diagnostics {
 	var diags diag.Diagnostics
-	if datafeedStats.RunningState == nil {
-		diags.AddWarning("Running state was empty for a started datafeed", "The Elasticsearch API returned an empty running state for a Datafeed which was successfully started. Ignoring start and end response values.")
-		return diags
+
+	if datafeed.State(datafeedStats.State) == datafeed.StateStarted {
+		if datafeedStats.RunningState == nil {
+			diags.AddWarning("Running state was empty for a started datafeed", "The Elasticsearch API returned an empty running state for a Datafeed which was successfully started. Ignoring start and end response values.")
+			return diags
+		}
+
+		if datafeedStats.RunningState.SearchInterval != nil {
+			d.Start = timetypes.NewRFC3339TimeValue(time.UnixMilli(datafeedStats.RunningState.SearchInterval.StartMS))
+			d.End = timetypes.NewRFC3339TimeValue(time.UnixMilli(datafeedStats.RunningState.SearchInterval.EndMS))
+		}
+
+		if datafeedStats.RunningState.RealTimeConfigured {
+			d.End = timetypes.NewRFC3339Null()
+		}
 	}
 
-	if datafeedStats.RunningState.SearchInterval != nil {
-		d.Start = timetypes.NewRFC3339TimeValue(time.UnixMilli(datafeedStats.RunningState.SearchInterval.StartMS))
-		d.End = timetypes.NewRFC3339TimeValue(time.UnixMilli(datafeedStats.RunningState.SearchInterval.EndMS))
-	} else {
+	if d.Start.IsUnknown() {
 		d.Start = timetypes.NewRFC3339Null()
-		d.End = timetypes.NewRFC3339Null()
 	}
 
-	if datafeedStats.RunningState.RealTimeConfigured {
+	if d.End.IsUnknown() {
 		d.End = timetypes.NewRFC3339Null()
 	}
 
