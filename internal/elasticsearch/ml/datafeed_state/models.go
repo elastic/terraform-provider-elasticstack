@@ -5,6 +5,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
@@ -24,6 +25,21 @@ type MLDatafeedStateData struct {
 	Timeouts                timeouts.Value       `tfsdk:"timeouts"`
 }
 
+func timeInSameLocation(ms int64, source timetypes.RFC3339) (time.Time, diag.Diagnostics) {
+	t := time.UnixMilli(ms)
+	if !utils.IsKnown(source) {
+		return t, nil
+	}
+
+	sourceTime, diags := source.ValueRFC3339Time()
+	if diags.HasError() {
+		return t, diags
+	}
+
+	t = t.In(sourceTime.Location())
+	return t, nil
+}
+
 func (d *MLDatafeedStateData) SetStartAndEndFromAPI(datafeedStats *models.DatafeedStats) diag.Diagnostics {
 	var diags diag.Diagnostics
 
@@ -34,8 +50,18 @@ func (d *MLDatafeedStateData) SetStartAndEndFromAPI(datafeedStats *models.Datafe
 		}
 
 		if datafeedStats.RunningState.SearchInterval != nil {
-			d.Start = timetypes.NewRFC3339TimeValue(time.UnixMilli(datafeedStats.RunningState.SearchInterval.StartMS))
-			d.End = timetypes.NewRFC3339TimeValue(time.UnixMilli(datafeedStats.RunningState.SearchInterval.EndMS))
+			start, diags := timeInSameLocation(datafeedStats.RunningState.SearchInterval.StartMS, d.Start)
+			if diags.HasError() {
+				return diags
+			}
+
+			end, diags := timeInSameLocation(datafeedStats.RunningState.SearchInterval.EndMS, d.End)
+			if diags.HasError() {
+				return diags
+			}
+
+			d.Start = timetypes.NewRFC3339TimeValue(start)
+			d.End = timetypes.NewRFC3339TimeValue(end)
 		}
 
 		if datafeedStats.RunningState.RealTimeConfigured {
