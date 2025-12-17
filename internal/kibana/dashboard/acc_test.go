@@ -11,8 +11,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-// Dashboard API is in technical preview and available from 9.2.x onwards
-var minDashboardAPISupport = version.Must(version.NewVersion("9.2.0"))
+// Dashboard API is in technical preview and available from 9.3.x onwards
+var minDashboardAPISupport = version.Must(version.NewVersion("9.3.0-SNAPSHOT"))
 
 func TestAccResourceEmptyDashboard(t *testing.T) {
 	dashboardTitle := "Test Dashboard " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
