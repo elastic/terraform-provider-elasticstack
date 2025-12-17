@@ -1,12 +1,10 @@
 package datafeed_state
 
 import (
-	"strconv"
 	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
@@ -24,26 +22,6 @@ type MLDatafeedStateData struct {
 	Start                   timetypes.RFC3339    `tfsdk:"start"`
 	End                     timetypes.RFC3339    `tfsdk:"end"`
 	Timeouts                timeouts.Value       `tfsdk:"timeouts"`
-}
-
-func (d *MLDatafeedStateData) GetStartAsString() (string, diag.Diagnostics) {
-	return d.getTimeAttributeAsString(d.Start)
-}
-
-func (d *MLDatafeedStateData) GetEndAsString() (string, diag.Diagnostics) {
-	return d.getTimeAttributeAsString(d.End)
-}
-
-func (d *MLDatafeedStateData) getTimeAttributeAsString(val timetypes.RFC3339) (string, diag.Diagnostics) {
-	if !utils.IsKnown(val) {
-		return "", nil
-	}
-
-	valTime, diags := val.ValueRFC3339Time()
-	if diags.HasError() {
-		return "", diags
-	}
-	return strconv.FormatInt(valTime.Unix(), 10), nil
 }
 
 func (d *MLDatafeedStateData) SetStartAndEndFromAPI(datafeedStats *models.DatafeedStats) diag.Diagnostics {
