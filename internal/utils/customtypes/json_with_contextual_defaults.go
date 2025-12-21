@@ -22,7 +22,13 @@ var (
 )
 
 const legacyContextKey = "__tf_provider_connector_type_id"
-const ContextKey = "__tf_provider_context"
+const contextKey = "__tf_provider_context"
+
+func DescriptionWithContextWarning(baseDescription string) string {
+	return fmt.Sprintf(`%s
+
+The provider injects the '%s' property into this JSON object. In most cases this field will be ignored when computing the difference between the current and desired state. In some cases however, this property may be shown in the Terraform plan. Any changes to the '%s' property can be safely ignored. This property is used internally by the provider, and you should not set this property within your Terraform configuration.`, baseDescription, contextKey, contextKey)
+}
 
 type JSONWithContextualDefaultsValue struct {
 	jsontypes.Normalized
@@ -76,7 +82,7 @@ func (t JSONWithContextualDefaultsType) ValueFromString(ctx context.Context, in 
 		}
 
 		var ok bool
-		contextValue, ok = configMap[ContextKey].(string)
+		contextValue, ok = configMap[contextKey].(string)
 		if !ok {
 			contextValue, _ = configMap[legacyContextKey].(string)
 		}
@@ -155,7 +161,7 @@ func (v JSONWithContextualDefaultsValue) SanitizedValue() (string, diag.Diagnost
 		return "", diags
 	}
 
-	delete(unsanitizedMap, ContextKey)
+	delete(unsanitizedMap, contextKey)
 	delete(unsanitizedMap, legacyContextKey)
 	removeNulls(unsanitizedMap)
 	sanitizedValue, err := json.Marshal(unsanitizedMap)
@@ -279,7 +285,7 @@ func NewJSONWithContextualDefaultsValue(value string, contextValue string, popul
 		}
 	}
 
-	configMap[ContextKey] = contextValue
+	configMap[contextKey] = contextValue
 	jsonBytes, err := json.Marshal(configMap)
 	if err != nil {
 		return JSONWithContextualDefaultsValue{}, diag.Diagnostics{

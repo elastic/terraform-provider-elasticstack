@@ -166,6 +166,25 @@ func packageInfoToDefaults(pkg *kbapi.PackageInfo) (map[string]inputDefaultsMode
 	return defaults, diags
 }
 
+func varsFromPackageInfo(pkg *kbapi.PackageInfo) (apiVars, diag.Diagnostics) {
+	if pkg == nil {
+		return nil, nil
+	}
+
+	var diags diag.Diagnostics
+	var vars apiVars
+
+	if pkg.Vars != nil && len(*pkg.Vars) > 0 {
+		err := mapstructure.Decode(pkg.Vars, &vars)
+		if err != nil {
+			diags.AddError("Failed to decode package vars", err.Error())
+			return nil, diags
+		}
+	}
+
+	return vars, nil
+}
+
 func policyTemplateAndDataStreamsFromPackageInfo(pkg *kbapi.PackageInfo) (apiPolicyTemplates, apiDatastreams, diag.Diagnostics) {
 	if pkg == nil {
 		return nil, nil, nil
