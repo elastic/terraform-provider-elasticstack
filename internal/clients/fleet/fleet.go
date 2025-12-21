@@ -400,8 +400,10 @@ func GetPackage(ctx context.Context, client *Client, name, version string) (*kba
 }
 
 // InstallPackage installs a package.
-func InstallPackage(ctx context.Context, client *Client, name, version string, spaceID string, force bool) diag.Diagnostics {
-	params := kbapi.PostFleetEpmPackagesPkgnamePkgversionParams{}
+func InstallPackage(ctx context.Context, client *Client, name, version string, spaceID string, force bool, prerelease bool) diag.Diagnostics {
+	params := kbapi.PostFleetEpmPackagesPkgnamePkgversionParams{
+		Prerelease: &prerelease,
+	}
 	body := kbapi.PostFleetEpmPackagesPkgnamePkgversionJSONRequestBody{
 		Force: &force,
 	}

@@ -234,3 +234,36 @@ resource "elasticstack_fleet_integration" "test_integration" {
   skip_destroy = false
 }
 `
+
+func TestAccResourceIntegrationWithPrerelease(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
+				Config:   testAccResourceIntegrationWithPrerelease,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_prerelease", "name", "tcp"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_prerelease", "prerelease", "true"),
+					resource.TestCheckResourceAttrSet("elasticstack_fleet_integration.test_integration_prerelease", "version"),
+				),
+			},
+		},
+	})
+}
+
+const testAccResourceIntegrationWithPrerelease = `
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_fleet_integration" "test_integration_prerelease" {
+  name         = "tcp"
+  version      = "1.16.0"
+  prerelease   = true
+  force        = true
+  skip_destroy = true
+}
+`

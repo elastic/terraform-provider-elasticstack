@@ -38,6 +38,10 @@ set ` + "`skip_destroy` to `true`."
 			Description: "Set to true to force the requested action.",
 			Optional:    true,
 		},
+		"prerelease": schema.BoolAttribute{
+			Description: "Set to true to allow installation of prerelease (beta, non-GA) packages.",
+			Optional:    true,
+		},
 		"skip_destroy": schema.BoolAttribute{
 			Description: "Set to true if you do not wish the integration package to be uninstalled at destroy time, and instead just remove the integration package from the Terraform state.",
 			Optional:    true,

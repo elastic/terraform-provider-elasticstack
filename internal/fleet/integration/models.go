@@ -10,6 +10,7 @@ type integrationModel struct {
 	Name        types.String `tfsdk:"name"`
 	Version     types.String `tfsdk:"version"`
 	Force       types.Bool   `tfsdk:"force"`
+	Prerelease  types.Bool   `tfsdk:"prerelease"`
 	SkipDestroy types.Bool   `tfsdk:"skip_destroy"`
 	SpaceIds    types.Set    `tfsdk:"space_ids"` //> string
 }
