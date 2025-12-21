@@ -2,11 +2,10 @@ package connectors
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
@@ -18,7 +17,13 @@ var (
 )
 
 type ConfigType struct {
-	jsontypes.NormalizedType
+	customtypes.JSONWithContextualDefaultsType
+}
+
+func NewConfigType() ConfigType {
+	return ConfigType{
+		JSONWithContextualDefaultsType: customtypes.NewJSONWithContextualDefaultsType(kibana_oapi.ConnectorConfigWithDefaults),
+	}
 }
 
 // String returns a human readable string of the type name.
@@ -28,7 +33,9 @@ func (t ConfigType) String() string {
 
 // ValueType returns the Value type.
 func (t ConfigType) ValueType(ctx context.Context) attr.Value {
-	return ConfigValue{}
+	return ConfigValue{
+		JSONWithContextualDefaultsValue: t.JSONWithContextualDefaultsType.ValueType(ctx).(customtypes.JSONWithContextualDefaultsValue),
+	}
 }
 
 // Equal returns true if the given type is equivalent.
@@ -39,28 +46,18 @@ func (t ConfigType) Equal(o attr.Type) bool {
 		return false
 	}
 
-	return t.StringType.Equal(other.StringType)
+	return t.JSONWithContextualDefaultsType.Equal(other.JSONWithContextualDefaultsType)
 }
 
 // ValueFromString returns a StringValuable type given a StringValue.
 func (t ConfigType) ValueFromString(ctx context.Context, in basetypes.StringValue) (basetypes.StringValuable, diag.Diagnostics) {
-	var connectorTypeID string
-	if utils.IsKnown(in) {
-		var configMap map[string]interface{}
-		if err := json.Unmarshal([]byte(in.ValueString()), &configMap); err != nil {
-			return nil, diag.Diagnostics{
-				diag.NewErrorDiagnostic("Failed to unmarshal config value", err.Error()),
-			}
-		}
-
-		connectorTypeID, _ = configMap[connectorTypeIDKey].(string)
+	val, diags := t.JSONWithContextualDefaultsType.ValueFromString(ctx, in)
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	return ConfigValue{
-		Normalized: jsontypes.Normalized{
-			StringValue: in,
-		},
-		connectorTypeID: connectorTypeID,
+		JSONWithContextualDefaultsValue: val.(customtypes.JSONWithContextualDefaultsValue),
 	}, nil
 }
 

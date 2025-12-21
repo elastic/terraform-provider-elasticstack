@@ -2,8 +2,10 @@ package connectors
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
@@ -16,11 +18,19 @@ func TestConfigType_ValueFromString(t *testing.T) {
 		name                string
 		input               basetypes.StringValue
 		expectedConnectorID string
+		contextKey          string
 		expectError         bool
 	}{
 		{
 			name:                "valid JSON config with connector type ID",
 			input:               basetypes.NewStringValue(`{"key": "value", "__tf_provider_connector_type_id": "my-connector"}`),
+			expectedConnectorID: "my-connector",
+			contextKey:          "__tf_provider_connector_type_id",
+			expectError:         false,
+		},
+		{
+			name:                "valid JSON config with context key ID",
+			input:               basetypes.NewStringValue(`{"key": "value", "__tf_provider_context": "my-connector"}`),
 			expectedConnectorID: "my-connector",
 			expectError:         false,
 		},
@@ -55,7 +65,7 @@ func TestConfigType_ValueFromString(t *testing.T) {
 		},
 		{
 			name:                "JSON with non-string connector type ID",
-			input:               basetypes.NewStringValue(`{"key": "value", "__tf_provider_connector_type_id": 123}`),
+			input:               basetypes.NewStringValue(`{"key": "value", "__tf_provider_context": 123}`),
 			expectedConnectorID: "",
 			expectError:         false,
 		},
@@ -64,7 +74,7 @@ func TestConfigType_ValueFromString(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			configType := ConfigType{}
-			result, diags := configType.ValueFromString(context.Background(), tt.input)
+			result, diags := configType.ValueFromString(t.Context(), tt.input)
 
 			if tt.expectError {
 				require.True(t, diags.HasError(), "Expected an error but got none")
@@ -77,7 +87,20 @@ func TestConfigType_ValueFromString(t *testing.T) {
 			configValue, ok := result.(ConfigValue)
 			require.True(t, ok, "Result should be of type ConfigValue")
 
-			require.Equal(t, tt.expectedConnectorID, configValue.connectorTypeID, "Connector type ID mismatch")
+			if !configValue.IsNull() && !configValue.IsUnknown() {
+				var resultMap map[string]interface{}
+				err := json.Unmarshal([]byte(configValue.ValueString()), &resultMap)
+				require.NoError(t, err)
+
+				if tt.expectedConnectorID != "" {
+					contextKey := "__tf_provider_context"
+					if tt.contextKey != "" {
+						contextKey = tt.contextKey
+					}
+					require.Equal(t, tt.expectedConnectorID, resultMap[contextKey], "Connector type ID mismatch")
+				}
+			}
+
 			require.Equal(t, tt.input, configValue.StringValue, "String value should be preserved")
 		})
 	}
@@ -92,43 +115,47 @@ func TestConfigType_ValueFromTerraform(t *testing.T) {
 	}{
 		{
 			name:    "valid string value with JSON config",
-			tfValue: tftypes.NewValue(tftypes.String, `{"key": "value", "__tf_provider_connector_type_id": "test-connector"}`),
+			tfValue: tftypes.NewValue(tftypes.String, `{"key": "value", "__tf_provider_context": "test-connector"}`),
 			expectedValue: ConfigValue{
-				Normalized: func() jsontypes.Normalized {
-					return jsontypes.NewNormalizedValue(`{"key": "value", "__tf_provider_connector_type_id": "test-connector"}`)
-				}(),
-				connectorTypeID: "test-connector",
+				JSONWithContextualDefaultsValue: customtypes.JSONWithContextualDefaultsValue{
+					Normalized: func() jsontypes.Normalized {
+						return jsontypes.NewNormalizedValue(`{"key": "value", "__tf_provider_context": "test-connector"}`)
+					}(),
+				},
 			},
 		},
 		{
 			name:    "valid string value with empty JSON",
 			tfValue: tftypes.NewValue(tftypes.String, `{}`),
 			expectedValue: ConfigValue{
-				Normalized: func() jsontypes.Normalized {
-					n, _ := jsontypes.NewNormalizedValue(`{}`).ToStringValue(context.Background())
-					return jsontypes.Normalized{StringValue: n}
-				}(),
-				connectorTypeID: "",
+				JSONWithContextualDefaultsValue: customtypes.JSONWithContextualDefaultsValue{
+					Normalized: func() jsontypes.Normalized {
+						n, _ := jsontypes.NewNormalizedValue(`{}`).ToStringValue(context.Background())
+						return jsontypes.Normalized{StringValue: n}
+					}(),
+				},
 			},
 		},
 		{
 			name:    "null string value",
 			tfValue: tftypes.NewValue(tftypes.String, nil),
 			expectedValue: ConfigValue{
-				Normalized: func() jsontypes.Normalized {
-					return jsontypes.Normalized{StringValue: basetypes.NewStringNull()}
-				}(),
-				connectorTypeID: "",
+				JSONWithContextualDefaultsValue: customtypes.JSONWithContextualDefaultsValue{
+					Normalized: func() jsontypes.Normalized {
+						return jsontypes.Normalized{StringValue: basetypes.NewStringNull()}
+					}(),
+				},
 			},
 		},
 		{
 			name:    "unknown string value",
 			tfValue: tftypes.NewValue(tftypes.String, tftypes.UnknownValue),
 			expectedValue: ConfigValue{
-				Normalized: func() jsontypes.Normalized {
-					return jsontypes.Normalized{StringValue: basetypes.NewStringUnknown()}
-				}(),
-				connectorTypeID: "",
+				JSONWithContextualDefaultsValue: customtypes.JSONWithContextualDefaultsValue{
+					Normalized: func() jsontypes.Normalized {
+						return jsontypes.Normalized{StringValue: basetypes.NewStringUnknown()}
+					}(),
+				},
 			},
 		},
 		{
@@ -165,9 +192,6 @@ func TestConfigType_ValueFromTerraform(t *testing.T) {
 
 			expectedConfigValue, ok := tt.expectedValue.(ConfigValue)
 			require.True(t, ok, "Expected value should be of type ConfigValue")
-
-			// Compare the connector type ID
-			require.Equal(t, expectedConfigValue.connectorTypeID, configValue.connectorTypeID, "Connector type ID mismatch")
 
 			// Compare the underlying string values
 			require.Equal(t, expectedConfigValue.StringValue.Equal(configValue.StringValue), true, "String values should be equal")
