@@ -10,7 +10,8 @@ resource "elasticstack_elasticsearch_security_role" "test" {
     names      = ["index1", "index2"]
     privileges = ["all"]
     field_security {
-      grant = ["*"]
+      grant  = ["*"]
+      except = []
     }
   }
 
