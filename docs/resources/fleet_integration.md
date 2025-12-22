@@ -68,7 +68,10 @@ resource "elasticstack_fleet_integration" "test_integration" {
 ### Optional
 
 - `force` (Boolean) Set to true to force the requested action.
+- `ignore_constraints` (Boolean) Set to true to ignore constraint errors during package installation.
+- `ignore_mapping_update_errors` (Boolean) Set to true to ignore mapping update errors during package installation.
 - `prerelease` (Boolean) Set to true to allow installation of prerelease (beta, non-GA) packages.
+- `skip_data_stream_rollover` (Boolean) Set to true to skip data stream rollover during package installation.
 - `skip_destroy` (Boolean) Set to true if you do not wish the integration package to be uninstalled at destroy time, and instead just remove the integration package from the Terraform state.
 - `space_ids` (Set of String) The Kibana space IDs where this integration package should be installed. When set, the package will be installed and managed within the specified space. Note: The order of space IDs does not matter as this is a set.
 

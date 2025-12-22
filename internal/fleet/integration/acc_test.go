@@ -267,3 +267,42 @@ resource "elasticstack_fleet_integration" "test_integration_prerelease" {
   skip_destroy = true
 }
 `
+
+func TestAccResourceIntegrationWithAllParameters(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
+				Config:   testAccResourceIntegrationWithAllParameters,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "name", "tcp"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "prerelease", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "ignore_mapping_update_errors", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "skip_data_stream_rollover", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "ignore_constraints", "true"),
+					resource.TestCheckResourceAttrSet("elasticstack_fleet_integration.test_integration_all_params", "version"),
+				),
+			},
+		},
+	})
+}
+
+const testAccResourceIntegrationWithAllParameters = `
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_fleet_integration" "test_integration_all_params" {
+  name                          = "tcp"
+  version                       = "1.16.0"
+  prerelease                    = true
+  force                         = true
+  ignore_mapping_update_errors  = true
+  skip_data_stream_rollover     = true
+  ignore_constraints            = true
+  skip_destroy                  = true
+}
+`

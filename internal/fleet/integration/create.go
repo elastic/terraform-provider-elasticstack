@@ -35,6 +35,9 @@ func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state 
 	version := planModel.Version.ValueString()
 	force := planModel.Force.ValueBool()
 	prerelease := planModel.Prerelease.ValueBool()
+	ignoreMappingUpdateErrors := planModel.IgnoreMappingUpdateErrors.ValueBool()
+	skipDataStreamRollover := planModel.SkipDataStreamRollover.ValueBool()
+	ignoreConstraints := planModel.IgnoreConstraints.ValueBool()
 
 	// If space_ids is set, use space-aware installation
 	var spaceID string
@@ -46,7 +49,7 @@ func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state 
 		}
 	}
 
-	diags = fleet.InstallPackage(ctx, client, name, version, spaceID, force, prerelease)
+	diags = fleet.InstallPackage(ctx, client, name, version, spaceID, force, prerelease, ignoreMappingUpdateErrors, skipDataStreamRollover, ignoreConstraints)
 	respDiags.Append(diags...)
 	if respDiags.HasError() {
 		return

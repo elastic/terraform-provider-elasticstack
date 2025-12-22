@@ -42,6 +42,18 @@ set ` + "`skip_destroy` to `true`."
 			Description: "Set to true to allow installation of prerelease (beta, non-GA) packages.",
 			Optional:    true,
 		},
+		"ignore_mapping_update_errors": schema.BoolAttribute{
+			Description: "Set to true to ignore mapping update errors during package installation.",
+			Optional:    true,
+		},
+		"skip_data_stream_rollover": schema.BoolAttribute{
+			Description: "Set to true to skip data stream rollover during package installation.",
+			Optional:    true,
+		},
+		"ignore_constraints": schema.BoolAttribute{
+			Description: "Set to true to ignore constraint errors during package installation.",
+			Optional:    true,
+		},
 		"skip_destroy": schema.BoolAttribute{
 			Description: "Set to true if you do not wish the integration package to be uninstalled at destroy time, and instead just remove the integration package from the Terraform state.",
 			Optional:    true,
