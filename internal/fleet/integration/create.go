@@ -2,8 +2,10 @@ package integration
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -38,6 +40,24 @@ func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state 
 	ignoreMappingUpdateErrors := planModel.IgnoreMappingUpdateErrors.ValueBool()
 	skipDataStreamRollover := planModel.SkipDataStreamRollover.ValueBool()
 	ignoreConstraints := planModel.IgnoreConstraints.ValueBool()
+
+	// Check if ignore_mapping_update_errors is set and validate version support
+	if utils.IsKnown(planModel.IgnoreMappingUpdateErrors) && ignoreMappingUpdateErrors {
+		serverVersion, versionDiags := r.client.ServerVersion(ctx)
+		respDiags.Append(diagutil.FrameworkDiagsFromSDK(versionDiags)...)
+		if respDiags.HasError() {
+			return
+		}
+
+		if serverVersion.LessThan(MinVersionIgnoreMappingUpdateErrors) {
+			respDiags.AddError(
+				"Unsupported parameter for server version",
+				fmt.Sprintf("The 'ignore_mapping_update_errors' parameter requires server version %s or higher. Current version: %s",
+					MinVersionIgnoreMappingUpdateErrors.String(), serverVersion.String()),
+			)
+			return
+		}
+	}
 
 	// If space_ids is set, use space-aware installation
 	var spaceID string

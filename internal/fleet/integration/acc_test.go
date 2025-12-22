@@ -17,8 +17,9 @@ import (
 )
 
 var (
-	minVersionIntegration       = version.Must(version.NewVersion("8.6.0"))
-	minVersionIntegrationPolicy = version.Must(version.NewVersion("8.10.0"))
+	minVersionIntegration               = version.Must(version.NewVersion("8.6.0"))
+	minVersionIntegrationPolicy         = version.Must(version.NewVersion("8.10.0"))
+	minVersionIgnoreMappingUpdateErrors = version.Must(version.NewVersion("8.11.0"))
 )
 
 func TestAccResourceIntegrationFromSDK(t *testing.T) {
@@ -275,7 +276,18 @@ func TestAccResourceIntegrationWithAllParameters(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
-				Config:   testAccResourceIntegrationWithAllParameters,
+				Config:   testAccResourceIntegrationWithAllParametersStep1,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "name", "tcp"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "prerelease", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "skip_data_stream_rollover", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "ignore_constraints", "true"),
+					resource.TestCheckResourceAttrSet("elasticstack_fleet_integration.test_integration_all_params", "version"),
+				),
+			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIgnoreMappingUpdateErrors),
+				Config:   testAccResourceIntegrationWithAllParametersStep2,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "name", "tcp"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "prerelease", "true"),
@@ -289,7 +301,24 @@ func TestAccResourceIntegrationWithAllParameters(t *testing.T) {
 	})
 }
 
-const testAccResourceIntegrationWithAllParameters = `
+const testAccResourceIntegrationWithAllParametersStep1 = `
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_fleet_integration" "test_integration_all_params" {
+  name                          = "tcp"
+  version                       = "1.16.0"
+  prerelease                    = true
+  force                         = true
+  skip_data_stream_rollover     = true
+  ignore_constraints            = true
+  skip_destroy                  = true
+}
+`
+
+const testAccResourceIntegrationWithAllParametersStep2 = `
 provider "elasticstack" {
   elasticsearch {}
   kibana {}

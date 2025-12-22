@@ -5,12 +5,16 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
 var (
 	_ resource.Resource              = &integrationResource{}
 	_ resource.ResourceWithConfigure = &integrationResource{}
+
+	// MinVersionIgnoreMappingUpdateErrors is the minimum version that supports the ignore_mapping_update_errors parameter
+	MinVersionIgnoreMappingUpdateErrors = version.Must(version.NewVersion("8.11.0"))
 )
 
 // NewResource is a helper function to simplify the provider implementation.
