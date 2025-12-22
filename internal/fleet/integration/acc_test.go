@@ -9,6 +9,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/integration"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -17,9 +18,8 @@ import (
 )
 
 var (
-	minVersionIntegration               = version.Must(version.NewVersion("8.6.0"))
-	minVersionIntegrationPolicy         = version.Must(version.NewVersion("8.10.0"))
-	minVersionIgnoreMappingUpdateErrors = version.Must(version.NewVersion("8.11.0"))
+	minVersionIntegration       = version.Must(version.NewVersion("8.6.0"))
+	minVersionIntegrationPolicy = version.Must(version.NewVersion("8.10.0"))
 )
 
 func TestAccResourceIntegrationFromSDK(t *testing.T) {
@@ -286,7 +286,7 @@ func TestAccResourceIntegrationWithAllParameters(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIgnoreMappingUpdateErrors),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(integration.MinVersionIgnoreMappingUpdateErrors),
 				Config:   testAccResourceIntegrationWithAllParametersStep2,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "name", "tcp"),
