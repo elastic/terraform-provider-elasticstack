@@ -1,9 +1,5 @@
 ## [Unreleased]
 
-### Added
-
-- Add `advanced_settings` to `elasticstack_fleet_agent_policy` to configure agent logging, CPU limits, and download settings ([#1545](https://github.com/elastic/terraform-provider-elasticstack/pull/1545))
-
 ### Breaking changes
 
 #### `elasticstack_fleet_integration_policy` input block has changed to a map attribute. 
@@ -70,6 +66,8 @@ inputs = {
 
 ### Changes
 
+- Add `advanced_settings` to `elasticstack_fleet_agent_policy` to configure agent logging, CPU limits, and download settings ([#1545](https://github.com/elastic/terraform-provider-elasticstack/pull/1545))
+- Prevent provider panic when importing a non-existant `elasticstack_elasticsearch_ml_datafeed`. ([#1579](https://github.com/elastic/terraform-provider-elasticstack/pull/1579))
 - Fix handling of empty `except` attributes in `elasticstack_elasticsearch_security_role` ([#1581](https://github.com/elastic/terraform-provider-elasticstack/pull/1581))
 - Fix the enabled property being ignored in `elasticstack_kibana_alerting_rule` ([#1527](https://github.com/elastic/terraform-provider-elasticstack/pull/1527))
 - Add `advanced_monitoring_options` to `elasticstack_fleet_agent_policy` to configure HTTP monitoring endpoint and diagnostics settings ([#1537](https://github.com/elastic/terraform-provider-elasticstack/pull/1537))

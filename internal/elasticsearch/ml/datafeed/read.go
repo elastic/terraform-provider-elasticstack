@@ -27,6 +27,11 @@ func (r *datafeedResource) read(ctx context.Context, model *Datafeed) (bool, fwd
 		return false, diags
 	}
 
+	if apiModel == nil {
+		// Datafeed not found
+		return false, diags
+	}
+
 	// Convert API model to TF model
 	convertDiags := model.FromAPIModel(ctx, apiModel)
 	diags.Append(convertDiags...)
