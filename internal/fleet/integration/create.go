@@ -41,44 +41,40 @@ func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state 
 		IgnoreConstraints: planModel.IgnoreConstraints.ValueBool(),
 	}
 
-	// Check if ignore_mapping_update_errors is set and validate version support
-	if utils.IsKnown(planModel.IgnoreMappingUpdateErrors) {
+	// Check if version-dependent parameters are set and validate version support
+	needsVersionCheck := utils.IsKnown(planModel.IgnoreMappingUpdateErrors) || utils.IsKnown(planModel.SkipDataStreamRollover)
+	if needsVersionCheck {
 		serverVersion, versionDiags := r.client.ServerVersion(ctx)
 		respDiags.Append(diagutil.FrameworkDiagsFromSDK(versionDiags)...)
 		if respDiags.HasError() {
 			return
 		}
 
-		if serverVersion.LessThan(MinVersionIgnoreMappingUpdateErrors) {
-			respDiags.AddError(
-				"Unsupported parameter for server version",
-				fmt.Sprintf("The 'ignore_mapping_update_errors' parameter requires server version %s or higher. Current version: %s",
-					MinVersionIgnoreMappingUpdateErrors.String(), serverVersion.String()),
-			)
-			return
+		// Validate ignore_mapping_update_errors
+		if utils.IsKnown(planModel.IgnoreMappingUpdateErrors) {
+			if serverVersion.LessThan(MinVersionIgnoreMappingUpdateErrors) {
+				respDiags.AddError(
+					"Unsupported parameter for server version",
+					fmt.Sprintf("The 'ignore_mapping_update_errors' parameter requires server version %s or higher. Current version: %s",
+						MinVersionIgnoreMappingUpdateErrors.String(), serverVersion.String()),
+				)
+				return
+			}
+			installOptions.IgnoreMappingUpdateErrors = planModel.IgnoreMappingUpdateErrors.ValueBoolPointer()
 		}
 
-		installOptions.IgnoreMappingUpdateErrors = planModel.IgnoreMappingUpdateErrors.ValueBoolPointer()
-	}
-
-	// Check if skip_data_stream_rollover is set and validate version support
-	if utils.IsKnown(planModel.SkipDataStreamRollover) {
-		serverVersion, versionDiags := r.client.ServerVersion(ctx)
-		respDiags.Append(diagutil.FrameworkDiagsFromSDK(versionDiags)...)
-		if respDiags.HasError() {
-			return
+		// Validate skip_data_stream_rollover
+		if utils.IsKnown(planModel.SkipDataStreamRollover) {
+			if serverVersion.LessThan(MinVersionSkipDataStreamRollover) {
+				respDiags.AddError(
+					"Unsupported parameter for server version",
+					fmt.Sprintf("The 'skip_data_stream_rollover' parameter requires server version %s or higher. Current version: %s",
+						MinVersionSkipDataStreamRollover.String(), serverVersion.String()),
+				)
+				return
+			}
+			installOptions.SkipDataStreamRollover = planModel.SkipDataStreamRollover.ValueBoolPointer()
 		}
-
-		if serverVersion.LessThan(MinVersionSkipDataStreamRollover) {
-			respDiags.AddError(
-				"Unsupported parameter for server version",
-				fmt.Sprintf("The 'skip_data_stream_rollover' parameter requires server version %s or higher. Current version: %s",
-					MinVersionSkipDataStreamRollover.String(), serverVersion.String()),
-			)
-			return
-		}
-
-		installOptions.SkipDataStreamRollover = planModel.SkipDataStreamRollover.ValueBoolPointer()
 	}
 
 	// If space_ids is set, use space-aware installation
