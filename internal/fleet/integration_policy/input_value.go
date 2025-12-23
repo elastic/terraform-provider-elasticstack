@@ -35,7 +35,7 @@ func (v InputValue) Equal(o attr.Value) bool {
 }
 
 func (v InputValue) MaybeEnabled(ctx context.Context) (bool, diag.Diagnostics) {
-	if v.IsNull() || v.IsUnknown() {
+	if !utils.IsKnown(v) {
 		return false, nil
 	}
 
