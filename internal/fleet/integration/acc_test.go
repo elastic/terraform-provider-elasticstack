@@ -280,7 +280,6 @@ func TestAccResourceIntegrationWithAllParameters(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "name", "tcp"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "prerelease", "true"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "skip_data_stream_rollover", "true"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "ignore_constraints", "true"),
 					resource.TestCheckResourceAttrSet("elasticstack_fleet_integration.test_integration_all_params", "version"),
 				),
@@ -312,7 +311,6 @@ resource "elasticstack_fleet_integration" "test_integration_all_params" {
   version                       = "1.16.0"
   prerelease                    = true
   force                         = true
-  skip_data_stream_rollover     = true
   ignore_constraints            = true
   skip_destroy                  = true
 }

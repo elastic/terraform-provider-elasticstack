@@ -15,6 +15,7 @@ var (
 
 	// MinVersionIgnoreMappingUpdateErrors is the minimum version that supports the ignore_mapping_update_errors parameter
 	MinVersionIgnoreMappingUpdateErrors = version.Must(version.NewVersion("8.11.0"))
+	MinVersionSkipDataStreamRollover    = MinVersionIgnoreMappingUpdateErrors
 )
 
 // NewResource is a helper function to simplify the provider implementation.

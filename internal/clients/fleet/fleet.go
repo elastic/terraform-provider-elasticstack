@@ -405,7 +405,7 @@ type InstallPackageOptions struct {
 	Force                     bool
 	Prerelease                bool
 	IgnoreMappingUpdateErrors *bool
-	SkipDataStreamRollover    bool
+	SkipDataStreamRollover    *bool
 	IgnoreConstraints         bool
 }
 
@@ -414,7 +414,7 @@ func InstallPackage(ctx context.Context, client *Client, name, version string, o
 	params := kbapi.PostFleetEpmPackagesPkgnamePkgversionParams{
 		Prerelease:                &opts.Prerelease,
 		IgnoreMappingUpdateErrors: opts.IgnoreMappingUpdateErrors,
-		SkipDataStreamRollover:    &opts.SkipDataStreamRollover,
+		SkipDataStreamRollover:    opts.SkipDataStreamRollover,
 	}
 	body := kbapi.PostFleetEpmPackagesPkgnamePkgversionJSONRequestBody{
 		Force:             &opts.Force,

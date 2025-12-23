@@ -36,10 +36,9 @@ func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state 
 	name := planModel.Name.ValueString()
 	version := planModel.Version.ValueString()
 	installOptions := fleet.InstallPackageOptions{
-		Force:                  planModel.Force.ValueBool(),
-		Prerelease:             planModel.Prerelease.ValueBool(),
-		SkipDataStreamRollover: planModel.SkipDataStreamRollover.ValueBool(),
-		IgnoreConstraints:      planModel.IgnoreConstraints.ValueBool(),
+		Force:             planModel.Force.ValueBool(),
+		Prerelease:        planModel.Prerelease.ValueBool(),
+		IgnoreConstraints: planModel.IgnoreConstraints.ValueBool(),
 	}
 
 	// Check if ignore_mapping_update_errors is set and validate version support
@@ -60,6 +59,26 @@ func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state 
 		}
 
 		installOptions.IgnoreMappingUpdateErrors = planModel.IgnoreMappingUpdateErrors.ValueBoolPointer()
+	}
+
+	// Check if ignore_mapping_update_errors is set and validate version support
+	if utils.IsKnown(planModel.SkipDataStreamRollover) {
+		serverVersion, versionDiags := r.client.ServerVersion(ctx)
+		respDiags.Append(diagutil.FrameworkDiagsFromSDK(versionDiags)...)
+		if respDiags.HasError() {
+			return
+		}
+
+		if serverVersion.LessThan(MinVersionSkipDataStreamRollover) {
+			respDiags.AddError(
+				"Unsupported parameter for server version",
+				fmt.Sprintf("The 'skip_data_stream_rollover' parameter requires server version %s or higher. Current version: %s",
+					MinVersionSkipDataStreamRollover.String(), serverVersion.String()),
+			)
+			return
+		}
+
+		installOptions.SkipDataStreamRollover = planModel.SkipDataStreamRollover.ValueBoolPointer()
 	}
 
 	// If space_ids is set, use space-aware installation
