@@ -74,6 +74,7 @@ func GetSchema() schema.Schema {
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
+					SetUnknownIfStateHasChanges(),
 				},
 			},
 			"end": schema.StringAttribute{

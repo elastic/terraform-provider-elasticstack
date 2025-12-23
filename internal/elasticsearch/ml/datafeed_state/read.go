@@ -6,7 +6,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -64,9 +63,7 @@ func (r *mlDatafeedStateResource) read(ctx context.Context, data MLDatafeedState
 
 	data.Id = types.StringValue(compId.String())
 
-	if datafeed.State(datafeedStats.State) == datafeed.StateStarted {
-		diags.Append(data.SetStartAndEndFromAPI(datafeedStats)...)
-	}
+	diags.Append(data.SetStartAndEndFromAPI(datafeedStats)...)
 
 	return &data, diags
 }

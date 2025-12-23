@@ -73,6 +73,10 @@ inputs = {
 - Add `advanced_monitoring_options` to `elasticstack_fleet_agent_policy` to configure HTTP monitoring endpoint and diagnostics settings ([#1537](https://github.com/elastic/terraform-provider-elasticstack/pull/1537))
 - Move the `input` block to an `inputs` map in `elasticstack_fleet_integration_policy` ([#1482](https://github.com/elastic/terraform-provider-elasticstack/pull/1482))
 - Fix `elasticstack_elasticsearch_ml_anomaly_detection_job` import to be resilient to sparse state values
+- Fix a state consistency issue when an `elasticstack_elasticsearch_ml_datafeed_state` resource without `start` configured is started after being stopped. ([#1563](https://github.com/elastic/terraform-provider-elasticstack/pull/1563))
+- Fix a state consistency issue when `elasticstack_elasticsearch_ml_datafeed_state` `start` and `end` times are specified in a timezone that is not the server timezone `elasticstack_elasticsearch_ml_datafeed_state` resource without `start` configured is started after being stopped. ([#1563](https://github.com/elastic/terraform-provider-elasticstack/pull/1563))
+- Fix an issue where `elasticstack_elasticsearch_ml_datafeed_state` `start` and `end` times where treated by the provider as unix seconds, but by the API as unix milliseconds. 
+
 
 ## [0.13.1] - 2025-12-12
 
