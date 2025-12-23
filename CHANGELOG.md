@@ -66,6 +66,7 @@ inputs = {
 
 ### Changes
 
+- Add support for Fleet API installation parameters to `elasticstack_fleet_integration` resource: `prerelease`, `ignore_mapping_update_errors` (8.11.0+), `skip_data_stream_rollover` (8.11.0+), and `ignore_constraints`. These parameters provide full control over package installation behavior and enable installation of prerelease (beta, non-GA) packages.
 - Add `advanced_settings` to `elasticstack_fleet_agent_policy` to configure agent logging, CPU limits, and download settings ([#1545](https://github.com/elastic/terraform-provider-elasticstack/pull/1545))
 - Prevent provider panic when importing a non-existant `elasticstack_elasticsearch_ml_datafeed`. ([#1579](https://github.com/elastic/terraform-provider-elasticstack/pull/1579))
 - Fix handling of empty `except` attributes in `elasticstack_elasticsearch_security_role` ([#1581](https://github.com/elastic/terraform-provider-elasticstack/pull/1581))
