@@ -131,9 +131,10 @@ jobs:
           - '8.16.6'
           - '8.17.1'
           - '8.18.8'
-          - '8.19.8'
+          - '8.19.9'
           - '9.0.8'
-          - '9.1.8'
+          - '9.1.9'
+          - '9.2.3'
         # The default runner image can be overridden for specific versions if needed
         # include:
         #   - version: '8.0.1'

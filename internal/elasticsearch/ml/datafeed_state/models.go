@@ -1,9 +1,9 @@
 package datafeed_state
 
 import (
-	"strconv"
 	"time"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
@@ -25,42 +25,57 @@ type MLDatafeedStateData struct {
 	Timeouts                timeouts.Value       `tfsdk:"timeouts"`
 }
 
-func (d *MLDatafeedStateData) GetStartAsString() (string, diag.Diagnostics) {
-	return d.getTimeAttributeAsString(d.Start)
-}
-
-func (d *MLDatafeedStateData) GetEndAsString() (string, diag.Diagnostics) {
-	return d.getTimeAttributeAsString(d.End)
-}
-
-func (d *MLDatafeedStateData) getTimeAttributeAsString(val timetypes.RFC3339) (string, diag.Diagnostics) {
-	if !utils.IsKnown(val) {
-		return "", nil
+func timeInSameLocation(ms int64, source timetypes.RFC3339) (time.Time, diag.Diagnostics) {
+	t := time.UnixMilli(ms)
+	if !utils.IsKnown(source) {
+		return t, nil
 	}
 
-	valTime, diags := val.ValueRFC3339Time()
+	sourceTime, diags := source.ValueRFC3339Time()
 	if diags.HasError() {
-		return "", diags
+		return t, diags
 	}
-	return strconv.FormatInt(valTime.Unix(), 10), nil
+
+	t = t.In(sourceTime.Location())
+	return t, nil
 }
 
 func (d *MLDatafeedStateData) SetStartAndEndFromAPI(datafeedStats *models.DatafeedStats) diag.Diagnostics {
 	var diags diag.Diagnostics
-	if datafeedStats.RunningState == nil {
-		diags.AddWarning("Running state was empty for a started datafeed", "The Elasticsearch API returned an empty running state for a Datafeed which was successfully started. Ignoring start and end response values.")
-		return diags
+
+	if datafeed.State(datafeedStats.State) == datafeed.StateStarted {
+		if datafeedStats.RunningState == nil {
+			diags.AddWarning("Running state was empty for a started datafeed", "The Elasticsearch API returned an empty running state for a Datafeed which was successfully started. Ignoring start and end response values.")
+			return diags
+		}
+
+		if datafeedStats.RunningState.SearchInterval != nil {
+			start, timeDiags := timeInSameLocation(datafeedStats.RunningState.SearchInterval.StartMS, d.Start)
+			diags.Append(timeDiags...)
+			if diags.HasError() {
+				return diags
+			}
+
+			end, timeDiags := timeInSameLocation(datafeedStats.RunningState.SearchInterval.EndMS, d.End)
+			diags.Append(timeDiags...)
+			if diags.HasError() {
+				return diags
+			}
+
+			d.Start = timetypes.NewRFC3339TimeValue(start)
+			d.End = timetypes.NewRFC3339TimeValue(end)
+		}
+
+		if datafeedStats.RunningState.RealTimeConfigured {
+			d.End = timetypes.NewRFC3339Null()
+		}
 	}
 
-	if datafeedStats.RunningState.SearchInterval != nil {
-		d.Start = timetypes.NewRFC3339TimeValue(time.UnixMilli(datafeedStats.RunningState.SearchInterval.StartMS))
-		d.End = timetypes.NewRFC3339TimeValue(time.UnixMilli(datafeedStats.RunningState.SearchInterval.EndMS))
-	} else {
+	if d.Start.IsUnknown() {
 		d.Start = timetypes.NewRFC3339Null()
-		d.End = timetypes.NewRFC3339Null()
 	}
 
-	if datafeedStats.RunningState.RealTimeConfigured {
+	if d.End.IsUnknown() {
 		d.End = timetypes.NewRFC3339Null()
 	}
 

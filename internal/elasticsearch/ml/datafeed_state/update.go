@@ -181,18 +181,10 @@ func (r *mlDatafeedStateResource) performStateTransition(ctx context.Context, cl
 	// Initiate the state change
 	switch desiredState {
 	case datafeed.StateStarted:
-		start, diags := data.GetStartAsString()
-		if diags.HasError() {
-			return false, diags
-		}
-		end, endDiags := data.GetEndAsString()
-		diags.Append(endDiags...)
-		if diags.HasError() {
-			return false, diags
-		}
+		start := data.Start.ValueString()
+		end := data.End.ValueString()
 
-		startDiags := elasticsearch.StartDatafeed(ctx, client, datafeedId, start, end, timeout)
-		diags.Append(startDiags...)
+		diags := elasticsearch.StartDatafeed(ctx, client, datafeedId, start, end, timeout)
 		if diags.HasError() {
 			return false, diags
 		}
