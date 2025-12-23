@@ -50,12 +50,14 @@ func (d *MLDatafeedStateData) SetStartAndEndFromAPI(datafeedStats *models.Datafe
 		}
 
 		if datafeedStats.RunningState.SearchInterval != nil {
-			start, diags := timeInSameLocation(datafeedStats.RunningState.SearchInterval.StartMS, d.Start)
+			start, timeDiags := timeInSameLocation(datafeedStats.RunningState.SearchInterval.StartMS, d.Start)
+			diags.Append(timeDiags...)
 			if diags.HasError() {
 				return diags
 			}
 
-			end, diags := timeInSameLocation(datafeedStats.RunningState.SearchInterval.EndMS, d.End)
+			end, timeDiags := timeInSameLocation(datafeedStats.RunningState.SearchInterval.EndMS, d.End)
+			diags.Append(timeDiags...)
 			if diags.HasError() {
 				return diags
 			}
