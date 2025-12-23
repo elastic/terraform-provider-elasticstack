@@ -61,7 +61,7 @@ func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state 
 		installOptions.IgnoreMappingUpdateErrors = planModel.IgnoreMappingUpdateErrors.ValueBoolPointer()
 	}
 
-	// Check if ignore_mapping_update_errors is set and validate version support
+	// Check if skip_data_stream_rollover is set and validate version support
 	if utils.IsKnown(planModel.SkipDataStreamRollover) {
 		serverVersion, versionDiags := r.client.ServerVersion(ctx)
 		respDiags.Append(diagutil.FrameworkDiagsFromSDK(versionDiags)...)
