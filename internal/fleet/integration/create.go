@@ -35,14 +35,15 @@ func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state 
 
 	name := planModel.Name.ValueString()
 	version := planModel.Version.ValueString()
-	force := planModel.Force.ValueBool()
-	prerelease := planModel.Prerelease.ValueBool()
-	ignoreMappingUpdateErrors := planModel.IgnoreMappingUpdateErrors.ValueBool()
-	skipDataStreamRollover := planModel.SkipDataStreamRollover.ValueBool()
-	ignoreConstraints := planModel.IgnoreConstraints.ValueBool()
+	installOptions := fleet.InstallPackageOptions{
+		Force:                  planModel.Force.ValueBool(),
+		Prerelease:             planModel.Prerelease.ValueBool(),
+		SkipDataStreamRollover: planModel.SkipDataStreamRollover.ValueBool(),
+		IgnoreConstraints:      planModel.IgnoreConstraints.ValueBool(),
+	}
 
 	// Check if ignore_mapping_update_errors is set and validate version support
-	if utils.IsKnown(planModel.IgnoreMappingUpdateErrors) && ignoreMappingUpdateErrors {
+	if utils.IsKnown(planModel.IgnoreMappingUpdateErrors) {
 		serverVersion, versionDiags := r.client.ServerVersion(ctx)
 		respDiags.Append(diagutil.FrameworkDiagsFromSDK(versionDiags)...)
 		if respDiags.HasError() {
@@ -57,19 +58,20 @@ func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state 
 			)
 			return
 		}
+
+		installOptions.IgnoreMappingUpdateErrors = planModel.IgnoreMappingUpdateErrors.ValueBoolPointer()
 	}
 
 	// If space_ids is set, use space-aware installation
-	var spaceID string
 	if !planModel.SpaceIds.IsNull() && !planModel.SpaceIds.IsUnknown() {
 		var tempDiags diag.Diagnostics
 		spaceIDs := utils.SetTypeAs[types.String](ctx, planModel.SpaceIds, path.Root("space_ids"), &tempDiags)
 		if !tempDiags.HasError() && len(spaceIDs) > 0 {
-			spaceID = spaceIDs[0].ValueString()
+			installOptions.SpaceID = spaceIDs[0].ValueString()
 		}
 	}
 
-	diags = fleet.InstallPackage(ctx, client, name, version, spaceID, force, prerelease, ignoreMappingUpdateErrors, skipDataStreamRollover, ignoreConstraints)
+	diags = fleet.InstallPackage(ctx, client, name, version, installOptions)
 	respDiags.Append(diags...)
 	if respDiags.HasError() {
 		return
