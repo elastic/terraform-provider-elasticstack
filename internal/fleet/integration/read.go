@@ -30,7 +30,7 @@ func (r *integrationResource) Read(ctx context.Context, req resource.ReadRequest
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	if pkg.Status != nil && *pkg.Status != "installed" {
+	if pkg == nil || (pkg.Status != nil && *pkg.Status != "installed") {
 		resp.State.RemoveResource(ctx)
 		return
 	}

@@ -3,7 +3,6 @@ package fleet
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -12,10 +11,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-)
-
-var (
-	ErrPackageNotFound = errors.New("package not found")
 )
 
 // buildSpaceAwarePath constructs an API path with space awareness.
@@ -393,7 +388,7 @@ func GetPackage(ctx context.Context, client *Client, name, version string) (*kba
 	case http.StatusOK:
 		return &resp.JSON200.Item, nil
 	case http.StatusNotFound:
-		return nil, diagutil.FrameworkDiagFromError(ErrPackageNotFound)
+		return nil, nil
 	default:
 		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
 	}

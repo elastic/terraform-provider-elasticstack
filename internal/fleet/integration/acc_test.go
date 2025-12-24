@@ -147,6 +147,75 @@ func TestAccResourceIntegrationDeleted(t *testing.T) {
 	})
 }
 
+func TestAccResourceIntegration_ExternalChange(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
+				Config:   testAccResourceIntegration,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "name", "tcp"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "version", "1.16.0"),
+				),
+			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
+				Config:   testAccResourceIntegration,
+				PreConfig: func() {
+					notSupported, err := versionutils.CheckIfVersionIsUnsupported(minVersionIntegration)()
+					require.NoError(t, err)
+
+					// Skip the pre-config if the version is not supported
+					if notSupported {
+						return
+					}
+
+					client, err := clients.NewAcceptanceTestingClient()
+					require.NoError(t, err)
+
+					fleetClient, err := client.GetFleetClient()
+					require.NoError(t, err)
+
+					diags := fleet.InstallPackage(t.Context(), fleetClient, "tcp", "1.17.0", "", true)
+					require.Empty(t, diags)
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "name", "tcp"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "version", "1.16.0"),
+				),
+			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
+				Config:   testAccResourceIntegration,
+				PreConfig: func() {
+					notSupported, err := versionutils.CheckIfVersionIsUnsupported(minVersionIntegration)()
+					require.NoError(t, err)
+
+					// Skip the pre-config if the version is not supported
+					if notSupported {
+						return
+					}
+
+					client, err := clients.NewAcceptanceTestingClient()
+					require.NoError(t, err)
+
+					fleetClient, err := client.GetFleetClient()
+					require.NoError(t, err)
+
+					diags := fleet.Uninstall(t.Context(), fleetClient, "tcp", "1.16.0", "", true)
+					require.Empty(t, diags)
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "name", "tcp"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "version", "1.16.0"),
+				),
+			},
+		},
+	})
+}
+
 const testAccResourceIntegration = `
 provider "elasticstack" {
   elasticsearch {}
