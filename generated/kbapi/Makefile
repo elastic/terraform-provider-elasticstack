@@ -2,7 +2,7 @@
 SHELL := /bin/bash
 ROOT_DIR := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 
-github_ref ?= ac9d40cacb0860b7cd9be55b38515fd56b63a4c2
+github_ref ?= b1d74aab43b200d470f33f0d4d9dae7a08b4df87
 oas_url    := https://raw.githubusercontent.com/elastic/kibana/$(github_ref)/oas_docs/output/kibana.yaml
 
 .PHONY: all
