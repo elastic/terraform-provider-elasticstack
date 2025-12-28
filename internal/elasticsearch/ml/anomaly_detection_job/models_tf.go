@@ -17,23 +17,24 @@ import (
 
 // AnomalyDetectionJobTFModel represents the Terraform resource model for ML anomaly detection jobs
 type AnomalyDetectionJobTFModel struct {
-	ID                                   types.String          `tfsdk:"id"`
-	ElasticsearchConnection              types.List            `tfsdk:"elasticsearch_connection"`
-	JobID                                types.String          `tfsdk:"job_id"`
-	Description                          types.String          `tfsdk:"description"`
-	Groups                               types.Set             `tfsdk:"groups"`
-	AnalysisConfig                       AnalysisConfigTFModel `tfsdk:"analysis_config"`
-	AnalysisLimits                       types.Object          `tfsdk:"analysis_limits"`
-	DataDescription                      types.Object          `tfsdk:"data_description"`
-	ModelPlotConfig                      types.Object          `tfsdk:"model_plot_config"`
-	AllowLazyOpen                        types.Bool            `tfsdk:"allow_lazy_open"`
-	BackgroundPersistInterval            types.String          `tfsdk:"background_persist_interval"`
-	CustomSettings                       jsontypes.Normalized  `tfsdk:"custom_settings"`
-	DailyModelSnapshotRetentionAfterDays types.Int64           `tfsdk:"daily_model_snapshot_retention_after_days"`
-	ModelSnapshotRetentionDays           types.Int64           `tfsdk:"model_snapshot_retention_days"`
-	RenormalizationWindowDays            types.Int64           `tfsdk:"renormalization_window_days"`
-	ResultsIndexName                     types.String          `tfsdk:"results_index_name"`
-	ResultsRetentionDays                 types.Int64           `tfsdk:"results_retention_days"`
+	ID                      types.String `tfsdk:"id"`
+	ElasticsearchConnection types.List   `tfsdk:"elasticsearch_connection"`
+	JobID                   types.String `tfsdk:"job_id"`
+	Description             types.String `tfsdk:"description"`
+	Groups                  types.Set    `tfsdk:"groups"`
+	// AnalysisConfig is required in configuration, but can be null in state during import.
+	AnalysisConfig                       *AnalysisConfigTFModel `tfsdk:"analysis_config"`
+	AnalysisLimits                       types.Object           `tfsdk:"analysis_limits"`
+	DataDescription                      types.Object           `tfsdk:"data_description"`
+	ModelPlotConfig                      types.Object           `tfsdk:"model_plot_config"`
+	AllowLazyOpen                        types.Bool             `tfsdk:"allow_lazy_open"`
+	BackgroundPersistInterval            types.String           `tfsdk:"background_persist_interval"`
+	CustomSettings                       jsontypes.Normalized   `tfsdk:"custom_settings"`
+	DailyModelSnapshotRetentionAfterDays types.Int64            `tfsdk:"daily_model_snapshot_retention_after_days"`
+	ModelSnapshotRetentionDays           types.Int64            `tfsdk:"model_snapshot_retention_days"`
+	RenormalizationWindowDays            types.Int64            `tfsdk:"renormalization_window_days"`
+	ResultsIndexName                     types.String           `tfsdk:"results_index_name"`
+	ResultsRetentionDays                 types.Int64            `tfsdk:"results_retention_days"`
 
 	// Read-only computed fields
 	CreateTime      types.String `tfsdk:"create_time"`
@@ -124,9 +125,15 @@ func (plan *AnomalyDetectionJobTFModel) toAPIModel(ctx context.Context) (*Anomal
 		apiModel.Groups = groups
 	}
 
+	if plan.AnalysisConfig == nil {
+		diags.AddError("Missing analysis_config", "analysis_config is required")
+		return nil, diags
+	}
+	analysisConfig := plan.AnalysisConfig
+
 	// Convert detectors
-	apiDetectors := make([]DetectorAPIModel, len(plan.AnalysisConfig.Detectors))
-	for i, detector := range plan.AnalysisConfig.Detectors {
+	apiDetectors := make([]DetectorAPIModel, len(analysisConfig.Detectors))
+	for i, detector := range analysisConfig.Detectors {
 		apiDetectors[i] = DetectorAPIModel{
 			Function:            detector.Function.ValueString(),
 			FieldName:           detector.FieldName.ValueString(),
@@ -143,40 +150,40 @@ func (plan *AnomalyDetectionJobTFModel) toAPIModel(ctx context.Context) (*Anomal
 
 	// Convert influencers
 	var influencers []string
-	if utils.IsKnown(plan.AnalysisConfig.Influencers) {
-		d := plan.AnalysisConfig.Influencers.ElementsAs(ctx, &influencers, false)
+	if utils.IsKnown(analysisConfig.Influencers) {
+		d := analysisConfig.Influencers.ElementsAs(ctx, &influencers, false)
 		diags.Append(d...)
 	}
 
 	apiModel.AnalysisConfig = AnalysisConfigAPIModel{
-		BucketSpan:              plan.AnalysisConfig.BucketSpan.ValueString(),
-		CategorizationFieldName: plan.AnalysisConfig.CategorizationFieldName.ValueString(),
+		BucketSpan:              analysisConfig.BucketSpan.ValueString(),
+		CategorizationFieldName: analysisConfig.CategorizationFieldName.ValueString(),
 		Detectors:               apiDetectors,
 		Influencers:             influencers,
-		Latency:                 plan.AnalysisConfig.Latency.ValueString(),
-		ModelPruneWindow:        plan.AnalysisConfig.ModelPruneWindow.ValueString(),
-		SummaryCountFieldName:   plan.AnalysisConfig.SummaryCountFieldName.ValueString(),
+		Latency:                 analysisConfig.Latency.ValueString(),
+		ModelPruneWindow:        analysisConfig.ModelPruneWindow.ValueString(),
+		SummaryCountFieldName:   analysisConfig.SummaryCountFieldName.ValueString(),
 	}
 
-	if utils.IsKnown(plan.AnalysisConfig.MultivariateByFields) {
-		apiModel.AnalysisConfig.MultivariateByFields = utils.Pointer(plan.AnalysisConfig.MultivariateByFields.ValueBool())
+	if utils.IsKnown(analysisConfig.MultivariateByFields) {
+		apiModel.AnalysisConfig.MultivariateByFields = utils.Pointer(analysisConfig.MultivariateByFields.ValueBool())
 	}
 
 	// Convert categorization filters
-	if utils.IsKnown(plan.AnalysisConfig.CategorizationFilters) {
+	if utils.IsKnown(analysisConfig.CategorizationFilters) {
 		var categorizationFilters []string
-		d := plan.AnalysisConfig.CategorizationFilters.ElementsAs(ctx, &categorizationFilters, false)
+		d := analysisConfig.CategorizationFilters.ElementsAs(ctx, &categorizationFilters, false)
 		diags.Append(d...)
 		apiModel.AnalysisConfig.CategorizationFilters = categorizationFilters
 	}
 
 	// Convert per_partition_categorization
-	if plan.AnalysisConfig.PerPartitionCategorization != nil {
+	if analysisConfig.PerPartitionCategorization != nil {
 		apiModel.AnalysisConfig.PerPartitionCategorization = &PerPartitionCategorizationAPIModel{
-			Enabled: plan.AnalysisConfig.PerPartitionCategorization.Enabled.ValueBool(),
+			Enabled: analysisConfig.PerPartitionCategorization.Enabled.ValueBool(),
 		}
-		if utils.IsKnown(plan.AnalysisConfig.PerPartitionCategorization.StopOnWarn) {
-			apiModel.AnalysisConfig.PerPartitionCategorization.StopOnWarn = utils.Pointer(plan.AnalysisConfig.PerPartitionCategorization.StopOnWarn.ValueBool())
+		if utils.IsKnown(analysisConfig.PerPartitionCategorization.StopOnWarn) {
+			apiModel.AnalysisConfig.PerPartitionCategorization.StopOnWarn = utils.Pointer(analysisConfig.PerPartitionCategorization.StopOnWarn.ValueBool())
 		}
 	}
 
@@ -331,12 +338,15 @@ func (tfModel *AnomalyDetectionJobTFModel) fromAPIModel(ctx context.Context, api
 
 // Helper functions for schema attribute types
 // Conversion helper methods
-func (tfModel *AnomalyDetectionJobTFModel) convertAnalysisConfigFromAPI(ctx context.Context, apiConfig *AnalysisConfigAPIModel, diags *diag.Diagnostics) AnalysisConfigTFModel {
+func (tfModel *AnomalyDetectionJobTFModel) convertAnalysisConfigFromAPI(ctx context.Context, apiConfig *AnalysisConfigAPIModel, diags *diag.Diagnostics) *AnalysisConfigTFModel {
 	if apiConfig == nil || apiConfig.BucketSpan == "" {
-		return AnalysisConfigTFModel{}
+		return nil
 	}
 
-	analysisConfigTF := tfModel.AnalysisConfig
+	var analysisConfigTF AnalysisConfigTFModel
+	if tfModel.AnalysisConfig != nil {
+		analysisConfigTF = *tfModel.AnalysisConfig
+	}
 	analysisConfigTF.BucketSpan = types.StringValue(apiConfig.BucketSpan)
 
 	// Convert optional string fields
@@ -352,11 +362,15 @@ func (tfModel *AnomalyDetectionJobTFModel) convertAnalysisConfigFromAPI(ctx cont
 	var categorizationFiltersDiags diag.Diagnostics
 	analysisConfigTF.CategorizationFilters, categorizationFiltersDiags = typeutils.NonEmptyListOrDefault(ctx, analysisConfigTF.CategorizationFilters, types.StringType, apiConfig.CategorizationFilters)
 	diags.Append(categorizationFiltersDiags...)
+	// Ensure the list is properly typed (handles untyped zero-value lists from import)
+	analysisConfigTF.CategorizationFilters = typeutils.EnsureTypedList(ctx, analysisConfigTF.CategorizationFilters, types.StringType)
 
 	// Convert influencers
 	var influencersDiags diag.Diagnostics
 	analysisConfigTF.Influencers, influencersDiags = typeutils.NonEmptyListOrDefault(ctx, analysisConfigTF.Influencers, types.StringType, apiConfig.Influencers)
 	diags.Append(influencersDiags...)
+	// Ensure the list is properly typed (handles untyped zero-value lists from import)
+	analysisConfigTF.Influencers = typeutils.EnsureTypedList(ctx, analysisConfigTF.Influencers, types.StringType)
 
 	// Convert detectors
 	if len(apiConfig.Detectors) > 0 {
@@ -427,6 +441,8 @@ func (tfModel *AnomalyDetectionJobTFModel) convertAnalysisConfigFromAPI(ctx cont
 			var customRulesDiags diag.Diagnostics
 			detectorsTF[i].CustomRules, customRulesDiags = typeutils.NonEmptyListOrDefault(ctx, originalDetector.CustomRules, types.ObjectType{AttrTypes: getCustomRuleAttrTypes()}, apiConfig.Detectors[i].CustomRules)
 			diags.Append(customRulesDiags...)
+			// Ensure the list is properly typed (handles untyped zero-value lists from import)
+			detectorsTF[i].CustomRules = typeutils.EnsureTypedList(ctx, detectorsTF[i].CustomRules, types.ObjectType{AttrTypes: getCustomRuleAttrTypes()})
 		}
 		analysisConfigTF.Detectors = detectorsTF
 	}
@@ -440,7 +456,7 @@ func (tfModel *AnomalyDetectionJobTFModel) convertAnalysisConfigFromAPI(ctx cont
 		analysisConfigTF.PerPartitionCategorization = &perPartitionCategorizationTF
 	}
 
-	return analysisConfigTF
+	return &analysisConfigTF
 }
 
 func (tfModel *AnomalyDetectionJobTFModel) convertDataDescriptionFromAPI(ctx context.Context, apiDataDescription *DataDescriptionAPIModel, diags *diag.Diagnostics) types.Object {

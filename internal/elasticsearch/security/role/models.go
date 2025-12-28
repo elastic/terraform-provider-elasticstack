@@ -354,13 +354,13 @@ func (data *RoleData) fromAPIModel(ctx context.Context, role *models.Role) diag.
 
 			var fieldSecObj types.Object
 			if index.FieldSecurity != nil {
-				grantSet, d := types.SetValueFrom(ctx, types.StringType, index.FieldSecurity.Grant)
+				grantSet, d := types.SetValueFrom(ctx, types.StringType, utils.NonNilSlice(index.FieldSecurity.Grant))
 				diags.Append(d...)
 				if diags.HasError() {
 					return diags
 				}
 
-				exceptSet, d := types.SetValueFrom(ctx, types.StringType, index.FieldSecurity.Except)
+				exceptSet, d := types.SetValueFrom(ctx, types.StringType, utils.NonNilSlice(index.FieldSecurity.Except))
 				diags.Append(d...)
 				if diags.HasError() {
 					return diags

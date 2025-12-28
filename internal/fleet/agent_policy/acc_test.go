@@ -872,3 +872,54 @@ func TestAccResourceAgentPolicyWithAdvancedMonitoring(t *testing.T) {
 		},
 	})
 }
+
+func TestAccResourceAgentPolicyNonDefaultSpace(t *testing.T) {
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	spaceName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	spaceID := fmt.Sprintf("space-%s", spaceName)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceAgentPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionSpaceIds),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+					"space_id":    config.StringVariable(spaceID),
+					"space_name":  config.StringVariable(fmt.Sprintf("Test Space %s", spaceName)),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "description", "Test Agent Policy in Non-Default Space"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "space_ids.#", "1"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_fleet_agent_policy.test_policy", "space_ids.*", spaceID),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionSpaceIds),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+					"space_id":    config.StringVariable(spaceID),
+					"space_name":  config.StringVariable(fmt.Sprintf("Test Space %s", spaceName)),
+				},
+				ResourceName:            "elasticstack_fleet_agent_policy.test_policy",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"skip_destroy"},
+				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+					res := s.RootModule().Resources["elasticstack_fleet_agent_policy.test_policy"]
+					if res == nil || res.Primary == nil {
+						return "", fmt.Errorf("resource elasticstack_fleet_agent_policy.test_policy not found in state")
+					}
+					return fmt.Sprintf("%s/%s", spaceID, res.Primary.ID), nil
+				},
+			},
+		},
+	})
+}

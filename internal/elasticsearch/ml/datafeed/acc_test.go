@@ -168,3 +168,23 @@ func TestAccResourceDatafeedComprehensive(t *testing.T) {
 		},
 	})
 }
+
+func TestAccResourceDatafeed_ImportNonExistent(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("import_missing"),
+				ConfigVariables: config.Variables{
+					"job_id":      config.StringVariable("dummy-job"),
+					"datafeed_id": config.StringVariable("dummy-datafeed"),
+				},
+				ResourceName:      "elasticstack_elasticsearch_ml_datafeed.test",
+				ImportState:       true,
+				ImportStateId:     "cluster-id/non-existent-datafeed-id",
+				ImportStateVerify: false,
+			},
+		},
+	})
+}
