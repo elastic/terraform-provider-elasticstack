@@ -1,0 +1,537 @@
+{
+  "item": {
+    "name": "gcp_vertexai",
+    "title": "GCP Vertex AI",
+    "version": "1.4.0",
+    "release": "ga",
+    "source": {
+      "license": "Elastic-2.0"
+    },
+    "description": "Collect GCP Vertex AI metrics and logs with Elastic Agent",
+    "type": "integration",
+    "download": "/epr/gcp_vertexai/gcp_vertexai-1.4.0.zip",
+    "path": "/package/gcp_vertexai/1.4.0",
+    "icons": [
+      {
+        "src": "/img/gcp_vertexai.svg",
+        "path": "/package/gcp_vertexai/1.4.0/img/gcp_vertexai.svg",
+        "title": "Vertex AI logo",
+        "size": "32x32",
+        "type": "image/svg+xml"
+      }
+    ],
+    "policy_templates_behavior": "combined_policy",
+    "conditions": {
+      "kibana": {
+        "version": "^9.2.0"
+      },
+      "elastic": {
+        "subscription": "basic"
+      }
+    },
+    "owner": {
+      "type": "elastic",
+      "github": "elastic/obs-infraobs-integrations"
+    },
+    "categories": [
+      "cloud",
+      "google_cloud",
+      "observability"
+    ],
+    "signature_path": "/epr/gcp_vertexai/gcp_vertexai-1.4.0.zip.sig",
+    "format_version": "3.3.0",
+    "readme": "/package/gcp_vertexai/1.4.0/docs/README.md",
+    "license": "basic",
+    "screenshots": [
+      {
+        "src": "/img/gcp-vertexai-overview-dashboard.png",
+        "path": "/package/gcp_vertexai/1.4.0/img/gcp-vertexai-overview-dashboard.png",
+        "title": "Vertex AI Overview Dashboard screenshot",
+        "size": "600x600",
+        "type": "image/png"
+      },
+      {
+        "src": "/img/vertexai_auditlogs.png",
+        "path": "/package/gcp_vertexai/1.4.0/img/vertexai_auditlogs.png",
+        "title": "Vertex AI Auditlogs Dashboard screenshot",
+        "size": "600x600",
+        "type": "image/png"
+      }
+    ],
+    "assets": {
+      "kibana": {
+        "dashboard": [
+          {
+            "pkgkey": "gcp_vertexai-1.4.0",
+            "service": "kibana",
+            "type": "dashboard",
+            "file": "gcp_vertexai-1b42c117-7971-424d-8015-c02f1317824d.json",
+            "path": "gcp_vertexai-1.4.0/kibana/dashboard/gcp_vertexai-1b42c117-7971-424d-8015-c02f1317824d.json"
+          },
+          {
+            "pkgkey": "gcp_vertexai-1.4.0",
+            "service": "kibana",
+            "type": "dashboard",
+            "file": "gcp_vertexai-d566516f-06fd-47e0-aba1-44148598c59a.json",
+            "path": "gcp_vertexai-1.4.0/kibana/dashboard/gcp_vertexai-d566516f-06fd-47e0-aba1-44148598c59a.json"
+          }
+        ],
+        "map": [
+          {
+            "pkgkey": "gcp_vertexai-1.4.0",
+            "service": "kibana",
+            "type": "map",
+            "file": "gcp_vertexai-a60a5081-be88-4802-aea1-fd33bd008591.json",
+            "path": "gcp_vertexai-1.4.0/kibana/map/gcp_vertexai-a60a5081-be88-4802-aea1-fd33bd008591.json"
+          }
+        ],
+        "search": [
+          {
+            "pkgkey": "gcp_vertexai-1.4.0",
+            "service": "kibana",
+            "type": "search",
+            "file": "gcp_vertexai-201625b6-343e-43c7-ab67-e77d1f8ed790.json",
+            "path": "gcp_vertexai-1.4.0/kibana/search/gcp_vertexai-201625b6-343e-43c7-ab67-e77d1f8ed790.json"
+          }
+        ]
+      },
+      "elasticsearch": {
+        "ingest_pipeline": [
+          {
+            "pkgkey": "gcp_vertexai-1.4.0",
+            "service": "elasticsearch",
+            "type": "ingest_pipeline",
+            "file": "default.yml",
+            "dataset": "auditlogs",
+            "path": "gcp_vertexai-1.4.0/data_stream/auditlogs/elasticsearch/ingest_pipeline/default.yml"
+          },
+          {
+            "pkgkey": "gcp_vertexai-1.4.0",
+            "service": "elasticsearch",
+            "type": "ingest_pipeline",
+            "file": "default.yml",
+            "dataset": "metrics",
+            "path": "gcp_vertexai-1.4.0/data_stream/metrics/elasticsearch/ingest_pipeline/default.yml"
+          },
+          {
+            "pkgkey": "gcp_vertexai-1.4.0",
+            "service": "elasticsearch",
+            "type": "ingest_pipeline",
+            "file": "default.yml",
+            "dataset": "prompt_response_logs",
+            "path": "gcp_vertexai-1.4.0/data_stream/prompt_response_logs/elasticsearch/ingest_pipeline/default.yml"
+          }
+        ]
+      }
+    },
+    "policy_templates": [
+      {
+        "name": "GCP Vertex AI Metrics",
+        "title": "GCP Vertex AI Metrics",
+        "description": "GCP Vertex AI Metrics",
+        "data_streams": [
+          "metrics"
+        ],
+        "inputs": [
+          {
+            "type": "gcp/metrics",
+            "title": "Collect GCP Vertex AI Metrics",
+            "description": "Collect GCP Vertex AI Metrics",
+            "input_group": "metrics"
+          }
+        ],
+        "multiple": true
+      },
+      {
+        "name": "GCP Vertex AI  Logs",
+        "title": "GCP Vertex AI  Logs",
+        "description": "GCP Vertex AI Logs",
+        "data_streams": [
+          "prompt_response_logs",
+          "auditlogs"
+        ],
+        "inputs": [
+          {
+            "type": "gcp/metrics",
+            "title": "Collect GCP Vertex AI Prompt Response Logs",
+            "description": "Collect GCP Vertex AI Prompt Response Logs",
+            "input_group": "logs"
+          },
+          {
+            "type": "gcp-pubsub",
+            "title": "Collect Google Cloud Platform (GCP) Vertex AI audit logs ",
+            "description": "Collecting Vertex AI audit logs from Google Cloud Platform (GCP) instances",
+            "input_group": "logs"
+          }
+        ],
+        "multiple": true
+      }
+    ],
+    "data_streams": [
+      {
+        "type": "logs",
+        "dataset": "gcp_vertexai.auditlogs",
+        "title": "Google Cloud Platform (GCP) VertexAI Audit Logs",
+        "release": "ga",
+        "ingest_pipeline": "default",
+        "streams": [
+          {
+            "input": "gcp-pubsub",
+            "vars": [
+              {
+                "name": "topic",
+                "type": "text",
+                "title": "Topic",
+                "description": "Name of the topic where the logs are written to.",
+                "multi": false,
+                "required": true,
+                "show_user": true,
+                "default": "gcp-vertexai-audit"
+              },
+              {
+                "name": "subscription_name",
+                "type": "text",
+                "title": "Subscription Name",
+                "description": "Use the short subscription name here, not the full-blown path with the project ID. You can find it as \"Subscription ID\" on the Google Cloud Console.",
+                "multi": false,
+                "required": true,
+                "show_user": true,
+                "default": "gcp-vertexai-audit-sub"
+              },
+              {
+                "name": "subscription_create",
+                "type": "bool",
+                "title": "Subscription Create",
+                "description": "If true, the integration will create the subscription on start.",
+                "multi": false,
+                "required": true,
+                "show_user": false,
+                "default": false
+              },
+              {
+                "name": "subscription_num_goroutines",
+                "type": "text",
+                "title": "Subscription Num Goroutines",
+                "description": "Number of goroutines created to read from the subscription. This does not limit the number of messages that can be processed concurrently or the maximum number of goroutines the input will create.",
+                "multi": false,
+                "required": false,
+                "show_user": false
+              },
+              {
+                "name": "subscription_max_outstanding_messages",
+                "type": "text",
+                "title": "Subscription Max Outstanding Messages",
+                "description": "The maximum number of unprocessed messages (unacknowledged but not yet expired). If the value is negative, then there will be no limit on the number of unprocessed messages. Default is 1000.",
+                "multi": false,
+                "required": false,
+                "show_user": false
+              },
+              {
+                "name": "alternative_host",
+                "type": "text",
+                "title": "Alternative host",
+                "description": "Overrides the default Pub/Sub service address and disables TLS. For testing.",
+                "multi": false,
+                "required": false,
+                "show_user": false
+              },
+              {
+                "name": "tags",
+                "type": "text",
+                "title": "Tags",
+                "multi": true,
+                "required": true,
+                "show_user": false,
+                "default": [
+                  "forwarded",
+                  "gcp-vertexai-audit"
+                ]
+              },
+              {
+                "name": "preserve_original_event",
+                "type": "bool",
+                "title": "Preserve original event",
+                "description": "Preserves a raw copy of the original event, added to the field `event.original`",
+                "multi": false,
+                "required": true,
+                "show_user": true,
+                "default": false
+              },
+              {
+                "name": "processors",
+                "type": "yaml",
+                "title": "Processors",
+                "description": "Processors are used to reduce the number of fields in the exported event or to enhance the event with metadata. This executes in the agent before the logs are parsed. See [Processors](https://www.elastic.co/guide/en/fleet/current/elastic-agent-processor-configuration.html) for details.",
+                "multi": false,
+                "required": false,
+                "show_user": false
+              }
+            ],
+            "template_path": "stream.yml.hbs",
+            "title": "Google Cloud Platform (GCP) Vertex AI audit logs",
+            "description": "Collect Google Cloud Platform (GCP) Vertex AI audit logs",
+            "enabled": true,
+            "ingestion_method": "GCP Pub/Sub"
+          }
+        ],
+        "package": "gcp_vertexai",
+        "path": "auditlogs"
+      },
+      {
+        "type": "metrics",
+        "dataset": "gcp_vertexai.metrics",
+        "title": "GCP Vertex AI Metrics",
+        "release": "ga",
+        "ingest_pipeline": "default",
+        "streams": [
+          {
+            "input": "gcp/metrics",
+            "vars": [
+              {
+                "name": "period",
+                "type": "text",
+                "title": "Period",
+                "multi": false,
+                "required": true,
+                "show_user": false,
+                "default": "60s"
+              },
+              {
+                "name": "exclude_labels",
+                "type": "bool",
+                "title": "Exclude Labels",
+                "description": "Exclude additional labels from metrics",
+                "multi": false,
+                "required": false,
+                "show_user": true
+              },
+              {
+                "name": "regions",
+                "type": "text",
+                "title": "GCP Regions",
+                "description": "List of GCP regions to fetch data from",
+                "multi": true,
+                "required": false,
+                "show_user": true
+              }
+            ],
+            "template_path": "stream.yml.hbs",
+            "title": "GCP Vertex AI Metrics",
+            "description": "Collect GCP Vertex AI Metrics",
+            "enabled": true,
+            "ingestion_method": "API"
+          }
+        ],
+        "package": "gcp_vertexai",
+        "path": "metrics"
+      },
+      {
+        "type": "logs",
+        "dataset": "gcp_vertexai.prompt_response_logs",
+        "title": "Google Cloud Platform (GCP) VertexAI Prompt Response Logs",
+        "release": "ga",
+        "ingest_pipeline": "default",
+        "streams": [
+          {
+            "input": "gcp/metrics",
+            "vars": [
+              {
+                "name": "period",
+                "type": "text",
+                "title": "Period",
+                "description": "Reporting period for Vertex AI metrics",
+                "multi": false,
+                "required": false,
+                "show_user": false,
+                "default": "300s"
+              },
+              {
+                "name": "table_id",
+                "type": "text",
+                "title": "Table ID",
+                "description": "Full table identifier in the format 'project_id.dataset_id.table_name'",
+                "multi": false,
+                "required": true,
+                "show_user": true
+              },
+              {
+                "name": "time_lookback_hours",
+                "type": "integer",
+                "title": "Time Lookback Hours",
+                "description": "Number of hours to look back for initial data collection (default 1 hour)",
+                "multi": false,
+                "required": false,
+                "show_user": true,
+                "default": 1
+              },
+              {
+                "name": "exclude_labels",
+                "type": "bool",
+                "title": "Exclude Labels",
+                "description": "Flag that defines if labels are excluded on the metric",
+                "multi": false,
+                "required": false,
+                "show_user": false,
+                "default": false
+              },
+              {
+                "name": "tags",
+                "type": "text",
+                "title": "Tags",
+                "multi": true,
+                "required": true,
+                "show_user": false,
+                "default": [
+                  "forwarded",
+                  "gcp-vertexai-prompt-response-logs"
+                ]
+              },
+              {
+                "name": "processors",
+                "type": "yaml",
+                "title": "Processors",
+                "description": "Processors are used to reduce the number of fields in the exported event or to enhance the event with metadata. This executes in the agent before the logs are parsed. See [Processors](https://www.elastic.co/guide/en/fleet/current/elastic-agent-processor-configuration.html) for details.",
+                "multi": false,
+                "required": false,
+                "show_user": false
+              }
+            ],
+            "template_path": "stream.yml.hbs",
+            "title": "Google Cloud Platform (GCP) Vertex AI prompt response logs",
+            "description": "Collect Google Cloud Platform (GCP) Vertex AI prompt response logs",
+            "enabled": true,
+            "ingestion_method": "API"
+          }
+        ],
+        "package": "gcp_vertexai",
+        "path": "prompt_response_logs"
+      }
+    ],
+    "vars": [
+      {
+        "name": "project_id",
+        "type": "text",
+        "title": "Project Id",
+        "multi": false,
+        "required": true,
+        "show_user": true,
+        "default": "set_project_id"
+      },
+      {
+        "name": "credentials_file",
+        "type": "text",
+        "title": "Credentials File",
+        "multi": false,
+        "required": false,
+        "show_user": true
+      },
+      {
+        "name": "credentials_json",
+        "type": "text",
+        "title": "Credentials Json",
+        "multi": false,
+        "required": false,
+        "show_user": true
+      }
+    ],
+    "latestVersion": "1.4.0",
+    "licensePath": "/package/gcp_vertexai/1.4.0/LICENSE.txt",
+    "keepPoliciesUpToDate": false,
+    "status": "installed",
+    "installationInfo": {
+      "created_at": "2025-12-28T08:56:50.201Z",
+      "updated_at": "2025-12-28T08:56:51.738Z",
+      "namespaces": [],
+      "type": "epm-packages",
+      "installed_kibana": [
+        {
+          "id": "gcp_vertexai-1b42c117-7971-424d-8015-c02f1317824d",
+          "type": "dashboard"
+        },
+        {
+          "id": "gcp_vertexai-d566516f-06fd-47e0-aba1-44148598c59a",
+          "type": "dashboard"
+        },
+        {
+          "id": "gcp_vertexai-a60a5081-be88-4802-aea1-fd33bd008591",
+          "type": "map"
+        },
+        {
+          "id": "gcp_vertexai-201625b6-343e-43c7-ab67-e77d1f8ed790",
+          "type": "search"
+        }
+      ],
+      "installed_kibana_space_id": "default",
+      "installed_es": [
+        {
+          "id": "logs-gcp_vertexai.auditlogs-1.4.0",
+          "type": "ingest_pipeline"
+        },
+        {
+          "id": "metrics-gcp_vertexai.metrics-1.4.0",
+          "type": "ingest_pipeline"
+        },
+        {
+          "id": "logs-gcp_vertexai.prompt_response_logs-1.4.0",
+          "type": "ingest_pipeline"
+        },
+        {
+          "id": "logs-gcp_vertexai.auditlogs",
+          "type": "index_template"
+        },
+        {
+          "id": "logs-gcp_vertexai.auditlogs@package",
+          "type": "component_template"
+        },
+        {
+          "id": "logs@custom",
+          "type": "component_template"
+        },
+        {
+          "id": "gcp_vertexai@custom",
+          "type": "component_template"
+        },
+        {
+          "id": "logs-gcp_vertexai.auditlogs@custom",
+          "type": "component_template"
+        },
+        {
+          "id": "metrics-gcp_vertexai.metrics",
+          "type": "index_template"
+        },
+        {
+          "id": "metrics-gcp_vertexai.metrics@package",
+          "type": "component_template"
+        },
+        {
+          "id": "metrics@custom",
+          "type": "component_template"
+        },
+        {
+          "id": "metrics-gcp_vertexai.metrics@custom",
+          "type": "component_template"
+        },
+        {
+          "id": "logs-gcp_vertexai.prompt_response_logs",
+          "type": "index_template"
+        },
+        {
+          "id": "logs-gcp_vertexai.prompt_response_logs@package",
+          "type": "component_template"
+        },
+        {
+          "id": "logs-gcp_vertexai.prompt_response_logs@custom",
+          "type": "component_template"
+        }
+      ],
+      "install_status": "installed",
+      "install_source": "registry",
+      "name": "gcp_vertexai",
+      "version": "1.4.0",
+      "verification_status": "verified",
+      "verification_key_id": "d27d666cd88e42b4",
+      "latest_install_failed_attempts": [],
+      "rolled_back": false
+    }
+  }
+}

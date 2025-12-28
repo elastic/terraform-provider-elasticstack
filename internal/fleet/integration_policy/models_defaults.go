@@ -21,6 +21,7 @@ type inputDefaultsStreamModel struct {
 	Vars    jsontypes.Normalized `tfsdk:"vars"`
 }
 
+type apiPolicyTemplates []apiPolicyTemplate
 type apiPolicyTemplate struct {
 	Name   string                   `json:"name"`
 	Inputs []apiPolicyTemplateInput `json:"inputs"`
@@ -31,21 +32,23 @@ type apiPolicyTemplateInput struct {
 	Vars apiVars `json:"vars"`
 }
 
-func (policyTemplate *apiPolicyTemplate) defaults() (map[string]jsontypes.Normalized, diag.Diagnostics) {
+func (policyTemplates apiPolicyTemplates) defaults() (map[string]jsontypes.Normalized, diag.Diagnostics) {
 	defaults := map[string]jsontypes.Normalized{}
 
-	if policyTemplate == nil {
+	if len(policyTemplates) == 0 {
 		return defaults, nil
 	}
 
-	for _, inputTemplate := range policyTemplate.Inputs {
-		name := fmt.Sprintf("%s-%s", policyTemplate.Name, inputTemplate.Type)
-		varDefaults, diags := inputTemplate.Vars.defaults()
-		if diags.HasError() {
-			return nil, diags
-		}
+	for _, policyTemplate := range policyTemplates {
+		for _, inputTemplate := range policyTemplate.Inputs {
+			name := fmt.Sprintf("%s-%s", policyTemplate.Name, inputTemplate.Type)
+			varDefaults, diags := inputTemplate.Vars.defaults()
+			if diags.HasError() {
+				return nil, diags
+			}
 
-		defaults[name] = varDefaults
+			defaults[name] = varDefaults
+		}
 	}
 
 	return defaults, nil
@@ -125,12 +128,12 @@ func (v apiVars) defaults() (jsontypes.Normalized, diag.Diagnostics) {
 }
 
 func packageInfoToDefaults(pkg *kbapi.PackageInfo) (map[string]inputDefaultsModel, diag.Diagnostics) {
-	policyTemplate, datastreams, diags := policyTemplateAndDataStreamsFromPackageInfo(pkg)
+	policyTemplates, datastreams, diags := policyTemplateAndDataStreamsFromPackageInfo(pkg)
 	if diags.HasError() {
 		return nil, diags
 	}
 
-	defaultVarsByInput, inputVarsDiags := policyTemplate.defaults()
+	defaultVarsByInput, inputVarsDiags := policyTemplates.defaults()
 	diags.Append(inputVarsDiags...)
 
 	defaultStreamsByInput, streamsDiags := datastreams.defaults()
@@ -148,34 +151,35 @@ func packageInfoToDefaults(pkg *kbapi.PackageInfo) (map[string]inputDefaultsMode
 	}
 
 	for inputIDSuffix, streams := range defaultStreamsByInput {
-		inputID := fmt.Sprintf("%s-%s", policyTemplate.Name, inputIDSuffix)
-		inputDefaults, ok := defaults[inputID]
-		if !ok {
-			inputDefaults.Vars = jsontypes.NewNormalizedNull()
-		}
+		for _, policyTemplate := range policyTemplates {
+			inputID := fmt.Sprintf("%s-%s", policyTemplate.Name, inputIDSuffix)
+			inputDefaults, ok := defaults[inputID]
+			if !ok {
+				inputDefaults.Vars = jsontypes.NewNormalizedNull()
+			}
 
-		inputDefaults.Streams = streams
-		defaults[inputID] = inputDefaults
+			inputDefaults.Streams = streams
+			defaults[inputID] = inputDefaults
+		}
 	}
 
 	return defaults, diags
 }
 
-func policyTemplateAndDataStreamsFromPackageInfo(pkg *kbapi.PackageInfo) (*apiPolicyTemplate, apiDatastreams, diag.Diagnostics) {
+func policyTemplateAndDataStreamsFromPackageInfo(pkg *kbapi.PackageInfo) (apiPolicyTemplates, apiDatastreams, diag.Diagnostics) {
 	if pkg == nil {
 		return nil, nil, nil
 	}
 
 	var diags diag.Diagnostics
 
-	var policyTemplate apiPolicyTemplate
-	var dataStreams []apiDatastream
+	var policyTemplates apiPolicyTemplates
+	var dataStreams apiDatastreams
 
-	if pkg.PolicyTemplates != nil && len(*pkg.PolicyTemplates) > 0 {
-		policyTemplateIf := (*pkg.PolicyTemplates)[0]
-		err := mapstructure.Decode(policyTemplateIf, &policyTemplate)
+	if pkg.PolicyTemplates != nil {
+		err := mapstructure.Decode(pkg.PolicyTemplates, &policyTemplates)
 		if err != nil {
-			diags.AddError("Failed to decode package policy template", err.Error())
+			diags.AddError("Failed to decode package policy templates", err.Error())
 			return nil, nil, diags
 		}
 	}
@@ -188,5 +192,5 @@ func policyTemplateAndDataStreamsFromPackageInfo(pkg *kbapi.PackageInfo) (*apiPo
 		}
 	}
 
-	return &policyTemplate, dataStreams, nil
+	return policyTemplates, dataStreams, nil
 }

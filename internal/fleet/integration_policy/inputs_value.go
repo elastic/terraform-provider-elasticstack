@@ -37,37 +37,37 @@ func (v InputsValue) Equal(o attr.Value) bool {
 
 // MapSemanticEquals returns true if the given map value is semantically equal to the current map value.
 // Disabled inputs (enabled=false) are ignored during the comparison.
-func (v InputsValue) MapSemanticEquals(ctx context.Context, newValuable basetypes.MapValuable) (bool, diag.Diagnostics) {
+func (v InputsValue) MapSemanticEquals(ctx context.Context, priorValuable basetypes.MapValuable) (bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	newValue, ok := newValuable.(InputsValue)
+	priorValue, ok := priorValuable.(InputsValue)
 	if !ok {
 		diags.AddError(
 			"Semantic Equality Check Error",
 			"An unexpected value type was received while performing semantic equality checks. "+
 				"Please report this to the provider developers.\n\n"+
 				"Expected Value Type: "+fmt.Sprintf("%T", v)+"\n"+
-				"Got Value Type: "+fmt.Sprintf("%T", newValuable),
+				"Got Value Type: "+fmt.Sprintf("%T", priorValuable),
 		)
 		return false, diags
 	}
 
 	// Handle null/unknown cases
 	if v.IsNull() {
-		return newValue.IsNull(), diags
+		return priorValue.IsNull(), diags
 	}
 
 	if v.IsUnknown() {
-		return newValue.IsUnknown(), diags
+		return priorValue.IsUnknown(), diags
 	}
 
-	remainingNewInputs := newValue.Elements()
+	remainingPriorInputs := priorValue.Elements()
 	for inputID, oldInputValue := range v.Elements() {
-		oldInput := oldInputValue.(InputValue)
-		newInput, exists := remainingNewInputs[inputID]
+		newInput := oldInputValue.(InputValue)
+		priorInput, exists := remainingPriorInputs[inputID]
 		if !exists {
-			// If the old input is disabled, we can ignore its absence in the new inputs
-			enabled, d := oldInput.MaybeEnabled(ctx)
+			// If the new input is disabled, we can ignore its absence in the prior inputs
+			enabled, d := newInput.MaybeEnabled(ctx)
 			diags.Append(d...)
 			if diags.HasError() {
 				return false, diags
@@ -77,12 +77,21 @@ func (v InputsValue) MapSemanticEquals(ctx context.Context, newValuable basetype
 				continue
 			}
 
+			enabledByDefault, d := newInput.EnabledByDefault(ctx)
+			diags.Append(d...)
+			if diags.HasError() {
+				return false, diags
+			}
+
+			if enabledByDefault {
+				continue
+			}
+
 			return false, diags
 		}
 
-		newInputValue := newInput.(InputValue)
-
-		equals, d := oldInput.ObjectSemanticEquals(ctx, newInputValue)
+		priorInputValue := priorInput.(InputValue)
+		equals, d := newInput.ObjectSemanticEquals(ctx, priorInputValue)
 		diags.Append(d...)
 		if diags.HasError() {
 			return false, diags
@@ -91,15 +100,15 @@ func (v InputsValue) MapSemanticEquals(ctx context.Context, newValuable basetype
 			return false, diags
 		}
 
-		// Remove the processed input from remainingNewInputs
-		delete(remainingNewInputs, inputID)
+		// Remove the processed input from remainingPriorInputs
+		delete(remainingPriorInputs, inputID)
 	}
 
-	// After processing all old inputs, check if there are any remaining new inputs
-	for _, newInputValue := range remainingNewInputs {
-		newInput := newInputValue.(InputValue)
-		// If the new input is enabled, it's a difference
-		enabled, d := newInput.MaybeEnabled(ctx)
+	// After processing all new inputs, check if there are any remaining prior inputs
+	for _, priorInputValue := range remainingPriorInputs {
+		priorInput := priorInputValue.(InputValue)
+		// If the prior input is enabled, it's a difference
+		enabled, d := priorInput.MaybeEnabled(ctx)
 		diags.Append(d...)
 		if diags.HasError() {
 			return false, diags

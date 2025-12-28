@@ -491,6 +491,34 @@ func TestAccIntegrationPolicyInputs(t *testing.T) {
 	})
 }
 
+func TestAccResourceIntegrationPolicyGCPVertexAI(t *testing.T) {
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIntegrationPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("vertex_ai"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_name", "gcp_vertexai"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_version", "1.4.0"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "vars_json", `{"project_id":"my-gcp-project"}`),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.GCP Vertex AI Metrics-gcp/metrics.enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.GCP Vertex AI Metrics-gcp/metrics.streams.gcp_vertexai.metrics.enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.GCP Vertex AI Metrics-gcp/metrics.streams.gcp_vertexai.metrics.vars", `{"period":"60s","regions":["us-central1"]}`),
+				),
+			},
+		},
+	})
+}
+
 func checkResourceIntegrationPolicyDestroy(s *terraform.State) error {
 	client, err := clients.NewAcceptanceTestingClient()
 	if err != nil {

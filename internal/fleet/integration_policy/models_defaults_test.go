@@ -15,6 +15,9 @@ import (
 //go:embed testdata/integration_kafka.json
 var kafkaIntegrationJSON []byte
 
+//go:embed testdata/integration_gcp_vertexai.json
+var gcpVertexAIIntegrationJSON []byte
+
 func TestApiVarsDefaults(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -159,33 +162,42 @@ func TestApiVarsDefaults(t *testing.T) {
 func TestApiPolicyTemplateDefaults(t *testing.T) {
 	tests := []struct {
 		name         string
-		template     *apiPolicyTemplate
+		templates    apiPolicyTemplates
 		expectedKeys []string
 		expectError  bool
 	}{
 		{
-			name:         "nil template returns empty map",
-			template:     nil,
+			name:         "nil templates returns empty map",
+			templates:    nil,
+			expectedKeys: []string{},
+		},
+		{
+			name:         "empty templates returns empty map",
+			templates:    apiPolicyTemplates{},
 			expectedKeys: []string{},
 		},
 		{
 			name: "template with no inputs returns empty map",
-			template: &apiPolicyTemplate{
-				Inputs: []apiPolicyTemplateInput{},
+			templates: apiPolicyTemplates{
+				{
+					Inputs: []apiPolicyTemplateInput{},
+				},
 			},
 			expectedKeys: []string{},
 		},
 		{
 			name: "template with single input",
-			template: &apiPolicyTemplate{
-				Name: "kafka",
-				Inputs: []apiPolicyTemplateInput{
-					{
-						Type: "jolokia/metrics",
-						Vars: apiVars{
-							{
-								Name:    "hosts",
-								Default: []interface{}{"http://127.0.0.1:8778"},
+			templates: apiPolicyTemplates{
+				{
+					Name: "kafka",
+					Inputs: []apiPolicyTemplateInput{
+						{
+							Type: "jolokia/metrics",
+							Vars: apiVars{
+								{
+									Name:    "hosts",
+									Default: []interface{}{"http://127.0.0.1:8778"},
+								},
 							},
 						},
 					},
@@ -195,32 +207,34 @@ func TestApiPolicyTemplateDefaults(t *testing.T) {
 		},
 		{
 			name: "template with multiple input types",
-			template: &apiPolicyTemplate{
-				Name: "kafka",
-				Inputs: []apiPolicyTemplateInput{
-					{
-						Type: "jolokia/metrics",
-						Vars: apiVars{
-							{
-								Name:    "hosts",
-								Default: []interface{}{"http://127.0.0.1:8778"},
+			templates: apiPolicyTemplates{
+				{
+					Name: "kafka",
+					Inputs: []apiPolicyTemplateInput{
+						{
+							Type: "jolokia/metrics",
+							Vars: apiVars{
+								{
+									Name:    "hosts",
+									Default: []interface{}{"http://127.0.0.1:8778"},
+								},
 							},
 						},
-					},
-					{
-						Type: "logfile",
-						Vars: apiVars{},
-					},
-					{
-						Type: "kafka/metrics",
-						Vars: apiVars{
-							{
-								Name:    "hosts",
-								Default: []interface{}{"localhost:9092"},
-							},
-							{
-								Name:    "period",
-								Default: "10s",
+						{
+							Type: "logfile",
+							Vars: apiVars{},
+						},
+						{
+							Type: "kafka/metrics",
+							Vars: apiVars{
+								{
+									Name:    "hosts",
+									Default: []interface{}{"localhost:9092"},
+								},
+								{
+									Name:    "period",
+									Default: "10s",
+								},
 							},
 						},
 					},
@@ -228,11 +242,35 @@ func TestApiPolicyTemplateDefaults(t *testing.T) {
 			},
 			expectedKeys: []string{"kafka-jolokia/metrics", "kafka-logfile", "kafka-kafka/metrics"},
 		},
+		{
+			name: "multiple templates",
+			templates: apiPolicyTemplates{
+				{
+					Name: "kafka",
+					Inputs: []apiPolicyTemplateInput{
+						{
+							Type: "jolokia/metrics",
+							Vars: apiVars{},
+						},
+					},
+				},
+				{
+					Name: "nginx",
+					Inputs: []apiPolicyTemplateInput{
+						{
+							Type: "access",
+							Vars: apiVars{},
+						},
+					},
+				},
+			},
+			expectedKeys: []string{"kafka-jolokia/metrics", "nginx-access"},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, diags := tt.template.defaults()
+			result, diags := tt.templates.defaults()
 
 			if tt.expectError {
 				require.True(t, diags.HasError(), "Expected error but got none")
@@ -608,9 +646,9 @@ func TestPolicyTemplateAndDataStreamsFromPackageInfo(t *testing.T) {
 			expectedDataStreams:    false,
 		},
 		{
-			name:                   "empty package returns empty",
+			name:                   "empty package returns nil",
 			pkg:                    &kbapi.PackageInfo{},
-			expectedPolicyTemplate: true, // Returns empty struct, not nil
+			expectedPolicyTemplate: false,
 			expectedDataStreams:    false,
 		},
 	}
@@ -649,11 +687,12 @@ func TestPolicyTemplateAndDataStreamsFromPackageInfo_Kafka(t *testing.T) {
 
 	pkg := &wrapper.Item
 
-	policyTemplate, datastreams, diags := policyTemplateAndDataStreamsFromPackageInfo(pkg)
+	policyTemplates, datastreams, diags := policyTemplateAndDataStreamsFromPackageInfo(pkg)
 	require.False(t, diags.HasError(), "Expected no error but got: %v", diags)
 
 	// Verify policy template was extracted
-	require.NotNil(t, policyTemplate, "Expected non-nil policy template")
+	require.Len(t, policyTemplates, 1, "Expected 1 policy template")
+	policyTemplate := policyTemplates[0]
 	assert.Len(t, policyTemplate.Inputs, 3, "Expected 3 input types in policy template")
 
 	// Verify input types
@@ -709,6 +748,76 @@ func TestPolicyTemplateAndDataStreamsFromPackageInfo_Kafka(t *testing.T) {
 	assert.Len(t, logDatastream.Streams, 1, "Expected 1 stream in kafka.log datastream")
 	assert.Equal(t, "logfile", logDatastream.Streams[0].Input)
 	assert.True(t, logDatastream.Streams[0].Enabled)
+}
+
+func TestPolicyTemplateAndDataStreamsFromPackageInfo_GCP_VertexAI(t *testing.T) {
+	// Load the actual Kafka package JSON
+	var wrapper struct {
+		Item kbapi.PackageInfo `json:"item"`
+	}
+	err := json.Unmarshal(gcpVertexAIIntegrationJSON, &wrapper)
+	require.NoError(t, err, "Failed to unmarshal GCP Vertex AI integration JSON")
+
+	pkg := &wrapper.Item
+
+	policyTemplates, datastreams, diags := policyTemplateAndDataStreamsFromPackageInfo(pkg)
+	require.False(t, diags.HasError(), "Expected no error but got: %v", diags)
+
+	// Verify policy template was extracted
+	require.Len(t, policyTemplates, 2, "Expected 2 policy templates")
+
+	// Template 1: Metrics
+	metricsTemplate := policyTemplates[0]
+	assert.Equal(t, "GCP Vertex AI Metrics", metricsTemplate.Name)
+	assert.Len(t, metricsTemplate.Inputs, 1, "Expected 1 input type in metrics policy template")
+	assert.Equal(t, "gcp/metrics", metricsTemplate.Inputs[0].Type)
+
+	// Template 2: Logs
+	logsTemplate := policyTemplates[1]
+	assert.Equal(t, "GCP Vertex AI  Logs", logsTemplate.Name)
+	assert.Len(t, logsTemplate.Inputs, 2, "Expected 2 input types in logs policy template")
+
+	logInputTypes := make([]string, 0, len(logsTemplate.Inputs))
+	for _, input := range logsTemplate.Inputs {
+		logInputTypes = append(logInputTypes, input.Type)
+	}
+	assert.Contains(t, logInputTypes, "gcp/metrics")
+	assert.Contains(t, logInputTypes, "gcp-pubsub")
+
+	// Verify datastreams were extracted
+	require.NotNil(t, datastreams, "Expected non-nil datastreams")
+	assert.Len(t, datastreams, 3, "Expected 3 datastreams in GCP Vertex AI package")
+
+	// Verify some specific datastreams
+	datasetNames := make([]string, 0, len(datastreams))
+	for _, ds := range datastreams {
+		datasetNames = append(datasetNames, ds.Dataset)
+	}
+
+	expectedDatasets := []string{
+		"gcp_vertexai.auditlogs",
+		"gcp_vertexai.metrics",
+		"gcp_vertexai.prompt_response_logs",
+	}
+
+	for _, expected := range expectedDatasets {
+		assert.Contains(t, datasetNames, expected, "Expected dataset %s not found", expected)
+	}
+
+	// Verify a specific datastream has correct structure
+	var auditDatastream *apiDatastream
+	for i := range datastreams {
+		if datastreams[i].Dataset == "gcp_vertexai.auditlogs" {
+			auditDatastream = &datastreams[i]
+			break
+		}
+	}
+
+	require.NotNil(t, auditDatastream, "Expected to find gcp_vertexai.auditlogs datastream")
+	assert.Equal(t, "logs", auditDatastream.Type)
+	assert.Len(t, auditDatastream.Streams, 1, "Expected 1 stream in gcp_vertexai.auditlogs datastream")
+	assert.Equal(t, "gcp-pubsub", auditDatastream.Streams[0].Input)
+	assert.True(t, auditDatastream.Streams[0].Enabled)
 }
 
 func TestInputDefaultsModel_Integration(t *testing.T) {

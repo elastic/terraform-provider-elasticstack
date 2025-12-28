@@ -34,6 +34,38 @@ func (v InputValue) Equal(o attr.Value) bool {
 	return v.ObjectValue.Equal(other.ObjectValue)
 }
 
+func (v InputValue) EnabledByDefault(ctx context.Context) (bool, diag.Diagnostics) {
+	if v.IsNull() || v.IsUnknown() {
+		return false, nil
+	}
+
+	var input integrationPolicyInputsModel
+	diags := v.As(ctx, &input, basetypes.ObjectAsOptions{})
+	if diags.HasError() {
+		return false, diags
+	}
+
+	if !utils.IsKnown(input.Defaults) {
+		return false, diags
+	}
+
+	// Extract defaults model
+	var defaults inputDefaultsModel
+	d := input.Defaults.As(ctx, &defaults, basetypes.ObjectAsOptions{})
+	diags.Append(d...)
+	if diags.HasError() {
+		return false, diags
+	}
+
+	for _, stream := range defaults.Streams {
+		if utils.IsKnown(stream.Enabled) && stream.Enabled.ValueBool() {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
 func (v InputValue) MaybeEnabled(ctx context.Context) (bool, diag.Diagnostics) {
 	if !utils.IsKnown(v) {
 		return false, nil
@@ -69,7 +101,7 @@ func (v InputValue) MaybeEnabled(ctx context.Context) (bool, diag.Diagnostics) {
 		}
 	}
 
-	return false, nil
+	return false, diags
 }
 
 // ObjectSemanticEquals returns true if the given object value is semantically equal to the current object value.
@@ -318,11 +350,6 @@ func compareStreams(ctx context.Context, oldInput, newInput integrationPolicyInp
 	for streamID, oldStream := range enabledOldStreams {
 		newStream, exists := enabledNewStreams[streamID]
 		if !exists {
-			return false, diags
-		}
-
-		// Compare enabled flags
-		if !oldStream.Enabled.Equal(newStream.Enabled) {
 			return false, diags
 		}
 
