@@ -30,10 +30,10 @@ resource "elasticstack_fleet_integration_policy" "test_policy" {
         "gcp_vertexai.prompt_response_logs" = {
           enabled = true,
           vars = jsonencode({
-            period = "300s",
-            table_id = "table_id",
+            period              = "300s",
+            table_id            = "table_id",
             time_lookback_hours = 1,
-            exclude_labels = false,
+            exclude_labels      = false,
             tags = [
               "forwarded",
               "gcp-vertexai-prompt-response-logs"
@@ -50,6 +50,24 @@ resource "elasticstack_fleet_integration_policy" "test_policy" {
           vars = jsonencode({
             period  = "60s"
             regions = ["us-central1"]
+          })
+        }
+      }
+    },
+    "GCP Vertex AI  Logs-gcp-pubsub" = {
+      enabled = true
+      streams = {
+        "gcp_vertexai.auditlogs" = {
+          enabled = true
+          vars = jsonencode({
+            topic               = "gcp-vertexai-audit"
+            subscription_name   = "gcp-vertexai-audit-sub"
+            subscription_create = false
+            tags = [
+              "forwarded",
+              "gcp-vertexai-audit"
+            ]
+            preserve_original_event = false
           })
         }
       }

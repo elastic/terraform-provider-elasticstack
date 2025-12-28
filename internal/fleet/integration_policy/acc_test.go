@@ -27,6 +27,7 @@ var (
 	minVersionIntegrationPolicyIds = version.Must(version.NewVersion("8.15.0"))
 	minVersionOutputId             = version.Must(version.NewVersion("8.16.0"))
 	minVersionSqlIntegration       = version.Must(version.NewVersion("9.1.0"))
+	minVersionGCPVertexAI          = version.Must(version.NewVersion("8.17.0"))
 )
 
 func TestJsonTypes(t *testing.T) {
@@ -499,9 +500,9 @@ func TestAccResourceIntegrationPolicyGCPVertexAI(t *testing.T) {
 		CheckDestroy: checkResourceIntegrationPolicyDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionGCPVertexAI),
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("vertex_ai"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
 				},
@@ -513,6 +514,32 @@ func TestAccResourceIntegrationPolicyGCPVertexAI(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.GCP Vertex AI Metrics-gcp/metrics.enabled", "true"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.GCP Vertex AI Metrics-gcp/metrics.streams.gcp_vertexai.metrics.enabled", "true"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.GCP Vertex AI Metrics-gcp/metrics.streams.gcp_vertexai.metrics.vars", `{"period":"60s","regions":["us-central1"]}`),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.GCP Vertex AI  Logs-gcp/metrics.enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.GCP Vertex AI  Logs-gcp/metrics.streams.gcp_vertexai.prompt_response_logs.enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.GCP Vertex AI  Logs-gcp/metrics.streams.gcp_vertexai.prompt_response_logs.vars", `{"exclude_labels":false,"period":"300s","table_id":"table_id","tags":["forwarded","gcp-vertexai-prompt-response-logs"],"time_lookback_hours":1}`),
+				),
+			},
+			{
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionGCPVertexAI),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_name", "gcp_vertexai"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_version", "1.4.0"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "vars_json", `{"project_id":"my-gcp-project"}`),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.GCP Vertex AI Metrics-gcp/metrics.enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.GCP Vertex AI Metrics-gcp/metrics.streams.gcp_vertexai.metrics.enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.GCP Vertex AI Metrics-gcp/metrics.streams.gcp_vertexai.metrics.vars", `{"period":"60s","regions":["us-central1"]}`),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.GCP Vertex AI  Logs-gcp/metrics.enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.GCP Vertex AI  Logs-gcp/metrics.streams.gcp_vertexai.prompt_response_logs.enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.GCP Vertex AI  Logs-gcp/metrics.streams.gcp_vertexai.prompt_response_logs.vars", `{"exclude_labels":false,"period":"300s","table_id":"table_id","tags":["forwarded","gcp-vertexai-prompt-response-logs"],"time_lookback_hours":1}`),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.GCP Vertex AI  Logs-gcp-pubsub.enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.GCP Vertex AI  Logs-gcp-pubsub.streams.gcp_vertexai.auditlogs.enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.GCP Vertex AI  Logs-gcp-pubsub.streams.gcp_vertexai.auditlogs.vars", `{"preserve_original_event":false,"subscription_create":false,"subscription_name":"gcp-vertexai-audit-sub","tags":["forwarded","gcp-vertexai-audit"],"topic":"gcp-vertexai-audit"}`),
 				),
 			},
 		},

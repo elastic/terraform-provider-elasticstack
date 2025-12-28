@@ -751,7 +751,7 @@ func TestPolicyTemplateAndDataStreamsFromPackageInfo_Kafka(t *testing.T) {
 }
 
 func TestPolicyTemplateAndDataStreamsFromPackageInfo_GCP_VertexAI(t *testing.T) {
-	// Load the actual Kafka package JSON
+	// Load the actual GCP Vertex AI package JSON
 	var wrapper struct {
 		Item kbapi.PackageInfo `json:"item"`
 	}
