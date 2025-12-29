@@ -46,6 +46,7 @@ resource "elasticstack_fleet_agent_policy" "test_policy_2" {
 
 resource "elasticstack_fleet_integration_policy" "test_policy" {
   name        = var.policy_name
+  policy_id   = "${var.policy_name}-policy-id"
   namespace   = "default"
   description = "IntegrationPolicyTest Policy"
   agent_policy_ids = [
