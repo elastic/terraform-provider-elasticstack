@@ -191,7 +191,7 @@ func (model *integrationPolicyModel) populateInputsFromAPI(ctx context.Context, 
 	model.Inputs = inputsMap
 }
 
-func (model integrationPolicyModel) toAPIModel(ctx context.Context, isUpdate bool, feat features) (kbapi.PackagePolicyRequest, diag.Diagnostics) {
+func (model integrationPolicyModel) toAPIModel(ctx context.Context, feat features) (kbapi.PackagePolicyRequest, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	// Check if agent_policy_ids is configured and version supports it
@@ -248,7 +248,11 @@ func (model integrationPolicyModel) toAPIModel(ctx context.Context, isUpdate boo
 		Vars: utils.MapRef(utils.NormalizedTypeToMap[any](model.VarsJson, path.Root("vars_json"), &diags)),
 	}
 
-	if isUpdate {
+	if utils.IsKnown(model.PolicyID) {
+		body.Id = model.PolicyID.ValueStringPointer()
+	}
+
+	if utils.IsKnown(model.ID) {
 		body.Id = model.ID.ValueStringPointer()
 	}
 
