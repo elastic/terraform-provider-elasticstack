@@ -67,7 +67,13 @@ func (r *integrationPolicyResource) Create(ctx context.Context, req resource.Cre
 	// Remember if the user configured input in the plan
 	planHadInput := utils.IsKnown(planModel.Inputs) && !planModel.Inputs.IsNull() && len(planModel.Inputs.Elements()) > 0
 
-	diags = planModel.populateFromAPI(ctx, policy)
+	pkg, diags := fleet.GetPackage(ctx, client, policy.Package.Name, policy.Package.Version)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	diags = planModel.populateFromAPI(ctx, pkg, policy)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

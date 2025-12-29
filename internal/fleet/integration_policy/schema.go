@@ -13,11 +13,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapdefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging"
 )
 
@@ -106,18 +109,27 @@ func getSchemaV2() schema.Schema {
 				Computed:    true,
 				Optional:    true,
 				Sensitive:   varsAreSensitive,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"space_ids": schema.SetAttribute{
 				Description: "The Kibana space IDs where this integration policy is available. When set, must match the space_ids of the referenced agent policy. If not set, will be inherited from the agent policy. Note: The order of space IDs does not matter as this is a set.",
 				ElementType: types.StringType,
 				Optional:    true,
 				Computed:    true,
+				PlanModifiers: []planmodifier.Set{
+					setplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"inputs": schema.MapNestedAttribute{
-				Description:  "Integration inputs mapped by input ID.",
-				CustomType:   NewInputsType(getInputsElementType()),
-				Computed:     true,
-				Optional:     true,
+				Description: "Integration inputs mapped by input ID.",
+				CustomType:  NewInputsType(NewInputType(getInputsAttributeTypes())),
+				Computed:    true,
+				Optional:    true,
+				PlanModifiers: []planmodifier.Map{
+					mapplanmodifier.UseStateForUnknown(),
+				},
 				NestedObject: getInputsNestedObject(varsAreSensitive),
 			},
 		},
@@ -126,6 +138,7 @@ func getSchemaV2() schema.Schema {
 
 func getInputsNestedObject(varsAreSensitive bool) schema.NestedAttributeObject {
 	return schema.NestedAttributeObject{
+		CustomType: NewInputType(getInputsAttributeTypes()),
 		Attributes: map[string]schema.Attribute{
 			"enabled": schema.BoolAttribute{
 				Description: "Enable the input.",
@@ -139,11 +152,40 @@ func getInputsNestedObject(varsAreSensitive bool) schema.NestedAttributeObject {
 				Optional:    true,
 				Sensitive:   varsAreSensitive,
 			},
+			"defaults": schema.SingleNestedAttribute{
+				Description: "Input defaults.",
+				Computed:    true,
+				Default: objectdefault.StaticValue(basetypes.NewObjectNull(
+					getInputDefaultsAttrTypes(),
+				)),
+				Attributes: map[string]schema.Attribute{
+					"vars": schema.StringAttribute{
+						Description: "Input-level variable defaults as JSON.",
+						CustomType:  jsontypes.NormalizedType{},
+						Computed:    true,
+					},
+					"streams": schema.MapNestedAttribute{
+						Description: "Stream-level defaults mapped by stream ID.",
+						Computed:    true,
+						NestedObject: schema.NestedAttributeObject{
+							Attributes: map[string]schema.Attribute{
+								"enabled": schema.BoolAttribute{
+									Description: "Default enabled state for the stream.",
+									Computed:    true,
+								},
+								"vars": schema.StringAttribute{
+									Description: "Stream-level variable defaults as JSON.",
+									CustomType:  jsontypes.NormalizedType{},
+									Computed:    true,
+								},
+							},
+						},
+					},
+				},
+			},
 			"streams": schema.MapNestedAttribute{
 				Description:  "Input streams mapped by stream ID.",
 				Optional:     true,
-				Computed:     true,
-				Default:      mapdefault.StaticValue(types.MapNull(getInputStreamType())),
 				NestedObject: getInputStreamNestedObject(varsAreSensitive),
 			},
 		},
@@ -169,10 +211,46 @@ func getInputStreamNestedObject(varsAreSensitive bool) schema.NestedAttributeObj
 	}
 }
 
-func getInputsElementType() attr.Type {
-	return getInputsNestedObject(false).Type()
+func getInputsElementType() InputType {
+	return getInputsNestedObject(false).CustomType.(InputType)
+}
+
+func getInputsAttributeTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"enabled": types.BoolType,
+		"vars":    jsontypes.NormalizedType{},
+		"defaults": types.ObjectType{
+			AttrTypes: map[string]attr.Type{
+				"vars": jsontypes.NormalizedType{},
+				"streams": types.MapType{
+					ElemType: types.ObjectType{
+						AttrTypes: map[string]attr.Type{
+							"enabled": types.BoolType,
+							"vars":    jsontypes.NormalizedType{},
+						},
+					},
+				},
+			},
+		},
+		"streams": types.MapType{
+			ElemType: types.ObjectType{
+				AttrTypes: map[string]attr.Type{
+					"enabled": types.BoolType,
+					"vars":    jsontypes.NormalizedType{},
+				},
+			},
+		},
+	}
 }
 
 func getInputStreamType() attr.Type {
 	return getInputStreamNestedObject(false).Type()
+}
+
+func getInputDefaultsType() attr.Type {
+	return getInputsAttributeTypes()["defaults"]
+}
+
+func getInputDefaultsAttrTypes() map[string]attr.Type {
+	return getInputDefaultsType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }
