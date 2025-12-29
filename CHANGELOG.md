@@ -76,6 +76,7 @@ inputs = {
 - Fix a state consistency issue when an `elasticstack_elasticsearch_ml_datafeed_state` resource without `start` configured is started after being stopped. ([#1563](https://github.com/elastic/terraform-provider-elasticstack/pull/1563))
 - Fix a state consistency issue when `elasticstack_elasticsearch_ml_datafeed_state` `start` and `end` times are specified in a timezone that is not the server timezone `elasticstack_elasticsearch_ml_datafeed_state` resource without `start` configured is started after being stopped. ([#1563](https://github.com/elastic/terraform-provider-elasticstack/pull/1563))
 - Fix an issue where `elasticstack_elasticsearch_ml_datafeed_state` `start` and `end` times where treated by the provider as unix seconds, but by the API as unix milliseconds. 
+- Only require input parameters in `elasticstack_fleet_integration_policy` to be specified if they differ from integration defaults ([#1558](https://github.com/elastic/terraform-provider-elasticstack/pull/1558))
 
 
 ## [0.13.1] - 2025-12-12
