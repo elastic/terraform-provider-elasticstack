@@ -126,6 +126,7 @@ func getSchema() schema.Schema {
 					"ignore_parent_settings": schema.SingleNestedAttribute{
 						MarkdownDescription: "Settings to ignore global dashboard settings in controls.",
 						Optional:            true,
+						CustomType:          NewIgnoreParentSettingsType(),
 						Attributes: map[string]schema.Attribute{
 							"ignore_filters": schema.BoolAttribute{
 								MarkdownDescription: "Ignore global filters in controls.",

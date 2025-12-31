@@ -36,12 +36,12 @@ type dashboardModel struct {
 }
 
 type controlGroupInputModel struct {
-	AutoApplySelections  types.Bool                 `tfsdk:"auto_apply_selections"`
-	ChainingSystem       types.String               `tfsdk:"chaining_system"`
-	LabelPosition        types.String               `tfsdk:"label_position"`
-	IgnoreParentSettings *ignoreParentSettingsModel `tfsdk:"ignore_parent_settings"`
-	Controls             types.List                 `tfsdk:"controls"` // List of controlModel
-	Enhancements         jsontypes.Normalized       `tfsdk:"enhancements"`
+	AutoApplySelections  types.Bool                `tfsdk:"auto_apply_selections"`
+	ChainingSystem       types.String              `tfsdk:"chaining_system"`
+	LabelPosition        types.String              `tfsdk:"label_position"`
+	IgnoreParentSettings IgnoreParentSettingsValue `tfsdk:"ignore_parent_settings"`
+	Controls             types.List                `tfsdk:"controls"` // List of controlModel
+	Enhancements         jsontypes.Normalized      `tfsdk:"enhancements"`
 }
 
 type ignoreParentSettingsModel struct {

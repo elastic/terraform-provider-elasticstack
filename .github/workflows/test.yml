@@ -87,8 +87,8 @@ jobs:
         ports:
           - 5601:5601
         options: --health-cmd="curl http://localhost:5601/api/status" --health-interval=10s --health-timeout=5s --health-retries=10
-      fleet:
-        image: elastic/elastic-agent:${{ matrix.version }}
+      fleet:    
+        image: ${{ matrix.fleetImage || 'docker.elastic.co/elastic-agent/elastic-agent' }}:${{ matrix.version }}
         env:
           SERVER_NAME: fleet
           FLEET_ENROLL: "1"
@@ -111,9 +111,9 @@ jobs:
       fail-fast: false
       matrix:
         version:
-          - '7.17.13'
-          - '8.0.1'
-          - '8.1.3'
+          # - '7.17.13'
+          # - '8.0.1'
+          # - '8.1.3'
           - '8.2.3'
           - '8.3.3'
           - '8.4.3'
@@ -135,10 +135,14 @@ jobs:
           - '9.0.8'
           - '9.1.9'
           - '9.2.3'
-        # The default runner image can be overridden for specific versions if needed
-        # include:
-        #   - version: '8.0.1'
-        #     runner: ubuntu-22.04
+          - '9.3.0-SNAPSHOT'
+        include:
+          - version: '7.17.13'
+            fleetImage: elastic/elastic-agent
+          - version: '8.0.1'
+            fleetImage: elastic/elastic-agent
+          - version: '8.1.3'
+            fleetImage: elastic/elastic-agent
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
       - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6

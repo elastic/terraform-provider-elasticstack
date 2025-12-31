@@ -71,7 +71,14 @@ func newControlGroupInputFromAPI(ctx context.Context, cgi *controlGroupInputAPIG
 	}
 
 	// Map ignore parent settings
-	model.IgnoreParentSettings = newIgnoreParentSettingsFromAPI(cgi.IgnoreParentSettings)
+	ignoreParentSettingsModel := newIgnoreParentSettingsFromAPI(cgi.IgnoreParentSettings)
+	ignoreParentSettingsValue, err := NewIgnoreParentSettingsValue(ctx, ignoreParentSettingsModel)
+	if err != nil {
+		diags.AddError("Failed to create ignore parent settings value", err.Error())
+		model.IgnoreParentSettings = NewIgnoreParentSettingsValueNull()
+	} else {
+		model.IgnoreParentSettings = ignoreParentSettingsValue
+	}
 
 	// Map controls
 	if cgi.Controls != nil && len(*cgi.Controls) > 0 {
@@ -156,8 +163,11 @@ func (m *controlGroupInputModel) toAPICreate() *controlGroupInputAPIPOST {
 	}
 
 	// Map ignore parent settings
-	if m.IgnoreParentSettings != nil {
-		result.IgnoreParentSettings = m.IgnoreParentSettings.toAPI()
+	if !m.IgnoreParentSettings.IsNull() && !m.IgnoreParentSettings.IsUnknown() {
+		ignoreParentSettingsModel, err := m.IgnoreParentSettings.ToModel(context.Background())
+		if err == nil && ignoreParentSettingsModel != nil {
+			result.IgnoreParentSettings = ignoreParentSettingsModel.toAPI()
+		}
 	}
 
 	// Map controls
