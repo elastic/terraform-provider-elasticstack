@@ -39,8 +39,18 @@ func (r *agentPolicyResource) Create(ctx context.Context, req resource.CreateReq
 		return
 	}
 
+	var spaceID string
+	if !planModel.SpaceIds.IsNull() && !planModel.SpaceIds.IsUnknown() {
+		var tempDiags diag.Diagnostics
+		spaceIDs := utils.SetTypeAs[types.String](ctx, planModel.SpaceIds, path.Root("space_ids"), &tempDiags)
+		if !tempDiags.HasError() && len(spaceIDs) > 0 {
+			// Use the first space for the POST request
+			spaceID = spaceIDs[0].ValueString()
+		}
+	}
+
 	sysMonitoring := planModel.SysMonitoring.ValueBool()
-	policy, diags := fleet.CreateAgentPolicy(ctx, client, body, sysMonitoring)
+	policy, diags := fleet.CreateAgentPolicy(ctx, client, body, sysMonitoring, spaceID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -54,16 +64,6 @@ func (r *agentPolicyResource) Create(ctx context.Context, req resource.CreateReq
 		// exists within that space context, not in the default space.
 		var readPolicy *kbapi.AgentPolicy
 		var getDiags diag.Diagnostics
-		var spaceID string
-
-		if !planModel.SpaceIds.IsNull() && !planModel.SpaceIds.IsUnknown() {
-			var tempDiags diag.Diagnostics
-			spaceIDs := utils.SetTypeAs[types.String](ctx, planModel.SpaceIds, path.Root("space_ids"), &tempDiags)
-			if !tempDiags.HasError() && len(spaceIDs) > 0 {
-				// Use the first space for the GET request
-				spaceID = spaceIDs[0].ValueString()
-			}
-		}
 
 		readPolicy, getDiags = fleet.GetAgentPolicy(ctx, client, policy.Id, spaceID)
 
