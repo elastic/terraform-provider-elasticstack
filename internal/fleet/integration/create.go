@@ -2,8 +2,10 @@ package integration
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -33,19 +35,58 @@ func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state 
 
 	name := planModel.Name.ValueString()
 	version := planModel.Version.ValueString()
-	force := planModel.Force.ValueBool()
+	installOptions := fleet.InstallPackageOptions{
+		Force:             planModel.Force.ValueBool(),
+		Prerelease:        planModel.Prerelease.ValueBool(),
+		IgnoreConstraints: planModel.IgnoreConstraints.ValueBool(),
+	}
+
+	// Check if version-dependent parameters are set and validate version support
+	needsVersionCheck := utils.IsKnown(planModel.IgnoreMappingUpdateErrors) || utils.IsKnown(planModel.SkipDataStreamRollover)
+	if needsVersionCheck {
+		serverVersion, versionDiags := r.client.ServerVersion(ctx)
+		respDiags.Append(diagutil.FrameworkDiagsFromSDK(versionDiags)...)
+		if respDiags.HasError() {
+			return
+		}
+
+		// Validate ignore_mapping_update_errors
+		if utils.IsKnown(planModel.IgnoreMappingUpdateErrors) {
+			if serverVersion.LessThan(MinVersionIgnoreMappingUpdateErrors) {
+				respDiags.AddError(
+					"Unsupported parameter for server version",
+					fmt.Sprintf("The 'ignore_mapping_update_errors' parameter requires server version %s or higher. Current version: %s",
+						MinVersionIgnoreMappingUpdateErrors.String(), serverVersion.String()),
+				)
+				return
+			}
+			installOptions.IgnoreMappingUpdateErrors = planModel.IgnoreMappingUpdateErrors.ValueBoolPointer()
+		}
+
+		// Validate skip_data_stream_rollover
+		if utils.IsKnown(planModel.SkipDataStreamRollover) {
+			if serverVersion.LessThan(MinVersionSkipDataStreamRollover) {
+				respDiags.AddError(
+					"Unsupported parameter for server version",
+					fmt.Sprintf("The 'skip_data_stream_rollover' parameter requires server version %s or higher. Current version: %s",
+						MinVersionSkipDataStreamRollover.String(), serverVersion.String()),
+				)
+				return
+			}
+			installOptions.SkipDataStreamRollover = planModel.SkipDataStreamRollover.ValueBoolPointer()
+		}
+	}
 
 	// If space_ids is set, use space-aware installation
-	var spaceID string
 	if !planModel.SpaceIds.IsNull() && !planModel.SpaceIds.IsUnknown() {
 		var tempDiags diag.Diagnostics
 		spaceIDs := utils.SetTypeAs[types.String](ctx, planModel.SpaceIds, path.Root("space_ids"), &tempDiags)
 		if !tempDiags.HasError() && len(spaceIDs) > 0 {
-			spaceID = spaceIDs[0].ValueString()
+			installOptions.SpaceID = spaceIDs[0].ValueString()
 		}
 	}
 
-	diags = fleet.InstallPackage(ctx, client, name, version, spaceID, force)
+	diags = fleet.InstallPackage(ctx, client, name, version, installOptions)
 	respDiags.Append(diags...)
 	if respDiags.HasError() {
 		return
