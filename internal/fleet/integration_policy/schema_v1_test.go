@@ -190,7 +190,9 @@ func TestIntegrationPolicyModelV1ToV2(t *testing.T) {
 		assert.Equal(t, v1Model.Force, v2Model.Force)
 		assert.Equal(t, v1Model.IntegrationName, v2Model.IntegrationName)
 		assert.Equal(t, v1Model.IntegrationVersion, v2Model.IntegrationVersion)
-		assert.Equal(t, v1Model.VarsJson, v2Model.VarsJson)
+
+		expectedVarsJson, _ := NewVarsJSONWithIntegration(`{"var1":"value1"}`, "test-integration", "1.0.0")
+		assert.True(t, expectedVarsJson.Equal(v2Model.VarsJson))
 	})
 
 	t.Run("conversion with agent_policy_ids", func(t *testing.T) {

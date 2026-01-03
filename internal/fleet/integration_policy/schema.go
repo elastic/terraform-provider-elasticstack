@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"os"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -104,11 +105,13 @@ func getSchemaV2() schema.Schema {
 				Optional:    true,
 			},
 			"vars_json": schema.StringAttribute{
-				Description: "Integration-level variables as JSON.",
-				CustomType:  jsontypes.NormalizedType{},
-				Computed:    true,
-				Optional:    true,
-				Sensitive:   varsAreSensitive,
+				Description: customtypes.DescriptionWithContextWarning("Integration-level variables as JSON. Variables vary depending on the integration package."),
+				CustomType: VarsJSONType{
+					JSONWithContextualDefaultsType: customtypes.NewJSONWithContextualDefaultsType(populateVarsJSONDefaults),
+				},
+				Computed:  true,
+				Optional:  true,
+				Sensitive: varsAreSensitive,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},

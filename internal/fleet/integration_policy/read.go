@@ -59,7 +59,7 @@ func (r *integrationPolicyResource) Read(ctx context.Context, req resource.ReadR
 	isImport := stateModel.PolicyID.ValueString() != "" &&
 		(stateModel.Name.IsNull() || stateModel.Name.IsUnknown())
 
-	pkg, diags := fleet.GetPackage(ctx, client, policy.Package.Name, policy.Package.Version)
+	pkg, diags := getPackageInfo(ctx, client, policy.Package.Name, policy.Package.Version)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
