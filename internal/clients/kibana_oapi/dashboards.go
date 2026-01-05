@@ -40,9 +40,9 @@ func addApiVersionQueryParamRequestEditor() func(ctx context.Context, req *http.
 }
 
 // GetDashboard reads a specific dashboard from the API.
-func GetDashboard(ctx context.Context, client *Client, spaceID string, dashboardID string) (*kbapi.GetDashboardsDashboardIdResponse, diag.Diagnostics) {
-	resp, err := client.API.GetDashboardsDashboardIdWithResponse(
-		ctx, dashboardID,
+func GetDashboard(ctx context.Context, client *Client, spaceID string, dashboardID string) (*kbapi.GetDashboardsIdResponse, diag.Diagnostics) {
+	resp, err := client.API.GetDashboardsIdWithResponse(
+		ctx, dashboardID, &kbapi.GetDashboardsIdParams{},
 		spaceAwarePathRequestEditor(spaceID),
 		addApiVersionQueryParamRequestEditor(),
 	)
@@ -61,9 +61,9 @@ func GetDashboard(ctx context.Context, client *Client, spaceID string, dashboard
 }
 
 // CreateDashboard creates a new dashboard.
-func CreateDashboard(ctx context.Context, client *Client, spaceID string, req kbapi.PostDashboardsDashboardJSONRequestBody) (*kbapi.PostDashboardsDashboardResponse, diag.Diagnostics) {
-	resp, err := client.API.PostDashboardsDashboardWithResponse(
-		ctx,
+func CreateDashboard(ctx context.Context, client *Client, spaceID string, req kbapi.PostDashboardsJSONRequestBody) (*kbapi.PostDashboardsResponse, diag.Diagnostics) {
+	resp, err := client.API.PostDashboardsWithResponse(
+		ctx, &kbapi.PostDashboardsParams{},
 		req,
 		spaceAwarePathRequestEditor(spaceID),
 		addApiVersionQueryParamRequestEditor(),
@@ -81,9 +81,9 @@ func CreateDashboard(ctx context.Context, client *Client, spaceID string, req kb
 }
 
 // UpdateDashboard updates an existing dashboard.
-func UpdateDashboard(ctx context.Context, client *Client, spaceID string, dashboardID string, req kbapi.PutDashboardsDashboardIdJSONRequestBody) (*kbapi.PutDashboardsDashboardIdResponse, diag.Diagnostics) {
-	resp, err := client.API.PutDashboardsDashboardIdWithResponse(
-		ctx, dashboardID, req,
+func UpdateDashboard(ctx context.Context, client *Client, spaceID string, dashboardID string, req kbapi.PutDashboardsIdJSONRequestBody) (*kbapi.PutDashboardsIdResponse, diag.Diagnostics) {
+	resp, err := client.API.PutDashboardsIdWithResponse(
+		ctx, dashboardID, &kbapi.PutDashboardsIdParams{}, req,
 		spaceAwarePathRequestEditor(spaceID),
 		addApiVersionQueryParamRequestEditor(),
 	)
@@ -101,7 +101,7 @@ func UpdateDashboard(ctx context.Context, client *Client, spaceID string, dashbo
 
 // DeleteDashboard deletes an existing dashboard.
 func DeleteDashboard(ctx context.Context, client *Client, spaceID string, dashboardID string) diag.Diagnostics {
-	resp, err := client.API.DeleteDashboardsDashboardIdWithResponse(
+	resp, err := client.API.DeleteDashboardsIdWithResponse(
 		ctx, dashboardID,
 		spaceAwarePathRequestEditor(spaceID),
 		addApiVersionQueryParamRequestEditor(),
