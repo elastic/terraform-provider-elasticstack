@@ -40,7 +40,7 @@ func (r *agentPolicyResource) Create(ctx context.Context, req resource.CreateReq
 	}
 
 	var spaceID string
-	if !planModel.SpaceIds.IsNull() && !planModel.SpaceIds.IsUnknown() {
+	if utils.IsKnown(planModel) {
 		var tempDiags diag.Diagnostics
 		spaceIDs := utils.SetTypeAs[types.String](ctx, planModel.SpaceIds, path.Root("space_ids"), &tempDiags)
 		if !tempDiags.HasError() && len(spaceIDs) > 0 {
