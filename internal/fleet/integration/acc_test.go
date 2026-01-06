@@ -179,7 +179,9 @@ func TestAccResourceIntegration_ExternalChange(t *testing.T) {
 					fleetClient, err := client.GetFleetClient()
 					require.NoError(t, err)
 
-					diags := fleet.InstallPackage(t.Context(), fleetClient, "tcp", "1.17.0", "", true)
+					diags := fleet.InstallPackage(t.Context(), fleetClient, "tcp", "1.17.0", fleet.InstallPackageOptions{
+						Force: true,
+					})
 					require.Empty(t, diags)
 				},
 				Check: resource.ComposeTestCheckFunc(
