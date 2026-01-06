@@ -394,14 +394,29 @@ func GetPackage(ctx context.Context, client *Client, name, version string) (*kba
 	}
 }
 
+// InstallPackageOptions holds the options for installing a package.
+type InstallPackageOptions struct {
+	SpaceID                   string
+	Force                     bool
+	Prerelease                bool
+	IgnoreMappingUpdateErrors *bool
+	SkipDataStreamRollover    *bool
+	IgnoreConstraints         bool
+}
+
 // InstallPackage installs a package.
-func InstallPackage(ctx context.Context, client *Client, name, version string, spaceID string, force bool) diag.Diagnostics {
-	params := kbapi.PostFleetEpmPackagesPkgnamePkgversionParams{}
+func InstallPackage(ctx context.Context, client *Client, name, version string, opts InstallPackageOptions) diag.Diagnostics {
+	params := kbapi.PostFleetEpmPackagesPkgnamePkgversionParams{
+		Prerelease:                &opts.Prerelease,
+		IgnoreMappingUpdateErrors: opts.IgnoreMappingUpdateErrors,
+		SkipDataStreamRollover:    opts.SkipDataStreamRollover,
+	}
 	body := kbapi.PostFleetEpmPackagesPkgnamePkgversionJSONRequestBody{
-		Force: &force,
+		Force:             &opts.Force,
+		IgnoreConstraints: &opts.IgnoreConstraints,
 	}
 
-	resp, err := client.API.PostFleetEpmPackagesPkgnamePkgversionWithResponse(ctx, name, version, &params, body, spaceAwarePathRequestEditor(spaceID))
+	resp, err := client.API.PostFleetEpmPackagesPkgnamePkgversionWithResponse(ctx, name, version, &params, body, spaceAwarePathRequestEditor(opts.SpaceID))
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
