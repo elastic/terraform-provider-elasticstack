@@ -923,3 +923,64 @@ func TestAccResourceAgentPolicyNonDefaultSpace(t *testing.T) {
 		},
 	})
 }
+
+func TestAccResourceAgentPolicyWithRestrictedUser(t *testing.T) {
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	spaceID := "test-space-" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	username := "test-user-" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	roleName := "test-role-" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	password := "Password123!"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceAgentPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionSpaceIds),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("step1"),
+				ConfigVariables: config.Variables{
+					"space_id":  config.StringVariable(spaceID),
+					"username":  config.StringVariable(username),
+					"password":  config.StringVariable(password),
+					"role_name": config.StringVariable(roleName),
+				},
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionSpaceIds),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("step2"),
+				ConfigVariables: config.Variables{
+					"space_id":    config.StringVariable(spaceID),
+					"username":    config.StringVariable(username),
+					"password":    config.StringVariable(password),
+					"role_name":   config.StringVariable(roleName),
+					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "space_ids.0", spaceID),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agent_policy.MinVersionSpaceIds),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("step3"),
+				ConfigVariables: config.Variables{
+					"space_id":    config.StringVariable(spaceID),
+					"username":    config.StringVariable(username),
+					"password":    config.StringVariable(password),
+					"role_name":   config.StringVariable(roleName),
+					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "description", "Updated Test Agent Policy"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "space_ids.0", spaceID),
+				),
+			},
+		},
+	})
+}

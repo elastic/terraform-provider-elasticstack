@@ -118,12 +118,12 @@ func GetAgentPolicy(ctx context.Context, client *Client, id string, spaceID stri
 }
 
 // CreateAgentPolicy creates a new agent policy.
-func CreateAgentPolicy(ctx context.Context, client *Client, req kbapi.PostFleetAgentPoliciesJSONRequestBody, sysMonitoring bool) (*kbapi.AgentPolicy, diag.Diagnostics) {
+func CreateAgentPolicy(ctx context.Context, client *Client, req kbapi.PostFleetAgentPoliciesJSONRequestBody, sysMonitoring bool, spaceID string) (*kbapi.AgentPolicy, diag.Diagnostics) {
 	params := kbapi.PostFleetAgentPoliciesParams{
 		SysMonitoring: utils.Pointer(sysMonitoring),
 	}
 
-	resp, err := client.API.PostFleetAgentPoliciesWithResponse(ctx, &params, req)
+	resp, err := client.API.PostFleetAgentPoliciesWithResponse(ctx, &params, req, spaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
