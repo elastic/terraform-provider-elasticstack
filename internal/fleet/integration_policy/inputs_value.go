@@ -4,10 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
@@ -19,7 +17,13 @@ type InputsValue struct {
 
 // Type returns an InputsType.
 func (v InputsValue) Type(ctx context.Context) attr.Type {
-	return NewInputsType(v.ElementType(ctx))
+	elemType := v.ElementType(ctx)
+	inputType, ok := elemType.(InputType)
+	if !ok {
+		// Fallback for when ElementType is not InputType (shouldn't happen in practice)
+		return NewInputsType(NewInputType(getInputsAttributeTypes()))
+	}
+	return NewInputsType(inputType)
 }
 
 // Equal returns true if the given value is equivalent.
@@ -33,167 +37,84 @@ func (v InputsValue) Equal(o attr.Value) bool {
 
 // MapSemanticEquals returns true if the given map value is semantically equal to the current map value.
 // Disabled inputs (enabled=false) are ignored during the comparison.
-func (v InputsValue) MapSemanticEquals(ctx context.Context, newValuable basetypes.MapValuable) (bool, diag.Diagnostics) {
+func (v InputsValue) MapSemanticEquals(ctx context.Context, priorValuable basetypes.MapValuable) (bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	newValue, ok := newValuable.(InputsValue)
+	priorValue, ok := priorValuable.(InputsValue)
 	if !ok {
 		diags.AddError(
 			"Semantic Equality Check Error",
 			"An unexpected value type was received while performing semantic equality checks. "+
 				"Please report this to the provider developers.\n\n"+
 				"Expected Value Type: "+fmt.Sprintf("%T", v)+"\n"+
-				"Got Value Type: "+fmt.Sprintf("%T", newValuable),
+				"Got Value Type: "+fmt.Sprintf("%T", priorValuable),
 		)
 		return false, diags
 	}
 
 	// Handle null/unknown cases
 	if v.IsNull() {
-		return newValue.IsNull(), diags
+		return priorValue.IsNull(), diags
 	}
 
 	if v.IsUnknown() {
-		return newValue.IsUnknown(), diags
+		return priorValue.IsUnknown(), diags
 	}
 
-	// Convert both maps to integrationPolicyInputsModel
-	oldInputsMap := utils.MapTypeAs[integrationPolicyInputsModel](ctx, v.MapValue, path.Root("inputs"), &diags)
-	if diags.HasError() {
-		return false, diags
-	}
-
-	newInputsMap := utils.MapTypeAs[integrationPolicyInputsModel](ctx, newValue.MapValue, path.Root("inputs"), &diags)
-	if diags.HasError() {
-		return false, diags
-	}
-
-	// Filter out disabled inputs from both maps
-	enabledOldInputs := filterEnabledInputs(ctx, oldInputsMap)
-	enabledNewInputs := filterEnabledInputs(ctx, newInputsMap)
-
-	// Check if the number of enabled inputs is the same
-	if len(enabledOldInputs) != len(enabledNewInputs) {
-		return false, diags
-	}
-
-	// Compare each enabled input
-	for inputID, oldInput := range enabledOldInputs {
-		newInput, exists := enabledNewInputs[inputID]
+	remainingPriorInputs := priorValue.Elements()
+	for inputID, oldInputValue := range v.Elements() {
+		newInput := oldInputValue.(InputValue)
+		priorInput, exists := remainingPriorInputs[inputID]
 		if !exists {
-			return false, diags
-		}
-
-		// Compare enabled flags
-		if !oldInput.Enabled.Equal(newInput.Enabled) {
-			return false, diags
-		}
-
-		// Compare vars using semantic equality if both are known
-		if utils.IsKnown(oldInput.Vars) && utils.IsKnown(newInput.Vars) {
-			varsEqual, d := oldInput.Vars.StringSemanticEquals(ctx, newInput.Vars)
+			// If the new input is disabled, we can ignore its absence in the prior inputs
+			enabled, d := newInput.MaybeEnabled(ctx)
 			diags.Append(d...)
 			if diags.HasError() {
 				return false, diags
 			}
-			if !varsEqual {
+
+			if !enabled {
+				continue
+			}
+
+			enabledByDefault, d := newInput.EnabledByDefault(ctx)
+			diags.Append(d...)
+			if diags.HasError() {
 				return false, diags
 			}
-		} else if !oldInput.Vars.Equal(newInput.Vars) {
-			// If one is null/unknown, use regular equality
+
+			if enabledByDefault {
+				continue
+			}
+
 			return false, diags
 		}
 
-		// Compare streams
-		streamsEqual, d := compareStreams(ctx, oldInput.Streams, newInput.Streams)
+		priorInputValue := priorInput.(InputValue)
+		equals, d := newInput.ObjectSemanticEquals(ctx, priorInputValue)
 		diags.Append(d...)
 		if diags.HasError() {
 			return false, diags
 		}
-		if !streamsEqual {
-			return false, diags
-		}
-	}
-
-	return true, diags
-}
-
-// filterEnabledInputs returns a map of only the enabled inputs
-func filterEnabledInputs(ctx context.Context, inputs map[string]integrationPolicyInputsModel) map[string]integrationPolicyInputsModel {
-	if inputs == nil {
-		return nil
-	}
-
-	enabled := make(map[string]integrationPolicyInputsModel)
-	for inputID, input := range inputs {
-		// Only include inputs that are explicitly enabled or unknown
-		// Disabled inputs (enabled=false) are excluded
-		if input.Enabled.IsNull() || input.Enabled.IsUnknown() || input.Enabled.ValueBool() {
-			enabled[inputID] = input
-		}
-	}
-	return enabled
-}
-
-// compareStreams compares two stream maps, ignoring disabled streams
-func compareStreams(ctx context.Context, oldStreams, newStreams basetypes.MapValue) (bool, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	// Handle null/unknown cases
-	if oldStreams.IsNull() && newStreams.IsNull() {
-		return true, diags
-	}
-	if oldStreams.IsUnknown() && newStreams.IsUnknown() {
-		return true, diags
-	}
-	if oldStreams.IsNull() != newStreams.IsNull() || oldStreams.IsUnknown() != newStreams.IsUnknown() {
-		return false, diags
-	}
-
-	// Convert both maps to integrationPolicyInputStreamModel
-	oldStreamsMap := utils.MapTypeAs[integrationPolicyInputStreamModel](ctx, oldStreams, path.Root("streams"), &diags)
-	if diags.HasError() {
-		return false, diags
-	}
-
-	newStreamsMap := utils.MapTypeAs[integrationPolicyInputStreamModel](ctx, newStreams, path.Root("streams"), &diags)
-	if diags.HasError() {
-		return false, diags
-	}
-
-	// Filter out disabled streams from both maps
-	enabledOldStreams := filterEnabledStreams(oldStreamsMap)
-	enabledNewStreams := filterEnabledStreams(newStreamsMap)
-
-	// Check if the number of enabled streams is the same
-	if len(enabledOldStreams) != len(enabledNewStreams) {
-		return false, diags
-	}
-
-	// Compare each enabled stream
-	for streamID, oldStream := range enabledOldStreams {
-		newStream, exists := enabledNewStreams[streamID]
-		if !exists {
+		if !equals {
 			return false, diags
 		}
 
-		// Compare enabled flags
-		if !oldStream.Enabled.Equal(newStream.Enabled) {
+		// Remove the processed input from remainingPriorInputs
+		delete(remainingPriorInputs, inputID)
+	}
+
+	// After processing all new inputs, check if there are any remaining prior inputs
+	for _, priorInputValue := range remainingPriorInputs {
+		priorInput := priorInputValue.(InputValue)
+		// If the prior input is enabled, it's a difference
+		enabled, d := priorInput.MaybeEnabled(ctx)
+		diags.Append(d...)
+		if diags.HasError() {
 			return false, diags
 		}
 
-		// Compare vars using semantic equality if both are known
-		if utils.IsKnown(oldStream.Vars) && utils.IsKnown(newStream.Vars) {
-			varsEqual, d := oldStream.Vars.StringSemanticEquals(ctx, newStream.Vars)
-			diags.Append(d...)
-			if diags.HasError() {
-				return false, diags
-			}
-			if !varsEqual {
-				return false, diags
-			}
-		} else if !oldStream.Vars.Equal(newStream.Vars) {
-			// If one is null/unknown, use regular equality
+		if enabled {
 			return false, diags
 		}
 	}
@@ -219,21 +140,21 @@ func filterEnabledStreams(streams map[string]integrationPolicyInputStreamModel) 
 }
 
 // NewInputsNull creates an InputsValue with a null value.
-func NewInputsNull(elemType attr.Type) InputsValue {
+func NewInputsNull(elemType InputType) InputsValue {
 	return InputsValue{
 		MapValue: basetypes.NewMapNull(elemType),
 	}
 }
 
 // NewInputsUnknown creates an InputsValue with an unknown value.
-func NewInputsUnknown(elemType attr.Type) InputsValue {
+func NewInputsUnknown(elemType InputType) InputsValue {
 	return InputsValue{
 		MapValue: basetypes.NewMapUnknown(elemType),
 	}
 }
 
 // NewInputsValue creates an InputsValue with a known value.
-func NewInputsValue(elemType attr.Type, elements map[string]attr.Value) (InputsValue, diag.Diagnostics) {
+func NewInputsValue(elemType InputType, elements map[string]attr.Value) (InputsValue, diag.Diagnostics) {
 	mapValue, diags := basetypes.NewMapValue(elemType, elements)
 	return InputsValue{
 		MapValue: mapValue,
@@ -241,7 +162,7 @@ func NewInputsValue(elemType attr.Type, elements map[string]attr.Value) (InputsV
 }
 
 // NewInputsValueFrom creates an InputsValue from a map of Go values.
-func NewInputsValueFrom(ctx context.Context, elemType attr.Type, elements any) (InputsValue, diag.Diagnostics) {
+func NewInputsValueFrom(ctx context.Context, elemType InputType, elements any) (InputsValue, diag.Diagnostics) {
 	mapValue, diags := basetypes.NewMapValueFrom(ctx, elemType, elements)
 	return InputsValue{
 		MapValue: mapValue,

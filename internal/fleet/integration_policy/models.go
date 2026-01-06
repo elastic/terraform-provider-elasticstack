@@ -36,9 +36,10 @@ type integrationPolicyModel struct {
 }
 
 type integrationPolicyInputsModel struct {
-	Enabled types.Bool           `tfsdk:"enabled"`
-	Vars    jsontypes.Normalized `tfsdk:"vars"`
-	Streams types.Map            `tfsdk:"streams"` //> integrationPolicyInputStreamModel
+	Enabled  types.Bool           `tfsdk:"enabled"`
+	Vars     jsontypes.Normalized `tfsdk:"vars"`
+	Defaults types.Object         `tfsdk:"defaults"` //> inputDefaultsModel
+	Streams  types.Map            `tfsdk:"streams"`  //> integrationPolicyInputStreamModel
 }
 
 type integrationPolicyInputStreamModel struct {
@@ -46,7 +47,7 @@ type integrationPolicyInputStreamModel struct {
 	Vars    jsontypes.Normalized `tfsdk:"vars"`
 }
 
-func (model *integrationPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.PackagePolicy) diag.Diagnostics {
+func (model *integrationPolicyModel) populateFromAPI(ctx context.Context, pkg *kbapi.PackageInfo, data *kbapi.PackagePolicy) diag.Diagnostics {
 	if data == nil {
 		return nil
 	}
@@ -110,12 +111,12 @@ func (model *integrationPolicyModel) populateFromAPI(ctx context.Context, data *
 		model.SpaceIds = types.SetNull(types.StringType)
 	}
 	// If originally set but API didn't return it, keep the original value
-	model.populateInputsFromAPI(ctx, data.Inputs, &diags)
+	model.populateInputsFromAPI(ctx, pkg, data.Inputs, &diags)
 
 	return diags
 }
 
-func (model *integrationPolicyModel) populateInputsFromAPI(ctx context.Context, inputs map[string]kbapi.PackagePolicyInput, diags *diag.Diagnostics) {
+func (model *integrationPolicyModel) populateInputsFromAPI(ctx context.Context, pkg *kbapi.PackageInfo, inputs map[string]kbapi.PackagePolicyInput, diags *diag.Diagnostics) {
 	// Handle input population based on context:
 	// 1. If model.Inputs is unknown: we're importing or reading fresh state → populate from API
 	// 2. If model.Inputs is known and null/empty: user explicitly didn't configure inputs → don't populate (avoid inconsistent state)
@@ -135,6 +136,17 @@ func (model *integrationPolicyModel) populateInputsFromAPI(ctx context.Context, 
 		return
 	}
 	// Case 3: Known and not null/empty - user configured inputs, populate from API (continue below)
+
+	// Fetch package info to get defaults
+	inputDefaults, defaultsDiags := packageInfoToDefaults(pkg)
+	diags.Append(defaultsDiags...)
+	if diags.HasError() {
+		return
+	}
+
+	if inputDefaults == nil {
+		inputDefaults = make(map[string]inputDefaultsModel)
+	}
 
 	newInputs := make(map[string]integrationPolicyInputsModel)
 	for inputID, inputData := range inputs {
@@ -162,6 +174,15 @@ func (model *integrationPolicyModel) populateInputsFromAPI(ctx context.Context, 
 			inputModel.Streams = types.MapNull(getInputStreamType())
 		}
 
+		// Populate defaults if available
+		if defaults, ok := inputDefaults[inputID]; ok {
+			defaultsObj, d := types.ObjectValueFrom(ctx, getInputDefaultsAttrTypes(), defaults)
+			diags.Append(d...)
+			inputModel.Defaults = defaultsObj
+		} else {
+			inputModel.Defaults = types.ObjectNull(getInputDefaultsAttrTypes())
+		}
+
 		newInputs[inputID] = inputModel
 	}
 
@@ -170,7 +191,7 @@ func (model *integrationPolicyModel) populateInputsFromAPI(ctx context.Context, 
 	model.Inputs = inputsMap
 }
 
-func (model integrationPolicyModel) toAPIModel(ctx context.Context, isUpdate bool, feat features) (kbapi.PackagePolicyRequest, diag.Diagnostics) {
+func (model integrationPolicyModel) toAPIModel(ctx context.Context, feat features) (kbapi.PackagePolicyRequest, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	// Check if agent_policy_ids is configured and version supports it
@@ -227,32 +248,32 @@ func (model integrationPolicyModel) toAPIModel(ctx context.Context, isUpdate boo
 		Vars: utils.MapRef(utils.NormalizedTypeToMap[any](model.VarsJson, path.Root("vars_json"), &diags)),
 	}
 
-	if isUpdate {
+	if utils.IsKnown(model.PolicyID) {
+		body.Id = model.PolicyID.ValueStringPointer()
+	}
+
+	if utils.IsKnown(model.ID) {
 		body.Id = model.ID.ValueStringPointer()
 	}
 
-	if utils.IsKnown(model.Inputs) && len(model.Inputs.Elements()) > 0 {
-		// Use the 'inputs' attribute (v2 format)
-		body.Inputs = utils.MapRef(model.toAPIInputsFromInputsAttribute(ctx, &diags))
-	}
-
+	body.Inputs = model.toAPIInputsFromInputsAttribute(ctx, &diags)
 	// Note: space_ids is read-only for integration policies and inherited from the agent policy
 
 	return body, diags
 }
 
 // toAPIInputsFromInputsAttribute converts the 'inputs' attribute to the API model format
-func (model integrationPolicyModel) toAPIInputsFromInputsAttribute(ctx context.Context, diags *diag.Diagnostics) map[string]kbapi.PackagePolicyRequestInput {
+func (model integrationPolicyModel) toAPIInputsFromInputsAttribute(ctx context.Context, diags *diag.Diagnostics) *map[string]kbapi.PackagePolicyRequestInput {
+	result := make(map[string]kbapi.PackagePolicyRequestInput, len(model.Inputs.Elements()))
 	if !utils.IsKnown(model.Inputs.MapValue) {
-		return nil
+		return &result
 	}
 
 	inputsMap := utils.MapTypeAs[integrationPolicyInputsModel](ctx, model.Inputs.MapValue, path.Root("inputs"), diags)
 	if inputsMap == nil {
-		return nil
+		return &result
 	}
 
-	result := make(map[string]kbapi.PackagePolicyRequestInput, len(inputsMap))
 	for inputID, inputModel := range inputsMap {
 		inputPath := path.Root("inputs").AtMapKey(inputID)
 
@@ -279,5 +300,5 @@ func (model integrationPolicyModel) toAPIInputsFromInputsAttribute(ctx context.C
 		result[inputID] = apiInput
 	}
 
-	return result
+	return &result
 }

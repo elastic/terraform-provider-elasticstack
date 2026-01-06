@@ -39,7 +39,7 @@ func TestOutputIdHandling(t *testing.T) {
 			OutputId: &outputId,
 		}
 
-		diags := model.populateFromAPI(context.Background(), data)
+		diags := model.populateFromAPI(context.Background(), nil, data)
 		require.Empty(t, diags)
 		require.Equal(t, "test-output-id", model.OutputID.ValueString())
 	})
@@ -57,7 +57,7 @@ func TestOutputIdHandling(t *testing.T) {
 			SupportsOutputId:  true,
 		}
 
-		result, diags := model.toAPIModel(context.Background(), false, feat)
+		result, diags := model.toAPIModel(context.Background(), feat)
 		require.Empty(t, diags)
 		require.NotNil(t, result.OutputId)
 		require.Equal(t, "test-output-id", *result.OutputId)
@@ -76,7 +76,7 @@ func TestOutputIdHandling(t *testing.T) {
 			SupportsOutputId:  false, // Simulate unsupported version
 		}
 
-		_, diags := model.toAPIModel(context.Background(), false, feat)
+		_, diags := model.toAPIModel(context.Background(), feat)
 		require.Len(t, diags, 1)
 		require.Equal(t, "Unsupported Elasticsearch version", diags[0].Summary())
 		require.Contains(t, diags[0].Detail(), "Output ID is only supported in Elastic Stack")

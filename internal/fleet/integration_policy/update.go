@@ -38,7 +38,7 @@ func (r *integrationPolicyResource) Update(ctx context.Context, req resource.Upd
 		return
 	}
 
-	body, diags := planModel.toAPIModel(ctx, true, feat)
+	body, diags := planModel.toAPIModel(ctx, feat)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -76,7 +76,13 @@ func (r *integrationPolicyResource) Update(ctx context.Context, req resource.Upd
 	// Remember the input configuration from state
 	stateHadInput := utils.IsKnown(stateModel.Inputs) && !stateModel.Inputs.IsNull() && len(stateModel.Inputs.Elements()) > 0
 
-	diags = planModel.populateFromAPI(ctx, policy)
+	pkg, diags := fleet.GetPackage(ctx, client, policy.Package.Name, policy.Package.Version)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	diags = planModel.populateFromAPI(ctx, pkg, policy)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
