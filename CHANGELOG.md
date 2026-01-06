@@ -66,6 +66,7 @@ inputs = {
 
 ### Changes
 
+- Fix handling custom `policy_id` attributes in `elasticstack_fleet_integration_policy` resources ([#1594](https://github.com/elastic/terraform-provider-elasticstack/pull/1594))
 - Add `advanced_settings` to `elasticstack_fleet_agent_policy` to configure agent logging, CPU limits, and download settings ([#1545](https://github.com/elastic/terraform-provider-elasticstack/pull/1545))
 - Prevent provider panic when importing a non-existant `elasticstack_elasticsearch_ml_datafeed`. ([#1579](https://github.com/elastic/terraform-provider-elasticstack/pull/1579))
 - Fix handling of empty `except` attributes in `elasticstack_elasticsearch_security_role` ([#1581](https://github.com/elastic/terraform-provider-elasticstack/pull/1581))
