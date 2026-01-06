@@ -42,7 +42,7 @@ type optionsModel struct {
 }
 
 // populateFromAPI populates the Terraform model from the API response
-func (m *dashboardModel) populateFromAPI(ctx context.Context, resp *kbapi.GetDashboardsDashboardIdResponse, dashboardID string, spaceID string) diag.Diagnostics {
+func (m *dashboardModel) populateFromAPI(ctx context.Context, resp *kbapi.GetDashboardsIdResponse, dashboardID string, spaceID string) diag.Diagnostics {
 	var diags diag.Diagnostics
 	data := resp.JSON200
 
@@ -113,8 +113,8 @@ func (m *dashboardModel) populateFromAPI(ctx context.Context, resp *kbapi.GetDas
 }
 
 // toAPICreateRequest converts the Terraform model to an API create request
-func (m *dashboardModel) toAPICreateRequest(ctx context.Context, diags *diag.Diagnostics) kbapi.PostDashboardsDashboardJSONRequestBody {
-	req := kbapi.PostDashboardsDashboardJSONRequestBody{}
+func (m *dashboardModel) toAPICreateRequest(ctx context.Context, diags *diag.Diagnostics) kbapi.PostDashboardsJSONRequestBody {
+	req := kbapi.PostDashboardsJSONRequestBody{}
 	req.Data.Title = m.Title.ValueString()
 	req.Data.RefreshInterval.Pause = m.RefreshIntervalPause.ValueBool()
 	req.Data.RefreshInterval.Value = float32(m.RefreshIntervalValue.ValueInt64())
@@ -164,8 +164,8 @@ func (m *dashboardModel) toAPICreateRequest(ctx context.Context, diags *diag.Dia
 }
 
 // toAPIUpdateRequest converts the Terraform model to an API update request
-func (m *dashboardModel) toAPIUpdateRequest(ctx context.Context, diags *diag.Diagnostics) kbapi.PutDashboardsDashboardIdJSONRequestBody {
-	req := kbapi.PutDashboardsDashboardIdJSONRequestBody{}
+func (m *dashboardModel) toAPIUpdateRequest(ctx context.Context, diags *diag.Diagnostics) kbapi.PutDashboardsIdJSONRequestBody {
+	req := kbapi.PutDashboardsIdJSONRequestBody{}
 	req.Data.Title = m.Title.ValueString()
 	req.Data.RefreshInterval.Pause = m.RefreshIntervalPause.ValueBool()
 	req.Data.RefreshInterval.Value = float32(m.RefreshIntervalValue.ValueInt64())
