@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestConfigValue_StringSemanticEquals(t *testing.T) {
+func TestVarsJSONValue_StringSemanticEquals(t *testing.T) {
 	tests := []struct {
 		name          string
 		configValue   VarsJSONValue

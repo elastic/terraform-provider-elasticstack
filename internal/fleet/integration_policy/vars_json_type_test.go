@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestConfigType_ValueFromString(t *testing.T) {
+func TestVarsJSONType_ValueFromString(t *testing.T) {
 	tests := []struct {
 		name                       string
 		input                      basetypes.StringValue
@@ -94,7 +94,7 @@ func TestConfigType_ValueFromString(t *testing.T) {
 	}
 }
 
-func TestConfigType_ValueFromTerraform(t *testing.T) {
+func TestVarsJSONType_ValueFromTerraform(t *testing.T) {
 	tests := []struct {
 		name          string
 		tfValue       tftypes.Value
