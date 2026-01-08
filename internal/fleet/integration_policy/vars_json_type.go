@@ -1,10 +1,9 @@
-package connectors
+package integration_policy
 
 import (
 	"context"
 	"fmt"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -13,34 +12,28 @@ import (
 )
 
 var (
-	_ basetypes.StringTypable = (*ConfigType)(nil)
+	_ basetypes.StringTypable = (*VarsJSONType)(nil)
 )
 
-type ConfigType struct {
+type VarsJSONType struct {
 	customtypes.JSONWithContextualDefaultsType
 }
 
-func NewConfigType() ConfigType {
-	return ConfigType{
-		JSONWithContextualDefaultsType: customtypes.NewJSONWithContextualDefaultsType(kibana_oapi.ConnectorConfigWithDefaults),
-	}
-}
-
 // String returns a human readable string of the type name.
-func (t ConfigType) String() string {
-	return "connectors.ConfigType"
+func (t VarsJSONType) String() string {
+	return "integration_policy.VarsJSONType"
 }
 
 // ValueType returns the Value type.
-func (t ConfigType) ValueType(ctx context.Context) attr.Value {
-	return ConfigValue{
+func (t VarsJSONType) ValueType(ctx context.Context) attr.Value {
+	return VarsJSONValue{
 		JSONWithContextualDefaultsValue: t.JSONWithContextualDefaultsType.ValueType(ctx).(customtypes.JSONWithContextualDefaultsValue),
 	}
 }
 
 // Equal returns true if the given type is equivalent.
-func (t ConfigType) Equal(o attr.Type) bool {
-	other, ok := o.(ConfigType)
+func (t VarsJSONType) Equal(o attr.Type) bool {
+	other, ok := o.(VarsJSONType)
 
 	if !ok {
 		return false
@@ -50,20 +43,20 @@ func (t ConfigType) Equal(o attr.Type) bool {
 }
 
 // ValueFromString returns a StringValuable type given a StringValue.
-func (t ConfigType) ValueFromString(ctx context.Context, in basetypes.StringValue) (basetypes.StringValuable, diag.Diagnostics) {
+func (t VarsJSONType) ValueFromString(ctx context.Context, in basetypes.StringValue) (basetypes.StringValuable, diag.Diagnostics) {
 	val, diags := t.JSONWithContextualDefaultsType.ValueFromString(ctx, in)
 	if diags.HasError() {
 		return nil, diags
 	}
 
-	return ConfigValue{
+	return VarsJSONValue{
 		JSONWithContextualDefaultsValue: val.(customtypes.JSONWithContextualDefaultsValue),
 	}, nil
 }
 
 // ValueFromTerraform returns a Value given a tftypes.Value.  This is meant to convert the tftypes.Value into a more convenient Go type
 // for the provider to consume the data with.
-func (t ConfigType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
+func (t VarsJSONType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
 	attrValue, err := t.StringType.ValueFromTerraform(ctx, in)
 	if err != nil {
 		return nil, err

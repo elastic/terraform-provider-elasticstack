@@ -340,6 +340,35 @@ func TestAccResourceIntegrationPolicySecrets(t *testing.T) {
 	})
 }
 
+func TestAccIntegrationPolicyAzureMetrics(t *testing.T) {
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIntegrationPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "description", "Azure Metrics Integration Policy"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_name", "azure_metrics"),
+					resource.TestCheckResourceAttrPair("elasticstack_fleet_integration_policy.test_policy", "integration_version", "data.elasticstack_fleet_integration.test", "version"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "vars_json", `{"client_id":"test-client-id","client_secret":"test-client-secret","subscription_id":"test-subscription-id","tenant_id":"test-tenant-id"}`),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.monitor-azure/metrics.enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.monitor-azure/metrics.streams.azure.monitor.enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.monitor-azure/metrics.streams.azure.monitor.vars", `{"period":"300s","resources":"- resource_query: \"resourceType eq 'Microsoft.Search/searchServices'\"\n  metrics:\n  - name: [\"DocumentsProcessedCount\", \"SearchLatency\", \"SearchQueriesPerSecond\", \"ThrottledSearchQueriesPercentage\"]\n    namespace: \"Microsoft.Search/searchServices\""}`),
+				),
+			},
+		},
+	})
+}
+
 func TestAccIntegrationPolicyInputs(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 

@@ -1,4 +1,4 @@
-package connectors
+package integration_policy
 
 import (
 	"context"
@@ -13,38 +13,30 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestConfigType_ValueFromString(t *testing.T) {
+func TestVarsJSONType_ValueFromString(t *testing.T) {
 	tests := []struct {
-		name                string
-		input               basetypes.StringValue
-		expectedConnectorID string
-		contextKey          string
-		expectError         bool
+		name                       string
+		input                      basetypes.StringValue
+		expectedIntegrationContext string
+		expectError                bool
 	}{
 		{
-			name:                "valid JSON config with connector type ID",
-			input:               basetypes.NewStringValue(`{"key": "value", "__tf_provider_connector_type_id": "my-connector"}`),
-			expectedConnectorID: "my-connector",
-			contextKey:          "__tf_provider_connector_type_id",
-			expectError:         false,
+			name:                       "valid JSON config with integration context",
+			input:                      basetypes.NewStringValue(`{"key": "value", "__tf_provider_context": "apm"}`),
+			expectedIntegrationContext: "apm",
+			expectError:                false,
 		},
 		{
-			name:                "valid JSON config with context key ID",
-			input:               basetypes.NewStringValue(`{"key": "value", "__tf_provider_context": "my-connector"}`),
-			expectedConnectorID: "my-connector",
-			expectError:         false,
+			name:                       "valid JSON config without integration context",
+			input:                      basetypes.NewStringValue(`{"key": "value"}`),
+			expectedIntegrationContext: "",
+			expectError:                false,
 		},
 		{
-			name:                "valid JSON config without connector type ID",
-			input:               basetypes.NewStringValue(`{"key": "value"}`),
-			expectedConnectorID: "",
-			expectError:         false,
-		},
-		{
-			name:                "empty JSON config",
-			input:               basetypes.NewStringValue(`{}`),
-			expectedConnectorID: "",
-			expectError:         false,
+			name:                       "empty JSON config",
+			input:                      basetypes.NewStringValue(`{}`),
+			expectedIntegrationContext: "",
+			expectError:                false,
 		},
 		{
 			name:        "invalid JSON config",
@@ -52,29 +44,29 @@ func TestConfigType_ValueFromString(t *testing.T) {
 			expectError: true,
 		},
 		{
-			name:                "null string value",
-			input:               basetypes.NewStringNull(),
-			expectedConnectorID: "",
-			expectError:         false,
+			name:                       "null string value",
+			input:                      basetypes.NewStringNull(),
+			expectedIntegrationContext: "",
+			expectError:                false,
 		},
 		{
-			name:                "unknown string value",
-			input:               basetypes.NewStringUnknown(),
-			expectedConnectorID: "",
-			expectError:         false,
+			name:                       "unknown string value",
+			input:                      basetypes.NewStringUnknown(),
+			expectedIntegrationContext: "",
+			expectError:                false,
 		},
 		{
-			name:                "JSON with non-string connector type ID",
-			input:               basetypes.NewStringValue(`{"key": "value", "__tf_provider_context": 123}`),
-			expectedConnectorID: "",
-			expectError:         false,
+			name:                       "JSON with non-string integration context",
+			input:                      basetypes.NewStringValue(`{"key": "value", "__tf_provider_context": 123}`),
+			expectedIntegrationContext: "",
+			expectError:                false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			configType := ConfigType{}
-			result, diags := configType.ValueFromString(t.Context(), tt.input)
+			configType := VarsJSONType{}
+			result, diags := configType.ValueFromString(context.Background(), tt.input)
 
 			if tt.expectError {
 				require.True(t, diags.HasError(), "Expected an error but got none")
@@ -84,7 +76,7 @@ func TestConfigType_ValueFromString(t *testing.T) {
 			require.False(t, diags.HasError(), "Unexpected error: %v", diags)
 			require.NotNil(t, result, "Result should not be nil")
 
-			configValue, ok := result.(ConfigValue)
+			configValue, ok := result.(VarsJSONValue)
 			require.True(t, ok, "Result should be of type ConfigValue")
 
 			if !configValue.IsNull() && !configValue.IsUnknown() {
@@ -92,12 +84,8 @@ func TestConfigType_ValueFromString(t *testing.T) {
 				err := json.Unmarshal([]byte(configValue.ValueString()), &resultMap)
 				require.NoError(t, err)
 
-				if tt.expectedConnectorID != "" {
-					contextKey := "__tf_provider_context"
-					if tt.contextKey != "" {
-						contextKey = tt.contextKey
-					}
-					require.Equal(t, tt.expectedConnectorID, resultMap[contextKey], "Connector type ID mismatch")
+				if tt.expectedIntegrationContext != "" {
+					require.Equal(t, tt.expectedIntegrationContext, resultMap["__tf_provider_context"], "Integration context mismatch")
 				}
 			}
 
@@ -106,7 +94,7 @@ func TestConfigType_ValueFromString(t *testing.T) {
 	}
 }
 
-func TestConfigType_ValueFromTerraform(t *testing.T) {
+func TestVarsJSONType_ValueFromTerraform(t *testing.T) {
 	tests := []struct {
 		name          string
 		tfValue       tftypes.Value
@@ -116,7 +104,7 @@ func TestConfigType_ValueFromTerraform(t *testing.T) {
 		{
 			name:    "valid string value with JSON config",
 			tfValue: tftypes.NewValue(tftypes.String, `{"key": "value", "__tf_provider_context": "test-connector"}`),
-			expectedValue: ConfigValue{
+			expectedValue: VarsJSONValue{
 				JSONWithContextualDefaultsValue: customtypes.JSONWithContextualDefaultsValue{
 					Normalized: func() jsontypes.Normalized {
 						return jsontypes.NewNormalizedValue(`{"key": "value", "__tf_provider_context": "test-connector"}`)
@@ -127,7 +115,7 @@ func TestConfigType_ValueFromTerraform(t *testing.T) {
 		{
 			name:    "valid string value with empty JSON",
 			tfValue: tftypes.NewValue(tftypes.String, `{}`),
-			expectedValue: ConfigValue{
+			expectedValue: VarsJSONValue{
 				JSONWithContextualDefaultsValue: customtypes.JSONWithContextualDefaultsValue{
 					Normalized: func() jsontypes.Normalized {
 						n, _ := jsontypes.NewNormalizedValue(`{}`).ToStringValue(context.Background())
@@ -139,7 +127,7 @@ func TestConfigType_ValueFromTerraform(t *testing.T) {
 		{
 			name:    "null string value",
 			tfValue: tftypes.NewValue(tftypes.String, nil),
-			expectedValue: ConfigValue{
+			expectedValue: VarsJSONValue{
 				JSONWithContextualDefaultsValue: customtypes.JSONWithContextualDefaultsValue{
 					Normalized: func() jsontypes.Normalized {
 						return jsontypes.Normalized{StringValue: basetypes.NewStringNull()}
@@ -150,7 +138,7 @@ func TestConfigType_ValueFromTerraform(t *testing.T) {
 		{
 			name:    "unknown string value",
 			tfValue: tftypes.NewValue(tftypes.String, tftypes.UnknownValue),
-			expectedValue: ConfigValue{
+			expectedValue: VarsJSONValue{
 				JSONWithContextualDefaultsValue: customtypes.JSONWithContextualDefaultsValue{
 					Normalized: func() jsontypes.Normalized {
 						return jsontypes.Normalized{StringValue: basetypes.NewStringUnknown()}
@@ -174,7 +162,7 @@ func TestConfigType_ValueFromTerraform(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			configType := ConfigType{}
+			configType := VarsJSONType{}
 			result, err := configType.ValueFromTerraform(context.Background(), tt.tfValue)
 
 			if tt.expectedError != "" {
@@ -187,10 +175,10 @@ func TestConfigType_ValueFromTerraform(t *testing.T) {
 			require.NoError(t, err, "Unexpected error: %v", err)
 			require.NotNil(t, result, "Result should not be nil")
 
-			configValue, ok := result.(ConfigValue)
+			configValue, ok := result.(VarsJSONValue)
 			require.True(t, ok, "Result should be of type ConfigValue")
 
-			expectedConfigValue, ok := tt.expectedValue.(ConfigValue)
+			expectedConfigValue, ok := tt.expectedValue.(VarsJSONValue)
 			require.True(t, ok, "Expected value should be of type ConfigValue")
 
 			// Compare the underlying string values

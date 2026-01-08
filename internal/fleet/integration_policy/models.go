@@ -2,6 +2,7 @@ package integration_policy
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -18,21 +19,21 @@ type features struct {
 }
 
 type integrationPolicyModel struct {
-	ID                 types.String         `tfsdk:"id"`
-	PolicyID           types.String         `tfsdk:"policy_id"`
-	Name               types.String         `tfsdk:"name"`
-	Namespace          types.String         `tfsdk:"namespace"`
-	AgentPolicyID      types.String         `tfsdk:"agent_policy_id"`
-	AgentPolicyIDs     types.List           `tfsdk:"agent_policy_ids"`
-	Description        types.String         `tfsdk:"description"`
-	Enabled            types.Bool           `tfsdk:"enabled"`
-	Force              types.Bool           `tfsdk:"force"`
-	IntegrationName    types.String         `tfsdk:"integration_name"`
-	IntegrationVersion types.String         `tfsdk:"integration_version"`
-	OutputID           types.String         `tfsdk:"output_id"`
-	Inputs             InputsValue          `tfsdk:"inputs"` //> integrationPolicyInputsModel
-	VarsJson           jsontypes.Normalized `tfsdk:"vars_json"`
-	SpaceIds           types.Set            `tfsdk:"space_ids"`
+	ID                 types.String  `tfsdk:"id"`
+	PolicyID           types.String  `tfsdk:"policy_id"`
+	Name               types.String  `tfsdk:"name"`
+	Namespace          types.String  `tfsdk:"namespace"`
+	AgentPolicyID      types.String  `tfsdk:"agent_policy_id"`
+	AgentPolicyIDs     types.List    `tfsdk:"agent_policy_ids"`
+	Description        types.String  `tfsdk:"description"`
+	Enabled            types.Bool    `tfsdk:"enabled"`
+	Force              types.Bool    `tfsdk:"force"`
+	IntegrationName    types.String  `tfsdk:"integration_name"`
+	IntegrationVersion types.String  `tfsdk:"integration_version"`
+	OutputID           types.String  `tfsdk:"output_id"`
+	Inputs             InputsValue   `tfsdk:"inputs"` //> integrationPolicyInputsModel
+	VarsJson           VarsJSONValue `tfsdk:"vars_json"`
+	SpaceIds           types.Set     `tfsdk:"space_ids"`
 }
 
 type integrationPolicyInputsModel struct {
@@ -97,7 +98,20 @@ func (model *integrationPolicyModel) populateFromAPI(ctx context.Context, pkg *k
 	model.IntegrationName = types.StringValue(data.Package.Name)
 	model.IntegrationVersion = types.StringValue(data.Package.Version)
 	model.OutputID = types.StringPointerValue(data.OutputId)
-	model.VarsJson = utils.MapToNormalizedType(utils.Deref(data.Vars), path.Root("vars_json"), &diags)
+
+	varsMap := utils.Deref(data.Vars)
+	if varsMap == nil {
+		model.VarsJson = NewVarsJSONNull()
+	} else {
+		jsonBytes, err := json.Marshal(varsMap)
+		if err != nil {
+			diags.AddError("Failed to marshal vars", err.Error())
+		} else {
+			var d diag.Diagnostics
+			model.VarsJson, d = NewVarsJSONWithIntegration(string(jsonBytes), data.Package.Name, data.Package.Version)
+			diags.Append(d...)
+		}
+	}
 
 	// Preserve space_ids if it was originally set in the plan/state
 	// The API response may not include space_ids, so we keep the original value
@@ -245,7 +259,7 @@ func (model integrationPolicyModel) toAPIModel(ctx context.Context, feat feature
 			}
 			return nil
 		}(),
-		Vars: utils.MapRef(utils.NormalizedTypeToMap[any](model.VarsJson, path.Root("vars_json"), &diags)),
+		Vars: utils.MapRef(utils.NormalizedTypeToMap[any](model.VarsJson.Normalized, path.Root("vars_json"), &diags)),
 	}
 
 	if utils.IsKnown(model.PolicyID) {

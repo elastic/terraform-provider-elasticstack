@@ -310,7 +310,7 @@ func TestAccResourceKibanaConnectorEmptyConfigFromSDK(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testCommonAttributes(connectorName, ".slack"),
 
-					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test", "config", `{"__tf_provider_connector_type_id":".slack"}`),
+					resource.TestCheckResourceAttr("elasticstack_kibana_action_connector.test", "config", `{"__tf_provider_context":".slack"}`),
 				),
 			},
 		},

@@ -47,6 +47,19 @@ type integrationPolicyInputModelV1 struct {
 }
 
 func (m integrationPolicyModelV1) toV2(ctx context.Context) (integrationPolicyModel, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	var varsJson VarsJSONValue
+	if m.VarsJson.IsNull() {
+		varsJson = NewVarsJSONNull()
+	} else if m.VarsJson.IsUnknown() {
+		varsJson = NewVarsJSONUnknown()
+	} else {
+		var d diag.Diagnostics
+		varsJson, d = NewVarsJSONWithIntegration(m.VarsJson.ValueString(), m.IntegrationName.ValueString(), m.IntegrationVersion.ValueString())
+		diags.Append(d...)
+	}
+
 	// Convert V1 model to V2 model
 	stateModelV2 := integrationPolicyModel{
 		ID:                 m.ID,
@@ -62,11 +75,10 @@ func (m integrationPolicyModelV1) toV2(ctx context.Context) (integrationPolicyMo
 		IntegrationVersion: m.IntegrationVersion,
 		OutputID:           m.OutputID,
 		SpaceIds:           m.SpaceIds,
-		VarsJson:           m.VarsJson,
+		VarsJson:           varsJson,
 	}
 
 	// Convert inputs from V1 to V2
-	var diags diag.Diagnostics
 	inputsV1 := utils.ListTypeAs[integrationPolicyInputModelV1](ctx, m.Input, path.Root("input"), &diags)
 	inputsV2 := make(map[string]integrationPolicyInputsModel, len(inputsV1))
 

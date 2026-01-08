@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -69,4 +71,30 @@ func (r *integrationPolicyResource) buildFeatures(ctx context.Context) (features
 		SupportsPolicyIds: supportsPolicyIds,
 		SupportsOutputId:  supportsOutputId,
 	}, nil
+}
+
+var knownPackages = map[string]kbapi.PackageInfo{}
+
+func getPackageCacheKey(name string, version string) string {
+	return fmt.Sprintf("%s-%s", name, version)
+}
+
+func getPackageInfo(ctx context.Context, client *fleet.Client, name string, version string) (*kbapi.PackageInfo, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	if pkg, ok := getCachedPackageInfo(name, version); ok {
+		return &pkg, diags
+	}
+
+	pkg, diags := fleet.GetPackage(ctx, client, name, version)
+	if diags.HasError() {
+		return nil, diags
+	}
+	knownPackages[getPackageCacheKey(name, version)] = *pkg
+	return pkg, diags
+}
+
+func getCachedPackageInfo(name string, version string) (kbapi.PackageInfo, bool) {
+	pkg, ok := knownPackages[getPackageCacheKey(name, version)]
+	return pkg, ok
 }
