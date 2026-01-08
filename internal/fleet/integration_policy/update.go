@@ -38,7 +38,7 @@ func (r *integrationPolicyResource) Update(ctx context.Context, req resource.Upd
 		return
 	}
 
-	body, diags := planModel.toAPIModel(ctx, true, feat)
+	body, diags := planModel.toAPIModel(ctx, feat)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

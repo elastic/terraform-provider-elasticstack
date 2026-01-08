@@ -66,6 +66,9 @@ inputs = {
 
 ### Changes
 
+- Add support for Fleet API installation parameters to `elasticstack_fleet_integration` resource: `prerelease`, `ignore_mapping_update_errors` (8.11.0+), `skip_data_stream_rollover` (8.11.0+), and `ignore_constraints`. These parameters provide full control over package installation behavior and enable installation of prerelease (beta, non-GA) packages.
+- Correctly handle 404 responses when reading `elasticstack_fleet_integration` resources ([#1608](https://github.com/elastic/terraform-provider-elasticstack/pull/1608))
+- Fix handling custom `policy_id` attributes in `elasticstack_fleet_integration_policy` resources ([#1594](https://github.com/elastic/terraform-provider-elasticstack/pull/1594))
 - Add `advanced_settings` to `elasticstack_fleet_agent_policy` to configure agent logging, CPU limits, and download settings ([#1545](https://github.com/elastic/terraform-provider-elasticstack/pull/1545))
 - Prevent provider panic when importing a non-existant `elasticstack_elasticsearch_ml_datafeed`. ([#1579](https://github.com/elastic/terraform-provider-elasticstack/pull/1579))
 - Fix handling of empty `except` attributes in `elasticstack_elasticsearch_security_role` ([#1581](https://github.com/elastic/terraform-provider-elasticstack/pull/1581))
@@ -78,6 +81,7 @@ inputs = {
 - Fix an issue where `elasticstack_elasticsearch_ml_datafeed_state` `start` and `end` times where treated by the provider as unix seconds, but by the API as unix milliseconds. 
 - Only require input parameters in `elasticstack_fleet_integration_policy` to be specified if they differ from integration defaults ([#1558](https://github.com/elastic/terraform-provider-elasticstack/pull/1558))
 - Only require vars in `elasticstack_fleet_integration_policy` to be specified if they differ from integration defaults ([#1593](https://github.com/elastic/terraform-provider-elasticstack/pull/1593))
+- Allow space restricted roles to manage `elasticstack_fleet_agent_policy` resources. ([#1597](https://github.com/elastic/terraform-provider-elasticstack/pull/1597))
 
 
 ## [0.13.1] - 2025-12-12

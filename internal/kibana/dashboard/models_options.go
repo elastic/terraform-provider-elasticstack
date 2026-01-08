@@ -27,11 +27,20 @@ func (m *dashboardModel) optionsToAPI(ctx context.Context) (*optionsAPIModel, di
 // The current API spec defines these types inline, resulting in anonymous structs.
 // A new type definition won't exactly match the API struct, howeven an alias will.
 type optionsAPIModel = struct {
-	HidePanelTitles *bool `json:"hidePanelTitles,omitempty"`
-	SyncColors      *bool `json:"syncColors,omitempty"`
-	SyncCursor      *bool `json:"syncCursor,omitempty"`
-	SyncTooltips    *bool `json:"syncTooltips,omitempty"`
-	UseMargins      *bool `json:"useMargins,omitempty"`
+	// HidePanelTitles Hide the panel titles in the dashboard.
+	HidePanelTitles *bool `json:"hide_panel_titles,omitempty"`
+
+	// SyncColors Synchronize colors between related panels in the dashboard.
+	SyncColors *bool `json:"sync_colors,omitempty"`
+
+	// SyncCursor Synchronize cursor position between related panels in the dashboard.
+	SyncCursor *bool `json:"sync_cursor,omitempty"`
+
+	// SyncTooltips Synchronize tooltips between related panels in the dashboard.
+	SyncTooltips *bool `json:"sync_tooltips,omitempty"`
+
+	// UseMargins Show margins between panels in the dashboard layout.
+	UseMargins *bool `json:"use_margins,omitempty"`
 }
 
 func (m *dashboardModel) mapOptionsFromAPI(ctx context.Context, options *optionsAPIModel) (types.Object, diag.Diagnostics) {

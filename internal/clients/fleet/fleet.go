@@ -3,7 +3,6 @@ package fleet
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -12,10 +11,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-)
-
-var (
-	ErrPackageNotFound = errors.New("package not found")
 )
 
 // buildSpaceAwarePath constructs an API path with space awareness.
@@ -118,12 +113,12 @@ func GetAgentPolicy(ctx context.Context, client *Client, id string, spaceID stri
 }
 
 // CreateAgentPolicy creates a new agent policy.
-func CreateAgentPolicy(ctx context.Context, client *Client, req kbapi.PostFleetAgentPoliciesJSONRequestBody, sysMonitoring bool) (*kbapi.AgentPolicy, diag.Diagnostics) {
+func CreateAgentPolicy(ctx context.Context, client *Client, req kbapi.PostFleetAgentPoliciesJSONRequestBody, sysMonitoring bool, spaceID string) (*kbapi.AgentPolicy, diag.Diagnostics) {
 	params := kbapi.PostFleetAgentPoliciesParams{
 		SysMonitoring: utils.Pointer(sysMonitoring),
 	}
 
-	resp, err := client.API.PostFleetAgentPoliciesWithResponse(ctx, &params, req)
+	resp, err := client.API.PostFleetAgentPoliciesWithResponse(ctx, &params, req, spaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -393,20 +388,35 @@ func GetPackage(ctx context.Context, client *Client, name, version string) (*kba
 	case http.StatusOK:
 		return &resp.JSON200.Item, nil
 	case http.StatusNotFound:
-		return nil, diagutil.FrameworkDiagFromError(ErrPackageNotFound)
+		return nil, nil
 	default:
 		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
 	}
 }
 
+// InstallPackageOptions holds the options for installing a package.
+type InstallPackageOptions struct {
+	SpaceID                   string
+	Force                     bool
+	Prerelease                bool
+	IgnoreMappingUpdateErrors *bool
+	SkipDataStreamRollover    *bool
+	IgnoreConstraints         bool
+}
+
 // InstallPackage installs a package.
-func InstallPackage(ctx context.Context, client *Client, name, version string, spaceID string, force bool) diag.Diagnostics {
-	params := kbapi.PostFleetEpmPackagesPkgnamePkgversionParams{}
+func InstallPackage(ctx context.Context, client *Client, name, version string, opts InstallPackageOptions) diag.Diagnostics {
+	params := kbapi.PostFleetEpmPackagesPkgnamePkgversionParams{
+		Prerelease:                &opts.Prerelease,
+		IgnoreMappingUpdateErrors: opts.IgnoreMappingUpdateErrors,
+		SkipDataStreamRollover:    opts.SkipDataStreamRollover,
+	}
 	body := kbapi.PostFleetEpmPackagesPkgnamePkgversionJSONRequestBody{
-		Force: &force,
+		Force:             &opts.Force,
+		IgnoreConstraints: &opts.IgnoreConstraints,
 	}
 
-	resp, err := client.API.PostFleetEpmPackagesPkgnamePkgversionWithResponse(ctx, name, version, &params, body, spaceAwarePathRequestEditor(spaceID))
+	resp, err := client.API.PostFleetEpmPackagesPkgnamePkgversionWithResponse(ctx, name, version, &params, body, spaceAwarePathRequestEditor(opts.SpaceID))
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
