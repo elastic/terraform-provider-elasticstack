@@ -123,6 +123,23 @@ func getSchema() schema.Schema {
 					},
 				},
 			},
+			"access_control": schema.SingleNestedAttribute{
+				MarkdownDescription: "Access control parameters for the dashboard.",
+				Optional:            true,
+				Attributes: map[string]schema.Attribute{
+					"access_mode": schema.StringAttribute{
+						MarkdownDescription: "The access mode for the dashboard (e.g., 'write_restricted', 'default').",
+						Optional:            true,
+						Validators: []validator.String{
+							stringvalidator.OneOf("write_restricted", "default"),
+						},
+					},
+					"owner": schema.StringAttribute{
+						MarkdownDescription: "The owner of the dashboard.",
+						Optional:            true,
+					},
+				},
+			},
 		},
 	}
 }

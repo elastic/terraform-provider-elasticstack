@@ -31,6 +31,7 @@ type dashboardModel struct {
 	QueryJSON            jsontypes.Normalized `tfsdk:"query_json"`
 	Tags                 types.List           `tfsdk:"tags"`
 	Options              types.Object         `tfsdk:"options"`
+	AccessControl        *AccessControlValue  `tfsdk:"access_control"`
 }
 
 type optionsModel struct {
@@ -109,6 +110,16 @@ func (m *dashboardModel) populateFromAPI(ctx context.Context, resp *kbapi.GetDas
 	diags.Append(optDiags...)
 	m.Options = options
 
+	// Map access control
+	if data.Data.AccessControl != nil {
+		var accessMode *string
+		if data.Data.AccessControl.AccessMode != nil {
+			s := string(*data.Data.AccessControl.AccessMode)
+			accessMode = &s
+		}
+		m.AccessControl = newAccessControlFromAPI(accessMode, data.Data.AccessControl.Owner)
+	}
+
 	return diags
 }
 
@@ -160,6 +171,9 @@ func (m *dashboardModel) toAPICreateRequest(ctx context.Context, diags *diag.Dia
 	diags.Append(optionsDiags...)
 	req.Data.Options = options
 
+	// Set access control
+	req.Data.AccessControl = m.AccessControl.ToCreateAPI()
+
 	return req
 }
 
@@ -200,6 +214,9 @@ func (m *dashboardModel) toAPIUpdateRequest(ctx context.Context, diags *diag.Dia
 	options, optionsDiags := m.optionsToAPI(ctx)
 	diags.Append(optionsDiags...)
 	req.Data.Options = options
+
+	// Set access control
+	req.Data.AccessControl = m.AccessControl.ToUpdateAPI()
 
 	return req
 }
