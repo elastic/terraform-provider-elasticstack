@@ -387,6 +387,9 @@ func connectorConfigWithDefaultsCasesWebhook(plan string) (string, error) {
 	if custom.UpdateIncidentMethod == nil {
 		custom.UpdateIncidentMethod = utils.Pointer(kbapi.CasesWebhookConfigUpdateIncidentMethodPut)
 	}
+	if custom.CreateCommentMethod == nil {
+		custom.CreateCommentMethod = utils.Pointer(kbapi.CasesWebhookConfigCreateCommentMethodPut)
+	}
 	customJSON, err := json.Marshal(custom)
 	if err != nil {
 		return "", err
