@@ -5,7 +5,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -141,15 +140,5 @@ func getSchema() schema.Schema {
 				},
 			},
 		},
-	}
-}
-
-func getOptionsAttrTypes() map[string]attr.Type {
-	return map[string]attr.Type{
-		"hide_panel_titles": types.BoolType,
-		"use_margins":       types.BoolType,
-		"sync_colors":       types.BoolType,
-		"sync_tooltips":     types.BoolType,
-		"sync_cursor":       types.BoolType,
 	}
 }
