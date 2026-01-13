@@ -26,6 +26,22 @@ func (r *integrationPolicyResource) Update(ctx context.Context, req resource.Upd
 		return
 	}
 
+	// Preserve computed fields from state before building the API request
+	// This ensures fields like agent_policy_id are included in the update request
+	// even when they're not explicitly changed by the user
+	if utils.IsKnown(stateModel.ID) && !stateModel.ID.IsNull() {
+		planModel.ID = stateModel.ID
+	}
+	if utils.IsKnown(stateModel.PolicyID) && !stateModel.PolicyID.IsNull() {
+		planModel.PolicyID = stateModel.PolicyID
+	}
+	if utils.IsKnown(stateModel.AgentPolicyID) && !stateModel.AgentPolicyID.IsNull() {
+		planModel.AgentPolicyID = stateModel.AgentPolicyID
+	}
+	if utils.IsKnown(stateModel.AgentPolicyIDs) && !stateModel.AgentPolicyIDs.IsNull() {
+		planModel.AgentPolicyIDs = stateModel.AgentPolicyIDs
+	}
+
 	client, err := r.client.GetFleetClient()
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), "")
@@ -74,7 +90,7 @@ func (r *integrationPolicyResource) Update(ctx context.Context, req resource.Upd
 	stateUsedAgentPolicyIDs := utils.IsKnown(stateModel.AgentPolicyIDs) && !stateModel.AgentPolicyIDs.IsNull()
 
 	// Remember the input configuration from state
-	stateHadInput := utils.IsKnown(stateModel.Inputs) && !stateModel.Inputs.IsNull() && len(stateModel.Inputs.Elements()) > 0
+	stateHadInput := utils.IsKnown(stateModel.Inputs) && !stateModel.Inputs.MapValue.IsNull() && len(stateModel.Inputs.MapValue.Elements()) > 0
 
 	pkg, diags := getPackageInfo(ctx, client, policy.Package.Name, policy.Package.Version)
 	resp.Diagnostics.Append(diags...)
@@ -90,24 +106,19 @@ func (r *integrationPolicyResource) Update(ctx context.Context, req resource.Upd
 
 	// Restore the agent policy field that was originally configured
 	// This prevents populateFromAPI from changing which field is used
+	// IMPORTANT: Use state values, not API response, to avoid null values causing inconsistent state
 	if stateUsedAgentPolicyID && !stateUsedAgentPolicyIDs {
-		// Only agent_policy_id was configured, ensure we preserve it
-		planModel.AgentPolicyID = types.StringPointerValue(policy.PolicyId)
+		// Only agent_policy_id was configured, ensure we preserve it from state
+		planModel.AgentPolicyID = stateModel.AgentPolicyID
 		planModel.AgentPolicyIDs = types.ListNull(types.StringType)
 	} else if stateUsedAgentPolicyIDs && !stateUsedAgentPolicyID {
-		// Only agent_policy_ids was configured, ensure we preserve it
-		if policy.PolicyIds != nil {
-			agentPolicyIDs, d := types.ListValueFrom(ctx, types.StringType, *policy.PolicyIds)
-			resp.Diagnostics.Append(d...)
-			planModel.AgentPolicyIDs = agentPolicyIDs
-		} else {
-			planModel.AgentPolicyIDs = types.ListNull(types.StringType)
-		}
+		// Only agent_policy_ids was configured, ensure we preserve it from state
+		planModel.AgentPolicyIDs = stateModel.AgentPolicyIDs
 		planModel.AgentPolicyID = types.StringNull()
 	}
 
 	// If state didn't have input configured, ensure we don't add it now
-	if !stateHadInput && (planModel.Inputs.IsNull() || len(planModel.Inputs.Elements()) == 0) {
+	if !stateHadInput && (planModel.Inputs.MapValue.IsNull() || len(planModel.Inputs.MapValue.Elements()) == 0) {
 		planModel.Inputs = NewInputsNull(getInputsElementType())
 	}
 
