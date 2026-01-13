@@ -118,7 +118,8 @@ func (r *integrationPolicyResource) Update(ctx context.Context, req resource.Upd
 	}
 
 	// If state didn't have input configured, ensure we don't add it now
-	if !stateHadInput && (planModel.Inputs.IsNull() || len(planModel.Inputs.Elements()) == 0) {
+	// IMPORTANT: Always set to null if state didn't have it, even if populateFromAPI added it
+	if !stateHadInput {
 		planModel.Inputs = NewInputsNull(getInputsElementType())
 	}
 
