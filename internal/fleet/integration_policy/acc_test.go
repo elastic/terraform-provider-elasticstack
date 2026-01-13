@@ -599,14 +599,14 @@ resource "elasticstack_fleet_integration_policy" "test_policy" {
   name               = "` + policyName + `-integration"
   namespace          = "default"
   agent_policy_id    = elasticstack_fleet_agent_policy.test_policy.policy_id
-  integration_name    = "system"
-  integration_version = "1.54.0"
+  integration_name    = "tcp"
+  integration_version = "1.16.0"
 }
 `,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName+"-integration"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_name", "system"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_version", "1.54.0"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_name", "tcp"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_version", "1.16.0"),
 					resource.TestCheckResourceAttrSet("elasticstack_fleet_integration_policy.test_policy", "agent_policy_id"),
 					resource.TestCheckResourceAttrPair(
 						"elasticstack_fleet_integration_policy.test_policy", "agent_policy_id",
@@ -627,14 +627,14 @@ resource "elasticstack_fleet_integration_policy" "test_policy" {
   name               = "` + policyName + `-integration"
   namespace          = "default"
   agent_policy_id    = elasticstack_fleet_agent_policy.test_policy.policy_id
-  integration_name    = "system"
-  integration_version = "1.55.1"  # Updated version
+  integration_name    = "tcp"
+  integration_version = "1.17.0"  # Updated version
 }
 `,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName+"-integration"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_name", "system"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_version", "1.55.1"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_name", "tcp"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_version", "1.17.0"),
 					// Critical check: agent_policy_id must still be set after version update
 					resource.TestCheckResourceAttrSet("elasticstack_fleet_integration_policy.test_policy", "agent_policy_id"),
 					resource.TestCheckResourceAttrPair(
