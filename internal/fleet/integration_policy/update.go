@@ -29,16 +29,18 @@ func (r *integrationPolicyResource) Update(ctx context.Context, req resource.Upd
 	// Preserve computed fields from state before building the API request
 	// This ensures fields like agent_policy_id are included in the update request
 	// even when they're not explicitly changed by the user
-	if utils.IsKnown(stateModel.ID) && !stateModel.ID.IsNull() {
+	if utils.IsKnown(stateModel.ID) {
 		planModel.ID = stateModel.ID
 	}
-	if utils.IsKnown(stateModel.PolicyID) && !stateModel.PolicyID.IsNull() {
+	if utils.IsKnown(stateModel.PolicyID) {
 		planModel.PolicyID = stateModel.PolicyID
 	}
-	if utils.IsKnown(stateModel.AgentPolicyID) && !stateModel.AgentPolicyID.IsNull() {
+	// Only preserve optional fields when plan doesn't have a value (user didn't change them)
+	// This prevents overwriting user changes while still fixing the null bug
+	if !utils.IsKnown(planModel.AgentPolicyID) && utils.IsKnown(stateModel.AgentPolicyID) {
 		planModel.AgentPolicyID = stateModel.AgentPolicyID
 	}
-	if utils.IsKnown(stateModel.AgentPolicyIDs) && !stateModel.AgentPolicyIDs.IsNull() {
+	if !utils.IsKnown(planModel.AgentPolicyIDs) && utils.IsKnown(stateModel.AgentPolicyIDs) {
 		planModel.AgentPolicyIDs = stateModel.AgentPolicyIDs
 	}
 
@@ -86,8 +88,8 @@ func (r *integrationPolicyResource) Update(ctx context.Context, req resource.Upd
 
 	// Remember which agent policy field was originally configured in state
 	// so we can preserve it after populateFromAPI
-	stateUsedAgentPolicyID := utils.IsKnown(stateModel.AgentPolicyID) && !stateModel.AgentPolicyID.IsNull()
-	stateUsedAgentPolicyIDs := utils.IsKnown(stateModel.AgentPolicyIDs) && !stateModel.AgentPolicyIDs.IsNull()
+	stateUsedAgentPolicyID := utils.IsKnown(stateModel.AgentPolicyID)
+	stateUsedAgentPolicyIDs := utils.IsKnown(stateModel.AgentPolicyIDs)
 
 	// Remember the input configuration from state
 	stateHadInput := utils.IsKnown(stateModel.Inputs) && !stateModel.Inputs.IsNull() && len(stateModel.Inputs.Elements()) > 0
