@@ -24,8 +24,8 @@ type outputModel struct {
 	ConfigYaml           types.String `tfsdk:"config_yaml"`
 	SpaceIds             types.Set    `tfsdk:"space_ids"` //> string
 	ProxyID              types.String `tfsdk:"proxy_id"`
-	Ssl                  types.Object `tfsdk:"ssl"`       //> outputSslModel
-	Kafka                types.Object `tfsdk:"kafka"`     //> outputKafkaModel
+	Ssl                  types.Object `tfsdk:"ssl"`   //> outputSslModel
+	Kafka                types.Object `tfsdk:"kafka"` //> outputKafkaModel
 }
 
 func (model *outputModel) populateFromAPI(ctx context.Context, union *kbapi.OutputUnion) (diags diag.Diagnostics) {

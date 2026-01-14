@@ -54,12 +54,6 @@ func (r *proxyResource) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 
-	// Preserve space_ids from plan since API doesn't return it
-	// This mirrors the pattern used in server_host and output resources
-	if utils.IsKnown(planModel.SpaceIds) {
-		// Keep the planned space_ids value
-	}
-
 	diags = resp.State.Set(ctx, planModel)
 	resp.Diagnostics.Append(diags...)
 }
