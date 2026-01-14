@@ -213,6 +213,7 @@ resource "elasticstack_fleet_output" "kafka_round_robin" {
 - `default_monitoring` (Boolean) Make this output the default for agent monitoring.
 - `kafka` (Attributes) Kafka-specific configuration. (see [below for nested schema](#nestedatt--kafka))
 - `output_id` (String) Unique identifier of the output.
+- `proxy_id` (String) The ID of the proxy to use for this output. The proxy must exist in the same space as the output.
 - `space_ids` (Set of String) The Kibana space IDs where this output is available. When set, the output will be created and managed within the specified space. Note: The order of space IDs does not matter as this is a set.
 - `ssl` (Attributes) SSL configuration. (see [below for nested schema](#nestedatt--ssl))
 

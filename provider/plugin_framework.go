@@ -28,6 +28,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/integration_ds"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/integration_policy"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/output"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/proxy"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/server_host"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/connectors"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard"
@@ -145,6 +146,7 @@ func (p *Provider) resources(ctx context.Context) []func() resource.Resource {
 		integration.NewResource,
 		integration_policy.NewResource,
 		output.NewResource,
+		proxy.NewResource,
 		server_host.NewResource,
 		system_user.NewSystemUserResource,
 		user.NewUserResource,
