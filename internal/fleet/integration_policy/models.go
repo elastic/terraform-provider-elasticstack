@@ -259,7 +259,20 @@ func (model integrationPolicyModel) toAPIModel(ctx context.Context, feat feature
 			}
 			return nil
 		}(),
-		Vars: utils.MapRef(utils.NormalizedTypeToMap[any](model.VarsJson.Normalized, path.Root("vars_json"), &diags)),
+		Vars: func() *map[string]any {
+			// Use SanitizedValue to strip internal metadata like __tf_provider_context
+			// before sending to the Kibana API. This prevents HTTP 400 errors when Kibana
+			// doesn't recognize the internal __tf_provider_context variable.
+			if !utils.IsKnown(model.VarsJson) {
+				return nil
+			}
+			sanitizedVars, sanitizeDiags := model.VarsJson.SanitizedValue()
+			diags.Append(sanitizeDiags...)
+			if diags.HasError() {
+				return nil
+			}
+			return utils.MapRef(utils.NormalizedTypeToMap[any](jsontypes.NewNormalizedValue(sanitizedVars), path.Root("vars_json"), &diags))
+		}(),
 	}
 
 	if utils.IsKnown(model.PolicyID) {
