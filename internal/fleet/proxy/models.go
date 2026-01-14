@@ -104,5 +104,10 @@ func (model proxyModel) toAPIUpdateModel(ctx context.Context) (kbapi.PutFleetPro
 		body.CertificateKey = model.CertificateKey.ValueStringPointer()
 	}
 
+	// Note: is_preconfigured is not supported by the Fleet Proxy Update API
+	// and can only be set during creation. The schema enforces resource
+	// recreation when this field changes via the RequiresReplace plan modifier
+	// (see schema.go:64).
+
 	return kbapi.PutFleetProxiesItemidJSONRequestBody(body), diags
 }

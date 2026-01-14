@@ -5,6 +5,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -57,12 +58,16 @@ func getSchema() schema.Schema {
 				Sensitive:   true,
 			},
 			"is_preconfigured": schema.BoolAttribute{
-				Description: "Indicates if the proxy is preconfigured (managed outside Terraform).",
+				Description: "Indicates if the proxy is preconfigured (managed outside Terraform). Note: This field cannot be updated after creation; changes will force resource recreation.",
 				Optional:    true,
 				Computed:    true,
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.RequiresReplace(),
+					boolplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"space_ids": schema.SetAttribute{
-				Description: "The Kibana space IDs where this proxy is available. When multiple spaces are specified, the first space ID is used for API operations. Note: The order of space IDs does not matter as this is a set.",
+				Description: "The Kibana space IDs where this proxy is available. When multiple spaces are specified, one space ID (deterministic but order-independent) is used for API operations. Note: The order of space IDs does not matter as this is a set.",
 				ElementType: types.StringType,
 				Optional:    true,
 				Computed:    true,
