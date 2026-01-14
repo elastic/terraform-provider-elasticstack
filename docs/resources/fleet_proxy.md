@@ -84,7 +84,7 @@ resource "elasticstack_fleet_server_host" "example" {
 - `certificate_key` (String, Sensitive) PEM-encoded private key for the client certificate.
 - `is_preconfigured` (Boolean) Indicates if the proxy is preconfigured (managed outside Terraform). Note: This field cannot be updated after creation; changes will force resource recreation.
 - `proxy_id` (String) Unique identifier of the proxy. If not specified, one will be generated.
-- `space_ids` (Set of String) The Kibana space IDs where this proxy is available. When multiple spaces are specified, the first space ID is used for API operations. Note: The order of space IDs does not matter as this is a set.
+- `space_ids` (Set of String) The Kibana space IDs where this proxy is available. When multiple spaces are specified, one space ID (deterministic but order-independent) is used for API operations. Note: The order of space IDs does not matter as this is a set.
 
 ### Read-Only
 

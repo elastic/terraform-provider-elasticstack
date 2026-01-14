@@ -67,7 +67,7 @@ func getSchema() schema.Schema {
 				},
 			},
 			"space_ids": schema.SetAttribute{
-				Description: "The Kibana space IDs where this proxy is available. When multiple spaces are specified, the first space ID is used for API operations. Note: The order of space IDs does not matter as this is a set.",
+				Description: "The Kibana space IDs where this proxy is available. When multiple spaces are specified, one space ID (deterministic but order-independent) is used for API operations. Note: The order of space IDs does not matter as this is a set.",
 				ElementType: types.StringType,
 				Optional:    true,
 				Computed:    true,
