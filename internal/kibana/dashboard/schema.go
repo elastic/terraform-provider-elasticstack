@@ -6,6 +6,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -86,11 +87,17 @@ func getSchema() schema.Schema {
 			"query_text": schema.StringAttribute{
 				MarkdownDescription: "The query text for text-based queries such as Kibana Query Language (KQL) or Lucene query language. Mutually exclusive with `query_json`.",
 				Optional:            true,
+				Validators: []validator.String{
+					stringvalidator.ConflictsWith(path.MatchRoot("query_json")),
+				},
 			},
 			"query_json": schema.StringAttribute{
 				MarkdownDescription: "The query as a JSON object for structured queries. Mutually exclusive with `query_text`.",
 				CustomType:          jsontypes.NormalizedType{},
 				Optional:            true,
+				Validators: []validator.String{
+					stringvalidator.ConflictsWith(path.MatchRoot("query_text")),
+				},
 			},
 			"tags": schema.ListAttribute{
 				MarkdownDescription: "An array of tag IDs applied to this dashboard.",
