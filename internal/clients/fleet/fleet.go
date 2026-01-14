@@ -471,3 +471,77 @@ func GetPackages(ctx context.Context, client *Client, prerelease bool) ([]kbapi.
 		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
 	}
 }
+
+// CreateFleetProxy creates a new fleet proxy.
+func CreateFleetProxy(ctx context.Context, client *Client, spaceID string, req kbapi.PostFleetProxiesJSONRequestBody) (*kbapi.GetFleetProxiesItemidResponse, diag.Diagnostics) {
+	resp, err := client.API.PostFleetProxiesWithResponse(ctx, req, spaceAwarePathRequestEditor(spaceID))
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+
+	switch resp.StatusCode() {
+	case http.StatusOK:
+		if resp.JSON200 == nil {
+			return nil, diag.Diagnostics{diag.NewErrorDiagnostic("Empty response from API", "Proxy creation succeeded but API returned no data")}
+		}
+
+		// After creation, fetch the proxy using GET to ensure consistent structure
+		return GetFleetProxy(ctx, client, resp.JSON200.Item.Id, spaceID)
+	default:
+		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+	}
+}
+
+// GetFleetProxy reads a specific proxy from the API.
+func GetFleetProxy(ctx context.Context, client *Client, id string, spaceID string) (*kbapi.GetFleetProxiesItemidResponse, diag.Diagnostics) {
+	resp, err := client.API.GetFleetProxiesItemidWithResponse(ctx, id, spaceAwarePathRequestEditor(spaceID))
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+
+	switch resp.StatusCode() {
+	case http.StatusOK:
+		return resp, nil
+	case http.StatusNotFound:
+		return nil, nil
+	default:
+		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+	}
+}
+
+// UpdateFleetProxy updates an existing fleet proxy.
+func UpdateFleetProxy(ctx context.Context, client *Client, id string, spaceID string, req kbapi.PutFleetProxiesItemidJSONRequestBody) (*kbapi.GetFleetProxiesItemidResponse, diag.Diagnostics) {
+	resp, err := client.API.PutFleetProxiesItemidWithResponse(ctx, id, req, spaceAwarePathRequestEditor(spaceID))
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+
+	switch resp.StatusCode() {
+	case http.StatusOK:
+		if resp.JSON200 == nil {
+			return nil, diag.Diagnostics{diag.NewErrorDiagnostic("Empty response from API", "Proxy update succeeded but API returned no data")}
+		}
+
+		// After update, fetch the proxy using GET to ensure consistent structure
+		return GetFleetProxy(ctx, client, id, spaceID)
+	default:
+		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+	}
+}
+
+// DeleteFleetProxy deletes a fleet proxy.
+func DeleteFleetProxy(ctx context.Context, client *Client, id string, spaceID string) diag.Diagnostics {
+	resp, err := client.API.DeleteFleetProxiesItemidWithResponse(ctx, id, spaceAwarePathRequestEditor(spaceID))
+	if err != nil {
+		return diagutil.FrameworkDiagFromError(err)
+	}
+
+	switch resp.StatusCode() {
+	case http.StatusOK:
+		return nil
+	case http.StatusNotFound:
+		return nil
+	default:
+		return reportUnknownError(resp.StatusCode(), resp.Body)
+	}
+}

@@ -22,6 +22,7 @@ func (model *outputModel) fromAPILogstashModel(ctx context.Context, data *kbapi.
 	model.DefaultIntegrations = types.BoolPointerValue(data.IsDefault)
 	model.DefaultMonitoring = types.BoolPointerValue(data.IsDefaultMonitoring)
 	model.ConfigYaml = types.StringPointerValue(data.ConfigYaml)
+	model.ProxyID = types.StringPointerValue(data.ProxyId)
 	model.Ssl, diags = sslToObjectValue(ctx, data.Ssl)
 
 	// Note: SpaceIds is not returned by the API for outputs
@@ -49,6 +50,7 @@ func (model outputModel) toAPICreateLogstashModel(ctx context.Context) (kbapi.Ne
 		IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
 		IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
 		Name:                 model.Name.ValueString(),
+		ProxyId:              model.ProxyID.ValueStringPointer(),
 		Ssl:                  ssl,
 	}
 
@@ -76,6 +78,7 @@ func (model outputModel) toAPIUpdateLogstashModel(ctx context.Context) (kbapi.Up
 		IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
 		IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
 		Name:                 model.Name.ValueStringPointer(),
+		ProxyId:              model.ProxyID.ValueStringPointer(),
 		Ssl:                  ssl,
 	}
 

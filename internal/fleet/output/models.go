@@ -23,6 +23,7 @@ type outputModel struct {
 	DefaultMonitoring    types.Bool   `tfsdk:"default_monitoring"`
 	ConfigYaml           types.String `tfsdk:"config_yaml"`
 	SpaceIds             types.Set    `tfsdk:"space_ids"` //> string
+	ProxyID              types.String `tfsdk:"proxy_id"`
 	Ssl                  types.Object `tfsdk:"ssl"`       //> outputSslModel
 	Kafka                types.Object `tfsdk:"kafka"`     //> outputKafkaModel
 }
