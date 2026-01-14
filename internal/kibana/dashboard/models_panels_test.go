@@ -13,14 +13,16 @@ import (
 
 func Test_mapPanelsFromAPI(t *testing.T) {
 	tests := []struct {
-		name          string
-		apiPanelsJSON string
-		expected      []panelModel
+		name             string
+		apiPanelsJSON    string
+		expectedPanels   []panelModel
+		expectedSections []sectionModel
 	}{
 		{
-			name:          "empty panels",
-			apiPanelsJSON: "[]",
-			expected:      nil,
+			name:             "empty panels",
+			apiPanelsJSON:    "[]",
+			expectedPanels:   nil,
+			expectedSections: nil,
 		},
 		{
 			name: "basic panel with structured config",
@@ -41,7 +43,7 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 					}
 				}
 			]`,
-			expected: []panelModel{
+			expectedPanels: []panelModel{
 				{
 					Type: types.StringValue("visualization"),
 					Grid: panelGridModel{
@@ -50,7 +52,7 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 						W: types.Int64Value(2),
 						H: types.Int64Value(3),
 					},
-					PanelID: types.StringValue("1"),
+					ID: types.StringValue("1"),
 					EmbeddableConfig: &embeddableConfigModel{
 						Title:           types.StringValue("My Panel"),
 						Content:         types.StringValue("some content"),
@@ -73,7 +75,7 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 					"config": {"unknownField": "something"}
 				}
 			]`,
-			expected: []panelModel{
+			expectedPanels: []panelModel{
 				{
 					Type: types.StringValue("search"),
 					Grid: panelGridModel{
@@ -82,9 +84,130 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 						W: types.Int64Null(),
 						H: types.Int64Null(),
 					},
-					PanelID:              types.StringNull(),
+					ID:                   types.StringNull(),
 					EmbeddableConfig:     nil,
 					EmbeddableConfigJSON: jsontypes.NewNormalizedValue(`{"unknownField": "something"}`),
+				},
+			},
+		},
+		{
+			name: "section with panels",
+			apiPanelsJSON: `[
+				{
+					"title": "My Section",
+					"grid": { "y": 100 },
+					"collapsed": true,
+					"uid": "section1",
+					"panels": [
+						{
+							"type": "visualization",
+							"grid": { "x": 0, "y": 0, "w": 4, "h": 4 },
+							"config": { "title": "Inner Panel" }
+						}
+					]
+				}
+			]`,
+			expectedSections: []sectionModel{
+				{
+					Title:     types.StringValue("My Section"),
+					ID:        types.StringValue("section1"),
+					Collapsed: types.BoolValue(true),
+					Grid: sectionGridModel{
+						Y: types.Int64Value(100),
+					},
+					Panels: []panelModel{
+						{
+							Type: types.StringValue("visualization"),
+							Grid: panelGridModel{
+								X: types.Int64Value(0),
+								Y: types.Int64Value(0),
+								W: types.Int64Value(4),
+								H: types.Int64Value(4),
+							},
+							ID:                   types.StringNull(),
+							EmbeddableConfig:     nil,
+							EmbeddableConfigJSON: jsontypes.NewNormalizedValue(`{ "title": "Inner Panel" }`),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "mix of panels and sections",
+			apiPanelsJSON: `[
+				{
+					"grid": { "x": 0, "y": 0, "w": 6, "h": 6 },
+					"type": "visualization",
+					"uid": "panel1",
+					"config": { "title": "Panel 1" }
+				},
+				{
+					"title": "Section 1",
+					"grid": { "y": 100 },
+					"uid": "section1",
+					"panels": [
+						{
+							"type": "visualization",
+							"grid": { "x": 0, "y": 0, "w": 6, "h": 6 },
+							"config": { "title": "Inner Panel" }
+						}
+					]
+				},
+				{
+					"grid": { "x": 6, "y": 0, "w": 6, "h": 6 },
+					"type": "lens",
+					"uid": "panel2",
+					"config": { "title": "Panel 2" }
+				}
+			]`,
+			expectedPanels: []panelModel{
+				{
+					Type: types.StringValue("visualization"),
+					Grid: panelGridModel{
+						X: types.Int64Value(0),
+						Y: types.Int64Value(0),
+						W: types.Int64Value(6),
+						H: types.Int64Value(6),
+					},
+					ID:                   types.StringValue("panel1"),
+					EmbeddableConfig:     nil,
+					EmbeddableConfigJSON: jsontypes.NewNormalizedValue(`{ "title": "Panel 1" }`),
+				},
+				{
+					Type: types.StringValue("lens"),
+					Grid: panelGridModel{
+						X: types.Int64Value(6),
+						Y: types.Int64Value(0),
+						W: types.Int64Value(6),
+						H: types.Int64Value(6),
+					},
+					ID:                   types.StringValue("panel2"),
+					EmbeddableConfig:     nil,
+					EmbeddableConfigJSON: jsontypes.NewNormalizedValue(`{ "title": "Panel 2" }`),
+				},
+			},
+			expectedSections: []sectionModel{
+				{
+					Title:     types.StringValue("Section 1"),
+					ID:        types.StringValue("section1"),
+					Collapsed: types.BoolNull(),
+					Grid: sectionGridModel{
+						Y: types.Int64Value(100),
+					},
+					Panels: []panelModel{
+						{
+							Type: types.StringValue("visualization"),
+							Grid: panelGridModel{
+								X: types.Int64Value(0),
+								Y: types.Int64Value(0),
+								W: types.Int64Value(6),
+								H: types.Int64Value(6),
+							},
+							ID:                   types.StringNull(),
+							EmbeddableConfig:     nil,
+							EmbeddableConfigJSON: jsontypes.NewNormalizedValue(`{ "title": "Inner Panel" }`),
+						},
+					},
 				},
 			},
 		},
@@ -97,13 +220,14 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 			require.NoError(t, err)
 
 			model := &dashboardModel{}
-			result, diags := model.mapPanelsFromAPI(&apiPanels)
+			panels, sections, diags := model.mapPanelsFromAPI(&apiPanels)
 			require.False(t, diags.HasError())
 
 			// Normalize JSON strings for comparison if needed, or rely on assert.Equal handling
 			// Since we use jsontypes.Normalized which stores string, we might need to be careful with JSON formatting in test expectation.
 			// In the 'unstructured' case, I used a compact JSON string.
-			assert.Equal(t, tt.expected, result)
+			assert.Equal(t, tt.expectedPanels, panels)
+			assert.Equal(t, tt.expectedSections, sections)
 		})
 	}
 }
@@ -126,7 +250,7 @@ func Test_panelsToAPI(t *testing.T) {
 							W: types.Int64Value(2),
 							H: types.Int64Value(3),
 						},
-						PanelID: types.StringValue("1"),
+						ID: types.StringValue("1"),
 						EmbeddableConfig: &embeddableConfigModel{
 							Title:           types.StringValue("My Panel"),
 							Content:         types.StringValue("some content"),
@@ -164,7 +288,7 @@ func Test_panelsToAPI(t *testing.T) {
 							X: types.Int64Value(10),
 							Y: types.Int64Value(20),
 						},
-						PanelID:              types.StringNull(),
+						ID:                   types.StringNull(),
 						EmbeddableConfig:     nil,
 						EmbeddableConfigJSON: jsontypes.NewNormalizedValue(`{"unknownField":"something"}`),
 					},
@@ -180,6 +304,39 @@ func Test_panelsToAPI(t *testing.T) {
 					"config": {
 						"unknownField": "something"
 					}
+				}
+			]`,
+		},
+		{
+			name: "section with panel",
+			model: dashboardModel{
+				Sections: []sectionModel{
+					{
+						Title:     types.StringValue("Test Section"),
+						ID:        types.StringValue("sec-1"),
+						Collapsed: types.BoolValue(true),
+						Grid:      sectionGridModel{Y: types.Int64Value(50)},
+						Panels: []panelModel{
+							{
+								Type: types.StringValue("text"),
+								Grid: panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0), W: types.Int64Value(5), H: types.Int64Value(5)},
+								EmbeddableConfig: &embeddableConfigModel{
+									Title: types.StringValue("Inner Text"),
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: `[
+				{
+					"title": "Test Section",
+					"uid": "sec-1",
+					"collapsed": true,
+					"grid": {"y": 50},
+					"panels": [
+						{"grid":{"h":5,"w":5,"x":0,"y":0},"type":"text","config":{"content":"","title":"Inner Text"}}
+					]
 				}
 			]`,
 		},

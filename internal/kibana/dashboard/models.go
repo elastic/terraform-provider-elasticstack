@@ -33,6 +33,7 @@ type dashboardModel struct {
 	Options              *optionsModel        `tfsdk:"options"`
 	AccessControl        *AccessControlValue  `tfsdk:"access_control"`
 	Panels               []panelModel         `tfsdk:"panels"`
+	Sections             []sectionModel       `tfsdk:"sections"`
 }
 
 // populateFromAPI populates the Terraform model from the API response
@@ -112,9 +113,10 @@ func (m *dashboardModel) populateFromAPI(ctx context.Context, resp *kbapi.GetDas
 	}
 
 	// Map panels
-	panels, panelsDiags := m.mapPanelsFromAPI(data.Data.Panels)
+	panels, sections, panelsDiags := m.mapPanelsFromAPI(data.Data.Panels)
 	diags.Append(panelsDiags...)
 	m.Panels = panels
+	m.Sections = sections
 
 	return diags
 }
