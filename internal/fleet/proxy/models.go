@@ -18,8 +18,7 @@ type proxyModel struct {
 	CertificateAuthorities types.String `tfsdk:"certificate_authorities"`
 	CertificateKey         types.String `tfsdk:"certificate_key"`
 	IsPreconfigured        types.Bool   `tfsdk:"is_preconfigured"`
-	ProxyHeaders           types.Map    `tfsdk:"proxy_headers"` //> string
-	SpaceIds               types.Set    `tfsdk:"space_ids"`     //> string
+	SpaceIds               types.Set    `tfsdk:"space_ids"` //> string
 }
 
 func (model *proxyModel) populateFromAPI(ctx context.Context, proxy *kbapi.GetFleetProxiesItemidResponse) (diags diag.Diagnostics) {
@@ -42,12 +41,6 @@ func (model *proxyModel) populateFromAPI(ctx context.Context, proxy *kbapi.GetFl
 	model.CertificateAuthorities = types.StringPointerValue(item.CertificateAuthorities)
 	model.CertificateKey = types.StringPointerValue(item.CertificateKey)
 	model.IsPreconfigured = types.BoolPointerValue(item.IsPreconfigured)
-
-	// Handle proxy_headers
-	// TODO: Implement proxy_headers support in future iteration
-	// The API uses union types (string|bool|float32) which require more complex handling
-	// For MVP, we skip this optional field to focus on core functionality
-	model.ProxyHeaders = types.MapNull(types.StringType)
 
 	// Note: space_ids is not returned in the API response, but it's managed through
 	// the space-aware API endpoints. We'll preserve it from the plan/state.
@@ -84,10 +77,6 @@ func (model proxyModel) toAPICreateModel(ctx context.Context) (kbapi.PostFleetPr
 		body.IsPreconfigured = model.IsPreconfigured.ValueBoolPointer()
 	}
 
-	// Optional: proxy_headers
-	// TODO: Implement proxy_headers support in future iteration
-	// Skipping for MVP due to complex union type handling
-
 	return kbapi.PostFleetProxiesJSONRequestBody(body), diags
 }
 
@@ -114,10 +103,6 @@ func (model proxyModel) toAPIUpdateModel(ctx context.Context) (kbapi.PutFleetPro
 	if utils.IsKnown(model.CertificateKey) {
 		body.CertificateKey = model.CertificateKey.ValueStringPointer()
 	}
-
-	// Optional: proxy_headers
-	// TODO: Implement proxy_headers support in future iteration
-	// Skipping for MVP due to complex union type handling
 
 	return kbapi.PutFleetProxiesItemidJSONRequestBody(body), diags
 }
