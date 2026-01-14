@@ -46,12 +46,10 @@ func getSchema() schema.Schema {
 			"certificate": schema.StringAttribute{
 				Description: "PEM-encoded client certificate for TLS authentication with the proxy.",
 				Optional:    true,
-				Sensitive:   true,
 			},
 			"certificate_authorities": schema.StringAttribute{
 				Description: "PEM-encoded certificate authorities for verifying the proxy server certificate.",
 				Optional:    true,
-				Sensitive:   true,
 			},
 			"certificate_key": schema.StringAttribute{
 				Description: "PEM-encoded private key for the client certificate.",
@@ -63,13 +61,8 @@ func getSchema() schema.Schema {
 				Optional:    true,
 				Computed:    true,
 			},
-			"proxy_headers": schema.MapAttribute{
-				Description: "Custom headers to send with proxy requests.",
-				Optional:    true,
-				ElementType: types.StringType,
-			},
 			"space_ids": schema.SetAttribute{
-				Description: "The Kibana space IDs where this proxy is available. When set, the proxy will be created and managed within the specified space. Note: The order of space IDs does not matter as this is a set.",
+				Description: "The Kibana space IDs where this proxy is available. When multiple spaces are specified, the first space ID is used for API operations. Note: The order of space IDs does not matter as this is a set.",
 				ElementType: types.StringType,
 				Optional:    true,
 				Computed:    true,
