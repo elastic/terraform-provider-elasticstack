@@ -31,6 +31,7 @@ type dashboardModel struct {
 	QueryJSON            jsontypes.Normalized `tfsdk:"query_json"`
 	Tags                 types.List           `tfsdk:"tags"`
 	Options              types.Object         `tfsdk:"options"`
+	Panels               []panelModel         `tfsdk:"panels"`
 }
 
 type optionsModel struct {
@@ -109,6 +110,11 @@ func (m *dashboardModel) populateFromAPI(ctx context.Context, resp *kbapi.GetDas
 	diags.Append(optDiags...)
 	m.Options = options
 
+	// Map panels
+	panels, panelsDiags := m.mapPanelsFromAPI(data.Data.Panels)
+	diags.Append(panelsDiags...)
+	m.Panels = panels
+
 	return diags
 }
 
@@ -160,6 +166,11 @@ func (m *dashboardModel) toAPICreateRequest(ctx context.Context, diags *diag.Dia
 	diags.Append(optionsDiags...)
 	req.Data.Options = options
 
+	// Set panels
+	panels, panelsDiags := m.panelsToAPI()
+	diags.Append(panelsDiags...)
+	req.Data.Panels = panels
+
 	return req
 }
 
@@ -200,6 +211,11 @@ func (m *dashboardModel) toAPIUpdateRequest(ctx context.Context, diags *diag.Dia
 	options, optionsDiags := m.optionsToAPI(ctx)
 	diags.Append(optionsDiags...)
 	req.Data.Options = options
+
+	// Set panels
+	panels, panelsDiags := m.panelsToAPI()
+	diags.Append(panelsDiags...)
+	req.Data.Panels = panels
 
 	return req
 }
