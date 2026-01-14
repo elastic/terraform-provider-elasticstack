@@ -596,20 +596,10 @@ func TestAccResourceIntegrationPolicy_VersionUpdate(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
-				Config: `
-resource "elasticstack_fleet_agent_policy" "test_policy" {
-  name      = "` + policyName + `"
-  namespace = "default"
-}
-
-resource "elasticstack_fleet_integration_policy" "test_policy" {
-  name               = "` + policyName + `-integration"
-  namespace          = "default"
-  agent_policy_id    = elasticstack_fleet_agent_policy.test_policy.policy_id
-  integration_name    = "tcp"
-  integration_version = "1.16.0"
-}
-`,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName+"-integration"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_name", "tcp"),
@@ -624,20 +614,10 @@ resource "elasticstack_fleet_integration_policy" "test_policy" {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
-				Config: `
-resource "elasticstack_fleet_agent_policy" "test_policy" {
-  name      = "` + policyName + `"
-  namespace = "default"
-}
-
-resource "elasticstack_fleet_integration_policy" "test_policy" {
-  name               = "` + policyName + `-integration"
-  namespace          = "default"
-  agent_policy_id    = elasticstack_fleet_agent_policy.test_policy.policy_id
-  integration_name    = "tcp"
-  integration_version = "1.17.0"  # Updated version
-}
-`,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName+"-integration"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_name", "tcp"),
