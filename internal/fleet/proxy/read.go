@@ -44,11 +44,17 @@ func (r *proxyResource) Read(ctx context.Context, req resource.ReadRequest, resp
 		return
 	}
 
+	// Preserve space_ids from state, as the Fleet API does not return them
+	spaceIDs := stateModel.SpaceIds
+
 	diags = stateModel.populateFromAPI(ctx, proxy)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	// Restore space_ids so they are not lost on refresh
+	stateModel.SpaceIds = spaceIDs
 
 	diags = resp.State.Set(ctx, stateModel)
 	resp.Diagnostics.Append(diags...)

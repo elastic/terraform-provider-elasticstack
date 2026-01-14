@@ -48,11 +48,17 @@ func (r *proxyResource) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 
+	// Preserve space_ids from the plan, as the Fleet API does not return it
+	originalSpaceIds := planModel.SpaceIds
+
 	diags = planModel.populateFromAPI(ctx, proxy)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	// Restore space_ids so it is not lost in state
+	planModel.SpaceIds = originalSpaceIds
 
 	diags = resp.State.Set(ctx, planModel)
 	resp.Diagnostics.Append(diags...)
