@@ -17,6 +17,7 @@ type serverHostModel struct {
 	Hosts    types.List   `tfsdk:"hosts"`
 	Default  types.Bool   `tfsdk:"default"`
 	SpaceIds types.Set    `tfsdk:"space_ids"` //> string
+	ProxyID  types.String `tfsdk:"proxy_id"`
 }
 
 func (model *serverHostModel) populateFromAPI(ctx context.Context, data *kbapi.ServerHost) (diags diag.Diagnostics) {
@@ -29,6 +30,7 @@ func (model *serverHostModel) populateFromAPI(ctx context.Context, data *kbapi.S
 	model.Name = types.StringValue(data.Name)
 	model.Hosts = utils.SliceToListType_String(ctx, data.HostUrls, path.Root("hosts"), &diags)
 	model.Default = types.BoolPointerValue(data.IsDefault)
+	model.ProxyID = types.StringPointerValue(data.ProxyId)
 
 	// Note: SpaceIds is not returned by the API for server hosts, so we preserve it from existing state.
 	// It's only used to determine which API endpoint to call.
@@ -46,6 +48,7 @@ func (model serverHostModel) toAPICreateModel(ctx context.Context) (body kbapi.P
 		Id:        model.HostID.ValueStringPointer(),
 		IsDefault: model.Default.ValueBoolPointer(),
 		Name:      model.Name.ValueString(),
+		ProxyId:   model.ProxyID.ValueStringPointer(),
 	}
 	return
 }
@@ -55,6 +58,7 @@ func (model serverHostModel) toAPIUpdateModel(ctx context.Context) (body kbapi.P
 		HostUrls:  utils.SliceRef(utils.ListTypeToSlice_String(ctx, model.Hosts, path.Root("hosts"), &diags)),
 		IsDefault: model.Default.ValueBoolPointer(),
 		Name:      model.Name.ValueStringPointer(),
+		ProxyId:   model.ProxyID.ValueStringPointer(),
 	}
 	return
 }

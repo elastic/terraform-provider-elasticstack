@@ -100,6 +100,10 @@ func getSchema() schema.Schema {
 					setplanmodifier.UseStateForUnknown(),
 				},
 			},
+			"proxy_id": schema.StringAttribute{
+				Description: "The ID of the proxy to use for this output. The proxy must exist in the same space as the output.",
+				Optional:    true,
+			},
 			"ssl": schema.SingleNestedAttribute{
 				Description: "SSL configuration.",
 				Optional:    true,

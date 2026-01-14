@@ -22,6 +22,7 @@ func (model *outputModel) fromAPIElasticsearchModel(ctx context.Context, data *k
 	model.DefaultIntegrations = types.BoolPointerValue(data.IsDefault)
 	model.DefaultMonitoring = types.BoolPointerValue(data.IsDefaultMonitoring)
 	model.ConfigYaml = types.StringPointerValue(data.ConfigYaml)
+	model.ProxyID = types.StringPointerValue(data.ProxyId)
 	model.Ssl, diags = sslToObjectValue(ctx, data.Ssl)
 
 	// Note: SpaceIds is not returned by the API for outputs
@@ -50,6 +51,7 @@ func (model outputModel) toAPICreateElasticsearchModel(ctx context.Context) (kba
 		IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
 		IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
 		Name:                 model.Name.ValueString(),
+		ProxyId:              model.ProxyID.ValueStringPointer(),
 		Ssl:                  ssl,
 	}
 
@@ -77,6 +79,7 @@ func (model outputModel) toAPIUpdateElasticsearchModel(ctx context.Context) (kba
 		IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
 		IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
 		Name:                 model.Name.ValueStringPointer(),
+		ProxyId:              model.ProxyID.ValueStringPointer(),
 		Ssl:                  ssl,
 	}
 
