@@ -53,11 +53,11 @@ func (r *outputResource) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
-	// Preserve sensitive fields from plan before populating from API
+	// Preserve sensitive field values from plan before populating from API
 	// The Fleet API does not return sensitive field values for security reasons
 	originalConfigYaml := planModel.ConfigYaml
-	originalSsl := planModel.Ssl
-	originalKafka := planModel.Kafka
+	originalSslKey := extractSslKeyFromObject(ctx, planModel.Ssl)
+	originalKafkaPassword := extractKafkaPasswordFromObject(ctx, planModel.Kafka)
 
 	// Populate from API response
 	// With Sets, we don't need order preservation - Terraform handles set comparison automatically
@@ -72,10 +72,14 @@ func (r *outputResource) Update(ctx context.Context, req resource.UpdateRequest,
 	planModel.ConfigYaml = originalConfigYaml
 
 	// ssl.key is sensitive and not returned by the API
-	planModel.Ssl = originalSsl
+	if originalSslKey != nil {
+		planModel.Ssl = restoreSslKeyToObject(ctx, planModel.Ssl, *originalSslKey, &diags)
+	}
 
 	// kafka.password is sensitive and not returned by the API
-	planModel.Kafka = originalKafka
+	if originalKafkaPassword != nil {
+		planModel.Kafka = restoreKafkaPasswordToObject(ctx, planModel.Kafka, *originalKafkaPassword, &diags)
+	}
 
 	diags = resp.State.Set(ctx, planModel)
 	resp.Diagnostics.Append(diags...)

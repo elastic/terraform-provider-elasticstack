@@ -48,11 +48,11 @@ func (r *outputResource) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	// Preserve sensitive fields from plan before populating from API
+	// Preserve sensitive field values from plan before populating from API
 	// The Fleet API does not return sensitive field values for security reasons
 	originalConfigYaml := planModel.ConfigYaml
-	originalSsl := planModel.Ssl
-	originalKafka := planModel.Kafka
+	originalSslKey := extractSslKeyFromObject(ctx, planModel.Ssl)
+	originalKafkaPassword := extractKafkaPasswordFromObject(ctx, planModel.Kafka)
 
 	diags = planModel.populateFromAPI(ctx, output)
 	resp.Diagnostics.Append(diags...)
@@ -65,10 +65,14 @@ func (r *outputResource) Create(ctx context.Context, req resource.CreateRequest,
 	planModel.ConfigYaml = originalConfigYaml
 
 	// ssl.key is sensitive and not returned by the API
-	planModel.Ssl = originalSsl
+	if originalSslKey != nil {
+		planModel.Ssl = restoreSslKeyToObject(ctx, planModel.Ssl, *originalSslKey, &diags)
+	}
 
 	// kafka.password is sensitive and not returned by the API
-	planModel.Kafka = originalKafka
+	if originalKafkaPassword != nil {
+		planModel.Kafka = restoreKafkaPasswordToObject(ctx, planModel.Kafka, *originalKafkaPassword, &diags)
+	}
 
 	diags = resp.State.Set(ctx, planModel)
 	resp.Diagnostics.Append(diags...)
