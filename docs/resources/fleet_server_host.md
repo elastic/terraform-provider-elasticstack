@@ -38,6 +38,7 @@ resource "elasticstack_fleet_server_host" "test_host" {
 
 - `default` (Boolean) Set as default.
 - `host_id` (String) Unique identifier of the Fleet server host.
+- `proxy_id` (String) The ID of the proxy to use for this Fleet server host. The proxy must exist in the same space as the server host.
 - `space_ids` (Set of String) The Kibana space IDs where this server host is available. When set, the server host will be created and managed within the specified space. Note: The order of space IDs does not matter as this is a set.
 
 ### Read-Only
