@@ -1676,6 +1676,13 @@ provider "elasticstack" {
   kibana {}
 }
 
+resource "elasticstack_kibana_data_view" "test" {
+  data_view = {
+    id    = "eql-data-view-id"
+    title = "eql-data-view-id"
+  }
+}
+
 resource "elasticstack_kibana_security_detection_rule" "test" {
   name             = "%s"
   type             = "eql"
@@ -1689,7 +1696,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   to               = "now"
   interval         = "5m"
   tiebreaker_field = "@timestamp"
-  data_view_id     = "eql-data-view-id"
+  data_view_id     = elasticstack_kibana_data_view.test.data_view.id
   namespace        = "eql-namespace"
   rule_name_override = "Custom EQL Rule Name"
   timestamp_override = "process.start"
