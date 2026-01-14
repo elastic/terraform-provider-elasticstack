@@ -44,3 +44,4 @@ certs
 .ci/.github_*
 .terraform.lock.hcl
 .claudedocs/
+claudedocs/
