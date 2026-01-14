@@ -577,8 +577,15 @@ func TestAccResourceIntegrationPolicyGCPVertexAI(t *testing.T) {
 }
 
 // TestAccResourceIntegrationPolicy_VersionUpdate tests that updating integration_version
-// preserves agent_policy_id without causing inconsistent state errors.
-// This is a regression test for https://github.com/elastic/terraform-provider-elasticstack/pull/1616
+// works correctly without causing inconsistent state errors.
+//
+// Note: This test validates basic version update functionality. The actual fix in PR #1616
+// addresses vars_json sanitization (stripping internal __tf_provider_context metadata before
+// sending to Kibana API), which prevents HTTP 400 errors when reconciling after manual
+// integration upgrades in the Kibana UI. That specific scenario is difficult to test in
+// an automated acceptance test.
+//
+// Related: https://github.com/elastic/terraform-provider-elasticstack/pull/1616
 func TestAccResourceIntegrationPolicy_VersionUpdate(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 

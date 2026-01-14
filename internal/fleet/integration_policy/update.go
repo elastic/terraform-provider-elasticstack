@@ -7,7 +7,6 @@ import (
 	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func (r *integrationPolicyResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
@@ -24,24 +23,6 @@ func (r *integrationPolicyResource) Update(ctx context.Context, req resource.Upd
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
-	}
-
-	// Preserve computed fields from state before building the API request
-	// This ensures fields like agent_policy_id are included in the update request
-	// even when they're not explicitly changed by the user
-	if utils.IsKnown(stateModel.ID) {
-		planModel.ID = stateModel.ID
-	}
-	if utils.IsKnown(stateModel.PolicyID) {
-		planModel.PolicyID = stateModel.PolicyID
-	}
-	// Only preserve optional fields when plan doesn't have a value (user didn't change them)
-	// This prevents overwriting user changes while still fixing the null bug
-	if !utils.IsKnown(planModel.AgentPolicyID) && utils.IsKnown(stateModel.AgentPolicyID) {
-		planModel.AgentPolicyID = stateModel.AgentPolicyID
-	}
-	if !utils.IsKnown(planModel.AgentPolicyIDs) && utils.IsKnown(stateModel.AgentPolicyIDs) {
-		planModel.AgentPolicyIDs = stateModel.AgentPolicyIDs
 	}
 
 	client, err := r.client.GetFleetClient()
@@ -86,12 +67,8 @@ func (r *integrationPolicyResource) Update(ctx context.Context, req resource.Upd
 		return
 	}
 
-	// Remember which agent policy field was originally configured in state
-	// so we can preserve it after populateFromAPI
-	stateUsedAgentPolicyID := utils.IsKnown(stateModel.AgentPolicyID)
-	stateUsedAgentPolicyIDs := utils.IsKnown(stateModel.AgentPolicyIDs)
-
-	// Remember the input configuration from state
+	// Remember if the user had inputs configured in state before calling populateFromAPI
+	// This prevents populateFromAPI from adding inputs when the user didn't configure them
 	stateHadInput := utils.IsKnown(stateModel.Inputs) && !stateModel.Inputs.IsNull() && len(stateModel.Inputs.Elements()) > 0
 
 	pkg, diags := getPackageInfo(ctx, client, policy.Package.Name, policy.Package.Version)
@@ -106,21 +83,9 @@ func (r *integrationPolicyResource) Update(ctx context.Context, req resource.Upd
 		return
 	}
 
-	// Restore the agent policy field that was originally configured
-	// This prevents populateFromAPI from changing which field is used
-	// IMPORTANT: Use state values, not API response, to avoid null values causing inconsistent state
-	if stateUsedAgentPolicyID && !stateUsedAgentPolicyIDs {
-		// Only agent_policy_id was configured, ensure we preserve it from state
-		planModel.AgentPolicyID = stateModel.AgentPolicyID
-		planModel.AgentPolicyIDs = types.ListNull(types.StringType)
-	} else if stateUsedAgentPolicyIDs && !stateUsedAgentPolicyID {
-		// Only agent_policy_ids was configured, ensure we preserve it from state
-		planModel.AgentPolicyIDs = stateModel.AgentPolicyIDs
-		planModel.AgentPolicyID = types.StringNull()
-	}
-
-	// If state didn't have input configured, ensure we don't add it now
-	// IMPORTANT: Always set to null if state didn't have it, even if populateFromAPI added it
+	// If state didn't have inputs configured, ensure we don't add them now
+	// This prevents "Provider produced inconsistent result" errors where
+	// inputs block count changes from 0 to 1 unexpectedly
 	if !stateHadInput {
 		planModel.Inputs = NewInputsNull(getInputsElementType())
 	}
