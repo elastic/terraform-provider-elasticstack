@@ -144,7 +144,7 @@ func getSchema() schema.Schema {
 							MarkdownDescription: "The grid coordinates and dimensions of the panel.",
 							Required:            true,
 							Attributes: map[string]schema.Attribute{
-								"x": schema.Float64Attribute{
+								"x": schema.Int64Attribute{
 									MarkdownDescription: "The X coordinate.",
 									Required:            true,
 								},
