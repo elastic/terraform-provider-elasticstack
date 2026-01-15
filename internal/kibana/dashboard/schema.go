@@ -165,6 +165,9 @@ func getSchema() schema.Schema {
 							MarkdownDescription: "The unique identifier of the panel.",
 							Optional:            true,
 							Computed:            true,
+							PlanModifiers: []planmodifier.String{
+								stringplanmodifier.UseNonNullStateForUnknown(),
+							},
 						},
 						"embeddable_config": schema.SingleNestedAttribute{
 							MarkdownDescription: "The configuration of the panel. Mutually exclusive with `embeddable_config_json`.",
