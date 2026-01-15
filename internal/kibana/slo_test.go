@@ -2,7 +2,7 @@ package kibana_test
 
 import (
 	"context"
-	"encoding/json"
+	_ "embed"
 	"fmt"
 	"regexp"
 	"strings"
@@ -16,6 +16,7 @@ import (
 	"github.com/hashicorp/go-version"
 	"github.com/stretchr/testify/require"
 
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -42,13 +43,19 @@ func TestAccResourceSlo(t *testing.T) {
 
 				return resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", indicator+".0.data_view_id", "my-data-view-id")
 			}
+			withOptionalDataViewID := func(vars config.Variables) config.Variables {
+				if testWithDataViewID {
+					vars["data_view_id"] = config.StringVariable("my-data-view-id")
+				}
+				return vars
+			}
 			sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 			resource.Test(t, resource.TestCase{
-				PreCheck:                 func() { acctest.PreCheck(t) },
-				CheckDestroy:             checkResourceSloDestroy,
-				ProtoV6ProviderFactories: acctest.Providers,
+				PreCheck:     func() { acctest.PreCheck(t) },
+				CheckDestroy: checkResourceSloDestroy,
 				Steps: []resource.TestStep{
 					{
+						ProtoV6ProviderFactories: acctest.Providers,
 						SkipFunc: func() (bool, error) {
 							if !testWithDataViewID {
 								return versionutils.CheckIfVersionMeetsConstraints(slo8_9Constraints)()
@@ -56,7 +63,10 @@ func TestAccResourceSlo(t *testing.T) {
 
 							return versionutils.CheckIfVersionIsUnsupported(kibanaresource.SLOSupportsDataViewIDMinVersion)()
 						},
-						Config: getSLOConfig(sloVars{name: sloName, indicatorType: "apm_latency_indicator", includeDataViewID: testWithDataViewID}),
+						ConfigDirectory: acctest.NamedTestCaseDirectory("apm_latency_indicator"),
+						ConfigVariables: config.Variables{
+							"name": config.StringVariable(sloName),
+						},
 						Check: resource.ComposeTestCheckFunc(
 							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "name", sloName),
 							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "slo_id", "id-"+sloName),
@@ -78,7 +88,9 @@ func TestAccResourceSlo(t *testing.T) {
 							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "space_id", "default"),
 						),
 					},
-					{ //check that name can be updated
+					{
+						//check that name can be updated
+						ProtoV6ProviderFactories: acctest.Providers,
 						SkipFunc: func() (bool, error) {
 							if !testWithDataViewID {
 								return versionutils.CheckIfVersionMeetsConstraints(slo8_9Constraints)()
@@ -86,16 +98,16 @@ func TestAccResourceSlo(t *testing.T) {
 
 							return versionutils.CheckIfVersionIsUnsupported(kibanaresource.SLOSupportsDataViewIDMinVersion)()
 						},
-						Config: getSLOConfig(sloVars{
-							name:              fmt.Sprintf("updated-%s", sloName),
-							indicatorType:     "apm_latency_indicator",
-							includeDataViewID: testWithDataViewID,
-						}),
+						ConfigDirectory: acctest.NamedTestCaseDirectory("update_name"),
+						ConfigVariables: config.Variables{
+							"name": config.StringVariable(fmt.Sprintf("updated-%s", sloName)),
+						},
 						Check: resource.ComposeTestCheckFunc(
 							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "name", fmt.Sprintf("updated-%s", sloName)),
 						),
 					},
 					{ //check that settings can be updated from api-computed defaults
+						ProtoV6ProviderFactories: acctest.Providers,
 						SkipFunc: func() (bool, error) {
 							if !testWithDataViewID {
 								return versionutils.CheckIfVersionMeetsConstraints(slo8_9Constraints)()
@@ -103,13 +115,17 @@ func TestAccResourceSlo(t *testing.T) {
 
 							return versionutils.CheckIfVersionIsUnsupported(kibanaresource.SLOSupportsDataViewIDMinVersion)()
 						},
-						Config: getSLOConfig(sloVars{name: sloName, indicatorType: "apm_latency_indicator", settingsEnabled: true, includeDataViewID: testWithDataViewID}),
+						ConfigDirectory: acctest.NamedTestCaseDirectory("update_settings"),
+						ConfigVariables: config.Variables{
+							"name": config.StringVariable(sloName),
+						},
 						Check: resource.ComposeTestCheckFunc(
 							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "settings.0.sync_delay", "5m"),
 							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "settings.0.frequency", "5m"),
 						),
 					},
 					{
+						ProtoV6ProviderFactories: acctest.Providers,
 						SkipFunc: func() (bool, error) {
 							if !testWithDataViewID {
 								return versionutils.CheckIfVersionMeetsConstraints(slo8_9Constraints)()
@@ -117,7 +133,10 @@ func TestAccResourceSlo(t *testing.T) {
 
 							return versionutils.CheckIfVersionIsUnsupported(kibanaresource.SLOSupportsDataViewIDMinVersion)()
 						},
-						Config: getSLOConfig(sloVars{name: sloName, indicatorType: "apm_availability_indicator", settingsEnabled: true, includeDataViewID: testWithDataViewID}),
+						ConfigDirectory: acctest.NamedTestCaseDirectory("apm_availability_indicator"),
+						ConfigVariables: config.Variables{
+							"name": config.StringVariable(sloName),
+						},
 						Check: resource.ComposeTestCheckFunc(
 							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "apm_availability_indicator.0.environment", "production"),
 							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "apm_availability_indicator.0.service", "my-service"),
@@ -127,6 +146,7 @@ func TestAccResourceSlo(t *testing.T) {
 						),
 					},
 					{
+						ProtoV6ProviderFactories: acctest.Providers,
 						SkipFunc: func() (bool, error) {
 							if !testWithDataViewID {
 								return versionutils.CheckIfVersionMeetsConstraints(slo8_9Constraints)()
@@ -134,7 +154,10 @@ func TestAccResourceSlo(t *testing.T) {
 
 							return versionutils.CheckIfVersionIsUnsupported(kibanaresource.SLOSupportsDataViewIDMinVersion)()
 						},
-						Config: getSLOConfig(sloVars{name: sloName, indicatorType: "kql_custom_indicator", settingsEnabled: true, includeDataViewID: testWithDataViewID}),
+						ConfigDirectory: acctest.NamedTestCaseDirectory("kql_custom_indicator"),
+						ConfigVariables: withOptionalDataViewID(config.Variables{
+							"name": config.StringVariable(sloName),
+						}),
 						Check: resource.ComposeTestCheckFunc(
 							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "kql_custom_indicator.0.index", "my-index-"+sloName),
 							dataviewCheckFunc("kql_custom_indicator"),
@@ -145,6 +168,7 @@ func TestAccResourceSlo(t *testing.T) {
 						),
 					},
 					{
+						ProtoV6ProviderFactories: acctest.Providers,
 						SkipFunc: func() (bool, error) {
 							if !testWithDataViewID {
 								return versionutils.CheckIfVersionMeetsConstraints(slo8_10Constraints)()
@@ -152,7 +176,10 @@ func TestAccResourceSlo(t *testing.T) {
 
 							return versionutils.CheckIfVersionIsUnsupported(kibanaresource.SLOSupportsDataViewIDMinVersion)()
 						},
-						Config: getSLOConfig(sloVars{name: sloName, indicatorType: "histogram_custom_indicator", settingsEnabled: true, includeDataViewID: testWithDataViewID}),
+						ConfigDirectory: acctest.NamedTestCaseDirectory("histogram_custom_indicator"),
+						ConfigVariables: withOptionalDataViewID(config.Variables{
+							"name": config.StringVariable(sloName),
+						}),
 						Check: resource.ComposeTestCheckFunc(
 							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "histogram_custom_indicator.0.index", "my-index-"+sloName),
 							dataviewCheckFunc("histogram_custom_indicator"),
@@ -166,6 +193,7 @@ func TestAccResourceSlo(t *testing.T) {
 						),
 					},
 					{
+						ProtoV6ProviderFactories: acctest.Providers,
 						SkipFunc: func() (bool, error) {
 							if !testWithDataViewID {
 								return versionutils.CheckIfVersionMeetsConstraints(slo8_10Constraints)()
@@ -173,12 +201,9 @@ func TestAccResourceSlo(t *testing.T) {
 
 							return versionutils.CheckIfVersionIsUnsupported(kibanaresource.SLOSupportsDataViewIDMinVersion)()
 						},
-						Config: getSLOConfig(sloVars{
-							name:              sloName,
-							indicatorType:     "metric_custom_indicator",
-							settingsEnabled:   true,
-							groupBy:           []string{"some.field"},
-							includeDataViewID: testWithDataViewID,
+						ConfigDirectory: acctest.NamedTestCaseDirectory("metric_custom_indicator_group_by"),
+						ConfigVariables: withOptionalDataViewID(config.Variables{
+							"name": config.StringVariable(sloName),
 						}),
 						Check: resource.ComposeTestCheckFunc(
 							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "metric_custom_indicator.0.index", "my-index-"+sloName),
@@ -203,6 +228,7 @@ func TestAccResourceSlo(t *testing.T) {
 						),
 					},
 					{
+						ProtoV6ProviderFactories: acctest.Providers,
 						SkipFunc: func() (bool, error) {
 							if !testWithDataViewID {
 								return versionutils.CheckIfVersionMeetsConstraints(slo8_10Constraints)()
@@ -210,12 +236,9 @@ func TestAccResourceSlo(t *testing.T) {
 
 							return versionutils.CheckIfVersionIsUnsupported(kibanaresource.SLOSupportsDataViewIDMinVersion)()
 						},
-						Config: getSLOConfig(sloVars{
-							name:              sloName,
-							indicatorType:     "metric_custom_indicator",
-							settingsEnabled:   true,
-							tags:              []string{"tag-1", "another_tag"},
-							includeDataViewID: testWithDataViewID,
+						ConfigDirectory: acctest.NamedTestCaseDirectory("metric_custom_indicator_tags"),
+						ConfigVariables: withOptionalDataViewID(config.Variables{
+							"name": config.StringVariable(sloName),
 						}),
 						Check: resource.ComposeTestCheckFunc(
 							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "tags.0", "tag-1"),
@@ -223,6 +246,7 @@ func TestAccResourceSlo(t *testing.T) {
 						),
 					},
 					{
+						ProtoV6ProviderFactories: acctest.Providers,
 						SkipFunc: func() (bool, error) {
 							if !testWithDataViewID {
 								return versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion)()
@@ -230,12 +254,9 @@ func TestAccResourceSlo(t *testing.T) {
 
 							return versionutils.CheckIfVersionIsUnsupported(kibanaresource.SLOSupportsDataViewIDMinVersion)()
 						},
-						Config: getSLOConfig(sloVars{
-							name:              sloName,
-							indicatorType:     "timeslice_metric_indicator",
-							settingsEnabled:   true,
-							tags:              []string{"tag-1", "another_tag"},
-							includeDataViewID: testWithDataViewID,
+						ConfigDirectory: acctest.NamedTestCaseDirectory("timeslice_metric_indicator"),
+						ConfigVariables: withOptionalDataViewID(config.Variables{
+							"name": config.StringVariable(sloName),
 						}),
 						Check: resource.ComposeTestCheckFunc(
 							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "timeslice_metric_indicator.0.index", "my-index-"+sloName),
@@ -250,6 +271,9 @@ func TestAccResourceSlo(t *testing.T) {
 		})
 	}
 }
+
+//go:embed testdata/TestAccResourceSloGroupBy/single_element/test.tf
+var singleElementConfig string
 
 func TestAccResourceSloGroupBy(t *testing.T) {
 	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
@@ -266,15 +290,10 @@ func TestAccResourceSloGroupBy(t *testing.T) {
 					},
 				},
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(kibanaresource.SLOSupportsMultipleGroupByMinVersion),
-				Config: getSLOConfig(sloVars{
-					name:                    sloName,
-					indicatorType:           "metric_custom_indicator",
-					settingsEnabled:         true,
-					groupBy:                 []string{"some.field"},
-					useSingleElementGroupBy: true,
-					includeDataViewID:       false,
-					// Do not set data_view_id for this test, as it is not supported in this provider version
-				}),
+				Config:   singleElementConfig,
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(sloName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "metric_custom_indicator.0.index", "my-index-"+sloName),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "metric_custom_indicator.0.good.0.metrics.0.name", "A"),
@@ -298,14 +317,10 @@ func TestAccResourceSloGroupBy(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(kibanaresource.SLOSupportsMultipleGroupByMinVersion),
-				Config: getSLOConfig(sloVars{
-					name:              sloName,
-					indicatorType:     "metric_custom_indicator",
-					settingsEnabled:   true,
-					groupBy:           []string{"some.field", "some.other.field"},
-					includeDataViewID: false,
-					// Do not set data_view_id for this test, as it is not supported in this provider version
-				}),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("multiple_elements"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(sloName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "metric_custom_indicator.0.index", "my-index-"+sloName),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "metric_custom_indicator.0.good.0.metrics.0.name", "A"),
@@ -335,19 +350,16 @@ func TestAccResourceSloGroupBy(t *testing.T) {
 func TestAccResourceSloPreventInitialBackfill(t *testing.T) {
 	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceSloDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceSloDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(kibanaresource.SLOSupportsPreventInitialBackfillMinVersion),
-				Config: getSLOConfig(sloVars{
-					name:                          sloName,
-					indicatorType:                 "metric_custom_indicator",
-					settingsEnabled:               true,
-					groupBy:                       []string{"some.field", "some.other.field"},
-					includePreventInitialBackfill: true,
-				}),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(kibanaresource.SLOSupportsPreventInitialBackfillMinVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("test"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(sloName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "metric_custom_indicator.0.index", "my-index-"+sloName),
 
@@ -367,47 +379,10 @@ func TestAccResourceSlo_timeslice_metric_indicator_basic(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion),
-				Config: fmt.Sprintf(`
-					provider "elasticstack" {
-						elasticsearch {}
-						kibana {}
-					}
-			
-					resource "elasticstack_elasticsearch_index" "my_index" {
-						name = "my-index"
-						deletion_protection = false
-					}
-                    resource "elasticstack_kibana_slo" "test_slo" {
-						name        = "%s"
-						description = "basic timeslice metric"
-						timeslice_metric_indicator {
-							index = "my-index"
-							timestamp_field = "@timestamp"
-							filter = "status_code: 200"
-							metric {
-								metrics {
-									name        = "A"
-									aggregation = "sum"
-									field       = "latency"
-								}
-								equation   = "A"
-								comparator = "GT"
-								threshold  = 100
-							}
-						}
-						budgeting_method = "timeslices"
-						objective {
-							target           = 0.95
-							timeslice_target = 0.95
-							timeslice_window = "5m"
-						}
-						time_window {
-							duration = "7d"
-							type     = "rolling"
-						}
-						depends_on = [elasticstack_elasticsearch_index.my_index]
-					}
-				`, sloName),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("test"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(sloName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "timeslice_metric_indicator.0.index", "my-index"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "timeslice_metric_indicator.0.timestamp_field", "@timestamp"),
@@ -433,48 +408,10 @@ func TestAccResourceSlo_timeslice_metric_indicator_percentile(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion),
-				Config: fmt.Sprintf(`
-					provider "elasticstack" {
-						elasticsearch {}
-						kibana {}
-					}
-				
-					resource "elasticstack_elasticsearch_index" "my_index" {
-						name = "my-index"
-						deletion_protection = false
-					}
-				
-					resource "elasticstack_kibana_slo" "test_slo" {
-						name        = "%s"
-						description = "percentile timeslice metric"
-						timeslice_metric_indicator {
-							index = "my-index"
-							timestamp_field = "@timestamp"
-							metric {
-								metrics {
-									name        = "B"
-									aggregation = "percentile"
-									field       = "latency"
-									percentile  = 99
-								}
-								equation   = "B"
-								comparator = "LT"
-								threshold  = 200
-							}
-						}
-						budgeting_method = "timeslices"
-						objective {
-							target           = 0.95
-							timeslice_target = 0.95
-							timeslice_window = "5m"
-						}
-						time_window {
-							duration = "7d"
-							type     = "rolling"
-						}
-						depends_on = [elasticstack_elasticsearch_index.my_index]
-					}
-				`, sloName),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("test"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(sloName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "timeslice_metric_indicator.0.index", "my-index"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "timeslice_metric_indicator.0.timestamp_field", "@timestamp"),
@@ -500,46 +437,10 @@ func TestAccResourceSlo_timeslice_metric_indicator_doc_count(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion),
-				Config: fmt.Sprintf(`
-					provider "elasticstack" {
-					    elasticsearch {}
-					    kibana {}
-					}
-					
-					resource "elasticstack_elasticsearch_index" "my_index" {
-					    name = "my-index"
-					    deletion_protection = false
-					}
-					
-					resource "elasticstack_kibana_slo" "test_slo" {
-					    name        = "%s"
-					    description = "doc_count timeslice metric"
-					    timeslice_metric_indicator {
-					        index = "my-index"
-					        timestamp_field = "@timestamp"
-					        metric {
-					            metrics {
-					                name        = "C"
-					                aggregation = "doc_count"
-					            }
-					            equation   = "C"
-					            comparator = "GTE"
-					            threshold  = 10
-					        }
-					    }
-					    budgeting_method = "timeslices"
-					    objective {
-					        target           = 0.95
-					        timeslice_target = 0.95
-					        timeslice_window = "5m"
-					    }
-					    time_window {
-					        duration = "7d"
-					        type     = "rolling"
-					    }
-					    depends_on = [elasticstack_elasticsearch_index.my_index]
-					}
-				`, sloName),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("test"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(sloName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "timeslice_metric_indicator.0.index", "my-index"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "timeslice_metric_indicator.0.timestamp_field", "@timestamp"),
@@ -563,56 +464,10 @@ func TestAccResourceSlo_timeslice_metric_indicator_multiple_mixed_metrics(t *tes
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion),
-				Config: fmt.Sprintf(`
-					provider "elasticstack" {
-						elasticsearch {}
-						kibana {}
-					}
-					
-					resource "elasticstack_elasticsearch_index" "my_index" {
-						name = "my-index"
-						deletion_protection = false
-					}
-					resource "elasticstack_kibana_slo" "test_slo" {
-						name        = "%s"
-						description = "multiple mixed metrics"
-						timeslice_metric_indicator {
-							index = "my-index"
-							timestamp_field = "@timestamp"
-							metric {
-								metrics {
-									name        = "A"
-									aggregation = "avg"
-									field       = "bops"
-								}
-								metrics {
-									name        = "B"
-									aggregation = "percentile"
-									field       = "latency"
-									percentile  = 99
-								}
-								metrics {
-									name        = "C"
-									aggregation = "doc_count"
-								}
-								equation   = "A + B + C"
-								comparator = "GT"
-								threshold  = 100
-							}
-						}
-						budgeting_method = "timeslices"
-						objective {
-							target           = 0.95
-							timeslice_target = 0.95
-							timeslice_window = "5m"
-						}
-						time_window {
-							duration = "7d"
-							type     = "rolling"
-						}
-						depends_on = [elasticstack_elasticsearch_index.my_index]
-					}
- 				`, sloName),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("test"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(sloName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "timeslice_metric_indicator.0.index", "my-index"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "timeslice_metric_indicator.0.timestamp_field", "@timestamp"),
@@ -634,82 +489,26 @@ func TestAccResourceSlo_timeslice_metric_indicator_multiple_mixed_metrics(t *tes
 }
 
 func TestAccResourceSloErrors(t *testing.T) {
-	multipleIndicatorsConfig := `
-	provider "elasticstack" {
-		elasticsearch {}
-		kibana {}
-	  }
-
-	  resource "elasticstack_elasticsearch_index" "my_index" {
-		  name = "my-index-fail"
-		  deletion_protection = false
-	  }
-
-	  resource "elasticstack_kibana_slo" "test_slo" {
-		  name        = "fail"
-		  description = "multiple indicator fail"
-
-		histogram_custom_indicator {
-			index = "my-index-fail"
-			good {
-				field = "test"
-				aggregation = "value_count"
-				filter = "latency < 300"
-			}
-			total {
-				field = "test"
-				aggregation = "value_count"
-			}
-			filter = "labels.groupId: group-0"
-			timestamp_field = "custom_timestamp"
-		}
-
-		kql_custom_indicator {
-			index = "my-index-fail"
-			good = "latency < 300"
-			total = "*"
-			filter = "labels.groupId: group-0"
-			timestamp_field = "custom_timestamp"
-		}
-
-		  time_window {
-			duration   = "7d"
-			type = "rolling"
-		  }
-
-		  budgeting_method = "supdawg"
-
-		  objective {
-			target          = 0.999
-			timeslice_target = 0.95
-			timeslice_window = "5m"
-		  }
-
-		  depends_on = [elasticstack_elasticsearch_index.my_index]
-
-	}`
-
-	budgetingMethodFailConfig := getSLOConfig(sloVars{name: "budgetingmethodfail", indicatorType: "apm_latency_indicator"})
-	budgetingMethodFailConfig = strings.ReplaceAll(budgetingMethodFailConfig, "budgeting_method = \"timeslices\"", "budgeting_method = \"supdawg\"")
-
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:    versionutils.CheckIfVersionIsUnsupported(version.Must(version.NewSemver("8.9.0"))),
-				Config:      multipleIndicatorsConfig,
-				ExpectError: regexp.MustCompile("Invalid combination of arguments"),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(version.Must(version.NewSemver("8.9.0"))),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("multiple_indicators"),
+				ExpectError:              regexp.MustCompile("Invalid combination of arguments"),
 			},
 			{
-				SkipFunc:    versionutils.CheckIfVersionIsUnsupported(version.Must(version.NewSemver("8.10.0-SNAPSHOT"))),
-				Config:      getSLOConfig(sloVars{name: "failwhale", indicatorType: "histogram_custom_indicator_agg_fail"}),
-				ExpectError: regexp.MustCompile(`expected histogram_custom_indicator.0.good.0.aggregation to be one of \["?value_count"? "?range"?\], got supdawg`),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(version.Must(version.NewSemver("8.10.0-SNAPSHOT"))),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("agg_fail"),
+				ExpectError:              regexp.MustCompile(`expected histogram_custom_indicator.0.good.0.aggregation to be one of \["?value_count"? "?range"?\], got supdawg`),
 			},
 			{
-				SkipFunc:    versionutils.CheckIfVersionIsUnsupported(version.Must(version.NewSemver("8.9.0"))),
-				Config:      budgetingMethodFailConfig,
-				ExpectError: regexp.MustCompile(`expected budgeting_method to be one of \["occurrences" "timeslices"\], got supdawg`),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(version.Must(version.NewSemver("8.9.0"))),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("budget_fail"),
+				ExpectError:              regexp.MustCompile(`expected budgeting_method to be one of \["occurrences" "timeslices"\], got supdawg`),
 			},
 		},
 	})
@@ -717,19 +516,33 @@ func TestAccResourceSloErrors(t *testing.T) {
 
 func TestAccResourceSloValidation(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config:      getSLOConfigWithInvalidSloId("short", "sh", "apm_latency_indicator"),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("short"),
+				ConfigVariables: config.Variables{
+					"name":   config.StringVariable("short"),
+					"slo_id": config.StringVariable("sh"),
+				},
 				ExpectError: regexp.MustCompile(`expected length of slo_id to be in the range \(8 - 48\)`),
 			},
 			{
-				Config:      getSLOConfigWithInvalidSloId("toolongid", "this-id-is-way-too-long-and-exceeds-the-48-character-limit-for-slo-ids", "apm_latency_indicator"),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("toolongid"),
+				ConfigVariables: config.Variables{
+					"name":   config.StringVariable("toolongid"),
+					"slo_id": config.StringVariable("this-id-is-way-too-long-and-exceeds-the-48-character-limit-for-slo-ids"),
+				},
 				ExpectError: regexp.MustCompile(`expected length of slo_id to be in the range \(8 - 48\)`),
 			},
 			{
-				Config:      getSLOConfigWithInvalidSloId("invalidchars", "invalid@id$", "apm_latency_indicator"),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("invalidchars"),
+				ConfigVariables: config.Variables{
+					"name":   config.StringVariable("invalidchars"),
+					"slo_id": config.StringVariable("invalid@id$"),
+				},
 				ExpectError: regexp.MustCompile(`must contain only letters, numbers, hyphens, and underscores`),
 			},
 		},
@@ -745,38 +558,10 @@ func TestAccResourceSlo_kql_custom_indicator_basic(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion),
-				Config: fmt.Sprintf(`
-					provider "elasticstack" {
-						elasticsearch {}
-						kibana {}
-					}
-
-					resource "elasticstack_elasticsearch_index" "my_index" {
-						name = "my-index-%s"
-						deletion_protection = false
-					}
-                    resource "elasticstack_kibana_slo" "test_slo" {
-						name        = "%s"
-						description = "basic kql indicator"
-		                kql_custom_indicator {
-		                	index = "my-index-%s"
-		                	good = "latency < 300"
-		                	total = "*"
-		                	timestamp_field = "custom_timestamp"
-		                }
-						budgeting_method = "timeslices"
-						objective {
-							target           = 0.95
-							timeslice_target = 0.95
-							timeslice_window = "5m"
-						}
-						time_window {
-							duration = "7d"
-							type     = "rolling"
-						}
-						depends_on = [elasticstack_elasticsearch_index.my_index]
-					}
-				`, sloName, sloName, sloName),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("test"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(sloName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "kql_custom_indicator.0.index", "my-index-"+sloName),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "kql_custom_indicator.0.good", "latency < 300"),
@@ -868,297 +653,4 @@ func checkResourceSloDestroy(s *terraform.State) error {
 		}
 	}
 	return nil
-}
-
-type sloVars struct {
-	name                          string
-	indicatorType                 string
-	settingsEnabled               bool
-	tags                          []string
-	groupBy                       []string
-	useSingleElementGroupBy       bool
-	includeDataViewID             bool
-	includePreventInitialBackfill bool
-}
-
-func getSLOConfig(vars sloVars) string {
-	var settings string
-	if vars.settingsEnabled {
-		preventInitialBackfill := ""
-		if vars.includePreventInitialBackfill {
-			preventInitialBackfill = "prevent_initial_backfill = true"
-		}
-		settings = fmt.Sprintf(`
-		settings {
-			sync_delay = "5m"
-			frequency = "5m"
-			%s
-		}
-		`, preventInitialBackfill)
-	} else {
-		settings = ""
-	}
-
-	var tagsOption string
-	if len(vars.tags) != 0 {
-		tagsJson, _ := json.Marshal(vars.tags)
-		tagsOption = "tags = " + string(tagsJson)
-	} else {
-		tagsOption = ""
-	}
-
-	var groupByOption string
-	if len(vars.groupBy) != 0 {
-		var groupByVal string
-		if vars.useSingleElementGroupBy {
-			groupByVal = fmt.Sprintf(`"%s"`, vars.groupBy[0])
-		} else {
-			groupByBytes, _ := json.Marshal(vars.groupBy)
-			groupByVal = string(groupByBytes)
-		}
-		groupByOption = "group_by = " + groupByVal
-	} else {
-		groupByOption = ""
-	}
-
-	dataViewID := ""
-	if vars.includeDataViewID {
-		dataViewID = "data_view_id = \"my-data-view-id\""
-	}
-
-	configTemplate := `
-		provider "elasticstack" {
-		elasticsearch {}
-		kibana {}
-		}
-
-		resource "elasticstack_elasticsearch_index" "my_index" {
-			name = "my-index-%s"
-			deletion_protection = false
-		}
-
-		resource "elasticstack_kibana_slo" "test_slo" {
-			name        = "%s"
-			slo_id      = "id-%s"
-			description = "fully sick SLO"
-
-		%s
-
-			time_window {
-			duration   = "7d"
-			type = "rolling"
-			}
-
-			budgeting_method = "timeslices"
-
-			objective {
-			target          = 0.999
-			timeslice_target = 0.95
-			timeslice_window = "5m"
-			}
-
-		%s
-
-			%s
-
-			depends_on = [elasticstack_elasticsearch_index.my_index]
-
-			%s
-		}
-	`
-
-	getIndicator := func(indicatorType string) string {
-		var indicator string
-
-		switch indicatorType {
-		case "apm_latency_indicator":
-			indicator = fmt.Sprintf(`
-	       apm_latency_indicator {
-		     environment     = "production"
-		     service         = "my-service"
-		     transaction_type = "request"
-		     transaction_name = "GET /sup/dawg"
-		     index           = "my-index-%s"
-		     threshold       = 500
-		 }
-		 `, vars.name)
-
-		case "apm_availability_indicator":
-			indicator = fmt.Sprintf(`
-	       apm_availability_indicator {
-		     environment     = "production"
-		     service         = "my-service"
-		     transaction_type = "request"
-		     transaction_name = "GET /sup/dawg"
-		     index           = "my-index-%s"
-		 }
-		 `, vars.name)
-
-		case "kql_custom_indicator":
-			indicator = fmt.Sprintf(`
-	       kql_custom_indicator {
-		       index = "my-index-%s"
-		       %s
-		       good = "latency < 300"
-		       total = "*"
-		       filter = "labels.groupId: group-0"
-		       timestamp_field = "custom_timestamp"
-		 }
-		 `, vars.name, dataViewID)
-
-		case "histogram_custom_indicator":
-			indicator = fmt.Sprintf(`
-	       histogram_custom_indicator {
-		       index = "my-index-%s"
-		       %s
-		       good {
-			       field = "test"
-			       aggregation = "value_count"
-			       filter = "latency < 300"
-		       }
-		       total {
-			       field = "test"
-			       aggregation = "value_count"
-		       }
-		       filter = "labels.groupId: group-0"
-		       timestamp_field = "custom_timestamp"
-		 }
-		 `, vars.name, dataViewID)
-
-		case "histogram_custom_indicator_agg_fail":
-			indicator = fmt.Sprintf(`
-	       histogram_custom_indicator {
-		       index = "my-index-%s"
-		       %s
-		       good {
-			       field = "test"
-			       aggregation = "supdawg"
-			       filter = "latency < 300"
-			       from = 0
-			       to = 10
-		       }
-		       total {
-			       field = "test"
-			       aggregation = "supdawg"
-		       }
-		       filter = "labels.groupId: group-0"
-		       timestamp_field = "custom_timestamp"
-		 }
-		 `, vars.name, dataViewID)
-
-		case "metric_custom_indicator":
-			indicator = fmt.Sprintf(`
-	       metric_custom_indicator {
-		       index = "my-index-%s"
-		       %s
-		       good {
-			       metrics {
-				       name = "A"
-				       aggregation = "sum"
-				       field = "processor.processed"
-			       }
-			       metrics {
-				       name = "B"
-				       aggregation = "sum"
-				       field = "processor.processed"
-			       }
-			       equation = "A + B"
-		       }
-
-		       total {
-			       metrics {
-				       name = "A"
-				       aggregation = "sum"
-				       field = "processor.accepted"
-			       }
-			       metrics {
-				       name = "B"
-				       aggregation = "sum"
-				       field = "processor.accepted"
-			       }
-			       equation = "A + B"
-		       }
-	       }
-		 `, vars.name, dataViewID)
-		case "timeslice_metric_indicator":
-			indicator = fmt.Sprintf(`
-	       timeslice_metric_indicator {
-		       index = "my-index-%s"
-		       %s
-		       timestamp_field = "@timestamp"
-		       metric {
-			       metrics {
-				       name = "A"
-				       aggregation = "sum"
-				       field = "latency"
-			       }
-			       equation = "A"
-			       comparator = "GT"
-			       threshold = 100
-		       }
-	       }
-		 `, vars.name, dataViewID)
-		}
-		return indicator
-	}
-
-	config := fmt.Sprintf(configTemplate, vars.name, vars.name, vars.name, getIndicator(vars.indicatorType), settings, groupByOption, tagsOption)
-
-	return config
-}
-
-func getSLOConfigWithInvalidSloId(name, sloId, indicatorType string) string {
-	configTemplate := `
-		provider "elasticstack" {
-		elasticsearch {}
-		kibana {}
-		}
-
-		resource "elasticstack_elasticsearch_index" "my_index" {
-			name = "my-index-%s"
-			deletion_protection = false
-		}
-
-		resource "elasticstack_kibana_slo" "test_slo" {
-			name        = "%s"
-			slo_id      = "%s"
-			description = "fully sick SLO"
-
-		%s
-
-			time_window {
-			duration   = "7d"
-			type = "rolling"
-			}
-
-			budgeting_method = "timeslices"
-
-			objective {
-			target          = 0.999
-			timeslice_target = 0.95
-			timeslice_window = "5m"
-			}
-
-			depends_on = [elasticstack_elasticsearch_index.my_index]
-
-		}
-	`
-
-	var indicator string
-	switch indicatorType {
-	case "apm_latency_indicator":
-		indicator = fmt.Sprintf(`
-		apm_latency_indicator {
-			environment      = "production"
-			service          = "my-service"
-			transaction_type = "request"
-			transaction_name = "GET /sup/dawg"
-			index            = "my-index-%s"
-			threshold        = 500
-		}
-		`, name)
-	}
-
-	config := fmt.Sprintf(configTemplate, name, name, sloId, indicator)
-	return config
 }
