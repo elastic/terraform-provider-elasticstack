@@ -67,9 +67,10 @@ func (r *integrationPolicyResource) Update(ctx context.Context, req resource.Upd
 		return
 	}
 
-	// Remember if the user had inputs configured in state before calling populateFromAPI
+	// Remember if the user had inputs configured in state OR plan before calling populateFromAPI
 	// This prevents populateFromAPI from adding inputs when the user didn't configure them
 	stateHadInput := utils.IsKnown(stateModel.Inputs) && !stateModel.Inputs.IsNull() && len(stateModel.Inputs.Elements()) > 0
+	planHadInput := utils.IsKnown(planModel.Inputs) && !planModel.Inputs.IsNull() && len(planModel.Inputs.Elements()) > 0
 
 	pkg, diags := getPackageInfo(ctx, client, policy.Package.Name, policy.Package.Version)
 	resp.Diagnostics.Append(diags...)
@@ -83,10 +84,11 @@ func (r *integrationPolicyResource) Update(ctx context.Context, req resource.Upd
 		return
 	}
 
-	// If state didn't have inputs configured, ensure we don't add them now
+	// If neither state nor plan had inputs configured, ensure we don't add them now
 	// This prevents "Provider produced inconsistent result" errors where
 	// inputs block count changes from 0 to 1 unexpectedly
-	if !stateHadInput {
+	// But if plan has inputs (even if state didn't), we keep them - that's the user adding inputs
+	if !stateHadInput && !planHadInput {
 		planModel.Inputs = NewInputsNull(getInputsElementType())
 	}
 
