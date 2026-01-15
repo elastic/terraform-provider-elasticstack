@@ -6,7 +6,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -203,16 +202,23 @@ func getSchema() schema.Schema {
 					},
 				},
 			},
+			"access_control": schema.SingleNestedAttribute{
+				MarkdownDescription: "Access control parameters for the dashboard.",
+				Optional:            true,
+				Attributes: map[string]schema.Attribute{
+					"access_mode": schema.StringAttribute{
+						MarkdownDescription: "The access mode for the dashboard (e.g., 'write_restricted', 'default').",
+						Optional:            true,
+						Validators: []validator.String{
+							stringvalidator.OneOf("write_restricted", "default"),
+						},
+					},
+					"owner": schema.StringAttribute{
+						MarkdownDescription: "The owner of the dashboard.",
+						Optional:            true,
+					},
+				},
+			},
 		},
-	}
-}
-
-func getOptionsAttrTypes() map[string]attr.Type {
-	return map[string]attr.Type{
-		"hide_panel_titles": types.BoolType,
-		"use_margins":       types.BoolType,
-		"sync_colors":       types.BoolType,
-		"sync_tooltips":     types.BoolType,
-		"sync_cursor":       types.BoolType,
 	}
 }
