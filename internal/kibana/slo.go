@@ -766,6 +766,10 @@ func getSloFromResourceData(d *schema.ResourceData) (models.Slo, diag.Diagnostic
 		metrics := make([]slo.IndicatorPropertiesTimesliceMetricParamsMetricMetricsInner, len(metricsIface))
 		for i, m := range metricsIface {
 			metric := m.(map[string]interface{})
+			var filter *string
+			if f, ok := metric["filter"]; ok {
+				filter = utils.Pointer(f.(string))
+			}
 			agg := metric["aggregation"].(string)
 			switch agg {
 			case "sum", "avg", "min", "max", "value_count":
@@ -774,6 +778,7 @@ func getSloFromResourceData(d *schema.ResourceData) (models.Slo, diag.Diagnostic
 						Name:        metric["name"].(string),
 						Aggregation: agg,
 						Field:       metric["field"].(string),
+						Filter:      filter,
 					},
 				}
 			case "percentile":
@@ -783,6 +788,7 @@ func getSloFromResourceData(d *schema.ResourceData) (models.Slo, diag.Diagnostic
 						Aggregation: agg,
 						Field:       metric["field"].(string),
 						Percentile:  metric["percentile"].(float64),
+						Filter:      filter,
 					},
 				}
 			case "doc_count":
@@ -790,6 +796,7 @@ func getSloFromResourceData(d *schema.ResourceData) (models.Slo, diag.Diagnostic
 					TimesliceMetricDocCountMetric: &slo.TimesliceMetricDocCountMetric{
 						Name:        metric["name"].(string),
 						Aggregation: agg,
+						Filter:      filter,
 					},
 				}
 			default:
@@ -1113,16 +1120,19 @@ func resourceSloRead(ctx context.Context, d *schema.ResourceData, meta interface
 				metric["name"] = m.TimesliceMetricBasicMetricWithField.Name
 				metric["aggregation"] = m.TimesliceMetricBasicMetricWithField.Aggregation
 				metric["field"] = m.TimesliceMetricBasicMetricWithField.Field
+				metric["filter"] = m.TimesliceMetricBasicMetricWithField.Filter
 			}
 			if m.TimesliceMetricPercentileMetric != nil {
 				metric["name"] = m.TimesliceMetricPercentileMetric.Name
 				metric["aggregation"] = m.TimesliceMetricPercentileMetric.Aggregation
 				metric["field"] = m.TimesliceMetricPercentileMetric.Field
 				metric["percentile"] = m.TimesliceMetricPercentileMetric.Percentile
+				metric["filter"] = m.TimesliceMetricPercentileMetric.Filter
 			}
 			if m.TimesliceMetricDocCountMetric != nil {
 				metric["name"] = m.TimesliceMetricDocCountMetric.Name
 				metric["aggregation"] = m.TimesliceMetricDocCountMetric.Aggregation
+				metric["filter"] = m.TimesliceMetricDocCountMetric.Filter
 			}
 			metrics = append(metrics, metric)
 		}

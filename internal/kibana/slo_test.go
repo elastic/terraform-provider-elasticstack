@@ -420,6 +420,64 @@ func TestAccResourceSlo_timeslice_metric_indicator_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "timeslice_metric_indicator.0.metric.0.threshold", "100"),
 				),
 			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion),
+				Config: fmt.Sprintf(`
+					provider "elasticstack" {
+						elasticsearch {}
+						kibana {}
+					}
+			
+					resource "elasticstack_elasticsearch_index" "my_index" {
+						name = "my-index"
+						deletion_protection = false
+					}
+                    resource "elasticstack_kibana_slo" "test_slo" {
+						name        = "%s"
+						description = "basic timeslice metric"
+						timeslice_metric_indicator {
+							index = "my-index"
+							timestamp_field = "@timestamp"
+							filter = "status_code: 200"
+							metric {
+								metrics {
+									name        = "A"
+									aggregation = "sum"
+									field       = "latency"
+									filter      = "index_stats.total.search.query_total > 100"
+								}
+								equation   = "A"
+								comparator = "GT"
+								threshold  = 100
+							}
+						}
+						budgeting_method = "timeslices"
+						objective {
+							target           = 0.95
+							timeslice_target = 0.95
+							timeslice_window = "5m"
+						}
+						time_window {
+							duration = "7d"
+							type     = "rolling"
+						}
+						depends_on = [elasticstack_elasticsearch_index.my_index]
+					}
+				`, sloName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "timeslice_metric_indicator.0.index", "my-index"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "timeslice_metric_indicator.0.timestamp_field", "@timestamp"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "timeslice_metric_indicator.0.filter", "status_code: 200"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "timeslice_metric_indicator.0.metric.0.metrics.0.name", "A"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "timeslice_metric_indicator.0.metric.0.metrics.0.aggregation", "sum"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "timeslice_metric_indicator.0.metric.0.metrics.0.field", "latency"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "timeslice_metric_indicator.0.metric.0.metrics.0.filter", "index_stats.total.search.query_total > 100"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "timeslice_metric_indicator.0.metric.0.equation", "A"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "timeslice_metric_indicator.0.metric.0.comparator", "GT"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "timeslice_metric_indicator.0.metric.0.threshold", "100"),
+				),
+			},
 		},
 	})
 }
