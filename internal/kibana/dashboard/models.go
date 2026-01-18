@@ -32,6 +32,7 @@ type dashboardModel struct {
 	Tags                 types.List           `tfsdk:"tags"`
 	Options              *optionsModel        `tfsdk:"options"`
 	AccessControl        *AccessControlValue  `tfsdk:"access_control"`
+	Panels               []panelModel         `tfsdk:"panels"`
 }
 
 // populateFromAPI populates the Terraform model from the API response
@@ -110,6 +111,11 @@ func (m *dashboardModel) populateFromAPI(ctx context.Context, resp *kbapi.GetDas
 		m.AccessControl = newAccessControlFromAPI(accessMode, data.Data.AccessControl.Owner)
 	}
 
+	// Map panels
+	panels, panelsDiags := m.mapPanelsFromAPI(data.Data.Panels)
+	diags.Append(panelsDiags...)
+	m.Panels = panels
+
 	return diags
 }
 
@@ -161,6 +167,11 @@ func (m *dashboardModel) toAPICreateRequest(ctx context.Context, diags *diag.Dia
 	diags.Append(optionsDiags...)
 	req.Data.Options = options
 
+	// Set panels
+	panels, panelsDiags := m.panelsToAPI()
+	diags.Append(panelsDiags...)
+	req.Data.Panels = panels
+
 	// Set access control
 	req.Data.AccessControl = m.AccessControl.ToCreateAPI()
 
@@ -204,6 +215,11 @@ func (m *dashboardModel) toAPIUpdateRequest(ctx context.Context, diags *diag.Dia
 	options, optionsDiags := m.optionsToAPI()
 	diags.Append(optionsDiags...)
 	req.Data.Options = options
+
+	// Set panels
+	panels, panelsDiags := m.panelsToAPI()
+	diags.Append(panelsDiags...)
+	req.Data.Panels = panels
 
 	// Set access control
 	req.Data.AccessControl = m.AccessControl.ToUpdateAPI()

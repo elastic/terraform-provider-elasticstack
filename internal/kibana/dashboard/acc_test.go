@@ -154,3 +154,56 @@ func TestAccResourceDashboardInSpace(t *testing.T) {
 		},
 	})
 }
+
+func TestAccResourceDashboardPanels(t *testing.T) {
+	dashboardTitle := "Test Dashboard with Panel " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "title", dashboardTitle),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.h", "10"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.w", "24"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.x", "0"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.y", "0"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.embeddable_config.content", "First markdown panel"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.embeddable_config.title", "My Markdown Panel"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("multiple_panels"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "title", dashboardTitle),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.#", "2"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.h", "10"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.w", "24"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.1.grid.x", "0"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.1.grid.y", "0"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.embeddable_config.title", "My Markdown Panel"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.1.grid.h", "10"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.1.grid.w", "24"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.1.grid.x", "0"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.1.grid.y", "0"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.1.embeddable_config.content", "Second markdown panel"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.1.embeddable_config.title", "My Markdown Panel"),
+				),
+			},
+		},
+	})
+}

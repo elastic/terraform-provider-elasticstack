@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -126,6 +127,81 @@ func getSchema() schema.Schema {
 					"sync_cursor": schema.BoolAttribute{
 						MarkdownDescription: "Synchronize cursor position between related panels in the dashboard.",
 						Optional:            true,
+					},
+				},
+			},
+			"panels": schema.ListNestedAttribute{
+				MarkdownDescription: "The panels to display in the dashboard.",
+				Optional:            true,
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"type": schema.StringAttribute{
+							MarkdownDescription: "The type of the panel (e.g. 'visualization', 'search', 'map', 'lens').",
+							Required:            true,
+						},
+						"grid": schema.SingleNestedAttribute{
+							MarkdownDescription: "The grid coordinates and dimensions of the panel.",
+							Required:            true,
+							Attributes: map[string]schema.Attribute{
+								"x": schema.Int64Attribute{
+									MarkdownDescription: "The X coordinate.",
+									Required:            true,
+								},
+								"y": schema.Int64Attribute{
+									MarkdownDescription: "The Y coordinate.",
+									Required:            true,
+								},
+								"w": schema.Int64Attribute{
+									MarkdownDescription: "The width.",
+									Optional:            true,
+								},
+								"h": schema.Int64Attribute{
+									MarkdownDescription: "The height.",
+									Optional:            true,
+								},
+							},
+						},
+						"panel_id": schema.StringAttribute{
+							MarkdownDescription: "The unique identifier of the panel.",
+							Optional:            true,
+							Computed:            true,
+							PlanModifiers: []planmodifier.String{
+								stringplanmodifier.UseNonNullStateForUnknown(),
+							},
+						},
+						"embeddable_config": schema.SingleNestedAttribute{
+							MarkdownDescription: "The configuration of the panel. Mutually exclusive with `embeddable_config_json`.",
+							Optional:            true,
+							Attributes: map[string]schema.Attribute{
+								"content": schema.StringAttribute{
+									MarkdownDescription: "The content of the panel.",
+									Optional:            true,
+								},
+								"description": schema.StringAttribute{
+									MarkdownDescription: "The description of the panel.",
+									Optional:            true,
+								},
+								"hide_panel_titles": schema.BoolAttribute{
+									MarkdownDescription: "Hide the panel titles.",
+									Optional:            true,
+								},
+								"title": schema.StringAttribute{
+									MarkdownDescription: "The title of the panel.",
+									Optional:            true,
+								},
+							},
+							Validators: []validator.Object{
+								objectvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("embeddable_config_json")),
+							},
+						},
+						"embeddable_config_json": schema.StringAttribute{
+							MarkdownDescription: "The configuration of the panel as a JSON string. Mutually exclusive with `embeddable_config`.",
+							CustomType:          jsontypes.NormalizedType{},
+							Optional:            true,
+							Validators: []validator.String{
+								stringvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("embeddable_config")),
+							},
+						},
 					},
 				},
 			},
