@@ -136,7 +136,7 @@ func (m *dashboardModel) panelsToAPI() (*kbapi.DashboardPanels, diag.Diagnostics
 			w := float32(pm.Grid.W.ValueInt64())
 			panelItem.Grid.W = &w
 		}
-        if utils.IsKnown(pm.Grid.H) {
+		if utils.IsKnown(pm.Grid.H) {
 			h := float32(pm.Grid.H.ValueInt64())
 			panelItem.Grid.H = &h
 		}
