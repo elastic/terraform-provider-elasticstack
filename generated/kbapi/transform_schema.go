@@ -571,6 +571,7 @@ var transformers = []TransformFunc{
 	fixGetMaintenanceWindowFindParams,
 	fixGetStreamsAttachmentTypesParams,
 	fixSecurityAPIPageSize,
+	fixSecurityExceptionListItems,
 	removeDuplicateOneOfRefs,
 	fixDashboardPanelItemRefs,
 	transformRemoveExamples,
@@ -982,6 +983,16 @@ func fixDashboardPanelItemRefs(schema *Schema) {
 	dashboardPath.Get.CreateRef(schema, "dashboard_panel_item", "responses.200.content.application/json.schema.properties.data.properties.panels.items.anyOf.0")
 	dashboardPath.Get.CreateRef(schema, "dashboard_panel_section", "responses.200.content.application/json.schema.properties.data.properties.panels.items.anyOf.1")
 	dashboardPath.Get.CreateRef(schema, "dashboard_panels", "responses.200.content.application/json.schema.properties.data.properties.panels")
+}
+
+func fixSecurityExceptionListItems(schema *Schema) {
+	exceptionListItems := schema.MustGetPath("/s/{spaceId}/api/exception_lists/items")
+
+	putExceptionListItem := exceptionListItems.MustGetEndpoint("put")
+	putExceptionListItem.CreateRef(schema, "Security_Exceptions_API_UpdateExceptionListItem", "requestBody.content.application/json.schema")
+
+	postExceptionListItem := exceptionListItems.MustGetEndpoint("post")
+	postExceptionListItem.CreateRef(schema, "Security_Exceptions_API_CreateExceptionListItem", "requestBody.content.application/json.schema")
 }
 
 func removeDuplicateOneOfRefs(schema *Schema) {
