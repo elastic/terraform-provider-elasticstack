@@ -825,7 +825,7 @@ func (m *ExceptionItemModel) toCreateRequest(ctx context.Context, client clients
 		return nil, diags
 	}
 
-	req := &kbapi.CreateExceptionListItemJSONRequestBody{
+	genericReq := kbapi.SecurityExceptionsAPICreateExceptionListItemGeneric{
 		ListId:      kbapi.SecurityExceptionsAPIExceptionListHumanId(m.ListID.ValueString()),
 		Name:        kbapi.SecurityExceptionsAPIExceptionListItemName(m.Name.ValueString()),
 		Description: kbapi.SecurityExceptionsAPIExceptionListItemDescription(m.Description.ValueString()),
@@ -836,7 +836,7 @@ func (m *ExceptionItemModel) toCreateRequest(ctx context.Context, client clients
 	// Set optional item_id
 	if utils.IsKnown(m.ItemID) {
 		itemID := kbapi.SecurityExceptionsAPIExceptionListItemHumanId(m.ItemID.ValueString())
-		req.ItemId = &itemID
+		genericReq.ItemId = &itemID
 	}
 
 	// Set common properties
@@ -859,26 +859,33 @@ func (m *ExceptionItemModel) toCreateRequest(ctx context.Context, client clients
 
 	// Assign common properties to request if they were set
 	if utils.IsKnown(m.NamespaceType) {
-		req.NamespaceType = &nsType
+		genericReq.NamespaceType = &nsType
 	}
 	if utils.IsKnown(m.OsTypes) && len(osTypes) > 0 {
-		req.OsTypes = &osTypes
+		genericReq.OsTypes = &osTypes
 	}
 	if utils.IsKnown(m.Tags) && len(tags) > 0 {
-		req.Tags = &tags
+		genericReq.Tags = &tags
 	}
 	if utils.IsKnown(m.Meta) {
-		req.Meta = &meta
+		genericReq.Meta = &meta
 	}
 	if utils.IsKnown(m.ExpireTime) {
-		req.ExpireTime = &expireTime
+		genericReq.ExpireTime = &expireTime
 	}
 
 	// Set optional comments
 	if comments := m.commentsToCreateAPI(ctx, &diags); comments != nil {
-		req.Comments = comments
+		genericReq.Comments = comments
 	}
 	if diags.HasError() {
+		return nil, diags
+	}
+
+	req := &kbapi.CreateExceptionListItemJSONRequestBody{}
+	err := req.FromSecurityExceptionsAPICreateExceptionListItemGeneric(genericReq)
+	if err != nil {
+		diags.Append(diagutil.FrameworkDiagFromError(err)...)
 		return nil, diags
 	}
 
@@ -896,7 +903,7 @@ func (m *ExceptionItemModel) toUpdateRequest(ctx context.Context, resourceId str
 	}
 
 	id := kbapi.SecurityExceptionsAPIExceptionListItemId(resourceId)
-	req := &kbapi.UpdateExceptionListItemJSONRequestBody{
+	genericReq := kbapi.SecurityExceptionsAPIUpdateExceptionListItemGeneric{
 		Id:          &id,
 		Name:        kbapi.SecurityExceptionsAPIExceptionListItemName(m.Name.ValueString()),
 		Description: kbapi.SecurityExceptionsAPIExceptionListItemDescription(m.Description.ValueString()),
@@ -924,26 +931,33 @@ func (m *ExceptionItemModel) toUpdateRequest(ctx context.Context, resourceId str
 
 	// Assign common properties to request if they were set
 	if utils.IsKnown(m.NamespaceType) {
-		req.NamespaceType = &nsType
+		genericReq.NamespaceType = &nsType
 	}
 	if utils.IsKnown(m.OsTypes) && len(osTypes) > 0 {
-		req.OsTypes = &osTypes
+		genericReq.OsTypes = &osTypes
 	}
 	if utils.IsKnown(m.Tags) && len(tags) > 0 {
-		req.Tags = &tags
+		genericReq.Tags = &tags
 	}
 	if utils.IsKnown(m.Meta) {
-		req.Meta = &meta
+		genericReq.Meta = &meta
 	}
 	if utils.IsKnown(m.ExpireTime) {
-		req.ExpireTime = &expireTime
+		genericReq.ExpireTime = &expireTime
 	}
 
 	// Set optional comments
 	if comments := m.commentsToUpdateAPI(ctx, &diags); comments != nil {
-		req.Comments = comments
+		genericReq.Comments = comments
 	}
 	if diags.HasError() {
+		return nil, diags
+	}
+
+	req := &kbapi.UpdateExceptionListItemJSONRequestBody{}
+	err := req.FromSecurityExceptionsAPIUpdateExceptionListItemGeneric(genericReq)
+	if err != nil {
+		diags.Append(diagutil.FrameworkDiagFromError(err)...)
 		return nil, diags
 	}
 
