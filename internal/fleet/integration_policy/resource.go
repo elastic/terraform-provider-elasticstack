@@ -100,5 +100,9 @@ func getCachedPackageInfo(name string, version string) (kbapi.PackageInfo, bool)
 	if !ok {
 		return kbapi.PackageInfo{}, false
 	}
-	return value.(kbapi.PackageInfo), true
+	pkg, ok := value.(kbapi.PackageInfo)
+	if !ok {
+		return kbapi.PackageInfo{}, false
+	}
+	return pkg, true
 }
