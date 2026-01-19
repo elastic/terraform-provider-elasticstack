@@ -97,7 +97,10 @@ func populateVarsJSONDefaults(ctxVal string, varsJson string) (string, error) {
 	if !ok {
 		return varsJson, nil
 	}
-	pkg := value.(kbapi.PackageInfo)
+	pkg, ok := value.(kbapi.PackageInfo)
+	if !ok {
+		return varsJson, fmt.Errorf("unexpected package cache value type for key %q", ctxVal)
+	}
 
 	pkgVars, diags := varsFromPackageInfo(&pkg)
 	if diags.HasError() {
