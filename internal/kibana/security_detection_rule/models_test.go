@@ -801,17 +801,20 @@ func TestActionsToApi(t *testing.T) {
 	ctx := context.Background()
 	var diags diag.Diagnostics
 
+	// Create params as a Map with string values
+	paramsMap := utils.MapValueFrom(ctx, map[string]string{
+		"message": "Alert triggered",
+		"channel": "#security",
+	}, types.StringType, path.Root("actions").AtListIndex(0).AtName("params"), &diags)
+
 	data := SecurityDetectionRuleData{
 		Actions: utils.ListValueFrom(ctx, []ActionModel{
 			{
 				ActionTypeId: types.StringValue(".slack"),
 				Id:           types.StringValue("slack-action-1"),
-				Params: utils.MapValueFrom(ctx, map[string]attr.Value{
-					"message": types.StringValue("Alert triggered"),
-					"channel": types.StringValue("#security"),
-				}, types.StringType, path.Root("actions").AtListIndex(0).AtName("params"), &diags),
-				Group: types.StringValue("default"),
-				Uuid:  types.StringNull(),
+				Params:       paramsMap,
+				Group:        types.StringValue("default"),
+				Uuid:         types.StringNull(),
 				AlertsFilter: utils.MapValueFrom(ctx, map[string]attr.Value{
 					"status":   types.StringValue("open"),
 					"severity": types.StringValue("high"),

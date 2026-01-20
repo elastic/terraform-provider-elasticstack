@@ -369,7 +369,7 @@ func GetSchema() schema.Schema {
 						},
 						"params": schema.MapAttribute{
 							ElementType:         types.StringType,
-							MarkdownDescription: "Object containing the allowed connector fields, which varies according to the connector type.",
+							MarkdownDescription: "Object containing the allowed connector fields, which varies according to the connector type. Simple string values can be specified directly. For nested objects or arrays, use `jsonencode()` to encode them as JSON strings - they will be automatically converted back to objects when sent to the API.",
 							Required:            true,
 						},
 						"group": schema.StringAttribute{

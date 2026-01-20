@@ -159,7 +159,7 @@ type CardinalityModel struct {
 type ActionModel struct {
 	ActionTypeId types.String `tfsdk:"action_type_id"`
 	Id           types.String `tfsdk:"id"`
-	Params       types.Map    `tfsdk:"params"`
+	Params       types.Map    `tfsdk:"params"` // Map of strings (some may be JSON)
 	Group        types.String `tfsdk:"group"`
 	Uuid         types.String `tfsdk:"uuid"`
 	AlertsFilter types.Map    `tfsdk:"alerts_filter"`
