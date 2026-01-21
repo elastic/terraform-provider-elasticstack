@@ -1,4 +1,4 @@
-package output
+package proxy
 
 import (
 	"context"
@@ -11,8 +11,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *outputResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var planModel outputModel
+func (r *proxyResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	var planModel proxyModel
 
 	diags := req.Plan.Get(ctx, &planModel)
 	resp.Diagnostics.Append(diags...)
@@ -26,7 +26,7 @@ func (r *outputResource) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	body, diags := planModel.toAPICreateModel(ctx, r.client)
+	body, diags := planModel.toAPICreateModel(ctx)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -42,37 +42,23 @@ func (r *outputResource) Create(ctx context.Context, req resource.CreateRequest,
 		}
 	}
 
-	output, diags := fleet.CreateOutput(ctx, client, spaceID, body)
+	proxy, diags := fleet.CreateFleetProxy(ctx, client, spaceID, body)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// Preserve sensitive field values from plan before populating from API
-	// The Fleet API does not return sensitive field values for security reasons
-	originalConfigYaml := planModel.ConfigYaml
-	originalSslKey := extractSslKeyFromObject(ctx, planModel.Ssl)
-	originalKafkaPassword := extractKafkaPasswordFromObject(ctx, planModel.Kafka)
+	// Preserve space_ids from the plan, as the Fleet API does not return it
+	originalSpaceIds := planModel.SpaceIds
 
-	diags = planModel.populateFromAPI(ctx, output)
+	diags = planModel.populateFromAPI(ctx, proxy)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// Restore sensitive fields so they are not lost in state
-	// config_yaml is sensitive and not returned by the API
-	planModel.ConfigYaml = originalConfigYaml
-
-	// ssl.key is sensitive and not returned by the API
-	if originalSslKey != nil {
-		planModel.Ssl = restoreSslKeyToObject(ctx, planModel.Ssl, *originalSslKey, &diags)
-	}
-
-	// kafka.password is sensitive and not returned by the API
-	if originalKafkaPassword != nil {
-		planModel.Kafka = restoreKafkaPasswordToObject(ctx, planModel.Kafka, *originalKafkaPassword, &diags)
-	}
+	// Restore space_ids so it is not lost in state
+	planModel.SpaceIds = originalSpaceIds
 
 	diags = resp.State.Set(ctx, planModel)
 	resp.Diagnostics.Append(diags...)

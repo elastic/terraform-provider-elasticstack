@@ -44,5 +44,9 @@ func (r *serverHostResource) Schema(ctx context.Context, req resource.SchemaRequ
 			Optional:    true,
 			Computed:    true,
 		},
+		"proxy_id": schema.StringAttribute{
+			Description: "The ID of the proxy to use for this Fleet server host. The proxy must exist in the same space as the server host.",
+			Optional:    true,
+		},
 	}
 }

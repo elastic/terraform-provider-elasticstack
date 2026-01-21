@@ -576,6 +576,64 @@ func TestAccResourceIntegrationPolicyGCPVertexAI(t *testing.T) {
 	})
 }
 
+// TestAccResourceIntegrationPolicy_VersionUpdate tests that updating integration_version
+// works correctly without causing inconsistent state errors.
+//
+// Note: This test validates basic version update functionality. The actual fix in PR #1616
+// addresses vars_json sanitization (stripping internal __tf_provider_context metadata before
+// sending to Kibana API), which prevents HTTP 400 errors when reconciling after manual
+// integration upgrades in the Kibana UI. That specific scenario is difficult to test in
+// an automated acceptance test.
+//
+// Related: https://github.com/elastic/terraform-provider-elasticstack/pull/1616
+func TestAccResourceIntegrationPolicy_VersionUpdate(t *testing.T) {
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIntegrationPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName+"-integration"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_name", "tcp"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_version", "1.16.0"),
+					resource.TestCheckResourceAttrSet("elasticstack_fleet_integration_policy.test_policy", "agent_policy_id"),
+					resource.TestCheckResourceAttrPair(
+						"elasticstack_fleet_integration_policy.test_policy", "agent_policy_id",
+						"elasticstack_fleet_agent_policy.test_policy", "policy_id",
+					),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName+"-integration"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_name", "tcp"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_version", "1.17.0"),
+					// Critical check: agent_policy_id must still be set after version update
+					resource.TestCheckResourceAttrSet("elasticstack_fleet_integration_policy.test_policy", "agent_policy_id"),
+					resource.TestCheckResourceAttrPair(
+						"elasticstack_fleet_integration_policy.test_policy", "agent_policy_id",
+						"elasticstack_fleet_agent_policy.test_policy", "policy_id",
+					),
+				),
+			},
+		},
+	})
+}
+
 func checkResourceIntegrationPolicyDestroy(s *terraform.State) error {
 	client, err := clients.NewAcceptanceTestingClient()
 	if err != nil {
