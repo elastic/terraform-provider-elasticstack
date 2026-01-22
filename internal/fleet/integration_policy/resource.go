@@ -3,6 +3,7 @@ package integration_policy
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -73,7 +74,7 @@ func (r *integrationPolicyResource) buildFeatures(ctx context.Context) (features
 	}, nil
 }
 
-var knownPackages = map[string]kbapi.PackageInfo{}
+var knownPackages sync.Map
 
 func getPackageCacheKey(name string, version string) string {
 	return fmt.Sprintf("%s-%s", name, version)
@@ -90,11 +91,18 @@ func getPackageInfo(ctx context.Context, client *fleet.Client, name string, vers
 	if diags.HasError() {
 		return nil, diags
 	}
-	knownPackages[getPackageCacheKey(name, version)] = *pkg
+	knownPackages.Store(getPackageCacheKey(name, version), *pkg)
 	return pkg, diags
 }
 
 func getCachedPackageInfo(name string, version string) (kbapi.PackageInfo, bool) {
-	pkg, ok := knownPackages[getPackageCacheKey(name, version)]
-	return pkg, ok
+	value, ok := knownPackages.Load(getPackageCacheKey(name, version))
+	if !ok {
+		return kbapi.PackageInfo{}, false
+	}
+	pkg, ok := value.(kbapi.PackageInfo)
+	if !ok {
+		return kbapi.PackageInfo{}, false
+	}
+	return pkg, true
 }

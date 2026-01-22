@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -92,9 +93,13 @@ func populateVarsJSONDefaults(ctxVal string, varsJson string) (string, error) {
 		return varsJson, nil
 	}
 
-	pkg, ok := knownPackages[ctxVal]
+	value, ok := knownPackages.Load(ctxVal)
 	if !ok {
 		return varsJson, nil
+	}
+	pkg, ok := value.(kbapi.PackageInfo)
+	if !ok {
+		return varsJson, fmt.Errorf("unexpected package cache value type for key %q", ctxVal)
 	}
 
 	pkgVars, diags := varsFromPackageInfo(&pkg)
