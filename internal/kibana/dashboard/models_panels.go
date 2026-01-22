@@ -14,7 +14,7 @@ import (
 type panelModel struct {
 	Type                 types.String           `tfsdk:"type"`
 	Grid                 panelGridModel         `tfsdk:"grid"`
-	PanelID              types.String           `tfsdk:"panel_id"`
+	ID                   types.String           `tfsdk:"id"`
 	EmbeddableConfig     *embeddableConfigModel `tfsdk:"embeddable_config"`
 	EmbeddableConfigJSON jsontypes.Normalized   `tfsdk:"embeddable_config_json"`
 }
@@ -33,54 +33,88 @@ type embeddableConfigModel struct {
 	Title           types.String `tfsdk:"title"`
 }
 
-func (m *dashboardModel) mapPanelsFromAPI(apiPanels *kbapi.DashboardPanels) ([]panelModel, diag.Diagnostics) {
+type sectionModel struct {
+	Title     types.String     `tfsdk:"title"`
+	ID        types.String     `tfsdk:"id"`
+	Collapsed types.Bool       `tfsdk:"collapsed"`
+	Grid      sectionGridModel `tfsdk:"grid"`
+	Panels    []panelModel     `tfsdk:"panels"`
+}
+
+type sectionGridModel struct {
+	Y types.Int64 `tfsdk:"y"`
+}
+
+func (m *dashboardModel) mapPanelsFromAPI(apiPanels *kbapi.DashboardPanels) ([]panelModel, []sectionModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if apiPanels == nil || len(*apiPanels) == 0 {
-		return nil, diags
+		return nil, nil, diags
 	}
 
 	var panels []panelModel
+	var sections []sectionModel
+
 	for _, item := range *apiPanels {
-		// Try to handle as DashboardPanelItem
+		// Try to handle as DashboardPanelItem (requires type)
 		panelItem, err := item.AsDashboardPanelItem()
+		if err == nil && panelItem.Type != "" {
+			panels = append(panels, m.mapPanelFromAPI(panelItem))
+			continue
+		}
+
+		// Try to handle as DashboardPanelSection
+		section, err := item.AsDashboardPanelSection()
 		if err == nil {
+			sections = append(sections, m.mapSectionFromAPI(section))
+		}
+	}
+
+	return panels, sections, diags
+}
+
+func (m *dashboardModel) mapSectionFromAPI(section kbapi.DashboardPanelSection) sectionModel {
+	sm := sectionModel{
+		Title:     types.StringValue(section.Title),
+		Collapsed: types.BoolPointerValue(section.Collapsed),
+		ID:        types.StringPointerValue(section.Uid),
+		Grid: sectionGridModel{
+			Y: types.Int64Value(int64(section.Grid.Y)),
+		},
+	}
+
+	// Map section panels
+	if section.Panels != nil {
+		var innerPanels []panelModel
+		for _, p := range *section.Panels {
 			pm := panelModel{
-				Type: types.StringValue(panelItem.Type),
+				Type: types.StringValue(p.Type),
+				ID:   types.StringPointerValue(p.Uid),
 				Grid: panelGridModel{
-					X: types.Int64Value(int64(panelItem.Grid.X)),
-					Y: types.Int64Value(int64(panelItem.Grid.Y)),
+					X: types.Int64Value(int64(p.Grid.X)),
+					Y: types.Int64Value(int64(p.Grid.Y)),
 				},
 			}
-			if panelItem.Grid.W != nil {
-				pm.Grid.W = types.Int64Value(int64(*panelItem.Grid.W))
+			if p.Grid.W != nil {
+				pm.Grid.W = types.Int64Value(int64(*p.Grid.W))
 			} else {
 				pm.Grid.W = types.Int64Null()
 			}
-			if panelItem.Grid.H != nil {
-				pm.Grid.H = types.Int64Value(int64(*panelItem.Grid.H))
+			if p.Grid.H != nil {
+				pm.Grid.H = types.Int64Value(int64(*p.Grid.H))
 			} else {
 				pm.Grid.H = types.Int64Null()
 			}
 
-			if panelItem.Uid != nil {
-				pm.PanelID = types.StringValue(*panelItem.Uid)
-			} else {
-				pm.PanelID = types.StringNull()
-			}
-
-			// Try to map to the structured config first
+			// Map Config
+			// Similar logic to standard panels but adapting to DashboardPanelSection_Panels_Config
 			var mappedToStruct bool
-			config0, err := panelItem.Config.AsDashboardPanelItemConfig0()
+			config0, err := p.Config.AsDashboardPanelSectionPanelsConfig0()
 			if err == nil {
-				// To ensure we don't lose data, we need to check if the round-trip matches.
-				// If the JSON contains fields not in Config0, we should prefer JSON.
-				rawJSON, _ := panelItem.Config.MarshalJSON()
+				rawJSON, _ := p.Config.MarshalJSON()
 				structJSON, _ := json.Marshal(config0)
-
 				var rawMap, structMap map[string]interface{}
 				if json.Unmarshal(rawJSON, &rawMap) == nil && json.Unmarshal(structJSON, &structMap) == nil {
 					if reflect.DeepEqual(rawMap, structMap) {
-						// Map to embeddableConfigModel
 						pm.EmbeddableConfig = &embeddableConfigModel{
 							Content:         types.StringValue(config0.Content),
 							Description:     types.StringPointerValue(config0.Description),
@@ -95,7 +129,7 @@ func (m *dashboardModel) mapPanelsFromAPI(apiPanels *kbapi.DashboardPanels) ([]p
 
 			if !mappedToStruct {
 				pm.EmbeddableConfig = nil
-				configBytes, err := panelItem.Config.MarshalJSON()
+				configBytes, err := p.Config.MarshalJSON()
 				if err == nil {
 					pm.EmbeddableConfigJSON = jsontypes.NewNormalizedValue(string(configBytes))
 				} else {
@@ -103,22 +137,85 @@ func (m *dashboardModel) mapPanelsFromAPI(apiPanels *kbapi.DashboardPanels) ([]p
 				}
 			}
 
-			panels = append(panels, pm)
+			innerPanels = append(innerPanels, pm)
+		}
+		sm.Panels = innerPanels
+	}
+	return sm
+}
+
+func (m *dashboardModel) mapPanelFromAPI(panelItem kbapi.DashboardPanelItem) panelModel {
+	pm := panelModel{
+		Type: types.StringValue(panelItem.Type),
+		Grid: panelGridModel{
+			X: types.Int64Value(int64(panelItem.Grid.X)),
+			Y: types.Int64Value(int64(panelItem.Grid.Y)),
+		},
+	}
+	if panelItem.Grid.W != nil {
+		pm.Grid.W = types.Int64Value(int64(*panelItem.Grid.W))
+	} else {
+		pm.Grid.W = types.Int64Null()
+	}
+	if panelItem.Grid.H != nil {
+		pm.Grid.H = types.Int64Value(int64(*panelItem.Grid.H))
+	} else {
+		pm.Grid.H = types.Int64Null()
+	}
+
+	if panelItem.Uid != nil {
+		pm.ID = types.StringValue(*panelItem.Uid)
+	} else {
+		pm.ID = types.StringNull()
+	}
+
+	// Try to map to the structured config first
+	var mappedToStruct bool
+	config0, err := panelItem.Config.AsDashboardPanelItemConfig0()
+	if err == nil {
+		// To ensure we don't lose data, we need to check if the round-trip matches.
+		// If the JSON contains fields not in Config0, we should prefer JSON.
+		rawJSON, _ := panelItem.Config.MarshalJSON()
+		structJSON, _ := json.Marshal(config0)
+
+		var rawMap, structMap map[string]interface{}
+		if json.Unmarshal(rawJSON, &rawMap) == nil && json.Unmarshal(structJSON, &structMap) == nil {
+			if reflect.DeepEqual(rawMap, structMap) {
+				// Map to embeddableConfigModel
+				pm.EmbeddableConfig = &embeddableConfigModel{
+					Content:         types.StringValue(config0.Content),
+					Description:     types.StringPointerValue(config0.Description),
+					HidePanelTitles: types.BoolPointerValue(config0.HidePanelTitles),
+					Title:           types.StringPointerValue(config0.Title),
+				}
+				pm.EmbeddableConfigJSON = jsontypes.NewNormalizedNull()
+				mappedToStruct = true
+			}
 		}
 	}
 
-	return panels, diags
+	if !mappedToStruct {
+		pm.EmbeddableConfig = nil
+		configBytes, err := panelItem.Config.MarshalJSON()
+		if err == nil {
+			pm.EmbeddableConfigJSON = jsontypes.NewNormalizedValue(string(configBytes))
+		} else {
+			pm.EmbeddableConfigJSON = jsontypes.NewNormalizedNull()
+		}
+	}
+	return pm
 }
 
 func (m *dashboardModel) panelsToAPI() (*kbapi.DashboardPanels, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	if m.Panels == nil {
+	if m.Panels == nil && m.Sections == nil {
 		return nil, diags
 	}
 
-	panels := m.Panels
-	apiPanels := make(kbapi.DashboardPanels, 0, len(panels))
-	for _, pm := range panels {
+	apiPanels := make(kbapi.DashboardPanels, 0, len(m.Panels)+len(m.Sections))
+
+	// Process panels
+	for _, pm := range m.Panels {
 		panelItem := kbapi.DashboardPanelItem{
 			Type: pm.Type.ValueString(),
 			Grid: struct {
@@ -141,8 +238,8 @@ func (m *dashboardModel) panelsToAPI() (*kbapi.DashboardPanels, diag.Diagnostics
 			panelItem.Grid.H = &h
 		}
 
-		if utils.IsKnown(pm.PanelID) {
-			panelItem.Uid = utils.Pointer(pm.PanelID.ValueString())
+		if utils.IsKnown(pm.ID) {
+			panelItem.Uid = utils.Pointer(pm.ID.ValueString())
 		}
 
 		if pm.EmbeddableConfig != nil {
@@ -178,6 +275,118 @@ func (m *dashboardModel) panelsToAPI() (*kbapi.DashboardPanels, diag.Diagnostics
 		err := item.FromDashboardPanelItem(panelItem)
 		if err != nil {
 			diags.AddError("Failed to create dashboard panel item", err.Error())
+		}
+		apiPanels = append(apiPanels, item)
+	}
+
+	// Process sections
+	for _, sm := range m.Sections {
+		section := kbapi.DashboardPanelSection{
+			Title: sm.Title.ValueString(),
+			Grid: struct {
+				Y float32 `json:"y"`
+			}{
+				Y: float32(sm.Grid.Y.ValueInt64()),
+			},
+		}
+
+		if utils.IsKnown(sm.Collapsed) {
+			section.Collapsed = utils.Pointer(sm.Collapsed.ValueBool())
+		}
+		if utils.IsKnown(sm.ID) {
+			section.Uid = utils.Pointer(sm.ID.ValueString())
+		}
+
+		if len(sm.Panels) > 0 {
+			innerPanels := make([]struct {
+				Config kbapi.DashboardPanelSection_Panels_Config `json:"config"`
+				Grid   struct {
+					H *float32 `json:"h,omitempty"`
+					W *float32 `json:"w,omitempty"`
+					X float32  `json:"x"`
+					Y float32  `json:"y"`
+				} `json:"grid"`
+				Type    string  `json:"type"`
+				Uid     *string `json:"uid,omitempty"`
+				Version *string `json:"version,omitempty"`
+			}, 0, len(sm.Panels))
+
+			for _, pm := range sm.Panels {
+				p := struct {
+					Config kbapi.DashboardPanelSection_Panels_Config `json:"config"`
+					Grid   struct {
+						H *float32 `json:"h,omitempty"`
+						W *float32 `json:"w,omitempty"`
+						X float32  `json:"x"`
+						Y float32  `json:"y"`
+					} `json:"grid"`
+					Type    string  `json:"type"`
+					Uid     *string `json:"uid,omitempty"`
+					Version *string `json:"version,omitempty"`
+				}{
+					Type: pm.Type.ValueString(),
+					Grid: struct {
+						H *float32 `json:"h,omitempty"`
+						W *float32 `json:"w,omitempty"`
+						X float32  `json:"x"`
+						Y float32  `json:"y"`
+					}{
+						X: float32(pm.Grid.X.ValueInt64()),
+						Y: float32(pm.Grid.Y.ValueInt64()),
+					},
+				}
+
+				if !pm.Grid.W.IsNull() && !pm.Grid.W.IsUnknown() {
+					w := float32(pm.Grid.W.ValueInt64())
+					p.Grid.W = &w
+				}
+				if !pm.Grid.H.IsNull() && !pm.Grid.H.IsUnknown() {
+					h := float32(pm.Grid.H.ValueInt64())
+					p.Grid.H = &h
+				}
+
+				if utils.IsKnown(pm.ID) {
+					p.Uid = utils.Pointer(pm.ID.ValueString())
+				}
+
+				// Map config for section panel
+				if pm.EmbeddableConfig != nil {
+					configModel := *pm.EmbeddableConfig
+					config0 := kbapi.DashboardPanelSectionPanelsConfig0{
+						Content: configModel.Content.ValueString(),
+					}
+					if utils.IsKnown(configModel.Description) {
+						config0.Description = utils.Pointer(configModel.Description.ValueString())
+					}
+					if utils.IsKnown(configModel.HidePanelTitles) {
+						config0.HidePanelTitles = utils.Pointer(configModel.HidePanelTitles.ValueBool())
+					}
+					if utils.IsKnown(configModel.Title) {
+						config0.Title = utils.Pointer(configModel.Title.ValueString())
+					}
+
+					if err := p.Config.FromDashboardPanelSectionPanelsConfig0(config0); err != nil {
+						diags.AddError("Failed to marshal section panel config", err.Error())
+					}
+				} else if utils.IsKnown(pm.EmbeddableConfigJSON) {
+					var configMap map[string]interface{}
+					diags.Append(pm.EmbeddableConfigJSON.Unmarshal(&configMap)...)
+					if !diags.HasError() {
+						if err := p.Config.FromDashboardPanelSectionPanelsConfig1(configMap); err != nil {
+							diags.AddError("Failed to marshal section panel config JSON", err.Error())
+						}
+					}
+				}
+
+				innerPanels = append(innerPanels, p)
+			}
+			section.Panels = &innerPanels
+		}
+
+		var item kbapi.DashboardPanels_Item
+		err := item.FromDashboardPanelSection(section)
+		if err != nil {
+			diags.AddError("Failed to create dashboard section item", err.Error())
 		}
 		apiPanels = append(apiPanels, item)
 	}
