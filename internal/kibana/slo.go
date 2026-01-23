@@ -1125,6 +1125,7 @@ func resourceSloRead(ctx context.Context, d *schema.ResourceData, meta interface
 			if m.TimesliceMetricDocCountMetric != nil {
 				metric["name"] = m.TimesliceMetricDocCountMetric.Name
 				metric["aggregation"] = m.TimesliceMetricDocCountMetric.Aggregation
+				metric["filter"] = m.TimesliceMetricDocCountMetric.Filter
 			}
 			metrics = append(metrics, metric)
 		}
