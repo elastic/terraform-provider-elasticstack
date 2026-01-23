@@ -4,8 +4,14 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
+
+// Ensure provider defined types fully satisfy framework interfaces
+var _ resource.Resource = &scriptResource{}
+var _ resource.ResourceWithConfigure = &scriptResource{}
+var _ resource.ResourceWithImportState = &scriptResource{}
 
 func NewScriptResource() resource.Resource {
 	return &scriptResource{}
@@ -23,4 +29,8 @@ func (r *scriptResource) Configure(_ context.Context, req resource.ConfigureRequ
 	client, diags := clients.ConvertProviderData(req.ProviderData)
 	resp.Diagnostics.Append(diags...)
 	r.client = client
+}
+
+func (r *scriptResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
