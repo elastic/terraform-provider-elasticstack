@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"strconv"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/slo"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -790,7 +791,7 @@ func getSloFromResourceData(d *schema.ResourceData) (models.Slo, diag.Diagnostic
 					TimesliceMetricDocCountMetric: &slo.TimesliceMetricDocCountMetric{
 						Name:        metric["name"].(string),
 						Aggregation: agg,
-						Filter:      metric["filter"].(*string),
+						Filter:      getOrNil[string]("timeslice_metric_indicator.0.metric.0.metrics."+strconv.Itoa(i)+".filter", d),
 					},
 				}
 			default:
