@@ -790,6 +790,7 @@ func getSloFromResourceData(d *schema.ResourceData) (models.Slo, diag.Diagnostic
 					TimesliceMetricDocCountMetric: &slo.TimesliceMetricDocCountMetric{
 						Name:        metric["name"].(string),
 						Aggregation: agg,
+						Filter:      metric["filter"].(*string),
 					},
 				}
 			default:
