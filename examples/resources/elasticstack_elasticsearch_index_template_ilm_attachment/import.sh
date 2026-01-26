@@ -1,0 +1,1 @@
+terraform import elasticstack_elasticsearch_index_template_ilm_attachment.logs_system <cluster_uuid>/logs-system.syslog@custom
