@@ -43,7 +43,7 @@ func TestAccResourceIndexTemplateIlmAttachment_fleet(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(index_template_ilm_attachment.MinVersion),
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable("test-fleet-policy-2"),
 				},
@@ -58,7 +58,7 @@ func TestAccResourceIndexTemplateIlmAttachment_fleet(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(index_template_ilm_attachment.MinVersion),
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable("test-fleet-policy-2"),
 				},
