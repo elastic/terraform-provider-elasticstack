@@ -24,6 +24,7 @@ resource "elasticstack_kibana_slo" "test_slo" {
       metrics {
         name        = "C"
         aggregation = "doc_count"
+        filter      = "field: value"
       }
       equation   = "C"
       comparator = "GTE"
