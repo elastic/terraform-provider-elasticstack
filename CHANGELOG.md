@@ -83,6 +83,7 @@ inputs = {
 - Only require input parameters in `elasticstack_fleet_integration_policy` to be specified if they differ from integration defaults ([#1558](https://github.com/elastic/terraform-provider-elasticstack/pull/1558))
 - Only require vars in `elasticstack_fleet_integration_policy` to be specified if they differ from integration defaults ([#1593](https://github.com/elastic/terraform-provider-elasticstack/pull/1593))
 - Allow space restricted roles to manage `elasticstack_fleet_agent_policy` resources. ([#1597](https://github.com/elastic/terraform-provider-elasticstack/pull/1597))
+- Fix missing timeslice's metric-scoped `filter` parameter for doc_count aggregations ([#1636](https://github.com/elastic/terraform-provider-elasticstack/pull/1636))
 
 
 ## [0.13.1] - 2025-12-12
