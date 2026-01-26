@@ -17,7 +17,7 @@ var _ resource.ResourceWithImportState = &Resource{}
 var (
 	// MinVersion is the minimum Elasticsearch version required for this resource.
 	// Minimum version requirement - will be validated during CI testing.
-	MinVersion = version.Must(version.NewVersion("8.2.3"))
+	MinVersion = version.Must(version.NewVersion("8.0.0"))
 )
 
 // NewResource creates a new resource instance.
