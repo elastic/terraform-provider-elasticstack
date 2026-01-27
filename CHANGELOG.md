@@ -12,7 +12,7 @@ Existing usage of the `space_ids` attribute must be migrated to `space_id`:
 resource "elasticstack_fleet_integration" "tcp" {
   name = "tcp"
   version = "1.16.0"
-  space_ids = ["default", "o11y]
+  space_ids = ["default", "o11y"]
 }
 ```
 
@@ -34,10 +34,7 @@ resource "elasticstack_fleet_integration" "tcp-o11y" {
 
 
 
-The `space_ids` attribute was 
-
 #### `elasticstack_fleet_integration_policy` input block has changed to a map attribute. 
-
 The `input` block in the `elasticstack_fleet_integration_policy` resource has been restructured into the `inputs` map attribute. 
 This transition:
 * Allows the provider to implement semantic equality checking across all inputs within the integration policy. This change:
