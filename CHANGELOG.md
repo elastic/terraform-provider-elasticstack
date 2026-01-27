@@ -2,6 +2,40 @@
 
 ### Breaking changes
 
+#### `elasticstack_fleet_integration` `space_ids` attribute has been reduced to a single `space_id`
+
+The provider was only considering the first entry in the `space_ids` set ([#1642](https://github.com/elastic/terraform-provider-elasticstack/issues/1642)). Extending the resource to correctly handle multiple spaces would not make sense as a single Terraform resource. Instead this attribute is being reduced to a single string, with practitioners able to manage the installation of an integration across multiple spaces through multiple instances of this resource. 
+
+Existing usage of the `space_ids` attribute must be migrated to `space_id`: 
+
+```hcl
+resource "elasticstack_fleet_integration" "tcp" {
+  name = "tcp"
+  version = "1.16.0"
+  space_ids = ["default", "o11y]
+}
+```
+
+becomes:
+
+```hcl
+resource "elasticstack_fleet_integration" "tcp-default" {
+  name = "tcp"
+  version = "1.16.0"
+  space_id = "default"
+}
+
+resource "elasticstack_fleet_integration" "tcp-o11y" {
+  name = "tcp"
+  version = "1.16.0"
+  space_id = "o11y"
+}
+```
+
+
+
+The `space_ids` attribute was 
+
 #### `elasticstack_fleet_integration_policy` input block has changed to a map attribute. 
 
 The `input` block in the `elasticstack_fleet_integration_policy` resource has been restructured into the `inputs` map attribute. 

@@ -10,8 +10,9 @@ import (
 )
 
 var (
-	_ resource.Resource              = &integrationResource{}
-	_ resource.ResourceWithConfigure = &integrationResource{}
+	_ resource.Resource                 = &integrationResource{}
+	_ resource.ResourceWithConfigure    = &integrationResource{}
+	_ resource.ResourceWithUpgradeState = &integrationResource{}
 
 	// MinVersionIgnoreMappingUpdateErrors is the minimum version that supports the ignore_mapping_update_errors parameter
 	MinVersionIgnoreMappingUpdateErrors = version.Must(version.NewVersion("8.11.0"))

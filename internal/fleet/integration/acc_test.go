@@ -404,3 +404,80 @@ resource "elasticstack_fleet_integration" "test_integration_all_params" {
   skip_destroy                  = true
 }
 `
+
+func TestAccResourceIntegrationFrom0_13_1(t *testing.T) {
+	spaceID := "aa_test_space_" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"elasticstack": {
+						Source:            "elastic/elasticstack",
+						VersionConstraint: "0.13.1",
+					},
+				},
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
+				Config:   testAccResourceIntegrationV0(spaceID),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_upgrade", "name", "tcp"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_upgrade", "version", "1.16.0"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
+				Config:                   testAccResourceIntegrationV1(spaceID),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_upgrade", "name", "tcp"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_upgrade", "version", "1.16.0"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_upgrade", "space_id", spaceID),
+				),
+			},
+		},
+	})
+}
+
+func testAccResourceIntegrationV0(spaceID string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_kibana_space" "test" {
+  space_id = "%s"
+  name     = "Test Space"
+}
+
+resource "elasticstack_fleet_integration" "test_integration_upgrade" {
+  name         = "tcp"
+  version      = "1.16.0"
+  space_ids    = [elasticstack_kibana_space.test.space_id, "default"]
+  force        = true
+  skip_destroy = true
+}
+`, spaceID)
+}
+
+func testAccResourceIntegrationV1(spaceID string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_kibana_space" "test" {
+  space_id = "%s"
+  name     = "Test Space"
+}
+
+resource "elasticstack_fleet_integration" "test_integration_upgrade" {
+  name         = "tcp"
+  version      = "1.16.0"
+  space_id     = elasticstack_kibana_space.test.space_id
+  force        = true
+  skip_destroy = true
+}
+`, spaceID)
+}
