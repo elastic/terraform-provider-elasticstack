@@ -45,12 +45,14 @@ resource "elasticstack_fleet_agent_policy" "test_policy_2" {
 }
 
 resource "elasticstack_fleet_integration_policy" "test_policy" {
-  name            = var.policy_name
-  policy_id       = "${var.policy_name}-policy-id"
-  namespace       = "default"
-  description     = "IntegrationPolicyTest Policy"
-  agent_policy_id = elasticstack_fleet_agent_policy.test_policy_1.policy_id
-
+  name        = var.policy_name
+  policy_id   = "${var.policy_name}-policy-id"
+  namespace   = "default"
+  description = "IntegrationPolicyTest Policy"
+  agent_policy_ids = [
+    elasticstack_fleet_agent_policy.test_policy_1.policy_id,
+    elasticstack_fleet_agent_policy.test_policy_2.policy_id
+  ]
   integration_name    = elasticstack_fleet_integration.test_policy.name
   integration_version = elasticstack_fleet_integration.test_policy.version
 

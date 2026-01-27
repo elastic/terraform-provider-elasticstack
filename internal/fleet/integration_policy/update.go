@@ -7,7 +7,6 @@ import (
 	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func (r *integrationPolicyResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
@@ -68,11 +67,6 @@ func (r *integrationPolicyResource) Update(ctx context.Context, req resource.Upd
 		return
 	}
 
-	// Remember which agent policy field was originally configured in state
-	// so we can preserve it after populateFromAPI
-	stateUsedAgentPolicyID := utils.IsKnown(stateModel.AgentPolicyID) && !stateModel.AgentPolicyID.IsNull()
-	stateUsedAgentPolicyIDs := utils.IsKnown(stateModel.AgentPolicyIDs) && !stateModel.AgentPolicyIDs.IsNull()
-
 	// Remember the input configuration from state
 	stateHadInput := utils.IsKnown(stateModel.Inputs) && !stateModel.Inputs.IsNull() && len(stateModel.Inputs.Elements()) > 0
 
@@ -86,24 +80,6 @@ func (r *integrationPolicyResource) Update(ctx context.Context, req resource.Upd
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
-	}
-
-	// Restore the agent policy field that was originally configured
-	// This prevents populateFromAPI from changing which field is used
-	if stateUsedAgentPolicyID && !stateUsedAgentPolicyIDs {
-		// Only agent_policy_id was configured, ensure we preserve it
-		planModel.AgentPolicyID = types.StringPointerValue(policy.PolicyId)
-		planModel.AgentPolicyIDs = types.ListNull(types.StringType)
-	} else if stateUsedAgentPolicyIDs && !stateUsedAgentPolicyID {
-		// Only agent_policy_ids was configured, ensure we preserve it
-		if policy.PolicyIds != nil {
-			agentPolicyIDs, d := types.ListValueFrom(ctx, types.StringType, *policy.PolicyIds)
-			resp.Diagnostics.Append(d...)
-			planModel.AgentPolicyIDs = agentPolicyIDs
-		} else {
-			planModel.AgentPolicyIDs = types.ListNull(types.StringType)
-		}
-		planModel.AgentPolicyID = types.StringNull()
 	}
 
 	// If state didn't have input configured, ensure we don't add it now
