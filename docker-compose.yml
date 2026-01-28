@@ -57,6 +57,7 @@ services:
     container_name: ${KIBANA_CONTAINER_NAME}
     volumes:
       - dev-kibana:/usr/share/kibana/data
+      - ./kibana.yml:/usr/share/kibana/config/kibana.yml:ro
     ports:
       - 127.0.0.1:${KIBANA_PORT}:5601
     environment:
