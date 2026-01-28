@@ -10,7 +10,6 @@ import (
 
 	"github.com/disaster37/go-kibana-rest/v8"
 	"github.com/elastic/go-elasticsearch/v8"
-	"github.com/elastic/terraform-provider-elasticstack/generated/alerting"
 	"github.com/elastic/terraform-provider-elasticstack/generated/connectors"
 	"github.com/elastic/terraform-provider-elasticstack/generated/slo"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
@@ -73,7 +72,6 @@ type ApiClient struct {
 	elasticsearchClusterInfo *models.ClusterInfo
 	kibana                   *kibana.Client
 	kibanaOapi               *kibana_oapi.Client
-	alerting                 alerting.AlertingAPI
 	connectors               *connectors.Client
 	slo                      slo.SloAPI
 	kibanaConfig             kibana.Config
@@ -122,7 +120,6 @@ func NewAcceptanceTestingClient() (*ApiClient, error) {
 			elasticsearch: es,
 			kibana:        kib,
 			kibanaOapi:    kibOapi,
-			alerting:      buildAlertingClient(cfg, kibanaHttpClient).AlertingAPI,
 			slo:           buildSloClient(cfg, kibanaHttpClient).SloAPI,
 			connectors:    actionConnectors,
 			kibanaConfig:  *cfg.Kibana,
@@ -252,14 +249,6 @@ func (a *ApiClient) GetKibanaOapiClient() (*kibana_oapi.Client, error) {
 	return a.kibanaOapi, nil
 }
 
-func (a *ApiClient) GetAlertingClient() (alerting.AlertingAPI, error) {
-	if a.alerting == nil {
-		return nil, errors.New("alerting client not found")
-	}
-
-	return a.alerting, nil
-}
-
 func (a *ApiClient) GetKibanaConnectorsClient(ctx context.Context) (*connectors.Client, error) {
 	if a.connectors == nil {
 		return nil, errors.New("kibana action connector client not found")
@@ -293,21 +282,6 @@ func (a *ApiClient) SetSloAuthContext(ctx context.Context) context.Context {
 			}})
 	} else {
 		return context.WithValue(ctx, slo.ContextBasicAuth, slo.BasicAuth{
-			UserName: a.kibanaConfig.Username,
-			Password: a.kibanaConfig.Password,
-		})
-	}
-}
-
-func (a *ApiClient) SetAlertingAuthContext(ctx context.Context) context.Context {
-	if a.kibanaConfig.ApiKey != "" {
-		return context.WithValue(ctx, alerting.ContextAPIKeys, map[string]alerting.APIKey{
-			"apiKeyAuth": {
-				Prefix: "ApiKey",
-				Key:    a.kibanaConfig.ApiKey,
-			}})
-	} else {
-		return context.WithValue(ctx, alerting.ContextBasicAuth, alerting.BasicAuth{
 			UserName: a.kibanaConfig.Username,
 			Password: a.kibanaConfig.Password,
 		})
@@ -517,20 +491,6 @@ func buildKibanaOapiClient(cfg config.Client) (*kibana_oapi.Client, error) {
 	return client, nil
 }
 
-func buildAlertingClient(cfg config.Client, httpClient *http.Client) *alerting.APIClient {
-	alertingConfig := alerting.Configuration{
-		Debug:     logging.IsDebugOrHigher(),
-		UserAgent: cfg.UserAgent,
-		Servers: alerting.ServerConfigurations{
-			{
-				URL: cfg.Kibana.Address,
-			},
-		},
-		HTTPClient: httpClient,
-	}
-	return alerting.NewAPIClient(&alertingConfig)
-}
-
 func buildConnectorsClient(cfg config.Client, httpClient *http.Client) (*connectors.Client, error) {
 	var authInterceptor connectors.ClientOption
 	if cfg.Kibana.ApiKey != "" {
@@ -628,7 +588,6 @@ func newApiClientFromConfig(cfg config.Client, version string) (*ApiClient, erro
 			return nil, fmt.Errorf("cannot create Kibana connectors client: [%w]", err)
 		}
 
-		client.alerting = buildAlertingClient(cfg, kibanaHttpClient).AlertingAPI
 		client.slo = buildSloClient(cfg, kibanaHttpClient).SloAPI
 		client.connectors = connectorsClient
 	}

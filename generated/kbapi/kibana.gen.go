@@ -48,8 +48,198 @@ const (
 
 // Defines values for AgentPolicyStatus.
 const (
-	Active   AgentPolicyStatus = "active"
-	Inactive AgentPolicyStatus = "inactive"
+	AgentPolicyStatusActive   AgentPolicyStatus = "active"
+	AgentPolicyStatusInactive AgentPolicyStatus = "inactive"
+)
+
+// Defines values for Aggtype.
+const (
+	AggtypeAvg   Aggtype = "avg"
+	AggtypeCount Aggtype = "count"
+	AggtypeMax   Aggtype = "max"
+	AggtypeMin   Aggtype = "min"
+	AggtypeSum   Aggtype = "sum"
+)
+
+// Defines values for AlertingRuleActionAlertsFilterQueryFiltersStateStore.
+const (
+	AlertingRuleActionAlertsFilterQueryFiltersStateStoreAppState    AlertingRuleActionAlertsFilterQueryFiltersStateStore = "appState"
+	AlertingRuleActionAlertsFilterQueryFiltersStateStoreGlobalState AlertingRuleActionAlertsFilterQueryFiltersStateStore = "globalState"
+)
+
+// Defines values for AlertingRuleActionAlertsFilterTimeframeDays.
+const (
+	AlertingRuleActionAlertsFilterTimeframeDaysN1 AlertingRuleActionAlertsFilterTimeframeDays = 1
+	AlertingRuleActionAlertsFilterTimeframeDaysN2 AlertingRuleActionAlertsFilterTimeframeDays = 2
+	AlertingRuleActionAlertsFilterTimeframeDaysN3 AlertingRuleActionAlertsFilterTimeframeDays = 3
+	AlertingRuleActionAlertsFilterTimeframeDaysN4 AlertingRuleActionAlertsFilterTimeframeDays = 4
+	AlertingRuleActionAlertsFilterTimeframeDaysN5 AlertingRuleActionAlertsFilterTimeframeDays = 5
+	AlertingRuleActionAlertsFilterTimeframeDaysN6 AlertingRuleActionAlertsFilterTimeframeDays = 6
+	AlertingRuleActionAlertsFilterTimeframeDaysN7 AlertingRuleActionAlertsFilterTimeframeDays = 7
+)
+
+// Defines values for AlertingRuleActionFrequencyNotifyWhen.
+const (
+	AlertingRuleActionFrequencyNotifyWhenOnActionGroupChange AlertingRuleActionFrequencyNotifyWhen = "onActionGroupChange"
+	AlertingRuleActionFrequencyNotifyWhenOnActiveAlert       AlertingRuleActionFrequencyNotifyWhen = "onActiveAlert"
+	AlertingRuleActionFrequencyNotifyWhenOnThrottleInterval  AlertingRuleActionFrequencyNotifyWhen = "onThrottleInterval"
+)
+
+// Defines values for AlertingRuleCreateRequestActionsAlertsFilterQueryFiltersStateStore.
+const (
+	AlertingRuleCreateRequestActionsAlertsFilterQueryFiltersStateStoreAppState    AlertingRuleCreateRequestActionsAlertsFilterQueryFiltersStateStore = "appState"
+	AlertingRuleCreateRequestActionsAlertsFilterQueryFiltersStateStoreGlobalState AlertingRuleCreateRequestActionsAlertsFilterQueryFiltersStateStore = "globalState"
+)
+
+// Defines values for AlertingRuleCreateRequestActionsAlertsFilterTimeframeDays.
+const (
+	AlertingRuleCreateRequestActionsAlertsFilterTimeframeDaysN1 AlertingRuleCreateRequestActionsAlertsFilterTimeframeDays = 1
+	AlertingRuleCreateRequestActionsAlertsFilterTimeframeDaysN2 AlertingRuleCreateRequestActionsAlertsFilterTimeframeDays = 2
+	AlertingRuleCreateRequestActionsAlertsFilterTimeframeDaysN3 AlertingRuleCreateRequestActionsAlertsFilterTimeframeDays = 3
+	AlertingRuleCreateRequestActionsAlertsFilterTimeframeDaysN4 AlertingRuleCreateRequestActionsAlertsFilterTimeframeDays = 4
+	AlertingRuleCreateRequestActionsAlertsFilterTimeframeDaysN5 AlertingRuleCreateRequestActionsAlertsFilterTimeframeDays = 5
+	AlertingRuleCreateRequestActionsAlertsFilterTimeframeDaysN6 AlertingRuleCreateRequestActionsAlertsFilterTimeframeDays = 6
+	AlertingRuleCreateRequestActionsAlertsFilterTimeframeDaysN7 AlertingRuleCreateRequestActionsAlertsFilterTimeframeDays = 7
+)
+
+// Defines values for AlertingRuleCreateRequestActionsFrequencyNotifyWhen.
+const (
+	AlertingRuleCreateRequestActionsFrequencyNotifyWhenOnActionGroupChange AlertingRuleCreateRequestActionsFrequencyNotifyWhen = "onActionGroupChange"
+	AlertingRuleCreateRequestActionsFrequencyNotifyWhenOnActiveAlert       AlertingRuleCreateRequestActionsFrequencyNotifyWhen = "onActiveAlert"
+	AlertingRuleCreateRequestActionsFrequencyNotifyWhenOnThrottleInterval  AlertingRuleCreateRequestActionsFrequencyNotifyWhen = "onThrottleInterval"
+)
+
+// Defines values for AlertingRuleCreateRequestNotifyWhen.
+const (
+	AlertingRuleCreateRequestNotifyWhenOnActionGroupChange AlertingRuleCreateRequestNotifyWhen = "onActionGroupChange"
+	AlertingRuleCreateRequestNotifyWhenOnActiveAlert       AlertingRuleCreateRequestNotifyWhen = "onActiveAlert"
+	AlertingRuleCreateRequestNotifyWhenOnThrottleInterval  AlertingRuleCreateRequestNotifyWhen = "onThrottleInterval"
+)
+
+// Defines values for AlertingRuleResponseExecutionStatusErrorReason.
+const (
+	AlertingRuleResponseExecutionStatusErrorReasonDecrypt  AlertingRuleResponseExecutionStatusErrorReason = "decrypt"
+	AlertingRuleResponseExecutionStatusErrorReasonDisabled AlertingRuleResponseExecutionStatusErrorReason = "disabled"
+	AlertingRuleResponseExecutionStatusErrorReasonExecute  AlertingRuleResponseExecutionStatusErrorReason = "execute"
+	AlertingRuleResponseExecutionStatusErrorReasonLicense  AlertingRuleResponseExecutionStatusErrorReason = "license"
+	AlertingRuleResponseExecutionStatusErrorReasonRead     AlertingRuleResponseExecutionStatusErrorReason = "read"
+	AlertingRuleResponseExecutionStatusErrorReasonTimeout  AlertingRuleResponseExecutionStatusErrorReason = "timeout"
+	AlertingRuleResponseExecutionStatusErrorReasonUnknown  AlertingRuleResponseExecutionStatusErrorReason = "unknown"
+	AlertingRuleResponseExecutionStatusErrorReasonValidate AlertingRuleResponseExecutionStatusErrorReason = "validate"
+)
+
+// Defines values for AlertingRuleResponseExecutionStatusStatus.
+const (
+	AlertingRuleResponseExecutionStatusStatusActive  AlertingRuleResponseExecutionStatusStatus = "active"
+	AlertingRuleResponseExecutionStatusStatusError   AlertingRuleResponseExecutionStatusStatus = "error"
+	AlertingRuleResponseExecutionStatusStatusOk      AlertingRuleResponseExecutionStatusStatus = "ok"
+	AlertingRuleResponseExecutionStatusStatusPending AlertingRuleResponseExecutionStatusStatus = "pending"
+	AlertingRuleResponseExecutionStatusStatusUnknown AlertingRuleResponseExecutionStatusStatus = "unknown"
+	AlertingRuleResponseExecutionStatusStatusWarning AlertingRuleResponseExecutionStatusStatus = "warning"
+)
+
+// Defines values for AlertingRuleResponseExecutionStatusWarningReason.
+const (
+	MaxAlerts            AlertingRuleResponseExecutionStatusWarningReason = "maxAlerts"
+	MaxExecutableActions AlertingRuleResponseExecutionStatusWarningReason = "maxExecutableActions"
+	MaxQueuedActions     AlertingRuleResponseExecutionStatusWarningReason = "maxQueuedActions"
+	RuleExecution        AlertingRuleResponseExecutionStatusWarningReason = "ruleExecution"
+)
+
+// Defines values for AlertingRuleResponseLastRunOutcome.
+const (
+	AlertingRuleResponseLastRunOutcomeFailed    AlertingRuleResponseLastRunOutcome = "failed"
+	AlertingRuleResponseLastRunOutcomeSucceeded AlertingRuleResponseLastRunOutcome = "succeeded"
+	AlertingRuleResponseLastRunOutcomeWarning   AlertingRuleResponseLastRunOutcome = "warning"
+)
+
+// Defines values for AlertingRuleResponseLastRunWarning.
+const (
+	AlertingRuleResponseLastRunWarningDecrypt              AlertingRuleResponseLastRunWarning = "decrypt"
+	AlertingRuleResponseLastRunWarningDisabled             AlertingRuleResponseLastRunWarning = "disabled"
+	AlertingRuleResponseLastRunWarningExecute              AlertingRuleResponseLastRunWarning = "execute"
+	AlertingRuleResponseLastRunWarningLicense              AlertingRuleResponseLastRunWarning = "license"
+	AlertingRuleResponseLastRunWarningMaxAlerts            AlertingRuleResponseLastRunWarning = "maxAlerts"
+	AlertingRuleResponseLastRunWarningMaxExecutableActions AlertingRuleResponseLastRunWarning = "maxExecutableActions"
+	AlertingRuleResponseLastRunWarningMaxQueuedActions     AlertingRuleResponseLastRunWarning = "maxQueuedActions"
+	AlertingRuleResponseLastRunWarningRead                 AlertingRuleResponseLastRunWarning = "read"
+	AlertingRuleResponseLastRunWarningRuleExecution        AlertingRuleResponseLastRunWarning = "ruleExecution"
+	AlertingRuleResponseLastRunWarningTimeout              AlertingRuleResponseLastRunWarning = "timeout"
+	AlertingRuleResponseLastRunWarningUnknown              AlertingRuleResponseLastRunWarning = "unknown"
+	AlertingRuleResponseLastRunWarningValidate             AlertingRuleResponseLastRunWarning = "validate"
+)
+
+// Defines values for AlertingRuleResponseMonitoringRunHistoryOutcome.
+const (
+	AlertingRuleResponseMonitoringRunHistoryOutcomeFailed    AlertingRuleResponseMonitoringRunHistoryOutcome = "failed"
+	AlertingRuleResponseMonitoringRunHistoryOutcomeSucceeded AlertingRuleResponseMonitoringRunHistoryOutcome = "succeeded"
+	AlertingRuleResponseMonitoringRunHistoryOutcomeWarning   AlertingRuleResponseMonitoringRunHistoryOutcome = "warning"
+)
+
+// Defines values for AlertingRuleResponseNotifyWhen.
+const (
+	AlertingRuleResponseNotifyWhenOnActionGroupChange AlertingRuleResponseNotifyWhen = "onActionGroupChange"
+	AlertingRuleResponseNotifyWhenOnActiveAlert       AlertingRuleResponseNotifyWhen = "onActiveAlert"
+	AlertingRuleResponseNotifyWhenOnThrottleInterval  AlertingRuleResponseNotifyWhen = "onThrottleInterval"
+)
+
+// Defines values for AlertingRuleResponseSnoozeScheduleRRuleFreq.
+const (
+	AlertingRuleResponseSnoozeScheduleRRuleFreqN0 AlertingRuleResponseSnoozeScheduleRRuleFreq = 0
+	AlertingRuleResponseSnoozeScheduleRRuleFreqN1 AlertingRuleResponseSnoozeScheduleRRuleFreq = 1
+	AlertingRuleResponseSnoozeScheduleRRuleFreqN2 AlertingRuleResponseSnoozeScheduleRRuleFreq = 2
+	AlertingRuleResponseSnoozeScheduleRRuleFreqN3 AlertingRuleResponseSnoozeScheduleRRuleFreq = 3
+	AlertingRuleResponseSnoozeScheduleRRuleFreqN4 AlertingRuleResponseSnoozeScheduleRRuleFreq = 4
+	AlertingRuleResponseSnoozeScheduleRRuleFreqN5 AlertingRuleResponseSnoozeScheduleRRuleFreq = 5
+	AlertingRuleResponseSnoozeScheduleRRuleFreqN6 AlertingRuleResponseSnoozeScheduleRRuleFreq = 6
+)
+
+// Defines values for AlertingRuleResponseSnoozeScheduleRRuleWkst.
+const (
+	FR AlertingRuleResponseSnoozeScheduleRRuleWkst = "FR"
+	MO AlertingRuleResponseSnoozeScheduleRRuleWkst = "MO"
+	SA AlertingRuleResponseSnoozeScheduleRRuleWkst = "SA"
+	SU AlertingRuleResponseSnoozeScheduleRRuleWkst = "SU"
+	TH AlertingRuleResponseSnoozeScheduleRRuleWkst = "TH"
+	TU AlertingRuleResponseSnoozeScheduleRRuleWkst = "TU"
+	WE AlertingRuleResponseSnoozeScheduleRRuleWkst = "WE"
+)
+
+// Defines values for AlertingRuleUpdateRequestActionsAlertsFilterQueryFiltersStateStore.
+const (
+	AppState    AlertingRuleUpdateRequestActionsAlertsFilterQueryFiltersStateStore = "appState"
+	GlobalState AlertingRuleUpdateRequestActionsAlertsFilterQueryFiltersStateStore = "globalState"
+)
+
+// Defines values for AlertingRuleUpdateRequestActionsAlertsFilterTimeframeDays.
+const (
+	AlertingRuleUpdateRequestActionsAlertsFilterTimeframeDaysN1 AlertingRuleUpdateRequestActionsAlertsFilterTimeframeDays = 1
+	AlertingRuleUpdateRequestActionsAlertsFilterTimeframeDaysN2 AlertingRuleUpdateRequestActionsAlertsFilterTimeframeDays = 2
+	AlertingRuleUpdateRequestActionsAlertsFilterTimeframeDaysN3 AlertingRuleUpdateRequestActionsAlertsFilterTimeframeDays = 3
+	AlertingRuleUpdateRequestActionsAlertsFilterTimeframeDaysN4 AlertingRuleUpdateRequestActionsAlertsFilterTimeframeDays = 4
+	AlertingRuleUpdateRequestActionsAlertsFilterTimeframeDaysN5 AlertingRuleUpdateRequestActionsAlertsFilterTimeframeDays = 5
+	AlertingRuleUpdateRequestActionsAlertsFilterTimeframeDaysN6 AlertingRuleUpdateRequestActionsAlertsFilterTimeframeDays = 6
+	AlertingRuleUpdateRequestActionsAlertsFilterTimeframeDaysN7 AlertingRuleUpdateRequestActionsAlertsFilterTimeframeDays = 7
+)
+
+// Defines values for AlertingRuleUpdateRequestActionsFrequencyNotifyWhen.
+const (
+	AlertingRuleUpdateRequestActionsFrequencyNotifyWhenOnActionGroupChange AlertingRuleUpdateRequestActionsFrequencyNotifyWhen = "onActionGroupChange"
+	AlertingRuleUpdateRequestActionsFrequencyNotifyWhenOnActiveAlert       AlertingRuleUpdateRequestActionsFrequencyNotifyWhen = "onActiveAlert"
+	AlertingRuleUpdateRequestActionsFrequencyNotifyWhenOnThrottleInterval  AlertingRuleUpdateRequestActionsFrequencyNotifyWhen = "onThrottleInterval"
+)
+
+// Defines values for AlertingRuleUpdateRequestNotifyWhen.
+const (
+	AlertingRuleUpdateRequestNotifyWhenOnActionGroupChange AlertingRuleUpdateRequestNotifyWhen = "onActionGroupChange"
+	AlertingRuleUpdateRequestNotifyWhenOnActiveAlert       AlertingRuleUpdateRequestNotifyWhen = "onActiveAlert"
+	AlertingRuleUpdateRequestNotifyWhenOnThrottleInterval  AlertingRuleUpdateRequestNotifyWhen = "onThrottleInterval"
+)
+
+// Defines values for Groupby.
+const (
+	All Groupby = "all"
+	Top Groupby = "top"
 )
 
 // Defines values for NewOutputElasticsearchPreset.
@@ -408,11 +598,402 @@ const (
 	PackageListItemType2Content PackageListItemType2 = "content"
 )
 
+// Defines values for ParamsEsQueryDslRuleSearchType.
+const (
+	EsQuery ParamsEsQueryDslRuleSearchType = "esQuery"
+)
+
+// Defines values for ParamsEsQueryEsqlRuleSearchType.
+const (
+	EsqlQuery ParamsEsQueryEsqlRuleSearchType = "esqlQuery"
+)
+
+// Defines values for ParamsEsQueryEsqlRuleThresholdComparator.
+const (
+	ParamsEsQueryEsqlRuleThresholdComparatorGreaterThan ParamsEsQueryEsqlRuleThresholdComparator = ">"
+)
+
+// Defines values for ParamsEsQueryKqlRuleSearchType.
+const (
+	SearchSource ParamsEsQueryKqlRuleSearchType = "searchSource"
+)
+
+// Defines values for ParamsPropertyApmAnomalyAnomalySeverityType.
+const (
+	Critical ParamsPropertyApmAnomalyAnomalySeverityType = "critical"
+	Major    ParamsPropertyApmAnomalyAnomalySeverityType = "major"
+	Minor    ParamsPropertyApmAnomalyAnomalySeverityType = "minor"
+	Warning  ParamsPropertyApmAnomalyAnomalySeverityType = "warning"
+)
+
+// Defines values for ParamsPropertyApmAnomalyWindowUnit.
+const (
+	ParamsPropertyApmAnomalyWindowUnitD ParamsPropertyApmAnomalyWindowUnit = "d"
+	ParamsPropertyApmAnomalyWindowUnitH ParamsPropertyApmAnomalyWindowUnit = "h"
+	ParamsPropertyApmAnomalyWindowUnitM ParamsPropertyApmAnomalyWindowUnit = "m"
+)
+
+// Defines values for ParamsPropertyApmErrorCountGroupBy.
+const (
+	ParamsPropertyApmErrorCountGroupByErrorGroupingKey   ParamsPropertyApmErrorCountGroupBy = "error.grouping_key"
+	ParamsPropertyApmErrorCountGroupByServiceEnvironment ParamsPropertyApmErrorCountGroupBy = "service.environment"
+	ParamsPropertyApmErrorCountGroupByServiceName        ParamsPropertyApmErrorCountGroupBy = "service.name"
+	ParamsPropertyApmErrorCountGroupByTransactionName    ParamsPropertyApmErrorCountGroupBy = "transaction.name"
+)
+
+// Defines values for ParamsPropertyApmErrorCountWindowUnit.
+const (
+	ParamsPropertyApmErrorCountWindowUnitD ParamsPropertyApmErrorCountWindowUnit = "d"
+	ParamsPropertyApmErrorCountWindowUnitH ParamsPropertyApmErrorCountWindowUnit = "h"
+	ParamsPropertyApmErrorCountWindowUnitM ParamsPropertyApmErrorCountWindowUnit = "m"
+)
+
+// Defines values for ParamsPropertyApmTransactionDurationAggregationType.
+const (
+	ParamsPropertyApmTransactionDurationAggregationTypeAvg   ParamsPropertyApmTransactionDurationAggregationType = "avg"
+	ParamsPropertyApmTransactionDurationAggregationTypeN95th ParamsPropertyApmTransactionDurationAggregationType = "95th"
+	ParamsPropertyApmTransactionDurationAggregationTypeN99th ParamsPropertyApmTransactionDurationAggregationType = "99th"
+)
+
+// Defines values for ParamsPropertyApmTransactionDurationGroupBy.
+const (
+	ParamsPropertyApmTransactionDurationGroupByServiceEnvironment ParamsPropertyApmTransactionDurationGroupBy = "service.environment"
+	ParamsPropertyApmTransactionDurationGroupByServiceName        ParamsPropertyApmTransactionDurationGroupBy = "service.name"
+	ParamsPropertyApmTransactionDurationGroupByTransactionName    ParamsPropertyApmTransactionDurationGroupBy = "transaction.name"
+	ParamsPropertyApmTransactionDurationGroupByTransactionType    ParamsPropertyApmTransactionDurationGroupBy = "transaction.type"
+)
+
+// Defines values for ParamsPropertyApmTransactionDurationWindowUnit.
+const (
+	ParamsPropertyApmTransactionDurationWindowUnitD ParamsPropertyApmTransactionDurationWindowUnit = "d"
+	ParamsPropertyApmTransactionDurationWindowUnitH ParamsPropertyApmTransactionDurationWindowUnit = "h"
+	ParamsPropertyApmTransactionDurationWindowUnitM ParamsPropertyApmTransactionDurationWindowUnit = "m"
+)
+
+// Defines values for ParamsPropertyApmTransactionErrorRateGroupBy.
+const (
+	ServiceEnvironment ParamsPropertyApmTransactionErrorRateGroupBy = "service.environment"
+	ServiceName        ParamsPropertyApmTransactionErrorRateGroupBy = "service.name"
+	TransactionName    ParamsPropertyApmTransactionErrorRateGroupBy = "transaction.name"
+	TransactionType    ParamsPropertyApmTransactionErrorRateGroupBy = "transaction.type"
+)
+
+// Defines values for ParamsPropertyApmTransactionErrorRateWindowUnit.
+const (
+	ParamsPropertyApmTransactionErrorRateWindowUnitD ParamsPropertyApmTransactionErrorRateWindowUnit = "d"
+	ParamsPropertyApmTransactionErrorRateWindowUnitH ParamsPropertyApmTransactionErrorRateWindowUnit = "h"
+	ParamsPropertyApmTransactionErrorRateWindowUnitM ParamsPropertyApmTransactionErrorRateWindowUnit = "m"
+)
+
+// Defines values for ParamsPropertyInfraInventoryCriteriaComparator.
+const (
+	ParamsPropertyInfraInventoryCriteriaComparatorBetween          ParamsPropertyInfraInventoryCriteriaComparator = "between"
+	ParamsPropertyInfraInventoryCriteriaComparatorGreaterThan      ParamsPropertyInfraInventoryCriteriaComparator = ">"
+	ParamsPropertyInfraInventoryCriteriaComparatorGreaterThanEqual ParamsPropertyInfraInventoryCriteriaComparator = ">="
+	ParamsPropertyInfraInventoryCriteriaComparatorLessThan         ParamsPropertyInfraInventoryCriteriaComparator = "<"
+	ParamsPropertyInfraInventoryCriteriaComparatorLessThanEqual    ParamsPropertyInfraInventoryCriteriaComparator = "<="
+	ParamsPropertyInfraInventoryCriteriaComparatorOutside          ParamsPropertyInfraInventoryCriteriaComparator = "outside"
+)
+
+// Defines values for ParamsPropertyInfraInventoryCriteriaCustomMetricAggregation.
+const (
+	ParamsPropertyInfraInventoryCriteriaCustomMetricAggregationAvg  ParamsPropertyInfraInventoryCriteriaCustomMetricAggregation = "avg"
+	ParamsPropertyInfraInventoryCriteriaCustomMetricAggregationMax  ParamsPropertyInfraInventoryCriteriaCustomMetricAggregation = "max"
+	ParamsPropertyInfraInventoryCriteriaCustomMetricAggregationMin  ParamsPropertyInfraInventoryCriteriaCustomMetricAggregation = "min"
+	ParamsPropertyInfraInventoryCriteriaCustomMetricAggregationRate ParamsPropertyInfraInventoryCriteriaCustomMetricAggregation = "rate"
+)
+
+// Defines values for ParamsPropertyInfraInventoryCriteriaCustomMetricType.
+const (
+	ParamsPropertyInfraInventoryCriteriaCustomMetricTypeCustom ParamsPropertyInfraInventoryCriteriaCustomMetricType = "custom"
+)
+
+// Defines values for ParamsPropertyInfraInventoryCriteriaMetric.
+const (
+	ParamsPropertyInfraInventoryCriteriaMetricCount                 ParamsPropertyInfraInventoryCriteriaMetric = "count"
+	ParamsPropertyInfraInventoryCriteriaMetricCpu                   ParamsPropertyInfraInventoryCriteriaMetric = "cpu"
+	ParamsPropertyInfraInventoryCriteriaMetricCustom                ParamsPropertyInfraInventoryCriteriaMetric = "custom"
+	ParamsPropertyInfraInventoryCriteriaMetricDiskIOReadBytes       ParamsPropertyInfraInventoryCriteriaMetric = "diskIOReadBytes"
+	ParamsPropertyInfraInventoryCriteriaMetricDiskIOWriteBytes      ParamsPropertyInfraInventoryCriteriaMetric = "diskIOWriteBytes"
+	ParamsPropertyInfraInventoryCriteriaMetricDiskLatency           ParamsPropertyInfraInventoryCriteriaMetric = "diskLatency"
+	ParamsPropertyInfraInventoryCriteriaMetricLoad                  ParamsPropertyInfraInventoryCriteriaMetric = "load"
+	ParamsPropertyInfraInventoryCriteriaMetricLogRate               ParamsPropertyInfraInventoryCriteriaMetric = "logRate"
+	ParamsPropertyInfraInventoryCriteriaMetricMemory                ParamsPropertyInfraInventoryCriteriaMetric = "memory"
+	ParamsPropertyInfraInventoryCriteriaMetricMemoryTotal           ParamsPropertyInfraInventoryCriteriaMetric = "memoryTotal"
+	ParamsPropertyInfraInventoryCriteriaMetricRdsActiveTransactions ParamsPropertyInfraInventoryCriteriaMetric = "rdsActiveTransactions"
+	ParamsPropertyInfraInventoryCriteriaMetricRdsConnections        ParamsPropertyInfraInventoryCriteriaMetric = "rdsConnections"
+	ParamsPropertyInfraInventoryCriteriaMetricRdsLatency            ParamsPropertyInfraInventoryCriteriaMetric = "rdsLatency"
+	ParamsPropertyInfraInventoryCriteriaMetricRdsQueriesExecuted    ParamsPropertyInfraInventoryCriteriaMetric = "rdsQueriesExecuted"
+	ParamsPropertyInfraInventoryCriteriaMetricRx                    ParamsPropertyInfraInventoryCriteriaMetric = "rx"
+	ParamsPropertyInfraInventoryCriteriaMetricS3BucketSize          ParamsPropertyInfraInventoryCriteriaMetric = "s3BucketSize"
+	ParamsPropertyInfraInventoryCriteriaMetricS3DownloadBytes       ParamsPropertyInfraInventoryCriteriaMetric = "s3DownloadBytes"
+	ParamsPropertyInfraInventoryCriteriaMetricS3NumberOfObjects     ParamsPropertyInfraInventoryCriteriaMetric = "s3NumberOfObjects"
+	ParamsPropertyInfraInventoryCriteriaMetricS3TotalRequests       ParamsPropertyInfraInventoryCriteriaMetric = "s3TotalRequests"
+	ParamsPropertyInfraInventoryCriteriaMetricS3UploadBytes         ParamsPropertyInfraInventoryCriteriaMetric = "s3UploadBytes"
+	ParamsPropertyInfraInventoryCriteriaMetricSqsMessagesDelayed    ParamsPropertyInfraInventoryCriteriaMetric = "sqsMessagesDelayed"
+	ParamsPropertyInfraInventoryCriteriaMetricSqsMessagesEmpty      ParamsPropertyInfraInventoryCriteriaMetric = "sqsMessagesEmpty"
+	ParamsPropertyInfraInventoryCriteriaMetricSqsMessagesSent       ParamsPropertyInfraInventoryCriteriaMetric = "sqsMessagesSent"
+	ParamsPropertyInfraInventoryCriteriaMetricSqsMessagesVisible    ParamsPropertyInfraInventoryCriteriaMetric = "sqsMessagesVisible"
+	ParamsPropertyInfraInventoryCriteriaMetricSqsOldestMessage      ParamsPropertyInfraInventoryCriteriaMetric = "sqsOldestMessage"
+	ParamsPropertyInfraInventoryCriteriaMetricTx                    ParamsPropertyInfraInventoryCriteriaMetric = "tx"
+)
+
+// Defines values for ParamsPropertyInfraInventoryCriteriaTimeUnit.
+const (
+	ParamsPropertyInfraInventoryCriteriaTimeUnitD ParamsPropertyInfraInventoryCriteriaTimeUnit = "d"
+	ParamsPropertyInfraInventoryCriteriaTimeUnitH ParamsPropertyInfraInventoryCriteriaTimeUnit = "h"
+	ParamsPropertyInfraInventoryCriteriaTimeUnitM ParamsPropertyInfraInventoryCriteriaTimeUnit = "m"
+	ParamsPropertyInfraInventoryCriteriaTimeUnitS ParamsPropertyInfraInventoryCriteriaTimeUnit = "s"
+)
+
+// Defines values for ParamsPropertyInfraInventoryCriteriaWarningComparator.
+const (
+	ParamsPropertyInfraInventoryCriteriaWarningComparatorBetween          ParamsPropertyInfraInventoryCriteriaWarningComparator = "between"
+	ParamsPropertyInfraInventoryCriteriaWarningComparatorGreaterThan      ParamsPropertyInfraInventoryCriteriaWarningComparator = ">"
+	ParamsPropertyInfraInventoryCriteriaWarningComparatorGreaterThanEqual ParamsPropertyInfraInventoryCriteriaWarningComparator = ">="
+	ParamsPropertyInfraInventoryCriteriaWarningComparatorLessThan         ParamsPropertyInfraInventoryCriteriaWarningComparator = "<"
+	ParamsPropertyInfraInventoryCriteriaWarningComparatorLessThanEqual    ParamsPropertyInfraInventoryCriteriaWarningComparator = "<="
+	ParamsPropertyInfraInventoryCriteriaWarningComparatorOutside          ParamsPropertyInfraInventoryCriteriaWarningComparator = "outside"
+)
+
+// Defines values for ParamsPropertyInfraInventoryNodeType.
+const (
+	AwsEC2    ParamsPropertyInfraInventoryNodeType = "awsEC2"
+	AwsRDS    ParamsPropertyInfraInventoryNodeType = "awsRDS"
+	AwsS3     ParamsPropertyInfraInventoryNodeType = "awsS3"
+	AwsSQS    ParamsPropertyInfraInventoryNodeType = "awsSQS"
+	Container ParamsPropertyInfraInventoryNodeType = "container"
+	Host      ParamsPropertyInfraInventoryNodeType = "host"
+	Pod       ParamsPropertyInfraInventoryNodeType = "pod"
+)
+
+// Defines values for ParamsPropertyInfraMetricThresholdCriteria0AggType.
+const (
+	ParamsPropertyInfraMetricThresholdCriteria0AggTypeAvg         ParamsPropertyInfraMetricThresholdCriteria0AggType = "avg"
+	ParamsPropertyInfraMetricThresholdCriteria0AggTypeCardinality ParamsPropertyInfraMetricThresholdCriteria0AggType = "cardinality"
+	ParamsPropertyInfraMetricThresholdCriteria0AggTypeCount       ParamsPropertyInfraMetricThresholdCriteria0AggType = "count"
+	ParamsPropertyInfraMetricThresholdCriteria0AggTypeCustom      ParamsPropertyInfraMetricThresholdCriteria0AggType = "custom"
+	ParamsPropertyInfraMetricThresholdCriteria0AggTypeMax         ParamsPropertyInfraMetricThresholdCriteria0AggType = "max"
+	ParamsPropertyInfraMetricThresholdCriteria0AggTypeMin         ParamsPropertyInfraMetricThresholdCriteria0AggType = "min"
+	ParamsPropertyInfraMetricThresholdCriteria0AggTypeP95         ParamsPropertyInfraMetricThresholdCriteria0AggType = "p95"
+	ParamsPropertyInfraMetricThresholdCriteria0AggTypeP99         ParamsPropertyInfraMetricThresholdCriteria0AggType = "p99"
+	ParamsPropertyInfraMetricThresholdCriteria0AggTypeRate        ParamsPropertyInfraMetricThresholdCriteria0AggType = "rate"
+	ParamsPropertyInfraMetricThresholdCriteria0AggTypeSum         ParamsPropertyInfraMetricThresholdCriteria0AggType = "sum"
+)
+
+// Defines values for ParamsPropertyInfraMetricThresholdCriteria0Comparator.
+const (
+	ParamsPropertyInfraMetricThresholdCriteria0ComparatorBetween          ParamsPropertyInfraMetricThresholdCriteria0Comparator = "between"
+	ParamsPropertyInfraMetricThresholdCriteria0ComparatorGreaterThan      ParamsPropertyInfraMetricThresholdCriteria0Comparator = ">"
+	ParamsPropertyInfraMetricThresholdCriteria0ComparatorGreaterThanEqual ParamsPropertyInfraMetricThresholdCriteria0Comparator = ">="
+	ParamsPropertyInfraMetricThresholdCriteria0ComparatorLessThan         ParamsPropertyInfraMetricThresholdCriteria0Comparator = "<"
+	ParamsPropertyInfraMetricThresholdCriteria0ComparatorLessThanEqual    ParamsPropertyInfraMetricThresholdCriteria0Comparator = "<="
+	ParamsPropertyInfraMetricThresholdCriteria0ComparatorOutside          ParamsPropertyInfraMetricThresholdCriteria0Comparator = "outside"
+)
+
+// Defines values for ParamsPropertyInfraMetricThresholdCriteria0TimeUnit.
+const (
+	ParamsPropertyInfraMetricThresholdCriteria0TimeUnitD ParamsPropertyInfraMetricThresholdCriteria0TimeUnit = "d"
+	ParamsPropertyInfraMetricThresholdCriteria0TimeUnitH ParamsPropertyInfraMetricThresholdCriteria0TimeUnit = "h"
+	ParamsPropertyInfraMetricThresholdCriteria0TimeUnitM ParamsPropertyInfraMetricThresholdCriteria0TimeUnit = "m"
+	ParamsPropertyInfraMetricThresholdCriteria0TimeUnitS ParamsPropertyInfraMetricThresholdCriteria0TimeUnit = "s"
+)
+
+// Defines values for ParamsPropertyInfraMetricThresholdCriteria0WarningComparator.
+const (
+	ParamsPropertyInfraMetricThresholdCriteria0WarningComparatorBetween          ParamsPropertyInfraMetricThresholdCriteria0WarningComparator = "between"
+	ParamsPropertyInfraMetricThresholdCriteria0WarningComparatorGreaterThan      ParamsPropertyInfraMetricThresholdCriteria0WarningComparator = ">"
+	ParamsPropertyInfraMetricThresholdCriteria0WarningComparatorGreaterThanEqual ParamsPropertyInfraMetricThresholdCriteria0WarningComparator = ">="
+	ParamsPropertyInfraMetricThresholdCriteria0WarningComparatorLessThan         ParamsPropertyInfraMetricThresholdCriteria0WarningComparator = "<"
+	ParamsPropertyInfraMetricThresholdCriteria0WarningComparatorLessThanEqual    ParamsPropertyInfraMetricThresholdCriteria0WarningComparator = "<="
+	ParamsPropertyInfraMetricThresholdCriteria0WarningComparatorOutside          ParamsPropertyInfraMetricThresholdCriteria0WarningComparator = "outside"
+)
+
+// Defines values for ParamsPropertyInfraMetricThresholdCriteria1AggType.
+const (
+	ParamsPropertyInfraMetricThresholdCriteria1AggTypeCount ParamsPropertyInfraMetricThresholdCriteria1AggType = "count"
+)
+
+// Defines values for ParamsPropertyInfraMetricThresholdCriteria1Comparator.
+const (
+	ParamsPropertyInfraMetricThresholdCriteria1ComparatorBetween          ParamsPropertyInfraMetricThresholdCriteria1Comparator = "between"
+	ParamsPropertyInfraMetricThresholdCriteria1ComparatorGreaterThan      ParamsPropertyInfraMetricThresholdCriteria1Comparator = ">"
+	ParamsPropertyInfraMetricThresholdCriteria1ComparatorGreaterThanEqual ParamsPropertyInfraMetricThresholdCriteria1Comparator = ">="
+	ParamsPropertyInfraMetricThresholdCriteria1ComparatorLessThan         ParamsPropertyInfraMetricThresholdCriteria1Comparator = "<"
+	ParamsPropertyInfraMetricThresholdCriteria1ComparatorLessThanEqual    ParamsPropertyInfraMetricThresholdCriteria1Comparator = "<="
+	ParamsPropertyInfraMetricThresholdCriteria1ComparatorOutside          ParamsPropertyInfraMetricThresholdCriteria1Comparator = "outside"
+)
+
+// Defines values for ParamsPropertyInfraMetricThresholdCriteria1TimeUnit.
+const (
+	ParamsPropertyInfraMetricThresholdCriteria1TimeUnitD ParamsPropertyInfraMetricThresholdCriteria1TimeUnit = "d"
+	ParamsPropertyInfraMetricThresholdCriteria1TimeUnitH ParamsPropertyInfraMetricThresholdCriteria1TimeUnit = "h"
+	ParamsPropertyInfraMetricThresholdCriteria1TimeUnitM ParamsPropertyInfraMetricThresholdCriteria1TimeUnit = "m"
+	ParamsPropertyInfraMetricThresholdCriteria1TimeUnitS ParamsPropertyInfraMetricThresholdCriteria1TimeUnit = "s"
+)
+
+// Defines values for ParamsPropertyInfraMetricThresholdCriteria1WarningComparator.
+const (
+	ParamsPropertyInfraMetricThresholdCriteria1WarningComparatorBetween          ParamsPropertyInfraMetricThresholdCriteria1WarningComparator = "between"
+	ParamsPropertyInfraMetricThresholdCriteria1WarningComparatorGreaterThan      ParamsPropertyInfraMetricThresholdCriteria1WarningComparator = ">"
+	ParamsPropertyInfraMetricThresholdCriteria1WarningComparatorGreaterThanEqual ParamsPropertyInfraMetricThresholdCriteria1WarningComparator = ">="
+	ParamsPropertyInfraMetricThresholdCriteria1WarningComparatorLessThan         ParamsPropertyInfraMetricThresholdCriteria1WarningComparator = "<"
+	ParamsPropertyInfraMetricThresholdCriteria1WarningComparatorLessThanEqual    ParamsPropertyInfraMetricThresholdCriteria1WarningComparator = "<="
+	ParamsPropertyInfraMetricThresholdCriteria1WarningComparatorOutside          ParamsPropertyInfraMetricThresholdCriteria1WarningComparator = "outside"
+)
+
+// Defines values for ParamsPropertyInfraMetricThresholdCriteria2AggType.
+const (
+	ParamsPropertyInfraMetricThresholdCriteria2AggTypeCustom ParamsPropertyInfraMetricThresholdCriteria2AggType = "custom"
+)
+
+// Defines values for ParamsPropertyInfraMetricThresholdCriteria2Comparator.
+const (
+	ParamsPropertyInfraMetricThresholdCriteria2ComparatorBetween          ParamsPropertyInfraMetricThresholdCriteria2Comparator = "between"
+	ParamsPropertyInfraMetricThresholdCriteria2ComparatorGreaterThan      ParamsPropertyInfraMetricThresholdCriteria2Comparator = ">"
+	ParamsPropertyInfraMetricThresholdCriteria2ComparatorGreaterThanEqual ParamsPropertyInfraMetricThresholdCriteria2Comparator = ">="
+	ParamsPropertyInfraMetricThresholdCriteria2ComparatorLessThan         ParamsPropertyInfraMetricThresholdCriteria2Comparator = "<"
+	ParamsPropertyInfraMetricThresholdCriteria2ComparatorLessThanEqual    ParamsPropertyInfraMetricThresholdCriteria2Comparator = "<="
+	ParamsPropertyInfraMetricThresholdCriteria2ComparatorOutside          ParamsPropertyInfraMetricThresholdCriteria2Comparator = "outside"
+)
+
+// Defines values for ParamsPropertyInfraMetricThresholdCriteria2CustomMetric0AggType.
+const (
+	Avg         ParamsPropertyInfraMetricThresholdCriteria2CustomMetric0AggType = "avg"
+	Cardinality ParamsPropertyInfraMetricThresholdCriteria2CustomMetric0AggType = "cardinality"
+	Max         ParamsPropertyInfraMetricThresholdCriteria2CustomMetric0AggType = "max"
+	Min         ParamsPropertyInfraMetricThresholdCriteria2CustomMetric0AggType = "min"
+	Sum         ParamsPropertyInfraMetricThresholdCriteria2CustomMetric0AggType = "sum"
+)
+
+// Defines values for ParamsPropertyInfraMetricThresholdCriteria2CustomMetric1AggType.
+const (
+	ParamsPropertyInfraMetricThresholdCriteria2CustomMetric1AggTypeCount ParamsPropertyInfraMetricThresholdCriteria2CustomMetric1AggType = "count"
+)
+
+// Defines values for ParamsPropertyInfraMetricThresholdCriteria2TimeUnit.
+const (
+	ParamsPropertyInfraMetricThresholdCriteria2TimeUnitD ParamsPropertyInfraMetricThresholdCriteria2TimeUnit = "d"
+	ParamsPropertyInfraMetricThresholdCriteria2TimeUnitH ParamsPropertyInfraMetricThresholdCriteria2TimeUnit = "h"
+	ParamsPropertyInfraMetricThresholdCriteria2TimeUnitM ParamsPropertyInfraMetricThresholdCriteria2TimeUnit = "m"
+	ParamsPropertyInfraMetricThresholdCriteria2TimeUnitS ParamsPropertyInfraMetricThresholdCriteria2TimeUnit = "s"
+)
+
+// Defines values for ParamsPropertyInfraMetricThresholdCriteria2WarningComparator.
+const (
+	ParamsPropertyInfraMetricThresholdCriteria2WarningComparatorBetween          ParamsPropertyInfraMetricThresholdCriteria2WarningComparator = "between"
+	ParamsPropertyInfraMetricThresholdCriteria2WarningComparatorGreaterThan      ParamsPropertyInfraMetricThresholdCriteria2WarningComparator = ">"
+	ParamsPropertyInfraMetricThresholdCriteria2WarningComparatorGreaterThanEqual ParamsPropertyInfraMetricThresholdCriteria2WarningComparator = ">="
+	ParamsPropertyInfraMetricThresholdCriteria2WarningComparatorLessThan         ParamsPropertyInfraMetricThresholdCriteria2WarningComparator = "<"
+	ParamsPropertyInfraMetricThresholdCriteria2WarningComparatorLessThanEqual    ParamsPropertyInfraMetricThresholdCriteria2WarningComparator = "<="
+	ParamsPropertyInfraMetricThresholdCriteria2WarningComparatorOutside          ParamsPropertyInfraMetricThresholdCriteria2WarningComparator = "outside"
+)
+
+// Defines values for ParamsPropertyLogThreshold0CountComparator.
+const (
+	ParamsPropertyLogThreshold0CountComparatorDoesNotEqual       ParamsPropertyLogThreshold0CountComparator = "does not equal"
+	ParamsPropertyLogThreshold0CountComparatorDoesNotMatch       ParamsPropertyLogThreshold0CountComparator = "does not match"
+	ParamsPropertyLogThreshold0CountComparatorDoesNotMatchPhrase ParamsPropertyLogThreshold0CountComparator = "does not match phrase"
+	ParamsPropertyLogThreshold0CountComparatorEquals             ParamsPropertyLogThreshold0CountComparator = "equals"
+	ParamsPropertyLogThreshold0CountComparatorLessThan           ParamsPropertyLogThreshold0CountComparator = "less than"
+	ParamsPropertyLogThreshold0CountComparatorLessThanOrEquals   ParamsPropertyLogThreshold0CountComparator = "less than or equals"
+	ParamsPropertyLogThreshold0CountComparatorMatches            ParamsPropertyLogThreshold0CountComparator = "matches"
+	ParamsPropertyLogThreshold0CountComparatorMatchesPhrase      ParamsPropertyLogThreshold0CountComparator = "matches phrase"
+	ParamsPropertyLogThreshold0CountComparatorMoreThan           ParamsPropertyLogThreshold0CountComparator = "more than"
+	ParamsPropertyLogThreshold0CountComparatorMoreThanOrEquals   ParamsPropertyLogThreshold0CountComparator = "more than or equals"
+)
+
+// Defines values for ParamsPropertyLogThreshold0CriteriaComparator.
+const (
+	ParamsPropertyLogThreshold0CriteriaComparatorDoesNotEqual       ParamsPropertyLogThreshold0CriteriaComparator = "does not equal"
+	ParamsPropertyLogThreshold0CriteriaComparatorDoesNotMatch       ParamsPropertyLogThreshold0CriteriaComparator = "does not match"
+	ParamsPropertyLogThreshold0CriteriaComparatorDoesNotMatchPhrase ParamsPropertyLogThreshold0CriteriaComparator = "does not match phrase"
+	ParamsPropertyLogThreshold0CriteriaComparatorEquals             ParamsPropertyLogThreshold0CriteriaComparator = "equals"
+	ParamsPropertyLogThreshold0CriteriaComparatorLessThan           ParamsPropertyLogThreshold0CriteriaComparator = "less than"
+	ParamsPropertyLogThreshold0CriteriaComparatorLessThanOrEquals   ParamsPropertyLogThreshold0CriteriaComparator = "less than or equals"
+	ParamsPropertyLogThreshold0CriteriaComparatorMatches            ParamsPropertyLogThreshold0CriteriaComparator = "matches"
+	ParamsPropertyLogThreshold0CriteriaComparatorMatchesPhrase      ParamsPropertyLogThreshold0CriteriaComparator = "matches phrase"
+	ParamsPropertyLogThreshold0CriteriaComparatorMoreThan           ParamsPropertyLogThreshold0CriteriaComparator = "more than"
+	ParamsPropertyLogThreshold0CriteriaComparatorMoreThanOrEquals   ParamsPropertyLogThreshold0CriteriaComparator = "more than or equals"
+)
+
+// Defines values for ParamsPropertyLogThreshold0LogViewType.
+const (
+	ParamsPropertyLogThreshold0LogViewTypeLogViewReference ParamsPropertyLogThreshold0LogViewType = "log-view-reference"
+)
+
+// Defines values for ParamsPropertyLogThreshold0TimeUnit.
+const (
+	ParamsPropertyLogThreshold0TimeUnitD ParamsPropertyLogThreshold0TimeUnit = "d"
+	ParamsPropertyLogThreshold0TimeUnitH ParamsPropertyLogThreshold0TimeUnit = "h"
+	ParamsPropertyLogThreshold0TimeUnitM ParamsPropertyLogThreshold0TimeUnit = "m"
+	ParamsPropertyLogThreshold0TimeUnitS ParamsPropertyLogThreshold0TimeUnit = "s"
+)
+
+// Defines values for ParamsPropertyLogThreshold1CountComparator.
+const (
+	ParamsPropertyLogThreshold1CountComparatorDoesNotEqual       ParamsPropertyLogThreshold1CountComparator = "does not equal"
+	ParamsPropertyLogThreshold1CountComparatorDoesNotMatch       ParamsPropertyLogThreshold1CountComparator = "does not match"
+	ParamsPropertyLogThreshold1CountComparatorDoesNotMatchPhrase ParamsPropertyLogThreshold1CountComparator = "does not match phrase"
+	ParamsPropertyLogThreshold1CountComparatorEquals             ParamsPropertyLogThreshold1CountComparator = "equals"
+	ParamsPropertyLogThreshold1CountComparatorLessThan           ParamsPropertyLogThreshold1CountComparator = "less than"
+	ParamsPropertyLogThreshold1CountComparatorLessThanOrEquals   ParamsPropertyLogThreshold1CountComparator = "less than or equals"
+	ParamsPropertyLogThreshold1CountComparatorMatches            ParamsPropertyLogThreshold1CountComparator = "matches"
+	ParamsPropertyLogThreshold1CountComparatorMatchesPhrase      ParamsPropertyLogThreshold1CountComparator = "matches phrase"
+	ParamsPropertyLogThreshold1CountComparatorMoreThan           ParamsPropertyLogThreshold1CountComparator = "more than"
+	ParamsPropertyLogThreshold1CountComparatorMoreThanOrEquals   ParamsPropertyLogThreshold1CountComparator = "more than or equals"
+)
+
+// Defines values for ParamsPropertyLogThreshold1CriteriaComparator.
+const (
+	ParamsPropertyLogThreshold1CriteriaComparatorDoesNotEqual       ParamsPropertyLogThreshold1CriteriaComparator = "does not equal"
+	ParamsPropertyLogThreshold1CriteriaComparatorDoesNotMatch       ParamsPropertyLogThreshold1CriteriaComparator = "does not match"
+	ParamsPropertyLogThreshold1CriteriaComparatorDoesNotMatchPhrase ParamsPropertyLogThreshold1CriteriaComparator = "does not match phrase"
+	ParamsPropertyLogThreshold1CriteriaComparatorEquals             ParamsPropertyLogThreshold1CriteriaComparator = "equals"
+	ParamsPropertyLogThreshold1CriteriaComparatorLessThan           ParamsPropertyLogThreshold1CriteriaComparator = "less than"
+	ParamsPropertyLogThreshold1CriteriaComparatorLessThanOrEquals   ParamsPropertyLogThreshold1CriteriaComparator = "less than or equals"
+	ParamsPropertyLogThreshold1CriteriaComparatorMatches            ParamsPropertyLogThreshold1CriteriaComparator = "matches"
+	ParamsPropertyLogThreshold1CriteriaComparatorMatchesPhrase      ParamsPropertyLogThreshold1CriteriaComparator = "matches phrase"
+	ParamsPropertyLogThreshold1CriteriaComparatorMoreThan           ParamsPropertyLogThreshold1CriteriaComparator = "more than"
+	ParamsPropertyLogThreshold1CriteriaComparatorMoreThanOrEquals   ParamsPropertyLogThreshold1CriteriaComparator = "more than or equals"
+)
+
+// Defines values for ParamsPropertyLogThreshold1LogViewType.
+const (
+	ParamsPropertyLogThreshold1LogViewTypeLogViewReference ParamsPropertyLogThreshold1LogViewType = "log-view-reference"
+)
+
+// Defines values for ParamsPropertyLogThreshold1TimeUnit.
+const (
+	ParamsPropertyLogThreshold1TimeUnitD ParamsPropertyLogThreshold1TimeUnit = "d"
+	ParamsPropertyLogThreshold1TimeUnitH ParamsPropertyLogThreshold1TimeUnit = "h"
+	ParamsPropertyLogThreshold1TimeUnitM ParamsPropertyLogThreshold1TimeUnit = "m"
+	ParamsPropertyLogThreshold1TimeUnitS ParamsPropertyLogThreshold1TimeUnit = "s"
+)
+
 // Defines values for ServerHostSslClientAuth.
 const (
 	ServerHostSslClientAuthNone     ServerHostSslClientAuth = "none"
 	ServerHostSslClientAuthOptional ServerHostSslClientAuth = "optional"
 	ServerHostSslClientAuthRequired ServerHostSslClientAuth = "required"
+)
+
+// Defines values for Thresholdcomparator.
+const (
+	ThresholdcomparatorBetween          Thresholdcomparator = "between"
+	ThresholdcomparatorGreaterThan      Thresholdcomparator = ">"
+	ThresholdcomparatorGreaterThanEqual Thresholdcomparator = ">="
+	ThresholdcomparatorLessThan         Thresholdcomparator = "<"
+	ThresholdcomparatorLessThanEqual    Thresholdcomparator = "<="
+	ThresholdcomparatorNotBetween       Thresholdcomparator = "notBetween"
+)
+
+// Defines values for Timewindowunit.
+const (
+	D Timewindowunit = "d"
+	H Timewindowunit = "h"
+	M Timewindowunit = "m"
+	S Timewindowunit = "s"
 )
 
 // Defines values for UpdateOutputElasticsearchPreset.
@@ -478,11 +1059,11 @@ const (
 
 // Defines values for UpdateOutputRemoteElasticsearchPreset.
 const (
-	UpdateOutputRemoteElasticsearchPresetBalanced   UpdateOutputRemoteElasticsearchPreset = "balanced"
-	UpdateOutputRemoteElasticsearchPresetCustom     UpdateOutputRemoteElasticsearchPreset = "custom"
-	UpdateOutputRemoteElasticsearchPresetLatency    UpdateOutputRemoteElasticsearchPreset = "latency"
-	UpdateOutputRemoteElasticsearchPresetScale      UpdateOutputRemoteElasticsearchPreset = "scale"
-	UpdateOutputRemoteElasticsearchPresetThroughput UpdateOutputRemoteElasticsearchPreset = "throughput"
+	Balanced   UpdateOutputRemoteElasticsearchPreset = "balanced"
+	Custom     UpdateOutputRemoteElasticsearchPreset = "custom"
+	Latency    UpdateOutputRemoteElasticsearchPreset = "latency"
+	Scale      UpdateOutputRemoteElasticsearchPreset = "scale"
+	Throughput UpdateOutputRemoteElasticsearchPreset = "throughput"
 )
 
 // Defines values for UpdateOutputRemoteElasticsearchType.
@@ -1271,6 +1852,642 @@ type AgentPolicyGlobalDataTagsItem_Value struct {
 	union json.RawMessage
 }
 
+// Aggfield The name of the numeric field that is used in the aggregation. This property is required when `aggType` is `avg`, `max`, `min` or `sum`.
+type Aggfield = string
+
+// Aggtype The type of aggregation to perform.
+type Aggtype string
+
+// AlertingRuleAction defines model for alerting_rule_action.
+type AlertingRuleAction struct {
+	// AlertsFilter Defines a period that limits whether the action runs.
+	AlertsFilter *struct {
+		Query *struct {
+			// Dsl A filter written in Elasticsearch Query Domain Specific Language (DSL).
+			Dsl *string `json:"dsl,omitempty"`
+
+			// Filters A filter written in Elasticsearch Query Domain Specific Language (DSL) as defined in the `kbn-es-query` package.
+			Filters []struct {
+				State *struct {
+					// Store A filter can be either specific to an application context or applied globally.
+					Store AlertingRuleActionAlertsFilterQueryFiltersStateStore `json:"store"`
+				} `json:"$state,omitempty"`
+				Meta  map[string]interface{}  `json:"meta"`
+				Query *map[string]interface{} `json:"query,omitempty"`
+			} `json:"filters"`
+
+			// Kql A filter written in Kibana Query Language (KQL).
+			Kql string `json:"kql"`
+		} `json:"query,omitempty"`
+		Timeframe *struct {
+			// Days Defines the days of the week that the action can run, represented as an array of numbers. For example, `1` represents Monday. An empty array is equivalent to specifying all the days of the week.
+			Days  []AlertingRuleActionAlertsFilterTimeframeDays `json:"days"`
+			Hours struct {
+				// End The end of the time frame in 24-hour notation (`hh:mm`).
+				End string `json:"end"`
+
+				// Start The start of the time frame in 24-hour notation (`hh:mm`).
+				Start string `json:"start"`
+			} `json:"hours"`
+
+			// Timezone The ISO time zone for the `hours` values. Values such as `UTC` and `UTC+1` also work but lack built-in daylight savings time support and are not recommended.
+			Timezone string `json:"timezone"`
+		} `json:"timeframe,omitempty"`
+	} `json:"alerts_filter,omitempty"`
+
+	// ConnectorTypeId The type of connector. This property appears in responses but cannot be set in requests.
+	ConnectorTypeId string `json:"connector_type_id"`
+	Frequency       *struct {
+		// NotifyWhen Indicates how often alerts generate actions. Valid values include: `onActionGroupChange`: Actions run when the alert status changes; `onActiveAlert`: Actions run when the alert becomes active and at each check interval while the rule conditions are met; `onThrottleInterval`: Actions run when the alert becomes active and at the interval specified in the throttle property while the rule conditions are met. NOTE: You cannot specify `notify_when` at both the rule and action level. The recommended method is to set it for each action. If you set it at the rule level then update the rule in Kibana, it is automatically changed to use action-specific values.
+		NotifyWhen AlertingRuleActionFrequencyNotifyWhen `json:"notify_when"`
+
+		// Summary Indicates whether the action is a summary.
+		Summary bool `json:"summary"`
+
+		// Throttle The throttle interval, which defines how often an alert generates repeated actions. It is specified in seconds, minutes, hours, or days and is applicable only if 'notify_when' is set to 'onThrottleInterval'. NOTE: You cannot specify the throttle interval at both the rule and action level. The recommended method is to set it for each action. If you set it at the rule level then update the rule in Kibana, it is automatically changed to use action-specific values.
+		Throttle *string `json:"throttle"`
+	} `json:"frequency,omitempty"`
+
+	// Group The group name, which affects when the action runs (for example, when the threshold is met or when the alert is recovered). Each rule type has a list of valid action group names. If you don't need to group actions, set to `default`.
+	Group *string `json:"group,omitempty"`
+
+	// Id The identifier for the connector saved object.
+	Id string `json:"id"`
+
+	// Params The parameters for the action, which are sent to the connector. The `params` are handled as Mustache templates and passed a default set of context.
+	Params map[string]interface{} `json:"params"`
+
+	// UseAlertDataForTemplate Indicates whether to use alert data as a template.
+	UseAlertDataForTemplate *bool `json:"use_alert_data_for_template,omitempty"`
+
+	// Uuid A universally unique identifier (UUID) for the action.
+	Uuid *string `json:"uuid,omitempty"`
+}
+
+// AlertingRuleActionAlertsFilterQueryFiltersStateStore A filter can be either specific to an application context or applied globally.
+type AlertingRuleActionAlertsFilterQueryFiltersStateStore string
+
+// AlertingRuleActionAlertsFilterTimeframeDays defines model for AlertingRuleAction.AlertsFilter.Timeframe.Days.
+type AlertingRuleActionAlertsFilterTimeframeDays int
+
+// AlertingRuleActionFrequencyNotifyWhen Indicates how often alerts generate actions. Valid values include: `onActionGroupChange`: Actions run when the alert status changes; `onActiveAlert`: Actions run when the alert becomes active and at each check interval while the rule conditions are met; `onThrottleInterval`: Actions run when the alert becomes active and at the interval specified in the throttle property while the rule conditions are met. NOTE: You cannot specify `notify_when` at both the rule and action level. The recommended method is to set it for each action. If you set it at the rule level then update the rule in Kibana, it is automatically changed to use action-specific values.
+type AlertingRuleActionFrequencyNotifyWhen string
+
+// AlertingRuleAlertDelay Indicates that an alert occurs only when the specified number of consecutive runs met the rule conditions.
+type AlertingRuleAlertDelay struct {
+	// Active The number of consecutive runs that must meet the rule conditions.
+	Active float32 `json:"active"`
+}
+
+// AlertingRuleCreateRequest defines model for alerting_rule_create_request.
+type AlertingRuleCreateRequest struct {
+	Actions *[]struct {
+		// AlertsFilter Conditions that affect whether the action runs. If you specify multiple conditions, all conditions must be met for the action to run. For example, if an alert occurs within the specified time frame and matches the query, the action runs.
+		AlertsFilter *struct {
+			Query *struct {
+				// Dsl A filter written in Elasticsearch Query Domain Specific Language (DSL).
+				Dsl *string `json:"dsl,omitempty"`
+
+				// Filters A filter written in Elasticsearch Query Domain Specific Language (DSL) as defined in the `kbn-es-query` package.
+				Filters []struct {
+					State *struct {
+						// Store A filter can be either specific to an application context or applied globally.
+						Store AlertingRuleCreateRequestActionsAlertsFilterQueryFiltersStateStore `json:"store"`
+					} `json:"$state,omitempty"`
+					Meta  map[string]interface{}  `json:"meta"`
+					Query *map[string]interface{} `json:"query,omitempty"`
+				} `json:"filters"`
+
+				// Kql A filter written in Kibana Query Language (KQL).
+				Kql string `json:"kql"`
+			} `json:"query,omitempty"`
+
+			// Timeframe Defines a period that limits whether the action runs.
+			Timeframe *struct {
+				// Days Defines the days of the week that the action can run, represented as an array of numbers. For example, `1` represents Monday. An empty array is equivalent to specifying all the days of the week.
+				Days []AlertingRuleCreateRequestActionsAlertsFilterTimeframeDays `json:"days"`
+
+				// Hours Defines the range of time in a day that the action can run. If the `start` value is `00:00` and the `end` value is `24:00`, actions be generated all day.
+				Hours struct {
+					// End The end of the time frame in 24-hour notation (`hh:mm`).
+					End string `json:"end"`
+
+					// Start The start of the time frame in 24-hour notation (`hh:mm`).
+					Start string `json:"start"`
+				} `json:"hours"`
+
+				// Timezone The ISO time zone for the `hours` values. Values such as `UTC` and `UTC+1` also work but lack built-in daylight savings time support and are not recommended.
+				Timezone string `json:"timezone"`
+			} `json:"timeframe,omitempty"`
+		} `json:"alerts_filter,omitempty"`
+		Frequency *struct {
+			// NotifyWhen Indicates how often alerts generate actions. Valid values include: `onActionGroupChange`: Actions run when the alert status changes; `onActiveAlert`: Actions run when the alert becomes active and at each check interval while the rule conditions are met; `onThrottleInterval`: Actions run when the alert becomes active and at the interval specified in the throttle property while the rule conditions are met. NOTE: You cannot specify `notify_when` at both the rule and action level. The recommended method is to set it for each action. If you set it at the rule level then update the rule in Kibana, it is automatically changed to use action-specific values.
+			NotifyWhen AlertingRuleCreateRequestActionsFrequencyNotifyWhen `json:"notify_when"`
+
+			// Summary Indicates whether the action is a summary.
+			Summary bool `json:"summary"`
+
+			// Throttle The throttle interval, which defines how often an alert generates repeated actions. It is specified in seconds, minutes, hours, or days and is applicable only if `notify_when` is set to `onThrottleInterval`. NOTE: You cannot specify the throttle interval at both the rule and action level. The recommended method is to set it for each action. If you set it at the rule level then update the rule in Kibana, it is automatically changed to use action-specific values.
+			Throttle *string `json:"throttle"`
+		} `json:"frequency,omitempty"`
+
+		// Group The group name, which affects when the action runs (for example, when the threshold is met or when the alert is recovered). Each rule type has a list of valid action group names. If you don't need to group actions, set to `default`.
+		Group *string `json:"group,omitempty"`
+
+		// Id The identifier for the connector saved object.
+		Id string `json:"id"`
+
+		// Params The parameters for the action, which are sent to the connector. The `params` are handled as Mustache templates and passed a default set of context.
+		Params *map[string]interface{} `json:"params,omitempty"`
+
+		// UseAlertDataForTemplate Indicates whether to use alert data as a template.
+		UseAlertDataForTemplate *bool `json:"use_alert_data_for_template,omitempty"`
+
+		// Uuid A universally unique identifier (UUID) for the action.
+		Uuid *string `json:"uuid,omitempty"`
+	} `json:"actions,omitempty"`
+
+	// AlertDelay Indicates that an alert occurs only when the specified number of consecutive runs met the rule conditions.
+	AlertDelay *struct {
+		// Active The number of consecutive runs that must meet the rule conditions.
+		Active float32 `json:"active"`
+	} `json:"alert_delay,omitempty"`
+	Artifacts *struct {
+		Dashboards *[]struct {
+			Id string `json:"id"`
+		} `json:"dashboards,omitempty"`
+		InvestigationGuide *struct {
+			Blob string `json:"blob"`
+		} `json:"investigation_guide,omitempty"`
+	} `json:"artifacts,omitempty"`
+
+	// Consumer The name of the application or feature that owns the rule. For example: `alerts`, `apm`, `discover`, `infrastructure`, `logs`, `metrics`, `ml`, `monitoring`, `securitySolution`, `siem`, `stackAlerts`, or `uptime`.
+	Consumer string `json:"consumer"`
+
+	// Enabled Indicates whether you want to run the rule on an interval basis after it is created.
+	Enabled *bool `json:"enabled,omitempty"`
+
+	// Flapping When flapping detection is turned on, alerts that switch quickly between active and recovered states are identified as “flapping” and notifications are reduced.
+	Flapping *struct {
+		// LookBackWindow The minimum number of runs in which the threshold must be met.
+		LookBackWindow float32 `json:"look_back_window"`
+
+		// StatusChangeThreshold The minimum number of times an alert must switch states in the look back window.
+		StatusChangeThreshold float32 `json:"status_change_threshold"`
+	} `json:"flapping"`
+
+	// Name The name of the rule. While this name does not have to be unique, a distinctive name can help you identify a rule.
+	Name string `json:"name"`
+
+	// NotifyWhen Indicates how often alerts generate actions. Valid values include: `onActionGroupChange`: Actions run when the alert status changes; `onActiveAlert`: Actions run when the alert becomes active and at each check interval while the rule conditions are met; `onThrottleInterval`: Actions run when the alert becomes active and at the interval specified in the throttle property while the rule conditions are met. NOTE: You cannot specify `notify_when` at both the rule and action level. The recommended method is to set it for each action. If you set it at the rule level then update the rule in Kibana, it is automatically changed to use action-specific values.
+	NotifyWhen *AlertingRuleCreateRequestNotifyWhen `json:"notify_when"`
+
+	// Params The parameters for the rule.
+	Params *AlertingRuleCreateRequest_Params `json:"params,omitempty"`
+
+	// RuleTypeId The rule type identifier.
+	RuleTypeId string `json:"rule_type_id"`
+
+	// Schedule The check interval, which specifies how frequently the rule conditions are checked.
+	Schedule struct {
+		// Interval The interval is specified in seconds, minutes, hours, or days.
+		Interval string `json:"interval"`
+	} `json:"schedule"`
+
+	// Tags The tags for the rule.
+	Tags *[]string `json:"tags,omitempty"`
+
+	// Throttle Use the `throttle` property in the action `frequency` object instead. The throttle interval, which defines how often an alert generates repeated actions. NOTE: You cannot specify the throttle interval at both the rule and action level. If you set it at the rule level then update the rule in Kibana, it is automatically changed to use action-specific values.
+	Throttle *string `json:"throttle"`
+}
+
+// AlertingRuleCreateRequestActionsAlertsFilterQueryFiltersStateStore A filter can be either specific to an application context or applied globally.
+type AlertingRuleCreateRequestActionsAlertsFilterQueryFiltersStateStore string
+
+// AlertingRuleCreateRequestActionsAlertsFilterTimeframeDays defines model for AlertingRuleCreateRequest.Actions.AlertsFilter.Timeframe.Days.
+type AlertingRuleCreateRequestActionsAlertsFilterTimeframeDays int
+
+// AlertingRuleCreateRequestActionsFrequencyNotifyWhen Indicates how often alerts generate actions. Valid values include: `onActionGroupChange`: Actions run when the alert status changes; `onActiveAlert`: Actions run when the alert becomes active and at each check interval while the rule conditions are met; `onThrottleInterval`: Actions run when the alert becomes active and at the interval specified in the throttle property while the rule conditions are met. NOTE: You cannot specify `notify_when` at both the rule and action level. The recommended method is to set it for each action. If you set it at the rule level then update the rule in Kibana, it is automatically changed to use action-specific values.
+type AlertingRuleCreateRequestActionsFrequencyNotifyWhen string
+
+// AlertingRuleCreateRequestNotifyWhen Indicates how often alerts generate actions. Valid values include: `onActionGroupChange`: Actions run when the alert status changes; `onActiveAlert`: Actions run when the alert becomes active and at each check interval while the rule conditions are met; `onThrottleInterval`: Actions run when the alert becomes active and at the interval specified in the throttle property while the rule conditions are met. NOTE: You cannot specify `notify_when` at both the rule and action level. The recommended method is to set it for each action. If you set it at the rule level then update the rule in Kibana, it is automatically changed to use action-specific values.
+type AlertingRuleCreateRequestNotifyWhen string
+
+// AlertingRuleCreateRequest_Params The parameters for the rule.
+type AlertingRuleCreateRequest_Params struct {
+	AdditionalProperties map[string]interface{} `json:"-"`
+	union                json.RawMessage
+}
+
+// AlertingRuleResponse defines model for alerting_rule_response.
+type AlertingRuleResponse struct {
+	Actions       []AlertingRuleAction `json:"actions"`
+	ActiveSnoozes *[]string            `json:"active_snoozes,omitempty"`
+
+	// AlertDelay Indicates that an alert occurs only when the specified number of consecutive runs met the rule conditions.
+	AlertDelay *AlertingRuleAlertDelay `json:"alert_delay,omitempty"`
+
+	// ApiKeyCreatedByUser Indicates whether the API key that is associated with the rule was created by the user.
+	ApiKeyCreatedByUser *bool `json:"api_key_created_by_user"`
+
+	// ApiKeyOwner The owner of the API key that is associated with the rule and used to run background tasks.
+	ApiKeyOwner *string `json:"api_key_owner"`
+	Artifacts   *struct {
+		Dashboards *[]struct {
+			Id string `json:"id"`
+		} `json:"dashboards,omitempty"`
+		InvestigationGuide *struct {
+			// Blob User-created content that describes alert causes and remdiation.
+			Blob string `json:"blob"`
+		} `json:"investigation_guide,omitempty"`
+	} `json:"artifacts,omitempty"`
+
+	// Consumer The name of the application or feature that owns the rule. For example: `alerts`, `apm`, `discover`, `infrastructure`, `logs`, `metrics`, `ml`, `monitoring`, `securitySolution`, `siem`, `stackAlerts`, or `uptime`.
+	Consumer string `json:"consumer"`
+
+	// CreatedAt The date and time that the rule was created.
+	CreatedAt string `json:"created_at"`
+
+	// CreatedBy The identifier for the user that created the rule.
+	CreatedBy *string `json:"created_by"`
+
+	// Enabled Indicates whether you want to run the rule on an interval basis after it is created.
+	Enabled         bool `json:"enabled"`
+	ExecutionStatus struct {
+		Error *struct {
+			// Message Error message.
+			Message string `json:"message"`
+
+			// Reason Reason for error.
+			Reason AlertingRuleResponseExecutionStatusErrorReason `json:"reason"`
+		} `json:"error,omitempty"`
+
+		// LastDuration Duration of last execution of the rule.
+		LastDuration *float32 `json:"last_duration,omitempty"`
+
+		// LastExecutionDate The date and time when rule was executed last.
+		LastExecutionDate string `json:"last_execution_date"`
+
+		// Status Status of rule execution.
+		Status  AlertingRuleResponseExecutionStatusStatus `json:"status"`
+		Warning *struct {
+			// Message Warning message.
+			Message string `json:"message"`
+
+			// Reason Reason for warning.
+			Reason AlertingRuleResponseExecutionStatusWarningReason `json:"reason"`
+		} `json:"warning,omitempty"`
+	} `json:"execution_status"`
+
+	// Flapping When flapping detection is turned on, alerts that switch quickly between active and recovered states are identified as “flapping” and notifications are reduced.
+	Flapping *struct {
+		// LookBackWindow The minimum number of runs in which the threshold must be met.
+		LookBackWindow float32 `json:"look_back_window"`
+
+		// StatusChangeThreshold The minimum number of times an alert must switch states in the look back window.
+		StatusChangeThreshold float32 `json:"status_change_threshold"`
+	} `json:"flapping"`
+
+	// Id The identifier for the rule.
+	Id string `json:"id"`
+
+	// IsSnoozedUntil The date when the rule will no longer be snoozed.
+	IsSnoozedUntil *string `json:"is_snoozed_until"`
+	LastRun        *struct {
+		AlertsCount struct {
+			// Active Number of active alerts during last run.
+			Active *float32 `json:"active"`
+
+			// Ignored Number of ignored alerts during last run.
+			Ignored *float32 `json:"ignored"`
+
+			// New Number of new alerts during last run.
+			New *float32 `json:"new"`
+
+			// Recovered Number of recovered alerts during last run.
+			Recovered *float32 `json:"recovered"`
+		} `json:"alerts_count"`
+
+		// Outcome Outcome of last run of the rule. Value could be succeeded, warning or failed.
+		Outcome    AlertingRuleResponseLastRunOutcome `json:"outcome"`
+		OutcomeMsg *[]string                          `json:"outcome_msg"`
+
+		// OutcomeOrder Order of the outcome.
+		OutcomeOrder *float32 `json:"outcome_order,omitempty"`
+
+		// Warning Warning of last rule execution.
+		Warning *AlertingRuleResponseLastRunWarning `json:"warning"`
+	} `json:"last_run"`
+	MappedParams *map[string]interface{} `json:"mapped_params,omitempty"`
+
+	// Monitoring Monitoring details of the rule.
+	Monitoring *struct {
+		// Run Rule run details.
+		Run struct {
+			// CalculatedMetrics Calculation of different percentiles and success ratio.
+			CalculatedMetrics struct {
+				P50          *float32 `json:"p50,omitempty"`
+				P95          *float32 `json:"p95,omitempty"`
+				P99          *float32 `json:"p99,omitempty"`
+				SuccessRatio float32  `json:"success_ratio"`
+			} `json:"calculated_metrics"`
+
+			// History History of the rule run.
+			History []struct {
+				// Duration Duration of the rule run.
+				Duration *float32 `json:"duration,omitempty"`
+
+				// Outcome Outcome of last run of the rule. Value could be succeeded, warning or failed.
+				Outcome *AlertingRuleResponseMonitoringRunHistoryOutcome `json:"outcome,omitempty"`
+
+				// Success Indicates whether the rule run was successful.
+				Success bool `json:"success"`
+
+				// Timestamp Time of rule run.
+				Timestamp float32 `json:"timestamp"`
+			} `json:"history"`
+			LastRun struct {
+				Metrics struct {
+					// Duration Duration of most recent rule run.
+					Duration *float32 `json:"duration,omitempty"`
+
+					// GapDurationS Duration in seconds of rule run gap.
+					GapDurationS *float32 `json:"gap_duration_s"`
+					GapRange     *struct {
+						// Gte End of the gap range.
+						Gte string `json:"gte"`
+
+						// Lte Start of the gap range.
+						Lte string `json:"lte"`
+					} `json:"gap_range"`
+
+					// TotalAlertsCreated Total number of alerts created during last rule run.
+					TotalAlertsCreated *float32 `json:"total_alerts_created"`
+
+					// TotalAlertsDetected Total number of alerts detected during last rule run.
+					TotalAlertsDetected *float32 `json:"total_alerts_detected"`
+
+					// TotalIndexingDurationMs Total time spent indexing documents during last rule run in milliseconds.
+					TotalIndexingDurationMs *float32 `json:"total_indexing_duration_ms"`
+
+					// TotalSearchDurationMs Total time spent performing Elasticsearch searches as measured by Kibana; includes network latency and time spent serializing or deserializing the request and response.
+					TotalSearchDurationMs *float32 `json:"total_search_duration_ms"`
+				} `json:"metrics"`
+
+				// Timestamp Time of the most recent rule run.
+				Timestamp string `json:"timestamp"`
+			} `json:"last_run"`
+		} `json:"run"`
+	} `json:"monitoring,omitempty"`
+
+	// MuteAll Indicates whether all alerts are muted.
+	MuteAll       bool     `json:"mute_all"`
+	MutedAlertIds []string `json:"muted_alert_ids"`
+
+	// Name  The name of the rule.
+	Name string `json:"name"`
+
+	// NextRun Date and time of the next run of the rule.
+	NextRun *string `json:"next_run"`
+
+	// NotifyWhen Indicates how often alerts generate actions. Valid values include: `onActionGroupChange`: Actions run when the alert status changes; `onActiveAlert`: Actions run when the alert becomes active and at each check interval while the rule conditions are met; `onThrottleInterval`: Actions run when the alert becomes active and at the interval specified in the throttle property while the rule conditions are met. NOTE: You cannot specify `notify_when` at both the rule and action level. The recommended method is to set it for each action. If you set it at the rule level then update the rule in Kibana, it is automatically changed to use action-specific values.
+	NotifyWhen *AlertingRuleResponseNotifyWhen `json:"notify_when"`
+
+	// Params The parameters for the rule.
+	Params map[string]interface{} `json:"params"`
+
+	// Revision The rule revision number.
+	Revision float32 `json:"revision"`
+
+	// RuleTypeId The rule type identifier.
+	RuleTypeId string `json:"rule_type_id"`
+
+	// Running Indicates whether the rule is running.
+	Running  *bool                `json:"running"`
+	Schedule AlertingRuleSchedule `json:"schedule"`
+
+	// ScheduledTaskId Identifier of the scheduled task.
+	ScheduledTaskId *string `json:"scheduled_task_id,omitempty"`
+	SnoozeSchedule  *[]struct {
+		// Duration Duration of the rule snooze schedule.
+		Duration float32 `json:"duration"`
+
+		// Id Identifier of the rule snooze schedule.
+		Id    *string `json:"id,omitempty"`
+		RRule struct {
+			Byhour     *[]float32                                                  `json:"byhour"`
+			Byminute   *[]float32                                                  `json:"byminute"`
+			Bymonth    *[]float32                                                  `json:"bymonth"`
+			Bymonthday *[]float32                                                  `json:"bymonthday"`
+			Bysecond   *[]float32                                                  `json:"bysecond"`
+			Bysetpos   *[]float32                                                  `json:"bysetpos"`
+			Byweekday  *[]AlertingRuleResponse_SnoozeSchedule_RRule_Byweekday_Item `json:"byweekday"`
+			Byweekno   *[]float32                                                  `json:"byweekno"`
+			Byyearday  *[]float32                                                  `json:"byyearday"`
+
+			// Count Number of times the rule should recur until it stops.
+			Count *float32 `json:"count,omitempty"`
+
+			// Dtstart Rule start date in Coordinated Universal Time (UTC).
+			Dtstart string `json:"dtstart"`
+
+			// Freq Indicates frequency of the rule. Options are YEARLY, MONTHLY, WEEKLY, DAILY.
+			Freq *AlertingRuleResponseSnoozeScheduleRRuleFreq `json:"freq,omitempty"`
+
+			// Interval Indicates the interval of frequency. For example, 1 and YEARLY is every 1 year, 2 and WEEKLY is every 2 weeks.
+			Interval *float32 `json:"interval,omitempty"`
+
+			// Tzid Indicates timezone abbreviation.
+			Tzid string `json:"tzid"`
+
+			// Until Recur the rule until this date.
+			Until *string `json:"until,omitempty"`
+
+			// Wkst Indicates the start of week, defaults to Monday.
+			Wkst *AlertingRuleResponseSnoozeScheduleRRuleWkst `json:"wkst,omitempty"`
+		} `json:"rRule"`
+		SkipRecurrences *[]string `json:"skipRecurrences,omitempty"`
+	} `json:"snooze_schedule,omitempty"`
+	Tags []string `json:"tags"`
+
+	// Throttle Deprecated in 8.13.0. Use the `throttle` property in the action `frequency` object instead. The throttle interval, which defines how often an alert generates repeated actions. NOTE: You cannot specify the throttle interval at both the rule and action level. If you set it at the rule level then update the rule in Kibana, it is automatically changed to use action-specific values.
+	// Deprecated:
+	Throttle *string `json:"throttle"`
+
+	// UpdatedAt The date and time that the rule was updated most recently.
+	UpdatedAt string `json:"updated_at"`
+
+	// UpdatedBy The identifier for the user that updated this rule most recently.
+	UpdatedBy *string `json:"updated_by"`
+
+	// ViewInAppRelativeUrl Relative URL to view rule in the app.
+	ViewInAppRelativeUrl *string `json:"view_in_app_relative_url"`
+}
+
+// AlertingRuleResponseExecutionStatusErrorReason Reason for error.
+type AlertingRuleResponseExecutionStatusErrorReason string
+
+// AlertingRuleResponseExecutionStatusStatus Status of rule execution.
+type AlertingRuleResponseExecutionStatusStatus string
+
+// AlertingRuleResponseExecutionStatusWarningReason Reason for warning.
+type AlertingRuleResponseExecutionStatusWarningReason string
+
+// AlertingRuleResponseLastRunOutcome Outcome of last run of the rule. Value could be succeeded, warning or failed.
+type AlertingRuleResponseLastRunOutcome string
+
+// AlertingRuleResponseLastRunWarning Warning of last rule execution.
+type AlertingRuleResponseLastRunWarning string
+
+// AlertingRuleResponseMonitoringRunHistoryOutcome Outcome of last run of the rule. Value could be succeeded, warning or failed.
+type AlertingRuleResponseMonitoringRunHistoryOutcome string
+
+// AlertingRuleResponseNotifyWhen Indicates how often alerts generate actions. Valid values include: `onActionGroupChange`: Actions run when the alert status changes; `onActiveAlert`: Actions run when the alert becomes active and at each check interval while the rule conditions are met; `onThrottleInterval`: Actions run when the alert becomes active and at the interval specified in the throttle property while the rule conditions are met. NOTE: You cannot specify `notify_when` at both the rule and action level. The recommended method is to set it for each action. If you set it at the rule level then update the rule in Kibana, it is automatically changed to use action-specific values.
+type AlertingRuleResponseNotifyWhen string
+
+// AlertingRuleResponseSnoozeScheduleRRuleByweekday0 defines model for .
+type AlertingRuleResponseSnoozeScheduleRRuleByweekday0 = string
+
+// AlertingRuleResponseSnoozeScheduleRRuleByweekday1 defines model for .
+type AlertingRuleResponseSnoozeScheduleRRuleByweekday1 = float32
+
+// AlertingRuleResponse_SnoozeSchedule_RRule_Byweekday_Item Indicates the days of the week to recur or else nth-day-of-month strings. For example, "+2TU" second Tuesday of month, "-1FR" last Friday of the month, which are internally converted to a `byweekday/bysetpos` combination.
+type AlertingRuleResponse_SnoozeSchedule_RRule_Byweekday_Item struct {
+	union json.RawMessage
+}
+
+// AlertingRuleResponseSnoozeScheduleRRuleFreq Indicates frequency of the rule. Options are YEARLY, MONTHLY, WEEKLY, DAILY.
+type AlertingRuleResponseSnoozeScheduleRRuleFreq int
+
+// AlertingRuleResponseSnoozeScheduleRRuleWkst Indicates the start of week, defaults to Monday.
+type AlertingRuleResponseSnoozeScheduleRRuleWkst string
+
+// AlertingRuleSchedule defines model for alerting_rule_schedule.
+type AlertingRuleSchedule struct {
+	// Interval The interval is specified in seconds, minutes, hours, or days.
+	Interval string `json:"interval"`
+}
+
+// AlertingRuleUpdateRequest defines model for alerting_rule_update_request.
+type AlertingRuleUpdateRequest struct {
+	Actions *[]struct {
+		AlertsFilter *struct {
+			Query *struct {
+				// Dsl A filter written in Elasticsearch Query Domain Specific Language (DSL).
+				Dsl *string `json:"dsl,omitempty"`
+
+				// Filters A filter written in Elasticsearch Query Domain Specific Language (DSL) as defined in the `kbn-es-query` package.
+				Filters []struct {
+					State *struct {
+						// Store A filter can be either specific to an application context or applied globally.
+						Store AlertingRuleUpdateRequestActionsAlertsFilterQueryFiltersStateStore `json:"store"`
+					} `json:"$state,omitempty"`
+					Meta  map[string]interface{}  `json:"meta"`
+					Query *map[string]interface{} `json:"query,omitempty"`
+				} `json:"filters"`
+
+				// Kql A filter written in Kibana Query Language (KQL).
+				Kql string `json:"kql"`
+			} `json:"query,omitempty"`
+
+			// Timeframe Defines a period that limits whether the action runs.
+			Timeframe *struct {
+				// Days Defines the days of the week that the action can run, represented as an array of numbers. For example, `1` represents Monday. An empty array is equivalent to specifying all the days of the week.
+				Days []AlertingRuleUpdateRequestActionsAlertsFilterTimeframeDays `json:"days"`
+
+				// Hours Defines the range of time in a day that the action can run. If the `start` value is `00:00` and the `end` value is `24:00`, actions be generated all day.
+				Hours struct {
+					// End The end of the time frame in 24-hour notation (`hh:mm`).
+					End string `json:"end"`
+
+					// Start The start of the time frame in 24-hour notation (`hh:mm`).
+					Start string `json:"start"`
+				} `json:"hours"`
+
+				// Timezone The ISO time zone for the `hours` values. Values such as `UTC` and `UTC+1` also work but lack built-in daylight savings time support and are not recommended.
+				Timezone string `json:"timezone"`
+			} `json:"timeframe,omitempty"`
+		} `json:"alerts_filter,omitempty"`
+		Frequency *struct {
+			// NotifyWhen Indicates how often alerts generate actions. Valid values include: `onActionGroupChange`: Actions run when the alert status changes; `onActiveAlert`: Actions run when the alert becomes active and at each check interval while the rule conditions are met; `onThrottleInterval`: Actions run when the alert becomes active and at the interval specified in the throttle property while the rule conditions are met. NOTE: You cannot specify `notify_when` at both the rule and action level. The recommended method is to set it for each action. If you set it at the rule level then update the rule in Kibana, it is automatically changed to use action-specific values.
+			NotifyWhen AlertingRuleUpdateRequestActionsFrequencyNotifyWhen `json:"notify_when"`
+
+			// Summary Indicates whether the action is a summary.
+			Summary bool `json:"summary"`
+
+			// Throttle The throttle interval, which defines how often an alert generates repeated actions. It is specified in seconds, minutes, hours, or days and is applicable only if `notify_when` is set to `onThrottleInterval`. NOTE: You cannot specify the throttle interval at both the rule and action level. The recommended method is to set it for each action. If you set it at the rule level then update the rule in Kibana, it is automatically changed to use action-specific values.
+			Throttle *string `json:"throttle"`
+		} `json:"frequency,omitempty"`
+
+		// Group The group name, which affects when the action runs (for example, when the threshold is met or when the alert is recovered). Each rule type has a list of valid action group names. If you don't need to group actions, set to `default`.
+		Group *string `json:"group,omitempty"`
+
+		// Id The identifier for the connector saved object.
+		Id string `json:"id"`
+
+		// Params The parameters for the action, which are sent to the connector. The `params` are handled as Mustache templates and passed a default set of context.
+		Params *map[string]interface{} `json:"params,omitempty"`
+
+		// UseAlertDataForTemplate Indicates whether to use alert data as a template.
+		UseAlertDataForTemplate *bool `json:"use_alert_data_for_template,omitempty"`
+
+		// Uuid A universally unique identifier (UUID) for the action.
+		Uuid *string `json:"uuid,omitempty"`
+	} `json:"actions,omitempty"`
+
+	// AlertDelay Indicates that an alert occurs only when the specified number of consecutive runs met the rule conditions.
+	AlertDelay *struct {
+		// Active The number of consecutive runs that must meet the rule conditions.
+		Active float32 `json:"active"`
+	} `json:"alert_delay,omitempty"`
+	Artifacts *struct {
+		Dashboards *[]struct {
+			Id string `json:"id"`
+		} `json:"dashboards,omitempty"`
+		InvestigationGuide *struct {
+			Blob string `json:"blob"`
+		} `json:"investigation_guide,omitempty"`
+	} `json:"artifacts,omitempty"`
+
+	// Flapping When flapping detection is turned on, alerts that switch quickly between active and recovered states are identified as “flapping” and notifications are reduced.
+	Flapping *struct {
+		// LookBackWindow The minimum number of runs in which the threshold must be met.
+		LookBackWindow float32 `json:"look_back_window"`
+
+		// StatusChangeThreshold The minimum number of times an alert must switch states in the look back window.
+		StatusChangeThreshold float32 `json:"status_change_threshold"`
+	} `json:"flapping"`
+
+	// Name The name of the rule. While this name does not have to be unique, a distinctive name can help you identify a rule.
+	Name string `json:"name"`
+
+	// NotifyWhen Indicates how often alerts generate actions. Valid values include: `onActionGroupChange`: Actions run when the alert status changes; `onActiveAlert`: Actions run when the alert becomes active and at each check interval while the rule conditions are met; `onThrottleInterval`: Actions run when the alert becomes active and at the interval specified in the throttle property while the rule conditions are met. NOTE: You cannot specify `notify_when` at both the rule and action level. The recommended method is to set it for each action. If you set it at the rule level then update the rule in Kibana, it is automatically changed to use action-specific values.
+	NotifyWhen *AlertingRuleUpdateRequestNotifyWhen `json:"notify_when"`
+
+	// Params The parameters for the rule.
+	Params   *map[string]interface{} `json:"params,omitempty"`
+	Schedule struct {
+		// Interval The interval is specified in seconds, minutes, hours, or days.
+		Interval string `json:"interval"`
+	} `json:"schedule"`
+	Tags *[]string `json:"tags,omitempty"`
+
+	// Throttle Use the `throttle` property in the action `frequency` object instead. The throttle interval, which defines how often an alert generates repeated actions. NOTE: You cannot specify the throttle interval at both the rule and action level. If you set it at the rule level then update the rule in Kibana, it is automatically changed to use action-specific values.
+	Throttle *string `json:"throttle"`
+}
+
+// AlertingRuleUpdateRequestActionsAlertsFilterQueryFiltersStateStore A filter can be either specific to an application context or applied globally.
+type AlertingRuleUpdateRequestActionsAlertsFilterQueryFiltersStateStore string
+
+// AlertingRuleUpdateRequestActionsAlertsFilterTimeframeDays defines model for AlertingRuleUpdateRequest.Actions.AlertsFilter.Timeframe.Days.
+type AlertingRuleUpdateRequestActionsAlertsFilterTimeframeDays int
+
+// AlertingRuleUpdateRequestActionsFrequencyNotifyWhen Indicates how often alerts generate actions. Valid values include: `onActionGroupChange`: Actions run when the alert status changes; `onActiveAlert`: Actions run when the alert becomes active and at each check interval while the rule conditions are met; `onThrottleInterval`: Actions run when the alert becomes active and at the interval specified in the throttle property while the rule conditions are met. NOTE: You cannot specify `notify_when` at both the rule and action level. The recommended method is to set it for each action. If you set it at the rule level then update the rule in Kibana, it is automatically changed to use action-specific values.
+type AlertingRuleUpdateRequestActionsFrequencyNotifyWhen string
+
+// AlertingRuleUpdateRequestNotifyWhen Indicates how often alerts generate actions. Valid values include: `onActionGroupChange`: Actions run when the alert status changes; `onActiveAlert`: Actions run when the alert becomes active and at each check interval while the rule conditions are met; `onThrottleInterval`: Actions run when the alert becomes active and at the interval specified in the throttle property while the rule conditions are met. NOTE: You cannot specify `notify_when` at both the rule and action level. The recommended method is to set it for each action. If you set it at the rule level then update the rule in Kibana, it is automatically changed to use action-specific values.
+type AlertingRuleUpdateRequestNotifyWhen string
+
 // CreateParamResponse defines model for create_param_response.
 type CreateParamResponse struct {
 	union json.RawMessage
@@ -1300,6 +2517,29 @@ type EnrollmentApiKey struct {
 	PolicyId *string `json:"policy_id,omitempty"`
 }
 
+// Excludehitsfrompreviousrun Indicates whether to exclude matches from previous runs. If `true`, you can avoid alert duplication by excluding documents that have already been detected by the previous rule run. This option is not available when a grouping field is specified.
+type Excludehitsfrompreviousrun = bool
+
+// Filter A filter written in Elasticsearch Query Domain Specific Language (DSL) as defined in the `kbn-es-query` package.
+type Filter struct {
+	State *map[string]interface{} `json:"$state,omitempty"`
+	Meta  *struct {
+		Alias        *string                 `json:"alias"`
+		ControlledBy *string                 `json:"controlledBy,omitempty"`
+		Disabled     *bool                   `json:"disabled,omitempty"`
+		Field        *string                 `json:"field,omitempty"`
+		Group        *string                 `json:"group,omitempty"`
+		Index        *string                 `json:"index,omitempty"`
+		IsMultiIndex *bool                   `json:"isMultiIndex,omitempty"`
+		Key          *string                 `json:"key,omitempty"`
+		Negate       *bool                   `json:"negate,omitempty"`
+		Params       *map[string]interface{} `json:"params,omitempty"`
+		Type         *string                 `json:"type,omitempty"`
+		Value        *string                 `json:"value,omitempty"`
+	} `json:"meta,omitempty"`
+	Query *map[string]interface{} `json:"query,omitempty"`
+}
+
 // GetDataViewsResponseItem defines model for get_data_views_response_item.
 type GetDataViewsResponseItem struct {
 	Id         *string                 `json:"id,omitempty"`
@@ -1308,6 +2548,9 @@ type GetDataViewsResponseItem struct {
 	Title      *string                 `json:"title,omitempty"`
 	TypeMeta   *map[string]interface{} `json:"typeMeta,omitempty"`
 }
+
+// Groupby Indicates whether the aggregation is applied over all documents (`all`) or split into groups (`top`) using a grouping field (`termField`). If grouping is used, an alert will be created for each group when it exceeds the threshold; only the top groups (up to `termSize` number of groups) are checked.
+type Groupby string
 
 // NewOutputElasticsearch defines model for new_output_elasticsearch.
 type NewOutputElasticsearch struct {
@@ -2572,6 +3815,719 @@ type PackagePolicySecretRef struct {
 	Id string `json:"id"`
 }
 
+// ParamsEsQueryDslRule An Elasticsearch query rule can run a query defined in Elasticsearch Query DSL and compare the number of matches to a configured threshold. These parameters are appropriate when `rule_type_id` is `.es-query`.
+type ParamsEsQueryDslRule struct {
+	// AggField The name of the numeric field that is used in the aggregation. This property is required when `aggType` is `avg`, `max`, `min` or `sum`.
+	AggField *Aggfield `json:"aggField,omitempty"`
+
+	// AggType The type of aggregation to perform.
+	AggType *Aggtype `json:"aggType,omitempty"`
+
+	// EsQuery The query definition, which uses Elasticsearch Query DSL.
+	EsQuery string `json:"esQuery"`
+
+	// ExcludeHitsFromPreviousRun Indicates whether to exclude matches from previous runs. If `true`, you can avoid alert duplication by excluding documents that have already been detected by the previous rule run. This option is not available when a grouping field is specified.
+	ExcludeHitsFromPreviousRun *Excludehitsfrompreviousrun `json:"excludeHitsFromPreviousRun,omitempty"`
+
+	// GroupBy Indicates whether the aggregation is applied over all documents (`all`) or split into groups (`top`) using a grouping field (`termField`). If grouping is used, an alert will be created for each group when it exceeds the threshold; only the top groups (up to `termSize` number of groups) are checked.
+	GroupBy *Groupby `json:"groupBy,omitempty"`
+
+	// Index The indices to query.
+	Index ParamsEsQueryDslRule_Index `json:"index"`
+
+	// SearchType The type of query, in this case a query that uses Elasticsearch Query DSL.
+	SearchType *ParamsEsQueryDslRuleSearchType `json:"searchType,omitempty"`
+
+	// Size The number of documents to pass to the configured actions when the threshold condition is met.
+	Size *Size `json:"size,omitempty"`
+
+	// TermField The names of up to four fields that are used for grouping the aggregation. This property is required when `groupBy` is `top`.
+	TermField *Termfield `json:"termField,omitempty"`
+
+	// TermSize This property is required when `groupBy` is `top`. It specifies the number of groups to check against the threshold and therefore limits the number of alerts on high cardinality fields.
+	TermSize *Termsize `json:"termSize,omitempty"`
+
+	// Threshold The threshold value that is used with the `thresholdComparator`. If the `thresholdComparator` is `between` or `notBetween`, you must specify the boundary values.
+	Threshold Threshold `json:"threshold"`
+
+	// ThresholdComparator The comparison function for the threshold. For example, "is above", "is above or equals", "is below", "is below or equals", "is between", and "is not between".
+	ThresholdComparator Thresholdcomparator `json:"thresholdComparator"`
+
+	// TimeField The field that is used to calculate the time window.
+	TimeField Timefield `json:"timeField"`
+
+	// TimeWindowSize The size of the time window (in `timeWindowUnit` units), which determines how far back to search for documents. Generally it should be a value higher than the rule check interval to avoid gaps in detection.
+	TimeWindowSize Timewindowsize `json:"timeWindowSize"`
+
+	// TimeWindowUnit The type of units for the time window: seconds, minutes, hours, or days.
+	TimeWindowUnit Timewindowunit `json:"timeWindowUnit"`
+}
+
+// ParamsEsQueryDslRuleIndex0 defines model for .
+type ParamsEsQueryDslRuleIndex0 = []string
+
+// ParamsEsQueryDslRuleIndex1 defines model for .
+type ParamsEsQueryDslRuleIndex1 = string
+
+// ParamsEsQueryDslRule_Index The indices to query.
+type ParamsEsQueryDslRule_Index struct {
+	union json.RawMessage
+}
+
+// ParamsEsQueryDslRuleSearchType The type of query, in this case a query that uses Elasticsearch Query DSL.
+type ParamsEsQueryDslRuleSearchType string
+
+// ParamsEsQueryEsqlRule An Elasticsearch query rule can run an ES|QL query and compare the number of matches to a configured threshold. These parameters are appropriate when `rule_type_id` is `.es-query`.
+type ParamsEsQueryEsqlRule struct {
+	// AggField The name of the numeric field that is used in the aggregation. This property is required when `aggType` is `avg`, `max`, `min` or `sum`.
+	AggField *Aggfield `json:"aggField,omitempty"`
+
+	// AggType The type of aggregation to perform.
+	AggType   *Aggtype `json:"aggType,omitempty"`
+	EsqlQuery struct {
+		// Esql The query definition, which uses Elasticsearch Query Language.
+		Esql string `json:"esql"`
+	} `json:"esqlQuery"`
+
+	// ExcludeHitsFromPreviousRun Indicates whether to exclude matches from previous runs. If `true`, you can avoid alert duplication by excluding documents that have already been detected by the previous rule run. This option is not available when a grouping field is specified.
+	ExcludeHitsFromPreviousRun *Excludehitsfrompreviousrun `json:"excludeHitsFromPreviousRun,omitempty"`
+
+	// GroupBy Indicates whether the aggregation is applied over all documents (`all`) or split into groups (`top`) using a grouping field (`termField`). If grouping is used, an alert will be created for each group when it exceeds the threshold; only the top groups (up to `termSize` number of groups) are checked.
+	GroupBy *Groupby `json:"groupBy,omitempty"`
+
+	// SearchType The type of query, in this case a query that uses Elasticsearch Query Language (ES|QL).
+	SearchType ParamsEsQueryEsqlRuleSearchType `json:"searchType"`
+
+	// Size When `searchType` is `esqlQuery`, this property is required but it does not affect the rule behavior.
+	Size int `json:"size"`
+
+	// TermSize This property is required when `groupBy` is `top`. It specifies the number of groups to check against the threshold and therefore limits the number of alerts on high cardinality fields.
+	TermSize *Termsize `json:"termSize,omitempty"`
+
+	// Threshold The threshold value that is used with the `thresholdComparator`. When `searchType` is `esqlQuery`, this property is required and must be set to zero.
+	Threshold []int `json:"threshold"`
+
+	// ThresholdComparator The comparison function for the threshold. When `searchType` is `esqlQuery`, this property is required and must be set to ">". Since the `threshold` value must be `0`, the result is that an alert occurs whenever the query returns results.
+	ThresholdComparator ParamsEsQueryEsqlRuleThresholdComparator `json:"thresholdComparator"`
+
+	// TimeField The field that is used to calculate the time window.
+	TimeField *Timefield `json:"timeField,omitempty"`
+
+	// TimeWindowSize The size of the time window (in `timeWindowUnit` units), which determines how far back to search for documents. Generally it should be a value higher than the rule check interval to avoid gaps in detection.
+	TimeWindowSize Timewindowsize `json:"timeWindowSize"`
+
+	// TimeWindowUnit The type of units for the time window: seconds, minutes, hours, or days.
+	TimeWindowUnit Timewindowunit `json:"timeWindowUnit"`
+}
+
+// ParamsEsQueryEsqlRuleSearchType The type of query, in this case a query that uses Elasticsearch Query Language (ES|QL).
+type ParamsEsQueryEsqlRuleSearchType string
+
+// ParamsEsQueryEsqlRuleThresholdComparator The comparison function for the threshold. When `searchType` is `esqlQuery`, this property is required and must be set to ">". Since the `threshold` value must be `0`, the result is that an alert occurs whenever the query returns results.
+type ParamsEsQueryEsqlRuleThresholdComparator string
+
+// ParamsEsQueryKqlRule An Elasticsearch query rule can run a query defined in KQL or Lucene and compare the number of matches to a configured threshold. These parameters are appropriate when `rule_type_id` is `.es-query`.
+type ParamsEsQueryKqlRule struct {
+	// AggField The name of the numeric field that is used in the aggregation. This property is required when `aggType` is `avg`, `max`, `min` or `sum`.
+	AggField *Aggfield `json:"aggField,omitempty"`
+
+	// AggType The type of aggregation to perform.
+	AggType *Aggtype `json:"aggType,omitempty"`
+
+	// ExcludeHitsFromPreviousRun Indicates whether to exclude matches from previous runs. If `true`, you can avoid alert duplication by excluding documents that have already been detected by the previous rule run. This option is not available when a grouping field is specified.
+	ExcludeHitsFromPreviousRun *Excludehitsfrompreviousrun `json:"excludeHitsFromPreviousRun,omitempty"`
+
+	// GroupBy Indicates whether the aggregation is applied over all documents (`all`) or split into groups (`top`) using a grouping field (`termField`). If grouping is used, an alert will be created for each group when it exceeds the threshold; only the top groups (up to `termSize` number of groups) are checked.
+	GroupBy *Groupby `json:"groupBy,omitempty"`
+
+	// SearchConfiguration The query definition, which uses KQL or Lucene to fetch the documents from Elasticsearch.
+	SearchConfiguration *struct {
+		Filter *[]Filter `json:"filter,omitempty"`
+
+		// Index The indices to query.
+		Index *ParamsEsQueryKqlRule_SearchConfiguration_Index `json:"index,omitempty"`
+		Query *struct {
+			Language *string `json:"language,omitempty"`
+			Query    *string `json:"query,omitempty"`
+		} `json:"query,omitempty"`
+	} `json:"searchConfiguration,omitempty"`
+
+	// SearchType The type of query, in this case a text-based query that uses KQL or Lucene.
+	SearchType ParamsEsQueryKqlRuleSearchType `json:"searchType"`
+
+	// Size The number of documents to pass to the configured actions when the threshold condition is met.
+	Size Size `json:"size"`
+
+	// TermField The names of up to four fields that are used for grouping the aggregation. This property is required when `groupBy` is `top`.
+	TermField *Termfield `json:"termField,omitempty"`
+
+	// TermSize This property is required when `groupBy` is `top`. It specifies the number of groups to check against the threshold and therefore limits the number of alerts on high cardinality fields.
+	TermSize *Termsize `json:"termSize,omitempty"`
+
+	// Threshold The threshold value that is used with the `thresholdComparator`. If the `thresholdComparator` is `between` or `notBetween`, you must specify the boundary values.
+	Threshold Threshold `json:"threshold"`
+
+	// ThresholdComparator The comparison function for the threshold. For example, "is above", "is above or equals", "is below", "is below or equals", "is between", and "is not between".
+	ThresholdComparator Thresholdcomparator `json:"thresholdComparator"`
+
+	// TimeField The field that is used to calculate the time window.
+	TimeField *Timefield `json:"timeField,omitempty"`
+
+	// TimeWindowSize The size of the time window (in `timeWindowUnit` units), which determines how far back to search for documents. Generally it should be a value higher than the rule check interval to avoid gaps in detection.
+	TimeWindowSize Timewindowsize `json:"timeWindowSize"`
+
+	// TimeWindowUnit The type of units for the time window: seconds, minutes, hours, or days.
+	TimeWindowUnit Timewindowunit `json:"timeWindowUnit"`
+}
+
+// ParamsEsQueryKqlRuleSearchConfigurationIndex0 defines model for .
+type ParamsEsQueryKqlRuleSearchConfigurationIndex0 = string
+
+// ParamsEsQueryKqlRuleSearchConfigurationIndex1 defines model for .
+type ParamsEsQueryKqlRuleSearchConfigurationIndex1 = []string
+
+// ParamsEsQueryKqlRule_SearchConfiguration_Index The indices to query.
+type ParamsEsQueryKqlRule_SearchConfiguration_Index struct {
+	union json.RawMessage
+}
+
+// ParamsEsQueryKqlRuleSearchType The type of query, in this case a text-based query that uses KQL or Lucene.
+type ParamsEsQueryKqlRuleSearchType string
+
+// ParamsIndexThresholdRule An index threshold rule runs an Elasticsearch query, aggregates field values from documents, compares them to threshold values, and schedules actions to run when the thresholds are met. These parameters are appropriate when `rule_type_id` is `.index-threshold`.
+type ParamsIndexThresholdRule struct {
+	// AggField The name of the numeric field that is used in the aggregation. This property is required when `aggType` is `avg`, `max`, `min` or `sum`.
+	AggField *Aggfield `json:"aggField,omitempty"`
+
+	// AggType The type of aggregation to perform.
+	AggType *Aggtype `json:"aggType,omitempty"`
+
+	// FilterKuery A KQL expression thats limits the scope of alerts.
+	FilterKuery *string `json:"filterKuery,omitempty"`
+
+	// GroupBy Indicates whether the aggregation is applied over all documents (`all`) or split into groups (`top`) using a grouping field (`termField`). If grouping is used, an alert will be created for each group when it exceeds the threshold; only the top groups (up to `termSize` number of groups) are checked.
+	GroupBy *Groupby `json:"groupBy,omitempty"`
+
+	// Index The indices to query.
+	Index []string `json:"index"`
+
+	// TermField The names of up to four fields that are used for grouping the aggregation. This property is required when `groupBy` is `top`.
+	TermField *Termfield `json:"termField,omitempty"`
+
+	// TermSize This property is required when `groupBy` is `top`. It specifies the number of groups to check against the threshold and therefore limits the number of alerts on high cardinality fields.
+	TermSize *Termsize `json:"termSize,omitempty"`
+
+	// Threshold The threshold value that is used with the `thresholdComparator`. If the `thresholdComparator` is `between` or `notBetween`, you must specify the boundary values.
+	Threshold Threshold `json:"threshold"`
+
+	// ThresholdComparator The comparison function for the threshold. For example, "is above", "is above or equals", "is below", "is below or equals", "is between", and "is not between".
+	ThresholdComparator Thresholdcomparator `json:"thresholdComparator"`
+
+	// TimeField The field that is used to calculate the time window.
+	TimeField Timefield `json:"timeField"`
+
+	// TimeWindowSize The size of the time window (in `timeWindowUnit` units), which determines how far back to search for documents. Generally it should be a value higher than the rule check interval to avoid gaps in detection.
+	TimeWindowSize Timewindowsize `json:"timeWindowSize"`
+
+	// TimeWindowUnit The type of units for the time window: seconds, minutes, hours, or days.
+	TimeWindowUnit Timewindowunit `json:"timeWindowUnit"`
+}
+
+// ParamsPropertyApmAnomaly defines model for params_property_apm_anomaly.
+type ParamsPropertyApmAnomaly struct {
+	// AnomalySeverityType The severity of anomalies that will generate alerts: critical, major, minor, or warning.
+	AnomalySeverityType ParamsPropertyApmAnomalyAnomalySeverityType `json:"anomalySeverityType"`
+
+	// Environment Filter the rule to apply to a specific environment.
+	Environment string `json:"environment"`
+
+	// ServiceName Filter the rule to apply to a specific service name.
+	ServiceName *string `json:"serviceName,omitempty"`
+
+	// TransactionType Filter the rule to apply to a specific transaction type.
+	TransactionType *string `json:"transactionType,omitempty"`
+
+	// WindowSize The size of the time window (in `windowUnit` units), which determines how far back to search for documents. Generally it should be a value higher than the rule check interval to avoid gaps in detection.
+	WindowSize float32 `json:"windowSize"`
+
+	// WindowUnit The type of units for the time window. For example: minutes, hours, or days.
+	WindowUnit ParamsPropertyApmAnomalyWindowUnit `json:"windowUnit"`
+}
+
+// ParamsPropertyApmAnomalyAnomalySeverityType The severity of anomalies that will generate alerts: critical, major, minor, or warning.
+type ParamsPropertyApmAnomalyAnomalySeverityType string
+
+// ParamsPropertyApmAnomalyWindowUnit The type of units for the time window. For example: minutes, hours, or days.
+type ParamsPropertyApmAnomalyWindowUnit string
+
+// ParamsPropertyApmErrorCount defines model for params_property_apm_error_count.
+type ParamsPropertyApmErrorCount struct {
+	// Environment Filter the errors coming from your application to apply the rule to a specific environment.
+	Environment string `json:"environment"`
+
+	// ErrorGroupingKey Filter the errors coming from your application to apply the rule to a specific error grouping key, which is a hash of the stack trace and other properties.
+	ErrorGroupingKey *string `json:"errorGroupingKey,omitempty"`
+
+	// GroupBy Perform a composite aggregation against the selected fields. When any of these groups match the selected rule conditions, an alert is triggered per group.
+	GroupBy *[]ParamsPropertyApmErrorCountGroupBy `json:"groupBy,omitempty"`
+
+	// ServiceName Filter the errors coming from your application to apply the rule to a specific service.
+	ServiceName *string `json:"serviceName,omitempty"`
+
+	// Threshold The error count threshold.
+	Threshold float32 `json:"threshold"`
+
+	// WindowSize The time frame in which the errors must occur (in `windowUnit` units). Generally it should be a value higher than the rule check interval to avoid gaps in detection.
+	WindowSize float32 `json:"windowSize"`
+
+	// WindowUnit The type of units for the time window: minutes, hours, or days.
+	WindowUnit ParamsPropertyApmErrorCountWindowUnit `json:"windowUnit"`
+}
+
+// ParamsPropertyApmErrorCountGroupBy defines model for ParamsPropertyApmErrorCount.GroupBy.
+type ParamsPropertyApmErrorCountGroupBy string
+
+// ParamsPropertyApmErrorCountWindowUnit The type of units for the time window: minutes, hours, or days.
+type ParamsPropertyApmErrorCountWindowUnit string
+
+// ParamsPropertyApmTransactionDuration defines model for params_property_apm_transaction_duration.
+type ParamsPropertyApmTransactionDuration struct {
+	// AggregationType The type of aggregation to perform.
+	AggregationType ParamsPropertyApmTransactionDurationAggregationType `json:"aggregationType"`
+
+	// Environment Filter the rule to apply to a specific environment.
+	Environment string `json:"environment"`
+
+	// GroupBy Perform a composite aggregation against the selected fields. When any of these groups match the selected rule conditions, an alert is triggered per group.
+	GroupBy *[]ParamsPropertyApmTransactionDurationGroupBy `json:"groupBy,omitempty"`
+
+	// ServiceName Filter the rule to apply to a specific service.
+	ServiceName *string `json:"serviceName,omitempty"`
+
+	// Threshold The latency threshold value.
+	Threshold float32 `json:"threshold"`
+
+	// TransactionName Filter the rule to apply to a specific transaction name.
+	TransactionName *string `json:"transactionName,omitempty"`
+
+	// TransactionType Filter the rule to apply to a specific transaction type.
+	TransactionType *string `json:"transactionType,omitempty"`
+
+	// WindowSize The size of the time window (in `windowUnit` units), which determines how far back to search for documents. Generally it should be a value higher than the rule check interval to avoid gaps in detection.
+	WindowSize float32 `json:"windowSize"`
+
+	// WindowUnit The type of units for the time window. For example: minutes, hours, or days.
+	WindowUnit ParamsPropertyApmTransactionDurationWindowUnit `json:"windowUnit"`
+}
+
+// ParamsPropertyApmTransactionDurationAggregationType The type of aggregation to perform.
+type ParamsPropertyApmTransactionDurationAggregationType string
+
+// ParamsPropertyApmTransactionDurationGroupBy defines model for ParamsPropertyApmTransactionDuration.GroupBy.
+type ParamsPropertyApmTransactionDurationGroupBy string
+
+// ParamsPropertyApmTransactionDurationWindowUnit The type of units for the time window. For example: minutes, hours, or days.
+type ParamsPropertyApmTransactionDurationWindowUnit string
+
+// ParamsPropertyApmTransactionErrorRate defines model for params_property_apm_transaction_error_rate.
+type ParamsPropertyApmTransactionErrorRate struct {
+	// Environment The environment from APM
+	Environment string                                          `json:"environment"`
+	GroupBy     *[]ParamsPropertyApmTransactionErrorRateGroupBy `json:"groupBy,omitempty"`
+
+	// ServiceName The service name from APM
+	ServiceName *string `json:"serviceName,omitempty"`
+
+	// Threshold The error rate threshold value
+	Threshold float32 `json:"threshold"`
+
+	// TransactionName The transaction name from APM
+	TransactionName *string `json:"transactionName,omitempty"`
+
+	// TransactionType The transaction type from APM
+	TransactionType *string `json:"transactionType,omitempty"`
+
+	// WindowSize The window size
+	WindowSize float32 `json:"windowSize"`
+
+	// WindowUnit The window size unit
+	WindowUnit ParamsPropertyApmTransactionErrorRateWindowUnit `json:"windowUnit"`
+}
+
+// ParamsPropertyApmTransactionErrorRateGroupBy defines model for ParamsPropertyApmTransactionErrorRate.GroupBy.
+type ParamsPropertyApmTransactionErrorRateGroupBy string
+
+// ParamsPropertyApmTransactionErrorRateWindowUnit The window size unit
+type ParamsPropertyApmTransactionErrorRateWindowUnit string
+
+// ParamsPropertyInfraInventory defines model for params_property_infra_inventory.
+type ParamsPropertyInfraInventory struct {
+	AlertOnNoData *bool `json:"alertOnNoData,omitempty"`
+	Criteria      *[]struct {
+		Comparator   *ParamsPropertyInfraInventoryCriteriaComparator `json:"comparator,omitempty"`
+		CustomMetric *struct {
+			Aggregation *ParamsPropertyInfraInventoryCriteriaCustomMetricAggregation `json:"aggregation,omitempty"`
+			Field       *string                                                      `json:"field,omitempty"`
+			Id          *string                                                      `json:"id,omitempty"`
+			Label       *string                                                      `json:"label,omitempty"`
+			Type        *ParamsPropertyInfraInventoryCriteriaCustomMetricType        `json:"type,omitempty"`
+		} `json:"customMetric,omitempty"`
+		Metric            *ParamsPropertyInfraInventoryCriteriaMetric            `json:"metric,omitempty"`
+		SourceId          *string                                                `json:"sourceId,omitempty"`
+		Threshold         *[]float32                                             `json:"threshold,omitempty"`
+		TimeSize          *float32                                               `json:"timeSize,omitempty"`
+		TimeUnit          *ParamsPropertyInfraInventoryCriteriaTimeUnit          `json:"timeUnit,omitempty"`
+		WarningComparator *ParamsPropertyInfraInventoryCriteriaWarningComparator `json:"warningComparator,omitempty"`
+		WarningThreshold  *[]float32                                             `json:"warningThreshold,omitempty"`
+	} `json:"criteria,omitempty"`
+	FilterQuery     *string                               `json:"filterQuery,omitempty"`
+	FilterQueryText *string                               `json:"filterQueryText,omitempty"`
+	NodeType        *ParamsPropertyInfraInventoryNodeType `json:"nodeType,omitempty"`
+	SourceId        *string                               `json:"sourceId,omitempty"`
+}
+
+// ParamsPropertyInfraInventoryCriteriaComparator defines model for ParamsPropertyInfraInventory.Criteria.Comparator.
+type ParamsPropertyInfraInventoryCriteriaComparator string
+
+// ParamsPropertyInfraInventoryCriteriaCustomMetricAggregation defines model for ParamsPropertyInfraInventory.Criteria.CustomMetric.Aggregation.
+type ParamsPropertyInfraInventoryCriteriaCustomMetricAggregation string
+
+// ParamsPropertyInfraInventoryCriteriaCustomMetricType defines model for ParamsPropertyInfraInventory.Criteria.CustomMetric.Type.
+type ParamsPropertyInfraInventoryCriteriaCustomMetricType string
+
+// ParamsPropertyInfraInventoryCriteriaMetric defines model for ParamsPropertyInfraInventory.Criteria.Metric.
+type ParamsPropertyInfraInventoryCriteriaMetric string
+
+// ParamsPropertyInfraInventoryCriteriaTimeUnit defines model for ParamsPropertyInfraInventory.Criteria.TimeUnit.
+type ParamsPropertyInfraInventoryCriteriaTimeUnit string
+
+// ParamsPropertyInfraInventoryCriteriaWarningComparator defines model for ParamsPropertyInfraInventory.Criteria.WarningComparator.
+type ParamsPropertyInfraInventoryCriteriaWarningComparator string
+
+// ParamsPropertyInfraInventoryNodeType defines model for ParamsPropertyInfraInventory.NodeType.
+type ParamsPropertyInfraInventoryNodeType string
+
+// ParamsPropertyInfraMetricThreshold defines model for params_property_infra_metric_threshold.
+type ParamsPropertyInfraMetricThreshold struct {
+	// AlertOnGroupDisappear If true, an alert occurs if a group that previously reported metrics does not report them again over the expected time period. This check is not recommended for dynamically scaling infrastructures that might rapidly start and stop nodes automatically.
+	AlertOnGroupDisappear *bool `json:"alertOnGroupDisappear,omitempty"`
+
+	// AlertOnNoData If true, an alert occurs if the metrics do not report any data over the expected period or if the query fails.
+	AlertOnNoData *bool                                               `json:"alertOnNoData,omitempty"`
+	Criteria      *[]ParamsPropertyInfraMetricThreshold_Criteria_Item `json:"criteria,omitempty"`
+
+	// FilterQuery A query that limits the scope of the rule. The rule evaluates only metric data that matches the query.
+	FilterQuery *string `json:"filterQuery,omitempty"`
+
+	// GroupBy Create an alert for every unique value of the specified fields. For example, you can create a rule per host or every mount point of each host.
+	// IMPORTANT: If you include the same field in both the `filterQuery` and `groupBy`, you might receive fewer results than you expect. For example, if you filter by `cloud.region: us-east`, grouping by `cloud.region` will have no effect because the filter query can match only one region.
+	GroupBy  *ParamsPropertyInfraMetricThreshold_GroupBy `json:"groupBy,omitempty"`
+	SourceId *string                                     `json:"sourceId,omitempty"`
+}
+
+// ParamsPropertyInfraMetricThresholdCriteria0 defines model for .
+type ParamsPropertyInfraMetricThresholdCriteria0 struct {
+	AggType *ParamsPropertyInfraMetricThresholdCriteria0AggType `json:"aggType,omitempty"`
+
+	// Comparator The comparison function for the threshold. For example, "is above", "is above or equals", "is below", "is below or equals", "is between", and "outside".
+	Comparator *ParamsPropertyInfraMetricThresholdCriteria0Comparator `json:"comparator,omitempty"`
+	Metric     *string                                                `json:"metric,omitempty"`
+
+	// Threshold The threshold value that is used with the `comparator`. If the `comparator` is `between`, you must specify the boundary values.
+	Threshold *[]float32 `json:"threshold,omitempty"`
+
+	// TimeSize The size of the time window (in `timeUnit` units), which determines how far back to search for documents. Generally it should be a value higher than the rule check interval to avoid gaps in detection.
+	TimeSize *float32 `json:"timeSize,omitempty"`
+
+	// TimeUnit The type of units for the time window: seconds, minutes, hours, or days.
+	TimeUnit          *ParamsPropertyInfraMetricThresholdCriteria0TimeUnit          `json:"timeUnit,omitempty"`
+	WarningComparator *ParamsPropertyInfraMetricThresholdCriteria0WarningComparator `json:"warningComparator,omitempty"`
+
+	// WarningThreshold The threshold value that is used with the `warningComparator`. If the `warningComparator` is `between`, you must specify the boundary values.
+	WarningThreshold *[]float32 `json:"warningThreshold,omitempty"`
+}
+
+// ParamsPropertyInfraMetricThresholdCriteria0AggType defines model for ParamsPropertyInfraMetricThreshold.Criteria.0.AggType.
+type ParamsPropertyInfraMetricThresholdCriteria0AggType string
+
+// ParamsPropertyInfraMetricThresholdCriteria0Comparator The comparison function for the threshold. For example, "is above", "is above or equals", "is below", "is below or equals", "is between", and "outside".
+type ParamsPropertyInfraMetricThresholdCriteria0Comparator string
+
+// ParamsPropertyInfraMetricThresholdCriteria0TimeUnit The type of units for the time window: seconds, minutes, hours, or days.
+type ParamsPropertyInfraMetricThresholdCriteria0TimeUnit string
+
+// ParamsPropertyInfraMetricThresholdCriteria0WarningComparator defines model for ParamsPropertyInfraMetricThreshold.Criteria.0.WarningComparator.
+type ParamsPropertyInfraMetricThresholdCriteria0WarningComparator string
+
+// ParamsPropertyInfraMetricThresholdCriteria1 defines model for .
+type ParamsPropertyInfraMetricThresholdCriteria1 struct {
+	AggType    *ParamsPropertyInfraMetricThresholdCriteria1AggType    `json:"aggType,omitempty"`
+	Comparator *ParamsPropertyInfraMetricThresholdCriteria1Comparator `json:"comparator,omitempty"`
+	Threshold  *[]float32                                             `json:"threshold,omitempty"`
+
+	// TimeSize The size of the time window (in `timeUnit` units), which determines how far back to search for documents. Generally it should be a value higher than the rule check interval to avoid gaps in detection.
+	TimeSize *float32 `json:"timeSize,omitempty"`
+
+	// TimeUnit The type of units for the time window: seconds, minutes, hours, or days.
+	TimeUnit          *ParamsPropertyInfraMetricThresholdCriteria1TimeUnit          `json:"timeUnit,omitempty"`
+	WarningComparator *ParamsPropertyInfraMetricThresholdCriteria1WarningComparator `json:"warningComparator,omitempty"`
+	WarningThreshold  *[]float32                                                    `json:"warningThreshold,omitempty"`
+}
+
+// ParamsPropertyInfraMetricThresholdCriteria1AggType defines model for ParamsPropertyInfraMetricThreshold.Criteria.1.AggType.
+type ParamsPropertyInfraMetricThresholdCriteria1AggType string
+
+// ParamsPropertyInfraMetricThresholdCriteria1Comparator defines model for ParamsPropertyInfraMetricThreshold.Criteria.1.Comparator.
+type ParamsPropertyInfraMetricThresholdCriteria1Comparator string
+
+// ParamsPropertyInfraMetricThresholdCriteria1TimeUnit The type of units for the time window: seconds, minutes, hours, or days.
+type ParamsPropertyInfraMetricThresholdCriteria1TimeUnit string
+
+// ParamsPropertyInfraMetricThresholdCriteria1WarningComparator defines model for ParamsPropertyInfraMetricThreshold.Criteria.1.WarningComparator.
+type ParamsPropertyInfraMetricThresholdCriteria1WarningComparator string
+
+// ParamsPropertyInfraMetricThresholdCriteria2 defines model for .
+type ParamsPropertyInfraMetricThresholdCriteria2 struct {
+	AggType      *ParamsPropertyInfraMetricThresholdCriteria2AggType                `json:"aggType,omitempty"`
+	Comparator   *ParamsPropertyInfraMetricThresholdCriteria2Comparator             `json:"comparator,omitempty"`
+	CustomMetric *[]ParamsPropertyInfraMetricThreshold_Criteria_2_CustomMetric_Item `json:"customMetric,omitempty"`
+	Equation     *string                                                            `json:"equation,omitempty"`
+	Label        *string                                                            `json:"label,omitempty"`
+	Threshold    *[]float32                                                         `json:"threshold,omitempty"`
+
+	// TimeSize The size of the time window (in `timeUnit` units), which determines how far back to search for documents. Generally it should be a value higher than the rule check interval to avoid gaps in detection.
+	TimeSize *float32 `json:"timeSize,omitempty"`
+
+	// TimeUnit The type of units for the time window: seconds, minutes, hours, or days.
+	TimeUnit          *ParamsPropertyInfraMetricThresholdCriteria2TimeUnit          `json:"timeUnit,omitempty"`
+	WarningComparator *ParamsPropertyInfraMetricThresholdCriteria2WarningComparator `json:"warningComparator,omitempty"`
+	WarningThreshold  *[]float32                                                    `json:"warningThreshold,omitempty"`
+}
+
+// ParamsPropertyInfraMetricThresholdCriteria2AggType defines model for ParamsPropertyInfraMetricThreshold.Criteria.2.AggType.
+type ParamsPropertyInfraMetricThresholdCriteria2AggType string
+
+// ParamsPropertyInfraMetricThresholdCriteria2Comparator defines model for ParamsPropertyInfraMetricThreshold.Criteria.2.Comparator.
+type ParamsPropertyInfraMetricThresholdCriteria2Comparator string
+
+// ParamsPropertyInfraMetricThresholdCriteria2CustomMetric0 defines model for .
+type ParamsPropertyInfraMetricThresholdCriteria2CustomMetric0 struct {
+	// AggType An aggregation to gather data for the rule. For example, find the average, highest or lowest value of a numeric field. Or use a cardinality aggregation to find the approximate number of unique values in a field.
+	AggType *ParamsPropertyInfraMetricThresholdCriteria2CustomMetric0AggType `json:"aggType,omitempty"`
+	Field   *string                                                          `json:"field,omitempty"`
+	Name    *string                                                          `json:"name,omitempty"`
+}
+
+// ParamsPropertyInfraMetricThresholdCriteria2CustomMetric0AggType An aggregation to gather data for the rule. For example, find the average, highest or lowest value of a numeric field. Or use a cardinality aggregation to find the approximate number of unique values in a field.
+type ParamsPropertyInfraMetricThresholdCriteria2CustomMetric0AggType string
+
+// ParamsPropertyInfraMetricThresholdCriteria2CustomMetric1 defines model for .
+type ParamsPropertyInfraMetricThresholdCriteria2CustomMetric1 struct {
+	AggType *ParamsPropertyInfraMetricThresholdCriteria2CustomMetric1AggType `json:"aggType,omitempty"`
+	Filter  *string                                                          `json:"filter,omitempty"`
+	Name    *string                                                          `json:"name,omitempty"`
+}
+
+// ParamsPropertyInfraMetricThresholdCriteria2CustomMetric1AggType defines model for ParamsPropertyInfraMetricThreshold.Criteria.2.CustomMetric.1.AggType.
+type ParamsPropertyInfraMetricThresholdCriteria2CustomMetric1AggType string
+
+// ParamsPropertyInfraMetricThreshold_Criteria_2_CustomMetric_Item defines model for ParamsPropertyInfraMetricThreshold.Criteria.2.customMetric.Item.
+type ParamsPropertyInfraMetricThreshold_Criteria_2_CustomMetric_Item struct {
+	union json.RawMessage
+}
+
+// ParamsPropertyInfraMetricThresholdCriteria2TimeUnit The type of units for the time window: seconds, minutes, hours, or days.
+type ParamsPropertyInfraMetricThresholdCriteria2TimeUnit string
+
+// ParamsPropertyInfraMetricThresholdCriteria2WarningComparator defines model for ParamsPropertyInfraMetricThreshold.Criteria.2.WarningComparator.
+type ParamsPropertyInfraMetricThresholdCriteria2WarningComparator string
+
+// ParamsPropertyInfraMetricThreshold_Criteria_Item defines model for params_property_infra_metric_threshold.criteria.Item.
+type ParamsPropertyInfraMetricThreshold_Criteria_Item struct {
+	union json.RawMessage
+}
+
+// ParamsPropertyInfraMetricThresholdGroupBy0 defines model for .
+type ParamsPropertyInfraMetricThresholdGroupBy0 = string
+
+// ParamsPropertyInfraMetricThresholdGroupBy1 defines model for .
+type ParamsPropertyInfraMetricThresholdGroupBy1 = []string
+
+// ParamsPropertyInfraMetricThreshold_GroupBy Create an alert for every unique value of the specified fields. For example, you can create a rule per host or every mount point of each host.
+// IMPORTANT: If you include the same field in both the `filterQuery` and `groupBy`, you might receive fewer results than you expect. For example, if you filter by `cloud.region: us-east`, grouping by `cloud.region` will have no effect because the filter query can match only one region.
+type ParamsPropertyInfraMetricThreshold_GroupBy struct {
+	union json.RawMessage
+}
+
+// ParamsPropertyLogThreshold defines model for params_property_log_threshold.
+type ParamsPropertyLogThreshold struct {
+	union json.RawMessage
+}
+
+// ParamsPropertyLogThreshold0 defines model for .
+type ParamsPropertyLogThreshold0 struct {
+	Count struct {
+		Comparator *ParamsPropertyLogThreshold0CountComparator `json:"comparator,omitempty"`
+		Value      *float32                                    `json:"value,omitempty"`
+	} `json:"count"`
+	Criteria *[]struct {
+		Comparator *ParamsPropertyLogThreshold0CriteriaComparator `json:"comparator,omitempty"`
+		Field      *string                                        `json:"field,omitempty"`
+		Value      *ParamsPropertyLogThreshold_0_Criteria_Value   `json:"value,omitempty"`
+	} `json:"criteria,omitempty"`
+	GroupBy *[]string `json:"groupBy,omitempty"`
+	LogView struct {
+		LogViewId *string                                 `json:"logViewId,omitempty"`
+		Type      *ParamsPropertyLogThreshold0LogViewType `json:"type,omitempty"`
+	} `json:"logView"`
+	TimeSize float32                             `json:"timeSize"`
+	TimeUnit ParamsPropertyLogThreshold0TimeUnit `json:"timeUnit"`
+}
+
+// ParamsPropertyLogThreshold0CountComparator defines model for ParamsPropertyLogThreshold.0.Count.Comparator.
+type ParamsPropertyLogThreshold0CountComparator string
+
+// ParamsPropertyLogThreshold0CriteriaComparator defines model for ParamsPropertyLogThreshold.0.Criteria.Comparator.
+type ParamsPropertyLogThreshold0CriteriaComparator string
+
+// ParamsPropertyLogThreshold0CriteriaValue0 defines model for .
+type ParamsPropertyLogThreshold0CriteriaValue0 = float32
+
+// ParamsPropertyLogThreshold0CriteriaValue1 defines model for .
+type ParamsPropertyLogThreshold0CriteriaValue1 = string
+
+// ParamsPropertyLogThreshold_0_Criteria_Value defines model for ParamsPropertyLogThreshold.0.Criteria.Value.
+type ParamsPropertyLogThreshold_0_Criteria_Value struct {
+	union json.RawMessage
+}
+
+// ParamsPropertyLogThreshold0LogViewType defines model for ParamsPropertyLogThreshold.0.LogView.Type.
+type ParamsPropertyLogThreshold0LogViewType string
+
+// ParamsPropertyLogThreshold0TimeUnit defines model for ParamsPropertyLogThreshold.0.TimeUnit.
+type ParamsPropertyLogThreshold0TimeUnit string
+
+// ParamsPropertyLogThreshold1 defines model for .
+type ParamsPropertyLogThreshold1 struct {
+	Count struct {
+		Comparator *ParamsPropertyLogThreshold1CountComparator `json:"comparator,omitempty"`
+		Value      *float32                                    `json:"value,omitempty"`
+	} `json:"count"`
+	Criteria *[][]struct {
+		Comparator *ParamsPropertyLogThreshold1CriteriaComparator `json:"comparator,omitempty"`
+		Field      *string                                        `json:"field,omitempty"`
+		Value      *ParamsPropertyLogThreshold_1_Criteria_Value   `json:"value,omitempty"`
+	} `json:"criteria,omitempty"`
+	GroupBy *[]string `json:"groupBy,omitempty"`
+	LogView struct {
+		LogViewId *string                                 `json:"logViewId,omitempty"`
+		Type      *ParamsPropertyLogThreshold1LogViewType `json:"type,omitempty"`
+	} `json:"logView"`
+	TimeSize float32                             `json:"timeSize"`
+	TimeUnit ParamsPropertyLogThreshold1TimeUnit `json:"timeUnit"`
+}
+
+// ParamsPropertyLogThreshold1CountComparator defines model for ParamsPropertyLogThreshold.1.Count.Comparator.
+type ParamsPropertyLogThreshold1CountComparator string
+
+// ParamsPropertyLogThreshold1CriteriaComparator defines model for ParamsPropertyLogThreshold.1.Criteria.Comparator.
+type ParamsPropertyLogThreshold1CriteriaComparator string
+
+// ParamsPropertyLogThreshold1CriteriaValue0 defines model for .
+type ParamsPropertyLogThreshold1CriteriaValue0 = float32
+
+// ParamsPropertyLogThreshold1CriteriaValue1 defines model for .
+type ParamsPropertyLogThreshold1CriteriaValue1 = string
+
+// ParamsPropertyLogThreshold_1_Criteria_Value defines model for ParamsPropertyLogThreshold.1.Criteria.Value.
+type ParamsPropertyLogThreshold_1_Criteria_Value struct {
+	union json.RawMessage
+}
+
+// ParamsPropertyLogThreshold1LogViewType defines model for ParamsPropertyLogThreshold.1.LogView.Type.
+type ParamsPropertyLogThreshold1LogViewType string
+
+// ParamsPropertyLogThreshold1TimeUnit defines model for ParamsPropertyLogThreshold.1.TimeUnit.
+type ParamsPropertyLogThreshold1TimeUnit string
+
+// ParamsPropertySloBurnRate defines model for params_property_slo_burn_rate.
+type ParamsPropertySloBurnRate struct {
+	// BurnRateThreshold The burn rate threshold used to trigger the alert
+	BurnRateThreshold *float32 `json:"burnRateThreshold,omitempty"`
+
+	// LongWindow The duration of the long window used to compute the burn rate
+	LongWindow *struct {
+		// Unit The duration unit
+		Unit *string `json:"unit,omitempty"`
+
+		// Value The duration value
+		Value *float32 `json:"value,omitempty"`
+	} `json:"longWindow,omitempty"`
+
+	// MaxBurnRateThreshold The maximum burn rate threshold value defined by the SLO error budget
+	MaxBurnRateThreshold *float32 `json:"maxBurnRateThreshold,omitempty"`
+
+	// ShortWindow The duration of the short window used to compute the burn rate
+	ShortWindow *struct {
+		// Unit The duration unit
+		Unit *string `json:"unit,omitempty"`
+
+		// Value The duration value
+		Value *float32 `json:"value,omitempty"`
+	} `json:"shortWindow,omitempty"`
+
+	// SloId The SLO identifier used by the rule
+	SloId *string `json:"sloId,omitempty"`
+}
+
+// ParamsPropertySyntheticsMonitorStatus defines model for params_property_synthetics_monitor_status.
+type ParamsPropertySyntheticsMonitorStatus struct {
+	Availability *struct {
+		Range     *float32 `json:"range,omitempty"`
+		RangeUnit *string  `json:"rangeUnit,omitempty"`
+		Threshold *string  `json:"threshold,omitempty"`
+	} `json:"availability,omitempty"`
+	Filters         *ParamsPropertySyntheticsMonitorStatus_Filters `json:"filters,omitempty"`
+	IsAutoGenerated *bool                                          `json:"isAutoGenerated,omitempty"`
+	// Deprecated:
+	Locations               *[]string `json:"locations,omitempty"`
+	NumTimes                float32   `json:"numTimes"`
+	Search                  *string   `json:"search,omitempty"`
+	ShouldCheckAvailability bool      `json:"shouldCheckAvailability"`
+	ShouldCheckStatus       bool      `json:"shouldCheckStatus"`
+	// Deprecated:
+	Timerange *struct {
+		From *string `json:"from,omitempty"`
+		To   *string `json:"to,omitempty"`
+	} `json:"timerange,omitempty"`
+	TimerangeCount *float32 `json:"timerangeCount,omitempty"`
+	TimerangeUnit  *string  `json:"timerangeUnit,omitempty"`
+	Version        *float32 `json:"version,omitempty"`
+}
+
+// ParamsPropertySyntheticsMonitorStatusFilters0 defines model for .
+type ParamsPropertySyntheticsMonitorStatusFilters0 = string
+
+// ParamsPropertySyntheticsMonitorStatusFilters1 defines model for .
+type ParamsPropertySyntheticsMonitorStatusFilters1 struct {
+	MonitorType     *[]string `json:"monitor.type,omitempty"`
+	ObserverGeoName *[]string `json:"observer.geo.name,omitempty"`
+	Tags            *[]string `json:"tags,omitempty"`
+	UrlPort         *[]string `json:"url.port,omitempty"`
+}
+
+// ParamsPropertySyntheticsMonitorStatus_Filters defines model for ParamsPropertySyntheticsMonitorStatus.Filters.
+type ParamsPropertySyntheticsMonitorStatus_Filters struct {
+	union json.RawMessage
+}
+
+// ParamsPropertySyntheticsUptimeTls defines model for params_property_synthetics_uptime_tls.
+type ParamsPropertySyntheticsUptimeTls struct {
+	CertAgeThreshold        *float32 `json:"certAgeThreshold,omitempty"`
+	CertExpirationThreshold *float32 `json:"certExpirationThreshold,omitempty"`
+	Search                  *string  `json:"search,omitempty"`
+}
+
 // ServerHost defines model for server_host.
 type ServerHost struct {
 	HostUrls        []string `json:"host_urls"`
@@ -2626,6 +4582,38 @@ type ServerHost_Secrets_Ssl_Key struct {
 
 // ServerHostSslClientAuth defines model for ServerHost.Ssl.ClientAuth.
 type ServerHostSslClientAuth string
+
+// Size The number of documents to pass to the configured actions when the threshold condition is met.
+type Size = int
+
+// Termfield The names of up to four fields that are used for grouping the aggregation. This property is required when `groupBy` is `top`.
+type Termfield struct {
+	union json.RawMessage
+}
+
+// Termfield0 defines model for .
+type Termfield0 = string
+
+// Termfield1 defines model for .
+type Termfield1 = []string
+
+// Termsize This property is required when `groupBy` is `top`. It specifies the number of groups to check against the threshold and therefore limits the number of alerts on high cardinality fields.
+type Termsize = int
+
+// Threshold The threshold value that is used with the `thresholdComparator`. If the `thresholdComparator` is `between` or `notBetween`, you must specify the boundary values.
+type Threshold = []int
+
+// Thresholdcomparator The comparison function for the threshold. For example, "is above", "is above or equals", "is below", "is below or equals", "is between", and "is not between".
+type Thresholdcomparator string
+
+// Timefield The field that is used to calculate the time window.
+type Timefield = string
+
+// Timewindowsize The size of the time window (in `timeWindowUnit` units), which determines how far back to search for documents. Generally it should be a value higher than the rule check interval to avoid gaps in detection.
+type Timewindowsize = int
+
+// Timewindowunit The type of units for the time window: seconds, minutes, hours, or days.
+type Timewindowunit string
 
 // UpdateOutputElasticsearch defines model for update_output_elasticsearch.
 type UpdateOutputElasticsearch struct {
@@ -2905,6 +4893,12 @@ type DataViewsViewId = string
 
 // SpaceId defines model for spaceId.
 type SpaceId = string
+
+// PostAlertingRuleIdDisableJSONBody defines parameters for PostAlertingRuleIdDisable.
+type PostAlertingRuleIdDisableJSONBody struct {
+	// Untrack Defines whether this rule's alerts should be untracked.
+	Untrack *bool `json:"untrack,omitempty"`
+}
 
 // GetFleetAgentPoliciesParams defines parameters for GetFleetAgentPolicies.
 type GetFleetAgentPoliciesParams struct {
@@ -3369,6 +5363,15 @@ type PutParameterJSONBody struct {
 	Value *string `json:"value,omitempty"`
 }
 
+// PostAlertingRuleIdJSONRequestBody defines body for PostAlertingRuleId for application/json ContentType.
+type PostAlertingRuleIdJSONRequestBody = AlertingRuleCreateRequest
+
+// PutAlertingRuleIdJSONRequestBody defines body for PutAlertingRuleId for application/json ContentType.
+type PutAlertingRuleIdJSONRequestBody = AlertingRuleUpdateRequest
+
+// PostAlertingRuleIdDisableJSONRequestBody defines body for PostAlertingRuleIdDisable for application/json ContentType.
+type PostAlertingRuleIdDisableJSONRequestBody PostAlertingRuleIdDisableJSONBody
+
 // PostFleetAgentPoliciesJSONRequestBody defines body for PostFleetAgentPolicies for application/json ContentType.
 type PostFleetAgentPoliciesJSONRequestBody PostFleetAgentPoliciesJSONBody
 
@@ -3545,6 +5548,23 @@ func (a AgentPolicy_PackagePolicies_1_Elasticsearch) MarshalJSON() ([]byte, erro
 		}
 	}
 	return json.Marshal(object)
+}
+
+// Getter for additional properties for AlertingRuleCreateRequest_Params. Returns the specified
+// element and whether it was found
+func (a AlertingRuleCreateRequest_Params) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for AlertingRuleCreateRequest_Params
+func (a *AlertingRuleCreateRequest_Params) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
 }
 
 // Getter for additional properties for OutputElasticsearch. Returns the specified
@@ -12040,6 +14060,432 @@ func (t *AgentPolicyGlobalDataTagsItem_Value) UnmarshalJSON(b []byte) error {
 	return err
 }
 
+// AsParamsPropertyApmAnomaly returns the union data inside the AlertingRuleCreateRequest_Params as a ParamsPropertyApmAnomaly
+func (t AlertingRuleCreateRequest_Params) AsParamsPropertyApmAnomaly() (ParamsPropertyApmAnomaly, error) {
+	var body ParamsPropertyApmAnomaly
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromParamsPropertyApmAnomaly overwrites any union data inside the AlertingRuleCreateRequest_Params as the provided ParamsPropertyApmAnomaly
+func (t *AlertingRuleCreateRequest_Params) FromParamsPropertyApmAnomaly(v ParamsPropertyApmAnomaly) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeParamsPropertyApmAnomaly performs a merge with any union data inside the AlertingRuleCreateRequest_Params, using the provided ParamsPropertyApmAnomaly
+func (t *AlertingRuleCreateRequest_Params) MergeParamsPropertyApmAnomaly(v ParamsPropertyApmAnomaly) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsParamsPropertyApmErrorCount returns the union data inside the AlertingRuleCreateRequest_Params as a ParamsPropertyApmErrorCount
+func (t AlertingRuleCreateRequest_Params) AsParamsPropertyApmErrorCount() (ParamsPropertyApmErrorCount, error) {
+	var body ParamsPropertyApmErrorCount
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromParamsPropertyApmErrorCount overwrites any union data inside the AlertingRuleCreateRequest_Params as the provided ParamsPropertyApmErrorCount
+func (t *AlertingRuleCreateRequest_Params) FromParamsPropertyApmErrorCount(v ParamsPropertyApmErrorCount) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeParamsPropertyApmErrorCount performs a merge with any union data inside the AlertingRuleCreateRequest_Params, using the provided ParamsPropertyApmErrorCount
+func (t *AlertingRuleCreateRequest_Params) MergeParamsPropertyApmErrorCount(v ParamsPropertyApmErrorCount) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsParamsPropertyApmTransactionDuration returns the union data inside the AlertingRuleCreateRequest_Params as a ParamsPropertyApmTransactionDuration
+func (t AlertingRuleCreateRequest_Params) AsParamsPropertyApmTransactionDuration() (ParamsPropertyApmTransactionDuration, error) {
+	var body ParamsPropertyApmTransactionDuration
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromParamsPropertyApmTransactionDuration overwrites any union data inside the AlertingRuleCreateRequest_Params as the provided ParamsPropertyApmTransactionDuration
+func (t *AlertingRuleCreateRequest_Params) FromParamsPropertyApmTransactionDuration(v ParamsPropertyApmTransactionDuration) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeParamsPropertyApmTransactionDuration performs a merge with any union data inside the AlertingRuleCreateRequest_Params, using the provided ParamsPropertyApmTransactionDuration
+func (t *AlertingRuleCreateRequest_Params) MergeParamsPropertyApmTransactionDuration(v ParamsPropertyApmTransactionDuration) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsParamsPropertyApmTransactionErrorRate returns the union data inside the AlertingRuleCreateRequest_Params as a ParamsPropertyApmTransactionErrorRate
+func (t AlertingRuleCreateRequest_Params) AsParamsPropertyApmTransactionErrorRate() (ParamsPropertyApmTransactionErrorRate, error) {
+	var body ParamsPropertyApmTransactionErrorRate
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromParamsPropertyApmTransactionErrorRate overwrites any union data inside the AlertingRuleCreateRequest_Params as the provided ParamsPropertyApmTransactionErrorRate
+func (t *AlertingRuleCreateRequest_Params) FromParamsPropertyApmTransactionErrorRate(v ParamsPropertyApmTransactionErrorRate) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeParamsPropertyApmTransactionErrorRate performs a merge with any union data inside the AlertingRuleCreateRequest_Params, using the provided ParamsPropertyApmTransactionErrorRate
+func (t *AlertingRuleCreateRequest_Params) MergeParamsPropertyApmTransactionErrorRate(v ParamsPropertyApmTransactionErrorRate) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsParamsEsQueryDslRule returns the union data inside the AlertingRuleCreateRequest_Params as a ParamsEsQueryDslRule
+func (t AlertingRuleCreateRequest_Params) AsParamsEsQueryDslRule() (ParamsEsQueryDslRule, error) {
+	var body ParamsEsQueryDslRule
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromParamsEsQueryDslRule overwrites any union data inside the AlertingRuleCreateRequest_Params as the provided ParamsEsQueryDslRule
+func (t *AlertingRuleCreateRequest_Params) FromParamsEsQueryDslRule(v ParamsEsQueryDslRule) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeParamsEsQueryDslRule performs a merge with any union data inside the AlertingRuleCreateRequest_Params, using the provided ParamsEsQueryDslRule
+func (t *AlertingRuleCreateRequest_Params) MergeParamsEsQueryDslRule(v ParamsEsQueryDslRule) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsParamsEsQueryEsqlRule returns the union data inside the AlertingRuleCreateRequest_Params as a ParamsEsQueryEsqlRule
+func (t AlertingRuleCreateRequest_Params) AsParamsEsQueryEsqlRule() (ParamsEsQueryEsqlRule, error) {
+	var body ParamsEsQueryEsqlRule
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromParamsEsQueryEsqlRule overwrites any union data inside the AlertingRuleCreateRequest_Params as the provided ParamsEsQueryEsqlRule
+func (t *AlertingRuleCreateRequest_Params) FromParamsEsQueryEsqlRule(v ParamsEsQueryEsqlRule) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeParamsEsQueryEsqlRule performs a merge with any union data inside the AlertingRuleCreateRequest_Params, using the provided ParamsEsQueryEsqlRule
+func (t *AlertingRuleCreateRequest_Params) MergeParamsEsQueryEsqlRule(v ParamsEsQueryEsqlRule) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsParamsEsQueryKqlRule returns the union data inside the AlertingRuleCreateRequest_Params as a ParamsEsQueryKqlRule
+func (t AlertingRuleCreateRequest_Params) AsParamsEsQueryKqlRule() (ParamsEsQueryKqlRule, error) {
+	var body ParamsEsQueryKqlRule
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromParamsEsQueryKqlRule overwrites any union data inside the AlertingRuleCreateRequest_Params as the provided ParamsEsQueryKqlRule
+func (t *AlertingRuleCreateRequest_Params) FromParamsEsQueryKqlRule(v ParamsEsQueryKqlRule) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeParamsEsQueryKqlRule performs a merge with any union data inside the AlertingRuleCreateRequest_Params, using the provided ParamsEsQueryKqlRule
+func (t *AlertingRuleCreateRequest_Params) MergeParamsEsQueryKqlRule(v ParamsEsQueryKqlRule) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsParamsIndexThresholdRule returns the union data inside the AlertingRuleCreateRequest_Params as a ParamsIndexThresholdRule
+func (t AlertingRuleCreateRequest_Params) AsParamsIndexThresholdRule() (ParamsIndexThresholdRule, error) {
+	var body ParamsIndexThresholdRule
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromParamsIndexThresholdRule overwrites any union data inside the AlertingRuleCreateRequest_Params as the provided ParamsIndexThresholdRule
+func (t *AlertingRuleCreateRequest_Params) FromParamsIndexThresholdRule(v ParamsIndexThresholdRule) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeParamsIndexThresholdRule performs a merge with any union data inside the AlertingRuleCreateRequest_Params, using the provided ParamsIndexThresholdRule
+func (t *AlertingRuleCreateRequest_Params) MergeParamsIndexThresholdRule(v ParamsIndexThresholdRule) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsParamsPropertyInfraInventory returns the union data inside the AlertingRuleCreateRequest_Params as a ParamsPropertyInfraInventory
+func (t AlertingRuleCreateRequest_Params) AsParamsPropertyInfraInventory() (ParamsPropertyInfraInventory, error) {
+	var body ParamsPropertyInfraInventory
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromParamsPropertyInfraInventory overwrites any union data inside the AlertingRuleCreateRequest_Params as the provided ParamsPropertyInfraInventory
+func (t *AlertingRuleCreateRequest_Params) FromParamsPropertyInfraInventory(v ParamsPropertyInfraInventory) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeParamsPropertyInfraInventory performs a merge with any union data inside the AlertingRuleCreateRequest_Params, using the provided ParamsPropertyInfraInventory
+func (t *AlertingRuleCreateRequest_Params) MergeParamsPropertyInfraInventory(v ParamsPropertyInfraInventory) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsParamsPropertyLogThreshold returns the union data inside the AlertingRuleCreateRequest_Params as a ParamsPropertyLogThreshold
+func (t AlertingRuleCreateRequest_Params) AsParamsPropertyLogThreshold() (ParamsPropertyLogThreshold, error) {
+	var body ParamsPropertyLogThreshold
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromParamsPropertyLogThreshold overwrites any union data inside the AlertingRuleCreateRequest_Params as the provided ParamsPropertyLogThreshold
+func (t *AlertingRuleCreateRequest_Params) FromParamsPropertyLogThreshold(v ParamsPropertyLogThreshold) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeParamsPropertyLogThreshold performs a merge with any union data inside the AlertingRuleCreateRequest_Params, using the provided ParamsPropertyLogThreshold
+func (t *AlertingRuleCreateRequest_Params) MergeParamsPropertyLogThreshold(v ParamsPropertyLogThreshold) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsParamsPropertyInfraMetricThreshold returns the union data inside the AlertingRuleCreateRequest_Params as a ParamsPropertyInfraMetricThreshold
+func (t AlertingRuleCreateRequest_Params) AsParamsPropertyInfraMetricThreshold() (ParamsPropertyInfraMetricThreshold, error) {
+	var body ParamsPropertyInfraMetricThreshold
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromParamsPropertyInfraMetricThreshold overwrites any union data inside the AlertingRuleCreateRequest_Params as the provided ParamsPropertyInfraMetricThreshold
+func (t *AlertingRuleCreateRequest_Params) FromParamsPropertyInfraMetricThreshold(v ParamsPropertyInfraMetricThreshold) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeParamsPropertyInfraMetricThreshold performs a merge with any union data inside the AlertingRuleCreateRequest_Params, using the provided ParamsPropertyInfraMetricThreshold
+func (t *AlertingRuleCreateRequest_Params) MergeParamsPropertyInfraMetricThreshold(v ParamsPropertyInfraMetricThreshold) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsParamsPropertySloBurnRate returns the union data inside the AlertingRuleCreateRequest_Params as a ParamsPropertySloBurnRate
+func (t AlertingRuleCreateRequest_Params) AsParamsPropertySloBurnRate() (ParamsPropertySloBurnRate, error) {
+	var body ParamsPropertySloBurnRate
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromParamsPropertySloBurnRate overwrites any union data inside the AlertingRuleCreateRequest_Params as the provided ParamsPropertySloBurnRate
+func (t *AlertingRuleCreateRequest_Params) FromParamsPropertySloBurnRate(v ParamsPropertySloBurnRate) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeParamsPropertySloBurnRate performs a merge with any union data inside the AlertingRuleCreateRequest_Params, using the provided ParamsPropertySloBurnRate
+func (t *AlertingRuleCreateRequest_Params) MergeParamsPropertySloBurnRate(v ParamsPropertySloBurnRate) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsParamsPropertySyntheticsUptimeTls returns the union data inside the AlertingRuleCreateRequest_Params as a ParamsPropertySyntheticsUptimeTls
+func (t AlertingRuleCreateRequest_Params) AsParamsPropertySyntheticsUptimeTls() (ParamsPropertySyntheticsUptimeTls, error) {
+	var body ParamsPropertySyntheticsUptimeTls
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromParamsPropertySyntheticsUptimeTls overwrites any union data inside the AlertingRuleCreateRequest_Params as the provided ParamsPropertySyntheticsUptimeTls
+func (t *AlertingRuleCreateRequest_Params) FromParamsPropertySyntheticsUptimeTls(v ParamsPropertySyntheticsUptimeTls) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeParamsPropertySyntheticsUptimeTls performs a merge with any union data inside the AlertingRuleCreateRequest_Params, using the provided ParamsPropertySyntheticsUptimeTls
+func (t *AlertingRuleCreateRequest_Params) MergeParamsPropertySyntheticsUptimeTls(v ParamsPropertySyntheticsUptimeTls) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsParamsPropertySyntheticsMonitorStatus returns the union data inside the AlertingRuleCreateRequest_Params as a ParamsPropertySyntheticsMonitorStatus
+func (t AlertingRuleCreateRequest_Params) AsParamsPropertySyntheticsMonitorStatus() (ParamsPropertySyntheticsMonitorStatus, error) {
+	var body ParamsPropertySyntheticsMonitorStatus
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromParamsPropertySyntheticsMonitorStatus overwrites any union data inside the AlertingRuleCreateRequest_Params as the provided ParamsPropertySyntheticsMonitorStatus
+func (t *AlertingRuleCreateRequest_Params) FromParamsPropertySyntheticsMonitorStatus(v ParamsPropertySyntheticsMonitorStatus) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeParamsPropertySyntheticsMonitorStatus performs a merge with any union data inside the AlertingRuleCreateRequest_Params, using the provided ParamsPropertySyntheticsMonitorStatus
+func (t *AlertingRuleCreateRequest_Params) MergeParamsPropertySyntheticsMonitorStatus(v ParamsPropertySyntheticsMonitorStatus) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsAlertingRuleResponseSnoozeScheduleRRuleByweekday0 returns the union data inside the AlertingRuleResponse_SnoozeSchedule_RRule_Byweekday_Item as a AlertingRuleResponseSnoozeScheduleRRuleByweekday0
+func (t AlertingRuleResponse_SnoozeSchedule_RRule_Byweekday_Item) AsAlertingRuleResponseSnoozeScheduleRRuleByweekday0() (AlertingRuleResponseSnoozeScheduleRRuleByweekday0, error) {
+	var body AlertingRuleResponseSnoozeScheduleRRuleByweekday0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAlertingRuleResponseSnoozeScheduleRRuleByweekday0 overwrites any union data inside the AlertingRuleResponse_SnoozeSchedule_RRule_Byweekday_Item as the provided AlertingRuleResponseSnoozeScheduleRRuleByweekday0
+func (t *AlertingRuleResponse_SnoozeSchedule_RRule_Byweekday_Item) FromAlertingRuleResponseSnoozeScheduleRRuleByweekday0(v AlertingRuleResponseSnoozeScheduleRRuleByweekday0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAlertingRuleResponseSnoozeScheduleRRuleByweekday0 performs a merge with any union data inside the AlertingRuleResponse_SnoozeSchedule_RRule_Byweekday_Item, using the provided AlertingRuleResponseSnoozeScheduleRRuleByweekday0
+func (t *AlertingRuleResponse_SnoozeSchedule_RRule_Byweekday_Item) MergeAlertingRuleResponseSnoozeScheduleRRuleByweekday0(v AlertingRuleResponseSnoozeScheduleRRuleByweekday0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsAlertingRuleResponseSnoozeScheduleRRuleByweekday1 returns the union data inside the AlertingRuleResponse_SnoozeSchedule_RRule_Byweekday_Item as a AlertingRuleResponseSnoozeScheduleRRuleByweekday1
+func (t AlertingRuleResponse_SnoozeSchedule_RRule_Byweekday_Item) AsAlertingRuleResponseSnoozeScheduleRRuleByweekday1() (AlertingRuleResponseSnoozeScheduleRRuleByweekday1, error) {
+	var body AlertingRuleResponseSnoozeScheduleRRuleByweekday1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAlertingRuleResponseSnoozeScheduleRRuleByweekday1 overwrites any union data inside the AlertingRuleResponse_SnoozeSchedule_RRule_Byweekday_Item as the provided AlertingRuleResponseSnoozeScheduleRRuleByweekday1
+func (t *AlertingRuleResponse_SnoozeSchedule_RRule_Byweekday_Item) FromAlertingRuleResponseSnoozeScheduleRRuleByweekday1(v AlertingRuleResponseSnoozeScheduleRRuleByweekday1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAlertingRuleResponseSnoozeScheduleRRuleByweekday1 performs a merge with any union data inside the AlertingRuleResponse_SnoozeSchedule_RRule_Byweekday_Item, using the provided AlertingRuleResponseSnoozeScheduleRRuleByweekday1
+func (t *AlertingRuleResponse_SnoozeSchedule_RRule_Byweekday_Item) MergeAlertingRuleResponseSnoozeScheduleRRuleByweekday1(v AlertingRuleResponseSnoozeScheduleRRuleByweekday1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t AlertingRuleResponse_SnoozeSchedule_RRule_Byweekday_Item) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *AlertingRuleResponse_SnoozeSchedule_RRule_Byweekday_Item) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
 // AsCreateParamResponse0 returns the union data inside the CreateParamResponse as a CreateParamResponse0
 func (t CreateParamResponse) AsCreateParamResponse0() (CreateParamResponse0, error) {
 	var body CreateParamResponse0
@@ -13585,6 +16031,590 @@ func (t *PackageListItem_Type) UnmarshalJSON(b []byte) error {
 	return err
 }
 
+// AsParamsEsQueryDslRuleIndex0 returns the union data inside the ParamsEsQueryDslRule_Index as a ParamsEsQueryDslRuleIndex0
+func (t ParamsEsQueryDslRule_Index) AsParamsEsQueryDslRuleIndex0() (ParamsEsQueryDslRuleIndex0, error) {
+	var body ParamsEsQueryDslRuleIndex0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromParamsEsQueryDslRuleIndex0 overwrites any union data inside the ParamsEsQueryDslRule_Index as the provided ParamsEsQueryDslRuleIndex0
+func (t *ParamsEsQueryDslRule_Index) FromParamsEsQueryDslRuleIndex0(v ParamsEsQueryDslRuleIndex0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeParamsEsQueryDslRuleIndex0 performs a merge with any union data inside the ParamsEsQueryDslRule_Index, using the provided ParamsEsQueryDslRuleIndex0
+func (t *ParamsEsQueryDslRule_Index) MergeParamsEsQueryDslRuleIndex0(v ParamsEsQueryDslRuleIndex0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsParamsEsQueryDslRuleIndex1 returns the union data inside the ParamsEsQueryDslRule_Index as a ParamsEsQueryDslRuleIndex1
+func (t ParamsEsQueryDslRule_Index) AsParamsEsQueryDslRuleIndex1() (ParamsEsQueryDslRuleIndex1, error) {
+	var body ParamsEsQueryDslRuleIndex1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromParamsEsQueryDslRuleIndex1 overwrites any union data inside the ParamsEsQueryDslRule_Index as the provided ParamsEsQueryDslRuleIndex1
+func (t *ParamsEsQueryDslRule_Index) FromParamsEsQueryDslRuleIndex1(v ParamsEsQueryDslRuleIndex1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeParamsEsQueryDslRuleIndex1 performs a merge with any union data inside the ParamsEsQueryDslRule_Index, using the provided ParamsEsQueryDslRuleIndex1
+func (t *ParamsEsQueryDslRule_Index) MergeParamsEsQueryDslRuleIndex1(v ParamsEsQueryDslRuleIndex1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t ParamsEsQueryDslRule_Index) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *ParamsEsQueryDslRule_Index) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsParamsEsQueryKqlRuleSearchConfigurationIndex0 returns the union data inside the ParamsEsQueryKqlRule_SearchConfiguration_Index as a ParamsEsQueryKqlRuleSearchConfigurationIndex0
+func (t ParamsEsQueryKqlRule_SearchConfiguration_Index) AsParamsEsQueryKqlRuleSearchConfigurationIndex0() (ParamsEsQueryKqlRuleSearchConfigurationIndex0, error) {
+	var body ParamsEsQueryKqlRuleSearchConfigurationIndex0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromParamsEsQueryKqlRuleSearchConfigurationIndex0 overwrites any union data inside the ParamsEsQueryKqlRule_SearchConfiguration_Index as the provided ParamsEsQueryKqlRuleSearchConfigurationIndex0
+func (t *ParamsEsQueryKqlRule_SearchConfiguration_Index) FromParamsEsQueryKqlRuleSearchConfigurationIndex0(v ParamsEsQueryKqlRuleSearchConfigurationIndex0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeParamsEsQueryKqlRuleSearchConfigurationIndex0 performs a merge with any union data inside the ParamsEsQueryKqlRule_SearchConfiguration_Index, using the provided ParamsEsQueryKqlRuleSearchConfigurationIndex0
+func (t *ParamsEsQueryKqlRule_SearchConfiguration_Index) MergeParamsEsQueryKqlRuleSearchConfigurationIndex0(v ParamsEsQueryKqlRuleSearchConfigurationIndex0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsParamsEsQueryKqlRuleSearchConfigurationIndex1 returns the union data inside the ParamsEsQueryKqlRule_SearchConfiguration_Index as a ParamsEsQueryKqlRuleSearchConfigurationIndex1
+func (t ParamsEsQueryKqlRule_SearchConfiguration_Index) AsParamsEsQueryKqlRuleSearchConfigurationIndex1() (ParamsEsQueryKqlRuleSearchConfigurationIndex1, error) {
+	var body ParamsEsQueryKqlRuleSearchConfigurationIndex1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromParamsEsQueryKqlRuleSearchConfigurationIndex1 overwrites any union data inside the ParamsEsQueryKqlRule_SearchConfiguration_Index as the provided ParamsEsQueryKqlRuleSearchConfigurationIndex1
+func (t *ParamsEsQueryKqlRule_SearchConfiguration_Index) FromParamsEsQueryKqlRuleSearchConfigurationIndex1(v ParamsEsQueryKqlRuleSearchConfigurationIndex1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeParamsEsQueryKqlRuleSearchConfigurationIndex1 performs a merge with any union data inside the ParamsEsQueryKqlRule_SearchConfiguration_Index, using the provided ParamsEsQueryKqlRuleSearchConfigurationIndex1
+func (t *ParamsEsQueryKqlRule_SearchConfiguration_Index) MergeParamsEsQueryKqlRuleSearchConfigurationIndex1(v ParamsEsQueryKqlRuleSearchConfigurationIndex1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t ParamsEsQueryKqlRule_SearchConfiguration_Index) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *ParamsEsQueryKqlRule_SearchConfiguration_Index) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsParamsPropertyInfraMetricThresholdCriteria2CustomMetric0 returns the union data inside the ParamsPropertyInfraMetricThreshold_Criteria_2_CustomMetric_Item as a ParamsPropertyInfraMetricThresholdCriteria2CustomMetric0
+func (t ParamsPropertyInfraMetricThreshold_Criteria_2_CustomMetric_Item) AsParamsPropertyInfraMetricThresholdCriteria2CustomMetric0() (ParamsPropertyInfraMetricThresholdCriteria2CustomMetric0, error) {
+	var body ParamsPropertyInfraMetricThresholdCriteria2CustomMetric0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromParamsPropertyInfraMetricThresholdCriteria2CustomMetric0 overwrites any union data inside the ParamsPropertyInfraMetricThreshold_Criteria_2_CustomMetric_Item as the provided ParamsPropertyInfraMetricThresholdCriteria2CustomMetric0
+func (t *ParamsPropertyInfraMetricThreshold_Criteria_2_CustomMetric_Item) FromParamsPropertyInfraMetricThresholdCriteria2CustomMetric0(v ParamsPropertyInfraMetricThresholdCriteria2CustomMetric0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeParamsPropertyInfraMetricThresholdCriteria2CustomMetric0 performs a merge with any union data inside the ParamsPropertyInfraMetricThreshold_Criteria_2_CustomMetric_Item, using the provided ParamsPropertyInfraMetricThresholdCriteria2CustomMetric0
+func (t *ParamsPropertyInfraMetricThreshold_Criteria_2_CustomMetric_Item) MergeParamsPropertyInfraMetricThresholdCriteria2CustomMetric0(v ParamsPropertyInfraMetricThresholdCriteria2CustomMetric0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsParamsPropertyInfraMetricThresholdCriteria2CustomMetric1 returns the union data inside the ParamsPropertyInfraMetricThreshold_Criteria_2_CustomMetric_Item as a ParamsPropertyInfraMetricThresholdCriteria2CustomMetric1
+func (t ParamsPropertyInfraMetricThreshold_Criteria_2_CustomMetric_Item) AsParamsPropertyInfraMetricThresholdCriteria2CustomMetric1() (ParamsPropertyInfraMetricThresholdCriteria2CustomMetric1, error) {
+	var body ParamsPropertyInfraMetricThresholdCriteria2CustomMetric1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromParamsPropertyInfraMetricThresholdCriteria2CustomMetric1 overwrites any union data inside the ParamsPropertyInfraMetricThreshold_Criteria_2_CustomMetric_Item as the provided ParamsPropertyInfraMetricThresholdCriteria2CustomMetric1
+func (t *ParamsPropertyInfraMetricThreshold_Criteria_2_CustomMetric_Item) FromParamsPropertyInfraMetricThresholdCriteria2CustomMetric1(v ParamsPropertyInfraMetricThresholdCriteria2CustomMetric1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeParamsPropertyInfraMetricThresholdCriteria2CustomMetric1 performs a merge with any union data inside the ParamsPropertyInfraMetricThreshold_Criteria_2_CustomMetric_Item, using the provided ParamsPropertyInfraMetricThresholdCriteria2CustomMetric1
+func (t *ParamsPropertyInfraMetricThreshold_Criteria_2_CustomMetric_Item) MergeParamsPropertyInfraMetricThresholdCriteria2CustomMetric1(v ParamsPropertyInfraMetricThresholdCriteria2CustomMetric1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t ParamsPropertyInfraMetricThreshold_Criteria_2_CustomMetric_Item) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *ParamsPropertyInfraMetricThreshold_Criteria_2_CustomMetric_Item) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsParamsPropertyInfraMetricThresholdCriteria0 returns the union data inside the ParamsPropertyInfraMetricThreshold_Criteria_Item as a ParamsPropertyInfraMetricThresholdCriteria0
+func (t ParamsPropertyInfraMetricThreshold_Criteria_Item) AsParamsPropertyInfraMetricThresholdCriteria0() (ParamsPropertyInfraMetricThresholdCriteria0, error) {
+	var body ParamsPropertyInfraMetricThresholdCriteria0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromParamsPropertyInfraMetricThresholdCriteria0 overwrites any union data inside the ParamsPropertyInfraMetricThreshold_Criteria_Item as the provided ParamsPropertyInfraMetricThresholdCriteria0
+func (t *ParamsPropertyInfraMetricThreshold_Criteria_Item) FromParamsPropertyInfraMetricThresholdCriteria0(v ParamsPropertyInfraMetricThresholdCriteria0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeParamsPropertyInfraMetricThresholdCriteria0 performs a merge with any union data inside the ParamsPropertyInfraMetricThreshold_Criteria_Item, using the provided ParamsPropertyInfraMetricThresholdCriteria0
+func (t *ParamsPropertyInfraMetricThreshold_Criteria_Item) MergeParamsPropertyInfraMetricThresholdCriteria0(v ParamsPropertyInfraMetricThresholdCriteria0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsParamsPropertyInfraMetricThresholdCriteria1 returns the union data inside the ParamsPropertyInfraMetricThreshold_Criteria_Item as a ParamsPropertyInfraMetricThresholdCriteria1
+func (t ParamsPropertyInfraMetricThreshold_Criteria_Item) AsParamsPropertyInfraMetricThresholdCriteria1() (ParamsPropertyInfraMetricThresholdCriteria1, error) {
+	var body ParamsPropertyInfraMetricThresholdCriteria1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromParamsPropertyInfraMetricThresholdCriteria1 overwrites any union data inside the ParamsPropertyInfraMetricThreshold_Criteria_Item as the provided ParamsPropertyInfraMetricThresholdCriteria1
+func (t *ParamsPropertyInfraMetricThreshold_Criteria_Item) FromParamsPropertyInfraMetricThresholdCriteria1(v ParamsPropertyInfraMetricThresholdCriteria1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeParamsPropertyInfraMetricThresholdCriteria1 performs a merge with any union data inside the ParamsPropertyInfraMetricThreshold_Criteria_Item, using the provided ParamsPropertyInfraMetricThresholdCriteria1
+func (t *ParamsPropertyInfraMetricThreshold_Criteria_Item) MergeParamsPropertyInfraMetricThresholdCriteria1(v ParamsPropertyInfraMetricThresholdCriteria1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsParamsPropertyInfraMetricThresholdCriteria2 returns the union data inside the ParamsPropertyInfraMetricThreshold_Criteria_Item as a ParamsPropertyInfraMetricThresholdCriteria2
+func (t ParamsPropertyInfraMetricThreshold_Criteria_Item) AsParamsPropertyInfraMetricThresholdCriteria2() (ParamsPropertyInfraMetricThresholdCriteria2, error) {
+	var body ParamsPropertyInfraMetricThresholdCriteria2
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromParamsPropertyInfraMetricThresholdCriteria2 overwrites any union data inside the ParamsPropertyInfraMetricThreshold_Criteria_Item as the provided ParamsPropertyInfraMetricThresholdCriteria2
+func (t *ParamsPropertyInfraMetricThreshold_Criteria_Item) FromParamsPropertyInfraMetricThresholdCriteria2(v ParamsPropertyInfraMetricThresholdCriteria2) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeParamsPropertyInfraMetricThresholdCriteria2 performs a merge with any union data inside the ParamsPropertyInfraMetricThreshold_Criteria_Item, using the provided ParamsPropertyInfraMetricThresholdCriteria2
+func (t *ParamsPropertyInfraMetricThreshold_Criteria_Item) MergeParamsPropertyInfraMetricThresholdCriteria2(v ParamsPropertyInfraMetricThresholdCriteria2) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t ParamsPropertyInfraMetricThreshold_Criteria_Item) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *ParamsPropertyInfraMetricThreshold_Criteria_Item) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsParamsPropertyInfraMetricThresholdGroupBy0 returns the union data inside the ParamsPropertyInfraMetricThreshold_GroupBy as a ParamsPropertyInfraMetricThresholdGroupBy0
+func (t ParamsPropertyInfraMetricThreshold_GroupBy) AsParamsPropertyInfraMetricThresholdGroupBy0() (ParamsPropertyInfraMetricThresholdGroupBy0, error) {
+	var body ParamsPropertyInfraMetricThresholdGroupBy0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromParamsPropertyInfraMetricThresholdGroupBy0 overwrites any union data inside the ParamsPropertyInfraMetricThreshold_GroupBy as the provided ParamsPropertyInfraMetricThresholdGroupBy0
+func (t *ParamsPropertyInfraMetricThreshold_GroupBy) FromParamsPropertyInfraMetricThresholdGroupBy0(v ParamsPropertyInfraMetricThresholdGroupBy0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeParamsPropertyInfraMetricThresholdGroupBy0 performs a merge with any union data inside the ParamsPropertyInfraMetricThreshold_GroupBy, using the provided ParamsPropertyInfraMetricThresholdGroupBy0
+func (t *ParamsPropertyInfraMetricThreshold_GroupBy) MergeParamsPropertyInfraMetricThresholdGroupBy0(v ParamsPropertyInfraMetricThresholdGroupBy0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsParamsPropertyInfraMetricThresholdGroupBy1 returns the union data inside the ParamsPropertyInfraMetricThreshold_GroupBy as a ParamsPropertyInfraMetricThresholdGroupBy1
+func (t ParamsPropertyInfraMetricThreshold_GroupBy) AsParamsPropertyInfraMetricThresholdGroupBy1() (ParamsPropertyInfraMetricThresholdGroupBy1, error) {
+	var body ParamsPropertyInfraMetricThresholdGroupBy1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromParamsPropertyInfraMetricThresholdGroupBy1 overwrites any union data inside the ParamsPropertyInfraMetricThreshold_GroupBy as the provided ParamsPropertyInfraMetricThresholdGroupBy1
+func (t *ParamsPropertyInfraMetricThreshold_GroupBy) FromParamsPropertyInfraMetricThresholdGroupBy1(v ParamsPropertyInfraMetricThresholdGroupBy1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeParamsPropertyInfraMetricThresholdGroupBy1 performs a merge with any union data inside the ParamsPropertyInfraMetricThreshold_GroupBy, using the provided ParamsPropertyInfraMetricThresholdGroupBy1
+func (t *ParamsPropertyInfraMetricThreshold_GroupBy) MergeParamsPropertyInfraMetricThresholdGroupBy1(v ParamsPropertyInfraMetricThresholdGroupBy1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t ParamsPropertyInfraMetricThreshold_GroupBy) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *ParamsPropertyInfraMetricThreshold_GroupBy) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsParamsPropertyLogThreshold0 returns the union data inside the ParamsPropertyLogThreshold as a ParamsPropertyLogThreshold0
+func (t ParamsPropertyLogThreshold) AsParamsPropertyLogThreshold0() (ParamsPropertyLogThreshold0, error) {
+	var body ParamsPropertyLogThreshold0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromParamsPropertyLogThreshold0 overwrites any union data inside the ParamsPropertyLogThreshold as the provided ParamsPropertyLogThreshold0
+func (t *ParamsPropertyLogThreshold) FromParamsPropertyLogThreshold0(v ParamsPropertyLogThreshold0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeParamsPropertyLogThreshold0 performs a merge with any union data inside the ParamsPropertyLogThreshold, using the provided ParamsPropertyLogThreshold0
+func (t *ParamsPropertyLogThreshold) MergeParamsPropertyLogThreshold0(v ParamsPropertyLogThreshold0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsParamsPropertyLogThreshold1 returns the union data inside the ParamsPropertyLogThreshold as a ParamsPropertyLogThreshold1
+func (t ParamsPropertyLogThreshold) AsParamsPropertyLogThreshold1() (ParamsPropertyLogThreshold1, error) {
+	var body ParamsPropertyLogThreshold1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromParamsPropertyLogThreshold1 overwrites any union data inside the ParamsPropertyLogThreshold as the provided ParamsPropertyLogThreshold1
+func (t *ParamsPropertyLogThreshold) FromParamsPropertyLogThreshold1(v ParamsPropertyLogThreshold1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeParamsPropertyLogThreshold1 performs a merge with any union data inside the ParamsPropertyLogThreshold, using the provided ParamsPropertyLogThreshold1
+func (t *ParamsPropertyLogThreshold) MergeParamsPropertyLogThreshold1(v ParamsPropertyLogThreshold1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t ParamsPropertyLogThreshold) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *ParamsPropertyLogThreshold) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsParamsPropertyLogThreshold0CriteriaValue0 returns the union data inside the ParamsPropertyLogThreshold_0_Criteria_Value as a ParamsPropertyLogThreshold0CriteriaValue0
+func (t ParamsPropertyLogThreshold_0_Criteria_Value) AsParamsPropertyLogThreshold0CriteriaValue0() (ParamsPropertyLogThreshold0CriteriaValue0, error) {
+	var body ParamsPropertyLogThreshold0CriteriaValue0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromParamsPropertyLogThreshold0CriteriaValue0 overwrites any union data inside the ParamsPropertyLogThreshold_0_Criteria_Value as the provided ParamsPropertyLogThreshold0CriteriaValue0
+func (t *ParamsPropertyLogThreshold_0_Criteria_Value) FromParamsPropertyLogThreshold0CriteriaValue0(v ParamsPropertyLogThreshold0CriteriaValue0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeParamsPropertyLogThreshold0CriteriaValue0 performs a merge with any union data inside the ParamsPropertyLogThreshold_0_Criteria_Value, using the provided ParamsPropertyLogThreshold0CriteriaValue0
+func (t *ParamsPropertyLogThreshold_0_Criteria_Value) MergeParamsPropertyLogThreshold0CriteriaValue0(v ParamsPropertyLogThreshold0CriteriaValue0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsParamsPropertyLogThreshold0CriteriaValue1 returns the union data inside the ParamsPropertyLogThreshold_0_Criteria_Value as a ParamsPropertyLogThreshold0CriteriaValue1
+func (t ParamsPropertyLogThreshold_0_Criteria_Value) AsParamsPropertyLogThreshold0CriteriaValue1() (ParamsPropertyLogThreshold0CriteriaValue1, error) {
+	var body ParamsPropertyLogThreshold0CriteriaValue1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromParamsPropertyLogThreshold0CriteriaValue1 overwrites any union data inside the ParamsPropertyLogThreshold_0_Criteria_Value as the provided ParamsPropertyLogThreshold0CriteriaValue1
+func (t *ParamsPropertyLogThreshold_0_Criteria_Value) FromParamsPropertyLogThreshold0CriteriaValue1(v ParamsPropertyLogThreshold0CriteriaValue1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeParamsPropertyLogThreshold0CriteriaValue1 performs a merge with any union data inside the ParamsPropertyLogThreshold_0_Criteria_Value, using the provided ParamsPropertyLogThreshold0CriteriaValue1
+func (t *ParamsPropertyLogThreshold_0_Criteria_Value) MergeParamsPropertyLogThreshold0CriteriaValue1(v ParamsPropertyLogThreshold0CriteriaValue1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t ParamsPropertyLogThreshold_0_Criteria_Value) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *ParamsPropertyLogThreshold_0_Criteria_Value) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsParamsPropertyLogThreshold1CriteriaValue0 returns the union data inside the ParamsPropertyLogThreshold_1_Criteria_Value as a ParamsPropertyLogThreshold1CriteriaValue0
+func (t ParamsPropertyLogThreshold_1_Criteria_Value) AsParamsPropertyLogThreshold1CriteriaValue0() (ParamsPropertyLogThreshold1CriteriaValue0, error) {
+	var body ParamsPropertyLogThreshold1CriteriaValue0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromParamsPropertyLogThreshold1CriteriaValue0 overwrites any union data inside the ParamsPropertyLogThreshold_1_Criteria_Value as the provided ParamsPropertyLogThreshold1CriteriaValue0
+func (t *ParamsPropertyLogThreshold_1_Criteria_Value) FromParamsPropertyLogThreshold1CriteriaValue0(v ParamsPropertyLogThreshold1CriteriaValue0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeParamsPropertyLogThreshold1CriteriaValue0 performs a merge with any union data inside the ParamsPropertyLogThreshold_1_Criteria_Value, using the provided ParamsPropertyLogThreshold1CriteriaValue0
+func (t *ParamsPropertyLogThreshold_1_Criteria_Value) MergeParamsPropertyLogThreshold1CriteriaValue0(v ParamsPropertyLogThreshold1CriteriaValue0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsParamsPropertyLogThreshold1CriteriaValue1 returns the union data inside the ParamsPropertyLogThreshold_1_Criteria_Value as a ParamsPropertyLogThreshold1CriteriaValue1
+func (t ParamsPropertyLogThreshold_1_Criteria_Value) AsParamsPropertyLogThreshold1CriteriaValue1() (ParamsPropertyLogThreshold1CriteriaValue1, error) {
+	var body ParamsPropertyLogThreshold1CriteriaValue1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromParamsPropertyLogThreshold1CriteriaValue1 overwrites any union data inside the ParamsPropertyLogThreshold_1_Criteria_Value as the provided ParamsPropertyLogThreshold1CriteriaValue1
+func (t *ParamsPropertyLogThreshold_1_Criteria_Value) FromParamsPropertyLogThreshold1CriteriaValue1(v ParamsPropertyLogThreshold1CriteriaValue1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeParamsPropertyLogThreshold1CriteriaValue1 performs a merge with any union data inside the ParamsPropertyLogThreshold_1_Criteria_Value, using the provided ParamsPropertyLogThreshold1CriteriaValue1
+func (t *ParamsPropertyLogThreshold_1_Criteria_Value) MergeParamsPropertyLogThreshold1CriteriaValue1(v ParamsPropertyLogThreshold1CriteriaValue1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t ParamsPropertyLogThreshold_1_Criteria_Value) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *ParamsPropertyLogThreshold_1_Criteria_Value) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsParamsPropertySyntheticsMonitorStatusFilters0 returns the union data inside the ParamsPropertySyntheticsMonitorStatus_Filters as a ParamsPropertySyntheticsMonitorStatusFilters0
+func (t ParamsPropertySyntheticsMonitorStatus_Filters) AsParamsPropertySyntheticsMonitorStatusFilters0() (ParamsPropertySyntheticsMonitorStatusFilters0, error) {
+	var body ParamsPropertySyntheticsMonitorStatusFilters0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromParamsPropertySyntheticsMonitorStatusFilters0 overwrites any union data inside the ParamsPropertySyntheticsMonitorStatus_Filters as the provided ParamsPropertySyntheticsMonitorStatusFilters0
+func (t *ParamsPropertySyntheticsMonitorStatus_Filters) FromParamsPropertySyntheticsMonitorStatusFilters0(v ParamsPropertySyntheticsMonitorStatusFilters0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeParamsPropertySyntheticsMonitorStatusFilters0 performs a merge with any union data inside the ParamsPropertySyntheticsMonitorStatus_Filters, using the provided ParamsPropertySyntheticsMonitorStatusFilters0
+func (t *ParamsPropertySyntheticsMonitorStatus_Filters) MergeParamsPropertySyntheticsMonitorStatusFilters0(v ParamsPropertySyntheticsMonitorStatusFilters0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsParamsPropertySyntheticsMonitorStatusFilters1 returns the union data inside the ParamsPropertySyntheticsMonitorStatus_Filters as a ParamsPropertySyntheticsMonitorStatusFilters1
+func (t ParamsPropertySyntheticsMonitorStatus_Filters) AsParamsPropertySyntheticsMonitorStatusFilters1() (ParamsPropertySyntheticsMonitorStatusFilters1, error) {
+	var body ParamsPropertySyntheticsMonitorStatusFilters1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromParamsPropertySyntheticsMonitorStatusFilters1 overwrites any union data inside the ParamsPropertySyntheticsMonitorStatus_Filters as the provided ParamsPropertySyntheticsMonitorStatusFilters1
+func (t *ParamsPropertySyntheticsMonitorStatus_Filters) FromParamsPropertySyntheticsMonitorStatusFilters1(v ParamsPropertySyntheticsMonitorStatusFilters1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeParamsPropertySyntheticsMonitorStatusFilters1 performs a merge with any union data inside the ParamsPropertySyntheticsMonitorStatus_Filters, using the provided ParamsPropertySyntheticsMonitorStatusFilters1
+func (t *ParamsPropertySyntheticsMonitorStatus_Filters) MergeParamsPropertySyntheticsMonitorStatusFilters1(v ParamsPropertySyntheticsMonitorStatusFilters1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t ParamsPropertySyntheticsMonitorStatus_Filters) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *ParamsPropertySyntheticsMonitorStatus_Filters) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
 // AsServerHostSecretsSslEsKey0 returns the union data inside the ServerHost_Secrets_Ssl_EsKey as a ServerHostSecretsSslEsKey0
 func (t ServerHost_Secrets_Ssl_EsKey) AsServerHostSecretsSslEsKey0() (ServerHostSecretsSslEsKey0, error) {
 	var body ServerHostSecretsSslEsKey0
@@ -13705,6 +16735,68 @@ func (t ServerHost_Secrets_Ssl_Key) MarshalJSON() ([]byte, error) {
 }
 
 func (t *ServerHost_Secrets_Ssl_Key) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsTermfield0 returns the union data inside the Termfield as a Termfield0
+func (t Termfield) AsTermfield0() (Termfield0, error) {
+	var body Termfield0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromTermfield0 overwrites any union data inside the Termfield as the provided Termfield0
+func (t *Termfield) FromTermfield0(v Termfield0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeTermfield0 performs a merge with any union data inside the Termfield, using the provided Termfield0
+func (t *Termfield) MergeTermfield0(v Termfield0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsTermfield1 returns the union data inside the Termfield as a Termfield1
+func (t Termfield) AsTermfield1() (Termfield1, error) {
+	var body Termfield1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromTermfield1 overwrites any union data inside the Termfield as the provided Termfield1
+func (t *Termfield) FromTermfield1(v Termfield1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeTermfield1 performs a merge with any union data inside the Termfield, using the provided Termfield1
+func (t *Termfield) MergeTermfield1(v Termfield1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t Termfield) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *Termfield) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
@@ -14195,6 +17287,56 @@ func (t *UpdateOutputUnion) UnmarshalJSON(b []byte) error {
 	return err
 }
 
+// Override default JSON handling for AlertingRuleCreateRequest_Params to handle AdditionalProperties and union
+func (a *AlertingRuleCreateRequest_Params) UnmarshalJSON(b []byte) error {
+	err := a.union.UnmarshalJSON(b)
+	if err != nil {
+		return err
+	}
+	object := make(map[string]json.RawMessage)
+	err = json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for AlertingRuleCreateRequest_Params to handle AdditionalProperties and union
+func (a AlertingRuleCreateRequest_Params) MarshalJSON() ([]byte, error) {
+	var err error
+	b, err := a.union.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	object := make(map[string]json.RawMessage)
+	if a.union != nil {
+		err = json.Unmarshal(b, &object)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
 // RequestEditorFn  is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
 
@@ -14268,6 +17410,30 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 
 // The interface specification for the client above.
 type ClientInterface interface {
+	// DeleteAlertingRuleId request
+	DeleteAlertingRuleId(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetAlertingRuleId request
+	GetAlertingRuleId(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostAlertingRuleIdWithBody request with any body
+	PostAlertingRuleIdWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostAlertingRuleId(ctx context.Context, id string, body PostAlertingRuleIdJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PutAlertingRuleIdWithBody request with any body
+	PutAlertingRuleIdWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PutAlertingRuleId(ctx context.Context, id string, body PutAlertingRuleIdJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostAlertingRuleIdDisableWithBody request with any body
+	PostAlertingRuleIdDisableWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostAlertingRuleIdDisable(ctx context.Context, id string, body PostAlertingRuleIdDisableJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostAlertingRuleIdEnable request
+	PostAlertingRuleIdEnable(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetFleetAgentPolicies request
 	GetFleetAgentPolicies(ctx context.Context, params *GetFleetAgentPoliciesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -14400,6 +17566,114 @@ type ClientInterface interface {
 	UpdateDataViewDefaultWithBody(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	UpdateDataViewDefault(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, body UpdateDataViewDefaultJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+}
+
+func (c *Client) DeleteAlertingRuleId(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteAlertingRuleIdRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetAlertingRuleId(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetAlertingRuleIdRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostAlertingRuleIdWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostAlertingRuleIdRequestWithBody(c.Server, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostAlertingRuleId(ctx context.Context, id string, body PostAlertingRuleIdJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostAlertingRuleIdRequest(c.Server, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PutAlertingRuleIdWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPutAlertingRuleIdRequestWithBody(c.Server, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PutAlertingRuleId(ctx context.Context, id string, body PutAlertingRuleIdJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPutAlertingRuleIdRequest(c.Server, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostAlertingRuleIdDisableWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostAlertingRuleIdDisableRequestWithBody(c.Server, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostAlertingRuleIdDisable(ctx context.Context, id string, body PostAlertingRuleIdDisableJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostAlertingRuleIdDisableRequest(c.Server, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostAlertingRuleIdEnable(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostAlertingRuleIdEnableRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
 }
 
 func (c *Client) GetFleetAgentPolicies(ctx context.Context, params *GetFleetAgentPoliciesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -14988,6 +18262,249 @@ func (c *Client) UpdateDataViewDefault(ctx context.Context, spaceId SpaceId, vie
 		return nil, err
 	}
 	return c.Client.Do(req)
+}
+
+// NewDeleteAlertingRuleIdRequest generates requests for DeleteAlertingRuleId
+func NewDeleteAlertingRuleIdRequest(server string, id string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/alerting/rule/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetAlertingRuleIdRequest generates requests for GetAlertingRuleId
+func NewGetAlertingRuleIdRequest(server string, id string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/alerting/rule/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewPostAlertingRuleIdRequest calls the generic PostAlertingRuleId builder with application/json body
+func NewPostAlertingRuleIdRequest(server string, id string, body PostAlertingRuleIdJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostAlertingRuleIdRequestWithBody(server, id, "application/json", bodyReader)
+}
+
+// NewPostAlertingRuleIdRequestWithBody generates requests for PostAlertingRuleId with any type of body
+func NewPostAlertingRuleIdRequestWithBody(server string, id string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/alerting/rule/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewPutAlertingRuleIdRequest calls the generic PutAlertingRuleId builder with application/json body
+func NewPutAlertingRuleIdRequest(server string, id string, body PutAlertingRuleIdJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPutAlertingRuleIdRequestWithBody(server, id, "application/json", bodyReader)
+}
+
+// NewPutAlertingRuleIdRequestWithBody generates requests for PutAlertingRuleId with any type of body
+func NewPutAlertingRuleIdRequestWithBody(server string, id string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/alerting/rule/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewPostAlertingRuleIdDisableRequest calls the generic PostAlertingRuleIdDisable builder with application/json body
+func NewPostAlertingRuleIdDisableRequest(server string, id string, body PostAlertingRuleIdDisableJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostAlertingRuleIdDisableRequestWithBody(server, id, "application/json", bodyReader)
+}
+
+// NewPostAlertingRuleIdDisableRequestWithBody generates requests for PostAlertingRuleIdDisable with any type of body
+func NewPostAlertingRuleIdDisableRequestWithBody(server string, id string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/alerting/rule/%s/_disable", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewPostAlertingRuleIdEnableRequest generates requests for PostAlertingRuleIdEnable
+func NewPostAlertingRuleIdEnableRequest(server string, id string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/alerting/rule/%s/_enable", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
 }
 
 // NewGetFleetAgentPoliciesRequest generates requests for GetFleetAgentPolicies
@@ -17120,6 +20637,30 @@ func WithBaseURL(baseURL string) ClientOption {
 
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
+	// DeleteAlertingRuleIdWithResponse request
+	DeleteAlertingRuleIdWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*DeleteAlertingRuleIdResponse, error)
+
+	// GetAlertingRuleIdWithResponse request
+	GetAlertingRuleIdWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*GetAlertingRuleIdResponse, error)
+
+	// PostAlertingRuleIdWithBodyWithResponse request with any body
+	PostAlertingRuleIdWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostAlertingRuleIdResponse, error)
+
+	PostAlertingRuleIdWithResponse(ctx context.Context, id string, body PostAlertingRuleIdJSONRequestBody, reqEditors ...RequestEditorFn) (*PostAlertingRuleIdResponse, error)
+
+	// PutAlertingRuleIdWithBodyWithResponse request with any body
+	PutAlertingRuleIdWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutAlertingRuleIdResponse, error)
+
+	PutAlertingRuleIdWithResponse(ctx context.Context, id string, body PutAlertingRuleIdJSONRequestBody, reqEditors ...RequestEditorFn) (*PutAlertingRuleIdResponse, error)
+
+	// PostAlertingRuleIdDisableWithBodyWithResponse request with any body
+	PostAlertingRuleIdDisableWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostAlertingRuleIdDisableResponse, error)
+
+	PostAlertingRuleIdDisableWithResponse(ctx context.Context, id string, body PostAlertingRuleIdDisableJSONRequestBody, reqEditors ...RequestEditorFn) (*PostAlertingRuleIdDisableResponse, error)
+
+	// PostAlertingRuleIdEnableWithResponse request
+	PostAlertingRuleIdEnableWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*PostAlertingRuleIdEnableResponse, error)
+
 	// GetFleetAgentPoliciesWithResponse request
 	GetFleetAgentPoliciesWithResponse(ctx context.Context, params *GetFleetAgentPoliciesParams, reqEditors ...RequestEditorFn) (*GetFleetAgentPoliciesResponse, error)
 
@@ -17252,6 +20793,135 @@ type ClientWithResponsesInterface interface {
 	UpdateDataViewDefaultWithBodyWithResponse(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateDataViewDefaultResponse, error)
 
 	UpdateDataViewDefaultWithResponse(ctx context.Context, spaceId SpaceId, viewId DataViewsViewId, body UpdateDataViewDefaultJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDataViewDefaultResponse, error)
+}
+
+type DeleteAlertingRuleIdResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteAlertingRuleIdResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteAlertingRuleIdResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetAlertingRuleIdResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AlertingRuleResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetAlertingRuleIdResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetAlertingRuleIdResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PostAlertingRuleIdResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AlertingRuleResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r PostAlertingRuleIdResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostAlertingRuleIdResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PutAlertingRuleIdResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AlertingRuleResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r PutAlertingRuleIdResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PutAlertingRuleIdResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PostAlertingRuleIdDisableResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r PostAlertingRuleIdDisableResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostAlertingRuleIdDisableResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PostAlertingRuleIdEnableResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r PostAlertingRuleIdEnableResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostAlertingRuleIdEnableResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
 }
 
 type GetFleetAgentPoliciesResponse struct {
@@ -18360,6 +22030,84 @@ func (r UpdateDataViewDefaultResponse) StatusCode() int {
 	return 0
 }
 
+// DeleteAlertingRuleIdWithResponse request returning *DeleteAlertingRuleIdResponse
+func (c *ClientWithResponses) DeleteAlertingRuleIdWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*DeleteAlertingRuleIdResponse, error) {
+	rsp, err := c.DeleteAlertingRuleId(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteAlertingRuleIdResponse(rsp)
+}
+
+// GetAlertingRuleIdWithResponse request returning *GetAlertingRuleIdResponse
+func (c *ClientWithResponses) GetAlertingRuleIdWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*GetAlertingRuleIdResponse, error) {
+	rsp, err := c.GetAlertingRuleId(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetAlertingRuleIdResponse(rsp)
+}
+
+// PostAlertingRuleIdWithBodyWithResponse request with arbitrary body returning *PostAlertingRuleIdResponse
+func (c *ClientWithResponses) PostAlertingRuleIdWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostAlertingRuleIdResponse, error) {
+	rsp, err := c.PostAlertingRuleIdWithBody(ctx, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostAlertingRuleIdResponse(rsp)
+}
+
+func (c *ClientWithResponses) PostAlertingRuleIdWithResponse(ctx context.Context, id string, body PostAlertingRuleIdJSONRequestBody, reqEditors ...RequestEditorFn) (*PostAlertingRuleIdResponse, error) {
+	rsp, err := c.PostAlertingRuleId(ctx, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostAlertingRuleIdResponse(rsp)
+}
+
+// PutAlertingRuleIdWithBodyWithResponse request with arbitrary body returning *PutAlertingRuleIdResponse
+func (c *ClientWithResponses) PutAlertingRuleIdWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutAlertingRuleIdResponse, error) {
+	rsp, err := c.PutAlertingRuleIdWithBody(ctx, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePutAlertingRuleIdResponse(rsp)
+}
+
+func (c *ClientWithResponses) PutAlertingRuleIdWithResponse(ctx context.Context, id string, body PutAlertingRuleIdJSONRequestBody, reqEditors ...RequestEditorFn) (*PutAlertingRuleIdResponse, error) {
+	rsp, err := c.PutAlertingRuleId(ctx, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePutAlertingRuleIdResponse(rsp)
+}
+
+// PostAlertingRuleIdDisableWithBodyWithResponse request with arbitrary body returning *PostAlertingRuleIdDisableResponse
+func (c *ClientWithResponses) PostAlertingRuleIdDisableWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostAlertingRuleIdDisableResponse, error) {
+	rsp, err := c.PostAlertingRuleIdDisableWithBody(ctx, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostAlertingRuleIdDisableResponse(rsp)
+}
+
+func (c *ClientWithResponses) PostAlertingRuleIdDisableWithResponse(ctx context.Context, id string, body PostAlertingRuleIdDisableJSONRequestBody, reqEditors ...RequestEditorFn) (*PostAlertingRuleIdDisableResponse, error) {
+	rsp, err := c.PostAlertingRuleIdDisable(ctx, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostAlertingRuleIdDisableResponse(rsp)
+}
+
+// PostAlertingRuleIdEnableWithResponse request returning *PostAlertingRuleIdEnableResponse
+func (c *ClientWithResponses) PostAlertingRuleIdEnableWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*PostAlertingRuleIdEnableResponse, error) {
+	rsp, err := c.PostAlertingRuleIdEnable(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostAlertingRuleIdEnableResponse(rsp)
+}
+
 // GetFleetAgentPoliciesWithResponse request returning *GetFleetAgentPoliciesResponse
 func (c *ClientWithResponses) GetFleetAgentPoliciesWithResponse(ctx context.Context, params *GetFleetAgentPoliciesParams, reqEditors ...RequestEditorFn) (*GetFleetAgentPoliciesResponse, error) {
 	rsp, err := c.GetFleetAgentPolicies(ctx, params, reqEditors...)
@@ -18785,6 +22533,132 @@ func (c *ClientWithResponses) UpdateDataViewDefaultWithResponse(ctx context.Cont
 		return nil, err
 	}
 	return ParseUpdateDataViewDefaultResponse(rsp)
+}
+
+// ParseDeleteAlertingRuleIdResponse parses an HTTP response from a DeleteAlertingRuleIdWithResponse call
+func ParseDeleteAlertingRuleIdResponse(rsp *http.Response) (*DeleteAlertingRuleIdResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteAlertingRuleIdResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParseGetAlertingRuleIdResponse parses an HTTP response from a GetAlertingRuleIdWithResponse call
+func ParseGetAlertingRuleIdResponse(rsp *http.Response) (*GetAlertingRuleIdResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetAlertingRuleIdResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AlertingRuleResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePostAlertingRuleIdResponse parses an HTTP response from a PostAlertingRuleIdWithResponse call
+func ParsePostAlertingRuleIdResponse(rsp *http.Response) (*PostAlertingRuleIdResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostAlertingRuleIdResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AlertingRuleResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePutAlertingRuleIdResponse parses an HTTP response from a PutAlertingRuleIdWithResponse call
+func ParsePutAlertingRuleIdResponse(rsp *http.Response) (*PutAlertingRuleIdResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PutAlertingRuleIdResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AlertingRuleResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePostAlertingRuleIdDisableResponse parses an HTTP response from a PostAlertingRuleIdDisableWithResponse call
+func ParsePostAlertingRuleIdDisableResponse(rsp *http.Response) (*PostAlertingRuleIdDisableResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostAlertingRuleIdDisableResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParsePostAlertingRuleIdEnableResponse parses an HTTP response from a PostAlertingRuleIdEnableWithResponse call
+func ParsePostAlertingRuleIdEnableResponse(rsp *http.Response) (*PostAlertingRuleIdEnableResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostAlertingRuleIdEnableResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
 }
 
 // ParseGetFleetAgentPoliciesResponse parses an HTTP response from a GetFleetAgentPoliciesWithResponse call

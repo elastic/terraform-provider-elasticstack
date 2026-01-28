@@ -545,6 +545,7 @@ var transformers = []TransformFunc{
 	transformAddMisingDescriptions,
 	transformKibanaPaths,
 	transformFleetPaths,
+	transformAlertingPaths,
 	transformRemoveExamples,
 	transformRemoveUnusedComponents,
 }
@@ -552,7 +553,7 @@ var transformers = []TransformFunc{
 // transformFilterPaths filters the paths in a schema down to a specified list
 // of endpoints and methods.
 func transformFilterPaths(schema *Schema) {
-	var includePaths = map[string][]string{
+	includePaths := map[string][]string{
 		"/api/data_views":                                {"get"},
 		"/api/data_views/data_view":                      {"post"},
 		"/api/data_views/data_view/{viewId}":             {"get", "post", "delete"},
@@ -570,6 +571,11 @@ func transformFilterPaths(schema *Schema) {
 		"/api/fleet/package_policies/{packagePolicyId}":  {"get", "put", "delete"},
 		"/api/synthetics/params":                         {"post"},
 		"/api/synthetics/params/{id}":                    {"get", "put", "delete"},
+
+		// Alerting
+		"/api/alerting/rule/{id}":          {"get", "post", "put", "delete"},
+		"/api/alerting/rule/{id}/_disable": {"post"},
+		"/api/alerting/rule/{id}/_enable":  {"post"},
 	}
 
 	for path, pathInfo := range schema.Paths {
@@ -1023,6 +1029,34 @@ func transformFleetPaths(schema *Schema) {
 	schema.Components.Set("schemas.package_policy_request.properties.output_id.x-omitempty", true)
 	schema.Components.Set("schemas.package_policy_request.properties.additional_datastreams_permissions.x-omitempty", true)
 	schema.Components.Set("schemas.package_policy_request.properties.supports_agentless.x-omitempty", true)
+}
+
+// transformAlertingPaths fixes the alerting paths.
+func transformAlertingPaths(schema *Schema) {
+	// Alerting rules
+	// https://www.elastic.co/guide/en/kibana/current/alerting-apis.html
+
+	rulePath := schema.MustGetPath("/api/alerting/rule/{id}")
+
+	// Create refs for rule response to make it reusable
+	rulePath.Get.CreateRef(schema, "alerting_rule_response", "responses.200.content.application/json.schema")
+	rulePath.Post.CreateRef(schema, "alerting_rule_response", "responses.200.content.application/json.schema")
+	rulePath.Put.CreateRef(schema, "alerting_rule_response", "responses.200.content.application/json.schema")
+
+	// Create refs for request bodies
+	rulePath.Post.CreateRef(schema, "alerting_rule_create_request", "requestBody.content.application/json.schema")
+	rulePath.Put.CreateRef(schema, "alerting_rule_update_request", "requestBody.content.application/json.schema")
+
+	// Create refs for nested action type
+	schema.Components.CreateRef(schema, "alerting_rule_action", "schemas.alerting_rule_response.properties.actions.items")
+
+	// Create ref for schedule
+	schema.Components.CreateRef(schema, "alerting_rule_schedule", "schemas.alerting_rule_response.properties.schedule")
+
+	// Create ref for alert_delay if it exists
+	if schema.Components.Has("schemas.alerting_rule_response.properties.alert_delay") {
+		schema.Components.CreateRef(schema, "alerting_rule_alert_delay", "schemas.alerting_rule_response.properties.alert_delay")
+	}
 }
 
 // transformRemoveExamples removes all examples.
