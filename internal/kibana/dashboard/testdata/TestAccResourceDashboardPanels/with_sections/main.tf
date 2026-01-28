@@ -25,7 +25,7 @@ resource "elasticstack_kibana_dashboard" "test" {
         w = 24
         h = 10
       }
-      embeddable_config = {
+      markdown_config = {
         content           = "First markdown panel"
         title             = "My First Markdown Panel"
         hide_panel_titles = false
