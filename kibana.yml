@@ -2,4 +2,4 @@ server.host: 0.0.0.0
 server.shutdownTimeout: 5s
 server.name: kibana
 feature_flags.overrides:
-  lens.apiformat: true
+  lens.apiFormat: true
