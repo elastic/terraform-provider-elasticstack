@@ -108,6 +108,10 @@ func getSchema() schema.Schema {
 				MarkdownDescription: "Display options for the dashboard.",
 				Optional:            true,
 				Attributes: map[string]schema.Attribute{
+					"auto_apply_filters": schema.BoolAttribute{
+						MarkdownDescription: "Auto apply control filters.",
+						Optional:            true,
+					},
 					"hide_panel_titles": schema.BoolAttribute{
 						MarkdownDescription: "Hide the panel titles in the dashboard.",
 						Optional:            true,

@@ -70,6 +70,7 @@ func TestAccResourceEmptyDashboard(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "time_from", "2024-01-01T00:00:00.000Z"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "time_to", "2024-01-01T01:00:00.000Z"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "time_range_mode", "absolute"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "options.auto_apply_filters", "true"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "options.hide_panel_titles", "true"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "options.use_margins", "false"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "options.sync_colors", "true"),

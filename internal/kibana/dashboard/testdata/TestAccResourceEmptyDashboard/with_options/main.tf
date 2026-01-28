@@ -17,6 +17,7 @@ resource "elasticstack_kibana_dashboard" "test" {
   query_text     = ""
 
   options = {
+    auto_apply_filters = true
     hide_panel_titles = true
     use_margins       = false
     sync_colors       = true

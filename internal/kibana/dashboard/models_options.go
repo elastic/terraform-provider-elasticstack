@@ -7,6 +7,7 @@ import (
 )
 
 type optionsModel struct {
+	AutoApplyFilters types.Bool `tfsdk:"auto_apply_filters"`
 	HidePanelTitles types.Bool `tfsdk:"hide_panel_titles"`
 	UseMargins      types.Bool `tfsdk:"use_margins"`
 	SyncColors      types.Bool `tfsdk:"sync_colors"`
@@ -51,6 +52,7 @@ func (m *dashboardModel) mapOptionsFromAPI(options *optionsAPIModel) *optionsMod
 	}
 
 	model := optionsModel{
+		AutoApplyFilters: types.BoolPointerValue(options.AutoApplyFilters),
 		HidePanelTitles: types.BoolPointerValue(options.HidePanelTitles),
 		UseMargins:      types.BoolPointerValue(options.UseMargins),
 		SyncColors:      types.BoolPointerValue(options.SyncColors),
@@ -63,6 +65,9 @@ func (m *dashboardModel) mapOptionsFromAPI(options *optionsAPIModel) *optionsMod
 
 func (m optionsModel) toAPI() *optionsAPIModel {
 	options := optionsAPIModel{}
+	if utils.IsKnown(m.AutoApplyFilters) {
+		options.AutoApplyFilters = m.AutoApplyFilters.ValueBoolPointer()
+	}
 	if utils.IsKnown(m.HidePanelTitles) {
 		options.HidePanelTitles = m.HidePanelTitles.ValueBoolPointer()
 	}
