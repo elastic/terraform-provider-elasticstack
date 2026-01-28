@@ -1,28 +1,24 @@
 package kibana
 
 import (
-	"context"
-	"fmt"
-	"io"
-	"net/http"
-	"strings"
+	"encoding/json"
 	"testing"
 	"time"
 
-	"github.com/elastic/terraform-provider-elasticstack/generated/alerting"
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/stretchr/testify/require"
-	gomock "go.uber.org/mock/gomock"
 )
 
 func Test_ruleResponseToModel(t *testing.T) {
-	now := time.Now()
+	now := time.Now().UTC().Truncate(time.Second)
+	nowStr := now.Format(time.RFC3339)
+
 	tests := []struct {
 		name          string
 		spaceId       string
-		ruleResponse  *alerting.RuleResponseProperties
+		ruleResponse  *kbapi.GetAlertingRuleIdResponse
 		expectedModel *models.AlertingRule
 	}{
 		{
@@ -34,15 +30,195 @@ func Test_ruleResponseToModel(t *testing.T) {
 		{
 			name:    "nil optional fields should not blow up the transform",
 			spaceId: "space-id",
-			ruleResponse: &alerting.RuleResponseProperties{
-				Id:         "id",
-				Name:       "name",
-				Consumer:   "consumer",
-				Params:     map[string]interface{}{},
-				RuleTypeId: "rule-type-id",
-				Enabled:    true,
-				Tags:       []string{"hello"},
-			},
+			ruleResponse: func() *kbapi.GetAlertingRuleIdResponse {
+				jsonData := `{
+					"id": "id",
+					"name": "name",
+					"consumer": "consumer",
+					"params": {},
+					"rule_type_id": "rule-type-id",
+					"enabled": true,
+					"tags": ["hello"],
+					"actions": [],
+					"execution_status": {
+						"last_execution_date": "` + nowStr + `",
+						"status": "ok"
+					},
+					"schedule": {
+						"interval": "1m"
+					},
+					"created_at": "` + nowStr + `",
+					"updated_at": "` + nowStr + `",
+					"mute_all": false,
+					"muted_alert_ids": [],
+					"revision": 0
+				}`
+				var resp kbapi.GetAlertingRuleIdResponse
+				resp.JSON200 = new(struct {
+					Actions []struct {
+						AlertsFilter *struct {
+							Query *struct {
+								Dsl     *string `json:"dsl,omitempty"`
+								Filters []struct {
+									State *struct {
+										Store kbapi.GetAlertingRuleId200ActionsAlertsFilterQueryFiltersStateStore `json:"store"`
+									} `json:"$state,omitempty"`
+									Meta  map[string]interface{}  `json:"meta"`
+									Query *map[string]interface{} `json:"query,omitempty"`
+								} `json:"filters"`
+								Kql string `json:"kql"`
+							} `json:"query,omitempty"`
+							Timeframe *struct {
+								Days  []kbapi.GetAlertingRuleId200ActionsAlertsFilterTimeframeDays `json:"days"`
+								Hours struct {
+									End   string `json:"end"`
+									Start string `json:"start"`
+								} `json:"hours"`
+								Timezone string `json:"timezone"`
+							} `json:"timeframe,omitempty"`
+						} `json:"alerts_filter,omitempty"`
+						ConnectorTypeId string `json:"connector_type_id"`
+						Frequency       *struct {
+							NotifyWhen kbapi.GetAlertingRuleId200ActionsFrequencyNotifyWhen `json:"notify_when"`
+							Summary    bool                                                 `json:"summary"`
+							Throttle   *string                                              `json:"throttle"`
+						} `json:"frequency,omitempty"`
+						Group                   *string                `json:"group,omitempty"`
+						Id                      string                 `json:"id"`
+						Params                  map[string]interface{} `json:"params"`
+						UseAlertDataForTemplate *bool                  `json:"use_alert_data_for_template,omitempty"`
+						Uuid                    *string                `json:"uuid,omitempty"`
+					} `json:"actions"`
+					ActiveSnoozes *[]string `json:"active_snoozes,omitempty"`
+					AlertDelay    *struct {
+						Active float32 `json:"active"`
+					} `json:"alert_delay,omitempty"`
+					ApiKeyCreatedByUser *bool   `json:"api_key_created_by_user"`
+					ApiKeyOwner         *string `json:"api_key_owner"`
+					Artifacts           *struct {
+						Dashboards *[]struct {
+							Id string `json:"id"`
+						} `json:"dashboards,omitempty"`
+						InvestigationGuide *struct {
+							Blob string `json:"blob"`
+						} `json:"investigation_guide,omitempty"`
+					} `json:"artifacts,omitempty"`
+					Consumer        string  `json:"consumer"`
+					CreatedAt       string  `json:"created_at"`
+					CreatedBy       *string `json:"created_by"`
+					Enabled         bool    `json:"enabled"`
+					ExecutionStatus struct {
+						Error *struct {
+							Message string                                               `json:"message"`
+							Reason  kbapi.GetAlertingRuleId200ExecutionStatusErrorReason `json:"reason"`
+						} `json:"error,omitempty"`
+						LastDuration      *float32                                        `json:"last_duration,omitempty"`
+						LastExecutionDate string                                          `json:"last_execution_date"`
+						Status            kbapi.GetAlertingRuleId200ExecutionStatusStatus `json:"status"`
+						Warning           *struct {
+							Message string                                                 `json:"message"`
+							Reason  kbapi.GetAlertingRuleId200ExecutionStatusWarningReason `json:"reason"`
+						} `json:"warning,omitempty"`
+					} `json:"execution_status"`
+					Flapping *struct {
+						Enabled               *bool   `json:"enabled,omitempty"`
+						LookBackWindow        float32 `json:"look_back_window"`
+						StatusChangeThreshold float32 `json:"status_change_threshold"`
+					} `json:"flapping"`
+					Id             string  `json:"id"`
+					IsSnoozedUntil *string `json:"is_snoozed_until"`
+					LastRun        *struct {
+						AlertsCount struct {
+							Active    *float32 `json:"active"`
+							Ignored   *float32 `json:"ignored"`
+							New       *float32 `json:"new"`
+							Recovered *float32 `json:"recovered"`
+						} `json:"alerts_count"`
+						Outcome      kbapi.GetAlertingRuleId200LastRunOutcome  `json:"outcome"`
+						OutcomeMsg   *[]string                                 `json:"outcome_msg"`
+						OutcomeOrder *float32                                  `json:"outcome_order,omitempty"`
+						Warning      *kbapi.GetAlertingRuleId200LastRunWarning `json:"warning"`
+					} `json:"last_run"`
+					MappedParams *map[string]interface{} `json:"mapped_params,omitempty"`
+					Monitoring   *struct {
+						Run struct {
+							CalculatedMetrics struct {
+								P50          *float32 `json:"p50,omitempty"`
+								P95          *float32 `json:"p95,omitempty"`
+								P99          *float32 `json:"p99,omitempty"`
+								SuccessRatio float32  `json:"success_ratio"`
+							} `json:"calculated_metrics"`
+							History []struct {
+								Duration  *float32                                               `json:"duration,omitempty"`
+								Outcome   *kbapi.GetAlertingRuleId200MonitoringRunHistoryOutcome `json:"outcome,omitempty"`
+								Success   bool                                                   `json:"success"`
+								Timestamp float32                                                `json:"timestamp"`
+							} `json:"history"`
+							LastRun struct {
+								Metrics struct {
+									Duration     *float32 `json:"duration,omitempty"`
+									GapDurationS *float32 `json:"gap_duration_s"`
+									GapRange     *struct {
+										Gte string `json:"gte"`
+										Lte string `json:"lte"`
+									} `json:"gap_range"`
+									TotalAlertsCreated      *float32 `json:"total_alerts_created"`
+									TotalAlertsDetected     *float32 `json:"total_alerts_detected"`
+									TotalIndexingDurationMs *float32 `json:"total_indexing_duration_ms"`
+									TotalSearchDurationMs   *float32 `json:"total_search_duration_ms"`
+								} `json:"metrics"`
+								Timestamp string `json:"timestamp"`
+							} `json:"last_run"`
+						} `json:"run"`
+					} `json:"monitoring,omitempty"`
+					MuteAll       bool                                  `json:"mute_all"`
+					MutedAlertIds []string                              `json:"muted_alert_ids"`
+					Name          string                                `json:"name"`
+					NextRun       *string                               `json:"next_run"`
+					NotifyWhen    *kbapi.GetAlertingRuleId200NotifyWhen `json:"notify_when"`
+					Params        map[string]interface{}                `json:"params"`
+					Revision      float32                               `json:"revision"`
+					RuleTypeId    string                                `json:"rule_type_id"`
+					Running       *bool                                 `json:"running"`
+					Schedule      struct {
+						Interval string `json:"interval"`
+					} `json:"schedule"`
+					ScheduledTaskId *string `json:"scheduled_task_id,omitempty"`
+					SnoozeSchedule  *[]struct {
+						Duration float32 `json:"duration"`
+						Id       *string `json:"id,omitempty"`
+						RRule    struct {
+							Byhour     *[]float32                                                         `json:"byhour"`
+							Byminute   *[]float32                                                         `json:"byminute"`
+							Bymonth    *[]float32                                                         `json:"bymonth"`
+							Bymonthday *[]float32                                                         `json:"bymonthday"`
+							Bysecond   *[]float32                                                         `json:"bysecond"`
+							Bysetpos   *[]float32                                                         `json:"bysetpos"`
+							Byweekday  *[]kbapi.GetAlertingRuleId_200_SnoozeSchedule_RRule_Byweekday_Item `json:"byweekday"`
+							Byweekno   *[]float32                                                         `json:"byweekno"`
+							Byyearday  *[]float32                                                         `json:"byyearday"`
+							Count      *float32                                                           `json:"count,omitempty"`
+							Dtstart    string                                                             `json:"dtstart"`
+							Freq       *kbapi.GetAlertingRuleId200SnoozeScheduleRRuleFreq                 `json:"freq,omitempty"`
+							Interval   *float32                                                           `json:"interval,omitempty"`
+							Tzid       string                                                             `json:"tzid"`
+							Until      *string                                                            `json:"until,omitempty"`
+							Wkst       *kbapi.GetAlertingRuleId200SnoozeScheduleRRuleWkst                 `json:"wkst,omitempty"`
+						} `json:"rRule"`
+						SkipRecurrences *[]string `json:"skipRecurrences,omitempty"`
+					} `json:"snooze_schedule,omitempty"`
+					Tags                 []string `json:"tags"`
+					Throttle             *string  `json:"throttle"`
+					UpdatedAt            string   `json:"updated_at"`
+					UpdatedBy            *string  `json:"updated_by"`
+					ViewInAppRelativeUrl *string  `json:"view_in_app_relative_url"`
+				})
+				err := json.Unmarshal([]byte(jsonData), resp.JSON200)
+				if err != nil {
+					panic(err)
+				}
+				return &resp
+			}(),
 			expectedModel: &models.AlertingRule{
 				RuleID:     "id",
 				SpaceID:    "space-id",
@@ -52,73 +228,253 @@ func Test_ruleResponseToModel(t *testing.T) {
 				RuleTypeID: "rule-type-id",
 				Enabled:    utils.Pointer(true),
 				Tags:       []string{"hello"},
+				Schedule:   models.AlertingRuleSchedule{Interval: "1m"},
 				Actions:    []models.AlertingRuleAction{},
+				ExecutionStatus: models.AlertingRuleExecutionStatus{
+					LastExecutionDate: &now,
+					Status:            utils.Pointer("ok"),
+				},
 			},
 		},
 		{
 			name:    "a full response should be successfully transformed",
 			spaceId: "space-id",
-			ruleResponse: &alerting.RuleResponseProperties{
-				Id:         "id",
-				Name:       "name",
-				Consumer:   "consumer",
-				Params:     map[string]interface{}{},
-				RuleTypeId: "rule-type-id",
-				Enabled:    true,
-				Tags:       []string{"hello"},
-				NotifyWhen: *alerting.NewNullableString(utils.Pointer("broken")),
-				Actions: []alerting.ActionsInner{
-					{
-						Group:  "group-1",
-						Id:     "id",
-						Params: map[string]interface{}{},
-						Frequency: utils.Pointer(alerting.ActionsInnerFrequency{
-							Summary:    true,
-							NotifyWhen: "onThrottleInterval",
-							Throttle:   *alerting.NewNullableString(utils.Pointer("10s")),
-						}),
-						AlertsFilter: utils.Pointer(alerting.ActionsInnerAlertsFilter{
-							Query: &alerting.ActionsInnerAlertsFilterQuery{
-								Kql: utils.Pointer("foobar"),
+			ruleResponse: func() *kbapi.GetAlertingRuleIdResponse {
+				jsonData := `{
+					"id": "id",
+					"name": "name",
+					"consumer": "consumer",
+					"params": {},
+					"rule_type_id": "rule-type-id",
+					"enabled": true,
+					"tags": ["hello"],
+					"notify_when": "broken",
+					"actions": [
+						{
+							"group": "group-1",
+							"id": "id",
+							"params": {},
+							"connector_type_id": "connector-type",
+							"frequency": {
+								"summary": true,
+								"notify_when": "onThrottleInterval",
+								"throttle": "10s"
 							},
-							Timeframe: &alerting.ActionsInnerAlertsFilterTimeframe{
-								Days:     []int32{3, 5, 7},
-								Timezone: utils.Pointer("UTC+1"),
-								Hours: &alerting.ActionsInnerAlertsFilterTimeframeHours{
-									Start: utils.Pointer("00:00"),
-									End:   utils.Pointer("08:00"),
+							"alerts_filter": {
+								"query": {
+									"kql": "foobar"
 								},
-							},
-						}),
+								"timeframe": {
+									"days": [3, 5, 7],
+									"timezone": "UTC+1",
+									"hours": {
+										"start": "00:00",
+										"end": "08:00"
+									}
+								}
+							}
+						},
+						{
+							"group": "group-2",
+							"id": "id",
+							"params": {},
+							"connector_type_id": "connector-type",
+							"frequency": {
+								"summary": true,
+								"notify_when": "onActionGroupChange"
+							}
+						},
+						{
+							"group": "group-3",
+							"id": "id",
+							"params": {},
+							"connector_type_id": "connector-type"
+						}
+					],
+					"execution_status": {
+						"status": "firing",
+						"last_execution_date": "` + nowStr + `"
 					},
-					{
-						Group:  "group-2",
-						Id:     "id",
-						Params: map[string]interface{}{},
-						Frequency: utils.Pointer(alerting.ActionsInnerFrequency{
-							Summary:    true,
-							NotifyWhen: "onActionGroupChange",
-						}),
+					"scheduled_task_id": "scheduled-task-id",
+					"schedule": {
+						"interval": "1m"
 					},
-					{
-						Group:  "group-3",
-						Id:     "id",
-						Params: map[string]interface{}{},
+					"throttle": "throttle",
+					"alert_delay": {
+						"active": 4
 					},
-				},
-				ExecutionStatus: alerting.RuleResponsePropertiesExecutionStatus{
-					Status:            utils.Pointer("firing"),
-					LastExecutionDate: &now,
-				},
-				ScheduledTaskId: utils.Pointer("scheduled-task-id"),
-				Schedule: alerting.Schedule{
-					Interval: utils.Pointer("1m"),
-				},
-				Throttle: *alerting.NewNullableString(utils.Pointer("throttle")),
-				AlertDelay: &alerting.AlertDelay{
-					Active: float32(4),
-				},
-			},
+					"created_at": "` + nowStr + `",
+					"updated_at": "` + nowStr + `",
+					"mute_all": false,
+					"muted_alert_ids": [],
+					"revision": 0
+				}`
+				var resp kbapi.GetAlertingRuleIdResponse
+				resp.JSON200 = new(struct {
+					Actions []struct {
+						AlertsFilter *struct {
+							Query *struct {
+								Dsl     *string `json:"dsl,omitempty"`
+								Filters []struct {
+									State *struct {
+										Store kbapi.GetAlertingRuleId200ActionsAlertsFilterQueryFiltersStateStore `json:"store"`
+									} `json:"$state,omitempty"`
+									Meta  map[string]interface{}  `json:"meta"`
+									Query *map[string]interface{} `json:"query,omitempty"`
+								} `json:"filters"`
+								Kql string `json:"kql"`
+							} `json:"query,omitempty"`
+							Timeframe *struct {
+								Days  []kbapi.GetAlertingRuleId200ActionsAlertsFilterTimeframeDays `json:"days"`
+								Hours struct {
+									End   string `json:"end"`
+									Start string `json:"start"`
+								} `json:"hours"`
+								Timezone string `json:"timezone"`
+							} `json:"timeframe,omitempty"`
+						} `json:"alerts_filter,omitempty"`
+						ConnectorTypeId string `json:"connector_type_id"`
+						Frequency       *struct {
+							NotifyWhen kbapi.GetAlertingRuleId200ActionsFrequencyNotifyWhen `json:"notify_when"`
+							Summary    bool                                                 `json:"summary"`
+							Throttle   *string                                              `json:"throttle"`
+						} `json:"frequency,omitempty"`
+						Group                   *string                `json:"group,omitempty"`
+						Id                      string                 `json:"id"`
+						Params                  map[string]interface{} `json:"params"`
+						UseAlertDataForTemplate *bool                  `json:"use_alert_data_for_template,omitempty"`
+						Uuid                    *string                `json:"uuid,omitempty"`
+					} `json:"actions"`
+					ActiveSnoozes *[]string `json:"active_snoozes,omitempty"`
+					AlertDelay    *struct {
+						Active float32 `json:"active"`
+					} `json:"alert_delay,omitempty"`
+					ApiKeyCreatedByUser *bool   `json:"api_key_created_by_user"`
+					ApiKeyOwner         *string `json:"api_key_owner"`
+					Artifacts           *struct {
+						Dashboards *[]struct {
+							Id string `json:"id"`
+						} `json:"dashboards,omitempty"`
+						InvestigationGuide *struct {
+							Blob string `json:"blob"`
+						} `json:"investigation_guide,omitempty"`
+					} `json:"artifacts,omitempty"`
+					Consumer        string  `json:"consumer"`
+					CreatedAt       string  `json:"created_at"`
+					CreatedBy       *string `json:"created_by"`
+					Enabled         bool    `json:"enabled"`
+					ExecutionStatus struct {
+						Error *struct {
+							Message string                                               `json:"message"`
+							Reason  kbapi.GetAlertingRuleId200ExecutionStatusErrorReason `json:"reason"`
+						} `json:"error,omitempty"`
+						LastDuration      *float32                                        `json:"last_duration,omitempty"`
+						LastExecutionDate string                                          `json:"last_execution_date"`
+						Status            kbapi.GetAlertingRuleId200ExecutionStatusStatus `json:"status"`
+						Warning           *struct {
+							Message string                                                 `json:"message"`
+							Reason  kbapi.GetAlertingRuleId200ExecutionStatusWarningReason `json:"reason"`
+						} `json:"warning,omitempty"`
+					} `json:"execution_status"`
+					Flapping *struct {
+						Enabled               *bool   `json:"enabled,omitempty"`
+						LookBackWindow        float32 `json:"look_back_window"`
+						StatusChangeThreshold float32 `json:"status_change_threshold"`
+					} `json:"flapping"`
+					Id             string  `json:"id"`
+					IsSnoozedUntil *string `json:"is_snoozed_until"`
+					LastRun        *struct {
+						AlertsCount struct {
+							Active    *float32 `json:"active"`
+							Ignored   *float32 `json:"ignored"`
+							New       *float32 `json:"new"`
+							Recovered *float32 `json:"recovered"`
+						} `json:"alerts_count"`
+						Outcome      kbapi.GetAlertingRuleId200LastRunOutcome  `json:"outcome"`
+						OutcomeMsg   *[]string                                 `json:"outcome_msg"`
+						OutcomeOrder *float32                                  `json:"outcome_order,omitempty"`
+						Warning      *kbapi.GetAlertingRuleId200LastRunWarning `json:"warning"`
+					} `json:"last_run"`
+					MappedParams *map[string]interface{} `json:"mapped_params,omitempty"`
+					Monitoring   *struct {
+						Run struct {
+							CalculatedMetrics struct {
+								P50          *float32 `json:"p50,omitempty"`
+								P95          *float32 `json:"p95,omitempty"`
+								P99          *float32 `json:"p99,omitempty"`
+								SuccessRatio float32  `json:"success_ratio"`
+							} `json:"calculated_metrics"`
+							History []struct {
+								Duration  *float32                                               `json:"duration,omitempty"`
+								Outcome   *kbapi.GetAlertingRuleId200MonitoringRunHistoryOutcome `json:"outcome,omitempty"`
+								Success   bool                                                   `json:"success"`
+								Timestamp float32                                                `json:"timestamp"`
+							} `json:"history"`
+							LastRun struct {
+								Metrics struct {
+									Duration     *float32 `json:"duration,omitempty"`
+									GapDurationS *float32 `json:"gap_duration_s"`
+									GapRange     *struct {
+										Gte string `json:"gte"`
+										Lte string `json:"lte"`
+									} `json:"gap_range"`
+									TotalAlertsCreated      *float32 `json:"total_alerts_created"`
+									TotalAlertsDetected     *float32 `json:"total_alerts_detected"`
+									TotalIndexingDurationMs *float32 `json:"total_indexing_duration_ms"`
+									TotalSearchDurationMs   *float32 `json:"total_search_duration_ms"`
+								} `json:"metrics"`
+								Timestamp string `json:"timestamp"`
+							} `json:"last_run"`
+						} `json:"run"`
+					} `json:"monitoring,omitempty"`
+					MuteAll       bool                                  `json:"mute_all"`
+					MutedAlertIds []string                              `json:"muted_alert_ids"`
+					Name          string                                `json:"name"`
+					NextRun       *string                               `json:"next_run"`
+					NotifyWhen    *kbapi.GetAlertingRuleId200NotifyWhen `json:"notify_when"`
+					Params        map[string]interface{}                `json:"params"`
+					Revision      float32                               `json:"revision"`
+					RuleTypeId    string                                `json:"rule_type_id"`
+					Running       *bool                                 `json:"running"`
+					Schedule      struct {
+						Interval string `json:"interval"`
+					} `json:"schedule"`
+					ScheduledTaskId *string `json:"scheduled_task_id,omitempty"`
+					SnoozeSchedule  *[]struct {
+						Duration float32 `json:"duration"`
+						Id       *string `json:"id,omitempty"`
+						RRule    struct {
+							Byhour     *[]float32                                                         `json:"byhour"`
+							Byminute   *[]float32                                                         `json:"byminute"`
+							Bymonth    *[]float32                                                         `json:"bymonth"`
+							Bymonthday *[]float32                                                         `json:"bymonthday"`
+							Bysecond   *[]float32                                                         `json:"bysecond"`
+							Bysetpos   *[]float32                                                         `json:"bysetpos"`
+							Byweekday  *[]kbapi.GetAlertingRuleId_200_SnoozeSchedule_RRule_Byweekday_Item `json:"byweekday"`
+							Byweekno   *[]float32                                                         `json:"byweekno"`
+							Byyearday  *[]float32                                                         `json:"byyearday"`
+							Count      *float32                                                           `json:"count,omitempty"`
+							Dtstart    string                                                             `json:"dtstart"`
+							Freq       *kbapi.GetAlertingRuleId200SnoozeScheduleRRuleFreq                 `json:"freq,omitempty"`
+							Interval   *float32                                                           `json:"interval,omitempty"`
+							Tzid       string                                                             `json:"tzid"`
+							Until      *string                                                            `json:"until,omitempty"`
+							Wkst       *kbapi.GetAlertingRuleId200SnoozeScheduleRRuleWkst                 `json:"wkst,omitempty"`
+						} `json:"rRule"`
+						SkipRecurrences *[]string `json:"skipRecurrences,omitempty"`
+					} `json:"snooze_schedule,omitempty"`
+					Tags                 []string `json:"tags"`
+					Throttle             *string  `json:"throttle"`
+					UpdatedAt            string   `json:"updated_at"`
+					UpdatedBy            *string  `json:"updated_by"`
+					ViewInAppRelativeUrl *string  `json:"view_in_app_relative_url"`
+				})
+				err := json.Unmarshal([]byte(jsonData), resp.JSON200)
+				if err != nil {
+					panic(err)
+				}
+				return &resp
+			}(),
 			expectedModel: &models.AlertingRule{
 				RuleID:          "id",
 				SpaceID:         "space-id",
@@ -185,123 +541,6 @@ func Test_ruleResponseToModel(t *testing.T) {
 	}
 }
 
-func Test_CreateUpdateAlertingRule(t *testing.T) {
-	ctrl := gomock.NewController(t)
-
-	getApiClient := func() (ApiClient, *alerting.MockAlertingAPI) {
-		apiClient := NewMockApiClient(ctrl)
-		apiClient.EXPECT().SetAlertingAuthContext(gomock.Any()).DoAndReturn(func(ctx context.Context) context.Context { return ctx })
-		alertingClient := alerting.NewMockAlertingAPI(ctrl)
-		apiClient.EXPECT().GetAlertingClient().DoAndReturn(func() (alerting.AlertingAPI, error) { return alertingClient, nil })
-		return apiClient, alertingClient
-	}
-
-	tests := []struct {
-		name        string
-		testFunc    func(ctx context.Context, apiClient ApiClient, rule models.AlertingRule) (*models.AlertingRule, diag.Diagnostics)
-		client      ApiClient
-		rule        models.AlertingRule
-		expectedRes *models.AlertingRule
-		expectedErr string
-	}{
-		{
-			name:     "CreateAlertingRule should not crash when backend returns 4xx",
-			testFunc: CreateAlertingRule,
-			client: func() ApiClient {
-				apiClient, alertingClient := getApiClient()
-				alertingClient.EXPECT().CreateRuleId(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, spaceId string, ruleId string) alerting.ApiCreateRuleIdRequest {
-					return alerting.ApiCreateRuleIdRequest{ApiService: alertingClient}
-				})
-				alertingClient.EXPECT().CreateRuleIdExecute(gomock.Any()).DoAndReturn(func(r alerting.ApiCreateRuleIdRequest) (*alerting.RuleResponseProperties, *http.Response, error) {
-					return nil, &http.Response{
-						StatusCode: 401,
-						Body:       io.NopCloser(strings.NewReader("some error")),
-					}, nil
-				})
-				return apiClient
-			}(),
-			rule:        models.AlertingRule{},
-			expectedRes: nil,
-			expectedErr: "some error",
-		},
-		{
-			name:     "UpdateAlertingRule should not crash when backend returns 4xx",
-			testFunc: UpdateAlertingRule,
-			client: func() ApiClient {
-				apiClient, alertingClient := getApiClient()
-				alertingClient.EXPECT().UpdateRule(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, spaceId string, ruleId string) alerting.ApiUpdateRuleRequest {
-					return alerting.ApiUpdateRuleRequest{ApiService: alertingClient}
-				})
-				alertingClient.EXPECT().UpdateRuleExecute(gomock.Any()).DoAndReturn(func(r alerting.ApiUpdateRuleRequest) (*alerting.RuleResponseProperties, *http.Response, error) {
-					return nil, &http.Response{
-						StatusCode: 401,
-						Body:       io.NopCloser(strings.NewReader("some error")),
-					}, nil
-				})
-				return apiClient
-			}(),
-			rule:        models.AlertingRule{},
-			expectedRes: nil,
-			expectedErr: "some error",
-		},
-		{
-			name:     "CreateAlertingRule should not crash when backend returns an empty response and HTTP 200",
-			testFunc: CreateAlertingRule,
-			client: func() ApiClient {
-				apiClient, alertingClient := getApiClient()
-				alertingClient.EXPECT().CreateRuleId(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, spaceId string, ruleId string) alerting.ApiCreateRuleIdRequest {
-					return alerting.ApiCreateRuleIdRequest{ApiService: alertingClient}
-				})
-				alertingClient.EXPECT().CreateRuleIdExecute(gomock.Any()).DoAndReturn(func(r alerting.ApiCreateRuleIdRequest) (*alerting.RuleResponseProperties, *http.Response, error) {
-					return nil, &http.Response{
-						StatusCode: 200,
-						Body:       io.NopCloser(strings.NewReader("everything seems fine")),
-					}, nil
-				})
-				return apiClient
-			}(),
-			rule:        models.AlertingRule{},
-			expectedRes: nil,
-			expectedErr: "empty response",
-		},
-		{
-			name:     "UpdateAlertingRule should not crash when backend returns an empty response and HTTP 200",
-			testFunc: UpdateAlertingRule,
-			client: func() ApiClient {
-				apiClient, alertingClient := getApiClient()
-				alertingClient.EXPECT().UpdateRule(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, spaceId string, ruleId string) alerting.ApiUpdateRuleRequest {
-					return alerting.ApiUpdateRuleRequest{ApiService: alertingClient}
-				})
-				alertingClient.EXPECT().UpdateRuleExecute(gomock.Any()).DoAndReturn(func(r alerting.ApiUpdateRuleRequest) (*alerting.RuleResponseProperties, *http.Response, error) {
-					return nil, &http.Response{
-						StatusCode: 200,
-						Body:       io.NopCloser(strings.NewReader("everything seems fine")),
-					}, nil
-				})
-				return apiClient
-			}(),
-			rule:        models.AlertingRule{},
-			expectedRes: nil,
-			expectedErr: "empty response",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			rule, diags := tt.testFunc(context.Background(), tt.client, tt.rule)
-
-			if tt.expectedRes == nil {
-				require.Nil(t, rule)
-			} else {
-				require.Equal(t, tt.expectedRes, rule)
-			}
-
-			if tt.expectedErr != "" {
-				require.NotEmpty(t, diags)
-				if !strings.Contains(diags[0].Detail, tt.expectedErr) {
-					require.Fail(t, fmt.Sprintf("Diags ['%s'] should contain message ['%s']", diags[0].Detail, tt.expectedErr))
-				}
-			}
-		})
-	}
-}
+// Test_CreateUpdateAlertingRule tests have been removed as they now test kibana_oapi layer
+// Error handling for Create/Update is tested at the kibana_oapi level
+// The ruleResponseToModel function above provides sufficient coverage for the transformation logic

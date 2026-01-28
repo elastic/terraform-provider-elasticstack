@@ -143,8 +143,8 @@ func ruleActionsToActionsInner(ruleActions []models.AlertingRuleAction) *[]struc
 	} `json:"alerts_filter,omitempty"`
 	Frequency *struct {
 		NotifyWhen kbapi.PostAlertingRuleIdJSONBodyActionsFrequencyNotifyWhen `json:"notify_when"`
-		Summary    bool                                                        `json:"summary"`
-		Throttle   *string                                                     `json:"throttle,omitempty"`
+		Summary    bool                                                       `json:"summary"`
+		Throttle   *string                                                    `json:"throttle,omitempty"`
 	} `json:"frequency,omitempty"`
 	Group                   *string                 `json:"group,omitempty"`
 	Id                      string                  `json:"id"`
@@ -176,8 +176,8 @@ func ruleActionsToActionsInner(ruleActions []models.AlertingRuleAction) *[]struc
 		} `json:"alerts_filter,omitempty"`
 		Frequency *struct {
 			NotifyWhen kbapi.PostAlertingRuleIdJSONBodyActionsFrequencyNotifyWhen `json:"notify_when"`
-			Summary    bool                                                        `json:"summary"`
-			Throttle   *string                                                     `json:"throttle,omitempty"`
+			Summary    bool                                                       `json:"summary"`
+			Throttle   *string                                                    `json:"throttle,omitempty"`
 		} `json:"frequency,omitempty"`
 		Group                   *string                 `json:"group,omitempty"`
 		Id                      string                  `json:"id"`
@@ -188,10 +188,10 @@ func ruleActionsToActionsInner(ruleActions []models.AlertingRuleAction) *[]struc
 
 	for index := range ruleActions {
 		action := ruleActions[index]
-		
+
 		group := action.Group
 		params := action.Params
-		
+
 		actionToAppend := struct {
 			AlertsFilter *struct {
 				Query *struct {
@@ -216,8 +216,8 @@ func ruleActionsToActionsInner(ruleActions []models.AlertingRuleAction) *[]struc
 			} `json:"alerts_filter,omitempty"`
 			Frequency *struct {
 				NotifyWhen kbapi.PostAlertingRuleIdJSONBodyActionsFrequencyNotifyWhen `json:"notify_when"`
-				Summary    bool                                                        `json:"summary"`
-				Throttle   *string                                                     `json:"throttle,omitempty"`
+				Summary    bool                                                       `json:"summary"`
+				Throttle   *string                                                    `json:"throttle,omitempty"`
 			} `json:"frequency,omitempty"`
 			Group                   *string                 `json:"group,omitempty"`
 			Id                      string                  `json:"id"`
@@ -233,8 +233,8 @@ func ruleActionsToActionsInner(ruleActions []models.AlertingRuleAction) *[]struc
 		if action.Frequency != nil {
 			actionToAppend.Frequency = &struct {
 				NotifyWhen kbapi.PostAlertingRuleIdJSONBodyActionsFrequencyNotifyWhen `json:"notify_when"`
-				Summary    bool                                                        `json:"summary"`
-				Throttle   *string                                                     `json:"throttle,omitempty"`
+				Summary    bool                                                       `json:"summary"`
+				Throttle   *string                                                    `json:"throttle,omitempty"`
 			}{
 				Summary:    action.Frequency.Summary,
 				NotifyWhen: kbapi.PostAlertingRuleIdJSONBodyActionsFrequencyNotifyWhen(action.Frequency.NotifyWhen),
@@ -277,7 +277,7 @@ func ruleActionsToActionsInner(ruleActions []models.AlertingRuleAction) *[]struc
 					} `json:"filters"`
 					Kql string `json:"kql"`
 				}{
-					Kql:     *action.AlertsFilter.Kql,
+					Kql: *action.AlertsFilter.Kql,
 					Filters: []struct {
 						State *struct {
 							Store kbapi.PostAlertingRuleIdJSONBodyActionsAlertsFilterQueryFiltersStateStore `json:"store"`
@@ -325,7 +325,6 @@ func ruleActionsToActionsInner(ruleActions []models.AlertingRuleAction) *[]struc
 //go:generate go tool go.uber.org/mock/mockgen -destination=./alerting_mocks.go -package=kibana -source ./alerting.go ApiClient
 type ApiClient interface {
 	GetKibanaOapiClient() (*kibana_oapi.Client, error)
-	SetAlertingAuthContext(context.Context) context.Context
 }
 
 // enableAlertingRule enables an alerting rule using the Kibana API
@@ -345,8 +344,6 @@ func CreateAlertingRule(ctx context.Context, apiClient ApiClient, rule models.Al
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
-
-	ctxWithAuth := apiClient.SetAlertingAuthContext(ctx)
 
 	var alertDelay *struct {
 		Active float32 `json:"active"`
@@ -397,7 +394,7 @@ func CreateAlertingRule(ctx context.Context, apiClient ApiClient, rule models.Al
 		AlertDelay: alertDelay,
 	}
 
-	resp, fwDiags := kibana_oapi.CreateAlertingRule(ctxWithAuth, client, rule.SpaceID, rule.RuleID, reqModel)
+	resp, fwDiags := kibana_oapi.CreateAlertingRule(ctx, client, rule.SpaceID, rule.RuleID, reqModel)
 	diags := diagutil.SDKDiagsFromFramework(fwDiags)
 	if diags.HasError() {
 		return nil, diags
@@ -414,7 +411,7 @@ func CreateAlertingRule(ctx context.Context, apiClient ApiClient, rule models.Al
 	rule.RuleID = resp.JSON200.Id
 
 	// Re-fetch the rule to get the full response with the correct type
-	return GetAlertingRule(ctxWithAuth, apiClient, rule.RuleID, rule.SpaceID)
+	return GetAlertingRule(ctx, apiClient, rule.RuleID, rule.SpaceID)
 }
 
 func UpdateAlertingRule(ctx context.Context, apiClient ApiClient, rule models.AlertingRule) (*models.AlertingRule, diag.Diagnostics) {
@@ -422,8 +419,6 @@ func UpdateAlertingRule(ctx context.Context, apiClient ApiClient, rule models.Al
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
-
-	ctxWithAuth := apiClient.SetAlertingAuthContext(ctx)
 
 	var alertDelay *struct {
 		Active float32 `json:"active"`
@@ -468,8 +463,8 @@ func UpdateAlertingRule(ctx context.Context, apiClient ApiClient, rule models.Al
 		} `json:"alerts_filter,omitempty"`
 		Frequency *struct {
 			NotifyWhen kbapi.PutAlertingRuleIdJSONBodyActionsFrequencyNotifyWhen `json:"notify_when"`
-			Summary    bool                                                       `json:"summary"`
-			Throttle   *string                                                    `json:"throttle,omitempty"`
+			Summary    bool                                                      `json:"summary"`
+			Throttle   *string                                                   `json:"throttle,omitempty"`
 		} `json:"frequency,omitempty"`
 		Group                   *string                 `json:"group,omitempty"`
 		Id                      string                  `json:"id"`
@@ -503,8 +498,8 @@ func UpdateAlertingRule(ctx context.Context, apiClient ApiClient, rule models.Al
 			} `json:"alerts_filter,omitempty"`
 			Frequency *struct {
 				NotifyWhen kbapi.PutAlertingRuleIdJSONBodyActionsFrequencyNotifyWhen `json:"notify_when"`
-				Summary    bool                                                       `json:"summary"`
-				Throttle   *string                                                    `json:"throttle,omitempty"`
+				Summary    bool                                                      `json:"summary"`
+				Throttle   *string                                                   `json:"throttle,omitempty"`
 			} `json:"frequency,omitempty"`
 			Group                   *string                 `json:"group,omitempty"`
 			Id                      string                  `json:"id"`
@@ -539,8 +534,8 @@ func UpdateAlertingRule(ctx context.Context, apiClient ApiClient, rule models.Al
 				} `json:"alerts_filter,omitempty"`
 				Frequency *struct {
 					NotifyWhen kbapi.PutAlertingRuleIdJSONBodyActionsFrequencyNotifyWhen `json:"notify_when"`
-					Summary    bool                                                       `json:"summary"`
-					Throttle   *string                                                    `json:"throttle,omitempty"`
+					Summary    bool                                                      `json:"summary"`
+					Throttle   *string                                                   `json:"throttle,omitempty"`
 				} `json:"frequency,omitempty"`
 				Group                   *string                 `json:"group,omitempty"`
 				Id                      string                  `json:"id"`
@@ -556,8 +551,8 @@ func UpdateAlertingRule(ctx context.Context, apiClient ApiClient, rule models.Al
 			if postAction.Frequency != nil {
 				putAction.Frequency = &struct {
 					NotifyWhen kbapi.PutAlertingRuleIdJSONBodyActionsFrequencyNotifyWhen `json:"notify_when"`
-					Summary    bool                                                       `json:"summary"`
-					Throttle   *string                                                    `json:"throttle,omitempty"`
+					Summary    bool                                                      `json:"summary"`
+					Throttle   *string                                                   `json:"throttle,omitempty"`
 				}{
 					NotifyWhen: kbapi.PutAlertingRuleIdJSONBodyActionsFrequencyNotifyWhen(postAction.Frequency.NotifyWhen),
 					Summary:    postAction.Frequency.Summary,
@@ -681,7 +676,7 @@ func UpdateAlertingRule(ctx context.Context, apiClient ApiClient, rule models.Al
 		AlertDelay: alertDelay,
 	}
 
-	resp, fwDiags := kibana_oapi.UpdateAlertingRule(ctxWithAuth, client, rule.SpaceID, rule.RuleID, reqModel)
+	resp, fwDiags := kibana_oapi.UpdateAlertingRule(ctx, client, rule.SpaceID, rule.RuleID, reqModel)
 	diags := diagutil.SDKDiagsFromFramework(fwDiags)
 	if diags.HasError() {
 		return nil, diags
@@ -700,19 +695,19 @@ func UpdateAlertingRule(ctx context.Context, apiClient ApiClient, rule models.Al
 	shouldBeEnabled := rule.Enabled != nil && *rule.Enabled
 
 	if shouldBeEnabled && !resp.JSON200.Enabled {
-		if diags := enableAlertingRule(ctxWithAuth, client, rule.RuleID, rule.SpaceID); diags.HasError() {
+		if diags := enableAlertingRule(ctx, client, rule.RuleID, rule.SpaceID); diags.HasError() {
 			return nil, diags
 		}
 	}
 
 	if !shouldBeEnabled && resp.JSON200.Enabled {
-		if diags := disableAlertingRule(ctxWithAuth, client, rule.RuleID, rule.SpaceID); diags.HasError() {
+		if diags := disableAlertingRule(ctx, client, rule.RuleID, rule.SpaceID); diags.HasError() {
 			return nil, diags
 		}
 	}
 
 	// Re-fetch the rule to get the full response with the correct type
-	return GetAlertingRule(ctxWithAuth, apiClient, rule.RuleID, rule.SpaceID)
+	return GetAlertingRule(ctx, apiClient, rule.RuleID, rule.SpaceID)
 }
 
 func GetAlertingRule(ctx context.Context, apiClient ApiClient, id, spaceID string) (*models.AlertingRule, diag.Diagnostics) {
@@ -721,8 +716,7 @@ func GetAlertingRule(ctx context.Context, apiClient ApiClient, id, spaceID strin
 		return nil, diag.FromErr(err)
 	}
 
-	ctxWithAuth := apiClient.SetAlertingAuthContext(ctx)
-	resp, fwDiags := kibana_oapi.GetAlertingRule(ctxWithAuth, client, spaceID, id)
+	resp, fwDiags := kibana_oapi.GetAlertingRule(ctx, client, spaceID, id)
 	diags := diagutil.SDKDiagsFromFramework(fwDiags)
 	if diags.HasError() {
 		return nil, diags
@@ -741,7 +735,6 @@ func DeleteAlertingRule(ctx context.Context, apiClient ApiClient, ruleId string,
 		return diag.FromErr(err)
 	}
 
-	ctxWithAuth := apiClient.SetAlertingAuthContext(ctx)
-	fwDiags := kibana_oapi.DeleteAlertingRule(ctxWithAuth, client, spaceId, ruleId)
+	fwDiags := kibana_oapi.DeleteAlertingRule(ctx, client, spaceId, ruleId)
 	return diagutil.SDKDiagsFromFramework(fwDiags)
 }

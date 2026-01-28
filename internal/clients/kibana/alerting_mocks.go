@@ -10,10 +10,9 @@
 package kibana
 
 import (
-	context "context"
 	reflect "reflect"
 
-	alerting "github.com/elastic/terraform-provider-elasticstack/generated/alerting"
+	kibana_oapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -41,31 +40,17 @@ func (m *MockApiClient) EXPECT() *MockApiClientMockRecorder {
 	return m.recorder
 }
 
-// GetAlertingClient mocks base method.
-func (m *MockApiClient) GetAlertingClient() (alerting.AlertingAPI, error) {
+// GetKibanaOapiClient mocks base method.
+func (m *MockApiClient) GetKibanaOapiClient() (*kibana_oapi.Client, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAlertingClient")
-	ret0, _ := ret[0].(alerting.AlertingAPI)
+	ret := m.ctrl.Call(m, "GetKibanaOapiClient")
+	ret0, _ := ret[0].(*kibana_oapi.Client)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetAlertingClient indicates an expected call of GetAlertingClient.
-func (mr *MockApiClientMockRecorder) GetAlertingClient() *gomock.Call {
+// GetKibanaOapiClient indicates an expected call of GetKibanaOapiClient.
+func (mr *MockApiClientMockRecorder) GetKibanaOapiClient() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAlertingClient", reflect.TypeOf((*MockApiClient)(nil).GetAlertingClient))
-}
-
-// SetAlertingAuthContext mocks base method.
-func (m *MockApiClient) SetAlertingAuthContext(arg0 context.Context) context.Context {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetAlertingAuthContext", arg0)
-	ret0, _ := ret[0].(context.Context)
-	return ret0
-}
-
-// SetAlertingAuthContext indicates an expected call of SetAlertingAuthContext.
-func (mr *MockApiClientMockRecorder) SetAlertingAuthContext(arg0 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetAlertingAuthContext", reflect.TypeOf((*MockApiClient)(nil).SetAlertingAuthContext), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetKibanaOapiClient", reflect.TypeOf((*MockApiClient)(nil).GetKibanaOapiClient))
 }
