@@ -29,6 +29,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/integration_policy"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/output"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/server_host"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/alerting_rule"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/connectors"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/data_view"
@@ -132,6 +133,7 @@ func (p *Provider) resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		agent_configuration.NewAgentConfigurationResource,
 		func() resource.Resource { return &import_saved_objects.Resource{} },
+		alerting_rule.NewResource,
 		data_view.NewResource,
 		default_data_view.NewResource,
 		func() resource.Resource { return &parameter.Resource{} },
