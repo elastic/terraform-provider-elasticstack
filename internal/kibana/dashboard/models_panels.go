@@ -265,7 +265,7 @@ func (m *dashboardModel) panelsToAPI() (*kbapi.DashboardPanels, diag.Diagnostics
 			var configMap map[string]interface{}
 			diags.Append(pm.EmbeddableConfigJSON.Unmarshal(&configMap)...)
 			if !diags.HasError() {
-				if err := panelItem.Config.FromDashboardPanelItemConfig1(configMap); err != nil {
+				if err := panelItem.Config.FromDashboardPanelItemConfig2(configMap); err != nil {
 					diags.AddError("Failed to marshal panel config JSON", err.Error())
 				}
 			}
@@ -372,7 +372,7 @@ func (m *dashboardModel) panelsToAPI() (*kbapi.DashboardPanels, diag.Diagnostics
 					var configMap map[string]interface{}
 					diags.Append(pm.EmbeddableConfigJSON.Unmarshal(&configMap)...)
 					if !diags.HasError() {
-						if err := p.Config.FromDashboardPanelSectionPanelsConfig1(configMap); err != nil {
+						if err := p.Config.FromDashboardPanelSectionPanelsConfig2(configMap); err != nil {
 							diags.AddError("Failed to marshal section panel config JSON", err.Error())
 						}
 					}

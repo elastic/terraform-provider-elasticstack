@@ -26,6 +26,9 @@ func (m *dashboardModel) optionsToAPI() (*optionsAPIModel, diag.Diagnostics) {
 // The current API spec defines these types inline, resulting in anonymous structs.
 // A new type definition won't exactly match the API struct, howeven an alias will.
 type optionsAPIModel = struct {
+	// AutoApplyFilters Auto apply control filters.
+	AutoApplyFilters *bool `json:"auto_apply_filters,omitempty"`
+
 	// HidePanelTitles Hide the panel titles in the dashboard.
 	HidePanelTitles *bool `json:"hide_panel_titles,omitempty"`
 
