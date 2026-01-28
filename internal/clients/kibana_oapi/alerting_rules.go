@@ -108,9 +108,13 @@ func DisableAlertingRule(ctx context.Context, client *Client, spaceID string, ru
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	if resp.StatusCode() != http.StatusOK {
-		return reportUnknownError(resp.StatusCode(), resp.Body)
-	}
+	defer resp.Body.Close()
 
-	return nil
+	switch resp.StatusCode {
+	case http.StatusOK:
+		return nil
+	default:
+		body, _ := io.ReadAll(resp.Body)
+		return reportUnknownError(resp.StatusCode, body)
+	}
 }
