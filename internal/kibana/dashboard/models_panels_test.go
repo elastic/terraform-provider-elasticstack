@@ -35,7 +35,7 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 						"h": 3
 					},
 					"uid": "1",
-					"type": "visualization",
+					"type": "DASHBOARD_MARKDOWN",
 					"config": {
 						"title": "My Panel",
 						"content": "some content",
@@ -45,7 +45,7 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 			]`,
 			expectedPanels: []panelModel{
 				{
-					Type: types.StringValue("visualization"),
+					Type: types.StringValue("DASHBOARD_MARKDOWN"),
 					Grid: panelGridModel{
 						X: types.Int64Value(0),
 						Y: types.Int64Value(1),
@@ -59,7 +59,11 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 						HidePanelTitles: types.BoolValue(true),
 						Description:     types.StringNull(),
 					},
-					ConfigJSON: jsontypes.NewNormalizedNull(),
+					ConfigJSON: jsontypes.NewNormalizedValue(`{
+						"title": "My Panel",
+						"content": "some content",
+                        "hidePanelTitles": true
+					}`),
 				},
 			},
 		},
@@ -220,12 +224,9 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 			require.NoError(t, err)
 
 			model := &dashboardModel{}
-			panels, sections, diags := model.mapPanelsFromAPI(&apiPanels)
+			panels, sections, diags := model.mapPanelsFromAPI(t.Context(), &apiPanels)
 			require.False(t, diags.HasError())
 
-			// Normalize JSON strings for comparison if needed, or rely on assert.Equal handling
-			// Since we use jsontypes.Normalized which stores string, we might need to be careful with JSON formatting in test expectation.
-			// In the 'unstructured' case, I used a compact JSON string.
 			assert.Equal(t, tt.expectedPanels, panels)
 			assert.Equal(t, tt.expectedSections, sections)
 		})

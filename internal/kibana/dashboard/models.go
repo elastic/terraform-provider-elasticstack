@@ -113,7 +113,7 @@ func (m *dashboardModel) populateFromAPI(ctx context.Context, resp *kbapi.GetDas
 	}
 
 	// Map panels
-	panels, sections, panelsDiags := m.mapPanelsFromAPI(data.Data.Panels)
+	panels, sections, panelsDiags := m.mapPanelsFromAPI(ctx, data.Data.Panels)
 	diags.Append(panelsDiags...)
 	m.Panels = panels
 	m.Sections = sections
