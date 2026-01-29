@@ -3,6 +3,7 @@ package dashboard
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -252,6 +253,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 				},
 				Validators: []validator.Object{
 					objectvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("config_json")),
+					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"DASHBOARD_MARKDOWN"}),
 				},
 			},
 			"config_json": schema.StringAttribute{
