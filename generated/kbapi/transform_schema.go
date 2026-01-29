@@ -786,9 +786,9 @@ func transformKibanaPaths(schema *Schema) {
 	// Data views
 	// https://github.com/elastic/kibana/blob/main/src/plugins/data_views/server/rest_api_routes/schema.ts
 
-	dataViewsPath := schema.MustGetPath("/s/{spaceId}/api/data_views")
+	// dataViewsPath := schema.MustGetPath("/s/{spaceId}/api/data_views")
 
-	dataViewsPath.Get.CreateRef(schema, "get_data_views_response_item", "responses.200.content.application/json.schema.properties.data_view.items")
+	// dataViewsPath.Get.CreateRef(schema, "get_data_views_response_item", "responses.200.content.application/json.schema.properties.data_view.items")
 
 	sytheticsParamsPath := schema.MustGetPath("/api/synthetics/params")
 	sytheticsParamsPath.Post.CreateRef(schema, "create_param_response", "responses.200.content.application/json.schema")
@@ -937,14 +937,14 @@ func removeBrokenDiscriminator(schema *Schema) {
 }
 
 func fixPutSecurityRoleName(schema *Schema) {
-	putEndpoint := schema.MustGetPath("/api/security/role/{name}").MustGetEndpoint("put")
-	putEndpoint.Delete("requestBody.content.application/json.schema.properties.kibana.items.properties.base.anyOf")
-	putEndpoint.Move("requestBody.content.application/json.schema.properties.kibana.items.properties.spaces.anyOf.1", "requestBody.content.application/json.schema.properties.kibana.items.properties.spaces")
+	// putEndpoint := schema.MustGetPath("/api/security/role/{name}").MustGetEndpoint("put")
+	// putEndpoint.Delete("requestBody.content.application/json.schema.properties.kibana.items.properties.base.anyOf")
+	// putEndpoint.Move("requestBody.content.application/json.schema.properties.kibana.items.properties.spaces.anyOf.1", "requestBody.content.application/json.schema.properties.kibana.items.properties.spaces")
 
-	postEndpoint := schema.MustGetPath("/api/security/roles").MustGetEndpoint("post")
-	postEndpoint.Move("requestBody.content.application/json.schema.properties.roles.additionalProperties", "requestBody.content.application/json.schema.properties.roles")
-	postEndpoint.Delete("requestBody.content.application/json.schema.properties.roles.properties.kibana.items.properties.base.anyOf")
-	postEndpoint.Move("requestBody.content.application/json.schema.properties.roles.properties.kibana.items.properties.spaces.anyOf.1", "requestBody.content.application/json.schema.properties.roles.properties.kibana.items.properties.spaces")
+	// postEndpoint := schema.MustGetPath("/api/security/roles").MustGetEndpoint("post")
+	// postEndpoint.Move("requestBody.content.application/json.schema.properties.roles.additionalProperties", "requestBody.content.application/json.schema.properties.roles")
+	// postEndpoint.Delete("requestBody.content.application/json.schema.properties.roles.properties.kibana.items.properties.base.anyOf")
+	// postEndpoint.Move("requestBody.content.application/json.schema.properties.roles.properties.kibana.items.properties.spaces.anyOf.1", "requestBody.content.application/json.schema.properties.roles.properties.kibana.items.properties.spaces")
 }
 
 func fixGetSpacesParams(schema *Schema) {
@@ -1048,12 +1048,12 @@ func transformFleetPaths(schema *Schema) {
 	agentPoliciesPath := schema.MustGetPath("/api/fleet/agent_policies")
 	agentPolicyPath := schema.MustGetPath("/api/fleet/agent_policies/{agentPolicyId}")
 
-	agentPoliciesPath.Get.CreateRef(schema, "agent_policy", "responses.200.content.application/json.schema.properties.items.items")
-	agentPoliciesPath.Post.CreateRef(schema, "agent_policy", "responses.200.content.application/json.schema.properties.item")
-	agentPolicyPath.Get.CreateRef(schema, "agent_policy", "responses.200.content.application/json.schema.properties.item")
-	agentPolicyPath.Put.CreateRef(schema, "agent_policy", "responses.200.content.application/json.schema.properties.item")
+	// agentPoliciesPath.Get.CreateRef(schema, "agent_policy", "responses.200.content.application/json.schema.properties.items.items")
+	// agentPoliciesPath.Post.CreateRef(schema, "agent_policy", "responses.200.content.application/json.schema.properties.item")
+	// agentPolicyPath.Get.CreateRef(schema, "agent_policy", "responses.200.content.application/json.schema.properties.item")
+	// agentPolicyPath.Put.CreateRef(schema, "agent_policy", "responses.200.content.application/json.schema.properties.item")
 
-	schema.Components.CreateRef(schema, "agent_policy_global_data_tags_item", "schemas.agent_policy.properties.global_data_tags.items")
+	// schema.Components.CreateRef(schema, "agent_policy_global_data_tags_item", "schemas.agent_policy.properties.global_data_tags.items")
 
 	// Define the value types for the GlobalDataTags
 	agentPoliciesPath.Post.Set("requestBody.content.application/json.schema.properties.global_data_tags.items.$ref", "#/components/schemas/agent_policy_global_data_tags_item")
@@ -1063,29 +1063,29 @@ func transformFleetPaths(schema *Schema) {
 	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/models/enrollment_api_key.ts
 	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/rest_spec/enrollment_api_key.ts
 
-	apiKeysPath := schema.MustGetPath("/api/fleet/enrollment_api_keys")
-	apiKeysPath.Get.CreateRef(schema, "enrollment_api_key", "responses.200.content.application/json.schema.properties.items.items")
+	// apiKeysPath := schema.MustGetPath("/api/fleet/enrollment_api_keys")
+	// apiKeysPath.Get.CreateRef(schema, "enrollment_api_key", "responses.200.content.application/json.schema.properties.items.items")
 
 	// EPM
 	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/models/epm.ts
 	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/rest_spec/epm.ts
 
-	packagesPath := schema.MustGetPath("/api/fleet/epm/packages")
-	packagePath := schema.MustGetPath("/api/fleet/epm/packages/{pkgName}/{pkgVersion}")
-	packagesPath.Get.CreateRef(schema, "package_list_item", "responses.200.content.application/json.schema.properties.items.items")
-	packagePath.Get.CreateRef(schema, "package_info", "responses.200.content.application/json.schema.properties.item")
+	// packagesPath := schema.MustGetPath("/api/fleet/epm/packages")
+	// packagePath := schema.MustGetPath("/api/fleet/epm/packages/{pkgName}/{pkgVersion}")
+	// packagesPath.Get.CreateRef(schema, "package_list_item", "responses.200.content.application/json.schema.properties.items.items")
+	// packagePath.Get.CreateRef(schema, "package_info", "responses.200.content.application/json.schema.properties.item")
 
 	// Server hosts
 	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/models/fleet_server_policy_config.ts
 	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/rest_spec/fleet_server_hosts.ts
 
-	hostsPath := schema.MustGetPath("/api/fleet/fleet_server_hosts")
-	hostPath := schema.MustGetPath("/api/fleet/fleet_server_hosts/{itemId}")
+	// hostsPath := schema.MustGetPath("/api/fleet/fleet_server_hosts")
+	// hostPath := schema.MustGetPath("/api/fleet/fleet_server_hosts/{itemId}")
 
-	hostsPath.Get.CreateRef(schema, "server_host", "responses.200.content.application/json.schema.properties.items.items")
-	hostsPath.Post.CreateRef(schema, "server_host", "responses.200.content.application/json.schema.properties.item")
-	hostPath.Get.CreateRef(schema, "server_host", "responses.200.content.application/json.schema.properties.item")
-	hostPath.Put.CreateRef(schema, "server_host", "responses.200.content.application/json.schema.properties.item")
+	// hostsPath.Get.CreateRef(schema, "server_host", "responses.200.content.application/json.schema.properties.items.items")
+	// hostsPath.Post.CreateRef(schema, "server_host", "responses.200.content.application/json.schema.properties.item")
+	// hostPath.Get.CreateRef(schema, "server_host", "responses.200.content.application/json.schema.properties.item")
+	// hostPath.Put.CreateRef(schema, "server_host", "responses.200.content.application/json.schema.properties.item")
 
 	// Outputs
 	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/models/output.ts
@@ -1096,61 +1096,61 @@ func transformFleetPaths(schema *Schema) {
 
 	outputsPath.Post.CreateRef(schema, "new_output_union", "requestBody.content.application/json.schema")
 	outputByIdPath.Put.CreateRef(schema, "update_output_union", "requestBody.content.application/json.schema")
-	outputsPath.Get.CreateRef(schema, "output_union", "responses.200.content.application/json.schema.properties.items.items")
-	outputByIdPath.Get.CreateRef(schema, "output_union", "responses.200.content.application/json.schema.properties.item")
-	outputsPath.Post.CreateRef(schema, "output_union", "responses.200.content.application/json.schema.properties.item")
-	outputByIdPath.Put.CreateRef(schema, "output_union", "responses.200.content.application/json.schema.properties.item")
+	// outputsPath.Get.CreateRef(schema, "output_union", "responses.200.content.application/json.schema.properties.items.items")
+	// outputByIdPath.Get.CreateRef(schema, "output_union", "responses.200.content.application/json.schema.properties.item")
+	// outputsPath.Post.CreateRef(schema, "output_union", "responses.200.content.application/json.schema.properties.item")
+	// outputByIdPath.Put.CreateRef(schema, "output_union", "responses.200.content.application/json.schema.properties.item")
 
-	for _, name := range []string{"output", "new_output", "update_output"} {
-		// Ref each index in the anyOf union
-		kafkaComponent := fmt.Sprintf("%s_kafka", name)
-		schema.Components.CreateRef(schema, fmt.Sprintf("%s_elasticsearch", name), fmt.Sprintf("schemas.%s_union.anyOf.0", name))
-		schema.Components.CreateRef(schema, fmt.Sprintf("%s_remote_elasticsearch", name), fmt.Sprintf("schemas.%s_union.anyOf.1", name))
-		schema.Components.CreateRef(schema, fmt.Sprintf("%s_logstash", name), fmt.Sprintf("schemas.%s_union.anyOf.2", name))
-		schema.Components.CreateRef(schema, kafkaComponent, fmt.Sprintf("schemas.%s_union.anyOf.3", name))
+	// for _, name := range []string{"output", "new_output", "update_output"} {
+	// Ref each index in the anyOf union
+	// kafkaComponent := fmt.Sprintf("%s_kafka", name)
+	// schema.Components.CreateRef(schema, fmt.Sprintf("%s_elasticsearch", name), fmt.Sprintf("schemas.%s_union.anyOf.0", name))
+	// schema.Components.CreateRef(schema, fmt.Sprintf("%s_remote_elasticsearch", name), fmt.Sprintf("schemas.%s_union.anyOf.1", name))
+	// schema.Components.CreateRef(schema, fmt.Sprintf("%s_logstash", name), fmt.Sprintf("schemas.%s_union.anyOf.2", name))
+	// schema.Components.CreateRef(schema, kafkaComponent, fmt.Sprintf("schemas.%s_union.anyOf.3", name))
 
-		// Extract child structs
-		for _, typ := range []string{"elasticsearch", "remote_elasticsearch", "logstash", "kafka"} {
-			schema.Components.CreateRef(schema, fmt.Sprintf("%s_shipper", name), fmt.Sprintf("schemas.%s_%s.properties.shipper", name, typ))
-			schema.Components.CreateRef(schema, fmt.Sprintf("%s_ssl", name), fmt.Sprintf("schemas.%s_%s.properties.ssl", name, typ))
-		}
+	// Extract child structs
+	// for _, typ := range []string{"elasticsearch", "remote_elasticsearch", "logstash", "kafka"} {
+	// 	schema.Components.CreateRef(schema, fmt.Sprintf("%s_shipper", name), fmt.Sprintf("schemas.%s_%s.properties.shipper", name, typ))
+	// 	schema.Components.CreateRef(schema, fmt.Sprintf("%s_ssl", name), fmt.Sprintf("schemas.%s_%s.properties.ssl", name, typ))
+	// }
 
-		// Ideally just remove the "anyOf", however then we would need to make
-		// refs for each of the "oneOf" options. So turn them into an "any" instead.
-		// See: https://github.com/elastic/kibana/issues/197153
-		/*
-			anyOf:
-			  - items: {}
-			    type: array
-			  - type: boolean
-			  - type: number
-			  - type: object
-			  - type: string
-			nullable: true
-			oneOf:
-			  - type: number
-			  - not: {}
-		*/
+	// Ideally just remove the "anyOf", however then we would need to make
+	// refs for each of the "oneOf" options. So turn them into an "any" instead.
+	// See: https://github.com/elastic/kibana/issues/197153
+	/*
+		anyOf:
+		  - items: {}
+		    type: array
+		  - type: boolean
+		  - type: number
+		  - type: object
+		  - type: string
+		nullable: true
+		oneOf:
+		  - type: number
+		  - not: {}
+	*/
 
-		// https://github.com/elastic/kibana/issues/197153
-		kafkaRequiredName := fmt.Sprintf("schemas.%s.required", kafkaComponent)
-		props := schema.Components.MustGetMap(fmt.Sprintf("schemas.%s.properties", kafkaComponent))
-		required := schema.Components.MustGetSlice(kafkaRequiredName)
-		for key, apiType := range map[string]string{"compression_level": "integer", "connection_type": "string", "password": "string", "username": "string"} {
-			props.Set(key, Map{
-				"type": apiType,
-			})
-			required = slices.DeleteFunc(required, func(item any) bool {
-				itemStr, ok := item.(string)
-				if !ok {
-					return false
-				}
+	// https://github.com/elastic/kibana/issues/197153
+	// kafkaRequiredName := fmt.Sprintf("schemas.%s.required", kafkaComponent)
+	// props := schema.Components.MustGetMap(fmt.Sprintf("schemas.%s.properties", kafkaComponent))
+	// required := schema.Components.MustGetSlice(kafkaRequiredName)
+	// for key, apiType := range map[string]string{"compression_level": "integer", "connection_type": "string", "password": "string", "username": "string"} {
+	// 	props.Set(key, Map{
+	// 		"type": apiType,
+	// 	})
+	// 	required = slices.DeleteFunc(required, func(item any) bool {
+	// 		itemStr, ok := item.(string)
+	// 		if !ok {
+	// 			return false
+	// 		}
 
-				return itemStr == key
-			})
-		}
-		schema.Components.Set(kafkaRequiredName, required)
-	}
+	// 		return itemStr == key
+	// 	})
+	// }
+	// schema.Components.Set(kafkaRequiredName, required)
+	// }
 
 	// Add the missing discriminator to the response union
 	// See: https://github.com/elastic/kibana/issues/181994
@@ -1164,47 +1164,47 @@ func transformFleetPaths(schema *Schema) {
 		},
 	})
 
-	for _, typ := range []string{"elasticsearch", "remote_elasticsearch", "logstash", "kafka"} {
-		// strict_dynamic_mapping_exception: [1:345] mapping set to strict, dynamic introduction of [id] within [ingest-outputs] is not allowed"
-		// See: https://github.com/elastic/kibana/issues/197155
-		schema.Components.MustDelete(fmt.Sprintf("schemas.update_output_%s.properties.id", typ))
-	}
+	// for _, typ := range []string{"elasticsearch", "remote_elasticsearch", "logstash", "kafka"} {
+	// 	// strict_dynamic_mapping_exception: [1:345] mapping set to strict, dynamic introduction of [id] within [ingest-outputs] is not allowed"
+	// 	// See: https://github.com/elastic/kibana/issues/197155
+	// 	schema.Components.MustDelete(fmt.Sprintf("schemas.update_output_%s.properties.id", typ))
+	// }
 
 	// Package policies
 	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/models/package_policy.ts
 	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/rest_spec/package_policy.ts
 
-	epmPoliciesPath := schema.MustGetPath("/api/fleet/package_policies")
-	epmPolicyPath := schema.MustGetPath("/api/fleet/package_policies/{packagePolicyId}")
+	// epmPoliciesPath := schema.MustGetPath("/api/fleet/package_policies")
+	// epmPolicyPath := schema.MustGetPath("/api/fleet/package_policies/{packagePolicyId}")
 
-	epmPoliciesPath.Get.CreateRef(schema, "package_policy", "responses.200.content.application/json.schema.properties.items.items")
-	epmPoliciesPath.Post.CreateRef(schema, "package_policy", "responses.200.content.application/json.schema.properties.item")
+	// epmPoliciesPath.Get.CreateRef(schema, "package_policy", "responses.200.content.application/json.schema.properties.items.items")
+	// epmPoliciesPath.Post.CreateRef(schema, "package_policy", "responses.200.content.application/json.schema.properties.item")
 
-	epmPoliciesPath.Post.Move("requestBody.content.application/json.schema.anyOf.1", "requestBody.content.application/json.schema") // anyOf.0 is the deprecated array format
-	epmPolicyPath.Put.Move("requestBody.content.application/json.schema.anyOf.1", "requestBody.content.application/json.schema")    // anyOf.0 is the deprecated array format
-	epmPoliciesPath.Post.CreateRef(schema, "package_policy_request", "requestBody.content.application/json.schema")
-	epmPolicyPath.Put.CreateRef(schema, "package_policy_request", "requestBody.content.application/json.schema")
+	// epmPoliciesPath.Post.Move("requestBody.content.application/json.schema.anyOf.1", "requestBody.content.application/json.schema") // anyOf.0 is the deprecated array format
+	// epmPolicyPath.Put.Move("requestBody.content.application/json.schema.anyOf.1", "requestBody.content.application/json.schema")    // anyOf.0 is the deprecated array format
+	// epmPoliciesPath.Post.CreateRef(schema, "package_policy_request", "requestBody.content.application/json.schema")
+	// epmPolicyPath.Put.CreateRef(schema, "package_policy_request", "requestBody.content.application/json.schema")
 
-	epmPolicyPath.Get.CreateRef(schema, "package_policy", "responses.200.content.application/json.schema.properties.item")
-	epmPolicyPath.Put.CreateRef(schema, "package_policy", "responses.200.content.application/json.schema.properties.item")
+	// epmPolicyPath.Get.CreateRef(schema, "package_policy", "responses.200.content.application/json.schema.properties.item")
+	// epmPolicyPath.Put.CreateRef(schema, "package_policy", "responses.200.content.application/json.schema.properties.item")
 
-	schema.Components.CreateRef(schema, "package_policy_secret_ref", "schemas.package_policy.properties.secret_references.items")
-	schema.Components.Move("schemas.package_policy.properties.inputs.anyOf.1", "schemas.package_policy.properties.inputs") // anyOf.0 is the deprecated array format
+	// schema.Components.CreateRef(schema, "package_policy_secret_ref", "schemas.package_policy.properties.secret_references.items")
+	// schema.Components.Move("schemas.package_policy.properties.inputs.anyOf.1", "schemas.package_policy.properties.inputs") // anyOf.0 is the deprecated array format
 
-	schema.Components.CreateRef(schema, "package_policy_input", "schemas.package_policy.properties.inputs.additionalProperties")
-	schema.Components.CreateRef(schema, "package_policy_input_stream", "schemas.package_policy_input.properties.streams.additionalProperties")
+	// schema.Components.CreateRef(schema, "package_policy_input", "schemas.package_policy.properties.inputs.additionalProperties")
+	// schema.Components.CreateRef(schema, "package_policy_input_stream", "schemas.package_policy_input.properties.streams.additionalProperties")
 
-	schema.Components.CreateRef(schema, "package_policy_request_package", "schemas.package_policy_request.properties.package")
-	schema.Components.CreateRef(schema, "package_policy_request_input", "schemas.package_policy_request.properties.inputs.additionalProperties")
-	schema.Components.CreateRef(schema, "package_policy_request_input_stream", "schemas.package_policy_request_input.properties.streams.additionalProperties")
+	// schema.Components.CreateRef(schema, "package_policy_request_package", "schemas.package_policy_request.properties.package")
+	// schema.Components.CreateRef(schema, "package_policy_request_input", "schemas.package_policy_request.properties.inputs.additionalProperties")
+	// schema.Components.CreateRef(schema, "package_policy_request_input_stream", "schemas.package_policy_request_input.properties.streams.additionalProperties")
 
 	// Simplify all of the vars
-	schema.Components.Set("schemas.package_policy.properties.vars", Map{"type": "object"})
-	schema.Components.Set("schemas.package_policy_input.properties.vars", Map{"type": "object"})
-	schema.Components.Set("schemas.package_policy_input_stream.properties.vars", Map{"type": "object"})
-	schema.Components.Set("schemas.package_policy_request.properties.vars", Map{"type": "object"})
-	schema.Components.Set("schemas.package_policy_request_input.properties.vars", Map{"type": "object"})
-	schema.Components.Set("schemas.package_policy_request_input_stream.properties.vars", Map{"type": "object"})
+	// schema.Components.Set("schemas.package_policy.properties.vars", Map{"type": "object"})
+	// schema.Components.Set("schemas.package_policy_input.properties.vars", Map{"type": "object"})
+	// schema.Components.Set("schemas.package_policy_input_stream.properties.vars", Map{"type": "object"})
+	// schema.Components.Set("schemas.package_policy_request.properties.vars", Map{"type": "object"})
+	// schema.Components.Set("schemas.package_policy_request_input.properties.vars", Map{"type": "object"})
+	// schema.Components.Set("schemas.package_policy_request_input_stream.properties.vars", Map{"type": "object"})
 }
 
 func setAllXOmitEmpty(key string, node Map) {
