@@ -3,12 +3,15 @@
 page_title: "elasticstack_kibana_slo Resource - terraform-provider-elasticstack"
 subcategory: "Kibana"
 description: |-
-  Creates or updates a Kibana SLO. See the Kibana SLO docs https://www.elastic.co/guide/en/observability/current/slo.html and dev docs https://github.com/elastic/kibana/blob/main/x-pack/plugins/observability/dev_docs/slo.md for more information.
+  Creates or updates a Kibana SLO.
+  See the Kibana SLO docs https://www.elastic.co/guide/en/observability/current/slo.html.
 ---
 
 # elasticstack_kibana_slo (Resource)
 
-Creates or updates a Kibana SLO. See the [Kibana SLO docs](https://www.elastic.co/guide/en/observability/current/slo.html) and [dev docs](https://github.com/elastic/kibana/blob/main/x-pack/plugins/observability/dev_docs/slo.md) for more information.
+Creates or updates a Kibana SLO.
+
+See the Kibana [SLO docs](https://www.elastic.co/guide/en/observability/current/slo.html).
 
 ## Example Usage
 
@@ -236,48 +239,26 @@ resource "elasticstack_kibana_slo" "timeslice_metric" {
 - `budgeting_method` (String) An `occurrences` budgeting method uses the number of good and total events during the time window. A `timeslices` budgeting method uses the number of good slices and total slices during the time window. A slice is an arbitrary time window (smaller than the overall SLO time window) that is either considered good or bad, calculated from the timeslice threshold and the ratio of good over total events that happened during the slice window. A budgeting method is required and must be either occurrences or timeslices.
 - `description` (String) A description for the SLO.
 - `name` (String) The name of the SLO.
-- `objective` (Block List, Min: 1, Max: 1) The target objective is the value the SLO needs to meet during the time window. If a timeslices budgeting method is used, we also need to define the timesliceTarget which can be different than the overall SLO target. (see [below for nested schema](#nestedblock--objective))
-- `time_window` (Block List, Min: 1, Max: 1) Currently support `calendarAligned` and `rolling` time windows. Any duration greater than 1 day can be used: days, weeks, months, quarters, years. Rolling time window requires a duration, e.g. `1w` for one week, and type: `rolling`. SLOs defined with such time window, will only consider the SLI data from the last duration period as a moving window. Calendar aligned time window requires a duration, limited to `1M` for monthly or `1w` for weekly, and type: `calendarAligned`. (see [below for nested schema](#nestedblock--time_window))
 
 ### Optional
 
-- `apm_availability_indicator` (Block List, Max: 1) (see [below for nested schema](#nestedblock--apm_availability_indicator))
-- `apm_latency_indicator` (Block List, Max: 1) (see [below for nested schema](#nestedblock--apm_latency_indicator))
+- `apm_availability_indicator` (Block List) (see [below for nested schema](#nestedblock--apm_availability_indicator))
+- `apm_latency_indicator` (Block List) (see [below for nested schema](#nestedblock--apm_latency_indicator))
 - `group_by` (List of String) Optional group by fields to use to generate an SLO per distinct value.
-- `histogram_custom_indicator` (Block List, Max: 1) (see [below for nested schema](#nestedblock--histogram_custom_indicator))
-- `kql_custom_indicator` (Block List, Max: 1) (see [below for nested schema](#nestedblock--kql_custom_indicator))
-- `metric_custom_indicator` (Block List, Max: 1) (see [below for nested schema](#nestedblock--metric_custom_indicator))
-- `settings` (Block List, Max: 1) The default settings should be sufficient for most users, but if needed, these properties can be overwritten. (see [below for nested schema](#nestedblock--settings))
+- `histogram_custom_indicator` (Block List) (see [below for nested schema](#nestedblock--histogram_custom_indicator))
+- `kql_custom_indicator` (Block List) (see [below for nested schema](#nestedblock--kql_custom_indicator))
+- `metric_custom_indicator` (Block List) (see [below for nested schema](#nestedblock--metric_custom_indicator))
+- `objective` (Block List) The target objective is the value the SLO needs to meet during the time window. If a timeslices budgeting method is used, we also need to define the timesliceTarget which can be different than the overall SLO target. (see [below for nested schema](#nestedblock--objective))
+- `settings` (Attributes) The default settings should be sufficient for most users, but if needed, these properties can be overwritten. (see [below for nested schema](#nestedatt--settings))
 - `slo_id` (String) An ID (8 to 48 characters) that contains only letters, numbers, hyphens, and underscores. If omitted, a UUIDv1 will be generated server-side.
 - `space_id` (String) An identifier for the space. If space_id is not provided, the default space is used.
 - `tags` (List of String) The tags for the SLO.
-- `timeslice_metric_indicator` (Block List, Max: 1) Defines a timeslice metric indicator for SLO. (see [below for nested schema](#nestedblock--timeslice_metric_indicator))
+- `time_window` (Block List) Currently support `calendarAligned` and `rolling` time windows. Any duration greater than 1 day can be used: days, weeks, months, quarters, years. Rolling time window requires a duration, e.g. `1w` for one week, and type: `rolling`. SLOs defined with such time window, will only consider the SLI data from the last duration period as a moving window. Calendar aligned time window requires a duration, limited to `1M` for monthly or `1w` for weekly, and type: `calendarAligned`. (see [below for nested schema](#nestedblock--time_window))
+- `timeslice_metric_indicator` (Block List) Defines a timeslice metric indicator for SLO. (see [below for nested schema](#nestedblock--timeslice_metric_indicator))
 
 ### Read-Only
 
-- `id` (String) The ID of this resource.
-
-<a id="nestedblock--objective"></a>
-### Nested Schema for `objective`
-
-Required:
-
-- `target` (Number)
-
-Optional:
-
-- `timeslice_target` (Number)
-- `timeslice_window` (String)
-
-
-<a id="nestedblock--time_window"></a>
-### Nested Schema for `time_window`
-
-Required:
-
-- `duration` (String)
-- `type` (String)
-
+- `id` (String) Internal identifier of the resource.
 
 <a id="nestedblock--apm_availability_indicator"></a>
 ### Nested Schema for `apm_availability_indicator`
@@ -317,15 +298,15 @@ Optional:
 
 Required:
 
-- `good` (Block List, Min: 1, Max: 1) (see [below for nested schema](#nestedblock--histogram_custom_indicator--good))
 - `index` (String)
-- `total` (Block List, Min: 1, Max: 1) (see [below for nested schema](#nestedblock--histogram_custom_indicator--total))
 
 Optional:
 
 - `data_view_id` (String) Optional data view id to use for this indicator.
 - `filter` (String)
+- `good` (Block List) (see [below for nested schema](#nestedblock--histogram_custom_indicator--good))
 - `timestamp_field` (String)
+- `total` (Block List) (see [below for nested schema](#nestedblock--histogram_custom_indicator--total))
 
 <a id="nestedblock--histogram_custom_indicator--good"></a>
 ### Nested Schema for `histogram_custom_indicator.good`
@@ -379,15 +360,15 @@ Optional:
 
 Required:
 
-- `good` (Block List, Min: 1, Max: 1) (see [below for nested schema](#nestedblock--metric_custom_indicator--good))
 - `index` (String)
-- `total` (Block List, Min: 1, Max: 1) (see [below for nested schema](#nestedblock--metric_custom_indicator--total))
 
 Optional:
 
 - `data_view_id` (String) Optional data view id to use for this indicator.
 - `filter` (String)
+- `good` (Block List) (see [below for nested schema](#nestedblock--metric_custom_indicator--good))
 - `timestamp_field` (String)
+- `total` (Block List) (see [below for nested schema](#nestedblock--metric_custom_indicator--total))
 
 <a id="nestedblock--metric_custom_indicator--good"></a>
 ### Nested Schema for `metric_custom_indicator.good`
@@ -395,7 +376,10 @@ Optional:
 Required:
 
 - `equation` (String)
-- `metrics` (Block List, Min: 1) (see [below for nested schema](#nestedblock--metric_custom_indicator--good--metrics))
+
+Optional:
+
+- `metrics` (Block List) (see [below for nested schema](#nestedblock--metric_custom_indicator--good--metrics))
 
 <a id="nestedblock--metric_custom_indicator--good--metrics"></a>
 ### Nested Schema for `metric_custom_indicator.good.metrics`
@@ -418,7 +402,10 @@ Optional:
 Required:
 
 - `equation` (String)
-- `metrics` (Block List, Min: 1) (see [below for nested schema](#nestedblock--metric_custom_indicator--total--metrics))
+
+Optional:
+
+- `metrics` (Block List) (see [below for nested schema](#nestedblock--metric_custom_indicator--total--metrics))
 
 <a id="nestedblock--metric_custom_indicator--total--metrics"></a>
 ### Nested Schema for `metric_custom_indicator.total.metrics`
@@ -436,7 +423,20 @@ Optional:
 
 
 
-<a id="nestedblock--settings"></a>
+<a id="nestedblock--objective"></a>
+### Nested Schema for `objective`
+
+Required:
+
+- `target` (Number)
+
+Optional:
+
+- `timeslice_target` (Number)
+- `timeslice_window` (String)
+
+
+<a id="nestedatt--settings"></a>
 ### Nested Schema for `settings`
 
 Optional:
@@ -446,19 +446,28 @@ Optional:
 - `sync_delay` (String)
 
 
+<a id="nestedblock--time_window"></a>
+### Nested Schema for `time_window`
+
+Required:
+
+- `duration` (String)
+- `type` (String)
+
+
 <a id="nestedblock--timeslice_metric_indicator"></a>
 ### Nested Schema for `timeslice_metric_indicator`
 
 Required:
 
 - `index` (String)
-- `metric` (Block List, Min: 1, Max: 1) (see [below for nested schema](#nestedblock--timeslice_metric_indicator--metric))
 - `timestamp_field` (String)
 
 Optional:
 
 - `data_view_id` (String) Optional data view id to use for this indicator.
 - `filter` (String)
+- `metric` (Block List) (see [below for nested schema](#nestedblock--timeslice_metric_indicator--metric))
 
 <a id="nestedblock--timeslice_metric_indicator--metric"></a>
 ### Nested Schema for `timeslice_metric_indicator.metric`
@@ -467,8 +476,11 @@ Required:
 
 - `comparator` (String)
 - `equation` (String)
-- `metrics` (Block List, Min: 1) (see [below for nested schema](#nestedblock--timeslice_metric_indicator--metric--metrics))
 - `threshold` (Number)
+
+Optional:
+
+- `metrics` (Block List) (see [below for nested schema](#nestedblock--timeslice_metric_indicator--metric--metrics))
 
 <a id="nestedblock--timeslice_metric_indicator--metric--metrics"></a>
 ### Nested Schema for `timeslice_metric_indicator.metric.metrics`
