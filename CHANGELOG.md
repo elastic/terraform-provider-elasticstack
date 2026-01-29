@@ -13,6 +13,7 @@ resource "elasticstack_kibana_slo" "test_slo" {
     sync_delay = "5m"
     frequency  = "5m"
   }
+}
 ```
 
 becomes 
@@ -24,6 +25,7 @@ resource "elasticstack_kibana_slo" "test_slo" {
     sync_delay = "5m"
     frequency  = "5m"
   }
+}
 ```
 
 #### `elasticstack_fleet_integration_policy` input block has changed to a map attribute. 
