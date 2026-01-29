@@ -15,15 +15,18 @@ import (
 type valueValidator func(dependentFieldHasAllowedValue bool, dependentValueStr string, val attr.Value, p path.Path) diag.Diagnostics
 
 // condition represents a validation rule that enforces conditional requirements
-// based on the value of a dependent field. It contains the path to the field
-// that this condition depends on and a list of allowed values for that field.
+// based on the value of a dependent field. It contains either a static path or
+// a path expression to the field that this condition depends on, and a list of
+// allowed values for that field.
 // When the dependent field matches one of the allowed values, additional
 // validation logic can be applied to the current field.
+// Use dependentPath for absolute paths, or dependentPathExpression for relative paths.
 type condition struct {
-	description   func() string
-	dependentPath path.Path
-	allowedValues []string
-	validateValue valueValidator
+	description             func() string
+	dependentPath           *path.Path
+	dependentPathExpression *path.Expression
+	allowedValues           []string
+	validateValue           valueValidator
 }
 
 // Description describes the validation in plain text formatting.
@@ -37,9 +40,9 @@ func (v condition) MarkdownDescription(ctx context.Context) string {
 }
 
 // dependentFieldHasAllowedValue checks if the dependent field specified by the condition's
-// dependentPath has a value that matches one of the allowed values defined in the condition.
-// It retrieves the dependent field's value from the provided configuration context and
-// compares it against the condition's allowedValues slice.
+// dependentPath or dependentPathExpression has a value that matches one of the allowed values
+// defined in the condition. It retrieves the dependent field's value from the provided
+// configuration context and compares it against the condition's allowedValues slice.
 //
 // The method returns three values:
 //   - bool: true if the dependent field has a non-null, non-unknown value that matches
@@ -49,9 +52,32 @@ func (v condition) MarkdownDescription(ctx context.Context) string {
 //
 // If the dependent field is null, unknown, or its value doesn't match any of the
 // allowed values, the condition is considered not met and the method returns false.
-func (v condition) dependentFieldHasAllowedValue(ctx context.Context, config tfsdk.Config) (bool, string, diag.Diagnostics) {
+func (v condition) dependentFieldHasAllowedValue(ctx context.Context, config tfsdk.Config, currentPath path.Path) (bool, string, diag.Diagnostics) {
 	var dependentValue types.String
-	diags := config.GetAttribute(ctx, v.dependentPath, &dependentValue)
+	var diags diag.Diagnostics
+
+	// Determine which path to use
+	if v.dependentPathExpression != nil {
+		// Merge the path expression with the current path to resolve relative references
+		merged := currentPath.Expression().Merge(*v.dependentPathExpression)
+		matchedPaths, matchDiags := config.PathMatches(ctx, merged)
+		diags.Append(matchDiags...)
+		if diags.HasError() {
+			return false, "", diags
+		}
+
+		// For validation purposes, we expect exactly one match
+		if len(matchedPaths) == 0 {
+			// No match found, condition not met
+			return false, "", nil
+		}
+
+		// Use the first matched path
+		diags.Append(config.GetAttribute(ctx, matchedPaths[0], &dependentValue)...)
+	} else {
+		// Use static path
+		diags.Append(config.GetAttribute(ctx, *v.dependentPath, &dependentValue)...)
+	}
 
 	if diags.HasError() {
 		return false, "", diags
@@ -73,7 +99,7 @@ func (v condition) dependentFieldHasAllowedValue(ctx context.Context, config tfs
 }
 
 func (v condition) validate(ctx context.Context, config tfsdk.Config, val attr.Value, p path.Path) diag.Diagnostics {
-	dependentFieldHasAllowedValue, dependentValueStr, diags := v.dependentFieldHasAllowedValue(ctx, config)
+	dependentFieldHasAllowedValue, dependentValueStr, diags := v.dependentFieldHasAllowedValue(ctx, config, p)
 	if diags.HasError() {
 		return diags
 	}
@@ -106,7 +132,7 @@ func (v condition) ValidateInt64(ctx context.Context, request validator.Int64Req
 //   - condition: A condition struct that can be used for validation
 func DependantPathOneOf(dependentPath path.Path, allowedValues []string) condition {
 	return condition{
-		dependentPath: dependentPath,
+		dependentPath: &dependentPath,
 		allowedValues: allowedValues,
 		description: func() string {
 			return fmt.Sprintf("Attribute '%v' is not one of %s",
@@ -148,7 +174,7 @@ func DependantPathOneOf(dependentPath path.Path, allowedValues []string) conditi
 //	AllowedIfDependentPathOneOf(path.Root("protocol"), []string{"https"})
 func AllowedIfDependentPathOneOf(dependentPath path.Path, allowedValues []string) condition {
 	return condition{
-		dependentPath: dependentPath,
+		dependentPath: &dependentPath,
 		allowedValues: allowedValues,
 		description: func() string {
 			if len(allowedValues) == 1 {
@@ -247,7 +273,7 @@ func RequiredIfDependentPathEquals(dependentPath path.Path, requiredValue string
 //	// This would require the current attribute when "type" equals "custom" or "advanced"
 func RequiredIfDependentPathOneOf(dependentPath path.Path, allowedValues []string) condition {
 	return condition{
-		dependentPath: dependentPath,
+		dependentPath: &dependentPath,
 		allowedValues: allowedValues,
 		description: func() string {
 			if len(allowedValues) == 1 {
@@ -301,7 +327,7 @@ func RequiredIfDependentPathOneOf(dependentPath path.Path, allowedValues []strin
 //	// This will prevent setting the current attribute when "type" equals "basic" or "simple"
 func ForbiddenIfDependentPathOneOf(dependentPath path.Path, allowedValues []string) condition {
 	return condition{
-		dependentPath: dependentPath,
+		dependentPath: &dependentPath,
 		allowedValues: allowedValues,
 		description: func() string {
 			if len(allowedValues) == 1 {
@@ -323,6 +349,174 @@ func ForbiddenIfDependentPathOneOf(dependentPath path.Path, allowedValues []stri
 					fmt.Sprintf("Attribute %s cannot be set when %s equals %q",
 						p,
 						dependentPath,
+						allowedValues[0],
+					),
+				)
+			}
+			return diags
+		},
+	}
+}
+
+// AllowedIfDependentPathExpressionOneOf creates a validation condition that allows the current attribute
+// to be set only when a dependent attribute matched by the path expression has one of the allowed values.
+// This uses a relative path expression that is resolved relative to the field being validated.
+//
+// Parameters:
+//   - dependentPathExpression: The path expression to match the dependent attribute relative to the current field
+//   - allowedValues: A slice of string values that the dependent attribute must match
+//
+// Returns:
+//   - condition: A validation condition that can be used with conditional validators
+//
+// Example:
+//
+//	// Only allow "ssl_cert" to be set when a sibling "protocol" field is "https"
+//	AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("protocol"), []string{"https"})
+func AllowedIfDependentPathExpressionOneOf(dependentPathExpression path.Expression, allowedValues []string) condition {
+	descStr := "dependent field"
+	return condition{
+		dependentPathExpression: &dependentPathExpression,
+		allowedValues:           allowedValues,
+		description: func() string {
+			if len(allowedValues) == 1 {
+				return fmt.Sprintf("value can only be set when %s equals %q", descStr, allowedValues[0])
+			}
+			return fmt.Sprintf("value can only be set when %s is one of %v", descStr, allowedValues)
+		},
+		validateValue: func(dependentFieldHasAllowedValue bool, dependentValueStr string, val attr.Value, p path.Path) diag.Diagnostics {
+			var diags diag.Diagnostics
+			isEmpty := val.IsNull() || val.IsUnknown()
+			isSet := !isEmpty
+
+			if dependentFieldHasAllowedValue {
+				return diags
+			}
+
+			if isSet {
+				if len(allowedValues) == 1 {
+					diags.AddAttributeError(p, "Invalid Configuration",
+						fmt.Sprintf("Attribute %s can only be set when %s equals %q, but %s is %q",
+							p,
+							descStr,
+							allowedValues[0],
+							descStr,
+							dependentValueStr,
+						),
+					)
+				} else {
+					diags.AddAttributeError(p, "Invalid Configuration",
+						fmt.Sprintf("Attribute %s can only be set when %s is one of %v, but %s is %q",
+							p,
+							descStr,
+							allowedValues,
+							descStr,
+							dependentValueStr,
+						),
+					)
+				}
+			}
+
+			return diags
+		},
+	}
+}
+
+// RequiredIfDependentPathExpressionOneOf returns a condition that validates an attribute is required
+// when a dependent attribute matched by the path expression has a value matching one of the specified
+// allowed values. This uses a relative path expression that is resolved relative to the field being validated.
+//
+// Parameters:
+//   - dependentPathExpression: The path expression to match the dependent attribute relative to the current field
+//   - allowedValues: A slice of string values that trigger the requirement when matched
+//
+// Returns:
+//   - condition: A validation condition that enforces the requirement rule
+//
+// Example usage:
+//
+//	validator := RequiredIfDependentPathExpressionOneOf(
+//	  path.MatchRelative().AtParent().AtName("type"),
+//	  []string{"custom", "advanced"},
+//	)
+//	// This would require the current attribute when sibling "type" equals "custom" or "advanced"
+func RequiredIfDependentPathExpressionOneOf(dependentPathExpression path.Expression, allowedValues []string) condition {
+	descStr := "dependent field"
+	return condition{
+		dependentPathExpression: &dependentPathExpression,
+		allowedValues:           allowedValues,
+		description: func() string {
+			if len(allowedValues) == 1 {
+				return fmt.Sprintf("value required when %s equals %q", descStr, allowedValues[0])
+			}
+			return fmt.Sprintf("value required when %s is one of %v", descStr, allowedValues)
+		},
+		validateValue: func(dependentFieldHasAllowedValue bool, dependentValueStr string, val attr.Value, p path.Path) diag.Diagnostics {
+			var diags diag.Diagnostics
+			isEmpty := val.IsNull() || val.IsUnknown()
+
+			if !dependentFieldHasAllowedValue {
+				return diags
+			}
+
+			if isEmpty {
+				diags.AddAttributeError(p, "Invalid Configuration",
+					fmt.Sprintf("Attribute %s must be set when %s equals %q",
+						p,
+						descStr,
+						allowedValues[0],
+					),
+				)
+			}
+			return diags
+		},
+	}
+}
+
+// ForbiddenIfDependentPathExpressionOneOf creates a validation condition that forbids setting a value
+// when a dependent field matched by the path expression has one of the specified allowed values.
+// This uses a relative path expression that is resolved relative to the field being validated.
+//
+// Parameters:
+//   - dependentPathExpression: The path expression to match the dependent attribute relative to the current field
+//   - allowedValues: A slice of string values that, when matched by the dependent field, will trigger the forbidden condition
+//
+// Returns:
+//   - condition: A validation condition that will generate an error if the current field is set
+//     while the dependent field matches any of the allowed values
+//
+// Example usage:
+//
+//	validator := ForbiddenIfDependentPathExpressionOneOf(
+//	  path.MatchRelative().AtParent().AtName("type"),
+//	  []string{"basic", "simple"},
+//	)
+//	// This will prevent setting the current attribute when sibling "type" equals "basic" or "simple"
+func ForbiddenIfDependentPathExpressionOneOf(dependentPathExpression path.Expression, allowedValues []string) condition {
+	descStr := "dependent field"
+	return condition{
+		dependentPathExpression: &dependentPathExpression,
+		allowedValues:           allowedValues,
+		description: func() string {
+			if len(allowedValues) == 1 {
+				return fmt.Sprintf("value cannot be set when %s equals %q", descStr, allowedValues[0])
+			}
+			return fmt.Sprintf("value cannot be set when %s is one of %v", descStr, allowedValues)
+		},
+		validateValue: func(dependentFieldHasAllowedValue bool, dependentValueStr string, val attr.Value, p path.Path) diag.Diagnostics {
+			var diags diag.Diagnostics
+
+			if !dependentFieldHasAllowedValue {
+				return diags
+			}
+
+			isEmpty := val.IsNull() || val.IsUnknown()
+			isSet := !isEmpty
+			if isSet {
+				diags.AddAttributeError(p, "Invalid Configuration",
+					fmt.Sprintf("Attribute %s cannot be set when %s equals %q",
+						p,
+						descStr,
 						allowedValues[0],
 					),
 				)
