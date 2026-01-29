@@ -5,13 +5,12 @@ import (
 	_ "embed"
 	"fmt"
 	"regexp"
-	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana"
-	kibanaresource "github.com/elastic/terraform-provider-elasticstack/internal/kibana"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/slo"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
 	"github.com/stretchr/testify/require"
@@ -61,7 +60,7 @@ func TestAccResourceSlo(t *testing.T) {
 								return versionutils.CheckIfVersionMeetsConstraints(slo8_9Constraints)()
 							}
 
-							return versionutils.CheckIfVersionIsUnsupported(kibanaresource.SLOSupportsDataViewIDMinVersion)()
+							return versionutils.CheckIfVersionIsUnsupported(slo.SLOSupportsDataViewIDMinVersion)()
 						},
 						ConfigDirectory: acctest.NamedTestCaseDirectory("apm_latency_indicator"),
 						ConfigVariables: config.Variables{
@@ -96,7 +95,7 @@ func TestAccResourceSlo(t *testing.T) {
 								return versionutils.CheckIfVersionMeetsConstraints(slo8_9Constraints)()
 							}
 
-							return versionutils.CheckIfVersionIsUnsupported(kibanaresource.SLOSupportsDataViewIDMinVersion)()
+							return versionutils.CheckIfVersionIsUnsupported(slo.SLOSupportsDataViewIDMinVersion)()
 						},
 						ConfigDirectory: acctest.NamedTestCaseDirectory("update_name"),
 						ConfigVariables: config.Variables{
@@ -113,7 +112,7 @@ func TestAccResourceSlo(t *testing.T) {
 								return versionutils.CheckIfVersionMeetsConstraints(slo8_9Constraints)()
 							}
 
-							return versionutils.CheckIfVersionIsUnsupported(kibanaresource.SLOSupportsDataViewIDMinVersion)()
+							return versionutils.CheckIfVersionIsUnsupported(slo.SLOSupportsDataViewIDMinVersion)()
 						},
 						ConfigDirectory: acctest.NamedTestCaseDirectory("update_settings"),
 						ConfigVariables: config.Variables{
@@ -131,7 +130,7 @@ func TestAccResourceSlo(t *testing.T) {
 								return versionutils.CheckIfVersionMeetsConstraints(slo8_9Constraints)()
 							}
 
-							return versionutils.CheckIfVersionIsUnsupported(kibanaresource.SLOSupportsDataViewIDMinVersion)()
+							return versionutils.CheckIfVersionIsUnsupported(slo.SLOSupportsDataViewIDMinVersion)()
 						},
 						ConfigDirectory: acctest.NamedTestCaseDirectory("apm_availability_indicator"),
 						ConfigVariables: config.Variables{
@@ -152,7 +151,7 @@ func TestAccResourceSlo(t *testing.T) {
 								return versionutils.CheckIfVersionMeetsConstraints(slo8_9Constraints)()
 							}
 
-							return versionutils.CheckIfVersionIsUnsupported(kibanaresource.SLOSupportsDataViewIDMinVersion)()
+							return versionutils.CheckIfVersionIsUnsupported(slo.SLOSupportsDataViewIDMinVersion)()
 						},
 						ConfigDirectory: acctest.NamedTestCaseDirectory("kql_custom_indicator"),
 						ConfigVariables: withOptionalDataViewID(config.Variables{
@@ -174,7 +173,7 @@ func TestAccResourceSlo(t *testing.T) {
 								return versionutils.CheckIfVersionMeetsConstraints(slo8_10Constraints)()
 							}
 
-							return versionutils.CheckIfVersionIsUnsupported(kibanaresource.SLOSupportsDataViewIDMinVersion)()
+							return versionutils.CheckIfVersionIsUnsupported(slo.SLOSupportsDataViewIDMinVersion)()
 						},
 						ConfigDirectory: acctest.NamedTestCaseDirectory("histogram_custom_indicator"),
 						ConfigVariables: withOptionalDataViewID(config.Variables{
@@ -199,7 +198,7 @@ func TestAccResourceSlo(t *testing.T) {
 								return versionutils.CheckIfVersionMeetsConstraints(slo8_10Constraints)()
 							}
 
-							return versionutils.CheckIfVersionIsUnsupported(kibanaresource.SLOSupportsDataViewIDMinVersion)()
+							return versionutils.CheckIfVersionIsUnsupported(slo.SLOSupportsDataViewIDMinVersion)()
 						},
 						ConfigDirectory: acctest.NamedTestCaseDirectory("metric_custom_indicator_group_by"),
 						ConfigVariables: withOptionalDataViewID(config.Variables{
@@ -234,7 +233,7 @@ func TestAccResourceSlo(t *testing.T) {
 								return versionutils.CheckIfVersionMeetsConstraints(slo8_10Constraints)()
 							}
 
-							return versionutils.CheckIfVersionIsUnsupported(kibanaresource.SLOSupportsDataViewIDMinVersion)()
+							return versionutils.CheckIfVersionIsUnsupported(slo.SLOSupportsDataViewIDMinVersion)()
 						},
 						ConfigDirectory: acctest.NamedTestCaseDirectory("metric_custom_indicator_tags"),
 						ConfigVariables: withOptionalDataViewID(config.Variables{
@@ -252,7 +251,7 @@ func TestAccResourceSlo(t *testing.T) {
 								return versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion)()
 							}
 
-							return versionutils.CheckIfVersionIsUnsupported(kibanaresource.SLOSupportsDataViewIDMinVersion)()
+							return versionutils.CheckIfVersionIsUnsupported(slo.SLOSupportsDataViewIDMinVersion)()
 						},
 						ConfigDirectory: acctest.NamedTestCaseDirectory("timeslice_metric_indicator"),
 						ConfigVariables: withOptionalDataViewID(config.Variables{
@@ -289,7 +288,7 @@ func TestAccResourceSloGroupBy(t *testing.T) {
 						VersionConstraint: "0.11.11",
 					},
 				},
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(kibanaresource.SLOSupportsMultipleGroupByMinVersion),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(slo.SLOSupportsMultipleGroupByMinVersion),
 				Config:   singleElementConfig,
 				ConfigVariables: config.Variables{
 					"name": config.StringVariable(sloName),
@@ -316,7 +315,7 @@ func TestAccResourceSloGroupBy(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(kibanaresource.SLOSupportsMultipleGroupByMinVersion),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(slo.SLOSupportsMultipleGroupByMinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("multiple_elements"),
 				ConfigVariables: config.Variables{
 					"name": config.StringVariable(sloName),
@@ -355,7 +354,7 @@ func TestAccResourceSloPreventInitialBackfill(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(kibanaresource.SLOSupportsPreventInitialBackfillMinVersion),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(slo.SLOSupportsPreventInitialBackfillMinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("test"),
 				ConfigVariables: config.Variables{
 					"name": config.StringVariable(sloName),
@@ -571,62 +570,6 @@ func TestAccResourceSlo_kql_custom_indicator_basic(t *testing.T) {
 			},
 		},
 	})
-}
-
-func TestSloIdValidation(t *testing.T) {
-	resource := kibanaresource.ResourceSlo()
-	sloIdSchema := resource.Schema["slo_id"]
-
-	// Test valid slo_id values
-	validIds := []string{
-		"valid_id",   // 8 chars with underscore
-		"valid-id",   // 8 chars with hyphen
-		"validId123", // 11 chars with mixed case and numbers
-		"a1234567",   // exactly 8 chars
-		"this-is-a-very-long-but-valid-slo-id-12345678", // exactly 48 chars
-	}
-
-	for _, id := range validIds {
-		warnings, errors := sloIdSchema.ValidateFunc(id, "slo_id")
-		if len(errors) > 0 {
-			t.Errorf("Expected valid ID %q to pass validation, but got errors: %v", id, errors)
-		}
-		if len(warnings) > 0 {
-			t.Errorf("Expected valid ID %q to have no warnings, but got: %v", id, warnings)
-		}
-	}
-
-	// Test invalid slo_id values
-	invalidTests := []struct {
-		id          string
-		expectedErr string
-	}{
-		{"short", "expected length of slo_id to be in the range (8 - 48)"},
-		{"1234567", "expected length of slo_id to be in the range (8 - 48)"},                                                                 // 7 chars
-		{"this-is-a-very-long-slo-id-that-exceeds-the-48-character-limit-for-sure", "expected length of slo_id to be in the range (8 - 48)"}, // > 48 chars
-		{"invalid@id", "must contain only letters, numbers, hyphens, and underscores"},
-		{"invalid$id", "must contain only letters, numbers, hyphens, and underscores"},
-		{"invalid id", "must contain only letters, numbers, hyphens, and underscores"}, // space
-		{"invalid.id", "must contain only letters, numbers, hyphens, and underscores"}, // period
-	}
-
-	for _, test := range invalidTests {
-		_, errors := sloIdSchema.ValidateFunc(test.id, "slo_id")
-		if len(errors) == 0 {
-			t.Errorf("Expected invalid ID %q to fail validation", test.id)
-		} else {
-			found := false
-			for _, err := range errors {
-				if strings.Contains(err.Error(), test.expectedErr) {
-					found = true
-					break
-				}
-			}
-			if !found {
-				t.Errorf("Expected error for ID %q to contain %q, but got: %v", test.id, test.expectedErr, errors)
-			}
-		}
-	}
 }
 
 //go:embed testdata/TestAccResourceSloFromSDK/create/main.tf
