@@ -517,12 +517,27 @@ func ForbiddenIfDependentPathExpressionOneOf(dependentPathExpression path.Expres
 			isEmpty := val.IsNull() || val.IsUnknown()
 			isSet := !isEmpty
 			if isSet {
-				diags.AddAttributeError(p, "Invalid Configuration",
-					fmt.Sprintf("Attribute %s cannot be set when %s equals %q",
+				var msg string
+				if len(allowedValues) == 1 {
+					msg = fmt.Sprintf(
+						"Attribute %s cannot be set when %s equals %q",
 						p,
 						descStr,
 						allowedValues[0],
-					),
+					)
+				} else {
+					msg = fmt.Sprintf(
+						"Attribute %s cannot be set when %s is one of %v",
+						p,
+						descStr,
+						allowedValues,
+					)
+				}
+
+				diags.AddAttributeError(
+					p,
+					"Invalid Configuration",
+					msg,
 				)
 			}
 			return diags
