@@ -2,7 +2,9 @@ package integration
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -102,7 +104,20 @@ func (r *integrationResource) UpgradeState(context.Context) map[int64]resource.S
 					}
 
 					if len(spaceIDs) > 0 {
+						selectedSpaceID := spaceIDs[0]
+						ignoredSpaces := spaceIDs[1:]
 						upgradedState.SpaceID = types.StringValue(spaceIDs[0])
+
+						resp.Diagnostics.AddAttributeError(
+							path.Root("space_ids"),
+							"Multiple Space IDs Found",
+							fmt.Sprintf(
+								`The previous version of the resource allowed multiple space IDs to be set, although all but the first was ignored.
+								The [%s] space from the previous state has been selected for the new "space_id" attribute, with %v spaces ignored. 
+								If this is not correct, please update the resource configuration accordingly.`,
+								selectedSpaceID, ignoredSpaces,
+							),
+						)
 					}
 				}
 
