@@ -101,7 +101,7 @@ Optional:
 <a id="nestedblock--actions--alerts_filter--timeframe"></a>
 ### Nested Schema for `actions.alerts_filter.timeframe`
 
-Required:
+Optional:
 
 - `days` (List of Number) Defines the days of the week that the action can run (1=Monday, 7=Sunday).
 - `hours_end` (String) The end of the time frame in 24-hour notation (hh:mm).
