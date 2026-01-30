@@ -34,7 +34,7 @@ func (r *integrationResource) Delete(ctx context.Context, req resource.DeleteReq
 
 	// If space_id is set, use space-aware uninstallation
 	var spaceID string
-	if !stateModel.SpaceID.IsNull() && !stateModel.SpaceID.IsUnknown() {
+	if utils.IsKnown(stateModel.SpaceID) {
 		spaceID = stateModel.SpaceID.ValueString()
 	}
 

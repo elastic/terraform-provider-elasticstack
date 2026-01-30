@@ -77,7 +77,7 @@ func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state 
 	}
 
 	// If space_id is set, use space-aware installation
-	if !planModel.SpaceID.IsNull() && !planModel.SpaceID.IsUnknown() {
+	if utils.IsKnown(planModel.SpaceID) {
 		installOptions.SpaceID = planModel.SpaceID.ValueString()
 	}
 
