@@ -239,7 +239,7 @@ func GetSchema() schema.Schema {
 						PlanModifiers: []planmodifier.Bool{
 							boolplanmodifier.UseStateForUnknown(),
 						},
-						DeprecationMessage: "This setting is deprecated and will be removed in a future version.",
+						DeprecationMessage: "indices_options.ignore_throttled is deprecated and will be removed in a future version.",
 					},
 				},
 			},

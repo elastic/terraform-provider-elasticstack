@@ -13,6 +13,7 @@ import (
 var _ resource.Resource = &Resource{}
 var _ resource.ResourceWithConfigure = &Resource{}
 var _ resource.ResourceWithImportState = &Resource{}
+var _ resource.ResourceWithUpgradeState = &Resource{}
 
 var (
 	// Version constraints for feature support

@@ -24,6 +24,7 @@ var resourceDescription string
 func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description: resourceDescription,
+		Version:     1,
 		Blocks: map[string]schema.Block{
 			"kibana_connection": providerschema.GetKbFWConnectionBlock(),
 			"actions": schema.ListNestedBlock{
