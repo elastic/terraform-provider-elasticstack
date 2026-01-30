@@ -604,3 +604,17 @@ func resourceRuleDelete(ctx context.Context, d *schema.ResourceData, meta interf
 	d.SetId("")
 	return diags
 }
+
+func getOrNil[T any](path string, d *schema.ResourceData) *T {
+	return transformOrNil[T](path, d, func(v interface{}) T {
+		return v.(T)
+	})
+}
+
+func transformOrNil[T any](path string, d *schema.ResourceData, transform func(interface{}) T) *T {
+	if v, ok := d.GetOk(path); ok {
+		val := transform(v)
+		return &val
+	}
+	return nil
+}

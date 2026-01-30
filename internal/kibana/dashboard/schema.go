@@ -229,8 +229,8 @@ func getPanelSchema() schema.NestedAttributeObject {
 					stringplanmodifier.UseNonNullStateForUnknown(),
 				},
 			},
-			"embeddable_config": schema.SingleNestedAttribute{
-				MarkdownDescription: "The configuration of the panel. Mutually exclusive with `embeddable_config_json`.",
+			"markdown_config": schema.SingleNestedAttribute{
+				MarkdownDescription: "The configuration of the panel. Mutually exclusive with `config_json`.",
 				Optional:            true,
 				Attributes: map[string]schema.Attribute{
 					"content": schema.StringAttribute{
@@ -251,15 +251,15 @@ func getPanelSchema() schema.NestedAttributeObject {
 					},
 				},
 				Validators: []validator.Object{
-					objectvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("embeddable_config_json")),
+					objectvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("config_json")),
 				},
 			},
-			"embeddable_config_json": schema.StringAttribute{
-				MarkdownDescription: "The configuration of the panel as a JSON string. Mutually exclusive with `embeddable_config`.",
+			"config_json": schema.StringAttribute{
+				MarkdownDescription: "The configuration of the panel as a JSON string. Mutually exclusive with `markdown_config`.",
 				CustomType:          jsontypes.NormalizedType{},
 				Optional:            true,
 				Validators: []validator.String{
-					stringvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("embeddable_config")),
+					stringvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("markdown_config")),
 				},
 			},
 		},

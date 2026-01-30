@@ -20,7 +20,7 @@ resource "elasticstack_kibana_dashboard" "test" {
       w = 24
       h = 6
     }
-    embeddable_config = {
+    markdown_config = {
       content           = "Top-level panel one"
       title             = "Top Panel One"
       hide_panel_titles = true
@@ -33,7 +33,7 @@ resource "elasticstack_kibana_dashboard" "test" {
       w = 24
       h = 6
     }
-    embeddable_config = {
+    markdown_config = {
       content           = "Top-level panel two"
       title             = "Top Panel Two"
       hide_panel_titles = true
@@ -53,7 +53,7 @@ resource "elasticstack_kibana_dashboard" "test" {
         w = 24
         h = 10
       }
-      embeddable_config = {
+      markdown_config = {
         content           = "Section one - panel one"
         title             = "Section One Panel"
         hide_panel_titles = false
@@ -72,7 +72,7 @@ resource "elasticstack_kibana_dashboard" "test" {
         w = 24
         h = 10
       }
-      embeddable_config = {
+      markdown_config = {
         content           = "Section two - panel one"
         title             = "Section Two Panel"
         hide_panel_titles = false
