@@ -108,7 +108,7 @@ func (r *integrationResource) UpgradeState(context.Context) map[int64]resource.S
 						ignoredSpaces := spaceIDs[1:]
 						upgradedState.SpaceID = types.StringValue(spaceIDs[0])
 
-						resp.Diagnostics.AddAttributeError(
+						resp.Diagnostics.AddAttributeWarning(
 							path.Root("space_ids"),
 							"Multiple Space IDs Found",
 							fmt.Sprintf(
