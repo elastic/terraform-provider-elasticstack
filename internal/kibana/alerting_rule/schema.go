@@ -65,6 +65,9 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 			"params": schema.StringAttribute{
 				Description: "The rule parameters as a JSON string, which differ for each rule type.",
 				Required:    true,
+				Validators: []validator.String{
+					ValidJSON(),
+				},
 			},
 			"rule_type_id": schema.StringAttribute{
 				Description: "The ID of the rule type that you want to call when the rule is scheduled to run.",
@@ -139,6 +142,9 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 						"params": schema.StringAttribute{
 							Description: "The parameters for the action as a JSON string.",
 							Required:    true,
+							Validators: []validator.String{
+								ValidJSON(),
+							},
 						},
 					},
 					Blocks: map[string]schema.Block{
@@ -182,20 +188,20 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 									Attributes: map[string]schema.Attribute{
 										"days": schema.ListAttribute{
 											Description: "Defines the days of the week that the action can run (1=Monday, 7=Sunday).",
-											Required:    true,
+											Optional:    true,
 											ElementType: types.Int64Type,
 										},
 										"timezone": schema.StringAttribute{
 											Description: "The ISO time zone for the hours values.",
-											Required:    true,
+											Optional:    true,
 										},
 										"hours_start": schema.StringAttribute{
 											Description: "The start of the time frame in 24-hour notation (hh:mm).",
-											Required:    true,
+											Optional:    true,
 										},
 										"hours_end": schema.StringAttribute{
 											Description: "The end of the time frame in 24-hour notation (hh:mm).",
-											Required:    true,
+											Optional:    true,
 										},
 									},
 								},

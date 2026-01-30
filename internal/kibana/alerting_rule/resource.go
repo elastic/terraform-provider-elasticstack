@@ -8,9 +8,10 @@ import (
 )
 
 var (
-	_ resource.Resource                = &Resource{}
-	_ resource.ResourceWithConfigure   = &Resource{}
-	_ resource.ResourceWithImportState = &Resource{}
+	_ resource.Resource                     = &Resource{}
+	_ resource.ResourceWithConfigure        = &Resource{}
+	_ resource.ResourceWithImportState      = &Resource{}
+	_ resource.ResourceWithConfigValidators = &Resource{}
 )
 
 type Resource struct {
@@ -66,4 +67,10 @@ func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequ
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, rule)...)
+}
+
+func (r *Resource) ConfigValidators(ctx context.Context) []resource.ConfigValidator {
+	return []resource.ConfigValidator{
+		ValidateRuleTypeParams(),
+	}
 }
