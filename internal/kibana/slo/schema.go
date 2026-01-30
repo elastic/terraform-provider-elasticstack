@@ -8,7 +8,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -82,13 +81,10 @@ func getSchema() schema.Schema {
 				Optional:    true,
 				ElementType: types.StringType,
 			},
-			"settings": schema.SingleNestedAttribute{
+		},
+		Blocks: map[string]schema.Block{
+			"settings": schema.SingleNestedBlock{
 				Description: "The default settings should be sufficient for most users, but if needed, these properties can be overwritten.",
-				Optional:    true,
-				Computed:    true,
-				PlanModifiers: []planmodifier.Object{
-					objectplanmodifier.UseStateForUnknown(),
-				},
 				Attributes: map[string]schema.Attribute{
 					"sync_delay": schema.StringAttribute{Optional: true, Computed: true},
 					"frequency":  schema.StringAttribute{Optional: true, Computed: true},
@@ -99,8 +95,6 @@ func getSchema() schema.Schema {
 					},
 				},
 			},
-		},
-		Blocks: map[string]schema.Block{
 			"time_window": schema.ListNestedBlock{
 				Description: "Currently support `calendarAligned` and `rolling` time windows. Any duration greater than 1 day can be used: days, weeks, months, quarters, years. Rolling time window requires a duration, e.g. `1w` for one week, and type: `rolling`. SLOs defined with such time window, will only consider the SLI data from the last duration period as a moving window. Calendar aligned time window requires a duration, limited to `1M` for monthly or `1w` for weekly, and type: `calendarAligned`.",
 				Validators:  []validator.List{listvalidator.SizeBetween(1, 1)},

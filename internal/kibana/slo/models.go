@@ -11,12 +11,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-var tfSettingsAttrTypes = map[string]attr.Type{
-	"sync_delay":               types.StringType,
-	"frequency":                types.StringType,
-	"prevent_initial_backfill": types.BoolType,
-}
-
 type tfModel struct {
 	ID types.String `tfsdk:"id"`
 
@@ -28,7 +22,7 @@ type tfModel struct {
 
 	TimeWindow []tfTimeWindow `tfsdk:"time_window"`
 	Objective  []tfObjective  `tfsdk:"objective"`
-	Settings   types.Object   `tfsdk:"settings"`
+	Settings   *tfSettings    `tfsdk:"settings"`
 
 	GroupBy types.List     `tfsdk:"group_by"`
 	Tags    []types.String `tfsdk:"tags"`
@@ -93,13 +87,8 @@ func (m tfModel) toAPIModel() (models.Slo, diag.Diagnostics) {
 	}
 
 	var settings *slo.Settings
-	if utils.IsKnown(m.Settings) {
-		settingsModel, settingsDiags := tfSettingsFromObject(m.Settings)
-		diags.Append(settingsDiags...)
-		if diags.HasError() {
-			return models.Slo{}, diags
-		}
-		settings = settingsModel.toAPIModel()
+	if m.Settings != nil {
+		settings = m.Settings.toAPIModel()
 	}
 
 	apiModel := models.Slo{
@@ -214,16 +203,13 @@ func (m *tfModel) populateFromAPI(apiModel *models.Slo) diag.Diagnostics {
 	m.Objective = []tfObjective{obj}
 
 	if apiModel.Settings != nil {
-		attrValues := map[string]attr.Value{
-			"sync_delay":               types.StringPointerValue(apiModel.Settings.SyncDelay),
-			"frequency":                types.StringPointerValue(apiModel.Settings.Frequency),
-			"prevent_initial_backfill": types.BoolPointerValue(apiModel.Settings.PreventInitialBackfill),
+		m.Settings = &tfSettings{
+			SyncDelay:              types.StringPointerValue(apiModel.Settings.SyncDelay),
+			Frequency:              types.StringPointerValue(apiModel.Settings.Frequency),
+			PreventInitialBackfill: types.BoolPointerValue(apiModel.Settings.PreventInitialBackfill),
 		}
-		settingsObj, objDiags := types.ObjectValue(tfSettingsAttrTypes, attrValues)
-		diags.Append(objDiags...)
-		m.Settings = settingsObj
 	} else {
-		m.Settings = types.ObjectNull(tfSettingsAttrTypes)
+		m.Settings = nil
 	}
 
 	if len(apiModel.GroupBy) > 0 {
@@ -274,36 +260,6 @@ func (m *tfModel) populateFromAPI(apiModel *models.Slo) diag.Diagnostics {
 	}
 
 	return diags
-}
-
-func tfSettingsFromObject(obj types.Object) (tfSettings, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	attrs := obj.Attributes()
-
-	syncDelayVal, ok := attrs["sync_delay"].(types.String)
-	if !ok {
-		diags.AddError("Invalid configuration", "settings.sync_delay is not a string")
-		return tfSettings{}, diags
-	}
-
-	frequencyVal, ok := attrs["frequency"].(types.String)
-	if !ok {
-		diags.AddError("Invalid configuration", "settings.frequency is not a string")
-		return tfSettings{}, diags
-	}
-
-	preventInitialBackfillVal, ok := attrs["prevent_initial_backfill"].(types.Bool)
-	if !ok {
-		diags.AddError("Invalid configuration", "settings.prevent_initial_backfill is not a bool")
-		return tfSettings{}, diags
-	}
-
-	return tfSettings{
-		SyncDelay:              syncDelayVal,
-		Frequency:              frequencyVal,
-		PreventInitialBackfill: preventInitialBackfillVal,
-	}, diags
 }
 
 func (s tfSettings) toAPIModel() *slo.Settings {

@@ -129,6 +129,6 @@ func migrateV1ToV2(ctx context.Context, req resource.UpgradeStateRequest, resp *
 	resp.Diagnostics.AddAttributeWarning(
 		path.Root("settings"),
 		"Upgraded legacy settings state",
-		"Upgraded legacy settings from a nested block to a single nested attribute.",
+		"Upgraded legacy settings state format from SDKv2 list to Plugin Framework object.",
 	)
 }
