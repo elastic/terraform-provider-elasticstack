@@ -197,7 +197,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 	return schema.NestedAttributeObject{
 		Attributes: map[string]schema.Attribute{
 			"type": schema.StringAttribute{
-				MarkdownDescription: "The type of the panel (e.g. 'visualization', 'search', 'map', 'lens').",
+				MarkdownDescription: "The type of the panel (e.g. 'DASHBOARD_MARKDOWN', 'lens').",
 				Required:            true,
 			},
 			"grid": schema.SingleNestedAttribute{

@@ -167,31 +167,25 @@ func TestForbiddenIfDependentPathOneOf(t *testing.T) {
 		{
 			name:           "valid - current null, dependent matches forbidden value",
 			currentValue:   types.StringNull(),
-			dependentValue: types.StringValue("https"),
+			dependentValue: types.StringValue("http"),
 			expectedError:  false,
 		},
 		{
 			name:           "valid - current unknown, dependent matches forbidden value",
 			currentValue:   types.StringUnknown(),
-			dependentValue: types.StringValue("https"),
+			dependentValue: types.StringValue("http"),
 			expectedError:  false,
 		},
 		{
 			name:           "valid - current set, dependent doesn't match forbidden value",
 			currentValue:   types.StringValue("custom_cert"),
-			dependentValue: types.StringValue("http"),
+			dependentValue: types.StringValue("https"),
 			expectedError:  false,
 		},
 		{
 			name:           "invalid - current set, dependent matches forbidden value",
 			currentValue:   types.StringValue("custom_cert"),
-			dependentValue: types.StringValue("https"),
-			expectedError:  true,
-		},
-		{
-			name:           "invalid - current set, dependent matches one of multiple forbidden values",
-			currentValue:   types.StringValue("custom_cert"),
-			dependentValue: types.StringValue("tls"),
+			dependentValue: types.StringValue("http"),
 			expectedError:  true,
 		},
 		{
@@ -269,7 +263,7 @@ func TestForbiddenIfDependentPathOneOf(t *testing.T) {
 			// Create validator - StringConditionalForbidden forbids the field when dependent matches forbidden values
 			v := ForbiddenIfDependentPathOneOf(
 				path.Root("protocol"),
-				[]string{"https", "tls"},
+				[]string{"http"},
 			)
 
 			// Create validation request

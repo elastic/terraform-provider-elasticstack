@@ -39,46 +39,58 @@ func (v condition) MarkdownDescription(ctx context.Context) string {
 	return v.description()
 }
 
-// dependentFieldHasAllowedValue checks if the dependent field specified by the condition's
-// dependentPath or dependentPathExpression has a value that matches one of the allowed values
-// defined in the condition. It retrieves the dependent field's value from the provided
-// configuration context and compares it against the condition's allowedValues slice.
-//
-// The method returns three values:
-//   - bool: true if the dependent field has a non-null, non-unknown value that matches
-//     one of the allowed values; false otherwise
-//   - string: the string representation of the dependent field's current value
-//   - diag.Diagnostics: any diagnostics encountered while retrieving the field value
-//
-// If the dependent field is null, unknown, or its value doesn't match any of the
-// allowed values, the condition is considered not met and the method returns false.
-func (v condition) dependentFieldHasAllowedValue(ctx context.Context, config tfsdk.Config, currentPath path.Path) (bool, string, diag.Diagnostics) {
+// checkPathExpression evaluates a path expression and checks if any matched paths contain an allowed value.
+// It returns true if any matched path has a value matching one of the allowed values.
+func (v condition) checkPathExpression(ctx context.Context, config tfsdk.Config, currentPath path.Path) (bool, string, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	// Merge the path expression with the current path to resolve relative references
+	merged := currentPath.Expression().Merge(*v.dependentPathExpression)
+	matchedPaths, matchDiags := config.PathMatches(ctx, merged)
+	diags.Append(matchDiags...)
+	if diags.HasError() {
+		return false, "", diags
+	}
+
+	// Check all matched paths - validation passes if any one contains an allowed value
+	if len(matchedPaths) == 0 {
+		// No match found, condition not met
+		return false, "", nil
+	}
+
+	// Iterate through all matched paths
+	var lastDependentValueStr string
+	for _, matchedPath := range matchedPaths {
+		var pathValue types.String
+		getDiags := config.GetAttribute(ctx, matchedPath, &pathValue)
+		if getDiags.HasError() {
+			diags.Append(getDiags...)
+			continue
+		}
+
+		lastDependentValueStr = pathValue.ValueString()
+
+		// Check if this path's value matches any allowed value
+		if !pathValue.IsNull() && !pathValue.IsUnknown() {
+			for _, allowedValue := range v.allowedValues {
+				if lastDependentValueStr == allowedValue {
+					// Found a match, condition is met
+					return true, lastDependentValueStr, nil
+				}
+			}
+		}
+	}
+
+	// None of the matched paths had an allowed value
+	return false, lastDependentValueStr, diags
+}
+
+// checkStaticPath evaluates a static path and checks if it contains an allowed value.
+func (v condition) checkStaticPath(ctx context.Context, config tfsdk.Config) (bool, string, diag.Diagnostics) {
 	var dependentValue types.String
 	var diags diag.Diagnostics
 
-	// Determine which path to use
-	if v.dependentPathExpression != nil {
-		// Merge the path expression with the current path to resolve relative references
-		merged := currentPath.Expression().Merge(*v.dependentPathExpression)
-		matchedPaths, matchDiags := config.PathMatches(ctx, merged)
-		diags.Append(matchDiags...)
-		if diags.HasError() {
-			return false, "", diags
-		}
-
-		// For validation purposes, we expect exactly one match
-		if len(matchedPaths) == 0 {
-			// No match found, condition not met
-			return false, "", nil
-		}
-
-		// Use the first matched path
-		diags.Append(config.GetAttribute(ctx, matchedPaths[0], &dependentValue)...)
-	} else {
-		// Use static path
-		diags.Append(config.GetAttribute(ctx, *v.dependentPath, &dependentValue)...)
-	}
-
+	diags.Append(config.GetAttribute(ctx, *v.dependentPath, &dependentValue)...)
 	if diags.HasError() {
 		return false, "", diags
 	}
@@ -96,6 +108,26 @@ func (v condition) dependentFieldHasAllowedValue(ctx context.Context, config tfs
 	}
 
 	return dependentFieldHasAllowedValue, dependentValueStr, nil
+}
+
+// dependentFieldHasAllowedValue checks if the dependent field specified by the condition's
+// dependentPath or dependentPathExpression has a value that matches one of the allowed values
+// defined in the condition. It retrieves the dependent field's value from the provided
+// configuration context and compares it against the condition's allowedValues slice.
+//
+// The method returns three values:
+//   - bool: true if the dependent field has a non-null, non-unknown value that matches
+//     one of the allowed values; false otherwise
+//   - string: the string representation of the dependent field's current value
+//   - diag.Diagnostics: any diagnostics encountered while retrieving the field value
+//
+// If the dependent field is null, unknown, or its value doesn't match any of the
+// allowed values, the condition is considered not met and the method returns false.
+func (v condition) dependentFieldHasAllowedValue(ctx context.Context, config tfsdk.Config, currentPath path.Path) (bool, string, diag.Diagnostics) {
+	if v.dependentPathExpression != nil {
+		return v.checkPathExpression(ctx, config, currentPath)
+	}
+	return v.checkStaticPath(ctx, config)
 }
 
 func (v condition) validate(ctx context.Context, config tfsdk.Config, val attr.Value, p path.Path) diag.Diagnostics {
