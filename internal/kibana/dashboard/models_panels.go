@@ -27,6 +27,18 @@ type panelGridModel struct {
 	H types.Int64 `tfsdk:"h"`
 }
 
+type sectionModel struct {
+	Title     types.String     `tfsdk:"title"`
+	ID        types.String     `tfsdk:"id"`
+	Collapsed types.Bool       `tfsdk:"collapsed"`
+	Grid      sectionGridModel `tfsdk:"grid"`
+	Panels    []panelModel     `tfsdk:"panels"`
+}
+
+type sectionGridModel struct {
+	Y types.Int64 `tfsdk:"y"`
+}
+
 type panelConfigConverter interface {
 	handlesAPIPanelConfig(string, kbapi.DashboardPanelItem_Config) bool
 	handlesTFPanelConfig(pm panelModel) bool

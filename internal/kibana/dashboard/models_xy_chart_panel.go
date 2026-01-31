@@ -792,18 +792,6 @@ func (m *searchFilterModel) toAPI() (kbapi.SearchFilterSchema, diag.Diagnostics)
 	return result, diags
 }
 
-type sectionModel struct {
-	Title     types.String     `tfsdk:"title"`
-	ID        types.String     `tfsdk:"id"`
-	Collapsed types.Bool       `tfsdk:"collapsed"`
-	Grid      sectionGridModel `tfsdk:"grid"`
-	Panels    []panelModel     `tfsdk:"panels"`
-}
-
-type sectionGridModel struct {
-	Y types.Int64 `tfsdk:"y"`
-}
-
 // toAPI converts the XY chart config model to API schema
 func (m *xyChartConfigModel) toAPI() (kbapi.XyChartSchema, diag.Diagnostics) {
 	var diags diag.Diagnostics
