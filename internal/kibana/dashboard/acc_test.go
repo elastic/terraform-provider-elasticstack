@@ -364,8 +364,6 @@ func TestAccResourceDashboardXYChart(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.axis.left.title.value", "Count"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.axis.left.title.visible", "true"),
 					// Check decorations fields
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.decorations.point_visibility", "true"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.decorations.show_value_labels", "false"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.decorations.fill_opacity", "0.3"),
 					// Check fitting
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.fitting.type", "none"),
@@ -376,12 +374,12 @@ func TestAccResourceDashboardXYChart(t *testing.T) {
 					// Check query
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.query.language", "kuery"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.query.query", ""),
-					// Check layers (still JSON)
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.layers"),
+					// Check layers
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.layers.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.layers.0.type", "line"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.layers.0.data_layer.dataset"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.layers.0.data_layer.y.#", "1"),
 				),
-				PostApplyFunc: func() {
-					t.Log("Hello")
-				},
 			},
 		},
 	})

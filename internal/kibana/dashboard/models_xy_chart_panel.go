@@ -111,7 +111,7 @@ type xyChartConfigModel struct {
 	Axis        *xyAxisModel         `tfsdk:"axis"`
 	Decorations *xyDecorationsModel  `tfsdk:"decorations"`
 	Fitting     *xyFittingModel      `tfsdk:"fitting"`
-	Layers      jsontypes.Normalized `tfsdk:"layers"`
+	Layers      []xyLayerModel       `tfsdk:"layers"`
 	Legend      *xyLegendModel       `tfsdk:"legend"`
 	Query       *filterSimpleModel   `tfsdk:"query"`
 	Filters     []searchFilterModel  `tfsdk:"filters"`
@@ -837,9 +837,19 @@ func (m *xyChartConfigModel) toAPI() (kbapi.XyChartSchema, diag.Diagnostics) {
 		xyChart.Fitting = m.Fitting.toAPI()
 	}
 
-	// Convert layers (still JSON)
-	if utils.IsKnown(m.Layers) {
-		diags.Append(m.Layers.Unmarshal(&xyChart.Layers)...)
+	// Convert layers
+	if len(m.Layers) > 0 {
+		layers := make([]kbapi.XyChartSchema_Layers_Item, 0, len(m.Layers))
+		for _, layer := range m.Layers {
+			apiLayer, layerDiags := layer.toAPI()
+			diags.Append(layerDiags...)
+			if !layerDiags.HasError() {
+				layers = append(layers, apiLayer)
+			}
+		}
+		if len(layers) > 0 {
+			xyChart.Layers = layers
+		}
 	}
 
 	// Convert legend
@@ -881,16 +891,17 @@ func (m *xyChartConfigModel) fromAPI(ctx context.Context, apiChart kbapi.XyChart
 	m.Title = types.StringPointerValue(apiChart.Title)
 	m.Description = types.StringPointerValue(apiChart.Description)
 
-	// Convert layers to JSON
+	// Convert layers
 	if len(apiChart.Layers) > 0 {
-		layersBytes, err := json.Marshal(apiChart.Layers)
-		if err != nil {
-			diags.AddError("Failed to marshal layers", err.Error())
-		} else {
-			m.Layers = jsontypes.NewNormalizedValue(string(layersBytes))
+		m.Layers = make([]xyLayerModel, 0, len(apiChart.Layers))
+		for _, apiLayer := range apiChart.Layers {
+			layer := xyLayerModel{}
+			layerDiags := layer.fromAPI(apiLayer)
+			diags.Append(layerDiags...)
+			if !layerDiags.HasError() {
+				m.Layers = append(m.Layers, layer)
+			}
 		}
-	} else {
-		m.Layers = jsontypes.NewNormalizedNull()
 	}
 
 	// Convert axis

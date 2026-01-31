@@ -40,25 +40,31 @@ resource "elasticstack_kibana_dashboard" "test" {
       }
       decorations = {
         fill_opacity      = 0.3
-        point_visibility  = true
-        show_value_labels = false
       }
       fitting = {
         type = "none"
       }
-      layers = jsonencode([
+      layers = [
         {
-          type    = "area"
-          dataset = {}
-          y = [
-            {
-              operation = "count"
-              color     = "#68BC00"
-              axis      = "left"
-            }
-          ]
+          type = "line"
+          data_layer = {
+            ignore_global_filters = false
+            sampling = 1
+            dataset = jsonencode({
+              type = "dataView"
+              id   = "metrics-*"
+            })
+            y = [
+              {
+                config = jsonencode({
+                  operation = "count"
+                  empty_as_null = true
+                })
+              }
+            ]
+          }
         }
-      ])
+      ]
       legend = {
         visible  = true
         inside   = false

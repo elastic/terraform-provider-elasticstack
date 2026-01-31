@@ -284,10 +284,10 @@ func getPanelSchema() schema.NestedAttributeObject {
 						Required:            true,
 						Attributes:          getXYFittingSchema(),
 					},
-					"layers": schema.StringAttribute{
-						MarkdownDescription: "Chart layers configuration as JSON. Minimum 1 layer required.",
-						CustomType:          jsontypes.NormalizedType{},
-						Required:            true,
+				"layers": schema.ListNestedAttribute{
+					MarkdownDescription: "Chart layers configuration. Minimum 1 layer required. Each layer can be a data layer or reference line layer.",
+					Required:            true,
+					NestedObject:        getXYLayerSchema(),
 					},
 					"legend": schema.SingleNestedAttribute{
 						MarkdownDescription: "Legend configuration for the XY chart.",
@@ -579,6 +579,160 @@ func getSearchFilterSchema() schema.NestedAttributeObject {
 				Optional:            true,
 				Validators: []validator.String{
 					stringvalidator.OneOf("kuery", "lucene"),
+				},
+			},
+		},
+	}
+}
+
+// getXYLayerSchema returns the schema for XY chart layers
+func getXYLayerSchema() schema.NestedAttributeObject {
+	return schema.NestedAttributeObject{
+		Attributes: map[string]schema.Attribute{
+			"type": schema.StringAttribute{
+				MarkdownDescription: "The type of layer. Valid values: 'area', 'line', 'bar', 'horizontal_bar', 'reference_line' for NoESQL layers; 'area_chart', 'line_chart', 'bar_chart', 'horizontal_bar_chart', 'reference_line' for ESQL layers.",
+				Required:            true,
+			},
+			"data_layer": schema.SingleNestedAttribute{
+				MarkdownDescription: "Configuration for data layers (area, line, bar charts). Mutually exclusive with `reference_line_layer`.",
+				Optional:            true,
+				Attributes:          getDataLayerAttributes(),
+				Validators: []validator.Object{
+					objectvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("reference_line_layer")),
+				},
+			},
+			"reference_line_layer": schema.SingleNestedAttribute{
+				MarkdownDescription: "Configuration for reference line layers. Mutually exclusive with `data_layer`.",
+				Optional:            true,
+				Attributes:          getReferenceLineLayerAttributes(),
+				Validators: []validator.Object{
+					objectvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("data_layer")),
+				},
+			},
+		},
+	}
+}
+
+// getDataLayerAttributes returns attributes for data layers (standard and ES|QL)
+func getDataLayerAttributes() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"dataset": schema.StringAttribute{
+			MarkdownDescription: "Dataset configuration as JSON. For ES|QL layers, this specifies the ES|QL query. For standard layers, this specifies the data view and query.",
+			CustomType:          jsontypes.NormalizedType{},
+			Required:            true,
+		},
+		"ignore_global_filters": schema.BoolAttribute{
+			MarkdownDescription: "If true, ignore global filters when fetching data for this layer. Default is false.",
+			Optional:            true,
+		},
+		"sampling": schema.Float64Attribute{
+			MarkdownDescription: "Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.",
+			Optional:            true,
+		},
+		"x": schema.StringAttribute{
+			MarkdownDescription: "X-axis configuration as JSON. For ES|QL: column and operation. For standard: field, operation, and optional parameters.",
+			CustomType:          jsontypes.NormalizedType{},
+			Optional:            true,
+		},
+		"y": schema.ListNestedAttribute{
+			MarkdownDescription: "Array of Y-axis metrics. Each entry defines a metric to display on the Y-axis.",
+			Required:            true,
+			NestedObject: schema.NestedAttributeObject{
+				Attributes: map[string]schema.Attribute{
+					"config": schema.StringAttribute{
+						MarkdownDescription: "Y-axis metric configuration as JSON. For ES|QL: axis, color, column, and operation. For standard: axis, color, and metric definition.",
+						CustomType:          jsontypes.NormalizedType{},
+						Required:            true,
+					},
+				},
+			},
+		},
+		"breakdown_by": schema.StringAttribute{
+			MarkdownDescription: "Split series configuration as JSON. For ES|QL: column and operation. For standard: field, operation, and optional parameters.",
+			CustomType:          jsontypes.NormalizedType{},
+			Optional:            true,
+		},
+	}
+}
+
+// getReferenceLineLayerAttributes returns attributes for reference line layers
+func getReferenceLineLayerAttributes() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"dataset": schema.StringAttribute{
+			MarkdownDescription: "Dataset configuration as JSON. For ES|QL layers, this specifies the ES|QL query. For standard layers, this specifies the data view and query.",
+			CustomType:          jsontypes.NormalizedType{},
+			Required:            true,
+		},
+		"ignore_global_filters": schema.BoolAttribute{
+			MarkdownDescription: "If true, ignore global filters when fetching data for this layer. Default is false.",
+			Optional:            true,
+		},
+		"sampling": schema.Float64Attribute{
+			MarkdownDescription: "Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.",
+			Optional:            true,
+		},
+		"thresholds": schema.ListNestedAttribute{
+			MarkdownDescription: "Array of reference line thresholds.",
+			Required:            true,
+			NestedObject: schema.NestedAttributeObject{
+				Attributes: map[string]schema.Attribute{
+					"axis": schema.StringAttribute{
+						MarkdownDescription: "Which axis the reference line applies to. Valid values: 'left', 'right'.",
+						Optional:            true,
+						Validators: []validator.String{
+							stringvalidator.OneOf("left", "right"),
+						},
+					},
+					"color": schema.StringAttribute{
+						MarkdownDescription: "Color for the reference line. Can be a static color string or dynamic color configuration as JSON.",
+						CustomType:          jsontypes.NormalizedType{},
+						Required:            true,
+					},
+					"column": schema.StringAttribute{
+						MarkdownDescription: "Column to use (for ES|QL layers).",
+						Optional:            true,
+					},
+					"value": schema.StringAttribute{
+						MarkdownDescription: "Metric configuration as JSON (for standard layers). Defines the calculation for the threshold value.",
+						CustomType:          jsontypes.NormalizedType{},
+						Optional:            true,
+					},
+					"fill": schema.StringAttribute{
+						MarkdownDescription: "Fill direction for reference line. Valid values: 'none', 'above', 'below'.",
+						Optional:            true,
+						Validators: []validator.String{
+							stringvalidator.OneOf("none", "above", "below"),
+						},
+					},
+					"icon": schema.StringAttribute{
+						MarkdownDescription: "Icon to display on the reference line. Valid values: 'asterisk', 'bell', 'bolt', 'bug', 'circle', 'dot', 'empty', 'flag', 'heart', 'partial', 'square', 'star', 'tag', 'triangle'.",
+						Optional:            true,
+						Validators: []validator.String{
+							stringvalidator.OneOf("asterisk", "bell", "bolt", "bug", "circle", "dot", "empty", "flag", "heart", "partial", "square", "star", "tag", "triangle"),
+						},
+					},
+					"operation": schema.StringAttribute{
+						MarkdownDescription: "Operation to apply (for ES|QL: aggregation function; for standard: metric calculation type).",
+						Optional:            true,
+					},
+					"stroke_dash": schema.StringAttribute{
+						MarkdownDescription: "Line style. Valid values: 'solid', 'dashed', 'dotted'.",
+						Optional:            true,
+						Validators: []validator.String{
+							stringvalidator.OneOf("solid", "dashed", "dotted"),
+						},
+					},
+					"stroke_width": schema.Float64Attribute{
+						MarkdownDescription: "Line width in pixels.",
+						Optional:            true,
+					},
+					"text": schema.StringAttribute{
+						MarkdownDescription: "Text display option for the reference line. Valid values: 'auto', 'name'.",
+						Optional:            true,
+						Validators: []validator.String{
+							stringvalidator.OneOf("auto", "name"),
+						},
+					},
 				},
 			},
 		},

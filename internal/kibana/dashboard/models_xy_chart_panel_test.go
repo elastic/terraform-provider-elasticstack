@@ -862,7 +862,19 @@ func Test_xyChartConfigModel_toAPI_fromAPI(t *testing.T) {
 					Type:   types.StringValue("linear"),
 					Dotted: types.BoolValue(true),
 				},
-				Layers: jsontypes.NewNormalizedValue(`[{"type":"layer1"}]`),
+				Layers: []xyLayerModel{
+					{
+						Type: types.StringValue("area"),
+						DataLayer: &dataLayerModel{
+							Dataset: jsontypes.NewNormalizedValue(`{"type":"dataView","id":"logs-*"}`),
+							Y: []yMetricModel{
+								{
+									Config: jsontypes.NewNormalizedValue(`{"operation":"count","color":"#68BC00","axis":"left"}`),
+								},
+							},
+						},
+					},
+				},
 				Legend: &xyLegendModel{
 					Inside:  types.BoolValue(false),
 					Visible: types.BoolValue(true),
