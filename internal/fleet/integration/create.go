@@ -8,7 +8,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -77,13 +76,9 @@ func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state 
 		}
 	}
 
-	// If space_ids is set, use space-aware installation
-	if !planModel.SpaceIds.IsNull() && !planModel.SpaceIds.IsUnknown() {
-		var tempDiags diag.Diagnostics
-		spaceIDs := utils.SetTypeAs[types.String](ctx, planModel.SpaceIds, path.Root("space_ids"), &tempDiags)
-		if !tempDiags.HasError() && len(spaceIDs) > 0 {
-			installOptions.SpaceID = spaceIDs[0].ValueString()
-		}
+	// If space_id is set, use space-aware installation
+	if utils.IsKnown(planModel.SpaceID) {
+		installOptions.SpaceID = planModel.SpaceID.ValueString()
 	}
 
 	diags = fleet.InstallPackage(ctx, client, name, version, installOptions)
@@ -94,10 +89,10 @@ func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state 
 
 	planModel.ID = types.StringValue(getPackageID(name, version))
 
-	// Populate space_ids in state
-	// If space_ids is unknown (not provided by user), set to null to satisfy Terraform's requirement
-	if planModel.SpaceIds.IsNull() || planModel.SpaceIds.IsUnknown() {
-		planModel.SpaceIds = types.SetNull(types.StringType)
+	// Populate space_id in state
+	// If space_id is unknown (not provided by user), set to null to satisfy Terraform's requirement
+	if planModel.SpaceID.IsUnknown() {
+		planModel.SpaceID = types.StringNull()
 	}
 
 	diags = state.Set(ctx, planModel)

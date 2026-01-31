@@ -21,41 +21,41 @@ resource "elasticstack_kibana_dashboard" "test" {
       h = 10
     }
     config_json = jsonencode({
-      "attributes":{
-        "title":"",
-        "type":"metric",
-        "dataset":{
-          "type":"dataView",
-          "id":"logs-*"
+      "attributes" : {
+        "title" : "",
+        "type" : "metric",
+        "dataset" : {
+          "type" : "dataView",
+          "id" : "logs-*"
         },
-        "sampling":1,
-        "ignore_global_filters":false,
-        "metric":{
-          "operation":"count",
-          "empty_as_null":true,
-          "fit":false,
-          "alignments":{
-              "labels": "left"
+        "sampling" : 1,
+        "ignore_global_filters" : false,
+        "metric" : {
+          "operation" : "count",
+          "empty_as_null" : true,
+          "fit" : false,
+          "alignments" : {
+            "labels" : "left"
           },
         },
-        "query":{
-          "query":"",
-          "language":"kuery"
+        "query" : {
+          "query" : "",
+          "language" : "kuery"
         }
       },
-      "enhancements":{
-        "dynamicActions":{
-          "events":[]
+      "enhancements" : {
+        "dynamicActions" : {
+          "events" : []
         }
       },
-      "filters":[],
-      "query":{
-        "language":"kuery",
-        "query":""
+      "filters" : [],
+      "query" : {
+        "language" : "kuery",
+        "query" : ""
       },
-      "syncColors":false,
-      "syncCursor":true,
-      "syncTooltips":false
+      "syncColors" : false,
+      "syncCursor" : true,
+      "syncTooltips" : false
     })
   }]
 }

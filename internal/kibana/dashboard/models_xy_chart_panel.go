@@ -106,15 +106,15 @@ func (c xyChartPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *kba
 }
 
 type xyChartConfigModel struct {
-	Title       types.String         `tfsdk:"title"`
-	Description types.String         `tfsdk:"description"`
-	Axis        *xyAxisModel         `tfsdk:"axis"`
-	Decorations *xyDecorationsModel  `tfsdk:"decorations"`
-	Fitting     *xyFittingModel      `tfsdk:"fitting"`
-	Layers      []xyLayerModel       `tfsdk:"layers"`
-	Legend      *xyLegendModel       `tfsdk:"legend"`
-	Query       *filterSimpleModel   `tfsdk:"query"`
-	Filters     []searchFilterModel  `tfsdk:"filters"`
+	Title       types.String        `tfsdk:"title"`
+	Description types.String        `tfsdk:"description"`
+	Axis        *xyAxisModel        `tfsdk:"axis"`
+	Decorations *xyDecorationsModel `tfsdk:"decorations"`
+	Fitting     *xyFittingModel     `tfsdk:"fitting"`
+	Layers      []xyLayerModel      `tfsdk:"layers"`
+	Legend      *xyLegendModel      `tfsdk:"legend"`
+	Query       *filterSimpleModel  `tfsdk:"query"`
+	Filters     []searchFilterModel `tfsdk:"filters"`
 }
 
 type xyAxisModel struct {

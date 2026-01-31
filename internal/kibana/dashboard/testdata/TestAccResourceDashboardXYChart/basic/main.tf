@@ -39,7 +39,7 @@ resource "elasticstack_kibana_dashboard" "test" {
         }
       }
       decorations = {
-        fill_opacity      = 0.3
+        fill_opacity = 0.3
       }
       fitting = {
         type = "none"
@@ -49,7 +49,7 @@ resource "elasticstack_kibana_dashboard" "test" {
           type = "line"
           data_layer = {
             ignore_global_filters = false
-            sampling = 1
+            sampling              = 1
             dataset = jsonencode({
               type = "dataView"
               id   = "metrics-*"
@@ -57,7 +57,7 @@ resource "elasticstack_kibana_dashboard" "test" {
             y = [
               {
                 config = jsonencode({
-                  operation = "count"
+                  operation     = "count"
                   empty_as_null = true
                 })
               }
