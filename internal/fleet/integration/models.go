@@ -15,7 +15,7 @@ type integrationModel struct {
 	SkipDataStreamRollover    types.Bool   `tfsdk:"skip_data_stream_rollover"`
 	IgnoreConstraints         types.Bool   `tfsdk:"ignore_constraints"`
 	SkipDestroy               types.Bool   `tfsdk:"skip_destroy"`
-	SpaceIds                  types.Set    `tfsdk:"space_ids"` //> string
+	SpaceID                   types.String `tfsdk:"space_id"`
 }
 
 func getPackageID(name string, version string) string {

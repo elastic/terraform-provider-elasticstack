@@ -2,6 +2,62 @@
 
 ### Breaking changes
 
+#### `elasticstack_fleet_integration` `space_ids` attribute has been reduced to a single `space_id`
+
+The provider was only considering the first entry in the `space_ids` set ([#1642](https://github.com/elastic/terraform-provider-elasticstack/issues/1642)). Extending the resource to correctly handle multiple spaces would not make sense as a single Terraform resource. Instead this attribute is being reduced to a single string, with practitioners able to manage the installation of an integration across multiple spaces through multiple instances of this resource. 
+
+Existing usage of the `space_ids` attribute must be migrated to `space_id`: 
+
+```hcl
+resource "elasticstack_fleet_integration" "tcp" {
+  name = "tcp"
+  version = "1.16.0"
+  space_ids = ["default", "o11y"]
+}
+```
+
+becomes:
+
+```hcl
+resource "elasticstack_fleet_integration" "tcp-default" {
+  name = "tcp"
+  version = "1.16.0"
+  space_id = "default"
+}
+
+resource "elasticstack_fleet_integration" "tcp-o11y" {
+  name = "tcp"
+  version = "1.16.0"
+  space_id = "o11y"
+}
+```
+
+#### `elasticstack_kibana_slo` `settings` block has change to a an attribute. 
+
+As part of migrating this resource to the Terraform plugin framework, the `settings` block has been moved to an attribute. Existing usage of this argument will need to be updated to use an attribute style syntax, for example:
+
+```hcl
+resource "elasticstack_kibana_slo" "test_slo" {
+  ...
+  settings {
+    sync_delay = "5m"
+    frequency  = "5m"
+  }
+}
+```
+
+becomes 
+
+```
+resource "elasticstack_kibana_slo" "test_slo" {
+  ...
+  settings = {  ## Note the addition of the = here. 
+    sync_delay = "5m"
+    frequency  = "5m"
+  }
+}
+```
+
 #### `elasticstack_fleet_integration_policy` input block has changed to a map attribute. 
 
 The `input` block in the `elasticstack_fleet_integration_policy` resource has been restructured into the `inputs` map attribute. 
@@ -67,6 +123,8 @@ inputs = {
 ### Changes
 
 - Add import support for `elasticstack_elasticsearch_script` resource ([#1637](https://github.com/elastic/terraform-provider-elasticstack/pull/1637))
+- Migrate `elasticstack_kibana_slo` resource to the Terraform plugin framework ([#1647](https://github.com/elastic/terraform-provider-elasticstack/pull/1647))
+- Prevent a provider error with `elasticstack_fleet_integration_policy` when moving between a single `policy_id` and multiple `policy_ids` ([#1644](https://github.com/elastic/terraform-provider-elasticstack/pull/1644)) 
 - Fix concurrent map write errors with `elasticstack_fleet_integration_policy` ([#1629](https://github.com/elastic/terraform-provider-elasticstack/pull/1629))
 - Add support for Fleet API installation parameters to `elasticstack_fleet_integration` resource: `prerelease`, `ignore_mapping_update_errors` (8.11.0+), `skip_data_stream_rollover` (8.11.0+), and `ignore_constraints`. These parameters provide full control over package installation behavior and enable installation of prerelease (beta, non-GA) packages.
 - Correctly handle 404 responses when reading `elasticstack_fleet_integration` resources ([#1608](https://github.com/elastic/terraform-provider-elasticstack/pull/1608))
@@ -84,7 +142,8 @@ inputs = {
 - Only require input parameters in `elasticstack_fleet_integration_policy` to be specified if they differ from integration defaults ([#1558](https://github.com/elastic/terraform-provider-elasticstack/pull/1558))
 - Only require vars in `elasticstack_fleet_integration_policy` to be specified if they differ from integration defaults ([#1593](https://github.com/elastic/terraform-provider-elasticstack/pull/1593))
 - Allow space restricted roles to manage `elasticstack_fleet_agent_policy` resources. ([#1597](https://github.com/elastic/terraform-provider-elasticstack/pull/1597))
-
+- Fix missing timeslice's metric-scoped `filter` parameter for doc_count aggregations ([#1636](https://github.com/elastic/terraform-provider-elasticstack/pull/1636))
+- Collapse `space_ids` to a single `space_id` in `elasticstack_fleet_integration` ([#1645](https://github.com/elastic/terraform-provider-elasticstack/pull/1645))
 
 ## [0.13.1] - 2025-12-12
 

@@ -62,7 +62,6 @@ func (model *integrationPolicyModel) populateFromAPI(ctx context.Context, pkg *k
 
 	// Only populate the agent policy field that was originally configured
 	// to avoid Terraform detecting inconsistent state
-
 	originallyUsedAgentPolicyID := utils.IsKnown(model.AgentPolicyID)
 	originallyUsedAgentPolicyIDs := utils.IsKnown(model.AgentPolicyIDs)
 
