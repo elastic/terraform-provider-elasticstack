@@ -254,3 +254,78 @@ func TestStringMatchesIntervalFrequencyRegex(t *testing.T) {
 		})
 	}
 }
+
+func TestStringIsHours(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		hours   string
+		matched bool
+	}{
+		{
+			name:    "valid hours (00:00)",
+			hours:   "00:00",
+			matched: true,
+		},
+		{
+			name:    "valid hours (09:00)",
+			hours:   "09:00",
+			matched: true,
+		},
+		{
+			name:    "valid hours (9:00)",
+			hours:   "9:00",
+			matched: true,
+		},
+		{
+			name:    "valid hours (12:30)",
+			hours:   "12:30",
+			matched: true,
+		},
+		{
+			name:    "valid hours (23:59)",
+			hours:   "23:59",
+			matched: true,
+		},
+		{
+			name:    "invalid hours (24:00)",
+			hours:   "24:00",
+			matched: false,
+		},
+		{
+			name:    "invalid hours (12:60)",
+			hours:   "12:60",
+			matched: false,
+		},
+		{
+			name:    "invalid hours (25:00)",
+			hours:   "25:00",
+			matched: false,
+		},
+		{
+			name:    "invalid hours format (1200)",
+			hours:   "1200",
+			matched: false,
+		},
+		{
+			name:    "invalid hours format (12-00)",
+			hours:   "12-00",
+			matched: false,
+		},
+		{
+			name:    "invalid hours format (abc)",
+			hours:   "abc",
+			matched: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			matched := hoursPattern.MatchString(tt.hours)
+			if matched != tt.matched {
+				t.Errorf("hoursPattern.MatchString(%q) = %v, want %v", tt.hours, matched, tt.matched)
+			}
+		})
+	}
+}

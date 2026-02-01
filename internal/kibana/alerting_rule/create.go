@@ -36,8 +36,8 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 	if !utils.IsKnown(plan.NotifyWhen) || plan.NotifyWhen.ValueString() == "" {
 		if serverVersion.LessThan(frequencyMinSupportedVersion) {
 			response.Diagnostics.AddError(
-				"notify_when is required until v8.6",
-				"notify_when is required until v8.6",
+				"Missing required attribute",
+				"The 'notify_when' attribute is required for Kibana versions prior to 8.6.0.",
 			)
 			return
 		}
@@ -47,8 +47,8 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 	if utils.IsKnown(plan.AlertDelay) && !plan.AlertDelay.IsNull() {
 		if serverVersion.LessThan(alertDelayMinSupportedVersion) {
 			response.Diagnostics.AddError(
-				"alert_delay is only supported for Elasticsearch v8.13 or higher",
-				"alert_delay is only supported for Elasticsearch v8.13 or higher",
+				"Unsupported attribute",
+				"The 'alert_delay' attribute is only supported for Kibana v8.13.0 or higher.",
 			)
 			return
 		}
@@ -61,23 +61,22 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 	}
 
 	// Version check for actions features
-	for i, action := range rule.Actions {
+	for _, action := range rule.Actions {
 		if action.Frequency != nil && serverVersion.LessThan(frequencyMinSupportedVersion) {
 			response.Diagnostics.AddError(
-				"actions.frequency is only supported for Elasticsearch v8.6 or higher",
-				"actions.frequency is only supported for Elasticsearch v8.6 or higher",
+				"Unsupported attribute",
+				"The 'actions.frequency' block is only supported for Kibana v8.6.0 or higher.",
 			)
 			return
 		}
 
 		if action.AlertsFilter != nil && serverVersion.LessThan(alertsFilterMinSupportedVersion) {
 			response.Diagnostics.AddError(
-				"actions.alerts_filter is only supported for Elasticsearch v8.9 or higher",
-				"actions.alerts_filter is only supported for Elasticsearch v8.9 or higher",
+				"Unsupported attribute",
+				"The 'actions.alerts_filter' block is only supported for Kibana v8.9.0 or higher.",
 			)
 			return
 		}
-		_ = i // Avoid unused variable warning
 	}
 
 	res, sdkDiags := kibana.CreateAlertingRule(ctx, client, rule)

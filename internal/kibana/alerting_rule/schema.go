@@ -7,6 +7,8 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/validators"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -88,6 +90,9 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 											Description: "Defines the days of the week that the action can run, represented as an array of numbers. For example, 1 represents Monday. An empty array is equivalent to specifying all the days of the week.",
 											Optional:    true,
 											ElementType: types.Int64Type,
+											Validators: []validator.List{
+												listvalidator.ValueInt64sAre(int64validator.Between(1, 7)),
+											},
 										},
 										"timezone": schema.StringAttribute{
 											Description: "The ISO time zone for the hours values. Values such as UTC and UTC+1 also work but lack built-in daylight savings time support and are not recommended.",
@@ -96,10 +101,16 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 										"hours_start": schema.StringAttribute{
 											Description: "Defines the range of time in a day that the action can run. The start of the time frame in 24-hour notation (hh:mm).",
 											Optional:    true,
+											Validators: []validator.String{
+												validators.StringIsHours{},
+											},
 										},
 										"hours_end": schema.StringAttribute{
 											Description: "Defines the range of time in a day that the action can run. The end of the time frame in 24-hour notation (hh:mm).",
 											Optional:    true,
+											Validators: []validator.String{
+												validators.StringIsHours{},
+											},
 										},
 									},
 								},
