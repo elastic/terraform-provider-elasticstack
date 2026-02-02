@@ -1,0 +1,73 @@
+package dashboard
+
+import (
+	"encoding/json"
+
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+)
+
+type searchFilterModel struct {
+	Query    types.String         `tfsdk:"query"`
+	Meta     jsontypes.Normalized `tfsdk:"meta"`
+	Language types.String         `tfsdk:"language"`
+}
+
+func (m *searchFilterModel) fromAPI(apiFilter kbapi.SearchFilterSchema) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	// Try to extract from SearchFilterSchema0
+	filterSchema, err := apiFilter.AsSearchFilterSchema0()
+	if err != nil {
+		diags.AddError("Failed to extract search filter", err.Error())
+		return diags
+	}
+
+	// Extract string from union type
+	queryStr, queryErr := filterSchema.Query.AsSearchFilterSchema0Query0()
+	if queryErr != nil {
+		diags.AddError("Failed to extract search filter query", queryErr.Error())
+		return diags
+	}
+
+	m.Query = types.StringValue(queryStr)
+	m.Language = typeutils.StringishPointerValue(filterSchema.Language)
+
+	if filterSchema.Meta != nil {
+		metaJSON, err := json.Marshal(filterSchema.Meta)
+		if err == nil {
+			m.Meta = jsontypes.NewNormalizedValue(string(metaJSON))
+		}
+	}
+
+	return diags
+}
+
+func (m *searchFilterModel) toAPI() (kbapi.SearchFilterSchema, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	filter := kbapi.SearchFilterSchema0{}
+	if utils.IsKnown(m.Query) {
+		query := m.Query.ValueString()
+		var queryUnion kbapi.SearchFilterSchema_0_Query
+		if err := queryUnion.FromSearchFilterSchema0Query0(query); err != nil {
+			diags.AddError("Failed to create search filter query", err.Error())
+			return kbapi.SearchFilterSchema{}, diags
+		}
+		filter.Query = queryUnion
+	}
+	if utils.IsKnown(m.Language) {
+		lang := kbapi.SearchFilterSchema0Language(m.Language.ValueString())
+		filter.Language = &lang
+	}
+
+	var result kbapi.SearchFilterSchema
+	if err := result.FromSearchFilterSchema0(filter); err != nil {
+		diags.AddError("Failed to create search filter", err.Error())
+	}
+	return result, diags
+}
