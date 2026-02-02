@@ -1,8 +1,15 @@
 package validators
 
 import (
+	"context"
+	"fmt"
 	"reflect"
 	"testing"
+
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/stretchr/testify/require"
 )
 
 func TestStringMatchesAlertingDuration(t *testing.T) {
@@ -339,61 +346,90 @@ func TestInt64Between(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name    string
-		value   int64
-		min     int64
-		max     int64
-		isValid bool
+		name        string
+		value       types.Int64
+		min         int64
+		max         int64
+		expectError bool
 	}{
 		{
-			name:    "valid value at min boundary",
-			value:   1,
-			min:     1,
-			max:     7,
-			isValid: true,
+			name:        "null value should not validate",
+			value:       types.Int64Null(),
+			min:         1,
+			max:         7,
+			expectError: false,
 		},
 		{
-			name:    "valid value at max boundary",
-			value:   7,
-			min:     1,
-			max:     7,
-			isValid: true,
+			name:        "unknown value should not validate",
+			value:       types.Int64Unknown(),
+			min:         1,
+			max:         7,
+			expectError: false,
 		},
 		{
-			name:    "valid value in middle",
-			value:   4,
-			min:     1,
-			max:     7,
-			isValid: true,
+			name:        "valid value at min boundary",
+			value:       types.Int64Value(1),
+			min:         1,
+			max:         7,
+			expectError: false,
 		},
 		{
-			name:    "invalid value below min",
-			value:   0,
-			min:     1,
-			max:     7,
-			isValid: false,
+			name:        "valid value at max boundary",
+			value:       types.Int64Value(7),
+			min:         1,
+			max:         7,
+			expectError: false,
 		},
 		{
-			name:    "invalid value above max",
-			value:   8,
-			min:     1,
-			max:     7,
-			isValid: false,
+			name:        "valid value in middle",
+			value:       types.Int64Value(4),
+			min:         1,
+			max:         7,
+			expectError: false,
 		},
 		{
-			name:    "invalid negative value",
-			value:   -1,
-			min:     1,
-			max:     7,
-			isValid: false,
+			name:        "invalid value below min",
+			value:       types.Int64Value(0),
+			min:         1,
+			max:         7,
+			expectError: true,
+		},
+		{
+			name:        "invalid value above max",
+			value:       types.Int64Value(8),
+			min:         1,
+			max:         7,
+			expectError: true,
+		},
+		{
+			name:        "invalid negative value",
+			value:       types.Int64Value(-1),
+			min:         1,
+			max:         7,
+			expectError: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			isValid := tt.value >= tt.min && tt.value <= tt.max
-			if !reflect.DeepEqual(isValid, tt.isValid) {
-				t.Errorf("Int64Between validation failed: value %d with min %d max %d, got valid = %v, want %v", tt.value, tt.min, tt.max, isValid, tt.isValid)
+			v := Int64Between{
+				Min: tt.min,
+				Max: tt.max,
+			}
+			req := validator.Int64Request{
+				Path:           path.Root("test"),
+				PathExpression: path.MatchRoot("test"),
+				ConfigValue:    tt.value,
+			}
+			resp := &validator.Int64Response{}
+
+			v.ValidateInt64(context.Background(), req, resp)
+
+			if tt.expectError {
+				require.True(t, resp.Diagnostics.HasError(), "Expected validation error but got none")
+				require.Contains(t, resp.Diagnostics.Errors()[0].Summary(), fmt.Sprintf("value must be between %d and %d", tt.min, tt.max))
+			} else {
+				require.False(t, resp.Diagnostics.HasError(), "Unexpected validation error: %v", resp.Diagnostics)
 			}
 		})
 	}
