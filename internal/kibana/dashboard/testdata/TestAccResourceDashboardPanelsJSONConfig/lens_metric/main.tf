@@ -21,81 +21,41 @@ resource "elasticstack_kibana_dashboard" "test" {
       h = 10
     }
     config_json = jsonencode({
+      "attributes" : {
+        "title" : "",
+        "type" : "metric",
+        "dataset" : {
+          "type" : "dataView",
+          "id" : "logs-*"
+        },
+        "sampling" : 1,
+        "ignore_global_filters" : false,
+        "metric" : {
+          "operation" : "count",
+          "empty_as_null" : true,
+          "fit" : false,
+          "alignments" : {
+            "labels" : "left"
+          },
+        },
+        "query" : {
+          "query" : "",
+          "language" : "kuery"
+        }
+      },
       "enhancements" : {
         "dynamicActions" : {
           "events" : []
         }
       },
-      "syncColors" : false,
-      "syncCursor" : true,
-      "syncTooltips" : false,
       "filters" : [],
       "query" : {
-        "query" : "",
-        "language" : "kuery"
+        "language" : "kuery",
+        "query" : ""
       },
-      "attributes" : {
-        "title" : "",
-        "visualizationType" : "lnsMetric",
-        "type" : "lens",
-        "references" : [
-          {
-            "type" : "index-pattern",
-            "id" : "logs-*",
-            "name" : "indexpattern-datasource-layer-b6744a6e-8ae5-4242-a867-67fe650a49fd"
-          }
-        ],
-        "state" : {
-          "visualization" : {
-            "layerId" : "b6744a6e-8ae5-4242-a867-67fe650a49fd",
-            "layerType" : "data",
-            "metricAccessor" : "d436609a-d400-473e-aa00-63235b265de1",
-            "secondaryTrend" : {
-              "type" : "none"
-            },
-            "secondaryLabelPosition" : "before"
-          },
-          "query" : {
-            "query" : "",
-            "language" : "kuery"
-          },
-          "filters" : [],
-          "datasourceStates" : {
-            "formBased" : {
-              "layers" : {
-                "b6744a6e-8ae5-4242-a867-67fe650a49fd" : {
-                  "columns" : {
-                    "d436609a-d400-473e-aa00-63235b265de1" : {
-                      "label" : "Count of records",
-                      "dataType" : "number",
-                      "operationType" : "count",
-                      "isBucketed" : false,
-                      "sourceField" : "___records___",
-                      "params" : {
-                        "emptyAsNull" : true
-                      }
-                    }
-                  },
-                  "columnOrder" : [
-                    "d436609a-d400-473e-aa00-63235b265de1"
-                  ],
-                  "incompleteColumns" : {},
-                  "sampling" : 1
-                }
-              }
-            },
-            "indexpattern" : {
-              "layers" : {}
-            },
-            "textBased" : {
-              "layers" : {}
-            }
-          },
-          "internalReferences" : [],
-          "adHocDataViews" : {}
-        },
-        "version" : 1
-      }
+      "syncColors" : false,
+      "syncCursor" : true,
+      "syncTooltips" : false
     })
   }]
 }
