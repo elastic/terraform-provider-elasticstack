@@ -213,7 +213,7 @@ func (m *tfModel) populateFromAPI(apiModel *models.Slo) diag.Diagnostics {
 	}
 	m.Objective = []tfObjective{obj}
 
-	if apiModel.Settings != nil {
+	if utils.IsKnown(m.Settings) && apiModel.Settings != nil {
 		attrValues := map[string]attr.Value{
 			"sync_delay":               types.StringPointerValue(apiModel.Settings.SyncDelay),
 			"frequency":                types.StringPointerValue(apiModel.Settings.Frequency),

@@ -62,7 +62,7 @@ resource "elasticstack_kibana_slo" "test_slo" {
     timeslice_window = "5m"
   }
 
-  settings = {
+  settings {
     sync_delay               = "5m"
     frequency                = "5m"
     prevent_initial_backfill = true

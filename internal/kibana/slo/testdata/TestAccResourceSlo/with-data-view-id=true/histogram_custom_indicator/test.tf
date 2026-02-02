@@ -53,7 +53,7 @@ resource "elasticstack_kibana_slo" "test_slo" {
 
   space_id = "default"
 
-  settings = {
+  settings {
     sync_delay = "5m"
     frequency  = "5m"
   }
