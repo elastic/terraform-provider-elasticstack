@@ -175,55 +175,10 @@ func (m *dashboardModel) panelsToAPI() (*kbapi.DashboardPanels, diag.Diagnostics
 
 	// Process panels
 	for _, pm := range m.Panels {
-		panelItem := kbapi.DashboardPanelItem{
-			Type: pm.Type.ValueString(),
-			Grid: struct {
-				H *float32 `json:"h,omitempty"`
-				W *float32 `json:"w,omitempty"`
-				X float32  `json:"x"`
-				Y float32  `json:"y"`
-			}{
-				X: float32(pm.Grid.X.ValueInt64()),
-				Y: float32(pm.Grid.Y.ValueInt64()),
-			},
-		}
-
-		if utils.IsKnown(pm.Grid.W) {
-			w := float32(pm.Grid.W.ValueInt64())
-			panelItem.Grid.W = &w
-		}
-		if utils.IsKnown(pm.Grid.H) {
-			h := float32(pm.Grid.H.ValueInt64())
-			panelItem.Grid.H = &h
-		}
-
-		if utils.IsKnown(pm.ID) {
-			panelItem.Uid = utils.Pointer(pm.ID.ValueString())
-		}
-
-		var diags diag.Diagnostics
-		var panelConfigHandled bool
-		for _, converter := range panelConfigConverters {
-			if converter.handlesTFPanelConfig(pm) {
-				d := converter.mapPanelToAPI(pm, &panelItem.Config)
-				diags.Append(d...)
-				if diags.HasError() {
-					return nil, diags
-				}
-
-				panelConfigHandled = true
-				break
-			}
-		}
-
-		if !panelConfigHandled && utils.IsKnown(pm.ConfigJSON) {
-			var configMap map[string]interface{}
-			diags.Append(pm.ConfigJSON.Unmarshal(&configMap)...)
-			if !diags.HasError() {
-				if err := panelItem.Config.FromDashboardPanelItemConfig2(configMap); err != nil {
-					diags.AddError("Failed to marshal panel config JSON", err.Error())
-				}
-			}
+		panelItem, d := pm.toAPI()
+		diags.Append(d...)
+		if diags.HasError() {
+			return nil, diags
 		}
 
 		var item kbapi.DashboardPanels_Item
@@ -231,6 +186,7 @@ func (m *dashboardModel) panelsToAPI() (*kbapi.DashboardPanels, diag.Diagnostics
 		if err != nil {
 			diags.AddError("Failed to create dashboard panel item", err.Error())
 		}
+
 		apiPanels = append(apiPanels, item)
 	}
 
@@ -256,109 +212,13 @@ func (m *dashboardModel) panelsToAPI() (*kbapi.DashboardPanels, diag.Diagnostics
 			innerPanels := make([]kbapi.DashboardPanelItem, 0, len(sm.Panels))
 
 			for _, pm := range sm.Panels {
-				p := struct {
-					Config kbapi.DashboardPanelItem_Config `json:"config"`
-					Grid   struct {
-						H *float32 `json:"h,omitempty"`
-						W *float32 `json:"w,omitempty"`
-						X float32  `json:"x"`
-						Y float32  `json:"y"`
-					} `json:"grid"`
-					Type    string  `json:"type"`
-					Uid     *string `json:"uid,omitempty"`
-					Version *string `json:"version,omitempty"`
-				}{
-					Type: pm.Type.ValueString(),
-					Grid: struct {
-						H *float32 `json:"h,omitempty"`
-						W *float32 `json:"w,omitempty"`
-						X float32  `json:"x"`
-						Y float32  `json:"y"`
-					}{
-						X: float32(pm.Grid.X.ValueInt64()),
-						Y: float32(pm.Grid.Y.ValueInt64()),
-					},
+				item, d := pm.toAPI()
+				diags.Append(d...)
+				if diags.HasError() {
+					return nil, diags
 				}
 
-				if !pm.Grid.W.IsNull() && !pm.Grid.W.IsUnknown() {
-					w := float32(pm.Grid.W.ValueInt64())
-					p.Grid.W = &w
-				}
-				if !pm.Grid.H.IsNull() && !pm.Grid.H.IsUnknown() {
-					h := float32(pm.Grid.H.ValueInt64())
-					p.Grid.H = &h
-				}
-
-				if utils.IsKnown(pm.ID) {
-					p.Uid = utils.Pointer(pm.ID.ValueString())
-				}
-
-				// Map config for section panel
-				if pm.MarkdownConfig != nil {
-					configModel := *pm.MarkdownConfig
-					config0 := kbapi.DashboardPanelItemConfig0{
-						Content: configModel.Content.ValueString(),
-					}
-					if utils.IsKnown(configModel.Description) {
-						config0.Description = utils.Pointer(configModel.Description.ValueString())
-					}
-					if utils.IsKnown(configModel.HidePanelTitles) {
-						config0.HidePanelTitles = utils.Pointer(configModel.HidePanelTitles.ValueBool())
-					}
-					if utils.IsKnown(configModel.Title) {
-						config0.Title = utils.Pointer(configModel.Title.ValueString())
-					}
-
-					if err := p.Config.FromDashboardPanelItemConfig0(config0); err != nil {
-						diags.AddError("Failed to marshal section panel config", err.Error())
-					}
-				} else if pm.XYChartConfig != nil {
-					configModel := *pm.XYChartConfig
-
-					// Convert the structured model to API schema
-					xyChart, xyDiags := configModel.toAPI()
-					diags.Append(xyDiags...)
-					if diags.HasError() {
-						continue
-					}
-
-					// Create the nested Config1 structure for section panels
-					var attrs0 kbapi.DashboardPanelItemConfig10Attributes0
-					if err := attrs0.FromXyChartSchema(xyChart); err != nil {
-						diags.AddError("Failed to create XY chart attributes for section panel", err.Error())
-						continue
-					}
-
-					var configAttrs kbapi.DashboardPanelItem_Config_1_0_Attributes
-					if err := configAttrs.FromDashboardPanelItemConfig10Attributes0(attrs0); err != nil {
-						diags.AddError("Failed to create config attributes for section panel", err.Error())
-						continue
-					}
-
-					config10 := kbapi.DashboardPanelItemConfig10{
-						Attributes: configAttrs,
-					}
-
-					var config1 kbapi.DashboardPanelItemConfig1
-					if err := config1.FromDashboardPanelItemConfig10(config10); err != nil {
-						diags.AddError("Failed to create config1 for section panel", err.Error())
-						continue
-					}
-
-					if err := p.Config.FromDashboardPanelItemConfig1(config1); err != nil {
-						diags.AddError("Failed to marshal XY chart config for section panel", err.Error())
-					}
-				} else if utils.IsKnown(pm.ConfigJSON) {
-					var configMap map[string]interface{}
-					diags.Append(pm.ConfigJSON.Unmarshal(&configMap)...)
-					if !diags.HasError() {
-						if err := p.Config.FromDashboardPanelItemConfig2(configMap); err != nil {
-							diags.AddError("Failed to marshal section panel config JSON", err.Error())
-						}
-					}
-				}
-
-				innerPanels = append(innerPanels, p)
+				innerPanels = append(innerPanels, item)
 			}
 			section.Panels = &innerPanels
 		}
@@ -372,4 +232,59 @@ func (m *dashboardModel) panelsToAPI() (*kbapi.DashboardPanels, diag.Diagnostics
 	}
 
 	return &apiPanels, diags
+}
+
+func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
+	panelItem := kbapi.DashboardPanelItem{
+		Type: pm.Type.ValueString(),
+		Grid: struct {
+			H *float32 `json:"h,omitempty"`
+			W *float32 `json:"w,omitempty"`
+			X float32  `json:"x"`
+			Y float32  `json:"y"`
+		}{
+			X: float32(pm.Grid.X.ValueInt64()),
+			Y: float32(pm.Grid.Y.ValueInt64()),
+		},
+	}
+
+	if utils.IsKnown(pm.Grid.W) {
+		w := float32(pm.Grid.W.ValueInt64())
+		panelItem.Grid.W = &w
+	}
+	if utils.IsKnown(pm.Grid.H) {
+		h := float32(pm.Grid.H.ValueInt64())
+		panelItem.Grid.H = &h
+	}
+
+	if utils.IsKnown(pm.ID) {
+		panelItem.Uid = utils.Pointer(pm.ID.ValueString())
+	}
+
+	var diags diag.Diagnostics
+	var panelConfigHandled bool
+	for _, converter := range panelConfigConverters {
+		if converter.handlesTFPanelConfig(pm) {
+			d := converter.mapPanelToAPI(pm, &panelItem.Config)
+			diags.Append(d...)
+			if diags.HasError() {
+				return kbapi.DashboardPanelItem{}, diags
+			}
+
+			panelConfigHandled = true
+			break
+		}
+	}
+
+	if !panelConfigHandled && utils.IsKnown(pm.ConfigJSON) {
+		var configMap map[string]interface{}
+		diags.Append(pm.ConfigJSON.Unmarshal(&configMap)...)
+		if !diags.HasError() {
+			if err := panelItem.Config.FromDashboardPanelItemConfig2(configMap); err != nil {
+				diags.AddError("Failed to marshal panel config JSON", err.Error())
+			}
+		}
+	}
+
+	return panelItem, diags
 }
