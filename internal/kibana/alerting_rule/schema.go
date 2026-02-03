@@ -6,6 +6,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/validators"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -105,7 +106,7 @@ func getSchema() schema.Schema {
 				Computed:    true,
 				Default:     booldefault.StaticBool(true),
 			},
-			"tags": schema.ListAttribute{
+			"tags": schema.SetAttribute{
 				Description: "A list of tag names that are applied to the rule.",
 				Optional:    true,
 				ElementType: types.StringType,
@@ -159,80 +160,65 @@ func getSchema() schema.Schema {
 						},
 					},
 					Blocks: map[string]schema.Block{
-						"frequency": schema.ListNestedBlock{
+						"frequency": schema.SingleNestedBlock{
 							Description: "The properties that affect how often actions are generated. If the rule type supports setting summary to true, the action can be a summary of alerts at the specified notification interval. Otherwise, an action runs for each alert at the specified notification interval. NOTE: You cannot specify these parameters when `notify_when` or `throttle` are defined at the rule level.",
-							Validators: []validator.List{
-								listvalidator.SizeAtMost(1),
-							},
-							NestedObject: schema.NestedBlockObject{
-								Attributes: map[string]schema.Attribute{
-									"summary": schema.BoolAttribute{
-										Description: "Indicates whether the action is a summary.",
-										Required:    true,
+							Attributes: map[string]schema.Attribute{
+								"summary": schema.BoolAttribute{
+									Description: "Indicates whether the action is a summary.",
+									Required:    true,
+								},
+								"notify_when": schema.StringAttribute{
+									Description: "Defines how often alerts generate actions. Valid values include: `onActionGroupChange`: Actions run when the alert status changes; `onActiveAlert`: Actions run when the alert becomes active and at each check interval while the rule conditions are met; `onThrottleInterval`: Actions run when the alert becomes active and at the interval specified in the throttle property while the rule conditions are met.",
+									Required:    true,
+									Validators: []validator.String{
+										stringvalidator.OneOf("onActionGroupChange", "onActiveAlert", "onThrottleInterval"),
 									},
-									"notify_when": schema.StringAttribute{
-										Description: "Defines how often alerts generate actions. Valid values include: `onActionGroupChange`: Actions run when the alert status changes; `onActiveAlert`: Actions run when the alert becomes active and at each check interval while the rule conditions are met; `onThrottleInterval`: Actions run when the alert becomes active and at the interval specified in the throttle property while the rule conditions are met.",
-										Required:    true,
-										Validators: []validator.String{
-											stringvalidator.OneOf("onActionGroupChange", "onActiveAlert", "onThrottleInterval"),
-										},
-									},
-									"throttle": schema.StringAttribute{
-										Description: "Defines how often an alert generates repeated actions. This custom action interval must be specified in seconds, minutes, hours, or days. For example, 10m or 1h. This property is applicable only if `notify_when` is `onThrottleInterval`.",
-										Optional:    true,
-										Validators: []validator.String{
-											validators.StringIsAlertingDuration{},
-										},
+								},
+								"throttle": schema.StringAttribute{
+									Description: "Defines how often an alert generates repeated actions. This custom action interval must be specified in seconds, minutes, hours, or days. For example, 10m or 1h. This property is applicable only if `notify_when` is `onThrottleInterval`.",
+									Optional:    true,
+									Validators: []validator.String{
+										validators.StringIsAlertingDuration{},
 									},
 								},
 							},
 						},
-						"alerts_filter": schema.ListNestedBlock{
+						"alerts_filter": schema.SingleNestedBlock{
 							Description: "Conditions that affect whether the action runs. If you specify multiple conditions, all conditions must be met for the action to run. For example, if an alert occurs within the specified time frame and matches the query, the action runs.",
-							Validators: []validator.List{
-								listvalidator.SizeAtMost(1),
-							},
-							NestedObject: schema.NestedBlockObject{
-								Attributes: map[string]schema.Attribute{
-									"kql": schema.StringAttribute{
-										Description: "Defines a query filter that determines whether the action runs. Written in Kibana Query Language (KQL).",
-										Optional:    true,
-									},
+							Attributes: map[string]schema.Attribute{
+								"kql": schema.StringAttribute{
+									Description: "Defines a query filter that determines whether the action runs. Written in Kibana Query Language (KQL).",
+									Optional:    true,
 								},
-								Blocks: map[string]schema.Block{
-									"timeframe": schema.ListNestedBlock{
-										Description: "Defines a period that limits whether the action runs.",
-										Validators: []validator.List{
-											listvalidator.SizeAtMost(1),
+							},
+							Blocks: map[string]schema.Block{
+								"timeframe": schema.SingleNestedBlock{
+									Description: "Defines a period that limits whether the action runs.",
+									Attributes: map[string]schema.Attribute{
+										"days": schema.ListAttribute{
+											Description: "Defines the days of the week that the action can run, represented as an array of numbers. For example, 1 represents Monday. An empty array is equivalent to specifying all the days of the week.",
+											Optional:    true,
+											ElementType: types.Int64Type,
+											Validators: []validator.List{
+												listvalidator.ValueInt64sAre(int64validator.Between(1, 7)),
+											},
 										},
-										NestedObject: schema.NestedBlockObject{
-											Attributes: map[string]schema.Attribute{
-												"days": schema.ListAttribute{
-													Description: "Defines the days of the week that the action can run, represented as an array of numbers. For example, 1 represents Monday. An empty array is equivalent to specifying all the days of the week.",
-													Required:    true,
-													ElementType: types.Int64Type,
-													Validators: []validator.List{
-														listvalidator.ValueInt64sAre(validators.Int64Between{Min: 1, Max: 7}),
-													},
-												},
-												"timezone": schema.StringAttribute{
-													Description: "The ISO time zone for the hours values. Values such as UTC and UTC+1 also work but lack built-in daylight savings time support and are not recommended.",
-													Required:    true,
-												},
-												"hours_start": schema.StringAttribute{
-													Description: "Defines the range of time in a day that the action can run. The start of the time frame in 24-hour notation (hh:mm).",
-													Required:    true,
-													Validators: []validator.String{
-														validators.StringIsHours{},
-													},
-												},
-												"hours_end": schema.StringAttribute{
-													Description: "Defines the range of time in a day that the action can run. The end of the time frame in 24-hour notation (hh:mm).",
-													Required:    true,
-													Validators: []validator.String{
-														validators.StringIsHours{},
-													},
-												},
+										"timezone": schema.StringAttribute{
+											Description: "The ISO time zone for the hours values. Values such as UTC and UTC+1 also work but lack built-in daylight savings time support and are not recommended.",
+											Optional:    true,
+										},
+										"hours_start": schema.StringAttribute{
+											Description: "Defines the range of time in a day that the action can run. The start of the time frame in 24-hour notation (hh:mm).",
+											Optional:    true,
+											Validators: []validator.String{
+												validators.StringIsHours{},
+											},
+										},
+										"hours_end": schema.StringAttribute{
+											Description: "Defines the range of time in a day that the action can run. The end of the time frame in 24-hour notation (hh:mm).",
+											Optional:    true,
+											Validators: []validator.String{
+												validators.StringIsHours{},
 											},
 										},
 									},
@@ -254,14 +240,14 @@ func initAttrTypes() {
 	actionsBlock := s.Blocks["actions"].(schema.ListNestedBlock)
 	cachedActionsTypes = actionsBlock.NestedObject.Type().(attr.TypeWithAttributeTypes).AttributeTypes()
 
-	freqBlock := actionsBlock.NestedObject.Blocks["frequency"].(schema.ListNestedBlock)
-	cachedFrequencyTypes = freqBlock.NestedObject.Type().(attr.TypeWithAttributeTypes).AttributeTypes()
+	freqBlock := actionsBlock.NestedObject.Blocks["frequency"].(schema.SingleNestedBlock)
+	cachedFrequencyTypes = freqBlock.Type().(attr.TypeWithAttributeTypes).AttributeTypes()
 
-	filterBlock := actionsBlock.NestedObject.Blocks["alerts_filter"].(schema.ListNestedBlock)
-	cachedFilterTypes = filterBlock.NestedObject.Type().(attr.TypeWithAttributeTypes).AttributeTypes()
+	filterBlock := actionsBlock.NestedObject.Blocks["alerts_filter"].(schema.SingleNestedBlock)
+	cachedFilterTypes = filterBlock.Type().(attr.TypeWithAttributeTypes).AttributeTypes()
 
-	tfBlock := filterBlock.NestedObject.Blocks["timeframe"].(schema.ListNestedBlock)
-	cachedTimeframeTypes = tfBlock.NestedObject.Type().(attr.TypeWithAttributeTypes).AttributeTypes()
+	tfBlock := filterBlock.Blocks["timeframe"].(schema.SingleNestedBlock)
+	cachedTimeframeTypes = tfBlock.Type().(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
 // getActionsAttrTypes returns the attribute types for actions list elements.
