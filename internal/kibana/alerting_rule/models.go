@@ -181,10 +181,8 @@ func (m alertingRuleModel) toAPIModel(ctx context.Context, serverVersion *versio
 		// notify_when is required until v8.6
 		if !utils.IsKnown(m.NotifyWhen) || m.NotifyWhen.ValueString() == "" {
 			if serverVersion.LessThan(frequencyMinSupportedVersion) {
-				diags.AddError(
-					"notify_when is required until v8.6",
-					"notify_when is required until v8.6",
-				)
+				errStr := "notify_when is required until v8.6"
+				diags.AddError(errStr, errStr)
 				return models.AlertingRule{}, diags
 			}
 		}
@@ -192,10 +190,8 @@ func (m alertingRuleModel) toAPIModel(ctx context.Context, serverVersion *versio
 		// alert_delay is only supported from v8.13+
 		if utils.IsKnown(m.AlertDelay) && !m.AlertDelay.IsNull() {
 			if serverVersion.LessThan(alertDelayMinSupportedVersion) {
-				diags.AddError(
-					"alert_delay is only supported for Elasticsearch v8.13 or higher",
-					"alert_delay is only supported for Elasticsearch v8.13 or higher",
-				)
+				errStr := "alert_delay is only supported for Elasticsearch v8.13 or higher"
+				diags.AddError(errStr, errStr)
 				return models.AlertingRule{}, diags
 			}
 		}
@@ -212,10 +208,8 @@ func (m alertingRuleModel) toAPIModel(ctx context.Context, serverVersion *versio
 				// Check frequency version requirement
 				if utils.IsKnown(action.Frequency) && !action.Frequency.IsNull() {
 					if serverVersion.LessThan(frequencyMinSupportedVersion) {
-						diags.AddError(
-							"actions.frequency is only supported for Kibana v8.6 or higher",
-							"actions.frequency is only supported for Kibana v8.6 or higher",
-						)
+						errStr := "actions.frequency is only supported for Kibana v8.6 or higher"
+						diags.AddError(errStr, errStr)
 						return models.AlertingRule{}, diags
 					}
 				}
@@ -223,10 +217,8 @@ func (m alertingRuleModel) toAPIModel(ctx context.Context, serverVersion *versio
 				// Check alerts_filter version requirement
 				if utils.IsKnown(action.AlertsFilter) && !action.AlertsFilter.IsNull() {
 					if serverVersion.LessThan(alertsFilterMinSupportedVersion) {
-						diags.AddError(
-							"actions.alerts_filter is only supported for Kibana v8.9 or higher",
-							"actions.alerts_filter is only supported for Kibana v8.9 or higher",
-						)
+						errStr := "actions.alerts_filter is only supported for Kibana v8.9 or higher"
+						diags.AddError(errStr, errStr)
 						return models.AlertingRule{}, diags
 					}
 				}
