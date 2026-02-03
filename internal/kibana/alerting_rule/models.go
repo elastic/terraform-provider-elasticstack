@@ -7,10 +7,12 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 // alertingRuleModel is the Terraform model for an alerting rule.
@@ -25,7 +27,7 @@ type alertingRuleModel struct {
 	RuleTypeID          types.String         `tfsdk:"rule_type_id"`
 	Interval            types.String         `tfsdk:"interval"`
 	Enabled             types.Bool           `tfsdk:"enabled"`
-	Tags                types.List           `tfsdk:"tags"`
+	Tags                types.Set            `tfsdk:"tags"`
 	Throttle            types.String         `tfsdk:"throttle"`
 	ScheduledTaskID     types.String         `tfsdk:"scheduled_task_id"`
 	LastExecutionStatus types.String         `tfsdk:"last_execution_status"`
@@ -39,8 +41,8 @@ type actionModel struct {
 	Group        types.String         `tfsdk:"group"`
 	ID           types.String         `tfsdk:"id"`
 	Params       jsontypes.Normalized `tfsdk:"params"`
-	Frequency    types.List           `tfsdk:"frequency"`
-	AlertsFilter types.List           `tfsdk:"alerts_filter"`
+	Frequency    types.Object         `tfsdk:"frequency"`
+	AlertsFilter types.Object         `tfsdk:"alerts_filter"`
 }
 
 // frequencyModel is the Terraform model for action frequency.
@@ -53,7 +55,7 @@ type frequencyModel struct {
 // alertsFilterModel is the Terraform model for action alerts filter.
 type alertsFilterModel struct {
 	Kql       types.String `tfsdk:"kql"`
-	Timeframe types.List   `tfsdk:"timeframe"`
+	Timeframe types.Object `tfsdk:"timeframe"`
 }
 
 // timeframeModel is the Terraform model for alerts filter timeframe.
@@ -107,11 +109,11 @@ func (m *alertingRuleModel) populateFromAPI(ctx context.Context, rule *models.Al
 
 	// Tags
 	if len(rule.Tags) > 0 {
-		tags, d := types.ListValueFrom(ctx, types.StringType, rule.Tags)
+		tags, d := types.SetValueFrom(ctx, types.StringType, rule.Tags)
 		diags.Append(d...)
 		m.Tags = tags
 	} else {
-		m.Tags = types.ListNull(types.StringType)
+		m.Tags = types.SetNull(types.StringType)
 	}
 
 	// Throttle
@@ -121,10 +123,11 @@ func (m *alertingRuleModel) populateFromAPI(ctx context.Context, rule *models.Al
 		m.Throttle = types.StringNull()
 	}
 
-	// Scheduled task ID
+	// Scheduled task ID - update if API returns a value, or resolve unknown to null
+	// (preserves existing known value when API doesn't return this field on re-reads)
 	if rule.ScheduledTaskID != nil {
 		m.ScheduledTaskID = types.StringValue(*rule.ScheduledTaskID)
-	} else {
+	} else if m.ScheduledTaskID.IsUnknown() {
 		m.ScheduledTaskID = types.StringNull()
 	}
 
@@ -141,10 +144,11 @@ func (m *alertingRuleModel) populateFromAPI(ctx context.Context, rule *models.Al
 		m.LastExecutionDate = types.StringNull()
 	}
 
-	// Alert delay
+	// Alert delay - update if API returns a value, or resolve unknown to null
+	// (preserves existing known value when API doesn't return this field on re-reads)
 	if rule.AlertDelay != nil {
 		m.AlertDelay = types.Int64Value(int64(*rule.AlertDelay))
-	} else {
+	} else if m.AlertDelay.IsUnknown() {
 		m.AlertDelay = types.Int64Null()
 	}
 
@@ -160,9 +164,75 @@ func (m *alertingRuleModel) populateFromAPI(ctx context.Context, rule *models.Al
 	return diags
 }
 
+// Version thresholds for feature support
+var (
+	frequencyMinSupportedVersion    = version.Must(version.NewVersion("8.6.0"))
+	alertsFilterMinSupportedVersion = version.Must(version.NewVersion("8.9.0"))
+	alertDelayMinSupportedVersion   = version.Must(version.NewVersion("8.13.0"))
+)
+
 // toAPIModel converts the Terraform model to the API model.
-func (m alertingRuleModel) toAPIModel(ctx context.Context) (models.AlertingRule, diag.Diagnostics) {
+// It also validates version-specific requirements based on the provided server version.
+func (m alertingRuleModel) toAPIModel(ctx context.Context, serverVersion *version.Version) (models.AlertingRule, diag.Diagnostics) {
 	var diags diag.Diagnostics
+
+	// Validate version-specific requirements
+	if serverVersion != nil {
+		// notify_when is required until v8.6
+		if !utils.IsKnown(m.NotifyWhen) || m.NotifyWhen.ValueString() == "" {
+			if serverVersion.LessThan(frequencyMinSupportedVersion) {
+				diags.AddError(
+					"notify_when is required until v8.6",
+					"notify_when is required until v8.6",
+				)
+				return models.AlertingRule{}, diags
+			}
+		}
+
+		// alert_delay is only supported from v8.13+
+		if utils.IsKnown(m.AlertDelay) && !m.AlertDelay.IsNull() {
+			if serverVersion.LessThan(alertDelayMinSupportedVersion) {
+				diags.AddError(
+					"alert_delay is only supported for Elasticsearch v8.13 or higher",
+					"alert_delay is only supported for Elasticsearch v8.13 or higher",
+				)
+				return models.AlertingRule{}, diags
+			}
+		}
+
+		// Validate version-specific requirements for actions
+		if utils.IsKnown(m.Actions) && !m.Actions.IsNull() {
+			var actions []actionModel
+			diags.Append(m.Actions.ElementsAs(ctx, &actions, false)...)
+			if diags.HasError() {
+				return models.AlertingRule{}, diags
+			}
+
+			for _, action := range actions {
+				// Check frequency version requirement
+				if utils.IsKnown(action.Frequency) && !action.Frequency.IsNull() {
+					if serverVersion.LessThan(frequencyMinSupportedVersion) {
+						diags.AddError(
+							"actions.frequency is only supported for Kibana v8.6 or higher",
+							"actions.frequency is only supported for Kibana v8.6 or higher",
+						)
+						return models.AlertingRule{}, diags
+					}
+				}
+
+				// Check alerts_filter version requirement
+				if utils.IsKnown(action.AlertsFilter) && !action.AlertsFilter.IsNull() {
+					if serverVersion.LessThan(alertsFilterMinSupportedVersion) {
+						diags.AddError(
+							"actions.alerts_filter is only supported for Kibana v8.9 or higher",
+							"actions.alerts_filter is only supported for Kibana v8.9 or higher",
+						)
+						return models.AlertingRule{}, diags
+					}
+				}
+			}
+		}
+	}
 
 	rule := models.AlertingRule{
 		RuleID:     m.RuleID.ValueString(),
@@ -259,7 +329,7 @@ func convertActionsFromAPI(ctx context.Context, apiActions []models.AlertingRule
 		}
 		action.Params = jsontypes.NewNormalizedValue(string(paramsJSON))
 
-		// Frequency - convert to list with single element
+		// Frequency - convert to single object
 		if apiAction.Frequency != nil {
 			freq := frequencyModel{
 				Summary:    types.BoolValue(apiAction.Frequency.Summary),
@@ -270,14 +340,14 @@ func convertActionsFromAPI(ctx context.Context, apiActions []models.AlertingRule
 			} else {
 				freq.Throttle = types.StringNull()
 			}
-			freqList, d := types.ListValueFrom(ctx, types.ObjectType{AttrTypes: getFrequencyAttrTypes()}, []frequencyModel{freq})
+			freqObj, d := types.ObjectValueFrom(ctx, getFrequencyAttrTypes(), freq)
 			diags.Append(d...)
-			action.Frequency = freqList
+			action.Frequency = freqObj
 		} else {
-			action.Frequency = types.ListNull(types.ObjectType{AttrTypes: getFrequencyAttrTypes()})
+			action.Frequency = types.ObjectNull(getFrequencyAttrTypes())
 		}
 
-		// Alerts filter - convert to list with single element
+		// Alerts filter - convert to single object
 		if apiAction.AlertsFilter != nil {
 			filter := alertsFilterModel{}
 
@@ -302,18 +372,18 @@ func convertActionsFromAPI(ctx context.Context, apiActions []models.AlertingRule
 					HoursStart: types.StringValue(tf.HoursStart),
 					HoursEnd:   types.StringValue(tf.HoursEnd),
 				}
-				tfList, d := types.ListValueFrom(ctx, types.ObjectType{AttrTypes: getTimeframeAttrTypes()}, []timeframeModel{timeframe})
+				tfObj, d := types.ObjectValueFrom(ctx, getTimeframeAttrTypes(), timeframe)
 				diags.Append(d...)
-				filter.Timeframe = tfList
+				filter.Timeframe = tfObj
 			} else {
-				filter.Timeframe = types.ListNull(types.ObjectType{AttrTypes: getTimeframeAttrTypes()})
+				filter.Timeframe = types.ObjectNull(getTimeframeAttrTypes())
 			}
 
-			filterList, d := types.ListValueFrom(ctx, types.ObjectType{AttrTypes: getAlertsFilterAttrTypes()}, []alertsFilterModel{filter})
+			filterObj, d := types.ObjectValueFrom(ctx, getAlertsFilterAttrTypes(), filter)
 			diags.Append(d...)
-			action.AlertsFilter = filterList
+			action.AlertsFilter = filterObj
 		} else {
-			action.AlertsFilter = types.ListNull(types.ObjectType{AttrTypes: getAlertsFilterAttrTypes()})
+			action.AlertsFilter = types.ObjectNull(getAlertsFilterAttrTypes())
 		}
 
 		actions = append(actions, action)
@@ -355,56 +425,47 @@ func convertActionsToAPI(ctx context.Context, actionsList types.List) ([]models.
 			apiAction.Params = params
 		}
 
-		// Frequency - extract first element from list
-		if utils.IsKnown(action.Frequency) && !action.Frequency.IsNull() && len(action.Frequency.Elements()) > 0 {
-			var freqList []frequencyModel
-			diags.Append(action.Frequency.ElementsAs(ctx, &freqList, false)...)
-			if len(freqList) > 0 {
-				freq := freqList[0]
-				apiAction.Frequency = &models.ActionFrequency{
-					Summary:    freq.Summary.ValueBool(),
-					NotifyWhen: freq.NotifyWhen.ValueString(),
-				}
-				if utils.IsKnown(freq.Throttle) && freq.Throttle.ValueString() != "" {
-					throttle := freq.Throttle.ValueString()
-					apiAction.Frequency.Throttle = &throttle
-				}
+		// Frequency - extract from object
+		if utils.IsKnown(action.Frequency) && !action.Frequency.IsNull() {
+			var freq frequencyModel
+			diags.Append(action.Frequency.As(ctx, &freq, basetypes.ObjectAsOptions{})...)
+			apiAction.Frequency = &models.ActionFrequency{
+				Summary:    freq.Summary.ValueBool(),
+				NotifyWhen: freq.NotifyWhen.ValueString(),
+			}
+			if utils.IsKnown(freq.Throttle) && freq.Throttle.ValueString() != "" {
+				throttle := freq.Throttle.ValueString()
+				apiAction.Frequency.Throttle = &throttle
 			}
 		}
 
-		// Alerts filter - extract first element from list
-		if utils.IsKnown(action.AlertsFilter) && !action.AlertsFilter.IsNull() && len(action.AlertsFilter.Elements()) > 0 {
-			var filterList []alertsFilterModel
-			diags.Append(action.AlertsFilter.ElementsAs(ctx, &filterList, false)...)
-			if len(filterList) > 0 {
-				filter := filterList[0]
-				apiAction.AlertsFilter = &models.ActionAlertsFilter{}
+		// Alerts filter - extract from object
+		if utils.IsKnown(action.AlertsFilter) && !action.AlertsFilter.IsNull() {
+			var filter alertsFilterModel
+			diags.Append(action.AlertsFilter.As(ctx, &filter, basetypes.ObjectAsOptions{})...)
+			apiAction.AlertsFilter = &models.ActionAlertsFilter{}
 
-				if utils.IsKnown(filter.Kql) {
-					kql := filter.Kql.ValueString()
-					apiAction.AlertsFilter.Kql = &kql
+			if utils.IsKnown(filter.Kql) {
+				kql := filter.Kql.ValueString()
+				apiAction.AlertsFilter.Kql = &kql
+			}
+
+			if utils.IsKnown(filter.Timeframe) && !filter.Timeframe.IsNull() {
+				var tf timeframeModel
+				diags.Append(filter.Timeframe.As(ctx, &tf, basetypes.ObjectAsOptions{})...)
+				var days []int64
+				diags.Append(tf.Days.ElementsAs(ctx, &days, false)...)
+
+				int32Days := make([]int32, len(days))
+				for j, d := range days {
+					int32Days[j] = int32(d)
 				}
 
-				if utils.IsKnown(filter.Timeframe) && !filter.Timeframe.IsNull() && len(filter.Timeframe.Elements()) > 0 {
-					var tfList []timeframeModel
-					diags.Append(filter.Timeframe.ElementsAs(ctx, &tfList, false)...)
-					if len(tfList) > 0 {
-						tf := tfList[0]
-						var days []int64
-						diags.Append(tf.Days.ElementsAs(ctx, &days, false)...)
-
-						int32Days := make([]int32, len(days))
-						for j, d := range days {
-							int32Days[j] = int32(d)
-						}
-
-						apiAction.AlertsFilter.Timeframe = &models.AlertsFilterTimeframe{
-							Days:       int32Days,
-							Timezone:   tf.Timezone.ValueString(),
-							HoursStart: tf.HoursStart.ValueString(),
-							HoursEnd:   tf.HoursEnd.ValueString(),
-						}
-					}
+				apiAction.AlertsFilter.Timeframe = &models.AlertsFilterTimeframe{
+					Days:       int32Days,
+					Timezone:   tf.Timezone.ValueString(),
+					HoursStart: tf.HoursStart.ValueString(),
+					HoursEnd:   tf.HoursEnd.ValueString(),
 				}
 			}
 		}

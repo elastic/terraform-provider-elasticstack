@@ -5,8 +5,6 @@ import (
 	"regexp"
 
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 var alertingDurationPattern = "^[1-9][0-9]*(?:d|h|m|s)$"
@@ -38,12 +36,4 @@ func (s StringIsAlertingDuration) ValidateString(_ context.Context, req validato
 		)
 		return
 	}
-}
-
-// Avoid lint error on deprecated SchemaValidateFunc usage.
-//
-//nolint:staticcheck
-func StringIsAlertingDurationSDKV2() schema.SchemaValidateFunc {
-	r := regexp.MustCompile(alertingDurationPattern)
-	return validation.StringMatch(r, "string is not a valid Alerting duration in seconds (s), minutes (m), hours (h), or days (d).")
 }

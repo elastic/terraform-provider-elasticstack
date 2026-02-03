@@ -43,10 +43,6 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 		return
 	}
 
-	// Store alert_delay from current state before reading from API
-	// (some Kibana versions don't return alert_delay in the response)
-	originalAlertDelay := state.AlertDelay
-
 	exists, diags := r.readRuleFromAPI(ctx, &state)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -56,11 +52,6 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 	if !exists {
 		resp.State.RemoveResource(ctx)
 		return
-	}
-
-	// Preserve alert_delay from previous state if API didn't return it
-	if state.AlertDelay.IsNull() && !originalAlertDelay.IsNull() {
-		state.AlertDelay = originalAlertDelay
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)

@@ -5,7 +5,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
@@ -38,53 +37,8 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 		return
 	}
 
-	// Validate version-specific requirements
-	if utils.IsKnown(plan.AlertDelay) && !plan.AlertDelay.IsNull() {
-		if serverVersion.LessThan(alertDelayMinSupportedVersion) {
-			resp.Diagnostics.AddError(
-				"alert_delay is only supported for Elasticsearch v8.13 or higher",
-				"alert_delay is only supported for Elasticsearch v8.13 or higher",
-			)
-			return
-		}
-	}
-
-	// Validate version-specific requirements for actions
-	if utils.IsKnown(plan.Actions) && !plan.Actions.IsNull() {
-		var actions []actionModel
-		diags = plan.Actions.ElementsAs(ctx, &actions, false)
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-
-		for _, action := range actions {
-			// Check frequency version requirement
-			if utils.IsKnown(action.Frequency) && !action.Frequency.IsNull() && len(action.Frequency.Elements()) > 0 {
-				if serverVersion.LessThan(frequencyMinSupportedVersion) {
-					resp.Diagnostics.AddError(
-						"actions.frequency is only supported for Kibana v8.6 or higher",
-						"actions.frequency is only supported for Kibana v8.6 or higher",
-					)
-					return
-				}
-			}
-
-			// Check alerts_filter version requirement
-			if utils.IsKnown(action.AlertsFilter) && !action.AlertsFilter.IsNull() && len(action.AlertsFilter.Elements()) > 0 {
-				if serverVersion.LessThan(alertsFilterMinSupportedVersion) {
-					resp.Diagnostics.AddError(
-						"actions.alerts_filter is only supported for Kibana v8.9 or higher",
-						"actions.alerts_filter is only supported for Kibana v8.9 or higher",
-					)
-					return
-				}
-			}
-		}
-	}
-
-	// Convert to API model
-	rule, d := plan.toAPIModel(ctx)
+	// Convert to API model (includes version-specific validation)
+	rule, d := plan.toAPIModel(ctx, serverVersion)
 	resp.Diagnostics.Append(d...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -96,26 +50,28 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 	rule.SpaceID = spaceID
 
 	// Update the rule
-	updatedRule, updateDiags := kibana.UpdateAlertingRule(ctx, r.client, rule)
+	_, updateDiags := kibana.UpdateAlertingRule(ctx, r.client, rule)
 	if updateDiags.HasError() {
 		resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(updateDiags)...)
 		return
 	}
 
-	// Store alert_delay from plan before populating (API may not echo it back)
-	originalAlertDelay := plan.AlertDelay
+	// Set plan's ID to the state's ID so we can re-read from API
+	plan.ID = state.ID
+	plan.RuleID = state.RuleID
+	plan.SpaceID = state.SpaceID
 
-	// Populate state directly from the API response to avoid race conditions
-	// with eventual consistency (the API response has the authoritative values)
-	resp.Diagnostics.Append(plan.populateFromAPI(ctx, updatedRule)...)
+	// Re-read rule from API to get the authoritative state
+	// (sometimes update response differs from what's actually stored)
+	exists, readDiags := r.readRuleFromAPI(ctx, &plan)
+	resp.Diagnostics.Append(readDiags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// Preserve alert_delay from plan if API didn't return it
-	// (some Kibana versions don't echo alert_delay in the response)
-	if plan.AlertDelay.IsNull() && !originalAlertDelay.IsNull() {
-		plan.AlertDelay = originalAlertDelay
+	if !exists {
+		resp.Diagnostics.AddError("Rule not found after update", "The alerting rule was updated but could not be read back from the API")
+		return
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
