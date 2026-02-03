@@ -11,7 +11,7 @@ services:
     ports:
       - "9200:9200/tcp"
   set-kibana-password:
-    image: docker.elastic.co/kibana/kibana:9.2.4@sha256:a3822d69614189c452dd0ff39e71c2f4ccae83e4737d9c12dfdddde7ef37b76a
+    image: docker.elastic.co/kibana/kibana:9.3.0@sha256:88691f9bc235f41d11a274914400ef2dbc4b6a45295498fa179a6f171bc08b63
     restart: on-failure
     links:
       - elasticsearch
@@ -22,7 +22,7 @@ services:
       elasticsearch:
         condition: service_started
   kibana:
-    image: docker.elastic.co/kibana/kibana:9.2.4@sha256:a3822d69614189c452dd0ff39e71c2f4ccae83e4737d9c12dfdddde7ef37b76a
+    image: docker.elastic.co/kibana/kibana:9.3.0@sha256:88691f9bc235f41d11a274914400ef2dbc4b6a45295498fa179a6f171bc08b63
     environment:
       SERVER_NAME: kibana
       ELASTICSEARCH_HOSTS: http://es:9200
