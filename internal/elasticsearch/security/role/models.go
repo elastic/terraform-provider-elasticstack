@@ -357,8 +357,6 @@ func (data *RoleData) fromAPIModel(ctx context.Context, role *models.Role) diag.
 					return diags
 				}
 
-				// For except: API omits empty arrays due to omitempty.
-				// Always return an empty set (not null) to match user configs.
 				exceptSet, d := types.SetValueFrom(ctx, types.StringType, utils.NonNilSlice(index.FieldSecurity.Except))
 				diags.Append(d...)
 				if diags.HasError() {
@@ -439,8 +437,6 @@ func (data *RoleData) fromAPIModel(ctx context.Context, role *models.Role) diag.
 					return diags
 				}
 
-				// For except: API omits empty arrays due to omitempty.
-				// Always return an empty set (not null) to match user configs.
 				exceptSet, d := types.SetValueFrom(ctx, types.StringType, utils.NonNilSlice(remoteIndex.FieldSecurity.Except))
 				diags.Append(d...)
 				if diags.HasError() {
