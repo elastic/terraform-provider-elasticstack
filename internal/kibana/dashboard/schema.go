@@ -858,7 +858,7 @@ func getTagcloudSchema() map[string]schema.Attribute {
 			},
 		},
 		"metric": schema.StringAttribute{
-			MarkdownDescription: "Metric configuration as JSON. Can be a field metric operation (count, unique count, min/max/avg/median/std dev, sum, last value, percentile, percentile ranks), a pipeline operation (differences, moving average, cumulative sum, counter rate), or a formula operation.",
+			MarkdownDescription: "Metric configuration as JSON. Can be a field metric operation (count, unique count, min, max, avg, median, std dev, sum, last value, percentile, percentile ranks), a pipeline operation (differences, moving average, cumulative sum, counter rate), or a formula operation.",
 			CustomType:          customtypes.NewJSONWithDefaultsType(populateTagcloudMetricDefaults),
 			Required:            true,
 		},

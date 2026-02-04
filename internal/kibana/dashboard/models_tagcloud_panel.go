@@ -87,7 +87,7 @@ func (c tagcloudPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *kb
 		return diags
 	}
 
-	// Create the nested Config1 structure
+	// Create the nested dashboard panel config structure for the tagcloud attributes
 	var attrs0 kbapi.DashboardPanelItemConfig10Attributes0
 	if err := attrs0.FromTagcloudChartSchema(tagcloudChart); err != nil {
 		diags.AddError("Failed to create tagcloud attributes", err.Error())
