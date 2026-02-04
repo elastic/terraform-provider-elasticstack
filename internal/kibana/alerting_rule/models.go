@@ -438,8 +438,7 @@ func convertActionsToAPI(ctx context.Context, actionsList types.List) ([]models.
 			apiAction.AlertsFilter = &models.ActionAlertsFilter{}
 
 			if utils.IsKnown(filter.Kql) {
-				kql := filter.Kql.ValueString()
-				apiAction.AlertsFilter.Kql = &kql
+				apiAction.AlertsFilter.Kql = filter.Kql.ValueStringPointer()
 			}
 
 			if utils.IsKnown(filter.Timeframe) {
