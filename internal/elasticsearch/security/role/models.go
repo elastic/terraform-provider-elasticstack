@@ -345,12 +345,9 @@ func (data *RoleData) fromAPIModel(ctx context.Context, role *models.Role) diag.
 				queryVal = jsontypes.NewNormalizedNull()
 			}
 
-			var allowRestrictedVal types.Bool
-			if index.AllowRestrictedIndices != nil {
-				allowRestrictedVal = types.BoolValue(*index.AllowRestrictedIndices)
-			} else {
-				allowRestrictedVal = types.BoolNull()
-			}
+			// For allow_restricted_indices: API omits false (default) due to omitempty.
+			// Always return the actual value (false when nil) to match user configs.
+			allowRestrictedVal := types.BoolValue(utils.Deref(index.AllowRestrictedIndices))
 
 			var fieldSecObj types.Object
 			if index.FieldSecurity != nil {
@@ -360,6 +357,8 @@ func (data *RoleData) fromAPIModel(ctx context.Context, role *models.Role) diag.
 					return diags
 				}
 
+				// For except: API omits empty arrays due to omitempty.
+				// Always return an empty set (not null) to match user configs.
 				exceptSet, d := types.SetValueFrom(ctx, types.StringType, utils.NonNilSlice(index.FieldSecurity.Except))
 				diags.Append(d...)
 				if diags.HasError() {
@@ -440,6 +439,8 @@ func (data *RoleData) fromAPIModel(ctx context.Context, role *models.Role) diag.
 					return diags
 				}
 
+				// For except: API omits empty arrays due to omitempty.
+				// Always return an empty set (not null) to match user configs.
 				exceptSet, d := types.SetValueFrom(ctx, types.StringType, utils.NonNilSlice(remoteIndex.FieldSecurity.Except))
 				diags.Append(d...)
 				if diags.HasError() {
