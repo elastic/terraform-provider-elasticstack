@@ -18,6 +18,7 @@ func newXYChartPanelConfigConverter() xyChartPanelConfigConverter {
 	return xyChartPanelConfigConverter{
 		lensPanelConfigConverter: lensPanelConfigConverter{
 			visualizationType: string(kbapi.Xy),
+			hasTFPanelConfig:  func(pm panelModel) bool { return pm.XYChartConfig != nil },
 		},
 	}
 }
