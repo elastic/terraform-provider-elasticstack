@@ -324,7 +324,7 @@ func TestV0ToV1_InvalidJSON(t *testing.T) {
 // TestFromAPIModel_DefaultValuesNotNull tests that when the API returns nil for optional
 // fields with defaults (due to omitempty), we return the actual default values, not null.
 // This prevents the "planned set element does not correlate with any element in actual" error.
-// See: https://github.com/elastic/terraform-provider-elasticstack/issues/XXX
+// See: https://github.com/elastic/terraform-provider-elasticstack/issues/1677
 func TestFromAPIModel_DefaultValuesNotNull(t *testing.T) {
 	ctx := context.Background()
 
