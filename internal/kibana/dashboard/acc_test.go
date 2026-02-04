@@ -228,7 +228,7 @@ func TestAccResourceDashboardPanels(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.panels.0.grid.y", "0"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.panels.0.markdown_config.content", "First markdown panel"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.panels.0.markdown_config.title", "My First Markdown Panel"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.panels.0.markdown_config.hide_panel_titles", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.panels.0.markdown_config.hide_title", "false"),
 				),
 			},
 			{

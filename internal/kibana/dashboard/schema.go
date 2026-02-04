@@ -283,8 +283,8 @@ func getPanelSchema() schema.NestedAttributeObject {
 						MarkdownDescription: "The description of the panel.",
 						Optional:            true,
 					},
-					"hide_panel_titles": schema.BoolAttribute{
-						MarkdownDescription: "Hide the panel titles.",
+					"hide_title": schema.BoolAttribute{
+						MarkdownDescription: "Hide the title of the panel.",
 						Optional:            true,
 					},
 					"title": schema.StringAttribute{
