@@ -132,7 +132,7 @@ jobs:
           - '9.0.8'
           - '9.1.9'
           - '9.2.3'
-          - '9.3.0-SNAPSHOT'
+          - '9.3.0'
         include:
           - version: '7.17.13'
             fleetImage: elastic/elastic-agent
