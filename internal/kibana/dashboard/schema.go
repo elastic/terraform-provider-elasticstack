@@ -58,6 +58,25 @@ func populateTagcloudTagByDefaults(model map[string]any) map[string]any {
 	return model
 }
 
+// populateRegionMapMetricDefaults populates default values for region map metric configuration
+func populateRegionMapMetricDefaults(model map[string]any) map[string]any {
+	if model == nil {
+		return model
+	}
+	if operation, ok := model["operation"].(string); ok {
+		switch operation {
+		case "count", "unique_count", "min", "max", "average", "median", "standard_deviation", "sum", "last_value", "percentile", "percentile_rank":
+			if _, exists := model["empty_as_null"]; !exists {
+				model["empty_as_null"] = false
+			}
+			if _, exists := model["show_metric_label"]; !exists {
+				model["show_metric_label"] = true
+			}
+		}
+	}
+	return model
+}
+
 func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = getSchema()
 }
@@ -242,6 +261,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 				path.MatchRelative().AtName("config_json"),
 				path.MatchRelative().AtName("xy_chart_config"),
 				path.MatchRelative().AtName("tagcloud_config"),
+				path.MatchRelative().AtName("region_map_config"),
 			),
 		},
 		Attributes: map[string]schema.Attribute{
@@ -280,7 +300,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 				},
 			},
 			"markdown_config": schema.SingleNestedAttribute{
-				MarkdownDescription: "The configuration of a markdown panel. Mutually exclusive with `config_json`, `xy_chart_config`, and `tagcloud_config`.",
+				MarkdownDescription: "The configuration of a markdown panel. Mutually exclusive with `config_json`, `xy_chart_config`, `tagcloud_config`, and `region_map_config`.",
 				Optional:            true,
 				Attributes: map[string]schema.Attribute{
 					"content": schema.StringAttribute{
@@ -305,12 +325,13 @@ func getPanelSchema() schema.NestedAttributeObject {
 						path.MatchRelative().AtParent().AtName("config_json"),
 						path.MatchRelative().AtParent().AtName("xy_chart_config"),
 						path.MatchRelative().AtParent().AtName("tagcloud_config"),
+						path.MatchRelative().AtParent().AtName("region_map_config"),
 					),
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"DASHBOARD_MARKDOWN"}),
 				},
 			},
 			"xy_chart_config": schema.SingleNestedAttribute{
-				MarkdownDescription: "Configuration for an XY chart panel. Mutually exclusive with `markdown_config`, `tagcloud_config`, and `config_json`. Use this for line, area, and bar charts.",
+				MarkdownDescription: "Configuration for an XY chart panel. Mutually exclusive with `markdown_config`, `tagcloud_config`, `region_map_config`, and `config_json`. Use this for line, area, and bar charts.",
 				Optional:            true,
 				Attributes: map[string]schema.Attribute{
 					"title": schema.StringAttribute{
@@ -364,26 +385,42 @@ func getPanelSchema() schema.NestedAttributeObject {
 					objectvalidator.ConflictsWith(
 						path.MatchRelative().AtParent().AtName("markdown_config"),
 						path.MatchRelative().AtParent().AtName("tagcloud_config"),
+						path.MatchRelative().AtParent().AtName("region_map_config"),
 						path.MatchRelative().AtParent().AtName("config_json"),
 					),
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"lens"}),
 				},
 			},
 			"tagcloud_config": schema.SingleNestedAttribute{
-				MarkdownDescription: "Configuration for a tagcloud chart panel. Mutually exclusive with `markdown_config`, `xy_chart_config`, and `config_json`. Tag clouds visualize word frequency.",
+				MarkdownDescription: "Configuration for a tagcloud chart panel. Mutually exclusive with `markdown_config`, `xy_chart_config`, `region_map_config`, and `config_json`. Tag clouds visualize word frequency.",
 				Optional:            true,
 				Attributes:          getTagcloudSchema(),
 				Validators: []validator.Object{
 					objectvalidator.ConflictsWith(
 						path.MatchRelative().AtParent().AtName("markdown_config"),
 						path.MatchRelative().AtParent().AtName("xy_chart_config"),
+						path.MatchRelative().AtParent().AtName("region_map_config"),
+						path.MatchRelative().AtParent().AtName("config_json"),
+					),
+					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"lens"}),
+				},
+			},
+			"region_map_config": schema.SingleNestedAttribute{
+				MarkdownDescription: "Configuration for a region map chart panel. Mutually exclusive with `markdown_config`, `xy_chart_config`, `tagcloud_config`, and `config_json`. Use this for geographic region maps.",
+				Optional:            true,
+				Attributes:          getRegionMapSchema(),
+				Validators: []validator.Object{
+					objectvalidator.ConflictsWith(
+						path.MatchRelative().AtParent().AtName("markdown_config"),
+						path.MatchRelative().AtParent().AtName("xy_chart_config"),
+						path.MatchRelative().AtParent().AtName("tagcloud_config"),
 						path.MatchRelative().AtParent().AtName("config_json"),
 					),
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"lens"}),
 				},
 			},
 			"config_json": schema.StringAttribute{
-				MarkdownDescription: "The configuration of the panel as a JSON string. Mutually exclusive with `markdown_config`, `xy_chart_config`, and `tagcloud_config`.",
+				MarkdownDescription: "The configuration of the panel as a JSON string. Mutually exclusive with `markdown_config`, `xy_chart_config`, `tagcloud_config`, and `region_map_config`.",
 				CustomType:          jsontypes.NormalizedType{},
 				Optional:            true,
 				Computed:            true,
@@ -392,6 +429,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 						path.MatchRelative().AtParent().AtName("markdown_config"),
 						path.MatchRelative().AtParent().AtName("xy_chart_config"),
 						path.MatchRelative().AtParent().AtName("tagcloud_config"),
+						path.MatchRelative().AtParent().AtName("region_map_config"),
 					),
 				},
 			},
@@ -873,6 +911,53 @@ func getTagcloudSchema() map[string]schema.Attribute {
 		"tag_by": schema.StringAttribute{
 			MarkdownDescription: "Tag grouping configuration as JSON. Can be a date histogram, terms, histogram, range, or filters operation. This determines how tags are grouped and displayed.",
 			CustomType:          customtypes.NewJSONWithDefaultsType(populateTagcloudTagByDefaults),
+			Required:            true,
+		},
+	}
+}
+
+// getRegionMapSchema returns the schema for region map chart configuration
+func getRegionMapSchema() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"title": schema.StringAttribute{
+			MarkdownDescription: "The title of the chart displayed in the panel.",
+			Optional:            true,
+		},
+		"description": schema.StringAttribute{
+			MarkdownDescription: "The description of the chart.",
+			Optional:            true,
+		},
+		"dataset": schema.StringAttribute{
+			MarkdownDescription: "Dataset configuration as JSON. For ES|QL, this specifies the ES|QL query. For standard layers, this specifies the data view and query.",
+			CustomType:          jsontypes.NormalizedType{},
+			Required:            true,
+		},
+		"ignore_global_filters": schema.BoolAttribute{
+			MarkdownDescription: "If true, ignore global filters when fetching data for this layer. Default is false.",
+			Optional:            true,
+		},
+		"sampling": schema.Float64Attribute{
+			MarkdownDescription: "Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.",
+			Optional:            true,
+		},
+		"query": schema.SingleNestedAttribute{
+			MarkdownDescription: "Query configuration for filtering data. Required for non-ES|QL region map configurations.",
+			Optional:            true,
+			Attributes:          getFilterSimpleSchema(),
+		},
+		"filters": schema.ListNestedAttribute{
+			MarkdownDescription: "Additional filters to apply to the chart data (maximum 100).",
+			Optional:            true,
+			NestedObject:        getSearchFilterSchema(),
+		},
+		"metric": schema.StringAttribute{
+			MarkdownDescription: "Metric configuration as JSON. For ES|QL, this defines the metric column and format. For standard mode, this defines the metric operation or formula.",
+			CustomType:          customtypes.NewJSONWithDefaultsType(populateRegionMapMetricDefaults),
+			Required:            true,
+		},
+		"region": schema.StringAttribute{
+			MarkdownDescription: "Region configuration as JSON. For ES|QL, this defines the region column and EMS join. For standard mode, this defines the bucket operation (terms, histogram, range, filters) and optional EMS settings.",
+			CustomType:          jsontypes.NormalizedType{},
 			Required:            true,
 		},
 	}

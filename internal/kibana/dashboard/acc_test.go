@@ -481,3 +481,55 @@ func TestAccResourceDashboardTagcloud(t *testing.T) {
 		},
 	})
 }
+
+func TestAccResourceDashboardRegionMap(t *testing.T) {
+	dashboardTitle := "Test Dashboard with Region Map " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "title", dashboardTitle),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.type", "lens"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.h", "15"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.w", "24"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.x", "0"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.y", "0"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.region_map_config.title", "Sample Region Map"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.region_map_config.description", "Test region map visualization"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.region_map_config.ignore_global_filters", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.region_map_config.sampling", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.region_map_config.query.language", "kuery"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.region_map_config.query.query", ""),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.region_map_config.filters.#", "1"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.region_map_config.dataset"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.region_map_config.metric"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.region_map_config.region"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				ResourceName:      "elasticstack_kibana_dashboard.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					"panels.0.region_map_config.metric",
+				},
+			},
+		},
+	})
+}
