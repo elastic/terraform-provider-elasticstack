@@ -121,11 +121,7 @@ func (m *alertingRuleModel) populateFromAPI(ctx context.Context, rule *models.Al
 
 	// Scheduled task ID - update if API returns a value, or resolve unknown to null
 	// (preserves existing known value when API doesn't return this field on re-reads)
-	if rule.ScheduledTaskID != nil {
-		m.ScheduledTaskID = types.StringValue(*rule.ScheduledTaskID)
-	} else if m.ScheduledTaskID.IsUnknown() {
-		m.ScheduledTaskID = types.StringNull()
-	}
+	m.ScheduledTaskID = types.StringPointerValue(rule.ScheduledTaskID)
 
 	// Execution status
 	if rule.ExecutionStatus.Status != nil {
