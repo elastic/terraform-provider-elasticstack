@@ -442,7 +442,7 @@ func convertActionsToAPI(ctx context.Context, actionsList types.List) ([]models.
 				apiAction.AlertsFilter.Kql = &kql
 			}
 
-			if utils.IsKnown(filter.Timeframe) && !filter.Timeframe.IsNull() {
+			if utils.IsKnown(filter.Timeframe) {
 				var tf timeframeModel
 				diags.Append(filter.Timeframe.As(ctx, &tf, basetypes.ObjectAsOptions{})...)
 				var days []int64
