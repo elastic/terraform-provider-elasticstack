@@ -124,11 +124,7 @@ func (m *alertingRuleModel) populateFromAPI(ctx context.Context, rule *models.Al
 	m.ScheduledTaskID = types.StringPointerValue(rule.ScheduledTaskID)
 
 	// Execution status
-	if rule.ExecutionStatus.Status != nil {
-		m.LastExecutionStatus = types.StringValue(*rule.ExecutionStatus.Status)
-	} else {
-		m.LastExecutionStatus = types.StringNull()
-	}
+	m.LastExecutionStatus = types.StringPointerValue(rule.ExecutionStatus.Status)
 
 	if rule.ExecutionStatus.LastExecutionDate != nil {
 		m.LastExecutionDate = types.StringValue(rule.ExecutionStatus.LastExecutionDate.Format("2006-01-02 15:04:05.999 -0700 MST"))
@@ -180,7 +176,7 @@ func (m alertingRuleModel) toAPIModel(ctx context.Context, serverVersion *versio
 		}
 
 		// alert_delay is only supported from v8.13+
-		if utils.IsKnown(m.AlertDelay) && !m.AlertDelay.IsNull() {
+		if utils.IsKnown(m.AlertDelay) {
 			if serverVersion.LessThan(alertDelayMinSupportedVersion) {
 				errStr := "alert_delay is only supported for Elasticsearch v8.13 or higher"
 				diags.AddError(errStr, errStr)
@@ -189,7 +185,7 @@ func (m alertingRuleModel) toAPIModel(ctx context.Context, serverVersion *versio
 		}
 
 		// Validate version-specific requirements for actions
-		if utils.IsKnown(m.Actions) && !m.Actions.IsNull() {
+		if utils.IsKnown(m.Actions) {
 			var actions []actionModel
 			diags.Append(m.Actions.ElementsAs(ctx, &actions, false)...)
 			if diags.HasError() {
@@ -198,7 +194,7 @@ func (m alertingRuleModel) toAPIModel(ctx context.Context, serverVersion *versio
 
 			for _, action := range actions {
 				// Check frequency version requirement
-				if utils.IsKnown(action.Frequency) && !action.Frequency.IsNull() {
+				if utils.IsKnown(action.Frequency) {
 					if serverVersion.LessThan(frequencyMinSupportedVersion) {
 						errStr := "actions.frequency is only supported for Kibana v8.6 or higher"
 						diags.AddError(errStr, errStr)
@@ -207,7 +203,7 @@ func (m alertingRuleModel) toAPIModel(ctx context.Context, serverVersion *versio
 				}
 
 				// Check alerts_filter version requirement
-				if utils.IsKnown(action.AlertsFilter) && !action.AlertsFilter.IsNull() {
+				if utils.IsKnown(action.AlertsFilter) {
 					if serverVersion.LessThan(alertsFilterMinSupportedVersion) {
 						errStr := "actions.alerts_filter is only supported for Kibana v8.9 or higher"
 						diags.AddError(errStr, errStr)
@@ -241,20 +237,17 @@ func (m alertingRuleModel) toAPIModel(ctx context.Context, serverVersion *versio
 
 	// Enabled
 	if utils.IsKnown(m.Enabled) {
-		enabled := m.Enabled.ValueBool()
-		rule.Enabled = &enabled
+		rule.Enabled = m.Enabled.ValueBoolPointer()
 	}
 
 	// NotifyWhen
 	if utils.IsKnown(m.NotifyWhen) && m.NotifyWhen.ValueString() != "" {
-		notifyWhen := m.NotifyWhen.ValueString()
-		rule.NotifyWhen = &notifyWhen
+		rule.NotifyWhen = m.NotifyWhen.ValueStringPointer()
 	}
 
 	// Throttle
 	if utils.IsKnown(m.Throttle) && m.Throttle.ValueString() != "" {
-		throttle := m.Throttle.ValueString()
-		rule.Throttle = &throttle
+		rule.Throttle = m.Throttle.ValueStringPointer()
 	}
 
 	// Tags
@@ -318,11 +311,7 @@ func convertActionsFromAPI(ctx context.Context, apiActions []models.AlertingRule
 			freq := frequencyModel{
 				Summary:    types.BoolValue(apiAction.Frequency.Summary),
 				NotifyWhen: types.StringValue(apiAction.Frequency.NotifyWhen),
-			}
-			if apiAction.Frequency.Throttle != nil {
-				freq.Throttle = types.StringValue(*apiAction.Frequency.Throttle)
-			} else {
-				freq.Throttle = types.StringNull()
+				Throttle: types.StringPointerValue(apiAction.Frequency.Throttle),
 			}
 			freqObj, d := types.ObjectValueFrom(ctx, getFrequencyAttrTypes(), freq)
 			diags.Append(d...)
@@ -335,11 +324,7 @@ func convertActionsFromAPI(ctx context.Context, apiActions []models.AlertingRule
 		if apiAction.AlertsFilter != nil {
 			filter := alertsFilterModel{}
 
-			if apiAction.AlertsFilter.Kql != nil {
-				filter.Kql = types.StringValue(*apiAction.AlertsFilter.Kql)
-			} else {
-				filter.Kql = types.StringNull()
-			}
+			filter.Kql = types.StringPointerValue(apiAction.AlertsFilter.Kql)
 
 			if apiAction.AlertsFilter.Timeframe != nil {
 				tf := apiAction.AlertsFilter.Timeframe
