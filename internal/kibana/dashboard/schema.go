@@ -236,6 +236,14 @@ func getSchema() schema.Schema {
 
 func getPanelSchema() schema.NestedAttributeObject {
 	return schema.NestedAttributeObject{
+		Validators: []validator.Object{
+			objectvalidator.AtLeastOneOf(
+				path.MatchRelative().AtName("markdown_config"),
+				path.MatchRelative().AtName("config_json"),
+				path.MatchRelative().AtName("xy_chart_config"),
+				path.MatchRelative().AtName("tagcloud_config"),
+			),
+		},
 		Attributes: map[string]schema.Attribute{
 			"type": schema.StringAttribute{
 				MarkdownDescription: "The type of the panel (e.g. 'DASHBOARD_MARKDOWN', 'lens').",

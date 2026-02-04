@@ -16,7 +16,7 @@ import (
 func newTagcloudPanelConfigConverter() tagcloudPanelConfigConverter {
 	return tagcloudPanelConfigConverter{
 		lensPanelConfigConverter: lensPanelConfigConverter{
-			visualizationType: "tagcloud",
+			visualizationType: string(kbapi.TagcloudNoESQLTypeTagcloud),
 		},
 	}
 }
@@ -218,7 +218,7 @@ func (m *tagcloudConfigModel) toAPI() (kbapi.TagcloudNoESQL, diag.Diagnostics) {
 	var api kbapi.TagcloudNoESQL
 
 	// Set type to "tagcloud"
-	api.Type = "tagcloud"
+	api.Type = kbapi.TagcloudNoESQLTypeTagcloud
 
 	if !m.Title.IsNull() {
 		api.Title = m.Title.ValueStringPointer()
