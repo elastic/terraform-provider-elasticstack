@@ -117,11 +117,7 @@ func (m *alertingRuleModel) populateFromAPI(ctx context.Context, rule *models.Al
 	}
 
 	// Throttle
-	if rule.Throttle != nil {
-		m.Throttle = types.StringValue(*rule.Throttle)
-	} else {
-		m.Throttle = types.StringNull()
-	}
+	m.Throttle = types.StringPointerValue(rule.Throttle)
 
 	// Scheduled task ID - update if API returns a value, or resolve unknown to null
 	// (preserves existing known value when API doesn't return this field on re-reads)
