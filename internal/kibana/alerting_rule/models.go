@@ -428,7 +428,7 @@ func convertActionsToAPI(ctx context.Context, actionsList types.List) ([]models.
 		}
 
 		// Alerts filter - extract from object
-		if utils.IsKnown(action.AlertsFilter) && !action.AlertsFilter.IsNull() {
+		if utils.IsKnown(action.AlertsFilter) {
 			var filter alertsFilterModel
 			diags.Append(action.AlertsFilter.As(ctx, &filter, basetypes.ObjectAsOptions{})...)
 			apiAction.AlertsFilter = &models.ActionAlertsFilter{}
