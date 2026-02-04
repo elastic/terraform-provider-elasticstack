@@ -422,8 +422,7 @@ func convertActionsToAPI(ctx context.Context, actionsList types.List) ([]models.
 				NotifyWhen: freq.NotifyWhen.ValueString(),
 			}
 			if utils.IsKnown(freq.Throttle) && freq.Throttle.ValueString() != "" {
-				throttle := freq.Throttle.ValueString()
-				apiAction.Frequency.Throttle = &throttle
+				apiAction.Frequency.Throttle = freq.Throttle.ValueStringPointer()
 			}
 		}
 
