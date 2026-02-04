@@ -257,6 +257,8 @@ func (data *RoleData) fromAPIModel(ctx context.Context, role *models.Role) diag.
 	// - User explicitly sets empty array ([]) - should become empty set
 	originalCluster := data.Cluster
 	originalRunAs := data.RunAs
+	originalIndices := data.Indices
+	originalRemoteIndices := data.RemoteIndices
 
 	data.Name = types.StringValue(role.Name)
 
