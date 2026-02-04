@@ -123,7 +123,7 @@ resource "elasticstack_elasticsearch_index" "my_index" {
 - `settings` (Block List, Deprecated) DEPRECATED: Please use dedicated setting field. Configuration options for the index. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#index-modules-settings.
 **NOTE:** Static index settings (see: https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#_static_index_settings) can be only set on the index creation and later cannot be removed or updated - _apply_ will return error (see [below for nested schema](#nestedblock--settings))
 - `shard_check_on_startup` (String) Whether or not shards should be checked for corruption before opening. When corruption is detected, it will prevent the shard from being opened. Accepts `false`, `true`, `checksum`.
-- `sort_field` (Set of String) The field to sort shards in this index by.
+- `sort_field` (List of String) The field to sort shards in this index by.
 - `sort_order` (List of String) The direction to sort shards in. Accepts `asc`, `desc`.
 - `timeout` (String) Period to wait for a response. If no response is received before the timeout expires, the request fails and returns an error. Defaults to `30s`.
 - `unassigned_node_left_delayed_timeout` (String) Time to delay the allocation of replica shards which become unassigned because a node has left, in time units, e.g. `10s`
