@@ -250,7 +250,8 @@ func fieldSecurityToAPIModel(ctx context.Context, data types.Object) (*models.Fi
 }
 
 // findMatchingFieldSecurity finds the field_security from the original indices that matches
-// the given names and privileges. Returns null types.Set values if not found.
+// the given names and privileges. Returns null types.Set values if not found or if errors occur.
+// Errors during matching are treated as non-matches to ensure safe fallback behavior.
 func findMatchingFieldSecurity(ctx context.Context, originalIndices types.Set, names, privileges []string) (grant, except types.Set) {
 	// Default to null if we can't find a match
 	grant = types.SetNull(types.StringType)
@@ -263,12 +264,14 @@ func findMatchingFieldSecurity(ctx context.Context, originalIndices types.Set, n
 	var originalIndicesList []IndexPermsData
 	diags := originalIndices.ElementsAs(ctx, &originalIndicesList, false)
 	if diags.HasError() {
+		// Return null values on error - safe fallback
 		return
 	}
 
 	// Try to find a matching index by comparing names and privileges
 	for _, origIdx := range originalIndicesList {
 		var origNames, origPrivs []string
+		// Ignore errors during extraction - treat as non-match
 		origIdx.Names.ElementsAs(ctx, &origNames, false)
 		origIdx.Privileges.ElementsAs(ctx, &origPrivs, false)
 
@@ -288,7 +291,8 @@ func findMatchingFieldSecurity(ctx context.Context, originalIndices types.Set, n
 }
 
 // findMatchingRemoteFieldSecurity finds the field_security from the original remote_indices
-// that matches the given clusters, names and privileges.
+// that matches the given clusters, names and privileges. Returns null types.Set values if not 
+// found or if errors occur. Errors during matching are treated as non-matches to ensure safe fallback behavior.
 func findMatchingRemoteFieldSecurity(ctx context.Context, originalRemoteIndices types.Set, clusters, names, privileges []string) (grant, except types.Set) {
 	// Default to null if we can't find a match
 	grant = types.SetNull(types.StringType)
@@ -301,12 +305,14 @@ func findMatchingRemoteFieldSecurity(ctx context.Context, originalRemoteIndices 
 	var originalList []RemoteIndexPermsData
 	diags := originalRemoteIndices.ElementsAs(ctx, &originalList, false)
 	if diags.HasError() {
+		// Return null values on error - safe fallback
 		return
 	}
 
 	// Try to find a matching index by comparing clusters, names and privileges
 	for _, origIdx := range originalList {
 		var origClusters, origNames, origPrivs []string
+		// Ignore errors during extraction - treat as non-match
 		origIdx.Clusters.ElementsAs(ctx, &origClusters, false)
 		origIdx.Names.ElementsAs(ctx, &origNames, false)
 		origIdx.Privileges.ElementsAs(ctx, &origPrivs, false)
