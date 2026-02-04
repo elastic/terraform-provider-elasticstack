@@ -3,6 +3,7 @@ package dashboard
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
@@ -17,6 +18,45 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
+
+// populateTagcloudMetricDefaults populates default values for tagcloud metric configuration
+func populateTagcloudMetricDefaults(model map[string]any) map[string]any {
+	if model == nil {
+		return model
+	}
+	// Set defaults for all field metric operations
+	if operation, ok := model["operation"].(string); ok {
+		// These operations all have the same defaults
+		switch operation {
+		case "count", "unique_count", "min", "max", "average", "median", "standard_deviation", "sum", "last_value", "percentile", "percentile_rank":
+			if _, exists := model["empty_as_null"]; !exists {
+				model["empty_as_null"] = false
+			}
+			if _, exists := model["show_metric_label"]; !exists {
+				model["show_metric_label"] = true
+			}
+		}
+	}
+	return model
+}
+
+// populateTagcloudTagByDefaults populates default values for tagcloud tag_by configuration
+func populateTagcloudTagByDefaults(model map[string]any) map[string]any {
+	if model == nil {
+		return model
+	}
+	// Set defaults for terms operation
+	if operation, ok := model["operation"].(string); ok && operation == "terms" {
+		if _, exists := model["rank_by"]; !exists {
+			model["rank_by"] = map[string]any{
+				"type":      "column",
+				"metric":    0,
+				"direction": "desc",
+			}
+		}
+	}
+	return model
+}
 
 func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = getSchema()
@@ -196,6 +236,14 @@ func getSchema() schema.Schema {
 
 func getPanelSchema() schema.NestedAttributeObject {
 	return schema.NestedAttributeObject{
+		Validators: []validator.Object{
+			objectvalidator.AtLeastOneOf(
+				path.MatchRelative().AtName("markdown_config"),
+				path.MatchRelative().AtName("config_json"),
+				path.MatchRelative().AtName("xy_chart_config"),
+				path.MatchRelative().AtName("tagcloud_config"),
+			),
+		},
 		Attributes: map[string]schema.Attribute{
 			"type": schema.StringAttribute{
 				MarkdownDescription: "The type of the panel (e.g. 'DASHBOARD_MARKDOWN', 'lens').",
@@ -232,7 +280,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 				},
 			},
 			"markdown_config": schema.SingleNestedAttribute{
-				MarkdownDescription: "The configuration of a markdown panel. Mutually exclusive with `config_json` and `xy_chart_config`.",
+				MarkdownDescription: "The configuration of a markdown panel. Mutually exclusive with `config_json`, `xy_chart_config`, and `tagcloud_config`.",
 				Optional:            true,
 				Attributes: map[string]schema.Attribute{
 					"content": schema.StringAttribute{
@@ -243,8 +291,8 @@ func getPanelSchema() schema.NestedAttributeObject {
 						MarkdownDescription: "The description of the panel.",
 						Optional:            true,
 					},
-					"hide_panel_titles": schema.BoolAttribute{
-						MarkdownDescription: "Hide the panel titles.",
+					"hide_title": schema.BoolAttribute{
+						MarkdownDescription: "Hide the title of the panel.",
 						Optional:            true,
 					},
 					"title": schema.StringAttribute{
@@ -256,12 +304,13 @@ func getPanelSchema() schema.NestedAttributeObject {
 					objectvalidator.ConflictsWith(
 						path.MatchRelative().AtParent().AtName("config_json"),
 						path.MatchRelative().AtParent().AtName("xy_chart_config"),
+						path.MatchRelative().AtParent().AtName("tagcloud_config"),
 					),
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"DASHBOARD_MARKDOWN"}),
 				},
 			},
 			"xy_chart_config": schema.SingleNestedAttribute{
-				MarkdownDescription: "Configuration for an XY chart panel. Mutually exclusive with `markdown_config` and `config_json`. Use this for line, area, and bar charts.",
+				MarkdownDescription: "Configuration for an XY chart panel. Mutually exclusive with `markdown_config`, `tagcloud_config`, and `config_json`. Use this for line, area, and bar charts.",
 				Optional:            true,
 				Attributes: map[string]schema.Attribute{
 					"title": schema.StringAttribute{
@@ -314,13 +363,27 @@ func getPanelSchema() schema.NestedAttributeObject {
 				Validators: []validator.Object{
 					objectvalidator.ConflictsWith(
 						path.MatchRelative().AtParent().AtName("markdown_config"),
+						path.MatchRelative().AtParent().AtName("tagcloud_config"),
+						path.MatchRelative().AtParent().AtName("config_json"),
+					),
+					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"lens"}),
+				},
+			},
+			"tagcloud_config": schema.SingleNestedAttribute{
+				MarkdownDescription: "Configuration for a tagcloud chart panel. Mutually exclusive with `markdown_config`, `xy_chart_config`, and `config_json`. Tag clouds visualize word frequency.",
+				Optional:            true,
+				Attributes:          getTagcloudSchema(),
+				Validators: []validator.Object{
+					objectvalidator.ConflictsWith(
+						path.MatchRelative().AtParent().AtName("markdown_config"),
+						path.MatchRelative().AtParent().AtName("xy_chart_config"),
 						path.MatchRelative().AtParent().AtName("config_json"),
 					),
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"lens"}),
 				},
 			},
 			"config_json": schema.StringAttribute{
-				MarkdownDescription: "The configuration of the panel as a JSON string. Mutually exclusive with `markdown_config` and `xy_chart_config`.",
+				MarkdownDescription: "The configuration of the panel as a JSON string. Mutually exclusive with `markdown_config`, `xy_chart_config`, and `tagcloud_config`.",
 				CustomType:          jsontypes.NormalizedType{},
 				Optional:            true,
 				Computed:            true,
@@ -328,6 +391,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 					stringvalidator.ConflictsWith(
 						path.MatchRelative().AtParent().AtName("markdown_config"),
 						path.MatchRelative().AtParent().AtName("xy_chart_config"),
+						path.MatchRelative().AtParent().AtName("tagcloud_config"),
 					),
 				},
 			},
@@ -742,6 +806,74 @@ func getReferenceLineLayerAttributes() map[string]schema.Attribute {
 					},
 				},
 			},
+		},
+	}
+}
+
+// getTagcloudSchema returns the schema for tagcloud chart configuration
+func getTagcloudSchema() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"title": schema.StringAttribute{
+			MarkdownDescription: "The title of the chart displayed in the panel.",
+			Optional:            true,
+		},
+		"description": schema.StringAttribute{
+			MarkdownDescription: "The description of the chart.",
+			Optional:            true,
+		},
+		"dataset": schema.StringAttribute{
+			MarkdownDescription: "Dataset configuration as JSON. For standard layers, this specifies the data view and query.",
+			CustomType:          jsontypes.NormalizedType{},
+			Required:            true,
+		},
+		"ignore_global_filters": schema.BoolAttribute{
+			MarkdownDescription: "If true, ignore global filters when fetching data for this layer. Default is false.",
+			Optional:            true,
+		},
+		"sampling": schema.Float64Attribute{
+			MarkdownDescription: "Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.",
+			Optional:            true,
+		},
+		"query": schema.SingleNestedAttribute{
+			MarkdownDescription: "Query configuration for filtering data.",
+			Required:            true,
+			Attributes:          getFilterSimpleSchema(),
+		},
+		"filters": schema.ListNestedAttribute{
+			MarkdownDescription: "Additional filters to apply to the chart data (maximum 100).",
+			Optional:            true,
+			NestedObject:        getSearchFilterSchema(),
+		},
+		"orientation": schema.StringAttribute{
+			MarkdownDescription: "Orientation of the tagcloud. Valid values: 'horizontal', 'vertical', 'angled'.",
+			Optional:            true,
+			Validators: []validator.String{
+				stringvalidator.OneOf("horizontal", "vertical", "angled"),
+			},
+		},
+		"font_size": schema.SingleNestedAttribute{
+			MarkdownDescription: "Minimum and maximum font size for the tags.",
+			Optional:            true,
+			Attributes: map[string]schema.Attribute{
+				"min": schema.Float64Attribute{
+					MarkdownDescription: "Minimum font size (default: 18, minimum: 1).",
+					Optional:            true,
+				},
+				"max": schema.Float64Attribute{
+					MarkdownDescription: "Maximum font size (default: 72, maximum: 120).",
+					Optional:            true,
+				},
+			},
+		},
+		"metric": schema.StringAttribute{
+			MarkdownDescription: "Metric configuration as JSON. Can be a field metric operation (count, unique count, min, max, avg, median, std dev, sum, last value, percentile, percentile ranks), a pipeline operation (differences, moving average, cumulative sum, counter rate), or a formula operation.",
+			CustomType:          customtypes.NewJSONWithDefaultsType(populateTagcloudMetricDefaults),
+			Required:            true,
+		},
+		"tag_by": schema.StringAttribute{
+			MarkdownDescription: "Tag grouping configuration as JSON. Can be a date histogram, terms, histogram, range, or filters operation. This determines how tags are grouped and displayed.",
+			CustomType:          customtypes.NewJSONWithDefaultsType(populateTagcloudTagByDefaults),
+			Required:            true,
 		},
 	}
 }

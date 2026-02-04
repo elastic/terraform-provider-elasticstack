@@ -39,7 +39,7 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 					"config": {
 						"title": "My Panel",
 						"content": "some content",
-                        "hidePanelTitles": true
+                        "hide_title": true
 					}
 				}
 			]`,
@@ -54,15 +54,15 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 					},
 					ID: types.StringValue("1"),
 					MarkdownConfig: &markdownConfigModel{
-						Title:           types.StringValue("My Panel"),
-						Content:         types.StringValue("some content"),
-						HidePanelTitles: types.BoolValue(true),
-						Description:     types.StringNull(),
+						Title:       types.StringValue("My Panel"),
+						Content:     types.StringValue("some content"),
+						HideTitle:   types.BoolValue(true),
+						Description: types.StringNull(),
 					},
 					ConfigJSON: jsontypes.NewNormalizedValue(`{
 						"title": "My Panel",
 						"content": "some content",
-                        "hidePanelTitles": true
+                        "hide_title": true
 					}`),
 				},
 			},
@@ -253,9 +253,9 @@ func Test_panelsToAPI(t *testing.T) {
 						},
 						ID: types.StringValue("1"),
 						MarkdownConfig: &markdownConfigModel{
-							Title:           types.StringValue("My Panel"),
-							Content:         types.StringValue("some content"),
-							HidePanelTitles: types.BoolValue(true),
+							Title:     types.StringValue("My Panel"),
+							Content:   types.StringValue("some content"),
+							HideTitle: types.BoolValue(true),
 						},
 						ConfigJSON: jsontypes.NewNormalizedNull(),
 					},
@@ -273,7 +273,7 @@ func Test_panelsToAPI(t *testing.T) {
 					"type": "visualization",
 					"config": {
 						"content": "some content",
-                        "hidePanelTitles": true,
+                        "hide_title": true,
 						"title": "My Panel"
 					}
 				}

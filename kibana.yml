@@ -3,3 +3,4 @@ server.shutdownTimeout: 5s
 server.name: kibana
 feature_flags.overrides:
   lens.apiFormat: true
+server.oas.enabled: true

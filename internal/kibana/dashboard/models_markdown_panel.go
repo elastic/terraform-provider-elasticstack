@@ -11,10 +11,10 @@ import (
 )
 
 type markdownConfigModel struct {
-	Content         types.String `tfsdk:"content"`
-	Description     types.String `tfsdk:"description"`
-	HidePanelTitles types.Bool   `tfsdk:"hide_panel_titles"`
-	Title           types.String `tfsdk:"title"`
+	Content     types.String `tfsdk:"content"`
+	Description types.String `tfsdk:"description"`
+	HideTitle   types.Bool   `tfsdk:"hide_title"`
+	Title       types.String `tfsdk:"title"`
 }
 
 type markdownPanelConfigConverter struct{}
@@ -34,10 +34,10 @@ func (c markdownPanelConfigConverter) populateFromAPIPanel(_ context.Context, pm
 	}
 
 	pm.MarkdownConfig = &markdownConfigModel{
-		Content:         types.StringValue(config0.Content),
-		Description:     types.StringPointerValue(config0.Description),
-		HidePanelTitles: types.BoolPointerValue(config0.HidePanelTitles),
-		Title:           types.StringPointerValue(config0.Title),
+		Content:     types.StringValue(config0.Content),
+		Description: types.StringPointerValue(config0.Description),
+		HideTitle:   types.BoolPointerValue(config0.HideTitle),
+		Title:       types.StringPointerValue(config0.Title),
 	}
 
 	return nil
@@ -50,8 +50,8 @@ func (c markdownPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *kb
 	if utils.IsKnown(pm.MarkdownConfig.Description) {
 		config0.Description = utils.Pointer(pm.MarkdownConfig.Description.ValueString())
 	}
-	if utils.IsKnown(pm.MarkdownConfig.HidePanelTitles) {
-		config0.HidePanelTitles = utils.Pointer(pm.MarkdownConfig.HidePanelTitles.ValueBool())
+	if utils.IsKnown(pm.MarkdownConfig.HideTitle) {
+		config0.HideTitle = utils.Pointer(pm.MarkdownConfig.HideTitle.ValueBool())
 	}
 	if utils.IsKnown(pm.MarkdownConfig.Title) {
 		config0.Title = utils.Pointer(pm.MarkdownConfig.Title.ValueString())

@@ -68,10 +68,10 @@ func Test_markdownPanelConfigConverter_populateFromAPIPanel(t *testing.T) {
 				title := "My Panel Title"
 
 				config0 := kbapi.DashboardPanelItemConfig0{
-					Content:         content,
-					Description:     &description,
-					HidePanelTitles: &hidePanelTitles,
-					Title:           &title,
+					Content:     content,
+					Description: &description,
+					HideTitle:   &hidePanelTitles,
+					Title:       &title,
 				}
 
 				config := kbapi.DashboardPanelItem_Config{}
@@ -82,10 +82,10 @@ func Test_markdownPanelConfigConverter_populateFromAPIPanel(t *testing.T) {
 				return config
 			}(),
 			expected: &markdownConfigModel{
-				Content:         types.StringValue("# Markdown Content"),
-				Description:     types.StringValue("A test description"),
-				HidePanelTitles: types.BoolValue(true),
-				Title:           types.StringValue("My Panel Title"),
+				Content:     types.StringValue("# Markdown Content"),
+				Description: types.StringValue("A test description"),
+				HideTitle:   types.BoolValue(true),
+				Title:       types.StringValue("My Panel Title"),
 			},
 			expectError: false,
 		},
@@ -93,10 +93,10 @@ func Test_markdownPanelConfigConverter_populateFromAPIPanel(t *testing.T) {
 			name: "only required field (content)",
 			config: func() kbapi.DashboardPanelItem_Config {
 				config0 := kbapi.DashboardPanelItemConfig0{
-					Content:         "Simple content",
-					Description:     nil,
-					HidePanelTitles: nil,
-					Title:           nil,
+					Content:     "Simple content",
+					Description: nil,
+					HideTitle:   nil,
+					Title:       nil,
 				}
 
 				config := kbapi.DashboardPanelItem_Config{}
@@ -107,10 +107,10 @@ func Test_markdownPanelConfigConverter_populateFromAPIPanel(t *testing.T) {
 				return config
 			}(),
 			expected: &markdownConfigModel{
-				Content:         types.StringValue("Simple content"),
-				Description:     types.StringNull(),
-				HidePanelTitles: types.BoolNull(),
-				Title:           types.StringNull(),
+				Content:     types.StringValue("Simple content"),
+				Description: types.StringNull(),
+				HideTitle:   types.BoolNull(),
+				Title:       types.StringNull(),
 			},
 			expectError: false,
 		},
@@ -129,10 +129,10 @@ func Test_markdownPanelConfigConverter_populateFromAPIPanel(t *testing.T) {
 				return config
 			}(),
 			expected: &markdownConfigModel{
-				Content:         types.StringValue(""),
-				Description:     types.StringNull(),
-				HidePanelTitles: types.BoolNull(),
-				Title:           types.StringNull(),
+				Content:     types.StringValue(""),
+				Description: types.StringNull(),
+				HideTitle:   types.BoolNull(),
+				Title:       types.StringNull(),
 			},
 			expectError: false,
 		},
@@ -141,8 +141,8 @@ func Test_markdownPanelConfigConverter_populateFromAPIPanel(t *testing.T) {
 			config: func() kbapi.DashboardPanelItem_Config {
 				hidePanelTitles := false
 				config0 := kbapi.DashboardPanelItemConfig0{
-					Content:         "Content",
-					HidePanelTitles: &hidePanelTitles,
+					Content:   "Content",
+					HideTitle: &hidePanelTitles,
 				}
 
 				config := kbapi.DashboardPanelItem_Config{}
@@ -153,10 +153,10 @@ func Test_markdownPanelConfigConverter_populateFromAPIPanel(t *testing.T) {
 				return config
 			}(),
 			expected: &markdownConfigModel{
-				Content:         types.StringValue("Content"),
-				Description:     types.StringNull(),
-				HidePanelTitles: types.BoolValue(false),
-				Title:           types.StringNull(),
+				Content:     types.StringValue("Content"),
+				Description: types.StringNull(),
+				HideTitle:   types.BoolValue(false),
+				Title:       types.StringNull(),
 			},
 			expectError: false,
 		},
@@ -179,10 +179,10 @@ func Test_markdownPanelConfigConverter_populateFromAPIPanel(t *testing.T) {
 				return config
 			}(),
 			expected: &markdownConfigModel{
-				Content:         types.StringValue("Content"),
-				Description:     types.StringValue(""),
-				HidePanelTitles: types.BoolNull(),
-				Title:           types.StringValue(""),
+				Content:     types.StringValue("Content"),
+				Description: types.StringValue(""),
+				HideTitle:   types.BoolNull(),
+				Title:       types.StringValue(""),
 			},
 			expectError: false,
 		},
@@ -219,9 +219,9 @@ Some **bold** text and *italic* text.
 - List item 2
 
 [Link](https://example.com)`),
-				Description:     types.StringNull(),
-				HidePanelTitles: types.BoolNull(),
-				Title:           types.StringNull(),
+				Description: types.StringNull(),
+				HideTitle:   types.BoolNull(),
+				Title:       types.StringNull(),
 			},
 			expectError: false,
 		},
@@ -241,10 +241,10 @@ Some **bold** text and *italic* text.
 				return config
 			}(),
 			expected: &markdownConfigModel{
-				Content:         types.StringValue(`Content with special chars: <>&"'`),
-				Description:     types.StringNull(),
-				HidePanelTitles: types.BoolNull(),
-				Title:           types.StringNull(),
+				Content:     types.StringValue(`Content with special chars: <>&"'`),
+				Description: types.StringNull(),
+				HideTitle:   types.BoolNull(),
+				Title:       types.StringNull(),
 			},
 			expectError: false,
 		},
@@ -267,10 +267,10 @@ Some **bold** text and *italic* text.
 				return config
 			}(),
 			expected: &markdownConfigModel{
-				Content:         types.StringValue("Content with extra fields"),
-				Description:     types.StringValue("Description"),
-				HidePanelTitles: types.BoolNull(),
-				Title:           types.StringNull(),
+				Content:     types.StringValue("Content with extra fields"),
+				Description: types.StringValue("Description"),
+				HideTitle:   types.BoolNull(),
+				Title:       types.StringNull(),
 			},
 			expectError: false,
 		},
@@ -293,7 +293,7 @@ Some **bold** text and *italic* text.
 			require.NotNil(t, pm.MarkdownConfig, "MarkdownConfig should not be nil")
 			assert.Equal(t, tt.expected.Content, pm.MarkdownConfig.Content, "Content mismatch")
 			assert.Equal(t, tt.expected.Description, pm.MarkdownConfig.Description, "Description mismatch")
-			assert.Equal(t, tt.expected.HidePanelTitles, pm.MarkdownConfig.HidePanelTitles, "HidePanelTitles mismatch")
+			assert.Equal(t, tt.expected.HideTitle, pm.MarkdownConfig.HideTitle, "HidePanelTitles mismatch")
 			assert.Equal(t, tt.expected.Title, pm.MarkdownConfig.Title, "Title mismatch")
 		})
 	}
@@ -379,17 +379,17 @@ func Test_markdownPanelConfigConverter_mapPanelToAPI(t *testing.T) {
 			name: "successfully maps panel with all fields to API config",
 			pm: panelModel{
 				MarkdownConfig: &markdownConfigModel{
-					Content:         types.StringValue("# Test Content"),
-					Description:     types.StringValue("Test Description"),
-					HidePanelTitles: types.BoolValue(true),
-					Title:           types.StringValue("Test Title"),
+					Content:     types.StringValue("# Test Content"),
+					Description: types.StringValue("Test Description"),
+					HideTitle:   types.BoolValue(true),
+					Title:       types.StringValue("Test Title"),
 				},
 			},
 			wantConfig: kbapi.DashboardPanelItemConfig0{
-				Content:         "# Test Content",
-				Description:     strPtr("Test Description"),
-				HidePanelTitles: boolPtr(true),
-				Title:           strPtr("Test Title"),
+				Content:     "# Test Content",
+				Description: strPtr("Test Description"),
+				HideTitle:   boolPtr(true),
+				Title:       strPtr("Test Title"),
 			},
 			wantDiags: false,
 		},
@@ -397,17 +397,17 @@ func Test_markdownPanelConfigConverter_mapPanelToAPI(t *testing.T) {
 			name: "successfully maps panel with minimal fields to API config",
 			pm: panelModel{
 				MarkdownConfig: &markdownConfigModel{
-					Content:         types.StringValue("# Minimal"),
-					Description:     types.StringNull(),
-					HidePanelTitles: types.BoolNull(),
-					Title:           types.StringNull(),
+					Content:     types.StringValue("# Minimal"),
+					Description: types.StringNull(),
+					HideTitle:   types.BoolNull(),
+					Title:       types.StringNull(),
 				},
 			},
 			wantConfig: kbapi.DashboardPanelItemConfig0{
-				Content:         "# Minimal",
-				Description:     nil,
-				HidePanelTitles: nil,
-				Title:           nil,
+				Content:     "# Minimal",
+				Description: nil,
+				HideTitle:   nil,
+				Title:       nil,
 			},
 			wantDiags: false,
 		},
@@ -415,17 +415,17 @@ func Test_markdownPanelConfigConverter_mapPanelToAPI(t *testing.T) {
 			name: "successfully maps panel with unknown values",
 			pm: panelModel{
 				MarkdownConfig: &markdownConfigModel{
-					Content:         types.StringValue("# Content"),
-					Description:     types.StringUnknown(),
-					HidePanelTitles: types.BoolUnknown(),
-					Title:           types.StringUnknown(),
+					Content:     types.StringValue("# Content"),
+					Description: types.StringUnknown(),
+					HideTitle:   types.BoolUnknown(),
+					Title:       types.StringUnknown(),
 				},
 			},
 			wantConfig: kbapi.DashboardPanelItemConfig0{
-				Content:         "# Content",
-				Description:     nil,
-				HidePanelTitles: nil,
-				Title:           nil,
+				Content:     "# Content",
+				Description: nil,
+				HideTitle:   nil,
+				Title:       nil,
 			},
 			wantDiags: false,
 		},
@@ -433,17 +433,17 @@ func Test_markdownPanelConfigConverter_mapPanelToAPI(t *testing.T) {
 			name: "handles false value for hidePanelTitles",
 			pm: panelModel{
 				MarkdownConfig: &markdownConfigModel{
-					Content:         types.StringValue("# Content"),
-					HidePanelTitles: types.BoolValue(false),
-					Description:     types.StringNull(),
-					Title:           types.StringNull(),
+					Content:     types.StringValue("# Content"),
+					HideTitle:   types.BoolValue(false),
+					Description: types.StringNull(),
+					Title:       types.StringNull(),
 				},
 			},
 			wantConfig: kbapi.DashboardPanelItemConfig0{
-				Content:         "# Content",
-				HidePanelTitles: boolPtr(false),
-				Description:     nil,
-				Title:           nil,
+				Content:     "# Content",
+				HideTitle:   boolPtr(false),
+				Description: nil,
+				Title:       nil,
 			},
 			wantDiags: false,
 		},
@@ -476,9 +476,9 @@ Some **bold** text and *italic* text.
 - List item 2
 
 [Link](https://example.com)`),
-					Description:     types.StringNull(),
-					HidePanelTitles: types.BoolNull(),
-					Title:           types.StringNull(),
+					Description: types.StringNull(),
+					HideTitle:   types.BoolNull(),
+					Title:       types.StringNull(),
 				},
 			},
 			wantConfig: kbapi.DashboardPanelItemConfig0{
@@ -491,9 +491,9 @@ Some **bold** text and *italic* text.
 - List item 2
 
 [Link](https://example.com)`,
-				Description:     nil,
-				HidePanelTitles: nil,
-				Title:           nil,
+				Description: nil,
+				HideTitle:   nil,
+				Title:       nil,
 			},
 			wantDiags: false,
 		},
@@ -540,11 +540,11 @@ Some **bold** text and *italic* text.
 					assert.Equal(t, *tt.wantConfig.Description, *config0.Description)
 				}
 
-				if tt.wantConfig.HidePanelTitles == nil {
-					assert.Nil(t, config0.HidePanelTitles)
+				if tt.wantConfig.HideTitle == nil {
+					assert.Nil(t, config0.HideTitle)
 				} else {
-					require.NotNil(t, config0.HidePanelTitles)
-					assert.Equal(t, *tt.wantConfig.HidePanelTitles, *config0.HidePanelTitles)
+					require.NotNil(t, config0.HideTitle)
+					assert.Equal(t, *tt.wantConfig.HideTitle, *config0.HideTitle)
 				}
 
 				if tt.wantConfig.Title == nil {
