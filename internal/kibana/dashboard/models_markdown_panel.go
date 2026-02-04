@@ -19,8 +19,8 @@ type markdownConfigModel struct {
 
 type markdownPanelConfigConverter struct{}
 
-func (c markdownPanelConfigConverter) handlesAPIPanelConfig(panelType string, _ kbapi.DashboardPanelItem_Config) bool {
-	return panelType == "DASHBOARD_MARKDOWN"
+func (c markdownPanelConfigConverter) handlesAPIPanelConfig(pm *panelModel, panelType string, _ kbapi.DashboardPanelItem_Config) bool {
+	return (pm == nil || pm.MarkdownConfig != nil) && panelType == "DASHBOARD_MARKDOWN"
 }
 
 func (c markdownPanelConfigConverter) handlesTFPanelConfig(pm panelModel) bool {

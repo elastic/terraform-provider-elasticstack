@@ -13,31 +13,65 @@ import (
 func Test_markdownPanelConfigConverter_handlesAPIPanelConfig(t *testing.T) {
 	tests := []struct {
 		name      string
+		pm        *panelModel
 		panelType string
 		want      bool
 	}{
 		{
-			name:      "handles DASHBOARD_MARKDOWN type",
+			name: "handles DASHBOARD_MARKDOWN type with markdown config",
+			pm: &panelModel{
+				MarkdownConfig: &markdownConfigModel{
+					Content: types.StringValue("# Test"),
+				},
+			},
 			panelType: "DASHBOARD_MARKDOWN",
 			want:      true,
 		},
 		{
-			name:      "does not handle visualization type",
+			name: "does not handle DASHBOARD_MARKDOWN without markdown config",
+			pm: &panelModel{
+				MarkdownConfig: nil,
+			},
+			panelType: "DASHBOARD_MARKDOWN",
+			want:      false,
+		},
+		{
+			name: "does not handle visualization type",
+			pm: &panelModel{
+				MarkdownConfig: &markdownConfigModel{
+					Content: types.StringValue("# Test"),
+				},
+			},
 			panelType: "visualization",
 			want:      false,
 		},
 		{
-			name:      "does not handle lens type",
+			name: "does not handle lens type",
+			pm: &panelModel{
+				MarkdownConfig: &markdownConfigModel{
+					Content: types.StringValue("# Test"),
+				},
+			},
 			panelType: "lens",
 			want:      false,
 		},
 		{
-			name:      "does not handle search type",
+			name: "does not handle search type",
+			pm: &panelModel{
+				MarkdownConfig: &markdownConfigModel{
+					Content: types.StringValue("# Test"),
+				},
+			},
 			panelType: "search",
 			want:      false,
 		},
 		{
-			name:      "does not handle empty string",
+			name: "does not handle empty string",
+			pm: &panelModel{
+				MarkdownConfig: &markdownConfigModel{
+					Content: types.StringValue("# Test"),
+				},
+			},
 			panelType: "",
 			want:      false,
 		},
@@ -46,7 +80,7 @@ func Test_markdownPanelConfigConverter_handlesAPIPanelConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := markdownPanelConfigConverter{}
-			got := c.handlesAPIPanelConfig(tt.panelType, kbapi.DashboardPanelItem_Config{})
+			got := c.handlesAPIPanelConfig(tt.pm, tt.panelType, kbapi.DashboardPanelItem_Config{})
 			assert.Equal(t, tt.want, got)
 		})
 	}

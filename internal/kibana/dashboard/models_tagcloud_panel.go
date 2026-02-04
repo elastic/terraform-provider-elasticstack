@@ -17,6 +17,7 @@ func newTagcloudPanelConfigConverter() tagcloudPanelConfigConverter {
 	return tagcloudPanelConfigConverter{
 		lensPanelConfigConverter: lensPanelConfigConverter{
 			visualizationType: string(kbapi.TagcloudNoESQLTypeTagcloud),
+			hasTFPanelConfig:  func(pm panelModel) bool { return pm.TagcloudConfig != nil },
 		},
 	}
 }

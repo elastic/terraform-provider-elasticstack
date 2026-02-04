@@ -50,7 +50,7 @@ func Test_searchFilterModel_fromAPI_toAPI(t *testing.T) {
 			}(),
 			expected: &searchFilterModel{
 				Query:    types.StringValue("simple query"),
-				Language: types.StringNull(),
+				Language: types.StringValue("kuery"), // Defaults to kuery when API doesn't return it
 			},
 			expectError: false,
 		},
