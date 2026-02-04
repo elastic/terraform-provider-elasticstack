@@ -386,7 +386,7 @@ func convertActionsFromAPI(ctx context.Context, apiActions []models.AlertingRule
 func convertActionsToAPI(ctx context.Context, actionsList types.List) ([]models.AlertingRuleAction, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	if actionsList.IsNull() || actionsList.IsUnknown() {
+	if !utils.IsKnown(actionsList) {
 		return nil, diags
 	}
 
