@@ -249,6 +249,116 @@ func fieldSecurityToAPIModel(ctx context.Context, data types.Object) (*models.Fi
 	return &fieldSecurity, diags
 }
 
+// findMatchingFieldSecurity finds the field_security from the original indices that matches
+// the given names and privileges. Returns null types.Set values if not found.
+func findMatchingFieldSecurity(ctx context.Context, originalIndices types.Set, names, privileges []string) (grant, except types.Set) {
+	// Default to null if we can't find a match
+	grant = types.SetNull(types.StringType)
+	except = types.SetNull(types.StringType)
+
+	if originalIndices.IsNull() || originalIndices.IsUnknown() {
+		return
+	}
+
+	var originalIndicesList []IndexPermsData
+	diags := originalIndices.ElementsAs(ctx, &originalIndicesList, false)
+	if diags.HasError() {
+		return
+	}
+
+	// Try to find a matching index by comparing names and privileges
+	for _, origIdx := range originalIndicesList {
+		var origNames, origPrivs []string
+		origIdx.Names.ElementsAs(ctx, &origNames, false)
+		origIdx.Privileges.ElementsAs(ctx, &origPrivs, false)
+
+		// Check if names and privileges match
+		if slicesEqualIgnoreOrder(names, origNames) && slicesEqualIgnoreOrder(privileges, origPrivs) {
+			// Found a match, extract field_security
+			if !origIdx.FieldSecurity.IsNull() && !origIdx.FieldSecurity.IsUnknown() {
+				var fieldSec FieldSecurityData
+				origIdx.FieldSecurity.As(ctx, &fieldSec, basetypes.ObjectAsOptions{})
+				return fieldSec.Grant, fieldSec.Except
+			}
+			return
+		}
+	}
+
+	return
+}
+
+// findMatchingRemoteFieldSecurity finds the field_security from the original remote_indices
+// that matches the given clusters, names and privileges.
+func findMatchingRemoteFieldSecurity(ctx context.Context, originalRemoteIndices types.Set, clusters, names, privileges []string) (grant, except types.Set) {
+	// Default to null if we can't find a match
+	grant = types.SetNull(types.StringType)
+	except = types.SetNull(types.StringType)
+
+	if originalRemoteIndices.IsNull() || originalRemoteIndices.IsUnknown() {
+		return
+	}
+
+	var originalList []RemoteIndexPermsData
+	diags := originalRemoteIndices.ElementsAs(ctx, &originalList, false)
+	if diags.HasError() {
+		return
+	}
+
+	// Try to find a matching index by comparing clusters, names and privileges
+	for _, origIdx := range originalList {
+		var origClusters, origNames, origPrivs []string
+		origIdx.Clusters.ElementsAs(ctx, &origClusters, false)
+		origIdx.Names.ElementsAs(ctx, &origNames, false)
+		origIdx.Privileges.ElementsAs(ctx, &origPrivs, false)
+
+		// Check if clusters, names and privileges match
+		if slicesEqualIgnoreOrder(clusters, origClusters) &&
+			slicesEqualIgnoreOrder(names, origNames) &&
+			slicesEqualIgnoreOrder(privileges, origPrivs) {
+			// Found a match, extract field_security
+			if !origIdx.FieldSecurity.IsNull() && !origIdx.FieldSecurity.IsUnknown() {
+				var fieldSec FieldSecurityData
+				origIdx.FieldSecurity.As(ctx, &fieldSec, basetypes.ObjectAsOptions{})
+				return fieldSec.Grant, fieldSec.Except
+			}
+			return
+		}
+	}
+
+	return
+}
+
+// slicesEqualIgnoreOrder checks if two string slices contain the same elements,
+// ignoring order. Used for matching index permissions.
+func slicesEqualIgnoreOrder(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	// Create a map to count occurrences in slice a
+	counts := make(map[string]int)
+	for _, s := range a {
+		counts[s]++
+	}
+
+	// Decrement counts for slice b
+	for _, s := range b {
+		counts[s]--
+		if counts[s] < 0 {
+			return false
+		}
+	}
+
+	// Check all counts are zero
+	for _, count := range counts {
+		if count != 0 {
+			return false
+		}
+	}
+
+	return true
+}
+
 // fromAPIModel converts the API model to the Terraform model
 func (data *RoleData) fromAPIModel(ctx context.Context, role *models.Role) diag.Diagnostics {
 	var diags diag.Diagnostics
@@ -356,13 +466,32 @@ func (data *RoleData) fromAPIModel(ctx context.Context, role *models.Role) diag.
 
 			var fieldSecObj types.Object
 			if index.FieldSecurity != nil {
-				grantSet, d := types.SetValueFrom(ctx, types.StringType, utils.NonNilSlice(index.FieldSecurity.Grant))
-				diags.Append(d...)
-				if diags.HasError() {
-					return diags
+				// Find matching original field_security to preserve user-specified empty sets
+				origGrant, origExcept := findMatchingFieldSecurity(ctx, originalIndices, index.Names, index.Privileges)
+
+				// For grant field
+				var grantSet types.Set
+				if len(index.FieldSecurity.Grant) > 0 {
+					var d diag.Diagnostics
+					grantSet, d = types.SetValueFrom(ctx, types.StringType, index.FieldSecurity.Grant)
+					diags.Append(d...)
+					if diags.HasError() {
+						return diags
+					}
+				} else {
+					// API returned nil or empty, use SetValueFromOptionalComputed to preserve original
+					var d diag.Diagnostics
+					grantSet, d = typeutils.SetValueFromOptionalComputed(ctx, origGrant, types.StringType, index.FieldSecurity.Grant)
+					diags.Append(d...)
+					if diags.HasError() {
+						return diags
+					}
 				}
 
-				exceptSet, d := types.SetValueFrom(ctx, types.StringType, utils.NonNilSlice(index.FieldSecurity.Except))
+				// For except field (Optional + Computed)
+				var exceptSet types.Set
+				var d diag.Diagnostics
+				exceptSet, d = typeutils.SetValueFromOptionalComputed(ctx, origExcept, types.StringType, index.FieldSecurity.Except)
 				diags.Append(d...)
 				if diags.HasError() {
 					return diags
@@ -436,13 +565,32 @@ func (data *RoleData) fromAPIModel(ctx context.Context, role *models.Role) diag.
 
 			var fieldSecObj types.Object
 			if remoteIndex.FieldSecurity != nil {
-				grantSet, d := types.SetValueFrom(ctx, types.StringType, utils.NonNilSlice(remoteIndex.FieldSecurity.Grant))
-				diags.Append(d...)
-				if diags.HasError() {
-					return diags
+				// Find matching original field_security to preserve user-specified empty sets
+				origGrant, origExcept := findMatchingRemoteFieldSecurity(ctx, originalRemoteIndices, remoteIndex.Clusters, remoteIndex.Names, remoteIndex.Privileges)
+
+				// For grant field
+				var grantSet types.Set
+				if len(remoteIndex.FieldSecurity.Grant) > 0 {
+					var d diag.Diagnostics
+					grantSet, d = types.SetValueFrom(ctx, types.StringType, remoteIndex.FieldSecurity.Grant)
+					diags.Append(d...)
+					if diags.HasError() {
+						return diags
+					}
+				} else {
+					// API returned nil or empty, use SetValueFromOptionalComputed to preserve original
+					var d diag.Diagnostics
+					grantSet, d = typeutils.SetValueFromOptionalComputed(ctx, origGrant, types.StringType, remoteIndex.FieldSecurity.Grant)
+					diags.Append(d...)
+					if diags.HasError() {
+						return diags
+					}
 				}
 
-				exceptSet, d := types.SetValueFrom(ctx, types.StringType, utils.NonNilSlice(remoteIndex.FieldSecurity.Except))
+				// For except field (Optional + Computed)
+				var exceptSet types.Set
+				var d diag.Diagnostics
+				exceptSet, d = typeutils.SetValueFromOptionalComputed(ctx, origExcept, types.StringType, remoteIndex.FieldSecurity.Except)
 				diags.Append(d...)
 				if diags.HasError() {
 					return diags
