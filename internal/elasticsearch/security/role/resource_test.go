@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -317,4 +319,174 @@ func TestV0ToV1_InvalidJSON(t *testing.T) {
 	assert.True(t, resp.Diagnostics.HasError())
 	assert.Contains(t, resp.Diagnostics.Errors()[0].Summary(), "State Upgrade Error")
 	assert.Contains(t, resp.Diagnostics.Errors()[0].Detail(), "Could not unmarshal prior state")
+}
+
+// TestFromAPIModel_DefaultValuesNotNull tests that when the API returns nil for optional
+// fields with defaults (due to omitempty), we return the actual default values, not null.
+// This prevents the "planned set element does not correlate with any element in actual" error.
+// See: https://github.com/elastic/terraform-provider-elasticstack/pull/1679
+func TestFromAPIModel_DefaultValuesNotNull(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("allow_restricted_indices_nil_returns_false", func(t *testing.T) {
+		// Simulate API response where allow_restricted_indices is nil (omitted due to omitempty)
+		role := &models.Role{
+			Name: "test-role",
+			Indices: []models.IndexPerms{
+				{
+					Names:                  []string{"index1"},
+					Privileges:             []string{"read"},
+					AllowRestrictedIndices: nil, // API omits false values
+					FieldSecurity: &models.FieldSecurity{
+						Grant:  []string{"*"},
+						Except: nil, // API omits empty arrays
+					},
+				},
+			},
+		}
+
+		data := &RoleData{}
+		diags := data.fromAPIModel(ctx, role)
+
+		require.False(t, diags.HasError(), "fromAPIModel should not return errors")
+
+		// Extract the indices set
+		var indicesList []IndexPermsData
+		diags = data.Indices.ElementsAs(ctx, &indicesList, false)
+		require.False(t, diags.HasError())
+		require.Len(t, indicesList, 1)
+
+		// Verify allow_restricted_indices is false, not null
+		assert.False(t, indicesList[0].AllowRestrictedIndices.IsNull(),
+			"allow_restricted_indices should not be null when API returns nil")
+		assert.Equal(t, false, indicesList[0].AllowRestrictedIndices.ValueBool(),
+			"allow_restricted_indices should be false when API returns nil")
+	})
+
+	t.Run("field_security_except_nil_returns_empty_set", func(t *testing.T) {
+		// Simulate API response where except is nil (omitted due to omitempty)
+		role := &models.Role{
+			Name: "test-role",
+			Indices: []models.IndexPerms{
+				{
+					Names:      []string{"index1"},
+					Privileges: []string{"read"},
+					FieldSecurity: &models.FieldSecurity{
+						Grant:  []string{"*"},
+						Except: nil, // API omits empty arrays
+					},
+				},
+			},
+		}
+
+		data := &RoleData{}
+		diags := data.fromAPIModel(ctx, role)
+
+		require.False(t, diags.HasError(), "fromAPIModel should not return errors")
+
+		// Extract the indices set
+		var indicesList []IndexPermsData
+		diags = data.Indices.ElementsAs(ctx, &indicesList, false)
+		require.False(t, diags.HasError())
+		require.Len(t, indicesList, 1)
+
+		// Extract field_security
+		var fieldSec FieldSecurityData
+		diags = indicesList[0].FieldSecurity.As(ctx, &fieldSec, basetypes.ObjectAsOptions{})
+		require.False(t, diags.HasError())
+
+		// Verify except is an empty set, not null
+		assert.False(t, fieldSec.Except.IsNull(),
+			"except should not be null when API returns nil")
+		assert.Equal(t, 0, len(fieldSec.Except.Elements()),
+			"except should be an empty set when API returns nil")
+	})
+
+	t.Run("remote_indices_field_security_except_nil_returns_empty_set", func(t *testing.T) {
+		// Simulate API response for remote_indices where except is nil
+		role := &models.Role{
+			Name: "test-role",
+			RemoteIndices: []models.RemoteIndexPerms{
+				{
+					IndexPerms: models.IndexPerms{
+						Names:      []string{"remote-index1"},
+						Privileges: []string{"read"},
+						FieldSecurity: &models.FieldSecurity{
+							Grant:  []string{"*"},
+							Except: nil, // API omits empty arrays
+						},
+					},
+					Clusters: []string{"cluster1"},
+				},
+			},
+		}
+
+		data := &RoleData{}
+		diags := data.fromAPIModel(ctx, role)
+
+		require.False(t, diags.HasError(), "fromAPIModel should not return errors")
+
+		// Extract the remote_indices set
+		var remoteIndicesList []RemoteIndexPermsData
+		diags = data.RemoteIndices.ElementsAs(ctx, &remoteIndicesList, false)
+		require.False(t, diags.HasError())
+		require.Len(t, remoteIndicesList, 1)
+
+		// Extract field_security
+		var fieldSec FieldSecurityData
+		diags = remoteIndicesList[0].FieldSecurity.As(ctx, &fieldSec, basetypes.ObjectAsOptions{})
+		require.False(t, diags.HasError())
+
+		// Verify except is an empty set, not null
+		assert.False(t, fieldSec.Except.IsNull(),
+			"except should not be null when API returns nil for remote_indices")
+		assert.Equal(t, 0, len(fieldSec.Except.Elements()),
+			"except should be an empty set when API returns nil for remote_indices")
+	})
+
+	t.Run("explicit_values_preserved", func(t *testing.T) {
+		// Simulate API response with explicit values (not defaults)
+		allowRestricted := true
+		role := &models.Role{
+			Name: "test-role",
+			Indices: []models.IndexPerms{
+				{
+					Names:                  []string{"index1"},
+					Privileges:             []string{"read"},
+					AllowRestrictedIndices: &allowRestricted, // Explicit true
+					FieldSecurity: &models.FieldSecurity{
+						Grant:  []string{"*"},
+						Except: []string{"secret_field"}, // Explicit non-empty
+					},
+				},
+			},
+		}
+
+		data := &RoleData{}
+		diags := data.fromAPIModel(ctx, role)
+
+		require.False(t, diags.HasError(), "fromAPIModel should not return errors")
+
+		// Extract the indices set
+		var indicesList []IndexPermsData
+		diags = data.Indices.ElementsAs(ctx, &indicesList, false)
+		require.False(t, diags.HasError())
+		require.Len(t, indicesList, 1)
+
+		// Verify allow_restricted_indices is true
+		assert.Equal(t, true, indicesList[0].AllowRestrictedIndices.ValueBool(),
+			"allow_restricted_indices should preserve explicit true value")
+
+		// Extract field_security
+		var fieldSec FieldSecurityData
+		diags = indicesList[0].FieldSecurity.As(ctx, &fieldSec, basetypes.ObjectAsOptions{})
+		require.False(t, diags.HasError())
+
+		// Verify except has the explicit value
+		var exceptList []string
+		diags = fieldSec.Except.ElementsAs(ctx, &exceptList, false)
+		require.False(t, diags.HasError())
+		assert.Equal(t, []string{"secret_field"}, exceptList,
+			"except should preserve explicit values")
+	})
 }

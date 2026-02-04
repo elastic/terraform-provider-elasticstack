@@ -273,18 +273,11 @@ func (m alertingRuleModel) toAPIModel(ctx context.Context, serverVersion *versio
 	return rule, diags
 }
 
-// getRuleIDAndSpaceID extracts rule ID and space ID from the composite ID or model fields.
+// getRuleIDAndSpaceID extracts rule ID and space ID from the composite ID.
+// The state upgrade ensures the ID is always in composite format.
 func (m alertingRuleModel) getRuleIDAndSpaceID() (ruleID string, spaceID string) {
-	resourceID := m.ID.ValueString()
-	maybeCompositeID, _ := clients.CompositeIdFromStr(resourceID)
-	if maybeCompositeID != nil {
-		ruleID = maybeCompositeID.ResourceId
-		spaceID = maybeCompositeID.ClusterId
-	} else {
-		ruleID = m.RuleID.ValueString()
-		spaceID = m.SpaceID.ValueString()
-	}
-	return
+	compositeID, _ := clients.CompositeIdFromStr(m.ID.ValueString())
+	return compositeID.ResourceId, compositeID.ClusterId
 }
 
 // convertActionsFromAPI converts API actions to Terraform list.

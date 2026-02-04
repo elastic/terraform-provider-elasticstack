@@ -3,6 +3,8 @@ package alerting_rule
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
@@ -39,6 +41,25 @@ func migrateV0ToV1(ctx context.Context, req resource.UpgradeStateRequest, resp *
 	}
 
 	modified := false
+
+	// Normalize ID to composite format (space_id/rule_id)
+	// SDKv2 may have stored just the rule_id in the id field
+	if id, ok := stateMap["id"].(string); ok {
+		// Check if ID is already in composite format
+		if !strings.Contains(id, "/") {
+			// Not composite - construct from space_id and rule_id
+			spaceID := "default"
+			if sid, ok := stateMap["space_id"].(string); ok && sid != "" {
+				spaceID = sid
+			}
+			ruleID := id
+			if rid, ok := stateMap["rule_id"].(string); ok && rid != "" {
+				ruleID = rid
+			}
+			stateMap["id"] = fmt.Sprintf("%s/%s", spaceID, ruleID)
+			modified = true
+		}
+	}
 
 	// Handle notify_when: convert empty string to null for proper handling
 	if notifyWhen, ok := stateMap["notify_when"]; ok {
