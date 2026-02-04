@@ -18,6 +18,7 @@ type panelModel struct {
 	MarkdownConfig *markdownConfigModel `tfsdk:"markdown_config"`
 	XYChartConfig  *xyChartConfigModel  `tfsdk:"xy_chart_config"`
 	TagcloudConfig *tagcloudConfigModel `tfsdk:"tagcloud_config"`
+	GaugeConfig    *gaugeConfigModel    `tfsdk:"gauge_config"`
 	ConfigJSON     jsontypes.Normalized `tfsdk:"config_json"`
 }
 
@@ -51,6 +52,7 @@ var panelConfigConverters = []panelConfigConverter{
 	markdownPanelConfigConverter{},
 	newXYChartPanelConfigConverter(),
 	newTagcloudPanelConfigConverter(),
+	newGaugePanelConfigConverter(),
 }
 
 func (m *dashboardModel) mapPanelsFromAPI(ctx context.Context, apiPanels *kbapi.DashboardPanels) ([]panelModel, []sectionModel, diag.Diagnostics) {
