@@ -391,9 +391,6 @@ func TestAccResourceDashboardXYChart(t *testing.T) {
 				ResourceName:      "elasticstack_kibana_dashboard.test",
 				ImportState:       true,
 				ImportStateVerify: true,
-				ImportStateVerifyIgnore: []string{
-					"panels.0.heatmap_config.metric",
-				},
 			},
 		},
 	})
