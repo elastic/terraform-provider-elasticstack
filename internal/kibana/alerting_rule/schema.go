@@ -199,7 +199,10 @@ func getSchema() schema.Schema {
 								"timeframe": schema.SingleNestedBlock{
 									Description: "Defines a period that limits whether the action runs.",
 									Validators: []validator.Object{
-										validators.TimeframeCompletenessValidator{},
+										objectvalidator.AlsoRequires(path.MatchRelative().AtName("days")),
+										objectvalidator.AlsoRequires(path.MatchRelative().AtName("timezone")),
+										objectvalidator.AlsoRequires(path.MatchRelative().AtName("hours_start")),
+										objectvalidator.AlsoRequires(path.MatchRelative().AtName("hours_end")),
 									},
 									Attributes: map[string]schema.Attribute{
 										"days": schema.ListAttribute{
