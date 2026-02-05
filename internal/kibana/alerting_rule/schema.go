@@ -8,8 +8,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
@@ -194,8 +196,8 @@ func getSchema() schema.Schema {
 							Blocks: map[string]schema.Block{
 								// The timeframe attributes (days, timezone, hours_start, hours_end) are
 								// marked as Optional instead of Required so the block can be omitted entirely.
-								// When the block IS present, the TimeframeCompletenessValidator ensures all
-								// fields are provided, as required by the Kibana API.
+								// When the block IS present, the objectvalidator.AlsoRequires validators ensure
+								// all fields are provided, as required by the Kibana API.
 								"timeframe": schema.SingleNestedBlock{
 									Description: "Defines a period that limits whether the action runs.",
 									Validators: []validator.Object{
