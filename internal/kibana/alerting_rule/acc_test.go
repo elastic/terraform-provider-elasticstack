@@ -2,6 +2,7 @@ package alerting_rule_test
 
 import (
 	"context"
+	_ "embed"
 	"fmt"
 	"testing"
 
@@ -253,6 +254,9 @@ func TestAccResourceAlertingRuleEnabledFalseOnCreate(t *testing.T) {
 	})
 }
 
+//go:embed testdata/TestAccResourceAlertingRuleFromSDK/create/rule.tf
+var sdkCreateTestConfig string
+
 func TestAccResourceAlertingRuleFromSDK(t *testing.T) {
 	minSupportedVersion := version.Must(version.NewSemver("7.14.0"))
 
@@ -273,7 +277,10 @@ func TestAccResourceAlertingRuleFromSDK(t *testing.T) {
 						VersionConstraint: "0.13.1",
 					},
 				},
-				Config: testAccAlertingRuleSDKConfig(ruleName),
+				Config: sdkCreateTestConfig,
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(ruleName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "name", ruleName),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_id", "ef33ce2d-9fc4-5131-a350-b5bd6482745e"),
@@ -287,7 +294,10 @@ func TestAccResourceAlertingRuleFromSDK(t *testing.T) {
 				// Upgrade to current PFW provider
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
 				ProtoV6ProviderFactories: acctest.Providers,
-				Config:                   testAccAlertingRuleSDKConfig(ruleName),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(ruleName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "name", ruleName),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_id", "ef33ce2d-9fc4-5131-a350-b5bd6482745e"),
@@ -299,35 +309,6 @@ func TestAccResourceAlertingRuleFromSDK(t *testing.T) {
 			},
 		},
 	})
-}
-
-func testAccAlertingRuleSDKConfig(name string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  kibana {}
-}
-
-resource "elasticstack_kibana_alerting_rule" "test_rule" {
-  name         = "%s"
-  rule_id      = "ef33ce2d-9fc4-5131-a350-b5bd6482745e"
-  consumer     = "alerts"
-  notify_when  = "onActiveAlert"
-  rule_type_id = ".index-threshold"
-  interval     = "1m"
-  enabled      = true
-
-  params = jsonencode({
-    "index" : [".test-index"],
-    "timeField" : "@timestamp",
-    "aggType" : "count",
-    "groupBy" : "all",
-    "timeWindowSize" : 5,
-    "timeWindowUnit" : "m",
-    "thresholdComparator" : ">",
-    "threshold" : [1000]
-  })
-}
-`, name)
 }
 
 func checkResourceAlertingRuleDestroy(s *terraform.State) error {

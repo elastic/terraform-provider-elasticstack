@@ -192,8 +192,15 @@ func getSchema() schema.Schema {
 								},
 							},
 							Blocks: map[string]schema.Block{
+								// The timeframe attributes (days, timezone, hours_start, hours_end) are
+								// marked as Optional instead of Required so the block can be omitted entirely.
+								// When the block IS present, the TimeframeCompletenessValidator ensures all
+								// fields are provided, as required by the Kibana API.
 								"timeframe": schema.SingleNestedBlock{
 									Description: "Defines a period that limits whether the action runs.",
+									Validators: []validator.Object{
+										validators.TimeframeCompletenessValidator{},
+									},
 									Attributes: map[string]schema.Attribute{
 										"days": schema.ListAttribute{
 											Description: "Defines the days of the week that the action can run, represented as an array of numbers. For example, 1 represents Monday. An empty array is equivalent to specifying all the days of the week.",
