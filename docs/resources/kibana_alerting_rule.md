@@ -58,7 +58,7 @@ resource "elasticstack_kibana_alerting_rule" "example" {
 - `interval` (String) The check interval, which specifies how frequently the rule conditions are checked. The interval must be specified in seconds, minutes, hours or days.
 - `name` (String) The name of the rule. While this name does not have to be unique, a distinctive name can help you identify a rule.
 - `params` (String) The rule parameters, which differ for each rule type.
-- `rule_type_id` (String) The ID of the rule type that you want to call when the rule is scheduled to run. For more information about the valid values, list the rule types using Get rule types API or refer to the Rule types documentation.
+- `rule_type_id` (String) The ID of the rule type that you want to call when the rule is scheduled to run. For more information about the valid values, list the rule types using [Get rule types API](https://www.elastic.co/guide/en/kibana/master/list-rule-types-api.html) or refer to the [Rule types documentation](https://www.elastic.co/guide/en/kibana/master/rule-types.html).
 
 ### Optional
 
