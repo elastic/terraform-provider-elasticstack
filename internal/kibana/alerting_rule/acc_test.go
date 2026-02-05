@@ -26,28 +26,8 @@ func TestAccResourceAlertingRule(t *testing.T) {
 
 	ruleName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
-	// Clean up any dangling rules from previous test runs
-	cleanupDanglingRules := func() {
-		client, err := clients.NewAcceptanceTestingClient()
-		if err != nil {
-			return // Ignore errors during cleanup
-		}
-
-		// Delete the rule IDs used in this test
-		ruleIDs := []string{
-			"bf33ce2d-9fc4-5131-a350-b5bd6482735c",
-			"cf33ce2d-9fc4-5131-a350-b5bd6482736c",
-		}
-		for _, ruleID := range ruleIDs {
-			kibana.DeleteAlertingRule(context.Background(), client, ruleID, "default")
-		}
-	}
-
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			acctest.PreCheck(t)
-			cleanupDanglingRules()
-		},
+		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceAlertingRuleDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -249,20 +229,8 @@ func TestAccResourceAlertingRuleEnabledFalseOnCreate(t *testing.T) {
 
 	ruleName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
-	// Clean up any dangling rules from previous test runs
-	cleanupDanglingRules := func() {
-		client, err := clients.NewAcceptanceTestingClient()
-		if err != nil {
-			return // Ignore errors during cleanup
-		}
-		kibana.DeleteAlertingRule(context.Background(), client, "df33ce2d-9fc4-5131-a350-b5bd6482737d", "default")
-	}
-
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			acctest.PreCheck(t)
-			cleanupDanglingRules()
-		},
+		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceAlertingRuleDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -292,20 +260,8 @@ func TestAccResourceAlertingRuleFromSDK(t *testing.T) {
 
 	ruleName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
-	// Clean up any dangling rules from previous test runs
-	cleanupDanglingRules := func() {
-		client, err := clients.NewAcceptanceTestingClient()
-		if err != nil {
-			return // Ignore errors during cleanup
-		}
-		kibana.DeleteAlertingRule(context.Background(), client, "ef33ce2d-9fc4-5131-a350-b5bd6482745e", "default")
-	}
-
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			acctest.PreCheck(t)
-			cleanupDanglingRules()
-		},
+		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceAlertingRuleDestroy,
 		Steps: []resource.TestStep{
 			{
