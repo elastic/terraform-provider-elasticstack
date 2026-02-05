@@ -95,7 +95,7 @@ inputs = {
 ```
 
 ### Changes
-
+- Fix `elasticstack_elasticsearch_security_role` returning null values for optional fields with defaults, preventing "planned set element does not correlate with any element in actual" errors ([#1677](https://github.com/elastic/terraform-provider-elasticstack/issues/1677))
 - Add import support for `elasticstack_elasticsearch_script` resource ([#1637](https://github.com/elastic/terraform-provider-elasticstack/pull/1637))
 - Migrate `elasticstack_kibana_alerting_rule` to use plugin framework ([#1664](https://github.com/elastic/terraform-provider-elasticstack/pull/1664))
 - Migrate `elasticstack_kibana_slo` resource to the Terraform plugin framework ([#1647](https://github.com/elastic/terraform-provider-elasticstack/pull/1647))
