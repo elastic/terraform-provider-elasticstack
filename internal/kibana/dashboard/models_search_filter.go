@@ -64,6 +64,13 @@ func (m *searchFilterModel) toAPI() (kbapi.SearchFilterSchema, diag.Diagnostics)
 		lang := kbapi.SearchFilterSchema0Language(m.Language.ValueString())
 		filter.Language = &lang
 	}
+	if utils.IsKnown(m.Meta) {
+		var meta map[string]interface{}
+		diags.Append(m.Meta.Unmarshal(&meta)...)
+		if !diags.HasError() {
+			filter.Meta = &meta
+		}
+	}
 
 	var result kbapi.SearchFilterSchema
 	if err := result.FromSearchFilterSchema0(filter); err != nil {
