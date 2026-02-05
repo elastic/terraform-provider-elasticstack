@@ -655,6 +655,32 @@ func (m *xyLegendModel) toAPI() (kbapi.XyLegend, diag.Diagnostics) {
 
 	var diags diag.Diagnostics
 	isInside := utils.IsKnown(m.Inside) && m.Inside.ValueBool()
+	statsElemsToStrings := func() ([]string, bool) {
+		if !utils.IsKnown(m.Statistics) {
+			return nil, false
+		}
+
+		elems := m.Statistics.Elements()
+		if len(elems) == 0 {
+			return nil, false
+		}
+
+		stats := make([]string, 0, len(elems))
+		for _, elem := range elems {
+			strVal, ok := elem.(types.String)
+			if !ok {
+				diags.AddError("Invalid legend statistic value", "Expected statistics element to be a string")
+				return nil, false
+			}
+			if !utils.IsKnown(strVal) {
+				diags.AddError("Invalid legend statistic value", "Statistics element must be known")
+				return nil, false
+			}
+			stats = append(stats, strVal.ValueString())
+		}
+
+		return stats, true
+	}
 
 	if isInside {
 		var legend kbapi.XyLegendInside
@@ -672,6 +698,13 @@ func (m *xyLegendModel) toAPI() (kbapi.XyLegend, diag.Diagnostics) {
 		if utils.IsKnown(m.Alignment) {
 			align := kbapi.XyLegendInsideAlignment(m.Alignment.ValueString())
 			legend.Alignment = &align
+		}
+		if stats, ok := statsElemsToStrings(); ok {
+			statsAPI := make([]kbapi.XyLegendInsideStatistics, 0, len(stats))
+			for _, s := range stats {
+				statsAPI = append(statsAPI, kbapi.XyLegendInsideStatistics(s))
+			}
+			legend.Statistics = &statsAPI
 		}
 
 		var result kbapi.XyLegend
@@ -697,6 +730,13 @@ func (m *xyLegendModel) toAPI() (kbapi.XyLegend, diag.Diagnostics) {
 	if utils.IsKnown(m.Size) {
 		size := kbapi.XyLegendOutsideSize(m.Size.ValueString())
 		legend.Size = &size
+	}
+	if stats, ok := statsElemsToStrings(); ok {
+		statsAPI := make([]kbapi.XyLegendOutsideStatistics, 0, len(stats))
+		for _, s := range stats {
+			statsAPI = append(statsAPI, kbapi.XyLegendOutsideStatistics(s))
+		}
+		legend.Statistics = &statsAPI
 	}
 
 	var result kbapi.XyLegend
