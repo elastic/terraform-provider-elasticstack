@@ -95,6 +95,8 @@ inputs = {
 ```
 
 ### Changes
+
+- Add import support for `elasticstack_elasticsearch_script` resource ([#1637](https://github.com/elastic/terraform-provider-elasticstack/pull/1637))
 - Migrate `elasticstack_kibana_alerting_rule` to use plugin framework ([#1664](https://github.com/elastic/terraform-provider-elasticstack/pull/1664))
 - Migrate `elasticstack_kibana_slo` resource to the Terraform plugin framework ([#1647](https://github.com/elastic/terraform-provider-elasticstack/pull/1647))
 - Prevent a provider error with `elasticstack_fleet_integration_policy` when moving between a single `policy_id` and multiple `policy_ids` ([#1644](https://github.com/elastic/terraform-provider-elasticstack/pull/1644)) 
