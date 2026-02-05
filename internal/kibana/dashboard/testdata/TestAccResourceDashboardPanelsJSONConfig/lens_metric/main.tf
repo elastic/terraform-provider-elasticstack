@@ -21,41 +21,45 @@ resource "elasticstack_kibana_dashboard" "test" {
       h = 10
     }
     config_json = jsonencode({
-      "attributes" : {
-        "title" : "",
-        "type" : "metric",
-        "dataset" : {
-          "type" : "dataView",
-          "id" : "logs-*"
-        },
-        "sampling" : 1,
-        "ignore_global_filters" : false,
-        "metric" : {
-          "operation" : "count",
-          "empty_as_null" : true,
-          "fit" : false,
-          "alignments" : {
-            "labels" : "left"
-          },
-        },
-        "query" : {
-          "query" : "",
-          "language" : "kuery"
-        }
-      },
       "enhancements" : {
         "dynamicActions" : {
           "events" : []
         }
       },
-      "filters" : [],
-      "query" : {
-        "language" : "kuery",
-        "query" : ""
-      },
       "syncColors" : false,
       "syncCursor" : true,
-      "syncTooltips" : false
+      "syncTooltips" : false,
+      "filters" : [],
+      "query" : {
+        "query" : "",
+        "language" : "kuery"
+      },
+      "attributes" : {
+        "title" : "",
+        "dataset" : {
+          "type" : "dataView",
+          "id" : "metrics-*"
+        },
+        "type" : "metric",
+        "sampling" : 1,
+        "ignore_global_filters" : false,
+        "metrics" : [
+          {
+            "type" : "primary",
+            "operation" : "count",
+            "empty_as_null" : true,
+            "alignments" : {
+              "value" : "right",
+              "labels" : "left"
+            },
+            "fit" : false
+          }
+        ],
+        "query" : {
+          "query" : "",
+          "language" : "kuery"
+        }
+      }
     })
   }]
 }
