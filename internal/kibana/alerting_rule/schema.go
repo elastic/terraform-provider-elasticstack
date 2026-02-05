@@ -194,9 +194,6 @@ func getSchema() schema.Schema {
 							Blocks: map[string]schema.Block{
 								"timeframe": schema.SingleNestedBlock{
 									Description: "Defines a period that limits whether the action runs.",
-									Validators: []validator.Object{
-										validators.TimeframeCompletenessValidator{},
-									},
 									Attributes: map[string]schema.Attribute{
 										"days": schema.ListAttribute{
 											Description: "Defines the days of the week that the action can run, represented as an array of numbers. For example, 1 represents Monday. An empty array is equivalent to specifying all the days of the week.",

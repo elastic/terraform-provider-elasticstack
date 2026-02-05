@@ -82,11 +82,13 @@ func TestAccResourceSlo(t *testing.T) {
 							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "objective.0.target", "0.999"),
 							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "objective.0.timeslice_target", "0.95"),
 							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "objective.0.timeslice_window", "5m"),
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "settings.sync_delay", "1m"),
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "settings.frequency", "1m"),
 							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "space_id", "default"),
 						),
 					},
 					{
-						//check that name can be updated
+						// check that name can be updated
 						ProtoV6ProviderFactories: acctest.Providers,
 						SkipFunc: func() (bool, error) {
 							if !testWithDataViewID {
@@ -103,7 +105,7 @@ func TestAccResourceSlo(t *testing.T) {
 							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "name", fmt.Sprintf("updated-%s", sloName)),
 						),
 					},
-					{ //check that settings can be updated from api-computed defaults
+					{ // check that settings can be updated from api-computed defaults
 						ProtoV6ProviderFactories: acctest.Providers,
 						SkipFunc: func() (bool, error) {
 							if !testWithDataViewID {

@@ -117,11 +117,19 @@ func (m *alertingRuleModel) populateFromAPI(ctx context.Context, rule *models.Al
 	}
 
 	// Throttle
-	m.Throttle = types.StringPointerValue(rule.Throttle)
+	if rule.Throttle != nil {
+		m.Throttle = types.StringValue(*rule.Throttle)
+	} else {
+		m.Throttle = types.StringNull()
+	}
 
 	// Scheduled task ID - update if API returns a value, or resolve unknown to null
 	// (preserves existing known value when API doesn't return this field on re-reads)
-	m.ScheduledTaskID = types.StringPointerValue(rule.ScheduledTaskID)
+	if rule.ScheduledTaskID != nil {
+		m.ScheduledTaskID = types.StringValue(*rule.ScheduledTaskID)
+	} else if m.ScheduledTaskID.IsUnknown() {
+		m.ScheduledTaskID = types.StringNull()
+	}
 
 	// Execution status
 	m.LastExecutionStatus = types.StringPointerValue(rule.ExecutionStatus.Status)
@@ -169,23 +177,27 @@ func (m alertingRuleModel) toAPIModel(ctx context.Context, serverVersion *versio
 		// notify_when is required until v8.6
 		if !utils.IsKnown(m.NotifyWhen) || m.NotifyWhen.ValueString() == "" {
 			if serverVersion.LessThan(frequencyMinSupportedVersion) {
-				errStr := "notify_when is required until v8.6"
-				diags.AddError(errStr, errStr)
+				diags.AddError(
+					"notify_when is required until v8.6",
+					"notify_when is required until v8.6",
+				)
 				return models.AlertingRule{}, diags
 			}
 		}
 
 		// alert_delay is only supported from v8.13+
-		if utils.IsKnown(m.AlertDelay) {
+		if utils.IsKnown(m.AlertDelay) && !m.AlertDelay.IsNull() {
 			if serverVersion.LessThan(alertDelayMinSupportedVersion) {
-				errStr := "alert_delay is only supported for Elasticsearch v8.13 or higher"
-				diags.AddError(errStr, errStr)
+				diags.AddError(
+					"alert_delay is only supported for Elasticsearch v8.13 or higher",
+					"alert_delay is only supported for Elasticsearch v8.13 or higher",
+				)
 				return models.AlertingRule{}, diags
 			}
 		}
 
 		// Validate version-specific requirements for actions
-		if utils.IsKnown(m.Actions) {
+		if utils.IsKnown(m.Actions) && !m.Actions.IsNull() {
 			var actions []actionModel
 			diags.Append(m.Actions.ElementsAs(ctx, &actions, false)...)
 			if diags.HasError() {
@@ -194,19 +206,23 @@ func (m alertingRuleModel) toAPIModel(ctx context.Context, serverVersion *versio
 
 			for _, action := range actions {
 				// Check frequency version requirement
-				if utils.IsKnown(action.Frequency) {
+				if utils.IsKnown(action.Frequency) && !action.Frequency.IsNull() {
 					if serverVersion.LessThan(frequencyMinSupportedVersion) {
-						errStr := "actions.frequency is only supported for Kibana v8.6 or higher"
-						diags.AddError(errStr, errStr)
+						diags.AddError(
+							"actions.frequency is only supported for Kibana v8.6 or higher",
+							"actions.frequency is only supported for Kibana v8.6 or higher",
+						)
 						return models.AlertingRule{}, diags
 					}
 				}
 
 				// Check alerts_filter version requirement
-				if utils.IsKnown(action.AlertsFilter) {
+				if utils.IsKnown(action.AlertsFilter) && !action.AlertsFilter.IsNull() {
 					if serverVersion.LessThan(alertsFilterMinSupportedVersion) {
-						errStr := "actions.alerts_filter is only supported for Kibana v8.9 or higher"
-						diags.AddError(errStr, errStr)
+						diags.AddError(
+							"actions.alerts_filter is only supported for Kibana v8.9 or higher",
+							"actions.alerts_filter is only supported for Kibana v8.9 or higher",
+						)
 						return models.AlertingRule{}, diags
 					}
 				}
@@ -396,21 +412,23 @@ func convertActionsToAPI(ctx context.Context, actionsList types.List) ([]models.
 				NotifyWhen: freq.NotifyWhen.ValueString(),
 			}
 			if utils.IsKnown(freq.Throttle) && freq.Throttle.ValueString() != "" {
-				apiAction.Frequency.Throttle = freq.Throttle.ValueStringPointer()
+				throttle := freq.Throttle.ValueString()
+				apiAction.Frequency.Throttle = &throttle
 			}
 		}
 
 		// Alerts filter - extract from object
-		if utils.IsKnown(action.AlertsFilter) {
+		if utils.IsKnown(action.AlertsFilter) && !action.AlertsFilter.IsNull() {
 			var filter alertsFilterModel
 			diags.Append(action.AlertsFilter.As(ctx, &filter, basetypes.ObjectAsOptions{})...)
 			apiAction.AlertsFilter = &models.ActionAlertsFilter{}
 
 			if utils.IsKnown(filter.Kql) {
-				apiAction.AlertsFilter.Kql = filter.Kql.ValueStringPointer()
+				kql := filter.Kql.ValueString()
+				apiAction.AlertsFilter.Kql = &kql
 			}
 
-			if utils.IsKnown(filter.Timeframe) {
+			if utils.IsKnown(filter.Timeframe) && !filter.Timeframe.IsNull() {
 				var tf timeframeModel
 				diags.Append(filter.Timeframe.As(ctx, &tf, basetypes.ObjectAsOptions{})...)
 				var days []int64
