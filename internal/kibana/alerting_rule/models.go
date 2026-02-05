@@ -304,7 +304,7 @@ func convertActionsFromAPI(ctx context.Context, apiActions []models.AlertingRule
 			freq := frequencyModel{
 				Summary:    types.BoolValue(apiAction.Frequency.Summary),
 				NotifyWhen: types.StringValue(apiAction.Frequency.NotifyWhen),
-				Throttle: types.StringPointerValue(apiAction.Frequency.Throttle),
+				Throttle:   types.StringPointerValue(apiAction.Frequency.Throttle),
 			}
 			freqObj, d := types.ObjectValueFrom(ctx, getFrequencyAttrTypes(), freq)
 			diags.Append(d...)
