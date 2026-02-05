@@ -32,32 +32,6 @@ resource "elasticstack_fleet_integration" "tcp-o11y" {
 }
 ```
 
-#### `elasticstack_kibana_slo` `settings` block has change to a an attribute. 
-
-As part of migrating this resource to the Terraform plugin framework, the `settings` block has been moved to an attribute. Existing usage of this argument will need to be updated to use an attribute style syntax, for example:
-
-```hcl
-resource "elasticstack_kibana_slo" "test_slo" {
-  ...
-  settings {
-    sync_delay = "5m"
-    frequency  = "5m"
-  }
-}
-```
-
-becomes 
-
-```
-resource "elasticstack_kibana_slo" "test_slo" {
-  ...
-  settings = {  ## Note the addition of the = here. 
-    sync_delay = "5m"
-    frequency  = "5m"
-  }
-}
-```
-
 #### `elasticstack_fleet_integration_policy` input block has changed to a map attribute. 
 
 The `input` block in the `elasticstack_fleet_integration_policy` resource has been restructured into the `inputs` map attribute. 
@@ -123,6 +97,7 @@ inputs = {
 ### Changes
 
 - Add import support for `elasticstack_elasticsearch_script` resource ([#1637](https://github.com/elastic/terraform-provider-elasticstack/pull/1637))
+- Migrate `elasticstack_kibana_alerting_rule` to use plugin framework ([#1664](https://github.com/elastic/terraform-provider-elasticstack/pull/1664))
 - Migrate `elasticstack_kibana_slo` resource to the Terraform plugin framework ([#1647](https://github.com/elastic/terraform-provider-elasticstack/pull/1647))
 - Prevent a provider error with `elasticstack_fleet_integration_policy` when moving between a single `policy_id` and multiple `policy_ids` ([#1644](https://github.com/elastic/terraform-provider-elasticstack/pull/1644)) 
 - Fix concurrent map write errors with `elasticstack_fleet_integration_policy` ([#1629](https://github.com/elastic/terraform-provider-elasticstack/pull/1629))

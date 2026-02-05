@@ -21,9 +21,9 @@ resource "elasticstack_kibana_dashboard" "test" {
       h = 6
     }
     markdown_config = {
-      content           = "Top-level panel one"
-      title             = "Top Panel One"
-      hide_panel_titles = true
+      content    = "Top-level panel one"
+      title      = "Top Panel One"
+      hide_title = true
     }
     }, {
     type = "DASHBOARD_MARKDOWN"
@@ -34,9 +34,9 @@ resource "elasticstack_kibana_dashboard" "test" {
       h = 6
     }
     markdown_config = {
-      content           = "Top-level panel two"
-      title             = "Top Panel Two"
-      hide_panel_titles = true
+      content    = "Top-level panel two"
+      title      = "Top Panel Two"
+      hide_title = true
     }
   }]
 
@@ -54,9 +54,9 @@ resource "elasticstack_kibana_dashboard" "test" {
         h = 10
       }
       markdown_config = {
-        content           = "Section one - panel one"
-        title             = "Section One Panel"
-        hide_panel_titles = false
+        content    = "Section one - panel one"
+        title      = "Section One Panel"
+        hide_title = false
       }
     }]
     }, {
@@ -73,9 +73,9 @@ resource "elasticstack_kibana_dashboard" "test" {
         h = 10
       }
       markdown_config = {
-        content           = "Section two - panel one"
-        title             = "Section Two Panel"
-        hide_panel_titles = false
+        content    = "Section two - panel one"
+        title      = "Section Two Panel"
+        hide_title = false
       }
     }]
   }]
