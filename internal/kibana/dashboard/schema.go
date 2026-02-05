@@ -242,6 +242,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 				path.MatchRelative().AtName("config_json"),
 				path.MatchRelative().AtName("xy_chart_config"),
 				path.MatchRelative().AtName("tagcloud_config"),
+				path.MatchRelative().AtName("heatmap_config"),
 			),
 		},
 		Attributes: map[string]schema.Attribute{
@@ -280,7 +281,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 				},
 			},
 			"markdown_config": schema.SingleNestedAttribute{
-				MarkdownDescription: "The configuration of a markdown panel. Mutually exclusive with `config_json`, `xy_chart_config`, and `tagcloud_config`.",
+				MarkdownDescription: "The configuration of a markdown panel. Mutually exclusive with `config_json`, `xy_chart_config`, `tagcloud_config`, and `heatmap_config`.",
 				Optional:            true,
 				Attributes: map[string]schema.Attribute{
 					"content": schema.StringAttribute{
@@ -305,12 +306,13 @@ func getPanelSchema() schema.NestedAttributeObject {
 						path.MatchRelative().AtParent().AtName("config_json"),
 						path.MatchRelative().AtParent().AtName("xy_chart_config"),
 						path.MatchRelative().AtParent().AtName("tagcloud_config"),
+						path.MatchRelative().AtParent().AtName("heatmap_config"),
 					),
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"DASHBOARD_MARKDOWN"}),
 				},
 			},
 			"xy_chart_config": schema.SingleNestedAttribute{
-				MarkdownDescription: "Configuration for an XY chart panel. Mutually exclusive with `markdown_config`, `tagcloud_config`, and `config_json`. Use this for line, area, and bar charts.",
+				MarkdownDescription: "Configuration for an XY chart panel. Mutually exclusive with `markdown_config`, `tagcloud_config`, `heatmap_config`, and `config_json`. Use this for line, area, and bar charts.",
 				Optional:            true,
 				Attributes: map[string]schema.Attribute{
 					"title": schema.StringAttribute{
@@ -364,26 +366,42 @@ func getPanelSchema() schema.NestedAttributeObject {
 					objectvalidator.ConflictsWith(
 						path.MatchRelative().AtParent().AtName("markdown_config"),
 						path.MatchRelative().AtParent().AtName("tagcloud_config"),
+						path.MatchRelative().AtParent().AtName("heatmap_config"),
 						path.MatchRelative().AtParent().AtName("config_json"),
 					),
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"lens"}),
 				},
 			},
 			"tagcloud_config": schema.SingleNestedAttribute{
-				MarkdownDescription: "Configuration for a tagcloud chart panel. Mutually exclusive with `markdown_config`, `xy_chart_config`, and `config_json`. Tag clouds visualize word frequency.",
+				MarkdownDescription: "Configuration for a tagcloud chart panel. Mutually exclusive with `markdown_config`, `xy_chart_config`, `heatmap_config`, and `config_json`. Tag clouds visualize word frequency.",
 				Optional:            true,
 				Attributes:          getTagcloudSchema(),
 				Validators: []validator.Object{
 					objectvalidator.ConflictsWith(
 						path.MatchRelative().AtParent().AtName("markdown_config"),
 						path.MatchRelative().AtParent().AtName("xy_chart_config"),
+						path.MatchRelative().AtParent().AtName("heatmap_config"),
+						path.MatchRelative().AtParent().AtName("config_json"),
+					),
+					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"lens"}),
+				},
+			},
+			"heatmap_config": schema.SingleNestedAttribute{
+				MarkdownDescription: "Configuration for a heatmap chart panel. Mutually exclusive with `markdown_config`, `xy_chart_config`, `tagcloud_config`, and `config_json`. Heatmaps visualize density using color intensity.",
+				Optional:            true,
+				Attributes:          getHeatmapSchema(),
+				Validators: []validator.Object{
+					objectvalidator.ConflictsWith(
+						path.MatchRelative().AtParent().AtName("markdown_config"),
+						path.MatchRelative().AtParent().AtName("xy_chart_config"),
+						path.MatchRelative().AtParent().AtName("tagcloud_config"),
 						path.MatchRelative().AtParent().AtName("config_json"),
 					),
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"lens"}),
 				},
 			},
 			"config_json": schema.StringAttribute{
-				MarkdownDescription: "The configuration of the panel as a JSON string. Mutually exclusive with `markdown_config`, `xy_chart_config`, and `tagcloud_config`.",
+				MarkdownDescription: "The configuration of the panel as a JSON string. Mutually exclusive with `markdown_config`, `xy_chart_config`, `tagcloud_config`, and `heatmap_config`.",
 				CustomType:          jsontypes.NormalizedType{},
 				Optional:            true,
 				Computed:            true,
@@ -392,6 +410,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 						path.MatchRelative().AtParent().AtName("markdown_config"),
 						path.MatchRelative().AtParent().AtName("xy_chart_config"),
 						path.MatchRelative().AtParent().AtName("tagcloud_config"),
+						path.MatchRelative().AtParent().AtName("heatmap_config"),
 					),
 				},
 			},
@@ -874,6 +893,190 @@ func getTagcloudSchema() map[string]schema.Attribute {
 			MarkdownDescription: "Tag grouping configuration as JSON. Can be a date histogram, terms, histogram, range, or filters operation. This determines how tags are grouped and displayed.",
 			CustomType:          customtypes.NewJSONWithDefaultsType(populateTagcloudTagByDefaults),
 			Required:            true,
+		},
+	}
+}
+
+// getHeatmapSchema returns the schema for heatmap chart configuration
+func getHeatmapSchema() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"title": schema.StringAttribute{
+			MarkdownDescription: "The title of the chart displayed in the panel.",
+			Optional:            true,
+		},
+		"description": schema.StringAttribute{
+			MarkdownDescription: "The description of the chart.",
+			Optional:            true,
+		},
+		"dataset": schema.StringAttribute{
+			MarkdownDescription: "Dataset configuration as JSON. For standard heatmaps, this specifies the data view or index; for ES|QL, this specifies the ES|QL query dataset.",
+			CustomType:          jsontypes.NormalizedType{},
+			Required:            true,
+		},
+		"ignore_global_filters": schema.BoolAttribute{
+			MarkdownDescription: "If true, ignore global filters when fetching data for this chart. Default is false.",
+			Optional:            true,
+		},
+		"sampling": schema.Float64Attribute{
+			MarkdownDescription: "Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.",
+			Optional:            true,
+		},
+		"query": schema.SingleNestedAttribute{
+			MarkdownDescription: "Query configuration for filtering data. Required for non-ES|QL heatmaps.",
+			Optional:            true,
+			Attributes:          getFilterSimpleSchema(),
+		},
+		"filters": schema.ListNestedAttribute{
+			MarkdownDescription: "Additional filters to apply to the chart data (maximum 100).",
+			Optional:            true,
+			NestedObject:        getSearchFilterSchema(),
+		},
+		"axes": schema.SingleNestedAttribute{
+			MarkdownDescription: "Axis configuration for X and Y axes.",
+			Required:            true,
+			Attributes:          getHeatmapAxesSchema(),
+		},
+		"cells": schema.SingleNestedAttribute{
+			MarkdownDescription: "Cells configuration for the heatmap.",
+			Required:            true,
+			Attributes:          getHeatmapCellsSchema(),
+		},
+		"legend": schema.SingleNestedAttribute{
+			MarkdownDescription: "Legend configuration for the heatmap.",
+			Required:            true,
+			Attributes:          getHeatmapLegendSchema(),
+		},
+		"metric": schema.StringAttribute{
+			MarkdownDescription: "Metric configuration as JSON. For non-ES|QL, this can be a field metric, pipeline metric, or formula. For ES|QL, this is the metric column/operation/color configuration.",
+			CustomType:          customtypes.NewJSONWithDefaultsType(populateTagcloudMetricDefaults),
+			Required:            true,
+		},
+		"x_axis": schema.StringAttribute{
+			MarkdownDescription: "X-axis operation configuration as JSON. For non-ES|QL, this can be date histogram, terms, histogram, range, or filters operations; for ES|QL, this is the column/operation configuration.",
+			CustomType:          jsontypes.NormalizedType{},
+			Required:            true,
+		},
+		"y_axis": schema.StringAttribute{
+			MarkdownDescription: "Y-axis operation configuration as JSON. For non-ES|QL, this can be date histogram, terms, histogram, range, or filters operations; for ES|QL, this is the column/operation configuration.",
+			CustomType:          jsontypes.NormalizedType{},
+			Optional:            true,
+		},
+	}
+}
+
+// getHeatmapAxesSchema returns schema for heatmap axes configuration
+func getHeatmapAxesSchema() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"x": schema.SingleNestedAttribute{
+			MarkdownDescription: "X-axis configuration.",
+			Optional:            true,
+			Attributes: map[string]schema.Attribute{
+				"labels": schema.SingleNestedAttribute{
+					MarkdownDescription: "X-axis label configuration.",
+					Optional:            true,
+					Attributes: map[string]schema.Attribute{
+						"orientation": schema.StringAttribute{
+							MarkdownDescription: "Orientation of the axis labels.",
+							Optional:            true,
+							Validators: []validator.String{
+								stringvalidator.OneOf("horizontal", "vertical", "angled"),
+							},
+						},
+						"visible": schema.BoolAttribute{
+							MarkdownDescription: "Whether to show axis labels.",
+							Optional:            true,
+						},
+					},
+				},
+				"title": schema.SingleNestedAttribute{
+					MarkdownDescription: "X-axis title configuration.",
+					Optional:            true,
+					Attributes: map[string]schema.Attribute{
+						"value": schema.StringAttribute{
+							MarkdownDescription: "Axis title text.",
+							Optional:            true,
+						},
+						"visible": schema.BoolAttribute{
+							MarkdownDescription: "Whether to show the title.",
+							Optional:            true,
+						},
+					},
+				},
+			},
+		},
+		"y": schema.SingleNestedAttribute{
+			MarkdownDescription: "Y-axis configuration.",
+			Optional:            true,
+			Attributes: map[string]schema.Attribute{
+				"labels": schema.SingleNestedAttribute{
+					MarkdownDescription: "Y-axis label configuration.",
+					Optional:            true,
+					Attributes: map[string]schema.Attribute{
+						"visible": schema.BoolAttribute{
+							MarkdownDescription: "Whether to show axis labels.",
+							Optional:            true,
+						},
+					},
+				},
+				"title": schema.SingleNestedAttribute{
+					MarkdownDescription: "Y-axis title configuration.",
+					Optional:            true,
+					Attributes: map[string]schema.Attribute{
+						"value": schema.StringAttribute{
+							MarkdownDescription: "Axis title text.",
+							Optional:            true,
+						},
+						"visible": schema.BoolAttribute{
+							MarkdownDescription: "Whether to show the title.",
+							Optional:            true,
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+// getHeatmapCellsSchema returns schema for heatmap cells configuration
+func getHeatmapCellsSchema() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"labels": schema.SingleNestedAttribute{
+			MarkdownDescription: "Cell label configuration.",
+			Optional:            true,
+			Attributes: map[string]schema.Attribute{
+				"visible": schema.BoolAttribute{
+					MarkdownDescription: "Whether to show cell labels.",
+					Optional:            true,
+				},
+			},
+		},
+	}
+}
+
+// getHeatmapLegendSchema returns schema for heatmap legend configuration
+func getHeatmapLegendSchema() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"visible": schema.BoolAttribute{
+			MarkdownDescription: "Whether to show the legend.",
+			Optional:            true,
+		},
+		"position": schema.StringAttribute{
+			MarkdownDescription: "Legend position.",
+			Optional:            true,
+			Validators: []validator.String{
+				stringvalidator.OneOf("top", "bottom", "left", "right"),
+			},
+		},
+		"size": schema.StringAttribute{
+			MarkdownDescription: "Legend size: auto, small, medium, large, or xlarge.",
+			Required:            true,
+			Validators: []validator.String{
+				stringvalidator.OneOf("auto", "small", "medium", "large", "xlarge"),
+			},
+		},
+		"truncate_after_lines": schema.Int64Attribute{
+			MarkdownDescription: "Maximum lines before truncating legend items (1-10).",
+			Optional:            true,
 		},
 	}
 }
