@@ -3,8 +3,7 @@ package alerting_rule
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -16,8 +15,15 @@ func (r *Resource) readRuleFromAPI(ctx context.Context, model *alertingRuleModel
 
 	ruleID, spaceID := model.getRuleIDAndSpaceID()
 
-	rule, readDiags := kibana.GetAlertingRule(ctx, r.client, ruleID, spaceID)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(readDiags)...)
+	// Get kbapi client
+	oapiClient, err := r.client.GetKibanaOapiClient()
+	if err != nil {
+		diags.AddError("Failed to get Kibana client", err.Error())
+		return false, diags
+	}
+
+	rule, readDiags := kibana_oapi.GetAlertingRule(ctx, oapiClient, spaceID, ruleID)
+	diags.Append(readDiags...)
 	if diags.HasError() {
 		return false, diags
 	}
