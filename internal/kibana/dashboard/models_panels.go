@@ -12,13 +12,14 @@ import (
 )
 
 type panelModel struct {
-	Type           types.String         `tfsdk:"type"`
-	Grid           panelGridModel       `tfsdk:"grid"`
-	ID             types.String         `tfsdk:"id"`
-	MarkdownConfig *markdownConfigModel `tfsdk:"markdown_config"`
-	XYChartConfig  *xyChartConfigModel  `tfsdk:"xy_chart_config"`
-	TagcloudConfig *tagcloudConfigModel `tfsdk:"tagcloud_config"`
-	ConfigJSON     jsontypes.Normalized `tfsdk:"config_json"`
+	Type            types.String          `tfsdk:"type"`
+	Grid            panelGridModel        `tfsdk:"grid"`
+	ID              types.String          `tfsdk:"id"`
+	MarkdownConfig  *markdownConfigModel  `tfsdk:"markdown_config"`
+	XYChartConfig   *xyChartConfigModel   `tfsdk:"xy_chart_config"`
+	TagcloudConfig  *tagcloudConfigModel  `tfsdk:"tagcloud_config"`
+	RegionMapConfig *regionMapConfigModel `tfsdk:"region_map_config"`
+	ConfigJSON      jsontypes.Normalized  `tfsdk:"config_json"`
 }
 
 type panelGridModel struct {
@@ -51,6 +52,7 @@ var panelConfigConverters = []panelConfigConverter{
 	markdownPanelConfigConverter{},
 	newXYChartPanelConfigConverter(),
 	newTagcloudPanelConfigConverter(),
+	newRegionMapPanelConfigConverter(),
 }
 
 func (m *dashboardModel) mapPanelsFromAPI(ctx context.Context, apiPanels *kbapi.DashboardPanels) ([]panelModel, []sectionModel, diag.Diagnostics) {
