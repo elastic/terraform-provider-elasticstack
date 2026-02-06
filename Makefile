@@ -187,7 +187,8 @@ release-no-publish: tools check-sign-release ## Make a release without publishin
 
 .PHONY: release
 release: tools check-sign-release check-publish-release ## Build, sign, and upload your release
-	@ go tool github.com/goreleaser/goreleaser/v2 release --clean  --parallelism=4
+	@ go tool github.com/goreleaser/goreleaser/v2 release --clean  --parall
+	elism=4
 
 
 .PHONY: check-sign-release
