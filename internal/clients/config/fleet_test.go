@@ -128,6 +128,7 @@ func Test_newFleetConfigFromSDK(t *testing.T) {
 			os.Unsetenv("FLEET_USERNAME")
 			os.Unsetenv("FLEET_PASSWORD")
 			os.Unsetenv("FLEET_API_KEY")
+			os.Unsetenv("FLEET_BEARER_TOKEN")
 			os.Unsetenv("FLEET_CA_CERTS")
 
 			args := tt.args()
@@ -145,6 +146,64 @@ func Test_newFleetConfigFromSDK(t *testing.T) {
 			require.Equal(t, args.expectedDiags, diags)
 		})
 	}
+}
+
+func Test_newFleetConfigFromSDK_BearerToken(t *testing.T) {
+	os.Unsetenv("FLEET_ENDPOINT")
+	os.Unsetenv("FLEET_USERNAME")
+	os.Unsetenv("FLEET_PASSWORD")
+	os.Unsetenv("FLEET_API_KEY")
+	os.Unsetenv("FLEET_BEARER_TOKEN")
+	os.Unsetenv("FLEET_CA_CERTS")
+
+	kibanaCfg := kibanaOapiConfig{}
+	rd := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
+		"fleet": providerSchema.GetFleetConnectionSchema(),
+	}, map[string]interface{}{
+		"fleet": []interface{}{
+			map[string]interface{}{
+				"endpoint":     "example.com/fleet",
+				"bearer_token": "my-jwt-token",
+				"insecure":     true,
+			},
+		},
+	})
+
+	fleetCfg, diags := newFleetConfigFromSDK(rd, kibanaCfg)
+
+	require.Nil(t, diags)
+	require.Equal(t, "my-jwt-token", fleetCfg.BearerToken)
+	require.Equal(t, "example.com/fleet", fleetCfg.URL)
+	require.True(t, fleetCfg.Insecure)
+}
+
+func Test_newFleetConfigFromSDK_BearerTokenEnvOverride(t *testing.T) {
+	os.Unsetenv("FLEET_ENDPOINT")
+	os.Unsetenv("FLEET_USERNAME")
+	os.Unsetenv("FLEET_PASSWORD")
+	os.Unsetenv("FLEET_API_KEY")
+	os.Unsetenv("FLEET_BEARER_TOKEN")
+	os.Unsetenv("FLEET_CA_CERTS")
+
+	os.Setenv("FLEET_BEARER_TOKEN", "env-jwt-token")
+	defer os.Unsetenv("FLEET_BEARER_TOKEN")
+
+	kibanaCfg := kibanaOapiConfig{}
+	rd := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
+		"fleet": providerSchema.GetFleetConnectionSchema(),
+	}, map[string]interface{}{
+		"fleet": []interface{}{
+			map[string]interface{}{
+				"endpoint":     "example.com/fleet",
+				"bearer_token": "config-jwt-token",
+			},
+		},
+	})
+
+	fleetCfg, diags := newFleetConfigFromSDK(rd, kibanaCfg)
+
+	require.Nil(t, diags)
+	require.Equal(t, "env-jwt-token", fleetCfg.BearerToken)
 }
 
 func Test_newFleetConfigFromFramework(t *testing.T) {
@@ -267,6 +326,7 @@ func Test_newFleetConfigFromFramework(t *testing.T) {
 			os.Unsetenv("FLEET_USERNAME")
 			os.Unsetenv("FLEET_PASSWORD")
 			os.Unsetenv("FLEET_API_KEY")
+			os.Unsetenv("FLEET_BEARER_TOKEN")
 			os.Unsetenv("FLEET_CA_CERTS")
 
 			args := tt.args()
@@ -281,4 +341,60 @@ func Test_newFleetConfigFromFramework(t *testing.T) {
 			require.Equal(t, args.expectedDiags, diags)
 		})
 	}
+}
+
+func Test_newFleetConfigFromFramework_BearerToken(t *testing.T) {
+	os.Unsetenv("FLEET_ENDPOINT")
+	os.Unsetenv("FLEET_USERNAME")
+	os.Unsetenv("FLEET_PASSWORD")
+	os.Unsetenv("FLEET_API_KEY")
+	os.Unsetenv("FLEET_BEARER_TOKEN")
+	os.Unsetenv("FLEET_CA_CERTS")
+
+	kibanaCfg := kibanaOapiConfig{}
+	providerConfig := ProviderConfiguration{
+		Fleet: []FleetConnection{
+			{
+				BearerToken: types.StringValue("my-jwt-token"),
+				Endpoint:    types.StringValue("example.com/fleet"),
+				CACerts:     types.ListValueMust(types.StringType, []attr.Value{}),
+				Insecure:    types.BoolValue(true),
+			},
+		},
+	}
+
+	fleetCfg, diags := newFleetConfigFromFramework(context.Background(), providerConfig, kibanaCfg)
+
+	require.False(t, diags.HasError())
+	require.Equal(t, "my-jwt-token", fleetCfg.BearerToken)
+	require.Equal(t, "example.com/fleet", fleetCfg.URL)
+	require.True(t, fleetCfg.Insecure)
+}
+
+func Test_newFleetConfigFromFramework_BearerTokenEnvOverride(t *testing.T) {
+	os.Unsetenv("FLEET_ENDPOINT")
+	os.Unsetenv("FLEET_USERNAME")
+	os.Unsetenv("FLEET_PASSWORD")
+	os.Unsetenv("FLEET_API_KEY")
+	os.Unsetenv("FLEET_BEARER_TOKEN")
+	os.Unsetenv("FLEET_CA_CERTS")
+
+	os.Setenv("FLEET_BEARER_TOKEN", "env-jwt-token")
+	defer os.Unsetenv("FLEET_BEARER_TOKEN")
+
+	kibanaCfg := kibanaOapiConfig{}
+	providerConfig := ProviderConfiguration{
+		Fleet: []FleetConnection{
+			{
+				BearerToken: types.StringValue("config-jwt-token"),
+				Endpoint:    types.StringValue("example.com/fleet"),
+				CACerts:     types.ListValueMust(types.StringType, []attr.Value{}),
+			},
+		},
+	}
+
+	fleetCfg, diags := newFleetConfigFromFramework(context.Background(), providerConfig, kibanaCfg)
+
+	require.False(t, diags.HasError())
+	require.Equal(t, "env-jwt-token", fleetCfg.BearerToken)
 }

@@ -39,6 +39,10 @@ func newKibanaOapiConfigFromSDK(d *schema.ResourceData, base baseConfig) (kibana
 			config.APIKey = apiKey.(string)
 		}
 
+		if bearerToken, ok := kibConfig["bearer_token"]; ok && bearerToken != "" {
+			config.BearerToken = bearerToken.(string)
+		}
+
 		if endpoints, ok := kibConfig["endpoints"]; ok && len(endpoints.([]interface{})) > 0 {
 			// We're curently limited by the API to a single endpoint
 			if endpoint := endpoints.([]interface{})[0]; endpoint != nil {
@@ -76,6 +80,9 @@ func newKibanaOapiConfigFromFramework(ctx context.Context, cfg ProviderConfigura
 		if kibConfig.ApiKey.ValueString() != "" {
 			config.APIKey = kibConfig.ApiKey.ValueString()
 		}
+		if kibConfig.BearerToken.ValueString() != "" {
+			config.BearerToken = kibConfig.BearerToken.ValueString()
+		}
 		var endpoints []string
 		diags := kibConfig.Endpoints.ElementsAs(ctx, &endpoints, true)
 
@@ -103,6 +110,7 @@ func (k kibanaOapiConfig) withEnvironmentOverrides() kibanaOapiConfig {
 	k.Username = withEnvironmentOverride(k.Username, "KIBANA_USERNAME")
 	k.Password = withEnvironmentOverride(k.Password, "KIBANA_PASSWORD")
 	k.APIKey = withEnvironmentOverride(k.APIKey, "KIBANA_API_KEY")
+	k.BearerToken = withEnvironmentOverride(k.BearerToken, "KIBANA_BEARER_TOKEN")
 	k.URL = withEnvironmentOverride(k.URL, "KIBANA_ENDPOINT")
 	if caCerts, ok := os.LookupEnv("KIBANA_CA_CERTS"); ok {
 		k.CACerts = strings.Split(caCerts, ",")

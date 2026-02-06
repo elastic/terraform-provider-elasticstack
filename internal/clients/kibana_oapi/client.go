@@ -16,12 +16,13 @@ import (
 
 // Config is the configuration for the Kibana client.
 type Config struct {
-	URL      string
-	Username string
-	Password string
-	APIKey   string
-	Insecure bool
-	CACerts  []string
+	URL         string
+	Username    string
+	Password    string
+	APIKey      string
+	BearerToken string
+	Insecure    bool
+	CACerts     []string
 }
 
 // Client provides an API client for Elastic Kibana.
@@ -100,6 +101,10 @@ func (t *transport) RoundTrip(req *http.Request) (*http.Response, error) {
 
 	if t.APIKey != "" {
 		req.Header.Add("Authorization", "ApiKey "+t.APIKey)
+	}
+
+	if t.BearerToken != "" {
+		req.Header.Set("Authorization", "Bearer "+t.BearerToken)
 	}
 
 	return t.next.RoundTrip(req)

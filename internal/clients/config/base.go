@@ -10,11 +10,12 @@ import (
 )
 
 type baseConfig struct {
-	Username  string
-	Password  string
-	ApiKey    string
-	UserAgent string
-	Header    http.Header
+	Username    string
+	Password    string
+	ApiKey      string
+	BearerToken string
+	UserAgent   string
+	Header      http.Header
 }
 
 func newBaseConfigFromSDK(d *schema.ResourceData, version string, esKey string) baseConfig {
@@ -28,7 +29,9 @@ func newBaseConfigFromSDK(d *schema.ResourceData, version string, esKey string) 
 		if resource := esConn.([]interface{})[0]; resource != nil {
 			config := resource.(map[string]interface{})
 
-			if apiKey, ok := config["api_key"]; ok && apiKey != "" {
+			if bearerToken, ok := config["bearer_token"]; ok && bearerToken != "" {
+				baseConfig.BearerToken = bearerToken.(string)
+			} else if apiKey, ok := config["api_key"]; ok && apiKey != "" {
 				baseConfig.ApiKey = apiKey.(string)
 			} else {
 				if username, ok := config["username"]; ok {
@@ -56,6 +59,7 @@ func newBaseConfigFromFramework(config ProviderConfiguration, version string) ba
 		baseConfig.Username = esConfig.Username.ValueString()
 		baseConfig.Password = esConfig.Password.ValueString()
 		baseConfig.ApiKey = esConfig.APIKey.ValueString()
+		baseConfig.BearerToken = esConfig.BearerToken.ValueString()
 	}
 
 	return baseConfig.withEnvironmentOverrides()
@@ -65,23 +69,26 @@ func (b baseConfig) withEnvironmentOverrides() baseConfig {
 	b.Username = withEnvironmentOverride(b.Username, "ELASTICSEARCH_USERNAME")
 	b.Password = withEnvironmentOverride(b.Password, "ELASTICSEARCH_PASSWORD")
 	b.ApiKey = withEnvironmentOverride(b.ApiKey, "ELASTICSEARCH_API_KEY")
+	b.BearerToken = withEnvironmentOverride(b.BearerToken, "ELASTICSEARCH_BEARER_TOKEN")
 
 	return b
 }
 
 func (b baseConfig) toKibanaConfig() kibanaConfig {
 	return kibanaConfig{
-		Username: b.Username,
-		Password: b.Password,
-		ApiKey:   b.ApiKey,
+		Username:    b.Username,
+		Password:    b.Password,
+		ApiKey:      b.ApiKey,
+		BearerToken: b.BearerToken,
 	}
 }
 
 func (b baseConfig) toKibanaOapiConfig() kibanaOapiConfig {
 	return kibanaOapiConfig{
-		Username: b.Username,
-		Password: b.Password,
-		APIKey:   b.ApiKey,
+		Username:    b.Username,
+		Password:    b.Password,
+		APIKey:      b.ApiKey,
+		BearerToken: b.BearerToken,
 	}
 }
 
