@@ -156,17 +156,17 @@ func Test_tfModel_toAPIModel(t *testing.T) {
 			},
 		},
 		{
-			name: "should fail to parse a set of non-strings for sort field",
+			name: "should fail to parse a list of non-strings for sort field",
 			model: tfModel{
 				Name:      basetypes.NewStringValue("index-name"),
-				SortField: basetypes.NewSetValueMust(basetypes.Int64Type{}, []attr.Value{basetypes.NewInt64Value(1)}),
+				SortField: basetypes.NewListValueMust(basetypes.Int64Type{}, []attr.Value{basetypes.NewInt64Value(1)}),
 				Settings:  basetypes.NewListNull(basetypes.ObjectType{}),
 			},
 			hasError: true,
 			expectedDiags: diag.Diagnostics{
 				diag.NewErrorDiagnostic(
-					"expected set of string",
-					"expected set element type to be string but got basetypes.Int64Type",
+					"expected list of string",
+					"expected list element type to be string but got basetypes.Int64Type",
 				),
 			},
 		},
@@ -195,7 +195,7 @@ func Test_tfModel_toAPIModel(t *testing.T) {
 				RoutingPartitionSize:               basetypes.NewInt64Value(7),
 				LoadFixedBitsetFiltersEagerly:      basetypes.NewBoolValue(true),
 				ShardCheckOnStartup:                basetypes.NewStringValue("shard_check_on_startup"),
-				SortField:                          basetypes.NewSetValueMust(basetypes.StringType{}, []attr.Value{basetypes.NewStringValue("sort_field")}),
+				SortField:                          basetypes.NewListValueMust(basetypes.StringType{}, []attr.Value{basetypes.NewStringValue("sort_field")}),
 				SortOrder:                          basetypes.NewListValueMust(basetypes.StringType{}, []attr.Value{basetypes.NewStringValue("sort_order")}),
 				MappingCoerce:                      basetypes.NewBoolValue(false),
 				NumberOfReplicas:                   basetypes.NewInt64Value(9),
