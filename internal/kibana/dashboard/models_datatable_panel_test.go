@@ -265,3 +265,49 @@ func Test_datatablePanelConfigConverter_roundTrip(t *testing.T) {
 	require.NotNil(t, newPanel.DatatableConfig.NoESQL)
 	assert.Equal(t, types.StringValue("Round Trip"), newPanel.DatatableConfig.NoESQL.Title)
 }
+
+func Test_datatablePanelConfigConverter_roundTrip_ESQL(t *testing.T) {
+	converter := newDatatablePanelConfigConverter()
+	esqlConfigModel := &datatableESQLConfigModel{
+		Title:               types.StringValue("Round Trip ESQL"),
+		Description:         types.StringValue("ESQL round-trip test"),
+		Dataset:             jsontypes.NewNormalizedValue(`{"type":"esql","query":"FROM metrics-* | KEEP host.name, system.cpu.user.pct | LIMIT 10"}`),
+		Density:             &datatableDensityModel{Mode: types.StringValue("expanded")},
+		IgnoreGlobalFilters: types.BoolValue(false),
+		Sampling:            types.Float64Value(1),
+		Metrics: []datatableMetricModel{
+			{Config: jsontypes.NewNormalizedValue(`{"column":"system.cpu.user.pct","operation":"value","format":{"id":"number","params":{"decimals":2}}}`)},
+		},
+		Rows: []datatableRowModel{
+			{Config: jsontypes.NewNormalizedValue(`{"column":"host.name","operation":"value","collapse_by":"avg"}`)},
+		},
+		SplitMetricsBy: []datatableSplitByModel{
+			{Config: jsontypes.NewNormalizedValue(`{"column":"host.name","operation":"value"}`)},
+		},
+		SortBy: jsontypes.NewNormalizedValue(`{"column_type":"metric","direction":"desc","index":0}`),
+		Paging: types.Int64Value(20),
+	}
+
+	panel := panelModel{
+		Type:            types.StringValue("lens"),
+		DatatableConfig: &datatableConfigModel{ESQL: esqlConfigModel},
+	}
+
+	var apiConfig kbapi.DashboardPanelItem_Config
+	diags := converter.mapPanelToAPI(panel, &apiConfig)
+	require.False(t, diags.HasError())
+
+	newPanel := panelModel{Type: types.StringValue("lens")}
+	diags = converter.populateFromAPIPanel(context.Background(), &newPanel, apiConfig)
+	require.False(t, diags.HasError())
+	require.NotNil(t, newPanel.DatatableConfig)
+	require.NotNil(t, newPanel.DatatableConfig.ESQL)
+	assert.Equal(t, types.StringValue("Round Trip ESQL"), newPanel.DatatableConfig.ESQL.Title)
+	assert.Equal(t, types.StringValue("ESQL round-trip test"), newPanel.DatatableConfig.ESQL.Description)
+	assert.False(t, newPanel.DatatableConfig.ESQL.Dataset.IsNull())
+	assert.Equal(t, types.Int64Value(20), newPanel.DatatableConfig.ESQL.Paging)
+	assert.Len(t, newPanel.DatatableConfig.ESQL.Metrics, 1)
+	assert.Len(t, newPanel.DatatableConfig.ESQL.Rows, 1)
+	assert.Len(t, newPanel.DatatableConfig.ESQL.SplitMetricsBy, 1)
+}
+
