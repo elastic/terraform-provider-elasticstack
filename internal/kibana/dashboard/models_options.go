@@ -1,26 +1,25 @@
 package dashboard
 
 import (
-	"context"
-
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
-func (m *dashboardModel) optionsToAPI(ctx context.Context) (*optionsAPIModel, diag.Diagnostics) {
-	if !utils.IsKnown(m.Options) {
+type optionsModel struct {
+	HidePanelTitles types.Bool `tfsdk:"hide_panel_titles"`
+	UseMargins      types.Bool `tfsdk:"use_margins"`
+	SyncColors      types.Bool `tfsdk:"sync_colors"`
+	SyncTooltips    types.Bool `tfsdk:"sync_tooltips"`
+	SyncCursor      types.Bool `tfsdk:"sync_cursor"`
+}
+
+func (m *dashboardModel) optionsToAPI() (*optionsAPIModel, diag.Diagnostics) {
+	if m.Options == nil {
 		return nil, nil
 	}
 
-	var optModel optionsModel
-	diags := m.Options.As(ctx, &optModel, basetypes.ObjectAsOptions{})
-	if diags.HasError() {
-		return nil, diags
-	}
-
-	return optModel.toAPI(), diags
+	return m.Options.toAPI(), nil
 }
 
 // optionsAPIModel introduces a type alias for the generated API model.
@@ -43,9 +42,9 @@ type optionsAPIModel = struct {
 	UseMargins *bool `json:"use_margins,omitempty"`
 }
 
-func (m *dashboardModel) mapOptionsFromAPI(ctx context.Context, options *optionsAPIModel) (types.Object, diag.Diagnostics) {
+func (m *dashboardModel) mapOptionsFromAPI(options *optionsAPIModel) *optionsModel {
 	if options == nil {
-		return types.ObjectNull(getOptionsAttrTypes()), nil
+		return nil
 	}
 
 	model := optionsModel{
@@ -56,7 +55,7 @@ func (m *dashboardModel) mapOptionsFromAPI(ctx context.Context, options *options
 		SyncCursor:      types.BoolPointerValue(options.SyncCursor),
 	}
 
-	return types.ObjectValueFrom(ctx, getOptionsAttrTypes(), model)
+	return &model
 }
 
 func (m optionsModel) toAPI() *optionsAPIModel {

@@ -160,13 +160,7 @@ func TestVarsJSONValue_StringSemanticEquals(t *testing.T) {
 }
 
 func TestNewVarsJSONWithIntegration(t *testing.T) {
-	// Save and restore knownPackages
-	originalKnownPackages := knownPackages
-	knownPackages = make(map[string]kbapi.PackageInfo)
-	t.Cleanup(func() {
-		knownPackages = originalKnownPackages
-	})
-
+	// Store test package in cache
 	pkgName := "test-pkg"
 	pkgVersion := "1.0.0"
 	cacheKey := getPackageCacheKey(pkgName, pkgVersion)
@@ -185,7 +179,12 @@ func TestNewVarsJSONWithIntegration(t *testing.T) {
 	pkg := kbapi.PackageInfo{
 		Vars: &vars,
 	}
-	knownPackages[cacheKey] = pkg
+	knownPackages.Store(cacheKey, pkg)
+
+	// Cleanup: remove test data from cache
+	t.Cleanup(func() {
+		knownPackages.Delete(cacheKey)
+	})
 
 	tests := []struct {
 		name          string
@@ -243,13 +242,7 @@ func TestNewVarsJSONWithIntegration(t *testing.T) {
 }
 
 func TestPopulateVarsJSONDefaults(t *testing.T) {
-	// Save and restore knownPackages
-	originalKnownPackages := knownPackages
-	knownPackages = make(map[string]kbapi.PackageInfo)
-	t.Cleanup(func() {
-		knownPackages = originalKnownPackages
-	})
-
+	// Store test package in cache
 	pkgName := "test-pkg"
 	pkgVersion := "1.0.0"
 	cacheKey := getPackageCacheKey(pkgName, pkgVersion)
@@ -272,7 +265,12 @@ func TestPopulateVarsJSONDefaults(t *testing.T) {
 	pkg := kbapi.PackageInfo{
 		Vars: &vars,
 	}
-	knownPackages[cacheKey] = pkg
+	knownPackages.Store(cacheKey, pkg)
+
+	// Cleanup: remove test data from cache
+	t.Cleanup(func() {
+		knownPackages.Delete(cacheKey)
+	})
 
 	tests := []struct {
 		name           string

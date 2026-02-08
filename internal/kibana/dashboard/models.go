@@ -30,15 +30,8 @@ type dashboardModel struct {
 	QueryText            types.String         `tfsdk:"query_text"`
 	QueryJSON            jsontypes.Normalized `tfsdk:"query_json"`
 	Tags                 types.List           `tfsdk:"tags"`
-	Options              types.Object         `tfsdk:"options"`
-}
-
-type optionsModel struct {
-	HidePanelTitles types.Bool `tfsdk:"hide_panel_titles"`
-	UseMargins      types.Bool `tfsdk:"use_margins"`
-	SyncColors      types.Bool `tfsdk:"sync_colors"`
-	SyncTooltips    types.Bool `tfsdk:"sync_tooltips"`
-	SyncCursor      types.Bool `tfsdk:"sync_cursor"`
+	Options              *optionsModel        `tfsdk:"options"`
+	AccessControl        *AccessControlValue  `tfsdk:"access_control"`
 }
 
 // populateFromAPI populates the Terraform model from the API response
@@ -105,9 +98,17 @@ func (m *dashboardModel) populateFromAPI(ctx context.Context, resp *kbapi.GetDas
 	}
 
 	// Map options
-	options, optDiags := m.mapOptionsFromAPI(ctx, data.Data.Options)
-	diags.Append(optDiags...)
-	m.Options = options
+	m.Options = m.mapOptionsFromAPI(data.Data.Options)
+
+	// Map access control
+	if data.Data.AccessControl != nil {
+		var accessMode *string
+		if data.Data.AccessControl.AccessMode != nil {
+			s := string(*data.Data.AccessControl.AccessMode)
+			accessMode = &s
+		}
+		m.AccessControl = newAccessControlFromAPI(accessMode, data.Data.AccessControl.Owner)
+	}
 
 	return diags
 }
@@ -156,9 +157,12 @@ func (m *dashboardModel) toAPICreateRequest(ctx context.Context, diags *diag.Dia
 	}
 
 	// Set options
-	options, optionsDiags := m.optionsToAPI(ctx)
+	options, optionsDiags := m.optionsToAPI()
 	diags.Append(optionsDiags...)
 	req.Data.Options = options
+
+	// Set access control
+	req.Data.AccessControl = m.AccessControl.ToCreateAPI()
 
 	return req
 }
@@ -197,9 +201,12 @@ func (m *dashboardModel) toAPIUpdateRequest(ctx context.Context, diags *diag.Dia
 	}
 
 	// Set options
-	options, optionsDiags := m.optionsToAPI(ctx)
+	options, optionsDiags := m.optionsToAPI()
 	diags.Append(optionsDiags...)
 	req.Data.Options = options
+
+	// Set access control
+	req.Data.AccessControl = m.AccessControl.ToUpdateAPI()
 
 	return req
 }
