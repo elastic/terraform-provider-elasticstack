@@ -93,7 +93,6 @@ func New(version string) *schema.Provider {
 			"elasticstack_elasticsearch_transform":           transform.ResourceTransform(),
 			"elasticstack_elasticsearch_watch":               watcher.ResourceWatch(),
 
-			"elasticstack_kibana_alerting_rule": kibana.ResourceAlertingRule(),
 			"elasticstack_kibana_space":         kibana.ResourceSpace(),
 			"elasticstack_kibana_security_role": kibana.ResourceRole(),
 		},

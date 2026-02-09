@@ -96,7 +96,7 @@ func Test_tagcloudConfigModel_fromAPI_toAPI(t *testing.T) {
 				IgnoreGlobalFilters: types.BoolNull(),
 				Sampling:            types.Float64Null(),
 				Query: &filterSimpleModel{
-					Language: types.StringNull(),
+					Language: types.StringValue("kuery"),
 					Query:    types.StringValue("*"),
 				},
 				Orientation: types.StringNull(),

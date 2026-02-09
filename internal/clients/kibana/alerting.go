@@ -313,7 +313,14 @@ func UpdateAlertingRule(ctx context.Context, apiClient ApiClient, rule models.Al
 		}
 	}
 
-	return ruleResponseToModel(rule.SpaceID, ruleRes), diag.Diagnostics{}
+	result := ruleResponseToModel(rule.SpaceID, ruleRes)
+
+	// Set enabled to the requested value since we just called enable/disable
+	if rule.Enabled != nil {
+		result.Enabled = rule.Enabled
+	}
+
+	return result, diag.Diagnostics{}
 }
 
 func GetAlertingRule(ctx context.Context, apiClient *clients.ApiClient, id, spaceID string) (*models.AlertingRule, diag.Diagnostics) {

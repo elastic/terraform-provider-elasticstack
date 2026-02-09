@@ -5,7 +5,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -35,7 +34,14 @@ func (m *searchFilterModel) fromAPI(apiFilter kbapi.SearchFilterSchema) diag.Dia
 	}
 
 	m.Query = types.StringValue(queryStr)
-	m.Language = typeutils.StringishPointerValue(filterSchema.Language)
+
+	// Language defaults to "kuery" if the API doesn't return it
+	// This is consistent with Kibana's default behavior
+	if filterSchema.Language != nil {
+		m.Language = types.StringValue(string(*filterSchema.Language))
+	} else {
+		m.Language = types.StringValue("kuery")
+	}
 
 	if filterSchema.Meta != nil {
 		metaJSON, err := json.Marshal(filterSchema.Meta)
@@ -63,6 +69,13 @@ func (m *searchFilterModel) toAPI() (kbapi.SearchFilterSchema, diag.Diagnostics)
 	if utils.IsKnown(m.Language) {
 		lang := kbapi.SearchFilterSchema0Language(m.Language.ValueString())
 		filter.Language = &lang
+	}
+	if utils.IsKnown(m.Meta) {
+		var meta map[string]interface{}
+		diags.Append(m.Meta.Unmarshal(&meta)...)
+		if !diags.HasError() {
+			filter.Meta = &meta
+		}
 	}
 
 	var result kbapi.SearchFilterSchema
