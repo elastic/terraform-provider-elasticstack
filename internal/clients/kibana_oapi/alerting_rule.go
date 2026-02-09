@@ -34,7 +34,7 @@ func CreateAlertingRule(ctx context.Context, client *Client, spaceID string, rul
 				fmt.Sprintf("Create rule returned an empty response with HTTP status code [%d].", resp.StatusCode()),
 			)}
 		}
-		return convertResponseToModel(spaceID, resp.JSON200)
+		return ConvertResponseToModel(spaceID, resp.JSON200)
 	case http.StatusConflict:
 		return nil, diag.Diagnostics{diag.NewErrorDiagnostic(
 			"Rule ID conflict",
@@ -64,7 +64,7 @@ func GetAlertingRule(ctx context.Context, client *Client, spaceID string, ruleID
 				fmt.Sprintf("Get rule returned an empty response with HTTP status code [%d].", resp.StatusCode()),
 			)}
 		}
-		return convertResponseToModel(spaceID, resp.JSON200)
+		return ConvertResponseToModel(spaceID, resp.JSON200)
 	case http.StatusNotFound:
 		return nil, nil
 	default:
@@ -121,7 +121,7 @@ func UpdateAlertingRule(ctx context.Context, client *Client, spaceID string, rul
 			}
 		}
 
-		returnedRule, convDiags := convertResponseToModel(spaceID, resp.JSON200)
+		returnedRule, convDiags := ConvertResponseToModel(spaceID, resp.JSON200)
 		if convDiags.HasError() {
 			return nil, convDiags
 		}
@@ -198,10 +198,11 @@ func DisableAlertingRule(ctx context.Context, client *Client, spaceID string, ru
 	}
 }
 
-// convertResponseToModel converts any kbapi rule response to models.AlertingRule using JSON marshaling.
+// ConvertResponseToModel converts any kbapi rule response to models.AlertingRule using JSON marshaling.
 // This handles the different anonymous struct types (GetAlertingRuleIdResponse.JSON200,
 // PostAlertingRuleIdResponse.JSON200, PutAlertingRuleIdResponse.JSON200) by converting through JSON.
-func convertResponseToModel(spaceID string, resp any) (*models.AlertingRule, diag.Diagnostics) {
+// Exported for testing purposes.
+func ConvertResponseToModel(spaceID string, resp any) (*models.AlertingRule, diag.Diagnostics) {
 	if resp == nil {
 		return nil, nil
 	}
@@ -263,6 +264,14 @@ func convertResponseToModel(spaceID string, resp any) (*models.AlertingRule, dia
 		return nil, diag.Diagnostics{diag.NewErrorDiagnostic("Failed to unmarshal response", err.Error())}
 	}
 
+	// Validate that we have required fields - an empty response should be caught
+	if intermediate.ID == "" || intermediate.Name == "" || intermediate.Consumer == "" || intermediate.RuleTypeID == "" {
+		return nil, diag.Diagnostics{diag.NewErrorDiagnostic(
+			"Invalid rule response",
+			"Response is missing required fields (id, name, consumer, or rule_type_id)",
+		)}
+	}
+
 	// Convert to models.AlertingRule
 	actions := []models.AlertingRuleAction{}
 	for _, action := range intermediate.Actions {
@@ -317,6 +326,12 @@ func convertResponseToModel(spaceID string, resp any) (*models.AlertingRule, dia
 		}
 	}
 
+	// Only set status pointer if it's non-empty
+	var status *string
+	if intermediate.ExecutionStatus.Status != "" {
+		status = &intermediate.ExecutionStatus.Status
+	}
+
 	return &models.AlertingRule{
 		RuleID:     intermediate.ID,
 		SpaceID:    spaceID,
@@ -334,7 +349,7 @@ func convertResponseToModel(spaceID string, resp any) (*models.AlertingRule, dia
 		ScheduledTaskID: intermediate.ScheduledTaskID,
 		ExecutionStatus: models.AlertingRuleExecutionStatus{
 			LastExecutionDate: lastExecutionDate,
-			Status:            &intermediate.ExecutionStatus.Status,
+			Status:            status,
 		},
 		Actions:    actions,
 		AlertDelay: alertDelay,
