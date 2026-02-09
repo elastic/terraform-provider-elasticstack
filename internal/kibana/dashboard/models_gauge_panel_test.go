@@ -35,23 +35,29 @@ func Test_gaugeConfigModel_fromAPI_toAPI(t *testing.T) {
 					Sampling:            utils.Pointer(float32(0.5)),
 				}
 
-				_ = json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &api.Dataset)
-				_ = json.Unmarshal([]byte(`{"query":"status:active","language":"kuery"}`), &api.Query)
-				_ = json.Unmarshal([]byte(`{"operation":"count"}`), &api.Metric)
+				err := json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &api.Dataset)
+				require.NoError(t, err)
+				err = json.Unmarshal([]byte(`{"query":"status:active","language":"kuery"}`), &api.Query)
+				require.NoError(t, err)
+				err = json.Unmarshal([]byte(`{"operation":"count"}`), &api.Metric)
+				require.NoError(t, err)
 
 				var shape kbapi.GaugeNoESQL_Shape
-				_ = json.Unmarshal([]byte(`{"type":"circle"}`), &shape)
+				err = json.Unmarshal([]byte(`{"type":"circle"}`), &shape)
+				require.NoError(t, err)
 				api.Shape = &shape
 
 				filter := kbapi.SearchFilterSchema0{
 					Language: func() *kbapi.SearchFilterSchema0Language { l := kbapi.SearchFilterSchema0Language("lucene"); return &l }(),
 				}
 				var query kbapi.SearchFilterSchema_0_Query
-				_ = query.FromSearchFilterSchema0Query0("host.name:foo")
+				err = query.FromSearchFilterSchema0Query0("host.name:foo")
+				require.NoError(t, err)
 				filter.Query = query
 
 				var filterUnion kbapi.SearchFilterSchema
-				_ = filterUnion.FromSearchFilterSchema0(filter)
+				err = filterUnion.FromSearchFilterSchema0(filter)
+				require.NoError(t, err)
 				filters := []kbapi.SearchFilterSchema{filterUnion}
 				api.Filters = &filters
 
@@ -75,9 +81,12 @@ func Test_gaugeConfigModel_fromAPI_toAPI(t *testing.T) {
 					Type: kbapi.GaugeNoESQLTypeGauge,
 				}
 
-				_ = json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &api.Dataset)
-				_ = json.Unmarshal([]byte(`{"query":"*"}`), &api.Query)
-				_ = json.Unmarshal([]byte(`{"operation":"count"}`), &api.Metric)
+				err := json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &api.Dataset)
+				require.NoError(t, err)
+				err = json.Unmarshal([]byte(`{"query":"*"}`), &api.Query)
+				require.NoError(t, err)
+				err = json.Unmarshal([]byte(`{"operation":"count"}`), &api.Metric)
+				require.NoError(t, err)
 
 				return api
 			}(),
