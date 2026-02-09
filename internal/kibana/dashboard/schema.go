@@ -680,7 +680,7 @@ func getXYLayerSchema() schema.NestedAttributeObject {
 	return schema.NestedAttributeObject{
 		Attributes: map[string]schema.Attribute{
 			"type": schema.StringAttribute{
-				MarkdownDescription: "The type of layer. Valid values: 'area', 'line', 'bar', 'horizontal_bar', 'reference_line' for NoESQL layers; 'area_chart', 'line_chart', 'bar_chart', 'horizontal_bar_chart', 'reference_line' for ESQL layers.",
+				MarkdownDescription: "The type of layer. Valid values: 'area', 'line', 'bar', 'horizontal_bar', 'referenceLines' for NoESQL layers; 'area_chart', 'line_chart', 'bar_chart', 'horizontal_bar_chart', 'referenceLines' for ESQL layers.",
 				Required:            true,
 			},
 			"data_layer": schema.SingleNestedAttribute{
@@ -770,13 +770,13 @@ func getReferenceLineLayerAttributes() map[string]schema.Attribute {
 						MarkdownDescription: "Which axis the reference line applies to. Valid values: 'left', 'right'.",
 						Optional:            true,
 						Validators: []validator.String{
-							stringvalidator.OneOf("left", "right"),
+							stringvalidator.OneOf("bottom", "left", "right"),
 						},
 					},
 					"color": schema.StringAttribute{
 						MarkdownDescription: "Color for the reference line. Can be a static color string or dynamic color configuration as JSON.",
 						CustomType:          jsontypes.NormalizedType{},
-						Required:            true,
+						Optional:            true,
 					},
 					"column": schema.StringAttribute{
 						MarkdownDescription: "Column to use (for ES|QL layers).",
@@ -817,10 +817,10 @@ func getReferenceLineLayerAttributes() map[string]schema.Attribute {
 						Optional:            true,
 					},
 					"text": schema.StringAttribute{
-						MarkdownDescription: "Text display option for the reference line. Valid values: 'auto', 'name'.",
+						MarkdownDescription: "Text display option for the reference line. Valid values include: 'auto', 'name', 'none', 'label'.",
 						Optional:            true,
 						Validators: []validator.String{
-							stringvalidator.OneOf("auto", "name"),
+							stringvalidator.OneOf("auto", "name", "none", "label"),
 						},
 					},
 				},
