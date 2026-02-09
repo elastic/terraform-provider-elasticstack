@@ -18,6 +18,7 @@ func newXYChartPanelConfigConverter() xyChartPanelConfigConverter {
 	return xyChartPanelConfigConverter{
 		lensPanelConfigConverter: lensPanelConfigConverter{
 			visualizationType: string(kbapi.Xy),
+			hasTFPanelConfig:  func(pm panelModel) bool { return pm.XYChartConfig != nil },
 		},
 	}
 }
@@ -130,18 +131,27 @@ func (m *xyAxisModel) fromAPI(apiAxis kbapi.XyAxis) diag.Diagnostics {
 		m.X = &xyAxisConfigModel{}
 		xDiags := m.X.fromAPI(apiAxis.X)
 		diags.Append(xDiags...)
+		if m.X.isEmpty() {
+			m.X = nil
+		}
 	}
 
 	if apiAxis.Left != nil {
 		m.Left = &yAxisConfigModel{}
 		leftDiags := m.Left.fromAPILeft(apiAxis.Left)
 		diags.Append(leftDiags...)
+		if m.Left.isEmpty() {
+			m.Left = nil
+		}
 	}
 
 	if apiAxis.Right != nil {
 		m.Right = &yAxisConfigModel{}
 		rightDiags := m.Right.fromAPIRight(apiAxis.Right)
 		diags.Append(rightDiags...)
+		if m.Right.isEmpty() {
+			m.Right = nil
+		}
 	}
 
 	return diags
@@ -182,6 +192,16 @@ type xyAxisConfigModel struct {
 	Grid             types.Bool           `tfsdk:"grid"`
 	LabelOrientation types.String         `tfsdk:"label_orientation"`
 	Extent           jsontypes.Normalized `tfsdk:"extent"`
+}
+
+func (m *xyAxisConfigModel) isEmpty() bool {
+	if m == nil {
+		return true
+	}
+	if utils.IsKnown(m.Ticks) || utils.IsKnown(m.Grid) || utils.IsKnown(m.LabelOrientation) || utils.IsKnown(m.Extent) {
+		return false
+	}
+	return axisTitleIsDefault(m.Title)
 }
 
 type xyAxisConfigAPIModel = struct {
@@ -261,6 +281,16 @@ type yAxisConfigModel struct {
 	LabelOrientation types.String         `tfsdk:"label_orientation"`
 	Scale            types.String         `tfsdk:"scale"`
 	Extent           jsontypes.Normalized `tfsdk:"extent"`
+}
+
+func (m *yAxisConfigModel) isEmpty() bool {
+	if m == nil {
+		return true
+	}
+	if utils.IsKnown(m.Ticks) || utils.IsKnown(m.Grid) || utils.IsKnown(m.LabelOrientation) || utils.IsKnown(m.Scale) || utils.IsKnown(m.Extent) {
+		return false
+	}
+	return axisTitleIsDefault(m.Title)
 }
 
 type leftYAxisConfigAPIModel = struct {
@@ -434,6 +464,19 @@ type axisTitleModel struct {
 	Visible types.Bool   `tfsdk:"visible"`
 }
 
+func axisTitleIsDefault(title *axisTitleModel) bool {
+	if title == nil {
+		return true
+	}
+	if utils.IsKnown(title.Value) {
+		return false
+	}
+	if utils.IsKnown(title.Visible) {
+		return title.Visible.ValueBool()
+	}
+	return true
+}
+
 func (m *axisTitleModel) fromAPI(apiTitle *struct {
 	Value   *string `json:"value,omitempty"`
 	Visible *bool   `json:"visible,omitempty"`
@@ -469,23 +512,21 @@ func (m *axisTitleModel) toAPI() *struct {
 }
 
 type xyDecorationsModel struct {
-	EndZones          types.Bool    `tfsdk:"end_zones"`
-	CurrentTimeMarker types.Bool    `tfsdk:"current_time_marker"`
-	PointVisibility   types.Bool    `tfsdk:"point_visibility"`
-	LineInterpolation types.String  `tfsdk:"line_interpolation"`
-	MinimumBarHeight  types.Int64   `tfsdk:"minimum_bar_height"`
-	ShowValueLabels   types.Bool    `tfsdk:"show_value_labels"`
-	FillOpacity       types.Float64 `tfsdk:"fill_opacity"`
-	ValueLabels       types.Bool    `tfsdk:"value_labels"`
+	ShowEndZones          types.Bool    `tfsdk:"show_end_zones"`
+	ShowCurrentTimeMarker types.Bool    `tfsdk:"show_current_time_marker"`
+	PointVisibility       types.String  `tfsdk:"point_visibility"`
+	LineInterpolation     types.String  `tfsdk:"line_interpolation"`
+	MinimumBarHeight      types.Int64   `tfsdk:"minimum_bar_height"`
+	ShowValueLabels       types.Bool    `tfsdk:"show_value_labels"`
+	FillOpacity           types.Float64 `tfsdk:"fill_opacity"`
 }
 
 func (m *xyDecorationsModel) fromAPI(apiDecorations kbapi.XyDecorations) {
-	m.EndZones = types.BoolPointerValue(apiDecorations.EndZones)
-	m.CurrentTimeMarker = types.BoolPointerValue(apiDecorations.CurrentTimeMarker)
-	m.PointVisibility = types.BoolPointerValue(apiDecorations.PointVisibility)
+	m.ShowEndZones = types.BoolPointerValue(apiDecorations.ShowEndZones)
+	m.ShowCurrentTimeMarker = types.BoolPointerValue(apiDecorations.ShowCurrentTimeMarker)
+	m.PointVisibility = typeutils.StringishPointerValue(apiDecorations.PointVisibility)
 	m.LineInterpolation = typeutils.StringishPointerValue(apiDecorations.LineInterpolation)
 	m.ShowValueLabels = types.BoolPointerValue(apiDecorations.ShowValueLabels)
-	m.ValueLabels = types.BoolPointerValue(apiDecorations.ValueLabels)
 
 	if apiDecorations.MinimumBarHeight != nil {
 		m.MinimumBarHeight = types.Int64Value(int64(*apiDecorations.MinimumBarHeight))
@@ -509,14 +550,15 @@ func (m *xyDecorationsModel) toAPI() kbapi.XyDecorations {
 
 	var decorations kbapi.XyDecorations
 
-	if utils.IsKnown(m.EndZones) {
-		decorations.EndZones = utils.Pointer(m.EndZones.ValueBool())
+	if utils.IsKnown(m.ShowEndZones) {
+		decorations.ShowEndZones = utils.Pointer(m.ShowEndZones.ValueBool())
 	}
-	if utils.IsKnown(m.CurrentTimeMarker) {
-		decorations.CurrentTimeMarker = utils.Pointer(m.CurrentTimeMarker.ValueBool())
+	if utils.IsKnown(m.ShowCurrentTimeMarker) {
+		decorations.ShowCurrentTimeMarker = utils.Pointer(m.ShowCurrentTimeMarker.ValueBool())
 	}
 	if utils.IsKnown(m.PointVisibility) {
-		decorations.PointVisibility = utils.Pointer(m.PointVisibility.ValueBool())
+		pointVisibility := kbapi.XyDecorationsPointVisibility(m.PointVisibility.ValueString())
+		decorations.PointVisibility = &pointVisibility
 	}
 	if utils.IsKnown(m.LineInterpolation) {
 		interp := kbapi.XyDecorationsLineInterpolation(m.LineInterpolation.ValueString())
@@ -530,9 +572,6 @@ func (m *xyDecorationsModel) toAPI() kbapi.XyDecorations {
 	}
 	if utils.IsKnown(m.FillOpacity) {
 		decorations.FillOpacity = utils.Pointer(float32(m.FillOpacity.ValueFloat64()))
-	}
-	if utils.IsKnown(m.ValueLabels) {
-		decorations.ValueLabels = utils.Pointer(m.ValueLabels.ValueBool())
 	}
 
 	return decorations
@@ -572,7 +611,7 @@ func (m *xyFittingModel) toAPI() kbapi.XyFitting {
 }
 
 type xyLegendModel struct {
-	Visible            types.Bool   `tfsdk:"visible"`
+	Visibility         types.String `tfsdk:"visibility"`
 	Statistics         types.List   `tfsdk:"statistics"`
 	TruncateAfterLines types.Int64  `tfsdk:"truncate_after_lines"`
 	Inside             types.Bool   `tfsdk:"inside"`
@@ -589,7 +628,7 @@ func (m *xyLegendModel) fromAPI(ctx context.Context, apiLegend kbapi.XyLegend) d
 	legendInside, err := apiLegend.AsXyLegendInside()
 	if err == nil && legendInside.Inside {
 		m.Inside = types.BoolValue(true)
-		m.Visible = types.BoolPointerValue(legendInside.Visible)
+		m.Visibility = types.StringValue(string(legendInside.Visibility))
 		m.Alignment = typeutils.StringishPointerValue(legendInside.Alignment)
 
 		if legendInside.TruncateAfterLines != nil {
@@ -622,7 +661,7 @@ func (m *xyLegendModel) fromAPI(ctx context.Context, apiLegend kbapi.XyLegend) d
 	legendOutside, err := apiLegend.AsXyLegendOutside()
 	if err == nil {
 		m.Inside = types.BoolValue(false)
-		m.Visible = types.BoolPointerValue(legendOutside.Visible)
+		m.Visibility = types.StringValue(string(legendOutside.Visibility))
 		m.Position = typeutils.StringishPointerValue(legendOutside.Position)
 		m.Size = typeutils.StringishPointerValue(legendOutside.Size)
 
@@ -655,6 +694,12 @@ func (m *xyLegendModel) toAPI() (kbapi.XyLegend, diag.Diagnostics) {
 
 	var diags diag.Diagnostics
 	isInside := utils.IsKnown(m.Inside) && m.Inside.ValueBool()
+	insideVisibility := kbapi.XyLegendInsideVisibilityAuto
+	outsideVisibility := kbapi.XyLegendOutsideVisibilityAuto
+	if utils.IsKnown(m.Visibility) {
+		insideVisibility = kbapi.XyLegendInsideVisibility(m.Visibility.ValueString())
+		outsideVisibility = kbapi.XyLegendOutsideVisibility(m.Visibility.ValueString())
+	}
 	statsElemsToStrings := func() ([]string, bool) {
 		if !utils.IsKnown(m.Statistics) {
 			return nil, false
@@ -685,10 +730,8 @@ func (m *xyLegendModel) toAPI() (kbapi.XyLegend, diag.Diagnostics) {
 	if isInside {
 		var legend kbapi.XyLegendInside
 		legend.Inside = true
+		legend.Visibility = insideVisibility
 
-		if utils.IsKnown(m.Visible) {
-			legend.Visible = utils.Pointer(m.Visible.ValueBool())
-		}
 		if utils.IsKnown(m.TruncateAfterLines) {
 			legend.TruncateAfterLines = utils.Pointer(float32(m.TruncateAfterLines.ValueInt64()))
 		}
@@ -716,10 +759,8 @@ func (m *xyLegendModel) toAPI() (kbapi.XyLegend, diag.Diagnostics) {
 
 	// Outside legend
 	var legend kbapi.XyLegendOutside
+	legend.Visibility = outsideVisibility
 
-	if utils.IsKnown(m.Visible) {
-		legend.Visible = utils.Pointer(m.Visible.ValueBool())
-	}
 	if utils.IsKnown(m.TruncateAfterLines) {
 		legend.TruncateAfterLines = utils.Pointer(float32(m.TruncateAfterLines.ValueInt64()))
 	}
