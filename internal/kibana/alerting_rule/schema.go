@@ -164,14 +164,20 @@ func getSchema() schema.Schema {
 					Blocks: map[string]schema.Block{
 						"frequency": schema.SingleNestedBlock{
 							Description: "The properties that affect how often actions are generated. If the rule type supports setting summary to true, the action can be a summary of alerts at the specified notification interval. Otherwise, an action runs for each alert at the specified notification interval. NOTE: You cannot specify these parameters when `notify_when` or `throttle` are defined at the rule level.",
+							Validators: []validator.Object{
+								objectvalidator.AlsoRequires(path.MatchRelative().AtName("summary")),
+								objectvalidator.AlsoRequires(path.MatchRelative().AtName("notify_when")),
+							},
 							Attributes: map[string]schema.Attribute{
 								"summary": schema.BoolAttribute{
 									Description: "Indicates whether the action is a summary.",
-									Required:    true,
+									Optional:    true,
+									Computed:    true,
 								},
 								"notify_when": schema.StringAttribute{
 									Description: "Defines how often alerts generate actions. Valid values include: `onActionGroupChange`: Actions run when the alert status changes; `onActiveAlert`: Actions run when the alert becomes active and at each check interval while the rule conditions are met; `onThrottleInterval`: Actions run when the alert becomes active and at the interval specified in the throttle property while the rule conditions are met.",
-									Required:    true,
+									Optional:    true,
+									Computed:    true,
 									Validators: []validator.String{
 										stringvalidator.OneOf("onActionGroupChange", "onActiveAlert", "onThrottleInterval"),
 									},

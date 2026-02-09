@@ -219,6 +219,27 @@ func TestAccResourceAlertingRule(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "alert_delay", "10"),
 				),
 			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("actions_no_frequency_create"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(ruleName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "name", ruleName),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_id", "af33ce2d-9fc4-5131-a350-b5bd6482746f"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "consumer", "alerts"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "notify_when", "onActionGroupChange"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_type_id", ".index-threshold"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "interval", "1m"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "actions.0.group", "threshold met"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "actions.0.params", `{"documents":[{"message":"{{context.message}}","rule_id":"{{rule.id}}","rule_name":"{{rule.name}}"}]}`),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "actions.1.group", "recovered"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "actions.1.params", `{"documents":[{"message":"Recovered","rule_id":"{{rule.id}}","rule_name":"{{rule.name}}"}]}`),
+				),
+			},
 		},
 	})
 }
