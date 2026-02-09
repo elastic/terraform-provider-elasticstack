@@ -8,7 +8,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-testing/config"
@@ -317,13 +317,18 @@ func checkResourceAlertingRuleDestroy(s *terraform.State) error {
 		return err
 	}
 
+	oapiClient, err := client.GetKibanaOapiClient()
+	if err != nil {
+		return err
+	}
+
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "elasticstack_kibana_alerting_rule" {
 			continue
 		}
 		compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
 
-		rule, diags := kibana.GetAlertingRule(context.Background(), client, compId.ResourceId, compId.ClusterId)
+		rule, diags := kibana_oapi.GetAlertingRule(context.Background(), oapiClient, compId.ClusterId, compId.ResourceId)
 		if diags.HasError() {
 			return fmt.Errorf("Failed to get alerting rule: %v", diags)
 		}
