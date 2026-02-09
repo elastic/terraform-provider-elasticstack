@@ -907,7 +907,6 @@ func transformKibanaPaths(schema *Schema) {
 		"propertyName": "action_type_id",
 	})
 	schema.Components.Delete("schemas.Security_Exceptions_API_ExceptionListItemExpireTime.format")
-
 }
 
 func removeBrokenDiscriminator(schema *Schema) {
@@ -996,26 +995,11 @@ func fixDashboardPanelItemRefs(schema *Schema) {
 // with additionalProperties (matching the PUT endpoint) so that oapi-codegen
 // generates a usable map[string]interface{} type.
 func fixAlertingRuleParams(schema *Schema) {
-	alertingRulePath := schema.GetPath("/api/alerting/rule/{id}")
-	if alertingRulePath == nil {
-		return
-	}
+	postEndpoint := schema.MustGetPath("/api/alerting/rule/{id}").MustGetEndpoint("post")
+	paramsSchema := postEndpoint.MustGetMap("requestBody.content.application/json.schema.properties.params")
 
-	postEndpoint := alertingRulePath.GetEndpoint("post")
-	if postEndpoint == nil {
-		return
-	}
-
-	paramsSchema, ok := postEndpoint.GetMap("requestBody.content.application/json.schema.properties.params")
-	if !ok {
-		return
-	}
-
-	// Remove the anyOf union that causes the broken generated type
-	delete(paramsSchema, "anyOf")
-
-	// Ensure it's defined as a plain object (matching the PUT endpoint)
-	paramsSchema["type"] = "object"
+	paramsSchema.Delete("anyOf")
+	paramsSchema.Set("type", "object")
 }
 
 func fixSecurityExceptionListItems(schema *Schema) {

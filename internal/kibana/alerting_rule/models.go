@@ -408,7 +408,7 @@ func convertActionsToAPI(ctx context.Context, actionsList types.List) ([]models.
 			var freq frequencyModel
 			diags.Append(action.Frequency.As(ctx, &freq, basetypes.ObjectAsOptions{})...)
 			// Only create Frequency if both required fields are present
-			if utils.IsKnown(freq.Summary) && utils.IsKnown(freq.NotifyWhen)  {
+			if utils.IsKnown(freq.Summary) && utils.IsKnown(freq.NotifyWhen) {
 				apiAction.Frequency = &models.ActionFrequency{
 					Summary:    freq.Summary.ValueBool(),
 					NotifyWhen: freq.NotifyWhen.ValueString(),
