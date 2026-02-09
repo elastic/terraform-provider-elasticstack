@@ -413,6 +413,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 						path.MatchRelative().AtParent().AtName("datatable_config"),
 						path.MatchRelative().AtParent().AtName("tagcloud_config"),
 						path.MatchRelative().AtParent().AtName("config_json"),
+						path.MatchRelative().AtParent().AtName("metric_chart_config"),
 					),
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"lens"}),
 				},
@@ -1001,6 +1002,9 @@ func getMetricChartSchema() map[string]schema.Attribute {
 		"metrics": schema.ListNestedAttribute{
 			MarkdownDescription: "Array of metrics to display (1-2 items). Each metric can be a primary metric (displays prominently) or secondary metric (displays as comparison). Metrics can use field operations (count, unique count, min, max, avg, median, std dev, sum, last value, percentile, percentile ranks), pipeline operations (differences, moving average, cumulative sum, counter rate), formula operations, or for ES|QL datasets, column-based value operations.",
 			Required:            true,
+			Validators: []validator.List{
+				listvalidator.SizeAtMost(2),
+			},
 			NestedObject: schema.NestedAttributeObject{
 				Attributes: map[string]schema.Attribute{
 					"config": schema.StringAttribute{

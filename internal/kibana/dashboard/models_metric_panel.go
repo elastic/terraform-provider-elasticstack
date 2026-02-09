@@ -100,6 +100,7 @@ func (c metricChartPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig 
 
 	if err := apiConfig.FromDashboardPanelItemConfig1(config1); err != nil {
 		diags.AddError("Failed to marshal metric chart config", err.Error())
+		return diags
 	}
 
 	return diags

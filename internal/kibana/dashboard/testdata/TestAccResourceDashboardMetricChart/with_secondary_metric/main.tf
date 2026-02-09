@@ -4,7 +4,7 @@ variable "dashboard_title" {
 
 resource "elasticstack_kibana_dashboard" "test" {
   title                  = var.dashboard_title
-  description            = "Dashboard with Metric Chart Panel with Filters"
+  description            = "Dashboard with Metric Chart Panel with Secondary Metric"
   time_from              = "now-15m"
   time_to                = "now"
   refresh_interval_pause = true
@@ -21,8 +21,8 @@ resource "elasticstack_kibana_dashboard" "test" {
       h = 15
     }
     metric_chart_config = {
-      title       = "Sample Metric Chart with Filters"
-      description = "Test metric chart with filters visualization"
+      title       = "Sample Metric Chart with Secondary Metric"
+      description = "Test metric chart with secondary metric"
       dataset = jsonencode({
         type = "dataView"
         id   = "metrics-*"
@@ -46,23 +46,19 @@ resource "elasticstack_kibana_dashboard" "test" {
               name = "document"
             }
           })
-        }
-      ]
-      breakdown_by = jsonencode({
-        operation = "terms"
-        fields    = ["category"]
-        size      = 3
-        columns   = 3
-        rank_by = {
-          direction = "desc"
-          metric    = 0
-          type      = "column"
-        }
-      })
-      filters = [
+        },
         {
-          language = "kuery"
-          query    = "event.category:web"
+          config = jsonencode({
+            type  = "secondary",
+            operation = "last_value",
+            field = "@timestamp",
+            sort_by = "@timestamp",
+            show_array_values = false,
+            filter = {
+              query = "\"@timestamp\": *"
+              language = "kuery"
+            }
+          })
         }
       ]
       ignore_global_filters = false

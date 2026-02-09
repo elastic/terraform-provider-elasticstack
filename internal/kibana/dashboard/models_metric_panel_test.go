@@ -350,6 +350,18 @@ func Test_metricChartConfigModel_withDataset(t *testing.T) {
 	require.False(t, diags.HasError())
 	assert.Equal(t, "dataview", parsedDataset["type"])
 	assert.Equal(t, "test-dataview", parsedDataset["id"])
+
+	// Round-trip: toAPI should preserve dataset
+	resultSchema, diags := model.toAPI()
+	require.False(t, diags.HasError())
+	resultVariant0, err := resultSchema.AsMetricChartSchema0()
+	require.NoError(t, err)
+	resultDatasetJSON, err := json.Marshal(resultVariant0.Dataset)
+	require.NoError(t, err)
+	var resultDataset map[string]interface{}
+	require.NoError(t, json.Unmarshal(resultDatasetJSON, &resultDataset))
+	assert.Equal(t, "dataview", resultDataset["type"])
+	assert.Equal(t, "test-dataview", resultDataset["id"])
 }
 
 func Test_metricChartConfigModel_withFilters(t *testing.T) {
