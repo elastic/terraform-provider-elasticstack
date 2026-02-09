@@ -42,7 +42,7 @@ resource "elasticstack_kibana_dashboard" "test" {
         line_interpolation = "smooth"
         minimum_bar_height = 2
         fill_opacity       = 0.3
-        value_labels       = false
+        show_value_labels  = false
       }
       fitting = {
         type = "none"
@@ -69,9 +69,9 @@ resource "elasticstack_kibana_dashboard" "test" {
         }
       ]
       legend = {
-        visible  = true
-        inside   = false
-        position = "right"
+        visibility = "visible"
+        inside     = false
+        position   = "right"
       }
       query = {
         language = "kuery"

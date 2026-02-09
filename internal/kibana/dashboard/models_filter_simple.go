@@ -14,6 +14,10 @@ type filterSimpleModel struct {
 
 func (m *filterSimpleModel) fromAPI(apiQuery kbapi.FilterSimpleSchema) {
 	m.Query = types.StringValue(apiQuery.Query)
+	if apiQuery.Language == nil {
+		m.Language = types.StringValue("kuery")
+		return
+	}
 	m.Language = typeutils.StringishPointerValue(apiQuery.Language)
 }
 

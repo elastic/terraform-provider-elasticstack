@@ -524,17 +524,20 @@ func getYAxisAttributes() map[string]schema.Attribute {
 // getXYDecorationsSchema returns the schema for XY chart decorations
 func getXYDecorationsSchema() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
-		"end_zones": schema.BoolAttribute{
+		"show_end_zones": schema.BoolAttribute{
 			MarkdownDescription: "Show end zones for partial buckets.",
 			Optional:            true,
 		},
-		"current_time_marker": schema.BoolAttribute{
+		"show_current_time_marker": schema.BoolAttribute{
 			MarkdownDescription: "Show current time marker line.",
 			Optional:            true,
 		},
-		"point_visibility": schema.BoolAttribute{
-			MarkdownDescription: "Show data points on lines.",
+		"point_visibility": schema.StringAttribute{
+			MarkdownDescription: "Show data points on lines. Valid values are: auto, always, never.",
 			Optional:            true,
+			Validators: []validator.String{
+				stringvalidator.OneOf("auto", "always", "never"),
+			},
 		},
 		"line_interpolation": schema.StringAttribute{
 			MarkdownDescription: "Line interpolation method.",
@@ -553,10 +556,6 @@ func getXYDecorationsSchema() map[string]schema.Attribute {
 		},
 		"fill_opacity": schema.Float64Attribute{
 			MarkdownDescription: "Area chart fill opacity (0-1 typical, max 2 for legacy).",
-			Optional:            true,
-		},
-		"value_labels": schema.BoolAttribute{
-			MarkdownDescription: "Show value labels (alternative property).",
 			Optional:            true,
 		},
 	}
@@ -589,9 +588,12 @@ func getXYFittingSchema() map[string]schema.Attribute {
 // getXYLegendSchema returns the schema for XY chart legend configuration
 func getXYLegendSchema() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
-		"visible": schema.BoolAttribute{
-			MarkdownDescription: "Whether to show the legend.",
+		"visibility": schema.StringAttribute{
+			MarkdownDescription: "Legend visibility (auto, visible, hidden).",
 			Optional:            true,
+			Validators: []validator.String{
+				stringvalidator.OneOf("auto", "visible", "hidden"),
+			},
 		},
 		"statistics": schema.ListAttribute{
 			MarkdownDescription: "Statistics to display in legend (maximum 17).",
