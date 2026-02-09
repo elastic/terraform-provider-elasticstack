@@ -22,54 +22,30 @@ resource "elasticstack_kibana_dashboard" "test" {
     }
     datatable_config = {
       esql = {
-        title       = "Sample ESQL Datatable"
-        description = "Test ES|QL datatable visualization"
+        title = "count"
         dataset = jsonencode({
           type  = "esql"
-          query = "FROM metrics-* | KEEP host.name, system.cpu.user.pct | LIMIT 10"
+          query = "FROM metrics-* | STATS count = COUNT(*) BY TBUCKET(5m)"
         })
         density = {
-          mode = "expanded"
+          mode = "default"
         }
         metrics = [
           {
             config = jsonencode({
               operation = "value"
-              column    = "system.cpu.user.pct"
-              format = {
-                id = "number"
-                params = {
-                  decimals = 2
-                }
-              }
+              column    = "TBUCKET(5m)"
             })
-          }
-        ]
-        rows = [
+          },
           {
             config = jsonencode({
-              column      = "host.name"
-              operation   = "value"
-              collapse_by = "avg"
-            })
-          }
-        ]
-        split_metrics_by = [
-          {
-            config = jsonencode({
-              column    = "host.name"
               operation = "value"
+              column    = "count"
             })
           }
         ]
-        sort_by = jsonencode({
-          column_type = "metric"
-          direction   = "desc"
-          index       = 0
-        })
         ignore_global_filters = false
         sampling              = 1
-        paging                = 20
       }
     }
   }]

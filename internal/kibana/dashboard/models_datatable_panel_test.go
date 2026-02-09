@@ -151,7 +151,7 @@ func Test_datatableESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 		Operation: kbapi.DatatableESQLMetricOperationValue,
 		Format:    kbapi.FormatTypeSchema{},
 	}
-	require.NoError(t, json.Unmarshal([]byte(`{"id":"number","params":{"decimals":2}}`), &metric.Format))
+	require.NoError(t, json.Unmarshal([]byte(`{"type":"number","decimals":2}`), &metric.Format))
 
 	row := struct {
 		Alignment    *kbapi.DatatableESQLRowsAlignment    `json:"alignment,omitempty"`
@@ -276,7 +276,7 @@ func Test_datatablePanelConfigConverter_roundTrip_ESQL(t *testing.T) {
 		IgnoreGlobalFilters: types.BoolValue(false),
 		Sampling:            types.Float64Value(1),
 		Metrics: []datatableMetricModel{
-			{Config: jsontypes.NewNormalizedValue(`{"column":"system.cpu.user.pct","operation":"value","format":{"id":"number","params":{"decimals":2}}}`)},
+			{Config: jsontypes.NewNormalizedValue(`{"column":"system.cpu.user.pct","operation":"value","format":{"type":"number","decimals":2}}`)},
 		},
 		Rows: []datatableRowModel{
 			{Config: jsontypes.NewNormalizedValue(`{"column":"host.name","operation":"value","collapse_by":"avg"}`)},
