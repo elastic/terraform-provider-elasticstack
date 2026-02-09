@@ -287,7 +287,6 @@ func Test_datatablePanelConfigConverter_roundTrip_ESQL(t *testing.T) {
 		SortBy: jsontypes.NewNormalizedValue(`{"column_type":"metric","direction":"desc","index":0}`),
 		Paging: types.Int64Value(20),
 	}
-
 	panel := panelModel{
 		Type:            types.StringValue("lens"),
 		DatatableConfig: &datatableConfigModel{ESQL: esqlConfigModel},
@@ -310,4 +309,3 @@ func Test_datatablePanelConfigConverter_roundTrip_ESQL(t *testing.T) {
 	assert.Len(t, newPanel.DatatableConfig.ESQL.Rows, 1)
 	assert.Len(t, newPanel.DatatableConfig.ESQL.SplitMetricsBy, 1)
 }
-

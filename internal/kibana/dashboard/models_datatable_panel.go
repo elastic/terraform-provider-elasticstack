@@ -135,6 +135,7 @@ func (c datatablePanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *k
 
 	if err := apiConfig.FromDashboardPanelItemConfig1(config1); err != nil {
 		diags.AddError("Failed to marshal datatable config", err.Error())
+		return diags
 	}
 
 	return diags
