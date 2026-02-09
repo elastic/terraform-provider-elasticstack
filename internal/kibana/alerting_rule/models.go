@@ -407,13 +407,15 @@ func convertActionsToAPI(ctx context.Context, actionsList types.List) ([]models.
 		if utils.IsKnown(action.Frequency) && !action.Frequency.IsNull() {
 			var freq frequencyModel
 			diags.Append(action.Frequency.As(ctx, &freq, basetypes.ObjectAsOptions{})...)
-			apiAction.Frequency = &models.ActionFrequency{
-				Summary:    freq.Summary.ValueBool(),
-				NotifyWhen: freq.NotifyWhen.ValueString(),
-			}
-			if utils.IsKnown(freq.Throttle) && freq.Throttle.ValueString() != "" {
-				throttle := freq.Throttle.ValueString()
-				apiAction.Frequency.Throttle = &throttle
+			// Only create Frequency if both required fields are present
+			if utils.IsKnown(freq.Summary) && utils.IsKnown(freq.NotifyWhen) {
+				apiAction.Frequency = &models.ActionFrequency{
+					Summary:    freq.Summary.ValueBool(),
+					NotifyWhen: freq.NotifyWhen.ValueString(),
+				}
+				if utils.IsKnown(freq.Throttle) && freq.Throttle.ValueString() != "" {
+					apiAction.Frequency.Throttle = freq.Throttle.ValueStringPointer()
+				}
 			}
 		}
 

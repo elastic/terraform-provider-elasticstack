@@ -8,7 +8,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-testing/config"
@@ -219,6 +219,27 @@ func TestAccResourceAlertingRule(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "alert_delay", "10"),
 				),
 			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("actions_no_frequency_create"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(ruleName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "name", ruleName),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_id", "af33ce2d-9fc4-5131-a350-b5bd6482746f"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "consumer", "alerts"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "notify_when", "onActionGroupChange"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_type_id", ".index-threshold"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "interval", "1m"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "actions.0.group", "threshold met"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "actions.0.params", `{"documents":[{"message":"{{context.message}}","rule_id":"{{rule.id}}","rule_name":"{{rule.name}}"}]}`),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "actions.1.group", "recovered"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "actions.1.params", `{"documents":[{"message":"Recovered","rule_id":"{{rule.id}}","rule_name":"{{rule.name}}"}]}`),
+				),
+			},
 		},
 	})
 }
@@ -317,13 +338,18 @@ func checkResourceAlertingRuleDestroy(s *terraform.State) error {
 		return err
 	}
 
+	oapiClient, err := client.GetKibanaOapiClient()
+	if err != nil {
+		return err
+	}
+
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "elasticstack_kibana_alerting_rule" {
 			continue
 		}
 		compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
 
-		rule, diags := kibana.GetAlertingRule(context.Background(), client, compId.ResourceId, compId.ClusterId)
+		rule, diags := kibana_oapi.GetAlertingRule(context.Background(), oapiClient, compId.ClusterId, compId.ResourceId)
 		if diags.HasError() {
 			return fmt.Errorf("Failed to get alerting rule: %v", diags)
 		}
