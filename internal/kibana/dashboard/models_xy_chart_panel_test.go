@@ -461,9 +461,12 @@ func Test_xyDecorationsModel_fromAPI_toAPI(t *testing.T) {
 		{
 			name: "all fields populated",
 			apiDecorations: kbapi.XyDecorations{
-				EndZones:          utils.Pointer(true),
-				CurrentTimeMarker: utils.Pointer(false),
-				PointVisibility:   utils.Pointer(true),
+				ShowEndZones:          utils.Pointer(true),
+				ShowCurrentTimeMarker: utils.Pointer(false),
+				PointVisibility: func() *kbapi.XyDecorationsPointVisibility {
+					v := kbapi.XyDecorationsPointVisibilityAlways
+					return &v
+				}(),
 				LineInterpolation: func() *kbapi.XyDecorationsLineInterpolation {
 					i := kbapi.XyDecorationsLineInterpolation("linear")
 					return &i
@@ -471,41 +474,37 @@ func Test_xyDecorationsModel_fromAPI_toAPI(t *testing.T) {
 				MinimumBarHeight: utils.Pointer(float32(5)),
 				ShowValueLabels:  utils.Pointer(true),
 				FillOpacity:      utils.Pointer(float32(0.5)),
-				ValueLabels:      utils.Pointer(false),
 			},
 			expected: &xyDecorationsModel{
-				EndZones:          types.BoolValue(true),
-				CurrentTimeMarker: types.BoolValue(false),
-				PointVisibility:   types.BoolValue(true),
-				LineInterpolation: types.StringValue("linear"),
-				MinimumBarHeight:  types.Int64Value(5),
-				ShowValueLabels:   types.BoolValue(true),
-				FillOpacity:       types.Float64Value(0.5),
-				ValueLabels:       types.BoolValue(false),
+				ShowEndZones:          types.BoolValue(true),
+				ShowCurrentTimeMarker: types.BoolValue(false),
+				PointVisibility:       types.StringValue("always"),
+				LineInterpolation:     types.StringValue("linear"),
+				MinimumBarHeight:      types.Int64Value(5),
+				ShowValueLabels:       types.BoolValue(true),
+				FillOpacity:           types.Float64Value(0.5),
 			},
 			expectFillValue: 0.5,
 		},
 		{
 			name: "nil values",
 			apiDecorations: kbapi.XyDecorations{
-				EndZones:          nil,
-				CurrentTimeMarker: nil,
-				PointVisibility:   nil,
-				LineInterpolation: nil,
-				MinimumBarHeight:  nil,
-				ShowValueLabels:   nil,
-				FillOpacity:       nil,
-				ValueLabels:       nil,
+				ShowEndZones:          nil,
+				ShowCurrentTimeMarker: nil,
+				PointVisibility:       nil,
+				LineInterpolation:     nil,
+				MinimumBarHeight:      nil,
+				ShowValueLabels:       nil,
+				FillOpacity:           nil,
 			},
 			expected: &xyDecorationsModel{
-				EndZones:          types.BoolNull(),
-				CurrentTimeMarker: types.BoolNull(),
-				PointVisibility:   types.BoolNull(),
-				LineInterpolation: types.StringNull(),
-				MinimumBarHeight:  types.Int64Null(),
-				ShowValueLabels:   types.BoolNull(),
-				FillOpacity:       types.Float64Null(),
-				ValueLabels:       types.BoolNull(),
+				ShowEndZones:          types.BoolNull(),
+				ShowCurrentTimeMarker: types.BoolNull(),
+				PointVisibility:       types.StringNull(),
+				LineInterpolation:     types.StringNull(),
+				MinimumBarHeight:      types.Int64Null(),
+				ShowValueLabels:       types.BoolNull(),
+				FillOpacity:           types.Float64Null(),
 			},
 		},
 		{
@@ -526,13 +525,12 @@ func Test_xyDecorationsModel_fromAPI_toAPI(t *testing.T) {
 			model := &xyDecorationsModel{}
 			model.fromAPI(tt.apiDecorations)
 
-			assert.Equal(t, tt.expected.EndZones, model.EndZones)
-			assert.Equal(t, tt.expected.CurrentTimeMarker, model.CurrentTimeMarker)
+			assert.Equal(t, tt.expected.ShowEndZones, model.ShowEndZones)
+			assert.Equal(t, tt.expected.ShowCurrentTimeMarker, model.ShowCurrentTimeMarker)
 			assert.Equal(t, tt.expected.PointVisibility, model.PointVisibility)
 			assert.Equal(t, tt.expected.LineInterpolation, model.LineInterpolation)
 			assert.Equal(t, tt.expected.MinimumBarHeight, model.MinimumBarHeight)
 			assert.Equal(t, tt.expected.ShowValueLabels, model.ShowValueLabels)
-			assert.Equal(t, tt.expected.ValueLabels, model.ValueLabels)
 
 			if !tt.expected.FillOpacity.IsNull() {
 				assert.InDelta(t, tt.expectFillValue, model.FillOpacity.ValueFloat64(), 0.001)
@@ -545,8 +543,8 @@ func Test_xyDecorationsModel_fromAPI_toAPI(t *testing.T) {
 			assert.NotNil(t, apiDecorations)
 
 			// Verify round-trip preserves known values
-			if !model.EndZones.IsNull() && !model.EndZones.IsUnknown() {
-				assert.Equal(t, model.EndZones.ValueBool(), *apiDecorations.EndZones)
+			if !model.ShowEndZones.IsNull() && !model.ShowEndZones.IsUnknown() {
+				assert.Equal(t, model.ShowEndZones.ValueBool(), *apiDecorations.ShowEndZones)
 			}
 		})
 	}
@@ -620,7 +618,7 @@ func Test_xyLegendModel_fromAPI_toAPI_Inside(t *testing.T) {
 			apiLegend: func() kbapi.XyLegend {
 				legend := kbapi.XyLegendInside{
 					Inside:             true,
-					Visible:            utils.Pointer(true),
+					Visibility:         kbapi.XyLegendInsideVisibilityVisible,
 					TruncateAfterLines: utils.Pointer(float32(3)),
 					Columns:            utils.Pointer(float32(2)),
 					Alignment:          func() *kbapi.XyLegendInsideAlignment { a := kbapi.XyLegendInsideAlignment("left"); return &a }(),
@@ -635,7 +633,7 @@ func Test_xyLegendModel_fromAPI_toAPI_Inside(t *testing.T) {
 			}(),
 			expected: &xyLegendModel{
 				Inside:             types.BoolValue(true),
-				Visible:            types.BoolValue(true),
+				Visibility:         types.StringValue("visible"),
 				TruncateAfterLines: types.Int64Value(3),
 				Columns:            types.Int64Value(2),
 				Alignment:          types.StringValue("left"),
@@ -651,7 +649,7 @@ func Test_xyLegendModel_fromAPI_toAPI_Inside(t *testing.T) {
 			require.False(t, diags.HasError())
 
 			assert.Equal(t, tt.expected.Inside, model.Inside)
-			assert.Equal(t, tt.expected.Visible, model.Visible)
+			assert.Equal(t, tt.expected.Visibility, model.Visibility)
 			assert.Equal(t, tt.expected.TruncateAfterLines, model.TruncateAfterLines)
 			assert.Equal(t, tt.expected.Columns, model.Columns)
 			assert.Equal(t, tt.expected.Alignment, model.Alignment)
@@ -676,7 +674,7 @@ func Test_xyLegendModel_fromAPI_toAPI_Outside(t *testing.T) {
 			name: "outside legend with all fields",
 			apiLegend: func() kbapi.XyLegend {
 				legend := kbapi.XyLegendOutside{
-					Visible:            utils.Pointer(false),
+					Visibility:         kbapi.XyLegendOutsideVisibilityHidden,
 					TruncateAfterLines: utils.Pointer(float32(5)),
 					Position:           func() *kbapi.XyLegendOutsidePosition { p := kbapi.XyLegendOutsidePosition("right"); return &p }(),
 					Size:               func() *kbapi.XyLegendOutsideSize { s := kbapi.XyLegendOutsideSize("medium"); return &s }(),
@@ -690,7 +688,7 @@ func Test_xyLegendModel_fromAPI_toAPI_Outside(t *testing.T) {
 			}(),
 			expected: &xyLegendModel{
 				Inside:             types.BoolValue(false),
-				Visible:            types.BoolValue(false),
+				Visibility:         types.StringValue("hidden"),
 				TruncateAfterLines: types.Int64Value(5),
 				Position:           types.StringValue("right"),
 				Size:               types.StringValue("medium"),
@@ -706,7 +704,7 @@ func Test_xyLegendModel_fromAPI_toAPI_Outside(t *testing.T) {
 			require.False(t, diags.HasError())
 
 			assert.Equal(t, tt.expected.Inside, model.Inside)
-			assert.Equal(t, tt.expected.Visible, model.Visible)
+			assert.Equal(t, tt.expected.Visibility, model.Visibility)
 			assert.Equal(t, tt.expected.TruncateAfterLines, model.TruncateAfterLines)
 			assert.Equal(t, tt.expected.Position, model.Position)
 			assert.Equal(t, tt.expected.Size, model.Size)
@@ -739,8 +737,8 @@ func Test_xyChartConfigModel_toAPI_fromAPI(t *testing.T) {
 					},
 				},
 				Decorations: &xyDecorationsModel{
-					EndZones:        types.BoolValue(true),
-					PointVisibility: types.BoolValue(false),
+					ShowEndZones:    types.BoolValue(true),
+					PointVisibility: types.StringValue("never"),
 				},
 				Fitting: &xyFittingModel{
 					Type:   types.StringValue("linear"),
@@ -760,8 +758,8 @@ func Test_xyChartConfigModel_toAPI_fromAPI(t *testing.T) {
 					},
 				},
 				Legend: &xyLegendModel{
-					Inside:  types.BoolValue(false),
-					Visible: types.BoolValue(true),
+					Inside:     types.BoolValue(false),
+					Visibility: types.StringValue("visible"),
 				},
 				Query: &filterSimpleModel{
 					Query:    types.StringValue("*"),
@@ -826,14 +824,14 @@ func Test_xyChartPanelConfigConverter_populateFromAPIPanel(t *testing.T) {
 						},
 					},
 					"decorations": map[string]interface{}{
-						"endZones": true,
+						"show_end_zones": true,
 					},
 					"fitting": map[string]interface{}{
 						"type": "linear",
 					},
 					"layers": []interface{}{},
 					"legend": map[string]interface{}{
-						"visible": true,
+						"visibility": "visible",
 					},
 					"query": map[string]interface{}{
 						"query": "*",

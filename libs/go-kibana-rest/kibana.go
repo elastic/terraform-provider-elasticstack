@@ -13,6 +13,7 @@ type Config struct {
 	Username         string
 	Password         string
 	ApiKey           string
+	BearerToken      string
 	DisableVerifySSL bool
 	CAs              []string
 }
@@ -40,7 +41,9 @@ func NewClient(cfg Config) (*Client, error) {
 		SetHeader("Content-Type", "application/json").
 		SetDisableWarn(true)
 
-	if cfg.ApiKey != "" {
+	if cfg.BearerToken != "" {
+		restyClient.SetAuthScheme("Bearer").SetAuthToken(cfg.BearerToken)
+	} else if cfg.ApiKey != "" {
 		restyClient.SetAuthScheme("ApiKey").SetAuthToken(cfg.ApiKey)
 	} else {
 		restyClient.SetBasicAuth(cfg.Username, cfg.Password)

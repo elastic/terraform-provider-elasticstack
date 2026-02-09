@@ -17,6 +17,7 @@ type panelModel struct {
 	ID                types.String            `tfsdk:"id"`
 	MarkdownConfig    *markdownConfigModel    `tfsdk:"markdown_config"`
 	XYChartConfig     *xyChartConfigModel     `tfsdk:"xy_chart_config"`
+	DatatableConfig   *datatableConfigModel   `tfsdk:"datatable_config"`
 	TagcloudConfig    *tagcloudConfigModel    `tfsdk:"tagcloud_config"`
 	MetricChartConfig *metricChartConfigModel `tfsdk:"metric_chart_config"`
 	ConfigJSON        jsontypes.Normalized    `tfsdk:"config_json"`
@@ -51,6 +52,7 @@ type panelConfigConverter interface {
 var panelConfigConverters = []panelConfigConverter{
 	markdownPanelConfigConverter{},
 	newXYChartPanelConfigConverter(),
+	newDatatablePanelConfigConverter(),
 	newTagcloudPanelConfigConverter(),
 	newMetricChartPanelConfigConverter(),
 }

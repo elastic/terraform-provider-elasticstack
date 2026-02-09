@@ -21,11 +21,6 @@ resource "elasticstack_kibana_dashboard" "test" {
       h = 10
     }
     config_json = jsonencode({
-      "enhancements" : {
-        "dynamicActions" : {
-          "events" : []
-        }
-      },
       "syncColors" : false,
       "syncCursor" : true,
       "syncTooltips" : false,

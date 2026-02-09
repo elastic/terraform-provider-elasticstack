@@ -119,6 +119,7 @@ func Test_newKibanaConfigFromSDK(t *testing.T) {
 			os.Unsetenv("KIBANA_ENDPOINT")
 			os.Unsetenv("KIBANA_INSECURE")
 			os.Unsetenv("KIBANA_API_KEY")
+			os.Unsetenv("KIBANA_BEARER_TOKEN")
 			os.Unsetenv("KIBANA_CA_CERTS")
 
 			args := tt.args()
@@ -136,6 +137,66 @@ func Test_newKibanaConfigFromSDK(t *testing.T) {
 			require.Equal(t, args.expectedDiags, diags)
 		})
 	}
+}
+
+func Test_newKibanaConfigFromSDK_BearerToken(t *testing.T) {
+	os.Unsetenv("KIBANA_USERNAME")
+	os.Unsetenv("KIBANA_PASSWORD")
+	os.Unsetenv("KIBANA_ENDPOINT")
+	os.Unsetenv("KIBANA_INSECURE")
+	os.Unsetenv("KIBANA_API_KEY")
+	os.Unsetenv("KIBANA_BEARER_TOKEN")
+	os.Unsetenv("KIBANA_CA_CERTS")
+
+	baseCfg := baseConfig{}
+	rd := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
+		"kibana": providerSchema.GetKibanaConnectionSchema(),
+	}, map[string]interface{}{
+		"kibana": []interface{}{
+			map[string]interface{}{
+				"endpoints":    []interface{}{"example.com/kibana"},
+				"bearer_token": "my-jwt-token",
+				"insecure":     true,
+			},
+		},
+	})
+
+	kibanaCfg, diags := newKibanaConfigFromSDK(rd, baseCfg)
+
+	require.Nil(t, diags)
+	require.Equal(t, "my-jwt-token", kibanaCfg.BearerToken)
+	require.Equal(t, "example.com/kibana", kibanaCfg.Address)
+	require.True(t, kibanaCfg.DisableVerifySSL)
+}
+
+func Test_newKibanaConfigFromSDK_BearerTokenEnvOverride(t *testing.T) {
+	os.Unsetenv("KIBANA_USERNAME")
+	os.Unsetenv("KIBANA_PASSWORD")
+	os.Unsetenv("KIBANA_ENDPOINT")
+	os.Unsetenv("KIBANA_INSECURE")
+	os.Unsetenv("KIBANA_API_KEY")
+	os.Unsetenv("KIBANA_BEARER_TOKEN")
+	os.Unsetenv("KIBANA_CA_CERTS")
+
+	os.Setenv("KIBANA_BEARER_TOKEN", "env-jwt-token")
+	defer os.Unsetenv("KIBANA_BEARER_TOKEN")
+
+	baseCfg := baseConfig{}
+	rd := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
+		"kibana": providerSchema.GetKibanaConnectionSchema(),
+	}, map[string]interface{}{
+		"kibana": []interface{}{
+			map[string]interface{}{
+				"endpoints":    []interface{}{"example.com/kibana"},
+				"bearer_token": "config-jwt-token",
+			},
+		},
+	})
+
+	kibanaCfg, diags := newKibanaConfigFromSDK(rd, baseCfg)
+
+	require.Nil(t, diags)
+	require.Equal(t, "env-jwt-token", kibanaCfg.BearerToken)
 }
 
 func Test_newKibanaConfigFromFramework(t *testing.T) {
@@ -280,6 +341,7 @@ func Test_newKibanaConfigFromFramework(t *testing.T) {
 			os.Unsetenv("KIBANA_USERNAME")
 			os.Unsetenv("KIBANA_PASSWORD")
 			os.Unsetenv("KIBANA_API_KEY")
+			os.Unsetenv("KIBANA_BEARER_TOKEN")
 			os.Unsetenv("KIBANA_ENDPOINT")
 			os.Unsetenv("KIBANA_CA_CERTS")
 			os.Unsetenv("KIBANA_INSECURE")
@@ -296,4 +358,66 @@ func Test_newKibanaConfigFromFramework(t *testing.T) {
 			require.Equal(t, args.expectedDiags, diags)
 		})
 	}
+}
+
+func Test_newKibanaConfigFromFramework_BearerToken(t *testing.T) {
+	os.Unsetenv("KIBANA_USERNAME")
+	os.Unsetenv("KIBANA_PASSWORD")
+	os.Unsetenv("KIBANA_API_KEY")
+	os.Unsetenv("KIBANA_BEARER_TOKEN")
+	os.Unsetenv("KIBANA_ENDPOINT")
+	os.Unsetenv("KIBANA_CA_CERTS")
+	os.Unsetenv("KIBANA_INSECURE")
+
+	baseCfg := baseConfig{}
+	providerConfig := ProviderConfiguration{
+		Kibana: []KibanaConnection{
+			{
+				BearerToken: types.StringValue("my-jwt-token"),
+				Endpoints: types.ListValueMust(types.StringType, []attr.Value{
+					types.StringValue("example.com/kibana"),
+				}),
+				CACerts:  types.ListValueMust(types.StringType, []attr.Value{}),
+				Insecure: types.BoolValue(true),
+			},
+		},
+	}
+
+	kibanaCfg, diags := newKibanaConfigFromFramework(context.Background(), providerConfig, baseCfg)
+
+	require.False(t, diags.HasError())
+	require.Equal(t, "my-jwt-token", kibanaCfg.BearerToken)
+	require.Equal(t, "example.com/kibana", kibanaCfg.Address)
+	require.True(t, kibanaCfg.DisableVerifySSL)
+}
+
+func Test_newKibanaConfigFromFramework_BearerTokenEnvOverride(t *testing.T) {
+	os.Unsetenv("KIBANA_USERNAME")
+	os.Unsetenv("KIBANA_PASSWORD")
+	os.Unsetenv("KIBANA_API_KEY")
+	os.Unsetenv("KIBANA_BEARER_TOKEN")
+	os.Unsetenv("KIBANA_ENDPOINT")
+	os.Unsetenv("KIBANA_CA_CERTS")
+	os.Unsetenv("KIBANA_INSECURE")
+
+	os.Setenv("KIBANA_BEARER_TOKEN", "env-jwt-token")
+	defer os.Unsetenv("KIBANA_BEARER_TOKEN")
+
+	baseCfg := baseConfig{}
+	providerConfig := ProviderConfiguration{
+		Kibana: []KibanaConnection{
+			{
+				BearerToken: types.StringValue("config-jwt-token"),
+				Endpoints: types.ListValueMust(types.StringType, []attr.Value{
+					types.StringValue("example.com/kibana"),
+				}),
+				CACerts: types.ListValueMust(types.StringType, []attr.Value{}),
+			},
+		},
+	}
+
+	kibanaCfg, diags := newKibanaConfigFromFramework(context.Background(), providerConfig, baseCfg)
+
+	require.False(t, diags.HasError())
+	require.Equal(t, "env-jwt-token", kibanaCfg.BearerToken)
 }
