@@ -49,13 +49,13 @@ resource "elasticstack_kibana_dashboard" "test" {
         },
         {
           config = jsonencode({
-            type  = "secondary",
-            operation = "last_value",
-            field = "@timestamp",
-            sort_by = "@timestamp",
+            type              = "secondary",
+            operation         = "last_value",
+            field             = "@timestamp",
+            sort_by           = "@timestamp",
             show_array_values = false,
             filter = {
-              query = "\"@timestamp\": *"
+              query    = "\"@timestamp\": *"
               language = "kuery"
             }
           })
