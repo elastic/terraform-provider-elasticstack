@@ -574,6 +574,7 @@ var transformers = []TransformFunc{
 	fixSecurityExceptionListItems,
 	removeDuplicateOneOfRefs,
 	fixDashboardPanelItemRefs,
+	fixAlertingRuleParams,
 	transformRemoveExamples,
 	transformRemoveUnusedComponents,
 	transformOmitEmptyNullable,
@@ -985,6 +986,36 @@ func fixDashboardPanelItemRefs(schema *Schema) {
 	dashboardPath.Get.CreateRef(schema, "dashboard_panels", "responses.200.content.application/json.schema.properties.data.properties.panels")
 
 	schema.Components.CreateRef(schema, "dashboard_panel_item", "schemas.dashboard_panel_section.properties.panels.items")
+}
+
+// fixAlertingRuleParams simplifies the POST alerting rule params schema.
+// The upstream spec defines params with an anyOf union of specific param types,
+// which causes oapi-codegen to generate a union struct whose
+// AdditionalProperties field is tagged json:"-" (with no custom MarshalJSON).
+// This means params serialize as an empty object. Simplify it to a plain object
+// with additionalProperties (matching the PUT endpoint) so that oapi-codegen
+// generates a usable map[string]interface{} type.
+func fixAlertingRuleParams(schema *Schema) {
+	alertingRulePath := schema.GetPath("/api/alerting/rule/{id}")
+	if alertingRulePath == nil {
+		return
+	}
+
+	postEndpoint := alertingRulePath.GetEndpoint("post")
+	if postEndpoint == nil {
+		return
+	}
+
+	paramsSchema, ok := postEndpoint.GetMap("requestBody.content.application/json.schema.properties.params")
+	if !ok {
+		return
+	}
+
+	// Remove the anyOf union that causes the broken generated type
+	delete(paramsSchema, "anyOf")
+
+	// Ensure it's defined as a plain object (matching the PUT endpoint)
+	paramsSchema["type"] = "object"
 }
 
 func fixSecurityExceptionListItems(schema *Schema) {
