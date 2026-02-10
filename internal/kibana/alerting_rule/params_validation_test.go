@@ -45,8 +45,8 @@ func TestValidateRuleParamsEsQueryUnion(t *testing.T) {
 	}
 
 	invalid := map[string]interface{}{
-		"searchType":          "invalid",
-		"size":                0.0,
+		"searchType":          "searchSource",
+		"size":                "not-a-number",
 		"threshold":           []interface{}{1.0},
 		"thresholdComparator": ">",
 		"timeWindowSize":      5.0,
@@ -85,5 +85,28 @@ func TestValidateRuleParamsSyntheticsMonitorStatusRequiredFields(t *testing.T) {
 
 	if errs := validateRuleParams("xpack.uptime.alerts.monitorStatus", valid); len(errs) > 0 {
 		t.Fatalf("expected no validation errors, got: %v", errs)
+	}
+}
+
+func TestValidateRuleParamsApmAnomalyRequiredKeys(t *testing.T) {
+	valid := map[string]interface{}{
+		"windowSize":          5.0,
+		"windowUnit":          "m",
+		"environment":         "production",
+		"anomalySeverityType": "critical",
+	}
+
+	if errs := validateRuleParams("apm.rules.anomaly", valid); len(errs) > 0 {
+		t.Fatalf("expected no validation errors, got: %v", errs)
+	}
+
+	invalid := map[string]interface{}{
+		"windowSize":  5.0,
+		"windowUnit":  "m",
+		"environment": "production",
+	}
+
+	if errs := validateRuleParams("apm.rules.anomaly", invalid); len(errs) == 0 {
+		t.Fatalf("expected required field validation errors for apm anomaly params")
 	}
 }
