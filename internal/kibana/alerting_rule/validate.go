@@ -70,6 +70,15 @@ var ruleTypeParamsTargets = map[string][]func() interface{}{
 	},
 }
 
+var ruleTypeAdditionalAllowedParamsKeys = map[string][]string{
+	// The generated type currently models legacy single-window fields, while
+	// Kibana accepts modern multi-window payloads under `windows`.
+	"slo.rules.burnRate": {"windows", "dependencies"},
+	// Kibana supports passing selected hit fields to actions, but that key is
+	// currently missing from generated `.es-query` params models.
+	".es-query": {"sourceFields"},
+}
+
 func validateRuleParams(ruleTypeID string, params map[string]interface{}) []string {
 	targets, ok := ruleTypeParamsTargets[ruleTypeID]
 	if !ok {
@@ -94,11 +103,18 @@ func validateRuleParams(ruleTypeID string, params map[string]interface{}) []stri
 		}
 
 		missingKeys := requiredKeysMissing(target, params)
-		if len(missingKeys) == 0 {
+		unexpectedKeys := unexpectedKeysPresent(target, params, ruleTypeAdditionalAllowedParamsKeys[ruleTypeID])
+		if len(missingKeys) == 0 && len(unexpectedKeys) == 0 {
 			return nil
 		}
 
-		candidateErrs := []string{fmt.Sprintf("missing required params keys: %s", strings.Join(missingKeys, ", "))}
+		candidateErrs := make([]string, 0, 2)
+		if len(missingKeys) > 0 {
+			candidateErrs = append(candidateErrs, fmt.Sprintf("missing required params keys: %s", strings.Join(missingKeys, ", ")))
+		}
+		if len(unexpectedKeys) > 0 {
+			candidateErrs = append(candidateErrs, fmt.Sprintf("unexpected params keys: %s", strings.Join(unexpectedKeys, ", ")))
+		}
 		if best == nil || len(candidateErrs) < len(best) {
 			best = candidateErrs
 		}
@@ -143,6 +159,59 @@ func requiredKeysMissing(target interface{}, params map[string]interface{}) []st
 
 	slices.Sort(missing)
 	return missing
+}
+
+func unexpectedKeysPresent(target interface{}, params map[string]interface{}, additionalAllowedKeys []string) []string {
+	allowed := allowedParamsKeys(target)
+	if allowed == nil {
+		allowed = make(map[string]struct{}, len(additionalAllowedKeys))
+	}
+	for _, key := range additionalAllowedKeys {
+		allowed[key] = struct{}{}
+	}
+	if len(allowed) == 0 {
+		return nil
+	}
+
+	unexpected := make([]string, 0)
+	for key := range params {
+		if _, ok := allowed[key]; !ok {
+			unexpected = append(unexpected, key)
+		}
+	}
+
+	slices.Sort(unexpected)
+	return unexpected
+}
+
+func allowedParamsKeys(target interface{}) map[string]struct{} {
+	t := reflect.TypeOf(target)
+	if t.Kind() == reflect.Pointer {
+		t = t.Elem()
+	}
+	if t.Kind() != reflect.Struct {
+		return nil
+	}
+
+	allowed := make(map[string]struct{}, t.NumField())
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+
+		// Skip unexported/synthetic fields (for example union backing fields).
+		if field.PkgPath != "" {
+			continue
+		}
+
+		jsonTag := field.Tag.Get("json")
+		jsonName, _ := parseJSONTag(jsonTag)
+		if jsonName == "" || jsonName == "-" {
+			continue
+		}
+
+		allowed[jsonName] = struct{}{}
+	}
+
+	return allowed
 }
 
 func parseJSONTag(tag string) (name string, hasOmitEmpty bool) {
