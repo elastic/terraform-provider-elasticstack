@@ -369,6 +369,15 @@ func (tfModel *AnomalyDetectionJobTFModel) convertAnalysisConfigFromAPI(ctx cont
 	var influencersDiags diag.Diagnostics
 	analysisConfigTF.Influencers, influencersDiags = typeutils.NonEmptyListOrDefault(ctx, analysisConfigTF.Influencers, types.StringType, apiConfig.Influencers)
 	diags.Append(influencersDiags...)
+	if len(apiConfig.Influencers) == 0 && utils.IsKnown(analysisConfigTF.Influencers) {
+		var originalInfluencers []string
+		emptyInfluencersDiags := analysisConfigTF.Influencers.ElementsAs(ctx, &originalInfluencers, false)
+		diags.Append(emptyInfluencersDiags...)
+		if !emptyInfluencersDiags.HasError() && len(originalInfluencers) == 0 {
+			analysisConfigTF.Influencers, influencersDiags = types.ListValueFrom(ctx, types.StringType, []string{})
+			diags.Append(influencersDiags...)
+		}
+	}
 	// Ensure the list is properly typed (handles untyped zero-value lists from import)
 	analysisConfigTF.Influencers = typeutils.EnsureTypedList(ctx, analysisConfigTF.Influencers, types.StringType)
 
