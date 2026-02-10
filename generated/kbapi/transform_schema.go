@@ -987,19 +987,14 @@ func fixDashboardPanelItemRefs(schema *Schema) {
 	schema.Components.CreateRef(schema, "dashboard_panel_item", "schemas.dashboard_panel_section.properties.panels.items")
 }
 
-// fixAlertingRuleParams simplifies the POST alerting rule params schema.
-// The upstream spec defines params with an anyOf union of specific param types,
-// which causes oapi-codegen to generate a union struct whose
-// AdditionalProperties field is tagged json:"-" (with no custom MarshalJSON).
-// This means params serialize as an empty object. Simplify it to a plain object
-// with additionalProperties (matching the PUT endpoint) so that oapi-codegen
-// generates a usable map[string]interface{} type.
+// fixAlertingRuleParams keeps the POST alerting rule params anyOf refs so
+// concrete params_* component models are generated, but overrides the request
+// field type to map[string]interface{} for runtime compatibility.
 func fixAlertingRuleParams(schema *Schema) {
 	postEndpoint := schema.MustGetPath("/api/alerting/rule/{id}").MustGetEndpoint("post")
 	paramsSchema := postEndpoint.MustGetMap("requestBody.content.application/json.schema.properties.params")
 
-	paramsSchema.Delete("anyOf")
-	paramsSchema.Set("type", "object")
+	paramsSchema.Set("x-go-type", "map[string]interface{}")
 }
 
 func fixSecurityExceptionListItems(schema *Schema) {
@@ -1275,6 +1270,25 @@ func transformRemoveExamples(schema *Schema) {
 
 // transformRemoveUnusedComponents removes all unused schema components.
 func transformRemoveUnusedComponents(schema *Schema) {
+	keepComponentSchemas := map[string]bool{
+		// Keep alerting params variants so oapi-codegen emits concrete model types
+		// that provider validation can unmarshal against.
+		"params_property_apm_anomaly":                true,
+		"params_property_apm_error_count":            true,
+		"params_property_apm_transaction_duration":   true,
+		"params_property_apm_transaction_error_rate": true,
+		"params_es_query_dsl_rule":                   true,
+		"params_es_query_esql_rule":                  true,
+		"params_es_query_kql_rule":                   true,
+		"params_index_threshold_rule":                true,
+		"params_property_infra_inventory":            true,
+		"params_property_log_threshold":              true,
+		"params_property_infra_metric_threshold":     true,
+		"params_property_slo_burn_rate":              true,
+		"params_property_synthetics_uptime_tls":      true,
+		"params_property_synthetics_monitor_status":  true,
+	}
+
 	var refs map[string]any
 	collectRefsFn := func(key string, node Map) {
 		if ref, ok := node["$ref"].(string); ok {
@@ -1299,6 +1313,9 @@ func transformRemoveUnusedComponents(schema *Schema) {
 
 		loop := false
 		for key := range componentSchemas {
+			if keepComponentSchemas[key] {
+				continue
+			}
 			if _, ok := refs[key]; !ok {
 				delete(componentSchemas, key)
 				loop = true
