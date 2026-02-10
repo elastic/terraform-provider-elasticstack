@@ -3,7 +3,6 @@ package alerting_rule
 import (
 	"context"
 	"encoding/json"
-	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
@@ -253,7 +252,7 @@ func (m alertingRuleModel) toAPIModel(ctx context.Context, serverVersion *versio
 		if utils.IsKnown(m.RuleTypeID) {
 			errs := validateRuleParams(m.RuleTypeID.ValueString(), params)
 			if len(errs) > 0 {
-				diags.AddAttributeError(path.Root("params"), "Invalid params for rule_type_id", strings.Join(errs, "; "))
+				diags.AddAttributeError(path.Root("params"), "Invalid params for rule_type_id", formatParamsValidationErrors(errs))
 				return models.AlertingRule{}, diags
 			}
 		}
