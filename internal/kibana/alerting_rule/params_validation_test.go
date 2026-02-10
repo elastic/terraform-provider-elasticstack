@@ -179,3 +179,45 @@ func TestValidateRuleParamsEsQueryAllowsSourceFields(t *testing.T) {
 		t.Fatalf("expected no validation errors for es-query sourceFields payload, got: %v", errs)
 	}
 }
+
+func TestValidateRuleParamsSloBurnRateStillRejectsUnknownExtraKeys(t *testing.T) {
+	params := map[string]interface{}{
+		"sloId":        "o11y_managed_o11y-search-success-rat",
+		"dependencies": []interface{}{},
+		"windows":      []interface{}{},
+		"unexpected":   true,
+	}
+
+	errs := validateRuleParams("slo.rules.burnRate", params)
+	if len(errs) == 0 {
+		t.Fatalf("expected validation errors for unexpected slo burn rate key")
+	}
+	if !strings.Contains(strings.Join(errs, "; "), "unexpected params keys: unexpected") {
+		t.Fatalf("expected unexpected key error, got: %v", errs)
+	}
+}
+
+func TestValidateRuleParamsIndexThresholdRejectsSourceFields(t *testing.T) {
+	params := map[string]interface{}{
+		"index":               []interface{}{"logs-*"},
+		"threshold":           []interface{}{1.0},
+		"thresholdComparator": ">",
+		"timeField":           "@timestamp",
+		"timeWindowSize":      5.0,
+		"timeWindowUnit":      "m",
+		"sourceFields": []interface{}{
+			map[string]interface{}{
+				"label":      "cluster_id",
+				"searchPath": "cluster_id",
+			},
+		},
+	}
+
+	errs := validateRuleParams(".index-threshold", params)
+	if len(errs) == 0 {
+		t.Fatalf("expected validation errors for sourceFields on non-es-query rule")
+	}
+	if !strings.Contains(strings.Join(errs, "; "), "unexpected params keys: sourceFields") {
+		t.Fatalf("expected sourceFields unexpected key error, got: %v", errs)
+	}
+}
