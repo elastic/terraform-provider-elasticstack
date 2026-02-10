@@ -158,10 +158,10 @@ func Test_legacyMetricPanelConfigConverter_handlesAPIPanelConfig(t *testing.T) {
 	legacyMetricConfig := func() kbapi.DashboardPanelItem_Config {
 		configMap := map[string]interface{}{
 			"attributes": map[string]interface{}{
-				"type": "legacy_metric",
+				"type":    "legacy_metric",
 				"dataset": map[string]interface{}{"type": "dataView", "id": "metrics-*"},
-				"query": map[string]interface{}{"language": "kuery", "query": ""},
-				"metric": map[string]interface{}{"operation": "count"},
+				"query":   map[string]interface{}{"language": "kuery", "query": ""},
+				"metric":  map[string]interface{}{"operation": "count"},
 			},
 		}
 		var cfg kbapi.DashboardPanelItem_Config
@@ -190,15 +190,15 @@ func Test_legacyMetricPanelConfigConverter_roundTrip(t *testing.T) {
 	ctx := context.Background()
 	// Start from API config (dashboard panel config with legacy_metric attributes).
 	attrs := map[string]interface{}{
-		"type":                 "legacy_metric",
-		"title":                "Round-Trip Title",
-		"description":          "Round-trip description",
-		"dataset":              map[string]interface{}{"type": "dataView", "id": "logs-*"},
-		"query":                map[string]interface{}{"language": "kuery", "query": "host:*"},
-		"metric":               map[string]interface{}{"operation": "count", "format": map[string]interface{}{"type": "number"}},
-		"sampling":             0.5,
+		"type":                  "legacy_metric",
+		"title":                 "Round-Trip Title",
+		"description":           "Round-trip description",
+		"dataset":               map[string]interface{}{"type": "dataView", "id": "logs-*"},
+		"query":                 map[string]interface{}{"language": "kuery", "query": "host:*"},
+		"metric":                map[string]interface{}{"operation": "count", "format": map[string]interface{}{"type": "number"}},
+		"sampling":              0.5,
 		"ignore_global_filters": true,
-		"filters":              []interface{}{map[string]interface{}{"query": "status:200", "language": "kuery"}},
+		"filters":               []interface{}{map[string]interface{}{"query": "status:200", "language": "kuery"}},
 	}
 	configMap := map[string]interface{}{"attributes": attrs}
 	var apiConfig1 kbapi.DashboardPanelItem_Config
