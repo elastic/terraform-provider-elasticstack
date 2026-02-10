@@ -152,11 +152,8 @@ func parseJSONTag(tag string) (name string, hasOmitEmpty bool) {
 
 	parts := strings.Split(tag, ",")
 	name = parts[0]
-	for _, part := range parts[1:] {
-		if part == "omitempty" {
-			hasOmitEmpty = true
-			break
-		}
+	if slices.Contains(parts[1:], "omitempty") {
+		hasOmitEmpty = true
 	}
 	return name, hasOmitEmpty
 }
