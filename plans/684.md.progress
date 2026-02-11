@@ -1,6 +1,6 @@
 # Progress: data.elasticstack_fleet_output (Issue 684)
 
-- [ ] Inventory existing Fleet output code and client helpers
+- [x] Inventory existing Fleet output code and client helpers
 - [x] Add data source skeleton under internal/fleet/output
 - [x] Define data source schema
 - [x] Implement read logic
@@ -9,4 +9,4 @@
 - [x] Documentation and examples
 - [x] Acceptance tests for data source
 - [x] Execute required tests and lint/docs generation
-- [ ] Final review steps (code, test coverage, UX)
+- [x] Final review steps (code, test coverage, UX)
