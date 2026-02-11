@@ -101,6 +101,43 @@ func populateTagcloudTagByDefaults(model map[string]any) map[string]any {
 	return model
 }
 
+// populateLegacyMetricMetricDefaults populates default values for legacy metric operations
+func populateLegacyMetricMetricDefaults(model map[string]any) map[string]any {
+	if model == nil {
+		return model
+	}
+	if operation, ok := model["operation"].(string); ok {
+		switch operation {
+		case "count", "unique_count", "min", "max", "average", "median", "standard_deviation", "sum", "last_value", "percentile", "percentile_rank":
+			if _, exists := model["empty_as_null"]; !exists {
+				model["empty_as_null"] = false
+			}
+		}
+	}
+
+	format, ok := model["format"].(map[string]any)
+	if ok {
+		if formatType, ok := format["type"].(string); ok {
+			switch formatType {
+			case "number", "percent":
+				if _, exists := format["decimals"]; !exists {
+					format["decimals"] = float64(2)
+				}
+				if _, exists := format["compact"]; !exists {
+					format["compact"] = false
+				}
+			case "bytes", "bits":
+				if _, exists := format["decimals"]; !exists {
+					format["decimals"] = float64(2)
+				}
+			}
+		}
+		model["format"] = format
+	}
+
+	return model
+}
+
 // populateGaugeMetricDefaults populates default values for gauge metric configuration
 func populateGaugeMetricDefaults(model map[string]any) map[string]any {
 	if model == nil {
@@ -304,6 +341,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 				path.MatchRelative().AtName("config_json"),
 				path.MatchRelative().AtName("xy_chart_config"),
 				path.MatchRelative().AtName("tagcloud_config"),
+				path.MatchRelative().AtName("legacy_metric_config"),
 				path.MatchRelative().AtName("gauge_config"),
 				path.MatchRelative().AtName("metric_chart_config"),
 				path.MatchRelative().AtName("datatable_config"),
@@ -345,7 +383,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 				},
 			},
 			"markdown_config": schema.SingleNestedAttribute{
-				MarkdownDescription: "The configuration of a markdown panel. Mutually exclusive with `config_json`, `xy_chart_config`, `datatable_config`, `metric_chart_config`, `gauge_config`, and `tagcloud_config`.",
+				MarkdownDescription: "The configuration of a markdown panel. Mutually exclusive with `config_json`, `xy_chart_config`, `datatable_config`, `metric_chart_config`, `gauge_config`, `legacy_metric_config`, and `tagcloud_config`.",
 				Optional:            true,
 				Attributes: map[string]schema.Attribute{
 					"content": schema.StringAttribute{
@@ -371,6 +409,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 						path.MatchRelative().AtParent().AtName("xy_chart_config"),
 						path.MatchRelative().AtParent().AtName("datatable_config"),
 						path.MatchRelative().AtParent().AtName("tagcloud_config"),
+						path.MatchRelative().AtParent().AtName("legacy_metric_config"),
 						path.MatchRelative().AtParent().AtName("gauge_config"),
 						path.MatchRelative().AtParent().AtName("metric_chart_config"),
 					),
@@ -378,7 +417,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 				},
 			},
 			"xy_chart_config": schema.SingleNestedAttribute{
-				MarkdownDescription: "Configuration for an XY chart panel. Mutually exclusive with `markdown_config`, `datatable_config`, `tagcloud_config`, `gauge_config`, and `config_json`. Use this for line, area, and bar charts.",
+				MarkdownDescription: "Configuration for an XY chart panel. Mutually exclusive with `markdown_config`, `datatable_config`, `tagcloud_config`, `gauge_config`, `legacy_metric_config`, and `config_json`. Use this for line, area, and bar charts.",
 				Optional:            true,
 				Attributes: map[string]schema.Attribute{
 					"title": schema.StringAttribute{
@@ -449,6 +488,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 						path.MatchRelative().AtParent().AtName("markdown_config"),
 						path.MatchRelative().AtParent().AtName("xy_chart_config"),
 						path.MatchRelative().AtParent().AtName("tagcloud_config"),
+						path.MatchRelative().AtParent().AtName("legacy_metric_config"),
 						path.MatchRelative().AtParent().AtName("config_json"),
 						path.MatchRelative().AtParent().AtName("metric_chart_config"),
 					),
@@ -456,7 +496,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 				},
 			},
 			"tagcloud_config": schema.SingleNestedAttribute{
-				MarkdownDescription: "Configuration for a tagcloud chart panel. Mutually exclusive with `markdown_config`, `xy_chart_config`, `metric_chart_config`, `datatable_config`, `gauge_config`, and `config_json`. Tag clouds visualize word frequency.",
+				MarkdownDescription: "Configuration for a tagcloud chart panel. Mutually exclusive with `markdown_config`, `xy_chart_config`, `metric_chart_config`, `legacy_metric_config`, `datatable_config`, `gauge_config`, and `config_json`. Tag clouds visualize word frequency.",
 				Optional:            true,
 				Attributes:          getTagcloudSchema(),
 				Validators: []validator.Object{
@@ -499,12 +539,30 @@ func getPanelSchema() schema.NestedAttributeObject {
 						path.MatchRelative().AtParent().AtName("gauge_config"),
 						path.MatchRelative().AtParent().AtName("datatable_config"),
 						path.MatchRelative().AtParent().AtName("config_json"),
+						path.MatchRelative().AtParent().AtName("legacy_metric_config"),
+					),
+					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"lens"}),
+				},
+			},
+			"legacy_metric_config": schema.SingleNestedAttribute{
+				MarkdownDescription: "Configuration for a legacy metric chart panel. Mutually exclusive with `markdown_config`, `xy_chart_config`, `tagcloud_config`, and `config_json`. Use this for legacy single-value metric visualizations.",
+				Optional:            true,
+				Attributes:          getLegacyMetricSchema(),
+				Validators: []validator.Object{
+					objectvalidator.ConflictsWith(
+						path.MatchRelative().AtParent().AtName("markdown_config"),
+						path.MatchRelative().AtParent().AtName("xy_chart_config"),
+						path.MatchRelative().AtParent().AtName("datatable_config"),
+						path.MatchRelative().AtParent().AtName("tagcloud_config"),
+						path.MatchRelative().AtParent().AtName("gauge_config"),
+						path.MatchRelative().AtParent().AtName("metric_chart_config"),
+						path.MatchRelative().AtParent().AtName("config_json"),
 					),
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"lens"}),
 				},
 			},
 			"config_json": schema.StringAttribute{
-				MarkdownDescription: "The configuration of the panel as a JSON string. Mutually exclusive with `markdown_config`, `xy_chart_config`, `metric_chart_config`, `datatable_config`, `gauge_config`, and `tagcloud_config`.",
+				MarkdownDescription: "The configuration of the panel as a JSON string. Mutually exclusive with `markdown_config`, `xy_chart_config`, `legacy_metric_config`, `metric_chart_config`, `datatable_config`, `gauge_config`, and `tagcloud_config`.",
 				CustomType:          jsontypes.NormalizedType{},
 				Optional:            true,
 				Computed:            true,
@@ -514,6 +572,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 						path.MatchRelative().AtParent().AtName("xy_chart_config"),
 						path.MatchRelative().AtParent().AtName("datatable_config"),
 						path.MatchRelative().AtParent().AtName("tagcloud_config"),
+						path.MatchRelative().AtParent().AtName("legacy_metric_config"),
 						path.MatchRelative().AtParent().AtName("gauge_config"),
 						path.MatchRelative().AtParent().AtName("metric_chart_config"),
 					),
@@ -1002,6 +1061,48 @@ func getTagcloudSchema() map[string]schema.Attribute {
 			MarkdownDescription: "Tag grouping configuration as JSON. Can be a date histogram, terms, histogram, range, or filters operation. This determines how tags are grouped and displayed.",
 			CustomType:          customtypes.NewJSONWithDefaultsType(populateTagcloudTagByDefaults),
 			Required:            true,
+		},
+	}
+}
+
+// getLegacyMetricSchema returns the schema for legacy metric chart configuration
+func getLegacyMetricSchema() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"title": schema.StringAttribute{
+			MarkdownDescription: "The title of the chart displayed in the panel.",
+			Optional:            true,
+		},
+		"description": schema.StringAttribute{
+			MarkdownDescription: "The description of the chart.",
+			Optional:            true,
+		},
+		"dataset": schema.StringAttribute{
+			MarkdownDescription: "Dataset configuration as JSON. Use `dataView` or `index` for standard data sources, and `esql` or `table` for ES|QL sources.",
+			CustomType:          jsontypes.NormalizedType{},
+			Required:            true,
+		},
+		"metric": schema.StringAttribute{
+			MarkdownDescription: "Metric configuration as JSON. For standard datasets, use a metric operation or formula. For ES|QL datasets, include format, operation, column, and color configuration.",
+			CustomType:          customtypes.NewJSONWithDefaultsType(populateLegacyMetricMetricDefaults),
+			Required:            true,
+		},
+		"query": schema.SingleNestedAttribute{
+			MarkdownDescription: "Query configuration for filtering data. Required for non-ES|QL datasets.",
+			Optional:            true,
+			Attributes:          getFilterSimpleSchema(),
+		},
+		"filters": schema.ListNestedAttribute{
+			MarkdownDescription: "Additional filters to apply to the chart data (maximum 100).",
+			Optional:            true,
+			NestedObject:        getSearchFilterSchema(),
+		},
+		"sampling": schema.Float64Attribute{
+			MarkdownDescription: "Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.",
+			Optional:            true,
+		},
+		"ignore_global_filters": schema.BoolAttribute{
+			MarkdownDescription: "If true, ignore global filters when fetching data for this panel. Default is false.",
+			Optional:            true,
 		},
 	}
 }
