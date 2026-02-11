@@ -7,6 +7,6 @@
 - [x] Model adjustments and unit tests (if needed)
 - [x] Register data source by default (remove experimental gate)
 - [x] Documentation and examples
-- [ ] Acceptance tests for data source
+- [x] Acceptance tests for data source
 - [ ] Execute required tests and lint/docs generation
 - [ ] Final review steps (code, test coverage, UX)

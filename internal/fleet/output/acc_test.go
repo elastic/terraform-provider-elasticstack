@@ -149,6 +149,10 @@ func TestAccDataSourceFleetOutput(t *testing.T) {
 						"id",
 						fmt.Sprintf("default/%s-elasticsearch-output", policyName),
 					),
+					resource.TestCheckNoResourceAttr(
+						"data.elasticstack_fleet_output.elasticsearch",
+						"space_id",
+					),
 					resource.TestCheckResourceAttr(
 						"data.elasticstack_fleet_output.elasticsearch",
 						"output_id",
@@ -231,12 +235,27 @@ func TestAccDataSourceFleetOutput(t *testing.T) {
 					),
 					resource.TestCheckResourceAttr(
 						"data.elasticstack_fleet_output.logstash",
+						"default_integrations",
+						"false",
+					),
+					resource.TestCheckResourceAttr(
+						"data.elasticstack_fleet_output.logstash",
+						"default_monitoring",
+						"false",
+					),
+					resource.TestCheckResourceAttr(
+						"data.elasticstack_fleet_output.logstash",
 						"ssl.certificate_authorities.0",
 						"placeholder",
 					),
 					resource.TestCheckResourceAttr(
 						"data.elasticstack_fleet_output.logstash",
 						"ssl.certificate",
+						"placeholder",
+					),
+					resource.TestCheckResourceAttr(
+						"data.elasticstack_fleet_output.logstash",
+						"ssl.key",
 						"placeholder",
 					),
 					resource.TestCheckResourceAttr(
@@ -281,8 +300,28 @@ func TestAccDataSourceFleetOutput(t *testing.T) {
 					),
 					resource.TestCheckResourceAttr(
 						"data.elasticstack_fleet_output.kafka",
+						"default_integrations",
+						"false",
+					),
+					resource.TestCheckResourceAttr(
+						"data.elasticstack_fleet_output.kafka",
+						"default_monitoring",
+						"false",
+					),
+					resource.TestCheckResourceAttr(
+						"data.elasticstack_fleet_output.kafka",
 						"kafka.auth_type",
 						"none",
+					),
+					resource.TestCheckResourceAttr(
+						"data.elasticstack_fleet_output.kafka",
+						"kafka.broker_timeout",
+						"10",
+					),
+					resource.TestCheckResourceAttr(
+						"data.elasticstack_fleet_output.kafka",
+						"kafka.client_id",
+						"fleet-output-client",
 					),
 					resource.TestCheckResourceAttr(
 						"data.elasticstack_fleet_output.kafka",
@@ -296,6 +335,11 @@ func TestAccDataSourceFleetOutput(t *testing.T) {
 					),
 					resource.TestCheckResourceAttr(
 						"data.elasticstack_fleet_output.kafka",
+						"kafka.connection_type",
+						"plaintext",
+					),
+					resource.TestCheckResourceAttr(
+						"data.elasticstack_fleet_output.kafka",
 						"kafka.compression",
 						"gzip",
 					),
@@ -306,13 +350,23 @@ func TestAccDataSourceFleetOutput(t *testing.T) {
 					),
 					resource.TestCheckResourceAttr(
 						"data.elasticstack_fleet_output.kafka",
-						"kafka.connection_type",
-						"plaintext",
+						"kafka.required_acks",
+						"1",
 					),
 					resource.TestCheckResourceAttr(
 						"data.elasticstack_fleet_output.kafka",
-						"kafka.required_acks",
-						"1",
+						"kafka.timeout",
+						"30",
+					),
+					resource.TestCheckResourceAttr(
+						"data.elasticstack_fleet_output.kafka",
+						"kafka.version",
+						"2.6.0",
+					),
+					resource.TestCheckResourceAttr(
+						"data.elasticstack_fleet_output.kafka",
+						"kafka.key",
+						"event.key",
 					),
 					resource.TestCheckResourceAttr(
 						"data.elasticstack_fleet_output.kafka",
@@ -323,6 +377,37 @@ func TestAccDataSourceFleetOutput(t *testing.T) {
 						"data.elasticstack_fleet_output.kafka",
 						"kafka.headers.0.value",
 						"test",
+					),
+					resource.TestCheckResourceAttr(
+						"data.elasticstack_fleet_output.kafka",
+						"kafka.hash.hash",
+						"event.hash",
+					),
+					resource.TestCheckResourceAttr(
+						"data.elasticstack_fleet_output.kafka",
+						"kafka.hash.random",
+						"false",
+					),
+					resource.TestCheckResourceAttr(
+						"data.elasticstack_fleet_output.kafka",
+						"kafka.sasl.mechanism",
+						"SCRAM-SHA-256",
+					),
+					resource.TestCheckNoResourceAttr(
+						"data.elasticstack_fleet_output.kafka",
+						"kafka.username",
+					),
+					resource.TestCheckNoResourceAttr(
+						"data.elasticstack_fleet_output.kafka",
+						"kafka.password",
+					),
+					resource.TestCheckNoResourceAttr(
+						"data.elasticstack_fleet_output.kafka",
+						"kafka.random",
+					),
+					resource.TestCheckNoResourceAttr(
+						"data.elasticstack_fleet_output.kafka",
+						"kafka.round_robin",
 					),
 					resource.TestCheckResourceAttr(
 						"data.elasticstack_fleet_output.kafka",
