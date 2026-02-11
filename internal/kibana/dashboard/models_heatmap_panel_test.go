@@ -7,6 +7,8 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -222,16 +224,16 @@ func Test_heatmapPanelConfigConverter_mapPanelToAPI_populateFromAPIPanel_roundTr
 	panel := panelModel{
 		Type: types.StringValue("lens"),
 		HeatmapConfig: &heatmapConfigModel{
-			Title:               types.StringValue("Round Trip Heatmap"),
-			Description:         types.StringValue("Round-trip test"),
-			Dataset:             jsontypes.NewNormalizedValue(`{"type":"dataView","id":"metrics-*"}`),
-			Metric:              customtypes.NewJSONWithDefaultsValue[map[string]any](`{"operation":"count"}`, populateTagcloudMetricDefaults),
-			XAxis:               jsontypes.NewNormalizedValue(`{"operation":"filters","filters":[{"label":"All","filter":{"query":"*","language":"kuery"}}]}`),
-			YAxis:               jsontypes.NewNormalizedValue(`{"operation":"filters","filters":[{"label":"All","filter":{"query":"*","language":"kuery"}}]}`),
-			Query:               &filterSimpleModel{Language: types.StringValue("kuery"), Query: types.StringValue("status:active")},
-			Axes:                &heatmapAxesModel{X: &heatmapXAxisModel{}, Y: &heatmapYAxisModel{}},
-			Cells:               &heatmapCellsModel{},
-			Legend:              &heatmapLegendModel{Size: types.StringValue("medium")},
+			Title:       types.StringValue("Round Trip Heatmap"),
+			Description: types.StringValue("Round-trip test"),
+			Dataset:     jsontypes.NewNormalizedValue(`{"type":"dataView","id":"metrics-*"}`),
+			Metric:      customtypes.NewJSONWithDefaultsValue[map[string]any](`{"operation":"count"}`, populateTagcloudMetricDefaults),
+			XAxis:       jsontypes.NewNormalizedValue(`{"operation":"filters","filters":[{"label":"All","filter":{"query":"*","language":"kuery"}}]}`),
+			YAxis:       jsontypes.NewNormalizedValue(`{"operation":"filters","filters":[{"label":"All","filter":{"query":"*","language":"kuery"}}]}`),
+			Query:       &filterSimpleModel{Language: types.StringValue("kuery"), Query: types.StringValue("status:active")},
+			Axes:        &heatmapAxesModel{X: &heatmapXAxisModel{}, Y: &heatmapYAxisModel{}},
+			Cells:       &heatmapCellsModel{},
+			Legend:      &heatmapLegendModel{Size: types.StringValue("medium")},
 		},
 	}
 
@@ -252,4 +254,3 @@ func Test_heatmapPanelConfigConverter_mapPanelToAPI_populateFromAPIPanel_roundTr
 	assert.Equal(t, types.StringValue("kuery"), newPanel.HeatmapConfig.Query.Language)
 	assert.Equal(t, types.StringValue("status:active"), newPanel.HeatmapConfig.Query.Query)
 }
-
