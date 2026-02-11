@@ -112,7 +112,7 @@ setup-kibana-fleet: ## Creates the agent and integration policies required to ru
 
 .PHONY: docker-clean
 docker-clean: ## Try to remove provisioned nodes and assigned network
-	@ docker compose -f $(COMPOSE_FILE) --profile acceptance-tests down
+	@ docker compose -f $(COMPOSE_FILE) --profile acceptance-tests down --volumes
 
 .PHONY: copy-kibana-ca
 copy-kibana-ca: ## Copy Kibana CA certificate to local machine
