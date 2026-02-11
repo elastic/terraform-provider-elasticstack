@@ -214,3 +214,42 @@ func Test_heatmapConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 	assert.Equal(t, kbapi.HeatmapESQLMetricOperationValue, heatmapRoundTrip.Metric.Operation)
 	assert.Equal(t, "host", heatmapRoundTrip.XAxis.Column)
 }
+
+func Test_heatmapPanelConfigConverter_mapPanelToAPI_populateFromAPIPanel_roundTrip(t *testing.T) {
+	ctx := context.Background()
+	converter := newHeatmapPanelConfigConverter()
+
+	panel := panelModel{
+		Type: types.StringValue("lens"),
+		HeatmapConfig: &heatmapConfigModel{
+			Title:               types.StringValue("Round Trip Heatmap"),
+			Description:         types.StringValue("Round-trip test"),
+			Dataset:             jsontypes.NewNormalizedValue(`{"type":"dataView","id":"metrics-*"}`),
+			Metric:              customtypes.NewJSONWithDefaultsValue[map[string]any](`{"operation":"count"}`, populateTagcloudMetricDefaults),
+			XAxis:               jsontypes.NewNormalizedValue(`{"operation":"filters","filters":[{"label":"All","filter":{"query":"*","language":"kuery"}}]}`),
+			YAxis:               jsontypes.NewNormalizedValue(`{"operation":"filters","filters":[{"label":"All","filter":{"query":"*","language":"kuery"}}]}`),
+			Query:               &filterSimpleModel{Language: types.StringValue("kuery"), Query: types.StringValue("status:active")},
+			Axes:                &heatmapAxesModel{X: &heatmapXAxisModel{}, Y: &heatmapYAxisModel{}},
+			Cells:               &heatmapCellsModel{},
+			Legend:              &heatmapLegendModel{Size: types.StringValue("medium")},
+		},
+	}
+
+	var apiConfig kbapi.DashboardPanelItem_Config
+	diags := converter.mapPanelToAPI(panel, &apiConfig)
+	require.False(t, diags.HasError())
+
+	newPanel := panelModel{Type: types.StringValue("lens")}
+	diags = converter.populateFromAPIPanel(ctx, &newPanel, apiConfig)
+	require.False(t, diags.HasError())
+	require.NotNil(t, newPanel.HeatmapConfig)
+	assert.Equal(t, types.StringValue("Round Trip Heatmap"), newPanel.HeatmapConfig.Title)
+	assert.Equal(t, types.StringValue("Round-trip test"), newPanel.HeatmapConfig.Description)
+	assert.False(t, newPanel.HeatmapConfig.Dataset.IsNull())
+	assert.False(t, newPanel.HeatmapConfig.Metric.IsNull())
+	assert.False(t, newPanel.HeatmapConfig.XAxis.IsNull())
+	require.NotNil(t, newPanel.HeatmapConfig.Query)
+	assert.Equal(t, types.StringValue("kuery"), newPanel.HeatmapConfig.Query.Language)
+	assert.Equal(t, types.StringValue("status:active"), newPanel.HeatmapConfig.Query.Query)
+}
+

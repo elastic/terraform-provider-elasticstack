@@ -550,7 +550,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 				},
 			},
 			"heatmap_config": schema.SingleNestedAttribute{
-				MarkdownDescription: panelConfigDescription("Configuration for a heatmap chart panel.", "markdown_config", panelConfigNames),
+				MarkdownDescription: panelConfigDescription("Configuration for a heatmap chart panel.", "heatmap_config", panelConfigNames),
 				Optional:            true,
 				Attributes:          getHeatmapSchema(),
 				Validators: []validator.Object{
