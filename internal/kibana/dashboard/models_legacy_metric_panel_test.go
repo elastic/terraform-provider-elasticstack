@@ -155,35 +155,87 @@ func Test_legacyMetricConfigModel_toAPI_requiresQueryForNoESQL(t *testing.T) {
 }
 
 func Test_legacyMetricPanelConfigConverter_handlesAPIPanelConfig(t *testing.T) {
-	legacyMetricConfig := func() kbapi.DashboardPanelItem_Config {
-		configMap := map[string]interface{}{
-			"attributes": map[string]interface{}{
-				"type":    "legacy_metric",
-				"dataset": map[string]interface{}{"type": "dataView", "id": "metrics-*"},
-				"query":   map[string]interface{}{"language": "kuery", "query": ""},
-				"metric":  map[string]interface{}{"operation": "count"},
-			},
-		}
+	buildConfig := func(t *testing.T, configMap map[string]interface{}) kbapi.DashboardPanelItem_Config {
+		t.Helper()
 		var cfg kbapi.DashboardPanelItem_Config
 		require.NoError(t, cfg.FromDashboardPanelItemConfig2(configMap))
 		return cfg
-	}()
+	}
 
-	xyConfig := func() kbapi.DashboardPanelItem_Config {
-		configMap := map[string]interface{}{
-			"attributes": map[string]interface{}{"type": "xy"},
-		}
-		var cfg kbapi.DashboardPanelItem_Config
-		require.NoError(t, cfg.FromDashboardPanelItemConfig2(configMap))
-		return cfg
-	}()
+	tests := []struct {
+		name      string
+		panelType string
+		config    kbapi.DashboardPanelItem_Config
+		want      bool
+	}{
+		{
+			name:      "handles lens legacy metric config",
+			panelType: "lens",
+			config: buildConfig(t, map[string]interface{}{
+				"attributes": map[string]interface{}{
+					"type":    "legacy_metric",
+					"dataset": map[string]interface{}{"type": "dataView", "id": "metrics-*"},
+					"query":   map[string]interface{}{"language": "kuery", "query": ""},
+					"metric":  map[string]interface{}{"operation": "count"},
+				},
+			}),
+			want: true,
+		},
+		{
+			name:      "does not handle lens non-legacy metric config",
+			panelType: "lens",
+			config: buildConfig(t, map[string]interface{}{
+				"attributes": map[string]interface{}{"type": "xy"},
+			}),
+			want: false,
+		},
+		{
+			name:      "does not handle non-lens type",
+			panelType: "DASHBOARD_MARKDOWN",
+			config: buildConfig(t, map[string]interface{}{
+				"attributes": map[string]interface{}{"type": "legacy_metric"},
+			}),
+			want: false,
+		},
+		{
+			name:      "does not handle empty type",
+			panelType: "",
+			config:    buildConfig(t, map[string]interface{}{"attributes": map[string]interface{}{"type": "legacy_metric"}}),
+			want:      false,
+		},
+		{
+			name:      "does not handle missing attributes",
+			panelType: "lens",
+			config:    buildConfig(t, map[string]interface{}{}),
+			want:      false,
+		},
+		{
+			name:      "does not handle non-map attributes",
+			panelType: "lens",
+			config:    buildConfig(t, map[string]interface{}{"attributes": "legacy_metric"}),
+			want:      false,
+		},
+		{
+			name:      "does not handle missing visualization type",
+			panelType: "lens",
+			config:    buildConfig(t, map[string]interface{}{"attributes": map[string]interface{}{"dataset": map[string]interface{}{"type": "dataView"}}}),
+			want:      false,
+		},
+		{
+			name:      "does not handle invalid config union",
+			panelType: "lens",
+			config:    kbapi.DashboardPanelItem_Config{},
+			want:      false,
+		},
+	}
 
-	c := newLegacyMetricPanelConfigConverter()
-
-	assert.True(t, c.handlesAPIPanelConfig("lens", legacyMetricConfig), "should handle lens panel with legacy_metric attributes")
-	assert.False(t, c.handlesAPIPanelConfig("lens", xyConfig), "should not handle lens panel with xy attributes")
-	assert.False(t, c.handlesAPIPanelConfig("DASHBOARD_MARKDOWN", legacyMetricConfig), "should not handle non-lens type")
-	assert.False(t, c.handlesAPIPanelConfig("", kbapi.DashboardPanelItem_Config{}), "should not handle empty type")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := newLegacyMetricPanelConfigConverter()
+			got := c.handlesAPIPanelConfig(nil, tt.panelType, tt.config)
+			assert.Equal(t, tt.want, got)
+		})
+	}
 }
 
 func Test_legacyMetricPanelConfigConverter_roundTrip(t *testing.T) {
