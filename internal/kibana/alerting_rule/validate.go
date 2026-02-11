@@ -62,7 +62,7 @@ func (r *Resource) ValidateConfig(ctx context.Context, req resource.ValidateConf
 
 	resp.Diagnostics.AddAttributeError(
 		path.Root("params"),
-		"Invalid params for rule_type_id",
+		fmt.Sprintf("Invalid params for rule_type_id %q", data.RuleTypeID.ValueString()),
 		formatParamsValidationErrors(errs),
 	)
 }
