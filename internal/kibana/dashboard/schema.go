@@ -2,6 +2,7 @@ package dashboard
 
 import (
 	"context"
+	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
@@ -18,6 +19,51 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
+
+var panelConfigNames = []string{
+	"markdown_config",
+	"config_json",
+	"xy_chart_config",
+	"tagcloud_config",
+	"region_map_config",
+	"legacy_metric_config",
+	"gauge_config",
+	"metric_chart_config",
+	"datatable_config",
+}
+
+func panelConfigPaths(names []string) []path.Expression {
+	paths := make([]path.Expression, 0, len(names))
+	for _, name := range names {
+		paths = append(paths, path.MatchRelative().AtName(name))
+	}
+	return paths
+}
+
+func siblingPanelConfigPathsExcept(name string, names []string) []path.Expression {
+	paths := make([]path.Expression, 0, len(names)-1)
+	for _, n := range names {
+		if n == name {
+			continue
+		}
+		paths = append(paths, path.MatchRelative().AtParent().AtName(n))
+	}
+	return paths
+}
+
+func panelConfigDescription(base, self string, names []string) string {
+	others := make([]string, 0, len(names)-1)
+	for _, name := range names {
+		if name == self {
+			continue
+		}
+		others = append(others, "`"+name+"`")
+	}
+	if len(others) == 0 {
+		return base
+	}
+	return base + " Mutually exclusive with " + strings.Join(others, ", ") + "."
+}
 
 // populateTagcloudMetricDefaults populates default values for tagcloud metric configuration
 func populateTagcloudMetricDefaults(model map[string]any) map[string]any {
@@ -356,15 +402,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 	return schema.NestedAttributeObject{
 		Validators: []validator.Object{
 			objectvalidator.AtLeastOneOf(
-				path.MatchRelative().AtName("markdown_config"),
-				path.MatchRelative().AtName("config_json"),
-				path.MatchRelative().AtName("xy_chart_config"),
-				path.MatchRelative().AtName("tagcloud_config"),
-				path.MatchRelative().AtName("region_map_config"),
-				path.MatchRelative().AtName("legacy_metric_config"),
-				path.MatchRelative().AtName("gauge_config"),
-				path.MatchRelative().AtName("metric_chart_config"),
-				path.MatchRelative().AtName("datatable_config"),
+				panelConfigPaths(panelConfigNames)...,
 			),
 		},
 		Attributes: map[string]schema.Attribute{
@@ -403,7 +441,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 				},
 			},
 			"markdown_config": schema.SingleNestedAttribute{
-				MarkdownDescription: "The configuration of a markdown panel. Mutually exclusive with `config_json`, `xy_chart_config`, `datatable_config`, `metric_chart_config`, `gauge_config`, `region_map_config`, `legacy_metric_config`, and `tagcloud_config`.",
+				MarkdownDescription: panelConfigDescription("The configuration of a markdown panel.", "markdown_config", panelConfigNames),
 				Optional:            true,
 				Attributes: map[string]schema.Attribute{
 					"content": schema.StringAttribute{
@@ -425,20 +463,13 @@ func getPanelSchema() schema.NestedAttributeObject {
 				},
 				Validators: []validator.Object{
 					objectvalidator.ConflictsWith(
-						path.MatchRelative().AtParent().AtName("config_json"),
-						path.MatchRelative().AtParent().AtName("xy_chart_config"),
-						path.MatchRelative().AtParent().AtName("datatable_config"),
-						path.MatchRelative().AtParent().AtName("tagcloud_config"),
-						path.MatchRelative().AtParent().AtName("region_map_config"),
-						path.MatchRelative().AtParent().AtName("legacy_metric_config"),
-						path.MatchRelative().AtParent().AtName("gauge_config"),
-						path.MatchRelative().AtParent().AtName("metric_chart_config"),
+						siblingPanelConfigPathsExcept("markdown_config", panelConfigNames)...,
 					),
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"DASHBOARD_MARKDOWN"}),
 				},
 			},
 			"xy_chart_config": schema.SingleNestedAttribute{
-				MarkdownDescription: "Configuration for an XY chart panel. Mutually exclusive with `markdown_config`, `datatable_config`, `tagcloud_config`, `region_map_config`, `gauge_config`, `legacy_metric_config`, and `config_json`. Use this for line, area, and bar charts.",
+				MarkdownDescription: panelConfigDescription("Configuration for an XY chart panel. Use this for line, area, and bar charts.", "xy_chart_config", panelConfigNames),
 				Optional:            true,
 				Attributes: map[string]schema.Attribute{
 					"title": schema.StringAttribute{
@@ -490,136 +521,85 @@ func getPanelSchema() schema.NestedAttributeObject {
 				},
 				Validators: []validator.Object{
 					objectvalidator.ConflictsWith(
-						path.MatchRelative().AtParent().AtName("markdown_config"),
-						path.MatchRelative().AtParent().AtName("datatable_config"),
-						path.MatchRelative().AtParent().AtName("tagcloud_config"),
-						path.MatchRelative().AtParent().AtName("region_map_config"),
-						path.MatchRelative().AtParent().AtName("gauge_config"),
-						path.MatchRelative().AtParent().AtName("config_json"),
-						path.MatchRelative().AtParent().AtName("metric_chart_config"),
+						siblingPanelConfigPathsExcept("xy_chart_config", panelConfigNames)...,
 					),
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"lens"}),
 				},
 			},
 			"datatable_config": schema.SingleNestedAttribute{
-				MarkdownDescription: "Configuration for a datatable chart panel. Mutually exclusive with `markdown_config`, `xy_chart_config`, `tagcloud_config`, and `config_json`.",
+				MarkdownDescription: panelConfigDescription("Configuration for a datatable chart panel.", "datatable_config", panelConfigNames),
 				Optional:            true,
 				Attributes:          getDatatableSchema(),
 				Validators: []validator.Object{
 					objectvalidator.ConflictsWith(
-						path.MatchRelative().AtParent().AtName("markdown_config"),
-						path.MatchRelative().AtParent().AtName("xy_chart_config"),
-						path.MatchRelative().AtParent().AtName("tagcloud_config"),
-						path.MatchRelative().AtParent().AtName("region_map_config"),
-						path.MatchRelative().AtParent().AtName("gauge_config"),
-						path.MatchRelative().AtParent().AtName("legacy_metric_config"),
-						path.MatchRelative().AtParent().AtName("config_json"),
-						path.MatchRelative().AtParent().AtName("metric_chart_config"),
+						siblingPanelConfigPathsExcept("datatable_config", panelConfigNames)...,
 					),
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"lens"}),
 				},
 			},
 			"tagcloud_config": schema.SingleNestedAttribute{
-				MarkdownDescription: "Configuration for a tagcloud chart panel. Mutually exclusive with `markdown_config`, `xy_chart_config`, `region_map_config`, `metric_chart_config`, `legacy_metric_config`, `datatable_config`, `gauge_config`, and `config_json`. Tag clouds visualize word frequency.",
+				MarkdownDescription: panelConfigDescription("Configuration for a tagcloud chart panel. Tag clouds visualize word frequency.", "tagcloud_config", panelConfigNames),
 				Optional:            true,
 				Attributes:          getTagcloudSchema(),
 				Validators: []validator.Object{
 					objectvalidator.ConflictsWith(
-						path.MatchRelative().AtParent().AtName("markdown_config"),
-						path.MatchRelative().AtParent().AtName("xy_chart_config"),
-						path.MatchRelative().AtParent().AtName("region_map_config"),
-						path.MatchRelative().AtParent().AtName("gauge_config"),
-						path.MatchRelative().AtParent().AtName("legacy_metric_config"),
-						path.MatchRelative().AtParent().AtName("metric_chart_config"),
-						path.MatchRelative().AtParent().AtName("datatable_config"),
-						path.MatchRelative().AtParent().AtName("config_json"),
+						siblingPanelConfigPathsExcept("tagcloud_config", panelConfigNames)...,
 					),
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"lens"}),
 				},
 			},
 			"region_map_config": schema.SingleNestedAttribute{
-				MarkdownDescription: "Configuration for a region map chart panel. Mutually exclusive with `markdown_config`, `xy_chart_config`, `tagcloud_config`, and `config_json`. Use this for geographic region maps.",
+				MarkdownDescription: panelConfigDescription("Configuration for a region map chart panel. Use this for geographic region maps.", "region_map_config", panelConfigNames),
 				Optional:            true,
 				Attributes:          getRegionMapSchema(),
 				Validators: []validator.Object{
 					objectvalidator.ConflictsWith(
-						path.MatchRelative().AtParent().AtName("markdown_config"),
-						path.MatchRelative().AtParent().AtName("xy_chart_config"),
-						path.MatchRelative().AtParent().AtName("tagcloud_config"),
-						path.MatchRelative().AtParent().AtName("gauge_config"),
-						path.MatchRelative().AtParent().AtName("legacy_metric_config"),
-						path.MatchRelative().AtParent().AtName("metric_chart_config"),
-						path.MatchRelative().AtParent().AtName("datatable_config"),
-						path.MatchRelative().AtParent().AtName("config_json"),
+						siblingPanelConfigPathsExcept("region_map_config", panelConfigNames)...,
 					),
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"lens"}),
 				},
 			},
 			"gauge_config": schema.SingleNestedAttribute{
-				MarkdownDescription: "Configuration for a gauge chart panel. Mutually exclusive with `markdown_config`, `xy_chart_config`, `tagcloud_config`, and `config_json`.",
+				MarkdownDescription: panelConfigDescription("Configuration for a gauge chart panel.", "gauge_config", panelConfigNames),
 				Optional:            true,
 				Attributes:          getGaugeSchema(),
 				Validators: []validator.Object{
 					objectvalidator.ConflictsWith(
-						path.MatchRelative().AtParent().AtName("markdown_config"),
-						path.MatchRelative().AtParent().AtName("xy_chart_config"),
-						path.MatchRelative().AtParent().AtName("tagcloud_config"),
-						path.MatchRelative().AtParent().AtName("metric_chart_config"),
-						path.MatchRelative().AtParent().AtName("datatable_config"),
-						path.MatchRelative().AtParent().AtName("config_json"),
+						siblingPanelConfigPathsExcept("gauge_config", panelConfigNames)...,
 					),
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"lens"}),
 				},
 			},
 			"metric_chart_config": schema.SingleNestedAttribute{
-				MarkdownDescription: "Configuration for a metric chart panel. Mutually exclusive with `markdown_config`, `xy_chart_config`, `tagcloud_config`, `datatable_config`, and `config_json`. Metric charts display key performance indicators.",
+				MarkdownDescription: panelConfigDescription("Configuration for a metric chart panel. Metric charts display key performance indicators.", "metric_chart_config", panelConfigNames),
 				Optional:            true,
 				Attributes:          getMetricChartSchema(),
 				Validators: []validator.Object{
 					objectvalidator.ConflictsWith(
-						path.MatchRelative().AtParent().AtName("markdown_config"),
-						path.MatchRelative().AtParent().AtName("xy_chart_config"),
-						path.MatchRelative().AtParent().AtName("tagcloud_config"),
-						path.MatchRelative().AtParent().AtName("gauge_config"),
-						path.MatchRelative().AtParent().AtName("datatable_config"),
-						path.MatchRelative().AtParent().AtName("config_json"),
-						path.MatchRelative().AtParent().AtName("legacy_metric_config"),
+						siblingPanelConfigPathsExcept("metric_chart_config", panelConfigNames)...,
 					),
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"lens"}),
 				},
 			},
 			"legacy_metric_config": schema.SingleNestedAttribute{
-				MarkdownDescription: "Configuration for a legacy metric chart panel. Mutually exclusive with `markdown_config`, `xy_chart_config`, `tagcloud_config`, and `config_json`. Use this for legacy single-value metric visualizations.",
+				MarkdownDescription: panelConfigDescription("Configuration for a legacy metric chart panel. Use this for legacy single-value metric visualizations.", "legacy_metric_config", panelConfigNames),
 				Optional:            true,
 				Attributes:          getLegacyMetricSchema(),
 				Validators: []validator.Object{
 					objectvalidator.ConflictsWith(
-						path.MatchRelative().AtParent().AtName("markdown_config"),
-						path.MatchRelative().AtParent().AtName("xy_chart_config"),
-						path.MatchRelative().AtParent().AtName("datatable_config"),
-						path.MatchRelative().AtParent().AtName("tagcloud_config"),
-						path.MatchRelative().AtParent().AtName("gauge_config"),
-						path.MatchRelative().AtParent().AtName("metric_chart_config"),
-						path.MatchRelative().AtParent().AtName("config_json"),
+						siblingPanelConfigPathsExcept("legacy_metric_config", panelConfigNames)...,
 					),
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"lens"}),
 				},
 			},
 			"config_json": schema.StringAttribute{
-				MarkdownDescription: "The configuration of the panel as a JSON string. Mutually exclusive with `markdown_config`, `xy_chart_config`, `legacy_metric_config`, `region_map_config`, `metric_chart_config`, `datatable_config`, `gauge_config`, and `tagcloud_config`.",
+				MarkdownDescription: panelConfigDescription("The configuration of the panel as a JSON string.", "config_json", panelConfigNames),
 				CustomType:          jsontypes.NormalizedType{},
 				Optional:            true,
 				Computed:            true,
 				Validators: []validator.String{
 					stringvalidator.ConflictsWith(
-						path.MatchRelative().AtParent().AtName("markdown_config"),
-						path.MatchRelative().AtParent().AtName("xy_chart_config"),
-						path.MatchRelative().AtParent().AtName("datatable_config"),
-						path.MatchRelative().AtParent().AtName("tagcloud_config"),
-						path.MatchRelative().AtParent().AtName("region_map_config"),
-						path.MatchRelative().AtParent().AtName("legacy_metric_config"),
-						path.MatchRelative().AtParent().AtName("gauge_config"),
-						path.MatchRelative().AtParent().AtName("metric_chart_config"),
+						siblingPanelConfigPathsExcept("legacy_metric_config", panelConfigNames)...,
 					),
 				},
 			},
