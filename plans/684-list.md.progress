@@ -1,0 +1,9 @@
+# Progress: Fleet outputs data source design update
+
+## Tasks
+- [ ] Update data source schema inputs/outputs to match design.
+- [ ] Implement output mapping and filtering logic for supported types.
+- [x] Add/adjust unit tests for translation and filtering.
+- [x] Add/adjust acceptance tests for outputs data source scenarios.
+- [ ] Regenerate docs and run required tooling (lint/test/docs).
+- [ ] Perform final review checks (code, tests, UX) and confirm readiness.

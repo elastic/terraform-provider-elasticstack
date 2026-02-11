@@ -184,6 +184,26 @@ func GetOutput(ctx context.Context, client *Client, id string, spaceID string) (
 	}
 }
 
+// GetOutputs reads all outputs from the API.
+func GetOutputs(ctx context.Context, client *Client, spaceID string) ([]kbapi.OutputUnion, diag.Diagnostics) {
+	resp, err := client.API.GetFleetOutputsWithResponse(ctx, spaceAwarePathRequestEditor(spaceID))
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+
+	switch resp.StatusCode() {
+	case http.StatusOK:
+		if resp.JSON200 == nil {
+			return nil, diag.Diagnostics{
+				diag.NewErrorDiagnostic("Unexpected Fleet outputs response", "Response body was empty"),
+			}
+		}
+		return resp.JSON200.Items, nil
+	default:
+		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+	}
+}
+
 // CreateOutput creates a new output.
 func CreateOutput(ctx context.Context, client *Client, spaceID string, req kbapi.NewOutputUnion) (*kbapi.OutputUnion, diag.Diagnostics) {
 	resp, err := client.API.PostFleetOutputsWithResponse(ctx, req, spaceAwarePathRequestEditor(spaceID))
