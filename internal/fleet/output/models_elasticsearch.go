@@ -23,6 +23,7 @@ func (model *outputModel) fromAPIElasticsearchModel(ctx context.Context, data *k
 	model.DefaultMonitoring = types.BoolPointerValue(data.IsDefaultMonitoring)
 	model.ConfigYaml = types.StringPointerValue(data.ConfigYaml)
 	model.Ssl, diags = sslToObjectValue(ctx, data.Ssl)
+	model.Kafka = types.ObjectNull(getKafkaAttrTypes())
 
 	// Note: SpaceIds is not returned by the API for outputs
 	// If it's currently null/unknown, set to explicit null to satisfy Terraform's requirement

@@ -130,6 +130,191 @@ func TestAccResourceOutputElasticsearch(t *testing.T) {
 	})
 }
 
+func TestAccDataSourceFleetOutput(t *testing.T) {
+	policyName := sdkacctest.RandString(22)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(output.MinVersionOutputKafka),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(
+						"data.elasticstack_fleet_output.elasticsearch",
+						"id",
+						fmt.Sprintf("default/%s-elasticsearch-output", policyName),
+					),
+					resource.TestCheckResourceAttr(
+						"data.elasticstack_fleet_output.elasticsearch",
+						"output_id",
+						fmt.Sprintf("%s-elasticsearch-output", policyName),
+					),
+					resource.TestCheckResourceAttr(
+						"data.elasticstack_fleet_output.elasticsearch",
+						"name",
+						fmt.Sprintf("Elasticsearch Output %s", policyName),
+					),
+					resource.TestCheckResourceAttr(
+						"data.elasticstack_fleet_output.elasticsearch",
+						"type",
+						"elasticsearch",
+					),
+					resource.TestCheckResourceAttr(
+						"data.elasticstack_fleet_output.elasticsearch",
+						"hosts.0",
+						"https://elasticsearch:9200",
+					),
+					resource.TestCheckResourceAttr(
+						"data.elasticstack_fleet_output.elasticsearch",
+						"ca_sha256",
+						"sha256fingerprint",
+					),
+					resource.TestCheckResourceAttr(
+						"data.elasticstack_fleet_output.elasticsearch",
+						"ca_trusted_fingerprint",
+						"trustedfingerprint",
+					),
+					resource.TestCheckResourceAttr(
+						"data.elasticstack_fleet_output.elasticsearch",
+						"config_yaml",
+						"\"ssl.verification_mode\": \"none\"\n",
+					),
+					resource.TestCheckResourceAttr(
+						"data.elasticstack_fleet_output.elasticsearch",
+						"default_integrations",
+						"false",
+					),
+					resource.TestCheckResourceAttr(
+						"data.elasticstack_fleet_output.elasticsearch",
+						"default_monitoring",
+						"false",
+					),
+					resource.TestCheckResourceAttr(
+						"data.elasticstack_fleet_output.logstash",
+						"id",
+						fmt.Sprintf("default/%s-logstash-output", policyName),
+					),
+					resource.TestCheckResourceAttr(
+						"data.elasticstack_fleet_output.logstash",
+						"output_id",
+						fmt.Sprintf("%s-logstash-output", policyName),
+					),
+					resource.TestCheckResourceAttr(
+						"data.elasticstack_fleet_output.logstash",
+						"name",
+						fmt.Sprintf("Logstash Output %s", policyName),
+					),
+					resource.TestCheckResourceAttr(
+						"data.elasticstack_fleet_output.logstash",
+						"type",
+						"logstash",
+					),
+					resource.TestCheckResourceAttr(
+						"data.elasticstack_fleet_output.logstash",
+						"hosts.0",
+						"logstash:5044",
+					),
+					resource.TestCheckResourceAttr(
+						"data.elasticstack_fleet_output.logstash",
+						"ssl.certificate_authorities.0",
+						"placeholder",
+					),
+					resource.TestCheckResourceAttr(
+						"data.elasticstack_fleet_output.logstash",
+						"ssl.certificate",
+						"placeholder",
+					),
+					resource.TestCheckResourceAttr(
+						"data.elasticstack_fleet_output.logstash",
+						"config_yaml",
+						"\"ssl.verification_mode\": \"none\"\n",
+					),
+					resource.TestCheckResourceAttr(
+						"data.elasticstack_fleet_output.kafka",
+						"id",
+						fmt.Sprintf("default/%s-kafka-output", policyName),
+					),
+					resource.TestCheckResourceAttr(
+						"data.elasticstack_fleet_output.kafka",
+						"output_id",
+						fmt.Sprintf("%s-kafka-output", policyName),
+					),
+					resource.TestCheckResourceAttr(
+						"data.elasticstack_fleet_output.kafka",
+						"name",
+						fmt.Sprintf("Kafka Output %s", policyName),
+					),
+					resource.TestCheckResourceAttr(
+						"data.elasticstack_fleet_output.kafka",
+						"type",
+						"kafka",
+					),
+					resource.TestCheckResourceAttr(
+						"data.elasticstack_fleet_output.kafka",
+						"hosts.0",
+						"kafka:9092",
+					),
+					resource.TestCheckResourceAttr(
+						"data.elasticstack_fleet_output.kafka",
+						"kafka.auth_type",
+						"none",
+					),
+					resource.TestCheckResourceAttr(
+						"data.elasticstack_fleet_output.kafka",
+						"kafka.topic",
+						"beats",
+					),
+					resource.TestCheckResourceAttr(
+						"data.elasticstack_fleet_output.kafka",
+						"kafka.partition",
+						"hash",
+					),
+					resource.TestCheckResourceAttr(
+						"data.elasticstack_fleet_output.kafka",
+						"kafka.compression",
+						"gzip",
+					),
+					resource.TestCheckResourceAttr(
+						"data.elasticstack_fleet_output.kafka",
+						"kafka.compression_level",
+						"6",
+					),
+					resource.TestCheckResourceAttr(
+						"data.elasticstack_fleet_output.kafka",
+						"kafka.connection_type",
+						"plaintext",
+					),
+					resource.TestCheckResourceAttr(
+						"data.elasticstack_fleet_output.kafka",
+						"kafka.required_acks",
+						"1",
+					),
+					resource.TestCheckResourceAttr(
+						"data.elasticstack_fleet_output.kafka",
+						"kafka.headers.0.key",
+						"environment",
+					),
+					resource.TestCheckResourceAttr(
+						"data.elasticstack_fleet_output.kafka",
+						"kafka.headers.0.value",
+						"test",
+					),
+					resource.TestCheckResourceAttr(
+						"data.elasticstack_fleet_output.kafka",
+						"config_yaml",
+						"\"ssl.verification_mode\": \"none\"\n",
+					),
+				),
+			},
+		},
+	})
+}
+
 //go:embed testdata/TestAccResourceOutputLogstashFromSDK/create/output.tf
 var logstashSDKCreateTestConfig string
 

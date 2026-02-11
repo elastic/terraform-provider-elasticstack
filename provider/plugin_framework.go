@@ -191,5 +191,7 @@ func (p *Provider) dataSources(ctx context.Context) []func() datasource.DataSour
 }
 
 func (p *Provider) experimentalDataSources(ctx context.Context) []func() datasource.DataSource {
-	return []func() datasource.DataSource{}
+	return []func() datasource.DataSource{
+		output.NewDataSource,
+	}
 }

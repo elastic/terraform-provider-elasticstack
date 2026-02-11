@@ -3,10 +3,10 @@
 - [ ] Inventory existing Fleet output code and client helpers
 - [x] Add data source skeleton under internal/fleet/output
 - [x] Define data source schema
-- [ ] Implement read logic
+- [x] Implement read logic
 - [ ] Model adjustments and unit tests (if needed)
 - [ ] Register data source behind an experimental gate
-- [ ] Documentation and examples
+- [x] Documentation and examples
 - [ ] Acceptance tests for data source
 - [ ] Execute required tests and lint/docs generation
 - [ ] Final review steps (code, test coverage, UX)
