@@ -73,6 +73,7 @@ func (m *alertingRuleModel) populateFromAPI(ctx context.Context, rule *models.Al
 	if rule == nil {
 		return diags
 	}
+	previousParams := m.Params
 
 	compositeID := clients.CompositeId{
 		ClusterId:  rule.SpaceID,
@@ -94,7 +95,8 @@ func (m *alertingRuleModel) populateFromAPI(ctx context.Context, rule *models.Al
 	}
 
 	// Params as JSON string
-	paramsJSON, err := json.Marshal(rule.Params)
+	normalizedParams := normalizeRuleParamsForState(rule.Params, previousParams)
+	paramsJSON, err := json.Marshal(normalizedParams)
 	if err != nil {
 		diags.AddError("Failed to marshal params", err.Error())
 		return diags
@@ -158,6 +160,53 @@ func (m *alertingRuleModel) populateFromAPI(ctx context.Context, rule *models.Al
 	}
 
 	return diags
+}
+
+// normalizeRuleParamsForState strips API-returned params keys that the user
+// never specified. Kibana injects server-side defaults (e.g. aggType, groupBy)
+// into the response even when the user's config omitted them. Without this,
+// Terraform sees the extra keys as drift and produces "inconsistent result
+// after apply" errors. The approach is generic: any key present in the API
+// response but absent from the user's prior state params is removed.
+func normalizeRuleParamsForState(apiParams map[string]interface{}, previousParams jsontypes.Normalized) map[string]interface{} {
+	if apiParams == nil {
+		return apiParams
+	}
+
+	priorKeys := parsePriorParamKeys(previousParams)
+	if priorKeys == nil {
+		// No prior state to compare against (first create); keep everything.
+		return apiParams
+	}
+
+	normalized := make(map[string]interface{}, len(apiParams))
+	for key, value := range apiParams {
+		if _, userHad := priorKeys[key]; userHad {
+			normalized[key] = value
+		}
+		// else: API injected this key but user never had it — drop it.
+	}
+
+	return normalized
+}
+
+// parsePriorParamKeys returns the set of top-level keys from the previous
+// Terraform state params, or nil if there is no usable prior state.
+func parsePriorParamKeys(previousParams jsontypes.Normalized) map[string]struct{} {
+	if !utils.IsKnown(previousParams) || previousParams.IsNull() {
+		return nil
+	}
+
+	var prior map[string]interface{}
+	if err := json.Unmarshal([]byte(previousParams.ValueString()), &prior); err != nil {
+		return nil
+	}
+
+	keys := make(map[string]struct{}, len(prior))
+	for key := range prior {
+		keys[key] = struct{}{}
+	}
+	return keys
 }
 
 // Version thresholds for feature support

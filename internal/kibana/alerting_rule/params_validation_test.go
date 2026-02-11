@@ -127,7 +127,7 @@ func TestValidateRuleParamsRejectsUnexpectedKeys(t *testing.T) {
 	if len(errs) == 0 {
 		t.Fatalf("expected validation errors for unexpected params key")
 	}
-	if !strings.Contains(strings.Join(errs, "; "), "unexpected params keys: extraParam") {
+	if !strings.Contains(strings.Join(errs, "; "), "json: unknown field \"extraParam\"") {
 		t.Fatalf("expected unexpected key error, got: %v", errs)
 	}
 }
@@ -210,7 +210,7 @@ func TestValidateRuleParamsSloBurnRateStillRejectsUnknownExtraKeys(t *testing.T)
 	if len(errs) == 0 {
 		t.Fatalf("expected validation errors for unexpected slo burn rate key")
 	}
-	if !strings.Contains(strings.Join(errs, "; "), "unexpected params keys: unexpected") {
+	if !strings.Contains(strings.Join(errs, "; "), "json: unknown field \"unexpected\"") {
 		t.Fatalf("expected unexpected key error, got: %v", errs)
 	}
 }
@@ -235,7 +235,7 @@ func TestValidateRuleParamsIndexThresholdRejectsSourceFields(t *testing.T) {
 	if len(errs) == 0 {
 		t.Fatalf("expected validation errors for sourceFields on non-es-query rule")
 	}
-	if !strings.Contains(strings.Join(errs, "; "), "unexpected params keys: sourceFields") {
+	if !strings.Contains(strings.Join(errs, "; "), "json: unknown field \"sourceFields\"") {
 		t.Fatalf("expected sourceFields unexpected key error, got: %v", errs)
 	}
 }
@@ -368,7 +368,7 @@ func TestValidateRuleParamsFixturesFromSreO11yModules(t *testing.T) {
 				"excludeHitsFromPreviousRun": true,
 				"hi":                         "hi",
 			},
-			expectErr: "unexpected params keys: hi",
+			expectErr: "json: unknown field \"hi\"",
 		},
 		{
 			name:     "slo burn rate valid fixture with dependencies",

@@ -1,10 +1,10 @@
 package alerting_rule
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"reflect"
 	"slices"
 	"strings"
 
@@ -20,16 +20,14 @@ type paramsSchemaSpec struct {
 	name         string
 	newTarget    func() interface{}
 	requiredKeys map[string]struct{}
-	allowedKeys  map[string]struct{}
 }
 
 func mustNewParamsSchemaSpec(name string, newTarget func() interface{}) paramsSchemaSpec {
-	requiredKeys, allowedKeys := paramsSchemaKeys(newTarget())
+	requiredKeys := computeRequiredKeys(newTarget())
 	return paramsSchemaSpec{
 		name:         name,
 		newTarget:    newTarget,
 		requiredKeys: requiredKeys,
-		allowedKeys:  allowedKeys,
 	}
 }
 
@@ -149,26 +147,22 @@ func validateRuleParams(ruleTypeID string, params map[string]interface{}) []stri
 	}
 
 	var best validationCandidate
+	validationRaw := stripKeys(raw, ruleTypeAdditionalAllowedParamsKeys[ruleTypeID])
 	for _, spec := range specs {
 		target := spec.newTarget()
-		if err := json.Unmarshal(raw, target); err != nil {
-			best.consider(false, []string{fmt.Sprintf("params do not match expected generated schema %q: %v", spec.name, err)})
+		decoder := json.NewDecoder(bytes.NewReader(validationRaw))
+		decoder.DisallowUnknownFields()
+		if err := decoder.Decode(target); err != nil {
+			best.consider(false, []string{fmt.Sprintf("extra param detected in params field for rule type %q: %v", ruleTypeID, err)})
 			continue
 		}
 
 		missingKeys := missingRequiredKeys(spec.requiredKeys, params, ruleTypeAdditionalRequiredParamsKeys[ruleTypeID])
-		unexpectedKeys := unexpectedKeysPresent(spec.allowedKeys, params, ruleTypeAdditionalAllowedParamsKeys[ruleTypeID])
-		if len(missingKeys) == 0 && len(unexpectedKeys) == 0 {
+		if len(missingKeys) == 0 {
 			return nil
 		}
 
-		candidateErrs := make([]string, 0, 2)
-		if len(missingKeys) > 0 {
-			candidateErrs = append(candidateErrs, fmt.Sprintf("missing required params keys: %s", strings.Join(missingKeys, ", ")))
-		}
-		if len(unexpectedKeys) > 0 {
-			candidateErrs = append(candidateErrs, fmt.Sprintf("unexpected params keys: %s", strings.Join(unexpectedKeys, ", ")))
-		}
+		candidateErrs := []string{fmt.Sprintf("missing required params keys: %s", strings.Join(missingKeys, ", "))}
 		best.consider(true, candidateErrs)
 	}
 
@@ -226,76 +220,45 @@ func missingRequiredKeys(requiredKeys map[string]struct{}, params map[string]int
 	return missing
 }
 
-func unexpectedKeysPresent(allowedKeys map[string]struct{}, params map[string]interface{}, additionalAllowedKeys []string) []string {
-	allowed := make(map[string]struct{}, len(allowedKeys)+len(additionalAllowedKeys))
-	for key := range allowedKeys {
-		allowed[key] = struct{}{}
-	}
-	for _, key := range additionalAllowedKeys {
-		allowed[key] = struct{}{}
-	}
-	if len(allowed) == 0 {
+func computeRequiredKeys(target interface{}) map[string]struct{} {
+	// Marshal zero-value struct and decode to map to discover non-omitempty keys.
+	raw, err := json.Marshal(target)
+	if err != nil {
 		return nil
 	}
 
-	unexpected := make([]string, 0)
-	for key := range params {
-		if _, ok := allowed[key]; !ok {
-			unexpected = append(unexpected, key)
-		}
+	var values map[string]interface{}
+	if err := json.Unmarshal(raw, &values); err != nil {
+		return nil
 	}
 
-	slices.Sort(unexpected)
-	return unexpected
+	requiredKeys := make(map[string]struct{}, len(values))
+	for key := range values {
+		requiredKeys[key] = struct{}{}
+	}
+	return requiredKeys
 }
 
-func paramsSchemaKeys(target interface{}) (requiredKeys map[string]struct{}, allowedKeys map[string]struct{}) {
-	t := reflect.TypeOf(target)
-	if t.Kind() == reflect.Pointer {
-		t = t.Elem()
-	}
-	if t.Kind() != reflect.Struct {
-		return nil, nil
+func stripKeys(raw []byte, keys []string) []byte {
+	if len(keys) == 0 {
+		return raw
 	}
 
-	requiredKeys = make(map[string]struct{}, t.NumField())
-	allowedKeys = make(map[string]struct{}, t.NumField())
-	for i := 0; i < t.NumField(); i++ {
-		field := t.Field(i)
-
-		// Skip unexported/synthetic fields (for example union backing fields).
-		if field.PkgPath != "" {
-			continue
-		}
-
-		jsonTag := field.Tag.Get("json")
-		jsonName, jsonHasOmitEmpty := parseJSONTag(jsonTag)
-		if jsonName == "" || jsonName == "-" {
-			continue
-		}
-
-		allowedKeys[jsonName] = struct{}{}
-
-		// Required keys are represented as non-pointer fields without omitempty.
-		if !jsonHasOmitEmpty && field.Type.Kind() != reflect.Pointer {
-			requiredKeys[jsonName] = struct{}{}
-		}
+	var values map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &values); err != nil {
+		return raw
 	}
 
-	return requiredKeys, allowedKeys
-}
-
-func parseJSONTag(tag string) (name string, hasOmitEmpty bool) {
-	if tag == "" {
-		return "", false
+	for _, key := range keys {
+		delete(values, key)
 	}
 
-	parts := strings.Split(tag, ",")
-	name = parts[0]
-	if slices.Contains(parts[1:], "omitempty") {
-		hasOmitEmpty = true
+	stripped, err := json.Marshal(values)
+	if err != nil {
+		return raw
 	}
-	return name, hasOmitEmpty
+
+	return stripped
 }
 
 func formatParamsValidationErrors(errs []string) string {
