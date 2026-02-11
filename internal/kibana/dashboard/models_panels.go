@@ -20,6 +20,7 @@ type panelModel struct {
 	DatatableConfig   *datatableConfigModel   `tfsdk:"datatable_config"`
 	TagcloudConfig    *tagcloudConfigModel    `tfsdk:"tagcloud_config"`
 	MetricChartConfig *metricChartConfigModel `tfsdk:"metric_chart_config"`
+	GaugeConfig       *gaugeConfigModel       `tfsdk:"gauge_config"`
 	ConfigJSON        jsontypes.Normalized    `tfsdk:"config_json"`
 }
 
@@ -54,6 +55,7 @@ var panelConfigConverters = []panelConfigConverter{
 	newXYChartPanelConfigConverter(),
 	newDatatablePanelConfigConverter(),
 	newTagcloudPanelConfigConverter(),
+	newGaugePanelConfigConverter(),
 	newMetricChartPanelConfigConverter(),
 }
 
