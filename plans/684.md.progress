@@ -1,0 +1,12 @@
+# Progress: data.elasticstack_fleet_output (Issue 684)
+
+- [ ] Inventory existing Fleet output code and client helpers
+- [x] Add data source skeleton under internal/fleet/output
+- [x] Define data source schema
+- [ ] Implement read logic
+- [ ] Model adjustments and unit tests (if needed)
+- [ ] Register data source behind an experimental gate
+- [ ] Documentation and examples
+- [ ] Acceptance tests for data source
+- [ ] Execute required tests and lint/docs generation
+- [ ] Final review steps (code, test coverage, UX)
