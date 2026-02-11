@@ -41,6 +41,26 @@ func TestElasticsearchAPIKeyConnection(t *testing.T) {
 	})
 }
 
+func TestElasticsearchBearerTokenConnection(t *testing.T) {
+	bearerToken := os.Getenv("ELASTICSEARCH_BEARER_TOKEN")
+	if bearerToken == "" {
+		t.Skip("ELASTICSEARCH_BEARER_TOKEN not set, skipping bearer token test")
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				Config: testElasticsearchBearerTokenConnection(bearerToken),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_security_user.test", "username", "elastic"),
+				),
+			},
+		},
+	})
+}
+
 func TestFleetConfiguration(t *testing.T) {
 	envConfig := config.NewFromEnv("acceptance-testing")
 
@@ -51,6 +71,29 @@ func TestFleetConfiguration(t *testing.T) {
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionForFleet),
 				Config:   testFleetConfiguration(envConfig),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_fleet_enrollment_tokens.test", "tokens.#"),
+				),
+			},
+		},
+	})
+}
+
+func TestFleetBearerTokenConfiguration(t *testing.T) {
+	bearerToken := os.Getenv("FLEET_BEARER_TOKEN")
+	if bearerToken == "" {
+		t.Skip("FLEET_BEARER_TOKEN not set, skipping bearer token test")
+	}
+
+	envConfig := config.NewFromEnv("acceptance-testing")
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionForFleet),
+				Config:   testFleetBearerTokenConfiguration(envConfig, bearerToken),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_fleet_enrollment_tokens.test", "tokens.#"),
 				),
@@ -112,6 +155,35 @@ func TestKibanaConfiguration(t *testing.T) {
 								return os.Getenv("KIBANA_API_KEY") == "", nil
 							},
 							Config: testKibanaApiKeyConfiguration(envConfig),
+							Check: resource.ComposeTestCheckFunc(
+								resource.TestCheckResourceAttrSet("elasticstack_kibana_space.acc_test", "name"),
+							),
+						},
+					},
+				}
+			},
+		},
+		{
+			name: "with bearer token",
+			pre: func(t *testing.T) {
+				bearerToken := os.Getenv("KIBANA_BEARER_TOKEN")
+				t.Setenv("KIBANA_USERNAME", "")
+				t.Setenv("KIBANA_PASSWORD", "")
+				t.Setenv("KIBANA_API_KEY", "")
+				t.Setenv("KIBANA_BEARER_TOKEN", bearerToken)
+				envConfig = config.NewFromEnv("acceptance-testing")
+			},
+			post: func(t *testing.T) {},
+			tc: func() resource.TestCase {
+				return resource.TestCase{
+					PreCheck:                 func() { acctest.PreCheck(t) },
+					ProtoV6ProviderFactories: acctest.Providers,
+					Steps: []resource.TestStep{
+						{
+							SkipFunc: func() (bool, error) {
+								return os.Getenv("KIBANA_BEARER_TOKEN") == "", nil
+							},
+							Config: testKibanaBearerTokenConfiguration(envConfig),
 							Check: resource.ComposeTestCheckFunc(
 								resource.TestCheckResourceAttrSet("elasticstack_kibana_space.acc_test", "name"),
 							),
@@ -221,4 +293,58 @@ data "elasticstack_elasticsearch_security_user" "test" {
   }
 }
 `, apiKeyName, os.Getenv("ELASTICSEARCH_ENDPOINTS"))
+}
+
+func testElasticsearchBearerTokenConnection(bearerToken string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {
+    endpoints    = ["%s"]
+    bearer_token = "%s"
+  }
+}
+
+data "elasticstack_elasticsearch_security_user" "test" {
+  username = "elastic"
+}
+`, os.Getenv("ELASTICSEARCH_ENDPOINTS"), bearerToken)
+}
+
+func testKibanaBearerTokenConfiguration(cfg config.Client) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+	elasticsearch {}
+	kibana {
+		endpoints    = ["%s"]
+		bearer_token = "%s"
+	}
+}
+
+resource "elasticstack_kibana_space" "acc_test" {
+	space_id          = "acc_test_space"
+	name              = "Acceptance Test Space"
+}`, cfg.Kibana.Address, cfg.Kibana.BearerToken)
+}
+
+func testFleetBearerTokenConfiguration(cfg config.Client, bearerToken string) string {
+	caCerts := ""
+	if len(cfg.Fleet.CACerts) > 0 {
+		quotedCas := []string{}
+		for _, ca := range cfg.Fleet.CACerts {
+			quotedCas = append(quotedCas, fmt.Sprintf(`"%s"`, ca))
+		}
+
+		caCerts = fmt.Sprintf("ca_certs = [%s]", strings.Join(quotedCas, ","))
+	}
+
+	return fmt.Sprintf(`
+provider "elasticstack" {
+	fleet {
+		endpoint     = "%s"
+		bearer_token = "%s"
+		%s
+	}
+}
+
+data "elasticstack_fleet_enrollment_tokens" "test" {}`, cfg.Fleet.URL, bearerToken, caCerts)
 }

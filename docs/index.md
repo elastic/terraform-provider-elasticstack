@@ -64,6 +64,17 @@ provider "elasticstack" {
 }
 ```
 
+Or a `bearer_token` can be used for JWT-based authentication:
+
+```terraform
+provider "elasticstack" {
+  elasticsearch {
+    bearer_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    endpoints    = ["http://localhost:9200"]
+  }
+}
+```
+
 #### Kibana
 
 Default static credentials can be provided by adding the `username`, `password` and `endpoints` in the `kibana` block:
@@ -97,12 +108,14 @@ Kibana resources will re-use any Elasticsearch credentials specified, these may 
 - `KIBANA_PASSWORD` - The password to use for Kibana authentication
 - `KIBANA_ENDPOINT` - The Kibana host to connect to
 - `KIBANA_API_KEY` - An Elasticsearch API key to use instead of `KIBANA_USERNAME` and `KIBANA_PASSWORD`
+- `KIBANA_BEARER_TOKEN` - A bearer token to use for Kibana authorization header
 
 Fleet resources will re-use any Kibana or Elasticsearch credentials specified, these may be overridden with the following variables:
-- `FLEET_USERNAME` - The username to use for Kibana authentication
-- `FLEET_PASSWORD` - The password to use for Kibana authentication
+- `FLEET_USERNAME` - The username to use for Fleet authentication
+- `FLEET_PASSWORD` - The password to use for Fleet authentication
 - `FLEET_ENDPOINT` - The Kibana host to connect to. ** Note the Fleet API is hosted within Kibana. This must be a Kibana HTTP host **
 - `FLEET_API_KEY` - API key to use for authentication to Fleet
+- `FLEET_BEARER_TOKEN` - A bearer token to use for Fleet authorization header
 
 ```terraform
 provider "elasticstack" {
@@ -175,6 +188,7 @@ Optional:
 Optional:
 
 - `api_key` (String, Sensitive) API Key to use for authentication to Fleet.
+- `bearer_token` (String, Sensitive) Bearer Token to use for authentication to Fleet.
 - `ca_certs` (List of String) A list of paths to CA certificates to validate the certificate presented by the Fleet server.
 - `endpoint` (String, Sensitive) The Fleet server where the terraform provider will point to, this must include the http(s) schema and port number.
 - `insecure` (Boolean) Disable TLS certificate validation
@@ -188,6 +202,7 @@ Optional:
 Optional:
 
 - `api_key` (String, Sensitive) API Key to use for authentication to Kibana
+- `bearer_token` (String, Sensitive) Bearer Token to use for authentication to Kibana
 - `ca_certs` (List of String) A list of paths to CA certificates to validate the certificate presented by the Kibana server.
 - `endpoints` (List of String, Sensitive) A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
 - `insecure` (Boolean) Disable TLS certificate validation

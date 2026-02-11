@@ -66,9 +66,9 @@ resource "elasticstack_kibana_dashboard" "test" {
         }
       ]
       legend = {
-        visible  = true
-        inside   = false
-        position = "right"
+        visibility = "visible"
+        inside     = false
+        position   = "right"
       }
       query = {
         language = "kuery"

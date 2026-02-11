@@ -75,19 +75,31 @@ func (m *xyLayerModel) fromAPI(apiLayer kbapi.XyChartSchema_Layers_Item) diag.Di
 	m.Type = types.StringValue(layerType.Type)
 
 	// Check if it's a reference line layer
-	isReferenceLine := layerType.Type == "reference_line"
+	// Kibana uses "referenceLines" in the Lens model.
+	isReferenceLine := layerType.Type == "referenceLines"
 
 	if isReferenceLine {
-		// Try NoESQL reference line first
-		refLineNoESql, err := apiLayer.AsXyReferenceLineLayerNoESQL()
-		if err == nil {
-			m.ReferenceLineLayer = &referenceLineLayerModel{}
-			return m.ReferenceLineLayer.fromAPINoESQL(refLineNoESql)
+		// Determine whether the layer is ES|QL or NoESQL based on the dataset type.
+		// The generated union unmarshalers are permissive enough that ES|QL payloads can
+		// successfully unmarshal into the NoESQL structs, so we need a discriminator.
+		isESQL := false
+		var meta struct {
+			Dataset map[string]interface{} `json:"dataset"`
+		}
+		if err := json.Unmarshal(layerJSON, &meta); err == nil {
+			if datasetType, ok := meta.Dataset["type"].(string); ok && datasetType == "esql" {
+				isESQL = true
+			}
 		}
 
-		// Try ESQL reference line
-		refLineESql, err := apiLayer.AsXyReferenceLineLayerESQL()
-		if err == nil {
+		if !isESQL {
+			if refLineNoESql, err := apiLayer.AsXyReferenceLineLayerNoESQL(); err == nil {
+				m.ReferenceLineLayer = &referenceLineLayerModel{}
+				return m.ReferenceLineLayer.fromAPINoESQL(refLineNoESql)
+			}
+		}
+
+		if refLineESql, err := apiLayer.AsXyReferenceLineLayerESQL(); err == nil {
 			m.ReferenceLineLayer = &referenceLineLayerModel{}
 			return m.ReferenceLineLayer.fromAPIESql(refLineESql)
 		}
@@ -334,12 +346,20 @@ func (m *referenceLineLayerModel) fromAPINoESQL(apiLayer kbapi.XyReferenceLineLa
 				continue
 			}
 
-			var threshold thresholdModel
-			thresholdDiags := threshold.fromAPIJSON(thresholdJSON)
-			diags.Append(thresholdDiags...)
-			if !thresholdDiags.HasError() {
-				m.Thresholds = append(m.Thresholds, threshold)
-			}
+			// NoESQL reference line thresholds are operation definitions (count, sum, static_value, formula, etc)
+			// rather than the richer object shape used by ES|QL reference lines.
+			m.Thresholds = append(m.Thresholds, thresholdModel{
+				Axis:        types.StringNull(),
+				Color:       jsontypes.NewNormalizedNull(),
+				Column:      types.StringNull(),
+				Value:       jsontypes.NewNormalizedValue(string(thresholdJSON)),
+				Fill:        types.StringNull(),
+				Icon:        types.StringNull(),
+				Operation:   types.StringNull(),
+				StrokeDash:  types.StringNull(),
+				StrokeWidth: types.Float64Null(),
+				Text:        types.StringNull(),
+			})
 		}
 	}
 
@@ -413,6 +433,15 @@ func (m *referenceLineLayerModel) toAPI(layerType string) (json.RawMessage, diag
 	if len(m.Thresholds) > 0 {
 		thresholds := make([]interface{}, 0, len(m.Thresholds))
 		for _, t := range m.Thresholds {
+			// For NoESQL layers, thresholds are operation definitions; we model them via `threshold.value`.
+			if utils.IsKnown(t.Value) {
+				var op interface{}
+				diags.Append(t.Value.Unmarshal(&op)...)
+				thresholds = append(thresholds, op)
+				continue
+			}
+
+			// For ES|QL layers, thresholds are a structured object.
 			thresholdMap, tDiags := t.toAPI()
 			diags.Append(tDiags...)
 			if !tDiags.HasError() {
