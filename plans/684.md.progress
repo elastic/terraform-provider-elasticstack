@@ -5,8 +5,8 @@
 - [x] Define data source schema
 - [x] Implement read logic
 - [x] Model adjustments and unit tests (if needed)
-- [x] Register data source behind an experimental gate
-- [x] Documentation and examples
-- [x] Acceptance tests for data source
-- [x] Execute required tests and lint/docs generation
-- [x] Final review steps (code, test coverage, UX)
+- [x] Register data source by default (remove experimental gate)
+- [ ] Documentation and examples
+- [ ] Acceptance tests for data source
+- [ ] Execute required tests and lint/docs generation
+- [ ] Final review steps (code, test coverage, UX)

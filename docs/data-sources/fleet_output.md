@@ -3,12 +3,12 @@
 page_title: "elasticstack_fleet_output Data Source - terraform-provider-elasticstack"
 subcategory: "Fleet"
 description: |-
-  Experimental data source for Fleet outputs.
+  Data source for Fleet outputs.
 ---
 
 # elasticstack_fleet_output (Data Source)
 
-Experimental data source for Fleet outputs.
+Data source for Fleet outputs.
 
 ## Example Usage
 

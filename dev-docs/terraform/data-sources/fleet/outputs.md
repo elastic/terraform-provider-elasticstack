@@ -1,7 +1,7 @@
 # Fleet output data source design
 
 ## Status
-This data source is currently only experimental and should not be exposed by default.
+This data source is GA and should be exposed by default.
 
 ## Overview
 The `elasticstack_fleet_output` data source retrieves a single Fleet output by ID from Kibana Fleet.

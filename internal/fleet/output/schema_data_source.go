@@ -7,7 +7,7 @@ import (
 
 func getDataSourceSchema() schema.Schema {
 	return schema.Schema{
-		MarkdownDescription: "Experimental data source for Fleet outputs.",
+		MarkdownDescription: "Data source for Fleet outputs.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Data source identifier in the format `<space_id>/<output_id>`.",
