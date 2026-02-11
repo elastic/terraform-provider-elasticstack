@@ -4,8 +4,8 @@
 This data source is GA and should be exposed by default.
 
 ## Overview
-The `elasticstack_fleet_output` data source retrieves a single Fleet output by ID from Kibana Fleet.
-It is read-only and mirrors the output configuration returned by the Fleet Outputs API.
+The `elasticstack_fleet_output` data source retrieves a single Fleet output from Kibana Fleet by ID.
+It is read-only and mirrors the output configuration returned by the Fleet Output API.
 
 ## API interactions
 - Uses the generated Kibana client `kbapi` via `internal/clients/fleet.GetOutput`.
@@ -14,11 +14,11 @@ It is read-only and mirrors the output configuration returned by the Fleet Outpu
 
 ## Schema
 ### Inputs
-- `output_id` (string, required): The Fleet output ID used in the GET request path.
+- `output_id` (string, required): Fleet output identifier.
 - `space_id` (string, optional): Kibana space ID used for the request path. Omitted means the default space. This remains null if unknown during planning.
 
 ### Computed attributes
-- `id` (string): Data source ID. A well formed CompositeID of `space_id`/`output_id`
+- `id` (string): Data source identifier in the format `<space_id>/<output_id>`.
 - `name` (string): Output name from the API response.
 - `type` (string): Output type discriminator from the API response.
 - `hosts` (list of string): Output hosts from the API response.
@@ -48,3 +48,9 @@ It is read-only and mirrors the output configuration returned by the Fleet Outpu
 
 ## Limitations
 - Only output types `elasticsearch`, `logstash`, and `kafka` are supported. Any other discriminator is rejected.
+
+## Required acceptance test cases
+- Read an Elasticsearch output via `output_id` and verify every computed attribute.
+- Read a Logstash output via `output_id` and verify every computed attribute.
+- Read a Kafka output via `output_id` and verify every computed attribute.
+- Read an output via `output_id` in a non-default space when the resource supports `space_id`.
