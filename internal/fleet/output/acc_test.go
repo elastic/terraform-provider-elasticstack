@@ -138,8 +138,8 @@ func TestAccDataSourceFleetOutput(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(output.MinVersionOutputKafka),
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("elasticsearch"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
 				},
@@ -194,6 +194,16 @@ func TestAccDataSourceFleetOutput(t *testing.T) {
 						"default_monitoring",
 						"false",
 					),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("logstash"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(
 						"data.elasticstack_fleet_output.logstash",
 						"id",
@@ -234,6 +244,16 @@ func TestAccDataSourceFleetOutput(t *testing.T) {
 						"config_yaml",
 						"\"ssl.verification_mode\": \"none\"\n",
 					),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(output.MinVersionOutputKafka),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("kafka"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(
 						"data.elasticstack_fleet_output.kafka",
 						"id",
