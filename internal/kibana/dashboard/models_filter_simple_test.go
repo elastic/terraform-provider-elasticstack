@@ -33,7 +33,7 @@ func Test_filterSimpleModel_fromAPI_toAPI(t *testing.T) {
 			},
 			expected: &filterSimpleModel{
 				Query:    types.StringValue("simple query"),
-				Language: types.StringNull(),
+				Language: types.StringValue("kuery"),
 			},
 		},
 	}

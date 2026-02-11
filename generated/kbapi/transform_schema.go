@@ -574,6 +574,7 @@ var transformers = []TransformFunc{
 	fixSecurityExceptionListItems,
 	removeDuplicateOneOfRefs,
 	fixDashboardPanelItemRefs,
+	fixAlertingRuleParams,
 	transformRemoveExamples,
 	transformRemoveUnusedComponents,
 	transformOmitEmptyNullable,
@@ -906,7 +907,6 @@ func transformKibanaPaths(schema *Schema) {
 		"propertyName": "action_type_id",
 	})
 	schema.Components.Delete("schemas.Security_Exceptions_API_ExceptionListItemExpireTime.format")
-
 }
 
 func removeBrokenDiscriminator(schema *Schema) {
@@ -985,6 +985,21 @@ func fixDashboardPanelItemRefs(schema *Schema) {
 	dashboardPath.Get.CreateRef(schema, "dashboard_panels", "responses.200.content.application/json.schema.properties.data.properties.panels")
 
 	schema.Components.CreateRef(schema, "dashboard_panel_item", "schemas.dashboard_panel_section.properties.panels.items")
+}
+
+// fixAlertingRuleParams simplifies the POST alerting rule params schema.
+// The upstream spec defines params with an anyOf union of specific param types,
+// which causes oapi-codegen to generate a union struct whose
+// AdditionalProperties field is tagged json:"-" (with no custom MarshalJSON).
+// This means params serialize as an empty object. Simplify it to a plain object
+// with additionalProperties (matching the PUT endpoint) so that oapi-codegen
+// generates a usable map[string]interface{} type.
+func fixAlertingRuleParams(schema *Schema) {
+	postEndpoint := schema.MustGetPath("/api/alerting/rule/{id}").MustGetEndpoint("post")
+	paramsSchema := postEndpoint.MustGetMap("requestBody.content.application/json.schema.properties.params")
+
+	paramsSchema.Delete("anyOf")
+	paramsSchema.Set("type", "object")
 }
 
 func fixSecurityExceptionListItems(schema *Schema) {

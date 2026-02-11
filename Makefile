@@ -112,7 +112,7 @@ setup-kibana-fleet: ## Creates the agent and integration policies required to ru
 
 .PHONY: docker-clean
 docker-clean: ## Try to remove provisioned nodes and assigned network
-	@ docker compose -f $(COMPOSE_FILE) down -v
+	@ docker compose -f $(COMPOSE_FILE) --profile acceptance-tests down --volumes
 
 .PHONY: copy-kibana-ca
 copy-kibana-ca: ## Copy Kibana CA certificate to local machine
@@ -213,21 +213,6 @@ release-notes: ## greps UNRELEASED notes from the CHANGELOG
 help: ## this help
 	@ awk 'BEGIN {FS = ":.*##"; printf "Usage: make \033[36m<target>\033[0m\n\nTargets:\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-10s\033[0m\t%s\n", $$1, $$2 }' $(MAKEFILE_LIST) | column -s$$'\t' -t
 
-.PHONY: generate-alerting-client
-generate-alerting-client: ## generate Kibana alerting client
-	@ docker run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli:v7.0.1 generate \
-		-i /local/generated/alerting/bundled.yaml \
-		--skip-validate-spec \
-		--git-repo-id terraform-provider-elasticstack \
-		--git-user-id elastic \
-		-p isGoSubmodule=true \
-		-p packageName=alerting \
-		-p generateInterfaces=true \
-		-g go \
-		-o /local/generated/alerting
-	@ rm -rf generated/alerting/go.mod generated/alerting/go.sum generated/alerting/test
-	@ go fmt ./generated/alerting/...
-
 .PHONY: generate-slo-client
 generate-slo-client: tools ## generate Kibana slo client
 	@ rm -rf generated/slo
@@ -246,4 +231,4 @@ generate-slo-client: tools ## generate Kibana slo client
 	@ go fmt ./generated/slo/...
 
 .PHONY: generate-clients
-generate-clients: generate-alerting-client generate-slo-client ## generate all clients
+generate-clients: generate-slo-client gen ## generate all clients

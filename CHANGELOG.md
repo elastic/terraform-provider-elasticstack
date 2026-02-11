@@ -96,6 +96,8 @@ inputs = {
 
 ### Changes
 
+- Add import support for `elasticstack_elasticsearch_script` resource ([#1637](https://github.com/elastic/terraform-provider-elasticstack/pull/1637))
+- Migrate `elasticstack_kibana_alerting_rule` to use plugin framework ([#1664](https://github.com/elastic/terraform-provider-elasticstack/pull/1664))
 - Migrate `elasticstack_kibana_slo` resource to the Terraform plugin framework ([#1647](https://github.com/elastic/terraform-provider-elasticstack/pull/1647))
 - Prevent a provider error with `elasticstack_fleet_integration_policy` when moving between a single `policy_id` and multiple `policy_ids` ([#1644](https://github.com/elastic/terraform-provider-elasticstack/pull/1644)) 
 - Fix concurrent map write errors with `elasticstack_fleet_integration_policy` ([#1629](https://github.com/elastic/terraform-provider-elasticstack/pull/1629))
@@ -117,6 +119,7 @@ inputs = {
 - Allow space restricted roles to manage `elasticstack_fleet_agent_policy` resources. ([#1597](https://github.com/elastic/terraform-provider-elasticstack/pull/1597))
 - Fix missing timeslice's metric-scoped `filter` parameter for doc_count aggregations ([#1636](https://github.com/elastic/terraform-provider-elasticstack/pull/1636))
 - Collapse `space_ids` to a single `space_id` in `elasticstack_fleet_integration` ([#1645](https://github.com/elastic/terraform-provider-elasticstack/pull/1645))
+- Add `bearer_token` authentication support to Kibana and Fleet provider configurations. Bearer tokens configured in the `elasticsearch` block are now propagated to `kibana` and `fleet` blocks as fallback credentials, consistent with the existing behavior for `username`, `password`, and `api_key`. New environment variables `KIBANA_BEARER_TOKEN` and `FLEET_BEARER_TOKEN` are also supported. ([#1690](https://github.com/elastic/terraform-provider-elasticstack/pull/1690))
 
 ## [0.13.1] - 2025-12-12
 
