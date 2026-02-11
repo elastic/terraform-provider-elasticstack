@@ -1,0 +1,58 @@
+package output
+
+import (
+	"context"
+
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+)
+
+type outputDataSourceModel struct {
+	ID                   types.String `tfsdk:"id"`
+	OutputID             types.String `tfsdk:"output_id"`
+	SpaceID              types.String `tfsdk:"space_id"`
+	Name                 types.String `tfsdk:"name"`
+	Type                 types.String `tfsdk:"type"`
+	Hosts                types.List   `tfsdk:"hosts"`
+	CaSha256             types.String `tfsdk:"ca_sha256"`
+	CaTrustedFingerprint types.String `tfsdk:"ca_trusted_fingerprint"`
+	DefaultIntegrations  types.Bool   `tfsdk:"default_integrations"`
+	DefaultMonitoring    types.Bool   `tfsdk:"default_monitoring"`
+	ConfigYaml           types.String `tfsdk:"config_yaml"`
+	SpaceIds             types.Set    `tfsdk:"space_ids"`
+	Ssl                  types.Object `tfsdk:"ssl"`
+	Kafka                types.Object `tfsdk:"kafka"`
+}
+
+func (model *outputDataSourceModel) populateFromAPI(ctx context.Context, data *kbapi.OutputUnion) diag.Diagnostics {
+	var resourceModel outputModel
+	resourceModel.SpaceIds = model.SpaceIds
+	resourceModel.Ssl = model.Ssl
+	resourceModel.Kafka = model.Kafka
+
+	diags := resourceModel.populateFromAPI(ctx, data)
+	if diags.HasError() {
+		return diags
+	}
+
+	model.ID = resourceModel.ID
+	model.OutputID = resourceModel.OutputID
+	model.Name = resourceModel.Name
+	model.Type = resourceModel.Type
+	model.Hosts = resourceModel.Hosts
+	model.CaSha256 = resourceModel.CaSha256
+	model.CaTrustedFingerprint = resourceModel.CaTrustedFingerprint
+	model.DefaultIntegrations = resourceModel.DefaultIntegrations
+	model.DefaultMonitoring = resourceModel.DefaultMonitoring
+	model.ConfigYaml = resourceModel.ConfigYaml
+	model.SpaceIds = resourceModel.SpaceIds
+	model.Ssl = resourceModel.Ssl
+	model.Kafka = resourceModel.Kafka
+
+	if model.SpaceID.IsUnknown() {
+		model.SpaceID = types.StringNull()
+	}
+
+	return nil
+}

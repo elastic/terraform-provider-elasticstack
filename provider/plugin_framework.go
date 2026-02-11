@@ -185,6 +185,7 @@ func (p *Provider) dataSources(ctx context.Context) []func() datasource.DataSour
 		export_saved_objects.NewDataSource,
 		enrollment_tokens.NewDataSource,
 		integration_ds.NewDataSource,
+		output.NewDataSource,
 		enrich.NewEnrichPolicyDataSource,
 		role_mapping.NewRoleMappingDataSource,
 	}
