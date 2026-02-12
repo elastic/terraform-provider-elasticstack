@@ -21,13 +21,20 @@ import (
 var minVersionEnableRule = version.Must(version.NewVersion("8.11.0"))
 
 func TestAccResourceEnableRule(t *testing.T) {
+	// Skip entire test if version is below 8.11.0
+	skipFunc := versionutils.CheckIfVersionIsUnsupported(minVersionEnableRule)
+	if skip, err := skipFunc(); err != nil {
+		t.Fatalf("failed to check version: %v", err)
+	} else if skip {
+		t.Skip("Test requires version 8.11.0 or higher")
+	}
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionEnableRule),
-				Config:   testAccResourceEnableRuleBasic(),
+				Config: testAccResourceEnableRuleBasic(),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "space_id", "default"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "key", "test_tag"),
@@ -41,6 +48,14 @@ func TestAccResourceEnableRule(t *testing.T) {
 }
 
 func TestAccResourceEnableRuleWithManualDisable(t *testing.T) {
+	// Skip entire test if version is below 8.11.0
+	skipFunc := versionutils.CheckIfVersionIsUnsupported(minVersionEnableRule)
+	if skip, err := skipFunc(); err != nil {
+		t.Fatalf("failed to check version: %v", err)
+	} else if skip {
+		t.Skip("Test requires version 8.11.0 or higher")
+	}
+
 	tagKey := "test_tag"
 	tagValue := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	spaceID := "default"
@@ -50,8 +65,7 @@ func TestAccResourceEnableRuleWithManualDisable(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionEnableRule),
-				Config:   testAccResourceEnableRuleWithRules(tagKey, tagValue),
+				Config: testAccResourceEnableRuleWithRules(tagKey, tagValue),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "space_id", spaceID),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "key", tagKey),
@@ -62,7 +76,6 @@ func TestAccResourceEnableRuleWithManualDisable(t *testing.T) {
 			},
 			{
 				// Manually disable one rule outside of Terraform to test drift detection
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionEnableRule),
 				PreConfig: func() {
 					disableOneRule(t, spaceID, tagKey, tagValue)
 				},
@@ -77,6 +90,14 @@ func TestAccResourceEnableRuleWithManualDisable(t *testing.T) {
 }
 
 func TestAccResourceEnableRuleDisableOnDestroyFalse(t *testing.T) {
+	// Skip entire test if version is below 8.11.0
+	skipFunc := versionutils.CheckIfVersionIsUnsupported(minVersionEnableRule)
+	if skip, err := skipFunc(); err != nil {
+		t.Fatalf("failed to check version: %v", err)
+	} else if skip {
+		t.Skip("Test requires version 8.11.0 or higher")
+	}
+
 	tagKey := "test_tag"
 	tagValue := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	spaceID := "default"
@@ -86,8 +107,7 @@ func TestAccResourceEnableRuleDisableOnDestroyFalse(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionEnableRule),
-				Config:   testAccResourceEnableRuleDisableOnDestroyFalse(tagKey, tagValue),
+				Config: testAccResourceEnableRuleDisableOnDestroyFalse(tagKey, tagValue),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "space_id", spaceID),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "key", tagKey),
@@ -99,8 +119,7 @@ func TestAccResourceEnableRuleDisableOnDestroyFalse(t *testing.T) {
 			},
 			{
 				// Destroy the enable_rule resource but keep the rules
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionEnableRule),
-				Config:   testAccResourceEnableRuleDisableOnDestroyFalseRulesOnly(tagKey, tagValue),
+				Config: testAccResourceEnableRuleDisableOnDestroyFalseRulesOnly(tagKey, tagValue),
 				Check: resource.ComposeTestCheckFunc(
 					// Verify rules are still enabled after destroying the enable_rule resource
 					checkRulesEnabled(spaceID, tagKey, tagValue, true),
