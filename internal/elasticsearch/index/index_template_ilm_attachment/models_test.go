@@ -20,60 +20,84 @@ func TestMergeILMSetting_EmptyExisting(t *testing.T) {
 	existing := map[string]interface{}{}
 	result := mergeILMSetting(existing, "my-policy")
 
-	assert.Equal(t, "my-policy", result["index.lifecycle.name"])
+	indexVal := result["index"].(map[string]interface{})
+	lifecycleVal := indexVal["lifecycle"].(map[string]interface{})
+	assert.Equal(t, "my-policy", lifecycleVal["name"])
 	assert.Len(t, result, 1)
 }
 
 func TestMergeILMSetting_NilExisting(t *testing.T) {
 	result := mergeILMSetting(nil, "my-policy")
 
-	assert.Equal(t, "my-policy", result["index.lifecycle.name"])
+	indexVal := result["index"].(map[string]interface{})
+	lifecycleVal := indexVal["lifecycle"].(map[string]interface{})
+	assert.Equal(t, "my-policy", lifecycleVal["name"])
 	assert.Len(t, result, 1)
 }
 
 func TestMergeILMSetting_PreserveExisting(t *testing.T) {
+	// Nested form as returned by Elasticsearch
 	existing := map[string]interface{}{
-		"index.number_of_replicas": 2,
-		"index.refresh_interval":   "30s",
+		"index": map[string]interface{}{
+			"number_of_replicas": 2,
+			"refresh_interval":  "30s",
+		},
 	}
 	result := mergeILMSetting(existing, "my-policy")
 
-	assert.Equal(t, "my-policy", result["index.lifecycle.name"])
-	assert.Equal(t, 2, result["index.number_of_replicas"])
-	assert.Equal(t, "30s", result["index.refresh_interval"])
-	assert.Len(t, result, 3)
+	indexVal := result["index"].(map[string]interface{})
+	lifecycleVal := indexVal["lifecycle"].(map[string]interface{})
+	assert.Equal(t, "my-policy", lifecycleVal["name"])
+	assert.Equal(t, 2, indexVal["number_of_replicas"])
+	assert.Equal(t, "30s", indexVal["refresh_interval"])
+	assert.Len(t, indexVal, 3)
+	assert.Len(t, result, 1)
 }
 
 func TestMergeILMSetting_OverwriteExistingILM(t *testing.T) {
 	existing := map[string]interface{}{
-		"index.lifecycle.name":     "old-policy",
-		"index.number_of_replicas": 2,
+		"index": map[string]interface{}{
+			"lifecycle":         map[string]interface{}{"name": "old-policy"},
+			"number_of_replicas": 2,
+		},
 	}
 	result := mergeILMSetting(existing, "new-policy")
 
-	assert.Equal(t, "new-policy", result["index.lifecycle.name"])
-	assert.Equal(t, 2, result["index.number_of_replicas"])
-	assert.Len(t, result, 2)
+	indexVal := result["index"].(map[string]interface{})
+	lifecycleVal := indexVal["lifecycle"].(map[string]interface{})
+	assert.Equal(t, "new-policy", lifecycleVal["name"])
+	assert.Equal(t, 2, indexVal["number_of_replicas"])
+	assert.Len(t, indexVal, 2)
+	assert.Len(t, result, 1)
 }
 
 func TestRemoveILMSetting_RemovesOnlyILM(t *testing.T) {
+	// Nested structure as returned by Elasticsearch API
 	settings := map[string]interface{}{
-		"index.lifecycle.name":     "my-policy",
-		"index.number_of_replicas": 2,
-		"index.refresh_interval":   "30s",
+		"index": map[string]interface{}{
+			"lifecycle":        map[string]interface{}{"name": "my-policy"},
+			"number_of_shards": "1",
+			"refresh_interval": "30s",
+		},
 	}
 	result := removeILMSetting(settings)
 
-	_, hasILM := result["index.lifecycle.name"]
-	assert.False(t, hasILM)
-	assert.Equal(t, 2, result["index.number_of_replicas"])
-	assert.Equal(t, "30s", result["index.refresh_interval"])
-	assert.Len(t, result, 2)
+	indexSettings, ok := result["index"].(map[string]interface{})
+	assert.True(t, ok)
+	_, hasLifecycle := indexSettings["lifecycle"]
+	assert.False(t, hasLifecycle)
+	assert.Equal(t, "1", indexSettings["number_of_shards"])
+	assert.Equal(t, "30s", indexSettings["refresh_interval"])
+	assert.Len(t, indexSettings, 2)
+	assert.Len(t, result, 1)
 }
 
 func TestRemoveILMSetting_EmptyAfterRemoval(t *testing.T) {
+	// Nested structure: only ILM present, so template is empty after removal
 	settings := map[string]interface{}{
-		"index.lifecycle.name": "my-policy",
+		"index": map[string]interface{}{
+			"lifecycle": map[string]interface{}{"name": "my-policy"},
+		},
 	}
 	result := removeILMSetting(settings)
 

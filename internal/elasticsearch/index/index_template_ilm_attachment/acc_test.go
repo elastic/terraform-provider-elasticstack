@@ -9,11 +9,14 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/index_template_ilm_attachment"
+	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
+
+const preservesTemplateIndexName = "logs-ilm-preserve"
 
 func TestAccResourceIndexTemplateIlmAttachment_fleet(t *testing.T) {
 	resource.Test(t, resource.TestCase{
@@ -35,7 +38,6 @@ func TestAccResourceIndexTemplateIlmAttachment_fleet(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"elasticstack_elasticsearch_index_template_ilm_attachment.test",
 						"lifecycle_name", "test-fleet-policy-1"),
-					checkComponentTemplateExists("logs-tcp.generic@custom"),
 					checkComponentTemplateHasILM("logs-tcp.generic@custom", "test-fleet-policy-1"),
 				),
 			},
@@ -70,6 +72,126 @@ func TestAccResourceIndexTemplateIlmAttachment_fleet(t *testing.T) {
 	})
 }
 
+// TestAccResourceIndexTemplateIlmAttachment_preservesTemplateOnDestroy verifies that when the
+// @custom component template has other settings, destroy only removes the ILM setting and leaves
+// the template in place. PreCheck creates the template with index.number_of_shards; our resource
+// adds ILM; after destroy the template must still exist without the ILM setting.
+func TestAccResourceIndexTemplateIlmAttachment_preservesTemplateOnDestroy(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			createPreservesTestComponentTemplate(t)
+		},
+		CheckDestroy: checkPreservesTemplateDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(index_template_ilm_attachment.MinVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"index_template": config.StringVariable(preservesTemplateIndexName),
+					"policy_name":    config.StringVariable("test-preserves-policy"),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(
+						"elasticstack_elasticsearch_index_template_ilm_attachment.test",
+						"index_template", preservesTemplateIndexName),
+					checkComponentTemplateHasILM(preservesTemplateIndexName+"@custom", "test-preserves-policy"),
+				),
+			},
+		},
+	})
+}
+
+func createPreservesTestComponentTemplate(t *testing.T) {
+	t.Helper()
+	client, err := clients.NewAcceptanceTestingClient()
+	if err != nil {
+		t.Fatalf("failed to create acceptance test client: %v", err)
+	}
+	name := preservesTemplateIndexName + "@custom"
+	tpl := &models.ComponentTemplate{
+		Name: name,
+		Template: &models.Template{
+			Settings: map[string]interface{}{
+				"index": map[string]interface{}{
+					"number_of_shards": "1",
+				},
+			},
+		},
+	}
+	if diags := elasticsearch.PutComponentTemplate(context.Background(), client, tpl); diags.HasError() {
+		t.Fatalf("failed to create component template %s: %v", name, diags)
+	}
+}
+
+// checkPreservesTemplateDestroy verifies the template still exists and has no ILM setting, then
+// deletes the template (cleanup of the fixture created in PreCheck).
+func checkPreservesTemplateDestroy(s *terraform.State) error {
+	client, err := clients.NewAcceptanceTestingClient()
+	if err != nil {
+		return err
+	}
+	ctx := context.Background()
+	name := preservesTemplateIndexName + "@custom"
+
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "elasticstack_elasticsearch_index_template_ilm_attachment" {
+			continue
+		}
+		compId, sdkDiags := clients.CompositeIdFromStr(rs.Primary.ID)
+		if sdkDiags.HasError() {
+			return fmt.Errorf("failed to parse resource ID: %v", sdkDiags)
+		}
+		if compId.ResourceId != name {
+			continue
+		}
+
+		tpl, sdkDiags := elasticsearch.GetComponentTemplate(ctx, client, name)
+		if sdkDiags.HasError() {
+			return fmt.Errorf("failed to get component template: %v", sdkDiags)
+		}
+		if tpl == nil {
+			return fmt.Errorf("expected component template %s to still exist after destroy (only ILM should be removed)", name)
+		}
+		if tpl.ComponentTemplate.Template == nil {
+			return fmt.Errorf("expected component template %s to still have a template section after destroy", name)
+		}
+		if tpl.ComponentTemplate.Template.Settings == nil {
+			return fmt.Errorf("expected component template %s to still have settings after destroy (other settings should be preserved)", name)
+		}
+		indexSettings, ok := tpl.ComponentTemplate.Template.Settings["index"].(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("expected component template %s to have index settings after destroy", name)
+		}
+		if lifecycle, ok := indexSettings["lifecycle"].(map[string]interface{}); ok {
+			if _, hasILM := lifecycle["name"]; hasILM {
+				return fmt.Errorf("ILM setting still exists in component template %s", name)
+			}
+		}
+		// Verify the setting we created in PreCheck was preserved (only ILM should be removed)
+		switch n := indexSettings["number_of_shards"].(type) {
+		case string:
+			if n != "1" {
+				return fmt.Errorf("expected index.number_of_shards to be preserved as \"1\" after destroy, got %q", n)
+			}
+		case float64:
+			if n != 1 {
+				return fmt.Errorf("expected index.number_of_shards to be preserved as 1 after destroy, got %v", n)
+			}
+		default:
+			return fmt.Errorf("expected index.number_of_shards to be preserved after destroy, got %v (type %T)", indexSettings["number_of_shards"], indexSettings["number_of_shards"])
+		}
+
+		// Cleanup: remove the fixture template created in PreCheck
+		if diags := elasticsearch.DeleteComponentTemplate(ctx, client, name); diags.HasError() {
+			return fmt.Errorf("failed to delete component template %s after check: %v", name, diags)
+		}
+		return nil
+	}
+	return nil
+}
+
 func checkResourceDestroy(s *terraform.State) error {
 	client, err := clients.NewAcceptanceTestingClient()
 	if err != nil {
@@ -102,26 +224,6 @@ func checkResourceDestroy(s *terraform.State) error {
 	}
 
 	return nil
-}
-
-func checkComponentTemplateExists(name string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		client, err := clients.NewAcceptanceTestingClient()
-		if err != nil {
-			return err
-		}
-
-		tpl, sdkDiags := elasticsearch.GetComponentTemplate(context.Background(), client, name)
-		if sdkDiags.HasError() {
-			return fmt.Errorf("failed to get component template: %v", sdkDiags)
-		}
-
-		if tpl == nil {
-			return fmt.Errorf("component template %s does not exist", name)
-		}
-
-		return nil
-	}
 }
 
 func checkComponentTemplateHasILM(name string, expectedPolicy string) resource.TestCheckFunc {

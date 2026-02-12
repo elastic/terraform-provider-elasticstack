@@ -33,20 +33,48 @@ func (m *tfModel) GetID() (*clients.CompositeId, diag.Diagnostics) {
 }
 
 // mergeILMSetting adds the ILM lifecycle.name setting to existing settings.
+// Uses nested form {"index": {"lifecycle": {"name": "policy"}}} to match the Get Component
+// Template API; we request nested form explicitly (flat_settings=false).
+// The Put API accepts both flat and nested; we use nested for consistency with the response.
 func mergeILMSetting(existingSettings map[string]interface{}, lifecycleName string) map[string]interface{} {
 	if existingSettings == nil {
 		existingSettings = make(map[string]interface{})
 	}
-	existingSettings["index.lifecycle.name"] = lifecycleName
+	indexVal, _ := existingSettings["index"].(map[string]interface{})
+	if indexVal == nil {
+		indexVal = make(map[string]interface{})
+		existingSettings["index"] = indexVal
+	}
+	indexVal["lifecycle"] = map[string]interface{}{"name": lifecycleName}
 	return existingSettings
 }
 
 // removeILMSetting removes the index.lifecycle.name setting from the settings map.
+// Elasticsearch uses nested form: {"index": {"lifecycle": {"name": "policy"}}}.
+// We remove that path and prune empty parent maps.
 func removeILMSetting(settings map[string]interface{}) map[string]interface{} {
 	if settings == nil {
 		return nil
 	}
-	delete(settings, "index.lifecycle.name")
+	indexVal, ok := settings["index"].(map[string]interface{})
+	if !ok {
+		return pruneEmpty(settings)
+	}
+	lifecycleVal, ok := indexVal["lifecycle"].(map[string]interface{})
+	if !ok {
+		return pruneEmpty(settings)
+	}
+	delete(lifecycleVal, "name")
+	if len(lifecycleVal) == 0 {
+		delete(indexVal, "lifecycle")
+	}
+	if len(indexVal) == 0 {
+		delete(settings, "index")
+	}
+	return pruneEmpty(settings)
+}
+
+func pruneEmpty(settings map[string]interface{}) map[string]interface{} {
 	if len(settings) == 0 {
 		return nil
 	}

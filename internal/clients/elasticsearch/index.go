@@ -121,8 +121,11 @@ func GetComponentTemplate(ctx context.Context, apiClient *clients.ApiClient, tem
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
-	req := esClient.Cluster.GetComponentTemplate.WithName(templateName)
-	res, err := esClient.Cluster.GetComponentTemplate(req, esClient.Cluster.GetComponentTemplate.WithContext(ctx))
+	res, err := esClient.Cluster.GetComponentTemplate(
+		esClient.Cluster.GetComponentTemplate.WithName(templateName),
+		esClient.Cluster.GetComponentTemplate.WithContext(ctx),
+		esClient.Cluster.GetComponentTemplate.WithFlatSettings(false), // request nested form for settings
+	)
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
