@@ -62,6 +62,7 @@ func TestAccResourceEnableRuleWithManualDisable(t *testing.T) {
 			},
 			{
 				// Manually disable one rule outside of Terraform to test drift detection
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionEnableRule),
 				PreConfig: func() {
 					disableOneRule(t, spaceID, tagKey, tagValue)
 				},
@@ -98,7 +99,8 @@ func TestAccResourceEnableRuleDisableOnDestroyFalse(t *testing.T) {
 			},
 			{
 				// Destroy the enable_rule resource but keep the rules
-				Config: testAccResourceEnableRuleDisableOnDestroyFalseRulesOnly(tagKey, tagValue),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionEnableRule),
+				Config:   testAccResourceEnableRuleDisableOnDestroyFalseRulesOnly(tagKey, tagValue),
 				Check: resource.ComposeTestCheckFunc(
 					// Verify rules are still enabled after destroying the enable_rule resource
 					checkRulesEnabled(spaceID, tagKey, tagValue, true),
