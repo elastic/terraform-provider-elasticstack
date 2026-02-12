@@ -152,6 +152,36 @@ func TestAccResourceSecurityRoleEmptySets(t *testing.T) {
 	})
 }
 
+// When the API returns nil for optional fields with defaults (due to omitempty),
+// the provider should return the actual default values (false for allow_restricted_indices,
+// empty set for except), not null, to prevent "planned set element does not correlate
+// with any element in actual" errors.
+func TestAccResourceSecurityRoleDefaultValues(t *testing.T) {
+	roleName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceSecurityRoleDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"role_name": config.StringVariable(roleName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "name", roleName),
+					// Verify allow_restricted_indices is false (not null) when explicitly set to false
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "indices.0.allow_restricted_indices", "false"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "indices.*.names.*", "index1"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "indices.*.names.*", "index2"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "cluster.*", "monitor"),
+				),
+			},
+		},
+	})
+}
+
 //go:embed testdata/TestAccResourceSecurityRoleFromSDK/create/main.tf
 var sdkCreateTestConfig string
 
