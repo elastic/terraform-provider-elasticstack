@@ -193,7 +193,7 @@ func TestValidateRuleParamsEsQueryRequiresSize(t *testing.T) {
 	if len(errs) == 0 {
 		t.Fatalf("expected validation errors for missing es-query size")
 	}
-	if !strings.Contains(strings.Join(errs, "; "), "missing required params keys:") || !strings.Contains(strings.Join(errs, "; "), "size") {
+	if !strings.Contains(strings.Join(errs, "; "), "missing required params keys") || !strings.Contains(strings.Join(errs, "; "), "size") {
 		t.Fatalf("expected missing size error, got: %v", errs)
 	}
 }

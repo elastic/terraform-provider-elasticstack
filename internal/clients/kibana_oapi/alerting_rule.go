@@ -362,6 +362,10 @@ func ConvertResponseToModel(spaceID string, resp any) (*models.AlertingRule, dia
 }
 
 // buildCreateRequestBody builds a JSON payload from models.AlertingRule.
+// Unlike buildUpdateRequestBody (which uses the typed PutAlertingRuleIdJSONRequestBody),
+// the create path uses a raw map because the generated POST params type was
+// changed to map[string]interface{} to support provider-side validation against
+// concrete generated models. This asymmetry is intentional.
 func buildCreateRequestBody(rule models.AlertingRule) ([]byte, error) {
 	body := map[string]interface{}{
 		"consumer":     rule.Consumer,

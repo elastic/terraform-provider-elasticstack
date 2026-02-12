@@ -290,20 +290,15 @@ func (m alertingRuleModel) toAPIModel(ctx context.Context, serverVersion *versio
 		},
 	}
 
-	// Params from JSON string
+	// Params from JSON string.
+	// Note: params validation is handled exclusively by ValidateConfig during
+	// the plan phase. We intentionally do not re-validate here to avoid
+	// duplicate error messages.
 	if utils.IsKnown(m.Params) {
 		params := map[string]interface{}{}
 		if err := json.Unmarshal([]byte(m.Params.ValueString()), &params); err != nil {
 			diags.AddError("Failed to unmarshal params", err.Error())
 			return models.AlertingRule{}, diags
-		}
-
-		if utils.IsKnown(m.RuleTypeID) {
-			errs := validateRuleParams(m.RuleTypeID.ValueString(), params)
-			if len(errs) > 0 {
-				diags.AddAttributeError(path.Root("params"), "Invalid params for rule_type_id", formatParamsValidationErrors(errs))
-				return models.AlertingRule{}, diags
-			}
 		}
 
 		rule.Params = params

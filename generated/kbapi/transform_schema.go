@@ -1259,8 +1259,6 @@ func transformRemoveExamples(schema *Schema) {
 
 // transformRemoveUnusedComponents removes all unused schema components.
 func transformRemoveUnusedComponents(schema *Schema) {
-	keepComponentSchemas := map[string]bool{}
-
 	var refs map[string]any
 	collectRefsFn := func(key string, node Map) {
 		if ref, ok := node["$ref"].(string); ok {
@@ -1285,9 +1283,6 @@ func transformRemoveUnusedComponents(schema *Schema) {
 
 		loop := false
 		for key := range componentSchemas {
-			if keepComponentSchemas[key] {
-				continue
-			}
 			if _, ok := refs[key]; !ok {
 				delete(componentSchemas, key)
 				loop = true

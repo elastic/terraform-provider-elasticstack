@@ -31,6 +31,10 @@ func mustNewParamsSchemaSpec(name string, newTarget func() interface{}) paramsSc
 	}
 }
 
+// ValidateConfig is the single validation entry point for rule params. It runs
+// during the plan phase so invalid params are caught before any API call. The
+// apply-phase toAPIModel intentionally does not re-validate to avoid duplicate
+// error messages.
 func (r *Resource) ValidateConfig(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
 	var data alertingRuleModel
 
@@ -162,7 +166,7 @@ func validateRuleParams(ruleTypeID string, params map[string]interface{}) []stri
 			return nil
 		}
 
-		candidateErrs := []string{fmt.Sprintf("missing required params keys: %s", strings.Join(missingKeys, ", "))}
+		candidateErrs := []string{fmt.Sprintf("missing required params keys for rule type %q: %s", ruleTypeID, strings.Join(missingKeys, ", "))}
 		best.consider(true, candidateErrs)
 	}
 
@@ -222,6 +226,12 @@ func missingRequiredKeys(requiredKeys map[string]struct{}, params map[string]int
 
 func computeRequiredKeys(target interface{}) map[string]struct{} {
 	// Marshal zero-value struct and decode to map to discover non-omitempty keys.
+	// This relies on the Go JSON serialization convention: fields tagged with
+	// `omitempty` are omitted when they hold their zero value, so any key that
+	// survives marshaling a zero-value struct is treated as required. This is a
+	// heuristic — if a generated type has a non-pointer field that Kibana treats
+	// as optional, it will appear "required" here. Use ruleTypeAdditionalRequiredParamsKeys
+	// (or ruleTypeAdditionalAllowedParamsKeys) to patch individual mismatches.
 	raw, err := json.Marshal(target)
 	if err != nil {
 		return nil
