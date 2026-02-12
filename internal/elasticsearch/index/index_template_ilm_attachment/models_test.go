@@ -58,7 +58,7 @@ func TestMergeILMSetting_OverwriteExistingILM(t *testing.T) {
 
 func TestRemoveILMSetting_RemovesOnlyILM(t *testing.T) {
 	settings := map[string]interface{}{
-		"index.lifecycle.name": "my-policy",
+		"index.lifecycle.name":   "my-policy",
 		"index.number_of_shards": "1",
 		"index.refresh_interval": "30s",
 	}
