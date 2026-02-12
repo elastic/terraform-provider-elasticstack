@@ -96,6 +96,7 @@ inputs = {
 
 ### Changes
 
+- Add `elasticstack_kibana_security_enable_rule` resource ([1710](https://github.com/elastic/terraform-provider-elasticstack/pull/1710))
 - Add import support for `elasticstack_elasticsearch_script` resource ([#1637](https://github.com/elastic/terraform-provider-elasticstack/pull/1637))
 - Migrate `elasticstack_kibana_alerting_rule` to use plugin framework ([#1664](https://github.com/elastic/terraform-provider-elasticstack/pull/1664))
 - Migrate `elasticstack_kibana_slo` resource to the Terraform plugin framework ([#1647](https://github.com/elastic/terraform-provider-elasticstack/pull/1647))
