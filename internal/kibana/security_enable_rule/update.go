@@ -31,9 +31,9 @@ func (r *EnableRuleResource) upsert(ctx context.Context, plan tfsdk.Plan, state 
 		return diags
 	}
 
-	minVersion := version.Must(version.NewVersion("8.0.0"))
+	minVersion := version.Must(version.NewVersion("8.11.0"))
 	if serverVersion.LessThan(minVersion) {
-		diags.AddError("Unsupported server version", "Security detection rules bulk actions are not supported until Elastic Stack v8.0.0. Upgrade the target server to use this resource")
+		diags.AddError("Unsupported server version", "Security detection rules bulk actions are not supported until Elastic Stack v8.11.0. Upgrade the target server to use this resource")
 		return diags
 	}
 

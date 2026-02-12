@@ -18,7 +18,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-var minVersionEnableRule = version.Must(version.NewVersion("8.0.0"))
+var minVersionEnableRule = version.Must(version.NewVersion("8.11.0"))
 
 func TestAccResourceEnableRule(t *testing.T) {
 	resource.Test(t, resource.TestCase{
