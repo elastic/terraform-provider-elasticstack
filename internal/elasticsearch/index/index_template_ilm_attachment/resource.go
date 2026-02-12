@@ -16,7 +16,8 @@ var _ resource.ResourceWithImportState = &Resource{}
 
 var (
 	// MinVersion is the minimum Elasticsearch version required for this resource.
-	// Minimum version requirement - will be validated during CI testing.
+	// Component template APIs used here are validated against this version; older
+	// versions (e.g. 7.17) have been observed to return 404 in acceptance tests.
 	MinVersion = version.Must(version.NewVersion("8.0.0"))
 )
 

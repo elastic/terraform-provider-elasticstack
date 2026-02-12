@@ -2,6 +2,7 @@ package index_template_ilm_attachment
 
 import (
 	"context"
+	_ "embed"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -9,17 +10,16 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 )
 
+//go:embed resource-description.md
+var resourceDescription string
+
 func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = getSchema()
 }
 
 func getSchema() schema.Schema {
 	return schema.Schema{
-		Description: "Attaches an ILM policy to a Fleet-managed or externally-managed index template " +
-			"by creating/updating the @custom component template with the lifecycle setting. " +
-			"**Important:** Do NOT use this resource for index templates already managed by Terraform. " +
-			"Instead, set `index.lifecycle.name` directly in the `elasticstack_elasticsearch_index_template` " +
-			"or `elasticstack_elasticsearch_component_template` resource settings.",
+		MarkdownDescription: resourceDescription,
 
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{

@@ -80,10 +80,16 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 	}
 
 	// Read back to ensure state consistency
-	resp.Diagnostics.Append(readILMAttachment(ctx, r.client, &plan)...)
+	diags, found := readILMAttachment(ctx, r.client, &plan)
+	resp.Diagnostics.Append(diags...)
+	if !found && !resp.Diagnostics.HasError() {
+		resp.Diagnostics.AddError(
+			"Component template not found",
+			fmt.Sprintf("Component template %s was not found after update", plan.getComponentTemplateName()),
+		)
+	}
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }

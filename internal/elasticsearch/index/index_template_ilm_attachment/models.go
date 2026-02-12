@@ -2,7 +2,6 @@ package index_template_ilm_attachment
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
@@ -84,8 +83,10 @@ func extractILMSetting(template *models.Template) string {
 }
 
 // readILMAttachment reads the component template and updates the model with the actual ILM setting.
-// This ensures state consistency after create/update operations.
-func readILMAttachment(ctx context.Context, client *clients.ApiClient, model *tfModel) diag.Diagnostics {
+// It returns (diags, true) on success, (diags, false) on SDK error, and (nil, false) when the
+// template or ILM setting is missing. The caller decides how to handle "not found" (e.g. Read
+// removes from state, Create/Update report an error).
+func readILMAttachment(ctx context.Context, client *clients.ApiClient, model *tfModel) (diag.Diagnostics, bool) {
 	var diags diag.Diagnostics
 
 	componentTemplateName := model.getComponentTemplateName()
@@ -93,26 +94,18 @@ func readILMAttachment(ctx context.Context, client *clients.ApiClient, model *tf
 	tpl, sdkDiags := elasticsearch.GetComponentTemplate(ctx, client, componentTemplateName)
 	if sdkDiags.HasError() {
 		diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-		return diags
+		return diags, false
 	}
 
 	if tpl == nil {
-		diags.AddError(
-			"Component template not found",
-			fmt.Sprintf("Component template %s was not found after create/update", componentTemplateName),
-		)
-		return diags
+		return nil, false
 	}
 
 	lifecycleName := extractILMSetting(tpl.ComponentTemplate.Template)
 	if lifecycleName == "" {
-		diags.AddError(
-			"ILM setting not found",
-			fmt.Sprintf("ILM setting was not found in component template %s after create/update", componentTemplateName),
-		)
-		return diags
+		return nil, false
 	}
 
 	model.LifecycleName = types.StringValue(lifecycleName)
-	return diags
+	return diags, true
 }

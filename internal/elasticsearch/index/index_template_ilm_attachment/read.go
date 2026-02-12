@@ -4,8 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -28,41 +27,26 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 	}
 
 	componentTemplateName := compId.ResourceId
-
-	// Read the component template
-	tpl, sdkDiags := elasticsearch.GetComponentTemplate(ctx, r.client, componentTemplateName)
-	if sdkDiags.HasError() {
-		resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-		return
+	// Derive index_template from component template name for import (component name is <index_template>@custom)
+	if !utils.IsKnown(state.IndexTemplate) {
+		state.IndexTemplate = types.StringValue(strings.TrimSuffix(componentTemplateName, customSuffix))
 	}
 
-	if tpl == nil {
-		// Resource was deleted outside Terraform
-		tflog.Warn(ctx, "Component template not found, removing from state", map[string]interface{}{
+	diags, found := readILMAttachment(ctx, r.client, &state)
+	if !found {
+		if diags.HasError() {
+			resp.Diagnostics.Append(diags...)
+			return
+		}
+		tflog.Warn(ctx, "Component template or ILM setting not found, removing from state", map[string]interface{}{
 			"name": componentTemplateName,
 		})
 		resp.State.RemoveResource(ctx)
 		return
 	}
-
-	// Extract the lifecycle name from settings
-	lifecycleName := extractILMSetting(tpl.ComponentTemplate.Template)
-	if lifecycleName == "" {
-		// The ILM setting was removed outside Terraform
-		tflog.Warn(ctx, "ILM setting not found in component template, removing from state", map[string]interface{}{
-			"name": componentTemplateName,
-		})
-		resp.State.RemoveResource(ctx)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
 		return
-	}
-
-	state.LifecycleName = types.StringValue(lifecycleName)
-
-	// Derive the index_template from the component template name (for import support)
-	// Component template name is always <index_template>@custom
-	if state.IndexTemplate.IsNull() || state.IndexTemplate.IsUnknown() {
-		indexTemplateName := strings.TrimSuffix(componentTemplateName, customSuffix)
-		state.IndexTemplate = types.StringValue(indexTemplateName)
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
