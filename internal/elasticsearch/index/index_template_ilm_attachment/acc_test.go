@@ -160,17 +160,11 @@ func checkPreservesTemplateDestroy(s *terraform.State) error {
 		if tpl.ComponentTemplate.Template.Settings == nil {
 			return fmt.Errorf("expected component template %s to still have settings after destroy (other settings should be preserved)", name)
 		}
-		indexSettings, ok := tpl.ComponentTemplate.Template.Settings["index"].(map[string]interface{})
-		if !ok {
-			return fmt.Errorf("expected component template %s to have index settings after destroy", name)
-		}
-		if lifecycle, ok := indexSettings["lifecycle"].(map[string]interface{}); ok {
-			if _, hasILM := lifecycle["name"]; hasILM {
-				return fmt.Errorf("ILM setting still exists in component template %s", name)
-			}
+		if _, hasILM := tpl.ComponentTemplate.Template.Settings["index.lifecycle.name"]; hasILM {
+			return fmt.Errorf("ILM setting still exists in component template %s", name)
 		}
 		// Verify the setting we created in PreCheck was preserved (only ILM should be removed)
-		switch n := indexSettings["number_of_shards"].(type) {
+		switch n := tpl.ComponentTemplate.Template.Settings["index.number_of_shards"].(type) {
 		case string:
 			if n != "1" {
 				return fmt.Errorf("expected index.number_of_shards to be preserved as \"1\" after destroy, got %q", n)
@@ -180,7 +174,7 @@ func checkPreservesTemplateDestroy(s *terraform.State) error {
 				return fmt.Errorf("expected index.number_of_shards to be preserved as 1 after destroy, got %v", n)
 			}
 		default:
-			return fmt.Errorf("expected index.number_of_shards to be preserved after destroy, got %v (type %T)", indexSettings["number_of_shards"], indexSettings["number_of_shards"])
+			return fmt.Errorf("expected index.number_of_shards to be preserved after destroy, got %v (type %T)", tpl.ComponentTemplate.Template.Settings["index.number_of_shards"], tpl.ComponentTemplate.Template.Settings["index.number_of_shards"])
 		}
 
 		// Cleanup: remove the fixture template created in PreCheck
@@ -250,14 +244,7 @@ func checkComponentTemplateHasILM(name string, expectedPolicy string) resource.T
 			return fmt.Errorf("component template %s has no settings", name)
 		}
 
-		// Elasticsearch returns settings in nested structure
-		var actualPolicy string
-		if indexSettings, ok := tpl.ComponentTemplate.Template.Settings["index"].(map[string]interface{}); ok {
-			if lifecycleSettings, ok := indexSettings["lifecycle"].(map[string]interface{}); ok {
-				actualPolicy, _ = lifecycleSettings["name"].(string)
-			}
-		}
-
+		actualPolicy, _ := tpl.ComponentTemplate.Template.Settings["index.lifecycle.name"].(string)
 		if actualPolicy == "" {
 			return fmt.Errorf("component template %s has no index.lifecycle.name setting", name)
 		}

@@ -33,44 +33,21 @@ func (m *tfModel) GetID() (*clients.CompositeId, diag.Diagnostics) {
 }
 
 // mergeILMSetting adds the ILM lifecycle.name setting to existing settings.
-// Uses nested form {"index": {"lifecycle": {"name": "policy"}}} to match the Get Component
-// Template API; we request nested form explicitly (flat_settings=false).
-// The Put API accepts both flat and nested; we use nested for consistency with the response.
+// We use flat form (index.lifecycle.name) for simpler processing; Get is called with flat_settings=true.
 func mergeILMSetting(existingSettings map[string]interface{}, lifecycleName string) map[string]interface{} {
 	if existingSettings == nil {
 		existingSettings = make(map[string]interface{})
 	}
-	indexVal, _ := existingSettings["index"].(map[string]interface{})
-	if indexVal == nil {
-		indexVal = make(map[string]interface{})
-		existingSettings["index"] = indexVal
-	}
-	indexVal["lifecycle"] = map[string]interface{}{"name": lifecycleName}
+	existingSettings["index.lifecycle.name"] = lifecycleName
 	return existingSettings
 }
 
-// removeILMSetting removes the index.lifecycle.name setting from the settings map.
-// Elasticsearch uses nested form: {"index": {"lifecycle": {"name": "policy"}}}.
-// We remove that path and prune empty parent maps.
+// removeILMSetting removes the index.lifecycle.name setting from the settings map (flat form).
 func removeILMSetting(settings map[string]interface{}) map[string]interface{} {
 	if settings == nil {
 		return nil
 	}
-	indexVal, ok := settings["index"].(map[string]interface{})
-	if !ok {
-		return pruneEmpty(settings)
-	}
-	lifecycleVal, ok := indexVal["lifecycle"].(map[string]interface{})
-	if !ok {
-		return pruneEmpty(settings)
-	}
-	delete(lifecycleVal, "name")
-	if len(lifecycleVal) == 0 {
-		delete(indexVal, "lifecycle")
-	}
-	if len(indexVal) == 0 {
-		delete(settings, "index")
-	}
+	delete(settings, "index.lifecycle.name")
 	return pruneEmpty(settings)
 }
 
@@ -91,22 +68,14 @@ func isComponentTemplateEmpty(template *models.Template) bool {
 		len(template.Aliases) == 0
 }
 
-// extractILMSetting extracts the index.lifecycle.name setting from component template settings.
-// Elasticsearch returns settings in a nested structure: {"index": {"lifecycle": {"name": "policy"}}}
+// extractILMSetting extracts the index.lifecycle.name setting from component template settings (flat form).
 func extractILMSetting(template *models.Template) string {
 	if template == nil || template.Settings == nil {
 		return ""
 	}
-
-	// Elasticsearch returns settings in nested structure
-	if indexSettings, ok := template.Settings["index"].(map[string]interface{}); ok {
-		if lifecycleSettings, ok := indexSettings["lifecycle"].(map[string]interface{}); ok {
-			if lifecycleName, ok := lifecycleSettings["name"].(string); ok {
-				return lifecycleName
-			}
-		}
+	if v, ok := template.Settings["index.lifecycle.name"].(string); ok {
+		return v
 	}
-
 	return ""
 }
 
