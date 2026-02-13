@@ -4,10 +4,10 @@ provider "elasticstack" {
 }
 
 # Install a Fleet integration - this creates Fleet-managed index templates.
-# Use "system" (not "tcp") to avoid conflicting with TestAccResourceIntegration_* which use tcp.
+# Use system (not tcp) to avoid conflicting with other Fleet tests. PreCheck installs it via API so it's available.
 resource "elasticstack_fleet_integration" "system" {
   name         = "system"
-  version      = "1.52.2"
+  version      = "1.20.0"
   force        = true
   skip_destroy = true
 }
@@ -34,5 +34,5 @@ resource "elasticstack_elasticsearch_index_template_ilm_attachment" "test" {
   depends_on = [elasticstack_fleet_integration.system]
 
   index_template = "logs-system.syslog"
-  lifecycle_name  = elasticstack_elasticsearch_index_lifecycle.test.name
+  lifecycle_name = elasticstack_elasticsearch_index_lifecycle.test.name
 }

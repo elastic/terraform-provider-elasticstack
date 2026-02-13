@@ -8,6 +8,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/index_template_ilm_attachment"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
@@ -16,11 +17,30 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
+// fleetSystemVersion is the system package version used by TestAccResourceIndexTemplateIlmAttachment_fleet.
+// PreCheck installs it via Fleet API so it is available; must match version in testdata create/main.tf.
+const fleetSystemVersion = "1.20.0"
+
 const preservesTemplateIndexName = "logs-ilm-preserve"
 
 func TestAccResourceIndexTemplateIlmAttachment_fleet(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { acctest.PreCheck(t) },
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			// Install system package via Fleet API so it is available (avoids conflict with tcp/sysmon_linux tests).
+			client, err := clients.NewAcceptanceTestingClient()
+			if err != nil {
+				t.Fatalf("acceptance test client: %v", err)
+			}
+			fleetClient, err := client.GetFleetClient()
+			if err != nil {
+				t.Fatalf("Fleet client: %v", err)
+			}
+			diags := fleet.InstallPackage(context.Background(), fleetClient, "system", fleetSystemVersion, fleet.InstallPackageOptions{Force: true})
+			if diags.HasError() {
+				t.Fatalf("system package %s must be installable in Fleet registry: %v", fleetSystemVersion, diags)
+			}
+		},
 		CheckDestroy: checkResourceDestroy,
 		Steps: []resource.TestStep{
 			// Create
