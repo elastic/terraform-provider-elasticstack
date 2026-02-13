@@ -12,15 +12,19 @@ import (
 )
 
 type panelModel struct {
-	Type              types.String            `tfsdk:"type"`
-	Grid              panelGridModel          `tfsdk:"grid"`
-	ID                types.String            `tfsdk:"id"`
-	MarkdownConfig    *markdownConfigModel    `tfsdk:"markdown_config"`
-	XYChartConfig     *xyChartConfigModel     `tfsdk:"xy_chart_config"`
-	DatatableConfig   *datatableConfigModel   `tfsdk:"datatable_config"`
-	TagcloudConfig    *tagcloudConfigModel    `tfsdk:"tagcloud_config"`
-	MetricChartConfig *metricChartConfigModel `tfsdk:"metric_chart_config"`
-	ConfigJSON        jsontypes.Normalized    `tfsdk:"config_json"`
+	Type               types.String             `tfsdk:"type"`
+	Grid               panelGridModel           `tfsdk:"grid"`
+	ID                 types.String             `tfsdk:"id"`
+	MarkdownConfig     *markdownConfigModel     `tfsdk:"markdown_config"`
+	XYChartConfig      *xyChartConfigModel      `tfsdk:"xy_chart_config"`
+	DatatableConfig    *datatableConfigModel    `tfsdk:"datatable_config"`
+	TagcloudConfig     *tagcloudConfigModel     `tfsdk:"tagcloud_config"`
+	MetricChartConfig  *metricChartConfigModel  `tfsdk:"metric_chart_config"`
+	GaugeConfig        *gaugeConfigModel        `tfsdk:"gauge_config"`
+	LegacyMetricConfig *legacyMetricConfigModel `tfsdk:"legacy_metric_config"`
+	RegionMapConfig    *regionMapConfigModel    `tfsdk:"region_map_config"`
+	HeatmapConfig      *heatmapConfigModel      `tfsdk:"heatmap_config"`
+	ConfigJSON         jsontypes.Normalized     `tfsdk:"config_json"`
 }
 
 type panelGridModel struct {
@@ -54,6 +58,10 @@ var panelConfigConverters = []panelConfigConverter{
 	newXYChartPanelConfigConverter(),
 	newDatatablePanelConfigConverter(),
 	newTagcloudPanelConfigConverter(),
+	newHeatmapPanelConfigConverter(),
+	newRegionMapPanelConfigConverter(),
+	newLegacyMetricPanelConfigConverter(),
+	newGaugePanelConfigConverter(),
 	newMetricChartPanelConfigConverter(),
 }
 

@@ -112,7 +112,7 @@ setup-kibana-fleet: ## Creates the agent and integration policies required to ru
 
 .PHONY: docker-clean
 docker-clean: ## Try to remove provisioned nodes and assigned network
-	@ docker compose -f $(COMPOSE_FILE) --profile acceptance-tests down
+	@ docker compose -f $(COMPOSE_FILE) --profile acceptance-tests down --volumes
 
 .PHONY: copy-kibana-ca
 copy-kibana-ca: ## Copy Kibana CA certificate to local machine
@@ -141,7 +141,7 @@ install: build ## Install built provider into the local terraform cache
 
 .PHONY: tools
 tools: $(GOBIN)  ## Download golangci-lint locally if necessary.
-	@[[ -f $(GOBIN)/golangci-lint ]] || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOBIN) v2.8.0
+	@[[ -f $(GOBIN)/golangci-lint ]] || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOBIN) v2.9.0
 
 .PHONY: golangci-lint
 golangci-lint:

@@ -2,6 +2,7 @@ package dashboard
 
 import (
 	"context"
+	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
@@ -18,6 +19,52 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
+
+var panelConfigNames = []string{
+	"markdown_config",
+	"config_json",
+	"xy_chart_config",
+	"tagcloud_config",
+	"region_map_config",
+	"legacy_metric_config",
+	"gauge_config",
+	"metric_chart_config",
+	"datatable_config",
+	"heatmap_config",
+}
+
+func panelConfigPaths(names []string) []path.Expression {
+	paths := make([]path.Expression, 0, len(names))
+	for _, name := range names {
+		paths = append(paths, path.MatchRelative().AtName(name))
+	}
+	return paths
+}
+
+func siblingPanelConfigPathsExcept(name string, names []string) []path.Expression {
+	paths := make([]path.Expression, 0, len(names)-1)
+	for _, n := range names {
+		if n == name {
+			continue
+		}
+		paths = append(paths, path.MatchRelative().AtParent().AtName(n))
+	}
+	return paths
+}
+
+func panelConfigDescription(base, self string, names []string) string {
+	others := make([]string, 0, len(names)-1)
+	for _, name := range names {
+		if name == self {
+			continue
+		}
+		others = append(others, "`"+name+"`")
+	}
+	if len(others) == 0 {
+		return base
+	}
+	return base + " Mutually exclusive with " + strings.Join(others, ", ") + "."
+}
 
 // populateTagcloudMetricDefaults populates default values for tagcloud metric configuration
 func populateTagcloudMetricDefaults(model map[string]any) map[string]any {
@@ -95,6 +142,81 @@ func populateTagcloudTagByDefaults(model map[string]any) map[string]any {
 				"type":      "column",
 				"metric":    0,
 				"direction": "desc",
+			}
+		}
+	}
+	return model
+}
+
+// populateLegacyMetricMetricDefaults populates default values for legacy metric operations
+func populateLegacyMetricMetricDefaults(model map[string]any) map[string]any {
+	if model == nil {
+		return model
+	}
+	if operation, ok := model["operation"].(string); ok {
+		switch operation {
+		case "count", "unique_count", "min", "max", "average", "median", "standard_deviation", "sum", "last_value", "percentile", "percentile_rank":
+			if _, exists := model["empty_as_null"]; !exists {
+				model["empty_as_null"] = false
+			}
+		}
+	}
+
+	format, ok := model["format"].(map[string]any)
+	if ok {
+		if formatType, ok := format["type"].(string); ok {
+			switch formatType {
+			case "number", "percent":
+				if _, exists := format["decimals"]; !exists {
+					format["decimals"] = float64(2)
+				}
+				if _, exists := format["compact"]; !exists {
+					format["compact"] = false
+				}
+			case "bytes", "bits":
+				if _, exists := format["decimals"]; !exists {
+					format["decimals"] = float64(2)
+				}
+			}
+		}
+		model["format"] = format
+	}
+
+	return model
+}
+
+// populateGaugeMetricDefaults populates default values for gauge metric configuration
+func populateGaugeMetricDefaults(model map[string]any) map[string]any {
+	if model == nil {
+		return model
+	}
+
+	if _, exists := model["empty_as_null"]; !exists {
+		model["empty_as_null"] = false
+	}
+	if _, exists := model["hide_title"]; !exists {
+		model["hide_title"] = false
+	}
+	if _, exists := model["ticks"]; !exists {
+		model["ticks"] = "auto"
+	}
+
+	return model
+}
+
+// populateRegionMapMetricDefaults populates default values for region map metric configuration
+func populateRegionMapMetricDefaults(model map[string]any) map[string]any {
+	if model == nil {
+		return model
+	}
+	if operation, ok := model["operation"].(string); ok {
+		switch operation {
+		case "count", "unique_count", "min", "max", "average", "median", "standard_deviation", "sum", "last_value", "percentile", "percentile_rank":
+			if _, exists := model["empty_as_null"]; !exists {
+				model["empty_as_null"] = false
+			}
+			if _, exists := model["show_metric_label"]; !exists {
+				model["show_metric_label"] = true
 			}
 		}
 	}
@@ -281,12 +403,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 	return schema.NestedAttributeObject{
 		Validators: []validator.Object{
 			objectvalidator.AtLeastOneOf(
-				path.MatchRelative().AtName("markdown_config"),
-				path.MatchRelative().AtName("config_json"),
-				path.MatchRelative().AtName("xy_chart_config"),
-				path.MatchRelative().AtName("tagcloud_config"),
-				path.MatchRelative().AtName("metric_chart_config"),
-				path.MatchRelative().AtName("datatable_config"),
+				panelConfigPaths(panelConfigNames)...,
 			),
 		},
 		Attributes: map[string]schema.Attribute{
@@ -325,7 +442,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 				},
 			},
 			"markdown_config": schema.SingleNestedAttribute{
-				MarkdownDescription: "The configuration of a markdown panel. Mutually exclusive with `config_json`, `xy_chart_config`, `datatable_config`, `metric_chart_config`, and `tagcloud_config`.",
+				MarkdownDescription: panelConfigDescription("The configuration of a markdown panel.", "markdown_config", panelConfigNames),
 				Optional:            true,
 				Attributes: map[string]schema.Attribute{
 					"content": schema.StringAttribute{
@@ -347,17 +464,13 @@ func getPanelSchema() schema.NestedAttributeObject {
 				},
 				Validators: []validator.Object{
 					objectvalidator.ConflictsWith(
-						path.MatchRelative().AtParent().AtName("config_json"),
-						path.MatchRelative().AtParent().AtName("xy_chart_config"),
-						path.MatchRelative().AtParent().AtName("datatable_config"),
-						path.MatchRelative().AtParent().AtName("tagcloud_config"),
-						path.MatchRelative().AtParent().AtName("metric_chart_config"),
+						siblingPanelConfigPathsExcept("markdown_config", panelConfigNames)...,
 					),
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"DASHBOARD_MARKDOWN"}),
 				},
 			},
 			"xy_chart_config": schema.SingleNestedAttribute{
-				MarkdownDescription: "Configuration for an XY chart panel. Mutually exclusive with `markdown_config`, `datatable_config`, `tagcloud_config`, and `config_json`. Use this for line, area, and bar charts.",
+				MarkdownDescription: panelConfigDescription("Configuration for an XY chart panel. Use this for line, area, and bar charts.", "xy_chart_config", panelConfigNames),
 				Optional:            true,
 				Attributes: map[string]schema.Attribute{
 					"title": schema.StringAttribute{
@@ -409,72 +522,96 @@ func getPanelSchema() schema.NestedAttributeObject {
 				},
 				Validators: []validator.Object{
 					objectvalidator.ConflictsWith(
-						path.MatchRelative().AtParent().AtName("markdown_config"),
-						path.MatchRelative().AtParent().AtName("datatable_config"),
-						path.MatchRelative().AtParent().AtName("tagcloud_config"),
-						path.MatchRelative().AtParent().AtName("config_json"),
-						path.MatchRelative().AtParent().AtName("metric_chart_config"),
+						siblingPanelConfigPathsExcept("xy_chart_config", panelConfigNames)...,
 					),
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"lens"}),
 				},
 			},
 			"datatable_config": schema.SingleNestedAttribute{
-				MarkdownDescription: "Configuration for a datatable chart panel. Mutually exclusive with `markdown_config`, `xy_chart_config`, `tagcloud_config`, and `config_json`.",
+				MarkdownDescription: panelConfigDescription("Configuration for a datatable chart panel.", "datatable_config", panelConfigNames),
 				Optional:            true,
 				Attributes:          getDatatableSchema(),
 				Validators: []validator.Object{
 					objectvalidator.ConflictsWith(
-						path.MatchRelative().AtParent().AtName("markdown_config"),
-						path.MatchRelative().AtParent().AtName("xy_chart_config"),
-						path.MatchRelative().AtParent().AtName("tagcloud_config"),
-						path.MatchRelative().AtParent().AtName("config_json"),
-						path.MatchRelative().AtParent().AtName("metric_chart_config"),
+						siblingPanelConfigPathsExcept("datatable_config", panelConfigNames)...,
 					),
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"lens"}),
 				},
 			},
 			"tagcloud_config": schema.SingleNestedAttribute{
-				MarkdownDescription: "Configuration for a tagcloud chart panel. Mutually exclusive with `markdown_config`, `xy_chart_config`, `metric_chart_config`, `datatable_config`, and `config_json`. Tag clouds visualize word frequency.",
+				MarkdownDescription: panelConfigDescription("Configuration for a tagcloud chart panel. Tag clouds visualize word frequency.", "tagcloud_config", panelConfigNames),
 				Optional:            true,
 				Attributes:          getTagcloudSchema(),
 				Validators: []validator.Object{
 					objectvalidator.ConflictsWith(
-						path.MatchRelative().AtParent().AtName("markdown_config"),
-						path.MatchRelative().AtParent().AtName("xy_chart_config"),
-						path.MatchRelative().AtParent().AtName("metric_chart_config"),
-						path.MatchRelative().AtParent().AtName("datatable_config"),
-						path.MatchRelative().AtParent().AtName("config_json"),
+						siblingPanelConfigPathsExcept("tagcloud_config", panelConfigNames)...,
+					),
+					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"lens"}),
+				},
+			},
+			"heatmap_config": schema.SingleNestedAttribute{
+				MarkdownDescription: panelConfigDescription("Configuration for a heatmap chart panel.", "heatmap_config", panelConfigNames),
+				Optional:            true,
+				Attributes:          getHeatmapSchema(),
+				Validators: []validator.Object{
+					objectvalidator.ConflictsWith(
+						siblingPanelConfigPathsExcept("heatmap_config", panelConfigNames)...,
+					),
+					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"lens"}),
+				},
+			},
+			"region_map_config": schema.SingleNestedAttribute{
+				MarkdownDescription: panelConfigDescription("Configuration for a region map chart panel. Use this for geographic region maps.", "region_map_config", panelConfigNames),
+				Optional:            true,
+				Attributes:          getRegionMapSchema(),
+				Validators: []validator.Object{
+					objectvalidator.ConflictsWith(
+						siblingPanelConfigPathsExcept("region_map_config", panelConfigNames)...,
+					),
+					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"lens"}),
+				},
+			},
+			"gauge_config": schema.SingleNestedAttribute{
+				MarkdownDescription: panelConfigDescription("Configuration for a gauge chart panel.", "gauge_config", panelConfigNames),
+				Optional:            true,
+				Attributes:          getGaugeSchema(),
+				Validators: []validator.Object{
+					objectvalidator.ConflictsWith(
+						siblingPanelConfigPathsExcept("gauge_config", panelConfigNames)...,
 					),
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"lens"}),
 				},
 			},
 			"metric_chart_config": schema.SingleNestedAttribute{
-				MarkdownDescription: "Configuration for a metric chart panel. Mutually exclusive with `markdown_config`, `xy_chart_config`, `tagcloud_config`, `datatable_config`, and `config_json`. Metric charts display key performance indicators.",
+				MarkdownDescription: panelConfigDescription("Configuration for a metric chart panel. Metric charts display key performance indicators.", "metric_chart_config", panelConfigNames),
 				Optional:            true,
 				Attributes:          getMetricChartSchema(),
 				Validators: []validator.Object{
 					objectvalidator.ConflictsWith(
-						path.MatchRelative().AtParent().AtName("markdown_config"),
-						path.MatchRelative().AtParent().AtName("xy_chart_config"),
-						path.MatchRelative().AtParent().AtName("tagcloud_config"),
-						path.MatchRelative().AtParent().AtName("datatable_config"),
-						path.MatchRelative().AtParent().AtName("config_json"),
+						siblingPanelConfigPathsExcept("metric_chart_config", panelConfigNames)...,
+					),
+					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"lens"}),
+				},
+			},
+			"legacy_metric_config": schema.SingleNestedAttribute{
+				MarkdownDescription: panelConfigDescription("Configuration for a legacy metric chart panel. Use this for legacy single-value metric visualizations.", "legacy_metric_config", panelConfigNames),
+				Optional:            true,
+				Attributes:          getLegacyMetricSchema(),
+				Validators: []validator.Object{
+					objectvalidator.ConflictsWith(
+						siblingPanelConfigPathsExcept("legacy_metric_config", panelConfigNames)...,
 					),
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"lens"}),
 				},
 			},
 			"config_json": schema.StringAttribute{
-				MarkdownDescription: "The configuration of the panel as a JSON string. Mutually exclusive with `markdown_config`, `xy_chart_config`, `metric_chart_config`, `datatable_config`, and `tagcloud_config`.",
+				MarkdownDescription: panelConfigDescription("The configuration of the panel as a JSON string.", "config_json", panelConfigNames),
 				CustomType:          jsontypes.NormalizedType{},
 				Optional:            true,
 				Computed:            true,
 				Validators: []validator.String{
 					stringvalidator.ConflictsWith(
-						path.MatchRelative().AtParent().AtName("markdown_config"),
-						path.MatchRelative().AtParent().AtName("xy_chart_config"),
-						path.MatchRelative().AtParent().AtName("datatable_config"),
-						path.MatchRelative().AtParent().AtName("tagcloud_config"),
-						path.MatchRelative().AtParent().AtName("metric_chart_config"),
+						siblingPanelConfigPathsExcept("config_json", panelConfigNames)...,
 					),
 				},
 			},
@@ -961,6 +1098,326 @@ func getTagcloudSchema() map[string]schema.Attribute {
 			MarkdownDescription: "Tag grouping configuration as JSON. Can be a date histogram, terms, histogram, range, or filters operation. This determines how tags are grouped and displayed.",
 			CustomType:          customtypes.NewJSONWithDefaultsType(populateTagcloudTagByDefaults),
 			Required:            true,
+		},
+	}
+}
+
+// getHeatmapSchema returns the schema for heatmap chart configuration
+func getHeatmapSchema() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"title": schema.StringAttribute{
+			MarkdownDescription: "The title of the chart displayed in the panel.",
+			Optional:            true,
+		},
+		"description": schema.StringAttribute{
+			MarkdownDescription: "The description of the chart.",
+			Optional:            true,
+		},
+		"dataset": schema.StringAttribute{
+			MarkdownDescription: "Dataset configuration as JSON. For standard heatmaps, this specifies the data view or index; for ES|QL, this specifies the ES|QL query dataset.",
+			CustomType:          jsontypes.NormalizedType{},
+			Required:            true,
+		},
+		"ignore_global_filters": schema.BoolAttribute{
+			MarkdownDescription: "If true, ignore global filters when fetching data for this chart. Default is false.",
+			Optional:            true,
+		},
+		"sampling": schema.Float64Attribute{
+			MarkdownDescription: "Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.",
+			Optional:            true,
+		},
+		"query": schema.SingleNestedAttribute{
+			MarkdownDescription: "Query configuration for filtering data. Required for non-ES|QL heatmaps.",
+			Optional:            true,
+			Attributes:          getFilterSimpleSchema(),
+		},
+		"filters": schema.ListNestedAttribute{
+			MarkdownDescription: "Additional filters to apply to the chart data (maximum 100).",
+			Optional:            true,
+			NestedObject:        getSearchFilterSchema(),
+		},
+		"axes": schema.SingleNestedAttribute{
+			MarkdownDescription: "Axis configuration for X and Y axes.",
+			Required:            true,
+			Attributes:          getHeatmapAxesSchema(),
+		},
+		"cells": schema.SingleNestedAttribute{
+			MarkdownDescription: "Cells configuration for the heatmap.",
+			Required:            true,
+			Attributes:          getHeatmapCellsSchema(),
+		},
+		"legend": schema.SingleNestedAttribute{
+			MarkdownDescription: "Legend configuration for the heatmap.",
+			Required:            true,
+			Attributes:          getHeatmapLegendSchema(),
+		},
+		"metric": schema.StringAttribute{
+			MarkdownDescription: "Metric configuration as JSON. For non-ES|QL, this can be a field metric, pipeline metric, or formula. For ES|QL, this is the metric column/operation/color configuration.",
+			CustomType:          customtypes.NewJSONWithDefaultsType(populateTagcloudMetricDefaults),
+			Required:            true,
+		},
+		"x_axis": schema.StringAttribute{
+			MarkdownDescription: "X-axis operation configuration as JSON. For non-ES|QL, this can be date histogram, terms, histogram, range, or filters operations; for ES|QL, this is the column/operation configuration.",
+			CustomType:          jsontypes.NormalizedType{},
+			Required:            true,
+		},
+		"y_axis": schema.StringAttribute{
+			MarkdownDescription: "Y-axis operation configuration as JSON. For non-ES|QL, this can be date histogram, terms, histogram, range, or filters operations; for ES|QL, this is the column/operation configuration.",
+			CustomType:          jsontypes.NormalizedType{},
+			Optional:            true,
+		},
+	}
+}
+
+// getHeatmapAxesSchema returns schema for heatmap axes configuration
+func getHeatmapAxesSchema() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"x": schema.SingleNestedAttribute{
+			MarkdownDescription: "X-axis configuration.",
+			Optional:            true,
+			Attributes: map[string]schema.Attribute{
+				"labels": schema.SingleNestedAttribute{
+					MarkdownDescription: "X-axis label configuration.",
+					Optional:            true,
+					Attributes: map[string]schema.Attribute{
+						"orientation": schema.StringAttribute{
+							MarkdownDescription: "Orientation of the axis labels.",
+							Optional:            true,
+							Validators: []validator.String{
+								stringvalidator.OneOf("horizontal", "vertical", "angled"),
+							},
+						},
+						"visible": schema.BoolAttribute{
+							MarkdownDescription: "Whether to show axis labels.",
+							Optional:            true,
+						},
+					},
+				},
+				"title": schema.SingleNestedAttribute{
+					MarkdownDescription: "X-axis title configuration.",
+					Optional:            true,
+					Attributes: map[string]schema.Attribute{
+						"value": schema.StringAttribute{
+							MarkdownDescription: "Axis title text.",
+							Optional:            true,
+						},
+						"visible": schema.BoolAttribute{
+							MarkdownDescription: "Whether to show the title.",
+							Optional:            true,
+						},
+					},
+				},
+			},
+		},
+		"y": schema.SingleNestedAttribute{
+			MarkdownDescription: "Y-axis configuration.",
+			Optional:            true,
+			Attributes: map[string]schema.Attribute{
+				"labels": schema.SingleNestedAttribute{
+					MarkdownDescription: "Y-axis label configuration.",
+					Optional:            true,
+					Attributes: map[string]schema.Attribute{
+						"visible": schema.BoolAttribute{
+							MarkdownDescription: "Whether to show axis labels.",
+							Optional:            true,
+						},
+					},
+				},
+				"title": schema.SingleNestedAttribute{
+					MarkdownDescription: "Y-axis title configuration.",
+					Optional:            true,
+					Attributes: map[string]schema.Attribute{
+						"value": schema.StringAttribute{
+							MarkdownDescription: "Axis title text.",
+							Optional:            true,
+						},
+						"visible": schema.BoolAttribute{
+							MarkdownDescription: "Whether to show the title.",
+							Optional:            true,
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+// getHeatmapCellsSchema returns schema for heatmap cells configuration
+func getHeatmapCellsSchema() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"labels": schema.SingleNestedAttribute{
+			MarkdownDescription: "Cell label configuration.",
+			Optional:            true,
+			Attributes: map[string]schema.Attribute{
+				"visible": schema.BoolAttribute{
+					MarkdownDescription: "Whether to show cell labels.",
+					Optional:            true,
+				},
+			},
+		},
+	}
+}
+
+// getHeatmapLegendSchema returns schema for heatmap legend configuration
+func getHeatmapLegendSchema() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"visible": schema.BoolAttribute{
+			MarkdownDescription: "Whether to show the legend.",
+			Optional:            true,
+		},
+		"position": schema.StringAttribute{
+			MarkdownDescription: "Legend position.",
+			Optional:            true,
+			Validators: []validator.String{
+				stringvalidator.OneOf("top", "bottom", "left", "right"),
+			},
+		},
+		"size": schema.StringAttribute{
+			MarkdownDescription: "Legend size: auto, small, medium, large, or xlarge.",
+			Required:            true,
+			Validators: []validator.String{
+				stringvalidator.OneOf("auto", "small", "medium", "large", "xlarge"),
+			},
+		},
+		"truncate_after_lines": schema.Int64Attribute{
+			MarkdownDescription: "Maximum lines before truncating legend items (1-10).",
+			Optional:            true,
+		},
+	}
+}
+
+// getRegionMapSchema returns the schema for region map chart configuration
+func getRegionMapSchema() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"title": schema.StringAttribute{
+			MarkdownDescription: "The title of the chart displayed in the panel.",
+			Optional:            true,
+		},
+		"description": schema.StringAttribute{
+			MarkdownDescription: "The description of the chart.",
+			Optional:            true,
+		},
+		"dataset": schema.StringAttribute{
+			MarkdownDescription: "Dataset configuration as JSON. For ES|QL, this specifies the ES|QL query. For standard layers, this specifies the data view and query.",
+			CustomType:          jsontypes.NormalizedType{},
+			Required:            true,
+		},
+		"ignore_global_filters": schema.BoolAttribute{
+			MarkdownDescription: "If true, ignore global filters when fetching data for this layer. Default is false.",
+			Optional:            true,
+		},
+		"sampling": schema.Float64Attribute{
+			MarkdownDescription: "Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.",
+			Optional:            true,
+		},
+		"query": schema.SingleNestedAttribute{
+			MarkdownDescription: "Query configuration for filtering data. Required for non-ES|QL region map configurations.",
+			Optional:            true,
+			Attributes:          getFilterSimpleSchema(),
+		},
+		"filters": schema.ListNestedAttribute{
+			MarkdownDescription: "Additional filters to apply to the chart data (maximum 100).",
+			Optional:            true,
+			NestedObject:        getSearchFilterSchema(),
+		},
+		"metric": schema.StringAttribute{
+			MarkdownDescription: "Metric configuration as JSON. For ES|QL, this defines the metric column and format. For standard mode, this defines the metric operation or formula.",
+			CustomType:          customtypes.NewJSONWithDefaultsType(populateRegionMapMetricDefaults),
+			Required:            true,
+		},
+		"region": schema.StringAttribute{
+			MarkdownDescription: "Region configuration as JSON. For ES|QL, this defines the region column and EMS join. For standard mode, this defines the bucket operation (terms, histogram, range, filters) and optional EMS settings.",
+			CustomType:          jsontypes.NormalizedType{},
+			Required:            true,
+		},
+	}
+}
+
+// getLegacyMetricSchema returns the schema for legacy metric chart configuration
+func getLegacyMetricSchema() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"title": schema.StringAttribute{
+			MarkdownDescription: "The title of the chart displayed in the panel.",
+			Optional:            true,
+		},
+		"description": schema.StringAttribute{
+			MarkdownDescription: "The description of the chart.",
+			Optional:            true,
+		},
+		"dataset": schema.StringAttribute{
+			MarkdownDescription: "Dataset configuration as JSON. Use `dataView` or `index` for standard data sources, and `esql` or `table` for ES|QL sources.",
+			CustomType:          jsontypes.NormalizedType{},
+			Required:            true,
+		},
+		"metric": schema.StringAttribute{
+			MarkdownDescription: "Metric configuration as JSON. For standard datasets, use a metric operation or formula. For ES|QL datasets, include format, operation, column, and color configuration.",
+			CustomType:          customtypes.NewJSONWithDefaultsType(populateLegacyMetricMetricDefaults),
+			Required:            true,
+		},
+		"query": schema.SingleNestedAttribute{
+			MarkdownDescription: "Query configuration for filtering data. Required for non-ES|QL datasets.",
+			Optional:            true,
+			Attributes:          getFilterSimpleSchema(),
+		},
+		"filters": schema.ListNestedAttribute{
+			MarkdownDescription: "Additional filters to apply to the chart data (maximum 100).",
+			Optional:            true,
+			NestedObject:        getSearchFilterSchema(),
+		},
+		"sampling": schema.Float64Attribute{
+			MarkdownDescription: "Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.",
+			Optional:            true,
+		},
+		"ignore_global_filters": schema.BoolAttribute{
+			MarkdownDescription: "If true, ignore global filters when fetching data for this panel. Default is false.",
+			Optional:            true,
+		},
+	}
+}
+
+// getGaugeSchema returns the schema for gauge chart configuration
+func getGaugeSchema() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"title": schema.StringAttribute{
+			MarkdownDescription: "The title of the chart displayed in the panel.",
+			Optional:            true,
+		},
+		"description": schema.StringAttribute{
+			MarkdownDescription: "The description of the chart.",
+			Optional:            true,
+		},
+		"dataset": schema.StringAttribute{
+			MarkdownDescription: "Dataset configuration as JSON. For standard layers, this specifies the data view and query.",
+			CustomType:          jsontypes.NormalizedType{},
+			Required:            true,
+		},
+		"ignore_global_filters": schema.BoolAttribute{
+			MarkdownDescription: "If true, ignore global filters when fetching data for this layer. Default is false.",
+			Optional:            true,
+		},
+		"sampling": schema.Float64Attribute{
+			MarkdownDescription: "Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.",
+			Optional:            true,
+		},
+		"query": schema.SingleNestedAttribute{
+			MarkdownDescription: "Query configuration for filtering data.",
+			Required:            true,
+			Attributes:          getFilterSimpleSchema(),
+		},
+		"filters": schema.ListNestedAttribute{
+			MarkdownDescription: "Additional filters to apply to the chart data (maximum 100).",
+			Optional:            true,
+			NestedObject:        getSearchFilterSchema(),
+		},
+		"metric": schema.StringAttribute{
+			MarkdownDescription: "Metric configuration as JSON. Supports metric operations such as count, unique count, min, max, average, median, standard deviation, sum, last value, percentile, percentile ranks, or formula.",
+			CustomType:          customtypes.NewJSONWithDefaultsType(populateGaugeMetricDefaults),
+			Required:            true,
+		},
+		"shape": schema.StringAttribute{
+			MarkdownDescription: "Gauge shape configuration as JSON. Supports bullet and circular gauges.",
+			CustomType:          jsontypes.NormalizedType{},
+			Optional:            true,
 		},
 	}
 }
