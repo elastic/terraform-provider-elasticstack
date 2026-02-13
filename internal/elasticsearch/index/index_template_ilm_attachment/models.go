@@ -88,7 +88,7 @@ func readILMAttachment(ctx context.Context, client *clients.ApiClient, model *tf
 
 	componentTemplateName := model.getComponentTemplateName()
 
-	tpl, sdkDiags := elasticsearch.GetComponentTemplate(ctx, client, componentTemplateName)
+	tpl, sdkDiags := elasticsearch.GetComponentTemplate(ctx, client, componentTemplateName, true)
 	if sdkDiags.HasError() {
 		diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 		return diags, false

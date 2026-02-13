@@ -147,7 +147,7 @@ func checkPreservesTemplateDestroy(s *terraform.State) error {
 			continue
 		}
 
-		tpl, sdkDiags := elasticsearch.GetComponentTemplate(ctx, client, name)
+		tpl, sdkDiags := elasticsearch.GetComponentTemplate(ctx, client, name, true)
 		if sdkDiags.HasError() {
 			return fmt.Errorf("failed to get component template: %v", sdkDiags)
 		}
@@ -202,7 +202,7 @@ func checkResourceDestroy(s *terraform.State) error {
 			return fmt.Errorf("failed to parse resource ID: %v", sdkDiags)
 		}
 
-		tpl, sdkDiags := elasticsearch.GetComponentTemplate(context.Background(), client, compId.ResourceId)
+		tpl, sdkDiags := elasticsearch.GetComponentTemplate(context.Background(), client, compId.ResourceId, true)
 		if sdkDiags.HasError() {
 			return fmt.Errorf("failed to get component template: %v", sdkDiags)
 		}
@@ -227,7 +227,7 @@ func checkComponentTemplateHasILM(name string, expectedPolicy string) resource.T
 			return err
 		}
 
-		tpl, sdkDiags := elasticsearch.GetComponentTemplate(context.Background(), client, name)
+		tpl, sdkDiags := elasticsearch.GetComponentTemplate(context.Background(), client, name, true)
 		if sdkDiags.HasError() {
 			return fmt.Errorf("failed to get component template: %v", sdkDiags)
 		}
