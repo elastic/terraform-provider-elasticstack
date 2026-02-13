@@ -46,30 +46,17 @@ func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp 
 		existing.ComponentTemplate.Template.Settings = removeILMSetting(existing.ComponentTemplate.Template.Settings)
 	}
 
-	// Check if the component template is now empty
-	if isComponentTemplateEmpty(existing.ComponentTemplate.Template) {
-		// Delete the entire component template
-		tflog.Debug(ctx, "Component template is empty after removing ILM setting, deleting", map[string]interface{}{
-			"name": componentTemplateName,
-		})
-		if sdkDiags := elasticsearch.DeleteComponentTemplate(ctx, r.client, componentTemplateName); sdkDiags.HasError() {
-			resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-			return
-		}
-	} else {
-		// Update the component template with the ILM setting removed
-		tflog.Debug(ctx, "Component template has other settings, preserving", map[string]interface{}{
-			"name": componentTemplateName,
-		})
-		componentTemplate := models.ComponentTemplate{
-			Name:     componentTemplateName,
-			Template: existing.ComponentTemplate.Template,
-			Meta:     existing.ComponentTemplate.Meta,
-			Version:  existing.ComponentTemplate.Version,
-		}
-		if sdkDiags := elasticsearch.PutComponentTemplate(ctx, r.client, &componentTemplate); sdkDiags.HasError() {
-			resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-			return
-		}
+	// Always update the component template with the ILM setting removed; never delete it.
+	// The template (e.g. logs-system.syslog@custom) is typically used by an index template
+	// (e.g. from Fleet); deleting it would fail with "cannot be removed as they are still in use".
+	componentTemplate := models.ComponentTemplate{
+		Name:     componentTemplateName,
+		Template: existing.ComponentTemplate.Template,
+		Meta:     existing.ComponentTemplate.Meta,
+		Version:  existing.ComponentTemplate.Version,
+	}
+	if sdkDiags := elasticsearch.PutComponentTemplate(ctx, r.client, &componentTemplate); sdkDiags.HasError() {
+		resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+		return
 	}
 }
