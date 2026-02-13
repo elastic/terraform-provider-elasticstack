@@ -74,9 +74,94 @@ func TestPopulateFromAPI_OmitsAPIInjectedKeysAbsentFromPriorState(t *testing.T) 
 		}
 	}
 	// Keys that WERE in the prior state must remain.
-	for _, key := range []string{"groupBy", "searchType", "size", "esQuery", "termSize", "termField"} {
+	expectedKeys := []string{
+		"groupBy",
+		"searchType",
+		"size",
+		"esQuery",
+		"termSize",
+		"termField",
+		"threshold",
+		"thresholdComparator",
+		"index",
+		"timeField",
+		"timeWindowSize",
+		"timeWindowUnit",
+		"excludeHitsFromPreviousRun",
+	}
+	for _, key := range expectedKeys {
 		if _, exists := got[key]; !exists {
 			t.Errorf("expected key %q to remain in state, but it was missing", key)
+		}
+	}
+}
+
+func TestPopulateFromAPI_OmitsNestedAPIInjectedKeysAbsentFromPriorState(t *testing.T) {
+	// Prior state includes `criteria` but omits nested defaults (e.g. criteria[].aggType).
+	model := alertingRuleModel{
+		RuleTypeID: types.StringValue(".es-query"),
+		Params: jsontypes.NewNormalizedValue(`{
+			"searchType":"esQuery",
+			"size":10,
+			"criteria":[
+				{
+					"threshold":[10],
+					"comparator":">",
+					"timeSize":5,
+					"timeUnit":"m"
+				}
+			]
+		}`),
+	}
+
+	apiRule := &models.AlertingRule{
+		RuleID:     "rule-id",
+		SpaceID:    "default",
+		Name:       "Test rule",
+		Consumer:   "alerts",
+		RuleTypeID: ".es-query",
+		Schedule:   models.AlertingRuleSchedule{Interval: "10m"},
+		Params: map[string]interface{}{
+			"searchType": "esQuery",
+			"size":       float64(10),
+			"criteria": []interface{}{
+				map[string]interface{}{
+					"threshold":  []interface{}{float64(10)},
+					"comparator": ">",
+					"timeSize":   float64(5),
+					"timeUnit":   "m",
+					// Injected nested default — user never had it.
+					"aggType": "count",
+				},
+			},
+		},
+	}
+
+	diags := model.populateFromAPI(context.Background(), apiRule)
+	if diags.HasError() {
+		t.Fatalf("expected no diagnostics, got: %v", diags)
+	}
+
+	var got map[string]interface{}
+	if err := json.Unmarshal([]byte(model.Params.ValueString()), &got); err != nil {
+		t.Fatalf("failed to decode model params: %v", err)
+	}
+
+	criteria, ok := got["criteria"].([]interface{})
+	if !ok || len(criteria) != 1 {
+		t.Fatalf("expected criteria to be a single-element array, got: %#v", got["criteria"])
+	}
+	crit0, ok := criteria[0].(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected criteria[0] to be an object, got: %#v", criteria[0])
+	}
+	if _, exists := crit0["aggType"]; exists {
+		t.Fatalf("expected nested injected key criteria[0].aggType to be stripped, but it was present")
+	}
+	// Keys that WERE in the prior state must remain.
+	for _, key := range []string{"threshold", "comparator", "timeSize", "timeUnit"} {
+		if _, exists := crit0[key]; !exists {
+			t.Fatalf("expected criteria[0].%s to remain in state, but it was missing", key)
 		}
 	}
 }
