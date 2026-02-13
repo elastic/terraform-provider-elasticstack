@@ -34,11 +34,11 @@ func TestAccResourceIndexTemplateIlmAttachment_fleet(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(
 						"elasticstack_elasticsearch_index_template_ilm_attachment.test",
-						"index_template", "logs-tcp.generic"),
+						"index_template", "logs-system.syslog"),
 					resource.TestCheckResourceAttr(
 						"elasticstack_elasticsearch_index_template_ilm_attachment.test",
 						"lifecycle_name", "test-fleet-policy-1"),
-					checkComponentTemplateHasILM("logs-tcp.generic@custom", "test-fleet-policy-1"),
+					checkComponentTemplateHasILM("logs-system.syslog@custom", "test-fleet-policy-1"),
 				),
 			},
 			// Update
@@ -53,7 +53,7 @@ func TestAccResourceIndexTemplateIlmAttachment_fleet(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"elasticstack_elasticsearch_index_template_ilm_attachment.test",
 						"lifecycle_name", "test-fleet-policy-2"),
-					checkComponentTemplateHasILM("logs-tcp.generic@custom", "test-fleet-policy-2"),
+					checkComponentTemplateHasILM("logs-system.syslog@custom", "test-fleet-policy-2"),
 				),
 			},
 			// Import
