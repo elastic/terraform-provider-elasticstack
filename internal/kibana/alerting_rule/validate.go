@@ -23,7 +23,13 @@ type paramsSchemaSpec struct {
 }
 
 func mustNewParamsSchemaSpec(name string, newTarget func() interface{}) paramsSchemaSpec {
-	requiredKeys := computeRequiredKeys(newTarget())
+	requiredKeys, err := computeRequiredKeys(newTarget())
+	if err != nil {
+		panic(fmt.Sprintf("alerting_rule: mustNewParamsSchemaSpec(%q): computeRequiredKeys error: %v", name, err))
+	}
+	if requiredKeys == nil {
+		panic(fmt.Sprintf("alerting_rule: mustNewParamsSchemaSpec(%q): computeRequiredKeys returned nil requiredKeys (err=%v)", name, err))
+	}
 	return paramsSchemaSpec{
 		name:         name,
 		newTarget:    newTarget,
@@ -224,7 +230,7 @@ func missingRequiredKeys(requiredKeys map[string]struct{}, params map[string]int
 	return missing
 }
 
-func computeRequiredKeys(target interface{}) map[string]struct{} {
+func computeRequiredKeys(target interface{}) (map[string]struct{}, error) {
 	// Marshal zero-value struct and decode to map to discover non-omitempty keys.
 	// This relies on the Go JSON serialization convention: fields tagged with
 	// `omitempty` are omitted when they hold their zero value, so any key that
@@ -234,19 +240,22 @@ func computeRequiredKeys(target interface{}) map[string]struct{} {
 	// (or ruleTypeAdditionalAllowedParamsKeys) to patch individual mismatches.
 	raw, err := json.Marshal(target)
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("json.Marshal: %w", err)
 	}
 
 	var values map[string]interface{}
 	if err := json.Unmarshal(raw, &values); err != nil {
-		return nil
+		return nil, fmt.Errorf("json.Unmarshal: %w", err)
+	}
+	if values == nil {
+		return nil, fmt.Errorf("decoded JSON was null (expected object)")
 	}
 
 	requiredKeys := make(map[string]struct{}, len(values))
 	for key := range values {
 		requiredKeys[key] = struct{}{}
 	}
-	return requiredKeys
+	return requiredKeys, nil
 }
 
 func stripKeys(raw []byte, keys []string) []byte {
