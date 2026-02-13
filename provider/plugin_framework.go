@@ -29,11 +29,17 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/integration_policy"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/output"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/server_host"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/ab_agent"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/ab_tool"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/ab_workflow"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/alerting_rule"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/connectors"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/data_view"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/default_data_view"
+	export_ab_agent "github.com/elastic/terraform-provider-elasticstack/internal/kibana/export_ab/agent"
+	export_ab_tool "github.com/elastic/terraform-provider-elasticstack/internal/kibana/export_ab/tool"
+	export_ab_workflow "github.com/elastic/terraform-provider-elasticstack/internal/kibana/export_ab/workflow"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/export_saved_objects"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/import_saved_objects"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/maintenance_window"
@@ -135,6 +141,9 @@ func (p *Provider) resources(ctx context.Context) []func() resource.Resource {
 		agent_configuration.NewAgentConfigurationResource,
 		func() resource.Resource { return &import_saved_objects.Resource{} },
 		alerting_rule.NewResource,
+		ab_agent.NewResource,
+		ab_tool.NewResource,
+		ab_workflow.NewResource,
 		data_view.NewResource,
 		default_data_view.NewResource,
 		func() resource.Resource { return &parameter.Resource{} },
@@ -183,6 +192,9 @@ func (p *Provider) dataSources(ctx context.Context) []func() datasource.DataSour
 		indices.NewDataSource,
 		spaces.NewDataSource,
 		export_saved_objects.NewDataSource,
+		export_ab_agent.NewDataSource,
+		export_ab_tool.NewDataSource,
+		export_ab_workflow.NewDataSource,
 		enrollment_tokens.NewDataSource,
 		integration_ds.NewDataSource,
 		enrich.NewEnrichPolicyDataSource,

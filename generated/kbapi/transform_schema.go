@@ -558,6 +558,7 @@ type TransformFunc func(schema *Schema)
 
 var transformers = []TransformFunc{
 	mergeDashboardsSchema,
+	mergeWorkflowsSchema,
 	transformRemoveKbnXsrf,
 	transformRemoveApiVersionParam,
 	transformSimplifyContentType,
@@ -578,6 +579,35 @@ var transformers = []TransformFunc{
 	transformRemoveExamples,
 	transformRemoveUnusedComponents,
 	transformOmitEmptyNullable,
+}
+
+//go:embed workflows.yaml
+var workflowsYaml string
+
+func mergeWorkflowsSchema(schema *Schema) {
+	var workflowsSchema Schema
+	err := yaml.Unmarshal([]byte(workflowsYaml), &workflowsSchema)
+	if err != nil {
+		log.Fatalf("failed to unmarshal schema from dashboards.yaml: %v", err)
+	}
+
+	// Merge paths
+	for path, pathInfo := range workflowsSchema.Paths {
+		// Only add the path if it doesn't already exist
+		if _, ok := schema.Paths[path]; !ok {
+			schema.Paths[path] = pathInfo
+		}
+	}
+
+	// Merge component schemas
+	dashboardSchemas := workflowsSchema.Components.MustGetMap("schemas")
+	schemaSchemas := schema.Components.MustGetMap("schemas")
+	for key, schemaInfo := range dashboardSchemas {
+		// Only add the schema if it doesn't already exist
+		if _, ok := schemaSchemas[key]; !ok {
+			schemaSchemas[key] = schemaInfo
+		}
+	}
 }
 
 //go:embed dashboards.yaml
