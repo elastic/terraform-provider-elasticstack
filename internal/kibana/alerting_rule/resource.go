@@ -11,10 +11,11 @@ import (
 )
 
 var (
-	_ resource.Resource                 = &Resource{}
-	_ resource.ResourceWithConfigure    = &Resource{}
-	_ resource.ResourceWithImportState  = &Resource{}
-	_ resource.ResourceWithUpgradeState = &Resource{}
+	_ resource.Resource                   = &Resource{}
+	_ resource.ResourceWithConfigure      = &Resource{}
+	_ resource.ResourceWithImportState    = &Resource{}
+	_ resource.ResourceWithValidateConfig = &Resource{}
+	_ resource.ResourceWithUpgradeState   = &Resource{}
 )
 
 //go:embed resource-description.md
