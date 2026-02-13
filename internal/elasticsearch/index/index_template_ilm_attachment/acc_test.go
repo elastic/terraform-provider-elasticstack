@@ -27,6 +27,14 @@ func TestAccResourceIndexTemplateIlmAttachment_fleet(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			acctest.PreCheck(t)
+			// Skip before installing Fleet package if version is unsupported (PreCheck runs before SkipFunc).
+			notSupported, err := versionutils.CheckIfVersionIsUnsupported(index_template_ilm_attachment.MinVersion)()
+			if err != nil {
+				t.Fatalf("checking version: %v", err)
+			}
+			if notSupported {
+				t.Skip("Elasticsearch version does not support this test")
+			}
 			// Install system package via Fleet API so it is available (avoids conflict with tcp/sysmon_linux tests).
 			client, err := clients.NewAcceptanceTestingClient()
 			if err != nil {
