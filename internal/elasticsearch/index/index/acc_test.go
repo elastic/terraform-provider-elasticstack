@@ -287,6 +287,30 @@ func TestAccResourceIndexRemovingField(t *testing.T) {
 	})
 }
 
+func TestAccResourceIndexSortFieldOrder(t *testing.T) {
+	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceIndexDestroy,
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccResourceIndexSortFieldOrder(indexName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_sort", "name", indexName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_sort", "sort_field.#", "2"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_sort", "sort_field.0", "startTimestamp"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_sort", "sort_field.1", "id"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_sort", "sort_order.#", "2"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_sort", "sort_order.0", "asc"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_sort", "sort_order.1", "asc"),
+				),
+			},
+		},
+	})
+}
+
 func testAccResourceIndexCreate(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
@@ -481,6 +505,30 @@ resource "elasticstack_elasticsearch_index" "test" {
   depends_on = [elasticstack_elasticsearch_index_template.test]
 }
 `, name, name, name, name)
+}
+
+func testAccResourceIndexSortFieldOrder(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_index" "test_sort" {
+  name = "%s"
+
+  mappings = jsonencode({
+    properties = {
+      startTimestamp = { type = "date" }
+      id             = { type = "keyword" }
+    }
+  })
+
+  sort_field = ["startTimestamp", "id"]
+  sort_order = ["asc", "asc"]
+
+  deletion_protection = false
+}
+	`, name)
 }
 
 func checkResourceIndexDestroy(s *terraform.State) error {

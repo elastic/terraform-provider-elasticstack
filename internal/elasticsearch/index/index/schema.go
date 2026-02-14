@@ -201,12 +201,13 @@ func getSchema() schema.Schema {
 					stringvalidator.OneOf("false", "true", "checksum"),
 				},
 			},
-			"sort_field": schema.SetAttribute{
+			// sort_field must be a list type to preserve the order of fields
+			"sort_field": schema.ListAttribute{
 				ElementType: types.StringType,
 				Description: "The field to sort shards in this index by.",
 				Optional:    true,
-				PlanModifiers: []planmodifier.Set{
-					setplanmodifier.RequiresReplace(),
+				PlanModifiers: []planmodifier.List{
+					listplanmodifier.RequiresReplace(),
 				},
 			},
 			// sort_order can't be set type since it can have dup strings like ["asc", "asc"]
