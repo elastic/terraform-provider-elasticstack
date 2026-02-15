@@ -18,6 +18,40 @@ import (
 
 // Utilities to convert various API types to Terraform model types
 
+// convertValueToString converts an API value to a TF string.
+// Simple values are converted directly, objects and arrays are JSON-encoded.
+func convertValueToString(value interface{}) types.String {
+	if value == nil {
+		return types.StringNull()
+	}
+
+	switch v := value.(type) {
+	case string:
+		return types.StringValue(v)
+	case bool:
+		return types.StringValue(strconv.FormatBool(v))
+	case float64:
+		// Handle numbers (JSON unmarshals all numbers as float64)
+		if v == float64(int64(v)) {
+			return types.StringValue(strconv.FormatInt(int64(v), 10))
+		}
+		return types.StringValue(strconv.FormatFloat(v, 'f', -1, 64))
+	case int64:
+		return types.StringValue(strconv.FormatInt(v, 10))
+	case int:
+		return types.StringValue(strconv.FormatInt(int64(v), 10))
+	case map[string]interface{}, []interface{}:
+		// Convert nested objects/arrays back to JSON
+		jsonBytes, err := json.Marshal(v)
+		if err != nil {
+			return types.StringValue(fmt.Sprintf("%v", v))
+		}
+		return types.StringValue(string(jsonBytes))
+	default:
+		return types.StringValue(fmt.Sprintf("%v", v))
+	}
+}
+
 // convertActionsToModel converts kbapi.SecurityDetectionsAPIRuleAction slice to Terraform model
 func convertActionsToModel(ctx context.Context, apiActions []kbapi.SecurityDetectionsAPIRuleAction) (types.List, diag.Diagnostics) {
 	var diags diag.Diagnostics
@@ -34,13 +68,11 @@ func convertActionsToModel(ctx context.Context, apiActions []kbapi.SecurityDetec
 			Id:           types.StringValue(string(apiAction.Id)),
 		}
 
-		// Convert params
+		// Convert params - convert nested objects to JSON strings
 		if apiAction.Params != nil {
 			paramsMap := make(map[string]attr.Value)
 			for k, v := range apiAction.Params {
-				if v != nil {
-					paramsMap[k] = types.StringValue(fmt.Sprintf("%v", v))
-				}
+				paramsMap[k] = convertValueToString(v)
 			}
 			paramsValue, paramsDiags := types.MapValue(types.StringType, paramsMap)
 			diags.Append(paramsDiags...)
