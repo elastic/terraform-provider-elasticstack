@@ -166,10 +166,14 @@ func TestAccResourceDashboardXYChart(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.layers.#", "1"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.layers.0.data_layer.ignore_global_filters", "true"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.layers.0.data_layer.sampling", "0.5"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.layers.0.data_layer.ignore_global_filters", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.layers.0.data_layer.sampling", "1"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.layers.0.data_layer.x"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.layers.0.data_layer.breakdown_by"),
+					resource.TestCheckResourceAttr(
+						"elasticstack_kibana_dashboard.test",
+						"panels.0.xy_chart_config.layers.0.data_layer.breakdown_by",
+						"{\"collapse_by\":\"avg\",\"color\":{\"mapping\":[{\"color\":{\"type\":\"colorCode\",\"value\":\"#54B399\"},\"values\":[\"host-a\"]}],\"mode\":\"categorical\",\"palette\":\"default\",\"unassignedColor\":{\"type\":\"colorCode\",\"value\":\"#D3DAE6\"}},\"column\":\"host.name\",\"operation\":\"value\"}",
+					),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.layers.0.data_layer.y.#", "1"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.layers.0.data_layer.y.0.config"),
 				),

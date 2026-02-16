@@ -23,6 +23,7 @@ type panelModel struct {
 	GaugeConfig        *gaugeConfigModel        `tfsdk:"gauge_config"`
 	LegacyMetricConfig *legacyMetricConfigModel `tfsdk:"legacy_metric_config"`
 	RegionMapConfig    *regionMapConfigModel    `tfsdk:"region_map_config"`
+	HeatmapConfig      *heatmapConfigModel      `tfsdk:"heatmap_config"`
 	ConfigJSON         jsontypes.Normalized     `tfsdk:"config_json"`
 }
 
@@ -57,6 +58,7 @@ var panelConfigConverters = []panelConfigConverter{
 	newXYChartPanelConfigConverter(),
 	newDatatablePanelConfigConverter(),
 	newTagcloudPanelConfigConverter(),
+	newHeatmapPanelConfigConverter(),
 	newRegionMapPanelConfigConverter(),
 	newLegacyMetricPanelConfigConverter(),
 	newGaugePanelConfigConverter(),
