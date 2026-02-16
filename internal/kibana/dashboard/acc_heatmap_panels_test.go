@@ -43,10 +43,10 @@ func TestAccResourceDashboardHeatmap(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.heatmap_config.legend.visible", "true"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.heatmap_config.query.language", "kuery"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.heatmap_config.query.query", ""),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.heatmap_config.dataset"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.heatmap_config.metric"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.heatmap_config.x_axis"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.heatmap_config.y_axis"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.heatmap_config.dataset_json"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.heatmap_config.metric_json"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.heatmap_config.x_axis_json"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.heatmap_config.y_axis_json"),
 				),
 			},
 			{
@@ -60,7 +60,7 @@ func TestAccResourceDashboardHeatmap(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: true,
 				ImportStateVerifyIgnore: []string{
-					"panels.0.heatmap_config.metric",
+					"panels.0.heatmap_config.metric_json",
 				},
 			},
 		},

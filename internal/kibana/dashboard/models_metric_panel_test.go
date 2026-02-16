@@ -253,11 +253,11 @@ func Test_metricChartConfigModel_withMetrics(t *testing.T) {
 
 	// Verify metrics were populated
 	assert.Len(t, model.Metrics, 1)
-	assert.True(t, utils.IsKnown(model.Metrics[0].Config))
+	assert.True(t, utils.IsKnown(model.Metrics[0].ConfigJSON))
 
 	// Verify the metric config contains expected data
 	var parsedMetric map[string]interface{}
-	diags = model.Metrics[0].Config.Unmarshal(&parsedMetric)
+	diags = model.Metrics[0].ConfigJSON.Unmarshal(&parsedMetric)
 	require.False(t, diags.HasError())
 	assert.Equal(t, "primary", parsedMetric["type"])
 	assert.Equal(t, "count", parsedMetric["operation"])
@@ -343,10 +343,10 @@ func Test_metricChartConfigModel_withDataset(t *testing.T) {
 	require.False(t, diags.HasError())
 
 	// Verify dataset was populated
-	assert.True(t, utils.IsKnown(model.Dataset))
+	assert.True(t, utils.IsKnown(model.DatasetJSON))
 
 	var parsedDataset map[string]interface{}
-	diags = model.Dataset.Unmarshal(&parsedDataset)
+	diags = model.DatasetJSON.Unmarshal(&parsedDataset)
 	require.False(t, diags.HasError())
 	assert.Equal(t, "dataview", parsedDataset["type"])
 	assert.Equal(t, "test-dataview", parsedDataset["id"])
@@ -443,10 +443,10 @@ func Test_metricChartConfigModel_withBreakdownBy(t *testing.T) {
 	require.False(t, diags.HasError())
 
 	// Verify breakdown_by was populated
-	assert.True(t, utils.IsKnown(model.BreakdownBy))
+	assert.True(t, utils.IsKnown(model.BreakdownByJSON))
 
 	var parsedBreakdown map[string]interface{}
-	diags = model.BreakdownBy.Unmarshal(&parsedBreakdown)
+	diags = model.BreakdownByJSON.Unmarshal(&parsedBreakdown)
 	require.False(t, diags.HasError())
 	assert.Equal(t, "terms", parsedBreakdown["operation"])
 	assert.Equal(t, "category", parsedBreakdown["field"])
@@ -472,7 +472,7 @@ func Test_metricItemModel_jsonRoundTrip(t *testing.T) {
 		t.Run(string(rune('A'+i)), func(t *testing.T) {
 			// Create a metric item with the config
 			item := metricItemModel{
-				Config: customtypes.NewJSONWithDefaultsValue[map[string]any](
+				ConfigJSON: customtypes.NewJSONWithDefaultsValue[map[string]any](
 					configJSON,
 					populateMetricChartMetricDefaults,
 				),
@@ -480,7 +480,7 @@ func Test_metricItemModel_jsonRoundTrip(t *testing.T) {
 
 			// Unmarshal and re-marshal to verify it's valid
 			var parsed map[string]interface{}
-			diags := item.Config.Unmarshal(&parsed)
+			diags := item.ConfigJSON.Unmarshal(&parsed)
 			require.False(t, diags.HasError())
 
 			// Verify we can marshal it back

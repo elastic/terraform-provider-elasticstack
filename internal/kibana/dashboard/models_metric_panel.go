@@ -109,17 +109,17 @@ func (c metricChartPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig 
 type metricChartConfigModel struct {
 	Title               types.String         `tfsdk:"title"`
 	Description         types.String         `tfsdk:"description"`
-	Dataset             jsontypes.Normalized `tfsdk:"dataset"`
+	DatasetJSON         jsontypes.Normalized `tfsdk:"dataset_json"`
 	IgnoreGlobalFilters types.Bool           `tfsdk:"ignore_global_filters"`
 	Sampling            types.Float64        `tfsdk:"sampling"`
 	Query               *filterSimpleModel   `tfsdk:"query"`
 	Filters             []searchFilterModel  `tfsdk:"filters"`
 	Metrics             []metricItemModel    `tfsdk:"metrics"`
-	BreakdownBy         jsontypes.Normalized `tfsdk:"breakdown_by"`
+	BreakdownByJSON     jsontypes.Normalized `tfsdk:"breakdown_by_json"`
 }
 
 type metricItemModel struct {
-	Config customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config"`
+	ConfigJSON customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config_json"`
 }
 
 func (m *metricChartConfigModel) fromAPI(ctx context.Context, apiChart kbapi.MetricChartSchema) diag.Diagnostics {
@@ -172,7 +172,7 @@ func (m *metricChartConfigModel) fromAPIVariant0(ctx context.Context, apiChart k
 		diags.AddError("Failed to marshal dataset", err.Error())
 		return diags
 	}
-	m.Dataset = jsontypes.NewNormalizedValue(string(datasetJSON))
+	m.DatasetJSON = jsontypes.NewNormalizedValue(string(datasetJSON))
 
 	// Set query
 	m.Query = &filterSimpleModel{}
@@ -196,7 +196,7 @@ func (m *metricChartConfigModel) fromAPIVariant0(ctx context.Context, apiChart k
 				diags.AddError("Failed to marshal metric", err.Error())
 				continue
 			}
-			m.Metrics[i].Config = customtypes.NewJSONWithDefaultsValue[map[string]any](
+			m.Metrics[i].ConfigJSON = customtypes.NewJSONWithDefaultsValue[map[string]any](
 				string(metricJSON),
 				populateMetricChartMetricDefaults,
 			)
@@ -209,10 +209,10 @@ func (m *metricChartConfigModel) fromAPIVariant0(ctx context.Context, apiChart k
 		if err != nil {
 			diags.AddError("Failed to marshal breakdown_by", err.Error())
 		} else {
-			m.BreakdownBy = jsontypes.NewNormalizedValue(string(breakdownJSON))
+			m.BreakdownByJSON = jsontypes.NewNormalizedValue(string(breakdownJSON))
 		}
 	} else {
-		m.BreakdownBy = jsontypes.NewNormalizedNull()
+		m.BreakdownByJSON = jsontypes.NewNormalizedNull()
 	}
 
 	return diags
@@ -237,7 +237,7 @@ func (m *metricChartConfigModel) fromAPIVariant1(ctx context.Context, apiChart k
 		diags.AddError("Failed to marshal dataset", err.Error())
 		return diags
 	}
-	m.Dataset = jsontypes.NewNormalizedValue(string(datasetJSON))
+	m.DatasetJSON = jsontypes.NewNormalizedValue(string(datasetJSON))
 
 	// Variant 1 doesn't always have a query (ES|QL case)
 	m.Query = nil
@@ -260,7 +260,7 @@ func (m *metricChartConfigModel) fromAPIVariant1(ctx context.Context, apiChart k
 				diags.AddError("Failed to marshal metric", err.Error())
 				continue
 			}
-			m.Metrics[i].Config = customtypes.NewJSONWithDefaultsValue[map[string]any](
+			m.Metrics[i].ConfigJSON = customtypes.NewJSONWithDefaultsValue[map[string]any](
 				string(metricJSON),
 				populateMetricChartMetricDefaults,
 			)
@@ -273,10 +273,10 @@ func (m *metricChartConfigModel) fromAPIVariant1(ctx context.Context, apiChart k
 		if err != nil {
 			diags.AddError("Failed to marshal breakdown_by", err.Error())
 		} else {
-			m.BreakdownBy = jsontypes.NewNormalizedValue(string(breakdownJSON))
+			m.BreakdownByJSON = jsontypes.NewNormalizedValue(string(breakdownJSON))
 		}
 	} else {
-		m.BreakdownBy = jsontypes.NewNormalizedNull()
+		m.BreakdownByJSON = jsontypes.NewNormalizedNull()
 	}
 
 	return diags
@@ -316,9 +316,9 @@ func (m *metricChartConfigModel) toAPIVariant0() (kbapi.MetricChartSchema, diag.
 	}
 
 	// Set dataset
-	if utils.IsKnown(m.Dataset) {
+	if utils.IsKnown(m.DatasetJSON) {
 		var dataset kbapi.MetricChartSchema_0_Dataset
-		datasetDiags := m.Dataset.Unmarshal(&dataset)
+		datasetDiags := m.DatasetJSON.Unmarshal(&dataset)
 		diags.Append(datasetDiags...)
 		if !datasetDiags.HasError() {
 			variant0.Dataset = dataset
@@ -345,9 +345,9 @@ func (m *metricChartConfigModel) toAPIVariant0() (kbapi.MetricChartSchema, diag.
 	if len(m.Metrics) > 0 {
 		metrics := make([]kbapi.MetricChartSchema_0_Metrics_Item, len(m.Metrics))
 		for i, metric := range m.Metrics {
-			if utils.IsKnown(metric.Config) {
+			if utils.IsKnown(metric.ConfigJSON) {
 				var metricItem kbapi.MetricChartSchema_0_Metrics_Item
-				metricDiags := metric.Config.Unmarshal(&metricItem)
+				metricDiags := metric.ConfigJSON.Unmarshal(&metricItem)
 				diags.Append(metricDiags...)
 				if !metricDiags.HasError() {
 					metrics[i] = metricItem
@@ -358,9 +358,9 @@ func (m *metricChartConfigModel) toAPIVariant0() (kbapi.MetricChartSchema, diag.
 	}
 
 	// Set breakdown_by
-	if utils.IsKnown(m.BreakdownBy) {
+	if utils.IsKnown(m.BreakdownByJSON) {
 		var breakdownBy kbapi.MetricChartSchema_0_BreakdownBy
-		breakdownDiags := m.BreakdownBy.Unmarshal(&breakdownBy)
+		breakdownDiags := m.BreakdownByJSON.Unmarshal(&breakdownBy)
 		diags.Append(breakdownDiags...)
 		if !breakdownDiags.HasError() {
 			variant0.BreakdownBy = &breakdownBy
@@ -398,9 +398,9 @@ func (m *metricChartConfigModel) toAPIVariant1() (kbapi.MetricChartSchema, diag.
 	}
 
 	// Set dataset
-	if utils.IsKnown(m.Dataset) {
+	if utils.IsKnown(m.DatasetJSON) {
 		var dataset kbapi.MetricChartSchema_1_Dataset
-		datasetDiags := m.Dataset.Unmarshal(&dataset)
+		datasetDiags := m.DatasetJSON.Unmarshal(&dataset)
 		diags.Append(datasetDiags...)
 		if !datasetDiags.HasError() {
 			variant1.Dataset = dataset
@@ -422,9 +422,9 @@ func (m *metricChartConfigModel) toAPIVariant1() (kbapi.MetricChartSchema, diag.
 	if len(m.Metrics) > 0 {
 		metrics := make([]kbapi.MetricChartSchema_1_Metrics_Item, len(m.Metrics))
 		for i, metric := range m.Metrics {
-			if utils.IsKnown(metric.Config) {
+			if utils.IsKnown(metric.ConfigJSON) {
 				var metricItem kbapi.MetricChartSchema_1_Metrics_Item
-				metricDiags := metric.Config.Unmarshal(&metricItem)
+				metricDiags := metric.ConfigJSON.Unmarshal(&metricItem)
 				diags.Append(metricDiags...)
 				if !metricDiags.HasError() {
 					metrics[i] = metricItem
@@ -435,14 +435,14 @@ func (m *metricChartConfigModel) toAPIVariant1() (kbapi.MetricChartSchema, diag.
 	}
 
 	// Set breakdown_by
-	if utils.IsKnown(m.BreakdownBy) {
+	if utils.IsKnown(m.BreakdownByJSON) {
 		var breakdownBy struct {
 			CollapseBy kbapi.CollapseBy                             `json:"collapse_by"`
 			Column     string                                       `json:"column"`
 			Columns    *float32                                     `json:"columns,omitempty"`
 			Operation  kbapi.MetricChartSchema1BreakdownByOperation `json:"operation"`
 		}
-		breakdownDiags := m.BreakdownBy.Unmarshal(&breakdownBy)
+		breakdownDiags := m.BreakdownByJSON.Unmarshal(&breakdownBy)
 		diags.Append(breakdownDiags...)
 		if !breakdownDiags.HasError() {
 			variant1.BreakdownBy = &breakdownBy

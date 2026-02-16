@@ -12,7 +12,7 @@ import (
 
 type searchFilterModel struct {
 	Query    types.String         `tfsdk:"query"`
-	Meta     jsontypes.Normalized `tfsdk:"meta"`
+	MetaJSON jsontypes.Normalized `tfsdk:"meta_json"`
 	Language types.String         `tfsdk:"language"`
 }
 
@@ -46,7 +46,7 @@ func (m *searchFilterModel) fromAPI(apiFilter kbapi.SearchFilterSchema) diag.Dia
 	if filterSchema.Meta != nil {
 		metaJSON, err := json.Marshal(filterSchema.Meta)
 		if err == nil {
-			m.Meta = jsontypes.NewNormalizedValue(string(metaJSON))
+			m.MetaJSON = jsontypes.NewNormalizedValue(string(metaJSON))
 		}
 	}
 
@@ -70,9 +70,9 @@ func (m *searchFilterModel) toAPI() (kbapi.SearchFilterSchema, diag.Diagnostics)
 		lang := kbapi.SearchFilterSchema0Language(m.Language.ValueString())
 		filter.Language = &lang
 	}
-	if utils.IsKnown(m.Meta) {
+	if utils.IsKnown(m.MetaJSON) {
 		var meta map[string]interface{}
-		diags.Append(m.Meta.Unmarshal(&meta)...)
+		diags.Append(m.MetaJSON.Unmarshal(&meta)...)
 		if !diags.HasError() {
 			filter.Meta = &meta
 		}

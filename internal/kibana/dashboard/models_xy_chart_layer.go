@@ -19,22 +19,22 @@ type xyLayerModel struct {
 
 // dataLayerModel represents a data layer (NoESQL or ESQL)
 type dataLayerModel struct {
-	Dataset             jsontypes.Normalized `tfsdk:"dataset"`
+	DatasetJSON         jsontypes.Normalized `tfsdk:"dataset_json"`
 	IgnoreGlobalFilters types.Bool           `tfsdk:"ignore_global_filters"`
 	Sampling            types.Float64        `tfsdk:"sampling"`
-	X                   jsontypes.Normalized `tfsdk:"x"`
+	XJSON               jsontypes.Normalized `tfsdk:"x_json"`
 	Y                   []yMetricModel       `tfsdk:"y"`
-	BreakdownBy         jsontypes.Normalized `tfsdk:"breakdown_by"`
+	BreakdownByJSON     jsontypes.Normalized `tfsdk:"breakdown_by_json"`
 }
 
 // yMetricModel represents a Y-axis metric
 type yMetricModel struct {
-	Config jsontypes.Normalized `tfsdk:"config"`
+	ConfigJSON jsontypes.Normalized `tfsdk:"config_json"`
 }
 
 // referenceLineLayerModel represents a reference line layer
 type referenceLineLayerModel struct {
-	Dataset             jsontypes.Normalized `tfsdk:"dataset"`
+	DatasetJSON         jsontypes.Normalized `tfsdk:"dataset_json"`
 	IgnoreGlobalFilters types.Bool           `tfsdk:"ignore_global_filters"`
 	Sampling            types.Float64        `tfsdk:"sampling"`
 	Thresholds          []thresholdModel     `tfsdk:"thresholds"`
@@ -43,9 +43,9 @@ type referenceLineLayerModel struct {
 // thresholdModel represents a reference line threshold
 type thresholdModel struct {
 	Axis        types.String         `tfsdk:"axis"`
-	Color       jsontypes.Normalized `tfsdk:"color"`
+	ColorJSON   jsontypes.Normalized `tfsdk:"color_json"`
 	Column      types.String         `tfsdk:"column"`
-	Value       jsontypes.Normalized `tfsdk:"value"`
+	ValueJSON   jsontypes.Normalized `tfsdk:"value_json"`
 	Fill        types.String         `tfsdk:"fill"`
 	Icon        types.String         `tfsdk:"icon"`
 	Operation   types.String         `tfsdk:"operation"`
@@ -166,7 +166,7 @@ func (m *dataLayerModel) fromAPINoESQL(apiLayer kbapi.XyLayerNoESQL) diag.Diagno
 	// Marshal to JSON to preserve the exact structure
 	datasetJSON, err := json.Marshal(apiLayer.Dataset)
 	if err == nil {
-		m.Dataset = jsontypes.NewNormalizedValue(string(datasetJSON))
+		m.DatasetJSON = jsontypes.NewNormalizedValue(string(datasetJSON))
 	} else {
 		diags.AddError("Failed to marshal dataset", err.Error())
 	}
@@ -181,14 +181,14 @@ func (m *dataLayerModel) fromAPINoESQL(apiLayer kbapi.XyLayerNoESQL) diag.Diagno
 	if apiLayer.X != nil {
 		xJSON, err := json.Marshal(apiLayer.X)
 		if err == nil {
-			m.X = jsontypes.NewNormalizedValue(string(xJSON))
+			m.XJSON = jsontypes.NewNormalizedValue(string(xJSON))
 		}
 	}
 
 	if apiLayer.BreakdownBy != nil {
 		breakdownJSON, err := json.Marshal(apiLayer.BreakdownBy)
 		if err == nil {
-			m.BreakdownBy = jsontypes.NewNormalizedValue(string(breakdownJSON))
+			m.BreakdownByJSON = jsontypes.NewNormalizedValue(string(breakdownJSON))
 		}
 	}
 
@@ -199,7 +199,7 @@ func (m *dataLayerModel) fromAPINoESQL(apiLayer kbapi.XyLayerNoESQL) diag.Diagno
 			yJSON, err := json.Marshal(y)
 			if err == nil {
 				m.Y = append(m.Y, yMetricModel{
-					Config: jsontypes.NewNormalizedValue(string(yJSON)),
+					ConfigJSON: jsontypes.NewNormalizedValue(string(yJSON)),
 				})
 			}
 		}
@@ -215,7 +215,7 @@ func (m *dataLayerModel) fromAPIESql(apiLayer kbapi.XyLayerESQL) diag.Diagnostic
 	// Marshal to JSON to preserve the exact structure
 	datasetJSON, err := json.Marshal(apiLayer.Dataset)
 	if err == nil {
-		m.Dataset = jsontypes.NewNormalizedValue(string(datasetJSON))
+		m.DatasetJSON = jsontypes.NewNormalizedValue(string(datasetJSON))
 	} else {
 		diags.AddError("Failed to marshal dataset", err.Error())
 	}
@@ -230,14 +230,14 @@ func (m *dataLayerModel) fromAPIESql(apiLayer kbapi.XyLayerESQL) diag.Diagnostic
 	if apiLayer.X != nil {
 		xJSON, err := json.Marshal(apiLayer.X)
 		if err == nil {
-			m.X = jsontypes.NewNormalizedValue(string(xJSON))
+			m.XJSON = jsontypes.NewNormalizedValue(string(xJSON))
 		}
 	}
 
 	if apiLayer.BreakdownBy != nil {
 		breakdownJSON, err := json.Marshal(apiLayer.BreakdownBy)
 		if err == nil {
-			m.BreakdownBy = jsontypes.NewNormalizedValue(string(breakdownJSON))
+			m.BreakdownByJSON = jsontypes.NewNormalizedValue(string(breakdownJSON))
 		}
 	}
 
@@ -248,7 +248,7 @@ func (m *dataLayerModel) fromAPIESql(apiLayer kbapi.XyLayerESQL) diag.Diagnostic
 			yJSON, err := json.Marshal(y)
 			if err == nil {
 				m.Y = append(m.Y, yMetricModel{
-					Config: jsontypes.NewNormalizedValue(string(yJSON)),
+					ConfigJSON: jsontypes.NewNormalizedValue(string(yJSON)),
 				})
 			}
 		}
@@ -266,9 +266,9 @@ func (m *dataLayerModel) toAPI(layerType string) (json.RawMessage, diag.Diagnost
 		"type": layerType,
 	}
 
-	if utils.IsKnown(m.Dataset) {
+	if utils.IsKnown(m.DatasetJSON) {
 		var dataset interface{}
-		diags.Append(m.Dataset.Unmarshal(&dataset)...)
+		diags.Append(m.DatasetJSON.Unmarshal(&dataset)...)
 		layer["dataset"] = dataset
 	}
 
@@ -280,15 +280,15 @@ func (m *dataLayerModel) toAPI(layerType string) (json.RawMessage, diag.Diagnost
 		layer["sampling"] = m.Sampling.ValueFloat64()
 	}
 
-	if utils.IsKnown(m.X) {
+	if utils.IsKnown(m.XJSON) {
 		var x interface{}
-		diags.Append(m.X.Unmarshal(&x)...)
+		diags.Append(m.XJSON.Unmarshal(&x)...)
 		layer["x"] = x
 	}
 
-	if utils.IsKnown(m.BreakdownBy) {
+	if utils.IsKnown(m.BreakdownByJSON) {
 		var breakdownBy interface{}
-		diags.Append(m.BreakdownBy.Unmarshal(&breakdownBy)...)
+		diags.Append(m.BreakdownByJSON.Unmarshal(&breakdownBy)...)
 		layer["breakdown_by"] = breakdownBy
 	}
 
@@ -296,9 +296,9 @@ func (m *dataLayerModel) toAPI(layerType string) (json.RawMessage, diag.Diagnost
 	if len(m.Y) > 0 {
 		yMetrics := make([]interface{}, 0, len(m.Y))
 		for _, y := range m.Y {
-			if utils.IsKnown(y.Config) {
+			if utils.IsKnown(y.ConfigJSON) {
 				var yConfig interface{}
-				diags.Append(y.Config.Unmarshal(&yConfig)...)
+				diags.Append(y.ConfigJSON.Unmarshal(&yConfig)...)
 				yMetrics = append(yMetrics, yConfig)
 			}
 		}
@@ -325,7 +325,7 @@ func (m *referenceLineLayerModel) fromAPINoESQL(apiLayer kbapi.XyReferenceLineLa
 	// Marshal to JSON to preserve the exact structure
 	datasetJSON, err := json.Marshal(apiLayer.Dataset)
 	if err == nil {
-		m.Dataset = jsontypes.NewNormalizedValue(string(datasetJSON))
+		m.DatasetJSON = jsontypes.NewNormalizedValue(string(datasetJSON))
 	} else {
 		diags.AddError("Failed to marshal dataset", err.Error())
 	}
@@ -350,9 +350,9 @@ func (m *referenceLineLayerModel) fromAPINoESQL(apiLayer kbapi.XyReferenceLineLa
 			// rather than the richer object shape used by ES|QL reference lines.
 			m.Thresholds = append(m.Thresholds, thresholdModel{
 				Axis:        types.StringNull(),
-				Color:       jsontypes.NewNormalizedNull(),
+				ColorJSON:   jsontypes.NewNormalizedNull(),
 				Column:      types.StringNull(),
-				Value:       jsontypes.NewNormalizedValue(string(thresholdJSON)),
+				ValueJSON:   jsontypes.NewNormalizedValue(string(thresholdJSON)),
 				Fill:        types.StringNull(),
 				Icon:        types.StringNull(),
 				Operation:   types.StringNull(),
@@ -373,7 +373,7 @@ func (m *referenceLineLayerModel) fromAPIESql(apiLayer kbapi.XyReferenceLineLaye
 	// Marshal to JSON to preserve the exact structure
 	datasetJSON, err := json.Marshal(apiLayer.Dataset)
 	if err == nil {
-		m.Dataset = jsontypes.NewNormalizedValue(string(datasetJSON))
+		m.DatasetJSON = jsontypes.NewNormalizedValue(string(datasetJSON))
 	} else {
 		diags.AddError("Failed to marshal dataset", err.Error())
 	}
@@ -415,9 +415,9 @@ func (m *referenceLineLayerModel) toAPI(layerType string) (json.RawMessage, diag
 		"type": layerType,
 	}
 
-	if utils.IsKnown(m.Dataset) {
+	if utils.IsKnown(m.DatasetJSON) {
 		var dataset interface{}
-		diags.Append(m.Dataset.Unmarshal(&dataset)...)
+		diags.Append(m.DatasetJSON.Unmarshal(&dataset)...)
 		layer["dataset"] = dataset
 	}
 
@@ -434,9 +434,9 @@ func (m *referenceLineLayerModel) toAPI(layerType string) (json.RawMessage, diag
 		thresholds := make([]interface{}, 0, len(m.Thresholds))
 		for _, t := range m.Thresholds {
 			// For NoESQL layers, thresholds are operation definitions; we model them via `threshold.value`.
-			if utils.IsKnown(t.Value) {
+			if utils.IsKnown(t.ValueJSON) {
 				var op interface{}
-				diags.Append(t.Value.Unmarshal(&op)...)
+				diags.Append(t.ValueJSON.Unmarshal(&op)...)
 				thresholds = append(thresholds, op)
 				continue
 			}
@@ -483,7 +483,7 @@ func (m *thresholdModel) fromAPIJSON(jsonData []byte) diag.Diagnostics {
 	if color, ok := thresholdData["color"]; ok {
 		colorJSON, err := json.Marshal(color)
 		if err == nil {
-			m.Color = jsontypes.NewNormalizedValue(string(colorJSON))
+			m.ColorJSON = jsontypes.NewNormalizedValue(string(colorJSON))
 		}
 	}
 
@@ -496,7 +496,7 @@ func (m *thresholdModel) fromAPIJSON(jsonData []byte) diag.Diagnostics {
 	if value, ok := thresholdData["value"]; ok {
 		valueJSON, err := json.Marshal(value)
 		if err == nil {
-			m.Value = jsontypes.NewNormalizedValue(string(valueJSON))
+			m.ValueJSON = jsontypes.NewNormalizedValue(string(valueJSON))
 		}
 	}
 
@@ -548,9 +548,9 @@ func (m *thresholdModel) toAPI() (map[string]interface{}, diag.Diagnostics) {
 		threshold["axis"] = m.Axis.ValueString()
 	}
 
-	if utils.IsKnown(m.Color) {
+	if utils.IsKnown(m.ColorJSON) {
 		var color interface{}
-		diags.Append(m.Color.Unmarshal(&color)...)
+		diags.Append(m.ColorJSON.Unmarshal(&color)...)
 		threshold["color"] = color
 	}
 
@@ -558,9 +558,9 @@ func (m *thresholdModel) toAPI() (map[string]interface{}, diag.Diagnostics) {
 		threshold["column"] = m.Column.ValueString()
 	}
 
-	if utils.IsKnown(m.Value) {
+	if utils.IsKnown(m.ValueJSON) {
 		var value interface{}
-		diags.Append(m.Value.Unmarshal(&value)...)
+		diags.Append(m.ValueJSON.Unmarshal(&value)...)
 		threshold["value"] = value
 	}
 

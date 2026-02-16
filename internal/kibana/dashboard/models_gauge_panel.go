@@ -112,13 +112,13 @@ func (c gaugePanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *kbapi
 type gaugeConfigModel struct {
 	Title               types.String                                      `tfsdk:"title"`
 	Description         types.String                                      `tfsdk:"description"`
-	Dataset             jsontypes.Normalized                              `tfsdk:"dataset"`
+	DatasetJSON         jsontypes.Normalized                              `tfsdk:"dataset_json"`
 	IgnoreGlobalFilters types.Bool                                        `tfsdk:"ignore_global_filters"`
 	Sampling            types.Float64                                     `tfsdk:"sampling"`
 	Query               *filterSimpleModel                                `tfsdk:"query"`
 	Filters             []searchFilterModel                               `tfsdk:"filters"`
-	Metric              customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"metric"`
-	Shape               jsontypes.Normalized                              `tfsdk:"shape"`
+	MetricJSON          customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"metric_json"`
+	ShapeJSON           jsontypes.Normalized                              `tfsdk:"shape_json"`
 }
 
 func (m *gaugeConfigModel) fromAPI(ctx context.Context, api kbapi.GaugeNoESQL) diag.Diagnostics {
@@ -132,7 +132,7 @@ func (m *gaugeConfigModel) fromAPI(ctx context.Context, api kbapi.GaugeNoESQL) d
 		diags.AddError("Failed to marshal dataset", err.Error())
 		return diags
 	}
-	m.Dataset = jsontypes.NewNormalizedValue(string(datasetBytes))
+	m.DatasetJSON = jsontypes.NewNormalizedValue(string(datasetBytes))
 
 	m.IgnoreGlobalFilters = types.BoolPointerValue(api.IgnoreGlobalFilters)
 	if api.Sampling != nil {
@@ -157,7 +157,7 @@ func (m *gaugeConfigModel) fromAPI(ctx context.Context, api kbapi.GaugeNoESQL) d
 		diags.AddError("Failed to marshal metric", err.Error())
 		return diags
 	}
-	m.Metric = customtypes.NewJSONWithDefaultsValue[map[string]any](
+	m.MetricJSON = customtypes.NewJSONWithDefaultsValue[map[string]any](
 		string(metricBytes),
 		populateGaugeMetricDefaults,
 	)
@@ -168,9 +168,9 @@ func (m *gaugeConfigModel) fromAPI(ctx context.Context, api kbapi.GaugeNoESQL) d
 			diags.AddError("Failed to marshal shape", err.Error())
 			return diags
 		}
-		m.Shape = jsontypes.NewNormalizedValue(string(shapeBytes))
+		m.ShapeJSON = jsontypes.NewNormalizedValue(string(shapeBytes))
 	} else {
-		m.Shape = jsontypes.NewNormalizedNull()
+		m.ShapeJSON = jsontypes.NewNormalizedNull()
 	}
 
 	return diags
@@ -190,8 +190,8 @@ func (m *gaugeConfigModel) toAPI() (kbapi.GaugeNoESQL, diag.Diagnostics) {
 		api.Description = m.Description.ValueStringPointer()
 	}
 
-	if utils.IsKnown(m.Dataset) {
-		if err := json.Unmarshal([]byte(m.Dataset.ValueString()), &api.Dataset); err != nil {
+	if utils.IsKnown(m.DatasetJSON) {
+		if err := json.Unmarshal([]byte(m.DatasetJSON.ValueString()), &api.Dataset); err != nil {
 			diags.AddError("Failed to unmarshal dataset", err.Error())
 			return api, diags
 		}
@@ -220,16 +220,16 @@ func (m *gaugeConfigModel) toAPI() (kbapi.GaugeNoESQL, diag.Diagnostics) {
 		api.Filters = &filters
 	}
 
-	if utils.IsKnown(m.Metric) {
-		if err := json.Unmarshal([]byte(m.Metric.ValueString()), &api.Metric); err != nil {
+	if utils.IsKnown(m.MetricJSON) {
+		if err := json.Unmarshal([]byte(m.MetricJSON.ValueString()), &api.Metric); err != nil {
 			diags.AddError("Failed to unmarshal metric", err.Error())
 			return api, diags
 		}
 	}
 
-	if utils.IsKnown(m.Shape) {
+	if utils.IsKnown(m.ShapeJSON) {
 		var shape kbapi.GaugeNoESQL_Shape
-		shapeDiags := m.Shape.Unmarshal(&shape)
+		shapeDiags := m.ShapeJSON.Unmarshal(&shape)
 		diags.Append(shapeDiags...)
 		if !shapeDiags.HasError() {
 			api.Shape = &shape

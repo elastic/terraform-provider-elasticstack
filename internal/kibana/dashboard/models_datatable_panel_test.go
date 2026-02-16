@@ -125,7 +125,7 @@ func Test_datatableNoESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 
 	assert.Equal(t, types.StringValue("Datatable NoESQL"), model.Title)
 	assert.Equal(t, types.StringValue("NoESQL description"), model.Description)
-	assert.False(t, model.Dataset.IsNull())
+	assert.False(t, model.DatasetJSON.IsNull())
 	assert.Equal(t, types.BoolValue(true), model.IgnoreGlobalFilters)
 	assert.Equal(t, types.Float64Value(0.5), model.Sampling)
 	require.NotNil(t, model.Query)
@@ -217,7 +217,7 @@ func Test_datatableESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 
 	assert.Equal(t, types.StringValue("Datatable ESQL"), model.Title)
 	assert.Equal(t, types.StringValue("ESQL description"), model.Description)
-	assert.False(t, model.Dataset.IsNull())
+	assert.False(t, model.DatasetJSON.IsNull())
 	assert.Equal(t, types.BoolValue(false), model.IgnoreGlobalFilters)
 	assert.Equal(t, types.Float64Value(1), model.Sampling)
 	assert.Len(t, model.Metrics, 1)
@@ -235,8 +235,8 @@ func Test_datatableESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 func Test_datatablePanelConfigConverter_roundTrip(t *testing.T) {
 	converter := newDatatablePanelConfigConverter()
 	configModel := &datatableNoESQLConfigModel{
-		Title:   types.StringValue("Round Trip"),
-		Dataset: jsontypes.NewNormalizedValue(`{"type":"dataView","id":"metrics-*"}`),
+		Title:       types.StringValue("Round Trip"),
+		DatasetJSON: jsontypes.NewNormalizedValue(`{"type":"dataView","id":"metrics-*"}`),
 		Density: &datatableDensityModel{
 			Mode: types.StringValue("default"),
 		},
@@ -245,7 +245,7 @@ func Test_datatablePanelConfigConverter_roundTrip(t *testing.T) {
 			Query:    types.StringValue(""),
 		},
 		Metrics: []datatableMetricModel{
-			{Config: jsontypes.NewNormalizedValue(`{"operation":"count"}`)},
+			{ConfigJSON: jsontypes.NewNormalizedValue(`{"operation":"count"}`)},
 		},
 	}
 
@@ -271,21 +271,21 @@ func Test_datatablePanelConfigConverter_roundTrip_ESQL(t *testing.T) {
 	esqlConfigModel := &datatableESQLConfigModel{
 		Title:               types.StringValue("Round Trip ESQL"),
 		Description:         types.StringValue("ESQL round-trip test"),
-		Dataset:             jsontypes.NewNormalizedValue(`{"type":"esql","query":"FROM metrics-* | KEEP host.name, system.cpu.user.pct | LIMIT 10"}`),
+		DatasetJSON:         jsontypes.NewNormalizedValue(`{"type":"esql","query":"FROM metrics-* | KEEP host.name, system.cpu.user.pct | LIMIT 10"}`),
 		Density:             &datatableDensityModel{Mode: types.StringValue("expanded")},
 		IgnoreGlobalFilters: types.BoolValue(false),
 		Sampling:            types.Float64Value(1),
 		Metrics: []datatableMetricModel{
-			{Config: jsontypes.NewNormalizedValue(`{"column":"system.cpu.user.pct","operation":"value","format":{"type":"number","decimals":2}}`)},
+			{ConfigJSON: jsontypes.NewNormalizedValue(`{"column":"system.cpu.user.pct","operation":"value","format":{"type":"number","decimals":2}}`)},
 		},
 		Rows: []datatableRowModel{
-			{Config: jsontypes.NewNormalizedValue(`{"column":"host.name","operation":"value","collapse_by":"avg"}`)},
+			{ConfigJSON: jsontypes.NewNormalizedValue(`{"column":"host.name","operation":"value","collapse_by":"avg"}`)},
 		},
 		SplitMetricsBy: []datatableSplitByModel{
-			{Config: jsontypes.NewNormalizedValue(`{"column":"host.name","operation":"value"}`)},
+			{ConfigJSON: jsontypes.NewNormalizedValue(`{"column":"host.name","operation":"value"}`)},
 		},
-		SortBy: jsontypes.NewNormalizedValue(`{"column_type":"metric","direction":"desc","index":0}`),
-		Paging: types.Int64Value(20),
+		SortByJSON: jsontypes.NewNormalizedValue(`{"column_type":"metric","direction":"desc","index":0}`),
+		Paging:     types.Int64Value(20),
 	}
 	panel := panelModel{
 		Type:            types.StringValue("lens"),
@@ -303,7 +303,7 @@ func Test_datatablePanelConfigConverter_roundTrip_ESQL(t *testing.T) {
 	require.NotNil(t, newPanel.DatatableConfig.ESQL)
 	assert.Equal(t, types.StringValue("Round Trip ESQL"), newPanel.DatatableConfig.ESQL.Title)
 	assert.Equal(t, types.StringValue("ESQL round-trip test"), newPanel.DatatableConfig.ESQL.Description)
-	assert.False(t, newPanel.DatatableConfig.ESQL.Dataset.IsNull())
+	assert.False(t, newPanel.DatatableConfig.ESQL.DatasetJSON.IsNull())
 	assert.Equal(t, types.Int64Value(20), newPanel.DatatableConfig.ESQL.Paging)
 	assert.Len(t, newPanel.DatatableConfig.ESQL.Metrics, 1)
 	assert.Len(t, newPanel.DatatableConfig.ESQL.Rows, 1)
