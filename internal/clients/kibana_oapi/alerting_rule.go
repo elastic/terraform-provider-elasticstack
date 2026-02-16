@@ -1,7 +1,6 @@
 package kibana_oapi
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -15,16 +14,11 @@ import (
 
 // CreateAlertingRule creates a new alerting rule using the Kibana API.
 func CreateAlertingRule(ctx context.Context, client *Client, spaceID string, rule models.AlertingRule) (*models.AlertingRule, diag.Diagnostics) {
-	body, err := buildCreateRequestBody(rule)
-	if err != nil {
-		return nil, diag.Diagnostics{diag.NewErrorDiagnostic("Unable to build create alerting rule request body", err.Error())}
-	}
-
-	resp, err := client.API.PostAlertingRuleIdWithBodyWithResponse(
+	body := buildCreateRequestBody(rule)
+	resp, err := client.API.PostAlertingRuleIdWithResponse(
 		ctx,
 		rule.RuleID,
-		"application/json",
-		bytes.NewReader(body),
+		body,
 		SpaceAwarePathRequestEditor(spaceID),
 	)
 	if err != nil {
@@ -361,92 +355,227 @@ func ConvertResponseToModel(spaceID string, resp any) (*models.AlertingRule, dia
 	}, nil
 }
 
-// buildCreateRequestBody builds a JSON payload from models.AlertingRule.
-// Unlike buildUpdateRequestBody (which uses the typed PutAlertingRuleIdJSONRequestBody),
-// the create path uses a raw map because the generated POST params type was
-// changed to map[string]interface{} to support provider-side validation against
-// concrete generated models. This asymmetry is intentional.
-func buildCreateRequestBody(rule models.AlertingRule) ([]byte, error) {
-	body := map[string]interface{}{
-		"consumer":     rule.Consumer,
-		"name":         rule.Name,
-		"rule_type_id": rule.RuleTypeID,
-		"schedule": map[string]interface{}{
-			"interval": rule.Schedule.Interval,
+func buildCreateRequestBody(rule models.AlertingRule) kbapi.PostAlertingRuleIdJSONRequestBody {
+	body := kbapi.PostAlertingRuleIdJSONRequestBody{
+		Consumer:   rule.Consumer,
+		Name:       rule.Name,
+		RuleTypeId: rule.RuleTypeID,
+		Schedule: struct {
+			Interval string `json:"interval"`
+		}{
+			Interval: rule.Schedule.Interval,
 		},
 	}
 
+	// Params
 	if rule.Params != nil {
-		body["params"] = rule.Params
-	}
-	if rule.Enabled != nil {
-		body["enabled"] = *rule.Enabled
-	}
-	if rule.NotifyWhen != nil && *rule.NotifyWhen != "" {
-		body["notify_when"] = *rule.NotifyWhen
-	}
-	if rule.Throttle != nil {
-		body["throttle"] = *rule.Throttle
-	}
-	if rule.Tags != nil {
-		body["tags"] = rule.Tags
-	}
-	if rule.AlertDelay != nil {
-		body["alert_delay"] = map[string]interface{}{"active": *rule.AlertDelay}
+		params := kbapi.PostAlertingRuleIdJSONBody_Params{
+			AdditionalProperties: rule.Params,
+		}
+		body.Params = &params
 	}
 
+	// Enabled
+	if rule.Enabled != nil {
+		body.Enabled = rule.Enabled
+	}
+
+	// NotifyWhen
+	if rule.NotifyWhen != nil && *rule.NotifyWhen != "" {
+		notifyWhen := kbapi.PostAlertingRuleIdJSONBodyNotifyWhen(*rule.NotifyWhen)
+		body.NotifyWhen = &notifyWhen
+	}
+
+	// Throttle
+	if rule.Throttle != nil {
+		body.Throttle = rule.Throttle
+	}
+
+	// Tags
+	if rule.Tags != nil {
+		tags := rule.Tags
+		body.Tags = &tags
+	}
+
+	// AlertDelay
+	if rule.AlertDelay != nil {
+		body.AlertDelay = &struct {
+			Active float32 `json:"active"`
+		}{
+			Active: *rule.AlertDelay,
+		}
+	}
+
+	// Actions - build them manually to ensure correct types
 	if len(rule.Actions) > 0 {
-		actions := make([]map[string]interface{}, 0, len(rule.Actions))
-		for _, action := range rule.Actions {
-			actionBody := map[string]interface{}{
-				"id": action.ID,
-			}
+		actions := make([]struct {
+			// AlertsFilter Conditions that affect whether the action runs. If you specify multiple conditions, all conditions must be met for the action to run. For example, if an alert occurs within the specified time frame and matches the query, the action runs.
+			AlertsFilter *struct {
+				Query *struct {
+					// Dsl A filter written in Elasticsearch Query Domain Specific Language (DSL).
+					Dsl *string `json:"dsl,omitempty"`
+
+					// Filters A filter written in Elasticsearch Query Domain Specific Language (DSL) as defined in the `kbn-es-query` package.
+					Filters []struct {
+						State *struct {
+							// Store A filter can be either specific to an application context or applied globally.
+							Store kbapi.PostAlertingRuleIdJSONBodyActionsAlertsFilterQueryFiltersStateStore `json:"store"`
+						} `json:"$state,omitempty"`
+						Meta  map[string]interface{}  `json:"meta"`
+						Query *map[string]interface{} `json:"query,omitempty"`
+					} `json:"filters"`
+
+					// Kql A filter written in Kibana Query Language (KQL).
+					Kql string `json:"kql"`
+				} `json:"query,omitempty"`
+
+				// Timeframe Defines a period that limits whether the action runs.
+				Timeframe *struct {
+					// Days Defines the days of the week that the action can run, represented as an array of numbers. For example, `1` represents Monday. An empty array is equivalent to specifying all the days of the week.
+					Days []kbapi.PostAlertingRuleIdJSONBodyActionsAlertsFilterTimeframeDays `json:"days"`
+
+					// Hours Defines the range of time in a day that the action can run. If the `start` value is `00:00` and the `end` value is `24:00`, actions be generated all day.
+					Hours struct {
+						// End The end of the time frame in 24-hour notation (`hh:mm`).
+						End string `json:"end"`
+
+						// Start The start of the time frame in 24-hour notation (`hh:mm`).
+						Start string `json:"start"`
+					} `json:"hours"`
+
+					// Timezone The ISO time zone for the `hours` values. Values such as `UTC` and `UTC+1` also work but lack built-in daylight savings time support and are not recommended.
+					Timezone string `json:"timezone"`
+				} `json:"timeframe,omitempty"`
+			} `json:"alerts_filter,omitempty"`
+			Frequency *struct {
+				// NotifyWhen Indicates how often alerts generate actions. Valid values include: `onActionGroupChange`: Actions run when the alert status changes; `onActiveAlert`: Actions run when the alert becomes active and at each check interval while the rule conditions are met; `onThrottleInterval`: Actions run when the alert becomes active and at the interval specified in the throttle property while the rule conditions are met. NOTE: You cannot specify `notify_when` at both the rule and action level. The recommended method is to set it for each action. If you set it at the rule level then update the rule in Kibana, it is automatically changed to use action-specific values.
+				NotifyWhen kbapi.PostAlertingRuleIdJSONBodyActionsFrequencyNotifyWhen `json:"notify_when"`
+
+				// Summary Indicates whether the action is a summary.
+				Summary bool `json:"summary"`
+
+				// Throttle The throttle interval, which defines how often an alert generates repeated actions. It is specified in seconds, minutes, hours, or days and is applicable only if `notify_when` is set to `onThrottleInterval`. NOTE: You cannot specify the throttle interval at both the rule and action level. The recommended method is to set it for each action. If you set it at the rule level then update the rule in Kibana, it is automatically changed to use action-specific values.
+				Throttle *string `json:"throttle,omitempty"`
+			} `json:"frequency,omitempty"`
+
+			// Group The group name, which affects when the action runs (for example, when the threshold is met or when the alert is recovered). Each rule type has a list of valid action group names. If you don't need to group actions, set to `default`.
+			Group *string `json:"group,omitempty"`
+
+			// Id The identifier for the connector saved object.
+			Id string `json:"id"`
+
+			// Params The parameters for the action, which are sent to the connector. The `params` are handled as Mustache templates and passed a default set of context.
+			Params *map[string]interface{} `json:"params,omitempty"`
+
+			// UseAlertDataForTemplate Indicates whether to use alert data as a template.
+			UseAlertDataForTemplate *bool `json:"use_alert_data_for_template,omitempty"`
+
+			// Uuid A universally unique identifier (UUID) for the action.
+			Uuid *string `json:"uuid,omitempty"`
+		}, len(rule.Actions))
+
+		for i, action := range rule.Actions {
+			actions[i].Id = action.ID
 			if action.Group != "" {
-				actionBody["group"] = action.Group
+				group := action.Group
+				actions[i].Group = &group
 			}
 			if action.Params != nil {
-				actionBody["params"] = action.Params
+				actions[i].Params = &action.Params
 			}
+
 			if action.Frequency != nil {
-				frequency := map[string]interface{}{
-					"notify_when": action.Frequency.NotifyWhen,
-					"summary":     action.Frequency.Summary,
+				actions[i].Frequency = &struct {
+					NotifyWhen kbapi.PostAlertingRuleIdJSONBodyActionsFrequencyNotifyWhen `json:"notify_when"`
+					Summary    bool                                                       `json:"summary"`
+					Throttle   *string                                                    `json:"throttle,omitempty"`
+				}{
+					NotifyWhen: kbapi.PostAlertingRuleIdJSONBodyActionsFrequencyNotifyWhen(action.Frequency.NotifyWhen),
+					Summary:    action.Frequency.Summary,
+					Throttle:   action.Frequency.Throttle,
 				}
-				if action.Frequency.Throttle != nil {
-					frequency["throttle"] = *action.Frequency.Throttle
-				}
-				actionBody["frequency"] = frequency
 			}
+
 			if action.AlertsFilter != nil {
-				filter := map[string]interface{}{}
+				filter := &struct {
+					Query *struct {
+						Dsl     *string `json:"dsl,omitempty"`
+						Filters []struct {
+							State *struct {
+								Store kbapi.PostAlertingRuleIdJSONBodyActionsAlertsFilterQueryFiltersStateStore `json:"store"`
+							} `json:"$state,omitempty"`
+							Meta  map[string]interface{}  `json:"meta"`
+							Query *map[string]interface{} `json:"query,omitempty"`
+						} `json:"filters"`
+						Kql string `json:"kql"`
+					} `json:"query,omitempty"`
+					Timeframe *struct {
+						Days  []kbapi.PostAlertingRuleIdJSONBodyActionsAlertsFilterTimeframeDays `json:"days"`
+						Hours struct {
+							End   string `json:"end"`
+							Start string `json:"start"`
+						} `json:"hours"`
+						Timezone string `json:"timezone"`
+					} `json:"timeframe,omitempty"`
+				}{}
+
 				if action.AlertsFilter.Kql != nil {
-					filter["query"] = map[string]interface{}{
-						"kql":     *action.AlertsFilter.Kql,
-						"filters": []interface{}{},
+					filter.Query = &struct {
+						Dsl     *string `json:"dsl,omitempty"`
+						Filters []struct {
+							State *struct {
+								Store kbapi.PostAlertingRuleIdJSONBodyActionsAlertsFilterQueryFiltersStateStore `json:"store"`
+							} `json:"$state,omitempty"`
+							Meta  map[string]interface{}  `json:"meta"`
+							Query *map[string]interface{} `json:"query,omitempty"`
+						} `json:"filters"`
+						Kql string `json:"kql"`
+					}{
+						Kql: *action.AlertsFilter.Kql,
+						Filters: []struct {
+							State *struct {
+								Store kbapi.PostAlertingRuleIdJSONBodyActionsAlertsFilterQueryFiltersStateStore `json:"store"`
+							} `json:"$state,omitempty"`
+							Meta  map[string]interface{}  `json:"meta"`
+							Query *map[string]interface{} `json:"query,omitempty"`
+						}{},
 					}
 				}
+
 				if action.AlertsFilter.Timeframe != nil {
-					days := make([]int32, len(action.AlertsFilter.Timeframe.Days))
-					copy(days, action.AlertsFilter.Timeframe.Days)
-					filter["timeframe"] = map[string]interface{}{
-						"days": days,
-						"hours": map[string]interface{}{
-							"start": action.AlertsFilter.Timeframe.HoursStart,
-							"end":   action.AlertsFilter.Timeframe.HoursEnd,
+					days := make([]kbapi.PostAlertingRuleIdJSONBodyActionsAlertsFilterTimeframeDays, len(action.AlertsFilter.Timeframe.Days))
+					for j, d := range action.AlertsFilter.Timeframe.Days {
+						days[j] = kbapi.PostAlertingRuleIdJSONBodyActionsAlertsFilterTimeframeDays(d)
+					}
+
+					filter.Timeframe = &struct {
+						Days  []kbapi.PostAlertingRuleIdJSONBodyActionsAlertsFilterTimeframeDays `json:"days"`
+						Hours struct {
+							End   string `json:"end"`
+							Start string `json:"start"`
+						} `json:"hours"`
+						Timezone string `json:"timezone"`
+					}{
+						Days: days,
+						Hours: struct {
+							End   string `json:"end"`
+							Start string `json:"start"`
+						}{
+							Start: action.AlertsFilter.Timeframe.HoursStart,
+							End:   action.AlertsFilter.Timeframe.HoursEnd,
 						},
-						"timezone": action.AlertsFilter.Timeframe.Timezone,
+						Timezone: action.AlertsFilter.Timeframe.Timezone,
 					}
 				}
-				if len(filter) > 0 {
-					actionBody["alerts_filter"] = filter
-				}
+
+				actions[i].AlertsFilter = filter
 			}
-			actions = append(actions, actionBody)
 		}
-		body["actions"] = actions
+
+		body.Actions = &actions
 	}
 
-	return json.Marshal(body)
+	return body
 }
 
 // buildUpdateRequestBody builds a PutAlertingRuleIdJSONRequestBody from models.AlertingRule

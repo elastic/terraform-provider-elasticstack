@@ -163,7 +163,7 @@ func validateRuleParams(ruleTypeID string, params map[string]interface{}) []stri
 		decoder := json.NewDecoder(bytes.NewReader(validationRaw))
 		decoder.DisallowUnknownFields()
 		if err := decoder.Decode(target); err != nil {
-			best.consider(false, []string{fmt.Sprintf("extra param detected in params field for rule type %q: %v", ruleTypeID, err)})
+			best.consider(false, fmt.Sprintf("extra param detected in params field for rule type %q: %v", ruleTypeID, err))
 			continue
 		}
 
@@ -172,35 +172,35 @@ func validateRuleParams(ruleTypeID string, params map[string]interface{}) []stri
 			return nil
 		}
 
-		candidateErrs := []string{fmt.Sprintf("missing required params keys for rule type %q: %s", ruleTypeID, strings.Join(missingKeys, ", "))}
-		best.consider(true, candidateErrs)
+		best.consider(true, fmt.Sprintf("missing required params keys for rule type %q: %s", ruleTypeID, strings.Join(missingKeys, ", ")))
 	}
 
-	return best.errs
+	if !best.hasValue || best.err == "" {
+		return nil
+	}
+
+	return []string{best.err}
 }
 
 type validationCandidate struct {
 	hasValue bool
 	decoded  bool
-	errs     []string
+	err      string
 }
 
-func (c *validationCandidate) consider(decoded bool, errs []string) {
-	if !c.hasValue || betterValidationCandidate(decoded, errs, c.decoded, c.errs) {
+func (c *validationCandidate) consider(decoded bool, err string) {
+	if !c.hasValue || betterValidationCandidate(decoded, err, c.decoded, c.err) {
 		c.hasValue = true
 		c.decoded = decoded
-		c.errs = errs
+		c.err = err
 	}
 }
 
-func betterValidationCandidate(decoded bool, errs []string, currentDecoded bool, currentErrs []string) bool {
+func betterValidationCandidate(decoded bool, err string, currentDecoded bool, currentErr string) bool {
 	if decoded != currentDecoded {
 		// Prefer candidates that decoded successfully so key-level diagnostics
 		// are surfaced over generic schema-mismatch decode errors.
 		return decoded
-	}
-	if len(errs) != len(currentErrs) {
-		return len(errs) < len(currentErrs)
 	}
 	// Keep stable variant order for deterministic tie-breaking.
 	return false

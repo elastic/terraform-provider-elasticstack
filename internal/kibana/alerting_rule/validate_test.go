@@ -242,27 +242,27 @@ func TestValidateRuleParamsIndexThresholdRejectsSourceFields(t *testing.T) {
 
 func TestValidationCandidatePrefersDecodedOverDecodeFailure(t *testing.T) {
 	candidate := validationCandidate{}
-	candidate.consider(false, []string{"params do not match expected generated schema: bad type"})
-	candidate.consider(true, []string{"missing required params keys: query"})
+	candidate.consider(false, "params do not match expected generated schema: bad type")
+	candidate.consider(true, "missing required params keys: query")
 
-	if len(candidate.errs) != 1 {
-		t.Fatalf("expected single decoded error to win, got: %v", candidate.errs)
+	if candidate.err == "" {
+		t.Fatalf("expected a selected error to win, got empty")
 	}
-	if candidate.errs[0] != "missing required params keys: query" {
-		t.Fatalf("expected decoded candidate to be selected, got: %v", candidate.errs)
+	if candidate.err != "missing required params keys: query" {
+		t.Fatalf("expected decoded candidate to be selected, got: %v", candidate.err)
 	}
 }
 
 func TestValidationCandidateKeepsStableOrderOnTie(t *testing.T) {
 	candidate := validationCandidate{}
-	candidate.consider(true, []string{"missing required params keys: a"})
-	candidate.consider(true, []string{"missing required params keys: b"})
+	candidate.consider(true, "missing required params keys: a")
+	candidate.consider(true, "missing required params keys: b")
 
-	if len(candidate.errs) != 1 {
-		t.Fatalf("expected one error, got: %v", candidate.errs)
+	if candidate.err == "" {
+		t.Fatalf("expected one error, got empty")
 	}
-	if candidate.errs[0] != "missing required params keys: a" {
-		t.Fatalf("expected first candidate to win tie, got: %v", candidate.errs)
+	if candidate.err != "missing required params keys: a" {
+		t.Fatalf("expected first candidate to win tie, got: %v", candidate.err)
 	}
 }
 

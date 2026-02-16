@@ -244,6 +244,73 @@ func TestAccResourceAlertingRule(t *testing.T) {
 	})
 }
 
+func TestAccResourceAlertingRuleParamsLifecycle(t *testing.T) {
+	minSupportedVersion := version.Must(version.NewSemver("7.14.0"))
+
+	t.Setenv("KIBANA_API_KEY", "")
+
+	ruleName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceAlertingRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_explicit"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(ruleName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "name", ruleName),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_id", "ff33ce2d-9fc4-5131-a350-b5bd6482799f"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_type_id", ".index-threshold"),
+					testCheckAlertingRuleAPIParamStringEquals("elasticstack_kibana_alerting_rule.test_rule", "filterKuery", "host.name: *"),
+					testCheckAlertingRuleAPIParamStringEquals("elasticstack_kibana_alerting_rule.test_rule", "aggType", "avg"),
+					testCheckAlertingRuleAPIParamStringEquals("elasticstack_kibana_alerting_rule.test_rule", "aggField", "version"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("remove_filter_kuery"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(ruleName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					testCheckAlertingRuleAPIParamAbsentOrEmpty("elasticstack_kibana_alerting_rule.test_rule", "filterKuery"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("remove_aggtype"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(ruleName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					// When aggType/aggField are removed from config, Kibana should revert to its defaults.
+					testCheckAlertingRuleAPIParamStringEquals("elasticstack_kibana_alerting_rule.test_rule", "aggType", "count"),
+					testCheckAlertingRuleAPIParamAbsentOrEmpty("elasticstack_kibana_alerting_rule.test_rule", "aggField"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("add_aggtype"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(ruleName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					testCheckAlertingRuleAPIParamStringEquals("elasticstack_kibana_alerting_rule.test_rule", "aggType", "avg"),
+					testCheckAlertingRuleAPIParamStringEquals("elasticstack_kibana_alerting_rule.test_rule", "aggField", "version"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccResourceAlertingRuleEnabledFalseOnCreate(t *testing.T) {
 	minSupportedVersion := version.Must(version.NewSemver("7.14.0"))
 
@@ -359,4 +426,69 @@ func checkResourceAlertingRuleDestroy(s *terraform.State) error {
 		}
 	}
 	return nil
+}
+
+func testCheckAlertingRuleAPIParams(resourceName string, check func(params map[string]interface{}) error) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceName]
+		if !ok {
+			return fmt.Errorf("resource %q not found in state", resourceName)
+		}
+
+		compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
+
+		client, err := clients.NewAcceptanceTestingClient()
+		if err != nil {
+			return err
+		}
+
+		oapiClient, err := client.GetKibanaOapiClient()
+		if err != nil {
+			return err
+		}
+
+		rule, diags := kibana_oapi.GetAlertingRule(context.Background(), oapiClient, compId.ClusterId, compId.ResourceId)
+		if diags.HasError() {
+			return fmt.Errorf("failed to get alerting rule: %v", diags)
+		}
+		if rule == nil {
+			return fmt.Errorf("alerting rule (%s) not found", compId.ResourceId)
+		}
+
+		params := rule.Params
+		if params == nil {
+			params = map[string]interface{}{}
+		}
+		return check(params)
+	}
+}
+
+func testCheckAlertingRuleAPIParamStringEquals(resourceName, key, expected string) resource.TestCheckFunc {
+	return testCheckAlertingRuleAPIParams(resourceName, func(params map[string]interface{}) error {
+		v, ok := params[key]
+		if !ok {
+			return fmt.Errorf("expected Kibana params to contain %q, but it was absent (params=%v)", key, params)
+		}
+		s, ok := v.(string)
+		if !ok {
+			return fmt.Errorf("expected Kibana params %q to be a string, got %T (%v)", key, v, v)
+		}
+		if s != expected {
+			return fmt.Errorf("expected Kibana params %q to equal %q, got %q", key, expected, s)
+		}
+		return nil
+	})
+}
+
+func testCheckAlertingRuleAPIParamAbsentOrEmpty(resourceName, key string) resource.TestCheckFunc {
+	return testCheckAlertingRuleAPIParams(resourceName, func(params map[string]interface{}) error {
+		v, ok := params[key]
+		if !ok {
+			return nil
+		}
+		if s, ok := v.(string); ok && s == "" {
+			return nil
+		}
+		return fmt.Errorf("expected Kibana params %q to be absent (or empty string), got %T (%v)", key, v, v)
+	})
 }

@@ -13,7 +13,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 // alertingRuleModel is the Terraform model for an alerting rule.
@@ -96,7 +95,11 @@ func (m *alertingRuleModel) populateFromAPI(ctx context.Context, rule *models.Al
 	}
 
 	// Params as JSON string
-	normalizedParams := normalizeRuleParamsForState(ctx, rule.Params, previousParams)
+	normalizedParams, d := normalizeRuleParamsForState(ctx, rule.Params, previousParams)
+	diags.Append(d...)
+	if diags.HasError() {
+		return diags
+	}
 	paramsJSON, err := json.Marshal(normalizedParams)
 	if err != nil {
 		diags.AddError("Failed to marshal params", err.Error())
@@ -169,44 +172,49 @@ func (m *alertingRuleModel) populateFromAPI(ctx context.Context, rule *models.Al
 // Terraform sees the extra keys as drift and produces "inconsistent result
 // after apply" errors. The approach is generic: any key present in the API
 // response but absent from the user's prior state params is removed.
-func normalizeRuleParamsForState(ctx context.Context, apiParams map[string]interface{}, previousParams jsontypes.Normalized) map[string]interface{} {
+func normalizeRuleParamsForState(ctx context.Context, apiParams map[string]interface{}, previousParams jsontypes.Normalized) (map[string]interface{}, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
 	if apiParams == nil {
-		return apiParams
+		return apiParams, diags
 	}
 
-	priorParams := parsePriorParams(ctx, previousParams)
+	priorParams, d := parsePriorParams(previousParams)
+	diags.Append(d...)
+	if diags.HasError() {
+		return apiParams, diags
+	}
 	if priorParams == nil {
 		// No prior state to compare against (first create); keep everything.
-		return apiParams
+		return apiParams, diags
 	}
 
 	normalized, ok := removeInjectedDefaultsRecursive(apiParams, priorParams).(map[string]interface{})
 	if !ok {
 		// Defensive fallback: params are expected to be a JSON object, but if we
 		// can't reconcile shapes, keep everything to avoid accidental data loss.
-		return apiParams
+		return apiParams, diags
 	}
 
-	return normalized
+	return normalized, diags
 }
 
 // parsePriorParams returns the decoded params JSON from the previous Terraform
 // state, or nil if there is no usable prior state.
-func parsePriorParams(ctx context.Context, previousParams jsontypes.Normalized) map[string]interface{} {
+func parsePriorParams(previousParams jsontypes.Normalized) (map[string]interface{}, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
 	if !utils.IsKnown(previousParams) || previousParams.IsNull() {
-		return nil
+		return nil, diags
 	}
 
 	var prior map[string]interface{}
-	if err := json.Unmarshal([]byte(previousParams.ValueString()), &prior); err != nil {
-		tflog.Debug(ctx, "json.Unmarshal into prior failed for previousParams.ValueString(); returning nil prior params (safe fallback keeps all API params)", map[string]any{
-			"error":                   err,
-			"previousParamsRawString": previousParams.ValueString(),
-		})
-		return nil
+	diags.Append(previousParams.Unmarshal(&prior)...)
+	if diags.HasError() {
+		return nil, diags
 	}
 
-	return prior
+	return prior, diags
 }
 
 // removeInjectedDefaultsRecursive removes API-injected keys at any nesting level.
@@ -350,8 +358,8 @@ func (m alertingRuleModel) toAPIModel(ctx context.Context, serverVersion *versio
 	// duplicate error messages.
 	if utils.IsKnown(m.Params) {
 		params := map[string]interface{}{}
-		if err := json.Unmarshal([]byte(m.Params.ValueString()), &params); err != nil {
-			diags.AddError("Failed to unmarshal params", err.Error())
+		diags.Append(m.Params.Unmarshal(&params)...)
+		if diags.HasError() {
 			return models.AlertingRule{}, diags
 		}
 
