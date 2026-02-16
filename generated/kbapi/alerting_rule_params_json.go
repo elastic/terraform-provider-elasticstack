@@ -5,6 +5,17 @@ import (
 	"fmt"
 )
 
+// NOTE: This file is hand-maintained.
+//
+// The Kibana API types in this package are generated via `generated/kbapi/Makefile`
+// using `oapi-codegen`. Some generated wrapper types (notably oneOf +
+// AdditionalProperties unions) require custom JSON marshalling to preserve
+// free-form object payloads. Keeping this file in the `kbapi` package ensures
+// the methods attach to the generated types without modifying generated output.
+//
+// The current codegen workflow does not wipe this directory; it generates into
+// a fixed output file configured by `oapi-config.yaml`.
+//
 // PostAlertingRuleIdJSONBody_Params is generated as a wrapper type to support
 // oneOf/AdditionalProperties. The generated struct does not include custom JSON
 // marshalling, which would otherwise cause params to always serialize as `{}`.

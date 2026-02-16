@@ -3,6 +3,7 @@ package alerting_rule_test
 import (
 	"context"
 	_ "embed"
+	"encoding/json"
 	"fmt"
 	"testing"
 
@@ -269,6 +270,7 @@ func TestAccResourceAlertingRuleParamsLifecycle(t *testing.T) {
 					testCheckAlertingRuleAPIParamStringEquals("elasticstack_kibana_alerting_rule.test_rule", "filterKuery", "host.name: *"),
 					testCheckAlertingRuleAPIParamStringEquals("elasticstack_kibana_alerting_rule.test_rule", "aggType", "avg"),
 					testCheckAlertingRuleAPIParamStringEquals("elasticstack_kibana_alerting_rule.test_rule", "aggField", "version"),
+					testCheckAlertingRuleStateParamsMissingKeys("elasticstack_kibana_alerting_rule.test_rule", "groupBy"),
 				),
 			},
 			{
@@ -490,5 +492,20 @@ func testCheckAlertingRuleAPIParamAbsentOrEmpty(resourceName, key string) resour
 			return nil
 		}
 		return fmt.Errorf("expected Kibana params %q to be absent (or empty string), got %T (%v)", key, v, v)
+	})
+}
+
+func testCheckAlertingRuleStateParamsMissingKeys(resourceName string, keys ...string) resource.TestCheckFunc {
+	return resource.TestCheckResourceAttrWith(resourceName, "params", func(value string) error {
+		var params map[string]interface{}
+		if err := json.Unmarshal([]byte(value), &params); err != nil {
+			return fmt.Errorf("failed to unmarshal Terraform state params: %w", err)
+		}
+		for _, key := range keys {
+			if _, exists := params[key]; exists {
+				return fmt.Errorf("expected Terraform state params to omit key %q (API-injected default), but it was present (params=%v)", key, params)
+			}
+		}
+		return nil
 	})
 }

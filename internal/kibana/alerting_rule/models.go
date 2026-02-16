@@ -222,6 +222,11 @@ func parsePriorParams(previousParams jsontypes.Normalized) (map[string]interface
 // It walks the API params structure and removes keys that are present in the API
 // payload but absent from the corresponding object in the prior state params.
 //
+// NOTE: This function assumes the prior state params represent what the user
+// configured (i.e. prior-state keys are a subset of configured keys). It only
+// iterates keys present in the API payload; therefore, keys present in the prior
+// state but missing from the API response will not be preserved in the output.
+//
 //   - For JSON objects (map[string]interface{}), keys not present in the prior
 //     object are dropped, and shared keys are recursed into.
 //   - For JSON arrays ([]interface{}), elements are matched by index when the prior

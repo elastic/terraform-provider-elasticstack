@@ -1,6 +1,9 @@
 package alerting_rule
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
 	"strings"
 	"testing"
 )
@@ -238,6 +241,61 @@ func TestValidateRuleParamsIndexThresholdRejectsSourceFields(t *testing.T) {
 	if !strings.Contains(strings.Join(errs, "; "), "json: unknown field \"sourceFields\"") {
 		t.Fatalf("expected sourceFields unexpected key error, got: %v", errs)
 	}
+}
+
+func TestAllParamsSpecsInitialize(t *testing.T) {
+	for ruleType, specs := range ruleTypeParamsSpecs {
+		for _, spec := range specs {
+			if spec.requiredKeys == nil {
+				t.Errorf("spec %q for rule type %q has nil requiredKeys", spec.name, ruleType)
+			}
+		}
+	}
+}
+
+func TestAllowedKeyOverridesAreNotInSchema(t *testing.T) {
+	for ruleType, allowlistedKeys := range ruleTypeAdditionalAllowedParamsKeys {
+		specs, ok := ruleTypeParamsSpecs[ruleType]
+		if !ok || len(specs) == 0 {
+			t.Fatalf("rule type %q has allowlisted keys but no params specs", ruleType)
+		}
+
+		for _, key := range allowlistedKeys {
+			if paramsSchemaAcceptsKey(specs, key) {
+				t.Errorf("rule type %q allowlists key %q, but the generated params schema now accepts it; remove it from ruleTypeAdditionalAllowedParamsKeys", ruleType, key)
+			}
+		}
+	}
+}
+
+func paramsSchemaAcceptsKey(specs []paramsSchemaSpec, key string) bool {
+	raw, err := json.Marshal(map[string]interface{}{key: nil})
+	if err != nil {
+		// This should never fail for a simple map + nil value.
+		return true
+	}
+
+	for _, spec := range specs {
+		target := spec.newTarget()
+		decoder := json.NewDecoder(bytes.NewReader(raw))
+		decoder.DisallowUnknownFields()
+		err := decoder.Decode(target)
+		if err == nil {
+			return true
+		}
+
+		// If the schema does not support this key, DisallowUnknownFields yields
+		// a stable error message containing `unknown field "<key>"`.
+		if strings.Contains(err.Error(), fmt.Sprintf("unknown field %q", key)) {
+			continue
+		}
+
+		// Any other error implies the key was recognized (e.g. type mismatch
+		// because we used `null`), so this key is part of the generated schema.
+		return true
+	}
+
+	return false
 }
 
 func TestValidationCandidatePrefersDecodedOverDecodeFailure(t *testing.T) {

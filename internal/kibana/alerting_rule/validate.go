@@ -157,7 +157,10 @@ func validateRuleParams(ruleTypeID string, params map[string]interface{}) []stri
 	}
 
 	var best validationCandidate
-	validationRaw := stripKeys(raw, ruleTypeAdditionalAllowedParamsKeys[ruleTypeID])
+	validationRaw, err := stripKeys(raw, ruleTypeAdditionalAllowedParamsKeys[ruleTypeID])
+	if err != nil {
+		return []string{fmt.Sprintf("failed to pre-process params for validation: %v", err)}
+	}
 	for _, spec := range specs {
 		target := spec.newTarget()
 		decoder := json.NewDecoder(bytes.NewReader(validationRaw))
@@ -189,14 +192,14 @@ type validationCandidate struct {
 }
 
 func (c *validationCandidate) consider(decoded bool, err string) {
-	if !c.hasValue || betterValidationCandidate(decoded, err, c.decoded, c.err) {
+	if !c.hasValue || betterValidationCandidate(decoded, c.decoded) {
 		c.hasValue = true
 		c.decoded = decoded
 		c.err = err
 	}
 }
 
-func betterValidationCandidate(decoded bool, err string, currentDecoded bool, currentErr string) bool {
+func betterValidationCandidate(decoded bool, currentDecoded bool) bool {
 	if decoded != currentDecoded {
 		// Prefer candidates that decoded successfully so key-level diagnostics
 		// are surfaced over generic schema-mismatch decode errors.
@@ -258,14 +261,14 @@ func computeRequiredKeys(target interface{}) (map[string]struct{}, error) {
 	return requiredKeys, nil
 }
 
-func stripKeys(raw []byte, keys []string) []byte {
+func stripKeys(raw []byte, keys []string) ([]byte, error) {
 	if len(keys) == 0 {
-		return raw
+		return raw, nil
 	}
 
 	var values map[string]json.RawMessage
 	if err := json.Unmarshal(raw, &values); err != nil {
-		return raw
+		return nil, fmt.Errorf("json.Unmarshal: %w", err)
 	}
 
 	for _, key := range keys {
@@ -274,10 +277,10 @@ func stripKeys(raw []byte, keys []string) []byte {
 
 	stripped, err := json.Marshal(values)
 	if err != nil {
-		return raw
+		return nil, fmt.Errorf("json.Marshal: %w", err)
 	}
 
-	return stripped
+	return stripped, nil
 }
 
 func formatParamsValidationErrors(errs []string) string {
