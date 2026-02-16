@@ -48,35 +48,47 @@ resource "elasticstack_kibana_dashboard" "test" {
         {
           type = "line"
           data_layer = {
-            ignore_global_filters = true
-            sampling              = 0.5
+            ignore_global_filters = false
+            sampling              = 1
             dataset = jsonencode({
-              type = "dataView"
-              id   = "metrics-*"
+              type  = "esql"
+              query = "FROM metrics-* | KEEP @timestamp, host.name, system.cpu.user.pct | LIMIT 10"
             })
             x = jsonencode({
-              operation               = "date_histogram"
-              field                   = "@timestamp"
-              drop_partial_intervals  = false
-              include_empty_rows      = true
-              suggested_interval      = "auto"
-              use_original_time_range = false
+              operation = "value"
+              column    = "@timestamp"
             })
             breakdown_by = jsonencode({
-              operation = "terms"
-              fields    = ["host.name"]
-              size      = 5
-              rank_by = {
-                direction = "desc"
-                metric    = 0
-                type      = "column"
+              operation   = "value"
+              column      = "host.name"
+              collapse_by = "avg"
+              color = {
+                mode    = "categorical"
+                palette = "default"
+                mapping = [
+                  {
+                    color = {
+                      type  = "colorCode"
+                      value = "#54B399"
+                    }
+                    values = ["host-a"]
+                  }
+                ]
+                unassignedColor = {
+                  type  = "colorCode"
+                  value = "#D3DAE6"
+                }
               }
             })
             y = [
               {
                 config = jsonencode({
-                  operation     = "count"
-                  empty_as_null = true
+                  operation = "value"
+                  column    = "system.cpu.user.pct"
+                  color = {
+                    type  = "static"
+                    color = "#54B399"
+                  }
                 })
               }
             ]
