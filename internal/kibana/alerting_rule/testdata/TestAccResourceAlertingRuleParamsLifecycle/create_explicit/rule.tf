@@ -15,7 +15,6 @@ resource "elasticstack_kibana_alerting_rule" "test_rule" {
   params = jsonencode({
     aggType             = "avg"
     aggField            = "version"
-    filterKuery         = "host.name: *"
     timeWindowSize      = 10
     timeWindowUnit      = "s"
     threshold           = [10]

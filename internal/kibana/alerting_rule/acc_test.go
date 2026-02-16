@@ -267,21 +267,9 @@ func TestAccResourceAlertingRuleParamsLifecycle(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "name", ruleName),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_id", "ff33ce2d-9fc4-5131-a350-b5bd6482799f"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_type_id", ".index-threshold"),
-					testCheckAlertingRuleAPIParamStringEquals("elasticstack_kibana_alerting_rule.test_rule", "filterKuery", "host.name: *"),
 					testCheckAlertingRuleAPIParamStringEquals("elasticstack_kibana_alerting_rule.test_rule", "aggType", "avg"),
 					testCheckAlertingRuleAPIParamStringEquals("elasticstack_kibana_alerting_rule.test_rule", "aggField", "version"),
 					testCheckAlertingRuleStateParamsMissingKeys("elasticstack_kibana_alerting_rule.test_rule", "groupBy"),
-				),
-			},
-			{
-				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("remove_filter_kuery"),
-				ConfigVariables: config.Variables{
-					"name": config.StringVariable(ruleName),
-				},
-				Check: resource.ComposeTestCheckFunc(
-					testCheckAlertingRuleAPIParamAbsentOrEmpty("elasticstack_kibana_alerting_rule.test_rule", "filterKuery"),
 				),
 			},
 			{

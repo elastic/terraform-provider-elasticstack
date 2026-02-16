@@ -368,12 +368,6 @@ func (m alertingRuleModel) toAPIModel(ctx context.Context, serverVersion *versio
 			return models.AlertingRule{}, diags
 		}
 
-		// Compatibility: Kibana versions before 8.6.0 do not recognize `filterKuery`
-		// for `.index-threshold` rules and reject requests with HTTP 400.
-		if rule.RuleTypeID == ".index-threshold" && serverVersion != nil && serverVersion.LessThan(frequencyMinSupportedVersion) {
-			delete(params, "filterKuery")
-		}
-
 		// Compatibility: older Kibana versions reject `.index-threshold` rule params
 		// when `groupBy` is omitted (server-side expects a string, but sees undefined).
 		// Defaulting to "all" preserves Kibana's effective behavior while avoiding 400s.

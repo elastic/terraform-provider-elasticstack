@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -149,69 +148,5 @@ func TestToAPIModel_IndexThresholdDoesNotOverrideExplicitAggType(t *testing.T) {
 	}
 	if got := apiRule.Params["aggField"]; got != "version" {
 		t.Fatalf("expected params.aggField to remain %q, got %#v", "version", got)
-	}
-}
-
-func TestToAPIModel_IndexThresholdStripsFilterKueryForOldVersions(t *testing.T) {
-	serverVersion := version.Must(version.NewVersion("8.5.3"))
-	m := alertingRuleModel{
-		RuleID:     types.StringValue("rule-id"),
-		SpaceID:    types.StringValue("default"),
-		Name:       types.StringValue("name"),
-		Consumer:   types.StringValue("alerts"),
-		RuleTypeID: types.StringValue(".index-threshold"),
-		Interval:   types.StringValue("1m"),
-		NotifyWhen: types.StringValue("onActiveAlert"),
-		Params: jsontypes.NewNormalizedValue(`{
-			"aggType":"avg",
-			"aggField":"version",
-			"filterKuery":"host.name: *",
-			"timeWindowSize":10,
-			"timeWindowUnit":"s",
-			"threshold":[10],
-			"thresholdComparator":">",
-			"index":["test-index"],
-			"timeField":"@timestamp"
-		}`),
-	}
-
-	apiRule, diags := m.toAPIModel(context.TODO(), serverVersion)
-	if diags.HasError() {
-		t.Fatalf("unexpected diagnostics: %v", diags)
-	}
-	if _, exists := apiRule.Params["filterKuery"]; exists {
-		t.Fatalf("expected params.filterKuery to be stripped for old Kibana versions, got %#v", apiRule.Params["filterKuery"])
-	}
-}
-
-func TestToAPIModel_IndexThresholdKeepsFilterKueryForNewVersions(t *testing.T) {
-	serverVersion := version.Must(version.NewVersion("8.6.0"))
-	m := alertingRuleModel{
-		RuleID:     types.StringValue("rule-id"),
-		SpaceID:    types.StringValue("default"),
-		Name:       types.StringValue("name"),
-		Consumer:   types.StringValue("alerts"),
-		RuleTypeID: types.StringValue(".index-threshold"),
-		Interval:   types.StringValue("1m"),
-		NotifyWhen: types.StringValue("onActiveAlert"),
-		Params: jsontypes.NewNormalizedValue(`{
-			"aggType":"avg",
-			"aggField":"version",
-			"filterKuery":"host.name: *",
-			"timeWindowSize":10,
-			"timeWindowUnit":"s",
-			"threshold":[10],
-			"thresholdComparator":">",
-			"index":["test-index"],
-			"timeField":"@timestamp"
-		}`),
-	}
-
-	apiRule, diags := m.toAPIModel(context.TODO(), serverVersion)
-	if diags.HasError() {
-		t.Fatalf("unexpected diagnostics: %v", diags)
-	}
-	if got := apiRule.Params["filterKuery"]; got != "host.name: *" {
-		t.Fatalf("expected params.filterKuery to be preserved for new Kibana versions, got %#v", got)
 	}
 }
