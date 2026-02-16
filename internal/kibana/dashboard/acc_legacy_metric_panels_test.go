@@ -46,7 +46,25 @@ func TestAccResourceDashboardLegacyMetricChart(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "title", dashboardTitle),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.legacy_metric_config.title", "Updated Legacy Metric"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.legacy_metric_config.description", "Updated description"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.legacy_metric_config.ignore_global_filters", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.legacy_metric_config.sampling", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.legacy_metric_config.query.language", "lucene"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.legacy_metric_config.query.query", "status:500"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
 				},
