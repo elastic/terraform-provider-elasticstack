@@ -47,9 +47,12 @@ func DeleteSlo(ctx context.Context, apiClient *clients.ApiClient, sloId string, 
 	ctxWithAuth := apiClient.SetSloAuthContext(ctx)
 	req := client.DeleteSloOp(ctxWithAuth, sloId, spaceId).KbnXsrf("true")
 	res, err := req.Execute()
-	if err != nil && res == nil {
+
+	if err != nil {
 		diags := diag.FromErr(err)
-		diags = append(diags, diagutil.CheckHttpError(res, "unable to create slo with id "+sloId)...)
+		if res != nil {
+			diags = append(diags, diagutil.CheckHttpError(res, "unable to create slo with id "+sloId)...)
+		}
 		return diags
 	}
 
@@ -85,7 +88,10 @@ func UpdateSlo(ctx context.Context, apiClient *clients.ApiClient, s models.Slo, 
 
 	if err != nil {
 		diags := diag.FromErr(err)
-		diags = append(diags, diagutil.CheckHttpError(res, "unable to create slo with id "+s.SloID)...)
+		if res != nil {
+			diags = append(diags, diagutil.CheckHttpError(res, "unable to create slo with id "+s.SloID)...)
+		}
+
 		return nil, diags
 	}
 
@@ -129,7 +135,9 @@ func CreateSlo(ctx context.Context, apiClient *clients.ApiClient, s models.Slo, 
 	sloRes, res, err := req.Execute()
 	if err != nil {
 		diags := diag.FromErr(err)
-		diags = append(diags, diagutil.CheckHttpError(res, "unable to create slo with id "+s.SloID)...)
+		if res != nil {
+			diags = append(diags, diagutil.CheckHttpError(res, "unable to create slo with id "+s.SloID)...)
+		}
 		return nil, diags
 	}
 	defer res.Body.Close()
