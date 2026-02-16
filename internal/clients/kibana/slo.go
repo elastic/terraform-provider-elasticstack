@@ -51,7 +51,7 @@ func DeleteSlo(ctx context.Context, apiClient *clients.ApiClient, sloId string, 
 	if err != nil {
 		diags := diag.FromErr(err)
 		if res != nil {
-			diags = append(diags, diagutil.CheckHttpError(res, "unable to create slo with id "+sloId)...)
+			diags = append(diags, diagutil.CheckHttpError(res, "unable to delete slo with id "+sloId)...)
 		}
 		return diags
 	}
@@ -89,7 +89,7 @@ func UpdateSlo(ctx context.Context, apiClient *clients.ApiClient, s models.Slo, 
 	if err != nil {
 		diags := diag.FromErr(err)
 		if res != nil {
-			diags = append(diags, diagutil.CheckHttpError(res, "unable to create slo with id "+s.SloID)...)
+			diags = append(diags, diagutil.CheckHttpError(res, "unable to update slo with id "+s.SloID)...)
 		}
 
 		return nil, diags
