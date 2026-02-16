@@ -368,12 +368,27 @@ func (m alertingRuleModel) toAPIModel(ctx context.Context, serverVersion *versio
 			return models.AlertingRule{}, diags
 		}
 
+		// Compatibility: Kibana versions before 8.6.0 do not recognize `filterKuery`
+		// for `.index-threshold` rules and reject requests with HTTP 400.
+		if rule.RuleTypeID == ".index-threshold" && serverVersion != nil && serverVersion.LessThan(frequencyMinSupportedVersion) {
+			delete(params, "filterKuery")
+		}
+
 		// Compatibility: older Kibana versions reject `.index-threshold` rule params
 		// when `groupBy` is omitted (server-side expects a string, but sees undefined).
 		// Defaulting to "all" preserves Kibana's effective behavior while avoiding 400s.
 		if rule.RuleTypeID == ".index-threshold" {
 			if v, ok := params["groupBy"]; !ok || v == nil {
 				params["groupBy"] = "all"
+			}
+
+			// Compatibility: some Kibana versions reject `.index-threshold` params
+			// when `aggType` is omitted (server-side expects a string, but sees undefined).
+			// Defaulting to `count` preserves Kibana behavior while avoiding 400s.
+			if v, ok := params["aggType"]; !ok || v == nil {
+				params["aggType"] = "count"
+				// aggField is only valid for non-count aggregations.
+				delete(params, "aggField")
 			}
 		}
 
