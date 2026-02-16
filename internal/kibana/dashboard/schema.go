@@ -943,7 +943,7 @@ func getDataLayerAttributes() map[string]schema.Attribute {
 			},
 		},
 		"breakdown_by": schema.StringAttribute{
-			MarkdownDescription: "Split series configuration as JSON. For ES|QL: column and operation. For standard: field, operation, and optional parameters.",
+			MarkdownDescription: "Split series configuration as JSON. For ES|QL: column, operation, optional collapse_by, and color mapping. For standard: field, operation, and optional parameters.",
 			CustomType:          jsontypes.NormalizedType{},
 			Optional:            true,
 		},
@@ -1000,10 +1000,10 @@ func getReferenceLineLayerAttributes() map[string]schema.Attribute {
 						},
 					},
 					"icon": schema.StringAttribute{
-						MarkdownDescription: "Icon to display on the reference line. Valid values: 'asterisk', 'bell', 'bolt', 'bug', 'circle', 'dot', 'empty', 'flag', 'heart', 'partial', 'square', 'star', 'tag', 'triangle'.",
+						MarkdownDescription: "Icon to display on the reference line. Valid values: 'alert', 'asterisk', 'bell', 'bolt', 'bug', 'circle', 'editorComment', 'flag', 'heart', 'mapMarker', 'pinFilled', 'starEmpty', 'starFilled', 'tag', 'triangle'.",
 						Optional:            true,
 						Validators: []validator.String{
-							stringvalidator.OneOf("asterisk", "bell", "bolt", "bug", "circle", "dot", "empty", "flag", "heart", "partial", "square", "star", "tag", "triangle"),
+							stringvalidator.OneOf("alert", "asterisk", "bell", "bolt", "bug", "circle", "editorComment", "flag", "heart", "mapMarker", "pinFilled", "starEmpty", "starFilled", "tag", "triangle"),
 						},
 					},
 					"operation": schema.StringAttribute{

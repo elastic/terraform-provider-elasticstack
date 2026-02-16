@@ -227,7 +227,7 @@ func TestAccResourceSecurityDetectionRule_Query(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "response_actions.1.params.command", "kill-process"),
 					resource.TestCheckResourceAttr(resourceName, "response_actions.1.params.comment", "Kill suspicious process identified during investigation"),
 					resource.TestCheckResourceAttr(resourceName, "response_actions.1.params.config.field", "process.entity_id"),
-					resource.TestCheckResourceAttr(resourceName, "response_actions.1.params.config.overwrite", "true"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.1.params.config.overwrite", "false"),
 				),
 			},
 			{
@@ -1177,7 +1177,7 @@ func TestAccResourceSecurityDetectionRule_ThreatMatch(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "response_actions.1.params.command", "kill-process"),
 					resource.TestCheckResourceAttr(resourceName, "response_actions.1.params.comment", "Kill processes communicating with known threat indicators"),
 					resource.TestCheckResourceAttr(resourceName, "response_actions.1.params.config.field", "process.entity_id"),
-					resource.TestCheckResourceAttr(resourceName, "response_actions.1.params.config.overwrite", "true"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.1.params.config.overwrite", "false"),
 				),
 			},
 		},
@@ -1661,7 +1661,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
         comment = "Kill suspicious process identified during investigation"
         config = {
           field     = "process.entity_id"
-          overwrite = true
+		  overwrite = false
         }
       }
     }
@@ -2925,7 +2925,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
         comment = "Kill processes communicating with known threat indicators"
         config = {
           field     = "process.entity_id"
-          overwrite = true
+		  overwrite = false
         }
       }
     }
