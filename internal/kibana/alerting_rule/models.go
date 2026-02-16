@@ -368,6 +368,15 @@ func (m alertingRuleModel) toAPIModel(ctx context.Context, serverVersion *versio
 			return models.AlertingRule{}, diags
 		}
 
+		// Compatibility: older Kibana versions reject `.index-threshold` rule params
+		// when `groupBy` is omitted (server-side expects a string, but sees undefined).
+		// Defaulting to "all" preserves Kibana's effective behavior while avoiding 400s.
+		if rule.RuleTypeID == ".index-threshold" {
+			if v, ok := params["groupBy"]; !ok || v == nil {
+				params["groupBy"] = "all"
+			}
+		}
+
 		rule.Params = params
 	}
 
