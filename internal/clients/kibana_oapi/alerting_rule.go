@@ -12,7 +12,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-// CreateAlertingRule creates a new alerting rule using the Kibana API.
 func CreateAlertingRule(ctx context.Context, client *Client, spaceID string, rule models.AlertingRule) (*models.AlertingRule, diag.Diagnostics) {
 	body := buildCreateRequestBody(rule)
 	resp, err := client.API.PostAlertingRuleIdWithResponse(
@@ -44,7 +43,6 @@ func CreateAlertingRule(ctx context.Context, client *Client, spaceID string, rul
 	}
 }
 
-// GetAlertingRule reads an alerting rule from the Kibana API.
 func GetAlertingRule(ctx context.Context, client *Client, spaceID string, ruleID string) (*models.AlertingRule, diag.Diagnostics) {
 	resp, err := client.API.GetAlertingRuleIdWithResponse(
 		ctx,
@@ -71,7 +69,6 @@ func GetAlertingRule(ctx context.Context, client *Client, spaceID string, ruleID
 	}
 }
 
-// UpdateAlertingRule updates an existing alerting rule using the Kibana API.
 func UpdateAlertingRule(ctx context.Context, client *Client, spaceID string, rule models.AlertingRule) (*models.AlertingRule, diag.Diagnostics) {
 	body := buildUpdateRequestBody(rule)
 
@@ -94,7 +91,6 @@ func UpdateAlertingRule(ctx context.Context, client *Client, spaceID string, rul
 			)}
 		}
 
-		// Extract enabled flag before conversion
 		var wasEnabled bool
 		if data, err := json.Marshal(resp.JSON200); err == nil {
 			var temp struct {
@@ -105,7 +101,6 @@ func UpdateAlertingRule(ctx context.Context, client *Client, spaceID string, rul
 			}
 		}
 
-		// Handle enable/disable if needed
 		shouldBeEnabled := rule.Enabled != nil && *rule.Enabled
 
 		if shouldBeEnabled && !wasEnabled {
@@ -125,7 +120,6 @@ func UpdateAlertingRule(ctx context.Context, client *Client, spaceID string, rul
 			return nil, convDiags
 		}
 
-		// Set enabled to the requested value since we just called enable/disable
 		if rule.Enabled != nil {
 			returnedRule.Enabled = rule.Enabled
 		}
@@ -136,7 +130,6 @@ func UpdateAlertingRule(ctx context.Context, client *Client, spaceID string, rul
 	}
 }
 
-// DeleteAlertingRule deletes an alerting rule using the Kibana API.
 func DeleteAlertingRule(ctx context.Context, client *Client, spaceID string, ruleID string) diag.Diagnostics {
 	resp, err := client.API.DeleteAlertingRuleIdWithResponse(
 		ctx,
@@ -157,7 +150,6 @@ func DeleteAlertingRule(ctx context.Context, client *Client, spaceID string, rul
 	}
 }
 
-// EnableAlertingRule enables an alerting rule using the Kibana API.
 func EnableAlertingRule(ctx context.Context, client *Client, spaceID string, ruleID string) diag.Diagnostics {
 	resp, err := client.API.PostAlertingRuleIdEnableWithResponse(
 		ctx,
@@ -176,7 +168,6 @@ func EnableAlertingRule(ctx context.Context, client *Client, spaceID string, rul
 	}
 }
 
-// DisableAlertingRule disables an alerting rule using the Kibana API.
 func DisableAlertingRule(ctx context.Context, client *Client, spaceID string, ruleID string) diag.Diagnostics {
 	body := kbapi.PostAlertingRuleIdDisableJSONRequestBody{}
 	resp, err := client.API.PostAlertingRuleIdDisableWithResponse(
@@ -197,22 +188,16 @@ func DisableAlertingRule(ctx context.Context, client *Client, spaceID string, ru
 	}
 }
 
-// ConvertResponseToModel converts any kbapi rule response to models.AlertingRule using JSON marshaling.
-// This handles the different anonymous struct types (GetAlertingRuleIdResponse.JSON200,
-// PostAlertingRuleIdResponse.JSON200, PutAlertingRuleIdResponse.JSON200) by converting through JSON.
-// Exported for testing purposes.
 func ConvertResponseToModel(spaceID string, resp any) (*models.AlertingRule, diag.Diagnostics) {
 	if resp == nil {
 		return nil, nil
 	}
 
-	// Marshal the response to JSON then unmarshal into our intermediate struct
 	data, err := json.Marshal(resp)
 	if err != nil {
 		return nil, diag.Diagnostics{diag.NewErrorDiagnostic("Failed to marshal response", err.Error())}
 	}
 
-	// Define an intermediate struct that matches the response structure
 	var intermediate struct {
 		ID         string `json:"id"`
 		Name       string `json:"name"`
@@ -263,7 +248,6 @@ func ConvertResponseToModel(spaceID string, resp any) (*models.AlertingRule, dia
 		return nil, diag.Diagnostics{diag.NewErrorDiagnostic("Failed to unmarshal response", err.Error())}
 	}
 
-	// Validate that we have required fields - an empty response should be caught
 	if intermediate.ID == "" || intermediate.Name == "" || intermediate.Consumer == "" || intermediate.RuleTypeID == "" {
 		return nil, diag.Diagnostics{diag.NewErrorDiagnostic(
 			"Invalid rule response",
@@ -271,7 +255,6 @@ func ConvertResponseToModel(spaceID string, resp any) (*models.AlertingRule, dia
 		)}
 	}
 
-	// Convert to models.AlertingRule
 	actions := []models.AlertingRuleAction{}
 	for _, action := range intermediate.Actions {
 		a := models.AlertingRuleAction{
@@ -317,7 +300,6 @@ func ConvertResponseToModel(spaceID string, resp any) (*models.AlertingRule, dia
 		alertDelay = &intermediate.AlertDelay.Active
 	}
 
-	// Parse execution date
 	var lastExecutionDate *time.Time
 	if intermediate.ExecutionStatus.LastExecutionDate != "" {
 		if parsed, err := time.Parse(time.RFC3339, intermediate.ExecutionStatus.LastExecutionDate); err == nil {
@@ -325,7 +307,6 @@ func ConvertResponseToModel(spaceID string, resp any) (*models.AlertingRule, dia
 		}
 	}
 
-	// Only set status pointer if it's non-empty
 	var status *string
 	if intermediate.ExecutionStatus.Status != "" {
 		status = &intermediate.ExecutionStatus.Status
@@ -367,7 +348,6 @@ func buildCreateRequestBody(rule models.AlertingRule) kbapi.PostAlertingRuleIdJS
 		},
 	}
 
-	// Params
 	if rule.Params != nil {
 		params := kbapi.PostAlertingRuleIdJSONBody_Params{
 			AdditionalProperties: rule.Params,
@@ -375,29 +355,24 @@ func buildCreateRequestBody(rule models.AlertingRule) kbapi.PostAlertingRuleIdJS
 		body.Params = &params
 	}
 
-	// Enabled
 	if rule.Enabled != nil {
 		body.Enabled = rule.Enabled
 	}
 
-	// NotifyWhen
 	if rule.NotifyWhen != nil && *rule.NotifyWhen != "" {
 		notifyWhen := kbapi.PostAlertingRuleIdJSONBodyNotifyWhen(*rule.NotifyWhen)
 		body.NotifyWhen = &notifyWhen
 	}
 
-	// Throttle
 	if rule.Throttle != nil {
 		body.Throttle = rule.Throttle
 	}
 
-	// Tags
 	if rule.Tags != nil {
 		tags := rule.Tags
 		body.Tags = &tags
 	}
 
-	// AlertDelay
 	if rule.AlertDelay != nil {
 		body.AlertDelay = &struct {
 			Active float32 `json:"active"`
@@ -406,72 +381,39 @@ func buildCreateRequestBody(rule models.AlertingRule) kbapi.PostAlertingRuleIdJS
 		}
 	}
 
-	// Actions - build them manually to ensure correct types
 	if len(rule.Actions) > 0 {
 		actions := make([]struct {
-			// AlertsFilter Conditions that affect whether the action runs. If you specify multiple conditions, all conditions must be met for the action to run. For example, if an alert occurs within the specified time frame and matches the query, the action runs.
 			AlertsFilter *struct {
 				Query *struct {
-					// Dsl A filter written in Elasticsearch Query Domain Specific Language (DSL).
-					Dsl *string `json:"dsl,omitempty"`
-
-					// Filters A filter written in Elasticsearch Query Domain Specific Language (DSL) as defined in the `kbn-es-query` package.
+					Dsl     *string `json:"dsl,omitempty"`
 					Filters []struct {
 						State *struct {
-							// Store A filter can be either specific to an application context or applied globally.
 							Store kbapi.PostAlertingRuleIdJSONBodyActionsAlertsFilterQueryFiltersStateStore `json:"store"`
 						} `json:"$state,omitempty"`
 						Meta  map[string]interface{}  `json:"meta"`
 						Query *map[string]interface{} `json:"query,omitempty"`
 					} `json:"filters"`
-
-					// Kql A filter written in Kibana Query Language (KQL).
 					Kql string `json:"kql"`
 				} `json:"query,omitempty"`
-
-				// Timeframe Defines a period that limits whether the action runs.
 				Timeframe *struct {
-					// Days Defines the days of the week that the action can run, represented as an array of numbers. For example, `1` represents Monday. An empty array is equivalent to specifying all the days of the week.
-					Days []kbapi.PostAlertingRuleIdJSONBodyActionsAlertsFilterTimeframeDays `json:"days"`
-
-					// Hours Defines the range of time in a day that the action can run. If the `start` value is `00:00` and the `end` value is `24:00`, actions be generated all day.
+					Days  []kbapi.PostAlertingRuleIdJSONBodyActionsAlertsFilterTimeframeDays `json:"days"`
 					Hours struct {
-						// End The end of the time frame in 24-hour notation (`hh:mm`).
-						End string `json:"end"`
-
-						// Start The start of the time frame in 24-hour notation (`hh:mm`).
+						End   string `json:"end"`
 						Start string `json:"start"`
 					} `json:"hours"`
-
-					// Timezone The ISO time zone for the `hours` values. Values such as `UTC` and `UTC+1` also work but lack built-in daylight savings time support and are not recommended.
 					Timezone string `json:"timezone"`
 				} `json:"timeframe,omitempty"`
 			} `json:"alerts_filter,omitempty"`
 			Frequency *struct {
-				// NotifyWhen Indicates how often alerts generate actions. Valid values include: `onActionGroupChange`: Actions run when the alert status changes; `onActiveAlert`: Actions run when the alert becomes active and at each check interval while the rule conditions are met; `onThrottleInterval`: Actions run when the alert becomes active and at the interval specified in the throttle property while the rule conditions are met. NOTE: You cannot specify `notify_when` at both the rule and action level. The recommended method is to set it for each action. If you set it at the rule level then update the rule in Kibana, it is automatically changed to use action-specific values.
 				NotifyWhen kbapi.PostAlertingRuleIdJSONBodyActionsFrequencyNotifyWhen `json:"notify_when"`
-
-				// Summary Indicates whether the action is a summary.
-				Summary bool `json:"summary"`
-
-				// Throttle The throttle interval, which defines how often an alert generates repeated actions. It is specified in seconds, minutes, hours, or days and is applicable only if `notify_when` is set to `onThrottleInterval`. NOTE: You cannot specify the throttle interval at both the rule and action level. The recommended method is to set it for each action. If you set it at the rule level then update the rule in Kibana, it is automatically changed to use action-specific values.
-				Throttle *string `json:"throttle,omitempty"`
+				Summary    bool                                                       `json:"summary"`
+				Throttle   *string                                                    `json:"throttle,omitempty"`
 			} `json:"frequency,omitempty"`
-
-			// Group The group name, which affects when the action runs (for example, when the threshold is met or when the alert is recovered). Each rule type has a list of valid action group names. If you don't need to group actions, set to `default`.
-			Group *string `json:"group,omitempty"`
-
-			// Id The identifier for the connector saved object.
-			Id string `json:"id"`
-
-			// Params The parameters for the action, which are sent to the connector. The `params` are handled as Mustache templates and passed a default set of context.
-			Params *map[string]interface{} `json:"params,omitempty"`
-
-			// UseAlertDataForTemplate Indicates whether to use alert data as a template.
-			UseAlertDataForTemplate *bool `json:"use_alert_data_for_template,omitempty"`
-
-			// Uuid A universally unique identifier (UUID) for the action.
-			Uuid *string `json:"uuid,omitempty"`
+			Group                   *string                 `json:"group,omitempty"`
+			Id                      string                  `json:"id"`
+			Params                  *map[string]interface{} `json:"params,omitempty"`
+			UseAlertDataForTemplate *bool                   `json:"use_alert_data_for_template,omitempty"`
+			Uuid                    *string                 `json:"uuid,omitempty"`
 		}, len(rule.Actions))
 
 		for i, action := range rule.Actions {
@@ -578,7 +520,6 @@ func buildCreateRequestBody(rule models.AlertingRule) kbapi.PostAlertingRuleIdJS
 	return body
 }
 
-// buildUpdateRequestBody builds a PutAlertingRuleIdJSONRequestBody from models.AlertingRule
 func buildUpdateRequestBody(rule models.AlertingRule) kbapi.PutAlertingRuleIdJSONRequestBody {
 	body := kbapi.PutAlertingRuleIdJSONRequestBody{
 		Name: rule.Name,
@@ -589,29 +530,24 @@ func buildUpdateRequestBody(rule models.AlertingRule) kbapi.PutAlertingRuleIdJSO
 		},
 	}
 
-	// Params
 	if rule.Params != nil {
 		body.Params = &rule.Params
 	}
 
-	// NotifyWhen
 	if rule.NotifyWhen != nil && *rule.NotifyWhen != "" {
 		notifyWhen := kbapi.PutAlertingRuleIdJSONBodyNotifyWhen(*rule.NotifyWhen)
 		body.NotifyWhen = &notifyWhen
 	}
 
-	// Throttle
 	if rule.Throttle != nil {
 		body.Throttle = rule.Throttle
 	}
 
-	// Tags
 	if rule.Tags != nil {
 		tags := rule.Tags
 		body.Tags = &tags
 	}
 
-	// AlertDelay
 	if rule.AlertDelay != nil {
 		body.AlertDelay = &struct {
 			Active float32 `json:"active"`
@@ -620,7 +556,6 @@ func buildUpdateRequestBody(rule models.AlertingRule) kbapi.PutAlertingRuleIdJSO
 		}
 	}
 
-	// Actions - build them manually to ensure correct types
 	if len(rule.Actions) > 0 {
 		actions := make([]struct {
 			AlertsFilter *struct {
@@ -755,7 +690,6 @@ func buildUpdateRequestBody(rule models.AlertingRule) kbapi.PutAlertingRuleIdJSO
 	return body
 }
 
-// valueOrDefault returns the value if not nil, otherwise returns the default
 func valueOrDefault(val *string, def string) string {
 	if val != nil && *val != "" {
 		return *val
