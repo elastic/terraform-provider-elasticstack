@@ -30,6 +30,11 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 		return
 	}
 
+	resp.Diagnostics.Append(resp.Identity.Set(ctx, identityModelV0{ID: readModel.ID})...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	// Set state
 	resp.Diagnostics.Append(resp.State.Set(ctx, *readModel)...)
 }

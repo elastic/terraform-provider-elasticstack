@@ -45,6 +45,10 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 		ResourceId: createResp.JSON200.Id,
 	}
 	planModel.ID = types.StringValue(compID.String())
+	resp.Diagnostics.Append(resp.Identity.Set(ctx, identityModelV0{ID: types.StringValue(compID.String())})...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	readModel, diags := r.read(ctx, planModel)
 	resp.Diagnostics.Append(diags...)

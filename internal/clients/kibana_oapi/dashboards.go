@@ -120,3 +120,30 @@ func DeleteDashboard(ctx context.Context, client *Client, spaceID string, dashbo
 		return reportUnknownError(resp.StatusCode(), resp.Body)
 	}
 }
+
+func dashboardsSearchRequestEditor() func(ctx context.Context, req *http.Request) error {
+	return func(ctx context.Context, req *http.Request) error {
+		req.Header.Add("x-elastic-internal-origin", "Kibana")
+		req.Header.Set("elastic-api-version", "1")
+		return nil
+	}
+}
+
+func SearchDashboards(ctx context.Context, client *Client, spaceID string, body kbapi.PostDashboardsSearchJSONRequestBody) (*kbapi.PostDashboardsSearchResponse, diag.Diagnostics) {
+	resp, err := client.API.PostDashboardsSearchWithResponse(
+		ctx,
+		body,
+		spaceAwarePathRequestEditor(spaceID),
+		dashboardsSearchRequestEditor(),
+	)
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+
+	switch resp.StatusCode() {
+	case http.StatusOK:
+		return resp, nil
+	default:
+		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+	}
+}

@@ -51,6 +51,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics/private_location"
 	"github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/list"
 	fwprovider "github.com/hashicorp/terraform-plugin-framework/provider"
 	fwschema "github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -63,7 +64,8 @@ const (
 
 // Ensure the implementation satisfies the expected interfaces.
 var (
-	_ fwprovider.Provider = &Provider{}
+	_ fwprovider.Provider                  = &Provider{}
+	_ fwprovider.ProviderWithListResources = &Provider{}
 )
 
 type Provider struct {
@@ -108,6 +110,7 @@ func (p *Provider) Configure(ctx context.Context, req fwprovider.ConfigureReques
 
 	res.DataSourceData = client
 	res.ResourceData = client
+	res.ListResourceData = client
 }
 
 func (p *Provider) DataSources(ctx context.Context) []func() datasource.DataSource {
@@ -128,6 +131,26 @@ func (p *Provider) Resources(ctx context.Context) []func() resource.Resource {
 	}
 
 	return resources
+}
+
+func (p *Provider) ListResources(ctx context.Context) []func() list.ListResource {
+	listResources := p.listResources(ctx)
+
+	if p.version == AccTestVersion || os.Getenv(IncludeExperimentalEnvVar) == "true" {
+		listResources = append(listResources, p.experimentalListResources(ctx)...)
+	}
+
+	return listResources
+}
+
+func (p *Provider) listResources(ctx context.Context) []func() list.ListResource {
+	return []func() list.ListResource{}
+}
+
+func (p *Provider) experimentalListResources(ctx context.Context) []func() list.ListResource {
+	return []func() list.ListResource{
+		dashboard.NewListResource,
+	}
 }
 
 func (p *Provider) resources(ctx context.Context) []func() resource.Resource {
