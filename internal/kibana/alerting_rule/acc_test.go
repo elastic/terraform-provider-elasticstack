@@ -269,7 +269,31 @@ func TestAccResourceAlertingRuleParamsLifecycle(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_type_id", ".index-threshold"),
 					testCheckAlertingRuleAPIParamStringEquals("elasticstack_kibana_alerting_rule.test_rule", "aggType", "avg"),
 					testCheckAlertingRuleAPIParamStringEquals("elasticstack_kibana_alerting_rule.test_rule", "aggField", "version"),
+					// Kibana injects groupBy="all" even when config omits it.
+					testCheckAlertingRuleAPIParamStringEquals("elasticstack_kibana_alerting_rule.test_rule", "groupBy", "all"),
 					testCheckAlertingRuleStateParamsMissingKeys("elasticstack_kibana_alerting_rule.test_rule", "groupBy"),
+					testCheckAlertingRuleStateParamsHasKeys(
+						"elasticstack_kibana_alerting_rule.test_rule",
+						"aggType",
+						"aggField",
+						"timeWindowSize",
+						"timeWindowUnit",
+						"threshold",
+						"thresholdComparator",
+						"index",
+						"timeField",
+					),
+					testCheckAlertingRuleStateParamsOnlyKeys(
+						"elasticstack_kibana_alerting_rule.test_rule",
+						"aggType",
+						"aggField",
+						"timeWindowSize",
+						"timeWindowUnit",
+						"threshold",
+						"thresholdComparator",
+						"index",
+						"timeField",
+					),
 				),
 			},
 			{
@@ -283,6 +307,26 @@ func TestAccResourceAlertingRuleParamsLifecycle(t *testing.T) {
 					// When aggType/aggField are removed from config, Kibana should revert to its defaults.
 					testCheckAlertingRuleAPIParamStringEquals("elasticstack_kibana_alerting_rule.test_rule", "aggType", "count"),
 					testCheckAlertingRuleAPIParamAbsentOrEmpty("elasticstack_kibana_alerting_rule.test_rule", "aggField"),
+					testCheckAlertingRuleAPIParamStringEquals("elasticstack_kibana_alerting_rule.test_rule", "groupBy", "all"),
+					testCheckAlertingRuleStateParamsMissingKeys("elasticstack_kibana_alerting_rule.test_rule", "aggType", "aggField", "groupBy"),
+					testCheckAlertingRuleStateParamsHasKeys(
+						"elasticstack_kibana_alerting_rule.test_rule",
+						"timeWindowSize",
+						"timeWindowUnit",
+						"threshold",
+						"thresholdComparator",
+						"index",
+						"timeField",
+					),
+					testCheckAlertingRuleStateParamsOnlyKeys(
+						"elasticstack_kibana_alerting_rule.test_rule",
+						"timeWindowSize",
+						"timeWindowUnit",
+						"threshold",
+						"thresholdComparator",
+						"index",
+						"timeField",
+					),
 				),
 			},
 			{
@@ -295,6 +339,30 @@ func TestAccResourceAlertingRuleParamsLifecycle(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testCheckAlertingRuleAPIParamStringEquals("elasticstack_kibana_alerting_rule.test_rule", "aggType", "avg"),
 					testCheckAlertingRuleAPIParamStringEquals("elasticstack_kibana_alerting_rule.test_rule", "aggField", "version"),
+					testCheckAlertingRuleAPIParamStringEquals("elasticstack_kibana_alerting_rule.test_rule", "groupBy", "all"),
+					testCheckAlertingRuleStateParamsMissingKeys("elasticstack_kibana_alerting_rule.test_rule", "groupBy"),
+					testCheckAlertingRuleStateParamsHasKeys(
+						"elasticstack_kibana_alerting_rule.test_rule",
+						"aggType",
+						"aggField",
+						"timeWindowSize",
+						"timeWindowUnit",
+						"threshold",
+						"thresholdComparator",
+						"index",
+						"timeField",
+					),
+					testCheckAlertingRuleStateParamsOnlyKeys(
+						"elasticstack_kibana_alerting_rule.test_rule",
+						"aggType",
+						"aggField",
+						"timeWindowSize",
+						"timeWindowUnit",
+						"threshold",
+						"thresholdComparator",
+						"index",
+						"timeField",
+					),
 				),
 			},
 		},
@@ -492,6 +560,42 @@ func testCheckAlertingRuleStateParamsMissingKeys(resourceName string, keys ...st
 		for _, key := range keys {
 			if _, exists := params[key]; exists {
 				return fmt.Errorf("expected Terraform state params to omit key %q (API-injected default), but it was present (params=%v)", key, params)
+			}
+		}
+		return nil
+	})
+}
+
+func testCheckAlertingRuleStateParamsHasKeys(resourceName string, keys ...string) resource.TestCheckFunc {
+	return resource.TestCheckResourceAttrWith(resourceName, "params", func(value string) error {
+		var params map[string]interface{}
+		if err := json.Unmarshal([]byte(value), &params); err != nil {
+			return fmt.Errorf("failed to unmarshal Terraform state params: %w", err)
+		}
+		for _, key := range keys {
+			if _, exists := params[key]; !exists {
+				return fmt.Errorf("expected Terraform state params to contain key %q, but it was absent (params=%v)", key, params)
+			}
+		}
+		return nil
+	})
+}
+
+func testCheckAlertingRuleStateParamsOnlyKeys(resourceName string, allowedKeys ...string) resource.TestCheckFunc {
+	return resource.TestCheckResourceAttrWith(resourceName, "params", func(value string) error {
+		var params map[string]interface{}
+		if err := json.Unmarshal([]byte(value), &params); err != nil {
+			return fmt.Errorf("failed to unmarshal Terraform state params: %w", err)
+		}
+
+		allowed := make(map[string]struct{}, len(allowedKeys))
+		for _, k := range allowedKeys {
+			allowed[k] = struct{}{}
+		}
+
+		for k := range params {
+			if _, ok := allowed[k]; !ok {
+				return fmt.Errorf("expected Terraform state params to contain only keys %v, but found unexpected key %q (params=%v)", allowedKeys, k, params)
 			}
 		}
 		return nil
