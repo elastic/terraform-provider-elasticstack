@@ -577,6 +577,7 @@ var transformers = []TransformFunc{
 	transformRemoveExamples,
 	transformRemoveUnusedComponents,
 	transformOmitEmptyNullable,
+	fixAlertingRuleParams,
 }
 
 //go:embed dashboards.yaml
@@ -1298,4 +1299,9 @@ func transformRemoveUnusedComponents(schema *Schema) {
 			break
 		}
 	}
+}
+
+func fixAlertingRuleParams(schema *Schema) {
+	postEndpoint := schema.MustGetPath("/api/alerting/rule/{id}").MustGetEndpoint("post")
+	postEndpoint.CreateRef(schema, "Alerting_Rule_API_Params", "requestBody.content.application/json.schema.properties.params")
 }
