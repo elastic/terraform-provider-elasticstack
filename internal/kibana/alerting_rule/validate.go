@@ -22,8 +22,10 @@ type paramsSchemaSpec struct {
 	requiredKeys map[string]struct{}
 }
 
-func mustNewParamsSchemaSpec(name string, newTarget func() interface{}) paramsSchemaSpec {
-	requiredKeys, err := computeRequiredKeys(newTarget())
+func mustNewParamsSchemaSpec(newTarget func() interface{}) paramsSchemaSpec {
+	target := newTarget()
+	name := fmt.Sprintf("%T", target)
+	requiredKeys, err := computeRequiredKeys(target)
 	if err != nil {
 		panic(fmt.Sprintf("alerting_rule: mustNewParamsSchemaSpec(%q): computeRequiredKeys error: %v", name, err))
 	}
@@ -77,43 +79,43 @@ func (r *Resource) ValidateConfig(ctx context.Context, req resource.ValidateConf
 
 var ruleTypeParamsSpecs = map[string][]paramsSchemaSpec{
 	"apm.rules.anomaly": {
-		mustNewParamsSchemaSpec("params_property_apm_anomaly", func() interface{} { return &kbapi.ParamsPropertyApmAnomaly{} }),
+		mustNewParamsSchemaSpec(func() interface{} { return &kbapi.ParamsPropertyApmAnomaly{} }),
 	},
 	"apm.error_rate": {
-		mustNewParamsSchemaSpec("params_property_apm_error_count", func() interface{} { return &kbapi.ParamsPropertyApmErrorCount{} }),
+		mustNewParamsSchemaSpec(func() interface{} { return &kbapi.ParamsPropertyApmErrorCount{} }),
 	},
 	"apm.transaction_duration": {
-		mustNewParamsSchemaSpec("params_property_apm_transaction_duration", func() interface{} { return &kbapi.ParamsPropertyApmTransactionDuration{} }),
+		mustNewParamsSchemaSpec(func() interface{} { return &kbapi.ParamsPropertyApmTransactionDuration{} }),
 	},
 	"apm.transaction_error_rate": {
-		mustNewParamsSchemaSpec("params_property_apm_transaction_error_rate", func() interface{} { return &kbapi.ParamsPropertyApmTransactionErrorRate{} }),
+		mustNewParamsSchemaSpec(func() interface{} { return &kbapi.ParamsPropertyApmTransactionErrorRate{} }),
 	},
 	".index-threshold": {
-		mustNewParamsSchemaSpec("params_index_threshold_rule", func() interface{} { return &kbapi.ParamsIndexThresholdRule{} }),
+		mustNewParamsSchemaSpec(func() interface{} { return &kbapi.ParamsIndexThresholdRule{} }),
 	},
 	"metrics.alert.inventory.threshold": {
-		mustNewParamsSchemaSpec("params_property_infra_inventory", func() interface{} { return &kbapi.ParamsPropertyInfraInventory{} }),
+		mustNewParamsSchemaSpec(func() interface{} { return &kbapi.ParamsPropertyInfraInventory{} }),
 	},
 	"metrics.alert.threshold": {
-		mustNewParamsSchemaSpec("params_property_infra_metric_threshold", func() interface{} { return &kbapi.ParamsPropertyInfraMetricThreshold{} }),
+		mustNewParamsSchemaSpec(func() interface{} { return &kbapi.ParamsPropertyInfraMetricThreshold{} }),
 	},
 	"slo.rules.burnRate": {
-		mustNewParamsSchemaSpec("params_property_slo_burn_rate", func() interface{} { return &kbapi.ParamsPropertySloBurnRate{} }),
+		mustNewParamsSchemaSpec(func() interface{} { return &kbapi.ParamsPropertySloBurnRate{} }),
 	},
 	"xpack.uptime.alerts.tls": {
-		mustNewParamsSchemaSpec("params_property_synthetics_uptime_tls", func() interface{} { return &kbapi.ParamsPropertySyntheticsUptimeTls{} }),
+		mustNewParamsSchemaSpec(func() interface{} { return &kbapi.ParamsPropertySyntheticsUptimeTls{} }),
 	},
 	"xpack.uptime.alerts.monitorStatus": {
-		mustNewParamsSchemaSpec("params_property_synthetics_monitor_status", func() interface{} { return &kbapi.ParamsPropertySyntheticsMonitorStatus{} }),
+		mustNewParamsSchemaSpec(func() interface{} { return &kbapi.ParamsPropertySyntheticsMonitorStatus{} }),
 	},
 	".es-query": {
-		mustNewParamsSchemaSpec("params_es_query_dsl_rule", func() interface{} { return &kbapi.ParamsEsQueryDslRule{} }),
-		mustNewParamsSchemaSpec("params_es_query_esql_rule", func() interface{} { return &kbapi.ParamsEsQueryEsqlRule{} }),
-		mustNewParamsSchemaSpec("params_es_query_kql_rule", func() interface{} { return &kbapi.ParamsEsQueryKqlRule{} }),
+		mustNewParamsSchemaSpec(func() interface{} { return &kbapi.ParamsEsQueryDslRule{} }),
+		mustNewParamsSchemaSpec(func() interface{} { return &kbapi.ParamsEsQueryEsqlRule{} }),
+		mustNewParamsSchemaSpec(func() interface{} { return &kbapi.ParamsEsQueryKqlRule{} }),
 	},
 	"logs.alert.document.count": {
-		mustNewParamsSchemaSpec("params_property_log_threshold_0", func() interface{} { return &kbapi.ParamsPropertyLogThreshold0{} }),
-		mustNewParamsSchemaSpec("params_property_log_threshold_1", func() interface{} { return &kbapi.ParamsPropertyLogThreshold1{} }),
+		mustNewParamsSchemaSpec(func() interface{} { return &kbapi.ParamsPropertyLogThreshold0{} }),
+		mustNewParamsSchemaSpec(func() interface{} { return &kbapi.ParamsPropertyLogThreshold1{} }),
 	},
 }
 
