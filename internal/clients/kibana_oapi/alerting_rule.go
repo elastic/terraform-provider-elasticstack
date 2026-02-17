@@ -349,7 +349,7 @@ func buildCreateRequestBody(rule models.AlertingRule) kbapi.PostAlertingRuleIdJS
 	}
 
 	if rule.Params != nil {
-		params := kbapi.PostAlertingRuleIdJSONBody_Params{
+		params := kbapi.AlertingRuleAPIParams{
 			AdditionalProperties: rule.Params,
 		}
 		body.Params = &params
