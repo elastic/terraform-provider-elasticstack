@@ -30,7 +30,6 @@ FLEET_ENDPOINT ?= https://$(FLEET_NAME):8220
 
 # Fleet Server image repository. Some older stack versions (notably 7.17.x, 8.0.x, 8.1.x)
 # do not publish elastic-agent images to docker.elastic.co, so fall back to Docker Hub.
-FLEET_IMAGE ?= docker.elastic.co/elastic-agent/elastic-agent
 ifneq (,$(filter 7.17.% 8.0.% 8.1.%,$(STACK_VERSION)))
 FLEET_IMAGE := elastic/elastic-agent
 endif
@@ -74,7 +73,7 @@ CURL_OPTS = -sS --retry 5 --retry-all-errors -X POST -u $(ELASTICSEARCH_USERNAME
 # To run specific test (e.g. TestAccResourceActionConnector) execute `make docker-testacc TESTARGS='-run ^TestAccResourceActionConnector$$'`
 # To enable tracing (or debugging), execute `make docker-testacc TF_LOG=TRACE`
 .PHONY: docker-testacc
-docker-testacc: docker-clean docker-fleet ## Run acceptance tests in the docker container
+docker-testacc: docker-fleet ## Run acceptance tests in the docker container
 	@ docker compose -f $(COMPOSE_FILE) --profile acceptance-tests up --quiet-pull acceptance-tests
 
 # To run specific test (e.g. TestAccResourceActionConnector) execute `make docker-testacc TESTARGS='-run ^TestAccResourceActionConnector$$'`
