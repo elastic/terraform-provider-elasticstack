@@ -30,17 +30,19 @@ func (m tfModel) kqlCustomIndicatorToAPI() (bool, slo.SloWithSummaryResponseIndi
 		filterObj = &slo.KqlWithFilters{String: &v}
 	}
 
-	good := slo.KqlWithFiltersGood{}
+	// Default good and total to empty string if not provided, as they are required by the API
+	// and must be marshallable to valid JSON
+	goodStr := ""
 	if utils.IsKnown(ind.Good) {
-		v := ind.Good.ValueString()
-		good.String = &v
+		goodStr = ind.Good.ValueString()
 	}
+	good := slo.KqlWithFiltersGood{String: &goodStr}
 
-	total := slo.KqlWithFiltersTotal{}
+	totalStr := ""
 	if utils.IsKnown(ind.Total) {
-		v := ind.Total.ValueString()
-		total.String = &v
+		totalStr = ind.Total.ValueString()
 	}
+	total := slo.KqlWithFiltersTotal{String: &totalStr}
 
 	params := slo.IndicatorPropertiesCustomKqlParams{
 		Index:          ind.Index.ValueString(),
@@ -77,6 +79,8 @@ func (m *tfModel) populateFromKqlCustomIndicator(apiIndicator *slo.IndicatorProp
 	if p.Filter != nil && p.Filter.String != nil {
 		ind.Filter = types.StringValue(*p.Filter.String)
 	}
+	// Handle good and total fields - these are always present in the API response
+	// If they are empty strings, preserve that in the state
 	if p.Good.String != nil {
 		ind.Good = types.StringValue(*p.Good.String)
 	}
