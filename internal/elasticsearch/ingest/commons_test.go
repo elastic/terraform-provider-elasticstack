@@ -25,14 +25,25 @@ func CheckResourceJson(name, key, value string) resource.TestCheckFunc {
 		if !ok {
 			return fmt.Errorf("%s: Attribute '%s' not found", name, key)
 		}
-		if eq, err := utils.JSONBytesEqual([]byte(value), []byte(v)); !eq {
+		if eq, jsonErr := utils.JSONBytesEqual([]byte(value), []byte(v)); !eq {
+			if jsonErr != nil {
+				return fmt.Errorf(
+					"%s: Attribute '%s' expected %#v, got %#v: %w",
+					name,
+					key,
+					value,
+					v,
+					jsonErr,
+				)
+			}
+
 			return fmt.Errorf(
-				"%s: Attribute '%s' expected %#v, got %#v (<err>: %v)",
+				"%s: Attribute '%s' expected %#v, got %#v",
 				name,
 				key,
 				value,
 				v,
-				err)
+			)
 		}
 		return nil
 	}

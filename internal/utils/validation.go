@@ -14,7 +14,7 @@ func StringIsDuration(i interface{}, k string) (warnings []string, errors []erro
 	}
 
 	if _, err := time.ParseDuration(v); err != nil {
-		return nil, []error{fmt.Errorf("%q contains an invalid duration: %s", k, err)}
+		return nil, []error{fmt.Errorf("%q contains an invalid duration: %w", k, err)}
 	}
 
 	return nil, nil

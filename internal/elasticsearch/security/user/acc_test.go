@@ -84,8 +84,11 @@ func TestAccImportedUserDoesNotResetPassword(t *testing.T) {
 					defer resp.Body.Close()
 
 					if resp.IsError() {
-						body, err := io.ReadAll(resp.Body)
-						return false, fmt.Errorf("failed to manually create import test user [%s] %s %s", username, body, err)
+						body, readErr := io.ReadAll(resp.Body)
+						if readErr != nil {
+							return false, fmt.Errorf("failed to manually create import test user [%s]: failed reading response body: %w", username, readErr)
+						}
+						return false, fmt.Errorf("failed to manually create import test user [%s]: %s", username, body)
 					}
 					return false, err
 				},
@@ -165,8 +168,11 @@ func TestAccImportedUserDoesNotResetPassword(t *testing.T) {
 					defer resp.Body.Close()
 
 					if resp.IsError() {
-						body, err := io.ReadAll(resp.Body)
-						return false, fmt.Errorf("failed to manually change import test user password [%s] %s %s", username, body, err)
+						body, readErr := io.ReadAll(resp.Body)
+						if readErr != nil {
+							return false, fmt.Errorf("failed to manually change import test user password [%s]: failed reading response body: %w", username, readErr)
+						}
+						return false, fmt.Errorf("failed to manually change import test user password [%s]: %s", username, body)
 					}
 					return false, err
 				},

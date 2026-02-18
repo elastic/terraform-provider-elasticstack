@@ -4,6 +4,8 @@ linters:
     - misspell
     - bodyclose
     - contextcheck
+    - errname
+    - errorlint
   exclusions:
     generated: lax
     presets:

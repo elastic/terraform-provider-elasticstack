@@ -33,9 +33,12 @@ func CheckUserCanAuthenticate(username string, password string) func(*terraform.
 		defer resp.Body.Close()
 
 		if resp.IsError() {
-			body, err := io.ReadAll(resp.Body)
+			body, readErr := io.ReadAll(resp.Body)
+			if readErr != nil {
+				return fmt.Errorf("failed to authenticate as test user [%s]: failed reading response body: %w", username, readErr)
+			}
 
-			return fmt.Errorf("failed to authenticate as test user [%s] %s %s", username, body, err)
+			return fmt.Errorf("failed to authenticate as test user [%s]: %s", username, body)
 		}
 		return nil
 	}

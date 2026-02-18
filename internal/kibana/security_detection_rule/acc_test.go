@@ -37,14 +37,25 @@ func checkResourceJSONAttr(name, key, expectedJSON string) resource.TestCheckFun
 			return fmt.Errorf("%s: Attribute '%s' not found", name, key)
 		}
 
-		if eq, err := utils.JSONBytesEqual([]byte(expectedJSON), []byte(actualJSON)); !eq {
+		if eq, jsonErr := utils.JSONBytesEqual([]byte(expectedJSON), []byte(actualJSON)); !eq {
+			if jsonErr != nil {
+				return fmt.Errorf(
+					"%s: Attribute '%s' expected %#v, got %#v: %w",
+					name,
+					key,
+					expectedJSON,
+					actualJSON,
+					jsonErr,
+				)
+			}
+
 			return fmt.Errorf(
-				"%s: Attribute '%s' expected %#v, got %#v (<err>: %v)",
+				"%s: Attribute '%s' expected %#v, got %#v",
 				name,
 				key,
 				expectedJSON,
 				actualJSON,
-				err)
+			)
 		}
 		return nil
 	}
@@ -1375,7 +1386,7 @@ func testAccCheckSecurityDetectionRuleDestroy(s *terraform.State) error {
 
 			response, err := kbClient.API.ReadRuleWithResponse(context.Background(), parts[0], params)
 			if err != nil {
-				return fmt.Errorf("failed to read security detection rule: %v", err)
+				return fmt.Errorf("failed to read security detection rule: %w", err)
 			}
 
 			// If the rule still exists (status 200), it means destroy failed
