@@ -52,7 +52,7 @@ This transition:
   * Allow practitioners to only define configuration for the inputs, streams, and variables that differ from the package defined defaults.
 * Reduces the scope of the large `streams_json` string. Instead allowing each stream to be defined as it's own object for Terraform drift checking. 
 
-Existing usage of the `input` block must be migrated to the attribute syntax. Some [examples](https://github.com/elastic/terraform-provider-elasticstack/compare/input-attribute?expand=1#diff-3346189f5ed24da90a529a5fa0d06be1745ee9013775c4b8e42a0e909155e5b6) of this migration can be seen in the changes to the provider automated tests. As a step-by-step guide however:
+Existing usage of the `input` block must be migrated to the attribute syntax. Some [examples of this migration](https://github.com/elastic/terraform-provider-elasticstack/pull/1482/files) can be seen in the changes to the provider automated tests. As a step-by-step guide however:
 
 1. `input` blocks are merged together into a single `inputs` attribute
 2. The `input_id` attribute is removed, and instead used as the map key when defining an input
