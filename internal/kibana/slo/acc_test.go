@@ -566,6 +566,24 @@ func TestAccResourceSlo_kql_custom_indicator_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "kql_custom_indicator.0.timestamp_field", "custom_timestamp"),
 				),
 			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("fleetctl_test"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(sloName),
+					"tags": config.ListVariable(config.StringVariable("test-tag")),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.fleetctl_api_pod_readiness", "kql_custom_indicator.0.index", "metrics-*,serverless-metrics-*:metrics-*"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.fleetctl_api_pod_readiness", "kql_custom_indicator.0.good", "kubernetes.pod.status.ready: true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.fleetctl_api_pod_readiness", "kql_custom_indicator.0.total", ""),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.fleetctl_api_pod_readiness", "kql_custom_indicator.0.filter", "kubernetes.deployment.name: \"fleetctl-api\" and kubernetes.pod.status.ready : * "),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.fleetctl_api_pod_readiness", "kql_custom_indicator.0.timestamp_field", "@timestamp"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.fleetctl_api_pod_readiness", "settings.sync_delay", "1m"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.fleetctl_api_pod_readiness", "settings.frequency", "1m"),
+				),
+			},
 		},
 	})
 }
