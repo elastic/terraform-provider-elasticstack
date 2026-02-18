@@ -47,10 +47,10 @@ type sectionGridModel struct {
 }
 
 type panelConfigConverter interface {
-	handlesAPIPanelConfig(*panelModel, string, kbapi.DashboardPanelItem_Config) bool
-	handlesTFPanelConfig(pm panelModel) bool
-	populateFromAPIPanel(context.Context, *panelModel, kbapi.DashboardPanelItem_Config) diag.Diagnostics
-	mapPanelToAPI(panelModel, *kbapi.DashboardPanelItem_Config) diag.Diagnostics
+	handlesAPIPanelConfig(ctx *panelModel, panelType string, config kbapi.DashboardPanelItem_Config) bool
+	handlesTFPanelConfig(tfModel panelModel) bool
+	populateFromAPIPanel(ctx context.Context, tfModel *panelModel, config kbapi.DashboardPanelItem_Config) diag.Diagnostics
+	mapPanelToAPI(tfModel panelModel, config *kbapi.DashboardPanelItem_Config) diag.Diagnostics
 }
 
 var panelConfigConverters = []panelConfigConverter{
