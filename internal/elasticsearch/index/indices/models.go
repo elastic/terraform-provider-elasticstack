@@ -418,7 +418,7 @@ func setSettingsFromAPI(ctx context.Context, model *indexTfModel, apiModel model
 
 func (model indexTfModel) getFieldValueByTagValue(tagName string, t reflect.Type) (attr.Value, bool) {
 	numField := t.NumField()
-	for i := 0; i < numField; i++ {
+	for i := range numField {
 		field := t.Field(i)
 		if field.Tag.Get("tfsdk") == tagName {
 			return reflect.ValueOf(model).Field(i).Interface().(attr.Value), true
@@ -430,7 +430,7 @@ func (model indexTfModel) getFieldValueByTagValue(tagName string, t reflect.Type
 
 func (model *indexTfModel) setFieldValueByTagValue(tagName string, t reflect.Type, value attr.Value) bool {
 	numField := t.NumField()
-	for i := 0; i < numField; i++ {
+	for i := range numField {
 		field := t.Field(i)
 		if field.Tag.Get("tfsdk") == tagName {
 			reflect.ValueOf(model).Elem().Field(i).Set(reflect.ValueOf(value))

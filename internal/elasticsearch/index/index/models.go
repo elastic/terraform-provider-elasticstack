@@ -436,7 +436,7 @@ func (model tfModel) toIndexSettings(ctx context.Context) (map[string]interface{
 
 func (model tfModel) getFieldValueByTagValue(tagName string, t reflect.Type) (attr.Value, bool) {
 	numField := t.NumField()
-	for i := 0; i < numField; i++ {
+	for i := range numField {
 		field := t.Field(i)
 		if field.Tag.Get("tfsdk") == tagName {
 			return reflect.ValueOf(model).Field(i).Interface().(attr.Value), true

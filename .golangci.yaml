@@ -10,6 +10,7 @@ linters:
     - goconst
     - gocritic
     - inamedparam
+    - intrange
   exclusions:
     generated: lax
     presets:
