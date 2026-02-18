@@ -650,4 +650,3 @@ func testCheckAlertingRuleStateParamsOnlyKeys(resourceName string, allowedKeys .
 		return nil
 	})
 }
-
