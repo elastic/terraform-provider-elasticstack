@@ -1,7 +1,7 @@
 ## [Unreleased]
 
 ### Changes
-* Fix JSON marshaling error in `elasticstack_kibana_slo` when `good` or `total` fields in `kql_custom_indicator` are empty or null. ([#XXXX](https://github.com/elastic/terraform-provider-elasticstack/pull/XXXX))
+* Fix JSON marshaling error in `elasticstack_kibana_slo` when `good` or `total` fields in `kql_custom_indicator` are empty or null. ([#1729](https://github.com/elastic/terraform-provider-elasticstack/pull/1729))
 
 ## [0.14.1] - 2026-02-18
 
