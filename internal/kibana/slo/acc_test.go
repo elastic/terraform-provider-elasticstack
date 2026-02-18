@@ -546,7 +546,7 @@ func TestAccResourceSloValidation(t *testing.T) {
 	})
 }
 
-func TestAccResourceSlo_kql_custom_indicator_basic(t *testing.T) {
+func TestAccResourceSlo_kql_custom_indicator(t *testing.T) {
 	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -555,7 +555,7 @@ func TestAccResourceSlo_kql_custom_indicator_basic(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion),
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("test"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
 				ConfigVariables: config.Variables{
 					"name": config.StringVariable(sloName),
 				},
@@ -564,6 +564,28 @@ func TestAccResourceSlo_kql_custom_indicator_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "kql_custom_indicator.0.good", "latency < 300"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "kql_custom_indicator.0.total", "*"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "kql_custom_indicator.0.timestamp_field", "custom_timestamp"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("json_encoding"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(sloName),
+					"tags": config.ListVariable(config.StringVariable("test"), config.StringVariable("terraform")),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.fleetctl_api_pod_readiness", "name", sloName),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.fleetctl_api_pod_readiness", "kql_custom_indicator.0.index", "metrics-*,serverless-metrics-*:metrics-*"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.fleetctl_api_pod_readiness", "kql_custom_indicator.0.good", "kubernetes.pod.status.ready: true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.fleetctl_api_pod_readiness", "kql_custom_indicator.0.filter", "kubernetes.deployment.name: \"fleetctl-api\" and kubernetes.pod.status.ready : * "),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.fleetctl_api_pod_readiness", "kql_custom_indicator.0.timestamp_field", "@timestamp"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.fleetctl_api_pod_readiness", "time_window.0.duration", "7d"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.fleetctl_api_pod_readiness", "time_window.0.type", "rolling"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.fleetctl_api_pod_readiness", "budgeting_method", "occurrences"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.fleetctl_api_pod_readiness", "objective.0.target", "0.9"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_slo.fleetctl_api_pod_readiness", "tags.*", "test"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_slo.fleetctl_api_pod_readiness", "tags.*", "terraform"),
 				),
 			},
 		},
