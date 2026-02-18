@@ -10,6 +10,12 @@
 
 ### Breaking changes
 
+#### `elasticstack_elasticsearch_index` `sort_field` attribute has changed from a set to a list
+
+The `sort_field` attribute in the `elasticstack_elasticsearch_index` resource was previously defined as a `SetAttribute`, which doesn't preserve order. This caused sort fields to be reordered arbitrarily when creating indices with multiple sort fields. The attribute has been changed to a `ListAttribute` to preserve the order as specified in the Terraform configuration.
+
+Users with existing state containing `sort_field` will see a plan diff on the next apply, as the resource will be recreated due to the `RequiresReplace` modifier on this static setting. The actual sort order in Elasticsearch will now match the order specified in Terraform.
+
 #### `elasticstack_fleet_integration` `space_ids` attribute has been reduced to a single `space_id`
 
 The provider was only considering the first entry in the `space_ids` set ([#1642](https://github.com/elastic/terraform-provider-elasticstack/issues/1642)). Extending the resource to correctly handle multiple spaces would not make sense as a single Terraform resource. Instead this attribute is being reduced to a single string, with practitioners able to manage the installation of an integration across multiple spaces through multiple instances of this resource. 

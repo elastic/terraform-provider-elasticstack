@@ -95,7 +95,7 @@ type tfModel struct {
 	RoutingPartitionSize               types.Int64          `tfsdk:"routing_partition_size"`
 	LoadFixedBitsetFiltersEagerly      types.Bool           `tfsdk:"load_fixed_bitset_filters_eagerly"`
 	ShardCheckOnStartup                types.String         `tfsdk:"shard_check_on_startup"`
-	SortField                          types.Set            `tfsdk:"sort_field"`
+	SortField                          types.List           `tfsdk:"sort_field"`
 	SortOrder                          types.List           `tfsdk:"sort_order"`
 	MappingCoerce                      types.Bool           `tfsdk:"mapping_coerce"`
 	MappingTotalFieldsLimit            types.Int64          `tfsdk:"mapping_total_fields_limit"`
