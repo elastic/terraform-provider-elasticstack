@@ -46,7 +46,7 @@ func TestKqlCustomIndicator_ToAPI(t *testing.T) {
 		assert.Equal(t, "@timestamp", params.TimestampField)
 	})
 
-	t.Run("handles unknown values by omitting pointers", func(t *testing.T) {
+	t.Run("handles unknown values by omitting filter and defaulting good/total", func(t *testing.T) {
 		m := tfModel{KqlCustomIndicator: []tfKqlCustomIndicator{{
 			Index:          types.StringValue("logs-*"),
 			DataViewID:     types.StringNull(),
@@ -65,8 +65,10 @@ func TestKqlCustomIndicator_ToAPI(t *testing.T) {
 		assert.Equal(t, "logs-*", params.Index)
 		assert.Nil(t, params.DataViewId)
 		assert.Nil(t, params.Filter)
-		assert.Nil(t, params.Good.String)
-		assert.Nil(t, params.Total.String)
+		require.NotNil(t, params.Good.String)
+		assert.Equal(t, "", *params.Good.String)
+		require.NotNil(t, params.Total.String)
+		assert.Equal(t, "", *params.Total.String)
 		assert.Equal(t, "@timestamp", params.TimestampField)
 	})
 }

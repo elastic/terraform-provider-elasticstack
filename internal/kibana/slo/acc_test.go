@@ -563,7 +563,9 @@ func TestAccResourceSlo_kql_custom_indicator(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "kql_custom_indicator.0.index", "my-index-"+sloName),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "kql_custom_indicator.0.good", "latency < 300"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "kql_custom_indicator.0.total", "*"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_slo.test_slo", "kql_custom_indicator.0.filter"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "kql_custom_indicator.0.timestamp_field", "custom_timestamp"),
+					testCheckSloOptionalListUnsetOrEmpty("elasticstack_kibana_slo.test_slo", "group_by"),
 				),
 			},
 			{
@@ -588,8 +590,53 @@ func TestAccResourceSlo_kql_custom_indicator(t *testing.T) {
 					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_slo.fleetctl_api_pod_readiness", "tags.*", "terraform"),
 				),
 			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("json_encoding_unset"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(sloName),
+					"tags": config.ListVariable(config.StringVariable("test"), config.StringVariable("terraform")),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.fleetctl_api_pod_readiness", "name", sloName),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.fleetctl_api_pod_readiness", "kql_custom_indicator.0.index", "metrics-*,serverless-metrics-*:metrics-*"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.fleetctl_api_pod_readiness", "kql_custom_indicator.0.good", "kubernetes.pod.status.ready: true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.fleetctl_api_pod_readiness", "kql_custom_indicator.0.total", "*"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_slo.fleetctl_api_pod_readiness", "kql_custom_indicator.0.filter"),
+					testCheckSloOptionalListUnsetOrEmpty("elasticstack_kibana_slo.fleetctl_api_pod_readiness", "group_by"),
+				),
+			},
 		},
 	})
+}
+
+func testCheckSloOptionalListUnsetOrEmpty(resourceName, attrName string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceName]
+		if !ok {
+			return fmt.Errorf("resource not found in state: %s", resourceName)
+		}
+
+		key := attrName + ".#"
+		v, ok := rs.Primary.Attributes[key]
+		if !ok {
+			return nil
+		}
+		switch v {
+		case "0":
+			return nil
+		case "1":
+			// Kibana can default group_by to ["*"] when omitted.
+			if rs.Primary.Attributes[attrName+".0"] == "*" {
+				return nil
+			}
+			return fmt.Errorf("expected %s to be unset/empty or default ['*'], got %q", attrName, rs.Primary.Attributes[attrName+".0"])
+		default:
+			return fmt.Errorf("expected %s to be unset/empty or default ['*'], got length %s", attrName, v)
+		}
+		return nil
+	}
 }
 
 //go:embed testdata/TestAccResourceSloFromSDK/create/main.tf
