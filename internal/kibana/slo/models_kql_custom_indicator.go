@@ -83,10 +83,10 @@ func (m *tfModel) populateFromKqlCustomIndicator(apiIndicator *slo.IndicatorProp
 	if p.Filter != nil && p.Filter.String != nil {
 		ind.Filter = types.StringValue(*p.Filter.String)
 	}
-	if p.Good.String != nil {
+	if p.Good.String != nil && *p.Good.String != "" {
 		ind.Good = types.StringValue(*p.Good.String)
 	}
-	if p.Total.String != nil {
+	if p.Total.String != nil && *p.Total.String != "" {
 		ind.Total = types.StringValue(*p.Total.String)
 	}
 	if p.DataViewId != nil {

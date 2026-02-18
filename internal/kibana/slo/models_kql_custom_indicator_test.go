@@ -144,6 +144,28 @@ func TestKqlCustomIndicator_PopulateFromAPI(t *testing.T) {
 		assert.True(t, ind.Total.IsNull())
 	})
 
+	t.Run("treats empty good/total as null", func(t *testing.T) {
+		api := &generatedslo.IndicatorPropertiesCustomKql{
+			Params: generatedslo.IndicatorPropertiesCustomKqlParams{
+				Index:          "logs-*",
+				DataViewId:     nil,
+				Filter:         nil,
+				Good:           generatedslo.KqlWithFiltersGood{String: strPtr("")},
+				Total:          generatedslo.KqlWithFiltersTotal{String: strPtr("")},
+				TimestampField: "@timestamp",
+			},
+		}
+
+		var m tfModel
+		diags := m.populateFromKqlCustomIndicator(api)
+		require.False(t, diags.HasError())
+		require.Len(t, m.KqlCustomIndicator, 1)
+
+		ind := m.KqlCustomIndicator[0]
+		assert.True(t, ind.Good.IsNull())
+		assert.True(t, ind.Total.IsNull())
+	})
+
 	t.Run("returns empty diagnostics when api is nil", func(t *testing.T) {
 		var m tfModel
 		diags := m.populateFromKqlCustomIndicator(nil)
