@@ -79,7 +79,7 @@ docker-testacc: docker-fleet ## Run acceptance tests in the docker container
 # To run specific test (e.g. TestAccResourceActionConnector) execute `make docker-testacc TESTARGS='-run ^TestAccResourceActionConnector$$'`
 # To enable tracing (or debugging), execute `make docker-testacc TF_LOG=TRACE`
 .PHONY: docker-testacc-with-token
-docker-testacc-with-token: docker-clean docker-fleet
+docker-testacc-with-token: docker-fleet
 	@ export ELASTICSEARCH_BEARER_TOKEN=$(shell $(MAKE) create-es-bearer-token | jq -r .access_token); \
 	docker compose -f $(COMPOSE_FILE) --profile token-acceptance-tests up --quiet-pull token-acceptance-tests;
 
