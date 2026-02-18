@@ -23,9 +23,9 @@ type ConfigValue struct {
 }
 
 // Type returns a ConfigType.
-func (v ConfigValue) Type(_ context.Context) attr.Type {
+func (v ConfigValue) Type(ctx context.Context) attr.Type {
 	return ConfigType{
-		JSONWithContextualDefaultsType: v.JSONWithContextualDefaultsValue.Type(context.Background()).(customtypes.JSONWithContextualDefaultsType),
+		JSONWithContextualDefaultsType: v.JSONWithContextualDefaultsValue.Type(ctx).(customtypes.JSONWithContextualDefaultsType),
 	}
 }
 

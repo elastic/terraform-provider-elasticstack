@@ -22,11 +22,11 @@ import (
 //go:embed resource-description.md
 var mlJobStateResourceDescription string
 
-func (r *mlJobStateResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = GetSchema()
+func (r *mlJobStateResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+	resp.Schema = GetSchema(ctx)
 }
 
-func GetSchema() schema.Schema {
+func GetSchema(ctx context.Context) schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: mlJobStateResourceDescription,
 		Blocks: map[string]schema.Block{
@@ -71,7 +71,7 @@ func GetSchema() schema.Schema {
 				Default:             stringdefault.StaticString("30s"),
 				CustomType:          customtypes.DurationType{},
 			},
-			"timeouts": timeouts.Attributes(context.Background(), timeouts.Opts{
+			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
 				Create: true,
 				Update: true,
 			}),

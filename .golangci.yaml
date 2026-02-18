@@ -2,6 +2,8 @@ version: "2"
 linters:
   enable:
     - misspell
+    - bodyclose
+    - contextcheck
   exclusions:
     generated: lax
     presets:

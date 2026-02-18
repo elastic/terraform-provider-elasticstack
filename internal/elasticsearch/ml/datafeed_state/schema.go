@@ -21,14 +21,14 @@ import (
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 )
 
-func (r *mlDatafeedStateResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = GetSchema()
+func (r *mlDatafeedStateResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+	resp.Schema = GetSchema(ctx)
 }
 
 //go:embed resource-description.md
 var description string
 
-func GetSchema() schema.Schema {
+func GetSchema(ctx context.Context) schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: description,
 		Blocks: map[string]schema.Block{
@@ -89,7 +89,7 @@ func GetSchema() schema.Schema {
 				Default:             stringdefault.StaticString("30s"),
 				CustomType:          customtypes.DurationType{},
 			},
-			"timeouts": timeouts.Attributes(context.Background(), timeouts.Opts{
+			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
 				Create: true,
 				Update: true,
 			}),

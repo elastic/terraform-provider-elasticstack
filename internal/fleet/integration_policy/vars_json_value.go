@@ -25,9 +25,9 @@ type VarsJSONValue struct {
 }
 
 // Type returns a VarsJSONType.
-func (v VarsJSONValue) Type(_ context.Context) attr.Type {
+func (v VarsJSONValue) Type(ctx context.Context) attr.Type {
 	return VarsJSONType{
-		JSONWithContextualDefaultsType: v.JSONWithContextualDefaultsValue.Type(context.Background()).(customtypes.JSONWithContextualDefaultsType),
+		JSONWithContextualDefaultsType: v.JSONWithContextualDefaultsValue.Type(ctx).(customtypes.JSONWithContextualDefaultsType),
 	}
 }
 
