@@ -31,7 +31,7 @@ type integrationPolicyModel struct {
 	IntegrationName    types.String  `tfsdk:"integration_name"`
 	IntegrationVersion types.String  `tfsdk:"integration_version"`
 	OutputID           types.String  `tfsdk:"output_id"`
-	Inputs             InputsValue   `tfsdk:"inputs"` //> integrationPolicyInputsModel
+	Inputs             InputsValue   `tfsdk:"inputs"` // > integrationPolicyInputsModel
 	VarsJson           VarsJSONValue `tfsdk:"vars_json"`
 	SpaceIds           types.Set     `tfsdk:"space_ids"`
 }
@@ -39,8 +39,8 @@ type integrationPolicyModel struct {
 type integrationPolicyInputsModel struct {
 	Enabled  types.Bool           `tfsdk:"enabled"`
 	Vars     jsontypes.Normalized `tfsdk:"vars"`
-	Defaults types.Object         `tfsdk:"defaults"` //> inputDefaultsModel
-	Streams  types.Map            `tfsdk:"streams"`  //> integrationPolicyInputStreamModel
+	Defaults types.Object         `tfsdk:"defaults"` // > inputDefaultsModel
+	Streams  types.Map            `tfsdk:"streams"`  // > integrationPolicyInputStreamModel
 }
 
 type integrationPolicyInputStreamModel struct {

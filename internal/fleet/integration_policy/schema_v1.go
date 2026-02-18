@@ -34,7 +34,7 @@ type integrationPolicyModelV1 struct {
 	IntegrationName    types.String         `tfsdk:"integration_name"`
 	IntegrationVersion types.String         `tfsdk:"integration_version"`
 	OutputID           types.String         `tfsdk:"output_id"`
-	Input              types.List           `tfsdk:"input"` //> integrationPolicyInputModel
+	Input              types.List           `tfsdk:"input"` // > integrationPolicyInputModel
 	VarsJson           jsontypes.Normalized `tfsdk:"vars_json"`
 	SpaceIds           types.Set            `tfsdk:"space_ids"`
 }
@@ -50,11 +50,12 @@ func (m integrationPolicyModelV1) toV2(ctx context.Context) (integrationPolicyMo
 	var diags diag.Diagnostics
 
 	var varsJson VarsJSONValue
-	if m.VarsJson.IsNull() {
+	switch {
+	case m.VarsJson.IsNull():
 		varsJson = NewVarsJSONNull()
-	} else if m.VarsJson.IsUnknown() {
+	case m.VarsJson.IsUnknown():
 		varsJson = NewVarsJSONUnknown()
-	} else {
+	default:
 		var d diag.Diagnostics
 		varsJson, d = NewVarsJSONWithIntegration(m.VarsJson.ValueString(), m.IntegrationName.ValueString(), m.IntegrationVersion.ValueString())
 		diags.Append(d...)

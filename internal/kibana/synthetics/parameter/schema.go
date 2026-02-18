@@ -30,7 +30,7 @@ type tfModelV0 struct {
 	Key               types.String   `tfsdk:"key"`
 	Value             types.String   `tfsdk:"value"`
 	Description       types.String   `tfsdk:"description"`
-	Tags              []types.String `tfsdk:"tags"` //> string
+	Tags              []types.String `tfsdk:"tags"` // > string
 	ShareAcrossSpaces types.Bool     `tfsdk:"share_across_spaces"`
 }
 

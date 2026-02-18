@@ -312,7 +312,7 @@ type dataViewModel struct {
 	ID       types.String `tfsdk:"id"`
 	SpaceID  types.String `tfsdk:"space_id"`
 	Override types.Bool   `tfsdk:"override"`
-	DataView types.Object `tfsdk:"data_view"` //> innerModel
+	DataView types.Object `tfsdk:"data_view"` // > innerModel
 }
 
 type innerModel struct {
@@ -320,12 +320,12 @@ type innerModel struct {
 	Name            types.String `tfsdk:"name"`
 	ID              types.String `tfsdk:"id"`
 	TimeFieldName   types.String `tfsdk:"time_field_name"`
-	SourceFilters   types.List   `tfsdk:"source_filters"`    //> string
-	FieldAttributes types.Map    `tfsdk:"field_attrs"`       //> fieldAttrModel
-	RuntimeFieldMap types.Map    `tfsdk:"runtime_field_map"` //> runtimeFieldModel
-	FieldFormats    types.Map    `tfsdk:"field_formats"`     //> fieldFormatModel
+	SourceFilters   types.List   `tfsdk:"source_filters"`    // > string
+	FieldAttributes types.Map    `tfsdk:"field_attrs"`       // > fieldAttrModel
+	RuntimeFieldMap types.Map    `tfsdk:"runtime_field_map"` // > runtimeFieldModel
+	FieldFormats    types.Map    `tfsdk:"field_formats"`     // > fieldFormatModel
 	AllowNoIndex    types.Bool   `tfsdk:"allow_no_index"`
-	Namespaces      types.List   `tfsdk:"namespaces"` //> string
+	Namespaces      types.List   `tfsdk:"namespaces"` // > string
 }
 
 type fieldAttrModel struct {
@@ -340,7 +340,7 @@ type runtimeFieldModel struct {
 
 type fieldFormatModel struct {
 	ID     types.String `tfsdk:"id"`
-	Params types.Object `tfsdk:"params"` //> fieldFormatParamsModel
+	Params types.Object `tfsdk:"params"` // > fieldFormatParamsModel
 }
 
 type fieldFormatParamsModel struct {
@@ -354,10 +354,10 @@ type fieldFormatParamsModel struct {
 	UseShortSuffix         types.Bool   `tfsdk:"use_short_suffix"`
 	Timezone               types.String `tfsdk:"timezone"`
 	FieldType              types.String `tfsdk:"field_type"`
-	Colors                 types.List   `tfsdk:"colors"` //> colorConfigModel
+	Colors                 types.List   `tfsdk:"colors"` // > colorConfigModel
 	FieldLength            types.Int64  `tfsdk:"field_length"`
 	Transform              types.String `tfsdk:"transform"`
-	LookupEntries          types.List   `tfsdk:"lookup_entries"` //> lookupEntryModel
+	LookupEntries          types.List   `tfsdk:"lookup_entries"` // > lookupEntryModel
 	UnknownKeyValue        types.String `tfsdk:"unknown_key_value"`
 	Type                   types.String `tfsdk:"type"`
 	Width                  types.Int64  `tfsdk:"width"`

@@ -898,7 +898,7 @@ func parseDurationToApi(duration customtypes.Duration) (kbapi.SecurityDetections
 		unit = kbapi.SecurityDetectionsAPIAlertSuppressionDurationUnitH
 	case "d":
 		// Convert days to hours since API doesn't support days unit
-		value = value * 24
+		value *= 24
 		unit = kbapi.SecurityDetectionsAPIAlertSuppressionDurationUnitH
 	default:
 		diags.AddError(

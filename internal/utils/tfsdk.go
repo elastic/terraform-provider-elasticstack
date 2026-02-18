@@ -352,11 +352,12 @@ func TransformMapToSlice[T1 any, T2 any](ctx context.Context, value map[string]T
 func convertToAttrDiags(diags diag.Diagnostics, path path.Path) diag.Diagnostics {
 	var nd diag.Diagnostics
 	for _, d := range diags {
-		if d.Severity() == diag.SeverityError {
+		switch d.Severity() {
+		case diag.SeverityError:
 			nd.AddAttributeError(path, d.Summary(), d.Detail())
-		} else if d.Severity() == diag.SeverityWarning {
+		case diag.SeverityWarning:
 			nd.AddAttributeWarning(path, d.Summary(), d.Detail())
-		} else {
+		default:
 			nd.Append(d)
 		}
 	}

@@ -92,10 +92,8 @@ func TestRoleDescriptorsValue_WithDefaults(t *testing.T) {
 
 			if tt.expectError {
 				assert.True(t, diags.HasError())
-			} else {
-				if tt.expectedResult != nil {
-					tt.expectedResult(t, result, diags)
-				}
+			} else if tt.expectedResult != nil {
+				tt.expectedResult(t, result, diags)
 			}
 		})
 	}

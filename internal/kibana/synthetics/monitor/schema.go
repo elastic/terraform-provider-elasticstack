@@ -106,7 +106,7 @@ type tfModelV0 struct {
 	Enabled          types.Bool                `tfsdk:"enabled"`
 	Tags             []types.String            `tfsdk:"tags"`
 	Labels           types.Map                 `tfsdk:"labels"`
-	Alert            types.Object              `tfsdk:"alert"` //tfAlertConfigV0
+	Alert            types.Object              `tfsdk:"alert"` // tfAlertConfigV0
 	APMServiceName   types.String              `tfsdk:"service_name"`
 	TimeoutSeconds   types.Int64               `tfsdk:"timeout"`
 	HTTP             *tfHTTPMonitorFieldsV0    `tfsdk:"http"`
@@ -801,17 +801,18 @@ func (v *tfModelV0) toKibanaAPIRequest(ctx context.Context) (*kibanaAPIRequest, 
 func (v *tfModelV0) toMonitorFields(ctx context.Context) (kbapi.MonitorFields, diag.Diagnostics) {
 	dg := diag.Diagnostics{}
 
-	if v.HTTP != nil {
+	switch {
+	case v.HTTP != nil:
 		return v.toHttpMonitorFields(ctx)
-	} else if v.TCP != nil {
+	case v.TCP != nil:
 		return v.toTCPMonitorFields(ctx)
-	} else if v.ICMP != nil {
+	case v.ICMP != nil:
 		return v.toICMPMonitorFields(), dg
-	} else if v.Browser != nil {
+	case v.Browser != nil:
 		return v.toBrowserMonitorFields()
 	}
 
-	dg.AddError("Unsupported monitor type config", "one of http,tcp monitor fields is required")
+	dg.AddError("Unsupported monitor type config", "one of http,tcp,icmp,browser monitor fields is required")
 	return nil, dg
 }
 
@@ -985,7 +986,7 @@ func (v *tfModelV0) toBrowserMonitorFields() (kbapi.MonitorFields, diag.Diagnost
 		SyntheticsArgs:    synthetics.ValueStringSlice(v.Browser.SyntheticsArgs),
 		IgnoreHttpsErrors: v.Browser.IgnoreHttpsErrors.ValueBoolPointer(),
 		PlaywrightOptions: playwrightOptions,
-	}, diag.Diagnostics{} //dg
+	}, diag.Diagnostics{} // dg
 }
 
 func Map[T, U any](ts []T, f func(T) U) []U {

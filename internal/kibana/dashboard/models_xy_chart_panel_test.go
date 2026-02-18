@@ -442,11 +442,7 @@ func Test_axisTitleModel_fromAPI_toAPI(t *testing.T) {
 
 			// Test toAPI
 			apiTitle := model.toAPI()
-			if tt.apiTitle == nil {
-				assert.NotNil(t, apiTitle)
-			} else {
-				assert.NotNil(t, apiTitle)
-			}
+			assert.NotNil(t, apiTitle)
 		})
 	}
 }

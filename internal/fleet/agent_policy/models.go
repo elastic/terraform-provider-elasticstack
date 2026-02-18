@@ -67,7 +67,7 @@ type agentPolicyModel struct {
 	SupportsAgentless         types.Bool           `tfsdk:"supports_agentless"`
 	InactivityTimeout         customtypes.Duration `tfsdk:"inactivity_timeout"`
 	UnenrollmentTimeout       customtypes.Duration `tfsdk:"unenrollment_timeout"`
-	GlobalDataTags            types.Map            `tfsdk:"global_data_tags"` //> globalDataTagsModel
+	GlobalDataTags            types.Map            `tfsdk:"global_data_tags"` // > globalDataTagsModel
 	SpaceIds                  types.Set            `tfsdk:"space_ids"`
 	RequiredVersions          types.Map            `tfsdk:"required_versions"`
 	AdvancedMonitoringOptions types.Object         `tfsdk:"advanced_monitoring_options"`

@@ -19,7 +19,7 @@ type tfModelV0 struct {
 	ID            types.String   `tfsdk:"id"`
 	Label         types.String   `tfsdk:"label"`
 	AgentPolicyId types.String   `tfsdk:"agent_policy_id"`
-	Tags          []types.String `tfsdk:"tags"` //> string
+	Tags          []types.String `tfsdk:"tags"` // > string
 	Geo           *tfGeoConfigV0 `tfsdk:"geo"`
 }
 

@@ -16,15 +16,15 @@ type outputModel struct {
 	OutputID             types.String `tfsdk:"output_id"`
 	Name                 types.String `tfsdk:"name"`
 	Type                 types.String `tfsdk:"type"`
-	Hosts                types.List   `tfsdk:"hosts"` //> string
+	Hosts                types.List   `tfsdk:"hosts"` // > string
 	CaSha256             types.String `tfsdk:"ca_sha256"`
 	CaTrustedFingerprint types.String `tfsdk:"ca_trusted_fingerprint"`
 	DefaultIntegrations  types.Bool   `tfsdk:"default_integrations"`
 	DefaultMonitoring    types.Bool   `tfsdk:"default_monitoring"`
 	ConfigYaml           types.String `tfsdk:"config_yaml"`
-	SpaceIds             types.Set    `tfsdk:"space_ids"` //> string
-	Ssl                  types.Object `tfsdk:"ssl"`       //> outputSslModel
-	Kafka                types.Object `tfsdk:"kafka"`     //> outputKafkaModel
+	SpaceIds             types.Set    `tfsdk:"space_ids"` // > string
+	Ssl                  types.Object `tfsdk:"ssl"`       // > outputSslModel
+	Kafka                types.Object `tfsdk:"kafka"`     // > outputKafkaModel
 }
 
 func (model *outputModel) populateFromAPI(ctx context.Context, union *kbapi.OutputUnion) (diags diag.Diagnostics) {

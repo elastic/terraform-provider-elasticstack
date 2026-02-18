@@ -12,7 +12,7 @@ import (
 )
 
 type outputSslModel struct {
-	CertificateAuthorities types.List   `tfsdk:"certificate_authorities"` //> string
+	CertificateAuthorities types.List   `tfsdk:"certificate_authorities"` // > string
 	Certificate            types.String `tfsdk:"certificate"`
 	Key                    types.String `tfsdk:"key"`
 }

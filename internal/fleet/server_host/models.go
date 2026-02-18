@@ -16,7 +16,7 @@ type serverHostModel struct {
 	Name     types.String `tfsdk:"name"`
 	Hosts    types.List   `tfsdk:"hosts"`
 	Default  types.Bool   `tfsdk:"default"`
-	SpaceIds types.Set    `tfsdk:"space_ids"` //> string
+	SpaceIds types.Set    `tfsdk:"space_ids"` // > string
 }
 
 func (model *serverHostModel) populateFromAPI(ctx context.Context, data *kbapi.ServerHost) (diags diag.Diagnostics) {

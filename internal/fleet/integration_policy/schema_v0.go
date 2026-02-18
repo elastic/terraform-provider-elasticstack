@@ -27,7 +27,7 @@ type integrationPolicyModelV0 struct {
 	Force              types.Bool   `tfsdk:"force"`
 	IntegrationName    types.String `tfsdk:"integration_name"`
 	IntegrationVersion types.String `tfsdk:"integration_version"`
-	Input              types.List   `tfsdk:"input"` //> integrationPolicyInputModelV0
+	Input              types.List   `tfsdk:"input"` // > integrationPolicyInputModelV0
 	VarsJson           types.String `tfsdk:"vars_json"`
 }
 

@@ -274,7 +274,7 @@ func GetEsConnectionSchema(keyName string, isProviderConfiguration bool) *schema
 	withEnvDefault := func(key string, dv interface{}) schema.SchemaDefaultFunc { return nil }
 
 	if isProviderConfiguration {
-		withEnvDefault = func(key string, dv interface{}) schema.SchemaDefaultFunc { return schema.EnvDefaultFunc(key, dv) }
+		withEnvDefault = schema.EnvDefaultFunc
 
 		// RequireWith validation isn't compatible when used in conjunction with DefaultFunc
 		usernameRequiredWithValidation = nil

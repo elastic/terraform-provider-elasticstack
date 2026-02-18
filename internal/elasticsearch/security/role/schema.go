@@ -248,8 +248,7 @@ func getIndexPermsAttrTypes() map[string]attr.Type {
 	}
 	// Add blocks as attributes (field_security is a block in indices)
 	for name, block := range nestedObj.Blocks {
-		switch b := block.(type) {
-		case schema.SingleNestedBlock:
+		if b, ok := block.(schema.SingleNestedBlock); ok {
 			// For SingleNestedBlock, the type is ObjectType
 			blockAttrs := make(map[string]attr.Type)
 			for attrName, attr := range b.Attributes {
@@ -270,8 +269,7 @@ func getRemoteIndexPermsAttrTypes() map[string]attr.Type {
 	}
 	// Add blocks as attributes (field_security is a block in remote_indices)
 	for name, block := range nestedObj.Blocks {
-		switch b := block.(type) {
-		case schema.SingleNestedBlock:
+		if b, ok := block.(schema.SingleNestedBlock); ok {
 			// For SingleNestedBlock, the type is ObjectType
 			blockAttrs := make(map[string]attr.Type)
 			for attrName, attr := range b.Attributes {

@@ -271,8 +271,7 @@ func resourceLogstashPipelineRead(ctx context.Context, d *schema.ResourceData, m
 			tflog.Warn(ctx, fmt.Sprintf("setting '%s' is not currently managed by terraform provider and has been ignored", key))
 			continue
 		}
-		switch typ {
-		case schema.TypeInt:
+		if typ == schema.TypeInt {
 			value = int(math.Round(value.(float64)))
 		}
 		if err := d.Set(utils.ConvertSettingsKeyToTFFieldKey(key), value); err != nil {

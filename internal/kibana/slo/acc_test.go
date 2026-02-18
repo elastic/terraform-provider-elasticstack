@@ -86,7 +86,7 @@ func TestAccResourceSlo(t *testing.T) {
 						),
 					},
 					{
-						//check that name can be updated
+						// check that name can be updated
 						ProtoV6ProviderFactories: acctest.Providers,
 						SkipFunc: func() (bool, error) {
 							if !testWithDataViewID {
@@ -103,7 +103,7 @@ func TestAccResourceSlo(t *testing.T) {
 							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "name", fmt.Sprintf("updated-%s", sloName)),
 						),
 					},
-					{ //check that settings can be updated from api-computed defaults
+					{ // check that settings can be updated from api-computed defaults
 						ProtoV6ProviderFactories: acctest.Providers,
 						SkipFunc: func() (bool, error) {
 							if !testWithDataViewID {

@@ -40,7 +40,7 @@ func TestStringIsDuration(t *testing.T) {
 			if !reflect.DeepEqual(gotWarnings, tt.wantWarnings) {
 				t.Errorf("StringIsDuration() gotWarnings = %v, want %v", gotWarnings, tt.wantWarnings)
 			}
-			if !reflect.DeepEqual(gotErrors, tt.wantErrors) {
+			if !reflect.DeepEqual(errorsToStrings(gotErrors), errorsToStrings(tt.wantErrors)) {
 				t.Errorf("StringIsDuration() gotErrors = %v, want %v", gotErrors, tt.wantErrors)
 			}
 		})
@@ -87,9 +87,24 @@ func TestStringIsElasticDuration(t *testing.T) {
 			if !reflect.DeepEqual(gotWarnings, tt.wantWarnings) {
 				t.Errorf("StringIsElasticDuration() gotWarnings = %v, want %v", gotWarnings, tt.wantWarnings)
 			}
-			if !reflect.DeepEqual(gotErrors, tt.wantErrors) {
+			if !reflect.DeepEqual(errorsToStrings(gotErrors), errorsToStrings(tt.wantErrors)) {
 				t.Errorf("StringIsElasticDuration() gotErrors = %v, want %v", gotErrors, tt.wantErrors)
 			}
 		})
 	}
+}
+
+func errorsToStrings(errs []error) []string {
+	if errs == nil {
+		return nil
+	}
+	out := make([]string, 0, len(errs))
+	for _, err := range errs {
+		if err == nil {
+			out = append(out, "")
+			continue
+		}
+		out = append(out, err.Error())
+	}
+	return out
 }

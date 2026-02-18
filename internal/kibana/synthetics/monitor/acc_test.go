@@ -519,7 +519,7 @@ func TestSyntheticMonitorHTTPResource(t *testing.T) {
 					resource.TestCheckNoResourceAttr(httpMonitorId, "tcp"),
 					resource.TestCheckNoResourceAttr(httpMonitorId, "browser"),
 					resource.TestCheckNoResourceAttr(httpMonitorId, "icmp"),
-					//check for merge attributes
+					// check for merge attributes
 					resource.TestCheckResourceAttr(httpMonitorId, "http.proxy_header", `{"header-name":"header-value-updated"}`),
 					resource.TestCheckResourceAttr(httpMonitorId, "http.username", "testupdated"),
 					resource.TestCheckResourceAttr(httpMonitorId, "http.password", "testpassword-updated"),
@@ -664,7 +664,7 @@ func TestSyntheticMonitorTCPResource(t *testing.T) {
 					resource.TestCheckNoResourceAttr(tcpMonitorId, "http"),
 					resource.TestCheckNoResourceAttr(tcpMonitorId, "browser"),
 					resource.TestCheckNoResourceAttr(tcpMonitorId, "icmp"),
-					//check for merge attributes
+					// check for merge attributes
 					resource.TestCheckResourceAttr(tcpMonitorId, "tcp.check_send", "Hello Updated"),
 					resource.TestCheckResourceAttr(tcpMonitorId, "tcp.check_receive", "World Updated"),
 				),

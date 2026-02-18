@@ -65,14 +65,15 @@ func (r *userResource) update(ctx context.Context, plan tfsdk.Plan, config tfsdk
 		return diags
 	}
 
-	if utils.IsKnown(passwordWoFromConfig) && (!hasState || !planData.PasswordWoVersion.Equal(stateData.PasswordWoVersion)) {
+	switch {
+	case utils.IsKnown(passwordWoFromConfig) && (!hasState || !planData.PasswordWoVersion.Equal(stateData.PasswordWoVersion)):
 		// Use write-only password - changes triggered by version change
 		password := passwordWoFromConfig.ValueString()
 		user.Password = &password
-	} else if utils.IsKnown(planData.Password) && (!hasState || !planData.Password.Equal(stateData.Password)) {
+	case utils.IsKnown(planData.Password) && (!hasState || !planData.Password.Equal(stateData.Password)):
 		password := planData.Password.ValueString()
 		user.Password = &password
-	} else if utils.IsKnown(planData.PasswordHash) && (!hasState || !planData.PasswordHash.Equal(stateData.PasswordHash)) {
+	case utils.IsKnown(planData.PasswordHash) && (!hasState || !planData.PasswordHash.Equal(stateData.PasswordHash)):
 		passwordHash := planData.PasswordHash.ValueString()
 		user.PasswordHash = &passwordHash
 	}

@@ -82,7 +82,7 @@ func GetSnapshotRepository(ctx context.Context, apiClient *clients.ApiClient, na
 	}
 
 	if currentRepo, ok := snapRepoResponse[name]; ok {
-		if len(currentRepo.Name) <= 0 {
+		if len(currentRepo.Name) == 0 {
 			currentRepo.Name = name
 		}
 		return &currentRepo, diags

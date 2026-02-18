@@ -27,11 +27,11 @@ type outputKafkaModel struct {
 	Username         types.String  `tfsdk:"username"`
 	Password         types.String  `tfsdk:"password"`
 	Key              types.String  `tfsdk:"key"`
-	Headers          types.List    `tfsdk:"headers"`     //> outputHeadersModel
-	Hash             types.Object  `tfsdk:"hash"`        //> outputHashModel
-	Random           types.Object  `tfsdk:"random"`      //> outputRandomModel
-	RoundRobin       types.Object  `tfsdk:"round_robin"` //> outputRoundRobinModel
-	Sasl             types.Object  `tfsdk:"sasl"`        //> outputSaslModel
+	Headers          types.List    `tfsdk:"headers"`     // > outputHeadersModel
+	Hash             types.Object  `tfsdk:"hash"`        // > outputHashModel
+	Random           types.Object  `tfsdk:"random"`      // > outputRandomModel
+	RoundRobin       types.Object  `tfsdk:"round_robin"` // > outputRoundRobinModel
+	Sasl             types.Object  `tfsdk:"sasl"`        // > outputSaslModel
 }
 
 type outputHeadersModel struct {
