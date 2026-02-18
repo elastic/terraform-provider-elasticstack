@@ -34,11 +34,17 @@ func (m tfModel) kqlCustomIndicatorToAPI() (bool, slo.SloWithSummaryResponseIndi
 	if utils.IsKnown(ind.Good) {
 		v := ind.Good.ValueString()
 		good.String = &v
+	} else {
+		v := ""
+		good.String = &v
 	}
 
 	total := slo.KqlWithFiltersTotal{}
 	if utils.IsKnown(ind.Total) {
 		v := ind.Total.ValueString()
+		total.String = &v
+	} else {
+		v := ""
 		total.String = &v
 	}
 

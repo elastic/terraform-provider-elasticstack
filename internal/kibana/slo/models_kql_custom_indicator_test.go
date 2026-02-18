@@ -1,6 +1,7 @@
 package slo
 
 import (
+	"encoding/json"
 	"testing"
 
 	generatedslo "github.com/elastic/terraform-provider-elasticstack/generated/slo"
@@ -65,9 +66,30 @@ func TestKqlCustomIndicator_ToAPI(t *testing.T) {
 		assert.Equal(t, "logs-*", params.Index)
 		assert.Nil(t, params.DataViewId)
 		assert.Nil(t, params.Filter)
-		assert.Nil(t, params.Good.String)
-		assert.Nil(t, params.Total.String)
+		require.NotNil(t, params.Good.String)
+		assert.Equal(t, "", *params.Good.String)
+		require.NotNil(t, params.Total.String)
+		assert.Equal(t, "", *params.Total.String)
 		assert.Equal(t, "@timestamp", params.TimestampField)
+	})
+
+	t.Run("marshals to valid JSON when good and total are not set", func(t *testing.T) {
+		m := tfModel{KqlCustomIndicator: []tfKqlCustomIndicator{{
+			Index:          types.StringValue("logs-*"),
+			DataViewID:     types.StringNull(),
+			Filter:         types.StringNull(),
+			Good:           types.StringNull(),
+			Total:          types.StringNull(),
+			TimestampField: types.StringValue("@timestamp"),
+		}}}
+
+		ok, ind, diags := m.kqlCustomIndicatorToAPI()
+		require.True(t, ok)
+		require.False(t, diags.HasError())
+		require.NotNil(t, ind.IndicatorPropertiesCustomKql)
+
+		_, err := json.Marshal(ind.IndicatorPropertiesCustomKql)
+		require.NoError(t, err)
 	})
 }
 
