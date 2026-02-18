@@ -1,5 +1,11 @@
 ## [Unreleased]
 
+## [0.14.1] - 2026-02-18
+
+### Changes
+* Fix provider panic in `elasticstack_kibana_slo` when SLO updates error without a HTTP response. ([#1725](https://github.com/elastic/terraform-provider-elasticstack/pull/1725))
+* Fix inconsistent state error in `elasticstack_kibana_alerting_rule` when `alert_delay` is not specified. ([#1726](https://github.com/elastic/terraform-provider-elasticstack/pull/1726))
+
 ## [0.14.0] - 2026-02-16
 
 ### Breaking changes
@@ -728,7 +734,8 @@ resource "elasticstack_fleet_output" "output" {
 - Initial set of docs
 - CI integration
 
-[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.14.0...HEAD
+[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.14.1...HEAD
+[0.14.1]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.14.0...v0.14.1
 [0.14.0]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.13.1...v0.14.0
 [0.13.1]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.13.0...v0.13.1
 [0.13.0]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.12.2...v0.13.0
