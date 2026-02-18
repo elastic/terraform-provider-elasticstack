@@ -69,6 +69,30 @@ func TestKqlCustomIndicator_ToAPI(t *testing.T) {
 		assert.Nil(t, params.Total.String)
 		assert.Equal(t, "@timestamp", params.TimestampField)
 	})
+
+	t.Run("maps empty string total field correctly", func(t *testing.T) {
+		m := tfModel{KqlCustomIndicator: []tfKqlCustomIndicator{{
+			Index:          types.StringValue("logs-*"),
+			Filter:         types.StringValue("service.name:foo"),
+			Good:           types.StringValue("status:200"),
+			Total:          types.StringValue(""), // Empty string, should not cause marshaling error
+			TimestampField: types.StringValue("@timestamp"),
+		}}}
+
+		ok, ind, diags := m.kqlCustomIndicatorToAPI()
+		require.True(t, ok)
+		require.False(t, diags.HasError())
+		require.NotNil(t, ind.IndicatorPropertiesCustomKql)
+
+		params := ind.IndicatorPropertiesCustomKql.Params
+		assert.Equal(t, "logs-*", params.Index)
+		require.NotNil(t, params.Total.String)
+		assert.Equal(t, "", *params.Total.String)
+		
+		// Verify it can be marshaled to JSON without error
+		_, err := params.Total.MarshalJSON()
+		require.NoError(t, err)
+	})
 }
 
 func TestKqlCustomIndicator_PopulateFromAPI(t *testing.T) {
