@@ -24,6 +24,7 @@ var panelConfigNames = []string{
 	"markdown_config",
 	"config_json",
 	"xy_chart_config",
+	"treemap_config",
 	"tagcloud_config",
 	"region_map_config",
 	"legacy_metric_config",
@@ -145,6 +146,51 @@ func populateTagcloudTagByDefaults(model map[string]any) map[string]any {
 			}
 		}
 	}
+	return model
+}
+
+// populateTreemapGroupByDefaults populates default values for treemap group_by configurations.
+// Kibana may add default fields (e.g. rank_by, size) on read, so we normalize both sides.
+func populateTreemapGroupByDefaults(model []map[string]any) []map[string]any {
+	if model == nil {
+		return model
+	}
+
+	for _, item := range model {
+		if item == nil {
+			continue
+		}
+		operation, _ := item["operation"].(string)
+		if operation != "terms" {
+			continue
+		}
+		if _, exists := item["rank_by"]; !exists {
+			item["rank_by"] = map[string]any{
+				"type":      "column",
+				"metric":    float64(0),
+				"direction": "desc",
+			}
+		}
+		// Treemap defaults to a size of 5 for terms.
+		if _, exists := item["size"]; !exists {
+			item["size"] = float64(5)
+		}
+	}
+
+	return model
+}
+
+// populateTreemapMetricsDefaults populates default values for treemap metrics.
+// This mirrors the defaulting behavior used by other Lens metric operations.
+func populateTreemapMetricsDefaults(model []map[string]any) []map[string]any {
+	if model == nil {
+		return model
+	}
+
+	for i := range model {
+		model[i] = populateTagcloudMetricDefaults(model[i])
+	}
+
 	return model
 }
 
@@ -523,6 +569,17 @@ func getPanelSchema() schema.NestedAttributeObject {
 				Validators: []validator.Object{
 					objectvalidator.ConflictsWith(
 						siblingPanelConfigPathsExcept("xy_chart_config", panelConfigNames)...,
+					),
+					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"lens"}),
+				},
+			},
+			"treemap_config": schema.SingleNestedAttribute{
+				MarkdownDescription: panelConfigDescription("Configuration for a treemap chart panel.", "treemap_config", panelConfigNames),
+				Optional:            true,
+				Attributes:          getTreemapSchema(),
+				Validators: []validator.Object{
+					objectvalidator.ConflictsWith(
+						siblingPanelConfigPathsExcept("treemap_config", panelConfigNames)...,
 					),
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"lens"}),
 				},
@@ -1164,6 +1221,113 @@ func getHeatmapSchema() map[string]schema.Attribute {
 		"y_axis": schema.StringAttribute{
 			MarkdownDescription: "Y-axis operation configuration as JSON. For non-ES|QL, this can be date histogram, terms, histogram, range, or filters operations; for ES|QL, this is the column/operation configuration.",
 			CustomType:          jsontypes.NormalizedType{},
+			Optional:            true,
+		},
+	}
+}
+
+// getTreemapSchema returns the schema for treemap chart configuration
+func getTreemapSchema() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"title": schema.StringAttribute{
+			MarkdownDescription: "The title of the chart displayed in the panel.",
+			Optional:            true,
+		},
+		"description": schema.StringAttribute{
+			MarkdownDescription: "The description of the chart.",
+			Optional:            true,
+		},
+		"dataset": schema.StringAttribute{
+			MarkdownDescription: "Dataset configuration as JSON. For non-ES|QL, this specifies the data view or index; for ES|QL, this specifies the ES|QL query dataset.",
+			CustomType:          jsontypes.NormalizedType{},
+			Required:            true,
+		},
+		"ignore_global_filters": schema.BoolAttribute{
+			MarkdownDescription: "If true, ignore global filters when fetching data for this chart. Default is false.",
+			Optional:            true,
+		},
+		"sampling": schema.Float64Attribute{
+			MarkdownDescription: "Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.",
+			Optional:            true,
+		},
+		"query": schema.SingleNestedAttribute{
+			MarkdownDescription: "Query configuration for filtering data. Required for non-ES|QL treemaps.",
+			Optional:            true,
+			Attributes:          getFilterSimpleSchema(),
+		},
+		"filters": schema.ListNestedAttribute{
+			MarkdownDescription: "Additional filters to apply to the chart data (maximum 100).",
+			Optional:            true,
+			NestedObject:        getSearchFilterSchema(),
+		},
+		"group_by": schema.StringAttribute{
+			MarkdownDescription: "Array of breakdown dimensions as JSON (minimum 1). For non-ES|QL, each item can be date histogram, terms, histogram, range, or filters operations; for ES|QL, each item is the column/operation/color configuration.",
+			CustomType:          customtypes.NewJSONWithDefaultsType(populateTreemapGroupByDefaults),
+			Required:            true,
+		},
+		"metrics": schema.StringAttribute{
+			MarkdownDescription: "Array of metric configurations as JSON (minimum 1). For non-ES|QL, each item can be a field metric, pipeline metric, or formula; for ES|QL, each item is the column/operation/color/format configuration.",
+			CustomType:          customtypes.NewJSONWithDefaultsType(populateTreemapMetricsDefaults),
+			Required:            true,
+		},
+		"label_position": schema.StringAttribute{
+			MarkdownDescription: "Position of the labels: hidden or visible.",
+			Optional:            true,
+			Validators: []validator.String{
+				stringvalidator.OneOf("hidden", "visible"),
+			},
+		},
+		"legend": schema.SingleNestedAttribute{
+			MarkdownDescription: "Legend configuration for the treemap chart.",
+			Required:            true,
+			Attributes:          getTreemapLegendSchema(),
+		},
+		"value_display": schema.SingleNestedAttribute{
+			MarkdownDescription: "Configuration for displaying values in chart cells.",
+			Optional:            true,
+			Attributes:          getTreemapValueDisplaySchema(),
+		},
+	}
+}
+
+func getTreemapLegendSchema() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"nested": schema.BoolAttribute{
+			MarkdownDescription: "Show nested legend with hierarchical breakdown levels.",
+			Optional:            true,
+		},
+		"size": schema.StringAttribute{
+			MarkdownDescription: "Legend size: auto, small, medium, large, or xlarge.",
+			Required:            true,
+			Validators: []validator.String{
+				stringvalidator.OneOf("auto", "small", "medium", "large", "xlarge"),
+			},
+		},
+		"truncate_after_lines": schema.Float64Attribute{
+			MarkdownDescription: "Maximum lines before truncating legend items (1-10).",
+			Optional:            true,
+		},
+		"visible": schema.StringAttribute{
+			MarkdownDescription: "Legend visibility: auto, show, or hide.",
+			Optional:            true,
+			Validators: []validator.String{
+				stringvalidator.OneOf("auto", "show", "hide"),
+			},
+		},
+	}
+}
+
+func getTreemapValueDisplaySchema() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"mode": schema.StringAttribute{
+			MarkdownDescription: "Value display mode: hidden, absolute, or percentage.",
+			Required:            true,
+			Validators: []validator.String{
+				stringvalidator.OneOf("hidden", "absolute", "percentage"),
+			},
+		},
+		"percent_decimals": schema.Float64Attribute{
+			MarkdownDescription: "Decimal places for percentage display (0-10).",
 			Optional:            true,
 		},
 	}

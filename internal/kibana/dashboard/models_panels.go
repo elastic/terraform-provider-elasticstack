@@ -17,6 +17,7 @@ type panelModel struct {
 	ID                 types.String             `tfsdk:"id"`
 	MarkdownConfig     *markdownConfigModel     `tfsdk:"markdown_config"`
 	XYChartConfig      *xyChartConfigModel      `tfsdk:"xy_chart_config"`
+	TreemapConfig      *treemapConfigModel      `tfsdk:"treemap_config"`
 	DatatableConfig    *datatableConfigModel    `tfsdk:"datatable_config"`
 	TagcloudConfig     *tagcloudConfigModel     `tfsdk:"tagcloud_config"`
 	MetricChartConfig  *metricChartConfigModel  `tfsdk:"metric_chart_config"`
@@ -56,6 +57,7 @@ type panelConfigConverter interface {
 var panelConfigConverters = []panelConfigConverter{
 	markdownPanelConfigConverter{},
 	newXYChartPanelConfigConverter(),
+	newTreemapPanelConfigConverter(),
 	newDatatablePanelConfigConverter(),
 	newTagcloudPanelConfigConverter(),
 	newHeatmapPanelConfigConverter(),
@@ -176,6 +178,14 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 	var diags diag.Diagnostics
 	for _, converter := range panelConfigConverters {
 		if converter.handlesAPIPanelConfig(tfPanel, panelItem.Type, panelItem.Config) {
+			// Some Lens visualizations omit optional/defaulted fields on read.
+			// For treemap panels, preserve configured values when the API doesn't return them.
+			if tfPanel != nil {
+				if _, ok := converter.(treemapPanelConfigConverter); ok {
+					pm.TreemapConfig = tfPanel.TreemapConfig
+				}
+			}
+
 			d := converter.populateFromAPIPanel(ctx, &pm, panelItem.Config)
 			diags.Append(d...)
 			if diags.HasError() {
