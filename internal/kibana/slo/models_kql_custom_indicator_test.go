@@ -88,8 +88,11 @@ func TestKqlCustomIndicator_ToAPI(t *testing.T) {
 		require.False(t, diags.HasError())
 		require.NotNil(t, ind.IndicatorPropertiesCustomKql)
 
-		_, err := json.Marshal(ind.IndicatorPropertiesCustomKql)
+		data, err := json.Marshal(ind.IndicatorPropertiesCustomKql)
 		require.NoError(t, err)
+		jsonStr := string(data)
+		assert.Contains(t, jsonStr, `"good":""`)
+		assert.Contains(t, jsonStr, `"total":""`)
 	})
 }
 
