@@ -586,6 +586,8 @@ func TestAccResourceSlo_kql_custom_indicator_without_good_total(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "kql_custom_indicator.0.index", "my-index-"+sloName),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "kql_custom_indicator.0.timestamp_field", "custom_timestamp"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_slo.test_slo", "kql_custom_indicator.0.good"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_slo.test_slo", "kql_custom_indicator.0.total"),
 				),
 			},
 		},
