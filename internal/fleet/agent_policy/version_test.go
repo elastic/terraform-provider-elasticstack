@@ -9,6 +9,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+const unsupportedElasticsearchVersionSummary = "Unsupported Elasticsearch version"
+
 func TestMinVersionInactivityTimeout(t *testing.T) {
 	// Test that the MinVersionInactivityTimeout constant is set correctly
 	expected := "8.7.0"
@@ -75,13 +77,13 @@ func TestInactivityTimeoutVersionValidation(t *testing.T) {
 	// Check that the error message contains the expected text
 	found := false
 	for _, diag := range diags {
-		if diag.Summary() == "Unsupported Elasticsearch version" {
+		if diag.Summary() == unsupportedElasticsearchVersionSummary {
 			found = true
 			break
 		}
 	}
 	if !found {
-		t.Error("Expected 'Unsupported Elasticsearch version' error, but didn't find it")
+		t.Errorf("Expected %q error, but didn't find it", unsupportedElasticsearchVersionSummary)
 	}
 
 	// Test toAPIUpdateModel - should return error when inactivity_timeout is used but not supported
@@ -151,13 +153,13 @@ func TestUnenrollmentTimeoutVersionValidation(t *testing.T) {
 	// Check that the error message contains the expected text
 	found := false
 	for _, diag := range diags {
-		if diag.Summary() == "Unsupported Elasticsearch version" {
+		if diag.Summary() == unsupportedElasticsearchVersionSummary {
 			found = true
 			break
 		}
 	}
 	if !found {
-		t.Error("Expected 'Unsupported Elasticsearch version' error, but didn't find it")
+		t.Errorf("Expected %q error, but didn't find it", unsupportedElasticsearchVersionSummary)
 	}
 
 	// Test toAPIUpdateModel - should return error when unenrollment_timeout is used but not supported
@@ -257,13 +259,13 @@ func TestAdvancedMonitoringVersionValidation(t *testing.T) {
 	// Check that the error message contains the expected text
 	found := false
 	for _, diag := range diags {
-		if diag.Summary() == "Unsupported Elasticsearch version" {
+		if diag.Summary() == unsupportedElasticsearchVersionSummary {
 			found = true
 			break
 		}
 	}
 	if !found {
-		t.Error("Expected 'Unsupported Elasticsearch version' error, but didn't find it")
+		t.Errorf("Expected %q error, but didn't find it", unsupportedElasticsearchVersionSummary)
 	}
 
 	// Test toAPIUpdateModel - should return error when advanced_monitoring_options is used but not supported
@@ -347,13 +349,13 @@ func TestAdvancedSettingsVersionValidation(t *testing.T) {
 	// Check that the error message contains the expected text
 	found := false
 	for _, diag := range diags {
-		if diag.Summary() == "Unsupported Elasticsearch version" {
+		if diag.Summary() == unsupportedElasticsearchVersionSummary {
 			found = true
 			break
 		}
 	}
 	if !found {
-		t.Error("Expected 'Unsupported Elasticsearch version' error, but didn't find it")
+		t.Errorf("Expected %q error, but didn't find it", unsupportedElasticsearchVersionSummary)
 	}
 
 	// Test toAPIUpdateModel - should return error when advanced_settings is used but not supported
@@ -445,13 +447,13 @@ func TestSpaceIdsVersionValidation(t *testing.T) {
 	// Check that the error message contains the expected text
 	found := false
 	for _, diag := range diags {
-		if diag.Summary() == "Unsupported Elasticsearch version" {
+		if diag.Summary() == unsupportedElasticsearchVersionSummary {
 			found = true
 			break
 		}
 	}
 	if !found {
-		t.Error("Expected 'Unsupported Elasticsearch version' error, but didn't find it")
+		t.Errorf("Expected %q error, but didn't find it", unsupportedElasticsearchVersionSummary)
 	}
 
 	// Test toAPIUpdateModel - should return error when space_ids is used but not supported
@@ -542,13 +544,13 @@ func TestAgentFeaturesVersionValidation(t *testing.T) {
 	// Check that the error message contains the expected text
 	found := false
 	for _, diag := range diags {
-		if diag.Summary() == "Unsupported Elasticsearch version" {
+		if diag.Summary() == unsupportedElasticsearchVersionSummary {
 			found = true
 			break
 		}
 	}
 	if !found {
-		t.Error("Expected 'Unsupported Elasticsearch version' error, but didn't find it")
+		t.Errorf("Expected %q error, but didn't find it", unsupportedElasticsearchVersionSummary)
 	}
 
 	// Test toAPIUpdateModel - should return error when host_name_format=fqdn on unsupported version

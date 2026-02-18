@@ -64,8 +64,10 @@ func checkResourceJSONAttr(name, key, expectedJSON string) resource.TestCheckFun
 var minVersionSupport = version.Must(version.NewVersion("8.11.0"))
 var minResponseActionVersionSupport = version.Must(version.NewVersion("8.16.0"))
 
+const securityDetectionRuleResourceName = "elasticstack_kibana_security_detection_rule.test"
+
 func TestAccResourceSecurityDetectionRule_Query(t *testing.T) {
-	resourceName := "elasticstack_kibana_security_detection_rule.test"
+	resourceName := securityDetectionRuleResourceName
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -265,7 +267,7 @@ func TestAccResourceSecurityDetectionRule_Query(t *testing.T) {
 }
 
 func TestAccResourceSecurityDetectionRule_EQL(t *testing.T) {
-	resourceName := "elasticstack_kibana_security_detection_rule.test"
+	resourceName := securityDetectionRuleResourceName
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -410,7 +412,7 @@ func TestAccResourceSecurityDetectionRule_EQL(t *testing.T) {
 }
 
 func TestAccResourceSecurityDetectionRule_ESQL(t *testing.T) {
-	resourceName := "elasticstack_kibana_security_detection_rule.test"
+	resourceName := securityDetectionRuleResourceName
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -559,7 +561,7 @@ func TestAccResourceSecurityDetectionRule_ESQL(t *testing.T) {
 }
 
 func TestAccResourceSecurityDetectionRule_MachineLearning(t *testing.T) {
-	resourceName := "elasticstack_kibana_security_detection_rule.test"
+	resourceName := securityDetectionRuleResourceName
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -717,7 +719,7 @@ func TestAccResourceSecurityDetectionRule_MachineLearning(t *testing.T) {
 }
 
 func TestAccResourceSecurityDetectionRule_NewTerms(t *testing.T) {
-	resourceName := "elasticstack_kibana_security_detection_rule.test"
+	resourceName := securityDetectionRuleResourceName
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -860,7 +862,7 @@ func TestAccResourceSecurityDetectionRule_NewTerms(t *testing.T) {
 }
 
 func TestAccResourceSecurityDetectionRule_SavedQuery(t *testing.T) {
-	resourceName := "elasticstack_kibana_security_detection_rule.test"
+	resourceName := securityDetectionRuleResourceName
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -1024,7 +1026,7 @@ func TestAccResourceSecurityDetectionRule_SavedQuery(t *testing.T) {
 }
 
 func TestAccResourceSecurityDetectionRule_ThreatMatch(t *testing.T) {
-	resourceName := "elasticstack_kibana_security_detection_rule.test"
+	resourceName := securityDetectionRuleResourceName
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -1196,7 +1198,7 @@ func TestAccResourceSecurityDetectionRule_ThreatMatch(t *testing.T) {
 }
 
 func TestAccResourceSecurityDetectionRule_Threshold(t *testing.T) {
-	resourceName := "elasticstack_kibana_security_detection_rule.test"
+	resourceName := securityDetectionRuleResourceName
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -3180,7 +3182,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 }
 
 func TestAccResourceSecurityDetectionRule_WithConnectorAction(t *testing.T) {
-	resourceName := "elasticstack_kibana_security_detection_rule.test"
+	resourceName := securityDetectionRuleResourceName
 	connectorResourceName := "elasticstack_kibana_action_connector.test"
 
 	resource.Test(t, resource.TestCase{
@@ -3423,7 +3425,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 }
 
 func TestAccResourceSecurityDetectionRule_BuildingBlockType(t *testing.T) {
-	resourceName := "elasticstack_kibana_security_detection_rule.test"
+	resourceName := securityDetectionRuleResourceName
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -3560,7 +3562,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 }
 
 func TestAccResourceSecurityDetectionRule_QueryMinimal(t *testing.T) {
-	resourceName := "elasticstack_kibana_security_detection_rule.test"
+	resourceName := securityDetectionRuleResourceName
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -3719,7 +3721,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 }
 
 func TestAccResourceSecurityDetectionRule_QueryMinimalWithSpace(t *testing.T) {
-	resourceName := "elasticstack_kibana_security_detection_rule.test"
+	resourceName := securityDetectionRuleResourceName
 	spaceResourceName := "elasticstack_kibana_space.test"
 	spaceID := fmt.Sprintf("test-space-%s", uuid.New().String()[:8])
 
@@ -3826,7 +3828,7 @@ func TestAccResourceSecurityDetectionRule_QueryMinimalWithSpace(t *testing.T) {
 }
 
 func TestAccResourceSecurityDetectionRule_EQLMinimal(t *testing.T) {
-	resourceName := "elasticstack_kibana_security_detection_rule.test"
+	resourceName := securityDetectionRuleResourceName
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -3887,7 +3889,7 @@ func TestAccResourceSecurityDetectionRule_EQLMinimal(t *testing.T) {
 }
 
 func TestAccResourceSecurityDetectionRule_ESQLMinimal(t *testing.T) {
-	resourceName := "elasticstack_kibana_security_detection_rule.test"
+	resourceName := securityDetectionRuleResourceName
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -3947,7 +3949,7 @@ func TestAccResourceSecurityDetectionRule_ESQLMinimal(t *testing.T) {
 }
 
 func TestAccResourceSecurityDetectionRule_MachineLearningMinimal(t *testing.T) {
-	resourceName := "elasticstack_kibana_security_detection_rule.test"
+	resourceName := securityDetectionRuleResourceName
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -4008,7 +4010,7 @@ func TestAccResourceSecurityDetectionRule_MachineLearningMinimal(t *testing.T) {
 }
 
 func TestAccResourceSecurityDetectionRule_NewTermsMinimal(t *testing.T) {
-	resourceName := "elasticstack_kibana_security_detection_rule.test"
+	resourceName := securityDetectionRuleResourceName
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -4072,7 +4074,7 @@ func TestAccResourceSecurityDetectionRule_NewTermsMinimal(t *testing.T) {
 }
 
 func TestAccResourceSecurityDetectionRule_SavedQueryMinimal(t *testing.T) {
-	resourceName := "elasticstack_kibana_security_detection_rule.test"
+	resourceName := securityDetectionRuleResourceName
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -4133,7 +4135,7 @@ func TestAccResourceSecurityDetectionRule_SavedQueryMinimal(t *testing.T) {
 }
 
 func TestAccResourceSecurityDetectionRule_ThreatMatchMinimal(t *testing.T) {
-	resourceName := "elasticstack_kibana_security_detection_rule.test"
+	resourceName := securityDetectionRuleResourceName
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -4201,7 +4203,7 @@ func TestAccResourceSecurityDetectionRule_ThreatMatchMinimal(t *testing.T) {
 }
 
 func TestAccResourceSecurityDetectionRule_ThresholdMinimal(t *testing.T) {
-	resourceName := "elasticstack_kibana_security_detection_rule.test"
+	resourceName := securityDetectionRuleResourceName
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -4625,7 +4627,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 }
 
 func TestAccResourceSecurityDetectionRule_QueryWithMitreThreat(t *testing.T) {
-	resourceName := "elasticstack_kibana_security_detection_rule.test"
+	resourceName := securityDetectionRuleResourceName
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -4945,9 +4947,9 @@ func TestAccResourceSecurityDetectionRule_ValidateConfig(t *testing.T) {
 				Config:   testAccSecurityDetectionRuleConfig_validationIndexOnly("test-validation-index-only"),
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_kibana_security_detection_rule.test", "name", "test-validation-index-only"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_security_detection_rule.test", "index.0", "logs-*"),
-					resource.TestCheckNoResourceAttr("elasticstack_kibana_security_detection_rule.test", "data_view_id"),
+					resource.TestCheckResourceAttr(securityDetectionRuleResourceName, "name", "test-validation-index-only"),
+					resource.TestCheckResourceAttr(securityDetectionRuleResourceName, "index.0", "logs-*"),
+					resource.TestCheckNoResourceAttr(securityDetectionRuleResourceName, "data_view_id"),
 				),
 			},
 			// Test 2: Valid config with only data_view_id (should succeed)
@@ -4955,9 +4957,9 @@ func TestAccResourceSecurityDetectionRule_ValidateConfig(t *testing.T) {
 				Config:   testAccSecurityDetectionRuleConfig_validationDataViewOnly("test-validation-dataview-only"),
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_kibana_security_detection_rule.test", "name", "test-validation-dataview-only"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_security_detection_rule.test", "data_view_id", "test-data-view-id"),
-					resource.TestCheckNoResourceAttr("elasticstack_kibana_security_detection_rule.test", "index.0"),
+					resource.TestCheckResourceAttr(securityDetectionRuleResourceName, "name", "test-validation-dataview-only"),
+					resource.TestCheckResourceAttr(securityDetectionRuleResourceName, "data_view_id", "test-data-view-id"),
+					resource.TestCheckNoResourceAttr(securityDetectionRuleResourceName, "index.0"),
 				),
 			},
 			// Test 3: Invalid config with both index and data_view_id (should fail)
@@ -4979,10 +4981,10 @@ func TestAccResourceSecurityDetectionRule_ValidateConfig(t *testing.T) {
 				Config:   testAccSecurityDetectionRuleConfig_validationESQLType("test-validation-esql"),
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_kibana_security_detection_rule.test", "name", "test-validation-esql"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_security_detection_rule.test", "type", "esql"),
-					resource.TestCheckNoResourceAttr("elasticstack_kibana_security_detection_rule.test", "index.0"),
-					resource.TestCheckNoResourceAttr("elasticstack_kibana_security_detection_rule.test", "data_view_id"),
+					resource.TestCheckResourceAttr(securityDetectionRuleResourceName, "name", "test-validation-esql"),
+					resource.TestCheckResourceAttr(securityDetectionRuleResourceName, "type", "esql"),
+					resource.TestCheckNoResourceAttr(securityDetectionRuleResourceName, "index.0"),
+					resource.TestCheckNoResourceAttr(securityDetectionRuleResourceName, "data_view_id"),
 				),
 			},
 			// Test 6: Machine learning rule type should skip validation (both index and data_view_id allowed to be unset)
@@ -4990,10 +4992,10 @@ func TestAccResourceSecurityDetectionRule_ValidateConfig(t *testing.T) {
 				Config:   testAccSecurityDetectionRuleConfig_validationMLType("test-validation-ml"),
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_kibana_security_detection_rule.test", "name", "test-validation-ml"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_security_detection_rule.test", "type", "machine_learning"),
-					resource.TestCheckNoResourceAttr("elasticstack_kibana_security_detection_rule.test", "index.0"),
-					resource.TestCheckNoResourceAttr("elasticstack_kibana_security_detection_rule.test", "data_view_id"),
+					resource.TestCheckResourceAttr(securityDetectionRuleResourceName, "name", "test-validation-ml"),
+					resource.TestCheckResourceAttr(securityDetectionRuleResourceName, "type", "machine_learning"),
+					resource.TestCheckNoResourceAttr(securityDetectionRuleResourceName, "index.0"),
+					resource.TestCheckNoResourceAttr(securityDetectionRuleResourceName, "data_view_id"),
 				),
 			},
 		},

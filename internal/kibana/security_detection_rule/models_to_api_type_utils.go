@@ -16,6 +16,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
+const kqlQueryLanguageKuery = "kuery"
+
 // getKQLQueryLanguage maps language string to kbapi.SecurityDetectionsAPIKqlQueryLanguage
 func (d SecurityDetectionRuleData) getKQLQueryLanguage() *kbapi.SecurityDetectionsAPIKqlQueryLanguage {
 	if !utils.IsKnown(d.Language) {
@@ -23,12 +25,12 @@ func (d SecurityDetectionRuleData) getKQLQueryLanguage() *kbapi.SecurityDetectio
 	}
 	var language kbapi.SecurityDetectionsAPIKqlQueryLanguage
 	switch d.Language.ValueString() {
-	case "kuery":
-		language = "kuery"
+	case kqlQueryLanguageKuery:
+		language = kqlQueryLanguageKuery
 	case "lucene":
 		language = "lucene"
 	default:
-		language = "kuery"
+		language = kqlQueryLanguageKuery
 	}
 	return &language
 }

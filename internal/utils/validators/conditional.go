@@ -410,7 +410,7 @@ func ForbiddenIfDependentPathOneOf(dependentPath path.Path, allowedValues []stri
 //	// Only allow "ssl_cert" to be set when a sibling "protocol" field is "https"
 //	AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("protocol"), []string{"https"})
 func AllowedIfDependentPathExpressionOneOf(dependentPathExpression path.Expression, allowedValues []string) condition {
-	descStr := "dependent field"
+	const descStr = "dependent field"
 	return condition{
 		dependentPathExpression: &dependentPathExpression,
 		allowedValues:           allowedValues,

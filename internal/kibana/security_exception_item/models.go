@@ -198,7 +198,7 @@ func convertExistsEntryToAPI(field kbapi.SecurityExceptionsAPINonEmptyString, op
 	var result kbapi.SecurityExceptionsAPIExceptionListItemEntry
 
 	apiEntry := kbapi.SecurityExceptionsAPIExceptionListItemEntryExists{
-		Type:     "exists",
+		Type:     entryTypeExists,
 		Field:    field,
 		Operator: operator,
 	}
@@ -286,17 +286,17 @@ func convertEntryToAPI(ctx context.Context, entry EntryModel) (kbapi.SecurityExc
 	field := kbapi.SecurityExceptionsAPINonEmptyString(entry.Field.ValueString())
 
 	switch entryType {
-	case "match":
+	case entryTypeMatch:
 		return convertMatchEntryToAPI(entry, field, operator)
-	case "match_any":
+	case entryTypeMatchAny:
 		return convertMatchAnyEntryToAPI(ctx, entry, field, operator)
-	case "list":
+	case entryTypeList:
 		return convertListEntryToAPI(ctx, entry, field, operator)
-	case "exists":
+	case entryTypeExists:
 		return convertExistsEntryToAPI(field, operator)
-	case "wildcard":
+	case entryTypeWildcard:
 		return convertWildcardEntryToAPI(entry, field, operator)
-	case "nested":
+	case entryTypeNested:
 		return convertNestedEntryArrayToAPI(ctx, entry, field)
 	default:
 		diags.AddError("Invalid entry type", fmt.Sprintf("Unknown entry type: %s", entryType))
@@ -393,11 +393,11 @@ func convertNestedEntryToAPI(ctx context.Context, entry NestedEntryModel) (kbapi
 	field := kbapi.SecurityExceptionsAPINonEmptyString(entry.Field.ValueString())
 
 	switch entryType {
-	case "match":
+	case entryTypeMatch:
 		return convertNestedMatchEntryToAPI(entry, field, operator)
-	case "match_any":
+	case entryTypeMatchAny:
 		return convertNestedMatchAnyEntryToAPI(ctx, entry, field, operator)
-	case "exists":
+	case entryTypeExists:
 		return convertNestedExistsEntryToAPI(field, operator)
 	default:
 		diags.AddError("Invalid nested entry type", fmt.Sprintf("Unknown nested entry type: %s. Only 'match', 'match_any', and 'exists' are allowed.", entryType))
@@ -559,17 +559,17 @@ func convertEntryFromAPI(ctx context.Context, apiEntry kbapi.SecurityExceptionsA
 	}
 
 	switch entryType {
-	case "match", "wildcard":
+	case entryTypeMatch, entryTypeWildcard:
 		convertMatchOrWildcardEntryFromAPI(entryMap, &entry)
-	case "match_any":
+	case entryTypeMatchAny:
 		d := convertMatchAnyEntryFromAPI(ctx, entryMap, &entry)
 		diags.Append(d...)
-	case "list":
+	case entryTypeList:
 		d := convertListEntryFromAPI(ctx, entryMap, &entry)
 		diags.Append(d...)
-	case "exists":
+	case entryTypeExists:
 		convertExistsEntryFromAPI(&entry)
-	case "nested":
+	case entryTypeNested:
 		d := convertNestedEntryFromAPI(ctx, entryMap, &entry)
 		diags.Append(d...)
 	}
@@ -631,12 +631,12 @@ func convertNestedEntryFromMap(ctx context.Context, entryMap map[string]interfac
 
 	entryType := entry.Type.ValueString()
 	switch entryType {
-	case "match":
+	case entryTypeMatch:
 		convertNestedMatchFromMap(entryMap, &entry)
-	case "match_any":
+	case entryTypeMatchAny:
 		d := convertNestedMatchAnyFromMap(ctx, entryMap, &entry)
 		diags.Append(d...)
-	case "exists":
+	case entryTypeExists:
 		convertNestedExistsFromMap(&entry)
 	}
 

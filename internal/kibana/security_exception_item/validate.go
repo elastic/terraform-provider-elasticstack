@@ -10,6 +10,15 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
+const (
+	entryTypeMatch    = "match"
+	entryTypeWildcard = "wildcard"
+	entryTypeMatchAny = "match_any"
+	entryTypeList     = "list"
+	entryTypeExists   = "exists"
+	entryTypeNested   = "nested"
+)
+
 // ValidateConfig validates the configuration for an exception item resource.
 // It ensures that entries are properly configured based on their type:
 //
@@ -59,7 +68,7 @@ func validateEntry(ctx context.Context, entry EntryModel, index int, diags *diag
 	entryPath := fmt.Sprintf("%s[%d]", path, index)
 
 	switch entryType {
-	case "match", "wildcard":
+	case entryTypeMatch, entryTypeWildcard:
 		// 'value' is required (only validate if not unknown)
 		if entry.Value.IsNull() {
 			diags.AddError(
@@ -75,28 +84,28 @@ func validateEntry(ctx context.Context, entry EntryModel, index int, diags *diag
 			)
 		}
 
-	case "match_any":
+	case entryTypeMatchAny:
 		// 'values' is required (only validate if not unknown)
 		if entry.Values.IsNull() {
 			diags.AddError(
 				"Missing Required Field",
-				fmt.Sprintf("Entry type 'match_any' requires 'values' to be set at %s.", entryPath),
+				fmt.Sprintf("Entry type '%s' requires 'values' to be set at %s.", entryTypeMatchAny, entryPath),
 			)
 		}
 		// 'operator' is required (only validate if not unknown)
 		if entry.Operator.IsNull() {
 			diags.AddError(
 				"Missing Required Field",
-				fmt.Sprintf("Entry type 'match_any' requires 'operator' to be set at %s.", entryPath),
+				fmt.Sprintf("Entry type '%s' requires 'operator' to be set at %s.", entryTypeMatchAny, entryPath),
 			)
 		}
 
-	case "list":
+	case entryTypeList:
 		// 'list' object is required (only validate if not unknown)
 		if entry.List.IsNull() {
 			diags.AddError(
 				"Missing Required Field",
-				fmt.Sprintf("Entry type 'list' requires 'list' object to be set at %s.", entryPath),
+				fmt.Sprintf("Entry type '%s' requires 'list' object to be set at %s.", entryTypeList, entryPath),
 			)
 		} else if !entry.List.IsUnknown() {
 			// Only validate list contents if the list object itself is known
@@ -109,14 +118,14 @@ func validateEntry(ctx context.Context, entry EntryModel, index int, diags *diag
 				if listModel.ID.IsNull() {
 					diags.AddError(
 						"Missing Required Field",
-						fmt.Sprintf("Entry type 'list' requires 'list.id' to be set at %s.", entryPath),
+						fmt.Sprintf("Entry type '%s' requires 'list.id' to be set at %s.", entryTypeList, entryPath),
 					)
 				}
 
 				if listModel.Type.IsNull() {
 					diags.AddError(
 						"Missing Required Field",
-						fmt.Sprintf("Entry type 'list' requires 'list.type' to be set at %s.", entryPath),
+						fmt.Sprintf("Entry type '%s' requires 'list.type' to be set at %s.", entryTypeList, entryPath),
 					)
 				}
 			}
@@ -125,26 +134,26 @@ func validateEntry(ctx context.Context, entry EntryModel, index int, diags *diag
 		if entry.Operator.IsNull() {
 			diags.AddError(
 				"Missing Required Field",
-				fmt.Sprintf("Entry type 'list' requires 'operator' to be set at %s.", entryPath),
+				fmt.Sprintf("Entry type '%s' requires 'operator' to be set at %s.", entryTypeList, entryPath),
 			)
 		}
 
-	case "exists":
+	case entryTypeExists:
 		// Only 'field' and 'operator' are required (already handled by schema)
 		// 'operator' is required (only validate if not unknown)
 		if entry.Operator.IsNull() {
 			diags.AddError(
 				"Missing Required Field",
-				fmt.Sprintf("Entry type 'exists' requires 'operator' to be set at %s.", entryPath),
+				fmt.Sprintf("Entry type '%s' requires 'operator' to be set at %s.", entryTypeExists, entryPath),
 			)
 		}
 
-	case "nested":
+	case entryTypeNested:
 		// 'entries' is required for nested type (only validate if not unknown)
 		if entry.Entries.IsNull() {
 			diags.AddError(
 				"Missing Required Field",
-				fmt.Sprintf("Entry type 'nested' requires 'entries' to be set at %s.", entryPath),
+				fmt.Sprintf("Entry type '%s' requires 'entries' to be set at %s.", entryTypeNested, entryPath),
 			)
 			return
 		}
@@ -158,7 +167,7 @@ func validateEntry(ctx context.Context, entry EntryModel, index int, diags *diag
 		if utils.IsKnown(entry.Operator) {
 			diags.AddWarning(
 				"Ignored Field",
-				fmt.Sprintf("Entry type 'nested' does not support 'operator'. This field will be ignored at %s.", entryPath),
+				fmt.Sprintf("Entry type '%s' does not support 'operator'. This field will be ignored at %s.", entryTypeNested, entryPath),
 			)
 		}
 
@@ -187,25 +196,25 @@ func validateNestedEntry(ctx context.Context, entry NestedEntryModel, index int,
 
 	// Nested entries can only be: match, match_any, or exists
 	switch entryType {
-	case "match":
+	case entryTypeMatch:
 		// 'value' is required (only validate if not unknown)
 		if entry.Value.IsNull() {
 			diags.AddError(
 				"Missing Required Field",
-				fmt.Sprintf("Nested entry type 'match' requires 'value' to be set at %s.", entryPath),
+				fmt.Sprintf("Nested entry type '%s' requires 'value' to be set at %s.", entryTypeMatch, entryPath),
 			)
 		}
 
-	case "match_any":
+	case entryTypeMatchAny:
 		// 'values' is required (only validate if not unknown)
 		if entry.Values.IsNull() {
 			diags.AddError(
 				"Missing Required Field",
-				fmt.Sprintf("Nested entry type 'match_any' requires 'values' to be set at %s.", entryPath),
+				fmt.Sprintf("Nested entry type '%s' requires 'values' to be set at %s.", entryTypeMatchAny, entryPath),
 			)
 		}
 
-	case "exists":
+	case entryTypeExists:
 		// Only 'field' and 'operator' are required (already handled by schema)
 		// Nothing additional to validate
 

@@ -958,7 +958,11 @@ func (r securityDetectionRuleResource) ValidateConfig(ctx context.Context, req r
 		return
 	}
 
-	if data.Type.ValueString() == "esql" || data.Type.ValueString() == "machine_learning" {
+	const (
+		ruleTypeESQL            = "esql"
+		ruleTypeMachineLearning = "machine_learning"
+	)
+	if data.Type.ValueString() == ruleTypeESQL || data.Type.ValueString() == ruleTypeMachineLearning {
 		return
 	}
 
