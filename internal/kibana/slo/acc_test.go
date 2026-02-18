@@ -570,6 +570,30 @@ func TestAccResourceSlo_kql_custom_indicator_basic(t *testing.T) {
 	})
 }
 
+func TestAccResourceSlo_kql_custom_indicator_empty_total(t *testing.T) {
+	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceSloDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(sloTimesliceMetricsMinVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("test"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(sloName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "kql_custom_indicator.0.index", "my-index-"+sloName),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "kql_custom_indicator.0.good", "latency < 300"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "kql_custom_indicator.0.total", ""),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "kql_custom_indicator.0.timestamp_field", "custom_timestamp"),
+				),
+			},
+		},
+	})
+}
+
 //go:embed testdata/TestAccResourceSloFromSDK/create/main.tf
 var sloFromSDKCreateConfig string
 

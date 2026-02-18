@@ -271,7 +271,7 @@ func kqlCustomIndicatorSchema() schema.Block {
 				"data_view_id":    schema.StringAttribute{Optional: true, Description: "Optional data view id to use for this indicator."},
 				"filter":          schema.StringAttribute{Optional: true},
 				"good":            schema.StringAttribute{Optional: true},
-				"total":           schema.StringAttribute{Optional: true},
+				"total":           schema.StringAttribute{Optional: true, Computed: true, Default: stringdefault.StaticString("")},
 				"timestamp_field": schema.StringAttribute{Optional: true, Computed: true, Default: stringdefault.StaticString("@timestamp")},
 			},
 		},
