@@ -110,7 +110,7 @@ func Test_treemapConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 	require.NoError(t, json.Unmarshal([]byte(`{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"colorCode","value":"#D3DAE6"}}`), &colorMapping))
 
 	staticColor := kbapi.StaticColor{}
-	require.NoError(t, json.Unmarshal([]byte(`{"type":"colorCode","value":"#54B399"}`), &staticColor))
+	require.NoError(t, json.Unmarshal([]byte(`{"type":"static","color":"#54B399"}`), &staticColor))
 
 	format := kbapi.FormatTypeSchema{}
 	require.NoError(t, json.Unmarshal([]byte(`{"type":"number","decimals":2}`), &format))
@@ -179,10 +179,25 @@ func Test_treemapConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 	schema, diags := model.toAPI()
 	require.False(t, diags.HasError())
 
-	roundTrip, err := schema.AsTreemapESQL()
+	// The ES|QL treemap attributes are marshalled from a map for maximum compatibility
+	// with Kibana validation behavior. Validate the resulting JSON contains the key
+	// shape rather than requiring it to decode into the generated schema.
+	b, err := json.Marshal(schema)
 	require.NoError(t, err)
-	assert.Equal(t, kbapi.TreemapESQLTypeTreemap, roundTrip.Type)
-	assert.NotNil(t, roundTrip.GroupBy)
-	assert.Len(t, *roundTrip.GroupBy, 1)
-	assert.Len(t, roundTrip.Metrics, 1)
+
+	var attrs map[string]any
+	require.NoError(t, json.Unmarshal(b, &attrs))
+	assert.Equal(t, "treemap", attrs["type"])
+
+	dataset, ok := attrs["dataset"].(map[string]any)
+	require.True(t, ok)
+	assert.Equal(t, "esql", dataset["type"])
+
+	groupByAny, ok := attrs["group_by"].([]any)
+	require.True(t, ok)
+	assert.Len(t, groupByAny, 1)
+
+	metricsAny, ok := attrs["metrics"].([]any)
+	require.True(t, ok)
+	assert.Len(t, metricsAny, 1)
 }

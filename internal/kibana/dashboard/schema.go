@@ -161,6 +161,14 @@ func populateTreemapGroupByDefaults(model []map[string]any) []map[string]any {
 			continue
 		}
 		operation, _ := item["operation"].(string)
+		// ES|QL treemaps may omit group_by.color on write, but Kibana may return it as null.
+		// Normalize both sides so semantic equality doesn't drift.
+		if operation == "value" {
+			if _, exists := item["color"]; !exists {
+				item["color"] = nil
+			}
+			continue
+		}
 		if operation != "terms" {
 			continue
 		}
@@ -189,6 +197,17 @@ func populateTreemapMetricsDefaults(model []map[string]any) []map[string]any {
 
 	for i := range model {
 		model[i] = populateTagcloudMetricDefaults(model[i])
+
+		// ES|QL treemap metrics may omit format on write, but Kibana may return it as null.
+		// Normalize both sides so semantic equality doesn't drift.
+		if model[i] == nil {
+			continue
+		}
+		if operation, ok := model[i]["operation"].(string); ok && operation == "value" {
+			if _, exists := model[i]["format"]; !exists {
+				model[i]["format"] = nil
+			}
+		}
 	}
 
 	return model

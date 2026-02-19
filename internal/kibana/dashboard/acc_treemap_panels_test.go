@@ -1,6 +1,7 @@
 package dashboard_test
 
 import (
+	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -70,6 +71,26 @@ func TestAccResourceDashboardTreemap(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.treemap_config.dataset"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.treemap_config.group_by"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.treemap_config.metrics"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("esql"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.treemap_config.title", "ESQL Treemap"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.treemap_config.description", "Treemap visualization using ES|QL"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.treemap_config.ignore_global_filters", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.treemap_config.sampling", "0.5"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.treemap_config.label_position", "hidden"),
+					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.treemap_config.dataset", regexp.MustCompile(`"type"\s*:\s*"esql"`)),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.treemap_config.group_by"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.treemap_config.metrics"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.treemap_config.query.language"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.treemap_config.query.query"),
 				),
 			},
 			{
