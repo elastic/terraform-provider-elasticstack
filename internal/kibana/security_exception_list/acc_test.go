@@ -51,6 +51,28 @@ func TestAccResourceExceptionList(t *testing.T) {
 			{
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionListAPISupport),
 				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_optional"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_list.test", "space_id", "default"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_exception_list.test", "list_id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_list.test", "name", "Test Exception List"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_list.test", "description", "This is a test exception list"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_list.test", "type", "endpoint"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_list.test", "namespace_type", "single"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_list.test", "os_types.#", "2"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_exception_list.test", "os_types.*", "linux"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_exception_list.test", "os_types.*", "windows"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_list.test", "tags.#", "2"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_exception_list.test", "tags.*", "test"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_exception_list.test", "tags.*", "demo"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_exception_list.test", "id"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_exception_list.test", "created_at"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_exception_list.test", "created_by"),
+				),
+			},
+			{
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionListAPISupport),
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"list_id":        config.StringVariable("test-exception-list"),
