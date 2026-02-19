@@ -166,7 +166,7 @@ func TestNewVarsJSONWithIntegration(t *testing.T) {
 	cacheKey := getPackageCacheKey(pkgName, pkgVersion)
 
 	// Setup mock package with defaults
-	vars := []map[string]interface{}{
+	vars := []map[string]any{
 		{
 			"name":    "var1",
 			"default": "default1",
@@ -248,7 +248,7 @@ func TestPopulateVarsJSONDefaults(t *testing.T) {
 	cacheKey := getPackageCacheKey(pkgName, pkgVersion)
 
 	// Setup mock package with defaults
-	vars := []map[string]interface{}{
+	vars := []map[string]any{
 		{
 			"name":    "var1",
 			"default": "default1",
@@ -326,7 +326,7 @@ func TestPopulateVarsJSONDefaults(t *testing.T) {
 				require.NoError(t, err)
 
 				// Compare JSONs by unmarshalling
-				var expectedMap, resultMap map[string]interface{}
+				var expectedMap, resultMap map[string]any
 				if tt.expectedResult != "" {
 					err = json.Unmarshal([]byte(tt.expectedResult), &expectedMap)
 					require.NoError(t, err)

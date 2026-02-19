@@ -82,7 +82,7 @@ func DataSourceProcessorRemove() *schema.Resource {
 	}
 }
 
-func dataSourceProcessorRemoveRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func dataSourceProcessorRemoveRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	processor := &models.ProcessorRemove{}
@@ -107,9 +107,9 @@ func dataSourceProcessorRemoveRead(ctx context.Context, d *schema.ResourceData, 
 		processor.Tag = v.(string)
 	}
 	if v, ok := d.GetOk("on_failure"); ok {
-		onFailure := make([]map[string]interface{}, len(v.([]interface{})))
-		for i, f := range v.([]interface{}) {
-			item := make(map[string]interface{})
+		onFailure := make([]map[string]any, len(v.([]any)))
+		for i, f := range v.([]any) {
+			item := make(map[string]any)
 			if err := json.NewDecoder(strings.NewReader(f.(string))).Decode(&item); err != nil {
 				return diag.FromErr(err)
 			}

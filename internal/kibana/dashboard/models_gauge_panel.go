@@ -40,7 +40,7 @@ func (c gaugePanelConfigConverter) populateFromAPIPanel(ctx context.Context, pm 
 		return nil
 	}
 
-	attrsMap, ok := attrs.(map[string]interface{})
+	attrsMap, ok := attrs.(map[string]any)
 	if !ok {
 		return nil
 	}

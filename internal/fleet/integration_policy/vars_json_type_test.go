@@ -80,7 +80,7 @@ func TestVarsJSONType_ValueFromString(t *testing.T) {
 			require.True(t, ok, "Result should be of type ConfigValue")
 
 			if !configValue.IsNull() && !configValue.IsUnknown() {
-				var resultMap map[string]interface{}
+				var resultMap map[string]any
 				err := json.Unmarshal([]byte(configValue.ValueString()), &resultMap)
 				require.NoError(t, err)
 

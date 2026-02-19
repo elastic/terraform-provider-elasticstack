@@ -75,7 +75,7 @@ func Test_tfModel_toAPIModel(t *testing.T) {
 			},
 			expectedApiModel: models.Index{
 				Name:     "index-name",
-				Settings: map[string]interface{}{},
+				Settings: map[string]any{},
 			},
 		},
 		{
@@ -87,7 +87,7 @@ func Test_tfModel_toAPIModel(t *testing.T) {
 			},
 			expectedApiModel: models.Index{
 				Name:     "index-name",
-				Settings: map[string]interface{}{},
+				Settings: map[string]any{},
 			},
 		},
 		{
@@ -99,7 +99,7 @@ func Test_tfModel_toAPIModel(t *testing.T) {
 			},
 			expectedApiModel: models.Index{
 				Name:     "index-name",
-				Settings: map[string]interface{}{},
+				Settings: map[string]any{},
 				Aliases: map[string]models.IndexAlias{
 					"alias-0": {Name: "alias-0"},
 					"alias-1": {
@@ -109,7 +109,7 @@ func Test_tfModel_toAPIModel(t *testing.T) {
 						IsWriteIndex:  true,
 						Routing:       "slow",
 						SearchRouting: "just_right",
-						Filter: map[string]interface{}{
+						Filter: map[string]any{
 							"a": "b",
 						},
 					},
@@ -125,7 +125,7 @@ func Test_tfModel_toAPIModel(t *testing.T) {
 			},
 			expectedApiModel: models.Index{
 				Name:     "index-name",
-				Settings: map[string]interface{}{},
+				Settings: map[string]any{},
 			},
 		},
 		{
@@ -137,7 +137,7 @@ func Test_tfModel_toAPIModel(t *testing.T) {
 			},
 			expectedApiModel: models.Index{
 				Name:     "index-name",
-				Settings: map[string]interface{}{},
+				Settings: map[string]any{},
 			},
 		},
 		{
@@ -149,8 +149,8 @@ func Test_tfModel_toAPIModel(t *testing.T) {
 			},
 			expectedApiModel: models.Index{
 				Name:     "index-name",
-				Settings: map[string]interface{}{},
-				Mappings: map[string]interface{}{
+				Settings: map[string]any{},
+				Mappings: map[string]any{
 					"a": "b",
 				},
 			},
@@ -245,7 +245,7 @@ func Test_tfModel_toAPIModel(t *testing.T) {
 			},
 			expectedApiModel: models.Index{
 				Name: "index-name",
-				Settings: map[string]interface{}{
+				Settings: map[string]any{
 					"number_of_shards":                       int64(3),
 					"number_of_routing_shards":               int64(5),
 					"codec":                                  "codec",
@@ -309,7 +309,7 @@ func Test_tfModel_toAPIModel(t *testing.T) {
 			},
 			expectedApiModel: models.Index{
 				Name: "index-name",
-				Settings: map[string]interface{}{
+				Settings: map[string]any{
 					"number_of_replicas": "5",
 				},
 			},

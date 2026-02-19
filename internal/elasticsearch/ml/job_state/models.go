@@ -30,7 +30,7 @@ type MLJob struct {
 
 // MLJobNode represents the node information for an ML job
 type MLJobNode struct {
-	Id         string                 `json:"id"`
-	Name       string                 `json:"name"`
-	Attributes map[string]interface{} `json:"attributes"`
+	Id         string         `json:"id"`
+	Name       string         `json:"name"`
+	Attributes map[string]any `json:"attributes"`
 }

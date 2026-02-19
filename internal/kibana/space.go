@@ -91,7 +91,7 @@ func ResourceSpace() *schema.Resource {
 	}
 }
 
-func resourceSpaceUpsert(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceSpaceUpsert(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
@@ -167,7 +167,7 @@ func resourceSpaceUpsert(ctx context.Context, d *schema.ResourceData, meta inter
 	return resourceSpaceRead(ctx, d, meta)
 }
 
-func resourceSpaceRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceSpaceRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
@@ -217,7 +217,7 @@ func resourceSpaceRead(ctx context.Context, d *schema.ResourceData, meta interfa
 	return diags
 }
 
-func resourceSpaceDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceSpaceDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags

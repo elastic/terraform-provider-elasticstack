@@ -48,9 +48,9 @@ func (r *Resource) UpgradeState(context.Context) map[int64]resource.StateUpgrade
 // values to the state when null values were in the config. jsontypes.Normalized
 // correctly states this is invalid JSON.
 func upgradeV0(ctx context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
-	var state map[string]interface{}
+	var state map[string]any
 
-	removeEmptyString := func(state map[string]interface{}, key string) map[string]interface{} {
+	removeEmptyString := func(state map[string]any, key string) map[string]any {
 		value, ok := state[key]
 		if !ok {
 			return state

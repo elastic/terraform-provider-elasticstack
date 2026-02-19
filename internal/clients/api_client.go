@@ -79,8 +79,8 @@ type ApiClient struct {
 	version                  string
 }
 
-func NewApiClientFuncFromSDK(version string) func(context.Context, *schema.ResourceData) (interface{}, diag.Diagnostics) {
-	return func(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
+func NewApiClientFuncFromSDK(version string) func(context.Context, *schema.ResourceData) (any, diag.Diagnostics) {
+	return func(ctx context.Context, d *schema.ResourceData) (any, diag.Diagnostics) {
 		return newApiClientFromSDK(d, version)
 	}
 }
@@ -193,7 +193,7 @@ func MaybeNewApiClientFromFrameworkResource(ctx context.Context, esConnList type
 	}, diags
 }
 
-func NewApiClientFromSDKResource(d *schema.ResourceData, meta interface{}) (*ApiClient, diag.Diagnostics) {
+func NewApiClientFromSDKResource(d *schema.ResourceData, meta any) (*ApiClient, diag.Diagnostics) {
 	defaultClient := meta.(*ApiClient)
 	version := defaultClient.version
 	resourceConfig, diags := config.NewFromSDKResource(d, version)
@@ -355,7 +355,7 @@ func (a *ApiClient) versionFromKibana() (*version.Version, diag.Diagnostics) {
 			"Please ensure a working 'kibana' endpoint is configured", err.Error())
 	}
 
-	vMap, ok := status["version"].(map[string]interface{})
+	vMap, ok := status["version"].(map[string]any)
 	if !ok {
 		return nil, diag.Errorf("failed to get version from Kibana API")
 	}
@@ -418,7 +418,7 @@ func (a *ApiClient) flavorFromKibana() (string, diag.Diagnostics) {
 			"Please ensure a working 'kibana' endpoint is configured", err.Error())
 	}
 
-	vMap, ok := status["version"].(map[string]interface{})
+	vMap, ok := status["version"].(map[string]any)
 	if !ok {
 		return "", diag.Errorf("failed to get flavor from Kibana API")
 	}

@@ -155,7 +155,7 @@ func Test_legacyMetricConfigModel_toAPI_requiresQueryForNoESQL(t *testing.T) {
 }
 
 func Test_legacyMetricPanelConfigConverter_handlesAPIPanelConfig(t *testing.T) {
-	buildConfig := func(t *testing.T, configMap map[string]interface{}) kbapi.DashboardPanelItem_Config {
+	buildConfig := func(t *testing.T, configMap map[string]any) kbapi.DashboardPanelItem_Config {
 		t.Helper()
 		var cfg kbapi.DashboardPanelItem_Config
 		require.NoError(t, cfg.FromDashboardPanelItemConfig2(configMap))
@@ -171,12 +171,12 @@ func Test_legacyMetricPanelConfigConverter_handlesAPIPanelConfig(t *testing.T) {
 		{
 			name:      "handles lens legacy metric config",
 			panelType: "lens",
-			config: buildConfig(t, map[string]interface{}{
-				"attributes": map[string]interface{}{
+			config: buildConfig(t, map[string]any{
+				"attributes": map[string]any{
 					"type":    "legacy_metric",
-					"dataset": map[string]interface{}{"type": "dataView", "id": "metrics-*"},
-					"query":   map[string]interface{}{"language": "kuery", "query": ""},
-					"metric":  map[string]interface{}{"operation": "count"},
+					"dataset": map[string]any{"type": "dataView", "id": "metrics-*"},
+					"query":   map[string]any{"language": "kuery", "query": ""},
+					"metric":  map[string]any{"operation": "count"},
 				},
 			}),
 			want: true,
@@ -184,41 +184,41 @@ func Test_legacyMetricPanelConfigConverter_handlesAPIPanelConfig(t *testing.T) {
 		{
 			name:      "does not handle lens non-legacy metric config",
 			panelType: "lens",
-			config: buildConfig(t, map[string]interface{}{
-				"attributes": map[string]interface{}{"type": "xy"},
+			config: buildConfig(t, map[string]any{
+				"attributes": map[string]any{"type": "xy"},
 			}),
 			want: false,
 		},
 		{
 			name:      "does not handle non-lens type",
 			panelType: "DASHBOARD_MARKDOWN",
-			config: buildConfig(t, map[string]interface{}{
-				"attributes": map[string]interface{}{"type": "legacy_metric"},
+			config: buildConfig(t, map[string]any{
+				"attributes": map[string]any{"type": "legacy_metric"},
 			}),
 			want: false,
 		},
 		{
 			name:      "does not handle empty type",
 			panelType: "",
-			config:    buildConfig(t, map[string]interface{}{"attributes": map[string]interface{}{"type": "legacy_metric"}}),
+			config:    buildConfig(t, map[string]any{"attributes": map[string]any{"type": "legacy_metric"}}),
 			want:      false,
 		},
 		{
 			name:      "does not handle missing attributes",
 			panelType: "lens",
-			config:    buildConfig(t, map[string]interface{}{}),
+			config:    buildConfig(t, map[string]any{}),
 			want:      false,
 		},
 		{
 			name:      "does not handle non-map attributes",
 			panelType: "lens",
-			config:    buildConfig(t, map[string]interface{}{"attributes": "legacy_metric"}),
+			config:    buildConfig(t, map[string]any{"attributes": "legacy_metric"}),
 			want:      false,
 		},
 		{
 			name:      "does not handle missing visualization type",
 			panelType: "lens",
-			config:    buildConfig(t, map[string]interface{}{"attributes": map[string]interface{}{"dataset": map[string]interface{}{"type": "dataView"}}}),
+			config:    buildConfig(t, map[string]any{"attributes": map[string]any{"dataset": map[string]any{"type": "dataView"}}}),
 			want:      false,
 		},
 		{
@@ -241,18 +241,18 @@ func Test_legacyMetricPanelConfigConverter_handlesAPIPanelConfig(t *testing.T) {
 func Test_legacyMetricPanelConfigConverter_roundTrip(t *testing.T) {
 	ctx := context.Background()
 	// Start from API config (dashboard panel config with legacy_metric attributes).
-	attrs := map[string]interface{}{
+	attrs := map[string]any{
 		"type":                  "legacy_metric",
 		"title":                 "Round-Trip Title",
 		"description":           "Round-trip description",
-		"dataset":               map[string]interface{}{"type": "dataView", "id": "logs-*"},
-		"query":                 map[string]interface{}{"language": "kuery", "query": "host:*"},
-		"metric":                map[string]interface{}{"operation": "count", "format": map[string]interface{}{"type": "number"}},
+		"dataset":               map[string]any{"type": "dataView", "id": "logs-*"},
+		"query":                 map[string]any{"language": "kuery", "query": "host:*"},
+		"metric":                map[string]any{"operation": "count", "format": map[string]any{"type": "number"}},
 		"sampling":              0.5,
 		"ignore_global_filters": true,
-		"filters":               []interface{}{map[string]interface{}{"query": "status:200", "language": "kuery"}},
+		"filters":               []any{map[string]any{"query": "status:200", "language": "kuery"}},
 	}
-	configMap := map[string]interface{}{"attributes": attrs}
+	configMap := map[string]any{"attributes": attrs}
 	var apiConfig1 kbapi.DashboardPanelItem_Config
 	require.NoError(t, apiConfig1.FromDashboardPanelItemConfig2(configMap))
 

@@ -50,7 +50,9 @@ func TestToAPIModel_IndexThresholdDoesNotOverrideExplicitGroupBy(t *testing.T) {
 		RuleTypeID: types.StringValue(".index-threshold"),
 		Interval:   types.StringValue("1m"),
 		NotifyWhen: types.StringValue("onActiveAlert"),
-		Params:     jsontypes.NewNormalizedValue(`{"groupBy":"top","termField":["host.name"],"termSize":10,"index":["test-index"],"timeField":"@timestamp","timeWindowSize":10,"timeWindowUnit":"s","threshold":[10],"thresholdComparator":">"}`),
+		Params: jsontypes.NewNormalizedValue(
+			`{"groupBy":"top","termField":["host.name"],"termSize":10,"index":["test-index"],"timeField":"@timestamp","timeWindowSize":10,"timeWindowUnit":"s","threshold":[10],"thresholdComparator":">"}`,
+		),
 	}
 
 	apiRule, diags := m.toAPIModel(context.TODO(), nil)

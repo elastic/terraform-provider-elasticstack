@@ -62,7 +62,7 @@ func DataSourceConnector() *schema.Resource {
 	}
 }
 
-func datasourceConnectorRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func datasourceConnectorRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags

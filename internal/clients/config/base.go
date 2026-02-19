@@ -26,8 +26,8 @@ func newBaseConfigFromSDK(d *schema.ResourceData, version string, esKey string) 
 	}
 
 	if esConn, ok := d.GetOk(esKey); ok {
-		if resource := esConn.([]interface{})[0]; resource != nil {
-			config := resource.(map[string]interface{})
+		if resource := esConn.([]any)[0]; resource != nil {
+			config := resource.(map[string]any)
 
 			if bearerToken, ok := config["bearer_token"]; ok && bearerToken != "" {
 				baseConfig.BearerToken = bearerToken.(string)

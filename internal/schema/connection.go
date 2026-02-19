@@ -271,7 +271,7 @@ func GetEsConnectionSchema(keyName string, isProviderConfiguration bool) *schema
 	usernameRequiredWithValidation := []string{passwordPath}
 	passwordRequiredWithValidation := []string{usernamePath}
 
-	withEnvDefault := func(key string, dv interface{}) schema.SchemaDefaultFunc { return nil }
+	withEnvDefault := func(key string, dv any) schema.SchemaDefaultFunc { return nil }
 
 	if isProviderConfiguration {
 		withEnvDefault = schema.EnvDefaultFunc
@@ -398,7 +398,7 @@ func GetEsConnectionSchema(keyName string, isProviderConfiguration bool) *schema
 }
 
 func GetKibanaConnectionSchema() *schema.Schema {
-	withEnvDefault := func(key string, dv interface{}) schema.SchemaDefaultFunc { return nil }
+	withEnvDefault := func(key string, dv any) schema.SchemaDefaultFunc { return nil }
 	return &schema.Schema{
 		Description: "Kibana connection configuration block.",
 		Type:        schema.TypeList,

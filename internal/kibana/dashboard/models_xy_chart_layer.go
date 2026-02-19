@@ -84,7 +84,7 @@ func (m *xyLayerModel) fromAPI(apiLayer kbapi.XyChartSchema_Layers_Item) diag.Di
 		// successfully unmarshal into the NoESQL structs, so we need a discriminator.
 		isESQL := false
 		var meta struct {
-			Dataset map[string]interface{} `json:"dataset"`
+			Dataset map[string]any `json:"dataset"`
 		}
 		if err := json.Unmarshal(layerJSON, &meta); err == nil {
 			if datasetType, ok := meta.Dataset["type"].(string); ok && datasetType == "esql" {
@@ -262,12 +262,12 @@ func (m *dataLayerModel) toAPI(layerType string) (json.RawMessage, diag.Diagnost
 	var diags diag.Diagnostics
 
 	// Build a map with all the fields
-	layer := map[string]interface{}{
+	layer := map[string]any{
 		"type": layerType,
 	}
 
 	if utils.IsKnown(m.Dataset) {
-		var dataset interface{}
+		var dataset any
 		diags.Append(m.Dataset.Unmarshal(&dataset)...)
 		layer["dataset"] = dataset
 	}
@@ -281,23 +281,23 @@ func (m *dataLayerModel) toAPI(layerType string) (json.RawMessage, diag.Diagnost
 	}
 
 	if utils.IsKnown(m.X) {
-		var x interface{}
+		var x any
 		diags.Append(m.X.Unmarshal(&x)...)
 		layer["x"] = x
 	}
 
 	if utils.IsKnown(m.BreakdownBy) {
-		var breakdownBy interface{}
+		var breakdownBy any
 		diags.Append(m.BreakdownBy.Unmarshal(&breakdownBy)...)
 		layer["breakdown_by"] = breakdownBy
 	}
 
 	// Convert Y metrics
 	if len(m.Y) > 0 {
-		yMetrics := make([]interface{}, 0, len(m.Y))
+		yMetrics := make([]any, 0, len(m.Y))
 		for _, y := range m.Y {
 			if utils.IsKnown(y.Config) {
-				var yConfig interface{}
+				var yConfig any
 				diags.Append(y.Config.Unmarshal(&yConfig)...)
 				yMetrics = append(yMetrics, yConfig)
 			}
@@ -411,12 +411,12 @@ func (m *referenceLineLayerModel) toAPI(layerType string) (json.RawMessage, diag
 	var diags diag.Diagnostics
 
 	// Build a map with all the fields
-	layer := map[string]interface{}{
+	layer := map[string]any{
 		"type": layerType,
 	}
 
 	if utils.IsKnown(m.Dataset) {
-		var dataset interface{}
+		var dataset any
 		diags.Append(m.Dataset.Unmarshal(&dataset)...)
 		layer["dataset"] = dataset
 	}
@@ -431,11 +431,11 @@ func (m *referenceLineLayerModel) toAPI(layerType string) (json.RawMessage, diag
 
 	// Convert thresholds
 	if len(m.Thresholds) > 0 {
-		thresholds := make([]interface{}, 0, len(m.Thresholds))
+		thresholds := make([]any, 0, len(m.Thresholds))
 		for _, t := range m.Thresholds {
 			// For NoESQL layers, thresholds are operation definitions; we model them via `threshold.value`.
 			if utils.IsKnown(t.Value) {
-				var op interface{}
+				var op any
 				diags.Append(t.Value.Unmarshal(&op)...)
 				thresholds = append(thresholds, op)
 				continue
@@ -468,7 +468,7 @@ func (m *referenceLineLayerModel) toAPI(layerType string) (json.RawMessage, diag
 func (m *thresholdModel) fromAPIJSON(jsonData []byte) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	var thresholdData map[string]interface{}
+	var thresholdData map[string]any
 	if err := json.Unmarshal(jsonData, &thresholdData); err != nil {
 		diags.AddError("Failed to unmarshal threshold", err.Error())
 		return diags
@@ -540,16 +540,16 @@ func (m *thresholdModel) fromAPIJSON(jsonData []byte) diag.Diagnostics {
 }
 
 // toAPI converts threshold to API map
-func (m *thresholdModel) toAPI() (map[string]interface{}, diag.Diagnostics) {
+func (m *thresholdModel) toAPI() (map[string]any, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	threshold := make(map[string]interface{})
+	threshold := make(map[string]any)
 
 	if utils.IsKnown(m.Axis) {
 		threshold["axis"] = m.Axis.ValueString()
 	}
 
 	if utils.IsKnown(m.Color) {
-		var color interface{}
+		var color any
 		diags.Append(m.Color.Unmarshal(&color)...)
 		threshold["color"] = color
 	}
@@ -559,7 +559,7 @@ func (m *thresholdModel) toAPI() (map[string]interface{}, diag.Diagnostics) {
 	}
 
 	if utils.IsKnown(m.Value) {
-		var value interface{}
+		var value any
 		diags.Append(m.Value.Unmarshal(&value)...)
 		threshold["value"] = value
 	}

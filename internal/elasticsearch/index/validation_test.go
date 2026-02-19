@@ -9,7 +9,7 @@ import (
 func Test_stringIsJSONObject(t *testing.T) {
 	tests := []struct {
 		name                  string
-		fieldVal              interface{}
+		fieldVal              any
 		expectedErrsToContain []string
 	}{
 		{

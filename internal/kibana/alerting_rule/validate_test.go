@@ -9,9 +9,9 @@ import (
 )
 
 func TestValidateRuleParamsIndexThreshold(t *testing.T) {
-	valid := map[string]interface{}{
-		"index":               []interface{}{"logs-*"},
-		"threshold":           []interface{}{1.0},
+	valid := map[string]any{
+		"index":               []any{"logs-*"},
+		"threshold":           []any{1.0},
 		"thresholdComparator": ">",
 		"timeField":           "@timestamp",
 		"timeWindowSize":      5.0,
@@ -22,9 +22,9 @@ func TestValidateRuleParamsIndexThreshold(t *testing.T) {
 		t.Fatalf("expected no validation errors, got: %v", errs)
 	}
 
-	invalid := map[string]interface{}{
+	invalid := map[string]any{
 		"index":               "logs-*",
-		"threshold":           []interface{}{1.0},
+		"threshold":           []any{1.0},
 		"thresholdComparator": ">",
 		"timeField":           "@timestamp",
 		"timeWindowSize":      5.0,
@@ -37,10 +37,10 @@ func TestValidateRuleParamsIndexThreshold(t *testing.T) {
 }
 
 func TestValidateRuleParamsEsQueryUnion(t *testing.T) {
-	validKQL := map[string]interface{}{
+	validKQL := map[string]any{
 		"searchType":          "searchSource",
 		"size":                0.0,
-		"threshold":           []interface{}{1.0},
+		"threshold":           []any{1.0},
 		"thresholdComparator": ">",
 		"timeWindowSize":      5.0,
 		"timeWindowUnit":      "m",
@@ -50,10 +50,10 @@ func TestValidateRuleParamsEsQueryUnion(t *testing.T) {
 		t.Fatalf("expected no validation errors, got: %v", errs)
 	}
 
-	invalid := map[string]interface{}{
+	invalid := map[string]any{
 		"searchType":          "searchSource",
 		"size":                "not-a-number",
-		"threshold":           []interface{}{1.0},
+		"threshold":           []any{1.0},
 		"thresholdComparator": ">",
 		"timeWindowSize":      5.0,
 		"timeWindowUnit":      "m",
@@ -65,7 +65,7 @@ func TestValidateRuleParamsEsQueryUnion(t *testing.T) {
 }
 
 func TestValidateRuleParamsUnknownRuleTypeIsAllowed(t *testing.T) {
-	params := map[string]interface{}{
+	params := map[string]any{
 		"anything": "goes",
 	}
 
@@ -75,7 +75,7 @@ func TestValidateRuleParamsUnknownRuleTypeIsAllowed(t *testing.T) {
 }
 
 func TestValidateRuleParamsSyntheticsMonitorStatusRequiredFields(t *testing.T) {
-	invalid := map[string]interface{}{
+	invalid := map[string]any{
 		"numTimes": 1.0,
 	}
 
@@ -83,7 +83,7 @@ func TestValidateRuleParamsSyntheticsMonitorStatusRequiredFields(t *testing.T) {
 		t.Fatalf("expected missing field errors for synthetics monitor status")
 	}
 
-	valid := map[string]interface{}{
+	valid := map[string]any{
 		"numTimes":                1.0,
 		"shouldCheckStatus":       true,
 		"shouldCheckAvailability": false,
@@ -95,7 +95,7 @@ func TestValidateRuleParamsSyntheticsMonitorStatusRequiredFields(t *testing.T) {
 }
 
 func TestValidateRuleParamsApmAnomalyRequiredKeys(t *testing.T) {
-	valid := map[string]interface{}{
+	valid := map[string]any{
 		"windowSize":          5.0,
 		"windowUnit":          "m",
 		"environment":         "production",
@@ -106,7 +106,7 @@ func TestValidateRuleParamsApmAnomalyRequiredKeys(t *testing.T) {
 		t.Fatalf("expected no validation errors, got: %v", errs)
 	}
 
-	invalid := map[string]interface{}{
+	invalid := map[string]any{
 		"windowSize":  5.0,
 		"windowUnit":  "m",
 		"environment": "production",
@@ -118,7 +118,7 @@ func TestValidateRuleParamsApmAnomalyRequiredKeys(t *testing.T) {
 }
 
 func TestValidateRuleParamsRejectsUnexpectedKeys(t *testing.T) {
-	params := map[string]interface{}{
+	params := map[string]any{
 		"windowSize":          5.0,
 		"windowUnit":          "m",
 		"environment":         "production",
@@ -136,19 +136,19 @@ func TestValidateRuleParamsRejectsUnexpectedKeys(t *testing.T) {
 }
 
 func TestValidateRuleParamsSloBurnRateAllowsWindows(t *testing.T) {
-	params := map[string]interface{}{
+	params := map[string]any{
 		"sloId":        "o11y_managed_o11y-search-success-rat",
-		"dependencies": []interface{}{},
-		"windows": []interface{}{
-			map[string]interface{}{
+		"dependencies": []any{},
+		"windows": []any{
+			map[string]any{
 				"id":                   "ede70e84-ff91-4f69-9f1e-558e45737998",
 				"burnRateThreshold":    14.4,
 				"maxBurnRateThreshold": 168.0,
-				"longWindow": map[string]interface{}{
+				"longWindow": map[string]any{
 					"value": 1.0,
 					"unit":  "h",
 				},
-				"shortWindow": map[string]interface{}{
+				"shortWindow": map[string]any{
 					"value": 5.0,
 					"unit":  "m",
 				},
@@ -163,15 +163,15 @@ func TestValidateRuleParamsSloBurnRateAllowsWindows(t *testing.T) {
 }
 
 func TestValidateRuleParamsEsQueryAllowsSourceFields(t *testing.T) {
-	params := map[string]interface{}{
+	params := map[string]any{
 		"searchType":          "searchSource",
 		"size":                0.0,
-		"threshold":           []interface{}{1.0},
+		"threshold":           []any{1.0},
 		"thresholdComparator": ">",
 		"timeWindowSize":      5.0,
 		"timeWindowUnit":      "m",
-		"sourceFields": []interface{}{
-			map[string]interface{}{
+		"sourceFields": []any{
+			map[string]any{
 				"label":      "cluster_id",
 				"searchPath": "cluster_id",
 			},
@@ -184,9 +184,9 @@ func TestValidateRuleParamsEsQueryAllowsSourceFields(t *testing.T) {
 }
 
 func TestValidateRuleParamsEsQueryRequiresSize(t *testing.T) {
-	params := map[string]interface{}{
+	params := map[string]any{
 		"searchType":          "searchSource",
-		"threshold":           []interface{}{1.0},
+		"threshold":           []any{1.0},
 		"thresholdComparator": ">",
 		"timeWindowSize":      5.0,
 		"timeWindowUnit":      "m",
@@ -202,10 +202,10 @@ func TestValidateRuleParamsEsQueryRequiresSize(t *testing.T) {
 }
 
 func TestValidateRuleParamsSloBurnRateStillRejectsUnknownExtraKeys(t *testing.T) {
-	params := map[string]interface{}{
+	params := map[string]any{
 		"sloId":        "o11y_managed_o11y-search-success-rat",
-		"dependencies": []interface{}{},
-		"windows":      []interface{}{},
+		"dependencies": []any{},
+		"windows":      []any{},
 		"unexpected":   true,
 	}
 
@@ -219,15 +219,15 @@ func TestValidateRuleParamsSloBurnRateStillRejectsUnknownExtraKeys(t *testing.T)
 }
 
 func TestValidateRuleParamsIndexThresholdRejectsSourceFields(t *testing.T) {
-	params := map[string]interface{}{
-		"index":               []interface{}{"logs-*"},
-		"threshold":           []interface{}{1.0},
+	params := map[string]any{
+		"index":               []any{"logs-*"},
+		"threshold":           []any{1.0},
 		"thresholdComparator": ">",
 		"timeField":           "@timestamp",
 		"timeWindowSize":      5.0,
 		"timeWindowUnit":      "m",
-		"sourceFields": []interface{}{
-			map[string]interface{}{
+		"sourceFields": []any{
+			map[string]any{
 				"label":      "cluster_id",
 				"searchPath": "cluster_id",
 			},
@@ -269,7 +269,7 @@ func TestAllowedKeyOverridesAreNotInSchema(t *testing.T) {
 }
 
 func paramsSchemaAcceptsKey(specs []paramsSchemaSpec, key string) bool {
-	raw, err := json.Marshal(map[string]interface{}{key: nil})
+	raw, err := json.Marshal(map[string]any{key: nil})
 	if err != nil {
 		// This should never fail for a simple map + nil value.
 		return true
@@ -340,22 +340,22 @@ func TestValidateRuleParamsFixturesFromSreO11yModules(t *testing.T) {
 	testCases := []struct {
 		name      string
 		ruleType  string
-		params    map[string]interface{}
+		params    map[string]any
 		expectErr string
 	}{
 		{
 			name:     "es-query high disk watermark valid fixture",
 			ruleType: ".es-query",
-			params: map[string]interface{}{
+			params: map[string]any{
 				"aggType":                    "count",
 				"groupBy":                    "top",
 				"termSize":                   10.0,
 				"termField":                  "docker.container.labels.co.elastic.cloud.allocator.deployment_id",
 				"timeWindowSize":             30.0,
 				"timeWindowUnit":             "m",
-				"threshold":                  []interface{}{30.0},
+				"threshold":                  []any{30.0},
 				"thresholdComparator":        ">",
-				"index":                      []interface{}{"cluster-elasticsearch-*"},
+				"index":                      []any{"cluster-elasticsearch-*"},
 				"timeField":                  "@timestamp",
 				"searchType":                 "esQuery",
 				"size":                       10.0,
@@ -366,20 +366,20 @@ func TestValidateRuleParamsFixturesFromSreO11yModules(t *testing.T) {
 		{
 			name:     "es-query autoscaling valid fixture with sourceFields",
 			ruleType: ".es-query",
-			params: map[string]interface{}{
+			params: map[string]any{
 				"aggType":                    "count",
 				"esQuery":                    "{\"query\":{\"bool\":{\"filter\":[]}}}",
 				"excludeHitsFromPreviousRun": false,
 				"groupBy":                    "top",
-				"index":                      []interface{}{"logging-*:service-constructor-*"},
+				"index":                      []any{"logging-*:service-constructor-*"},
 				"searchType":                 "esQuery",
 				"size":                       1.0,
-				"sourceFields": []interface{}{
-					map[string]interface{}{"label": "cluster_id", "searchPath": "cluster_id"},
+				"sourceFields": []any{
+					map[string]any{"label": "cluster_id", "searchPath": "cluster_id"},
 				},
 				"termField":           "cluster_id",
 				"termSize":            100.0,
-				"threshold":           []interface{}{1.0},
+				"threshold":           []any{1.0},
 				"thresholdComparator": ">",
 				"timeField":           "@timestamp",
 				"timeWindowSize":      5.0,
@@ -389,7 +389,7 @@ func TestValidateRuleParamsFixturesFromSreO11yModules(t *testing.T) {
 		{
 			name:     "es-query failed rule evaluations valid fixture",
 			ruleType: ".es-query",
-			params: map[string]interface{}{
+			params: map[string]any{
 				"aggType":                    "count",
 				"groupBy":                    "top",
 				"termSize":                   10.0,
@@ -397,9 +397,9 @@ func TestValidateRuleParamsFixturesFromSreO11yModules(t *testing.T) {
 				"size":                       100.0,
 				"timeWindowSize":             6.0,
 				"timeWindowUnit":             "h",
-				"threshold":                  []interface{}{3.0},
+				"threshold":                  []any{3.0},
 				"thresholdComparator":        ">",
-				"index":                      []interface{}{".ds-.kibana-event-log*"},
+				"index":                      []any{".ds-.kibana-event-log*"},
 				"timeField":                  "@timestamp",
 				"searchType":                 "esQuery",
 				"esQuery":                    "{\"query\":{\"bool\":{\"must\":[]}}}",
@@ -409,16 +409,16 @@ func TestValidateRuleParamsFixturesFromSreO11yModules(t *testing.T) {
 		{
 			name:     "es-query flood stage invalid fixture catches unknown key",
 			ruleType: ".es-query",
-			params: map[string]interface{}{
+			params: map[string]any{
 				"aggType":                    "count",
 				"groupBy":                    "top",
 				"termSize":                   10.0,
 				"termField":                  "docker.container.labels.co.elastic.cloud.allocator.deployment_id",
 				"timeWindowSize":             10.0,
 				"timeWindowUnit":             "m",
-				"threshold":                  []interface{}{10.0},
+				"threshold":                  []any{10.0},
 				"thresholdComparator":        ">",
-				"index":                      []interface{}{"cluster-elasticsearch-*"},
+				"index":                      []any{"cluster-elasticsearch-*"},
 				"timeField":                  "@timestamp",
 				"searchType":                 "esQuery",
 				"size":                       10.0,
@@ -431,62 +431,62 @@ func TestValidateRuleParamsFixturesFromSreO11yModules(t *testing.T) {
 		{
 			name:     "slo burn rate valid fixture with dependencies",
 			ruleType: "slo.rules.burnRate",
-			params: map[string]interface{}{
+			params: map[string]any{
 				"sloId": "abc123",
-				"windows": []interface{}{
-					map[string]interface{}{
+				"windows": []any{
+					map[string]any{
 						"id":                   "0c59b724-200b-462f-928c-d975e69b1eef",
 						"burnRateThreshold":    3.36,
 						"maxBurnRateThreshold": 168.0,
-						"longWindow":           map[string]interface{}{"value": 1.0, "unit": "h"},
-						"shortWindow":          map[string]interface{}{"value": 5.0, "unit": "m"},
+						"longWindow":           map[string]any{"value": 1.0, "unit": "h"},
+						"shortWindow":          map[string]any{"value": 5.0, "unit": "m"},
 						"actionGroup":          "slo.burnRate.alert",
 					},
-					map[string]interface{}{
+					map[string]any{
 						"id":                   "62770ca9-c0f9-4a9a-bb1c-3a9666f54cf7",
 						"burnRateThreshold":    1.4,
 						"maxBurnRateThreshold": 28.0,
-						"longWindow":           map[string]interface{}{"value": 6.0, "unit": "h"},
-						"shortWindow":          map[string]interface{}{"value": 30.0, "unit": "m"},
+						"longWindow":           map[string]any{"value": 6.0, "unit": "h"},
+						"shortWindow":          map[string]any{"value": 30.0, "unit": "m"},
 						"actionGroup":          "slo.burnRate.high",
 					},
 				},
-				"dependencies": []interface{}{},
+				"dependencies": []any{},
 			},
 		},
 		{
 			name:     "uptime monitor status valid fixture",
 			ruleType: "xpack.uptime.alerts.monitorStatus",
-			params: map[string]interface{}{
+			params: map[string]any{
 				"search":                  "",
 				"numTimes":                8.0,
 				"timerangeUnit":           "m",
 				"timerangeCount":          10.0,
 				"shouldCheckStatus":       true,
 				"shouldCheckAvailability": false,
-				"availability": map[string]interface{}{
+				"availability": map[string]any{
 					"range":     30.0,
 					"rangeUnit": "d",
 					"threshold": "99",
 				},
-				"filters": map[string]interface{}{
-					"tags": []interface{}{"o11y"},
+				"filters": map[string]any{
+					"tags": []any{"o11y"},
 				},
 			},
 		},
 		{
 			name:     "unknown custom threshold from modules remains pass through",
 			ruleType: "observability.rules.custom_threshold",
-			params: map[string]interface{}{
-				"criteria":      []interface{}{},
+			params: map[string]any{
+				"criteria":      []any{},
 				"alertOnNoData": true,
 			},
 		},
 		{
 			name:     "unknown transform_health from modules remains pass through",
 			ruleType: "transform_health",
-			params: map[string]interface{}{
-				"transforms": []interface{}{"foo-transform"},
+			params: map[string]any{
+				"transforms": []any{"foo-transform"},
 				"unhealthy":  true,
 			},
 		},
@@ -516,18 +516,18 @@ func TestValidateRuleParamsFixturesFromClusterMgmtCustomers(t *testing.T) {
 	testCases := []struct {
 		name      string
 		ruleType  string
-		params    map[string]interface{}
+		params    map[string]any
 		expectErr string
 	}{
 		{
 			name:     "metrics alert threshold k8s node disk pressure",
 			ruleType: "metrics.alert.threshold",
-			params: map[string]interface{}{
-				"criteria": []interface{}{
-					map[string]interface{}{
+			params: map[string]any{
+				"criteria": []any{
+					map[string]any{
 						"aggType":    "count",
 						"comparator": ">",
-						"threshold":  []interface{}{30.0},
+						"threshold":  []any{30.0},
 						"timeSize":   15.0,
 						"timeUnit":   "m",
 					},
@@ -537,37 +537,37 @@ func TestValidateRuleParamsFixturesFromClusterMgmtCustomers(t *testing.T) {
 				"alertOnGroupDisappear": false,
 				"filterQueryText":       "kubernetes.node.status.disk_pressure: true and orchestrator.platform.type: mki",
 				"filterQuery":           "{\"bool\":{\"filter\":[]}}",
-				"groupBy":               []interface{}{"orchestrator.cluster.name", "kubernetes.node.name"},
+				"groupBy":               []any{"orchestrator.cluster.name", "kubernetes.node.name"},
 			},
 		},
 		{
 			name:     "logs document count project api 500",
 			ruleType: "logs.alert.document.count",
-			params: map[string]interface{}{
+			params: map[string]any{
 				"timeSize": 10.0,
 				"timeUnit": "m",
-				"logView": map[string]interface{}{
+				"logView": map[string]any{
 					"type":      "log-view-reference",
 					"logViewId": "default",
 				},
-				"count": map[string]interface{}{
+				"count": map[string]any{
 					"value":      1.0,
 					"comparator": "more than",
 				},
-				"criteria": []interface{}{
-					map[string]interface{}{"field": "kubernetes.container.name", "comparator": "equals", "value": "project-api"},
-					map[string]interface{}{"field": "http.response.status_code", "comparator": "equals", "value": 500.0},
-					map[string]interface{}{"field": "message", "comparator": "matches", "value": "\"HTTP request\""},
+				"criteria": []any{
+					map[string]any{"field": "kubernetes.container.name", "comparator": "equals", "value": "project-api"},
+					map[string]any{"field": "http.response.status_code", "comparator": "equals", "value": 500.0},
+					map[string]any{"field": "message", "comparator": "matches", "value": "\"HTTP request\""},
 				},
 			},
 		},
 		{
 			name:     "apm error rate cosmos throttling",
 			ruleType: "apm.error_rate",
-			params: map[string]interface{}{
+			params: map[string]any{
 				"environment": "production",
-				"searchConfiguration": map[string]interface{}{
-					"query": map[string]interface{}{
+				"searchConfiguration": map[string]any{
+					"query": map[string]any{
 						"language": "kuery",
 						"query":    "(service.name : \"project-api\") and error.exception.type : \"TooManyRequestsError\"",
 					},
@@ -581,7 +581,7 @@ func TestValidateRuleParamsFixturesFromClusterMgmtCustomers(t *testing.T) {
 		{
 			name:     "apm transaction error rate uiam authenticate",
 			ruleType: "apm.transaction_error_rate",
-			params: map[string]interface{}{
+			params: map[string]any{
 				"environment":     "ENVIRONMENT_ALL",
 				"serviceName":     "uiam",
 				"transactionType": "request",
@@ -594,13 +594,13 @@ func TestValidateRuleParamsFixturesFromClusterMgmtCustomers(t *testing.T) {
 		{
 			name:     "index threshold kibana slo no data",
 			ruleType: ".index-threshold",
-			params: map[string]interface{}{
+			params: map[string]any{
 				"aggType":             "count",
 				"filterKuery":         "data_stream.dataset: \"proxy.log\"",
 				"groupBy":             "all",
-				"index":               []interface{}{"proxy-logs-*"},
+				"index":               []any{"proxy-logs-*"},
 				"termSize":            5.0,
-				"threshold":           []interface{}{0.0},
+				"threshold":           []any{0.0},
 				"thresholdComparator": "<=",
 				"timeField":           "@timestamp",
 				"timeWindowSize":      10.0,
@@ -610,14 +610,14 @@ func TestValidateRuleParamsFixturesFromClusterMgmtCustomers(t *testing.T) {
 		{
 			name:     "uptime monitor status with stackVersion",
 			ruleType: "xpack.uptime.alerts.monitorStatus",
-			params: map[string]interface{}{
+			params: map[string]any{
 				"search":                  "monitor.name: \"Production Backstage Monitor\"",
 				"numTimes":                5.0,
 				"timerangeUnit":           "m",
 				"timerangeCount":          5.0,
 				"shouldCheckStatus":       true,
 				"shouldCheckAvailability": false,
-				"availability": map[string]interface{}{
+				"availability": map[string]any{
 					"range":     30.0,
 					"rangeUnit": "d",
 					"threshold": "99",

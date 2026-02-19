@@ -112,7 +112,7 @@ func DataSourceClusterInfo() *schema.Resource {
 	}
 }
 
-func dataSourceClusterInfoRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func dataSourceClusterInfoRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
@@ -136,7 +136,7 @@ func dataSourceClusterInfoRead(ctx context.Context, d *schema.ResourceData, meta
 		return diag.FromErr(err)
 	}
 
-	version := map[string]interface{}{}
+	version := map[string]any{}
 	version["build_date"] = info.Version.BuildDate.String()
 	version["build_flavor"] = info.Version.BuildFlavor
 	version["build_hash"] = info.Version.BuildHash
@@ -146,7 +146,7 @@ func dataSourceClusterInfoRead(ctx context.Context, d *schema.ResourceData, meta
 	version["minimum_index_compatibility_version"] = info.Version.MinimumIndexCompatibilityVersion
 	version["minimum_wire_compatibility_version"] = info.Version.MinimumWireCompatibilityVersion
 	version["number"] = info.Version.Number
-	if err := d.Set("version", []interface{}{version}); err != nil {
+	if err := d.Set("version", []any{version}); err != nil {
 		return diag.FromErr(err)
 	}
 

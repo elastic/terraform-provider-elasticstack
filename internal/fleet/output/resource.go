@@ -60,7 +60,7 @@ func (r *outputResource) UpgradeState(context.Context) map[int64]resource.StateU
 					JSON: req.RawState.JSON,
 				}
 
-				var stateMap map[string]interface{}
+				var stateMap map[string]any
 				err := json.Unmarshal(req.RawState.JSON, &stateMap)
 				if err != nil {
 					resp.Diagnostics.AddError("Failed to unmarshal raw state", err.Error())

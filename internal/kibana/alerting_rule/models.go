@@ -172,7 +172,7 @@ func (m *alertingRuleModel) populateFromAPI(ctx context.Context, rule *models.Al
 // Terraform sees the extra keys as drift and produces "inconsistent result
 // after apply" errors. The approach is generic: any key present in the API
 // response but absent from the user's prior state params is removed.
-func normalizeRuleParamsForState(ctx context.Context, apiParams map[string]interface{}, previousParams jsontypes.Normalized) (map[string]interface{}, diag.Diagnostics) {
+func normalizeRuleParamsForState(ctx context.Context, apiParams map[string]any, previousParams jsontypes.Normalized) (map[string]any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	if apiParams == nil {
@@ -189,7 +189,7 @@ func normalizeRuleParamsForState(ctx context.Context, apiParams map[string]inter
 		return apiParams, diags
 	}
 
-	normalized, ok := removeInjectedDefaultsRecursive(apiParams, priorParams).(map[string]interface{})
+	normalized, ok := removeInjectedDefaultsRecursive(apiParams, priorParams).(map[string]any)
 	if !ok {
 		// Defensive fallback: params are expected to be a JSON object, but if we
 		// can't reconcile shapes, keep everything to avoid accidental data loss.
@@ -201,14 +201,14 @@ func normalizeRuleParamsForState(ctx context.Context, apiParams map[string]inter
 
 // parsePriorParams returns the decoded params JSON from the previous Terraform
 // state, or nil if there is no usable prior state.
-func parsePriorParams(previousParams jsontypes.Normalized) (map[string]interface{}, diag.Diagnostics) {
+func parsePriorParams(previousParams jsontypes.Normalized) (map[string]any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	if !utils.IsKnown(previousParams) || previousParams.IsNull() {
 		return nil, diags
 	}
 
-	var prior map[string]interface{}
+	var prior map[string]any
 	diags.Append(previousParams.Unmarshal(&prior)...)
 	if diags.HasError() {
 		return nil, diags
@@ -235,14 +235,14 @@ func parsePriorParams(previousParams jsontypes.Normalized) (map[string]interface
 //   - For scalars, the API value is returned unchanged.
 func removeInjectedDefaultsRecursive(api any, prior any) any {
 	switch apiTyped := api.(type) {
-	case map[string]interface{}:
-		priorMap, ok := prior.(map[string]interface{})
+	case map[string]any:
+		priorMap, ok := prior.(map[string]any)
 		if !ok {
 			// Can't compare nested keys without a prior object; keep as-is.
 			return apiTyped
 		}
 
-		out := make(map[string]interface{}, len(apiTyped))
+		out := make(map[string]any, len(apiTyped))
 		for k, v := range apiTyped {
 			priorV, exists := priorMap[k]
 			if !exists {
@@ -253,14 +253,14 @@ func removeInjectedDefaultsRecursive(api any, prior any) any {
 		}
 		return out
 
-	case []interface{}:
-		priorSlice, ok := prior.([]interface{})
+	case []any:
+		priorSlice, ok := prior.([]any)
 		if !ok {
 			// Can't compare element structure without a prior array; keep as-is.
 			return apiTyped
 		}
 
-		out := make([]interface{}, len(apiTyped))
+		out := make([]any, len(apiTyped))
 		for i, v := range apiTyped {
 			if i < len(priorSlice) {
 				out[i] = removeInjectedDefaultsRecursive(v, priorSlice[i])
@@ -362,7 +362,7 @@ func (m alertingRuleModel) toAPIModel(ctx context.Context, serverVersion *versio
 	// the plan phase. We intentionally do not re-validate here to avoid
 	// duplicate error messages.
 	if utils.IsKnown(m.Params) {
-		params := map[string]interface{}{}
+		params := map[string]any{}
 		diags.Append(m.Params.Unmarshal(&params)...)
 		if diags.HasError() {
 			return models.AlertingRule{}, diags
@@ -533,7 +533,7 @@ func convertActionsToAPI(ctx context.Context, actionsList types.List) ([]models.
 
 		// Params from JSON
 		if utils.IsKnown(action.Params) {
-			var params map[string]interface{}
+			var params map[string]any
 			if err := json.Unmarshal([]byte(action.Params.ValueString()), &params); err != nil {
 				diags.AddAttributeError(path.Root("actions").AtListIndex(i).AtName("params"), "Failed to unmarshal action params", err.Error())
 				continue

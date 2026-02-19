@@ -33,7 +33,7 @@ type indexModel struct {
 type AliasIndexConfig struct {
 	Name          string
 	IsWriteIndex  bool
-	Filter        map[string]interface{}
+	Filter        map[string]any
 	IndexRouting  string
 	IsHidden      bool
 	Routing       string

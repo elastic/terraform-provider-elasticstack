@@ -226,7 +226,7 @@ func DataSourceRole() *schema.Resource {
 	}
 }
 
-func dataSourceSecurityRoleRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func dataSourceSecurityRoleRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
@@ -307,11 +307,11 @@ func dataSourceSecurityRoleRead(ctx context.Context, d *schema.ResourceData, met
 	return diags
 }
 
-func flattenApplicationsData(apps *[]models.Application) []interface{} {
+func flattenApplicationsData(apps *[]models.Application) []any {
 	if apps != nil {
-		oapps := make([]interface{}, len(*apps))
+		oapps := make([]any, len(*apps))
 		for i, app := range *apps {
-			oa := make(map[string]interface{})
+			oa := make(map[string]any)
 			oa["application"] = app.Name
 			oa["privileges"] = app.Privileges
 			oa["resources"] = app.Resources
@@ -319,45 +319,45 @@ func flattenApplicationsData(apps *[]models.Application) []interface{} {
 		}
 		return oapps
 	}
-	return make([]interface{}, 0)
+	return make([]any, 0)
 }
 
-func flattenIndicesData(indices []models.IndexPerms) []interface{} {
-	oindx := make([]interface{}, len(indices))
+func flattenIndicesData(indices []models.IndexPerms) []any {
+	oindx := make([]any, len(indices))
 
 	for i, index := range indices {
-		oi := make(map[string]interface{})
+		oi := make(map[string]any)
 		oi["names"] = index.Names
 		oi["privileges"] = index.Privileges
 		oi["query"] = index.Query
 		oi["allow_restricted_indices"] = index.AllowRestrictedIndices
 
 		if index.FieldSecurity != nil {
-			fsec := make(map[string]interface{})
+			fsec := make(map[string]any)
 			fsec["grant"] = index.FieldSecurity.Grant
 			fsec["except"] = index.FieldSecurity.Except
-			oi["field_security"] = []interface{}{fsec}
+			oi["field_security"] = []any{fsec}
 		}
 		oindx[i] = oi
 	}
 	return oindx
 }
 
-func flattenRemoteIndicesData(remoteIndices []models.RemoteIndexPerms) []interface{} {
-	oRemoteIndx := make([]interface{}, len(remoteIndices))
+func flattenRemoteIndicesData(remoteIndices []models.RemoteIndexPerms) []any {
+	oRemoteIndx := make([]any, len(remoteIndices))
 
 	for i, remoteIndex := range remoteIndices {
-		oi := make(map[string]interface{})
+		oi := make(map[string]any)
 		oi["names"] = remoteIndex.Names
 		oi["clusters"] = remoteIndex.Clusters
 		oi["privileges"] = remoteIndex.Privileges
 		oi["query"] = remoteIndex.Query
 
 		if remoteIndex.FieldSecurity != nil {
-			fsec := make(map[string]interface{})
+			fsec := make(map[string]any)
 			fsec["grant"] = remoteIndex.FieldSecurity.Grant
 			fsec["except"] = remoteIndex.FieldSecurity.Except
-			oi["field_security"] = []interface{}{fsec}
+			oi["field_security"] = []any{fsec}
 		}
 		oRemoteIndx[i] = oi
 	}

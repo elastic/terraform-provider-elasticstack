@@ -81,7 +81,7 @@ func (t JSONWithContextualDefaultsType) Equal(o attr.Type) bool {
 func (t JSONWithContextualDefaultsType) ValueFromString(ctx context.Context, in basetypes.StringValue) (basetypes.StringValuable, diag.Diagnostics) {
 	var contextValue string
 	if utils.IsKnown(in) {
-		var configMap map[string]interface{}
+		var configMap map[string]any
 		if err := json.Unmarshal([]byte(in.ValueString()), &configMap); err != nil {
 			return nil, diag.Diagnostics{
 				diag.NewErrorDiagnostic("Failed to unmarshal config value", err.Error()),
@@ -161,7 +161,7 @@ func (v JSONWithContextualDefaultsValue) SanitizedValue() (string, diag.Diagnost
 		return "", diags
 	}
 
-	var unsanitizedMap map[string]interface{}
+	var unsanitizedMap map[string]any
 	err := json.Unmarshal([]byte(v.ValueString()), &unsanitizedMap)
 	if err != nil {
 		diags.AddError("Failed to unmarshal config value", err.Error())
@@ -181,14 +181,14 @@ func (v JSONWithContextualDefaultsValue) SanitizedValue() (string, diag.Diagnost
 }
 
 // removeNulls recursively removes all null values from the map
-func removeNulls(m map[string]interface{}) {
+func removeNulls(m map[string]any) {
 	for key, value := range m {
 		if value == nil {
 			delete(m, key)
 			continue
 		}
 
-		if nestedMap, ok := value.(map[string]interface{}); ok {
+		if nestedMap, ok := value.(map[string]any); ok {
 			removeNulls(nestedMap)
 			continue
 		}
@@ -288,7 +288,7 @@ func NewJSONWithContextualDefaultsValue(
 		return NewJSONWithContextualDefaultsNull(), nil
 	}
 
-	var configMap map[string]interface{}
+	var configMap map[string]any
 	err := json.Unmarshal([]byte(value), &configMap)
 	if err != nil {
 		return JSONWithContextualDefaultsValue{}, diag.Diagnostics{

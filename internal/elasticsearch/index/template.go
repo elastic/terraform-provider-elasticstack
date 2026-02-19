@@ -214,7 +214,7 @@ func ResourceTemplate() *schema.Resource {
 	}
 }
 
-func resourceIndexTemplatePut(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceIndexTemplatePut(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
@@ -235,7 +235,7 @@ func resourceIndexTemplatePut(ctx context.Context, d *schema.ResourceData, meta 
 
 	compsOf := make([]string, 0)
 	if v, ok := d.GetOk("composed_of"); ok {
-		for _, c := range v.([]interface{}) {
+		for _, c := range v.([]any) {
 			compsOf = append(compsOf, c.(string))
 		}
 	}
@@ -243,7 +243,7 @@ func resourceIndexTemplatePut(ctx context.Context, d *schema.ResourceData, meta 
 
 	if v, ok := d.GetOk("ignore_missing_component_templates"); ok {
 		compsOfIgnore := make([]string, 0)
-		for _, c := range v.([]interface{}) {
+		for _, c := range v.([]any) {
 			compsOfIgnore = append(compsOfIgnore, c.(string))
 		}
 
@@ -259,9 +259,9 @@ func resourceIndexTemplatePut(ctx context.Context, d *schema.ResourceData, meta 
 		if d.HasChange("data_stream") {
 			old, _ := d.GetChange("data_stream")
 
-			if old != nil && len(old.([]interface{})) == 1 {
-				if old.([]interface{})[0] != nil {
-					setting := old.([]interface{})[0].(map[string]interface{})
+			if old != nil && len(old.([]any)) == 1 {
+				if old.([]any)[0] != nil {
+					setting := old.([]any)[0].(map[string]any)
 					if acr, ok := setting["allow_custom_routing"]; ok && acr.(bool) {
 						hasAllowCustomRouting = true
 					}
@@ -270,8 +270,8 @@ func resourceIndexTemplatePut(ctx context.Context, d *schema.ResourceData, meta 
 		}
 
 		// only one definition of stream allowed
-		if v.([]interface{})[0] != nil {
-			stream := v.([]interface{})[0].(map[string]interface{})
+		if v.([]any)[0] != nil {
+			stream := v.([]any)[0].(map[string]any)
 			dSettings := &models.DataStreamSettings{}
 			if s, ok := stream["hidden"]; ok {
 				hidden := s.(bool)
@@ -295,7 +295,7 @@ func resourceIndexTemplatePut(ctx context.Context, d *schema.ResourceData, meta 
 	}
 
 	if v, ok := d.GetOk("metadata"); ok {
-		metadata := make(map[string]interface{})
+		metadata := make(map[string]any)
 		if err := json.NewDecoder(strings.NewReader(v.(string))).Decode(&metadata); err != nil {
 			return diag.FromErr(err)
 		}
@@ -331,10 +331,10 @@ func resourceIndexTemplatePut(ctx context.Context, d *schema.ResourceData, meta 
 	return resourceIndexTemplateRead(ctx, d, meta)
 }
 
-func expandTemplate(config interface{}) (models.Template, bool, diag.Diagnostics) {
+func expandTemplate(config any) (models.Template, bool, diag.Diagnostics) {
 	templ := models.Template{}
 	// only one template block allowed to be declared
-	definedTempl, ok := config.([]interface{})[0].(map[string]interface{})
+	definedTempl, ok := config.([]any)[0].(map[string]any)
 	if !ok {
 		return templ, false, nil
 	}
@@ -354,7 +354,7 @@ func expandTemplate(config interface{}) (models.Template, bool, diag.Diagnostics
 
 	if mappings, ok := definedTempl["mappings"]; ok {
 		if mappings.(string) != "" {
-			maps := make(map[string]interface{})
+			maps := make(map[string]any)
 			if err := json.Unmarshal([]byte(mappings.(string)), &maps); err != nil {
 				return templ, false, diag.FromErr(err)
 			}
@@ -364,7 +364,7 @@ func expandTemplate(config interface{}) (models.Template, bool, diag.Diagnostics
 
 	if settings, ok := definedTempl["settings"]; ok {
 		if settings.(string) != "" {
-			sets := make(map[string]interface{})
+			sets := make(map[string]any)
 			if err := json.Unmarshal([]byte(settings.(string)), &sets); err != nil {
 				return templ, false, diag.FromErr(err)
 			}
@@ -375,7 +375,7 @@ func expandTemplate(config interface{}) (models.Template, bool, diag.Diagnostics
 	return templ, true, nil
 }
 
-func resourceIndexTemplateRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceIndexTemplateRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
@@ -407,8 +407,8 @@ func resourceIndexTemplateRead(ctx context.Context, d *schema.ResourceData, meta
 		return diag.FromErr(err)
 	}
 	if stream := tpl.IndexTemplate.DataStream; stream != nil {
-		ds := make([]interface{}, 1)
-		dSettings := make(map[string]interface{})
+		ds := make([]any, 1)
+		dSettings := make(map[string]any)
 		if v := stream.Hidden; v != nil {
 			dSettings["hidden"] = *v
 		}
@@ -453,9 +453,9 @@ func resourceIndexTemplateRead(ctx context.Context, d *schema.ResourceData, meta
 	return diags
 }
 
-func flattenTemplateData(template *models.Template) ([]interface{}, diag.Diagnostics) {
+func flattenTemplateData(template *models.Template) ([]any, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	tmpl := make(map[string]interface{})
+	tmpl := make(map[string]any)
 	if template.Mappings != nil {
 		m, err := json.Marshal(template.Mappings)
 		if err != nil {
@@ -484,10 +484,10 @@ func flattenTemplateData(template *models.Template) ([]interface{}, diag.Diagnos
 		tmpl["lifecycle"] = lifecycle
 	}
 
-	return []interface{}{tmpl}, diags
+	return []any{tmpl}, diags
 }
 
-func resourceIndexTemplateDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceIndexTemplateDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags

@@ -125,7 +125,7 @@ func ResourceDataStream() *schema.Resource {
 	}
 }
 
-func resourceDataStreamPut(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceDataStreamPut(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
@@ -144,7 +144,7 @@ func resourceDataStreamPut(ctx context.Context, d *schema.ResourceData, meta int
 	return resourceDataStreamRead(ctx, d, meta)
 }
 
-func resourceDataStreamRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceDataStreamRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
@@ -203,9 +203,9 @@ func resourceDataStreamRead(ctx context.Context, d *schema.ResourceData, meta in
 		}
 	}
 
-	indices := make([]interface{}, len(ds.Indices))
+	indices := make([]any, len(ds.Indices))
 	for i, idx := range ds.Indices {
-		index := make(map[string]interface{})
+		index := make(map[string]any)
 		index["index_name"] = idx.IndexName
 		index["index_uuid"] = idx.IndexUUID
 		indices[i] = index
@@ -217,7 +217,7 @@ func resourceDataStreamRead(ctx context.Context, d *schema.ResourceData, meta in
 	return diags
 }
 
-func resourceDataStreamDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceDataStreamDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags

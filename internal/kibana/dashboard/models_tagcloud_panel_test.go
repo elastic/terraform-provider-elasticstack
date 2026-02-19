@@ -337,7 +337,7 @@ func Test_tagcloudPanelConfigConverter_mapPanelToAPI(t *testing.T) {
 	attrs, ok := configMap["attributes"]
 	require.True(t, ok, "attributes should exist in config")
 
-	attrsMap, ok := attrs.(map[string]interface{})
+	attrsMap, ok := attrs.(map[string]any)
 	require.True(t, ok, "attributes should be a map")
 
 	// Verify the type field exists with tagcloud

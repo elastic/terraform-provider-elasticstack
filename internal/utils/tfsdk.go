@@ -14,7 +14,7 @@ import (
 
 type Elementable interface {
 	attr.Value
-	ElementsAs(ctx context.Context, target interface{}, allowUnhandled bool) diag.Diagnostics
+	ElementsAs(ctx context.Context, target any, allowUnhandled bool) diag.Diagnostics
 }
 
 type ListMeta struct {

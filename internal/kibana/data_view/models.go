@@ -2,6 +2,7 @@ package data_view
 
 import (
 	"context"
+	"maps"
 	"slices"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -232,9 +233,7 @@ func convertFieldFormats(src map[string]kbapi.DataViewsFieldformat) kbapi.DataVi
 	}
 
 	dst := make(kbapi.DataViewsFieldformats, len(src))
-	for k, v := range src {
-		dst[k] = v
-	}
+	maps.Copy(dst, src)
 	return dst
 }
 

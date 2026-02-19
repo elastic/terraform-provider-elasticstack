@@ -238,8 +238,8 @@ func applyDefaultsToVars(vars jsontypes.Normalized, defaults jsontypes.Normalize
 		return defaults, nil
 	}
 
-	var varsMap map[string]interface{}
-	var defaultsMap map[string]interface{}
+	var varsMap map[string]any
+	var defaultsMap map[string]any
 
 	diags := vars.Unmarshal(&varsMap)
 	d := defaults.Unmarshal(&defaultsMap)

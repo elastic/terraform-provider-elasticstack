@@ -47,7 +47,7 @@ func (r *roleResource) UpgradeState(_ context.Context) map[int64]resource.StateU
 }
 
 func v0ToV1(ctx context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
-	var priorState map[string]interface{}
+	var priorState map[string]any
 	err := json.Unmarshal(req.RawState.JSON, &priorState)
 	if err != nil {
 		resp.Diagnostics.AddError("State Upgrade Error", "Could not unmarshal prior state: "+err.Error())
@@ -82,18 +82,18 @@ func v0ToV1(ctx context.Context, req resource.UpgradeStateRequest, resp *resourc
 	}
 }
 
-func convertV0Indices(indices interface{}) interface{} {
-	indicesSlice, ok := indices.([]interface{})
+func convertV0Indices(indices any) any {
+	indicesSlice, ok := indices.([]any)
 	if ok {
 		for i, index := range indicesSlice {
-			indexMap, ok := index.(map[string]interface{})
+			indexMap, ok := index.(map[string]any)
 			if ok {
 				if indexMap["query"] == "" {
 					delete(indexMap, "query")
 				}
 				// Convert field_security from a list to an object
 				if fs, ok := indexMap["field_security"]; ok {
-					fsList, ok := fs.([]interface{})
+					fsList, ok := fs.([]any)
 					if ok && len(fsList) > 0 {
 						indexMap["field_security"] = fsList[0]
 					} else {

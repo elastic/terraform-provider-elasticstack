@@ -45,7 +45,7 @@ func (r *scriptResource) update(ctx context.Context, plan tfsdk.Plan, state *tfs
 	if utils.IsKnown(data.Params) {
 		paramsStr := data.Params.ValueString()
 		if paramsStr != "" {
-			var params map[string]interface{}
+			var params map[string]any
 			err := json.Unmarshal([]byte(paramsStr), &params)
 			if err != nil {
 				diags.AddError("Error unmarshaling script params", err.Error())

@@ -257,7 +257,7 @@ func DataSourceSnapshotRespository() *schema.Resource {
 	}
 }
 
-func dataSourceSnapRepoRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func dataSourceSnapRepoRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags

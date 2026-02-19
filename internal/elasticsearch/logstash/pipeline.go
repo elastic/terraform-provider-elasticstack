@@ -182,7 +182,7 @@ func ResourceLogstashPipeline() *schema.Resource {
 	}
 }
 
-func resourceLogstashPipelinePut(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceLogstashPipelinePut(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
@@ -201,13 +201,13 @@ func resourceLogstashPipelinePut(ctx context.Context, d *schema.ResourceData, me
 	logstashPipeline.LastModified = utils.FormatStrictDateTime(time.Now().UTC())
 	logstashPipeline.Pipeline = d.Get("pipeline").(string)
 
-	var pipelineMetadata map[string]interface{}
+	var pipelineMetadata map[string]any
 	if err := json.Unmarshal([]byte(d.Get("pipeline_metadata").(string)), &pipelineMetadata); err != nil {
 		return diag.FromErr(err)
 	}
 	logstashPipeline.PipelineMetadata = pipelineMetadata
 
-	logstashPipeline.PipelineSettings = map[string]interface{}{}
+	logstashPipeline.PipelineSettings = map[string]any{}
 	if settings := utils.ExpandIndividuallyDefinedSettings(ctx, d, allSettingsKeys); len(settings) > 0 {
 		logstashPipeline.PipelineSettings = settings
 	}
@@ -222,7 +222,7 @@ func resourceLogstashPipelinePut(ctx context.Context, d *schema.ResourceData, me
 	return resourceLogstashPipelineRead(ctx, d, meta)
 }
 
-func resourceLogstashPipelineRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceLogstashPipelineRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
@@ -264,7 +264,7 @@ func resourceLogstashPipelineRead(ctx context.Context, d *schema.ResourceData, m
 	}
 
 	for key, typ := range allSettingsKeys {
-		var value interface{}
+		var value any
 		if v, ok := logstashPipeline.PipelineSettings[key]; ok {
 			value = v
 		} else {
@@ -285,7 +285,7 @@ func resourceLogstashPipelineRead(ctx context.Context, d *schema.ResourceData, m
 	return nil
 }
 
-func resourceLogstashPipelineDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceLogstashPipelineDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags

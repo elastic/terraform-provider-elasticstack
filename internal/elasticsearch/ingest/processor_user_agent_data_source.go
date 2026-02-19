@@ -69,7 +69,7 @@ func DataSourceProcessorUserAgent() *schema.Resource {
 	}
 }
 
-func dataSourceProcessorUserAgentRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func dataSourceProcessorUserAgentRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	processor := &models.ProcessorUserAgent{}

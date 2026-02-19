@@ -18,11 +18,11 @@ import (
 // one generated params variant. This avoids reflection in runtime validation.
 type paramsSchemaSpec struct {
 	name         string
-	newTarget    func() interface{}
+	newTarget    func() any
 	requiredKeys map[string]struct{}
 }
 
-func mustNewParamsSchemaSpec(newTarget func() interface{}) paramsSchemaSpec {
+func mustNewParamsSchemaSpec(newTarget func() any) paramsSchemaSpec {
 	target := newTarget()
 	name := fmt.Sprintf("%T", target)
 	requiredKeys, err := computeRequiredKeys(target)
@@ -55,7 +55,7 @@ func (r *Resource) ValidateConfig(ctx context.Context, req resource.ValidateConf
 		return
 	}
 
-	var params map[string]interface{}
+	var params map[string]any
 	if err := json.Unmarshal([]byte(data.Params.ValueString()), &params); err != nil {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("params"),
@@ -79,43 +79,43 @@ func (r *Resource) ValidateConfig(ctx context.Context, req resource.ValidateConf
 
 var ruleTypeParamsSpecs = map[string][]paramsSchemaSpec{
 	"apm.rules.anomaly": {
-		mustNewParamsSchemaSpec(func() interface{} { return &kbapi.ParamsPropertyApmAnomaly{} }),
+		mustNewParamsSchemaSpec(func() any { return &kbapi.ParamsPropertyApmAnomaly{} }),
 	},
 	"apm.error_rate": {
-		mustNewParamsSchemaSpec(func() interface{} { return &kbapi.ParamsPropertyApmErrorCount{} }),
+		mustNewParamsSchemaSpec(func() any { return &kbapi.ParamsPropertyApmErrorCount{} }),
 	},
 	"apm.transaction_duration": {
-		mustNewParamsSchemaSpec(func() interface{} { return &kbapi.ParamsPropertyApmTransactionDuration{} }),
+		mustNewParamsSchemaSpec(func() any { return &kbapi.ParamsPropertyApmTransactionDuration{} }),
 	},
 	"apm.transaction_error_rate": {
-		mustNewParamsSchemaSpec(func() interface{} { return &kbapi.ParamsPropertyApmTransactionErrorRate{} }),
+		mustNewParamsSchemaSpec(func() any { return &kbapi.ParamsPropertyApmTransactionErrorRate{} }),
 	},
 	".index-threshold": {
-		mustNewParamsSchemaSpec(func() interface{} { return &kbapi.ParamsIndexThresholdRule{} }),
+		mustNewParamsSchemaSpec(func() any { return &kbapi.ParamsIndexThresholdRule{} }),
 	},
 	"metrics.alert.inventory.threshold": {
-		mustNewParamsSchemaSpec(func() interface{} { return &kbapi.ParamsPropertyInfraInventory{} }),
+		mustNewParamsSchemaSpec(func() any { return &kbapi.ParamsPropertyInfraInventory{} }),
 	},
 	"metrics.alert.threshold": {
-		mustNewParamsSchemaSpec(func() interface{} { return &kbapi.ParamsPropertyInfraMetricThreshold{} }),
+		mustNewParamsSchemaSpec(func() any { return &kbapi.ParamsPropertyInfraMetricThreshold{} }),
 	},
 	"slo.rules.burnRate": {
-		mustNewParamsSchemaSpec(func() interface{} { return &kbapi.ParamsPropertySloBurnRate{} }),
+		mustNewParamsSchemaSpec(func() any { return &kbapi.ParamsPropertySloBurnRate{} }),
 	},
 	"xpack.uptime.alerts.tls": {
-		mustNewParamsSchemaSpec(func() interface{} { return &kbapi.ParamsPropertySyntheticsUptimeTls{} }),
+		mustNewParamsSchemaSpec(func() any { return &kbapi.ParamsPropertySyntheticsUptimeTls{} }),
 	},
 	"xpack.uptime.alerts.monitorStatus": {
-		mustNewParamsSchemaSpec(func() interface{} { return &kbapi.ParamsPropertySyntheticsMonitorStatus{} }),
+		mustNewParamsSchemaSpec(func() any { return &kbapi.ParamsPropertySyntheticsMonitorStatus{} }),
 	},
 	".es-query": {
-		mustNewParamsSchemaSpec(func() interface{} { return &kbapi.ParamsEsQueryDslRule{} }),
-		mustNewParamsSchemaSpec(func() interface{} { return &kbapi.ParamsEsQueryEsqlRule{} }),
-		mustNewParamsSchemaSpec(func() interface{} { return &kbapi.ParamsEsQueryKqlRule{} }),
+		mustNewParamsSchemaSpec(func() any { return &kbapi.ParamsEsQueryDslRule{} }),
+		mustNewParamsSchemaSpec(func() any { return &kbapi.ParamsEsQueryEsqlRule{} }),
+		mustNewParamsSchemaSpec(func() any { return &kbapi.ParamsEsQueryKqlRule{} }),
 	},
 	"logs.alert.document.count": {
-		mustNewParamsSchemaSpec(func() interface{} { return &kbapi.ParamsPropertyLogThreshold0{} }),
-		mustNewParamsSchemaSpec(func() interface{} { return &kbapi.ParamsPropertyLogThreshold1{} }),
+		mustNewParamsSchemaSpec(func() any { return &kbapi.ParamsPropertyLogThreshold0{} }),
+		mustNewParamsSchemaSpec(func() any { return &kbapi.ParamsPropertyLogThreshold1{} }),
 	},
 }
 
@@ -146,7 +146,7 @@ var ruleTypeAdditionalRequiredParamsKeys = map[string][]string{
 	".es-query": {"size"},
 }
 
-func validateRuleParams(ruleTypeID string, params map[string]interface{}) []string {
+func validateRuleParams(ruleTypeID string, params map[string]any) []string {
 	specs, ok := ruleTypeParamsSpecs[ruleTypeID]
 	if !ok {
 		// Backward compatible fallback for custom/unknown rules.
@@ -211,7 +211,7 @@ func betterValidationCandidate(decoded bool, currentDecoded bool) bool {
 	return false
 }
 
-func missingRequiredKeys(requiredKeys map[string]struct{}, params map[string]interface{}, additionalRequiredKeys []string) []string {
+func missingRequiredKeys(requiredKeys map[string]struct{}, params map[string]any, additionalRequiredKeys []string) []string {
 	if len(requiredKeys) == 0 && len(additionalRequiredKeys) == 0 {
 		return nil
 	}
@@ -235,7 +235,7 @@ func missingRequiredKeys(requiredKeys map[string]struct{}, params map[string]int
 	return missing
 }
 
-func computeRequiredKeys(target interface{}) (map[string]struct{}, error) {
+func computeRequiredKeys(target any) (map[string]struct{}, error) {
 	// Marshal zero-value struct and decode to map to discover non-omitempty keys.
 	// This relies on the Go JSON serialization convention: fields tagged with
 	// `omitempty` are omitted when they hold their zero value, so any key that
@@ -248,7 +248,7 @@ func computeRequiredKeys(target interface{}) (map[string]struct{}, error) {
 		return nil, fmt.Errorf("json.Marshal: %w", err)
 	}
 
-	var values map[string]interface{}
+	var values map[string]any
 	if err := json.Unmarshal(raw, &values); err != nil {
 		return nil, fmt.Errorf("json.Unmarshal: %w", err)
 	}

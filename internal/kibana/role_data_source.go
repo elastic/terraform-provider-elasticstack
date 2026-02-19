@@ -231,7 +231,7 @@ func DataSourceRole() *schema.Resource {
 	}
 }
 
-func dataSourceSecurityRoleRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func dataSourceSecurityRoleRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	roleId := d.Get("name").(string)
 	d.SetId(roleId)
 

@@ -568,7 +568,7 @@ func checkResourceAlertingRuleDestroy(s *terraform.State) error {
 	return nil
 }
 
-func testCheckAlertingRuleAPIParams(resourceName string, check func(params map[string]interface{}) error) resource.TestCheckFunc {
+func testCheckAlertingRuleAPIParams(resourceName string, check func(params map[string]any) error) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[resourceName]
 		if !ok {
@@ -597,14 +597,14 @@ func testCheckAlertingRuleAPIParams(resourceName string, check func(params map[s
 
 		params := rule.Params
 		if params == nil {
-			params = map[string]interface{}{}
+			params = map[string]any{}
 		}
 		return check(params)
 	}
 }
 
 func testCheckAlertingRuleAPIParamStringEquals(resourceName, key, expected string) resource.TestCheckFunc {
-	return testCheckAlertingRuleAPIParams(resourceName, func(params map[string]interface{}) error {
+	return testCheckAlertingRuleAPIParams(resourceName, func(params map[string]any) error {
 		v, ok := params[key]
 		if !ok {
 			return fmt.Errorf("expected Kibana params to contain %q, but it was absent (params=%v)", key, params)
@@ -621,7 +621,7 @@ func testCheckAlertingRuleAPIParamStringEquals(resourceName, key, expected strin
 }
 
 func testCheckAlertingRuleAPIParamAbsentOrEmpty(resourceName, key string) resource.TestCheckFunc {
-	return testCheckAlertingRuleAPIParams(resourceName, func(params map[string]interface{}) error {
+	return testCheckAlertingRuleAPIParams(resourceName, func(params map[string]any) error {
 		v, ok := params[key]
 		if !ok {
 			return nil
@@ -635,7 +635,7 @@ func testCheckAlertingRuleAPIParamAbsentOrEmpty(resourceName, key string) resour
 
 func testCheckAlertingRuleStateParamsMissingKeys(resourceName string, keys ...string) resource.TestCheckFunc {
 	return resource.TestCheckResourceAttrWith(resourceName, "params", func(value string) error {
-		var params map[string]interface{}
+		var params map[string]any
 		if err := json.Unmarshal([]byte(value), &params); err != nil {
 			return fmt.Errorf("failed to unmarshal Terraform state params: %w", err)
 		}
@@ -650,7 +650,7 @@ func testCheckAlertingRuleStateParamsMissingKeys(resourceName string, keys ...st
 
 func testCheckAlertingRuleStateParamsHasKeys(resourceName string, keys ...string) resource.TestCheckFunc {
 	return resource.TestCheckResourceAttrWith(resourceName, "params", func(value string) error {
-		var params map[string]interface{}
+		var params map[string]any
 		if err := json.Unmarshal([]byte(value), &params); err != nil {
 			return fmt.Errorf("failed to unmarshal Terraform state params: %w", err)
 		}
@@ -665,7 +665,7 @@ func testCheckAlertingRuleStateParamsHasKeys(resourceName string, keys ...string
 
 func testCheckAlertingRuleStateParamsOnlyKeys(resourceName string, allowedKeys ...string) resource.TestCheckFunc {
 	return resource.TestCheckResourceAttrWith(resourceName, "params", func(value string) error {
-		var params map[string]interface{}
+		var params map[string]any
 		if err := json.Unmarshal([]byte(value), &params); err != nil {
 			return fmt.Errorf("failed to unmarshal Terraform state params: %w", err)
 		}

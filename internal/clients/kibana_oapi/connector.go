@@ -290,7 +290,7 @@ func remarshalConfig[T any](plan string) (string, error) {
 // back, unknown fields are automatically filtered out.
 func remarshalConfigGenAi(plan string) (string, error) {
 	// First, unmarshal to a map to check the apiProvider
-	var configMap map[string]interface{}
+	var configMap map[string]any
 	if err := json.Unmarshal([]byte(plan), &configMap); err != nil {
 		return "", err
 	}
@@ -333,7 +333,7 @@ func connectorConfigWithDefaultsBedrock(plan string) (string, error) {
 
 func connectorConfigWithDefaultsGenAi(plan string) (string, error) {
 	// First unmarshal to check the apiProvider
-	var configMap map[string]interface{}
+	var configMap map[string]any
 	if err := json.Unmarshal([]byte(plan), &configMap); err != nil {
 		return "", err
 	}

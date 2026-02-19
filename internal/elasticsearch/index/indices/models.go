@@ -252,7 +252,7 @@ func newAliasModelFromAPI(name string, apiModel models.IndexAlias) (aliasTfModel
 }
 
 func setSettingsFromAPI(ctx context.Context, model *indexTfModel, apiModel models.Index) diag.Diagnostics {
-	modelType := reflect.TypeOf(*model)
+	modelType := reflect.TypeFor[indexTfModel]()
 
 	for _, key := range allSettingsKeys {
 		settingsValue, ok := apiModel.Settings["index."+key]
@@ -342,7 +342,7 @@ func setSettingsFromAPI(ctx context.Context, model *indexTfModel, apiModel model
 				}
 			}
 
-			elems, ok := settingsValue.([]interface{})
+			elems, ok := settingsValue.([]any)
 			if !ok {
 				return diag.Diagnostics{
 					diag.NewErrorDiagnostic(
@@ -367,7 +367,7 @@ func setSettingsFromAPI(ctx context.Context, model *indexTfModel, apiModel model
 				}
 			}
 
-			elems, ok := settingsValue.([]interface{})
+			elems, ok := settingsValue.([]any)
 			if !ok {
 				return diag.Diagnostics{
 					diag.NewErrorDiagnostic(

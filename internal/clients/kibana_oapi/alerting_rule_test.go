@@ -34,7 +34,7 @@ func Test_convertResponseToModel(t *testing.T) {
 				"id":           "id",
 				"name":         "name",
 				"consumer":     "consumer",
-				"params":       map[string]interface{}{},
+				"params":       map[string]any{},
 				"rule_type_id": "rule-type-id",
 				"enabled":      true,
 				"tags":         []string{"hello"},
@@ -47,7 +47,7 @@ func Test_convertResponseToModel(t *testing.T) {
 				SpaceID:    "space-id",
 				Name:       "name",
 				Consumer:   "consumer",
-				Params:     map[string]interface{}{},
+				Params:     map[string]any{},
 				RuleTypeID: "rule-type-id",
 				Enabled:    utils.Pointer(true),
 				Tags:       []string{"hello"},
@@ -66,7 +66,7 @@ func Test_convertResponseToModel(t *testing.T) {
 				"id":           "id",
 				"name":         "name",
 				"consumer":     "consumer",
-				"params":       map[string]interface{}{},
+				"params":       map[string]any{},
 				"rule_type_id": "rule-type-id",
 				"enabled":      true,
 				"tags":         []string{"hello"},
@@ -87,7 +87,7 @@ func Test_convertResponseToModel(t *testing.T) {
 					map[string]any{
 						"group":  "group-1",
 						"id":     "id",
-						"params": map[string]interface{}{},
+						"params": map[string]any{},
 						"frequency": map[string]any{
 							"summary":     true,
 							"notify_when": "onThrottleInterval",
@@ -110,7 +110,7 @@ func Test_convertResponseToModel(t *testing.T) {
 					map[string]any{
 						"group":  "group-2",
 						"id":     "id",
-						"params": map[string]interface{}{},
+						"params": map[string]any{},
 						"frequency": map[string]any{
 							"summary":     true,
 							"notify_when": "onActionGroupChange",
@@ -119,7 +119,7 @@ func Test_convertResponseToModel(t *testing.T) {
 					map[string]any{
 						"group":  "group-3",
 						"id":     "id",
-						"params": map[string]interface{}{},
+						"params": map[string]any{},
 					},
 				},
 			},
@@ -128,7 +128,7 @@ func Test_convertResponseToModel(t *testing.T) {
 				SpaceID:         "space-id",
 				Name:            "name",
 				Consumer:        "consumer",
-				Params:          map[string]interface{}{},
+				Params:          map[string]any{},
 				RuleTypeID:      "rule-type-id",
 				Enabled:         utils.Pointer(true),
 				Tags:            []string{"hello"},
@@ -144,7 +144,7 @@ func Test_convertResponseToModel(t *testing.T) {
 					{
 						Group:  "group-1",
 						ID:     "id",
-						Params: map[string]interface{}{},
+						Params: map[string]any{},
 						Frequency: &models.ActionFrequency{
 							Summary:    true,
 							NotifyWhen: "onThrottleInterval",
@@ -163,7 +163,7 @@ func Test_convertResponseToModel(t *testing.T) {
 					{
 						Group:  "group-2",
 						ID:     "id",
-						Params: map[string]interface{}{},
+						Params: map[string]any{},
 						Frequency: &models.ActionFrequency{
 							Summary:    true,
 							NotifyWhen: "onActionGroupChange",
@@ -172,7 +172,7 @@ func Test_convertResponseToModel(t *testing.T) {
 					{
 						Group:  "group-3",
 						ID:     "id",
-						Params: map[string]interface{}{},
+						Params: map[string]any{},
 					},
 				},
 				AlertDelay: utils.Pointer(float32(4)),
@@ -310,7 +310,7 @@ func Test_CreateUpdateAlertingRule_ErrorHandling(t *testing.T) {
 				Consumer:   "alerts",
 				RuleTypeID: ".index-threshold",
 				Schedule:   models.AlertingRuleSchedule{Interval: "1m"},
-				Params:     map[string]interface{}{},
+				Params:     map[string]any{},
 			}
 
 			result, errDetail := tt.testFunc(context.Background(), client, "default", rule)

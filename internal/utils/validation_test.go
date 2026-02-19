@@ -11,7 +11,7 @@ func TestStringIsDuration(t *testing.T) {
 
 	tests := []struct {
 		name         string
-		i            interface{}
+		i            any
 		k            string
 		wantWarnings []string
 		wantErrors   []error
@@ -52,7 +52,7 @@ func TestStringIsElasticDuration(t *testing.T) {
 
 	tests := []struct {
 		name         string
-		i            interface{}
+		i            any
 		k            string
 		wantWarnings []string
 		wantErrors   []error

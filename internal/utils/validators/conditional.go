@@ -3,6 +3,7 @@ package validators
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -72,11 +73,9 @@ func (v condition) checkPathExpression(ctx context.Context, config tfsdk.Config,
 
 		// Check if this path's value matches any allowed value
 		if !pathValue.IsNull() && !pathValue.IsUnknown() {
-			for _, allowedValue := range v.allowedValues {
-				if lastDependentValueStr == allowedValue {
-					// Found a match, condition is met
-					return true, lastDependentValueStr, nil
-				}
+			if slices.Contains(v.allowedValues, lastDependentValueStr) {
+				// Found a match, condition is met
+				return true, lastDependentValueStr, nil
 			}
 		}
 	}
@@ -99,11 +98,8 @@ func (v condition) checkStaticPath(ctx context.Context, config tfsdk.Config) (bo
 	dependentFieldHasAllowedValue := false
 
 	if !dependentValue.IsNull() && !dependentValue.IsUnknown() {
-		for _, allowedValue := range v.allowedValues {
-			if dependentValueStr == allowedValue {
-				dependentFieldHasAllowedValue = true
-				break
-			}
+		if slices.Contains(v.allowedValues, dependentValueStr) {
+			dependentFieldHasAllowedValue = true
 		}
 	}
 

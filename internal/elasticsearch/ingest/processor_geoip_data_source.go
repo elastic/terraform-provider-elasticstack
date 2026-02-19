@@ -73,7 +73,7 @@ func DataSourceProcessorGeoip() *schema.Resource {
 	}
 }
 
-func dataSourceProcessorGeoipRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func dataSourceProcessorGeoipRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	processor := &models.ProcessorGeoip{}

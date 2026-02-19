@@ -12,6 +12,7 @@ linters:
     - inamedparam
     - intrange
     - lll
+    - modernize
   exclusions:
     generated: lax
     presets:

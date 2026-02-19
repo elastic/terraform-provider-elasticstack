@@ -98,7 +98,7 @@ func (data *RoleData) toAPIModel(ctx context.Context) (*models.Role, diag.Diagno
 
 	// Global
 	if utils.IsKnown(data.Global) {
-		var global map[string]interface{}
+		var global map[string]any
 		if err := json.Unmarshal([]byte(data.Global.ValueString()), &global); err != nil {
 			diags.AddError("Invalid JSON", fmt.Sprintf("Error parsing global JSON: %s", err))
 			return nil, diags
@@ -171,7 +171,7 @@ func (data *RoleData) toAPIModel(ctx context.Context) (*models.Role, diag.Diagno
 
 	// Metadata
 	if utils.IsKnown(data.Metadata) {
-		var metadata map[string]interface{}
+		var metadata map[string]any
 		if err := json.Unmarshal([]byte(data.Metadata.ValueString()), &metadata); err != nil {
 			diags.AddError("Invalid JSON", fmt.Sprintf("Error parsing metadata JSON: %s", err))
 			return nil, diags

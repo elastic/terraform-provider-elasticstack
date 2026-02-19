@@ -324,7 +324,7 @@ func ResourceTransform() *schema.Resource {
 	}
 }
 
-func resourceTransformCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceTransformCreate(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 
 	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
@@ -366,7 +366,7 @@ func resourceTransformCreate(ctx context.Context, d *schema.ResourceData, meta i
 	return resourceTransformRead(ctx, d, meta)
 }
 
-func resourceTransformRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceTransformRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 
 	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
@@ -411,7 +411,7 @@ func resourceTransformRead(ctx context.Context, d *schema.ResourceData, meta int
 	return diags
 }
 
-func resourceTransformUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceTransformUpdate(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 
 	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
@@ -457,7 +457,7 @@ func resourceTransformUpdate(ctx context.Context, d *schema.ResourceData, meta i
 	return resourceTransformRead(ctx, d, meta)
 }
 
-func resourceTransformDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceTransformDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 
 	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
@@ -487,17 +487,17 @@ func getTransformFromResourceData(ctx context.Context, d *schema.ResourceData, n
 	}
 
 	if v, ok := d.GetOk("source"); ok {
-		definedSource := v.([]interface{})[0].(map[string]interface{})
+		definedSource := v.([]any)[0].(map[string]any)
 
 		transform.Source = new(models.TransformSource)
 		indices := make([]string, 0)
-		for _, i := range definedSource["indices"].([]interface{}) {
+		for _, i := range definedSource["indices"].([]any) {
 			indices = append(indices, i.(string))
 		}
 		transform.Source.Indices = indices
 
 		if v, ok := definedSource["query"]; ok && len(v.(string)) > 0 {
-			var query interface{}
+			var query any
 			if err := json.NewDecoder(strings.NewReader(v.(string))).Decode(&query); err != nil {
 				return nil, err
 			}
@@ -505,7 +505,7 @@ func getTransformFromResourceData(ctx context.Context, d *schema.ResourceData, n
 		}
 
 		if v, ok := definedSource["runtime_mappings"]; ok && len(v.(string)) > 0 && isSettingAllowed(ctx, "source.runtime_mappings", serverVersion) {
-			var runtimeMappings interface{}
+			var runtimeMappings any
 			if err := json.NewDecoder(strings.NewReader(v.(string))).Decode(&runtimeMappings); err != nil {
 				return nil, err
 			}
@@ -514,16 +514,16 @@ func getTransformFromResourceData(ctx context.Context, d *schema.ResourceData, n
 	}
 
 	if v, ok := d.GetOk("destination"); ok {
-		definedDestination := v.([]interface{})[0].(map[string]interface{})
+		definedDestination := v.([]any)[0].(map[string]any)
 
 		transform.Destination = &models.TransformDestination{
 			Index: definedDestination["index"].(string),
 		}
 
-		if aliases, ok := definedDestination["aliases"].([]interface{}); ok && len(aliases) > 0 && isSettingAllowed(ctx, "destination.aliases", serverVersion) {
+		if aliases, ok := definedDestination["aliases"].([]any); ok && len(aliases) > 0 && isSettingAllowed(ctx, "destination.aliases", serverVersion) {
 			transform.Destination.Aliases = make([]models.TransformAlias, len(aliases))
 			for i, alias := range aliases {
-				aliasMap := alias.(map[string]interface{})
+				aliasMap := alias.(map[string]any)
 				transform.Destination.Aliases[i] = models.TransformAlias{
 					Alias:          aliasMap["alias"].(string),
 					MoveOnCreation: aliasMap["move_on_creation"].(bool),
@@ -537,7 +537,7 @@ func getTransformFromResourceData(ctx context.Context, d *schema.ResourceData, n
 	}
 
 	if v, ok := d.GetOk("pivot"); ok {
-		var pivot interface{}
+		var pivot any
 		if err := json.NewDecoder(strings.NewReader(v.(string))).Decode(&pivot); err != nil {
 			return nil, err
 		}
@@ -545,7 +545,7 @@ func getTransformFromResourceData(ctx context.Context, d *schema.ResourceData, n
 	}
 
 	if v, ok := d.GetOk("latest"); ok && isSettingAllowed(ctx, "latest", serverVersion) {
-		var latest interface{}
+		var latest any
 		if err := json.NewDecoder(strings.NewReader(v.(string))).Decode(&latest); err != nil {
 			return nil, err
 		}
@@ -557,7 +557,7 @@ func getTransformFromResourceData(ctx context.Context, d *schema.ResourceData, n
 	}
 
 	if v, ok := d.GetOk("metadata"); ok && isSettingAllowed(ctx, "metadata", serverVersion) {
-		var metadata map[string]interface{}
+		var metadata map[string]any
 		if err := json.NewDecoder(strings.NewReader(v.(string))).Decode(&metadata); err != nil {
 			return nil, err
 		}
@@ -565,11 +565,11 @@ func getTransformFromResourceData(ctx context.Context, d *schema.ResourceData, n
 	}
 
 	if v, ok := d.GetOk("retention_policy"); ok && isSettingAllowed(ctx, "retention_policy", serverVersion) {
-		definedRetentionPolicy := v.([]interface{})[0].(map[string]interface{})
+		definedRetentionPolicy := v.([]any)[0].(map[string]any)
 
 		if v, ok := definedRetentionPolicy["time"]; ok {
 			retentionTime := models.TransformRetentionPolicyTime{}
-			var definedRetentionTime = v.([]interface{})[0].(map[string]interface{})
+			var definedRetentionTime = v.([]any)[0].(map[string]any)
 			if f, ok := definedRetentionTime["field"]; ok {
 				retentionTime.Field = f.(string)
 			}
@@ -583,11 +583,11 @@ func getTransformFromResourceData(ctx context.Context, d *schema.ResourceData, n
 	}
 
 	if v, ok := d.GetOk("sync"); ok {
-		definedSync := v.([]interface{})[0].(map[string]interface{})
+		definedSync := v.([]any)[0].(map[string]any)
 
 		if v, ok := definedSync["time"]; ok {
 			syncTime := models.TransformSyncTime{}
-			var definedSyncTime = v.([]interface{})[0].(map[string]interface{})
+			var definedSyncTime = v.([]any)[0].(map[string]any)
 			if f, ok := definedSyncTime["field"]; ok {
 				syncTime.Field = f.(string)
 			}
@@ -773,12 +773,12 @@ func updateResourceDataFromStats(d *schema.ResourceData, transformStats *models.
 	return nil
 }
 
-func flattenSource(source *models.TransformSource) []interface{} {
+func flattenSource(source *models.TransformSource) []any {
 	if source == nil {
-		return []interface{}{}
+		return []any{}
 	}
 
-	s := make(map[string]interface{})
+	s := make(map[string]any)
 
 	if source.Indices != nil {
 		s["indices"] = source.Indices
@@ -787,7 +787,7 @@ func flattenSource(source *models.TransformSource) []interface{} {
 	if source.Query != nil {
 		query, err := json.Marshal(source.Query)
 		if err != nil {
-			return []interface{}{}
+			return []any{}
 		}
 		if len(query) > 0 {
 			s["query"] = string(query)
@@ -797,28 +797,28 @@ func flattenSource(source *models.TransformSource) []interface{} {
 	if source.RuntimeMappings != nil {
 		rm, err := json.Marshal(source.RuntimeMappings)
 		if err != nil {
-			return []interface{}{}
+			return []any{}
 		}
 		if len(rm) > 0 {
 			s["runtime_mappings"] = string(rm)
 		}
 	}
 
-	return []interface{}{s}
+	return []any{s}
 }
 
-func flattenDestination(dest *models.TransformDestination) []interface{} {
+func flattenDestination(dest *models.TransformDestination) []any {
 	if dest == nil {
-		return []interface{}{}
+		return []any{}
 	}
 
-	d := make(map[string]interface{})
+	d := make(map[string]any)
 	d["index"] = dest.Index
 
 	if len(dest.Aliases) > 0 {
-		aliases := make([]interface{}, len(dest.Aliases))
+		aliases := make([]any, len(dest.Aliases))
 		for i, alias := range dest.Aliases {
-			aliasMap := make(map[string]interface{})
+			aliasMap := make(map[string]any)
 			aliasMap["alias"] = alias.Alias
 			aliasMap["move_on_creation"] = alias.MoveOnCreation
 			aliases[i] = aliasMap
@@ -830,15 +830,15 @@ func flattenDestination(dest *models.TransformDestination) []interface{} {
 		d["pipeline"] = dest.Pipeline
 	}
 
-	return []interface{}{d}
+	return []any{d}
 }
 
-func flattenSync(sync *models.TransformSync) []interface{} {
+func flattenSync(sync *models.TransformSync) []any {
 	if sync == nil {
 		return nil
 	}
 
-	t := make(map[string]interface{})
+	t := make(map[string]any)
 
 	if sync.Time.Delay != "" {
 		t["delay"] = sync.Time.Delay
@@ -848,18 +848,18 @@ func flattenSync(sync *models.TransformSync) []interface{} {
 		t["field"] = sync.Time.Field
 	}
 
-	s := make(map[string]interface{})
-	s["time"] = []interface{}{t}
+	s := make(map[string]any)
+	s["time"] = []any{t}
 
-	return []interface{}{s}
+	return []any{s}
 }
 
-func flattenRetentionPolicy(retention *models.TransformRetentionPolicy) []interface{} {
+func flattenRetentionPolicy(retention *models.TransformRetentionPolicy) []any {
 	if retention == nil {
-		return []interface{}{}
+		return []any{}
 	}
 
-	t := make(map[string]interface{})
+	t := make(map[string]any)
 
 	if retention.Time.MaxAge != "" {
 		t["max_age"] = retention.Time.MaxAge
@@ -869,10 +869,10 @@ func flattenRetentionPolicy(retention *models.TransformRetentionPolicy) []interf
 		t["field"] = retention.Time.Field
 	}
 
-	r := make(map[string]interface{})
-	r["time"] = []interface{}{t}
+	r := make(map[string]any)
+	r["time"] = []any{t}
 
-	return []interface{}{r}
+	return []any{r}
 }
 
 func isSettingAllowed(ctx context.Context, settingName string, serverVersion *version.Version) bool {

@@ -40,7 +40,7 @@ func (c regionMapPanelConfigConverter) populateFromAPIPanel(ctx context.Context,
 		return nil
 	}
 
-	attrsMap, ok := attrs.(map[string]interface{})
+	attrsMap, ok := attrs.(map[string]any)
 	if !ok {
 		return nil
 	}

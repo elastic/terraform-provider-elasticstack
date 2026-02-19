@@ -112,12 +112,12 @@ func populateVarsJSONDefaults(ctxVal string, varsJson string) (string, error) {
 		return varsJson, diagutil.FwDiagsAsError(diags)
 	}
 
-	var vars map[string]interface{}
+	var vars map[string]any
 	if err := json.Unmarshal([]byte(varsJson), &vars); err != nil {
 		return varsJson, err
 	}
 
-	var defaultsMap map[string]interface{}
+	var defaultsMap map[string]any
 	diags = defaults.Unmarshal(&defaultsMap)
 	if diags.HasError() {
 		return varsJson, diagutil.FwDiagsAsError(diags)

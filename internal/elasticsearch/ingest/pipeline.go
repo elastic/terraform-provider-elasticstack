@@ -83,7 +83,7 @@ func ResourceIngestPipeline() *schema.Resource {
 	}
 }
 
-func resourceIngestPipelineTemplatePut(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceIngestPipelineTemplatePut(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
@@ -100,9 +100,9 @@ func resourceIngestPipelineTemplatePut(ctx context.Context, d *schema.ResourceDa
 		pipeline.Description = &r
 	}
 	if v, ok := d.GetOk("on_failure"); ok {
-		onFailure := make([]map[string]interface{}, len(v.([]interface{})))
-		for i, f := range v.([]interface{}) {
-			item := make(map[string]interface{})
+		onFailure := make([]map[string]any, len(v.([]any)))
+		for i, f := range v.([]any) {
+			item := make(map[string]any)
 			if err := json.NewDecoder(strings.NewReader(f.(string))).Decode(&item); err != nil {
 				return diag.FromErr(err)
 			}
@@ -111,9 +111,9 @@ func resourceIngestPipelineTemplatePut(ctx context.Context, d *schema.ResourceDa
 		pipeline.OnFailure = onFailure
 	}
 	if v, ok := d.GetOk("processors"); ok {
-		procs := make([]map[string]interface{}, len(v.([]interface{})))
-		for i, f := range v.([]interface{}) {
-			item := make(map[string]interface{})
+		procs := make([]map[string]any, len(v.([]any)))
+		for i, f := range v.([]any) {
+			item := make(map[string]any)
 			if err := json.NewDecoder(strings.NewReader(f.(string))).Decode(&item); err != nil {
 				return diag.FromErr(err)
 			}
@@ -122,7 +122,7 @@ func resourceIngestPipelineTemplatePut(ctx context.Context, d *schema.ResourceDa
 		pipeline.Processors = procs
 	}
 	if v, ok := d.GetOk("metadata"); ok {
-		metadata := make(map[string]interface{})
+		metadata := make(map[string]any)
 		if err := json.NewDecoder(strings.NewReader(v.(string))).Decode(&metadata); err != nil {
 			return diag.FromErr(err)
 		}
@@ -137,7 +137,7 @@ func resourceIngestPipelineTemplatePut(ctx context.Context, d *schema.ResourceDa
 	return resourceIngestPipelineTemplateRead(ctx, d, meta)
 }
 
-func resourceIngestPipelineTemplateRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceIngestPipelineTemplateRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
@@ -205,7 +205,7 @@ func resourceIngestPipelineTemplateRead(ctx context.Context, d *schema.ResourceD
 	return diags
 }
 
-func resourceIngestPipelineTemplateDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceIngestPipelineTemplateDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags

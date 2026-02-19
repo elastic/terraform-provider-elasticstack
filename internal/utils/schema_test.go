@@ -17,12 +17,12 @@ func TestExpandStringSet(t *testing.T) {
 	}{
 		{
 			name: "returns empty",
-			set:  schema.NewSet(schema.HashString, []interface{}{}),
+			set:  schema.NewSet(schema.HashString, []any{}),
 			want: nil,
 		},
 		{
 			name: "converts to string array",
-			set:  schema.NewSet(schema.HashString, []interface{}{"a", "b", "c"}),
+			set:  schema.NewSet(schema.HashString, []any{"a", "b", "c"}),
 			want: []string{"c", "b", "a"}, // reordered by hash
 		},
 	}

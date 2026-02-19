@@ -811,30 +811,30 @@ func Test_xyChartPanelConfigConverter_populateFromAPIPanel(t *testing.T) {
 		{
 			name: "valid xy chart config",
 			config: func() kbapi.DashboardPanelItem_Config {
-				attributes := map[string]interface{}{
+				attributes := map[string]any{
 					"type":  "xy",
 					"title": "Test Chart",
-					"axis": map[string]interface{}{
-						"x": map[string]interface{}{
+					"axis": map[string]any{
+						"x": map[string]any{
 							"grid": true,
 						},
 					},
-					"decorations": map[string]interface{}{
+					"decorations": map[string]any{
 						"show_end_zones": true,
 					},
-					"fitting": map[string]interface{}{
+					"fitting": map[string]any{
 						"type": "linear",
 					},
-					"layers": []interface{}{},
-					"legend": map[string]interface{}{
+					"layers": []any{},
+					"legend": map[string]any{
 						"visibility": "visible",
 					},
-					"query": map[string]interface{}{
+					"query": map[string]any{
 						"query": "*",
 					},
 				}
 
-				configMap := map[string]interface{}{
+				configMap := map[string]any{
 					"attributes": attributes,
 				}
 

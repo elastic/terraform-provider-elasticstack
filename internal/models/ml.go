@@ -7,10 +7,10 @@ type Datafeed struct {
 	DatafeedId             string                  `json:"datafeed_id"`
 	JobId                  string                  `json:"job_id"`
 	Indices                []string                `json:"indices"`
-	Query                  map[string]interface{}  `json:"query,omitempty"`
-	Aggregations           map[string]interface{}  `json:"aggregations,omitempty"`
-	ScriptFields           map[string]interface{}  `json:"script_fields,omitempty"`
-	RuntimeMappings        map[string]interface{}  `json:"runtime_mappings,omitempty"`
+	Query                  map[string]any          `json:"query,omitempty"`
+	Aggregations           map[string]any          `json:"aggregations,omitempty"`
+	ScriptFields           map[string]any          `json:"script_fields,omitempty"`
+	RuntimeMappings        map[string]any          `json:"runtime_mappings,omitempty"`
 	ScrollSize             *int                    `json:"scroll_size,omitempty"`
 	ChunkingConfig         *ChunkingConfig         `json:"chunking_config,omitempty"`
 	Frequency              *string                 `json:"frequency,omitempty"`
@@ -50,10 +50,10 @@ type Authorization struct {
 type DatafeedCreateRequest struct {
 	JobId                  string                  `json:"job_id"`
 	Indices                []string                `json:"indices"`
-	Query                  map[string]interface{}  `json:"query,omitempty"`
-	Aggregations           map[string]interface{}  `json:"aggregations,omitempty"`
-	ScriptFields           map[string]interface{}  `json:"script_fields,omitempty"`
-	RuntimeMappings        map[string]interface{}  `json:"runtime_mappings,omitempty"`
+	Query                  map[string]any          `json:"query,omitempty"`
+	Aggregations           map[string]any          `json:"aggregations,omitempty"`
+	ScriptFields           map[string]any          `json:"script_fields,omitempty"`
+	RuntimeMappings        map[string]any          `json:"runtime_mappings,omitempty"`
 	ScrollSize             *int                    `json:"scroll_size,omitempty"`
 	ChunkingConfig         *ChunkingConfig         `json:"chunking_config,omitempty"`
 	Frequency              *string                 `json:"frequency,omitempty"`
@@ -67,10 +67,10 @@ type DatafeedCreateRequest struct {
 type DatafeedUpdateRequest struct {
 	JobId                  *string                 `json:"job_id,omitempty"`
 	Indices                []string                `json:"indices,omitempty"`
-	Query                  map[string]interface{}  `json:"query,omitempty"`
-	Aggregations           map[string]interface{}  `json:"aggregations,omitempty"`
-	ScriptFields           map[string]interface{}  `json:"script_fields,omitempty"`
-	RuntimeMappings        map[string]interface{}  `json:"runtime_mappings,omitempty"`
+	Query                  map[string]any          `json:"query,omitempty"`
+	Aggregations           map[string]any          `json:"aggregations,omitempty"`
+	ScriptFields           map[string]any          `json:"script_fields,omitempty"`
+	RuntimeMappings        map[string]any          `json:"runtime_mappings,omitempty"`
 	ScrollSize             *int                    `json:"scroll_size,omitempty"`
 	ChunkingConfig         *ChunkingConfig         `json:"chunking_config,omitempty"`
 	Frequency              *string                 `json:"frequency,omitempty"`
@@ -85,10 +85,10 @@ type DatafeedResponse struct {
 	DatafeedId             string                  `json:"datafeed_id"`
 	JobId                  string                  `json:"job_id"`
 	Indices                []string                `json:"indices"`
-	Query                  map[string]interface{}  `json:"query"`
-	Aggregations           map[string]interface{}  `json:"aggregations,omitempty"`
-	ScriptFields           map[string]interface{}  `json:"script_fields,omitempty"`
-	RuntimeMappings        map[string]interface{}  `json:"runtime_mappings,omitempty"`
+	Query                  map[string]any          `json:"query"`
+	Aggregations           map[string]any          `json:"aggregations,omitempty"`
+	ScriptFields           map[string]any          `json:"script_fields,omitempty"`
+	RuntimeMappings        map[string]any          `json:"runtime_mappings,omitempty"`
 	ScrollSize             int                     `json:"scroll_size"`
 	ChunkingConfig         ChunkingConfig          `json:"chunking_config"`
 	Frequency              string                  `json:"frequency"`
@@ -154,7 +154,7 @@ type MLJob struct {
 
 // MLJobNode represents the node information for an ML job
 type MLJobNode struct {
-	Id         string                 `json:"id"`
-	Name       string                 `json:"name"`
-	Attributes map[string]interface{} `json:"attributes"`
+	Id         string         `json:"id"`
+	Name       string         `json:"name"`
+	Attributes map[string]any `json:"attributes"`
 }

@@ -219,7 +219,7 @@ func (plan *AnomalyDetectionJobTFModel) toAPIModel(ctx context.Context) (*Anomal
 	}
 
 	if utils.IsKnown(plan.CustomSettings) {
-		var customSettings map[string]interface{}
+		var customSettings map[string]any
 		if err := json.Unmarshal([]byte(plan.CustomSettings.ValueString()), &customSettings); err != nil {
 			diags.AddError("Failed to parse custom_settings", err.Error())
 			return nil, diags

@@ -11,19 +11,19 @@ type Transform struct {
 	Description     string                    `json:"description,omitempty"`
 	Source          *TransformSource          `json:"source"`
 	Destination     *TransformDestination     `json:"dest"`
-	Pivot           interface{}               `json:"pivot,omitempty"`
-	Latest          interface{}               `json:"latest,omitempty"`
+	Pivot           any                       `json:"pivot,omitempty"`
+	Latest          any                       `json:"latest,omitempty"`
 	Frequency       string                    `json:"frequency,omitempty"`
 	RetentionPolicy *TransformRetentionPolicy `json:"retention_policy,omitempty"`
 	Sync            *TransformSync            `json:"sync,omitempty"`
-	Meta            interface{}               `json:"_meta,omitempty"`
+	Meta            any                       `json:"_meta,omitempty"`
 	Settings        *TransformSettings        `json:"settings,omitempty"`
 }
 
 type TransformSource struct {
-	Indices         []string    `json:"index"`
-	Query           interface{} `json:"query,omitempty"`
-	RuntimeMappings interface{} `json:"runtime_mappings,omitempty"`
+	Indices         []string `json:"index"`
+	Query           any      `json:"query,omitempty"`
+	RuntimeMappings any      `json:"runtime_mappings,omitempty"`
 }
 
 type TransformAlias struct {

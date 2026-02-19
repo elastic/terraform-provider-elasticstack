@@ -33,17 +33,17 @@ func advancedSettingsAttrTypes() map[string]attr.Type {
 
 // advancedSettingsAPIResult is the return type for convertAdvancedSettingsToAPI
 type advancedSettingsAPIResult = struct {
-	AgentDownloadTargetDirectory       interface{} `json:"agent_download_target_directory,omitempty"`
-	AgentDownloadTimeout               interface{} `json:"agent_download_timeout,omitempty"`
-	AgentInternal                      interface{} `json:"agent_internal,omitempty"`
-	AgentLimitsGoMaxProcs              interface{} `json:"agent_limits_go_max_procs,omitempty"`
-	AgentLoggingFilesInterval          interface{} `json:"agent_logging_files_interval,omitempty"`
-	AgentLoggingFilesKeepfiles         interface{} `json:"agent_logging_files_keepfiles,omitempty"`
-	AgentLoggingFilesRotateeverybytes  interface{} `json:"agent_logging_files_rotateeverybytes,omitempty"`
-	AgentLoggingLevel                  interface{} `json:"agent_logging_level,omitempty"`
-	AgentLoggingMetricsPeriod          interface{} `json:"agent_logging_metrics_period,omitempty"`
-	AgentLoggingToFiles                interface{} `json:"agent_logging_to_files,omitempty"`
-	AgentMonitoringRuntimeExperimental interface{} `json:"agent_monitoring_runtime_experimental,omitempty"`
+	AgentDownloadTargetDirectory       any `json:"agent_download_target_directory,omitempty"`
+	AgentDownloadTimeout               any `json:"agent_download_timeout,omitempty"`
+	AgentInternal                      any `json:"agent_internal,omitempty"`
+	AgentLimitsGoMaxProcs              any `json:"agent_limits_go_max_procs,omitempty"`
+	AgentLoggingFilesInterval          any `json:"agent_logging_files_interval,omitempty"`
+	AgentLoggingFilesKeepfiles         any `json:"agent_logging_files_keepfiles,omitempty"`
+	AgentLoggingFilesRotateeverybytes  any `json:"agent_logging_files_rotateeverybytes,omitempty"`
+	AgentLoggingLevel                  any `json:"agent_logging_level,omitempty"`
+	AgentLoggingMetricsPeriod          any `json:"agent_logging_metrics_period,omitempty"`
+	AgentLoggingToFiles                any `json:"agent_logging_to_files,omitempty"`
+	AgentMonitoringRuntimeExperimental any `json:"agent_monitoring_runtime_experimental,omitempty"`
 }
 
 // populateAdvancedSettingsFromAPI populates the advanced settings from API response

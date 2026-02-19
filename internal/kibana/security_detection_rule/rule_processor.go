@@ -41,7 +41,7 @@ func processorForType(t string) (ruleProcessor, bool) {
 	return nil, false
 }
 
-func getProcessorForResponse(resp *kbapi.SecurityDetectionsAPIRuleResponse) (ruleProcessor, interface{}, diag.Diagnostics) {
+func getProcessorForResponse(resp *kbapi.SecurityDetectionsAPIRuleResponse) (ruleProcessor, any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	respValue, err := resp.ValueByDiscriminator()
 	if err != nil {

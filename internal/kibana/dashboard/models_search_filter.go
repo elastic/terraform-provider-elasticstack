@@ -71,7 +71,7 @@ func (m *searchFilterModel) toAPI() (kbapi.SearchFilterSchema, diag.Diagnostics)
 		filter.Language = &lang
 	}
 	if utils.IsKnown(m.Meta) {
-		var meta map[string]interface{}
+		var meta map[string]any
 		diags.Append(m.Meta.Unmarshal(&meta)...)
 		if !diags.HasError() {
 			filter.Meta = &meta

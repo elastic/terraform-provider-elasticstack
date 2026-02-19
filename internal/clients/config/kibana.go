@@ -25,8 +25,8 @@ func newKibanaConfigFromSDK(d *schema.ResourceData, base baseConfig) (kibanaConf
 	}
 
 	// if defined, then we only have a single entry
-	if kib := kibConn.([]interface{})[0]; kib != nil {
-		kibConfig := kib.(map[string]interface{})
+	if kib := kibConn.([]any)[0]; kib != nil {
+		kibConfig := kib.(map[string]any)
 
 		if username, ok := kibConfig["username"]; ok && username != "" {
 			config.Username = username.(string)
@@ -43,14 +43,14 @@ func newKibanaConfigFromSDK(d *schema.ResourceData, base baseConfig) (kibanaConf
 			config.BearerToken = bearerToken.(string)
 		}
 
-		if endpoints, ok := kibConfig["endpoints"]; ok && len(endpoints.([]interface{})) > 0 {
+		if endpoints, ok := kibConfig["endpoints"]; ok && len(endpoints.([]any)) > 0 {
 			// We're curently limited by the API to a single endpoint
-			if endpoint := endpoints.([]interface{})[0]; endpoint != nil {
+			if endpoint := endpoints.([]any)[0]; endpoint != nil {
 				config.Address = endpoint.(string)
 			}
 		}
 
-		if caCerts, ok := kibConfig["ca_certs"].([]interface{}); ok && len(caCerts) > 0 {
+		if caCerts, ok := kibConfig["ca_certs"].([]any); ok && len(caCerts) > 0 {
 			for _, elem := range caCerts {
 				if vStr, elemOk := elem.(string); elemOk {
 					config.CAs = append(config.CAs, vStr)

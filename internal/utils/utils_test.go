@@ -10,28 +10,28 @@ func TestFlattenMap(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		in  map[string]interface{}
-		out map[string]interface{}
+		in  map[string]any
+		out map[string]any
 	}{
 		{
-			map[string]interface{}{"key1": map[string]interface{}{"key2": 1}},
-			map[string]interface{}{"key1.key2": 1},
+			map[string]any{"key1": map[string]any{"key2": 1}},
+			map[string]any{"key1.key2": 1},
 		},
 		{
-			map[string]interface{}{"key1": map[string]interface{}{"key2": map[string]interface{}{"key3": 1}}},
-			map[string]interface{}{"key1.key2.key3": 1},
+			map[string]any{"key1": map[string]any{"key2": map[string]any{"key3": 1}}},
+			map[string]any{"key1.key2.key3": 1},
 		},
 		{
-			map[string]interface{}{"key1": 1},
-			map[string]interface{}{"key1": 1},
+			map[string]any{"key1": 1},
+			map[string]any{"key1": 1},
 		},
 		{
-			map[string]interface{}{"key1": "test"},
-			map[string]interface{}{"key1": "test"},
+			map[string]any{"key1": "test"},
+			map[string]any{"key1": "test"},
 		},
 		{
-			map[string]interface{}{"key1": map[string]interface{}{"key2": 1, "key3": "test", "key4": []int{1, 2, 3}}},
-			map[string]interface{}{"key1.key2": 1, "key1.key3": "test", "key1.key4": []int{1, 2, 3}},
+			map[string]any{"key1": map[string]any{"key2": 1, "key3": "test", "key4": []int{1, 2, 3}}},
+			map[string]any{"key1.key2": 1, "key1.key3": "test", "key1.key4": []int{1, 2, 3}},
 		},
 	}
 

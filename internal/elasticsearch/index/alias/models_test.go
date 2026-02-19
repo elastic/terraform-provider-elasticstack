@@ -18,7 +18,7 @@ func TestAliasIndexConfig_Equals(t *testing.T) {
 			a: AliasIndexConfig{
 				Name:          "test-index",
 				IsWriteIndex:  true,
-				Filter:        map[string]interface{}{"user": "admin", "status": "active"},
+				Filter:        map[string]any{"user": "admin", "status": "active"},
 				IndexRouting:  "1",
 				IsHidden:      false,
 				Routing:       "2",
@@ -27,7 +27,7 @@ func TestAliasIndexConfig_Equals(t *testing.T) {
 			b: AliasIndexConfig{
 				Name:          "test-index",
 				IsWriteIndex:  true,
-				Filter:        map[string]interface{}{"user": "admin", "status": "active"},
+				Filter:        map[string]any{"user": "admin", "status": "active"},
 				IndexRouting:  "1",
 				IsHidden:      false,
 				Routing:       "2",
@@ -111,11 +111,11 @@ func TestAliasIndexConfig_Equals(t *testing.T) {
 			name: "different Filter - different values",
 			a: AliasIndexConfig{
 				Name:   "test-index",
-				Filter: map[string]interface{}{"user": "admin"},
+				Filter: map[string]any{"user": "admin"},
 			},
 			b: AliasIndexConfig{
 				Name:   "test-index",
-				Filter: map[string]interface{}{"user": "guest"},
+				Filter: map[string]any{"user": "guest"},
 			},
 			expected: false,
 		},
@@ -123,11 +123,11 @@ func TestAliasIndexConfig_Equals(t *testing.T) {
 			name: "different Filter - different keys",
 			a: AliasIndexConfig{
 				Name:   "test-index",
-				Filter: map[string]interface{}{"user": "admin"},
+				Filter: map[string]any{"user": "admin"},
 			},
 			b: AliasIndexConfig{
 				Name:   "test-index",
-				Filter: map[string]interface{}{"role": "admin"},
+				Filter: map[string]any{"role": "admin"},
 			},
 			expected: false,
 		},
@@ -135,7 +135,7 @@ func TestAliasIndexConfig_Equals(t *testing.T) {
 			name: "one nil Filter, one non-nil",
 			a: AliasIndexConfig{
 				Name:   "test-index",
-				Filter: map[string]interface{}{"term": "value"},
+				Filter: map[string]any{"term": "value"},
 			},
 			b: AliasIndexConfig{
 				Name:   "test-index",
@@ -159,11 +159,11 @@ func TestAliasIndexConfig_Equals(t *testing.T) {
 			name: "both empty Filters",
 			a: AliasIndexConfig{
 				Name:   "test-index",
-				Filter: map[string]interface{}{},
+				Filter: map[string]any{},
 			},
 			b: AliasIndexConfig{
 				Name:   "test-index",
-				Filter: map[string]interface{}{},
+				Filter: map[string]any{},
 			},
 			expected: true,
 		},
@@ -171,11 +171,11 @@ func TestAliasIndexConfig_Equals(t *testing.T) {
 			name: "complex nested Filter match",
 			a: AliasIndexConfig{
 				Name:   "test-index",
-				Filter: map[string]interface{}{"environment": "prod", "tier": "premium"},
+				Filter: map[string]any{"environment": "prod", "tier": "premium"},
 			},
 			b: AliasIndexConfig{
 				Name:   "test-index",
-				Filter: map[string]interface{}{"environment": "prod", "tier": "premium"},
+				Filter: map[string]any{"environment": "prod", "tier": "premium"},
 			},
 			expected: true,
 		},
@@ -228,7 +228,7 @@ func TestAliasIndexConfig_Equals(t *testing.T) {
 			a: AliasIndexConfig{
 				Name:          "production-index",
 				IsWriteIndex:  true,
-				Filter:        map[string]interface{}{"environment": "prod"},
+				Filter:        map[string]any{"environment": "prod"},
 				IndexRouting:  "prod-route",
 				IsHidden:      true,
 				Routing:       "main-route",
@@ -237,7 +237,7 @@ func TestAliasIndexConfig_Equals(t *testing.T) {
 			b: AliasIndexConfig{
 				Name:          "production-index",
 				IsWriteIndex:  true,
-				Filter:        map[string]interface{}{"environment": "prod"},
+				Filter:        map[string]any{"environment": "prod"},
 				IndexRouting:  "prod-route",
 				IsHidden:      true,
 				Routing:       "main-route",
@@ -249,14 +249,14 @@ func TestAliasIndexConfig_Equals(t *testing.T) {
 			name: "Filter with nested maps",
 			a: AliasIndexConfig{
 				Name: "test-index",
-				Filter: map[string]interface{}{
-					"term": map[string]interface{}{"user": "admin"},
+				Filter: map[string]any{
+					"term": map[string]any{"user": "admin"},
 				},
 			},
 			b: AliasIndexConfig{
 				Name: "test-index",
-				Filter: map[string]interface{}{
-					"term": map[string]interface{}{"user": "admin"},
+				Filter: map[string]any{
+					"term": map[string]any{"user": "admin"},
 				},
 			},
 			expected: true,
@@ -265,20 +265,20 @@ func TestAliasIndexConfig_Equals(t *testing.T) {
 			name: "Filter with slices",
 			a: AliasIndexConfig{
 				Name: "test-index",
-				Filter: map[string]interface{}{
-					"bool": map[string]interface{}{
-						"must": []interface{}{
-							map[string]interface{}{"term": map[string]interface{}{"status": "active"}},
+				Filter: map[string]any{
+					"bool": map[string]any{
+						"must": []any{
+							map[string]any{"term": map[string]any{"status": "active"}},
 						},
 					},
 				},
 			},
 			b: AliasIndexConfig{
 				Name: "test-index",
-				Filter: map[string]interface{}{
-					"bool": map[string]interface{}{
-						"must": []interface{}{
-							map[string]interface{}{"term": map[string]interface{}{"status": "active"}},
+				Filter: map[string]any{
+					"bool": map[string]any{
+						"must": []any{
+							map[string]any{"term": map[string]any{"status": "active"}},
 						},
 					},
 				},

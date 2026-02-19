@@ -330,7 +330,7 @@ func ResourceSnapshotRepository() *schema.Resource {
 	}
 }
 
-func resourceSnapRepoPut(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceSnapRepoPut(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
@@ -343,7 +343,7 @@ func resourceSnapRepoPut(ctx context.Context, d *schema.ResourceData, meta inter
 
 	var snapRepo models.SnapshotRepository
 	snapRepo.Name = repoId
-	snapRepoSettings := make(map[string]interface{})
+	snapRepoSettings := make(map[string]any)
 
 	if v, ok := d.GetOk("verify"); ok {
 		snapRepo.Verify = v.(bool)
@@ -355,7 +355,7 @@ func resourceSnapRepoPut(ctx context.Context, d *schema.ResourceData, meta inter
 	for t := range schemaTypes {
 		if v, ok := d.GetOk(t); ok && reflect.TypeOf(v).Kind() == reflect.Slice {
 			snapRepo.Type = t
-			expandFsSettings(v.([]interface{})[0].(map[string]interface{}), snapRepoSettings)
+			expandFsSettings(v.([]any)[0].(map[string]any), snapRepoSettings)
 		}
 	}
 	snapRepo.Settings = snapRepoSettings
@@ -367,7 +367,7 @@ func resourceSnapRepoPut(ctx context.Context, d *schema.ResourceData, meta inter
 	return resourceSnapRepoRead(ctx, d, meta)
 }
 
-func expandFsSettings(source, target map[string]interface{}) {
+func expandFsSettings(source, target map[string]any) {
 	for k, v := range source {
 		if !utils.IsEmpty(v) {
 			target[k] = v
@@ -375,7 +375,7 @@ func expandFsSettings(source, target map[string]interface{}) {
 	}
 }
 
-func resourceSnapRepoRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceSnapRepoRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
@@ -429,9 +429,9 @@ func resourceSnapRepoRead(ctx context.Context, d *schema.ResourceData, meta inte
 	return diags
 }
 
-func flattenRepoSettings(r *models.SnapshotRepository, s map[string]*schema.Schema) ([]interface{}, error) {
-	settings := make(map[string]interface{})
-	result := make([]interface{}, 1)
+func flattenRepoSettings(r *models.SnapshotRepository, s map[string]*schema.Schema) ([]any, error) {
+	settings := make(map[string]any)
+	result := make([]any, 1)
 
 	// make sure the schema contains the fetched setting
 	for k, v := range r.Settings {
@@ -458,7 +458,7 @@ func flattenRepoSettings(r *models.SnapshotRepository, s map[string]*schema.Sche
 	return result, nil
 }
 
-func resourceSnapRepoDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceSnapRepoDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
@@ -476,7 +476,7 @@ func resourceSnapRepoDelete(ctx context.Context, d *schema.ResourceData, meta in
 	return diags
 }
 
-func validateURLEndpoint(val interface{}, key string) ([]string, []error) {
+func validateURLEndpoint(val any, key string) ([]string, []error) {
 	v := val.(string)
 	if v == "" {
 		return nil, nil

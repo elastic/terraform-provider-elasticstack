@@ -241,7 +241,7 @@ func (m *dashboardModel) queryToAPI() (kbapi.KbnEsQueryServerQuerySchema, diag.D
 		}
 	} else if utils.IsKnown(m.QueryJSON) {
 		// For JSON queries, use the raw JSON directly
-		var qj map[string]interface{}
+		var qj map[string]any
 		diags := m.QueryJSON.Unmarshal(&qj)
 		if diags.HasError() {
 			return query, diags

@@ -20,7 +20,7 @@ type AnomalyDetectionJobAPIModel struct {
 	ModelPlotConfig                      *ModelPlotConfigAPIModel `json:"model_plot_config,omitempty"`
 	AllowLazyOpen                        *bool                    `json:"allow_lazy_open,omitempty"`
 	BackgroundPersistInterval            string                   `json:"background_persist_interval,omitempty"`
-	CustomSettings                       map[string]interface{}   `json:"custom_settings,omitempty"`
+	CustomSettings                       map[string]any           `json:"custom_settings,omitempty"`
 	DailyModelSnapshotRetentionAfterDays *int64                   `json:"daily_model_snapshot_retention_after_days,omitempty"`
 	ModelSnapshotRetentionDays           *int64                   `json:"model_snapshot_retention_days,omitempty"`
 	RenormalizationWindowDays            *int64                   `json:"renormalization_window_days,omitempty"`
@@ -28,10 +28,10 @@ type AnomalyDetectionJobAPIModel struct {
 	ResultsRetentionDays                 *int64                   `json:"results_retention_days,omitempty"`
 
 	// Read-only fields
-	CreateTime      interface{} `json:"create_time,omitempty"`
-	JobType         string      `json:"job_type,omitempty"`
-	JobVersion      string      `json:"job_version,omitempty"`
-	ModelSnapshotID string      `json:"model_snapshot_id,omitempty"`
+	CreateTime      any    `json:"create_time,omitempty"`
+	JobType         string `json:"job_type,omitempty"`
+	JobVersion      string `json:"job_version,omitempty"`
+	ModelSnapshotID string `json:"model_snapshot_id,omitempty"`
 }
 
 // AnalysisConfigAPIModel represents the analysis configuration in API format
@@ -63,7 +63,7 @@ type DetectorAPIModel struct {
 
 // CustomRuleAPIModel represents a custom rule in API format
 type CustomRuleAPIModel struct {
-	Actions    []interface{}           `json:"actions,omitempty"`
+	Actions    []any                   `json:"actions,omitempty"`
 	Conditions []RuleConditionAPIModel `json:"conditions,omitempty"`
 }
 
@@ -128,7 +128,7 @@ type AnomalyDetectionJobUpdateAPIModel struct {
 	ModelPlotConfig                      *ModelPlotConfigAPIModel `json:"model_plot_config,omitempty"`
 	AllowLazyOpen                        *bool                    `json:"allow_lazy_open,omitempty"`
 	BackgroundPersistInterval            *string                  `json:"background_persist_interval,omitempty"`
-	CustomSettings                       map[string]interface{}   `json:"custom_settings,omitempty"`
+	CustomSettings                       map[string]any           `json:"custom_settings,omitempty"`
 	DailyModelSnapshotRetentionAfterDays *int64                   `json:"daily_model_snapshot_retention_after_days,omitempty"`
 	ModelSnapshotRetentionDays           *int64                   `json:"model_snapshot_retention_days,omitempty"`
 	RenormalizationWindowDays            *int64                   `json:"renormalization_window_days,omitempty"`
@@ -197,7 +197,7 @@ func (u *AnomalyDetectionJobUpdateAPIModel) BuildFromPlan(ctx context.Context, p
 	}
 
 	if !plan.CustomSettings.Equal(state.CustomSettings) && !plan.CustomSettings.IsNull() {
-		var customSettings map[string]interface{}
+		var customSettings map[string]any
 		if err := json.Unmarshal([]byte(plan.CustomSettings.ValueString()), &customSettings); err != nil {
 			diags.AddError("Failed to parse custom_settings", err.Error())
 			return false, diags

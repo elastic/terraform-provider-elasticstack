@@ -113,7 +113,7 @@ func DataSourceProcessorDateIndexName() *schema.Resource {
 	}
 }
 
-func dataSourceProcessorDateIndexNameRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func dataSourceProcessorDateIndexNameRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	processor := &models.ProcessorDateIndexName{}
@@ -126,7 +126,7 @@ func dataSourceProcessorDateIndexNameRead(ctx context.Context, d *schema.Resourc
 	processor.DateRounding = d.Get("date_rounding").(string)
 
 	if v, ok := d.GetOk("date_formats"); ok {
-		formats := v.([]interface{})
+		formats := v.([]any)
 		res := make([]string, len(formats))
 		for i, v := range formats {
 			res[i] = v.(string)
@@ -147,9 +147,9 @@ func dataSourceProcessorDateIndexNameRead(ctx context.Context, d *schema.Resourc
 		processor.Tag = v.(string)
 	}
 	if v, ok := d.GetOk("on_failure"); ok {
-		onFailure := make([]map[string]interface{}, len(v.([]interface{})))
-		for i, f := range v.([]interface{}) {
-			item := make(map[string]interface{})
+		onFailure := make([]map[string]any, len(v.([]any)))
+		for i, f := range v.([]any) {
+			item := make(map[string]any)
 			if err := json.NewDecoder(strings.NewReader(f.(string))).Decode(&item); err != nil {
 				return diag.FromErr(err)
 			}

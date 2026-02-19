@@ -18,7 +18,7 @@ import (
 
 func Test_newElasticsearchConfigFromSDK(t *testing.T) {
 	type args struct {
-		resourceData     map[string]interface{}
+		resourceData     map[string]any
 		base             baseConfig
 		env              map[string]string
 		expectedESConfig *elasticsearchConfig
@@ -48,10 +48,10 @@ func Test_newElasticsearchConfigFromSDK(t *testing.T) {
 				tlsConfig.InsecureSkipVerify = true
 
 				return args{
-					resourceData: map[string]interface{}{
-						key: []interface{}{
-							map[string]interface{}{
-								"endpoints": []interface{}{"localhost", "example.com"},
+					resourceData: map[string]any{
+						key: []any{
+							map[string]any{
+								"endpoints": []any{"localhost", "example.com"},
 								"insecure":  true,
 							},
 						},
@@ -75,10 +75,10 @@ func Test_newElasticsearchConfigFromSDK(t *testing.T) {
 				tlsConfig.InsecureSkipVerify = false
 
 				return args{
-					resourceData: map[string]interface{}{
-						key: []interface{}{
-							map[string]interface{}{
-								"endpoints": []interface{}{"localhost", "example.com"},
+					resourceData: map[string]any{
+						key: []any{
+							map[string]any{
+								"endpoints": []any{"localhost", "example.com"},
 								"insecure":  true,
 							},
 						},

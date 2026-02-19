@@ -191,7 +191,7 @@ func DeleteSlm(ctx context.Context, apiClient *clients.ApiClient, slmName string
 	return diags
 }
 
-func PutSettings(ctx context.Context, apiClient *clients.ApiClient, settings map[string]interface{}) diag.Diagnostics {
+func PutSettings(ctx context.Context, apiClient *clients.ApiClient, settings map[string]any) diag.Diagnostics {
 	var diags diag.Diagnostics
 	settingsBytes, err := json.Marshal(settings)
 	if err != nil {
@@ -212,7 +212,7 @@ func PutSettings(ctx context.Context, apiClient *clients.ApiClient, settings map
 	return diags
 }
 
-func GetSettings(ctx context.Context, apiClient *clients.ApiClient) (map[string]interface{}, diag.Diagnostics) {
+func GetSettings(ctx context.Context, apiClient *clients.ApiClient) (map[string]any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
@@ -228,7 +228,7 @@ func GetSettings(ctx context.Context, apiClient *clients.ApiClient) (map[string]
 		return nil, diags
 	}
 
-	clusterSettings := make(map[string]interface{})
+	clusterSettings := make(map[string]any)
 	if err := json.NewDecoder(res.Body).Decode(&clusterSettings); err != nil {
 		return nil, diag.FromErr(err)
 	}

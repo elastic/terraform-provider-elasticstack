@@ -111,7 +111,7 @@ func deleteSingleDetectionRule(t *testing.T, spaceID string) {
 	ruleBytes, err := resp.JSON200.Data[0].MarshalJSON()
 	require.NoError(t, err)
 
-	var ruleMap map[string]interface{}
+	var ruleMap map[string]any
 	err = json.Unmarshal(ruleBytes, &ruleMap)
 	require.NoError(t, err)
 

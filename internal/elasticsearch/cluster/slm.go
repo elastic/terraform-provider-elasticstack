@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -35,18 +36,12 @@ func ResourceSlm() *schema.Resource {
 			Type:        schema.TypeString,
 			Optional:    true,
 			Default:     "open,hidden",
-			ValidateDiagFunc: func(value interface{}, path cty.Path) diag.Diagnostics {
+			ValidateDiagFunc: func(value any, path cty.Path) diag.Diagnostics {
 				validValues := []string{"all", "open", "closed", "hidden", "none"}
 
 				var diags diag.Diagnostics
-				for _, pv := range strings.Split(value.(string), ",") {
-					found := false
-					for _, vv := range validValues {
-						if vv == strings.TrimSpace(pv) {
-							found = true
-							break
-						}
-					}
+				for pv := range strings.SplitSeq(value.(string), ",") {
+					found := slices.Contains(validValues, strings.TrimSpace(pv))
 					if !found {
 						diags = append(diags, diag.Diagnostic{
 							Severity: diag.Error,
@@ -154,7 +149,7 @@ func ResourceSlm() *schema.Resource {
 	}
 }
 
-func resourceSlmPut(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceSlmPut(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
@@ -201,7 +196,7 @@ func resourceSlmPut(ctx context.Context, d *schema.ResourceData, meta interface{
 	}
 	indices := make([]string, 0)
 	if v, ok := d.GetOk("indices"); ok {
-		list := v.([]interface{})
+		list := v.([]any)
 		for _, idx := range list {
 			indices = append(indices, idx.(string))
 		}
@@ -216,7 +211,7 @@ func resourceSlmPut(ctx context.Context, d *schema.ResourceData, meta interface{
 	}
 	slmConfig.FeatureStates = states
 	if v, ok := d.GetOk("metadata"); ok {
-		metadata := make(map[string]interface{})
+		metadata := make(map[string]any)
 		if err := json.NewDecoder(strings.NewReader(v.(string))).Decode(&metadata); err != nil {
 			return diag.FromErr(err)
 		}
@@ -236,7 +231,7 @@ func resourceSlmPut(ctx context.Context, d *schema.ResourceData, meta interface{
 	return resourceSlmRead(ctx, d, meta)
 }
 
-func resourceSlmRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceSlmRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
@@ -328,7 +323,7 @@ func resourceSlmRead(ctx context.Context, d *schema.ResourceData, meta interface
 	return diags
 }
 
-func resourceSlmDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceSlmDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags

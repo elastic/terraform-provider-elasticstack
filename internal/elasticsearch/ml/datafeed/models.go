@@ -67,7 +67,7 @@ func (m *Datafeed) ToAPIModel(ctx context.Context) (*models.Datafeed, fwdiags.Di
 
 	// Convert query
 	if utils.IsKnown(m.Query) {
-		var query map[string]interface{}
+		var query map[string]any
 		diags.Append(m.Query.Unmarshal(&query)...)
 		if diags.HasError() {
 			return nil, diags
@@ -77,7 +77,7 @@ func (m *Datafeed) ToAPIModel(ctx context.Context) (*models.Datafeed, fwdiags.Di
 
 	// Convert aggregations
 	if utils.IsKnown(m.Aggregations) {
-		var aggregations map[string]interface{}
+		var aggregations map[string]any
 		diags.Append(m.Aggregations.Unmarshal(&aggregations)...)
 		if diags.HasError() {
 			return nil, diags
@@ -87,7 +87,7 @@ func (m *Datafeed) ToAPIModel(ctx context.Context) (*models.Datafeed, fwdiags.Di
 
 	// Convert script_fields
 	if utils.IsKnown(m.ScriptFields) {
-		var scriptFields map[string]interface{}
+		var scriptFields map[string]any
 		err := json.Unmarshal([]byte(m.ScriptFields.ValueString()), &scriptFields)
 		if err != nil {
 			diags.AddError("Failed to unmarshal script_fields", err.Error())
@@ -98,7 +98,7 @@ func (m *Datafeed) ToAPIModel(ctx context.Context) (*models.Datafeed, fwdiags.Di
 
 	// Convert runtime_mappings
 	if utils.IsKnown(m.RuntimeMappings) {
-		var runtimeMappings map[string]interface{}
+		var runtimeMappings map[string]any
 		diags.Append(m.RuntimeMappings.Unmarshal(&runtimeMappings)...)
 		if diags.HasError() {
 			return nil, diags

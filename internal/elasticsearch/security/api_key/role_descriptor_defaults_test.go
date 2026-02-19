@@ -232,7 +232,7 @@ func TestPopulateRoleDescriptorsDefaults(t *testing.T) {
 							},
 						},
 					},
-					Metadata: map[string]interface{}{
+					Metadata: map[string]any{
 						"version": 1,
 						"tags":    []string{"production"},
 					},
@@ -252,7 +252,7 @@ func TestPopulateRoleDescriptorsDefaults(t *testing.T) {
 							AllowRestrictedIndices: utils.Pointer(false),
 						},
 					},
-					Metadata: map[string]interface{}{
+					Metadata: map[string]any{
 						"version": 1,
 						"tags":    []string{"production"},
 					},

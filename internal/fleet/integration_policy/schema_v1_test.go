@@ -37,7 +37,7 @@ func TestUpdateStreamsV1ToV2(t *testing.T) {
 
 	t.Run("single stream with enabled and vars", func(t *testing.T) {
 		enabled := true
-		vars := map[string]interface{}{
+		vars := map[string]any{
 			"key1": "value1",
 			"key2": 42,
 		}
@@ -70,8 +70,8 @@ func TestUpdateStreamsV1ToV2(t *testing.T) {
 	t.Run("multiple streams with different configurations", func(t *testing.T) {
 		enabled1 := true
 		enabled2 := false
-		vars1 := map[string]interface{}{"key1": "value1"}
-		vars2 := map[string]interface{}{"key2": "value2"}
+		vars1 := map[string]any{"key1": "value1"}
+		vars2 := map[string]any{"key2": "value2"}
 
 		apiStreams := map[string]kbapi.PackagePolicyInputStream{
 			"stream-1": {
@@ -101,7 +101,7 @@ func TestUpdateStreamsV1ToV2(t *testing.T) {
 	})
 
 	t.Run("stream with nil enabled", func(t *testing.T) {
-		vars := map[string]interface{}{"key": "value"}
+		vars := map[string]any{"key": "value"}
 		apiStreams := map[string]kbapi.PackagePolicyInputStream{
 			"stream-1": {
 				Enabled: nil,
@@ -293,7 +293,7 @@ func TestIntegrationPolicyModelV1ToV2(t *testing.T) {
 
 	t.Run("conversion with input and streams", func(t *testing.T) {
 		enabled := true
-		vars := map[string]interface{}{"stream_var": "value"}
+		vars := map[string]any{"stream_var": "value"}
 		apiStreams := map[string]kbapi.PackagePolicyInputStream{
 			"stream-1": {
 				Enabled: &enabled,
@@ -352,8 +352,8 @@ func TestIntegrationPolicyModelV1ToV2(t *testing.T) {
 	t.Run("conversion with multiple inputs and streams", func(t *testing.T) {
 		enabled1 := true
 		enabled2 := false
-		vars1 := map[string]interface{}{"stream1_var": "value1"}
-		vars2 := map[string]interface{}{"stream2_var": "value2"}
+		vars1 := map[string]any{"stream1_var": "value1"}
+		vars2 := map[string]any{"stream2_var": "value2"}
 
 		apiStreams1 := map[string]kbapi.PackagePolicyInputStream{
 			"stream-1": {Enabled: &enabled1, Vars: &vars1},

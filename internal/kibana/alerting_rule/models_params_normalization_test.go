@@ -38,7 +38,7 @@ func TestPopulateFromAPI_OmitsAPIInjectedKeysAbsentFromPriorState(t *testing.T) 
 		Consumer:   "alerts",
 		RuleTypeID: ".es-query",
 		Schedule:   models.AlertingRuleSchedule{Interval: "10m"},
-		Params: map[string]interface{}{
+		Params: map[string]any{
 			// API injects aggType and someNewDefault — user never had them.
 			"aggType":                    "count",
 			"someNewDefault":             "injected",
@@ -47,9 +47,9 @@ func TestPopulateFromAPI_OmitsAPIInjectedKeysAbsentFromPriorState(t *testing.T) 
 			"termField":                  "some-field",
 			"timeWindowSize":             float64(10),
 			"timeWindowUnit":             "m",
-			"threshold":                  []interface{}{float64(10)},
+			"threshold":                  []any{float64(10)},
 			"thresholdComparator":        ">",
-			"index":                      []interface{}{"cluster-elasticsearch-*"},
+			"index":                      []any{"cluster-elasticsearch-*"},
 			"timeField":                  "@timestamp",
 			"searchType":                 "esQuery",
 			"size":                       float64(10),
@@ -63,7 +63,7 @@ func TestPopulateFromAPI_OmitsAPIInjectedKeysAbsentFromPriorState(t *testing.T) 
 		t.Fatalf("expected no diagnostics, got: %v", diags)
 	}
 
-	var got map[string]interface{}
+	var got map[string]any
 	if err := json.Unmarshal([]byte(model.Params.ValueString()), &got); err != nil {
 		t.Fatalf("failed to decode model params: %v", err)
 	}
@@ -121,12 +121,12 @@ func TestPopulateFromAPI_OmitsNestedAPIInjectedKeysAbsentFromPriorState(t *testi
 		Consumer:   "alerts",
 		RuleTypeID: ".es-query",
 		Schedule:   models.AlertingRuleSchedule{Interval: "10m"},
-		Params: map[string]interface{}{
+		Params: map[string]any{
 			"searchType": "esQuery",
 			"size":       float64(10),
-			"criteria": []interface{}{
-				map[string]interface{}{
-					"threshold":  []interface{}{float64(10)},
+			"criteria": []any{
+				map[string]any{
+					"threshold":  []any{float64(10)},
 					"comparator": ">",
 					"timeSize":   float64(5),
 					"timeUnit":   "m",
@@ -142,16 +142,16 @@ func TestPopulateFromAPI_OmitsNestedAPIInjectedKeysAbsentFromPriorState(t *testi
 		t.Fatalf("expected no diagnostics, got: %v", diags)
 	}
 
-	var got map[string]interface{}
+	var got map[string]any
 	if err := json.Unmarshal([]byte(model.Params.ValueString()), &got); err != nil {
 		t.Fatalf("failed to decode model params: %v", err)
 	}
 
-	criteria, ok := got["criteria"].([]interface{})
+	criteria, ok := got["criteria"].([]any)
 	if !ok || len(criteria) != 1 {
 		t.Fatalf("expected criteria to be a single-element array, got: %#v", got["criteria"])
 	}
-	crit0, ok := criteria[0].(map[string]interface{})
+	crit0, ok := criteria[0].(map[string]any)
 	if !ok {
 		t.Fatalf("expected criteria[0] to be an object, got: %#v", criteria[0])
 	}
@@ -179,7 +179,7 @@ func TestPopulateFromAPI_KeepsAllKeysWhenPresentInPriorState(t *testing.T) {
 		Consumer:   "alerts",
 		RuleTypeID: ".es-query",
 		Schedule:   models.AlertingRuleSchedule{Interval: "10m"},
-		Params: map[string]interface{}{
+		Params: map[string]any{
 			"searchType": "esQuery",
 			"size":       float64(10),
 			"aggType":    "count",
@@ -193,7 +193,7 @@ func TestPopulateFromAPI_KeepsAllKeysWhenPresentInPriorState(t *testing.T) {
 		t.Fatalf("expected no diagnostics, got: %v", diags)
 	}
 
-	var got map[string]interface{}
+	var got map[string]any
 	if err := json.Unmarshal([]byte(model.Params.ValueString()), &got); err != nil {
 		t.Fatalf("failed to decode model params: %v", err)
 	}
@@ -219,7 +219,7 @@ func TestPopulateFromAPI_FirstCreate_KeepsAllAPIParams(t *testing.T) {
 		Consumer:   "alerts",
 		RuleTypeID: ".es-query",
 		Schedule:   models.AlertingRuleSchedule{Interval: "10m"},
-		Params: map[string]interface{}{
+		Params: map[string]any{
 			"searchType": "esQuery",
 			"size":       float64(10),
 			"aggType":    "count",
@@ -233,7 +233,7 @@ func TestPopulateFromAPI_FirstCreate_KeepsAllAPIParams(t *testing.T) {
 		t.Fatalf("expected no diagnostics, got: %v", diags)
 	}
 
-	var got map[string]interface{}
+	var got map[string]any
 	if err := json.Unmarshal([]byte(model.Params.ValueString()), &got); err != nil {
 		t.Fatalf("failed to decode model params: %v", err)
 	}

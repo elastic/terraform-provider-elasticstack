@@ -27,8 +27,8 @@ func (p mappingsPlanModifier) PlanModifyString(ctx context.Context, req planmodi
 	stateStr := req.StateValue.ValueString()
 	cfgStr := req.ConfigValue.ValueString()
 
-	var stateMappings map[string]interface{}
-	var cfgMappings map[string]interface{}
+	var stateMappings map[string]any
+	var cfgMappings map[string]any
 
 	// No error checking, schema validation ensures this is valid json
 	_ = json.Unmarshal([]byte(stateStr), &stateMappings)
@@ -41,7 +41,7 @@ func (p mappingsPlanModifier) PlanModifyString(ctx context.Context, req planmodi
 			return
 		}
 
-		requiresReplace, finalMappings, diags := p.modifyMappings(ctx, path.Root("mappings").AtMapKey("properties"), stateProps.(map[string]interface{}), cfgProps.(map[string]interface{}))
+		requiresReplace, finalMappings, diags := p.modifyMappings(ctx, path.Root("mappings").AtMapKey("properties"), stateProps.(map[string]any), cfgProps.(map[string]any))
 		resp.RequiresReplace = requiresReplace
 		cfgMappings["properties"] = finalMappings
 		resp.Diagnostics.Append(diags...)
@@ -56,12 +56,12 @@ func (p mappingsPlanModifier) PlanModifyString(ctx context.Context, req planmodi
 	}
 }
 
-func (p mappingsPlanModifier) modifyMappings(ctx context.Context, initialPath path.Path, old map[string]interface{}, new map[string]interface{}) (bool, map[string]interface{}, diag.Diagnostics) {
+func (p mappingsPlanModifier) modifyMappings(ctx context.Context, initialPath path.Path, old map[string]any, new map[string]any) (bool, map[string]any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	warningDetail := "Elasticsearch will maintain the current field in it's mapping. " +
 		"Re-index to remove the field completely"
 	for k, v := range old {
-		oldFieldSettings := v.(map[string]interface{})
+		oldFieldSettings := v.(map[string]any)
 		newFieldSettings, ok := new[k]
 		currentPath := initialPath.AtMapKey(k)
 		// When field is removed, it'll be ignored in elasticsearch
@@ -74,7 +74,7 @@ func (p mappingsPlanModifier) modifyMappings(ctx context.Context, initialPath pa
 			new[k] = v
 			continue
 		}
-		newSettings := newFieldSettings.(map[string]interface{})
+		newSettings := newFieldSettings.(map[string]any)
 		// check if the "type" field exists and match with new one
 		if s, ok := oldFieldSettings["type"]; ok {
 			if ns, ok := newSettings["type"]; ok {
@@ -91,7 +91,7 @@ func (p mappingsPlanModifier) modifyMappings(ctx context.Context, initialPath pa
 		if s, ok := oldFieldSettings["properties"]; ok {
 			currentPath = currentPath.AtMapKey("properties")
 			if ns, ok := newSettings["properties"]; ok {
-				requiresReplace, newProperties, d := p.modifyMappings(ctx, currentPath, s.(map[string]interface{}), ns.(map[string]interface{}))
+				requiresReplace, newProperties, d := p.modifyMappings(ctx, currentPath, s.(map[string]any), ns.(map[string]any))
 				diags.Append(d...)
 				newSettings["properties"] = newProperties
 				if requiresReplace {

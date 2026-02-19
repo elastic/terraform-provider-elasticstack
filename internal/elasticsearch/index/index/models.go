@@ -244,7 +244,7 @@ func (model tfModel) toAPIModel(ctx context.Context) (models.Index, diag.Diagnos
 
 	apiModel := models.Index{
 		Name:     model.Name.ValueString(),
-		Settings: map[string]interface{}{},
+		Settings: map[string]any{},
 	}
 
 	if utils.IsKnown(model.Alias) {
@@ -309,15 +309,15 @@ func (model tfModel) GetID() (*clients.CompositeId, diag.Diagnostics) {
 	return compId, nil
 }
 
-func (model tfModel) toIndexSettings(ctx context.Context) (map[string]interface{}, diag.Diagnostics) {
-	settings := map[string]interface{}{}
-	modelType := reflect.TypeOf(model)
+func (model tfModel) toIndexSettings(ctx context.Context) (map[string]any, diag.Diagnostics) {
+	settings := map[string]any{}
+	modelType := reflect.TypeFor[tfModel]()
 
 	for _, key := range allSettingsKeys {
 		tfFieldKey := convertSettingsKeyToTFFieldKey(key)
 		value, ok := model.getFieldValueByTagValue(tfFieldKey, modelType)
 		if !ok {
-			return map[string]interface{}{}, diag.Diagnostics{
+			return map[string]any{}, diag.Diagnostics{
 				diag.NewErrorDiagnostic(
 					"failed to find setting value",
 					fmt.Sprintf("expected setting with key %s", tfFieldKey),
@@ -326,7 +326,7 @@ func (model tfModel) toIndexSettings(ctx context.Context) (map[string]interface{
 		}
 
 		if !value.IsNull() && !value.IsUnknown() {
-			var settingsValue interface{}
+			var settingsValue any
 			switch a := value.(type) {
 			case types.String:
 				settingsValue = a.ValueString()
@@ -337,7 +337,7 @@ func (model tfModel) toIndexSettings(ctx context.Context) (map[string]interface{
 			case types.List:
 				elemType := a.ElementType(ctx)
 				if elemType != types.StringType {
-					return map[string]interface{}{}, diag.Diagnostics{
+					return map[string]any{}, diag.Diagnostics{
 						diag.NewErrorDiagnostic(
 							"expected list of string",
 							fmt.Sprintf("expected list element type to be string but got %s", elemType),
@@ -347,14 +347,14 @@ func (model tfModel) toIndexSettings(ctx context.Context) (map[string]interface{
 
 				elems := []string{}
 				if diags := a.ElementsAs(ctx, &elems, true); diags.HasError() {
-					return map[string]interface{}{}, diags
+					return map[string]any{}, diags
 				}
 
 				settingsValue = elems
 			case types.Set:
 				elemType := a.ElementType(ctx)
 				if elemType != types.StringType {
-					return map[string]interface{}{}, diag.Diagnostics{
+					return map[string]any{}, diag.Diagnostics{
 						diag.NewErrorDiagnostic(
 							"expected set of string",
 							fmt.Sprintf("expected set element type to be string but got %s", elemType),
@@ -364,12 +364,12 @@ func (model tfModel) toIndexSettings(ctx context.Context) (map[string]interface{
 
 				elems := []string{}
 				if diags := a.ElementsAs(ctx, &elems, true); diags.HasError() {
-					return map[string]interface{}{}, diags
+					return map[string]any{}, diags
 				}
 
 				settingsValue = elems
 			default:
-				return map[string]interface{}{}, diag.Diagnostics{
+				return map[string]any{}, diag.Diagnostics{
 					diag.NewErrorDiagnostic(
 						"unknown value type",
 						fmt.Sprintf("unknown index setting value type %s", a.Type(ctx)),
@@ -389,12 +389,12 @@ func (model tfModel) toIndexSettings(ctx context.Context) (map[string]interface{
 		"normalizer":  model.AnalysisNormalizer,
 	}
 
-	analysis := map[string]interface{}{}
+	analysis := map[string]any{}
 	for name, property := range analysisProperties {
 		if utils.IsKnown(property) {
-			var parsedValue map[string]interface{}
+			var parsedValue map[string]any
 			if diags := property.Unmarshal(&parsedValue); diags.HasError() {
-				return map[string]interface{}{}, diags
+				return map[string]any{}, diags
 			}
 
 			analysis[name] = parsedValue
@@ -407,19 +407,19 @@ func (model tfModel) toIndexSettings(ctx context.Context) (map[string]interface{
 
 	var settingSet []settingsTfSet
 	if diags := model.Settings.ElementsAs(ctx, &settingSet, true); diags.HasError() {
-		return map[string]interface{}{}, diags
+		return map[string]any{}, diags
 	}
 
 	if len(settingSet) == 1 {
 		var rawSettings []settingTfModel
 		if diags := settingSet[0].Setting.ElementsAs(ctx, &rawSettings, true); diags.HasError() {
-			return map[string]interface{}{}, diags
+			return map[string]any{}, diags
 		}
 
 		for _, setting := range rawSettings {
 			name := setting.Name.ValueString()
 			if _, ok := settings[name]; ok {
-				return map[string]interface{}{}, diag.Diagnostics{
+				return map[string]any{}, diag.Diagnostics{
 					diag.NewErrorDiagnostic(
 						"duplicate setting definition",
 						fmt.Sprintf("setting [%s] is both explicitly defined and included in the deprecated raw settings blocks. Please remove it from `settings` to avoid unexpected settings", name),

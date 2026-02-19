@@ -20,7 +20,7 @@ func TestProcessorReroute_JSON(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Unmarshal back to verify structure
-	var result map[string]map[string]interface{}
+	var result map[string]map[string]any
 	err = json.Unmarshal(processorJson, &result)
 	assert.NoError(t, err)
 

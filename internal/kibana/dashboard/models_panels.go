@@ -308,7 +308,7 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 	}
 
 	if !panelConfigHandled && utils.IsKnown(pm.ConfigJSON) {
-		var configMap map[string]interface{}
+		var configMap map[string]any
 		diags.Append(pm.ConfigJSON.Unmarshal(&configMap)...)
 		if !diags.HasError() {
 			if err := panelItem.Config.FromDashboardPanelItemConfig2(configMap); err != nil {

@@ -14,7 +14,7 @@ func DiffJsonSuppress(k, old, new string, d *schema.ResourceData) bool {
 }
 
 func DiffIndexSettingSuppress(k, old, new string, d *schema.ResourceData) bool {
-	var o, n map[string]interface{}
+	var o, n map[string]any
 	if err := json.Unmarshal([]byte(old), &o); err != nil {
 		return false
 	}
@@ -24,8 +24,8 @@ func DiffIndexSettingSuppress(k, old, new string, d *schema.ResourceData) bool {
 	return MapsEqual(NormalizeIndexSettings(FlattenMap(o)), NormalizeIndexSettings(FlattenMap(n)))
 }
 
-func NormalizeIndexSettings(m map[string]interface{}) map[string]interface{} {
-	out := make(map[string]interface{}, len(m))
+func NormalizeIndexSettings(m map[string]any) map[string]any {
+	out := make(map[string]any, len(m))
 	for k, v := range m {
 		if strings.HasPrefix(k, "index.") {
 			out[k] = fmt.Sprintf("%v", v)
@@ -37,14 +37,14 @@ func NormalizeIndexSettings(m map[string]interface{}) map[string]interface{} {
 }
 
 func DiffNullMapEntriesSuppress(key, old, new string, d *schema.ResourceData) bool {
-	var oldMap, newMap map[string]interface{}
+	var oldMap, newMap map[string]any
 	if err := json.Unmarshal([]byte(old), &oldMap); err != nil {
 		return false
 	}
 	if err := json.Unmarshal([]byte(new), &newMap); err != nil {
 		return false
 	}
-	for _, m := range [...]map[string]interface{}{oldMap, newMap} {
+	for _, m := range [...]map[string]any{oldMap, newMap} {
 		for k, v := range m {
 			if v == nil {
 				delete(m, k)

@@ -93,7 +93,7 @@ func DataSourceProcessorScript() *schema.Resource {
 	}
 }
 
-func dataSourceProcessorScriptRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func dataSourceProcessorScriptRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	processor := &models.ProcessorScript{}
@@ -110,7 +110,7 @@ func dataSourceProcessorScriptRead(ctx context.Context, d *schema.ResourceData, 
 		processor.Source = v.(string)
 	}
 	if v, ok := d.GetOk("params"); ok {
-		params := make(map[string]interface{})
+		params := make(map[string]any)
 		if err := json.NewDecoder(strings.NewReader(v.(string))).Decode(&params); err != nil {
 			return diag.FromErr(err)
 		}
@@ -126,9 +126,9 @@ func dataSourceProcessorScriptRead(ctx context.Context, d *schema.ResourceData, 
 		processor.Tag = v.(string)
 	}
 	if v, ok := d.GetOk("on_failure"); ok {
-		onFailure := make([]map[string]interface{}, len(v.([]interface{})))
-		for i, f := range v.([]interface{}) {
-			item := make(map[string]interface{})
+		onFailure := make([]map[string]any, len(v.([]any)))
+		for i, f := range v.([]any) {
+			item := make(map[string]any)
 			if err := json.NewDecoder(strings.NewReader(f.(string))).Decode(&item); err != nil {
 				return diag.FromErr(err)
 			}

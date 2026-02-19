@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func mapToJsonStringValue(t *testing.T, m map[string]interface{}) basetypes.StringValue {
+func mapToJsonStringValue(t *testing.T, m map[string]any) basetypes.StringValue {
 	mBytes, err := json.Marshal(m)
 	require.NoError(t, err)
 
@@ -53,8 +53,8 @@ func Test_PlanModifyString(t *testing.T) {
 		},
 		{
 			name: "should do nothing if the state mappings do not define any properties",
-			stateMappings: mapToJsonStringValue(t, map[string]interface{}{
-				"not_properties": map[string]interface{}{
+			stateMappings: mapToJsonStringValue(t, map[string]any{
+				"not_properties": map[string]any{
 					"hello": "world",
 				},
 			}),
@@ -62,8 +62,8 @@ func Test_PlanModifyString(t *testing.T) {
 		},
 		{
 			name: "requires replace if state mappings define properties but the config value does not",
-			stateMappings: mapToJsonStringValue(t, map[string]interface{}{
-				"properties": map[string]interface{}{
+			stateMappings: mapToJsonStringValue(t, map[string]any{
+				"properties": map[string]any{
 					"hello": "world",
 				},
 			}),
@@ -72,29 +72,29 @@ func Test_PlanModifyString(t *testing.T) {
 		},
 		{
 			name: "should not alter the final plan when a new field is added",
-			stateMappings: mapToJsonStringValue(t, map[string]interface{}{
-				"properties": map[string]interface{}{
-					"field1": map[string]interface{}{
+			stateMappings: mapToJsonStringValue(t, map[string]any{
+				"properties": map[string]any{
+					"field1": map[string]any{
 						"type": "string",
 					},
 				},
 			}),
-			configMappings: mapToJsonStringValue(t, map[string]interface{}{
-				"properties": map[string]interface{}{
-					"field1": map[string]interface{}{
+			configMappings: mapToJsonStringValue(t, map[string]any{
+				"properties": map[string]any{
+					"field1": map[string]any{
 						"type": "string",
 					},
-					"field2": map[string]interface{}{
+					"field2": map[string]any{
 						"type": "string",
 					},
 				},
 			}),
-			expectedPlanMappings: mapToJsonStringValue(t, map[string]interface{}{
-				"properties": map[string]interface{}{
-					"field1": map[string]interface{}{
+			expectedPlanMappings: mapToJsonStringValue(t, map[string]any{
+				"properties": map[string]any{
+					"field1": map[string]any{
 						"type": "string",
 					},
-					"field2": map[string]interface{}{
+					"field2": map[string]any{
 						"type": "string",
 					},
 				},
@@ -102,23 +102,23 @@ func Test_PlanModifyString(t *testing.T) {
 		},
 		{
 			name: "requires replace when the type of an existing field is changed",
-			stateMappings: mapToJsonStringValue(t, map[string]interface{}{
-				"properties": map[string]interface{}{
-					"field1": map[string]interface{}{
+			stateMappings: mapToJsonStringValue(t, map[string]any{
+				"properties": map[string]any{
+					"field1": map[string]any{
 						"type": "string",
 					},
 				},
 			}),
-			configMappings: mapToJsonStringValue(t, map[string]interface{}{
-				"properties": map[string]interface{}{
-					"field1": map[string]interface{}{
+			configMappings: mapToJsonStringValue(t, map[string]any{
+				"properties": map[string]any{
+					"field1": map[string]any{
 						"type": "int",
 					},
 				},
 			}),
-			expectedPlanMappings: mapToJsonStringValue(t, map[string]interface{}{
-				"properties": map[string]interface{}{
-					"field1": map[string]interface{}{
+			expectedPlanMappings: mapToJsonStringValue(t, map[string]any{
+				"properties": map[string]any{
+					"field1": map[string]any{
 						"type": "int",
 					},
 				},
@@ -127,29 +127,29 @@ func Test_PlanModifyString(t *testing.T) {
 		},
 		{
 			name: "should add the removed field to the plan and include a warning when a field is removed from config",
-			stateMappings: mapToJsonStringValue(t, map[string]interface{}{
-				"properties": map[string]interface{}{
-					"field1": map[string]interface{}{
+			stateMappings: mapToJsonStringValue(t, map[string]any{
+				"properties": map[string]any{
+					"field1": map[string]any{
 						"type": "string",
 					},
-					"field2": map[string]interface{}{
-						"type": "string",
-					},
-				},
-			}),
-			configMappings: mapToJsonStringValue(t, map[string]interface{}{
-				"properties": map[string]interface{}{
-					"field1": map[string]interface{}{
+					"field2": map[string]any{
 						"type": "string",
 					},
 				},
 			}),
-			expectedPlanMappings: mapToJsonStringValue(t, map[string]interface{}{
-				"properties": map[string]interface{}{
-					"field1": map[string]interface{}{
+			configMappings: mapToJsonStringValue(t, map[string]any{
+				"properties": map[string]any{
+					"field1": map[string]any{
 						"type": "string",
 					},
-					"field2": map[string]interface{}{
+				},
+			}),
+			expectedPlanMappings: mapToJsonStringValue(t, map[string]any{
+				"properties": map[string]any{
+					"field1": map[string]any{
+						"type": "string",
+					},
+					"field2": map[string]any{
 						"type": "string",
 					},
 				},
@@ -164,36 +164,36 @@ func Test_PlanModifyString(t *testing.T) {
 		},
 		{
 			name: "should add the removed field to the plan and include a warning when a sub-field is removed from config",
-			stateMappings: mapToJsonStringValue(t, map[string]interface{}{
-				"properties": map[string]interface{}{
-					"field1": map[string]interface{}{
-						"properties": map[string]interface{}{
-							"field2": map[string]interface{}{
+			stateMappings: mapToJsonStringValue(t, map[string]any{
+				"properties": map[string]any{
+					"field1": map[string]any{
+						"properties": map[string]any{
+							"field2": map[string]any{
 								"type": "string",
 							},
 						},
 					},
 				},
 			}),
-			configMappings: mapToJsonStringValue(t, map[string]interface{}{
-				"properties": map[string]interface{}{
-					"field1": map[string]interface{}{
-						"properties": map[string]interface{}{
-							"field3": map[string]interface{}{
+			configMappings: mapToJsonStringValue(t, map[string]any{
+				"properties": map[string]any{
+					"field1": map[string]any{
+						"properties": map[string]any{
+							"field3": map[string]any{
 								"type": "string",
 							},
 						},
 					},
 				},
 			}),
-			expectedPlanMappings: mapToJsonStringValue(t, map[string]interface{}{
-				"properties": map[string]interface{}{
-					"field1": map[string]interface{}{
-						"properties": map[string]interface{}{
-							"field2": map[string]interface{}{
+			expectedPlanMappings: mapToJsonStringValue(t, map[string]any{
+				"properties": map[string]any{
+					"field1": map[string]any{
+						"properties": map[string]any{
+							"field2": map[string]any{
 								"type": "string",
 							},
-							"field3": map[string]interface{}{
+							"field3": map[string]any{
 								"type": "string",
 							},
 						},
@@ -210,33 +210,33 @@ func Test_PlanModifyString(t *testing.T) {
 		},
 		{
 			name: "requires replace when a sub-fields type is changed",
-			stateMappings: mapToJsonStringValue(t, map[string]interface{}{
-				"properties": map[string]interface{}{
-					"field1": map[string]interface{}{
-						"properties": map[string]interface{}{
-							"field2": map[string]interface{}{
+			stateMappings: mapToJsonStringValue(t, map[string]any{
+				"properties": map[string]any{
+					"field1": map[string]any{
+						"properties": map[string]any{
+							"field2": map[string]any{
 								"type": "string",
 							},
 						},
 					},
 				},
 			}),
-			configMappings: mapToJsonStringValue(t, map[string]interface{}{
-				"properties": map[string]interface{}{
-					"field1": map[string]interface{}{
-						"properties": map[string]interface{}{
-							"field2": map[string]interface{}{
+			configMappings: mapToJsonStringValue(t, map[string]any{
+				"properties": map[string]any{
+					"field1": map[string]any{
+						"properties": map[string]any{
+							"field2": map[string]any{
 								"type": "int",
 							},
 						},
 					},
 				},
 			}),
-			expectedPlanMappings: mapToJsonStringValue(t, map[string]interface{}{
-				"properties": map[string]interface{}{
-					"field1": map[string]interface{}{
-						"properties": map[string]interface{}{
-							"field2": map[string]interface{}{
+			expectedPlanMappings: mapToJsonStringValue(t, map[string]any{
+				"properties": map[string]any{
+					"field1": map[string]any{
+						"properties": map[string]any{
+							"field2": map[string]any{
 								"type": "int",
 							},
 						},

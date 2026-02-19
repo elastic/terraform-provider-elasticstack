@@ -104,7 +104,7 @@ func ResourceWatch() *schema.Resource {
 	}
 }
 
-func resourceWatchPut(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceWatchPut(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
@@ -120,38 +120,38 @@ func resourceWatchPut(ctx context.Context, d *schema.ResourceData, meta interfac
 	watch.WatchID = watchID
 	watch.Active = d.Get("active").(bool)
 
-	var trigger map[string]interface{}
+	var trigger map[string]any
 	if err := json.Unmarshal([]byte(d.Get("trigger").(string)), &trigger); err != nil {
 		return diag.FromErr(err)
 	}
 	watch.Body.Trigger = trigger
 
-	var input map[string]interface{}
+	var input map[string]any
 	if err := json.Unmarshal([]byte(d.Get("input").(string)), &input); err != nil {
 		return diag.FromErr(err)
 	}
 	watch.Body.Input = input
 
-	var condition map[string]interface{}
+	var condition map[string]any
 	if err := json.Unmarshal([]byte(d.Get("condition").(string)), &condition); err != nil {
 		return diag.FromErr(err)
 	}
 	watch.Body.Condition = condition
 
-	var actions map[string]interface{}
+	var actions map[string]any
 	if err := json.Unmarshal([]byte(d.Get("actions").(string)), &actions); err != nil {
 		return diag.FromErr(err)
 	}
 	watch.Body.Actions = actions
 
-	var metadata map[string]interface{}
+	var metadata map[string]any
 	if err := json.Unmarshal([]byte(d.Get("metadata").(string)), &metadata); err != nil {
 		return diag.FromErr(err)
 	}
 	watch.Body.Metadata = metadata
 
 	if transformJSON, ok := d.GetOk("transform"); ok {
-		var transform map[string]interface{}
+		var transform map[string]any
 		if err := json.Unmarshal([]byte(transformJSON.(string)), &transform); err != nil {
 			return diag.FromErr(err)
 		}
@@ -168,7 +168,7 @@ func resourceWatchPut(ctx context.Context, d *schema.ResourceData, meta interfac
 	return resourceWatchRead(ctx, d, meta)
 }
 
-func resourceWatchRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceWatchRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
@@ -252,7 +252,7 @@ func resourceWatchRead(ctx context.Context, d *schema.ResourceData, meta interfa
 	return nil
 }
 
-func resourceWatchDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceWatchDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags

@@ -63,7 +63,7 @@ func TestUpgradeV0ToV2_JSONConversions(t *testing.T) {
 				assert.False(t, v1VarsJson.IsNull(), "Expected non-null but got null value")
 
 				// For non-null values, verify the JSON content
-				var result map[string]interface{}
+				var result map[string]any
 				diags := v1VarsJson.Unmarshal(&result)
 				require.Empty(t, diags, "Failed to unmarshal JSON")
 			}

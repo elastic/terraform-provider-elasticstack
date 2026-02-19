@@ -94,7 +94,7 @@ func (r *userResource) update(ctx context.Context, plan tfsdk.Plan, config tfsdk
 	user.Roles = roles
 
 	if !planData.Metadata.IsNull() && !planData.Metadata.IsUnknown() {
-		var metadata map[string]interface{}
+		var metadata map[string]any
 		err := json.Unmarshal([]byte(planData.Metadata.ValueString()), &metadata)
 		if err != nil {
 			diags.AddError("Failed to decode metadata", err.Error())

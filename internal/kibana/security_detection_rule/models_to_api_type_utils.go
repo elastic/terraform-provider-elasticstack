@@ -561,7 +561,7 @@ func (d SecurityDetectionRuleData) actionsToApi(ctx context.Context) ([]kbapi.Se
 				paramsStringMap := make(map[string]string)
 				paramsDiags := action.Params.ElementsAs(meta.Context, &paramsStringMap, false)
 				if !paramsDiags.HasError() {
-					paramsMap := make(map[string]interface{})
+					paramsMap := make(map[string]any)
 					for k, v := range paramsStringMap {
 						paramsMap[k] = v
 					}
@@ -585,7 +585,7 @@ func (d SecurityDetectionRuleData) actionsToApi(ctx context.Context) ([]kbapi.Se
 				alertsFilterStringMap := make(map[string]string)
 				alertsFilterDiags := action.AlertsFilter.ElementsAs(meta.Context, &alertsFilterStringMap, false)
 				if !alertsFilterDiags.HasError() {
-					alertsFilterMap := make(map[string]interface{})
+					alertsFilterMap := make(map[string]any)
 					for k, v := range alertsFilterStringMap {
 						alertsFilterMap[k] = v
 					}

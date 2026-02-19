@@ -256,7 +256,7 @@ func Test_metricChartConfigModel_withMetrics(t *testing.T) {
 	assert.True(t, utils.IsKnown(model.Metrics[0].Config))
 
 	// Verify the metric config contains expected data
-	var parsedMetric map[string]interface{}
+	var parsedMetric map[string]any
 	diags = model.Metrics[0].Config.Unmarshal(&parsedMetric)
 	require.False(t, diags.HasError())
 	assert.Equal(t, "primary", parsedMetric["type"])
@@ -345,7 +345,7 @@ func Test_metricChartConfigModel_withDataset(t *testing.T) {
 	// Verify dataset was populated
 	assert.True(t, utils.IsKnown(model.Dataset))
 
-	var parsedDataset map[string]interface{}
+	var parsedDataset map[string]any
 	diags = model.Dataset.Unmarshal(&parsedDataset)
 	require.False(t, diags.HasError())
 	assert.Equal(t, "dataview", parsedDataset["type"])
@@ -358,7 +358,7 @@ func Test_metricChartConfigModel_withDataset(t *testing.T) {
 	require.NoError(t, err)
 	resultDatasetJSON, err := json.Marshal(resultVariant0.Dataset)
 	require.NoError(t, err)
-	var resultDataset map[string]interface{}
+	var resultDataset map[string]any
 	require.NoError(t, json.Unmarshal(resultDatasetJSON, &resultDataset))
 	assert.Equal(t, "dataview", resultDataset["type"])
 	assert.Equal(t, "test-dataview", resultDataset["id"])
@@ -445,7 +445,7 @@ func Test_metricChartConfigModel_withBreakdownBy(t *testing.T) {
 	// Verify breakdown_by was populated
 	assert.True(t, utils.IsKnown(model.BreakdownBy))
 
-	var parsedBreakdown map[string]interface{}
+	var parsedBreakdown map[string]any
 	diags = model.BreakdownBy.Unmarshal(&parsedBreakdown)
 	require.False(t, diags.HasError())
 	assert.Equal(t, "terms", parsedBreakdown["operation"])
@@ -479,7 +479,7 @@ func Test_metricItemModel_jsonRoundTrip(t *testing.T) {
 			}
 
 			// Unmarshal and re-marshal to verify it's valid
-			var parsed map[string]interface{}
+			var parsed map[string]any
 			diags := item.Config.Unmarshal(&parsed)
 			require.False(t, diags.HasError())
 

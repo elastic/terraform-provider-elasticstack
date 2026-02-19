@@ -428,9 +428,9 @@ func TestToModelV0(t *testing.T) {
 				IgnoreHttpsErrors:     tBool,
 				InlineScript:          `step('Go to https://google.com.co', () => page.goto('https://www.google.com'))`,
 				SyntheticsArgs:        []string{"--no-sandbox", "--disable-setuid-sandbox"},
-				PlaywrightOptions: map[string]interface{}{
+				PlaywrightOptions: map[string]any{
 					"ignoreHTTPSErrors": false,
-					"httpCredentials": map[string]interface{}{
+					"httpCredentials": map[string]any{
 						"username": "test",
 						"password": "test",
 					},
@@ -756,9 +756,9 @@ func TestToKibanaAPIRequest(t *testing.T) {
 					IgnoreHttpsErrors: tBool,
 					InlineScript:      `step('Go to https://google.com.co', () => page.goto('https://www.google.com'))`,
 					SyntheticsArgs:    []string{"--no-sandbox", "--disable-setuid-sandbox"},
-					PlaywrightOptions: map[string]interface{}{
+					PlaywrightOptions: map[string]any{
 						"ignoreHTTPSErrors": false,
-						"httpCredentials": map[string]interface{}{
+						"httpCredentials": map[string]any{
 							"username": "test",
 							"password": "test",
 						},

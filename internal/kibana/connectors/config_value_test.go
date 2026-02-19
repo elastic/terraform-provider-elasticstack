@@ -219,7 +219,7 @@ func TestNewConfigValueWithConnectorID(t *testing.T) {
 				require.False(t, result.IsNull())
 
 				// Check that the connector type ID was added to the JSON
-				var resultMap map[string]interface{}
+				var resultMap map[string]any
 				err := json.Unmarshal([]byte(result.ValueString()), &resultMap)
 				require.NoError(t, err)
 				require.Equal(t, "test-connector", resultMap["__tf_provider_context"])
@@ -234,7 +234,7 @@ func TestNewConfigValueWithConnectorID(t *testing.T) {
 			validateResult: func(t *testing.T, result ConfigValue) {
 				require.False(t, result.IsNull())
 
-				var resultMap map[string]interface{}
+				var resultMap map[string]any
 				err := json.Unmarshal([]byte(result.ValueString()), &resultMap)
 				require.NoError(t, err)
 				require.Equal(t, "test-connector", resultMap["__tf_provider_context"])
@@ -248,16 +248,16 @@ func TestNewConfigValueWithConnectorID(t *testing.T) {
 			validateResult: func(t *testing.T, result ConfigValue) {
 				require.False(t, result.IsNull())
 
-				var resultMap map[string]interface{}
+				var resultMap map[string]any
 				err := json.Unmarshal([]byte(result.ValueString()), &resultMap)
 				require.NoError(t, err)
 				require.Equal(t, "complex-connector", resultMap["__tf_provider_context"])
 
-				config, ok := resultMap["config"].(map[string]interface{})
+				config, ok := resultMap["config"].(map[string]any)
 				require.True(t, ok)
 				require.Equal(t, "value", config["nested"])
 
-				array, ok := resultMap["array"].([]interface{})
+				array, ok := resultMap["array"].([]any)
 				require.True(t, ok)
 				require.Len(t, array, 3)
 			},
@@ -277,7 +277,7 @@ func TestNewConfigValueWithConnectorID(t *testing.T) {
 			validateResult: func(t *testing.T, result ConfigValue) {
 				require.False(t, result.IsNull())
 
-				var resultMap map[string]interface{}
+				var resultMap map[string]any
 				err := json.Unmarshal([]byte(result.ValueString()), &resultMap)
 				require.NoError(t, err)
 				require.Equal(t, "", resultMap["__tf_provider_context"])

@@ -107,9 +107,9 @@ func (r *Resource) updateAliases(
 	return nil
 }
 
-func (r *Resource) updateSettings(ctx context.Context, client *clients.ApiClient, indexName string, planSettings map[string]interface{}, stateSettings map[string]interface{}) diag.Diagnostics {
-	planDynamicSettings := map[string]interface{}{}
-	stateDynamicSettings := map[string]interface{}{}
+func (r *Resource) updateSettings(ctx context.Context, client *clients.ApiClient, indexName string, planSettings map[string]any, stateSettings map[string]any) diag.Diagnostics {
+	planDynamicSettings := map[string]any{}
+	stateDynamicSettings := map[string]any{}
 
 	for _, key := range dynamicSettingsKeys {
 		if planSetting, ok := planSettings[key]; ok {

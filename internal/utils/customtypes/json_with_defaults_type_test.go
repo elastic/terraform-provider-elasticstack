@@ -159,7 +159,7 @@ func TestRoleDescriptorsType_ValueFromTerraform(t *testing.T) {
 		name          string
 		input         tftypes.Value
 		expectedError bool
-		expectedType  interface{}
+		expectedType  any
 	}{
 		{
 			name:          "valid string terraform value",

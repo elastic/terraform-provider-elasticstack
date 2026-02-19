@@ -31,7 +31,7 @@ func (r *roleMappingResource) update(ctx context.Context, plan tfsdk.Plan, state
 	}
 
 	// Parse rules JSON
-	var rules map[string]interface{}
+	var rules map[string]any
 	if err := json.Unmarshal([]byte(data.Rules.ValueString()), &rules); err != nil {
 		diags.AddError("Failed to parse rules JSON", err.Error())
 		return diags
@@ -57,7 +57,7 @@ func (r *roleMappingResource) update(ctx context.Context, plan tfsdk.Plan, state
 	}
 
 	if utils.IsKnown(data.RoleTemplates) {
-		var roleTemplates []map[string]interface{}
+		var roleTemplates []map[string]any
 		if err := json.Unmarshal([]byte(data.RoleTemplates.ValueString()), &roleTemplates); err != nil {
 			diags.AddError("Failed to parse role templates JSON", err.Error())
 			return diags

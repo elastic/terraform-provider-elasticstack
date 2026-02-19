@@ -18,7 +18,7 @@ import (
 
 func PutIlm(ctx context.Context, apiClient *clients.ApiClient, policy *models.Policy) diag.Diagnostics {
 	var diags diag.Diagnostics
-	policyBytes, err := json.Marshal(map[string]interface{}{"policy": policy})
+	policyBytes, err := json.Marshal(map[string]any{"policy": policy})
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -390,7 +390,7 @@ func UpdateIndexAlias(ctx context.Context, apiClient *clients.ApiClient, index s
 	return diagutil.FrameworkDiagsFromSDK(diags)
 }
 
-func UpdateIndexSettings(ctx context.Context, apiClient *clients.ApiClient, index string, settings map[string]interface{}) fwdiags.Diagnostics {
+func UpdateIndexSettings(ctx context.Context, apiClient *clients.ApiClient, index string, settings map[string]any) fwdiags.Diagnostics {
 	settingsBytes, err := json.Marshal(settings)
 	if err != nil {
 		return fwdiags.Diagnostics{
@@ -625,7 +625,7 @@ type AliasAction struct {
 	Index         string
 	Alias         string
 	IsWriteIndex  bool
-	Filter        map[string]interface{}
+	Filter        map[string]any
 	IndexRouting  string
 	IsHidden      bool
 	Routing       string
@@ -641,19 +641,19 @@ func UpdateAliasesAtomic(ctx context.Context, apiClient *clients.ApiClient, acti
 		}
 	}
 
-	var aliasActions []map[string]interface{}
+	var aliasActions []map[string]any
 
 	for _, action := range actions {
 		switch action.Type {
 		case "remove":
-			aliasActions = append(aliasActions, map[string]interface{}{
-				"remove": map[string]interface{}{
+			aliasActions = append(aliasActions, map[string]any{
+				"remove": map[string]any{
 					"index": action.Index,
 					"alias": action.Alias,
 				},
 			})
 		case "add":
-			addDetails := map[string]interface{}{
+			addDetails := map[string]any{
 				"index": action.Index,
 				"alias": action.Alias,
 			}
@@ -677,13 +677,13 @@ func UpdateAliasesAtomic(ctx context.Context, apiClient *clients.ApiClient, acti
 				addDetails["is_hidden"] = action.IsHidden
 			}
 
-			aliasActions = append(aliasActions, map[string]interface{}{
+			aliasActions = append(aliasActions, map[string]any{
 				"add": addDetails,
 			})
 		}
 	}
 
-	requestBody := map[string]interface{}{
+	requestBody := map[string]any{
 		"actions": aliasActions,
 	}
 

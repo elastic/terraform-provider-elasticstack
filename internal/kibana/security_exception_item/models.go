@@ -466,7 +466,7 @@ func convertEntriesFromAPI(ctx context.Context, apiEntries kbapi.SecurityExcepti
 }
 
 // convertMatchOrWildcardEntryFromAPI converts match or wildcard entries from API format
-func convertMatchOrWildcardEntryFromAPI(entryMap map[string]interface{}, entry *EntryModel) {
+func convertMatchOrWildcardEntryFromAPI(entryMap map[string]any, entry *EntryModel) {
 	if value, ok := entryMap["value"].(string); ok {
 		entry.Value = types.StringValue(value)
 	} else {
@@ -478,10 +478,10 @@ func convertMatchOrWildcardEntryFromAPI(entryMap map[string]interface{}, entry *
 }
 
 // convertMatchAnyEntryFromAPI converts match_any entries from API format
-func convertMatchAnyEntryFromAPI(ctx context.Context, entryMap map[string]interface{}, entry *EntryModel) diag.Diagnostics {
+func convertMatchAnyEntryFromAPI(ctx context.Context, entryMap map[string]any, entry *EntryModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	if values, ok := entryMap["value"].([]interface{}); ok {
+	if values, ok := entryMap["value"].([]any); ok {
 		strValues := make([]string, 0, len(values))
 		for _, v := range values {
 			if str, ok := v.(string); ok {
@@ -501,10 +501,10 @@ func convertMatchAnyEntryFromAPI(ctx context.Context, entryMap map[string]interf
 }
 
 // convertListEntryFromAPI converts list entries from API format
-func convertListEntryFromAPI(ctx context.Context, entryMap map[string]interface{}, entry *EntryModel) diag.Diagnostics {
+func convertListEntryFromAPI(ctx context.Context, entryMap map[string]any, entry *EntryModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	if listData, ok := entryMap["list"].(map[string]interface{}); ok {
+	if listData, ok := entryMap["list"].(map[string]any); ok {
 		listModel := EntryListModel{
 			ID:   types.StringValue(listData["id"].(string)),
 			Type: types.StringValue(listData["type"].(string)),
@@ -530,15 +530,15 @@ func convertExistsEntryFromAPI(entry *EntryModel) {
 }
 
 // convertNestedEntryFromAPI converts nested entries from API format
-func convertNestedEntryFromAPI(ctx context.Context, entryMap map[string]interface{}, entry *EntryModel) diag.Diagnostics {
+func convertNestedEntryFromAPI(ctx context.Context, entryMap map[string]any, entry *EntryModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	// Nested entries don't have an operator field in the API
 	entry.Operator = types.StringNull()
-	if entriesData, ok := entryMap["entries"].([]interface{}); ok {
+	if entriesData, ok := entryMap["entries"].([]any); ok {
 		nestedEntries := make([]NestedEntryModel, 0, len(entriesData))
 		for _, neData := range entriesData {
-			if neMap, ok := neData.(map[string]interface{}); ok {
+			if neMap, ok := neData.(map[string]any); ok {
 				ne, d := convertNestedEntryFromMap(ctx, neMap)
 				diags.Append(d...)
 				if !d.HasError() {
@@ -571,7 +571,7 @@ func convertEntryFromAPI(ctx context.Context, apiEntry kbapi.SecurityExceptionsA
 	}
 
 	// Try to unmarshal into a map to determine the type
-	var entryMap map[string]interface{}
+	var entryMap map[string]any
 	if err := json.Unmarshal(entryBytes, &entryMap); err != nil {
 		diags.AddError("Failed to unmarshal entry", err.Error())
 		return entry, diags
@@ -611,7 +611,7 @@ func convertEntryFromAPI(ctx context.Context, apiEntry kbapi.SecurityExceptionsA
 }
 
 // convertNestedMatchFromMap converts nested match entries from map format
-func convertNestedMatchFromMap(entryMap map[string]interface{}, entry *NestedEntryModel) {
+func convertNestedMatchFromMap(entryMap map[string]any, entry *NestedEntryModel) {
 	if value, ok := entryMap["value"].(string); ok {
 		entry.Value = types.StringValue(value)
 	} else {
@@ -621,10 +621,10 @@ func convertNestedMatchFromMap(entryMap map[string]interface{}, entry *NestedEnt
 }
 
 // convertNestedMatchAnyFromMap converts nested match_any entries from map format
-func convertNestedMatchAnyFromMap(ctx context.Context, entryMap map[string]interface{}, entry *NestedEntryModel) diag.Diagnostics {
+func convertNestedMatchAnyFromMap(ctx context.Context, entryMap map[string]any, entry *NestedEntryModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	if values, ok := entryMap["value"].([]interface{}); ok {
+	if values, ok := entryMap["value"].([]any); ok {
 		strValues := make([]string, 0, len(values))
 		for _, v := range values {
 			if str, ok := v.(string); ok {
@@ -648,7 +648,7 @@ func convertNestedExistsFromMap(entry *NestedEntryModel) {
 }
 
 // convertNestedEntryFromMap converts a map representation of nested entry to a model
-func convertNestedEntryFromMap(ctx context.Context, entryMap map[string]interface{}) (NestedEntryModel, diag.Diagnostics) {
+func convertNestedEntryFromMap(ctx context.Context, entryMap map[string]any) (NestedEntryModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var entry NestedEntryModel
 

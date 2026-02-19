@@ -138,7 +138,7 @@ func ResourceComponentTemplate() *schema.Resource {
 	}
 }
 
-func resourceComponentTemplatePut(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceComponentTemplatePut(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
@@ -152,7 +152,7 @@ func resourceComponentTemplatePut(ctx context.Context, d *schema.ResourceData, m
 	componentTemplate.Name = componentId
 
 	if v, ok := d.GetOk("metadata"); ok {
-		metadata := make(map[string]interface{})
+		metadata := make(map[string]any)
 		if err := json.NewDecoder(strings.NewReader(v.(string))).Decode(&metadata); err != nil {
 			return diag.FromErr(err)
 		}
@@ -183,7 +183,7 @@ func resourceComponentTemplatePut(ctx context.Context, d *schema.ResourceData, m
 	return resourceComponentTemplateRead(ctx, d, meta)
 }
 
-func resourceComponentTemplateRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceComponentTemplateRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
@@ -237,7 +237,7 @@ func resourceComponentTemplateRead(ctx context.Context, d *schema.ResourceData, 
 	return diags
 }
 
-func resourceComponentTemplateDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceComponentTemplateDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags

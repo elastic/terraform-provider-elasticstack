@@ -439,7 +439,7 @@ func getSchema(actions ...string) map[string]*schema.Schema {
 	return sch
 }
 
-func resourceIlmPut(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceIlmPut(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
@@ -477,7 +477,7 @@ func expandIlmPolicy(d *schema.ResourceData, serverVersion *version.Version) (*m
 	policy.Name = d.Get("name").(string)
 
 	if v, ok := d.GetOk("metadata"); ok {
-		metadata := make(map[string]interface{})
+		metadata := make(map[string]any)
 		if err := json.NewDecoder(strings.NewReader(v.(string))).Decode(&metadata); err != nil {
 			return nil, diag.FromErr(err)
 		}
@@ -486,7 +486,7 @@ func expandIlmPolicy(d *schema.ResourceData, serverVersion *version.Version) (*m
 
 	for _, ph := range supportedIlmPhases {
 		if v, ok := d.GetOk(ph); ok {
-			phase, diags := expandPhase(v.([]interface{})[0].(map[string]interface{}), serverVersion)
+			phase, diags := expandPhase(v.([]any)[0].(map[string]any), serverVersion)
 			if diags.HasError() {
 				return nil, diags
 			}
@@ -498,7 +498,7 @@ func expandIlmPolicy(d *schema.ResourceData, serverVersion *version.Version) (*m
 	return &policy, diags
 }
 
-func expandPhase(p map[string]interface{}, serverVersion *version.Version) (*models.Phase, diag.Diagnostics) {
+func expandPhase(p map[string]any, serverVersion *version.Version) (*models.Phase, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var phase models.Phase
 
@@ -509,7 +509,7 @@ func expandPhase(p map[string]interface{}, serverVersion *version.Version) (*mod
 
 	actions := make(map[string]models.Action)
 	for actionName, action := range p {
-		if a := action.([]interface{}); len(a) > 0 {
+		if a := action.([]any); len(a) > 0 {
 			switch actionName {
 			case "allocate":
 				actions[actionName], diags = expandAction(a, serverVersion, "number_of_replicas", "total_shards_per_node", "include", "exclude", "require")
@@ -519,7 +519,7 @@ func expandPhase(p map[string]interface{}, serverVersion *version.Version) (*mod
 				actions[actionName], diags = expandAction(a, serverVersion, "max_num_segments", "index_codec")
 			case "freeze":
 				if a[0] != nil {
-					ac := a[0].(map[string]interface{})
+					ac := a[0].(map[string]any)
 					if ac["enabled"].(bool) {
 						actions[actionName], diags = expandAction(a, serverVersion)
 					}
@@ -528,7 +528,7 @@ func expandPhase(p map[string]interface{}, serverVersion *version.Version) (*mod
 				actions[actionName], diags = expandAction(a, serverVersion, "enabled")
 			case "readonly":
 				if a[0] != nil {
-					ac := a[0].(map[string]interface{})
+					ac := a[0].(map[string]any)
 					if ac["enabled"].(bool) {
 						actions[actionName], diags = expandAction(a, serverVersion)
 					}
@@ -556,7 +556,7 @@ func expandPhase(p map[string]interface{}, serverVersion *version.Version) (*mod
 				actions[actionName], diags = expandAction(a, serverVersion, "number_of_shards", "max_primary_shard_size", "allow_write_after_shrink")
 			case "unfollow":
 				if a[0] != nil {
-					ac := a[0].(map[string]interface{})
+					ac := a[0].(map[string]any)
 					if ac["enabled"].(bool) {
 						actions[actionName], diags = expandAction(a, serverVersion)
 					}
@@ -587,7 +587,7 @@ var (
 
 var ilmActionSettingOptions = map[string]struct {
 	skipEmptyCheck bool
-	def            interface{}
+	def            any
 	minVersion     *version.Version
 }{
 	"allow_write_after_shrink": {def: false, minVersion: version.Must(version.NewVersion("8.14.0"))},
@@ -602,13 +602,13 @@ var ilmActionSettingOptions = map[string]struct {
 	"total_shards_per_node":    {skipEmptyCheck: true, def: -1, minVersion: version.Must(version.NewVersion("7.16.0"))},
 }
 
-func expandAction(a []interface{}, serverVersion *version.Version, settings ...string) (map[string]interface{}, diag.Diagnostics) {
+func expandAction(a []any, serverVersion *version.Version, settings ...string) (map[string]any, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	def := make(map[string]interface{})
+	def := make(map[string]any)
 
 	if action := a[0]; action != nil {
 		for _, setting := range settings {
-			if v, ok := action.(map[string]interface{})[setting]; ok && v != nil {
+			if v, ok := action.(map[string]any)[setting]; ok && v != nil {
 				options := ilmActionSettingOptions[setting]
 
 				if options.minVersion != nil && options.minVersion.GreaterThan(serverVersion) {
@@ -623,7 +623,7 @@ func expandAction(a []interface{}, serverVersion *version.Version, settings ...s
 				if options.skipEmptyCheck || !utils.IsEmpty(v) {
 					// these 3 fields must be treated as JSON objects
 					if setting == "include" || setting == "exclude" || setting == "require" {
-						res := make(map[string]interface{})
+						res := make(map[string]any)
 						if err := json.Unmarshal([]byte(v.(string)), &res); err != nil {
 							return nil, diag.FromErr(err)
 						}
@@ -638,7 +638,7 @@ func expandAction(a []interface{}, serverVersion *version.Version, settings ...s
 	return def, diags
 }
 
-func resourceIlmRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceIlmRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
@@ -691,21 +691,21 @@ func resourceIlmRead(ctx context.Context, d *schema.ResourceData, meta interface
 	return diags
 }
 
-func flattenPhase(phaseName string, p models.Phase, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
+func flattenPhase(phaseName string, p models.Phase, d *schema.ResourceData) (any, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	out := make([]interface{}, 1)
-	phase := make(map[string]interface{})
-	enabled := make(map[string]interface{})
-	ns := make(map[string]interface{})
+	out := make([]any, 1)
+	phase := make(map[string]any)
+	enabled := make(map[string]any)
+	ns := make(map[string]any)
 
 	_, new := d.GetChange(phaseName)
 
-	if new != nil && len(new.([]interface{})) > 0 {
-		ns = new.([]interface{})[0].(map[string]interface{})
+	if new != nil && len(new.([]any)) > 0 {
+		ns = new.([]any)[0].(map[string]any)
 	}
 
-	existsAndNotEmpty := func(key string, m map[string]interface{}) bool {
-		if v, ok := m[key]; ok && len(v.([]interface{})) > 0 {
+	existsAndNotEmpty := func(key string, m map[string]any) bool {
+		if v, ok := m[key]; ok && len(v.([]any)) > 0 {
 			return true
 		}
 		return false
@@ -713,7 +713,7 @@ func flattenPhase(phaseName string, p models.Phase, d *schema.ResourceData) (int
 	for _, aCase := range []string{"readonly", "freeze", "unfollow"} {
 		if existsAndNotEmpty(aCase, ns) {
 			enabled["enabled"] = false
-			phase[aCase] = []interface{}{enabled}
+			phase[aCase] = []any{enabled}
 		}
 	}
 
@@ -724,9 +724,9 @@ func flattenPhase(phaseName string, p models.Phase, d *schema.ResourceData) (int
 		switch actionName {
 		case "readonly", "freeze", "unfollow":
 			enabled["enabled"] = true
-			phase[actionName] = []interface{}{enabled}
+			phase[actionName] = []any{enabled}
 		case "allocate":
-			allocateAction := make(map[string]interface{})
+			allocateAction := make(map[string]any)
 			if v, ok := action["number_of_replicas"]; ok {
 				allocateAction["number_of_replicas"] = v
 			}
@@ -745,16 +745,16 @@ func flattenPhase(phaseName string, p models.Phase, d *schema.ResourceData) (int
 					allocateAction[f] = string(res)
 				}
 			}
-			phase[actionName] = []interface{}{allocateAction}
+			phase[actionName] = []any{allocateAction}
 		default:
-			phase[actionName] = []interface{}{action}
+			phase[actionName] = []any{action}
 		}
 	}
 	out[0] = phase
 	return out, diags
 }
 
-func resourceIlmDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceIlmDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	client, diags := clients.NewApiClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags

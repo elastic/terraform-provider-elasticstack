@@ -17,7 +17,7 @@ import (
 func Test_newFleetConfigFromSDK(t *testing.T) {
 	type args struct {
 		kibanaCfg      kibanaOapiConfig
-		resourceData   map[string]interface{}
+		resourceData   map[string]any
 		expectedConfig fleetConfig
 		expectedDiags  sdkdiags.Diagnostics
 		env            map[string]string
@@ -38,7 +38,7 @@ func Test_newFleetConfigFromSDK(t *testing.T) {
 
 				return args{
 					kibanaCfg:      kibanaCfg,
-					resourceData:   map[string]interface{}{},
+					resourceData:   map[string]any{},
 					expectedConfig: kibanaCfg.toFleetConfig(),
 				}
 			},
@@ -55,14 +55,14 @@ func Test_newFleetConfigFromSDK(t *testing.T) {
 
 				return args{
 					kibanaCfg: kibanaCfg,
-					resourceData: map[string]interface{}{
-						"fleet": []interface{}{
-							map[string]interface{}{
+					resourceData: map[string]any{
+						"fleet": []any{
+							map[string]any{
 								"endpoint": "example.com/fleet",
 								"username": "fleet",
 								"password": "baltic",
 								"api_key":  "leviosa",
-								"ca_certs": []interface{}{"internal", "lets_decrypt"},
+								"ca_certs": []any{"internal", "lets_decrypt"},
 								"insecure": false,
 							},
 						},
@@ -90,14 +90,14 @@ func Test_newFleetConfigFromSDK(t *testing.T) {
 
 				return args{
 					kibanaCfg: kibanaCfg,
-					resourceData: map[string]interface{}{
-						"fleet": []interface{}{
-							map[string]interface{}{
+					resourceData: map[string]any{
+						"fleet": []any{
+							map[string]any{
 								"endpoint": "example.com/fleet",
 								"username": "fleet",
 								"password": "baltic",
 								"api_key":  "leviosa",
-								"ca_certs": []interface{}{"internal", "lets_decrypt"},
+								"ca_certs": []any{"internal", "lets_decrypt"},
 								"insecure": false,
 							},
 						},
@@ -159,9 +159,9 @@ func Test_newFleetConfigFromSDK_BearerToken(t *testing.T) {
 	kibanaCfg := kibanaOapiConfig{}
 	rd := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
 		"fleet": providerSchema.GetFleetConnectionSchema(),
-	}, map[string]interface{}{
-		"fleet": []interface{}{
-			map[string]interface{}{
+	}, map[string]any{
+		"fleet": []any{
+			map[string]any{
 				"endpoint":     "example.com/fleet",
 				"bearer_token": "my-jwt-token",
 				"insecure":     true,
@@ -191,9 +191,9 @@ func Test_newFleetConfigFromSDK_BearerTokenEnvOverride(t *testing.T) {
 	kibanaCfg := kibanaOapiConfig{}
 	rd := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
 		"fleet": providerSchema.GetFleetConnectionSchema(),
-	}, map[string]interface{}{
-		"fleet": []interface{}{
-			map[string]interface{}{
+	}, map[string]any{
+		"fleet": []any{
+			map[string]any{
 				"endpoint":     "example.com/fleet",
 				"bearer_token": "config-jwt-token",
 			},
