@@ -838,7 +838,7 @@ func (d SecurityDetectionRuleData) setCommonUpdateProps(
 }
 
 // Helper function to initialize fields that should be set to default values for all rule types
-func (d *SecurityDetectionRuleData) initializeAllFieldsToDefaults(ctx context.Context, diags *diag.Diagnostics) {
+func (d *SecurityDetectionRuleData) initializeAllFieldsToDefaults() {
 
 	// Initialize fields that should be empty lists for all rule types initially
 	if !utils.IsKnown(d.Author) {
@@ -881,11 +881,11 @@ func (d *SecurityDetectionRuleData) initializeAllFieldsToDefaults(ctx context.Co
 	}
 
 	// Initialize all type-specific fields to null/empty by default
-	d.initializeTypeSpecificFieldsToDefaults(ctx, diags)
+	d.initializeTypeSpecificFieldsToDefaults()
 }
 
 // Helper function to initialize type-specific fields to default/null values
-func (d *SecurityDetectionRuleData) initializeTypeSpecificFieldsToDefaults(ctx context.Context, diags *diag.Diagnostics) {
+func (d *SecurityDetectionRuleData) initializeTypeSpecificFieldsToDefaults() {
 	// EQL-specific fields
 	if !utils.IsKnown(d.TiebreakerField) {
 		d.TiebreakerField = types.StringNull()

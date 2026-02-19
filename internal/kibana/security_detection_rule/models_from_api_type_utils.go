@@ -587,6 +587,7 @@ func convertThresholdToModel(ctx context.Context, apiThreshold kbapi.SecurityDet
 // convertFiltersFromApi converts the API filters field back to the Terraform type
 func (d *SecurityDetectionRuleData) updateFiltersFromApi(ctx context.Context, apiFilters *kbapi.SecurityDetectionsAPIRuleFilterArray) diag.Diagnostics {
 	var diags diag.Diagnostics
+	_ = ctx
 
 	if apiFilters == nil || len(*apiFilters) == 0 {
 		d.Filters = jsontypes.NewNormalizedNull()
@@ -685,7 +686,8 @@ func (d *SecurityDetectionRuleData) updateReferencesFromApi(ctx context.Context,
 
 // Helper function to update data view ID from API response
 func (d *SecurityDetectionRuleData) updateDataViewIdFromApi(ctx context.Context, dataViewId *kbapi.SecurityDetectionsAPIDataViewId) diag.Diagnostics {
-	var diags diag.Diagnostics
+	diags := diag.Diagnostics{}
+	_ = ctx
 
 	if dataViewId != nil {
 		d.DataViewId = types.StringValue(*dataViewId)
@@ -698,7 +700,8 @@ func (d *SecurityDetectionRuleData) updateDataViewIdFromApi(ctx context.Context,
 
 // Helper function to update timeline ID from API response
 func (d *SecurityDetectionRuleData) updateTimelineIdFromApi(ctx context.Context, timelineId *kbapi.SecurityDetectionsAPITimelineTemplateId) diag.Diagnostics {
-	var diags diag.Diagnostics
+	diags := diag.Diagnostics{}
+	_ = ctx
 
 	if timelineId != nil {
 		d.TimelineId = types.StringValue(*timelineId)
@@ -711,7 +714,8 @@ func (d *SecurityDetectionRuleData) updateTimelineIdFromApi(ctx context.Context,
 
 // Helper function to update timeline title from API response
 func (d *SecurityDetectionRuleData) updateTimelineTitleFromApi(ctx context.Context, timelineTitle *kbapi.SecurityDetectionsAPITimelineTemplateTitle) diag.Diagnostics {
-	var diags diag.Diagnostics
+	diags := diag.Diagnostics{}
+	_ = ctx
 
 	if timelineTitle != nil {
 		d.TimelineTitle = types.StringValue(*timelineTitle)
@@ -724,7 +728,8 @@ func (d *SecurityDetectionRuleData) updateTimelineTitleFromApi(ctx context.Conte
 
 // Helper function to update namespace from API response
 func (d *SecurityDetectionRuleData) updateNamespaceFromApi(ctx context.Context, namespace *kbapi.SecurityDetectionsAPIAlertsIndexNamespace) diag.Diagnostics {
-	var diags diag.Diagnostics
+	diags := diag.Diagnostics{}
+	_ = ctx
 
 	if namespace != nil {
 		d.Namespace = types.StringValue(*namespace)
@@ -737,7 +742,8 @@ func (d *SecurityDetectionRuleData) updateNamespaceFromApi(ctx context.Context, 
 
 // Helper function to update rule name override from API response
 func (d *SecurityDetectionRuleData) updateRuleNameOverrideFromApi(ctx context.Context, ruleNameOverride *kbapi.SecurityDetectionsAPIRuleNameOverride) diag.Diagnostics {
-	var diags diag.Diagnostics
+	diags := diag.Diagnostics{}
+	_ = ctx
 
 	if ruleNameOverride != nil {
 		d.RuleNameOverride = types.StringValue(*ruleNameOverride)
@@ -750,7 +756,8 @@ func (d *SecurityDetectionRuleData) updateRuleNameOverrideFromApi(ctx context.Co
 
 // Helper function to update timestamp override from API response
 func (d *SecurityDetectionRuleData) updateTimestampOverrideFromApi(ctx context.Context, timestampOverride *kbapi.SecurityDetectionsAPITimestampOverride) diag.Diagnostics {
-	var diags diag.Diagnostics
+	diags := diag.Diagnostics{}
+	_ = ctx
 
 	if timestampOverride != nil {
 		d.TimestampOverride = types.StringValue(*timestampOverride)
@@ -766,7 +773,8 @@ func (d *SecurityDetectionRuleData) updateTimestampOverrideFallbackDisabledFromA
 	ctx context.Context,
 	timestampOverrideFallbackDisabled *kbapi.SecurityDetectionsAPITimestampOverrideFallbackDisabled,
 ) diag.Diagnostics {
-	var diags diag.Diagnostics
+	diags := diag.Diagnostics{}
+	_ = ctx
 
 	if timestampOverrideFallbackDisabled != nil {
 		d.TimestampOverrideFallbackDisabled = types.BoolValue(*timestampOverrideFallbackDisabled)
@@ -779,7 +787,8 @@ func (d *SecurityDetectionRuleData) updateTimestampOverrideFallbackDisabledFromA
 
 // Helper function to update building block type from API response
 func (d *SecurityDetectionRuleData) updateBuildingBlockTypeFromApi(ctx context.Context, buildingBlockType *kbapi.SecurityDetectionsAPIBuildingBlockType) diag.Diagnostics {
-	var diags diag.Diagnostics
+	diags := diag.Diagnostics{}
+	_ = ctx
 
 	if buildingBlockType != nil {
 		d.BuildingBlockType = types.StringValue(*buildingBlockType)
@@ -792,7 +801,8 @@ func (d *SecurityDetectionRuleData) updateBuildingBlockTypeFromApi(ctx context.C
 
 // Helper function to update license from API response
 func (d *SecurityDetectionRuleData) updateLicenseFromApi(ctx context.Context, license *kbapi.SecurityDetectionsAPIRuleLicense) diag.Diagnostics {
-	var diags diag.Diagnostics
+	diags := diag.Diagnostics{}
+	_ = ctx
 
 	if license != nil {
 		d.License = types.StringValue(*license)
@@ -805,7 +815,8 @@ func (d *SecurityDetectionRuleData) updateLicenseFromApi(ctx context.Context, li
 
 // Helper function to update note from API response
 func (d *SecurityDetectionRuleData) updateNoteFromApi(ctx context.Context, note *kbapi.SecurityDetectionsAPIInvestigationGuide) diag.Diagnostics {
-	var diags diag.Diagnostics
+	diags := diag.Diagnostics{}
+	_ = ctx
 
 	if note != nil {
 		d.Note = types.StringValue(*note)
@@ -818,7 +829,8 @@ func (d *SecurityDetectionRuleData) updateNoteFromApi(ctx context.Context, note 
 
 // Helper function to update setup from API response
 func (d *SecurityDetectionRuleData) updateSetupFromApi(ctx context.Context, setup kbapi.SecurityDetectionsAPISetupGuide) diag.Diagnostics {
-	var diags diag.Diagnostics
+	diags := diag.Diagnostics{}
+	_ = ctx
 
 	// Handle setup field - if empty, set to null to maintain consistency with optional schema
 	if setup != "" {

@@ -155,6 +155,7 @@ func (m *metricChartConfigModel) fromAPI(ctx context.Context, apiChart kbapi.Met
 
 func (m *metricChartConfigModel) fromAPIVariant0(ctx context.Context, apiChart kbapi.MetricChartSchema0) diag.Diagnostics {
 	var diags diag.Diagnostics
+	_ = ctx
 
 	// Set simple fields
 	m.Title = types.StringPointerValue(apiChart.Title)
@@ -220,6 +221,7 @@ func (m *metricChartConfigModel) fromAPIVariant0(ctx context.Context, apiChart k
 
 func (m *metricChartConfigModel) fromAPIVariant1(ctx context.Context, apiChart kbapi.MetricChartSchema1) diag.Diagnostics {
 	var diags diag.Diagnostics
+	_ = ctx
 
 	// Set simple fields
 	m.Title = types.StringPointerValue(apiChart.Title)

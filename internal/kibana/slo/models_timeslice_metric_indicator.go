@@ -107,7 +107,7 @@ func (m tfModel) timesliceMetricIndicatorToAPI() (bool, slo.SloWithSummaryRespon
 }
 
 func (m *tfModel) populateFromTimesliceMetricIndicator(apiIndicator *slo.IndicatorPropertiesTimesliceMetric) diag.Diagnostics {
-	var diags diag.Diagnostics
+	diags := diag.Diagnostics{}
 	if apiIndicator == nil {
 		return diags
 	}

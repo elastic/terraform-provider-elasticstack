@@ -131,6 +131,7 @@ type heatmapConfigModel struct {
 
 func (m *heatmapConfigModel) fromAPINoESQL(ctx context.Context, api kbapi.HeatmapNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
+	_ = ctx
 
 	m.Title = types.StringPointerValue(api.Title)
 	m.Description = types.StringPointerValue(api.Description)
@@ -207,6 +208,7 @@ func (m *heatmapConfigModel) fromAPINoESQL(ctx context.Context, api kbapi.Heatma
 
 func (m *heatmapConfigModel) fromAPIESQL(ctx context.Context, api kbapi.HeatmapESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
+	_ = ctx
 
 	m.Title = types.StringPointerValue(api.Title)
 	m.Description = types.StringPointerValue(api.Description)
@@ -534,7 +536,7 @@ type heatmapAxesModel struct {
 }
 
 func (m *heatmapAxesModel) fromAPI(api kbapi.HeatmapAxes) diag.Diagnostics {
-	var diags diag.Diagnostics
+	diags := diag.Diagnostics{}
 
 	m.X = &heatmapXAxisModel{}
 	m.X.fromAPI(api.X)

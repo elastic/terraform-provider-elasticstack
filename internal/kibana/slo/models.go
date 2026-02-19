@@ -154,8 +154,7 @@ func (m tfModel) indicatorToAPI() (slo.SloWithSummaryResponseIndicator, diag.Dia
 		return ind, diags
 	}
 
-	if ok, ind, indDiags := m.apmLatencyIndicatorToAPI(); ok {
-		diags.Append(indDiags...)
+	if ok, ind := m.apmLatencyIndicatorToAPI(); ok {
 		return ind, diags
 	}
 

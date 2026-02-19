@@ -41,7 +41,7 @@ func (p mappingsPlanModifier) PlanModifyString(ctx context.Context, req planmodi
 			return
 		}
 
-		requiresReplace, finalMappings, diags := p.modifyMappings(ctx, path.Root("mappings").AtMapKey("properties"), stateProps.(map[string]any), cfgProps.(map[string]any))
+		requiresReplace, finalMappings, diags := p.modifyMappings(path.Root("mappings").AtMapKey("properties"), stateProps.(map[string]any), cfgProps.(map[string]any))
 		resp.RequiresReplace = requiresReplace
 		cfgMappings["properties"] = finalMappings
 		resp.Diagnostics.Append(diags...)
@@ -56,7 +56,7 @@ func (p mappingsPlanModifier) PlanModifyString(ctx context.Context, req planmodi
 	}
 }
 
-func (p mappingsPlanModifier) modifyMappings(ctx context.Context, initialPath path.Path, old map[string]any, new map[string]any) (bool, map[string]any, diag.Diagnostics) {
+func (p mappingsPlanModifier) modifyMappings(initialPath path.Path, old map[string]any, new map[string]any) (bool, map[string]any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	warningDetail := "Elasticsearch will maintain the current field in it's mapping. " +
 		"Re-index to remove the field completely"
@@ -91,7 +91,7 @@ func (p mappingsPlanModifier) modifyMappings(ctx context.Context, initialPath pa
 		if s, ok := oldFieldSettings["properties"]; ok {
 			currentPath = currentPath.AtMapKey("properties")
 			if ns, ok := newSettings["properties"]; ok {
-				requiresReplace, newProperties, d := p.modifyMappings(ctx, currentPath, s.(map[string]any), ns.(map[string]any))
+				requiresReplace, newProperties, d := p.modifyMappings(currentPath, s.(map[string]any), ns.(map[string]any))
 				diags.Append(d...)
 				newSettings["properties"] = newProperties
 				if requiresReplace {

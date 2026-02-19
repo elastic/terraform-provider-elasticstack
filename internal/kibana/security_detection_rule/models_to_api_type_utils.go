@@ -833,6 +833,7 @@ func (d SecurityDetectionRuleData) severityMappingToApi(ctx context.Context) (*k
 // filtersToApi converts the Terraform filters field to the API type
 func (d SecurityDetectionRuleData) filtersToApi(ctx context.Context) (*kbapi.SecurityDetectionsAPIRuleFilterArray, diag.Diagnostics) {
 	var diags diag.Diagnostics
+	_ = ctx
 
 	if !utils.IsKnown(d.Filters) {
 		return nil, diags

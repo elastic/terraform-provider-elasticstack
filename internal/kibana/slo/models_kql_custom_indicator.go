@@ -17,7 +17,7 @@ type tfKqlCustomIndicator struct {
 }
 
 func (m tfModel) kqlCustomIndicatorToAPI() (bool, slo.SloWithSummaryResponseIndicator, diag.Diagnostics) {
-	var diags diag.Diagnostics
+	diags := diag.Diagnostics{}
 	if len(m.KqlCustomIndicator) != 1 {
 		return false, slo.SloWithSummaryResponseIndicator{}, diags
 	}
@@ -62,7 +62,7 @@ func (m tfModel) kqlCustomIndicatorToAPI() (bool, slo.SloWithSummaryResponseIndi
 }
 
 func (m *tfModel) populateFromKqlCustomIndicator(apiIndicator *slo.IndicatorPropertiesCustomKql) diag.Diagnostics {
-	var diags diag.Diagnostics
+	diags := diag.Diagnostics{}
 	if apiIndicator == nil {
 		return diags
 	}

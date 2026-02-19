@@ -26,7 +26,16 @@ type elasticsearchConfig struct {
 func newElasticsearchConfigFromSDK(d *schema.ResourceData, base baseConfig, key string, useEnvAsDefault bool) (*elasticsearchConfig, sdkdiags.Diagnostics) {
 	esConn, ok := d.GetOk(key)
 	if !ok {
-		return nil, nil
+		if !useEnvAsDefault {
+			return nil, nil
+		}
+
+		cfg := base.toElasticsearchConfig().withEnvironmentOverrides()
+		if len(cfg.config.Addresses) == 0 {
+			return nil, nil
+		}
+
+		return &cfg, nil
 	}
 
 	var diags sdkdiags.Diagnostics

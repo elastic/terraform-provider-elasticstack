@@ -135,6 +135,7 @@ func (m *legacyMetricConfigModel) fromAPI(ctx context.Context, apiChart kbapi.Le
 
 func (m *legacyMetricConfigModel) fromAPINoESQL(ctx context.Context, api kbapi.LegacyMetricNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
+	_ = ctx
 
 	m.Title = types.StringPointerValue(api.Title)
 	m.Description = types.StringPointerValue(api.Description)
@@ -179,6 +180,7 @@ func (m *legacyMetricConfigModel) fromAPINoESQL(ctx context.Context, api kbapi.L
 
 func (m *legacyMetricConfigModel) fromAPIESQL(ctx context.Context, api kbapi.LegacyMetricESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
+	_ = ctx
 
 	m.Title = types.StringPointerValue(api.Title)
 	m.Description = types.StringPointerValue(api.Description)

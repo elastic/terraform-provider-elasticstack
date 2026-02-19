@@ -211,6 +211,7 @@ type datatableDensityHeightValueModel struct {
 
 func (m *datatableNoESQLConfigModel) fromAPI(ctx context.Context, api kbapi.DatatableNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
+	_ = ctx
 
 	m.Title = types.StringPointerValue(api.Title)
 	m.Description = types.StringPointerValue(api.Description)
@@ -410,6 +411,7 @@ func (m *datatableNoESQLConfigModel) toAPI() (kbapi.DatatableNoESQL, diag.Diagno
 
 func (m *datatableESQLConfigModel) fromAPI(ctx context.Context, api kbapi.DatatableESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
+	_ = ctx
 
 	m.Title = types.StringPointerValue(api.Title)
 	m.Description = types.StringPointerValue(api.Description)

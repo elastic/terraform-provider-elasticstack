@@ -187,6 +187,7 @@ func validateEntry(ctx context.Context, entry EntryModel, index int, diags *diag
 
 // validateNestedEntry validates a nested entry within a "nested" type entry
 func validateNestedEntry(ctx context.Context, entry NestedEntryModel, index int, diags *diag.Diagnostics, path string) {
+	_ = ctx
 	if !utils.IsKnown(entry.Type) {
 		return
 	}

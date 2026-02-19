@@ -139,6 +139,7 @@ type fontSizeModel struct {
 
 func (m *tagcloudConfigModel) fromAPI(ctx context.Context, api kbapi.TagcloudNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
+	_ = ctx
 
 	m.Title = types.StringPointerValue(api.Title)
 	m.Description = types.StringPointerValue(api.Description)

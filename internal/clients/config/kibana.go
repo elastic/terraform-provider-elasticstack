@@ -15,51 +15,115 @@ import (
 type kibanaConfig kibana.Config
 
 func newKibanaConfigFromSDK(d *schema.ResourceData, base baseConfig) (kibanaConfig, sdkdiags.Diagnostics) {
-	var diags sdkdiags.Diagnostics
-
 	// Use ES details by default
 	config := base.toKibanaConfig()
 	kibConn, ok := d.GetOk("kibana")
 	if !ok {
-		return config, diags
+		return config, nil
+	}
+
+	kibConnList, ok := kibConn.([]any)
+	if !ok || len(kibConnList) == 0 {
+		return config, sdkdiags.Errorf("invalid provider configuration: kibana must be a non-empty list")
 	}
 
 	// if defined, then we only have a single entry
-	if kib := kibConn.([]any)[0]; kib != nil {
-		kibConfig := kib.(map[string]any)
-
-		if username, ok := kibConfig["username"]; ok && username != "" {
-			config.Username = username.(string)
-		}
-		if password, ok := kibConfig["password"]; ok && password != "" {
-			config.Password = password.(string)
+	if kib := kibConnList[0]; kib != nil {
+		kibConfig, ok := kib.(map[string]any)
+		if !ok {
+			return config, sdkdiags.Errorf("invalid provider configuration: kibana[0] must be an object")
 		}
 
-		if apiKey, ok := kibConfig["api_key"]; ok && apiKey != "" {
-			config.ApiKey = apiKey.(string)
-		}
-
-		if bearerToken, ok := kibConfig["bearer_token"]; ok && bearerToken != "" {
-			config.BearerToken = bearerToken.(string)
-		}
-
-		if endpoints, ok := kibConfig["endpoints"]; ok && len(endpoints.([]any)) > 0 {
-			// We're curently limited by the API to a single endpoint
-			if endpoint := endpoints.([]any)[0]; endpoint != nil {
-				config.Address = endpoint.(string)
+		if usernameRaw, usernameOk := kibConfig["username"]; usernameOk {
+			switch v := usernameRaw.(type) {
+			case string:
+				if v != "" {
+					config.Username = v
+				}
+			case nil:
+			default:
+				return config, sdkdiags.Errorf("invalid provider configuration: kibana.username must be a string")
 			}
 		}
 
-		if caCerts, ok := kibConfig["ca_certs"].([]any); ok && len(caCerts) > 0 {
-			for _, elem := range caCerts {
-				if vStr, elemOk := elem.(string); elemOk {
-					config.CAs = append(config.CAs, vStr)
+		if passwordRaw, passwordOk := kibConfig["password"]; passwordOk {
+			switch v := passwordRaw.(type) {
+			case string:
+				if v != "" {
+					config.Password = v
+				}
+			case nil:
+			default:
+				return config, sdkdiags.Errorf("invalid provider configuration: kibana.password must be a string")
+			}
+		}
+
+		if apiKeyRaw, apiKeyOk := kibConfig["api_key"]; apiKeyOk {
+			switch v := apiKeyRaw.(type) {
+			case string:
+				if v != "" {
+					config.ApiKey = v
+				}
+			case nil:
+			default:
+				return config, sdkdiags.Errorf("invalid provider configuration: kibana.api_key must be a string")
+			}
+		}
+
+		if bearerTokenRaw, bearerTokenOk := kibConfig["bearer_token"]; bearerTokenOk {
+			switch v := bearerTokenRaw.(type) {
+			case string:
+				if v != "" {
+					config.BearerToken = v
+				}
+			case nil:
+			default:
+				return config, sdkdiags.Errorf("invalid provider configuration: kibana.bearer_token must be a string")
+			}
+		}
+
+		if endpointsRaw, endpointsOk := kibConfig["endpoints"]; endpointsOk {
+			endpointsList, ok := endpointsRaw.([]any)
+			if !ok {
+				return config, sdkdiags.Errorf("invalid provider configuration: kibana.endpoints must be a list")
+			}
+			if len(endpointsList) > 0 {
+				// We're curently limited by the API to a single endpoint
+				if endpoint := endpointsList[0]; endpoint != nil {
+					endpointStr, ok := endpoint.(string)
+					if !ok {
+						return config, sdkdiags.Errorf("invalid provider configuration: kibana.endpoints must be a list of strings")
+					}
+					config.Address = endpointStr
 				}
 			}
 		}
 
-		if insecure, ok := kibConfig["insecure"]; ok && insecure.(bool) {
-			config.DisableVerifySSL = true
+		if caCertsRaw, caCertsOk := kibConfig["ca_certs"]; caCertsOk {
+			caCerts, ok := caCertsRaw.([]any)
+			if !ok {
+				return config, sdkdiags.Errorf("invalid provider configuration: kibana.ca_certs must be a list")
+			}
+			for _, elem := range caCerts {
+				if elem == nil {
+					continue
+				}
+				vStr, ok := elem.(string)
+				if !ok {
+					return config, sdkdiags.Errorf("invalid provider configuration: kibana.ca_certs must be a list of strings")
+				}
+				config.CAs = append(config.CAs, vStr)
+			}
+		}
+
+		if insecureRaw, insecureOk := kibConfig["insecure"]; insecureOk {
+			insecure, ok := insecureRaw.(bool)
+			if !ok {
+				return config, sdkdiags.Errorf("invalid provider configuration: kibana.insecure must be a bool")
+			}
+			if insecure {
+				config.DisableVerifySSL = true
+			}
 		}
 	}
 

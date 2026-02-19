@@ -38,18 +38,18 @@ func (validator requiresTypeValidator) MarkdownDescription(ctx context.Context) 
 }
 
 // validateType contains the common validation logic for both string and object validators
-func (validator requiresTypeValidator) validateType(ctx context.Context, config tfsdk.Config, attrPath path.Path, diagnostics *diag.Diagnostics) bool {
+func (validator requiresTypeValidator) validateType(ctx context.Context, config tfsdk.Config, attrPath path.Path, diagnostics *diag.Diagnostics) {
 	// Get the type attribute value from the same configuration object
 	var typeAttr *string
 	diags := config.GetAttribute(ctx, path.Root("type"), &typeAttr)
 	diagnostics.Append(diags...)
 	if diagnostics.HasError() {
-		return false
+		return
 	}
 
 	// If type is unknown or empty, we can't validate
 	if typeAttr == nil {
-		return true
+		return
 	}
 
 	// Check if the current type matches the expected type
@@ -60,10 +60,8 @@ func (validator requiresTypeValidator) validateType(ctx context.Context, config 
 			fmt.Sprintf("The %s attribute can only be used when type='%s', but type='%s' was specified.",
 				attrPath.String(), validator.expectedType, *typeAttr),
 		)
-		return false
+		return
 	}
-
-	return true
 }
 
 func (validator requiresTypeValidator) ValidateObject(ctx context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {

@@ -16,6 +16,7 @@ linters:
     - nolintlint
     - testifylint
     - unconvert
+    - unparam
   exclusions:
     generated: lax
     presets:

@@ -216,11 +216,10 @@ type xyAxisConfigAPIModel = struct {
 }
 
 func (m *xyAxisConfigModel) fromAPI(apiAxis *xyAxisConfigAPIModel) diag.Diagnostics {
+	diags := diag.Diagnostics{}
 	if apiAxis == nil {
-		return nil
+		return diags
 	}
-
-	var diags diag.Diagnostics
 
 	m.Grid = types.BoolPointerValue(apiAxis.Grid)
 	m.Ticks = types.BoolPointerValue(apiAxis.Ticks)
@@ -306,11 +305,10 @@ type leftYAxisConfigAPIModel = struct {
 }
 
 func (m *yAxisConfigModel) fromAPILeft(apiAxis *leftYAxisConfigAPIModel) diag.Diagnostics {
+	diags := diag.Diagnostics{}
 	if apiAxis == nil {
-		return nil
+		return diags
 	}
-
-	var diags diag.Diagnostics
 
 	m.Grid = types.BoolPointerValue(apiAxis.Grid)
 	m.Ticks = types.BoolPointerValue(apiAxis.Ticks)
@@ -396,11 +394,10 @@ type rightYAxisConfigAPIModel = struct {
 }
 
 func (m *yAxisConfigModel) fromAPIRight(apiAxis *rightYAxisConfigAPIModel) diag.Diagnostics {
+	diags := diag.Diagnostics{}
 	if apiAxis == nil {
-		return nil
+		return diags
 	}
-
-	var diags diag.Diagnostics
 
 	m.Grid = types.BoolPointerValue(apiAxis.Grid)
 	m.Ticks = types.BoolPointerValue(apiAxis.Ticks)

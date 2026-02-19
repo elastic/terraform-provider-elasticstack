@@ -51,7 +51,7 @@ func (r *securityDetectionRuleResource) read(ctx context.Context, resourceId, sp
 	var diags diag.Diagnostics
 
 	data := &SecurityDetectionRuleData{}
-	data.initializeAllFieldsToDefaults(ctx, &diags)
+	data.initializeAllFieldsToDefaults()
 
 	// Get the rule using kbapi client
 	kbClient, err := r.client.GetKibanaOapiClient()

@@ -1,6 +1,8 @@
 package slo
 
 import (
+	"math"
+
 	"github.com/elastic/terraform-provider-elasticstack/generated/slo"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -16,10 +18,9 @@ type tfApmLatencyIndicator struct {
 	Threshold       types.Int64  `tfsdk:"threshold"`
 }
 
-func (m tfModel) apmLatencyIndicatorToAPI() (bool, slo.SloWithSummaryResponseIndicator, diag.Diagnostics) {
-	var diags diag.Diagnostics
+func (m tfModel) apmLatencyIndicatorToAPI() (bool, slo.SloWithSummaryResponseIndicator) {
 	if len(m.ApmLatencyIndicator) != 1 {
-		return false, slo.SloWithSummaryResponseIndicator{}, diags
+		return false, slo.SloWithSummaryResponseIndicator{}
 	}
 
 	ind := m.ApmLatencyIndicator[0]
@@ -37,7 +38,7 @@ func (m tfModel) apmLatencyIndicatorToAPI() (bool, slo.SloWithSummaryResponseInd
 				Threshold:       float64(ind.Threshold.ValueInt64()),
 			},
 		},
-	}, diags
+	}
 }
 
 func (m *tfModel) populateFromApmLatencyIndicator(apiIndicator *slo.IndicatorPropertiesApmLatency) diag.Diagnostics {
@@ -47,6 +48,10 @@ func (m *tfModel) populateFromApmLatencyIndicator(apiIndicator *slo.IndicatorPro
 	}
 
 	p := apiIndicator.Params
+	if math.IsNaN(p.Threshold) || math.IsInf(p.Threshold, 0) || p.Threshold < 0 {
+		diags.AddError("Invalid API response", "indicator.params.threshold must be a non-negative finite number")
+		return diags
+	}
 	m.ApmLatencyIndicator = []tfApmLatencyIndicator{{
 		Environment:     types.StringValue(p.Environment),
 		Service:         types.StringValue(p.Service),

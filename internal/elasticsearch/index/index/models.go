@@ -196,7 +196,7 @@ func (model *tfModel) populateFromAPI(ctx context.Context, indexName string, api
 		model.Mappings = jsontypes.NewNormalizedValue(string(mappingBytes))
 	}
 
-	diags = setSettingsFromAPI(ctx, model, apiModel)
+	diags = setSettingsFromAPI(model, apiModel)
 	if diags.HasError() {
 		return diags
 	}
@@ -223,7 +223,7 @@ func aliasesFromAPI(ctx context.Context, apiModel models.Index) (basetypes.SetVa
 	return modelAliases, nil
 }
 
-func setSettingsFromAPI(ctx context.Context, model *tfModel, apiModel models.Index) diag.Diagnostics {
+func setSettingsFromAPI(model *tfModel, apiModel models.Index) diag.Diagnostics {
 	settingsBytes, err := json.Marshal(apiModel.Settings)
 	if err != nil {
 		return diag.Diagnostics{

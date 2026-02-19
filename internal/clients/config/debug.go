@@ -12,11 +12,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-const logReqMsg = `%s API Request Details:
----[ REQUEST ]---------------------------------------
-%s
------------------------------------------------------`
-
 const logRespMsg = `%s API Response for [%s] Details:
 ---[ RESPONSE ]--------------------------------------
 %s
@@ -56,7 +51,7 @@ func (l *debugLogger) logRequest(ctx context.Context, req *http.Request, request
 
 	reqData, err := httputil.DumpRequestOut(req, true)
 	if err == nil {
-		tflog.Debug(ctx, fmt.Sprintf(logReqMsg, l.Name, utils.PrettyPrintJSONLines(reqData)))
+		tflog.Debug(ctx, fmt.Sprintf("%s request [%s] dump:\n%s", l.Name, requestId, utils.PrettyPrintJSONLines(reqData)))
 	} else {
 		tflog.Debug(ctx, fmt.Sprintf("%s API request dump error: %#v", l.Name, err))
 	}

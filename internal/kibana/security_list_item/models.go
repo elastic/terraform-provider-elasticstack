@@ -30,6 +30,7 @@ type SecurityListItemModel struct {
 // toAPICreateModel converts the Terraform model to the API create request body
 func (m *SecurityListItemModel) toAPICreateModel(ctx context.Context) (*kbapi.CreateListItemJSONRequestBody, diag.Diagnostics) {
 	var diags diag.Diagnostics
+	_ = ctx
 
 	body := &kbapi.CreateListItemJSONRequestBody{
 		ListId: m.ListID.ValueString(),
@@ -58,6 +59,7 @@ func (m *SecurityListItemModel) toAPICreateModel(ctx context.Context) (*kbapi.Cr
 // toAPIUpdateModel converts the Terraform model to the API update request body
 func (m *SecurityListItemModel) toAPIUpdateModel(ctx context.Context) (*kbapi.UpdateListItemJSONRequestBody, diag.Diagnostics) {
 	var diags diag.Diagnostics
+	_ = ctx
 
 	// Parse composite ID to get resource_id
 	compId, compIdDiags := clients.CompositeIdFromStrFw(m.ID.ValueString())
@@ -93,6 +95,7 @@ func (m *SecurityListItemModel) toAPIUpdateModel(ctx context.Context) (*kbapi.Up
 // fromAPIModel populates the Terraform model from an API response
 func (m *SecurityListItemModel) fromAPIModel(ctx context.Context, apiItem *kbapi.SecurityListsAPIListItem) diag.Diagnostics {
 	var diags diag.Diagnostics
+	_ = ctx
 
 	compId := clients.CompositeId{
 		ClusterId:  m.SpaceID.ValueString(),

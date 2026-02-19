@@ -16,10 +16,10 @@ type optionsModel struct {
 
 func (m *dashboardModel) optionsToAPI() (*optionsAPIModel, diag.Diagnostics) {
 	if m.Options == nil {
-		return nil, nil
+		return nil, diag.Diagnostics{}
 	}
 
-	return m.Options.toAPI(), nil
+	return m.Options.toAPI(), diag.Diagnostics{}
 }
 
 // optionsAPIModel introduces a type alias for the generated API model.

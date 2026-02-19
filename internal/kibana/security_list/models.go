@@ -113,6 +113,7 @@ func (m *SecurityListModel) toUpdateRequest() (*kbapi.UpdateListJSONRequestBody,
 // fromAPI converts the API response to Terraform model
 func (m *SecurityListModel) fromAPI(ctx context.Context, apiList *kbapi.SecurityListsAPIList) diag.Diagnostics {
 	var diags diag.Diagnostics
+	_ = ctx
 
 	// Create composite ID from space_id and list_id
 	compId := clients.CompositeId{

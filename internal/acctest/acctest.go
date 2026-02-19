@@ -2,6 +2,7 @@ package acctest
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"path"
@@ -21,7 +22,11 @@ func init() {
 	}
 	Providers = map[string]func() (tfprotov6.ProviderServer, error){
 		"elasticstack": func() (tfprotov6.ProviderServer, error) {
-			return providerServerFactory(), nil
+			server := providerServerFactory()
+			if server == nil {
+				return nil, fmt.Errorf("provider server factory returned nil")
+			}
+			return server, nil
 		},
 	}
 }
