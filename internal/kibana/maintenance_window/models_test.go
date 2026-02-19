@@ -281,7 +281,7 @@ func TestMaintenanceWindowToAPICreateRequest(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			request, diags := tt.model.toAPICreateRequest(ctx)
-			require.Equal(t, request, tt.expectedRequest)
+			require.Equal(t, tt.expectedRequest, request)
 			require.Empty(t, diags)
 		})
 	}
@@ -498,7 +498,7 @@ func TestMaintenanceWindowToAPIUpdateRequest(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			request, diags := tt.model.toAPIUpdateRequest(ctx)
-			require.Equal(t, request, tt.expectedRequest)
+			require.Equal(t, tt.expectedRequest, request)
 			require.Empty(t, diags)
 		})
 	}

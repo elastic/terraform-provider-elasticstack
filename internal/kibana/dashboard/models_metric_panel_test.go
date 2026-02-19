@@ -87,7 +87,7 @@ func Test_metricChartConfigModel_fromAPI_toAPI_variant0(t *testing.T) {
 			}
 
 			if tt.expectedSampling > 0 {
-				assert.Equal(t, tt.expectedSampling, model.Sampling.ValueFloat64())
+				assert.InDelta(t, tt.expectedSampling, model.Sampling.ValueFloat64(), 1e-9)
 			} else {
 				assert.True(t, model.Sampling.IsNull())
 			}
@@ -191,7 +191,7 @@ func Test_metricChartConfigModel_fromAPI_toAPI_variant1(t *testing.T) {
 			}
 
 			if tt.expectedSampling > 0 {
-				assert.Equal(t, tt.expectedSampling, model.Sampling.ValueFloat64())
+				assert.InDelta(t, tt.expectedSampling, model.Sampling.ValueFloat64(), 1e-9)
 			} else {
 				assert.True(t, model.Sampling.IsNull())
 			}

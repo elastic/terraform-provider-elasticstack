@@ -196,11 +196,11 @@ func TestUpgradeV0ToV2_FieldsPreserved(t *testing.T) {
 	assert.Equal(t, "test-namespace", v0Model.Namespace.ValueString())
 	assert.Equal(t, "agent-policy-1", v0Model.AgentPolicyID.ValueString())
 	assert.Equal(t, "test description", v0Model.Description.ValueString())
-	assert.Equal(t, false, v0Model.Enabled.ValueBool())
-	assert.Equal(t, true, v0Model.Force.ValueBool())
+	assert.False(t, v0Model.Enabled.ValueBool())
+	assert.True(t, v0Model.Force.ValueBool())
 	assert.Equal(t, "test-integration", v0Model.IntegrationName.ValueString())
 	assert.Equal(t, "2.0.0", v0Model.IntegrationVersion.ValueString())
-	assert.Equal(t, `{"complex":{"nested":"value"}}`, v0Model.VarsJson.ValueString())
+	assert.JSONEq(t, `{"complex":{"nested":"value"}}`, v0Model.VarsJson.ValueString())
 	assert.True(t, v0Model.Input.IsNull())
 }
 

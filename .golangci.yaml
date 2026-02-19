@@ -13,6 +13,8 @@ linters:
     - intrange
     - lll
     - modernize
+    - nolintlint
+    - testifylint
   exclusions:
     generated: lax
     presets:

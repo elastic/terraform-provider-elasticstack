@@ -34,7 +34,7 @@ func TestApmLatencyIndicator_ToAPI(t *testing.T) {
 		require.NotNil(t, ind.IndicatorPropertiesApmLatency)
 
 		assert.Equal(t, indicatorAddressToType["apm_latency_indicator"], ind.IndicatorPropertiesApmLatency.Type)
-		assert.Equal(t, 500.0, ind.IndicatorPropertiesApmLatency.Params.Threshold)
+		assert.InDelta(t, 500.0, ind.IndicatorPropertiesApmLatency.Params.Threshold, 1e-9)
 		assert.Equal(t, "svc", ind.IndicatorPropertiesApmLatency.Params.Service)
 		assert.Equal(t, "apm-*", ind.IndicatorPropertiesApmLatency.Params.Index)
 		require.NotNil(t, ind.IndicatorPropertiesApmLatency.Params.Filter)

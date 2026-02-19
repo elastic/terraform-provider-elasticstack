@@ -50,7 +50,7 @@ func TestDurationType_ValueFromTerraform(t *testing.T) {
 			if tt.expectedError != "" {
 				require.ErrorContains(t, err, tt.expectedError)
 			} else {
-				require.Nil(t, err)
+				require.NoError(t, err)
 			}
 
 			require.Equal(t, tt.expectedValue, val)

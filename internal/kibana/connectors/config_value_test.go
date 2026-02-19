@@ -280,7 +280,7 @@ func TestNewConfigValueWithConnectorID(t *testing.T) {
 				var resultMap map[string]any
 				err := json.Unmarshal([]byte(result.ValueString()), &resultMap)
 				require.NoError(t, err)
-				require.Equal(t, "", resultMap["__tf_provider_context"])
+				require.Empty(t, resultMap["__tf_provider_context"])
 				require.Equal(t, "value", resultMap["key"])
 			},
 		},

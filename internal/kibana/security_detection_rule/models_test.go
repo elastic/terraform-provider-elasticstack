@@ -202,9 +202,9 @@ func TestUpdateFromQueryRule(t *testing.T) {
 			require.Equal(t, tt.expected.Severity, data.Severity)
 
 			// Verify list fields have correct length
-			require.Equal(t, len(tt.expected.Author.Elements()), len(data.Author.Elements()))
-			require.Equal(t, len(tt.expected.Tags.Elements()), len(data.Tags.Elements()))
-			require.Equal(t, len(tt.expected.Index.Elements()), len(data.Index.Elements()))
+			require.Len(t, data.Author.Elements(), len(tt.expected.Author.Elements()))
+			require.Len(t, data.Tags.Elements(), len(tt.expected.Tags.Elements()))
+			require.Len(t, data.Index.Elements(), len(tt.expected.Index.Elements()))
 		})
 	}
 }
@@ -683,7 +683,7 @@ func TestThresholdToApi(t *testing.T) {
 				require.Equal(t, 1, tt.expectedFieldCount)
 				require.NotEmpty(t, string(singleField))
 			} else if multipleFields, err := threshold.Field.AsSecurityDetectionsAPIThresholdField1(); err == nil {
-				require.Equal(t, tt.expectedFieldCount, len(multipleFields))
+				require.Len(t, multipleFields, tt.expectedFieldCount)
 			}
 
 			if tt.hasCardinality {
@@ -739,7 +739,7 @@ func TestAlertSuppressionToApi(t *testing.T) {
 			require.Empty(t, diags)
 			require.NotNil(t, alertSuppression)
 
-			require.Equal(t, tt.expectedGroupByCount, len(alertSuppression.GroupBy))
+			require.Len(t, alertSuppression.GroupBy, tt.expectedGroupByCount)
 
 			if tt.hasDuration {
 				require.NotNil(t, alertSuppression.Duration)
@@ -952,7 +952,7 @@ func TestUpdateFromRule(t *testing.T) {
 				require.Equal(t, "query", data.Type.ValueString())
 				require.Equal(t, "user.name:test", data.Query.ValueString())
 				require.Equal(t, "kuery", data.Language.ValueString())
-				require.Equal(t, true, data.Enabled.ValueBool())
+				require.True(t, data.Enabled.ValueBool())
 				require.Equal(t, int64(75), data.RiskScore.ValueInt64())
 				require.Equal(t, "medium", data.Severity.ValueString())
 			},
@@ -1603,7 +1603,7 @@ func TestConvertThresholdToModel(t *testing.T) {
 			require.Empty(t, objDiags)
 
 			require.Equal(t, tt.expectedValue, thresholdModel.Value.ValueInt64())
-			require.Equal(t, tt.expectedFieldCount, len(thresholdModel.Field.Elements()))
+			require.Len(t, thresholdModel.Field.Elements(), tt.expectedFieldCount)
 
 			if tt.hasCardinality {
 				require.False(t, thresholdModel.Cardinality.IsNull())

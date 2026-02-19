@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // testPopulateDefaults is a test function that mimics testPopulateDefaults for testing purposes
@@ -195,10 +196,10 @@ func TestRoleDescriptorsType_ValueFromTerraform(t *testing.T) {
 			value, err := roleDescriptorsType.ValueFromTerraform(ctx, tt.input)
 
 			if tt.expectedError {
-				assert.Error(t, err)
-				assert.Nil(t, value)
+				require.Error(t, err)
+				require.Nil(t, value)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				if tt.expectedType != nil {
 					assert.IsType(t, tt.expectedType, value)
 				}

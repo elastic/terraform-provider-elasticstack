@@ -108,7 +108,7 @@ func TestConvertAdvancedSettingsToAPI(t *testing.T) {
 				assert.Equal(t, int32(2), result.AgentLimitsGoMaxProcs)
 				assert.Equal(t, "2h", result.AgentDownloadTimeout)
 				assert.Equal(t, "/tmp/elastic", result.AgentDownloadTargetDirectory)
-				assert.Equal(t, "", result.AgentMonitoringRuntimeExperimental)
+				assert.Empty(t, result.AgentMonitoringRuntimeExperimental)
 			},
 		},
 	}

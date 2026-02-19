@@ -214,7 +214,7 @@ func Test_convertResponseToModel(t *testing.T) {
 				require.Equal(t, tt.expectedModel.ExecutionStatus.Status, model.ExecutionStatus.Status)
 
 				// Check actions
-				require.Equal(t, len(tt.expectedModel.Actions), len(model.Actions))
+				require.Len(t, model.Actions, len(tt.expectedModel.Actions))
 				for i, expectedAction := range tt.expectedModel.Actions {
 					require.Equal(t, expectedAction.Group, model.Actions[i].Group)
 					require.Equal(t, expectedAction.ID, model.Actions[i].ID)

@@ -82,7 +82,7 @@ func TestJSONWithContextType_ValueFromTerraform(t *testing.T) {
 		jsonStr := `{"key": "value"}`
 		val, err := typ.ValueFromTerraform(ctx, tftypes.NewValue(tftypes.String, jsonStr))
 		require.NoError(t, err)
-		assert.Equal(t, jsonStr, val.(JSONWithContextualDefaultsValue).ValueString())
+		assert.JSONEq(t, jsonStr, val.(JSONWithContextualDefaultsValue).ValueString())
 	})
 
 	t.Run("Invalid type", func(t *testing.T) {

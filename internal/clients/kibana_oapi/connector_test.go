@@ -12,6 +12,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -205,7 +206,9 @@ func TestGetConnectorByName(t *testing.T) {
 			rw.Header().Add("Content-Type", "application/json")
 			rw.WriteHeader(httpStatus)
 			_, err := rw.Write(r)
-			require.NoError(t, err)
+			if !assert.NoError(t, err) {
+				return
+			}
 			mockResponses = mockResponses[1:]
 		} else {
 			t.Fatalf("Unexpected request: %s %s", req.Method, req.URL.Path)

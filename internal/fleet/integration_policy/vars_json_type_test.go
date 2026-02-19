@@ -182,7 +182,7 @@ func TestVarsJSONType_ValueFromTerraform(t *testing.T) {
 			require.True(t, ok, "Expected value should be of type ConfigValue")
 
 			// Compare the underlying string values
-			require.Equal(t, expectedConfigValue.StringValue.Equal(configValue.StringValue), true, "String values should be equal")
+			require.True(t, expectedConfigValue.StringValue.Equal(configValue.StringValue), "String values should be equal")
 		})
 	}
 }
