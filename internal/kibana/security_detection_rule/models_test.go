@@ -286,10 +286,10 @@ func TestToQueryRuleCreateProps(t *testing.T) {
 			queryRule, err := createProps.AsSecurityDetectionsAPIQueryRuleCreateProps()
 			require.NoError(t, err)
 
-			require.Equal(t, tt.expectedName, string(queryRule.Name))
+			require.Equal(t, tt.expectedName, queryRule.Name)
 			require.Equal(t, tt.expectedType, string(queryRule.Type))
 			require.NotNil(t, queryRule.Query)
-			require.Equal(t, tt.expectedQuery, string(*queryRule.Query))
+			require.Equal(t, tt.expectedQuery, *queryRule.Query)
 			require.Equal(t, tt.expectedRiskScore, int64(queryRule.RiskScore))
 			require.Equal(t, tt.expectedSeverity, string(queryRule.Severity))
 
@@ -304,7 +304,7 @@ func TestToQueryRuleCreateProps(t *testing.T) {
 
 			if tt.shouldHaveRuleId {
 				require.NotNil(t, queryRule.RuleId)
-				require.Equal(t, "custom-rule-id", string(*queryRule.RuleId))
+				require.Equal(t, "custom-rule-id", *queryRule.RuleId)
 			}
 		})
 	}
@@ -330,15 +330,15 @@ func TestToEqlRuleCreateProps(t *testing.T) {
 	eqlRule, err := createProps.AsSecurityDetectionsAPIEqlRuleCreateProps()
 	require.NoError(t, err)
 
-	require.Equal(t, "EQL Test Rule", string(eqlRule.Name))
+	require.Equal(t, "EQL Test Rule", eqlRule.Name)
 	require.Equal(t, "eql", string(eqlRule.Type))
-	require.Equal(t, "process where process.name == \"cmd.exe\"", string(eqlRule.Query))
+	require.Equal(t, "process where process.name == \"cmd.exe\"", eqlRule.Query)
 	require.Equal(t, "eql", string(eqlRule.Language))
 	require.Equal(t, int64(60), int64(eqlRule.RiskScore))
 	require.Equal(t, "medium", string(eqlRule.Severity))
 
 	require.NotNil(t, eqlRule.TiebreakerField)
-	require.Equal(t, "@timestamp", string(*eqlRule.TiebreakerField))
+	require.Equal(t, "@timestamp", *eqlRule.TiebreakerField)
 
 	require.Empty(t, diags)
 }
@@ -394,14 +394,14 @@ func TestToMachineLearningRuleCreateProps(t *testing.T) {
 			mlRule, err := createProps.AsSecurityDetectionsAPIMachineLearningRuleCreateProps()
 			require.NoError(t, err)
 
-			require.Equal(t, tt.data.Name.ValueString(), string(mlRule.Name))
+			require.Equal(t, tt.data.Name.ValueString(), mlRule.Name)
 			require.Equal(t, "machine_learning", string(mlRule.Type))
 			require.Equal(t, tt.data.AnomalyThreshold.ValueInt64(), int64(mlRule.AnomalyThreshold))
 
 			if tt.shouldHaveSingle {
 				ingleJobId, err := mlRule.MachineLearningJobId.AsSecurityDetectionsAPIMachineLearningJobId0()
 				require.NoError(t, err)
-				require.Equal(t, "suspicious_activity", string(ingleJobId))
+				require.Equal(t, "suspicious_activity", ingleJobId)
 			}
 
 			if tt.shouldHaveMultiple {
@@ -440,10 +440,10 @@ func TestToEsqlRuleCreateProps(t *testing.T) {
 	esqlRule, err := createProps.AsSecurityDetectionsAPIEsqlRuleCreateProps()
 	require.NoError(t, err)
 
-	require.Equal(t, "Test ESQL Rule", string(esqlRule.Name))
-	require.Equal(t, "Test ESQL rule description", string(esqlRule.Description))
+	require.Equal(t, "Test ESQL Rule", esqlRule.Name)
+	require.Equal(t, "Test ESQL rule description", esqlRule.Description)
 	require.Equal(t, "esql", string(esqlRule.Type))
-	require.Equal(t, "FROM logs | WHERE user.name == \"suspicious_user\"", string(esqlRule.Query))
+	require.Equal(t, "FROM logs | WHERE user.name == \"suspicious_user\"", esqlRule.Query)
 	require.Equal(t, "esql", string(esqlRule.Language))
 	require.Equal(t, int64(85), int64(esqlRule.RiskScore))
 	require.Equal(t, "high", string(esqlRule.Severity))
@@ -478,11 +478,11 @@ func TestToNewTermsRuleCreateProps(t *testing.T) {
 	newTermsRule, err := createProps.AsSecurityDetectionsAPINewTermsRuleCreateProps()
 	require.NoError(t, err)
 
-	require.Equal(t, "Test New Terms Rule", string(newTermsRule.Name))
-	require.Equal(t, "Test new terms rule description", string(newTermsRule.Description))
+	require.Equal(t, "Test New Terms Rule", newTermsRule.Name)
+	require.Equal(t, "Test new terms rule description", newTermsRule.Description)
 	require.Equal(t, "new_terms", string(newTermsRule.Type))
-	require.Equal(t, "user.name:*", string(newTermsRule.Query))
-	require.Equal(t, "now-7d", string(newTermsRule.HistoryWindowStart))
+	require.Equal(t, "user.name:*", newTermsRule.Query)
+	require.Equal(t, "now-7d", newTermsRule.HistoryWindowStart)
 	require.Equal(t, int64(60), int64(newTermsRule.RiskScore))
 	require.Equal(t, "medium", string(newTermsRule.Severity))
 	require.Len(t, newTermsRule.NewTermsFields, 2)
@@ -518,10 +518,10 @@ func TestToSavedQueryRuleCreateProps(t *testing.T) {
 	savedQueryRule, err := createProps.AsSecurityDetectionsAPISavedQueryRuleCreateProps()
 	require.NoError(t, err)
 
-	require.Equal(t, "Test Saved Query Rule", string(savedQueryRule.Name))
-	require.Equal(t, "Test saved query rule description", string(savedQueryRule.Description))
+	require.Equal(t, "Test Saved Query Rule", savedQueryRule.Name)
+	require.Equal(t, "Test saved query rule description", savedQueryRule.Description)
 	require.Equal(t, "saved_query", string(savedQueryRule.Type))
-	require.Equal(t, "my-saved-query-id", string(savedQueryRule.SavedId))
+	require.Equal(t, "my-saved-query-id", savedQueryRule.SavedId)
 	require.Equal(t, int64(70), int64(savedQueryRule.RiskScore))
 	require.Equal(t, "high", string(savedQueryRule.Severity))
 }
@@ -565,10 +565,10 @@ func TestToThreatMatchRuleCreateProps(t *testing.T) {
 	threatMatchRule, err := createProps.AsSecurityDetectionsAPIThreatMatchRuleCreateProps()
 	require.NoError(t, err)
 
-	require.Equal(t, "Test Threat Match Rule", string(threatMatchRule.Name))
-	require.Equal(t, "Test threat match rule description", string(threatMatchRule.Description))
+	require.Equal(t, "Test Threat Match Rule", threatMatchRule.Name)
+	require.Equal(t, "Test threat match rule description", threatMatchRule.Description)
 	require.Equal(t, "threat_match", string(threatMatchRule.Type))
-	require.Equal(t, "source.ip:*", string(threatMatchRule.Query))
+	require.Equal(t, "source.ip:*", threatMatchRule.Query)
 	require.Equal(t, int64(90), int64(threatMatchRule.RiskScore))
 	require.Equal(t, "critical", string(threatMatchRule.Severity))
 	require.Len(t, threatMatchRule.ThreatIndex, 1)
@@ -608,10 +608,10 @@ func TestToThresholdRuleCreateProps(t *testing.T) {
 	thresholdRule, err := createProps.AsSecurityDetectionsAPIThresholdRuleCreateProps()
 	require.NoError(t, err)
 
-	require.Equal(t, "Test Threshold Rule", string(thresholdRule.Name))
-	require.Equal(t, "Test threshold rule description", string(thresholdRule.Description))
+	require.Equal(t, "Test Threshold Rule", thresholdRule.Name)
+	require.Equal(t, "Test threshold rule description", thresholdRule.Description)
 	require.Equal(t, "threshold", string(thresholdRule.Type))
-	require.Equal(t, "event.action:login", string(thresholdRule.Query))
+	require.Equal(t, "event.action:login", thresholdRule.Query)
 	require.Equal(t, int64(80), int64(thresholdRule.RiskScore))
 	require.Equal(t, "high", string(thresholdRule.Severity))
 
@@ -622,7 +622,7 @@ func TestToThresholdRuleCreateProps(t *testing.T) {
 	// Check single field
 	singleField, err := thresholdRule.Threshold.Field.AsSecurityDetectionsAPIThresholdField0()
 	require.NoError(t, err)
-	require.Equal(t, "user.name", string(singleField))
+	require.Equal(t, "user.name", singleField)
 }
 
 func TestThresholdToApi(t *testing.T) {
@@ -681,7 +681,7 @@ func TestThresholdToApi(t *testing.T) {
 			// Check field count
 			if singleField, err := threshold.Field.AsSecurityDetectionsAPIThresholdField0(); err == nil {
 				require.Equal(t, 1, tt.expectedFieldCount)
-				require.NotEmpty(t, string(singleField))
+				require.NotEmpty(t, singleField)
 			} else if multipleFields, err := threshold.Field.AsSecurityDetectionsAPIThresholdField1(); err == nil {
 				require.Len(t, multipleFields, tt.expectedFieldCount)
 			}
@@ -788,13 +788,13 @@ func TestThreatMappingToApi(t *testing.T) {
 	mapping := threatMapping[0]
 	require.Len(t, mapping.Entries, 2)
 
-	require.Equal(t, "source.ip", string(mapping.Entries[0].Field))
+	require.Equal(t, "source.ip", mapping.Entries[0].Field)
 	require.Equal(t, "mapping", string(mapping.Entries[0].Type))
-	require.Equal(t, "threat.indicator.ip", string(mapping.Entries[0].Value))
+	require.Equal(t, "threat.indicator.ip", mapping.Entries[0].Value)
 
-	require.Equal(t, "user.name", string(mapping.Entries[1].Field))
+	require.Equal(t, "user.name", mapping.Entries[1].Field)
 	require.Equal(t, "mapping", string(mapping.Entries[1].Type))
-	require.Equal(t, "threat.indicator.user.name", string(mapping.Entries[1].Value))
+	require.Equal(t, "threat.indicator.user.name", mapping.Entries[1].Value)
 }
 
 func TestActionsToApi(t *testing.T) {
@@ -833,12 +833,12 @@ func TestActionsToApi(t *testing.T) {
 
 	action := actions[0]
 	require.Equal(t, ".slack", action.ActionTypeId)
-	require.Equal(t, "slack-action-1", string(action.Id))
+	require.Equal(t, "slack-action-1", action.Id)
 	require.NotNil(t, action.Params)
 	require.Contains(t, action.Params, "message")
 	require.Equal(t, "Alert triggered", action.Params["message"])
 	require.NotNil(t, action.Group)
-	require.Equal(t, "default", string(*action.Group))
+	require.Equal(t, "default", *action.Group)
 	require.NotNil(t, action.Frequency)
 }
 
@@ -1807,38 +1807,38 @@ func TestToCreateProps(t *testing.T) {
 			case ruleTypeQuery:
 				queryRule, err := createProps.AsSecurityDetectionsAPIQueryRuleCreateProps()
 				require.NoError(t, err)
-				require.Equal(t, "Test Query Rule", string(queryRule.Name))
-				require.Equal(t, "Test description", string(queryRule.Description))
+				require.Equal(t, "Test Query Rule", queryRule.Name)
+				require.Equal(t, "Test description", queryRule.Description)
 				require.Equal(t, ruleTypeQuery, string(queryRule.Type))
-				require.Equal(t, "user.name:test", string(*queryRule.Query))
+				require.Equal(t, "user.name:test", *queryRule.Query)
 				require.Equal(t, "kuery", string(*queryRule.Language))
 				require.Equal(t, int64(75), int64(queryRule.RiskScore))
 				require.Equal(t, "medium", string(queryRule.Severity))
 			case ruleTypeEQL:
 				eqlRule, err := createProps.AsSecurityDetectionsAPIEqlRuleCreateProps()
 				require.NoError(t, err)
-				require.Equal(t, "Test EQL Rule", string(eqlRule.Name))
-				require.Equal(t, "Test description", string(eqlRule.Description))
+				require.Equal(t, "Test EQL Rule", eqlRule.Name)
+				require.Equal(t, "Test description", eqlRule.Description)
 				require.Equal(t, ruleTypeEQL, string(eqlRule.Type))
-				require.Equal(t, "process where process.name == \"cmd.exe\"", string(eqlRule.Query))
+				require.Equal(t, "process where process.name == \"cmd.exe\"", eqlRule.Query)
 				require.Equal(t, "eql", string(eqlRule.Language))
 				require.Equal(t, int64(75), int64(eqlRule.RiskScore))
 				require.Equal(t, "medium", string(eqlRule.Severity))
 			case ruleTypeESQL:
 				esqlRule, err := createProps.AsSecurityDetectionsAPIEsqlRuleCreateProps()
 				require.NoError(t, err)
-				require.Equal(t, "Test ESQL Rule", string(esqlRule.Name))
-				require.Equal(t, "Test description", string(esqlRule.Description))
+				require.Equal(t, "Test ESQL Rule", esqlRule.Name)
+				require.Equal(t, "Test description", esqlRule.Description)
 				require.Equal(t, ruleTypeESQL, string(esqlRule.Type))
-				require.Equal(t, "FROM logs | WHERE user.name == \"suspicious_user\"", string(esqlRule.Query))
+				require.Equal(t, "FROM logs | WHERE user.name == \"suspicious_user\"", esqlRule.Query)
 				require.Equal(t, "esql", string(esqlRule.Language))
 				require.Equal(t, int64(75), int64(esqlRule.RiskScore))
 				require.Equal(t, "medium", string(esqlRule.Severity))
 			case ruleTypeMachineLearning:
 				mlRule, err := createProps.AsSecurityDetectionsAPIMachineLearningRuleCreateProps()
 				require.NoError(t, err)
-				require.Equal(t, "Test ML Rule", string(mlRule.Name))
-				require.Equal(t, "Test description", string(mlRule.Description))
+				require.Equal(t, "Test ML Rule", mlRule.Name)
+				require.Equal(t, "Test description", mlRule.Description)
 				require.Equal(t, ruleTypeMachineLearning, string(mlRule.Type))
 				require.Equal(t, int64(50), int64(mlRule.AnomalyThreshold))
 				require.Equal(t, int64(75), int64(mlRule.RiskScore))
@@ -1850,11 +1850,11 @@ func TestToCreateProps(t *testing.T) {
 			case ruleTypeNewTerms:
 				newTermsRule, err := createProps.AsSecurityDetectionsAPINewTermsRuleCreateProps()
 				require.NoError(t, err)
-				require.Equal(t, "Test New Terms Rule", string(newTermsRule.Name))
-				require.Equal(t, "Test description", string(newTermsRule.Description))
+				require.Equal(t, "Test New Terms Rule", newTermsRule.Name)
+				require.Equal(t, "Test description", newTermsRule.Description)
 				require.Equal(t, ruleTypeNewTerms, string(newTermsRule.Type))
-				require.Equal(t, "user.name:*", string(newTermsRule.Query))
-				require.Equal(t, "now-7d", string(newTermsRule.HistoryWindowStart))
+				require.Equal(t, "user.name:*", newTermsRule.Query)
+				require.Equal(t, "now-7d", newTermsRule.HistoryWindowStart)
 				require.Equal(t, int64(75), int64(newTermsRule.RiskScore))
 				require.Equal(t, "medium", string(newTermsRule.Severity))
 				require.Len(t, newTermsRule.NewTermsFields, 1)
@@ -1862,19 +1862,19 @@ func TestToCreateProps(t *testing.T) {
 			case ruleTypeSavedQuery:
 				savedQueryRule, err := createProps.AsSecurityDetectionsAPISavedQueryRuleCreateProps()
 				require.NoError(t, err)
-				require.Equal(t, "Test Saved Query Rule", string(savedQueryRule.Name))
-				require.Equal(t, "Test description", string(savedQueryRule.Description))
+				require.Equal(t, "Test Saved Query Rule", savedQueryRule.Name)
+				require.Equal(t, "Test description", savedQueryRule.Description)
 				require.Equal(t, ruleTypeSavedQuery, string(savedQueryRule.Type))
-				require.Equal(t, "my-saved-query", string(savedQueryRule.SavedId))
+				require.Equal(t, "my-saved-query", savedQueryRule.SavedId)
 				require.Equal(t, int64(75), int64(savedQueryRule.RiskScore))
 				require.Equal(t, "medium", string(savedQueryRule.Severity))
 			case ruleTypeThreatMatch:
 				threatMatchRule, err := createProps.AsSecurityDetectionsAPIThreatMatchRuleCreateProps()
 				require.NoError(t, err)
-				require.Equal(t, "Test Threat Match Rule", string(threatMatchRule.Name))
-				require.Equal(t, "Test description", string(threatMatchRule.Description))
+				require.Equal(t, "Test Threat Match Rule", threatMatchRule.Name)
+				require.Equal(t, "Test description", threatMatchRule.Description)
 				require.Equal(t, ruleTypeThreatMatch, string(threatMatchRule.Type))
-				require.Equal(t, "source.ip:*", string(threatMatchRule.Query))
+				require.Equal(t, "source.ip:*", threatMatchRule.Query)
 				require.Equal(t, int64(75), int64(threatMatchRule.RiskScore))
 				require.Equal(t, "medium", string(threatMatchRule.Severity))
 				require.Len(t, threatMatchRule.ThreatIndex, 1)
@@ -1883,10 +1883,10 @@ func TestToCreateProps(t *testing.T) {
 			case ruleTypeThreshold:
 				thresholdRule, err := createProps.AsSecurityDetectionsAPIThresholdRuleCreateProps()
 				require.NoError(t, err)
-				require.Equal(t, "Test Threshold Rule", string(thresholdRule.Name))
-				require.Equal(t, "Test description", string(thresholdRule.Description))
+				require.Equal(t, "Test Threshold Rule", thresholdRule.Name)
+				require.Equal(t, "Test description", thresholdRule.Description)
 				require.Equal(t, ruleTypeThreshold, string(thresholdRule.Type))
-				require.Equal(t, "event.action:login", string(thresholdRule.Query))
+				require.Equal(t, "event.action:login", thresholdRule.Query)
 				require.Equal(t, int64(75), int64(thresholdRule.RiskScore))
 				require.Equal(t, "medium", string(thresholdRule.Severity))
 				require.NotNil(t, thresholdRule.Threshold)
@@ -1894,7 +1894,7 @@ func TestToCreateProps(t *testing.T) {
 				// Check single field
 				singleField, err := thresholdRule.Threshold.Field.AsSecurityDetectionsAPIThresholdField0()
 				require.NoError(t, err)
-				require.Equal(t, "user.name", string(singleField))
+				require.Equal(t, "user.name", singleField)
 			}
 		})
 	}
@@ -2097,33 +2097,33 @@ func TestToUpdateProps(t *testing.T) {
 			case "query":
 				queryRule, err := updateProps.AsSecurityDetectionsAPIQueryRuleUpdateProps()
 				require.NoError(t, err)
-				require.Equal(t, "Test Query Rule", string(queryRule.Name))
-				require.Equal(t, "Test description", string(queryRule.Description))
-				require.Equal(t, "user.name:test", string(*queryRule.Query))
+				require.Equal(t, "Test Query Rule", queryRule.Name)
+				require.Equal(t, "Test description", queryRule.Description)
+				require.Equal(t, "user.name:test", *queryRule.Query)
 				require.Equal(t, "kuery", string(*queryRule.Language))
 				require.Equal(t, int64(75), int64(queryRule.RiskScore))
 				require.Equal(t, "medium", string(queryRule.Severity))
 			case "eql":
 				eqlRule, err := updateProps.AsSecurityDetectionsAPIEqlRuleUpdateProps()
 				require.NoError(t, err)
-				require.Equal(t, "Test EQL Rule", string(eqlRule.Name))
-				require.Equal(t, "Test description", string(eqlRule.Description))
-				require.Equal(t, "process where process.name == \"cmd.exe\"", string(eqlRule.Query))
+				require.Equal(t, "Test EQL Rule", eqlRule.Name)
+				require.Equal(t, "Test description", eqlRule.Description)
+				require.Equal(t, "process where process.name == \"cmd.exe\"", eqlRule.Query)
 				require.Equal(t, int64(75), int64(eqlRule.RiskScore))
 				require.Equal(t, "medium", string(eqlRule.Severity))
 			case "esql":
 				esqlRule, err := updateProps.AsSecurityDetectionsAPIEsqlRuleUpdateProps()
 				require.NoError(t, err)
-				require.Equal(t, "Test ESQL Rule", string(esqlRule.Name))
-				require.Equal(t, "Test description", string(esqlRule.Description))
-				require.Equal(t, "FROM logs | WHERE user.name == \"suspicious_user\"", string(esqlRule.Query))
+				require.Equal(t, "Test ESQL Rule", esqlRule.Name)
+				require.Equal(t, "Test description", esqlRule.Description)
+				require.Equal(t, "FROM logs | WHERE user.name == \"suspicious_user\"", esqlRule.Query)
 				require.Equal(t, int64(75), int64(esqlRule.RiskScore))
 				require.Equal(t, "medium", string(esqlRule.Severity))
 			case "machine_learning":
 				mlRule, err := updateProps.AsSecurityDetectionsAPIMachineLearningRuleUpdateProps()
 				require.NoError(t, err)
-				require.Equal(t, "Test ML Rule", string(mlRule.Name))
-				require.Equal(t, "Test description", string(mlRule.Description))
+				require.Equal(t, "Test ML Rule", mlRule.Name)
+				require.Equal(t, "Test description", mlRule.Description)
 				require.Equal(t, int64(50), int64(mlRule.AnomalyThreshold))
 				require.Equal(t, int64(75), int64(mlRule.RiskScore))
 				require.Equal(t, "medium", string(mlRule.Severity))
@@ -2134,10 +2134,10 @@ func TestToUpdateProps(t *testing.T) {
 			case "new_terms":
 				newTermsRule, err := updateProps.AsSecurityDetectionsAPINewTermsRuleUpdateProps()
 				require.NoError(t, err)
-				require.Equal(t, "Test New Terms Rule", string(newTermsRule.Name))
-				require.Equal(t, "Test description", string(newTermsRule.Description))
-				require.Equal(t, "user.name:*", string(newTermsRule.Query))
-				require.Equal(t, "now-7d", string(newTermsRule.HistoryWindowStart))
+				require.Equal(t, "Test New Terms Rule", newTermsRule.Name)
+				require.Equal(t, "Test description", newTermsRule.Description)
+				require.Equal(t, "user.name:*", newTermsRule.Query)
+				require.Equal(t, "now-7d", newTermsRule.HistoryWindowStart)
 				require.Equal(t, int64(75), int64(newTermsRule.RiskScore))
 				require.Equal(t, "medium", string(newTermsRule.Severity))
 				require.Len(t, newTermsRule.NewTermsFields, 1)
@@ -2145,17 +2145,17 @@ func TestToUpdateProps(t *testing.T) {
 			case "saved_query":
 				savedQueryRule, err := updateProps.AsSecurityDetectionsAPISavedQueryRuleUpdateProps()
 				require.NoError(t, err)
-				require.Equal(t, "Test Saved Query Rule", string(savedQueryRule.Name))
-				require.Equal(t, "Test description", string(savedQueryRule.Description))
-				require.Equal(t, "my-saved-query", string(savedQueryRule.SavedId))
+				require.Equal(t, "Test Saved Query Rule", savedQueryRule.Name)
+				require.Equal(t, "Test description", savedQueryRule.Description)
+				require.Equal(t, "my-saved-query", savedQueryRule.SavedId)
 				require.Equal(t, int64(75), int64(savedQueryRule.RiskScore))
 				require.Equal(t, "medium", string(savedQueryRule.Severity))
 			case "threat_match":
 				threatMatchRule, err := updateProps.AsSecurityDetectionsAPIThreatMatchRuleUpdateProps()
 				require.NoError(t, err)
-				require.Equal(t, "Test Threat Match Rule", string(threatMatchRule.Name))
-				require.Equal(t, "Test description", string(threatMatchRule.Description))
-				require.Equal(t, "source.ip:*", string(threatMatchRule.Query))
+				require.Equal(t, "Test Threat Match Rule", threatMatchRule.Name)
+				require.Equal(t, "Test description", threatMatchRule.Description)
+				require.Equal(t, "source.ip:*", threatMatchRule.Query)
 				require.Equal(t, int64(75), int64(threatMatchRule.RiskScore))
 				require.Equal(t, "medium", string(threatMatchRule.Severity))
 				require.Len(t, threatMatchRule.ThreatIndex, 1)
@@ -2164,9 +2164,9 @@ func TestToUpdateProps(t *testing.T) {
 			case "threshold":
 				thresholdRule, err := updateProps.AsSecurityDetectionsAPIThresholdRuleUpdateProps()
 				require.NoError(t, err)
-				require.Equal(t, "Test Threshold Rule", string(thresholdRule.Name))
-				require.Equal(t, "Test description", string(thresholdRule.Description))
-				require.Equal(t, "event.action:login", string(thresholdRule.Query))
+				require.Equal(t, "Test Threshold Rule", thresholdRule.Name)
+				require.Equal(t, "Test description", thresholdRule.Description)
+				require.Equal(t, "event.action:login", thresholdRule.Query)
 				require.Equal(t, int64(75), int64(thresholdRule.RiskScore))
 				require.Equal(t, "medium", string(thresholdRule.Severity))
 				require.NotNil(t, thresholdRule.Threshold)
@@ -2174,7 +2174,7 @@ func TestToUpdateProps(t *testing.T) {
 				// Check single field
 				singleField, err := thresholdRule.Threshold.Field.AsSecurityDetectionsAPIThresholdField0()
 				require.NoError(t, err)
-				require.Equal(t, "user.name", string(singleField))
+				require.Equal(t, "user.name", singleField)
 			}
 		})
 	}

@@ -50,7 +50,7 @@ func (r *securityListItemResource) Update(ctx context.Context, req resource.Upda
 	}
 
 	// Read the updated list item to populate state
-	id := kbapi.SecurityListsAPIListId(updatedListItem.Id)
+	id := updatedListItem.Id
 	readParams := &kbapi.ReadListItemParams{
 		Id: &id,
 	}

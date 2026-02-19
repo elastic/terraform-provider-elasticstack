@@ -37,14 +37,14 @@ type ExceptionListModel struct {
 func (m *ExceptionListModel) toCreateRequest(ctx context.Context) (*kbapi.CreateExceptionListJSONRequestBody, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	req := &kbapi.CreateExceptionListJSONRequestBody{
-		Name:        kbapi.SecurityExceptionsAPIExceptionListName(m.Name.ValueString()),
-		Description: kbapi.SecurityExceptionsAPIExceptionListDescription(m.Description.ValueString()),
+		Name:        m.Name.ValueString(),
+		Description: m.Description.ValueString(),
 		Type:        kbapi.SecurityExceptionsAPIExceptionListType(m.Type.ValueString()),
 	}
 
 	// Set optional list_id
 	if utils.IsKnown(m.ListID) {
-		listId := kbapi.SecurityExceptionsAPIExceptionListHumanId(m.ListID.ValueString())
+		listId := m.ListID.ValueString()
 		req.ListId = &listId
 	}
 
@@ -76,8 +76,7 @@ func (m *ExceptionListModel) toCreateRequest(ctx context.Context) (*kbapi.Create
 			return nil, diags
 		}
 		if len(tags) > 0 {
-			tagsArray := kbapi.SecurityExceptionsAPIExceptionListTags(tags)
-			req.Tags = &tagsArray
+			req.Tags = &tags
 		}
 	}
 
@@ -98,11 +97,11 @@ func (m *ExceptionListModel) toCreateRequest(ctx context.Context) (*kbapi.Create
 // toUpdateRequest converts the Terraform model to API update request
 func (m *ExceptionListModel) toUpdateRequest(ctx context.Context, resourceId string) (*kbapi.UpdateExceptionListJSONRequestBody, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	id := kbapi.SecurityExceptionsAPIExceptionListId(resourceId)
+	id := resourceId
 	req := &kbapi.UpdateExceptionListJSONRequestBody{
 		Id:          &id,
-		Name:        kbapi.SecurityExceptionsAPIExceptionListName(m.Name.ValueString()),
-		Description: kbapi.SecurityExceptionsAPIExceptionListDescription(m.Description.ValueString()),
+		Name:        m.Name.ValueString(),
+		Description: m.Description.ValueString(),
 		// Type is required by the API even though it has RequiresReplace in the schema
 		// The API will reject updates without this field, even though the value cannot change
 		Type: kbapi.SecurityExceptionsAPIExceptionListType(m.Type.ValueString()),
@@ -136,7 +135,7 @@ func (m *ExceptionListModel) toUpdateRequest(ctx context.Context, resourceId str
 			return nil, diags
 		}
 		if len(tags) > 0 {
-			tagsArray := kbapi.SecurityExceptionsAPIExceptionListTags(tags)
+			tagsArray := tags
 			req.Tags = &tagsArray
 		}
 	}

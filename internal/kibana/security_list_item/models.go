@@ -32,13 +32,13 @@ func (m *SecurityListItemModel) toAPICreateModel(ctx context.Context) (*kbapi.Cr
 	var diags diag.Diagnostics
 
 	body := &kbapi.CreateListItemJSONRequestBody{
-		ListId: kbapi.SecurityListsAPIListId(m.ListID.ValueString()),
-		Value:  kbapi.SecurityListsAPIListItemValue(m.Value.ValueString()),
+		ListId: m.ListID.ValueString(),
+		Value:  m.Value.ValueString(),
 	}
 
 	// Set optional ID if specified
 	if utils.IsKnown(m.ListItemID) {
-		id := kbapi.SecurityListsAPIListItemId(m.ListItemID.ValueString())
+		id := m.ListItemID.ValueString()
 		body.Id = &id
 	}
 
@@ -67,13 +67,13 @@ func (m *SecurityListItemModel) toAPIUpdateModel(ctx context.Context) (*kbapi.Up
 	}
 
 	body := &kbapi.UpdateListItemJSONRequestBody{
-		Id:    kbapi.SecurityListsAPIListItemId(compId.ResourceId),
-		Value: kbapi.SecurityListsAPIListItemValue(m.Value.ValueString()),
+		Id:    compId.ResourceId,
+		Value: m.Value.ValueString(),
 	}
 
 	// Set optional version if available
 	if utils.IsKnown(m.VersionID) {
-		version := kbapi.SecurityListsAPIListVersionId(m.VersionID.ValueString())
+		version := m.VersionID.ValueString()
 		body.UnderscoreVersion = &version
 	}
 
@@ -96,7 +96,7 @@ func (m *SecurityListItemModel) fromAPIModel(ctx context.Context, apiItem *kbapi
 
 	compId := clients.CompositeId{
 		ClusterId:  m.SpaceID.ValueString(),
-		ResourceId: string(apiItem.Id),
+		ResourceId: apiItem.Id,
 	}
 	m.ID = types.StringValue(compId.String())
 	m.ListItemID = typeutils.StringishValue(apiItem.Id)

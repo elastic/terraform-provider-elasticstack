@@ -14,7 +14,7 @@ import (
 // This is required before any list operations can be performed.
 // Returns true if acknowledged, and diagnostics if there was an error.
 func CreateListIndex(ctx context.Context, client *Client, spaceId string) (bool, diag.Diagnostics) {
-	resp, err := client.API.CreateListIndexWithResponse(ctx, kbapi.SpaceId(spaceId))
+	resp, err := client.API.CreateListIndexWithResponse(ctx, spaceId)
 	if err != nil {
 		return false, diagutil.FrameworkDiagFromError(err)
 	}
@@ -36,7 +36,7 @@ func CreateListIndex(ctx context.Context, client *Client, spaceId string) (bool,
 // ReadListIndex reads the status of .lists and .items data streams for a space.
 // Returns the status of list_index and list_item_index separately, and diagnostics on error.
 func ReadListIndex(ctx context.Context, client *Client, spaceId string) (listIndex bool, listItemIndex bool, diags diag.Diagnostics) {
-	resp, err := client.API.ReadListIndexWithResponse(ctx, kbapi.SpaceId(spaceId))
+	resp, err := client.API.ReadListIndexWithResponse(ctx, spaceId)
 	if err != nil {
 		return false, false, diagutil.FrameworkDiagFromError(err)
 	}
@@ -58,7 +58,7 @@ func ReadListIndex(ctx context.Context, client *Client, spaceId string) (listInd
 // DeleteListIndex deletes the .lists and .items data streams for a space.
 // Returns diagnostics if there was an error.
 func DeleteListIndex(ctx context.Context, client *Client, spaceId string) diag.Diagnostics {
-	resp, err := client.API.DeleteListIndexWithResponse(ctx, kbapi.SpaceId(spaceId))
+	resp, err := client.API.DeleteListIndexWithResponse(ctx, spaceId)
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -75,7 +75,7 @@ func DeleteListIndex(ctx context.Context, client *Client, spaceId string) diag.D
 
 // GetList reads a security list from the API by ID
 func GetList(ctx context.Context, client *Client, spaceId string, params *kbapi.ReadListParams) (*kbapi.SecurityListsAPIList, diag.Diagnostics) {
-	resp, err := client.API.ReadListWithResponse(ctx, kbapi.SpaceId(spaceId), params)
+	resp, err := client.API.ReadListWithResponse(ctx, spaceId, params)
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -97,7 +97,7 @@ func GetList(ctx context.Context, client *Client, spaceId string, params *kbapi.
 
 // CreateList creates a new security list.
 func CreateList(ctx context.Context, client *Client, spaceId string, body kbapi.CreateListJSONRequestBody) (*kbapi.SecurityListsAPIList, diag.Diagnostics) {
-	resp, err := client.API.CreateListWithResponse(ctx, kbapi.SpaceId(spaceId), body)
+	resp, err := client.API.CreateListWithResponse(ctx, spaceId, body)
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -117,7 +117,7 @@ func CreateList(ctx context.Context, client *Client, spaceId string, body kbapi.
 
 // UpdateList updates an existing security list.
 func UpdateList(ctx context.Context, client *Client, spaceId string, body kbapi.UpdateListJSONRequestBody) (*kbapi.SecurityListsAPIList, diag.Diagnostics) {
-	resp, err := client.API.UpdateListWithResponse(ctx, kbapi.SpaceId(spaceId), body)
+	resp, err := client.API.UpdateListWithResponse(ctx, spaceId, body)
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -137,7 +137,7 @@ func UpdateList(ctx context.Context, client *Client, spaceId string, body kbapi.
 
 // DeleteList deletes an existing security list.
 func DeleteList(ctx context.Context, client *Client, spaceId string, params *kbapi.DeleteListParams) diag.Diagnostics {
-	resp, err := client.API.DeleteListWithResponse(ctx, kbapi.SpaceId(spaceId), params)
+	resp, err := client.API.DeleteListWithResponse(ctx, spaceId, params)
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -156,7 +156,7 @@ func DeleteList(ctx context.Context, client *Client, spaceId string, params *kba
 // The response can be a single item or an array, so we unmarshal from the body.
 // When querying by ID, we expect a single item.
 func GetListItem(ctx context.Context, client *Client, spaceId string, params *kbapi.ReadListItemParams) (*kbapi.SecurityListsAPIListItem, diag.Diagnostics) {
-	resp, err := client.API.ReadListItemWithResponse(ctx, kbapi.SpaceId(spaceId), params)
+	resp, err := client.API.ReadListItemWithResponse(ctx, spaceId, params)
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -180,7 +180,7 @@ func GetListItem(ctx context.Context, client *Client, spaceId string, params *kb
 
 // CreateListItem creates a new security list item.
 func CreateListItem(ctx context.Context, client *Client, spaceId string, body kbapi.CreateListItemJSONRequestBody) (*kbapi.SecurityListsAPIListItem, diag.Diagnostics) {
-	resp, err := client.API.CreateListItemWithResponse(ctx, kbapi.SpaceId(spaceId), body)
+	resp, err := client.API.CreateListItemWithResponse(ctx, spaceId, body)
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -200,7 +200,7 @@ func CreateListItem(ctx context.Context, client *Client, spaceId string, body kb
 
 // UpdateListItem updates an existing security list item.
 func UpdateListItem(ctx context.Context, client *Client, spaceId string, body kbapi.UpdateListItemJSONRequestBody) (*kbapi.SecurityListsAPIListItem, diag.Diagnostics) {
-	resp, err := client.API.UpdateListItemWithResponse(ctx, kbapi.SpaceId(spaceId), body)
+	resp, err := client.API.UpdateListItemWithResponse(ctx, spaceId, body)
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -220,7 +220,7 @@ func UpdateListItem(ctx context.Context, client *Client, spaceId string, body kb
 
 // DeleteListItem deletes an existing security list item.
 func DeleteListItem(ctx context.Context, client *Client, spaceId string, params *kbapi.DeleteListItemParams) diag.Diagnostics {
-	resp, err := client.API.DeleteListItemWithResponse(ctx, kbapi.SpaceId(spaceId), params)
+	resp, err := client.API.DeleteListItemWithResponse(ctx, spaceId, params)
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}

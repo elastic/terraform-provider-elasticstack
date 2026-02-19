@@ -36,7 +36,7 @@ func (r *securityListResource) Read(ctx context.Context, req resource.ReadReques
 	}
 
 	params := &kbapi.ReadListParams{
-		Id: kbapi.SecurityListsAPIListId(listID),
+		Id: listID,
 	}
 
 	list, diags := kibana_oapi.GetList(ctx, client, spaceID, params)

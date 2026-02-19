@@ -25,7 +25,7 @@ func (r *securityListResource) Delete(ctx context.Context, req resource.DeleteRe
 	listID := state.ListID.ValueString()
 
 	params := &kbapi.DeleteListParams{
-		Id: kbapi.SecurityListsAPIListId(listID),
+		Id: listID,
 	}
 
 	diags := kibana_oapi.DeleteList(ctx, client, spaceID, params)

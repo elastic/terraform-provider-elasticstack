@@ -35,7 +35,7 @@ func GetSlo(ctx context.Context, apiClient *clients.ApiClient, id, spaceID strin
 
 	defer res.Body.Close()
 
-	return sloResponseToModel(spaceID, sloRes), diagutil.CheckHttpError(res, "Unable to get slo with ID "+string(id))
+	return sloResponseToModel(spaceID, sloRes), diagutil.CheckHttpError(res, "Unable to get slo with ID "+id)
 }
 
 func DeleteSlo(ctx context.Context, apiClient *clients.ApiClient, sloId string, spaceId string) diag.Diagnostics {
@@ -57,7 +57,7 @@ func DeleteSlo(ctx context.Context, apiClient *clients.ApiClient, sloId string, 
 	}
 
 	defer res.Body.Close()
-	return diagutil.CheckHttpError(res, "Unable to delete slo with ID "+string(sloId))
+	return diagutil.CheckHttpError(res, "Unable to delete slo with ID "+sloId)
 }
 
 func UpdateSlo(ctx context.Context, apiClient *clients.ApiClient, s models.Slo, supportsGroupByList bool) (*models.Slo, diag.Diagnostics) {
@@ -76,7 +76,7 @@ func UpdateSlo(ctx context.Context, apiClient *clients.ApiClient, s models.Slo, 
 		Description:     &s.Description,
 		Indicator:       &indicator,
 		TimeWindow:      &s.TimeWindow,
-		BudgetingMethod: (*slo.BudgetingMethod)(&s.BudgetingMethod),
+		BudgetingMethod: &s.BudgetingMethod,
 		Objective:       &s.Objective,
 		Settings:        s.Settings,
 		GroupBy:         transformGroupBy(s.GroupBy, supportsGroupByList),
@@ -119,7 +119,7 @@ func CreateSlo(ctx context.Context, apiClient *clients.ApiClient, s models.Slo, 
 		Description:     s.Description,
 		Indicator:       indicator,
 		TimeWindow:      s.TimeWindow,
-		BudgetingMethod: slo.BudgetingMethod(s.BudgetingMethod),
+		BudgetingMethod: s.BudgetingMethod,
 		Objective:       s.Objective,
 		Settings:        s.Settings,
 		GroupBy:         transformGroupBy(s.GroupBy, supportsGroupByList),

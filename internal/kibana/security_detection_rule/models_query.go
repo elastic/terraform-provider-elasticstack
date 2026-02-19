@@ -6,6 +6,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -61,13 +62,13 @@ func toQueryRuleCreateProps(ctx context.Context, client clients.MinVersionEnforc
 	var diags diag.Diagnostics
 	var createProps kbapi.SecurityDetectionsAPIRuleCreateProps
 
-	queryRuleQuery := kbapi.SecurityDetectionsAPIRuleQuery(d.Query.ValueString())
+	queryRuleQuery := d.Query.ValueString()
 	queryRule := kbapi.SecurityDetectionsAPIQueryRuleCreateProps{
-		Name:        kbapi.SecurityDetectionsAPIRuleName(d.Name.ValueString()),
-		Description: kbapi.SecurityDetectionsAPIRuleDescription(d.Description.ValueString()),
+		Name:        d.Name.ValueString(),
+		Description: d.Description.ValueString(),
 		Type:        kbapi.SecurityDetectionsAPIQueryRuleCreatePropsType("query"),
 		Query:       &queryRuleQuery,
-		RiskScore:   kbapi.SecurityDetectionsAPIRiskScore(d.RiskScore.ValueInt64()),
+		RiskScore:   int(d.RiskScore.ValueInt64()),
 		Severity:    kbapi.SecurityDetectionsAPISeverity(d.Severity.ValueString()),
 	}
 
@@ -112,7 +113,7 @@ func toQueryRuleCreateProps(ctx context.Context, client clients.MinVersionEnforc
 	queryRule.Language = d.getKQLQueryLanguage()
 
 	if utils.IsKnown(d.SavedId) {
-		savedId := kbapi.SecurityDetectionsAPISavedQueryId(d.SavedId.ValueString())
+		savedId := d.SavedId.ValueString()
 		queryRule.SavedId = &savedId
 	}
 
@@ -132,7 +133,7 @@ func toQueryRuleUpdateProps(ctx context.Context, client clients.MinVersionEnforc
 	var diags diag.Diagnostics
 	var updateProps kbapi.SecurityDetectionsAPIRuleUpdateProps
 
-	queryRuleQuery := kbapi.SecurityDetectionsAPIRuleQuery(d.Query.ValueString())
+	queryRuleQuery := d.Query.ValueString()
 
 	// Parse ID to get space_id and rule_id
 	compId, resourceIdDiags := clients.CompositeIdFromStrFw(d.Id.ValueString())
@@ -146,17 +147,17 @@ func toQueryRuleUpdateProps(ctx context.Context, client clients.MinVersionEnforc
 
 	queryRule := kbapi.SecurityDetectionsAPIQueryRuleUpdateProps{
 		Id:          &uid,
-		Name:        kbapi.SecurityDetectionsAPIRuleName(d.Name.ValueString()),
-		Description: kbapi.SecurityDetectionsAPIRuleDescription(d.Description.ValueString()),
+		Name:        d.Name.ValueString(),
+		Description: d.Description.ValueString(),
 		Type:        kbapi.SecurityDetectionsAPIQueryRuleUpdatePropsType("query"),
 		Query:       &queryRuleQuery,
-		RiskScore:   kbapi.SecurityDetectionsAPIRiskScore(d.RiskScore.ValueInt64()),
+		RiskScore:   int(d.RiskScore.ValueInt64()),
 		Severity:    kbapi.SecurityDetectionsAPISeverity(d.Severity.ValueString()),
 	}
 
 	// For updates, we need to include the rule_id if it's set
 	if utils.IsKnown(d.RuleId) {
-		ruleId := kbapi.SecurityDetectionsAPIRuleSignatureId(d.RuleId.ValueString())
+		ruleId := d.RuleId.ValueString()
 		queryRule.RuleId = &ruleId
 		queryRule.Id = nil // if rule_id is set, we cant send id
 	}
@@ -202,7 +203,7 @@ func toQueryRuleUpdateProps(ctx context.Context, client clients.MinVersionEnforc
 	queryRule.Language = d.getKQLQueryLanguage()
 
 	if utils.IsKnown(d.SavedId) {
-		savedId := kbapi.SecurityDetectionsAPISavedQueryId(d.SavedId.ValueString())
+		savedId := d.SavedId.ValueString()
 		queryRule.SavedId = &savedId
 	}
 
@@ -226,9 +227,9 @@ func updateFromQueryRule(ctx context.Context, rule *kbapi.SecurityDetectionsAPIQ
 	}
 	d.Id = types.StringValue(compId.String())
 
-	d.RuleId = types.StringValue(string(rule.RuleId))
-	d.Name = types.StringValue(string(rule.Name))
-	d.Type = types.StringValue(string(rule.Type))
+	d.RuleId = types.StringValue(rule.RuleId)
+	d.Name = types.StringValue(rule.Name)
+	d.Type = typeutils.StringishValue(rule.Type)
 
 	// Update common fields
 	diags.Append(d.updateTimelineIdFromApi(ctx, rule.TimelineId)...)
@@ -249,14 +250,14 @@ func updateFromQueryRule(ctx context.Context, rule *kbapi.SecurityDetectionsAPIQ
 	diags.Append(timestampOverrideFallbackDisabledDiags...)
 
 	d.Query = types.StringValue(rule.Query)
-	d.Language = types.StringValue(string(rule.Language))
-	d.Enabled = types.BoolValue(bool(rule.Enabled))
-	d.From = types.StringValue(string(rule.From))
-	d.To = types.StringValue(string(rule.To))
-	d.Interval = types.StringValue(string(rule.Interval))
-	d.Description = types.StringValue(string(rule.Description))
+	d.Language = typeutils.StringishValue(rule.Language)
+	d.Enabled = types.BoolValue(rule.Enabled)
+	d.From = types.StringValue(rule.From)
+	d.To = types.StringValue(rule.To)
+	d.Interval = types.StringValue(rule.Interval)
+	d.Description = types.StringValue(rule.Description)
 	d.RiskScore = types.Int64Value(int64(rule.RiskScore))
-	d.Severity = types.StringValue(string(rule.Severity))
+	d.Severity = typeutils.StringishValue(rule.Severity)
 	d.MaxSignals = types.Int64Value(int64(rule.MaxSignals))
 	d.Version = types.Int64Value(int64(rule.Version))
 

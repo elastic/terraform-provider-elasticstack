@@ -6,6 +6,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -62,10 +63,10 @@ func (d SecurityDetectionRuleData) toThresholdRuleCreateProps(ctx context.Contex
 	var createProps kbapi.SecurityDetectionsAPIRuleCreateProps
 
 	thresholdRule := kbapi.SecurityDetectionsAPIThresholdRuleCreateProps{
-		Name:        kbapi.SecurityDetectionsAPIRuleName(d.Name.ValueString()),
-		Description: kbapi.SecurityDetectionsAPIRuleDescription(d.Description.ValueString()),
+		Name:        d.Name.ValueString(),
+		Description: d.Description.ValueString(),
 		Type:        kbapi.SecurityDetectionsAPIThresholdRuleCreatePropsType("threshold"),
-		Query:       kbapi.SecurityDetectionsAPIRuleQuery(d.Query.ValueString()),
+		Query:       d.Query.ValueString(),
 		RiskScore:   kbapi.SecurityDetectionsAPIRiskScore(d.RiskScore.ValueInt64()),
 		Severity:    kbapi.SecurityDetectionsAPISeverity(d.Severity.ValueString()),
 	}
@@ -125,7 +126,7 @@ func (d SecurityDetectionRuleData) toThresholdRuleCreateProps(ctx context.Contex
 	thresholdRule.Language = d.getKQLQueryLanguage()
 
 	if utils.IsKnown(d.SavedId) {
-		savedId := kbapi.SecurityDetectionsAPISavedQueryId(d.SavedId.ValueString())
+		savedId := d.SavedId.ValueString()
 		thresholdRule.SavedId = &savedId
 	}
 
@@ -156,17 +157,17 @@ func (d SecurityDetectionRuleData) toThresholdRuleUpdateProps(ctx context.Contex
 
 	thresholdRule := kbapi.SecurityDetectionsAPIThresholdRuleUpdateProps{
 		Id:          &uid,
-		Name:        kbapi.SecurityDetectionsAPIRuleName(d.Name.ValueString()),
-		Description: kbapi.SecurityDetectionsAPIRuleDescription(d.Description.ValueString()),
+		Name:        d.Name.ValueString(),
+		Description: d.Description.ValueString(),
 		Type:        kbapi.SecurityDetectionsAPIThresholdRuleUpdatePropsType("threshold"),
-		Query:       kbapi.SecurityDetectionsAPIRuleQuery(d.Query.ValueString()),
+		Query:       d.Query.ValueString(),
 		RiskScore:   kbapi.SecurityDetectionsAPIRiskScore(d.RiskScore.ValueInt64()),
 		Severity:    kbapi.SecurityDetectionsAPISeverity(d.Severity.ValueString()),
 	}
 
 	// For updates, we need to include the rule_id if it's set
 	if utils.IsKnown(d.RuleId) {
-		ruleId := kbapi.SecurityDetectionsAPIRuleSignatureId(d.RuleId.ValueString())
+		ruleId := d.RuleId.ValueString()
 		thresholdRule.RuleId = &ruleId
 		thresholdRule.Id = nil // if rule_id is set, we cant send id
 	}
@@ -226,7 +227,7 @@ func (d SecurityDetectionRuleData) toThresholdRuleUpdateProps(ctx context.Contex
 	thresholdRule.Language = d.getKQLQueryLanguage()
 
 	if utils.IsKnown(d.SavedId) {
-		savedId := kbapi.SecurityDetectionsAPISavedQueryId(d.SavedId.ValueString())
+		savedId := d.SavedId.ValueString()
 		thresholdRule.SavedId = &savedId
 	}
 
@@ -251,9 +252,9 @@ func (d *SecurityDetectionRuleData) updateFromThresholdRule(ctx context.Context,
 	}
 	d.Id = types.StringValue(compId.String())
 
-	d.RuleId = types.StringValue(string(rule.RuleId))
-	d.Name = types.StringValue(string(rule.Name))
-	d.Type = types.StringValue(string(rule.Type))
+	d.RuleId = types.StringValue(rule.RuleId)
+	d.Name = types.StringValue(rule.Name)
+	d.Type = typeutils.StringishValue(rule.Type)
 
 	// Update common fields
 	diags.Append(d.updateTimelineIdFromApi(ctx, rule.TimelineId)...)
@@ -264,18 +265,18 @@ func (d *SecurityDetectionRuleData) updateFromThresholdRule(ctx context.Context,
 	diags.Append(d.updateTimestampOverrideFromApi(ctx, rule.TimestampOverride)...)
 	diags.Append(d.updateTimestampOverrideFallbackDisabledFromApi(ctx, rule.TimestampOverrideFallbackDisabled)...)
 
-	d.Query = types.StringValue(rule.Query)
-	d.Language = types.StringValue(string(rule.Language))
-	d.Enabled = types.BoolValue(bool(rule.Enabled))
+	d.Query = typeutils.StringishValue(rule.Query)
+	d.Language = typeutils.StringishValue(rule.Language)
+	d.Enabled = types.BoolValue(rule.Enabled)
 
 	// Update building block type
 	diags.Append(d.updateBuildingBlockTypeFromApi(ctx, rule.BuildingBlockType)...)
-	d.From = types.StringValue(string(rule.From))
-	d.To = types.StringValue(string(rule.To))
-	d.Interval = types.StringValue(string(rule.Interval))
-	d.Description = types.StringValue(string(rule.Description))
+	d.From = types.StringValue(rule.From)
+	d.To = types.StringValue(rule.To)
+	d.Interval = types.StringValue(rule.Interval)
+	d.Description = types.StringValue(rule.Description)
 	d.RiskScore = types.Int64Value(int64(rule.RiskScore))
-	d.Severity = types.StringValue(string(rule.Severity))
+	d.Severity = typeutils.StringishValue(rule.Severity)
 	d.MaxSignals = types.Int64Value(int64(rule.MaxSignals))
 	d.Version = types.Int64Value(int64(rule.Version))
 
@@ -302,7 +303,7 @@ func (d *SecurityDetectionRuleData) updateFromThresholdRule(ctx context.Context,
 
 	// Optional saved query ID
 	if rule.SavedId != nil {
-		d.SavedId = types.StringValue(string(*rule.SavedId))
+		d.SavedId = types.StringValue(*rule.SavedId)
 	} else {
 		d.SavedId = types.StringNull()
 	}

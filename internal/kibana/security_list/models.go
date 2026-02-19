@@ -38,24 +38,24 @@ type SecurityListModel struct {
 func (m *SecurityListModel) toCreateRequest() (*kbapi.CreateListJSONRequestBody, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	req := &kbapi.CreateListJSONRequestBody{
-		Name:        kbapi.SecurityListsAPIListName(m.Name.ValueString()),
-		Description: kbapi.SecurityListsAPIListDescription(m.Description.ValueString()),
+		Name:        m.Name.ValueString(),
+		Description: m.Description.ValueString(),
 		Type:        kbapi.SecurityListsAPIListType(m.Type.ValueString()),
 	}
 
 	// Set optional fields
 	if utils.IsKnown(m.ListID) {
-		id := kbapi.SecurityListsAPIListId(m.ListID.ValueString())
+		id := m.ListID.ValueString()
 		req.Id = &id
 	}
 
 	if utils.IsKnown(m.Deserializer) {
-		deserializer := kbapi.SecurityListsAPIListDeserializer(m.Deserializer.ValueString())
+		deserializer := m.Deserializer.ValueString()
 		req.Deserializer = &deserializer
 	}
 
 	if utils.IsKnown(m.Serializer) {
-		serializer := kbapi.SecurityListsAPIListSerializer(m.Serializer.ValueString())
+		serializer := m.Serializer.ValueString()
 		req.Serializer = &serializer
 	}
 
@@ -81,14 +81,14 @@ func (m *SecurityListModel) toCreateRequest() (*kbapi.CreateListJSONRequestBody,
 func (m *SecurityListModel) toUpdateRequest() (*kbapi.UpdateListJSONRequestBody, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	req := &kbapi.UpdateListJSONRequestBody{
-		Id:          kbapi.SecurityListsAPIListId(m.ListID.ValueString()),
-		Name:        kbapi.SecurityListsAPIListName(m.Name.ValueString()),
-		Description: kbapi.SecurityListsAPIListDescription(m.Description.ValueString()),
+		Id:          m.ListID.ValueString(),
+		Name:        m.Name.ValueString(),
+		Description: m.Description.ValueString(),
 	}
 
 	// Set optional fields
 	if utils.IsKnown(m.VersionID) {
-		versionID := kbapi.SecurityListsAPIListVersionId(m.VersionID.ValueString())
+		versionID := m.VersionID.ValueString()
 		req.UnderscoreVersion = &versionID
 	}
 
@@ -103,7 +103,7 @@ func (m *SecurityListModel) toUpdateRequest() (*kbapi.UpdateListJSONRequestBody,
 	}
 
 	if utils.IsKnown(m.Version) {
-		version := kbapi.SecurityListsAPIListVersion(int(m.Version.ValueInt64()))
+		version := int(m.Version.ValueInt64())
 		req.Version = &version
 	}
 
@@ -117,7 +117,7 @@ func (m *SecurityListModel) fromAPI(ctx context.Context, apiList *kbapi.Security
 	// Create composite ID from space_id and list_id
 	compId := clients.CompositeId{
 		ClusterId:  m.SpaceID.ValueString(),
-		ResourceId: string(apiList.Id),
+		ResourceId: apiList.Id,
 	}
 	m.ID = types.StringValue(compId.String())
 

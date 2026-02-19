@@ -63,10 +63,10 @@ func (d SecurityDetectionRuleData) toEsqlRuleCreateProps(ctx context.Context, cl
 	var createProps kbapi.SecurityDetectionsAPIRuleCreateProps
 
 	esqlRule := kbapi.SecurityDetectionsAPIEsqlRuleCreateProps{
-		Name:        kbapi.SecurityDetectionsAPIRuleName(d.Name.ValueString()),
-		Description: kbapi.SecurityDetectionsAPIRuleDescription(d.Description.ValueString()),
+		Name:        d.Name.ValueString(),
+		Description: d.Description.ValueString(),
 		Type:        kbapi.SecurityDetectionsAPIEsqlRuleCreatePropsType("esql"),
-		Query:       kbapi.SecurityDetectionsAPIRuleQuery(d.Query.ValueString()),
+		Query:       d.Query.ValueString(),
 		Language:    kbapi.SecurityDetectionsAPIEsqlQueryLanguage("esql"),
 		RiskScore:   kbapi.SecurityDetectionsAPIRiskScore(d.RiskScore.ValueInt64()),
 		Severity:    kbapi.SecurityDetectionsAPISeverity(d.Severity.ValueString()),
@@ -139,10 +139,10 @@ func (d SecurityDetectionRuleData) toEsqlRuleUpdateProps(ctx context.Context, cl
 
 	esqlRule := kbapi.SecurityDetectionsAPIEsqlRuleUpdateProps{
 		Id:          &uid,
-		Name:        kbapi.SecurityDetectionsAPIRuleName(d.Name.ValueString()),
-		Description: kbapi.SecurityDetectionsAPIRuleDescription(d.Description.ValueString()),
+		Name:        d.Name.ValueString(),
+		Description: d.Description.ValueString(),
 		Type:        kbapi.SecurityDetectionsAPIEsqlRuleUpdatePropsType("esql"),
-		Query:       kbapi.SecurityDetectionsAPIRuleQuery(d.Query.ValueString()),
+		Query:       d.Query.ValueString(),
 		Language:    kbapi.SecurityDetectionsAPIEsqlQueryLanguage("esql"),
 		RiskScore:   kbapi.SecurityDetectionsAPIRiskScore(d.RiskScore.ValueInt64()),
 		Severity:    kbapi.SecurityDetectionsAPISeverity(d.Severity.ValueString()),
@@ -150,7 +150,7 @@ func (d SecurityDetectionRuleData) toEsqlRuleUpdateProps(ctx context.Context, cl
 
 	// For updates, we need to include the rule_id if it's set
 	if utils.IsKnown(d.RuleId) {
-		ruleId := kbapi.SecurityDetectionsAPIRuleSignatureId(d.RuleId.ValueString())
+		ruleId := d.RuleId.ValueString()
 		esqlRule.RuleId = &ruleId
 		esqlRule.Id = nil // if rule_id is set, we cant send id
 	}
@@ -214,8 +214,8 @@ func (d *SecurityDetectionRuleData) updateFromEsqlRule(ctx context.Context, rule
 	}
 	d.Id = types.StringValue(compId.String())
 
-	d.RuleId = types.StringValue(string(rule.RuleId))
-	d.Name = types.StringValue(string(rule.Name))
+	d.RuleId = types.StringValue(rule.RuleId)
+	d.Name = types.StringValue(rule.Name)
 	d.Type = types.StringValue(string(rule.Type))
 
 	// Update common fields (ESQL doesn't support DataViewId)
@@ -229,11 +229,11 @@ func (d *SecurityDetectionRuleData) updateFromEsqlRule(ctx context.Context, rule
 
 	d.Query = types.StringValue(rule.Query)
 	d.Language = types.StringValue(string(rule.Language))
-	d.Enabled = types.BoolValue(bool(rule.Enabled))
-	d.From = types.StringValue(string(rule.From))
-	d.To = types.StringValue(string(rule.To))
-	d.Interval = types.StringValue(string(rule.Interval))
-	d.Description = types.StringValue(string(rule.Description))
+	d.Enabled = types.BoolValue(rule.Enabled)
+	d.From = types.StringValue(rule.From)
+	d.To = types.StringValue(rule.To)
+	d.Interval = types.StringValue(rule.Interval)
+	d.Description = types.StringValue(rule.Description)
 	d.RiskScore = types.Int64Value(int64(rule.RiskScore))
 	d.Severity = types.StringValue(string(rule.Severity))
 	d.MaxSignals = types.Int64Value(int64(rule.MaxSignals))

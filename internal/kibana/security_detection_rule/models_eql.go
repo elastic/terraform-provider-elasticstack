@@ -62,10 +62,10 @@ func toEqlRuleCreateProps(ctx context.Context, client clients.MinVersionEnforcea
 	var createProps kbapi.SecurityDetectionsAPIRuleCreateProps
 
 	eqlRule := kbapi.SecurityDetectionsAPIEqlRuleCreateProps{
-		Name:        kbapi.SecurityDetectionsAPIRuleName(d.Name.ValueString()),
-		Description: kbapi.SecurityDetectionsAPIRuleDescription(d.Description.ValueString()),
+		Name:        d.Name.ValueString(),
+		Description: d.Description.ValueString(),
 		Type:        kbapi.SecurityDetectionsAPIEqlRuleCreatePropsType("eql"),
-		Query:       kbapi.SecurityDetectionsAPIRuleQuery(d.Query.ValueString()),
+		Query:       d.Query.ValueString(),
 		Language:    kbapi.SecurityDetectionsAPIEqlQueryLanguage("eql"),
 		RiskScore:   kbapi.SecurityDetectionsAPIRiskScore(d.RiskScore.ValueInt64()),
 		Severity:    kbapi.SecurityDetectionsAPISeverity(d.Severity.ValueString()),
@@ -110,7 +110,7 @@ func toEqlRuleCreateProps(ctx context.Context, client clients.MinVersionEnforcea
 
 	// Set EQL-specific fields
 	if utils.IsKnown(d.TiebreakerField) {
-		tiebreakerField := kbapi.SecurityDetectionsAPITiebreakerField(d.TiebreakerField.ValueString())
+		tiebreakerField := d.TiebreakerField.ValueString()
 		eqlRule.TiebreakerField = &tiebreakerField
 	}
 
@@ -141,10 +141,10 @@ func toEqlRuleUpdateProps(ctx context.Context, client clients.MinVersionEnforcea
 
 	eqlRule := kbapi.SecurityDetectionsAPIEqlRuleUpdateProps{
 		Id:          &uid,
-		Name:        kbapi.SecurityDetectionsAPIRuleName(d.Name.ValueString()),
-		Description: kbapi.SecurityDetectionsAPIRuleDescription(d.Description.ValueString()),
+		Name:        d.Name.ValueString(),
+		Description: d.Description.ValueString(),
 		Type:        kbapi.SecurityDetectionsAPIEqlRuleUpdatePropsType("eql"),
-		Query:       kbapi.SecurityDetectionsAPIRuleQuery(d.Query.ValueString()),
+		Query:       d.Query.ValueString(),
 		Language:    kbapi.SecurityDetectionsAPIEqlQueryLanguage("eql"),
 		RiskScore:   kbapi.SecurityDetectionsAPIRiskScore(d.RiskScore.ValueInt64()),
 		Severity:    kbapi.SecurityDetectionsAPISeverity(d.Severity.ValueString()),
@@ -152,7 +152,7 @@ func toEqlRuleUpdateProps(ctx context.Context, client clients.MinVersionEnforcea
 
 	// For updates, we need to include the rule_id if it's set
 	if utils.IsKnown(d.RuleId) {
-		ruleId := kbapi.SecurityDetectionsAPIRuleSignatureId(d.RuleId.ValueString())
+		ruleId := d.RuleId.ValueString()
 		eqlRule.RuleId = &ruleId
 		eqlRule.Id = nil // if rule_id is set, we cant send id
 	}
@@ -196,7 +196,7 @@ func toEqlRuleUpdateProps(ctx context.Context, client clients.MinVersionEnforcea
 
 	// Set EQL-specific fields
 	if utils.IsKnown(d.TiebreakerField) {
-		tiebreakerField := kbapi.SecurityDetectionsAPITiebreakerField(d.TiebreakerField.ValueString())
+		tiebreakerField := d.TiebreakerField.ValueString()
 		eqlRule.TiebreakerField = &tiebreakerField
 	}
 
@@ -220,8 +220,8 @@ func updateFromEqlRule(ctx context.Context, rule *kbapi.SecurityDetectionsAPIEql
 	}
 	d.Id = types.StringValue(compId.String())
 
-	d.RuleId = types.StringValue(string(rule.RuleId))
-	d.Name = types.StringValue(string(rule.Name))
+	d.RuleId = types.StringValue(rule.RuleId)
+	d.Name = types.StringValue(rule.Name)
 	d.Type = types.StringValue(string(rule.Type))
 
 	// Update common fields
@@ -235,11 +235,11 @@ func updateFromEqlRule(ctx context.Context, rule *kbapi.SecurityDetectionsAPIEql
 
 	d.Query = types.StringValue(rule.Query)
 	d.Language = types.StringValue(string(rule.Language))
-	d.Enabled = types.BoolValue(bool(rule.Enabled))
-	d.From = types.StringValue(string(rule.From))
-	d.To = types.StringValue(string(rule.To))
-	d.Interval = types.StringValue(string(rule.Interval))
-	d.Description = types.StringValue(string(rule.Description))
+	d.Enabled = types.BoolValue(rule.Enabled)
+	d.From = types.StringValue(rule.From)
+	d.To = types.StringValue(rule.To)
+	d.Interval = types.StringValue(rule.Interval)
+	d.Description = types.StringValue(rule.Description)
 	d.RiskScore = types.Int64Value(int64(rule.RiskScore))
 	d.Severity = types.StringValue(string(rule.Severity))
 	d.MaxSignals = types.Int64Value(int64(rule.MaxSignals))
@@ -277,7 +277,7 @@ func updateFromEqlRule(ctx context.Context, rule *kbapi.SecurityDetectionsAPIEql
 
 	// EQL-specific fields
 	if rule.TiebreakerField != nil {
-		d.TiebreakerField = types.StringValue(string(*rule.TiebreakerField))
+		d.TiebreakerField = types.StringValue(*rule.TiebreakerField)
 	} else {
 		d.TiebreakerField = types.StringNull()
 	}

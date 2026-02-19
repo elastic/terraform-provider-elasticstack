@@ -49,12 +49,12 @@ func (r *ExceptionListResource) Create(ctx context.Context, req resource.CreateR
 	 */
 	// Read back the created resource to get the final state
 	readParams := &kbapi.ReadExceptionListParams{
-		Id: (*kbapi.SecurityExceptionsAPIExceptionListId)(&createResp.Id),
+		Id: &createResp.Id,
 	}
 
 	// Include namespace_type if specified (required for agnostic lists)
 	if utils.IsKnown(plan.NamespaceType) {
-		nsType := kbapi.SecurityExceptionsAPIExceptionNamespaceType(createResp.NamespaceType)
+		nsType := createResp.NamespaceType
 		readParams.NamespaceType = &nsType
 	}
 

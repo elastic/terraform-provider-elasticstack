@@ -55,7 +55,7 @@ func (r *ExceptionItemResource) Update(ctx context.Context, req resource.UpdateR
 	// We want to avoid a dirty plan immediately after an apply.
 	// Read back the updated resource to get the final state
 	readParams := &kbapi.ReadExceptionListItemParams{
-		Id: (*kbapi.SecurityExceptionsAPIExceptionListItemId)(&updateResp.Id),
+		Id: &updateResp.Id,
 	}
 
 	// Include namespace_type if specified (required for agnostic items)

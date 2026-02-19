@@ -31,7 +31,7 @@ func (r *securityListItemResource) Delete(ctx context.Context, req resource.Dele
 	}
 
 	// Delete by resource ID from composite ID
-	id := kbapi.SecurityListsAPIListItemId(compId.ResourceId)
+	id := compId.ResourceId
 	params := &kbapi.DeleteListItemParams{
 		Id: &id,
 	}

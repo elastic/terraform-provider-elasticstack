@@ -32,7 +32,7 @@ func (r *ExceptionListResource) Delete(ctx context.Context, req resource.DeleteR
 	}
 
 	// Delete by resource ID from composite ID
-	id := kbapi.SecurityExceptionsAPIExceptionListId(compId.ResourceId)
+	id := compId.ResourceId
 	params := &kbapi.DeleteExceptionListParams{
 		Id: &id,
 	}

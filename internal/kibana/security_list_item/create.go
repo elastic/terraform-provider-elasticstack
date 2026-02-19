@@ -42,7 +42,7 @@ func (r *securityListItemResource) Create(ctx context.Context, req resource.Crea
 	}
 
 	// Read the created list item to populate state
-	id := kbapi.SecurityListsAPIListId(createdListItem.Id)
+	id := createdListItem.Id
 	readParams := &kbapi.ReadListItemParams{
 		Id: &id,
 	}

@@ -48,7 +48,7 @@ func (r *ExceptionItemResource) Create(ctx context.Context, req resource.CreateR
 
 	// Read back the created resource to get the final state
 	readParams := &kbapi.ReadExceptionListItemParams{
-		Id: (*kbapi.SecurityExceptionsAPIExceptionListItemId)(&createResp.Id),
+		Id: &createResp.Id,
 	}
 
 	// Include namespace_type if specified (required for agnostic items)

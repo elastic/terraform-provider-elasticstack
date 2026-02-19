@@ -36,7 +36,7 @@ func (r *ExceptionListResource) Read(ctx context.Context, req resource.ReadReque
 	state.SpaceID = types.StringValue(compId.ClusterId)
 
 	// Read by resource ID from composite ID
-	id := kbapi.SecurityExceptionsAPIExceptionListId(compId.ResourceId)
+	id := compId.ResourceId
 	params := &kbapi.ReadExceptionListParams{
 		Id: &id,
 	}

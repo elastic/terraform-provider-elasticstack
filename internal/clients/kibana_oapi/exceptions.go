@@ -11,7 +11,7 @@ import (
 
 // GetExceptionList reads an exception list from the API by ID or list_id
 func GetExceptionList(ctx context.Context, client *Client, spaceId string, params *kbapi.ReadExceptionListParams) (*kbapi.SecurityExceptionsAPIExceptionList, diag.Diagnostics) {
-	resp, err := client.API.ReadExceptionListWithResponse(ctx, kbapi.SpaceId(spaceId), params)
+	resp, err := client.API.ReadExceptionListWithResponse(ctx, spaceId, params)
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -28,7 +28,7 @@ func GetExceptionList(ctx context.Context, client *Client, spaceId string, param
 
 // CreateExceptionList creates a new exception list.
 func CreateExceptionList(ctx context.Context, client *Client, spaceId string, body kbapi.CreateExceptionListJSONRequestBody) (*kbapi.SecurityExceptionsAPIExceptionList, diag.Diagnostics) {
-	resp, err := client.API.CreateExceptionListWithResponse(ctx, kbapi.SpaceId(spaceId), body)
+	resp, err := client.API.CreateExceptionListWithResponse(ctx, spaceId, body)
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -43,7 +43,7 @@ func CreateExceptionList(ctx context.Context, client *Client, spaceId string, bo
 
 // UpdateExceptionList updates an existing exception list.
 func UpdateExceptionList(ctx context.Context, client *Client, spaceId string, body kbapi.UpdateExceptionListJSONRequestBody) (*kbapi.SecurityExceptionsAPIExceptionList, diag.Diagnostics) {
-	resp, err := client.API.UpdateExceptionListWithResponse(ctx, kbapi.SpaceId(spaceId), body)
+	resp, err := client.API.UpdateExceptionListWithResponse(ctx, spaceId, body)
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -58,7 +58,7 @@ func UpdateExceptionList(ctx context.Context, client *Client, spaceId string, bo
 
 // DeleteExceptionList deletes an existing exception list.
 func DeleteExceptionList(ctx context.Context, client *Client, spaceId string, params *kbapi.DeleteExceptionListParams) diag.Diagnostics {
-	resp, err := client.API.DeleteExceptionListWithResponse(ctx, kbapi.SpaceId(spaceId), params)
+	resp, err := client.API.DeleteExceptionListWithResponse(ctx, spaceId, params)
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -75,7 +75,7 @@ func DeleteExceptionList(ctx context.Context, client *Client, spaceId string, pa
 
 // GetExceptionListItem reads an exception list item from the API by ID or item_id
 func GetExceptionListItem(ctx context.Context, client *Client, spaceId string, params *kbapi.ReadExceptionListItemParams) (*kbapi.SecurityExceptionsAPIExceptionListItem, diag.Diagnostics) {
-	resp, err := client.API.ReadExceptionListItemWithResponse(ctx, kbapi.SpaceId(spaceId), params)
+	resp, err := client.API.ReadExceptionListItemWithResponse(ctx, spaceId, params)
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -92,7 +92,7 @@ func GetExceptionListItem(ctx context.Context, client *Client, spaceId string, p
 
 // CreateExceptionListItem creates a new exception list item.
 func CreateExceptionListItem(ctx context.Context, client *Client, spaceId string, body kbapi.CreateExceptionListItemJSONRequestBody) (*kbapi.SecurityExceptionsAPIExceptionListItem, diag.Diagnostics) {
-	resp, err := client.API.CreateExceptionListItemWithResponse(ctx, kbapi.SpaceId(spaceId), body)
+	resp, err := client.API.CreateExceptionListItemWithResponse(ctx, spaceId, body)
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -107,7 +107,7 @@ func CreateExceptionListItem(ctx context.Context, client *Client, spaceId string
 
 // UpdateExceptionListItem updates an existing exception list item.
 func UpdateExceptionListItem(ctx context.Context, client *Client, spaceId string, body kbapi.UpdateExceptionListItemJSONRequestBody) (*kbapi.SecurityExceptionsAPIExceptionListItem, diag.Diagnostics) {
-	resp, err := client.API.UpdateExceptionListItemWithResponse(ctx, kbapi.SpaceId(spaceId), body)
+	resp, err := client.API.UpdateExceptionListItemWithResponse(ctx, spaceId, body)
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -122,7 +122,7 @@ func UpdateExceptionListItem(ctx context.Context, client *Client, spaceId string
 
 // DeleteExceptionListItem deletes an existing exception list item.
 func DeleteExceptionListItem(ctx context.Context, client *Client, spaceId string, params *kbapi.DeleteExceptionListItemParams) diag.Diagnostics {
-	resp, err := client.API.DeleteExceptionListItemWithResponse(ctx, kbapi.SpaceId(spaceId), params)
+	resp, err := client.API.DeleteExceptionListItemWithResponse(ctx, spaceId, params)
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}

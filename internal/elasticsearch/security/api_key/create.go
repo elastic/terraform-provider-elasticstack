@@ -131,7 +131,7 @@ func (r *Resource) createCrossClusterApiKey(ctx context.Context, client *clients
 
 	putResponse, createDiags := elasticsearch.CreateCrossClusterApiKey(client, &crossClusterModel)
 	if createDiags.HasError() {
-		return diag.Diagnostics(createDiags)
+		return createDiags
 	}
 	if putResponse == nil {
 		return diag.Diagnostics{
@@ -158,7 +158,7 @@ func (r *Resource) createApiKey(ctx context.Context, client *clients.ApiClient, 
 
 	putResponse, createDiags := elasticsearch.CreateApiKey(client, &apiModel)
 	if createDiags.HasError() {
-		return diag.Diagnostics(createDiags)
+		return createDiags
 	}
 	if putResponse == nil {
 		return diag.Diagnostics{

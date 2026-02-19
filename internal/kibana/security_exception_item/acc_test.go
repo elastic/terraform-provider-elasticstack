@@ -1142,9 +1142,8 @@ func checkResourceExceptionItemDestroy(s *terraform.State) error {
 		}
 
 		// Try to read the exception item
-		id := kbapi.SecurityExceptionsAPIExceptionListItemId(compId.ResourceId)
 		params := &kbapi.ReadExceptionListItemParams{
-			Id: &id,
+			Id: &compId.ResourceId,
 		}
 
 		// If namespace_type is available in the state, use it

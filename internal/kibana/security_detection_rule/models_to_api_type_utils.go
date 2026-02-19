@@ -264,7 +264,7 @@ func (d SecurityDetectionRuleData) thresholdToApi(ctx context.Context, diags *di
 						}
 					})
 				if len(cardinalityList) > 0 {
-					threshold.Cardinality = (*kbapi.SecurityDetectionsAPIThresholdCardinality)(&cardinalityList)
+					threshold.Cardinality = &cardinalityList
 				}
 			}
 
@@ -377,9 +377,9 @@ func (d SecurityDetectionRuleData) threatMappingToApi(ctx context.Context) (kbap
 		for _, entry := range entries {
 
 			apiMapping := kbapi.SecurityDetectionsAPIThreatMappingEntry{
-				Field: kbapi.SecurityDetectionsAPINonEmptyString(entry.Field.ValueString()),
+				Field: entry.Field.ValueString(),
 				Type:  kbapi.SecurityDetectionsAPIThreatMappingEntryType(entry.Type.ValueString()),
-				Value: kbapi.SecurityDetectionsAPINonEmptyString(entry.Value.ValueString()),
+				Value: entry.Value.ValueString(),
 			}
 			apiThreatMappingEntries = append(apiThreatMappingEntries, apiMapping)
 
@@ -553,7 +553,7 @@ func (d SecurityDetectionRuleData) actionsToApi(ctx context.Context) ([]kbapi.Se
 		func(action ActionModel, meta utils.ListMeta) kbapi.SecurityDetectionsAPIRuleAction {
 			apiAction := kbapi.SecurityDetectionsAPIRuleAction{
 				ActionTypeId: action.ActionTypeId.ValueString(),
-				Id:           kbapi.SecurityDetectionsAPIRuleActionId(action.Id.ValueString()),
+				Id:           action.Id.ValueString(),
 			}
 
 			// Convert params map
@@ -572,13 +572,13 @@ func (d SecurityDetectionRuleData) actionsToApi(ctx context.Context) ([]kbapi.Se
 
 			// Set optional fields
 			if utils.IsKnown(action.Group) {
-				group := kbapi.SecurityDetectionsAPIRuleActionGroup(action.Group.ValueString())
+				group := action.Group.ValueString()
 				apiAction.Group = &group
 			}
 
 			if utils.IsKnown(action.Uuid) {
-				uuid := kbapi.SecurityDetectionsAPINonEmptyString(action.Uuid.ValueString())
-				apiAction.Uuid = &uuid
+				uuidStr := action.Uuid.ValueString()
+				apiAction.Uuid = &uuidStr
 			}
 
 			if utils.IsKnown(action.AlertsFilter) {
@@ -622,8 +622,7 @@ func (d SecurityDetectionRuleData) actionsToApi(ctx context.Context) ([]kbapi.Se
 								}
 							} else {
 								// Use the time interval string
-								throttle1 := kbapi.SecurityDetectionsAPIRuleActionThrottle1(throttleStr)
-								err := throttle.FromSecurityDetectionsAPIRuleActionThrottle1(throttle1)
+								err := throttle.FromSecurityDetectionsAPIRuleActionThrottle1(throttleStr)
 								if err != nil {
 									freqMeta.Diags.AddError("Error setting throttle interval", err.Error())
 								}
@@ -741,9 +740,7 @@ func (d SecurityDetectionRuleData) investigationFieldsToApi(ctx context.Context)
 
 	// Convert to API type
 	apiFieldNames := make([]kbapi.SecurityDetectionsAPINonEmptyString, len(fieldNames))
-	for i, field := range fieldNames {
-		apiFieldNames[i] = kbapi.SecurityDetectionsAPINonEmptyString(field)
-	}
+	copy(apiFieldNames, fieldNames)
 
 	return &kbapi.SecurityDetectionsAPIInvestigationFields{
 		FieldNames: apiFieldNames,
@@ -762,13 +759,13 @@ func (d SecurityDetectionRuleData) relatedIntegrationsToApi(ctx context.Context)
 		func(integration RelatedIntegrationModel, meta utils.ListMeta) kbapi.SecurityDetectionsAPIRelatedIntegration {
 
 			apiIntegration := kbapi.SecurityDetectionsAPIRelatedIntegration{
-				Package: kbapi.SecurityDetectionsAPINonEmptyString(integration.Package.ValueString()),
-				Version: kbapi.SecurityDetectionsAPINonEmptyString(integration.Version.ValueString()),
+				Package: integration.Package.ValueString(),
+				Version: integration.Version.ValueString(),
 			}
 
 			// Set optional integration field if provided
 			if utils.IsKnown(integration.Integration) {
-				integrationName := kbapi.SecurityDetectionsAPINonEmptyString(integration.Integration.ValueString())
+				integrationName := integration.Integration.ValueString()
 				apiIntegration.Integration = &integrationName
 			}
 

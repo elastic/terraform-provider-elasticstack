@@ -35,7 +35,7 @@ func (r *ExceptionItemResource) Read(ctx context.Context, req resource.ReadReque
 	}
 
 	// Read by ID
-	id := kbapi.SecurityExceptionsAPIExceptionListItemId(compId.ResourceId)
+	id := compId.ResourceId
 	params := &kbapi.ReadExceptionListItemParams{
 		Id: &id,
 	}

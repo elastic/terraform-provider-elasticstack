@@ -119,7 +119,7 @@ func convertMatchEntryToAPI(
 		Type:     "match",
 		Field:    field,
 		Operator: operator,
-		Value:    kbapi.SecurityExceptionsAPINonEmptyString(entry.Value.ValueString()),
+		Value:    entry.Value.ValueString(),
 	}
 	if err := result.FromSecurityExceptionsAPIExceptionListItemEntryMatch(apiEntry); err != nil {
 		diags.AddError("Failed to create match entry", err.Error())
@@ -155,9 +155,7 @@ func convertMatchAnyEntryToAPI(
 	}
 
 	apiValues := make([]kbapi.SecurityExceptionsAPINonEmptyString, len(values))
-	for i, v := range values {
-		apiValues[i] = kbapi.SecurityExceptionsAPINonEmptyString(v)
-	}
+	copy(apiValues, values)
 	apiEntry := kbapi.SecurityExceptionsAPIExceptionListItemEntryMatchAny{
 		Type:     "match_any",
 		Field:    field,
@@ -197,7 +195,7 @@ func convertListEntryToAPI(
 		Field:    field,
 		Operator: operator,
 	}
-	apiEntry.List.Id = kbapi.SecurityExceptionsAPIListId(listModel.ID.ValueString())
+	apiEntry.List.Id = listModel.ID.ValueString()
 	apiEntry.List.Type = kbapi.SecurityExceptionsAPIListType(listModel.Type.ValueString())
 	if err := result.FromSecurityExceptionsAPIExceptionListItemEntryList(apiEntry); err != nil {
 		diags.AddError("Failed to create list entry", err.Error())
@@ -245,7 +243,7 @@ func convertWildcardEntryToAPI(
 		Type:     "wildcard",
 		Field:    field,
 		Operator: operator,
-		Value:    kbapi.SecurityExceptionsAPINonEmptyString(entry.Value.ValueString()),
+		Value:    entry.Value.ValueString(),
 	}
 	if err := result.FromSecurityExceptionsAPIExceptionListItemEntryMatchWildcard(apiEntry); err != nil {
 		diags.AddError("Failed to create wildcard entry", err.Error())
@@ -304,7 +302,7 @@ func convertEntryToAPI(ctx context.Context, entry EntryModel) (kbapi.SecurityExc
 
 	entryType := entry.Type.ValueString()
 	operator := kbapi.SecurityExceptionsAPIExceptionListItemEntryOperator(entry.Operator.ValueString())
-	field := kbapi.SecurityExceptionsAPINonEmptyString(entry.Field.ValueString())
+	field := entry.Field.ValueString()
 
 	switch entryType {
 	case entryTypeMatch:
@@ -344,7 +342,7 @@ func convertNestedMatchEntryToAPI(
 		Type:     "match",
 		Field:    field,
 		Operator: operator,
-		Value:    kbapi.SecurityExceptionsAPINonEmptyString(entry.Value.ValueString()),
+		Value:    entry.Value.ValueString(),
 	}
 	if err := result.FromSecurityExceptionsAPIExceptionListItemEntryMatch(apiEntry); err != nil {
 		diags.AddError("Failed to create nested match entry", err.Error())
@@ -380,9 +378,7 @@ func convertNestedMatchAnyEntryToAPI(
 	}
 
 	apiValues := make([]kbapi.SecurityExceptionsAPINonEmptyString, len(values))
-	for i, v := range values {
-		apiValues[i] = kbapi.SecurityExceptionsAPINonEmptyString(v)
-	}
+	copy(apiValues, values)
 	apiEntry := kbapi.SecurityExceptionsAPIExceptionListItemEntryMatchAny{
 		Type:     "match_any",
 		Field:    field,
@@ -423,7 +419,7 @@ func convertNestedEntryToAPI(ctx context.Context, entry NestedEntryModel) (kbapi
 
 	entryType := entry.Type.ValueString()
 	operator := kbapi.SecurityExceptionsAPIExceptionListItemEntryOperator(entry.Operator.ValueString())
-	field := kbapi.SecurityExceptionsAPINonEmptyString(entry.Field.ValueString())
+	field := entry.Field.ValueString()
 
 	switch entryType {
 	case entryTypeMatch:
@@ -763,8 +759,7 @@ func (m *ExceptionItemModel) setCommonProps(
 			return
 		}
 		if len(tags) > 0 {
-			tagsArray := kbapi.SecurityExceptionsAPIExceptionListItemTags(tags)
-			*props.Tags = tagsArray
+			*props.Tags = tags
 		}
 	}
 
@@ -797,7 +792,7 @@ func (m *ExceptionItemModel) setCommonProps(
 			return
 		}
 
-		expireTimeAPI := kbapi.SecurityExceptionsAPIExceptionListItemExpireTime(expireTime.Format("2006-01-02T15:04:05.000Z"))
+		expireTimeAPI := expireTime.Format("2006-01-02T15:04:05.000Z")
 		*props.ExpireTime = expireTimeAPI
 	}
 }
@@ -819,7 +814,7 @@ func (m *ExceptionItemModel) commentsToCreateAPI(
 	commentsArray := make(kbapi.SecurityExceptionsAPICreateExceptionListItemCommentArray, len(comments))
 	for i, comment := range comments {
 		commentsArray[i] = kbapi.SecurityExceptionsAPICreateExceptionListItemComment{
-			Comment: kbapi.SecurityExceptionsAPINonEmptyString(comment.Comment.ValueString()),
+			Comment: comment.Comment.ValueString(),
 		}
 	}
 	return &commentsArray
@@ -842,7 +837,7 @@ func (m *ExceptionItemModel) commentsToUpdateAPI(
 	commentsArray := make(kbapi.SecurityExceptionsAPIUpdateExceptionListItemCommentArray, len(comments))
 	for i, comment := range comments {
 		commentsArray[i] = kbapi.SecurityExceptionsAPIUpdateExceptionListItemComment{
-			Comment: kbapi.SecurityExceptionsAPINonEmptyString(comment.Comment.ValueString()),
+			Comment: comment.Comment.ValueString(),
 		}
 	}
 	return &commentsArray
@@ -859,16 +854,16 @@ func (m *ExceptionItemModel) toCreateRequest(ctx context.Context, client clients
 	}
 
 	genericReq := kbapi.SecurityExceptionsAPICreateExceptionListItemGeneric{
-		ListId:      kbapi.SecurityExceptionsAPIExceptionListHumanId(m.ListID.ValueString()),
-		Name:        kbapi.SecurityExceptionsAPIExceptionListItemName(m.Name.ValueString()),
-		Description: kbapi.SecurityExceptionsAPIExceptionListItemDescription(m.Description.ValueString()),
+		ListId:      m.ListID.ValueString(),
+		Name:        m.Name.ValueString(),
+		Description: m.Description.ValueString(),
 		Type:        kbapi.SecurityExceptionsAPIExceptionListItemType(m.Type.ValueString()),
 		Entries:     entries,
 	}
 
 	// Set optional item_id
 	if utils.IsKnown(m.ItemID) {
-		itemID := kbapi.SecurityExceptionsAPIExceptionListItemHumanId(m.ItemID.ValueString())
+		itemID := m.ItemID.ValueString()
 		genericReq.ItemId = &itemID
 	}
 
@@ -935,11 +930,11 @@ func (m *ExceptionItemModel) toUpdateRequest(ctx context.Context, resourceId str
 		return nil, diags
 	}
 
-	id := kbapi.SecurityExceptionsAPIExceptionListItemId(resourceId)
+	id := resourceId
 	genericReq := kbapi.SecurityExceptionsAPIUpdateExceptionListItemGeneric{
 		Id:          &id,
-		Name:        kbapi.SecurityExceptionsAPIExceptionListItemName(m.Name.ValueString()),
-		Description: kbapi.SecurityExceptionsAPIExceptionListItemDescription(m.Description.ValueString()),
+		Name:        m.Name.ValueString(),
+		Description: m.Description.ValueString(),
 		Type:        kbapi.SecurityExceptionsAPIExceptionListItemType(m.Type.ValueString()),
 		Entries:     entries,
 	}
@@ -1022,7 +1017,7 @@ func (m *ExceptionItemModel) fromAPI(ctx context.Context, apiResp *kbapi.Securit
 
 	// Set optional expire_time
 	if apiResp.ExpireTime != nil {
-		expireTime, err := time.Parse(time.RFC3339, string(*apiResp.ExpireTime))
+		expireTime, err := time.Parse(time.RFC3339, *apiResp.ExpireTime)
 		if err != nil {
 			diags.AddError("Failed to parse expire_time from API response", err.Error())
 			m.ExpireTime = timetypes.NewRFC3339Null()

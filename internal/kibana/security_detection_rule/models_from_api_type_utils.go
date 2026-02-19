@@ -9,6 +9,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -31,7 +32,7 @@ func convertActionsToModel(ctx context.Context, apiActions []kbapi.SecurityDetec
 	for _, apiAction := range apiActions {
 		action := ActionModel{
 			ActionTypeId: types.StringValue(apiAction.ActionTypeId),
-			Id:           types.StringValue(string(apiAction.Id)),
+			Id:           types.StringValue(apiAction.Id),
 		}
 
 		// Convert params
@@ -53,7 +54,7 @@ func convertActionsToModel(ctx context.Context, apiActions []kbapi.SecurityDetec
 		action.Group = types.StringPointerValue(apiAction.Group)
 
 		if apiAction.Uuid != nil {
-			action.Uuid = types.StringValue(string(*apiAction.Uuid))
+			action.Uuid = types.StringValue(*apiAction.Uuid)
 		} else {
 			action.Uuid = types.StringNull()
 		}
@@ -78,11 +79,11 @@ func convertActionsToModel(ctx context.Context, apiActions []kbapi.SecurityDetec
 			if throttle0, err := apiAction.Frequency.Throttle.AsSecurityDetectionsAPIRuleActionThrottle0(); err == nil {
 				throttleStr = string(throttle0)
 			} else if throttle1, err := apiAction.Frequency.Throttle.AsSecurityDetectionsAPIRuleActionThrottle1(); err == nil {
-				throttleStr = string(throttle1)
+				throttleStr = throttle1
 			}
 
 			frequencyModel := ActionFrequencyModel{
-				NotifyWhen: types.StringValue(string(apiAction.Frequency.NotifyWhen)),
+				NotifyWhen: typeutils.StringishValue(apiAction.Frequency.NotifyWhen),
 				Summary:    types.BoolValue(apiAction.Frequency.Summary),
 				Throttle:   types.StringValue(throttleStr),
 			}
@@ -169,9 +170,7 @@ func convertInvestigationFieldsToModel(ctx context.Context, apiInvestigationFiel
 	}
 
 	fieldNames := make([]string, len(apiInvestigationFields.FieldNames))
-	for i, field := range apiInvestigationFields.FieldNames {
-		fieldNames[i] = string(field)
-	}
+	copy(fieldNames, apiInvestigationFields.FieldNames)
 
 	return utils.SliceToListType_String(ctx, fieldNames, path.Root("investigation_fields"), &diags), diags
 }
@@ -188,13 +187,13 @@ func convertRelatedIntegrationsToModel(ctx context.Context, apiRelatedIntegratio
 
 	for _, apiIntegration := range *apiRelatedIntegrations {
 		integration := RelatedIntegrationModel{
-			Package: types.StringValue(string(apiIntegration.Package)),
-			Version: types.StringValue(string(apiIntegration.Version)),
+			Package: types.StringValue(apiIntegration.Package),
+			Version: types.StringValue(apiIntegration.Version),
 		}
 
 		// Set optional integration field if provided
 		if apiIntegration.Integration != nil {
-			integration.Integration = types.StringValue(string(*apiIntegration.Integration))
+			integration.Integration = types.StringValue(*apiIntegration.Integration)
 		} else {
 			integration.Integration = types.StringNull()
 		}
@@ -267,9 +266,9 @@ func convertThreatMappingToModel(ctx context.Context, apiThreatMappings kbapi.Se
 
 		for _, apiEntry := range apiMapping.Entries {
 			entries = append(entries, SecurityDetectionRuleTfDataItemEntry{
-				Field: types.StringValue(string(apiEntry.Field)),
+				Field: types.StringValue(apiEntry.Field),
 				Type:  types.StringValue(string(apiEntry.Type)),
-				Value: types.StringValue(string(apiEntry.Value)),
+				Value: types.StringValue(apiEntry.Value),
 			})
 		}
 
@@ -547,13 +546,11 @@ func convertThresholdToModel(ctx context.Context, apiThreshold kbapi.SecurityDet
 	var fieldList types.List
 	if singleField, err := apiThreshold.Field.AsSecurityDetectionsAPIThresholdField0(); err == nil {
 		// Single field
-		fieldList = utils.SliceToListType_String(ctx, []string{string(singleField)}, path.Root("threshold").AtName("field"), &diags)
+		fieldList = utils.SliceToListType_String(ctx, []string{singleField}, path.Root("threshold").AtName("field"), &diags)
 	} else if multipleFields, err := apiThreshold.Field.AsSecurityDetectionsAPIThresholdField1(); err == nil {
 		// Multiple fields
 		fieldStrings := make([]string, len(multipleFields))
-		for i, field := range multipleFields {
-			fieldStrings[i] = string(field)
-		}
+		copy(fieldStrings, multipleFields)
 		fieldList = utils.SliceToListType_String(ctx, fieldStrings, path.Root("threshold").AtName("field"), &diags)
 	} else {
 		fieldList = types.ListValueMust(types.StringType, []attr.Value{})
@@ -691,7 +688,7 @@ func (d *SecurityDetectionRuleData) updateDataViewIdFromApi(ctx context.Context,
 	var diags diag.Diagnostics
 
 	if dataViewId != nil {
-		d.DataViewId = types.StringValue(string(*dataViewId))
+		d.DataViewId = types.StringValue(*dataViewId)
 	} else {
 		d.DataViewId = types.StringNull()
 	}
@@ -704,7 +701,7 @@ func (d *SecurityDetectionRuleData) updateTimelineIdFromApi(ctx context.Context,
 	var diags diag.Diagnostics
 
 	if timelineId != nil {
-		d.TimelineId = types.StringValue(string(*timelineId))
+		d.TimelineId = types.StringValue(*timelineId)
 	} else {
 		d.TimelineId = types.StringNull()
 	}
@@ -717,7 +714,7 @@ func (d *SecurityDetectionRuleData) updateTimelineTitleFromApi(ctx context.Conte
 	var diags diag.Diagnostics
 
 	if timelineTitle != nil {
-		d.TimelineTitle = types.StringValue(string(*timelineTitle))
+		d.TimelineTitle = types.StringValue(*timelineTitle)
 	} else {
 		d.TimelineTitle = types.StringNull()
 	}
@@ -730,7 +727,7 @@ func (d *SecurityDetectionRuleData) updateNamespaceFromApi(ctx context.Context, 
 	var diags diag.Diagnostics
 
 	if namespace != nil {
-		d.Namespace = types.StringValue(string(*namespace))
+		d.Namespace = types.StringValue(*namespace)
 	} else {
 		d.Namespace = types.StringNull()
 	}
@@ -743,7 +740,7 @@ func (d *SecurityDetectionRuleData) updateRuleNameOverrideFromApi(ctx context.Co
 	var diags diag.Diagnostics
 
 	if ruleNameOverride != nil {
-		d.RuleNameOverride = types.StringValue(string(*ruleNameOverride))
+		d.RuleNameOverride = types.StringValue(*ruleNameOverride)
 	} else {
 		d.RuleNameOverride = types.StringNull()
 	}
@@ -756,7 +753,7 @@ func (d *SecurityDetectionRuleData) updateTimestampOverrideFromApi(ctx context.C
 	var diags diag.Diagnostics
 
 	if timestampOverride != nil {
-		d.TimestampOverride = types.StringValue(string(*timestampOverride))
+		d.TimestampOverride = types.StringValue(*timestampOverride)
 	} else {
 		d.TimestampOverride = types.StringNull()
 	}
@@ -772,7 +769,7 @@ func (d *SecurityDetectionRuleData) updateTimestampOverrideFallbackDisabledFromA
 	var diags diag.Diagnostics
 
 	if timestampOverrideFallbackDisabled != nil {
-		d.TimestampOverrideFallbackDisabled = types.BoolValue(bool(*timestampOverrideFallbackDisabled))
+		d.TimestampOverrideFallbackDisabled = types.BoolValue(*timestampOverrideFallbackDisabled)
 	} else {
 		d.TimestampOverrideFallbackDisabled = types.BoolNull()
 	}
@@ -785,7 +782,7 @@ func (d *SecurityDetectionRuleData) updateBuildingBlockTypeFromApi(ctx context.C
 	var diags diag.Diagnostics
 
 	if buildingBlockType != nil {
-		d.BuildingBlockType = types.StringValue(string(*buildingBlockType))
+		d.BuildingBlockType = types.StringValue(*buildingBlockType)
 	} else {
 		d.BuildingBlockType = types.StringNull()
 	}
@@ -798,7 +795,7 @@ func (d *SecurityDetectionRuleData) updateLicenseFromApi(ctx context.Context, li
 	var diags diag.Diagnostics
 
 	if license != nil {
-		d.License = types.StringValue(string(*license))
+		d.License = types.StringValue(*license)
 	} else {
 		d.License = types.StringNull()
 	}
@@ -811,7 +808,7 @@ func (d *SecurityDetectionRuleData) updateNoteFromApi(ctx context.Context, note 
 	var diags diag.Diagnostics
 
 	if note != nil {
-		d.Note = types.StringValue(string(*note))
+		d.Note = types.StringValue(*note)
 	} else {
 		d.Note = types.StringNull()
 	}
@@ -824,8 +821,8 @@ func (d *SecurityDetectionRuleData) updateSetupFromApi(ctx context.Context, setu
 	var diags diag.Diagnostics
 
 	// Handle setup field - if empty, set to null to maintain consistency with optional schema
-	if string(setup) != "" {
-		d.Setup = types.StringValue(string(setup))
+	if setup != "" {
+		d.Setup = types.StringValue(setup)
 	} else {
 		d.Setup = types.StringNull()
 	}

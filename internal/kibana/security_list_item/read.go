@@ -37,7 +37,7 @@ func (r *securityListItemResource) Read(ctx context.Context, req resource.ReadRe
 	}
 
 	// Read by resource ID from composite ID
-	id := kbapi.SecurityListsAPIListId(compId.ResourceId)
+	id := compId.ResourceId
 	params := &kbapi.ReadListItemParams{
 		Id: &id,
 	}

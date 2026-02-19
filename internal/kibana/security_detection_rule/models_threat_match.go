@@ -64,10 +64,10 @@ func (d SecurityDetectionRuleData) toThreatMatchRuleCreateProps(ctx context.Cont
 	var createProps kbapi.SecurityDetectionsAPIRuleCreateProps
 
 	threatMatchRule := kbapi.SecurityDetectionsAPIThreatMatchRuleCreateProps{
-		Name:        kbapi.SecurityDetectionsAPIRuleName(d.Name.ValueString()),
-		Description: kbapi.SecurityDetectionsAPIRuleDescription(d.Description.ValueString()),
+		Name:        d.Name.ValueString(),
+		Description: d.Description.ValueString(),
 		Type:        kbapi.SecurityDetectionsAPIThreatMatchRuleCreatePropsType("threat_match"),
-		Query:       kbapi.SecurityDetectionsAPIRuleQuery(d.Query.ValueString()),
+		Query:       d.Query.ValueString(),
 		RiskScore:   kbapi.SecurityDetectionsAPIRiskScore(d.RiskScore.ValueInt64()),
 		Severity:    kbapi.SecurityDetectionsAPISeverity(d.Severity.ValueString()),
 	}
@@ -127,11 +127,11 @@ func (d SecurityDetectionRuleData) toThreatMatchRuleCreateProps(ctx context.Cont
 
 	// Set threat-specific fields
 	if utils.IsKnown(d.ThreatQuery) {
-		threatMatchRule.ThreatQuery = kbapi.SecurityDetectionsAPIThreatQuery(d.ThreatQuery.ValueString())
+		threatMatchRule.ThreatQuery = d.ThreatQuery.ValueString()
 	}
 
 	if utils.IsKnown(d.ThreatIndicatorPath) {
-		threatIndicatorPath := kbapi.SecurityDetectionsAPIThreatIndicatorPath(d.ThreatIndicatorPath.ValueString())
+		threatIndicatorPath := d.ThreatIndicatorPath.ValueString()
 		threatMatchRule.ThreatIndicatorPath = &threatIndicatorPath
 	}
 
@@ -149,7 +149,7 @@ func (d SecurityDetectionRuleData) toThreatMatchRuleCreateProps(ctx context.Cont
 	threatMatchRule.Language = d.getKQLQueryLanguage()
 
 	if utils.IsKnown(d.SavedId) {
-		savedId := kbapi.SecurityDetectionsAPISavedQueryId(d.SavedId.ValueString())
+		savedId := d.SavedId.ValueString()
 		threatMatchRule.SavedId = &savedId
 	}
 
@@ -180,17 +180,17 @@ func (d SecurityDetectionRuleData) toThreatMatchRuleUpdateProps(ctx context.Cont
 
 	threatMatchRule := kbapi.SecurityDetectionsAPIThreatMatchRuleUpdateProps{
 		Id:          &uid,
-		Name:        kbapi.SecurityDetectionsAPIRuleName(d.Name.ValueString()),
-		Description: kbapi.SecurityDetectionsAPIRuleDescription(d.Description.ValueString()),
+		Name:        d.Name.ValueString(),
+		Description: d.Description.ValueString(),
 		Type:        kbapi.SecurityDetectionsAPIThreatMatchRuleUpdatePropsType("threat_match"),
-		Query:       kbapi.SecurityDetectionsAPIRuleQuery(d.Query.ValueString()),
+		Query:       d.Query.ValueString(),
 		RiskScore:   kbapi.SecurityDetectionsAPIRiskScore(d.RiskScore.ValueInt64()),
 		Severity:    kbapi.SecurityDetectionsAPISeverity(d.Severity.ValueString()),
 	}
 
 	// For updates, we need to include the rule_id if it's set
 	if utils.IsKnown(d.RuleId) {
-		ruleId := kbapi.SecurityDetectionsAPIRuleSignatureId(d.RuleId.ValueString())
+		ruleId := d.RuleId.ValueString()
 		threatMatchRule.RuleId = &ruleId
 		threatMatchRule.Id = nil // if rule_id is set, we cant send id
 	}
@@ -250,11 +250,11 @@ func (d SecurityDetectionRuleData) toThreatMatchRuleUpdateProps(ctx context.Cont
 
 	// Set threat-specific fields
 	if utils.IsKnown(d.ThreatQuery) {
-		threatMatchRule.ThreatQuery = kbapi.SecurityDetectionsAPIThreatQuery(d.ThreatQuery.ValueString())
+		threatMatchRule.ThreatQuery = d.ThreatQuery.ValueString()
 	}
 
 	if utils.IsKnown(d.ThreatIndicatorPath) {
-		threatIndicatorPath := kbapi.SecurityDetectionsAPIThreatIndicatorPath(d.ThreatIndicatorPath.ValueString())
+		threatIndicatorPath := d.ThreatIndicatorPath.ValueString()
 		threatMatchRule.ThreatIndicatorPath = &threatIndicatorPath
 	}
 
@@ -272,7 +272,7 @@ func (d SecurityDetectionRuleData) toThreatMatchRuleUpdateProps(ctx context.Cont
 	threatMatchRule.Language = d.getKQLQueryLanguage()
 
 	if utils.IsKnown(d.SavedId) {
-		savedId := kbapi.SecurityDetectionsAPISavedQueryId(d.SavedId.ValueString())
+		savedId := d.SavedId.ValueString()
 		threatMatchRule.SavedId = &savedId
 	}
 
@@ -297,8 +297,8 @@ func (d *SecurityDetectionRuleData) updateFromThreatMatchRule(ctx context.Contex
 	}
 	d.Id = types.StringValue(compId.String())
 
-	d.RuleId = types.StringValue(string(rule.RuleId))
-	d.Name = types.StringValue(string(rule.Name))
+	d.RuleId = types.StringValue(rule.RuleId)
+	d.Name = types.StringValue(rule.Name)
 	d.Type = types.StringValue(string(rule.Type))
 
 	// Update common fields
@@ -314,11 +314,11 @@ func (d *SecurityDetectionRuleData) updateFromThreatMatchRule(ctx context.Contex
 	diags.Append(d.updateBuildingBlockTypeFromApi(ctx, rule.BuildingBlockType)...)
 	d.Query = types.StringValue(rule.Query)
 	d.Language = types.StringValue(string(rule.Language))
-	d.Enabled = types.BoolValue(bool(rule.Enabled))
-	d.From = types.StringValue(string(rule.From))
-	d.To = types.StringValue(string(rule.To))
-	d.Interval = types.StringValue(string(rule.Interval))
-	d.Description = types.StringValue(string(rule.Description))
+	d.Enabled = types.BoolValue(rule.Enabled)
+	d.From = types.StringValue(rule.From)
+	d.To = types.StringValue(rule.To)
+	d.Interval = types.StringValue(rule.Interval)
+	d.Description = types.StringValue(rule.Description)
 	d.RiskScore = types.Int64Value(int64(rule.RiskScore))
 	d.Severity = types.StringValue(string(rule.Severity))
 	d.MaxSignals = types.Int64Value(int64(rule.MaxSignals))
@@ -339,7 +339,7 @@ func (d *SecurityDetectionRuleData) updateFromThreatMatchRule(ctx context.Contex
 	diags.Append(d.updateIndexFromApi(ctx, rule.Index)...)
 
 	// Threat Match-specific fields
-	d.ThreatQuery = types.StringValue(string(rule.ThreatQuery))
+	d.ThreatQuery = types.StringValue(rule.ThreatQuery)
 	if len(rule.ThreatIndex) > 0 {
 		d.ThreatIndex = utils.ListValueFrom(ctx, rule.ThreatIndex, types.StringType, path.Root("threat_index"), &diags)
 	} else {
@@ -347,7 +347,7 @@ func (d *SecurityDetectionRuleData) updateFromThreatMatchRule(ctx context.Contex
 	}
 
 	if rule.ThreatIndicatorPath != nil {
-		d.ThreatIndicatorPath = types.StringValue(string(*rule.ThreatIndicatorPath))
+		d.ThreatIndicatorPath = types.StringValue(*rule.ThreatIndicatorPath)
 	} else {
 		d.ThreatIndicatorPath = types.StringNull()
 	}
@@ -366,7 +366,7 @@ func (d *SecurityDetectionRuleData) updateFromThreatMatchRule(ctx context.Contex
 
 	// Optional saved query ID
 	if rule.SavedId != nil {
-		d.SavedId = types.StringValue(string(*rule.SavedId))
+		d.SavedId = types.StringValue(*rule.SavedId)
 	} else {
 		d.SavedId = types.StringNull()
 	}

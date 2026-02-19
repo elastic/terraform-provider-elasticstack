@@ -51,7 +51,7 @@ func (r *Resource) updateCrossClusterApiKey(ctx context.Context, client *clients
 	}
 
 	updateDiags := elasticsearch.UpdateCrossClusterApiKey(client, crossClusterModel)
-	return diag.Diagnostics(updateDiags)
+	return updateDiags
 }
 
 func (r *Resource) updateApiKey(ctx context.Context, client *clients.ApiClient, planModel tfModel) diag.Diagnostics {
@@ -62,5 +62,5 @@ func (r *Resource) updateApiKey(ctx context.Context, client *clients.ApiClient, 
 	}
 
 	updateDiags := elasticsearch.UpdateApiKey(client, apiModel)
-	return diag.Diagnostics(updateDiags)
+	return updateDiags
 }

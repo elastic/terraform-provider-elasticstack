@@ -350,30 +350,30 @@ func (d SecurityDetectionRuleData) setCommonCreateProps(
 ) {
 	// Set optional rule_id if provided
 	if props.RuleId != nil && utils.IsKnown(d.RuleId) {
-		id := kbapi.SecurityDetectionsAPIRuleSignatureId(d.RuleId.ValueString())
+		id := d.RuleId.ValueString()
 		*props.RuleId = &id
 	}
 
 	// Set enabled status
 	if props.Enabled != nil && utils.IsKnown(d.Enabled) {
-		isEnabled := kbapi.SecurityDetectionsAPIIsRuleEnabled(d.Enabled.ValueBool())
+		isEnabled := d.Enabled.ValueBool()
 		*props.Enabled = &isEnabled
 	}
 
 	// Set time range
 	if props.From != nil && utils.IsKnown(d.From) {
-		fromTime := kbapi.SecurityDetectionsAPIRuleIntervalFrom(d.From.ValueString())
+		fromTime := d.From.ValueString()
 		*props.From = &fromTime
 	}
 
 	if props.To != nil && utils.IsKnown(d.To) {
-		toTime := kbapi.SecurityDetectionsAPIRuleIntervalTo(d.To.ValueString())
+		toTime := d.To.ValueString()
 		*props.To = &toTime
 	}
 
 	// Set interval
 	if props.Interval != nil && utils.IsKnown(d.Interval) {
-		intervalTime := kbapi.SecurityDetectionsAPIRuleInterval(d.Interval.ValueString())
+		intervalTime := d.Interval.ValueString()
 		*props.Interval = &intervalTime
 	}
 
@@ -419,17 +419,17 @@ func (d SecurityDetectionRuleData) setCommonCreateProps(
 
 	// Set optional string fields
 	if props.License != nil && utils.IsKnown(d.License) {
-		ruleLicense := kbapi.SecurityDetectionsAPIRuleLicense(d.License.ValueString())
+		ruleLicense := d.License.ValueString()
 		*props.License = &ruleLicense
 	}
 
 	if props.Note != nil && utils.IsKnown(d.Note) {
-		ruleNote := kbapi.SecurityDetectionsAPIInvestigationGuide(d.Note.ValueString())
+		ruleNote := d.Note.ValueString()
 		*props.Note = &ruleNote
 	}
 
 	if props.Setup != nil && utils.IsKnown(d.Setup) {
-		ruleSetup := kbapi.SecurityDetectionsAPISetupGuide(d.Setup.ValueString())
+		ruleSetup := d.Setup.ValueString()
 		*props.Setup = &ruleSetup
 	}
 
@@ -474,37 +474,37 @@ func (d SecurityDetectionRuleData) setCommonCreateProps(
 
 	// Set building block type
 	if props.BuildingBlockType != nil && utils.IsKnown(d.BuildingBlockType) {
-		buildingBlockType := kbapi.SecurityDetectionsAPIBuildingBlockType(d.BuildingBlockType.ValueString())
+		buildingBlockType := d.BuildingBlockType.ValueString()
 		*props.BuildingBlockType = &buildingBlockType
 	}
 
 	// Set data view ID
 	if props.DataViewId != nil && utils.IsKnown(d.DataViewId) {
-		dataViewId := kbapi.SecurityDetectionsAPIDataViewId(d.DataViewId.ValueString())
+		dataViewId := d.DataViewId.ValueString()
 		*props.DataViewId = &dataViewId
 	}
 
 	// Set namespace
 	if props.Namespace != nil && utils.IsKnown(d.Namespace) {
-		namespace := kbapi.SecurityDetectionsAPIAlertsIndexNamespace(d.Namespace.ValueString())
+		namespace := d.Namespace.ValueString()
 		*props.Namespace = &namespace
 	}
 
 	// Set rule name override
 	if props.RuleNameOverride != nil && utils.IsKnown(d.RuleNameOverride) {
-		ruleNameOverride := kbapi.SecurityDetectionsAPIRuleNameOverride(d.RuleNameOverride.ValueString())
+		ruleNameOverride := d.RuleNameOverride.ValueString()
 		*props.RuleNameOverride = &ruleNameOverride
 	}
 
 	// Set timestamp override
 	if props.TimestampOverride != nil && utils.IsKnown(d.TimestampOverride) {
-		timestampOverride := kbapi.SecurityDetectionsAPITimestampOverride(d.TimestampOverride.ValueString())
+		timestampOverride := d.TimestampOverride.ValueString()
 		*props.TimestampOverride = &timestampOverride
 	}
 
 	// Set timestamp override fallback disabled
 	if props.TimestampOverrideFallbackDisabled != nil && utils.IsKnown(d.TimestampOverrideFallbackDisabled) {
-		timestampOverrideFallbackDisabled := kbapi.SecurityDetectionsAPITimestampOverrideFallbackDisabled(d.TimestampOverrideFallbackDisabled.ValueBool())
+		timestampOverrideFallbackDisabled := d.TimestampOverrideFallbackDisabled.ValueBool()
 		*props.TimestampOverrideFallbackDisabled = &timestampOverrideFallbackDisabled
 	}
 
@@ -581,13 +581,13 @@ func (d SecurityDetectionRuleData) setCommonCreateProps(
 
 	// Set timeline ID
 	if props.TimelineId != nil && utils.IsKnown(d.TimelineId) {
-		timelineId := kbapi.SecurityDetectionsAPITimelineTemplateId(d.TimelineId.ValueString())
+		timelineId := d.TimelineId.ValueString()
 		*props.TimelineId = &timelineId
 	}
 
 	// Set timeline title
 	if props.TimelineTitle != nil && utils.IsKnown(d.TimelineTitle) {
-		timelineTitle := kbapi.SecurityDetectionsAPITimelineTemplateTitle(d.TimelineTitle.ValueString())
+		timelineTitle := d.TimelineTitle.ValueString()
 		*props.TimelineTitle = &timelineTitle
 	}
 }
@@ -601,24 +601,24 @@ func (d SecurityDetectionRuleData) setCommonUpdateProps(
 ) {
 	// Set enabled status
 	if props.Enabled != nil && utils.IsKnown(d.Enabled) {
-		isEnabled := kbapi.SecurityDetectionsAPIIsRuleEnabled(d.Enabled.ValueBool())
+		isEnabled := d.Enabled.ValueBool()
 		*props.Enabled = &isEnabled
 	}
 
 	// Set time range
 	if props.From != nil && utils.IsKnown(d.From) {
-		fromTime := kbapi.SecurityDetectionsAPIRuleIntervalFrom(d.From.ValueString())
+		fromTime := d.From.ValueString()
 		*props.From = &fromTime
 	}
 
 	if props.To != nil && utils.IsKnown(d.To) {
-		toTime := kbapi.SecurityDetectionsAPIRuleIntervalTo(d.To.ValueString())
+		toTime := d.To.ValueString()
 		*props.To = &toTime
 	}
 
 	// Set interval
 	if props.Interval != nil && utils.IsKnown(d.Interval) {
-		intervalTime := kbapi.SecurityDetectionsAPIRuleInterval(d.Interval.ValueString())
+		intervalTime := d.Interval.ValueString()
 		*props.Interval = &intervalTime
 	}
 
@@ -664,17 +664,17 @@ func (d SecurityDetectionRuleData) setCommonUpdateProps(
 
 	// Set optional string fields
 	if props.License != nil && utils.IsKnown(d.License) {
-		ruleLicense := kbapi.SecurityDetectionsAPIRuleLicense(d.License.ValueString())
+		ruleLicense := d.License.ValueString()
 		*props.License = &ruleLicense
 	}
 
 	if props.Note != nil && utils.IsKnown(d.Note) {
-		ruleNote := kbapi.SecurityDetectionsAPIInvestigationGuide(d.Note.ValueString())
+		ruleNote := d.Note.ValueString()
 		*props.Note = &ruleNote
 	}
 
 	if props.Setup != nil && utils.IsKnown(d.Setup) {
-		ruleSetup := kbapi.SecurityDetectionsAPISetupGuide(d.Setup.ValueString())
+		ruleSetup := d.Setup.ValueString()
 		*props.Setup = &ruleSetup
 	}
 
@@ -719,37 +719,37 @@ func (d SecurityDetectionRuleData) setCommonUpdateProps(
 
 	// Set building block type
 	if props.BuildingBlockType != nil && utils.IsKnown(d.BuildingBlockType) {
-		buildingBlockType := kbapi.SecurityDetectionsAPIBuildingBlockType(d.BuildingBlockType.ValueString())
+		buildingBlockType := d.BuildingBlockType.ValueString()
 		*props.BuildingBlockType = &buildingBlockType
 	}
 
 	// Set data view ID
 	if props.DataViewId != nil && utils.IsKnown(d.DataViewId) {
-		dataViewId := kbapi.SecurityDetectionsAPIDataViewId(d.DataViewId.ValueString())
+		dataViewId := d.DataViewId.ValueString()
 		*props.DataViewId = &dataViewId
 	}
 
 	// Set namespace
 	if props.Namespace != nil && utils.IsKnown(d.Namespace) {
-		namespace := kbapi.SecurityDetectionsAPIAlertsIndexNamespace(d.Namespace.ValueString())
+		namespace := d.Namespace.ValueString()
 		*props.Namespace = &namespace
 	}
 
 	// Set rule name override
 	if props.RuleNameOverride != nil && utils.IsKnown(d.RuleNameOverride) {
-		ruleNameOverride := kbapi.SecurityDetectionsAPIRuleNameOverride(d.RuleNameOverride.ValueString())
+		ruleNameOverride := d.RuleNameOverride.ValueString()
 		*props.RuleNameOverride = &ruleNameOverride
 	}
 
 	// Set timestamp override
 	if props.TimestampOverride != nil && utils.IsKnown(d.TimestampOverride) {
-		timestampOverride := kbapi.SecurityDetectionsAPITimestampOverride(d.TimestampOverride.ValueString())
+		timestampOverride := d.TimestampOverride.ValueString()
 		*props.TimestampOverride = &timestampOverride
 	}
 
 	// Set timestamp override fallback disabled
 	if props.TimestampOverrideFallbackDisabled != nil && utils.IsKnown(d.TimestampOverrideFallbackDisabled) {
-		timestampOverrideFallbackDisabled := kbapi.SecurityDetectionsAPITimestampOverrideFallbackDisabled(d.TimestampOverrideFallbackDisabled.ValueBool())
+		timestampOverrideFallbackDisabled := d.TimestampOverrideFallbackDisabled.ValueBool()
 		*props.TimestampOverrideFallbackDisabled = &timestampOverrideFallbackDisabled
 	}
 
@@ -826,13 +826,13 @@ func (d SecurityDetectionRuleData) setCommonUpdateProps(
 
 	// Set timeline ID
 	if props.TimelineId != nil && utils.IsKnown(d.TimelineId) {
-		timelineId := kbapi.SecurityDetectionsAPITimelineTemplateId(d.TimelineId.ValueString())
+		timelineId := d.TimelineId.ValueString()
 		*props.TimelineId = &timelineId
 	}
 
 	// Set timeline title
 	if props.TimelineTitle != nil && utils.IsKnown(d.TimelineTitle) {
-		timelineTitle := kbapi.SecurityDetectionsAPITimelineTemplateTitle(d.TimelineTitle.ValueString())
+		timelineTitle := d.TimelineTitle.ValueString()
 		*props.TimelineTitle = &timelineTitle
 	}
 }

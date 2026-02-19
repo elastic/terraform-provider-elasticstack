@@ -72,8 +72,8 @@ func (d SecurityDetectionRuleData) toMachineLearningRuleCreateProps(ctx context.
 	var createProps kbapi.SecurityDetectionsAPIRuleCreateProps
 
 	mlRule := kbapi.SecurityDetectionsAPIMachineLearningRuleCreateProps{
-		Name:             kbapi.SecurityDetectionsAPIRuleName(d.Name.ValueString()),
-		Description:      kbapi.SecurityDetectionsAPIRuleDescription(d.Description.ValueString()),
+		Name:             d.Name.ValueString(),
+		Description:      d.Description.ValueString(),
 		Type:             kbapi.SecurityDetectionsAPIMachineLearningRuleCreatePropsType("machine_learning"),
 		AnomalyThreshold: kbapi.SecurityDetectionsAPIAnomalyThreshold(d.AnomalyThreshold.ValueInt64()),
 		RiskScore:        kbapi.SecurityDetectionsAPIRiskScore(d.RiskScore.ValueInt64()),
@@ -160,8 +160,8 @@ func (d SecurityDetectionRuleData) toMachineLearningRuleUpdateProps(ctx context.
 
 	mlRule := kbapi.SecurityDetectionsAPIMachineLearningRuleUpdateProps{
 		Id:               &uid,
-		Name:             kbapi.SecurityDetectionsAPIRuleName(d.Name.ValueString()),
-		Description:      kbapi.SecurityDetectionsAPIRuleDescription(d.Description.ValueString()),
+		Name:             d.Name.ValueString(),
+		Description:      d.Description.ValueString(),
 		Type:             kbapi.SecurityDetectionsAPIMachineLearningRuleUpdatePropsType("machine_learning"),
 		AnomalyThreshold: kbapi.SecurityDetectionsAPIAnomalyThreshold(d.AnomalyThreshold.ValueInt64()),
 		RiskScore:        kbapi.SecurityDetectionsAPIRiskScore(d.RiskScore.ValueInt64()),
@@ -170,7 +170,7 @@ func (d SecurityDetectionRuleData) toMachineLearningRuleUpdateProps(ctx context.
 
 	// For updates, we need to include the rule_id if it's set
 	if utils.IsKnown(d.RuleId) {
-		ruleId := kbapi.SecurityDetectionsAPIRuleSignatureId(d.RuleId.ValueString())
+		ruleId := d.RuleId.ValueString()
 		mlRule.RuleId = &ruleId
 		mlRule.Id = nil // if rule_id is set, we cant send id
 	}
@@ -249,8 +249,8 @@ func (d *SecurityDetectionRuleData) updateFromMachineLearningRule(ctx context.Co
 	}
 	d.Id = types.StringValue(compId.String())
 
-	d.RuleId = types.StringValue(string(rule.RuleId))
-	d.Name = types.StringValue(string(rule.Name))
+	d.RuleId = types.StringValue(rule.RuleId)
+	d.Name = types.StringValue(rule.Name)
 	d.Type = types.StringValue(string(rule.Type))
 
 	// Update common fields (ML doesn't support DataViewId)
@@ -262,11 +262,11 @@ func (d *SecurityDetectionRuleData) updateFromMachineLearningRule(ctx context.Co
 	diags.Append(d.updateTimestampOverrideFromApi(ctx, rule.TimestampOverride)...)
 	diags.Append(d.updateTimestampOverrideFallbackDisabledFromApi(ctx, rule.TimestampOverrideFallbackDisabled)...)
 
-	d.Enabled = types.BoolValue(bool(rule.Enabled))
-	d.From = types.StringValue(string(rule.From))
-	d.To = types.StringValue(string(rule.To))
-	d.Interval = types.StringValue(string(rule.Interval))
-	d.Description = types.StringValue(string(rule.Description))
+	d.Enabled = types.BoolValue(rule.Enabled)
+	d.From = types.StringValue(rule.From)
+	d.To = types.StringValue(rule.To)
+	d.Interval = types.StringValue(rule.Interval)
+	d.Description = types.StringValue(rule.Description)
 	d.RiskScore = types.Int64Value(int64(rule.RiskScore))
 	d.Severity = types.StringValue(string(rule.Severity))
 
@@ -294,13 +294,11 @@ func (d *SecurityDetectionRuleData) updateFromMachineLearningRule(ctx context.Co
 	// Try to extract as single job ID first, then as array
 	if singleJobId, err := rule.MachineLearningJobId.AsSecurityDetectionsAPIMachineLearningJobId0(); err == nil {
 		// Single job ID
-		d.MachineLearningJobId = utils.ListValueFrom(ctx, []string{string(singleJobId)}, types.StringType, path.Root("machine_learning_job_id"), &diags)
+		d.MachineLearningJobId = utils.ListValueFrom(ctx, []string{singleJobId}, types.StringType, path.Root("machine_learning_job_id"), &diags)
 	} else if multipleJobIds, err := rule.MachineLearningJobId.AsSecurityDetectionsAPIMachineLearningJobId1(); err == nil {
 		// Multiple job IDs
 		jobIdStrings := make([]string, len(multipleJobIds))
-		for i, jobId := range multipleJobIds {
-			jobIdStrings[i] = string(jobId)
-		}
+		copy(jobIdStrings, multipleJobIds)
 		d.MachineLearningJobId = utils.ListValueFrom(ctx, jobIdStrings, types.StringType, path.Root("machine_learning_job_id"), &diags)
 	} else {
 		d.MachineLearningJobId = types.ListValueMust(types.StringType, []attr.Value{})

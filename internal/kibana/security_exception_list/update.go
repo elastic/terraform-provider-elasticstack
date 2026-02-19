@@ -56,11 +56,11 @@ func (r *ExceptionListResource) Update(ctx context.Context, req resource.UpdateR
 	 */
 	// Read back the updated resource to get the final state
 	readParams := &kbapi.ReadExceptionListParams{
-		Id: (*kbapi.SecurityExceptionsAPIExceptionListId)(&updateResp.Id),
+		Id: &updateResp.Id,
 	}
 	// Include namespace_type if specified (required for agnostic lists)
 	if updateResp.NamespaceType != "" {
-		nsType := kbapi.SecurityExceptionsAPIExceptionNamespaceType(updateResp.NamespaceType)
+		nsType := updateResp.NamespaceType
 		readParams.NamespaceType = &nsType
 	}
 
