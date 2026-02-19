@@ -127,7 +127,7 @@ func Test_newKibanaOapiConfigFromSDK(t *testing.T) {
 			}, args.resourceData)
 
 			for key, val := range args.env {
-				os.Setenv(key, val)
+				t.Setenv(key, val)
 			}
 
 			kibanaCfg, diags := newKibanaOapiConfigFromSDK(rd, args.baseCfg)
@@ -287,7 +287,7 @@ func Test_newKibanaOapiConfigFromFramework(t *testing.T) {
 			args := tt.args()
 
 			for key, val := range args.env {
-				os.Setenv(key, val)
+				t.Setenv(key, val)
 			}
 
 			kibanaCfg, diags := newKibanaOapiConfigFromFramework(context.Background(), args.providerConfig, args.baseCfg)

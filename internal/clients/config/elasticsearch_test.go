@@ -108,7 +108,7 @@ func Test_newElasticsearchConfigFromSDK(t *testing.T) {
 			}, args.resourceData)
 
 			for key, val := range args.env {
-				os.Setenv(key, val)
+				t.Setenv(key, val)
 			}
 
 			esConfig, diags := newElasticsearchConfigFromSDK(rd, args.base, key, false)
@@ -221,7 +221,7 @@ func Test_newElasticsearchConfigFromFramework(t *testing.T) {
 			args := tt.args()
 
 			for key, val := range args.env {
-				os.Setenv(key, val)
+				t.Setenv(key, val)
 			}
 
 			esConfig, diags := newElasticsearchConfigFromFramework(context.Background(), args.providerConfig, args.base)

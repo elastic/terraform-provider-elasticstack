@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -219,10 +218,8 @@ func TestGetConnectorByName(t *testing.T) {
 	httpStatus = http.StatusOK
 	mockResponses = append(mockResponses, getConnectorsResponse)
 
-	err := os.Setenv("ELASTICSEARCH_URL", server.URL)
-	require.NoError(t, err)
-	err = os.Setenv("KIBANA_ENDPOINT", server.URL)
-	require.NoError(t, err)
+	t.Setenv("ELASTICSEARCH_URL", server.URL)
+	t.Setenv("KIBANA_ENDPOINT", server.URL)
 
 	apiClient, err := clients.NewAcceptanceTestingClient()
 	require.NoError(t, err)

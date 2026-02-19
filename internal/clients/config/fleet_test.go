@@ -137,7 +137,7 @@ func Test_newFleetConfigFromSDK(t *testing.T) {
 			}, args.resourceData)
 
 			for key, val := range args.env {
-				os.Setenv(key, val)
+				t.Setenv(key, val)
 			}
 
 			fleetConfig, diags := newFleetConfigFromSDK(rd, args.kibanaCfg)
@@ -185,8 +185,7 @@ func Test_newFleetConfigFromSDK_BearerTokenEnvOverride(t *testing.T) {
 	os.Unsetenv("FLEET_BEARER_TOKEN")
 	os.Unsetenv("FLEET_CA_CERTS")
 
-	os.Setenv("FLEET_BEARER_TOKEN", "env-jwt-token")
-	defer os.Unsetenv("FLEET_BEARER_TOKEN")
+	t.Setenv("FLEET_BEARER_TOKEN", "env-jwt-token")
 
 	kibanaCfg := kibanaOapiConfig{}
 	rd := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
@@ -332,7 +331,7 @@ func Test_newFleetConfigFromFramework(t *testing.T) {
 			args := tt.args()
 
 			for key, val := range args.env {
-				os.Setenv(key, val)
+				t.Setenv(key, val)
 			}
 
 			fleetConfig, diags := newFleetConfigFromFramework(context.Background(), args.providerConfig, args.kibanaCfg)
@@ -379,8 +378,7 @@ func Test_newFleetConfigFromFramework_BearerTokenEnvOverride(t *testing.T) {
 	os.Unsetenv("FLEET_BEARER_TOKEN")
 	os.Unsetenv("FLEET_CA_CERTS")
 
-	os.Setenv("FLEET_BEARER_TOKEN", "env-jwt-token")
-	defer os.Unsetenv("FLEET_BEARER_TOKEN")
+	t.Setenv("FLEET_BEARER_TOKEN", "env-jwt-token")
 
 	kibanaCfg := kibanaOapiConfig{}
 	providerConfig := ProviderConfiguration{
