@@ -73,6 +73,7 @@ func (m *alertingRuleModel) populateFromAPI(ctx context.Context, rule *models.Al
 	if rule == nil {
 		return diags
 	}
+	previousParams := m.Params
 
 	compositeID := clients.CompositeId{
 		ClusterId:  rule.SpaceID,
@@ -94,7 +95,12 @@ func (m *alertingRuleModel) populateFromAPI(ctx context.Context, rule *models.Al
 	}
 
 	// Params as JSON string
-	paramsJSON, err := json.Marshal(rule.Params)
+	normalizedParams, d := normalizeRuleParamsForState(ctx, rule.Params, previousParams)
+	diags.Append(d...)
+	if diags.HasError() {
+		return diags
+	}
+	paramsJSON, err := json.Marshal(normalizedParams)
 	if err != nil {
 		diags.AddError("Failed to marshal params", err.Error())
 		return diags
@@ -158,6 +164,116 @@ func (m *alertingRuleModel) populateFromAPI(ctx context.Context, rule *models.Al
 	}
 
 	return diags
+}
+
+// normalizeRuleParamsForState strips API-returned params keys that the user
+// never specified. Kibana injects server-side defaults (e.g. aggType, groupBy)
+// into the response even when the user's config omitted them. Without this,
+// Terraform sees the extra keys as drift and produces "inconsistent result
+// after apply" errors. The approach is generic: any key present in the API
+// response but absent from the user's prior state params is removed.
+func normalizeRuleParamsForState(ctx context.Context, apiParams map[string]interface{}, previousParams jsontypes.Normalized) (map[string]interface{}, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	if apiParams == nil {
+		return apiParams, diags
+	}
+
+	priorParams, d := parsePriorParams(previousParams)
+	diags.Append(d...)
+	if diags.HasError() {
+		return apiParams, diags
+	}
+	if priorParams == nil {
+		// No prior state to compare against (first create); keep everything.
+		return apiParams, diags
+	}
+
+	normalized, ok := removeInjectedDefaultsRecursive(apiParams, priorParams).(map[string]interface{})
+	if !ok {
+		// Defensive fallback: params are expected to be a JSON object, but if we
+		// can't reconcile shapes, keep everything to avoid accidental data loss.
+		return apiParams, diags
+	}
+
+	return normalized, diags
+}
+
+// parsePriorParams returns the decoded params JSON from the previous Terraform
+// state, or nil if there is no usable prior state.
+func parsePriorParams(previousParams jsontypes.Normalized) (map[string]interface{}, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	if !utils.IsKnown(previousParams) || previousParams.IsNull() {
+		return nil, diags
+	}
+
+	var prior map[string]interface{}
+	diags.Append(previousParams.Unmarshal(&prior)...)
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	return prior, diags
+}
+
+// removeInjectedDefaultsRecursive removes API-injected keys at any nesting level.
+//
+// It walks the API params structure and removes keys that are present in the API
+// payload but absent from the corresponding object in the prior state params.
+//
+// NOTE: This function assumes the prior state params represent what the user
+// configured (i.e. prior-state keys are a subset of configured keys). It only
+// iterates keys present in the API payload; therefore, keys present in the prior
+// state but missing from the API response will not be preserved in the output.
+//
+//   - For JSON objects (map[string]interface{}), keys not present in the prior
+//     object are dropped, and shared keys are recursed into.
+//   - For JSON arrays ([]interface{}), elements are matched by index when the prior
+//     is also an array; element values are recursed into when there is a matching
+//     prior element, otherwise the element is kept as-is (defensive fallback).
+//   - For scalars, the API value is returned unchanged.
+func removeInjectedDefaultsRecursive(api any, prior any) any {
+	switch apiTyped := api.(type) {
+	case map[string]interface{}:
+		priorMap, ok := prior.(map[string]interface{})
+		if !ok {
+			// Can't compare nested keys without a prior object; keep as-is.
+			return apiTyped
+		}
+
+		out := make(map[string]interface{}, len(apiTyped))
+		for k, v := range apiTyped {
+			priorV, exists := priorMap[k]
+			if !exists {
+				// API injected this key but user never had it — drop it.
+				continue
+			}
+			out[k] = removeInjectedDefaultsRecursive(v, priorV)
+		}
+		return out
+
+	case []interface{}:
+		priorSlice, ok := prior.([]interface{})
+		if !ok {
+			// Can't compare element structure without a prior array; keep as-is.
+			return apiTyped
+		}
+
+		out := make([]interface{}, len(apiTyped))
+		for i, v := range apiTyped {
+			if i < len(priorSlice) {
+				out[i] = removeInjectedDefaultsRecursive(v, priorSlice[i])
+			} else {
+				// Defensive fallback: no matching prior element; keep.
+				out[i] = v
+			}
+		}
+		return out
+
+	default:
+		return api
+	}
 }
 
 // Version thresholds for feature support
@@ -241,13 +357,35 @@ func (m alertingRuleModel) toAPIModel(ctx context.Context, serverVersion *versio
 		},
 	}
 
-	// Params from JSON string
+	// Params from JSON string.
+	// Note: params validation is handled exclusively by ValidateConfig during
+	// the plan phase. We intentionally do not re-validate here to avoid
+	// duplicate error messages.
 	if utils.IsKnown(m.Params) {
 		params := map[string]interface{}{}
-		if err := json.Unmarshal([]byte(m.Params.ValueString()), &params); err != nil {
-			diags.AddError("Failed to unmarshal params", err.Error())
+		diags.Append(m.Params.Unmarshal(&params)...)
+		if diags.HasError() {
 			return models.AlertingRule{}, diags
 		}
+
+		// Compatibility: older Kibana versions reject `.index-threshold` rule params
+		// when `groupBy` is omitted (server-side expects a string, but sees undefined).
+		// Defaulting to "all" preserves Kibana's effective behavior while avoiding 400s.
+		if rule.RuleTypeID == ".index-threshold" {
+			if v, ok := params["groupBy"]; !ok || v == nil {
+				params["groupBy"] = "all"
+			}
+
+			// Compatibility: some Kibana versions reject `.index-threshold` params
+			// when `aggType` is omitted (server-side expects a string, but sees undefined).
+			// Defaulting to `count` preserves Kibana behavior while avoiding 400s.
+			if v, ok := params["aggType"]; !ok || v == nil {
+				params["aggType"] = "count"
+				// aggField is only valid for non-count aggregations.
+				delete(params, "aggField")
+			}
+		}
+
 		rule.Params = params
 	}
 

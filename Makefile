@@ -28,6 +28,13 @@ KIBANA_API_KEY_NAME ?= kibana-api-key
 FLEET_NAME ?= terraform-elasticstack-fleet
 FLEET_ENDPOINT ?= https://$(FLEET_NAME):8220
 
+# Fleet Server image repository. Some older stack versions (notably 7.17.x, 8.0.x, 8.1.x)
+# do not publish elastic-agent images to docker.elastic.co, so fall back to Docker Hub.
+ifneq (,$(filter 7.17.% 8.0.% 8.1.%,$(STACK_VERSION)))
+FLEET_IMAGE := elastic/elastic-agent
+endif
+export FLEET_IMAGE
+
 RERUN_FAILS ?= 3
 
 export GOBIN = $(shell pwd)/bin
