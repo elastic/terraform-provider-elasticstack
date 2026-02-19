@@ -17,6 +17,9 @@ import (
 //go:embed resource-description.md
 var securityListResourceDescription string
 
+//go:embed type-description.md
+var securityListTypeDescription string
+
 func (r *securityListResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: securityListResourceDescription,
@@ -56,7 +59,7 @@ func (r *securityListResource) Schema(_ context.Context, _ resource.SchemaReques
 				Required:            true,
 			},
 			"type": schema.StringAttribute{
-				MarkdownDescription: "Specifies the Elasticsearch data type of values the list contains. Valid values include: `binary`, `boolean`, `byte`, `date`, `date_nanos`, `date_range`, `double`, `double_range`, `float`, `float_range`, `geo_point`, `geo_shape`, `half_float`, `integer`, `integer_range`, `ip`, `ip_range`, `keyword`, `long`, `long_range`, `shape`, `short`, `text`.",
+				MarkdownDescription: securityListTypeDescription,
 				Required:            true,
 				Validators: []validator.String{
 					stringvalidator.OneOf(

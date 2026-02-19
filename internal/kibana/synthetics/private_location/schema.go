@@ -47,7 +47,7 @@ func privateLocationSchema() schema.Schema {
 			"agent_policy_id": schema.StringAttribute{
 				Optional:            false,
 				Required:            true,
-				MarkdownDescription: "The ID of the agent policy associated with the private location. To create a private location for synthetics monitor you need to create an agent policy in fleet and use its agentPolicyId",
+				MarkdownDescription: agentPolicyIDDescription,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 					stringplanmodifier.RequiresReplace(),
@@ -102,6 +102,9 @@ func toModelV0(pLoc kbapi.PrivateLocation) tfModelV0 {
 
 //go:embed resource-description.md
 var syntheticsPrivateLocationDescription string
+
+//go:embed agent_policy_id-description.md
+var agentPolicyIDDescription string
 
 // Geographic configuration schema and types
 func geoConfigSchema() schema.Attribute {

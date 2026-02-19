@@ -889,7 +889,7 @@ func getXYLayerSchema() schema.NestedAttributeObject {
 	return schema.NestedAttributeObject{
 		Attributes: map[string]schema.Attribute{
 			"type": schema.StringAttribute{
-				MarkdownDescription: "The type of layer. Valid values: 'area', 'line', 'bar', 'horizontal_bar', 'referenceLines' for NoESQL layers; 'area_chart', 'line_chart', 'bar_chart', 'horizontal_bar_chart', 'referenceLines' for ESQL layers.",
+				MarkdownDescription: xyLayerTypeDescription,
 				Required:            true,
 			},
 			"data_layer": schema.SingleNestedAttribute{
@@ -1004,7 +1004,7 @@ func getReferenceLineLayerAttributes() map[string]schema.Attribute {
 						},
 					},
 					"icon": schema.StringAttribute{
-						MarkdownDescription: "Icon to display on the reference line. Valid values: 'alert', 'asterisk', 'bell', 'bolt', 'bug', 'circle', 'editorComment', 'flag', 'heart', 'mapMarker', 'pinFilled', 'starEmpty', 'starFilled', 'tag', 'triangle'.",
+						MarkdownDescription: referenceLineIconDescription,
 						Optional:            true,
 						Validators: []validator.String{
 							stringvalidator.OneOf("alert", "asterisk", "bell", "bolt", "bug", "circle", "editorComment", "flag", "heart", "mapMarker", "pinFilled", "starEmpty", "starFilled", "tag", "triangle"),
@@ -1094,7 +1094,7 @@ func getTagcloudSchema() map[string]schema.Attribute {
 			},
 		},
 		"metric": schema.StringAttribute{
-			MarkdownDescription: "Metric configuration as JSON. Can be a field metric operation (count, unique count, min, max, avg, median, std dev, sum, last value, percentile, percentile ranks), a pipeline operation (differences, moving average, cumulative sum, counter rate), or a formula operation.",
+			MarkdownDescription: tagcloudMetricDescription,
 			CustomType:          customtypes.NewJSONWithDefaultsType(populateTagcloudMetricDefaults),
 			Required:            true,
 		},
@@ -1161,12 +1161,12 @@ func getHeatmapSchema() map[string]schema.Attribute {
 			Required:            true,
 		},
 		"x_axis": schema.StringAttribute{
-			MarkdownDescription: "X-axis operation configuration as JSON. For non-ES|QL, this can be date histogram, terms, histogram, range, or filters operations; for ES|QL, this is the column/operation configuration.",
+			MarkdownDescription: heatmapXAxisDescription,
 			CustomType:          jsontypes.NormalizedType{},
 			Required:            true,
 		},
 		"y_axis": schema.StringAttribute{
-			MarkdownDescription: "Y-axis operation configuration as JSON. For non-ES|QL, this can be date histogram, terms, histogram, range, or filters operations; for ES|QL, this is the column/operation configuration.",
+			MarkdownDescription: heatmapYAxisDescription,
 			CustomType:          jsontypes.NormalizedType{},
 			Optional:            true,
 		},
@@ -1330,7 +1330,7 @@ func getRegionMapSchema() map[string]schema.Attribute {
 			Required:            true,
 		},
 		"region": schema.StringAttribute{
-			MarkdownDescription: "Region configuration as JSON. For ES|QL, this defines the region column and EMS join. For standard mode, this defines the bucket operation (terms, histogram, range, filters) and optional EMS settings.",
+			MarkdownDescription: regionMapRegionDescription,
 			CustomType:          jsontypes.NormalizedType{},
 			Required:            true,
 		},
@@ -1414,7 +1414,7 @@ func getGaugeSchema() map[string]schema.Attribute {
 			NestedObject:        getSearchFilterSchema(),
 		},
 		"metric": schema.StringAttribute{
-			MarkdownDescription: "Metric configuration as JSON. Supports metric operations such as count, unique count, min, max, average, median, standard deviation, sum, last value, percentile, percentile ranks, or formula.",
+			MarkdownDescription: gaugeMetricDescription,
 			CustomType:          customtypes.NewJSONWithDefaultsType(populateGaugeMetricDefaults),
 			Required:            true,
 		},
@@ -1438,7 +1438,7 @@ func getMetricChartSchema() map[string]schema.Attribute {
 			Optional:            true,
 		},
 		"dataset": schema.StringAttribute{
-			MarkdownDescription: "Dataset configuration as JSON. Can be a data view dataset (`type: 'dataview'`), index dataset (`type: 'index'`), ES|QL dataset (`type: 'esql'`), or table ES|QL dataset (`type: 'tableESQLDatasetType'`).",
+			MarkdownDescription: metricChartDatasetDescription,
 			CustomType:          jsontypes.NormalizedType{},
 			Required:            true,
 		},
@@ -1461,7 +1461,7 @@ func getMetricChartSchema() map[string]schema.Attribute {
 			NestedObject:        getSearchFilterSchema(),
 		},
 		"metrics": schema.ListNestedAttribute{
-			MarkdownDescription: "Array of metrics to display (1-2 items). Each metric can be a primary metric (displays prominently) or secondary metric (displays as comparison). Metrics can use field operations (count, unique count, min, max, avg, median, std dev, sum, last value, percentile, percentile ranks), pipeline operations (differences, moving average, cumulative sum, counter rate), formula operations, or for ES|QL datasets, column-based value operations.",
+			MarkdownDescription: metricChartMetricsDescription,
 			Required:            true,
 			Validators: []validator.List{
 				listvalidator.SizeAtMost(2),
@@ -1469,7 +1469,7 @@ func getMetricChartSchema() map[string]schema.Attribute {
 			NestedObject: schema.NestedAttributeObject{
 				Attributes: map[string]schema.Attribute{
 					"config": schema.StringAttribute{
-						MarkdownDescription: "Metric configuration as JSON. For primary metrics: includes type ('primary'), operation, format, alignments, icon, and optional fields like sub_label, fit, color, apply_color_to, and background_chart. For secondary metrics: includes type ('secondary'), operation, format, and optional fields like label, prefix, compare, and color.",
+						MarkdownDescription: metricChartMetricConfigDescription,
 						CustomType:          customtypes.NewJSONWithDefaultsType(populateMetricChartMetricDefaults),
 						Required:            true,
 					},
@@ -1477,7 +1477,7 @@ func getMetricChartSchema() map[string]schema.Attribute {
 			},
 		},
 		"breakdown_by": schema.StringAttribute{
-			MarkdownDescription: "Breakdown configuration as JSON. Groups metrics by a dimension. Can use operations like date histogram, terms, histogram, range, filters, or for ES|QL datasets, value operations with columns. Includes optional columns count and collapse_by configuration.",
+			MarkdownDescription: metricChartBreakdownByDescription,
 			CustomType:          jsontypes.NormalizedType{},
 			Optional:            true,
 		},

@@ -283,7 +283,12 @@ func Test_legacyMetricConfigModel_fromAPI_roundTrip(t *testing.T) {
 
 	t.Run("NoESQL round-trip", func(t *testing.T) {
 		var chart kbapi.LegacyMetricChartSchema
-		require.NoError(t, json.Unmarshal([]byte(`{"type":"legacy_metric","dataset":{"type":"dataView","id":"x"},"query":{"language":"kuery","query":""},"metric":{"operation":"count","format":{"type":"number"}}}`), &chart))
+		require.NoError(t, json.Unmarshal([]byte(`{
+		"type": "legacy_metric",
+		"dataset": {"type": "dataView", "id": "x"},
+		"query": {"language": "kuery", "query": ""},
+		"metric": {"operation": "count", "format": {"type": "number"}}
+	}`), &chart))
 		model1 := &legacyMetricConfigModel{}
 		diags := model1.fromAPI(ctx, chart)
 		require.False(t, diags.HasError())
@@ -297,7 +302,16 @@ func Test_legacyMetricConfigModel_fromAPI_roundTrip(t *testing.T) {
 
 	t.Run("ESQL round-trip", func(t *testing.T) {
 		var apiESQL kbapi.LegacyMetricESQL
-		require.NoError(t, json.Unmarshal([]byte(`{"type":"legacy_metric","dataset":{"type":"esql","query":"FROM x"},"metric":{"operation":"value","column":"y","format":{"type":"number"},"color":{"type":"static","color":"#fff"}}}`), &apiESQL))
+		require.NoError(t, json.Unmarshal([]byte(`{
+		"type": "legacy_metric",
+		"dataset": {"type": "esql", "query": "FROM x"},
+		"metric": {
+			"operation": "value",
+			"column": "y",
+			"format": {"type": "number"},
+			"color": {"type": "static", "color": "#fff"}
+		}
+	}`), &apiESQL))
 		model1 := &legacyMetricConfigModel{}
 		diags := model1.fromAPIESQL(ctx, apiESQL)
 		require.False(t, diags.HasError())
@@ -334,7 +348,12 @@ func Test_legacyMetricConfigModel_toAPI_ESQL_withQuery(t *testing.T) {
 	model := &legacyMetricConfigModel{
 		Dataset: jsontypes.NewNormalizedValue(`{"type":"esql","query":"FROM x"}`),
 		Query:   &filterSimpleModel{Language: types.StringValue("kuery"), Query: types.StringValue("*")},
-		Metric:  customtypes.NewJSONWithDefaultsValue[map[string]any](`{"operation":"value","column":"y","format":{"type":"number"},"color":{"type":"static","color":"#fff"}}`, populateLegacyMetricMetricDefaults),
+		Metric: customtypes.NewJSONWithDefaultsValue[map[string]any](`{
+			"operation": "value",
+			"column": "y",
+			"format": {"type": "number"},
+			"color": {"type": "static", "color": "#fff"}
+		}`, populateLegacyMetricMetricDefaults),
 	}
 	_, diags := model.toAPI()
 	require.True(t, diags.HasError())

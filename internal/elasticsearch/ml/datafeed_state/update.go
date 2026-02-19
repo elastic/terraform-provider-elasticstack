@@ -35,7 +35,7 @@ func (r *mlDatafeedStateResource) Update(ctx context.Context, req resource.Updat
 
 	diags = r.update(ctx, req.Plan, &resp.State, updateTimeout)
 	if diagutil.ContainsContextDeadlineExceeded(ctx, diags) {
-		diags.AddError("Operation timed out", fmt.Sprintf("The operation to update the ML datafeed state timed out after %s. You may need to allocate more free memory within ML nodes by either closing other jobs, or increasing the overall ML memory. You may retry the operation.", updateTimeout))
+		diags.AddError("Operation timed out", fmt.Sprintf(updateTimeoutErrorMessage, updateTimeout))
 	}
 
 	resp.Diagnostics.Append(diags...)
@@ -124,7 +124,12 @@ func (r *mlDatafeedStateResource) update(ctx context.Context, plan tfsdk.Plan, s
 	return diags
 }
 
-func (r *mlDatafeedStateResource) updateAfterMissedTransition(ctx context.Context, client *clients.ApiClient, data MLDatafeedStateData, datafeedStats *models.DatafeedStats) (*MLDatafeedStateData, diag.Diagnostics) {
+func (r *mlDatafeedStateResource) updateAfterMissedTransition(
+	ctx context.Context,
+	client *clients.ApiClient,
+	data MLDatafeedStateData,
+	datafeedStats *models.DatafeedStats,
+) (*MLDatafeedStateData, diag.Diagnostics) {
 	datafeedId := data.DatafeedId.ValueString()
 	statsAfterUpdate, diags := elasticsearch.GetDatafeedStats(ctx, client, datafeedId)
 	if diags.HasError() {

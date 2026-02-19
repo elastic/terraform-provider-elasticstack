@@ -45,7 +45,10 @@ func (d *MLDatafeedStateData) SetStartAndEndFromAPI(datafeedStats *models.Datafe
 
 	if datafeed.State(datafeedStats.State) == datafeed.StateStarted {
 		if datafeedStats.RunningState == nil {
-			diags.AddWarning("Running state was empty for a started datafeed", "The Elasticsearch API returned an empty running state for a Datafeed which was successfully started. Ignoring start and end response values.")
+			diags.AddWarning(
+				"Running state was empty for a started datafeed",
+				"The Elasticsearch API returned an empty running state for a Datafeed which was successfully started. Ignoring start and end response values.",
+			)
 			return diags
 		}
 

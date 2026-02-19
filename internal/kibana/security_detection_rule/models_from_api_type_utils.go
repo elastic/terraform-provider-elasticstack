@@ -765,7 +765,10 @@ func (d *SecurityDetectionRuleData) updateTimestampOverrideFromApi(ctx context.C
 }
 
 // Helper function to update timestamp override fallback disabled from API response
-func (d *SecurityDetectionRuleData) updateTimestampOverrideFallbackDisabledFromApi(ctx context.Context, timestampOverrideFallbackDisabled *kbapi.SecurityDetectionsAPITimestampOverrideFallbackDisabled) diag.Diagnostics {
+func (d *SecurityDetectionRuleData) updateTimestampOverrideFallbackDisabledFromApi(
+	ctx context.Context,
+	timestampOverrideFallbackDisabled *kbapi.SecurityDetectionsAPITimestampOverrideFallbackDisabled,
+) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	if timestampOverrideFallbackDisabled != nil {

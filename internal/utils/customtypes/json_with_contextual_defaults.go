@@ -25,9 +25,16 @@ const legacyContextKey = "__tf_provider_connector_type_id"
 const contextKey = "__tf_provider_context"
 
 func DescriptionWithContextWarning(baseDescription string) string {
-	return fmt.Sprintf(`%s
-
-The provider injects the '%s' property into this JSON object. In most cases this field will be ignored when computing the difference between the current and desired state. In some cases however, this property may be shown in the Terraform plan. Any changes to the '%s' property can be safely ignored. This property is used internally by the provider, and you should not set this property within your Terraform configuration.`, baseDescription, contextKey, contextKey)
+	return fmt.Sprintf(
+		"%s\n\n"+
+			"The provider injects the '%s' property into this JSON object. In most cases this field will be ignored when computing the difference between the current and desired state. "+
+			"In some cases however, this property may be shown in the Terraform plan. "+
+			"Any changes to the '%s' property can be safely ignored. "+
+			"This property is used internally by the provider, and you should not set this property within your Terraform configuration.",
+		baseDescription,
+		contextKey,
+		contextKey,
+	)
 }
 
 type JSONWithContextualDefaultsValue struct {
@@ -272,7 +279,11 @@ func NewJSONWithContextualDefaultsUnknown() JSONWithContextualDefaultsValue {
 }
 
 // NewJSONWithContextualDefaultsValue creates a JSONWithContext with a known value and a context value.
-func NewJSONWithContextualDefaultsValue(value string, contextValue string, populateDefaults func(contextValue string, value string) (string, error)) (JSONWithContextualDefaultsValue, diag.Diagnostics) {
+func NewJSONWithContextualDefaultsValue(
+	value string,
+	contextValue string,
+	populateDefaults func(contextValue string, value string) (string, error),
+) (JSONWithContextualDefaultsValue, diag.Diagnostics) {
 	if value == "" {
 		return NewJSONWithContextualDefaultsNull(), nil
 	}

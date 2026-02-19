@@ -154,7 +154,7 @@ func ResourceTemplate() *schema.Resource {
 						},
 					},
 					"mappings": {
-						Description:      "Mapping for fields in the index. Should be specified as a JSON object of field mappings. See the documentation (https://www.elastic.co/guide/en/elasticsearch/reference/current/explicit-mapping.html) for more details",
+						Description:      indexTemplateMappingsDescription,
 						Type:             schema.TypeString,
 						Optional:         true,
 						DiffSuppressFunc: utils.DiffJsonSuppress,
@@ -199,7 +199,7 @@ func ResourceTemplate() *schema.Resource {
 	utils.AddConnectionSchema(templateSchema)
 
 	return &schema.Resource{
-		Description: "Creates or updates an index template. Index templates define settings, mappings, and aliases that can be applied automatically to new indices. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-put-template.html",
+		Description: indexTemplateResourceDescription,
 
 		CreateContext: resourceIndexTemplatePut,
 		UpdateContext: resourceIndexTemplatePut,

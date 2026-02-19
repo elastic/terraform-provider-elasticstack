@@ -130,7 +130,7 @@ func getSchema() schema.Schema {
 							Attributes: map[string]schema.Attribute{
 								"id": schema.StringAttribute{
 									Required:            true,
-									MarkdownDescription: "The ID of the field format. Valid values include: `boolean`, `color`, `date`, `duration`, `number`, `percent`, `relative_date`, `static_lookup`, `string`, `truncate`, `url`.",
+									MarkdownDescription: fieldFormatIDMarkdownDescription,
 								},
 								"params": schema.SingleNestedAttribute{
 									Optional: true,

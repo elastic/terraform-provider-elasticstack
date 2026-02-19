@@ -54,7 +54,7 @@ func getSchema() schema.Schema {
 				Required:    true,
 			},
 			"budgeting_method": schema.StringAttribute{
-				Description: "An `occurrences` budgeting method uses the number of good and total events during the time window. A `timeslices` budgeting method uses the number of good slices and total slices during the time window. A slice is an arbitrary time window (smaller than the overall SLO time window) that is either considered good or bad, calculated from the timeslice threshold and the ratio of good over total events that happened during the slice window. A budgeting method is required and must be either occurrences or timeslices.",
+				Description: budgetingMethodDescription,
 				Required:    true,
 				Validators:  []validator.String{stringvalidator.OneOf("occurrences", "timeslices")},
 			},
@@ -100,7 +100,7 @@ func getSchema() schema.Schema {
 				},
 			},
 			"time_window": schema.ListNestedBlock{
-				Description: "Currently support `calendarAligned` and `rolling` time windows. Any duration greater than 1 day can be used: days, weeks, months, quarters, years. Rolling time window requires a duration, e.g. `1w` for one week, and type: `rolling`. SLOs defined with such time window, will only consider the SLI data from the last duration period as a moving window. Calendar aligned time window requires a duration, limited to `1M` for monthly or `1w` for weekly, and type: `calendarAligned`.",
+				Description: timeWindowDescription,
 				Validators:  []validator.List{listvalidator.SizeBetween(1, 1)},
 				NestedObject: schema.NestedBlockObject{
 					Attributes: map[string]schema.Attribute{
@@ -110,7 +110,7 @@ func getSchema() schema.Schema {
 				},
 			},
 			"objective": schema.ListNestedBlock{
-				Description: "The target objective is the value the SLO needs to meet during the time window. If a timeslices budgeting method is used, we also need to define the timesliceTarget which can be different than the overall SLO target.",
+				Description: objectiveDescription,
 				Validators:  []validator.List{listvalidator.SizeBetween(1, 1)},
 				NestedObject: schema.NestedBlockObject{
 					Attributes: map[string]schema.Attribute{
@@ -304,8 +304,8 @@ func timesliceMetricIndicatorSchema() schema.Block {
 								NestedObject: schema.NestedBlockObject{
 									Attributes: map[string]schema.Attribute{
 										"name":        schema.StringAttribute{Required: true, Description: "The unique name for this metric. Used as a variable in the equation field."},
-										"aggregation": schema.StringAttribute{Required: true, Description: "The aggregation type for this metric. One of: sum, avg, min, max, value_count, percentile, doc_count. Determines which other fields are required:"},
-										"field":       schema.StringAttribute{Optional: true, Description: "Field to aggregate. Required for aggregations: sum, avg, min, max, value_count, percentile. Must NOT be set for doc_count."},
+										"aggregation": schema.StringAttribute{Required: true, Description: timesliceMetricAggregationDescription},
+										"field":       schema.StringAttribute{Optional: true, Description: timesliceMetricFieldDescription},
 										"percentile":  schema.Float64Attribute{Optional: true, Description: "Percentile value (e.g., 99). Required if aggregation is 'percentile'. Must NOT be set for other aggregations."},
 										"filter":      schema.StringAttribute{Optional: true, Description: "Optional KQL filter for this metric. Supported for all aggregations except doc_count."},
 									},

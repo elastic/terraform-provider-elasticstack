@@ -13,7 +13,13 @@ func validateMaintenanceWindowServer(serverVersion *version.Version, serverFlavo
 	var diags diag.Diagnostics
 
 	if serverVersion.LessThan(maintenanceWindowPublicAPIMinSupportedVersion) && serverFlavor != serverlessFlavor {
-		diags.AddError("Maintenance window API not supported", fmt.Sprintf(`The maintenance Window public API feature requires a minimum Elasticsearch version of "%s" or a serverless Kibana instance.`, maintenanceWindowPublicAPIMinSupportedVersion))
+		diags.AddError(
+			"Maintenance window API not supported",
+			fmt.Sprintf(
+				`The maintenance Window public API feature requires a minimum Elasticsearch version of "%s" or a serverless Kibana instance.`,
+				maintenanceWindowPublicAPIMinSupportedVersion,
+			),
+		)
 		return diags
 	}
 

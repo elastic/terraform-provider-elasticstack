@@ -19,6 +19,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
+const osqueryResponseActionQuery = "SELECT * FROM processes WHERE pid IN (SELECT DISTINCT pid FROM connections WHERE remote_address NOT LIKE '10.%'" +
+	" AND remote_address NOT LIKE '192.168.%' AND remote_address NOT LIKE '127.%');"
+
 // checkResourceJSONAttr compares the JSON string value of a resource attribute
 func checkResourceJSONAttr(name, key, expectedJSON string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
@@ -623,7 +626,7 @@ func TestAccResourceSecurityDetectionRule_MachineLearning(t *testing.T) {
 					// Check response actions
 					resource.TestCheckResourceAttr(resourceName, "response_actions.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "response_actions.0.action_type_id", ".osquery"),
-					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.query", "SELECT * FROM processes WHERE pid IN (SELECT DISTINCT pid FROM connections WHERE remote_address NOT LIKE '10.%' AND remote_address NOT LIKE '192.168.%' AND remote_address NOT LIKE '127.%');"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.query", osqueryResponseActionQuery),
 					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.timeout", "600"),
 					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.ecs_mapping.process.pid", "pid"),
 					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.ecs_mapping.process.name", "name"),
@@ -2144,7 +2147,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
     {
       action_type_id = ".osquery"
       params = {
-        query   = "SELECT * FROM processes WHERE pid IN (SELECT DISTINCT pid FROM connections WHERE remote_address NOT LIKE '10.%%' AND remote_address NOT LIKE '192.168.%%' AND remote_address NOT LIKE '127.%%');"
+		query   = "%s"
         timeout = 600
         ecs_mapping = {
           "process.pid"        = "pid"
@@ -2155,7 +2158,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
     }
   ]
 }
-`, name)
+`, name, osqueryResponseActionQuery)
 }
 
 func testAccSecurityDetectionRuleConfig_machineLearningUpdate(name string) string {

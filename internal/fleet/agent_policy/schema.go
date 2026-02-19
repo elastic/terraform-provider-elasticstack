@@ -96,7 +96,7 @@ func getSchema() schema.Schema {
 				Optional:    true,
 			},
 			"host_name_format": schema.StringAttribute{
-				Description: "Determines the format of the host.name field in events. Can be 'hostname' (short hostname, e.g., 'myhost') or 'fqdn' (fully qualified domain name, e.g., 'myhost.example.com'). Defaults to 'hostname'.",
+				Description: hostNameFormatDescription,
 				Computed:    true,
 				Optional:    true,
 				Default:     stringdefault.StaticString(HostNameFormatHostname),
@@ -116,7 +116,7 @@ func getSchema() schema.Schema {
 				},
 			},
 			"inactivity_timeout": schema.StringAttribute{
-				Description: "The inactivity timeout for the agent policy. If an agent does not report within this time period, it will be considered inactive. Supports duration strings (e.g., '30s', '2m', '1h').",
+				Description: inactivityTimeoutDescription,
 				Computed:    true,
 				Optional:    true,
 				CustomType:  customtypes.DurationType{},
@@ -134,7 +134,7 @@ func getSchema() schema.Schema {
 				},
 			},
 			"global_data_tags": schema.MapNestedAttribute{
-				Description: "User-defined data tags to apply to all inputs. Values can be strings (string_value) or numbers (number_value) but not both. Example -- key1 = {string_value = value1}, key2 = {number_value = 42}",
+				Description: globalDataTagsDescription,
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"string_value": schema.StringAttribute{

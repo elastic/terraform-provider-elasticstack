@@ -25,13 +25,16 @@ import (
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 )
 
+const jobIDAllowedCharsMessage = "must contain lowercase alphanumeric characters (a-z and 0-9), hyphens, and underscores. " +
+	"It must start and end with alphanumeric characters"
+
 func (r *anomalyDetectionJobResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = GetSchema()
 }
 
 func GetSchema() schema.Schema {
 	return schema.Schema{
-		MarkdownDescription: "Creates and manages Machine Learning anomaly detection jobs. See the [ML Job API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/ml-put-job.html) for more details.",
+		MarkdownDescription: resourceDescription,
 		Blocks: map[string]schema.Block{
 			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock("elasticsearch_connection", false),
 		},
@@ -44,14 +47,17 @@ func GetSchema() schema.Schema {
 				},
 			},
 			"job_id": schema.StringAttribute{
-				MarkdownDescription: "The identifier for the anomaly detection job. This identifier can contain lowercase alphanumeric characters (a-z and 0-9), hyphens, and underscores. It must start and end with alphanumeric characters.",
+				MarkdownDescription: jobIDDescription,
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(1, 64),
-					stringvalidator.RegexMatches(regexp.MustCompile(`^[a-z0-9][a-z0-9_-]*[a-z0-9]$|^[a-z0-9]$`), "must contain lowercase alphanumeric characters (a-z and 0-9), hyphens, and underscores. It must start and end with alphanumeric characters"),
+					stringvalidator.RegexMatches(
+						regexp.MustCompile(`^[a-z0-9][a-z0-9_-]*[a-z0-9]$|^[a-z0-9]$`),
+						jobIDAllowedCharsMessage,
+					),
 				},
 			},
 			"description": schema.StringAttribute{
@@ -74,7 +80,7 @@ func GetSchema() schema.Schema {
 				},
 				Attributes: map[string]schema.Attribute{
 					"bucket_span": schema.StringAttribute{
-						MarkdownDescription: "The size of the interval that the analysis is aggregated into, typically between 15m and 1h. If the anomaly detector is expecting to see data at near real-time frequency, then the bucket_span should be set to a value around 10 times the time between ingested documents. For example, if data comes every second, bucket_span should be 10s; if data comes every 5 minutes, bucket_span should be 50m. For sparse or batch data, use larger bucket_span values.",
+						MarkdownDescription: bucketSpanDescription,
 						Default:             stringdefault.StaticString("5m"),
 						Computed:            true,
 						Optional:            true,
@@ -103,7 +109,43 @@ func GetSchema() schema.Schema {
 									MarkdownDescription: "The analysis function that is used. For example, count, rare, mean, min, max, sum.",
 									Required:            true,
 									Validators: []validator.String{
-										stringvalidator.OneOf("count", "high_count", "low_count", "non_zero_count", "high_non_zero_count", "low_non_zero_count", "distinct_count", "high_distinct_count", "low_distinct_count", "info_content", "high_info_content", "low_info_content", "min", "max", "median", "high_median", "low_median", "mean", "high_mean", "low_mean", "metric", "varp", "high_varp", "low_varp", "sum", "high_sum", "low_sum", "non_null_sum", "high_non_null_sum", "low_non_null_sum", "rare", "freq_rare", "time_of_day", "time_of_week", "lat_long"),
+										stringvalidator.OneOf(
+											"count",
+											"high_count",
+											"low_count",
+											"non_zero_count",
+											"high_non_zero_count",
+											"low_non_zero_count",
+											"distinct_count",
+											"high_distinct_count",
+											"low_distinct_count",
+											"info_content",
+											"high_info_content",
+											"low_info_content",
+											"min",
+											"max",
+											"median",
+											"high_median",
+											"low_median",
+											"mean",
+											"high_mean",
+											"low_mean",
+											"metric",
+											"varp",
+											"high_varp",
+											"low_varp",
+											"sum",
+											"high_sum",
+											"low_sum",
+											"non_null_sum",
+											"high_non_null_sum",
+											"low_non_null_sum",
+											"rare",
+											"freq_rare",
+											"time_of_day",
+											"time_of_week",
+											"lat_long",
+										),
 									},
 								},
 								"field_name": schema.StringAttribute{
@@ -111,11 +153,11 @@ func GetSchema() schema.Schema {
 									Optional:            true,
 								},
 								"by_field_name": schema.StringAttribute{
-									MarkdownDescription: "The field used to split the data. In particular, this property is used for analyzing the splits with respect to their own history. It is used for finding unusual values in the context of the split.",
+									MarkdownDescription: byFieldNameDescription,
 									Optional:            true,
 								},
 								"over_field_name": schema.StringAttribute{
-									MarkdownDescription: "The field used to split the data. In particular, this property is used for analyzing the splits with respect to the history of all splits. It is used for finding unusual values in the population of all splits.",
+									MarkdownDescription: overFieldNameDescription,
 									Optional:            true,
 								},
 								"partition_field_name": schema.StringAttribute{
@@ -215,7 +257,7 @@ func GetSchema() schema.Schema {
 						Optional:            true,
 						Attributes: map[string]schema.Attribute{
 							"enabled": schema.BoolAttribute{
-								MarkdownDescription: "To enable this setting, you must also set the partition_field_name property to the same value in every detector that uses the keyword mlcategory. Otherwise, job creation fails.",
+								MarkdownDescription: perPartitionCategorizationEnabledDescription,
 								Optional:            true,
 								Computed:            true,
 								PlanModifiers: []planmodifier.Bool{

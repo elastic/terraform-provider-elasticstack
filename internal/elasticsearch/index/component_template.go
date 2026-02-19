@@ -51,7 +51,7 @@ func ResourceComponentTemplate() *schema.Resource {
 						Elem: &schema.Resource{
 							Schema: map[string]*schema.Schema{
 								"name": {
-									Description: "The alias name. Index alias names support date math. See the [date math index names documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/date-math-index-names.html) for more details.",
+									Description: componentTemplateAliasNameDescription,
 									Type:        schema.TypeString,
 									Required:    true,
 								},
@@ -93,7 +93,7 @@ func ResourceComponentTemplate() *schema.Resource {
 						},
 					},
 					"mappings": {
-						Description:      "Mapping for fields in the index. Should be specified as a JSON object of field mappings. See the documentation (https://www.elastic.co/guide/en/elasticsearch/reference/current/explicit-mapping.html) for more details",
+						Description:      indexTemplateMappingsDescription,
 						Type:             schema.TypeString,
 						Optional:         true,
 						DiffSuppressFunc: utils.DiffJsonSuppress,
@@ -102,7 +102,7 @@ func ResourceComponentTemplate() *schema.Resource {
 						),
 					},
 					"settings": {
-						Description:      "Configuration options for the index. See the [index modules settings documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#index-modules-settings) for more details.",
+						Description:      componentTemplateSettingsDescription,
 						Type:             schema.TypeString,
 						Optional:         true,
 						DiffSuppressFunc: utils.DiffIndexSettingSuppress,
@@ -123,7 +123,7 @@ func ResourceComponentTemplate() *schema.Resource {
 	utils.AddConnectionSchema(componentTemplateSchema)
 
 	return &schema.Resource{
-		Description: "Creates or updates a component template. Component templates are building blocks for constructing index templates that specify index mappings, settings, and aliases. See the [component template documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-component-template.html) for more details.",
+		Description: componentTemplateResourceDescription,
 
 		CreateContext: resourceComponentTemplatePut,
 		UpdateContext: resourceComponentTemplatePut,

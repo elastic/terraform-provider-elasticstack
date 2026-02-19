@@ -64,7 +64,14 @@ func (r *anomalyDetectionJobResource) read(ctx context.Context, job *AnomalyDete
 			jobIDs = append(jobIDs, job.JobID)
 		}
 
-		diags.AddWarning("Getting jobs by ID returned multiple results", fmt.Sprintf("Expected a single result when getting anomaly detection jobs by ID. However the API returned %d jobs with IDs %v", len(response.Jobs), jobIDs))
+		diags.AddWarning(
+			"Getting jobs by ID returned multiple results",
+			fmt.Sprintf(
+				"Expected a single result when getting anomaly detection jobs by ID. However the API returned %d jobs with IDs %v",
+				len(response.Jobs),
+				jobIDs,
+			),
+		)
 	}
 
 	// Convert API response back to TF model

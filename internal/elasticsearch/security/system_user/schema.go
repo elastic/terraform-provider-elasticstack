@@ -25,6 +25,9 @@ func (r *systemUserResource) Schema(_ context.Context, _ resource.SchemaRequest,
 }
 
 func GetSchema() schema.Schema {
+	const usernameAllowedCharsError = "must contain alphanumeric characters (a-z, A-Z, 0-9), spaces, punctuation, and printable symbols " +
+		"in the Basic Latin (ASCII) block. Leading or trailing whitespace is not allowed"
+
 	return schema.Schema{
 		MarkdownDescription: systemUserResourceDescription,
 		Blocks: map[string]schema.Block{
@@ -43,7 +46,10 @@ func GetSchema() schema.Schema {
 				},
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(1, 1024),
-					stringvalidator.RegexMatches(regexp.MustCompile(`^[[:graph:]]+$`), "must contain alphanumeric characters (a-z, A-Z, 0-9), spaces, punctuation, and printable symbols in the Basic Latin (ASCII) block. Leading or trailing whitespace is not allowed"),
+					stringvalidator.RegexMatches(
+						regexp.MustCompile(`^[[:graph:]]+$`),
+						usernameAllowedCharsError,
+					),
 				},
 			},
 			"password": schema.StringAttribute{
@@ -56,7 +62,7 @@ func GetSchema() schema.Schema {
 				},
 			},
 			"password_hash": schema.StringAttribute{
-				MarkdownDescription: "A hash of the user's password. This must be produced using the same hashing algorithm as has been configured for password storage (see the [security settings documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-settings.html#hashing-settings)).",
+				MarkdownDescription: systemUserPasswordHashDescription,
 				Optional:            true,
 				Sensitive:           true,
 				Validators: []validator.String{

@@ -132,7 +132,7 @@ func DataSourceRole() *schema.Resource {
 						Computed:    true,
 					},
 					"allow_restricted_indices": {
-						Description: "Include matching restricted indices in names parameter. Usage is strongly discouraged as it can grant unrestricted operations on critical data, make the entire system unstable or leak sensitive information.",
+						Description: roleAllowRestrictedIndicesDescription,
 						Type:        schema.TypeBool,
 						Computed:    true,
 					},
@@ -140,7 +140,7 @@ func DataSourceRole() *schema.Resource {
 			},
 		},
 		"remote_indices": {
-			Description: "A list of remote indices permissions entries. Remote indices are effective for remote clusters configured with the API key based model. They have no effect for remote clusters configured with the certificate based model.",
+			Description: roleRemoteIndicesDescription,
 			Type:        schema.TypeSet,
 			Computed:    true,
 			Elem: &schema.Resource{

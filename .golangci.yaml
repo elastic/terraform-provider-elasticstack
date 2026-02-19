@@ -11,6 +11,7 @@ linters:
     - gocritic
     - inamedparam
     - intrange
+    - lll
   exclusions:
     generated: lax
     presets:
@@ -22,6 +23,9 @@ linters:
       - third_party$
       - builtin$
       - examples$
+  settings:
+    lll:
+      line-length: 200
 formatters:
   exclusions:
     generated: lax

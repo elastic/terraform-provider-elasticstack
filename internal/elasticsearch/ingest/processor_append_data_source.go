@@ -40,7 +40,7 @@ func DataSourceProcessorAppend() *schema.Resource {
 			Default:     true,
 		},
 		"media_type": {
-			Description: "The media type for encoding value. Applies only when value is a template snippet. Must be one of `application/json`, `text/plain`, or `application/x-www-form-urlencoded`. Supported only from Elasticsearch version **7.15**.",
+			Description: processorAppendMediaTypeDescription,
 			Type:        schema.TypeString,
 			Optional:    true,
 		},
@@ -84,7 +84,7 @@ func DataSourceProcessorAppend() *schema.Resource {
 	}
 
 	return &schema.Resource{
-		Description: "Helper data source which can be used to create the configuration for an append processor. This processor appends one or more values to an existing array if the field already exists and it is an array. Converts a scalar to an array and appends one or more values to it if the field exists and it is a scalar. Creates an array containing the provided values if the field doesn’t exist. See the [append processor documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/append-processor.html) for more details.",
+		Description: processorAppendDataSourceDescription,
 
 		ReadContext: dataSourceProcessorAppendRead,
 

@@ -230,7 +230,14 @@ func SetValueFrom[T any](ctx context.Context, value []T, elemType attr.Type, p p
 // ===================
 
 // StructToObjectType converts a tfsdk naive T1 into an types.Object of T2.
-func StructToObjectType[T1 any, T2 any](ctx context.Context, value *T1, attrTypes map[string]attr.Type, p path.Path, diags *diag.Diagnostics, transformee func(item T1, meta ObjectMeta) T2) types.Object {
+func StructToObjectType[T1 any, T2 any](
+	ctx context.Context,
+	value *T1,
+	attrTypes map[string]attr.Type,
+	p path.Path,
+	diags *diag.Diagnostics,
+	transformee func(item T1, meta ObjectMeta) T2,
+) types.Object {
 	if value == nil {
 		return types.ObjectNull(attrTypes)
 	}

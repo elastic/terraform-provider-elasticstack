@@ -19,7 +19,7 @@ func (r *DefaultDataViewResource) Schema(_ context.Context, _ resource.SchemaReq
 
 func getSchema() schema.Schema {
 	return schema.Schema{
-		MarkdownDescription: "Manages the default Kibana data view. See the [Kibana Data Views API documentation](https://www.elastic.co/docs/api/doc/kibana/v8/operation/operation-setdefaultdatailviewdefault) for more information.",
+		MarkdownDescription: defaultDataViewDescription,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,
@@ -29,7 +29,7 @@ func getSchema() schema.Schema {
 				},
 			},
 			"data_view_id": schema.StringAttribute{
-				MarkdownDescription: "The data view identifier to set as default. NOTE: The API does not validate whether it is a valid identifier. Leave this unset (or explicitly `null`) to unset the default data view.",
+				MarkdownDescription: defaultDataViewDataViewIDDescription,
 				Optional:            true,
 				Validators: []validator.String{
 					stringvalidator.LengthAtLeast(1),

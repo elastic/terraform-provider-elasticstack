@@ -99,7 +99,7 @@ func ResourceIlm() *schema.Resource {
 	utils.AddConnectionSchema(ilmSchema)
 
 	return &schema.Resource{
-		Description: "Creates or updates lifecycle policy. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-put-lifecycle.html and https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-index-lifecycle.html",
+		Description: ilmResourceDescription,
 
 		CreateContext: resourceIlmPut,
 		UpdateContext: resourceIlmPut,
@@ -328,7 +328,7 @@ var supportedActions = map[string]*schema.Schema{
 		},
 	},
 	"set_priority": {
-		Description: "Sets the priority of the index as soon as the policy enters the hot, warm, or cold phase. Higher priority indices are recovered before indices with lower priorities following a node restart. Default priority is 1.",
+		Description: ilmSetPriorityActionDescription,
 		Type:        schema.TypeList,
 		Optional:    true,
 		MaxItems:    1,
@@ -534,7 +534,20 @@ func expandPhase(p map[string]interface{}, serverVersion *version.Version) (*mod
 					}
 				}
 			case "rollover":
-				actions[actionName], diags = expandAction(a, serverVersion, "max_age", "max_docs", "max_size", "max_primary_shard_docs", "max_primary_shard_size", "min_age", "min_docs", "min_size", "min_primary_shard_docs", "min_primary_shard_size")
+				actions[actionName], diags = expandAction(
+					a,
+					serverVersion,
+					"max_age",
+					"max_docs",
+					"max_size",
+					"max_primary_shard_docs",
+					"max_primary_shard_size",
+					"min_age",
+					"min_docs",
+					"min_size",
+					"min_primary_shard_docs",
+					"min_primary_shard_size",
+				)
 			case "searchable_snapshot":
 				actions[actionName], diags = expandAction(a, serverVersion, "snapshot_repository", "force_merge_index")
 			case "set_priority":

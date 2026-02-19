@@ -16,6 +16,10 @@ import (
 )
 
 func ResourceDataStream() *schema.Resource {
+	const dataStreamNameAllowedCharsError = "must contain lower case alphanumeric characters and selected punctuation, see: " +
+		"https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-data-stream.html" +
+		"#indices-create-data-stream-api-path-params"
+
 	dataStreamSchema := map[string]*schema.Schema{
 		"id": {
 			Description: "Internal identifier of the resource",
@@ -31,7 +35,10 @@ func ResourceDataStream() *schema.Resource {
 				validation.StringLenBetween(1, 255),
 				validation.StringNotInSlice([]string{".", ".."}, true),
 				validation.StringMatch(regexp.MustCompile(`^[^-_+]`), "cannot start with -, _, +"),
-				validation.StringMatch(regexp.MustCompile(`^[a-z0-9!$%&'()+.;=@[\]^{}~_-]+$`), "must contain lower case alphanumeric characters and selected punctuation, see: https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-data-stream.html#indices-create-data-stream-api-path-params"),
+				validation.StringMatch(
+					regexp.MustCompile(`^[a-z0-9!$%&'()+.;=@[\]^{}~_-]+$`),
+					dataStreamNameAllowedCharsError,
+				),
 			),
 		},
 		"timestamp_field": {

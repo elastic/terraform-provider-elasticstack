@@ -35,7 +35,7 @@ func ResourceIngestPipeline() *schema.Resource {
 			Optional:    true,
 		},
 		"on_failure": {
-			Description: "Processors to run immediately after a processor failure. Each processor supports a processor-level `on_failure` value. If a processor without an `on_failure` value fails, Elasticsearch uses this pipeline-level parameter as a fallback. The processors in this parameter run sequentially in the order specified. Elasticsearch will not attempt to run the pipeline’s remaining processors. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/processors.html. Each record must be a valid JSON document",
+			Description: ingestPipelineOnFailureDescription,
 			Type:        schema.TypeList,
 			Optional:    true,
 			MinItems:    1,
@@ -46,7 +46,7 @@ func ResourceIngestPipeline() *schema.Resource {
 			},
 		},
 		"processors": {
-			Description: "Processors used to perform transformations on documents before indexing. Processors run sequentially in the order specified. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/processors.html. Each record must be a valid JSON document.",
+			Description: ingestPipelineProcessorsDescription,
 			Type:        schema.TypeList,
 			Required:    true,
 			MinItems:    1,

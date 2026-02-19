@@ -86,7 +86,7 @@ func DataSourceRole() *schema.Resource {
 						},
 					},
 					"remote_indices": {
-						Description: "A list of remote indices permissions entries. Remote indices are effective for remote clusters configured with the API key based model. They have no effect for remote clusters configured with the certificate based model.",
+						Description: remoteIndicesPermissionsDescription,
 						Type:        schema.TypeSet,
 						Optional:    true,
 						Elem: &schema.Resource{

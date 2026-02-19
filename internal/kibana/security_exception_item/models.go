@@ -101,7 +101,11 @@ func convertEntriesToAPI(ctx context.Context, entries types.List) (kbapi.Securit
 }
 
 // convertMatchEntryToAPI converts a match entry to API format
-func convertMatchEntryToAPI(entry EntryModel, field kbapi.SecurityExceptionsAPINonEmptyString, operator kbapi.SecurityExceptionsAPIExceptionListItemEntryOperator) (kbapi.SecurityExceptionsAPIExceptionListItemEntry, diag.Diagnostics) {
+func convertMatchEntryToAPI(
+	entry EntryModel,
+	field kbapi.SecurityExceptionsAPINonEmptyString,
+	operator kbapi.SecurityExceptionsAPIExceptionListItemEntryOperator,
+) (kbapi.SecurityExceptionsAPIExceptionListItemEntry, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var result kbapi.SecurityExceptionsAPIExceptionListItemEntry
 
@@ -125,7 +129,12 @@ func convertMatchEntryToAPI(entry EntryModel, field kbapi.SecurityExceptionsAPIN
 }
 
 // convertMatchAnyEntryToAPI converts a match_any entry to API format
-func convertMatchAnyEntryToAPI(ctx context.Context, entry EntryModel, field kbapi.SecurityExceptionsAPINonEmptyString, operator kbapi.SecurityExceptionsAPIExceptionListItemEntryOperator) (kbapi.SecurityExceptionsAPIExceptionListItemEntry, diag.Diagnostics) {
+func convertMatchAnyEntryToAPI(
+	ctx context.Context,
+	entry EntryModel,
+	field kbapi.SecurityExceptionsAPINonEmptyString,
+	operator kbapi.SecurityExceptionsAPIExceptionListItemEntryOperator,
+) (kbapi.SecurityExceptionsAPIExceptionListItemEntry, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var result kbapi.SecurityExceptionsAPIExceptionListItemEntry
 
@@ -163,7 +172,12 @@ func convertMatchAnyEntryToAPI(ctx context.Context, entry EntryModel, field kbap
 }
 
 // convertListEntryToAPI converts a list entry to API format
-func convertListEntryToAPI(ctx context.Context, entry EntryModel, field kbapi.SecurityExceptionsAPINonEmptyString, operator kbapi.SecurityExceptionsAPIExceptionListItemEntryOperator) (kbapi.SecurityExceptionsAPIExceptionListItemEntry, diag.Diagnostics) {
+func convertListEntryToAPI(
+	ctx context.Context,
+	entry EntryModel,
+	field kbapi.SecurityExceptionsAPINonEmptyString,
+	operator kbapi.SecurityExceptionsAPIExceptionListItemEntryOperator,
+) (kbapi.SecurityExceptionsAPIExceptionListItemEntry, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var result kbapi.SecurityExceptionsAPIExceptionListItemEntry
 
@@ -193,7 +207,10 @@ func convertListEntryToAPI(ctx context.Context, entry EntryModel, field kbapi.Se
 }
 
 // convertExistsEntryToAPI converts an exists entry to API format
-func convertExistsEntryToAPI(field kbapi.SecurityExceptionsAPINonEmptyString, operator kbapi.SecurityExceptionsAPIExceptionListItemEntryOperator) (kbapi.SecurityExceptionsAPIExceptionListItemEntry, diag.Diagnostics) {
+func convertExistsEntryToAPI(
+	field kbapi.SecurityExceptionsAPINonEmptyString,
+	operator kbapi.SecurityExceptionsAPIExceptionListItemEntryOperator,
+) (kbapi.SecurityExceptionsAPIExceptionListItemEntry, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var result kbapi.SecurityExceptionsAPIExceptionListItemEntry
 
@@ -210,7 +227,11 @@ func convertExistsEntryToAPI(field kbapi.SecurityExceptionsAPINonEmptyString, op
 }
 
 // convertWildcardEntryToAPI converts a wildcard entry to API format
-func convertWildcardEntryToAPI(entry EntryModel, field kbapi.SecurityExceptionsAPINonEmptyString, operator kbapi.SecurityExceptionsAPIExceptionListItemEntryOperator) (kbapi.SecurityExceptionsAPIExceptionListItemEntry, diag.Diagnostics) {
+func convertWildcardEntryToAPI(
+	entry EntryModel,
+	field kbapi.SecurityExceptionsAPINonEmptyString,
+	operator kbapi.SecurityExceptionsAPIExceptionListItemEntryOperator,
+) (kbapi.SecurityExceptionsAPIExceptionListItemEntry, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var result kbapi.SecurityExceptionsAPIExceptionListItemEntry
 
@@ -305,7 +326,11 @@ func convertEntryToAPI(ctx context.Context, entry EntryModel) (kbapi.SecurityExc
 }
 
 // convertNestedMatchEntryToAPI converts a nested match entry to API format
-func convertNestedMatchEntryToAPI(entry NestedEntryModel, field kbapi.SecurityExceptionsAPINonEmptyString, operator kbapi.SecurityExceptionsAPIExceptionListItemEntryOperator) (kbapi.SecurityExceptionsAPIExceptionListItemEntryNestedEntryItem, diag.Diagnostics) {
+func convertNestedMatchEntryToAPI(
+	entry NestedEntryModel,
+	field kbapi.SecurityExceptionsAPINonEmptyString,
+	operator kbapi.SecurityExceptionsAPIExceptionListItemEntryOperator,
+) (kbapi.SecurityExceptionsAPIExceptionListItemEntryNestedEntryItem, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var result kbapi.SecurityExceptionsAPIExceptionListItemEntryNestedEntryItem
 
@@ -329,7 +354,12 @@ func convertNestedMatchEntryToAPI(entry NestedEntryModel, field kbapi.SecurityEx
 }
 
 // convertNestedMatchAnyEntryToAPI converts a nested match_any entry to API format
-func convertNestedMatchAnyEntryToAPI(ctx context.Context, entry NestedEntryModel, field kbapi.SecurityExceptionsAPINonEmptyString, operator kbapi.SecurityExceptionsAPIExceptionListItemEntryOperator) (kbapi.SecurityExceptionsAPIExceptionListItemEntryNestedEntryItem, diag.Diagnostics) {
+func convertNestedMatchAnyEntryToAPI(
+	ctx context.Context,
+	entry NestedEntryModel,
+	field kbapi.SecurityExceptionsAPINonEmptyString,
+	operator kbapi.SecurityExceptionsAPIExceptionListItemEntryOperator,
+) (kbapi.SecurityExceptionsAPIExceptionListItemEntryNestedEntryItem, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var result kbapi.SecurityExceptionsAPIExceptionListItemEntryNestedEntryItem
 
@@ -367,7 +397,10 @@ func convertNestedMatchAnyEntryToAPI(ctx context.Context, entry NestedEntryModel
 }
 
 // convertNestedExistsEntryToAPI converts a nested exists entry to API format
-func convertNestedExistsEntryToAPI(field kbapi.SecurityExceptionsAPINonEmptyString, operator kbapi.SecurityExceptionsAPIExceptionListItemEntryOperator) (kbapi.SecurityExceptionsAPIExceptionListItemEntryNestedEntryItem, diag.Diagnostics) {
+func convertNestedExistsEntryToAPI(
+	field kbapi.SecurityExceptionsAPINonEmptyString,
+	operator kbapi.SecurityExceptionsAPIExceptionListItemEntryOperator,
+) (kbapi.SecurityExceptionsAPIExceptionListItemEntryNestedEntryItem, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var result kbapi.SecurityExceptionsAPIExceptionListItemEntryNestedEntryItem
 

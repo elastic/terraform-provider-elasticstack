@@ -12,7 +12,7 @@ import (
 
 func (r *PrebuiltRuleResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Manages Elastic prebuilt detection rules. This resource installs and updates Elastic prebuilt rules and timelines. See https://www.elastic.co/guide/en/security/current/prebuilt-rules.html",
+		Description: resourceDescription,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,

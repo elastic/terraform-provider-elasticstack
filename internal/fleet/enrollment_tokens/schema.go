@@ -14,18 +14,18 @@ func (d *enrollmentTokensDataSource) Schema(ctx context.Context, req datasource.
 
 func getSchema() schema.Schema {
 	return schema.Schema{
-		Description: "Retrieves Elasticsearch API keys used to enroll Elastic Agents in Fleet. See the [Fleet enrollment tokens documentation](https://www.elastic.co/guide/en/fleet/current/fleet-enrollment-tokens.html) for more details.",
+		Description: dataSourceDescription,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description: "The ID of this resource.",
 				Computed:    true,
 			},
 			"policy_id": schema.StringAttribute{
-				Description: "The identifier of the target agent policy. When provided, only the enrollment tokens associated with this agent policy will be selected. Omit this value to select all enrollment tokens.",
+				Description: policyIDDescription,
 				Optional:    true,
 			},
 			"space_id": schema.StringAttribute{
-				Description: "The Kibana space ID to query enrollment tokens from. When the agent policy is space-scoped, this must be set to match the policy's space. If not specified, queries the default space.",
+				Description: spaceIDDescription,
 				Optional:    true,
 			},
 			"tokens": schema.ListNestedAttribute{

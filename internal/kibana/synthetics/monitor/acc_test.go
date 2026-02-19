@@ -18,6 +18,10 @@ var (
 )
 
 const (
+	httpCheckExpectedUpdated = `{"request":{"body":"name=first\u0026email=someemail@someemailprovider.com",` +
+		`"headers":{"Content-Type":"application/x-www-form-urlencoded"},"method":"POST"},` +
+		`"response":{"body":{"positive":["foo","bar"]},"status":[200,201,301]}}`
+
 	httpMonitorMinConfig = `
 
 resource "elasticstack_kibana_synthetics_monitor" "%s" {
@@ -523,7 +527,7 @@ func TestSyntheticMonitorHTTPResource(t *testing.T) {
 					resource.TestCheckResourceAttr(httpMonitorId, "http.proxy_header", `{"header-name":"header-value-updated"}`),
 					resource.TestCheckResourceAttr(httpMonitorId, "http.username", "testupdated"),
 					resource.TestCheckResourceAttr(httpMonitorId, "http.password", "testpassword-updated"),
-					resource.TestCheckResourceAttr(httpMonitorId, "http.check", `{"request":{"body":"name=first\u0026email=someemail@someemailprovider.com","headers":{"Content-Type":"application/x-www-form-urlencoded"},"method":"POST"},"response":{"body":{"positive":["foo","bar"]},"status":[200,201,301]}}`),
+					resource.TestCheckResourceAttr(httpMonitorId, "http.check", httpCheckExpectedUpdated),
 					resource.TestCheckResourceAttr(httpMonitorId, "http.response", `{"include_body":"never","include_body_max_bytes":"1024"}`),
 					resource.TestCheckResourceAttr(httpMonitorId, "params", `{"param-name":"param-value-updated"}`),
 					resource.TestCheckResourceAttr(httpMonitorId, "retest_on_failure", "false"),

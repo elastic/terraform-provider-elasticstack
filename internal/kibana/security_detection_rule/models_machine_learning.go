@@ -19,11 +19,19 @@ func (m MachineLearningRuleProcessor) HandlesRuleType(t string) bool {
 	return t == "machine_learning"
 }
 
-func (m MachineLearningRuleProcessor) ToCreateProps(ctx context.Context, client clients.MinVersionEnforceable, d SecurityDetectionRuleData) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
+func (m MachineLearningRuleProcessor) ToCreateProps(
+	ctx context.Context,
+	client clients.MinVersionEnforceable,
+	d SecurityDetectionRuleData,
+) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
 	return d.toMachineLearningRuleCreateProps(ctx, client)
 }
 
-func (m MachineLearningRuleProcessor) ToUpdateProps(ctx context.Context, client clients.MinVersionEnforceable, d SecurityDetectionRuleData) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
+func (m MachineLearningRuleProcessor) ToUpdateProps(
+	ctx context.Context,
+	client clients.MinVersionEnforceable,
+	d SecurityDetectionRuleData,
+) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
 	return d.toMachineLearningRuleUpdateProps(ctx, client)
 }
 

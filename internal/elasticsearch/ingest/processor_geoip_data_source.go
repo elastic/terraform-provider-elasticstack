@@ -33,7 +33,7 @@ func DataSourceProcessorGeoip() *schema.Resource {
 			Default:     "geoip",
 		},
 		"database_file": {
-			Description: "The database filename referring to a database the module ships with (GeoLite2-City.mmdb, GeoLite2-Country.mmdb, or GeoLite2-ASN.mmdb) or a custom database in the `ingest-geoip` config directory.",
+			Description: processorGeoIPDatabaseFileDescription,
 			Type:        schema.TypeString,
 			Optional:    true,
 		},

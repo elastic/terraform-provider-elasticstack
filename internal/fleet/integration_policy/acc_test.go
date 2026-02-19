@@ -30,6 +30,57 @@ var (
 	minVersionGCPVertexAI          = version.Must(version.NewVersion("8.17.0"))
 )
 
+const (
+	tcpGenericVarsExpected8080 = `{"custom":"","data_stream.dataset":"tcp.generic","listen_address":"localhost","listen_port":8080,` +
+		`"ssl":"","syslog_options":"field: message","tags":[]}`
+	tcpGenericVarsExpected8085 = `{"custom":"","data_stream.dataset":"tcp.generic","listen_address":"localhost","listen_port":8085,` +
+		`"ssl":"","syslog_options":"field: message","tags":[]}`
+
+	sqlSQLVarsExpected = `{"data_stream.dataset":"sql","driver":"mysql",` +
+		`"hosts":["root:test@tcp(127.0.0.1:3306)/"],"merge_results":false,"period":"1m","processors":"",` +
+		`"sql_queries":"- query: SHOW GLOBAL STATUS LIKE 'Innodb_system%'\n  response_format: variables\n        \n","ssl":""}`
+	sqlHostsSecretRefRegex = `"hosts":{"ids":["\S+"],"isSecretRef":true}`
+
+	azureMetricsVarsJSONExpected = `{"client_id":"test-client-id","client_secret":"test-client-secret",` +
+		`"subscription_id":"test-subscription-id","tenant_id":"test-tenant-id"}`
+	azureMonitorVarsExpected = `{"period":"300s",` +
+		`"resources":"- resource_query: \"resourceType eq 'Microsoft.Search/searchServices'\"\n  metrics:\n  - name: [` +
+		`\"DocumentsProcessedCount\", \"SearchLatency\", \"SearchQueriesPerSecond\", \"ThrottledSearchQueriesPercentage\"]\n` +
+		`    namespace: \"Microsoft.Search/searchServices\""}`
+
+	kafkaMetricsVarsExpected       = `{"hosts":["localhost:9092"],"period":"10s","ssl.certificate_authorities":[]}`
+	kafkaConsumerGroupVarsExpected = `{"topics":["don't mention the war, I mentioned it once but I think I got away with it"]}`
+	kafkaLogfileVarsExpected       = `{"kafka_home":"/opt/kafka*","paths":["/logs/controller.log*","/logs/server.log*",` +
+		`"/logs/state-change.log*","/logs/kafka-*.log*"],"preserve_original_event":false,"tags":["kafka-log"]}`
+
+	gcpVertexAIMetricsVarsExpected            = `{"period":"60s","regions":["us-central1"]}`
+	gcpVertexAIPromptResponseLogsVarsExpected = `{"exclude_labels":false,"period":"300s","table_id":"table_id",` +
+		`"tags":["forwarded","gcp-vertexai-prompt-response-logs"],"time_lookback_hours":1}`
+	gcpVertexAIAuditLogsVarsExpected = `{"preserve_original_event":false,"subscription_create":false,"subscription_name":"gcp-vertexai-audit-sub",` +
+		`"tags":["forwarded","gcp-vertexai-audit"],"topic":"gcp-vertexai-audit"}`
+
+	awsLogsSecretsRegexUsEast1 = `{"access_key_id":{"id":"\S+","isSecretRef":true},"default_region":"us-east-1",` +
+		`"endpoint":"endpoint","secret_access_key":{"id":"\S+","isSecretRef":true},"session_token":{"id":"\S+","isSecretRef":true}}`
+	awsLogsSecretsRegexUsEast2 = `{"access_key_id":{"id":"\S+","isSecretRef":true},"default_region":"us-east-2",` +
+		`"endpoint":"endpoint","secret_access_key":{"id":"\S+","isSecretRef":true},"session_token":{"id":"\S+","isSecretRef":true}}`
+
+	awsLogsStreamsJSONExpected = `{"aws_logs.generic":{"enabled":true,"vars":{"api_sleep":"200ms","api_timeput":"120s","custom":"",` +
+		`"data_stream.dataset":"aws_logs.generic","log_streams":[],"number_of_workers":1,` +
+		`"preserve_original_event":false,"scan_frequency":"1m","start_position":"beginning","tags":["forwarded"]}}}`
+
+	awsLogsCloudwatchVarsExpected = `{"api_sleep":"200ms","api_timeput":"120s","custom":"","data_stream.dataset":"aws_logs.generic",` +
+		`"log_streams":[],"number_of_workers":1,"preserve_original_event":false,"scan_frequency":"1m",` +
+		`"start_position":"beginning","tags":["forwarded"]}`
+	awsLogsCloudwatchVarsExpectedUpdated = `{"api_sleep":"200ms","api_timeput":"120s","custom":"","data_stream.dataset":"aws_logs.generic",` +
+		`"log_streams":[],"number_of_workers":1,"preserve_original_event":false,"scan_frequency":"2m",` +
+		`"start_position":"beginning","tags":["forwarded"]}`
+
+	awsLogsVarsJSONFormatCreated = `{"access_key_id":"placeholder","default_region":"us-east-1","endpoint":"endpoint",` +
+		`"secret_access_key":"created %s","session_token":"placeholder"}`
+	awsLogsVarsJSONFormatUpdated = `{"access_key_id":"placeholder","default_region":"us-east-2","endpoint":"endpoint",` +
+		`"secret_access_key":"updated %s","session_token":"placeholder"}`
+)
+
 func TestJsonTypes(t *testing.T) {
 	mapBytes, err := json.Marshal(map[string]string{})
 	require.NoError(t, err)
@@ -123,7 +174,11 @@ func TestAccResourceIntegrationPolicyWithOutput(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "output_id", fmt.Sprintf("%s-test-output", policyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.tcp-tcp.enabled", "true"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.tcp-tcp.streams.tcp.generic.enabled", "true"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.tcp-tcp.streams.tcp.generic.vars", `{"custom":"","data_stream.dataset":"tcp.generic","listen_address":"localhost","listen_port":8080,"ssl":"","syslog_options":"field: message","tags":[]}`),
+					resource.TestCheckResourceAttr(
+						"elasticstack_fleet_integration_policy.test_policy",
+						"inputs.tcp-tcp.streams.tcp.generic.vars",
+						tcpGenericVarsExpected8080,
+					),
 				),
 			},
 			{
@@ -143,7 +198,11 @@ func TestAccResourceIntegrationPolicyWithOutput(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "output_id", fmt.Sprintf("%s-updated-output", policyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.tcp-tcp.enabled", "true"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.tcp-tcp.streams.tcp.generic.enabled", "true"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.tcp-tcp.streams.tcp.generic.vars", `{"custom":"","data_stream.dataset":"tcp.generic","listen_address":"localhost","listen_port":8080,"ssl":"","syslog_options":"field: message","tags":[]}`),
+					resource.TestCheckResourceAttr(
+						"elasticstack_fleet_integration_policy.test_policy",
+						"inputs.tcp-tcp.streams.tcp.generic.vars",
+						tcpGenericVarsExpected8080,
+					),
 				),
 			},
 		},
@@ -173,7 +232,11 @@ func TestAccResourceIntegrationPolicy(t *testing.T) {
 					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration_policy.test_policy", "output_id"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.tcp-tcp.enabled", "true"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.tcp-tcp.streams.tcp.generic.enabled", "true"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.tcp-tcp.streams.tcp.generic.vars", `{"custom":"","data_stream.dataset":"tcp.generic","listen_address":"localhost","listen_port":8080,"ssl":"","syslog_options":"field: message","tags":[]}`),
+					resource.TestCheckResourceAttr(
+						"elasticstack_fleet_integration_policy.test_policy",
+						"inputs.tcp-tcp.streams.tcp.generic.vars",
+						tcpGenericVarsExpected8080,
+					),
 				),
 			},
 			{
@@ -192,7 +255,11 @@ func TestAccResourceIntegrationPolicy(t *testing.T) {
 					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration_policy.test_policy", "output_id"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.tcp-tcp.enabled", "false"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.tcp-tcp.streams.tcp.generic.enabled", "false"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.tcp-tcp.streams.tcp.generic.vars", `{"custom":"","data_stream.dataset":"tcp.generic","listen_address":"localhost","listen_port":8085,"ssl":"","syslog_options":"field: message","tags":[]}`),
+					resource.TestCheckResourceAttr(
+						"elasticstack_fleet_integration_policy.test_policy",
+						"inputs.tcp-tcp.streams.tcp.generic.vars",
+						tcpGenericVarsExpected8085,
+					),
 				),
 			},
 		},
@@ -231,8 +298,16 @@ func TestAccResourceIntegrationPolicySecretsFromSDK(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "description", "IntegrationPolicyTest Policy"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_name", "aws_logs"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_version", "1.4.0"),
-					resource.TestMatchResourceAttr("elasticstack_fleet_integration_policy.test_policy", "vars_json", regexp.MustCompile(`{"access_key_id":{"id":"\S+","isSecretRef":true},"default_region":"us-east-1","endpoint":"endpoint","secret_access_key":{"id":"\S+","isSecretRef":true},"session_token":{"id":"\S+","isSecretRef":true}}`)),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.streams_json", `{"aws_logs.generic":{"enabled":true,"vars":{"api_sleep":"200ms","api_timeput":"120s","custom":"","data_stream.dataset":"aws_logs.generic","log_streams":[],"number_of_workers":1,"preserve_original_event":false,"scan_frequency":"1m","start_position":"beginning","tags":["forwarded"]}}}`),
+					resource.TestMatchResourceAttr(
+						"elasticstack_fleet_integration_policy.test_policy",
+						"vars_json",
+						regexp.MustCompile(awsLogsSecretsRegexUsEast1),
+					),
+					resource.TestCheckResourceAttr(
+						"elasticstack_fleet_integration_policy.test_policy",
+						"input.0.streams_json",
+						awsLogsStreamsJSONExpected,
+					),
 				),
 			},
 			{
@@ -248,10 +323,18 @@ func TestAccResourceIntegrationPolicySecretsFromSDK(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "description", "IntegrationPolicyTest Policy"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_name", "aws_logs"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_version", "1.4.0"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "vars_json", fmt.Sprintf(`{"access_key_id":"placeholder","default_region":"us-east-1","endpoint":"endpoint","secret_access_key":"created %s","session_token":"placeholder"}`, policyName)),
+					resource.TestCheckResourceAttr(
+						"elasticstack_fleet_integration_policy.test_policy",
+						"vars_json",
+						fmt.Sprintf(awsLogsVarsJSONFormatCreated, policyName),
+					),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.aws_logs-aws-cloudwatch.enabled", "true"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.aws_logs-aws-cloudwatch.streams.aws_logs.generic.enabled", "true"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.aws_logs-aws-cloudwatch.streams.aws_logs.generic.vars", `{"api_sleep":"200ms","api_timeput":"120s","custom":"","data_stream.dataset":"aws_logs.generic","log_streams":[],"number_of_workers":1,"preserve_original_event":false,"scan_frequency":"1m","start_position":"beginning","tags":["forwarded"]}`),
+					resource.TestCheckResourceAttr(
+						"elasticstack_fleet_integration_policy.test_policy",
+						"inputs.aws_logs-aws-cloudwatch.streams.aws_logs.generic.vars",
+						awsLogsCloudwatchVarsExpected,
+					),
 				),
 			},
 		},
@@ -279,10 +362,18 @@ func TestAccResourceIntegrationPolicySecrets(t *testing.T) {
 						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "description", "IntegrationPolicyTest Policy"),
 						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_name", "aws_logs"),
 						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_version", "1.4.0"),
-						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "vars_json", fmt.Sprintf(`{"access_key_id":"placeholder","default_region":"us-east-1","endpoint":"endpoint","secret_access_key":"created %s","session_token":"placeholder"}`, policyName)),
+						resource.TestCheckResourceAttr(
+							"elasticstack_fleet_integration_policy.test_policy",
+							"vars_json",
+							fmt.Sprintf(awsLogsVarsJSONFormatCreated, policyName),
+						),
 						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.aws_logs-aws-cloudwatch.enabled", "true"),
 						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.aws_logs-aws-cloudwatch.streams.aws_logs.generic.enabled", "true"),
-						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.aws_logs-aws-cloudwatch.streams.aws_logs.generic.vars", `{"api_sleep":"200ms","api_timeput":"120s","custom":"","data_stream.dataset":"aws_logs.generic","log_streams":[],"number_of_workers":1,"preserve_original_event":false,"scan_frequency":"1m","start_position":"beginning","tags":["forwarded"]}`),
+						resource.TestCheckResourceAttr(
+							"elasticstack_fleet_integration_policy.test_policy",
+							"inputs.aws_logs-aws-cloudwatch.streams.aws_logs.generic.vars",
+							awsLogsCloudwatchVarsExpected,
+						),
 					),
 				},
 				{
@@ -298,10 +389,18 @@ func TestAccResourceIntegrationPolicySecrets(t *testing.T) {
 						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "description", "Updated Integration Policy"),
 						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_name", "aws_logs"),
 						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_version", "1.4.0"),
-						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "vars_json", fmt.Sprintf(`{"access_key_id":"placeholder","default_region":"us-east-2","endpoint":"endpoint","secret_access_key":"updated %s","session_token":"placeholder"}`, policyName)),
+						resource.TestCheckResourceAttr(
+							"elasticstack_fleet_integration_policy.test_policy",
+							"vars_json",
+							fmt.Sprintf(awsLogsVarsJSONFormatUpdated, policyName),
+						),
 						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.aws_logs-aws-cloudwatch.enabled", "false"),
 						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.aws_logs-aws-cloudwatch.streams.aws_logs.generic.enabled", "false"),
-						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.aws_logs-aws-cloudwatch.streams.aws_logs.generic.vars", `{"api_sleep":"200ms","api_timeput":"120s","custom":"","data_stream.dataset":"aws_logs.generic","log_streams":[],"number_of_workers":1,"preserve_original_event":false,"scan_frequency":"2m","start_position":"beginning","tags":["forwarded"]}`),
+						resource.TestCheckResourceAttr(
+							"elasticstack_fleet_integration_policy.test_policy",
+							"inputs.aws_logs-aws-cloudwatch.streams.aws_logs.generic.vars",
+							awsLogsCloudwatchVarsExpectedUpdated,
+						),
 					),
 				},
 				{
@@ -322,7 +421,11 @@ func TestAccResourceIntegrationPolicySecrets(t *testing.T) {
 						"inputs.aws_logs-aws-s3.defaults",
 					},
 					Check: resource.ComposeTestCheckFunc(
-						resource.TestMatchResourceAttr("elasticstack_fleet_integration_policy.test_policy", "vars_json", regexp.MustCompile(`{"access_key_id":{"id":"\S+","isSecretRef":true},"default_region":"us-east-2","endpoint":"endpoint","secret_access_key":{"id":"\S+","isSecretRef":true},"session_token":{"id":"\S+","isSecretRef":true}}`)),
+						resource.TestMatchResourceAttr(
+							"elasticstack_fleet_integration_policy.test_policy",
+							"vars_json",
+							regexp.MustCompile(awsLogsSecretsRegexUsEast2),
+						),
 					),
 				},
 			},
@@ -349,7 +452,11 @@ func TestAccResourceIntegrationPolicySecrets(t *testing.T) {
 						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_version", "1.1.0"),
 						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.sql-sql/metrics.enabled", "true"),
 						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.sql-sql/metrics.streams.sql.sql.enabled", "true"),
-						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.sql-sql/metrics.streams.sql.sql.vars", `{"data_stream.dataset":"sql","driver":"mysql","hosts":["root:test@tcp(127.0.0.1:3306)/"],"merge_results":false,"period":"1m","processors":"","sql_queries":"- query: SHOW GLOBAL STATUS LIKE 'Innodb_system%'\n  response_format: variables\n        \n","ssl":""}`),
+						resource.TestCheckResourceAttr(
+							"elasticstack_fleet_integration_policy.test_policy",
+							"inputs.sql-sql/metrics.streams.sql.sql.vars",
+							sqlSQLVarsExpected,
+						),
 					),
 				},
 				{
@@ -367,7 +474,11 @@ func TestAccResourceIntegrationPolicySecrets(t *testing.T) {
 					ImportStateVerify:       true,
 					ImportStateVerifyIgnore: []string{"inputs.sql-sql/metrics.streams.sql.sql.vars", "space_ids"},
 					Check: resource.ComposeTestCheckFunc(
-						resource.TestMatchResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.sql-sql/metrics.streams.sql.sql.vars", regexp.MustCompile(`"hosts":{"ids":["\S+"],"isSecretRef":true}`)),
+						resource.TestMatchResourceAttr(
+							"elasticstack_fleet_integration_policy.test_policy",
+							"inputs.sql-sql/metrics.streams.sql.sql.vars",
+							regexp.MustCompile(sqlHostsSecretRefRegex),
+						),
 					),
 				},
 			},
@@ -394,10 +505,18 @@ func TestAccIntegrationPolicyAzureMetrics(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "description", "Azure Metrics Integration Policy"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_name", "azure_metrics"),
 					resource.TestCheckResourceAttrPair("elasticstack_fleet_integration_policy.test_policy", "integration_version", "data.elasticstack_fleet_integration.test", "version"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "vars_json", `{"client_id":"test-client-id","client_secret":"test-client-secret","subscription_id":"test-subscription-id","tenant_id":"test-tenant-id"}`),
+					resource.TestCheckResourceAttr(
+						"elasticstack_fleet_integration_policy.test_policy",
+						"vars_json",
+						azureMetricsVarsJSONExpected,
+					),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.monitor-azure/metrics.enabled", "true"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.monitor-azure/metrics.streams.azure.monitor.enabled", "true"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.monitor-azure/metrics.streams.azure.monitor.vars", `{"period":"300s","resources":"- resource_query: \"resourceType eq 'Microsoft.Search/searchServices'\"\n  metrics:\n  - name: [\"DocumentsProcessedCount\", \"SearchLatency\", \"SearchQueriesPerSecond\", \"ThrottledSearchQueriesPercentage\"]\n    namespace: \"Microsoft.Search/searchServices\""}`),
+					resource.TestCheckResourceAttr(
+						"elasticstack_fleet_integration_policy.test_policy",
+						"inputs.monitor-azure/metrics.streams.azure.monitor.vars",
+						azureMonitorVarsExpected,
+					),
 				),
 			},
 		},
@@ -432,7 +551,11 @@ func TestAccIntegrationPolicyInputs(t *testing.T) {
 					// Check disabled stream
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-kafka/metrics.streams.kafka.partition.enabled", "false"),
 					// Check vars
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-kafka/metrics.vars", `{"hosts":["localhost:9092"],"period":"10s","ssl.certificate_authorities":[]}`),
+					resource.TestCheckResourceAttr(
+						"elasticstack_fleet_integration_policy.test_policy",
+						"inputs.kafka-kafka/metrics.vars",
+						kafkaMetricsVarsExpected,
+					),
 					// Check unspecified, disabled by default input
 					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-jolokia/metrics"),
 				),
@@ -451,7 +574,11 @@ func TestAccIntegrationPolicyInputs(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-logfile.enabled", "false"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-kafka/metrics.enabled", "true"),
 					// Vars should remain the same since we didn't change them
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-kafka/metrics.vars", `{"hosts":["localhost:9092"],"period":"10s","ssl.certificate_authorities":[]}`),
+					resource.TestCheckResourceAttr(
+						"elasticstack_fleet_integration_policy.test_policy",
+						"inputs.kafka-kafka/metrics.vars",
+						kafkaMetricsVarsExpected,
+					),
 
 					// Disabled input should have no vars/streams in state
 					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-logfile.vars"),
@@ -468,7 +595,11 @@ func TestAccIntegrationPolicyInputs(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName),
 					// Check that updating an enabled input's vars triggers a change
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-kafka/metrics.streams.kafka.consumergroup.vars", `{"topics":["don't mention the war, I mentioned it once but I think I got away with it"]}`),
+					resource.TestCheckResourceAttr(
+						"elasticstack_fleet_integration_policy.test_policy",
+						"inputs.kafka-kafka/metrics.streams.kafka.consumergroup.vars",
+						kafkaConsumerGroupVarsExpected,
+					),
 					// Disabled input should remain disabled
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-logfile.enabled", "false"),
 				),
@@ -486,13 +617,25 @@ func TestAccIntegrationPolicyInputs(t *testing.T) {
 					// Check that the kafka-logfile input is re-enabled
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-logfile.enabled", "true"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-logfile.streams.kafka.log.enabled", "true"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-logfile.streams.kafka.log.vars", `{"kafka_home":"/opt/kafka*","paths":["/logs/controller.log*","/logs/server.log*","/logs/state-change.log*","/logs/kafka-*.log*"],"preserve_original_event":false,"tags":["kafka-log"]}`),
+					resource.TestCheckResourceAttr(
+						"elasticstack_fleet_integration_policy.test_policy",
+						"inputs.kafka-logfile.streams.kafka.log.vars",
+						kafkaLogfileVarsExpected,
+					),
 					// Check that the kafka/metrics input remains enabled
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-kafka/metrics.enabled", "true"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-kafka/metrics.vars", `{"hosts":["localhost:9092"],"period":"10s","ssl.certificate_authorities":[]}`),
+					resource.TestCheckResourceAttr(
+						"elasticstack_fleet_integration_policy.test_policy",
+						"inputs.kafka-kafka/metrics.vars",
+						kafkaMetricsVarsExpected,
+					),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-kafka/metrics.streams.kafka.broker.enabled", "true"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-kafka/metrics.streams.kafka.consumergroup.enabled", "true"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-kafka/metrics.streams.kafka.consumergroup.vars", `{"topics":["don't mention the war, I mentioned it once but I think I got away with it"]}`),
+					resource.TestCheckResourceAttr(
+						"elasticstack_fleet_integration_policy.test_policy",
+						"inputs.kafka-kafka/metrics.streams.kafka.consumergroup.vars",
+						kafkaConsumerGroupVarsExpected,
+					),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-kafka/metrics.streams.kafka.partition.enabled", "false"),
 				),
 			},
@@ -512,10 +655,18 @@ func TestAccIntegrationPolicyInputs(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-logfile.streams.kafka.log.vars", `{"tags":["custom-tag-1","custom-tag-2"]}`),
 					// Check that the kafka/metrics input remains enabled
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-kafka/metrics.enabled", "true"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-kafka/metrics.vars", `{"hosts":["localhost:9092"],"period":"10s","ssl.certificate_authorities":[]}`),
+					resource.TestCheckResourceAttr(
+						"elasticstack_fleet_integration_policy.test_policy",
+						"inputs.kafka-kafka/metrics.vars",
+						kafkaMetricsVarsExpected,
+					),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-kafka/metrics.streams.kafka.broker.enabled", "true"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-kafka/metrics.streams.kafka.consumergroup.enabled", "true"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-kafka/metrics.streams.kafka.consumergroup.vars", `{"topics":["don't mention the war, I mentioned it once but I think I got away with it"]}`),
+					resource.TestCheckResourceAttr(
+						"elasticstack_fleet_integration_policy.test_policy",
+						"inputs.kafka-kafka/metrics.streams.kafka.consumergroup.vars",
+						kafkaConsumerGroupVarsExpected,
+					),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-kafka/metrics.streams.kafka.partition.enabled", "false"),
 				),
 			},
@@ -578,10 +729,18 @@ func TestAccResourceIntegrationPolicyGCPVertexAI(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "vars_json", `{"project_id":"my-gcp-project"}`),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.GCP Vertex AI Metrics-gcp/metrics.enabled", "true"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.GCP Vertex AI Metrics-gcp/metrics.streams.gcp_vertexai.metrics.enabled", "true"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.GCP Vertex AI Metrics-gcp/metrics.streams.gcp_vertexai.metrics.vars", `{"period":"60s","regions":["us-central1"]}`),
+					resource.TestCheckResourceAttr(
+						"elasticstack_fleet_integration_policy.test_policy",
+						"inputs.GCP Vertex AI Metrics-gcp/metrics.streams.gcp_vertexai.metrics.vars",
+						gcpVertexAIMetricsVarsExpected,
+					),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.GCP Vertex AI  Logs-gcp/metrics.enabled", "true"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.GCP Vertex AI  Logs-gcp/metrics.streams.gcp_vertexai.prompt_response_logs.enabled", "true"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.GCP Vertex AI  Logs-gcp/metrics.streams.gcp_vertexai.prompt_response_logs.vars", `{"exclude_labels":false,"period":"300s","table_id":"table_id","tags":["forwarded","gcp-vertexai-prompt-response-logs"],"time_lookback_hours":1}`),
+					resource.TestCheckResourceAttr(
+						"elasticstack_fleet_integration_policy.test_policy",
+						"inputs.GCP Vertex AI  Logs-gcp/metrics.streams.gcp_vertexai.prompt_response_logs.vars",
+						gcpVertexAIPromptResponseLogsVarsExpected,
+					),
 				),
 			},
 			{
@@ -598,13 +757,25 @@ func TestAccResourceIntegrationPolicyGCPVertexAI(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "vars_json", `{"project_id":"my-gcp-project"}`),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.GCP Vertex AI Metrics-gcp/metrics.enabled", "true"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.GCP Vertex AI Metrics-gcp/metrics.streams.gcp_vertexai.metrics.enabled", "true"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.GCP Vertex AI Metrics-gcp/metrics.streams.gcp_vertexai.metrics.vars", `{"period":"60s","regions":["us-central1"]}`),
+					resource.TestCheckResourceAttr(
+						"elasticstack_fleet_integration_policy.test_policy",
+						"inputs.GCP Vertex AI Metrics-gcp/metrics.streams.gcp_vertexai.metrics.vars",
+						gcpVertexAIMetricsVarsExpected,
+					),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.GCP Vertex AI  Logs-gcp/metrics.enabled", "true"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.GCP Vertex AI  Logs-gcp/metrics.streams.gcp_vertexai.prompt_response_logs.enabled", "true"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.GCP Vertex AI  Logs-gcp/metrics.streams.gcp_vertexai.prompt_response_logs.vars", `{"exclude_labels":false,"period":"300s","table_id":"table_id","tags":["forwarded","gcp-vertexai-prompt-response-logs"],"time_lookback_hours":1}`),
+					resource.TestCheckResourceAttr(
+						"elasticstack_fleet_integration_policy.test_policy",
+						"inputs.GCP Vertex AI  Logs-gcp/metrics.streams.gcp_vertexai.prompt_response_logs.vars",
+						gcpVertexAIPromptResponseLogsVarsExpected,
+					),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.GCP Vertex AI  Logs-gcp-pubsub.enabled", "true"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.GCP Vertex AI  Logs-gcp-pubsub.streams.gcp_vertexai.auditlogs.enabled", "true"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.GCP Vertex AI  Logs-gcp-pubsub.streams.gcp_vertexai.auditlogs.vars", `{"preserve_original_event":false,"subscription_create":false,"subscription_name":"gcp-vertexai-audit-sub","tags":["forwarded","gcp-vertexai-audit"],"topic":"gcp-vertexai-audit"}`),
+					resource.TestCheckResourceAttr(
+						"elasticstack_fleet_integration_policy.test_policy",
+						"inputs.GCP Vertex AI  Logs-gcp-pubsub.streams.gcp_vertexai.auditlogs.vars",
+						gcpVertexAIAuditLogsVarsExpected,
+					),
 				),
 			},
 		},

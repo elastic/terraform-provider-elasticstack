@@ -12,6 +12,21 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
+const (
+	watchTriggerCreateExpected = `{"schedule":{"cron":"0 0/1 * * * ?"}}`
+	watchTriggerUpdateExpected = `{"schedule":{"cron":"0 0/2 * * * ?"}}`
+	watchInputNoneExpected     = `{"none":{}}`
+	watchConditionAlways       = `{"always":{}}`
+	watchActionsEmpty          = `{}`
+	watchMetadataEmpty         = `{}`
+	watchInputSimpleExpected   = `{"simple":{"name":"example"}}`
+	watchConditionNever        = `{"never":{}}`
+	watchActionsLogExpected    = `{"log":{"logging":{"level":"info","text":"example logging text"}}}`
+	watchMetadataExample       = `{"example_key":"example_value"}`
+	watchTransformExpected     = `{"search":{"request":{"body":{"query":{"match_all":{}}},"indices":[],"rest_total_hits_as_int":true,` +
+		`"search_type":"query_then_fetch"}}}`
+)
+
 func TestResourceWatch(t *testing.T) {
 	watchID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
@@ -24,11 +39,11 @@ func TestResourceWatch(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "watch_id", watchID),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "active", "false"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "trigger", `{"schedule":{"cron":"0 0/1 * * * ?"}}`),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "input", `{"none":{}}`),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "condition", `{"always":{}}`),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "actions", `{}`),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "metadata", `{}`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "trigger", watchTriggerCreateExpected),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "input", watchInputNoneExpected),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "condition", watchConditionAlways),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "actions", watchActionsEmpty),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "metadata", watchMetadataEmpty),
 				),
 			},
 			{
@@ -36,12 +51,12 @@ func TestResourceWatch(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "watch_id", watchID),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "active", "true"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "trigger", `{"schedule":{"cron":"0 0/2 * * * ?"}}`),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "input", `{"simple":{"name":"example"}}`),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "condition", `{"never":{}}`),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "actions", `{"log":{"logging":{"level":"info","text":"example logging text"}}}`),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "metadata", `{"example_key":"example_value"}`),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "transform", `{"search":{"request":{"body":{"query":{"match_all":{}}},"indices":[],"rest_total_hits_as_int":true,"search_type":"query_then_fetch"}}}`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "trigger", watchTriggerUpdateExpected),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "input", watchInputSimpleExpected),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "condition", watchConditionNever),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "actions", watchActionsLogExpected),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "metadata", watchMetadataExample),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "transform", watchTransformExpected),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "throttle_period_in_millis", "10000"),
 				),
 			},

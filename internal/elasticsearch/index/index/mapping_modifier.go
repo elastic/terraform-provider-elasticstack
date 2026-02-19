@@ -58,13 +58,19 @@ func (p mappingsPlanModifier) PlanModifyString(ctx context.Context, req planmodi
 
 func (p mappingsPlanModifier) modifyMappings(ctx context.Context, initialPath path.Path, old map[string]interface{}, new map[string]interface{}) (bool, map[string]interface{}, diag.Diagnostics) {
 	var diags diag.Diagnostics
+	warningDetail := "Elasticsearch will maintain the current field in it's mapping. " +
+		"Re-index to remove the field completely"
 	for k, v := range old {
 		oldFieldSettings := v.(map[string]interface{})
 		newFieldSettings, ok := new[k]
 		currentPath := initialPath.AtMapKey(k)
 		// When field is removed, it'll be ignored in elasticsearch
 		if !ok {
-			diags.AddAttributeWarning(path.Root("mappings"), fmt.Sprintf("removing field [%s] in mappings is ignored.", currentPath), "Elasticsearch will maintain the current field in it's mapping. Re-index to remove the field completely")
+			diags.AddAttributeWarning(
+				path.Root("mappings"),
+				fmt.Sprintf("removing field [%s] in mappings is ignored.", currentPath),
+				warningDetail,
+			)
 			new[k] = v
 			continue
 		}
@@ -92,7 +98,11 @@ func (p mappingsPlanModifier) modifyMappings(ctx context.Context, initialPath pa
 					return true, new, diags
 				}
 			} else {
-				diags.AddAttributeWarning(path.Root("mappings"), fmt.Sprintf("removing field [%s] in mappings is ignored.", currentPath), "Elasticsearch will maintain the current field in it's mapping. Re-index to remove the field completely")
+				diags.AddAttributeWarning(
+					path.Root("mappings"),
+					fmt.Sprintf("removing field [%s] in mappings is ignored.", currentPath),
+					warningDetail,
+				)
 				newSettings["properties"] = s
 			}
 		}

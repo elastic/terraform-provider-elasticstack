@@ -45,6 +45,10 @@ func init() {
 }
 
 func ResourceTransform() *schema.Resource {
+	const destinationIndexAllowedCharsError = "must contain lower case alphanumeric characters and selected punctuation, see the " +
+		"[indices create API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-index.html" +
+		"#indices-create-api-path-params) for more details"
+
 	transformSchema := map[string]*schema.Schema{
 		"id": {
 			Description: "Internal identifier of the resource",
@@ -115,7 +119,10 @@ func ResourceTransform() *schema.Resource {
 							validation.StringLenBetween(1, 255),
 							validation.StringNotInSlice([]string{".", ".."}, true),
 							validation.StringMatch(regexp.MustCompile(`^[^-_+]`), "cannot start with -, _, +"),
-							validation.StringMatch(regexp.MustCompile(`^[a-z0-9!$%&'()+.;=@[\]^{}~_-]+$`), "must contain lower case alphanumeric characters and selected punctuation, see the [indices create API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-index.html#indices-create-api-path-params) for more details"),
+							validation.StringMatch(
+								regexp.MustCompile(`^[a-z0-9!$%&'()+.;=@[\]^{}~_-]+$`),
+								destinationIndexAllowedCharsError,
+							),
 						),
 					},
 					"aliases": {
@@ -283,13 +290,13 @@ func ResourceTransform() *schema.Resource {
 		},
 		"defer_validation": {
 			Type:        schema.TypeBool,
-			Description: "When true, deferrable validations are not run upon creation, but rather when the transform is started. This behavior may be desired if the source index does not exist until after the transform is created. Default is `false`",
+			Description: deferValidationDescription,
 			Optional:    true,
 			Default:     false,
 		},
 		"timeout": {
 			Type:         schema.TypeString,
-			Description:  "Period to wait for a response from Elasticsearch when performing any management operation. If no response is received before the timeout expires, the operation fails and returns an error. Defaults to `30s`.",
+			Description:  timeoutDescription,
 			Optional:     true,
 			Default:      "30s",
 			ValidateFunc: utils.StringIsDuration,

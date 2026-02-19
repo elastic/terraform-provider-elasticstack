@@ -92,7 +92,7 @@ func getSchema() schema.Schema {
 				Sensitive:   true,
 			},
 			"space_ids": schema.SetAttribute{
-				Description: "The Kibana space IDs where this output is available. When set, the output will be created and managed within the specified space. Note: The order of space IDs does not matter as this is a set.",
+				Description: spaceIDsDescription,
 				ElementType: types.StringType,
 				Optional:    true,
 				Computed:    true,

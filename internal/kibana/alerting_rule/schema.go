@@ -77,7 +77,7 @@ func getSchema() schema.Schema {
 				},
 			},
 			"notify_when": schema.StringAttribute{
-				Description: "Required until v8.6.0. Deprecated in v8.13.0. Use the `notify_when` property in the action `frequency` object instead. Defines how often alerts generate actions. Valid values include: `onActionGroupChange`: Actions run when the alert status changes; `onActiveAlert`: Actions run when the alert becomes active and at each check interval while the rule conditions are met; `onThrottleInterval`: Actions run when the alert becomes active and at the interval specified in the throttle property while the rule conditions are met. NOTE: This is a rule level property; if you update the rule in Kibana, it is automatically changed to use action-specific `notify_when` values.",
+				Description: notifyWhenDescription,
 				Optional:    true,
 				Computed:    true,
 				Validators: []validator.String{
@@ -90,7 +90,7 @@ func getSchema() schema.Schema {
 				CustomType:  jsontypes.NormalizedType{},
 			},
 			"rule_type_id": schema.StringAttribute{
-				Description: "The ID of the rule type that you want to call when the rule is scheduled to run. For more information about the valid values, list the rule types using [Get rule types API](https://www.elastic.co/guide/en/kibana/master/list-rule-types-api.html) or refer to the [Rule types documentation](https://www.elastic.co/guide/en/kibana/master/rule-types.html).",
+				Description: ruleTypeIDDescription,
 				Required:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
@@ -115,7 +115,7 @@ func getSchema() schema.Schema {
 				ElementType: types.StringType,
 			},
 			"throttle": schema.StringAttribute{
-				Description: "Deprecated in 8.13.0. Defines how often an alert generates repeated actions. This custom action interval must be specified in seconds, minutes, hours, or days. For example, 10m or 1h. This property is applicable only if `notify_when` is `onThrottleInterval`. NOTE: This is a rule level property; if you update the rule in Kibana, it is automatically changed to use action-specific `throttle` values.",
+				Description: throttleRuleDescription,
 				Optional:    true,
 				Validators: []validator.String{
 					validators.StringIsAlertingDuration{},
@@ -151,7 +151,7 @@ func getSchema() schema.Schema {
 				NestedObject: schema.NestedBlockObject{
 					Attributes: map[string]schema.Attribute{
 						"group": schema.StringAttribute{
-							Description: "The group name, which affects when the action runs (for example, when the threshold is met or when the alert is recovered). Each rule type has a list of valid action group names.",
+							Description: actionsGroupDescription,
 							Optional:    true,
 							Computed:    true,
 							Default:     stringdefault.StaticString("default"),
@@ -168,7 +168,7 @@ func getSchema() schema.Schema {
 					},
 					Blocks: map[string]schema.Block{
 						"frequency": schema.SingleNestedBlock{
-							Description: "The properties that affect how often actions are generated. If the rule type supports setting summary to true, the action can be a summary of alerts at the specified notification interval. Otherwise, an action runs for each alert at the specified notification interval. NOTE: You cannot specify these parameters when `notify_when` or `throttle` are defined at the rule level.",
+							Description: actionsFrequencyDescription,
 							Validators: []validator.Object{
 								objectvalidator.AlsoRequires(path.MatchRelative().AtName("summary")),
 								objectvalidator.AlsoRequires(path.MatchRelative().AtName("notify_when")),
@@ -180,7 +180,7 @@ func getSchema() schema.Schema {
 									Computed:    true,
 								},
 								"notify_when": schema.StringAttribute{
-									Description: "Defines how often alerts generate actions. Valid values include: `onActionGroupChange`: Actions run when the alert status changes; `onActiveAlert`: Actions run when the alert becomes active and at each check interval while the rule conditions are met; `onThrottleInterval`: Actions run when the alert becomes active and at the interval specified in the throttle property while the rule conditions are met.",
+									Description: actionsFrequencyNotifyWhenDescription,
 									Optional:    true,
 									Computed:    true,
 									Validators: []validator.String{
@@ -188,7 +188,7 @@ func getSchema() schema.Schema {
 									},
 								},
 								"throttle": schema.StringAttribute{
-									Description: "Defines how often an alert generates repeated actions. This custom action interval must be specified in seconds, minutes, hours, or days. For example, 10m or 1h. This property is applicable only if `notify_when` is `onThrottleInterval`.",
+									Description: actionsFrequencyThrottleDescription,
 									Optional:    true,
 									Validators: []validator.String{
 										validators.StringIsAlertingDuration{},
@@ -197,7 +197,7 @@ func getSchema() schema.Schema {
 							},
 						},
 						"alerts_filter": schema.SingleNestedBlock{
-							Description: "Conditions that affect whether the action runs. If you specify multiple conditions, all conditions must be met for the action to run. For example, if an alert occurs within the specified time frame and matches the query, the action runs.",
+							Description: alertsFilterDescription,
 							Attributes: map[string]schema.Attribute{
 								"kql": schema.StringAttribute{
 									Description: "Defines a query filter that determines whether the action runs. Written in Kibana Query Language (KQL).",
@@ -219,7 +219,7 @@ func getSchema() schema.Schema {
 									},
 									Attributes: map[string]schema.Attribute{
 										"days": schema.ListAttribute{
-											Description: "Defines the days of the week that the action can run, represented as an array of numbers. For example, 1 represents Monday. An empty array is equivalent to specifying all the days of the week.",
+											Description: timeframeDaysDescription,
 											Optional:    true,
 											ElementType: types.Int64Type,
 											Validators: []validator.List{

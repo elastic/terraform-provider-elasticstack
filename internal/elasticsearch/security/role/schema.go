@@ -111,7 +111,7 @@ func GetSchema(version int64) schema.Schema {
 							CustomType:          jsontypes.NormalizedType{},
 						},
 						"allow_restricted_indices": schema.BoolAttribute{
-							MarkdownDescription: "Include matching restricted indices in names parameter. Usage is strongly discouraged as it can grant unrestricted operations on critical data, make the entire system unstable or leak sensitive information.",
+							MarkdownDescription: allowRestrictedIndicesDescription,
 							Optional:            true,
 							Computed:            true,
 							PlanModifiers: []planmodifier.Bool{
@@ -122,7 +122,7 @@ func GetSchema(version int64) schema.Schema {
 				},
 			},
 			"remote_indices": schema.SetNestedBlock{
-				MarkdownDescription: "A list of remote indices permissions entries. Remote indices are effective for remote clusters configured with the API key based model. They have no effect for remote clusters configured with the certificate based model.",
+				MarkdownDescription: remoteIndicesDescription,
 				NestedObject: schema.NestedBlockObject{
 					Blocks: map[string]schema.Block{
 						"field_security": schema.SingleNestedBlock{

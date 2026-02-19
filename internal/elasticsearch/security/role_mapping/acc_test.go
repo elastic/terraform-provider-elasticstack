@@ -1,6 +1,7 @@
 package role_mapping_test
 
 import (
+	_ "embed"
 	"fmt"
 	"net/http"
 	"testing"
@@ -8,10 +9,14 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest/checks"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
+
+//go:embed testdata/TestAccResourceSecurityRoleMapping/create/role_mapping.tf
+var roleMappingCreateConfig string
 
 func TestAccResourceSecurityRoleMapping(t *testing.T) {
 	names := []string{
@@ -20,49 +25,59 @@ func TestAccResourceSecurityRoleMapping(t *testing.T) {
 	}
 
 	for _, roleMappingName := range names {
-		t.Run("roleMappingName = "+roleMappingName, func(t *testing.T) {
-			resource.Test(t, resource.TestCase{
-				PreCheck:                 func() { acctest.PreCheck(t) },
-				CheckDestroy:             checkResourceSecurityRoleMappingDestroy,
-				ProtoV6ProviderFactories: acctest.Providers,
-				Steps: []resource.TestStep{
-					{
-						Config: testAccResourceSecurityRoleMappingCreate(roleMappingName),
-						Check: resource.ComposeTestCheckFunc(
-							resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role_mapping.test", "name", roleMappingName),
-							resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role_mapping.test", "enabled", "true"),
-							checks.TestCheckResourceListAttr("elasticstack_elasticsearch_security_role_mapping.test", "roles", []string{"admin"}),
-							resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role_mapping.test", "rules", `{"any":[{"field":{"username":"esadmin"}},{"field":{"groups":"cn=admins,dc=example,dc=com"}}]}`),
-							resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role_mapping.test", "metadata", `{"version":1}`),
-						),
+		resource.Test(t, resource.TestCase{
+			PreCheck:     func() { acctest.PreCheck(t) },
+			CheckDestroy: checkResourceSecurityRoleMappingDestroy,
+			Steps: []resource.TestStep{
+				{
+					ProtoV6ProviderFactories: acctest.Providers,
+					ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+					ConfigVariables: config.Variables{
+						"name": config.StringVariable(roleMappingName),
 					},
-					{
-						Config: testAccResourceSecurityRoleMappingUpdate(roleMappingName),
-						Check: resource.ComposeTestCheckFunc(
-							resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role_mapping.test", "name", roleMappingName),
-							resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role_mapping.test", "enabled", "false"),
-							checks.TestCheckResourceListAttr("elasticstack_elasticsearch_security_role_mapping.test", "roles", []string{"admin", "user"}),
-							resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role_mapping.test", "rules", `{"any":[{"field":{"username":"esadmin"}},{"field":{"groups":"cn=admins,dc=example,dc=com"}}]}`),
-							resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role_mapping.test", "metadata", `{}`),
-						),
-					},
-					{
-						Config: testAccResourceSecurityRoleMappingRoleTemplates(roleMappingName),
-						Check: resource.ComposeTestCheckFunc(
-							resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role_mapping.test", "name", roleMappingName),
-							resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role_mapping.test", "enabled", "false"),
-							resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role_mapping.test", "role_templates", `[{"format":"json","template":"{\"source\":\"{{#tojson}}groups{{/tojson}}\"}"}]`),
-							resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role_mapping.test", "rules", `{"any":[{"field":{"username":"esadmin"}},{"field":{"groups":"cn=admins,dc=example,dc=com"}}]}`),
-							resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role_mapping.test", "metadata", `{}`),
-						),
-					},
-					{
-						ResourceName:      "elasticstack_elasticsearch_security_role_mapping.test",
-						ImportState:       true,
-						ImportStateVerify: true,
-					},
+					Check: resource.ComposeTestCheckFunc(
+						resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role_mapping.test", "name", roleMappingName),
+						resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role_mapping.test", "enabled", "true"),
+						checks.TestCheckResourceListAttr("elasticstack_elasticsearch_security_role_mapping.test", "roles", []string{"admin"}),
+						resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role_mapping.test", "rules", `{"any":[{"field":{"username":"esadmin"}},{"field":{"groups":"cn=admins,dc=example,dc=com"}}]}`),
+						resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role_mapping.test", "metadata", `{"version":1}`),
+					),
 				},
-			})
+				{
+					ProtoV6ProviderFactories: acctest.Providers,
+					ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+					ConfigVariables: config.Variables{
+						"name": config.StringVariable(roleMappingName),
+					},
+					Check: resource.ComposeTestCheckFunc(
+						resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role_mapping.test", "name", roleMappingName),
+						resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role_mapping.test", "enabled", "false"),
+						checks.TestCheckResourceListAttr("elasticstack_elasticsearch_security_role_mapping.test", "roles", []string{"admin", "user"}),
+						resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role_mapping.test", "rules", `{"any":[{"field":{"username":"esadmin"}},{"field":{"groups":"cn=admins,dc=example,dc=com"}}]}`),
+						resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role_mapping.test", "metadata", `{}`),
+					),
+				},
+				{
+					ProtoV6ProviderFactories: acctest.Providers,
+					ConfigDirectory:          acctest.NamedTestCaseDirectory("role_templates"),
+					ConfigVariables: config.Variables{
+						"name": config.StringVariable(roleMappingName),
+					},
+					Check: resource.ComposeTestCheckFunc(
+						resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role_mapping.test", "name", roleMappingName),
+						resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role_mapping.test", "enabled", "false"),
+						resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role_mapping.test", "role_templates", `[{"format":"json","template":"{\"source\":\"{{#tojson}}groups{{/tojson}}\"}"}]`),
+						resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role_mapping.test", "rules", `{"any":[{"field":{"username":"esadmin"}},{"field":{"groups":"cn=admins,dc=example,dc=com"}}]}`),
+						resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role_mapping.test", "metadata", `{}`),
+					),
+				},
+				{
+					ProtoV6ProviderFactories: acctest.Providers,
+					ResourceName:             "elasticstack_elasticsearch_security_role_mapping.test",
+					ImportState:              true,
+					ImportStateVerify:        true,
+				},
+			},
 		})
 	}
 }
@@ -80,7 +95,10 @@ func TestAccResourceSecurityRoleMappingFromSDK(t *testing.T) {
 						VersionConstraint: "0.11.17",
 					},
 				},
-				Config: testAccResourceSecurityRoleMappingCreate(roleMappingName),
+				Config: roleMappingCreateConfig,
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(roleMappingName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role_mapping.test", "name", roleMappingName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role_mapping.test", "enabled", "true"),
@@ -89,7 +107,10 @@ func TestAccResourceSecurityRoleMappingFromSDK(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				Config:                   testAccResourceSecurityRoleMappingCreate(roleMappingName),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(roleMappingName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role_mapping.test", "name", roleMappingName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role_mapping.test", "enabled", "true"),
@@ -127,75 +148,4 @@ func checkResourceSecurityRoleMappingDestroy(s *terraform.State) error {
 		}
 	}
 	return nil
-}
-
-func testAccResourceSecurityRoleMappingCreate(roleMappingName string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_security_role_mapping" "test" {
-  name    = "%s"
-  enabled = true
-  roles   = ["admin"]
-  rules = jsonencode({
-    any = [
-      { field = { username = "esadmin" } },
-      { field = { groups = "cn=admins,dc=example,dc=com" } },
-    ]
-  })
-
-  metadata = jsonencode({ version = 1 })
-}
-	`, roleMappingName)
-}
-
-func testAccResourceSecurityRoleMappingUpdate(roleMappingName string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_security_role_mapping" "test" {
-  name    = "%s"
-  enabled = false
-  roles   = ["admin", "user"]
-  rules = jsonencode({
-    any = [
-      { field = { username = "esadmin" } },
-      { field = { groups = "cn=admins,dc=example,dc=com" } },
-    ]
-  })
-
-  metadata = jsonencode({})
-}
-	`, roleMappingName)
-}
-
-func testAccResourceSecurityRoleMappingRoleTemplates(roleMappingName string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_security_role_mapping" "test" {
-  name    = "%s"
-  enabled = false
-  role_templates = jsonencode([
-    {
-      format   = "json"
-      template = "{\"source\":\"{{#tojson}}groups{{/tojson}}\"}"
-    }
-  ])
-  rules = jsonencode({
-    any = [
-      { field = { username = "esadmin" } },
-      { field = { groups = "cn=admins,dc=example,dc=com" } },
-    ]
-  })
-
-  metadata = jsonencode({})
-}
-	`, roleMappingName)
 }

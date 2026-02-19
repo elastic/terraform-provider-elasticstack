@@ -45,7 +45,8 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 	if apiModel.ConnectorID != "" && version.LessThan(MinVersionSupportingPreconfiguredIDs) {
 		response.Diagnostics.AddError(
 			"Unsupported Elastic Stack version",
-			"Preconfigured connector IDs are only supported for Elastic Stack v"+MinVersionSupportingPreconfiguredIDs.String()+" and above. Either remove the `connector_id` attribute or upgrade your target cluster to supported version",
+			"Preconfigured connector IDs are only supported for Elastic Stack v"+MinVersionSupportingPreconfiguredIDs.String()+" and above."+
+				" Either remove the `connector_id` attribute or upgrade your target cluster to supported version",
 		)
 		return
 	}

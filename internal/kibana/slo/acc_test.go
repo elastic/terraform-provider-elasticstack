@@ -493,13 +493,20 @@ func TestAccResourceSloErrors(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(version.Must(version.NewSemver("8.9.0"))),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("multiple_indicators"),
-				ExpectError:              regexp.MustCompile("(?s)Invalid Attribute Combination.*?Exactly one of these attributes must be configured:\\s+" + regexp.QuoteMeta(`[metric_custom_indicator,histogram_custom_indicator,apm_latency_indicator,apm_availability_indicator,kql_custom_indicator,timeslice_metric_indicator]`)),
+				ExpectError: regexp.MustCompile(
+					"(?s)Invalid Attribute Combination.*?Exactly one of these attributes must be configured:\\s+" +
+						regexp.QuoteMeta(`[metric_custom_indicator,histogram_custom_indicator,apm_latency_indicator,apm_availability_indicator,kql_custom_indicator,timeslice_metric_indicator]`),
+				),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(version.Must(version.NewSemver("8.10.0-SNAPSHOT"))),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("agg_fail"),
-				ExpectError:              regexp.MustCompile(regexp.QuoteMeta(`Attribute histogram_custom_indicator[0].good[0].aggregation value must be one`) + "\\s+" + regexp.QuoteMeta(`of: ["value_count" "range"], got: "supdawg"`)),
+				ExpectError: regexp.MustCompile(
+					regexp.QuoteMeta(`Attribute histogram_custom_indicator[0].good[0].aggregation value must be one`) +
+						"\\s+" +
+						regexp.QuoteMeta(`of: ["value_count" "range"], got: "supdawg"`),
+				),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,

@@ -439,7 +439,12 @@ func (tfModel *AnomalyDetectionJobTFModel) convertAnalysisConfigFromAPI(ctx cont
 			}
 
 			var customRulesDiags diag.Diagnostics
-			detectorsTF[i].CustomRules, customRulesDiags = typeutils.NonEmptyListOrDefault(ctx, originalDetector.CustomRules, types.ObjectType{AttrTypes: getCustomRuleAttrTypes()}, apiConfig.Detectors[i].CustomRules)
+			detectorsTF[i].CustomRules, customRulesDiags = typeutils.NonEmptyListOrDefault(
+				ctx,
+				originalDetector.CustomRules,
+				types.ObjectType{AttrTypes: getCustomRuleAttrTypes()},
+				apiConfig.Detectors[i].CustomRules,
+			)
 			diags.Append(customRulesDiags...)
 			// Ensure the list is properly typed (handles untyped zero-value lists from import)
 			detectorsTF[i].CustomRules = typeutils.EnsureTypedList(ctx, detectorsTF[i].CustomRules, types.ObjectType{AttrTypes: getCustomRuleAttrTypes()})

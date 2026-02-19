@@ -117,7 +117,7 @@ func getSchemaV2() schema.Schema {
 				},
 			},
 			"space_ids": schema.SetAttribute{
-				Description: "The Kibana space IDs where this integration policy is available. When set, must match the space_ids of the referenced agent policy. If not set, will be inherited from the agent policy. Note: The order of space IDs does not matter as this is a set.",
+				Description: spaceIDsDescription,
 				ElementType: types.StringType,
 				Optional:    true,
 				Computed:    true,

@@ -138,7 +138,7 @@ func monitorConfigSchema() schema.Schema {
 				MarkdownDescription: "The monitor's name.",
 			},
 			"space_id": schema.StringAttribute{
-				MarkdownDescription: "Kibana space. The space ID that is part of the Kibana URL when inside the space. Space IDs are limited to lowercase alphanumeric, underscore, and hyphen characters (a-z, 0-9, _, and -). You are cannot change the ID with the update operation.",
+				MarkdownDescription: spaceIDDescription,
 				Optional:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -147,7 +147,7 @@ func monitorConfigSchema() schema.Schema {
 				Computed: true,
 			},
 			"namespace": schema.StringAttribute{
-				MarkdownDescription: "The data stream namespace. Note: if you change its value, kibana creates new datastream. A user needs permissions for new/old datastream in update case to be able to see full monitor history. The `namespace` field should be lowercase and not contain spaces. The namespace must not include any of the following characters: *, \\, /, ?, \", <, >, |, whitespace, ,, #, :, or -. Default: `default`",
+				MarkdownDescription: namespaceDescription,
 				Optional:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -231,7 +231,7 @@ func monitorConfigSchema() schema.Schema {
 			"browser": browserMonitorFieldsSchema(),
 			"retest_on_failure": schema.BoolAttribute{
 				Optional:            true,
-				MarkdownDescription: "Enable or disable retesting when a monitor fails. By default, monitors are automatically retested if the monitor goes from \"up\" to \"down\". If the result of the retest is also \"down\", an error will be created, and if configured, an alert sent. Then the monitor will resume running according to the defined schedule. Using retest_on_failure can reduce noise related to transient problems. Default: `true`.",
+				MarkdownDescription: retestOnFailureDescription,
 			},
 		},
 	}
@@ -480,13 +480,13 @@ func tcpMonitorFieldsSchema() schema.Attribute {
 			},
 			"proxy_url": schema.StringAttribute{
 				Optional:            true,
-				MarkdownDescription: "The URL of the SOCKS5 proxy to use when connecting to the server. The value must be a URL with a scheme of `socks5://`. If the SOCKS5 proxy server requires client authentication, then a username and password can be embedded in the URL. When using a proxy, hostnames are resolved on the proxy server instead of on the client. You can change this behavior by setting the `proxy_use_local_resolver` option.",
+				MarkdownDescription: proxyURLDescription,
 				Computed:            true,
 				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 			},
 			"proxy_use_local_resolver": schema.BoolAttribute{
 				Optional:            true,
-				MarkdownDescription: " A Boolean value that determines whether hostnames are resolved locally instead of being resolved on the proxy server. The default value is false, which means that name resolution occurs on the proxy server.",
+				MarkdownDescription: proxyUseLocalResolverDescription,
 				Computed:            true,
 				PlanModifiers:       []planmodifier.Bool{boolplanmodifier.UseStateForUnknown()},
 			},

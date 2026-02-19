@@ -24,6 +24,9 @@ const (
 	restAPIKeyType               = "rest"
 	crossClusterAPIKeyType       = "cross_cluster"
 	defaultAPIKeyType            = restAPIKeyType
+
+	apiKeyNameInvalidMessage = "must contain alphanumeric characters (a-z, A-Z, 0-9), spaces, punctuation, and printable symbols in the Basic Latin (ASCII) block. " +
+		"Leading or trailing whitespace is not allowed"
 )
 
 func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
@@ -33,7 +36,7 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 func (r *Resource) getSchema(version int64) schema.Schema {
 	return schema.Schema{
 		Version:     version,
-		Description: "Creates an API key for access without requiring basic authentication. Supports both regular API keys and cross-cluster API keys. See the [security API create API key documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-create-api-key.html) and [create cross-cluster API key documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-create-cross-cluster-api-key.html) for more details.",
+		Description: resourceDescription,
 		Blocks: map[string]schema.Block{
 			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock("elasticsearch_connection", false),
 		},
@@ -57,7 +60,10 @@ func (r *Resource) getSchema(version int64) schema.Schema {
 				Required:    true,
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(1, 1024),
-					stringvalidator.RegexMatches(regexp.MustCompile(`^([[:graph:]]| )+$`), "must contain alphanumeric characters (a-z, A-Z, 0-9), spaces, punctuation, and printable symbols in the Basic Latin (ASCII) block. Leading or trailing whitespace is not allowed"),
+					stringvalidator.RegexMatches(
+						regexp.MustCompile(`^([[:graph:]]| )+$`),
+						apiKeyNameInvalidMessage,
+					),
 				},
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),

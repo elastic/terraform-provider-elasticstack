@@ -125,7 +125,7 @@ func DataSourceTemplate() *schema.Resource {
 						},
 					},
 					"mappings": {
-						Description: "Mapping for fields in the index. Should be specified as a JSON object of field mappings. See the documentation (https://www.elastic.co/guide/en/elasticsearch/reference/current/explicit-mapping.html) for more details",
+						Description: indexTemplateMappingsDescription,
 						Type:        schema.TypeString,
 						Computed:    true,
 					},

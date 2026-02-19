@@ -30,7 +30,7 @@ func (r *securityDetectionRuleResource) Schema(_ context.Context, _ resource.Sch
 
 func GetSchema() schema.Schema {
 	return schema.Schema{
-		MarkdownDescription: "Creates or updates a Kibana security detection rule. See the [rules API documentation](https://www.elastic.co/guide/en/security/current/rules-api-create.html) for more details.",
+		MarkdownDescription: securityDetectionRuleMarkdownDescription,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Internal identifier of the resource",
@@ -316,7 +316,7 @@ func GetSchema() schema.Schema {
 				Optional:            true,
 			},
 			"filters": schema.StringAttribute{
-				MarkdownDescription: "Query and filter context array to define alert conditions as JSON. Supports complex filter structures including bool queries, term filters, range filters, etc. Available for all rule types.",
+				MarkdownDescription: filtersMarkdownDescription,
 				Optional:            true,
 				CustomType:          jsontypes.NormalizedType{},
 				Validators: []validator.String{
@@ -574,7 +574,7 @@ func GetSchema() schema.Schema {
 						CustomType:  customtypes.DurationType{},
 					},
 					"missing_fields_strategy": schema.StringAttribute{
-						MarkdownDescription: "Strategy for handling missing fields in suppression grouping: 'suppress' - only one alert will be created per suppress by bucket, 'doNotSuppress' - per each document a separate alert will be created.",
+						MarkdownDescription: missingFieldsStrategyMarkdownDescription,
 						Optional:            true,
 						Validators: []validator.String{
 							stringvalidator.OneOf("suppress", "doNotSuppress"),
@@ -585,7 +585,7 @@ func GetSchema() schema.Schema {
 
 			// Building block type field (common across all rule types)
 			"building_block_type": schema.StringAttribute{
-				MarkdownDescription: "Determines if the rule acts as a building block. If set, value must be `default`. Building-block alerts are not displayed in the UI by default and are used as a foundation for other rules.",
+				MarkdownDescription: buildingBlockTypeMarkdownDescription,
 				Optional:            true,
 				Validators: []validator.String{
 					stringvalidator.OneOf("default"),

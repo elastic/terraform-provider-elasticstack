@@ -76,7 +76,13 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 	resp.Diagnostics.Append(resp.State.Set(ctx, finalModel)...)
 }
 
-func (r *Resource) updateAliases(ctx context.Context, client *clients.ApiClient, indexName string, planAliases map[string]models.IndexAlias, stateAliases map[string]models.IndexAlias) diag.Diagnostics {
+func (r *Resource) updateAliases(
+	ctx context.Context,
+	client *clients.ApiClient,
+	indexName string,
+	planAliases map[string]models.IndexAlias,
+	stateAliases map[string]models.IndexAlias,
+) diag.Diagnostics {
 	aliasesToDelete := []string{}
 	for aliasName := range stateAliases {
 		if _, ok := planAliases[aliasName]; !ok {
