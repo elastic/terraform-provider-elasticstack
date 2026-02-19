@@ -60,6 +60,7 @@ var panelConfigNames = []string{
 	"pie_chart_config",
 	"datatable_config",
 	"heatmap_config",
+	"mosaic_config",
 }
 
 func panelConfigPaths(names []string) []path.Expression {
@@ -685,6 +686,21 @@ func getPanelSchema() schema.NestedAttributeObject {
 				Validators: []validator.Object{
 					objectvalidator.ConflictsWith(
 						siblingPanelConfigPathsExcept("heatmap_config", panelConfigNames)...,
+					),
+					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"lens"}),
+				},
+			},
+			"mosaic_config": schema.SingleNestedAttribute{
+				MarkdownDescription: panelConfigDescription("Configuration for a mosaic chart panel.", "mosaic_config", panelConfigNames),
+				Optional:            true,
+				Attributes:          getMosaicSchema(),
+				Validators: []validator.Object{
+					objectvalidator.AtLeastOneOf(
+						path.MatchRelative().AtName("esql"),
+						path.MatchRelative().AtName("standard"),
+					),
+					objectvalidator.ConflictsWith(
+						siblingPanelConfigPathsExcept("mosaic_config", panelConfigNames)...,
 					),
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"lens"}),
 				},
@@ -1729,6 +1745,237 @@ func getMetricChart() map[string]schema.Attribute {
 			Optional:            true,
 		},
 	}
+}
+
+// getMosaicSchema returns the schema for mosaic chart configuration
+func getMosaicSchema() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"title": schema.StringAttribute{
+			MarkdownDescription: "The title of the chart displayed in the panel.",
+			Optional:            true,
+		},
+		"description": schema.StringAttribute{
+			MarkdownDescription: "The description of the chart.",
+			Optional:            true,
+		},
+		"ignore_global_filters": schema.BoolAttribute{
+			MarkdownDescription: "If true, ignore global filters when fetching data for this chart. Default is false.",
+			Optional:            true,
+			Computed:            true,
+			Default:             booldefault.StaticBool(false),
+		},
+		"sampling": schema.Float64Attribute{
+			MarkdownDescription: "Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.",
+			Optional:            true,
+			Computed:            true,
+			Default:             float64default.StaticFloat64(1),
+		},
+		"legend": schema.SingleNestedAttribute{
+			MarkdownDescription: "Legend configuration for the mosaic chart.",
+			Optional:            true,
+			Attributes:          getMosaicLegendSchema(),
+		},
+		"value_display": schema.SingleNestedAttribute{
+			MarkdownDescription: "Configuration for displaying values in chart cells.",
+			Optional:            true,
+			Attributes:          getMosaicValueDisplaySchema(),
+		},
+		"filters": schema.ListNestedAttribute{
+			MarkdownDescription: "Additional filters to apply to the chart data (maximum 100).",
+			Optional:            true,
+			NestedObject:        getSearchFilterSchema(),
+		},
+		"esql": schema.SingleNestedAttribute{
+			MarkdownDescription: "Mosaic chart configuration for ES|QL queries.",
+			Optional:            true,
+			Attributes:          getMosaicESQLSchema(),
+			Validators: []validator.Object{
+				objectvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("standard")),
+			},
+		},
+		"standard": schema.SingleNestedAttribute{
+			MarkdownDescription: "Mosaic chart configuration for standard (non-ES|QL) queries.",
+			Optional:            true,
+			Attributes:          getMosaicStandardSchema(),
+			Validators: []validator.Object{
+				objectvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("esql")),
+			},
+		},
+	}
+}
+
+func getMosaicLegendSchema() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"nested": schema.BoolAttribute{
+			MarkdownDescription: "Show nested legend with hierarchical breakdown levels.",
+			Optional:            true,
+		},
+		"size": schema.StringAttribute{
+			MarkdownDescription: "Legend size: auto, small, medium, large, or xlarge.",
+			Optional:            true,
+			Validators: []validator.String{
+				stringvalidator.OneOf("auto", "small", "medium", "large", "xlarge"),
+			},
+		},
+		"truncate_after_lines": schema.Float64Attribute{
+			MarkdownDescription: "Maximum lines before truncating legend items (1-10).",
+			Optional:            true,
+		},
+		"visible": schema.StringAttribute{
+			MarkdownDescription: "Legend visibility: auto, show, or hide.",
+			Optional:            true,
+			Validators: []validator.String{
+				stringvalidator.OneOf("auto", "show", "hide"),
+			},
+		},
+	}
+}
+
+func getMosaicValueDisplaySchema() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"mode": schema.StringAttribute{
+			MarkdownDescription: "Value display mode: hidden, absolute, or percentage.",
+			Optional:            true,
+			Validators: []validator.String{
+				stringvalidator.OneOf("hidden", "absolute", "percentage"),
+			},
+		},
+		"percent_decimals": schema.Float64Attribute{
+			MarkdownDescription: "Decimal places for percentage display (0-10).",
+			Optional:            true,
+		},
+	}
+}
+
+func getMosaicESQLSchema() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"dataset": schema.StringAttribute{
+			MarkdownDescription: "Dataset configuration as JSON. For ES|QL, this specifies the ES|QL query dataset.",
+			CustomType:          jsontypes.NormalizedType{},
+			Required:            true,
+		},
+		"group_breakdown_by": schema.ListNestedAttribute{
+			MarkdownDescription: "Array of group breakdown dimensions as JSON (ES|QL column-based configuration).",
+			Optional:            true,
+			NestedObject: schema.NestedAttributeObject{
+				Attributes: map[string]schema.Attribute{
+					"config": schema.StringAttribute{
+						MarkdownDescription: "Group breakdown dimension configuration as JSON.",
+						CustomType:          customtypes.NewJSONWithDefaultsType[map[string]any](populateMosaicOperationDefaults),
+						Required:            true,
+					},
+				},
+			},
+		},
+		"group_by": schema.ListNestedAttribute{
+			MarkdownDescription: "Array of breakdown dimensions as JSON (ES|QL column-based configuration).",
+			Optional:            true,
+			NestedObject: schema.NestedAttributeObject{
+				Attributes: map[string]schema.Attribute{
+					"config": schema.StringAttribute{
+						MarkdownDescription: "Breakdown dimension configuration as JSON.",
+						CustomType:          customtypes.NewJSONWithDefaultsType[map[string]any](populateMosaicOperationDefaults),
+						Required:            true,
+					},
+				},
+			},
+		},
+		"metrics": schema.ListNestedAttribute{
+			MarkdownDescription: "Array of metric configurations as JSON (exactly 1 required).",
+			Required:            true,
+			NestedObject: schema.NestedAttributeObject{
+				Attributes: map[string]schema.Attribute{
+					"config": schema.StringAttribute{
+						MarkdownDescription: "Metric configuration as JSON.",
+						CustomType:          customtypes.NewJSONWithDefaultsType[map[string]any](populateMosaicOperationDefaults),
+						Required:            true,
+					},
+				},
+			},
+			Validators: []validator.List{
+				listvalidator.SizeAtLeast(1),
+				listvalidator.SizeAtMost(1),
+			},
+		},
+	}
+}
+
+func getMosaicStandardSchema() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"dataset": schema.StringAttribute{
+			MarkdownDescription: "Dataset configuration as JSON. For standard charts, this specifies the data view and query.",
+			CustomType:          jsontypes.NormalizedType{},
+			Required:            true,
+		},
+		"query": schema.SingleNestedAttribute{
+			MarkdownDescription: "Query configuration for filtering data.",
+			Required:            true,
+			Attributes:          getFilterSimpleSchema(),
+		},
+		"group_breakdown_by": schema.ListNestedAttribute{
+			MarkdownDescription: "Array of group breakdown dimensions as JSON.",
+			Optional:            true,
+			NestedObject: schema.NestedAttributeObject{
+				Attributes: map[string]schema.Attribute{
+					"config": schema.StringAttribute{
+						MarkdownDescription: "Group breakdown dimension configuration as JSON.",
+						CustomType:          customtypes.NewJSONWithDefaultsType[map[string]any](populateMosaicOperationDefaults),
+						Required:            true,
+					},
+				},
+			},
+		},
+		"group_by": schema.ListNestedAttribute{
+			MarkdownDescription: "Array of breakdown dimensions as JSON.",
+			Optional:            true,
+			NestedObject: schema.NestedAttributeObject{
+				Attributes: map[string]schema.Attribute{
+					"config": schema.StringAttribute{
+						MarkdownDescription: "Breakdown dimension configuration as JSON.",
+						CustomType:          customtypes.NewJSONWithDefaultsType[map[string]any](populateMosaicOperationDefaults),
+						Required:            true,
+					},
+				},
+			},
+		},
+		"metrics": schema.ListNestedAttribute{
+			MarkdownDescription: "Array of metric configurations as JSON (exactly 1 required).",
+			Required:            true,
+			NestedObject: schema.NestedAttributeObject{
+				Attributes: map[string]schema.Attribute{
+					"config": schema.StringAttribute{
+						MarkdownDescription: "Metric configuration as JSON.",
+						CustomType:          customtypes.NewJSONWithDefaultsType[map[string]any](populateMosaicOperationDefaults),
+						Required:            true,
+					},
+				},
+			},
+			Validators: []validator.List{
+				listvalidator.SizeAtLeast(1),
+				listvalidator.SizeAtMost(1),
+			},
+		},
+	}
+}
+
+func populateMosaicOperationDefaults(model map[string]any) map[string]any {
+	op, ok := model["operation"].(string)
+	if !ok {
+		return model
+	}
+
+	// Kibana may inject default rank_by for terms operations.
+	if op == "terms" {
+		if _, ok := model["rank_by"]; !ok {
+			model["rank_by"] = map[string]any{
+				"type":      "column",
+				"metric":    float64(0),
+				"direction": "desc",
+			}
+		}
+	}
+
+	return model
 }
 
 // getDatatableSchema returns the schema for datatable chart configuration

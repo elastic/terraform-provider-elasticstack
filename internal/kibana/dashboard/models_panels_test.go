@@ -32,12 +32,14 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 	tests := []struct {
 		name             string
 		apiPanelsJSON    string
+		initialModel     *dashboardModel
 		expectedPanels   []panelModel
 		expectedSections []sectionModel
 	}{
 		{
 			name:             "empty panels",
 			apiPanelsJSON:    "[]",
+			initialModel:     &dashboardModel{},
 			expectedPanels:   nil,
 			expectedSections: nil,
 		},
@@ -60,6 +62,7 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 					}
 				}
 			]`,
+			initialModel: &dashboardModel{},
 			expectedPanels: []panelModel{
 				{
 					Type: types.StringValue("DASHBOARD_MARKDOWN"),
@@ -96,6 +99,7 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 					"config": {"unknownField": "something"}
 				}
 			]`,
+			initialModel: &dashboardModel{},
 			expectedPanels: []panelModel{
 				{
 					Type: types.StringValue("search"),
@@ -128,6 +132,7 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 					]
 				}
 			]`,
+			initialModel: &dashboardModel{},
 			expectedSections: []sectionModel{
 				{
 					Title:     types.StringValue("My Section"),
@@ -181,6 +186,7 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 					"config": { "title": "Panel 2" }
 				}
 			]`,
+			initialModel: &dashboardModel{},
 			expectedPanels: []panelModel{
 				{
 					Type: types.StringValue("visualization"),
@@ -232,6 +238,47 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "preserves prior typed config when API config lacks attributes",
+			apiPanelsJSON: `[
+				{
+					"grid": { "x": 0, "y": 0, "w": 6, "h": 6 },
+					"type": "lens",
+					"uid": "panel1",
+					"config": { "savedObjectId": "abc123" }
+				}
+			]`,
+			initialModel: &dashboardModel{Panels: []panelModel{
+				{
+					Type: types.StringValue("lens"),
+					MosaicConfig: &mosaicConfigModel{
+						Title: types.StringValue("keep"),
+						Standard: &mosaicStandardModel{
+							Dataset: jsontypes.NewNormalizedValue(`{"type":"dataView","id":"metrics-*"}`),
+						},
+					},
+				},
+			}},
+			expectedPanels: []panelModel{
+				{
+					Type: types.StringValue("lens"),
+					Grid: panelGridModel{
+						X: types.Int64Value(0),
+						Y: types.Int64Value(0),
+						W: types.Int64Value(6),
+						H: types.Int64Value(6),
+					},
+					ID: types.StringValue("panel1"),
+					MosaicConfig: &mosaicConfigModel{
+						Title: types.StringValue("keep"),
+						Standard: &mosaicStandardModel{
+							Dataset: jsontypes.NewNormalizedValue(`{"type":"dataView","id":"metrics-*"}`),
+						},
+					},
+					ConfigJSON: jsontypes.NewNormalizedValue(`{ "savedObjectId": "abc123" }`),
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -240,7 +287,7 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 			err := json.Unmarshal([]byte(tt.apiPanelsJSON), &apiPanels)
 			require.NoError(t, err)
 
-			model := &dashboardModel{}
+			model := tt.initialModel
 			panels, sections, diags := model.mapPanelsFromAPI(t.Context(), &apiPanels)
 			require.False(t, diags.HasError())
 

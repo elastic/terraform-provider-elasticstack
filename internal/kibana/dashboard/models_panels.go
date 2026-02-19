@@ -43,6 +43,7 @@ type panelModel struct {
 	LegacyMetricConfig *legacyMetricConfigModel `tfsdk:"legacy_metric_config"`
 	RegionMapConfig    *regionMapConfigModel    `tfsdk:"region_map_config"`
 	HeatmapConfig      *heatmapConfigModel      `tfsdk:"heatmap_config"`
+	MosaicConfig       *mosaicConfigModel       `tfsdk:"mosaic_config"`
 	ConfigJSON         jsontypes.Normalized     `tfsdk:"config_json"`
 }
 
@@ -79,6 +80,7 @@ var panelConfigConverters = []panelConfigConverter{
 	newDatatablePanelConfigConverter(),
 	newTagcloudPanelConfigConverter(),
 	newHeatmapPanelConfigConverter(),
+	newMosaicPanelConfigConverter(),
 	newRegionMapPanelConfigConverter(),
 	newLegacyMetricPanelConfigConverter(),
 	newGaugePanelConfigConverter(),
@@ -203,6 +205,7 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 	}
 
 	var diags diag.Diagnostics
+	matchedConverter := false
 	for _, converter := range panelConfigConverters {
 		if converter.handlesAPIPanelConfig(tfPanel, panelItem.Type, panelItem.Config) {
 			d := converter.populateFromAPIPanel(ctx, &pm, panelItem.Config)
@@ -210,8 +213,44 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 			if diags.HasError() {
 				return panelModel{}, diags
 			}
-
+			matchedConverter = true
 			break
+		}
+	}
+
+	// If the API returned a config shape we can't decode into a typed panel config (e.g. a
+	// savedObjectId reference without inline attributes), preserve the prior Terraform model's
+	// typed config to avoid dropping state on read-after-update.
+	if !matchedConverter && tfPanel != nil && !tfPanel.Type.IsNull() && tfPanel.Type.ValueString() == panelItem.Type {
+		if tfPanel.MarkdownConfig != nil {
+			pm.MarkdownConfig = tfPanel.MarkdownConfig
+		}
+		if tfPanel.XYChartConfig != nil {
+			pm.XYChartConfig = tfPanel.XYChartConfig
+		}
+		if tfPanel.DatatableConfig != nil {
+			pm.DatatableConfig = tfPanel.DatatableConfig
+		}
+		if tfPanel.TagcloudConfig != nil {
+			pm.TagcloudConfig = tfPanel.TagcloudConfig
+		}
+		if tfPanel.MetricChartConfig != nil {
+			pm.MetricChartConfig = tfPanel.MetricChartConfig
+		}
+		if tfPanel.GaugeConfig != nil {
+			pm.GaugeConfig = tfPanel.GaugeConfig
+		}
+		if tfPanel.LegacyMetricConfig != nil {
+			pm.LegacyMetricConfig = tfPanel.LegacyMetricConfig
+		}
+		if tfPanel.RegionMapConfig != nil {
+			pm.RegionMapConfig = tfPanel.RegionMapConfig
+		}
+		if tfPanel.HeatmapConfig != nil {
+			pm.HeatmapConfig = tfPanel.HeatmapConfig
+		}
+		if tfPanel.MosaicConfig != nil {
+			pm.MosaicConfig = tfPanel.MosaicConfig
 		}
 	}
 
