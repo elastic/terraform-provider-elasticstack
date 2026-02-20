@@ -1,4 +1,4 @@
-package index_template_ilm_attachment
+package templateilmattachment
 
 import (
 	"context"
@@ -8,10 +8,11 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var plan tfModel
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -38,9 +39,16 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 		return
 	}
 
+	// Generate the resource ID
 	componentTemplateName := plan.getComponentTemplateName()
+	id, sdkDiags := r.client.ID(ctx, componentTemplateName)
+	if sdkDiags.HasError() {
+		resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+		return
+	}
+	plan.ID = types.StringValue(id.String())
 
-	// Read existing component template to preserve other settings
+	// Read existing component template (if any) to preserve other settings
 	existing, sdkDiags := elasticsearch.GetComponentTemplate(ctx, r.client, componentTemplateName, true)
 	if sdkDiags.HasError() {
 		resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
@@ -54,10 +62,27 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 
 		// Warn if the existing template has a version field
 		if componentTemplate.Version != nil {
-			tflog.Warn(ctx, "Existing component template has a version field. This resource does not update the version when modifying the template. If you rely on version tracking for change detection, consider using elasticstack_elasticsearch_component_template instead.", map[string]interface{}{
-				"component_template": componentTemplateName,
-				"existing_version":   *componentTemplate.Version,
-			})
+			tflog.Warn(ctx,
+				"Existing component template has a version field. This resource does not update the version when "+
+					"modifying the template. If you rely on version tracking for change detection, consider using "+
+					"elasticstack_elasticsearch_component_template instead.",
+				map[string]any{
+					"component_template": componentTemplateName,
+					"existing_version":   *componentTemplate.Version,
+				})
+		}
+
+		// Warn if an ILM setting already exists (potential conflict)
+		existingILM := extractILMSetting(componentTemplate.Template)
+		if existingILM != "" {
+			tflog.Warn(ctx,
+				"Component template already has an ILM policy configured. This resource will overwrite it. "+
+					"If this is unexpected, another process may be managing this setting.",
+				map[string]any{
+					"component_template": componentTemplateName,
+					"existing_ilm":       existingILM,
+					"new_ilm":            plan.LifecycleName.ValueString(),
+				})
 		}
 	}
 	componentTemplate.Name = componentTemplateName
@@ -85,7 +110,7 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 	if !found && !resp.Diagnostics.HasError() {
 		resp.Diagnostics.AddError(
 			"Component template not found",
-			fmt.Sprintf("Component template %s was not found after update", plan.getComponentTemplateName()),
+			fmt.Sprintf("Component template %s was not found after create", plan.getComponentTemplateName()),
 		)
 	}
 	if resp.Diagnostics.HasError() {

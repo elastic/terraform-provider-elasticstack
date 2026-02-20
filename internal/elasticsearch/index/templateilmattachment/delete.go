@@ -1,4 +1,4 @@
-package index_template_ilm_attachment
+package templateilmattachment
 
 import (
 	"context"
@@ -18,13 +18,13 @@ func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp 
 		return
 	}
 
-	compId, diags := state.GetID()
+	compID, diags := state.GetID()
 	if diags.HasError() {
 		resp.Diagnostics.Append(diags...)
 		return
 	}
 
-	componentTemplateName := compId.ResourceID
+	componentTemplateName := compID.ResourceID
 
 	// Read existing component template
 	existing, sdkDiags := elasticsearch.GetComponentTemplate(ctx, r.client, componentTemplateName, true)
@@ -35,7 +35,7 @@ func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp 
 
 	if existing == nil {
 		// Already gone
-		tflog.Debug(ctx, "Component template already deleted", map[string]interface{}{
+		tflog.Debug(ctx, "Component template already deleted", map[string]any{
 			"name": componentTemplateName,
 		})
 		return

@@ -1,4 +1,4 @@
-package index_template_ilm_attachment_test
+package templateilmattachment_test
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/index_template_ilm_attachment"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/templateilmattachment"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/terraform-plugin-testing/config"
@@ -28,7 +28,7 @@ func TestAccResourceIndexTemplateIlmAttachment_fleet(t *testing.T) {
 		PreCheck: func() {
 			acctest.PreCheck(t)
 			// Skip before installing Fleet package if version is unsupported (PreCheck runs before SkipFunc).
-			notSupported, err := versionutils.CheckIfVersionIsUnsupported(index_template_ilm_attachment.MinVersion)()
+			notSupported, err := versionutils.CheckIfVersionIsUnsupported(templateilmattachment.MinVersion)()
 			if err != nil {
 				t.Fatalf("checking version: %v", err)
 			}
@@ -54,17 +54,17 @@ func TestAccResourceIndexTemplateIlmAttachment_fleet(t *testing.T) {
 			// Create
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(index_template_ilm_attachment.MinVersion),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(templateilmattachment.MinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable("test-fleet-policy-1"),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(
-						"elasticstack_elasticsearch_index_template_ilm_attachment.test",
+						"elasticstack_elasticsearch_templateilmattachment.test",
 						"index_template", "logs-system.syslog"),
 					resource.TestCheckResourceAttr(
-						"elasticstack_elasticsearch_index_template_ilm_attachment.test",
+						"elasticstack_elasticsearch_templateilmattachment.test",
 						"lifecycle_name", "test-fleet-policy-1"),
 					checkComponentTemplateHasILM("logs-system.syslog@custom", "test-fleet-policy-1"),
 				),
@@ -72,14 +72,14 @@ func TestAccResourceIndexTemplateIlmAttachment_fleet(t *testing.T) {
 			// Update
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(index_template_ilm_attachment.MinVersion),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(templateilmattachment.MinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable("test-fleet-policy-2"),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(
-						"elasticstack_elasticsearch_index_template_ilm_attachment.test",
+						"elasticstack_elasticsearch_templateilmattachment.test",
 						"lifecycle_name", "test-fleet-policy-2"),
 					checkComponentTemplateHasILM("logs-system.syslog@custom", "test-fleet-policy-2"),
 				),
@@ -87,12 +87,12 @@ func TestAccResourceIndexTemplateIlmAttachment_fleet(t *testing.T) {
 			// Import
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(index_template_ilm_attachment.MinVersion),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(templateilmattachment.MinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable("test-fleet-policy-2"),
 				},
-				ResourceName:      "elasticstack_elasticsearch_index_template_ilm_attachment.test",
+				ResourceName:      "elasticstack_elasticsearch_templateilmattachment.test",
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
@@ -114,7 +114,7 @@ func TestAccResourceIndexTemplateIlmAttachment_preservesTemplateOnDestroy(t *tes
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(index_template_ilm_attachment.MinVersion),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(templateilmattachment.MinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"index_template": config.StringVariable(preservesTemplateIndexName),
@@ -122,7 +122,7 @@ func TestAccResourceIndexTemplateIlmAttachment_preservesTemplateOnDestroy(t *tes
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(
-						"elasticstack_elasticsearch_index_template_ilm_attachment.test",
+						"elasticstack_elasticsearch_templateilmattachment.test",
 						"index_template", preservesTemplateIndexName),
 					checkComponentTemplateHasILM(preservesTemplateIndexName+"@custom", "test-preserves-policy"),
 				),
@@ -141,8 +141,8 @@ func createPreservesTestComponentTemplate(t *testing.T) {
 	tpl := &models.ComponentTemplate{
 		Name: name,
 		Template: &models.Template{
-			Settings: map[string]interface{}{
-				"index": map[string]interface{}{
+			Settings: map[string]any{
+				"index": map[string]any{
 					"number_of_shards": "1",
 				},
 			},
@@ -167,11 +167,11 @@ func checkPreservesTemplateDestroy(s *terraform.State) error {
 		if rs.Type != "elasticstack_elasticsearch_index_template_ilm_attachment" {
 			continue
 		}
-		compId, sdkDiags := clients.CompositeIDFromStr(rs.Primary.ID)
+		compID, sdkDiags := clients.CompositeIDFromStr(rs.Primary.ID)
 		if sdkDiags.HasError() {
 			return fmt.Errorf("failed to parse resource ID: %v", sdkDiags)
 		}
-		if compId.ResourceID != name {
+		if compID.ResourceID != name {
 			continue
 		}
 
@@ -202,7 +202,8 @@ func checkPreservesTemplateDestroy(s *terraform.State) error {
 				return fmt.Errorf("expected index.number_of_shards to be preserved as 1 after destroy, got %v", n)
 			}
 		default:
-			return fmt.Errorf("expected index.number_of_shards to be preserved after destroy, got %v (type %T)", tpl.ComponentTemplate.Template.Settings["index.number_of_shards"], tpl.ComponentTemplate.Template.Settings["index.number_of_shards"])
+			got := tpl.ComponentTemplate.Template.Settings["index.number_of_shards"]
+			return fmt.Errorf("expected index.number_of_shards to be preserved after destroy, got %v (type %T)", got, got)
 		}
 
 		// Cleanup: remove the fixture template created in PreCheck
@@ -225,12 +226,12 @@ func checkResourceDestroy(s *terraform.State) error {
 			continue
 		}
 
-		compId, sdkDiags := clients.CompositeIDFromStr(rs.Primary.ID)
+		compID, sdkDiags := clients.CompositeIDFromStr(rs.Primary.ID)
 		if sdkDiags.HasError() {
 			return fmt.Errorf("failed to parse resource ID: %v", sdkDiags)
 		}
 
-		tpl, sdkDiags := elasticsearch.GetComponentTemplate(context.Background(), client, compId.ResourceID, true)
+		tpl, sdkDiags := elasticsearch.GetComponentTemplate(context.Background(), client, compID.ResourceID, true)
 		if sdkDiags.HasError() {
 			return fmt.Errorf("failed to get component template: %v", sdkDiags)
 		}
@@ -239,7 +240,7 @@ func checkResourceDestroy(s *terraform.State) error {
 		if tpl != nil {
 			if tpl.ComponentTemplate.Template != nil && tpl.ComponentTemplate.Template.Settings != nil {
 				if _, hasILM := tpl.ComponentTemplate.Template.Settings["index.lifecycle.name"]; hasILM {
-					return fmt.Errorf("ILM setting still exists in component template %s", compId.ResourceID)
+					return fmt.Errorf("ILM setting still exists in component template %s", compID.ResourceID)
 				}
 			}
 		}
@@ -249,7 +250,7 @@ func checkResourceDestroy(s *terraform.State) error {
 }
 
 func checkComponentTemplateHasILM(name string, expectedPolicy string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
+	return func(_ *terraform.State) error {
 		client, err := clients.NewAcceptanceTestingClient()
 		if err != nil {
 			return err

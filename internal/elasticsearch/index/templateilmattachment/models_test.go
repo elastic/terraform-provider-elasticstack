@@ -1,4 +1,4 @@
-package index_template_ilm_attachment
+package templateilmattachment
 
 import (
 	"testing"
@@ -17,7 +17,7 @@ func TestGetComponentTemplateName(t *testing.T) {
 }
 
 func TestMergeILMSetting_EmptyExisting(t *testing.T) {
-	existing := map[string]interface{}{}
+	existing := map[string]any{}
 	result := mergeILMSetting(existing, "my-policy")
 
 	assert.Equal(t, "my-policy", result["index.lifecycle.name"])
@@ -32,7 +32,7 @@ func TestMergeILMSetting_NilExisting(t *testing.T) {
 }
 
 func TestMergeILMSetting_PreserveExisting(t *testing.T) {
-	existing := map[string]interface{}{
+	existing := map[string]any{
 		"index.number_of_replicas": 2,
 		"index.refresh_interval":   "30s",
 	}
@@ -45,7 +45,7 @@ func TestMergeILMSetting_PreserveExisting(t *testing.T) {
 }
 
 func TestMergeILMSetting_OverwriteExistingILM(t *testing.T) {
-	existing := map[string]interface{}{
+	existing := map[string]any{
 		"index.lifecycle.name":     "old-policy",
 		"index.number_of_replicas": 2,
 	}
@@ -57,7 +57,7 @@ func TestMergeILMSetting_OverwriteExistingILM(t *testing.T) {
 }
 
 func TestRemoveILMSetting_RemovesOnlyILM(t *testing.T) {
-	settings := map[string]interface{}{
+	settings := map[string]any{
 		"index.lifecycle.name":   "my-policy",
 		"index.number_of_shards": "1",
 		"index.refresh_interval": "30s",
@@ -72,7 +72,7 @@ func TestRemoveILMSetting_RemovesOnlyILM(t *testing.T) {
 }
 
 func TestRemoveILMSetting_EmptyAfterRemoval(t *testing.T) {
-	settings := map[string]interface{}{
+	settings := map[string]any{
 		"index.lifecycle.name": "my-policy",
 	}
 	result := removeILMSetting(settings)
@@ -104,14 +104,14 @@ func TestIsComponentTemplateEmpty(t *testing.T) {
 		{
 			name: "empty settings map",
 			template: &models.Template{
-				Settings: map[string]interface{}{},
+				Settings: map[string]any{},
 			},
 			expected: true,
 		},
 		{
 			name: "has settings",
 			template: &models.Template{
-				Settings: map[string]interface{}{
+				Settings: map[string]any{
 					"index.number_of_replicas": 2,
 				},
 			},
@@ -120,8 +120,8 @@ func TestIsComponentTemplateEmpty(t *testing.T) {
 		{
 			name: "has mappings",
 			template: &models.Template{
-				Mappings: map[string]interface{}{
-					"properties": map[string]interface{}{},
+				Mappings: map[string]any{
+					"properties": map[string]any{},
 				},
 			},
 			expected: false,
@@ -138,11 +138,11 @@ func TestIsComponentTemplateEmpty(t *testing.T) {
 		{
 			name: "has settings and mappings",
 			template: &models.Template{
-				Settings: map[string]interface{}{
+				Settings: map[string]any{
 					"index.number_of_replicas": 2,
 				},
-				Mappings: map[string]interface{}{
-					"properties": map[string]interface{}{},
+				Mappings: map[string]any{
+					"properties": map[string]any{},
 				},
 			},
 			expected: false,
@@ -183,7 +183,7 @@ func TestExtractILMSetting(t *testing.T) {
 		{
 			name: "no ILM setting",
 			template: &models.Template{
-				Settings: map[string]interface{}{
+				Settings: map[string]any{
 					"index.number_of_replicas": 2,
 				},
 			},
@@ -192,7 +192,7 @@ func TestExtractILMSetting(t *testing.T) {
 		{
 			name: "has ILM setting",
 			template: &models.Template{
-				Settings: map[string]interface{}{
+				Settings: map[string]any{
 					"index.lifecycle.name":     "my-policy",
 					"index.number_of_replicas": 2,
 				},
@@ -202,7 +202,7 @@ func TestExtractILMSetting(t *testing.T) {
 		{
 			name: "ILM setting is not a string",
 			template: &models.Template{
-				Settings: map[string]interface{}{
+				Settings: map[string]any{
 					"index.lifecycle.name": 123,
 				},
 			},

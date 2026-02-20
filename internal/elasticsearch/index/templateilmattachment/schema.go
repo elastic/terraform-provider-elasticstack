@@ -1,4 +1,4 @@
-package index_template_ilm_attachment
+package templateilmattachment
 
 import (
 	"context"

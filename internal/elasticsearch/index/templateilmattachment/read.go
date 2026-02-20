@@ -1,4 +1,4 @@
-package index_template_ilm_attachment
+package templateilmattachment
 
 import (
 	"context"
@@ -20,13 +20,13 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 		return
 	}
 
-	compId, diags := state.GetID()
+	compID, diags := state.GetID()
 	if diags.HasError() {
 		resp.Diagnostics.Append(diags...)
 		return
 	}
 
-	componentTemplateName := compId.ResourceID
+	componentTemplateName := compID.ResourceID
 	// Derive index_template from component template name for import (component name is <index_template>@custom)
 	if !typeutils.IsKnown(state.IndexTemplate) {
 		state.IndexTemplate = types.StringValue(strings.TrimSuffix(componentTemplateName, customSuffix))
@@ -38,7 +38,7 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 			resp.Diagnostics.Append(diags...)
 			return
 		}
-		tflog.Warn(ctx, "Component template or ILM setting not found, removing from state", map[string]interface{}{
+		tflog.Warn(ctx, "Component template or ILM setting not found, removing from state", map[string]any{
 			"name": componentTemplateName,
 		})
 		resp.State.RemoveResource(ctx)

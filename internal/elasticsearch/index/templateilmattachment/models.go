@@ -1,4 +1,4 @@
-package index_template_ilm_attachment
+package templateilmattachment
 
 import (
 	"context"
@@ -25,25 +25,25 @@ func (m *tfModel) getComponentTemplateName() string {
 
 // GetID parses and returns the composite ID from the model.
 func (m *tfModel) GetID() (*clients.CompositeID, diag.Diagnostics) {
-	compId, sdkDiags := clients.CompositeIDFromStr(m.ID.ValueString())
+	compID, sdkDiags := clients.CompositeIDFromStr(m.ID.ValueString())
 	if sdkDiags.HasError() {
 		return nil, diagutil.FrameworkDiagsFromSDK(sdkDiags)
 	}
-	return compId, nil
+	return compID, nil
 }
 
 // mergeILMSetting adds the ILM lifecycle.name setting to existing settings.
 // We use flat form (index.lifecycle.name) for simpler processing; Get is called with flat_settings=true.
-func mergeILMSetting(existingSettings map[string]interface{}, lifecycleName string) map[string]interface{} {
+func mergeILMSetting(existingSettings map[string]any, lifecycleName string) map[string]any {
 	if existingSettings == nil {
-		existingSettings = make(map[string]interface{})
+		existingSettings = make(map[string]any)
 	}
 	existingSettings["index.lifecycle.name"] = lifecycleName
 	return existingSettings
 }
 
 // removeILMSetting removes the index.lifecycle.name setting from the settings map (flat form).
-func removeILMSetting(settings map[string]interface{}) map[string]interface{} {
+func removeILMSetting(settings map[string]any) map[string]any {
 	if settings == nil {
 		return nil
 	}
@@ -51,7 +51,7 @@ func removeILMSetting(settings map[string]interface{}) map[string]interface{} {
 	return pruneEmpty(settings)
 }
 
-func pruneEmpty(settings map[string]interface{}) map[string]interface{} {
+func pruneEmpty(settings map[string]any) map[string]any {
 	if len(settings) == 0 {
 		return nil
 	}
