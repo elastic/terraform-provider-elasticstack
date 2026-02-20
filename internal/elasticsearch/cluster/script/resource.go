@@ -18,7 +18,7 @@ func NewScriptResource() resource.Resource {
 }
 
 type scriptResource struct {
-	client *clients.ApiClient
+	client *clients.APIClient
 }
 
 func (r *scriptResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {

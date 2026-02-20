@@ -1,18 +1,18 @@
-package maintenance_window
+package maintenancewindow
 
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *MaintenanceWindowResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	// Retrieve values from plan
-	var planMaintenanceWindow MaintenanceWindowModel
+	var planMaintenanceWindow Model
 
 	diags := req.Plan.Get(ctx, &planMaintenanceWindow)
 	resp.Diagnostics.Append(diags...)
@@ -46,7 +46,7 @@ func (r *MaintenanceWindowResource) Create(ctx context.Context, req resource.Cre
 	}
 
 	spaceID := planMaintenanceWindow.SpaceID.ValueString()
-	createMaintenanceWindowResponse, diags := kibana_oapi.CreateMaintenanceWindow(ctx, client, spaceID, body)
+	createMaintenanceWindowResponse, diags := kibanaoapi.CreateMaintenanceWindow(ctx, client, spaceID, body)
 
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -58,7 +58,7 @@ func (r *MaintenanceWindowResource) Create(ctx context.Context, req resource.Cre
 	* We want to avoid a dirty plan immediately after an apply.
 	 */
 	maintenanceWindowID := createMaintenanceWindowResponse.JSON200.Id
-	readMaintenanceWindowResponse, diags := kibana_oapi.GetMaintenanceWindow(ctx, client, spaceID, maintenanceWindowID)
+	readMaintenanceWindowResponse, diags := kibanaoapi.GetMaintenanceWindow(ctx, client, spaceID, maintenanceWindowID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

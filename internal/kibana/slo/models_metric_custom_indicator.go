@@ -80,7 +80,7 @@ func (m tfModel) metricCustomIndicatorToAPI() (bool, slo.SloWithSummaryResponseI
 }
 
 func (m *tfModel) populateFromMetricCustomIndicator(apiIndicator *slo.IndicatorPropertiesCustomMetric) diag.Diagnostics {
-	var diags diag.Diagnostics
+	diags := diag.Diagnostics{}
 	if apiIndicator == nil {
 		return diags
 	}

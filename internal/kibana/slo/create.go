@@ -79,7 +79,7 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 		return
 	}
 
-	compositeID := (&clients.CompositeId{ClusterId: apiModel.SpaceID, ResourceId: res.SloID}).String()
+	compositeID := (&clients.CompositeID{ClusterID: apiModel.SpaceID, ResourceID: res.SloID}).String()
 	plan.ID = types.StringValue(compositeID)
 
 	// Read back to populate computed fields.

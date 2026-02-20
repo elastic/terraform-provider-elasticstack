@@ -1,4 +1,4 @@
-package maintenance_window
+package maintenancewindow
 
 import (
 	"context"
@@ -17,7 +17,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *MaintenanceWindowResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: "Creates and manages Kibana [maintenance windows](https://www.elastic.co/docs/api/doc/kibana/group/endpoint-maintenance-window)",
 		Attributes: map[string]schema.Attribute{
@@ -62,7 +62,7 @@ func (r *MaintenanceWindowResource) Schema(_ context.Context, _ resource.SchemaR
 						},
 					},
 					"duration": schema.StringAttribute{
-						Description: "The duration of the schedule. It allows values in `<integer><unit>` format. `<unit>` is one of `d`, `h`, `m`, or `s` for days, hours, minutes, seconds. For example: `1d`, `5h`, `30m`, `5000s`.",
+						Description: durationDescription,
 						Required:    true,
 						Validators: []validator.String{
 							validators.StringIsAlertingDuration{},
@@ -85,7 +85,7 @@ func (r *MaintenanceWindowResource) Schema(_ context.Context, _ resource.SchemaR
 								},
 							},
 							"every": schema.StringAttribute{
-								Description: "The duration of the schedule. It allows values in `<integer><unit>` format. `<unit>` is one of `d`, `h`, `m`, or `s` for days, hours, minutes, seconds. For example: `1d`, `5h`, `30m`, `5000s`.",
+								Description: durationDescription,
 								Optional:    true,
 								Validators: []validator.String{
 									validators.StringIsMaintenanceWindowIntervalFrequency{},

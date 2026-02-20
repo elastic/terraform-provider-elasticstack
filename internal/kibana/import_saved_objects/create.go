@@ -1,4 +1,4 @@
-package import_saved_objects
+package importsavedobjects
 
 import (
 	"context"
@@ -71,7 +71,7 @@ func (r *Resource) importObjects(ctx context.Context, plan tfsdk.Plan, state *tf
 	if !respModel.Success && !model.IgnoreImportErrors.ValueBool() {
 		var detail strings.Builder
 		for i, err := range respModel.Errors {
-			detail.WriteString(fmt.Sprintf("import error [%d]: %s\n", i, err))
+			fmt.Fprintf(&detail, "import error [%d]: %s\n", i, err)
 		}
 		detail.WriteString("see the `errors` attribute for the full resposne")
 

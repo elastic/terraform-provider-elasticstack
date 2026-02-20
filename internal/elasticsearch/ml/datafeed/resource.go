@@ -15,7 +15,7 @@ func NewDatafeedResource() resource.Resource {
 }
 
 type datafeedResource struct {
-	client *clients.ApiClient
+	client *clients.APIClient
 }
 
 func (r *datafeedResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -74,13 +74,13 @@ func (r *datafeedResource) resourceReady(diags *fwdiags.Diagnostics) bool {
 func (r *datafeedResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 
-	compID, sdkDiags := clients.CompositeIdFromStr(req.ID)
+	compID, sdkDiags := clients.CompositeIDFromStr(req.ID)
 	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	datafeedID := compID.ResourceId
+	datafeedID := compID.ResourceID
 
 	// Set the datafeed_id attribute
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("datafeed_id"), datafeedID)...)

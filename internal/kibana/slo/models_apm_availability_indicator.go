@@ -16,7 +16,7 @@ type tfApmAvailabilityIndicator struct {
 }
 
 func (m tfModel) apmAvailabilityIndicatorToAPI() (bool, slo.SloWithSummaryResponseIndicator, diag.Diagnostics) {
-	var diags diag.Diagnostics
+	diags := diag.Diagnostics{}
 	if len(m.ApmAvailabilityIndicator) != 1 {
 		return false, slo.SloWithSummaryResponseIndicator{}, diags
 	}
@@ -39,7 +39,7 @@ func (m tfModel) apmAvailabilityIndicatorToAPI() (bool, slo.SloWithSummaryRespon
 }
 
 func (m *tfModel) populateFromApmAvailabilityIndicator(apiIndicator *slo.IndicatorPropertiesApmAvailability) diag.Diagnostics {
-	var diags diag.Diagnostics
+	diags := diag.Diagnostics{}
 	if apiIndicator == nil {
 		return diags
 	}

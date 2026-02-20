@@ -1,15 +1,15 @@
-package maintenance_window
+package maintenancewindow
 
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *MaintenanceWindowResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var planMaintenanceWindow MaintenanceWindowModel
+func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var planMaintenanceWindow Model
 
 	diags := req.Plan.Get(ctx, &planMaintenanceWindow)
 	resp.Diagnostics.Append(diags...)
@@ -45,7 +45,7 @@ func (r *MaintenanceWindowResource) Update(ctx context.Context, req resource.Upd
 	}
 
 	maintenanceWindowID, spaceID := planMaintenanceWindow.getMaintenanceWindowIDAndSpaceID()
-	diags = kibana_oapi.UpdateMaintenanceWindow(ctx, client, spaceID, maintenanceWindowID, body)
+	diags = kibanaoapi.UpdateMaintenanceWindow(ctx, client, spaceID, maintenanceWindowID, body)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -55,7 +55,7 @@ func (r *MaintenanceWindowResource) Update(ctx context.Context, req resource.Upd
 	* In create/update paths we typically follow the write operation with a read, and then set the state from the read.
 	* We want to avoid a dirty plan immediately after an apply.
 	 */
-	readMaintenanceWindowResponse, diags := kibana_oapi.GetMaintenanceWindow(ctx, client, spaceID, maintenanceWindowID)
+	readMaintenanceWindowResponse, diags := kibanaoapi.GetMaintenanceWindow(ctx, client, spaceID, maintenanceWindowID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

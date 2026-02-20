@@ -1,4 +1,4 @@
-package user
+package securityuser
 
 import (
 	"context"
@@ -15,39 +15,39 @@ import (
 )
 
 func (r *userResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var data UserData
+	var data Data
 	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	compId, diags := clients.CompositeIdFromStrFw(data.Id.ValueString())
+	compID, diags := clients.CompositeIDFromStrFw(data.ID.ValueString())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	usernameId := compId.ResourceId
+	usernameID := compID.ResourceID
 
-	client, diags := clients.MaybeNewApiClientFromFrameworkResource(ctx, data.ElasticsearchConnection, r.client)
+	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, data.ElasticsearchConnection, r.client)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	user, sdkDiags := elasticsearch.GetUser(ctx, client, usernameId)
+	user, sdkDiags := elasticsearch.GetUser(ctx, client, usernameID)
 	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	if user == nil {
-		tflog.Warn(ctx, fmt.Sprintf(`User "%s" not found, removing from state`, compId.ResourceId))
+		tflog.Warn(ctx, fmt.Sprintf(`User "%s" not found, removing from state`, compID.ResourceID))
 		resp.State.RemoveResource(ctx)
 		return
 	}
 
 	// Set the fields
-	data.Username = types.StringValue(usernameId)
+	data.Username = types.StringValue(usernameID)
 	data.Email = types.StringValue(user.Email)
 	data.FullName = types.StringValue(user.FullName)
 	data.Enabled = types.BoolValue(user.Enabled)

@@ -82,7 +82,7 @@ func TestJSONWithContextType_ValueFromTerraform(t *testing.T) {
 		jsonStr := `{"key": "value"}`
 		val, err := typ.ValueFromTerraform(ctx, tftypes.NewValue(tftypes.String, jsonStr))
 		require.NoError(t, err)
-		assert.Equal(t, jsonStr, val.(JSONWithContextualDefaultsValue).ValueString())
+		assert.JSONEq(t, jsonStr, val.(JSONWithContextualDefaultsValue).ValueString())
 	})
 
 	t.Run("Invalid type", func(t *testing.T) {
@@ -114,7 +114,7 @@ func TestJSONWithContext_SanitizedValue(t *testing.T) {
 		sanitized, diags := val.SanitizedValue()
 		require.False(t, diags.HasError())
 
-		var m map[string]interface{}
+		var m map[string]any
 		err := json.Unmarshal([]byte(sanitized), &m)
 		require.NoError(t, err)
 
@@ -145,7 +145,7 @@ func TestJSONWithContext_StringSemanticEquals(t *testing.T) {
 		if contextValue == "error" {
 			return "", assert.AnError
 		}
-		var m map[string]interface{}
+		var m map[string]any
 		if err := json.Unmarshal([]byte(value), &m); err != nil {
 			return "", err
 		}
@@ -216,7 +216,7 @@ func TestNewJSONWithContext(t *testing.T) {
 		assert.Equal(t, "ctx", val.contextValue)
 
 		// Check if context key was added to the string value
-		var m map[string]interface{}
+		var m map[string]any
 		err := json.Unmarshal([]byte(val.ValueString()), &m)
 		require.NoError(t, err)
 		assert.Equal(t, "ctx", m["__tf_provider_context"])

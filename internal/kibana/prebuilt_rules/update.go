@@ -1,9 +1,9 @@
-package prebuilt_rules
+package prebuiltrules
 
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -44,12 +44,12 @@ func (r *PrebuiltRuleResource) upsert(ctx context.Context, plan tfsdk.Plan, stat
 	spaceID := model.SpaceID.ValueString()
 	model.ID = model.SpaceID
 
-	diags.Append(kibana_oapi.InstallPrebuiltRules(ctx, client, spaceID)...)
+	diags.Append(kibanaoapi.InstallPrebuiltRules(ctx, client, spaceID)...)
 	if diags.HasError() {
 		return diags
 	}
 
-	status, statusDiags := kibana_oapi.GetPrebuiltRulesStatus(ctx, client, spaceID)
+	status, statusDiags := kibanaoapi.GetPrebuiltRulesStatus(ctx, client, spaceID)
 	diags.Append(statusDiags...)
 	if diags.HasError() {
 		return diags

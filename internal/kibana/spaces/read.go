@@ -8,7 +8,7 @@ import (
 )
 
 // Read refreshes the Terraform state with the latest data.
-func (d *dataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+func (d *dataSource) Read(ctx context.Context, _ datasource.ReadRequest, resp *datasource.ReadResponse) {
 	var state dataSourceModel
 
 	// Call client API
@@ -26,7 +26,7 @@ func (d *dataSource) Read(ctx context.Context, req datasource.ReadRequest, resp 
 			Description: types.StringValue(space.Description),
 			Initials:    types.StringValue(space.Initials),
 			Color:       types.StringValue(space.Color),
-			ImageUrl:    types.StringValue(space.ImageURL),
+			ImageURL:    types.StringValue(space.ImageURL),
 			Solution:    types.StringValue(space.Solution),
 		}
 

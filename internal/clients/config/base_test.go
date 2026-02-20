@@ -18,9 +18,9 @@ func TestNewBaseConfigFromSDK(t *testing.T) {
 
 	rd := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
 		"elasticsearch": providerSchema.GetEsConnectionSchema("elasticsearch", true),
-	}, map[string]interface{}{
-		"elasticsearch": []interface{}{
-			map[string]interface{}{
+	}, map[string]any{
+		"elasticsearch": []any{
+			map[string]any{
 				"username": "elastic",
 				"password": "changeme",
 			},
@@ -63,7 +63,7 @@ func TestNewBaseConfigFromFramework(t *testing.T) {
 			expectedBaseConfig: baseConfig{
 				Username:  "elastic",
 				Password:  "changeme",
-				ApiKey:    "apikey",
+				APIKey:    "apikey",
 				UserAgent: expectedUA,
 				Header:    http.Header{"User-Agent": []string{expectedUA}},
 			},

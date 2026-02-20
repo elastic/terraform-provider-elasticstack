@@ -16,14 +16,14 @@ func TestAccDataSourceIngestProcessorUserAgent(t *testing.T) {
 				Config: testAccDataSourceIngestProcessorUserAgent,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_user_agent.test", "field", "agent"),
-					CheckResourceJson("data.elasticstack_elasticsearch_ingest_processor_user_agent.test", "json", expectedJsonUserAgent),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_user_agent.test", "json", expectedJSONUserAgent),
 				),
 			},
 		},
 	})
 }
 
-const expectedJsonUserAgent = `{
+const expectedJSONUserAgent = `{
 	"user_agent": {
 		"field": "agent",
 		"ignore_missing": false

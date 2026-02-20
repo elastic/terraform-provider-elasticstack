@@ -15,14 +15,14 @@ func TestAccDataSourceIngestProcessorDrop(t *testing.T) {
 			{
 				Config: testAccDataSourceIngestProcessorDrop,
 				Check: resource.ComposeTestCheckFunc(
-					CheckResourceJson("data.elasticstack_elasticsearch_ingest_processor_drop.test", "json", expectedJsonDrop),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_drop.test", "json", expectedJSONDrop),
 				),
 			},
 		},
 	})
 }
 
-const expectedJsonDrop = `{
+const expectedJSONDrop = `{
   "drop": {
 		"ignore_failure": false,
 		"if" : "ctx.network_name == 'Guest'"

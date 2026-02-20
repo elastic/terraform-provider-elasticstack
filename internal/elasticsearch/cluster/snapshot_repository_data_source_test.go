@@ -75,7 +75,7 @@ data "elasticstack_elasticsearch_snapshot_repository" "test_fs_repo" {
 	`, name)
 }
 
-func TestAccDataSourceSnapRepoUrl(t *testing.T) {
+func TestAccDataSourceSnapRepoURL(t *testing.T) {
 	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
@@ -83,7 +83,7 @@ func TestAccDataSourceSnapRepoUrl(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceSnapRepoUrl(name),
+				Config: testAccDataSourceSnapRepoURL(name),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_url_repo", "name", name),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_url_repo", "s3.#", "0"),
@@ -96,7 +96,7 @@ func TestAccDataSourceSnapRepoUrl(t *testing.T) {
 	})
 }
 
-func testAccDataSourceSnapRepoUrl(name string) string {
+func testAccDataSourceSnapRepoURL(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   elasticsearch {}

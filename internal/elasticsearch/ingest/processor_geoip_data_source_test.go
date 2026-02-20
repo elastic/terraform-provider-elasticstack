@@ -16,14 +16,14 @@ func TestAccDataSourceIngestProcessorGeoip(t *testing.T) {
 				Config: testAccDataSourceIngestProcessorGeoip,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_geoip.test", "field", "ip"),
-					CheckResourceJson("data.elasticstack_elasticsearch_ingest_processor_geoip.test", "json", expectedJsonGeoip),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_geoip.test", "json", expectedJSONGeoip),
 				),
 			},
 		},
 	})
 }
 
-const expectedJsonGeoip = `{
+const expectedJSONGeoip = `{
   "geoip": {
 		"field": "ip",
 		"first_only": true,

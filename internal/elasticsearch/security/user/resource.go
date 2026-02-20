@@ -1,4 +1,4 @@
-package user
+package securityuser
 
 import (
 	"context"
@@ -18,7 +18,7 @@ func NewUserResource() resource.Resource {
 }
 
 type userResource struct {
-	client *clients.ApiClient
+	client *clients.APIClient
 }
 
 func (r *userResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {

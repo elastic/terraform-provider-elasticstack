@@ -1,4 +1,4 @@
-package integration_policy_test
+package integrationpolicy_test
 
 import (
 	"context"
@@ -14,15 +14,14 @@ import (
 
 type privateData map[string]string
 
-func (p *privateData) GetKey(ctx context.Context, key string) ([]byte, diag.Diagnostics) {
+func (p *privateData) GetKey(_ context.Context, key string) ([]byte, diag.Diagnostics) {
 	if val, ok := (*p)[key]; ok {
 		return []byte(val), nil
-	} else {
-		return nil, nil
 	}
+	return nil, nil
 }
 
-func (p *privateData) SetKey(ctx context.Context, key string, value []byte) diag.Diagnostics {
+func (p *privateData) SetKey(_ context.Context, key string, value []byte) diag.Diagnostics {
 	(*p)[key] = string(value)
 	return nil
 }
@@ -94,23 +93,23 @@ func TestHandleRespSecrets(t *testing.T) {
 				SecretReferences: secretRefs,
 				Inputs: map[string]kbapi.PackagePolicyInput{
 					"input1": {
-						Streams: &map[string]kbapi.PackagePolicyInputStream{"stream1": {Vars: utils.Pointer(maps.Clone(tt.input))}},
-						Vars:    utils.Pointer(maps.Clone(tt.input)),
+						Streams: &map[string]kbapi.PackagePolicyInputStream{"stream1": {Vars: schemautil.Pointer(maps.Clone(tt.input))}},
+						Vars:    schemautil.Pointer(maps.Clone(tt.input)),
 					},
 				},
-				Vars: utils.Pointer(maps.Clone(tt.input)),
+				Vars: schemautil.Pointer(maps.Clone(tt.input)),
 			}
 			wants := kbapi.PackagePolicy{
 				Inputs: map[string]kbapi.PackagePolicyInput{
 					"input1": {
-						Streams: &map[string]kbapi.PackagePolicyInputStream{"stream1": {Vars: utils.Pointer(tt.want)}},
+						Streams: &map[string]kbapi.PackagePolicyInputStream{"stream1": {Vars: schemautil.Pointer(tt.want)}},
 						Vars:    &tt.want,
 					},
 				},
 				Vars: &tt.want,
 			}
 
-			diags := integration_policy.HandleRespSecrets(ctx, &resp, &private)
+			diags := integrationpolicy.HandleRespSecrets(ctx, &resp, &private)
 			require.Empty(t, diags)
 			// Policy vars
 			got := *resp.Vars
@@ -206,26 +205,26 @@ func TestHandleReqRespSecrets(t *testing.T) {
 			req := kbapi.PackagePolicyRequest{
 				Inputs: &map[string]kbapi.PackagePolicyRequestInput{
 					"input1": {
-						Streams: &map[string]kbapi.PackagePolicyRequestInputStream{"stream1": {Vars: utils.Pointer(maps.Clone(tt.reqInput))}},
-						Vars:    utils.Pointer(maps.Clone(tt.reqInput)),
+						Streams: &map[string]kbapi.PackagePolicyRequestInputStream{"stream1": {Vars: schemautil.Pointer(maps.Clone(tt.reqInput))}},
+						Vars:    schemautil.Pointer(maps.Clone(tt.reqInput)),
 					},
 				},
-				Vars: utils.Pointer(maps.Clone(tt.reqInput)),
+				Vars: schemautil.Pointer(maps.Clone(tt.reqInput)),
 			}
 			resp := kbapi.PackagePolicy{
 				SecretReferences: secretRefs,
 				Inputs: map[string]kbapi.PackagePolicyInput{
 					"input1": {
-						Streams: &map[string]kbapi.PackagePolicyInputStream{"stream1": {Vars: utils.Pointer(maps.Clone(tt.respInput))}},
-						Vars:    utils.Pointer(maps.Clone(tt.respInput)),
+						Streams: &map[string]kbapi.PackagePolicyInputStream{"stream1": {Vars: schemautil.Pointer(maps.Clone(tt.respInput))}},
+						Vars:    schemautil.Pointer(maps.Clone(tt.respInput)),
 					},
 				},
-				Vars: utils.Pointer(maps.Clone(tt.respInput)),
+				Vars: schemautil.Pointer(maps.Clone(tt.respInput)),
 			}
 			wants := kbapi.PackagePolicy{
 				Inputs: map[string]kbapi.PackagePolicyInput{
 					"input1": {
-						Streams: &map[string]kbapi.PackagePolicyInputStream{"stream1": {Vars: utils.Pointer(tt.want)}},
+						Streams: &map[string]kbapi.PackagePolicyInputStream{"stream1": {Vars: schemautil.Pointer(tt.want)}},
 						Vars:    &tt.want,
 					},
 				},
@@ -233,7 +232,7 @@ func TestHandleReqRespSecrets(t *testing.T) {
 			}
 
 			private := privateData{}
-			diags := integration_policy.HandleReqRespSecrets(ctx, req, &resp, &private)
+			diags := integrationpolicy.HandleReqRespSecrets(ctx, req, &resp, &private)
 			require.Empty(t, diags)
 
 			// Policy vars

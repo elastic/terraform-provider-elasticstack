@@ -41,13 +41,13 @@ func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, respo
 func (r *Resource) readSloFromAPI(ctx context.Context, state *tfModel) (bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	compID, idDiags := clients.CompositeIdFromStrFw(state.ID.ValueString())
+	compID, idDiags := clients.CompositeIDFromStrFw(state.ID.ValueString())
 	diags.Append(idDiags...)
 	if diags.HasError() {
 		return false, diags
 	}
 
-	apiModel, sdkDiags := clientkibana.GetSlo(ctx, r.client, compID.ResourceId, compID.ClusterId)
+	apiModel, sdkDiags := clientkibana.GetSlo(ctx, r.client, compID.ResourceID, compID.ClusterID)
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
 		return false, diags
@@ -56,7 +56,7 @@ func (r *Resource) readSloFromAPI(ctx context.Context, state *tfModel) (bool, di
 		return false, diags
 	}
 
-	state.ID = types.StringValue((&clients.CompositeId{ClusterId: apiModel.SpaceID, ResourceId: apiModel.SloID}).String())
+	state.ID = types.StringValue((&clients.CompositeID{ClusterID: apiModel.SpaceID, ResourceID: apiModel.SloID}).String())
 	diags.Append(state.populateFromAPI(apiModel)...)
 	if diags.HasError() {
 		return true, diags

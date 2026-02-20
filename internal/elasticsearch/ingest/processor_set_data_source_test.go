@@ -16,14 +16,14 @@ func TestAccDataSourceIngestProcessorSet(t *testing.T) {
 				Config: testAccDataSourceIngestProcessorSet,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_set.test", "field", "count"),
-					CheckResourceJson("data.elasticstack_elasticsearch_ingest_processor_set.test", "json", expectedJsonSet),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_set.test", "json", expectedJSONSet),
 				),
 			},
 		},
 	})
 }
 
-const expectedJsonSet = `{
+const expectedJSONSet = `{
 	"set": {
 		"field": "count",
 		"ignore_empty_value": false,

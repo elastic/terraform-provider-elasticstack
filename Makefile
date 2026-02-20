@@ -33,7 +33,6 @@ FLEET_ENDPOINT ?= https://$(FLEET_NAME):8220
 ifneq (,$(filter 7.17.% 8.0.% 8.1.%,$(STACK_VERSION)))
 FLEET_IMAGE := elastic/elastic-agent
 endif
-export FLEET_IMAGE
 
 RERUN_FAILS ?= 3
 
@@ -148,7 +147,7 @@ install: build ## Install built provider into the local terraform cache
 
 .PHONY: tools
 tools: $(GOBIN)  ## Download golangci-lint locally if necessary.
-	@[[ -f $(GOBIN)/golangci-lint ]] || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOBIN) v2.9.0
+	@[[ -f $(GOBIN)/golangci-lint ]] || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOBIN) v2.10.1
 
 .PHONY: golangci-lint
 golangci-lint:

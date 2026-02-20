@@ -35,7 +35,7 @@ func TestAccResourceSlo(t *testing.T) {
 		t.Run("with-data-view-id="+fmt.Sprint(testWithDataViewID), func(t *testing.T) {
 			dataviewCheckFunc := func(indicator string) resource.TestCheckFunc {
 				if !testWithDataViewID {
-					return func(s *terraform.State) error {
+					return func(_ *terraform.State) error {
 						return nil
 					}
 				}
@@ -86,7 +86,7 @@ func TestAccResourceSlo(t *testing.T) {
 						),
 					},
 					{
-						//check that name can be updated
+						// check that name can be updated
 						ProtoV6ProviderFactories: acctest.Providers,
 						SkipFunc: func() (bool, error) {
 							if !testWithDataViewID {
@@ -103,7 +103,7 @@ func TestAccResourceSlo(t *testing.T) {
 							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "name", fmt.Sprintf("updated-%s", sloName)),
 						),
 					},
-					{ //check that settings can be updated from api-computed defaults
+					{ // check that settings can be updated from api-computed defaults
 						ProtoV6ProviderFactories: acctest.Providers,
 						SkipFunc: func() (bool, error) {
 							if !testWithDataViewID {
@@ -493,13 +493,20 @@ func TestAccResourceSloErrors(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(version.Must(version.NewSemver("8.9.0"))),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("multiple_indicators"),
-				ExpectError:              regexp.MustCompile("(?s)Invalid Attribute Combination.*?Exactly one of these attributes must be configured:\\s+" + regexp.QuoteMeta(`[metric_custom_indicator,histogram_custom_indicator,apm_latency_indicator,apm_availability_indicator,kql_custom_indicator,timeslice_metric_indicator]`)),
+				ExpectError: regexp.MustCompile(
+					"(?s)Invalid Attribute Combination.*?Exactly one of these attributes must be configured:\\s+" +
+						regexp.QuoteMeta(`[metric_custom_indicator,histogram_custom_indicator,apm_latency_indicator,apm_availability_indicator,kql_custom_indicator,timeslice_metric_indicator]`),
+				),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(version.Must(version.NewSemver("8.10.0-SNAPSHOT"))),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("agg_fail"),
-				ExpectError:              regexp.MustCompile(regexp.QuoteMeta(`Attribute histogram_custom_indicator[0].good[0].aggregation value must be one`) + "\\s+" + regexp.QuoteMeta(`of: ["value_count" "range"], got: "supdawg"`)),
+				ExpectError: regexp.MustCompile(
+					regexp.QuoteMeta(`Attribute histogram_custom_indicator[0].good[0].aggregation value must be one`) +
+						"\\s+" +
+						regexp.QuoteMeta(`of: ["value_count" "range"], got: "supdawg"`),
+				),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -578,7 +585,11 @@ func TestAccResourceSlo_kql_custom_indicator_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.fleetctl_api_pod_readiness", "kql_custom_indicator.0.index", "metrics-*,serverless-metrics-*:metrics-*"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.fleetctl_api_pod_readiness", "kql_custom_indicator.0.good", "kubernetes.pod.status.ready: true"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.fleetctl_api_pod_readiness", "kql_custom_indicator.0.total", ""),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.fleetctl_api_pod_readiness", "kql_custom_indicator.0.filter", "kubernetes.deployment.name: \"fleetctl-api\" and kubernetes.pod.status.ready : * "),
+					resource.TestCheckResourceAttr(
+						"elasticstack_kibana_slo.fleetctl_api_pod_readiness",
+						"kql_custom_indicator.0.filter",
+						"kubernetes.deployment.name: \"fleetctl-api\" and kubernetes.pod.status.ready : * ",
+					),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.fleetctl_api_pod_readiness", "kql_custom_indicator.0.timestamp_field", "@timestamp"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.fleetctl_api_pod_readiness", "settings.sync_delay", "1m"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.fleetctl_api_pod_readiness", "settings.frequency", "1m"),
@@ -651,9 +662,9 @@ func checkResourceSloDestroy(s *terraform.State) error {
 		if rs.Type != "elasticstack_kibana_slo" {
 			continue
 		}
-		compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
+		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
-		slo, diags := kibana.GetSlo(context.Background(), client, compId.ResourceId, compId.ClusterId)
+		slo, diags := kibana.GetSlo(context.Background(), client, compID.ResourceID, compID.ClusterID)
 		if diags.HasError() {
 			if len(diags) > 1 || diags[0].Summary != "404 Not Found" {
 				return fmt.Errorf("Failed to check if SLO was destroyed: %v", diags)
@@ -661,7 +672,7 @@ func checkResourceSloDestroy(s *terraform.State) error {
 		}
 
 		if slo != nil {
-			return fmt.Errorf("SLO (%s) still exists", compId.ResourceId)
+			return fmt.Errorf("SLO (%s) still exists", compID.ResourceID)
 		}
 	}
 	return nil

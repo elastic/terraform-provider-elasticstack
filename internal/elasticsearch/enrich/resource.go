@@ -25,7 +25,7 @@ func NewEnrichPolicyResource() resource.Resource {
 }
 
 type enrichPolicyResource struct {
-	client *clients.ApiClient
+	client *clients.APIClient
 }
 
 func (r *enrichPolicyResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -46,7 +46,7 @@ func GetResourceSchema() schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: "Managing Elasticsearch enrich policies. See the [enrich API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/enrich-apis.html) for more details.",
 		Blocks: map[string]schema.Block{
-			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock("elasticsearch_connection", false),
+			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(false),
 		},
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{

@@ -20,7 +20,7 @@ func TestDataSourceProcessorReroute_Unit(t *testing.T) {
 	assert.Contains(t, resource.Schema, "json")
 
 	// Test data source read function
-	d := schema.TestResourceDataRaw(t, resource.Schema, map[string]interface{}{
+	d := schema.TestResourceDataRaw(t, resource.Schema, map[string]any{
 		"destination": "target-index",
 		"dataset":     "logs",
 		"namespace":   "production",
@@ -45,7 +45,7 @@ func TestDataSourceProcessorReroute_MinimalConfig(t *testing.T) {
 	resource := DataSourceProcessorReroute()
 
 	// Test with just a destination
-	d := schema.TestResourceDataRaw(t, resource.Schema, map[string]interface{}{
+	d := schema.TestResourceDataRaw(t, resource.Schema, map[string]any{
 		"destination": "minimal-index",
 	})
 
@@ -64,7 +64,7 @@ func TestDataSourceProcessorReroute_AllFields(t *testing.T) {
 	resource := DataSourceProcessorReroute()
 
 	// Test with all optional fields
-	d := schema.TestResourceDataRaw(t, resource.Schema, map[string]interface{}{
+	d := schema.TestResourceDataRaw(t, resource.Schema, map[string]any{
 		"destination":    "all-fields-index",
 		"dataset":        "metrics",
 		"namespace":      "development",
@@ -72,7 +72,7 @@ func TestDataSourceProcessorReroute_AllFields(t *testing.T) {
 		"if":             "ctx.field != null",
 		"ignore_failure": true,
 		"tag":            "reroute-tag",
-		"on_failure":     []interface{}{`{"set": {"field": "error", "value": "reroute_failed"}}`},
+		"on_failure":     []any{`{"set": {"field": "error", "value": "reroute_failed"}}`},
 	})
 
 	ctx := context.Background()

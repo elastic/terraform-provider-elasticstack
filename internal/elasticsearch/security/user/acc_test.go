@@ -1,4 +1,4 @@
-package user_test
+package securityuser_test
 
 import (
 	"context"
@@ -84,23 +84,26 @@ func TestAccImportedUserDoesNotResetPassword(t *testing.T) {
 					defer resp.Body.Close()
 
 					if resp.IsError() {
-						body, err := io.ReadAll(resp.Body)
-						return false, fmt.Errorf("failed to manually create import test user [%s] %s %s", username, body, err)
+						body, readErr := io.ReadAll(resp.Body)
+						if readErr != nil {
+							return false, fmt.Errorf("failed to manually create import test user [%s]: failed reading response body: %w", username, readErr)
+						}
+						return false, fmt.Errorf("failed to manually create import test user [%s]: %s", username, body)
 					}
 					return false, err
 				},
 				ResourceName: "elasticstack_elasticsearch_security_user.test",
-				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+				ImportStateIdFunc: func(_ *terraform.State) (string, error) {
 					client, err := clients.NewAcceptanceTestingClient()
 					if err != nil {
 						return "", err
 					}
-					clusterId, diag := client.ClusterID(context.Background())
+					clusterID, diag := client.ClusterID(context.Background())
 					if diag.HasError() {
 						return "", fmt.Errorf("failed to get cluster uuid: %s", diag[0].Summary)
 					}
 
-					return fmt.Sprintf("%s/%s", *clusterId, username), nil
+					return fmt.Sprintf("%s/%s", *clusterID, username), nil
 				},
 				ImportState:        true,
 				ImportStatePersist: true,
@@ -165,8 +168,11 @@ func TestAccImportedUserDoesNotResetPassword(t *testing.T) {
 					defer resp.Body.Close()
 
 					if resp.IsError() {
-						body, err := io.ReadAll(resp.Body)
-						return false, fmt.Errorf("failed to manually change import test user password [%s] %s %s", username, body, err)
+						body, readErr := io.ReadAll(resp.Body)
+						if readErr != nil {
+							return false, fmt.Errorf("failed to manually change import test user password [%s]: failed reading response body: %w", username, readErr)
+						}
+						return false, fmt.Errorf("failed to manually change import test user password [%s]: %s", username, body)
 					}
 					return false, err
 				},
@@ -281,13 +287,13 @@ func checkResourceSecurityUserDestroy(s *terraform.State) error {
 		if rs.Type != "elasticstack_elasticsearch_security_user" {
 			continue
 		}
-		compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
+		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
 		esClient, err := client.GetESClient()
 		if err != nil {
 			return err
 		}
-		req := esClient.Security.GetUser.WithUsername(compId.ResourceId)
+		req := esClient.Security.GetUser.WithUsername(compID.ResourceID)
 		res, err := esClient.Security.GetUser(req)
 		if err != nil {
 			return err
@@ -296,7 +302,7 @@ func checkResourceSecurityUserDestroy(s *terraform.State) error {
 		defer res.Body.Close()
 
 		if res.StatusCode != 404 {
-			return fmt.Errorf("User (%s) still exists", compId.ResourceId)
+			return fmt.Errorf("User (%s) still exists", compID.ResourceID)
 		}
 	}
 	return nil

@@ -80,7 +80,7 @@ func migrateV0ToV1(_ context.Context, req resource.UpgradeStateRequest, resp *re
 	)
 }
 
-func migrateV1ToV2(ctx context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
+func migrateV1ToV2(_ context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
 	if req.RawState == nil || req.RawState.JSON == nil {
 		resp.Diagnostics.AddError("Invalid raw state", "Raw state or JSON is nil")
 		return

@@ -21,7 +21,7 @@ func NewAliasResource() resource.Resource {
 }
 
 type aliasResource struct {
-	client *clients.ApiClient
+	client *clients.APIClient
 }
 
 func (r *aliasResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {

@@ -33,20 +33,20 @@ func (r *Resource) Update(ctx context.Context, request resource.UpdateRequest, r
 		return
 	}
 
-	monitorId, dg := synthetics.GetCompositeId(plan.ID.ValueString())
+	monitorID, dg := synthetics.GetCompositeID(plan.ID.ValueString())
 	response.Diagnostics.Append(dg...)
 	if response.Diagnostics.HasError() {
 		return
 	}
 
-	spaceId := plan.SpaceID.ValueString()
-	result, err := kibanaClient.KibanaSynthetics.Monitor.Update(ctx, kbapi.MonitorID(monitorId.ResourceId), input.config, input.fields, spaceId)
+	spaceID := plan.SpaceID.ValueString()
+	result, err := kibanaClient.KibanaSynthetics.Monitor.Update(ctx, kbapi.MonitorID(monitorID.ResourceID), input.config, input.fields, spaceID)
 	if err != nil {
-		response.Diagnostics.AddError(fmt.Sprintf("Failed to update Kibana monitor `%s`, space %s", input.config.Name, spaceId), err.Error())
+		response.Diagnostics.AddError(fmt.Sprintf("Failed to update Kibana monitor `%s`, space %s", input.config.Name, spaceID), err.Error())
 		return
 	}
 
-	plan, diags = plan.toModelV0(ctx, result, spaceId)
+	plan, diags = plan.toModelV0(ctx, result, spaceID)
 	response.Diagnostics.Append(diags...)
 	if response.Diagnostics.HasError() {
 		return

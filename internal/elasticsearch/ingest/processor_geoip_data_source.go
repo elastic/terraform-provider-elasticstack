@@ -33,7 +33,7 @@ func DataSourceProcessorGeoip() *schema.Resource {
 			Default:     "geoip",
 		},
 		"database_file": {
-			Description: "The database filename referring to a database the module ships with (GeoLite2-City.mmdb, GeoLite2-Country.mmdb, or GeoLite2-ASN.mmdb) or a custom database in the `ingest-geoip` config directory.",
+			Description: processorGeoIPDatabaseFileDescription,
 			Type:        schema.TypeString,
 			Optional:    true,
 		},
@@ -73,7 +73,7 @@ func DataSourceProcessorGeoip() *schema.Resource {
 	}
 }
 
-func dataSourceProcessorGeoipRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func dataSourceProcessorGeoipRead(_ context.Context, d *schema.ResourceData, _ any) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	processor := &models.ProcessorGeoip{}
@@ -96,15 +96,15 @@ func dataSourceProcessorGeoipRead(ctx context.Context, d *schema.ResourceData, m
 		processor.DatabaseFile = v.(string)
 	}
 
-	processorJson, err := json.MarshalIndent(map[string]*models.ProcessorGeoip{"geoip": processor}, "", " ")
+	processorJSON, err := json.MarshalIndent(map[string]*models.ProcessorGeoip{"geoip": processor}, "", " ")
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("json", string(processorJson)); err != nil {
+	if err := d.Set("json", string(processorJSON)); err != nil {
 		return diag.FromErr(err)
 	}
 
-	hash, err := utils.StringToHash(string(processorJson))
+	hash, err := schemautil.StringToHash(string(processorJSON))
 	if err != nil {
 		return diag.FromErr(err)
 	}

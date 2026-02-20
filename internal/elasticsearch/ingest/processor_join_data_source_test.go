@@ -16,14 +16,14 @@ func TestAccDataSourceIngestProcessorJoin(t *testing.T) {
 				Config: testAccDataSourceIngestProcessorJoin,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_join.test", "field", "joined_array_field"),
-					CheckResourceJson("data.elasticstack_elasticsearch_ingest_processor_join.test", "json", expectedJsonJoin),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_join.test", "json", expectedJSONJoin),
 				),
 			},
 		},
 	})
 }
 
-const expectedJsonJoin = `{
+const expectedJSONJoin = `{
 	"join": {
 		"field": "joined_array_field",
 		"ignore_failure": false,

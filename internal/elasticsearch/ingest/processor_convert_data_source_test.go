@@ -16,14 +16,14 @@ func TestAccDataSourceIngestProcessorConvert(t *testing.T) {
 				Config: testAccDataSourceIngestProcessorConvert,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_convert.test", "field", "id"),
-					CheckResourceJson("data.elasticstack_elasticsearch_ingest_processor_convert.test", "json", expectedJsonConvert),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_convert.test", "json", expectedJSONConvert),
 				),
 			},
 		},
 	})
 }
 
-const expectedJsonConvert = `{
+const expectedJSONConvert = `{
 	"convert": {
 		"description": "converts the content of the id field to an integer",
 		"field": "id",

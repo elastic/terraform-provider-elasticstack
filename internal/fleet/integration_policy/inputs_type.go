@@ -1,4 +1,4 @@
-package integration_policy
+package integrationpolicy
 
 import (
 	"context"
@@ -22,11 +22,11 @@ type InputsType struct {
 
 // String returns a human readable string of the type name.
 func (t InputsType) String() string {
-	return "integration_policy.InputsType"
+	return "integrationpolicy.InputsType"
 }
 
 // ValueType returns the Value type.
-func (t InputsType) ValueType(ctx context.Context) attr.Value {
+func (t InputsType) ValueType(_ context.Context) attr.Value {
 	return InputsValue{
 		MapValue: basetypes.NewMapUnknown(t.ElementType()),
 	}
@@ -42,7 +42,7 @@ func (t InputsType) Equal(o attr.Type) bool {
 }
 
 // ValueFromMap returns a MapValuable type given a basetypes.MapValue.
-func (t InputsType) ValueFromMap(ctx context.Context, in basetypes.MapValue) (basetypes.MapValuable, diag.Diagnostics) {
+func (t InputsType) ValueFromMap(_ context.Context, in basetypes.MapValue) (basetypes.MapValuable, diag.Diagnostics) {
 	return InputsValue{
 		MapValue: in,
 	}, nil

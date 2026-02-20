@@ -45,7 +45,7 @@ func TestAccResourceSnapRepoFs(t *testing.T) {
 	})
 }
 
-func TestAccResourceSnapRepoUrl(t *testing.T) {
+func TestAccResourceSnapRepoURL(t *testing.T) {
 	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
@@ -54,7 +54,7 @@ func TestAccResourceSnapRepoUrl(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccRepoUrlCreate(name),
+				Config: testAccRepoURLCreate(name),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_url_repo", "name", name),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_url_repo", "url.0.url", "file:/tmp"),
@@ -83,7 +83,7 @@ resource "elasticstack_elasticsearch_snapshot_repository" "test_fs_repo" {
 	`, name)
 }
 
-func testAccRepoUrlCreate(name string) string {
+func testAccRepoURLCreate(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   elasticsearch {}
@@ -108,25 +108,25 @@ func checkRepoDestroy(name string) func(s *terraform.State) error {
 
 		for _, rs := range s.RootModule().Resources {
 			if rs.Type != "elasticstack_elasticsearch_snapshot_repository" {
-				compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
-				if compId.ResourceId != name {
+				compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
+				if compID.ResourceID != name {
 					continue
 				}
 			}
 
-			compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
+			compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 			esClient, err := client.GetESClient()
 			if err != nil {
 				return err
 			}
-			req := esClient.Snapshot.GetRepository.WithRepository(compId.ResourceId)
+			req := esClient.Snapshot.GetRepository.WithRepository(compID.ResourceID)
 			res, err := esClient.Snapshot.GetRepository(req)
 			if err != nil {
 				return err
 			}
 
 			if res.StatusCode != 404 {
-				return fmt.Errorf("Snapshot repository (%s) still exists", compId.ResourceId)
+				return fmt.Errorf("Snapshot repository (%s) still exists", compID.ResourceID)
 			}
 		}
 		return nil

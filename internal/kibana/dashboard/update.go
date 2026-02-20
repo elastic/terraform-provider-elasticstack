@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
@@ -18,14 +18,14 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 	}
 
 	// Parse composite ID
-	composite, diags := clients.CompositeIdFromStrFw(planModel.ID.ValueString())
+	composite, diags := clients.CompositeIDFromStrFw(planModel.ID.ValueString())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	dashboardID := composite.ResourceId
-	spaceID := composite.ClusterId
+	dashboardID := composite.ResourceID
+	spaceID := composite.ClusterID
 
 	// Get the Kibana client
 	kibanaClient, err := r.client.GetKibanaOapiClient()
@@ -41,7 +41,7 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 	}
 
 	// Update the dashboard
-	_, diags = kibana_oapi.UpdateDashboard(ctx, kibanaClient, spaceID, dashboardID, apiReq)
+	_, diags = kibanaoapi.UpdateDashboard(ctx, kibanaClient, spaceID, dashboardID, apiReq)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

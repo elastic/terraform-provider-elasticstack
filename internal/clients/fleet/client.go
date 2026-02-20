@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/debugutils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging"
 )
 
@@ -54,7 +54,7 @@ func NewClient(cfg Config) (*Client, error) {
 	}
 
 	if logging.IsDebugOrHigher() {
-		roundTripper = utils.NewDebugTransport("Fleet", roundTripper)
+		roundTripper = debugutils.NewDebugTransport("Fleet", roundTripper)
 	}
 
 	httpClient := &http.Client{

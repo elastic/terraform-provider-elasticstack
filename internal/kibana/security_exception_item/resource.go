@@ -1,4 +1,4 @@
-package security_exception_item
+package securityexceptionitem
 
 import (
 	"context"
@@ -22,17 +22,17 @@ func NewResource() resource.Resource {
 }
 
 type ExceptionItemResource struct {
-	client *clients.ApiClient
+	client *clients.APIClient
 }
 
-func (r *ExceptionItemResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+func (r *ExceptionItemResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	client, diags := clients.ConvertProviderData(req.ProviderData)
 	resp.Diagnostics.Append(diags...)
 	r.client = client
 }
 
 // Metadata returns the provider type name.
-func (r *ExceptionItemResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+func (r *ExceptionItemResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = fmt.Sprintf("%s_%s", req.ProviderTypeName, "kibana_security_exception_item")
 }
 
