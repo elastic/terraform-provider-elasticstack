@@ -14,9 +14,9 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/api_key"
+	apikey "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/api_key"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -36,8 +36,8 @@ func TestAccResourceSecurityAPIKey(t *testing.T) {
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(apikey.MinVersion),
 				Config:   testAccResourceSecurityAPIKeyCreate(apiKeyName),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_apikey.test", "name", apiKeyName),
-					resource.TestCheckResourceAttrWith("elasticstack_elasticsearch_security_apikey.test", "role_descriptors", func(testValue string) error {
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "name", apiKeyName),
+					resource.TestCheckResourceAttrWith("elasticstack_elasticsearch_security_api_key.test", "role_descriptors", func(testValue string) error {
 						var testRoleDescriptor map[string]models.APIKeyRoleDescriptor
 						if err := json.Unmarshal([]byte(testValue), &testRoleDescriptor); err != nil {
 							return err
@@ -60,18 +60,18 @@ func TestAccResourceSecurityAPIKey(t *testing.T) {
 
 						return nil
 					}),
-					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_apikey.test", "expiration"),
-					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_apikey.test", "api_key"),
-					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_apikey.test", "encoded"),
-					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_apikey.test", "id"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "expiration"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "api_key"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "encoded"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "id"),
 				),
 			},
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(apikey.MinVersionWithUpdate),
 				Config:   testAccResourceSecurityAPIKeyUpdate(apiKeyName),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_apikey.test", "name", apiKeyName),
-					resource.TestCheckResourceAttrWith("elasticstack_elasticsearch_security_apikey.test", "role_descriptors", func(testValue string) error {
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "name", apiKeyName),
+					resource.TestCheckResourceAttrWith("elasticstack_elasticsearch_security_api_key.test", "role_descriptors", func(testValue string) error {
 						var testRoleDescriptor map[string]models.APIKeyRoleDescriptor
 						if err := json.Unmarshal([]byte(testValue), &testRoleDescriptor); err != nil {
 							return err
@@ -94,10 +94,10 @@ func TestAccResourceSecurityAPIKey(t *testing.T) {
 
 						return nil
 					}),
-					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_apikey.test", "expiration"),
-					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_apikey.test", "api_key"),
-					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_apikey.test", "encoded"),
-					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_apikey.test", "id"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "expiration"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "api_key"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "encoded"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "id"),
 				),
 			},
 		},
@@ -119,8 +119,8 @@ func TestAccResourceSecurityAPIKeyWithRemoteIndices(t *testing.T) {
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedRemoteIndicesVersion),
 				Config:   testAccResourceSecurityAPIKeyRemoteIndices(apiKeyName),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_apikey.test", "name", apiKeyName),
-					resource.TestCheckResourceAttrWith("elasticstack_elasticsearch_security_apikey.test", "role_descriptors", func(testValue string) error {
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "name", apiKeyName),
+					resource.TestCheckResourceAttrWith("elasticstack_elasticsearch_security_api_key.test", "role_descriptors", func(testValue string) error {
 						var testRoleDescriptor map[string]models.APIKeyRoleDescriptor
 						if err := json.Unmarshal([]byte(testValue), &testRoleDescriptor); err != nil {
 							return err
@@ -151,9 +151,9 @@ func TestAccResourceSecurityAPIKeyWithRemoteIndices(t *testing.T) {
 
 						return nil
 					}),
-					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_apikey.test", "expiration"),
-					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_apikey.test", "api_key"),
-					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_apikey.test", "encoded"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "expiration"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "api_key"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "encoded"),
 				),
 			},
 		},
@@ -173,8 +173,8 @@ func TestAccResourceSecurityAPIKeyWithWorkflowRestriction(t *testing.T) {
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(apikey.MinVersionWithRestriction),
 				Config:   testAccResourceSecurityAPIKeyCreateWithWorkflowRestriction(apiKeyName),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_apikey.test", "name", apiKeyName),
-					resource.TestCheckResourceAttrWith("elasticstack_elasticsearch_security_apikey.test", "role_descriptors", func(testValue string) error {
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "name", apiKeyName),
+					resource.TestCheckResourceAttrWith("elasticstack_elasticsearch_security_api_key.test", "role_descriptors", func(testValue string) error {
 						var testRoleDescriptor map[string]models.APIKeyRoleDescriptor
 						if err := json.Unmarshal([]byte(testValue), &testRoleDescriptor); err != nil {
 							return err
@@ -199,9 +199,9 @@ func TestAccResourceSecurityAPIKeyWithWorkflowRestriction(t *testing.T) {
 
 						return nil
 					}),
-					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_apikey.test", "expiration"),
-					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_apikey.test", "api_key"),
-					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_apikey.test", "encoded"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "expiration"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "api_key"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "encoded"),
 				),
 			},
 		},
@@ -263,11 +263,11 @@ func TestAccResourceSecurityAPIKeyFromSDK(t *testing.T) {
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(apikey.MinVersion),
 				Config:   testAccResourceSecurityAPIKeyWithoutExpiration(apiKeyName),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_apikey.test", "name", apiKeyName),
-					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_apikey.test", "role_descriptors"),
-					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_apikey.test", "encoded"),
-					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_apikey.test", "id"),
-					resource.TestCheckResourceAttrWith("elasticstack_elasticsearch_security_apikey.test", "api_key", func(value string) error {
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "name", apiKeyName),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "role_descriptors"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "encoded"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "id"),
+					resource.TestCheckResourceAttrWith("elasticstack_elasticsearch_security_api_key.test", "api_key", func(value string) error {
 						initialAPIKey = value
 
 						if value == "" {
@@ -283,7 +283,7 @@ func TestAccResourceSecurityAPIKeyFromSDK(t *testing.T) {
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(apikey.MinVersion),
 				Config:                   testAccResourceSecurityAPIKeyWithoutExpiration(apiKeyName),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrWith("elasticstack_elasticsearch_security_apikey.test", "api_key", func(value string) error {
+					resource.TestCheckResourceAttrWith("elasticstack_elasticsearch_security_api_key.test", "api_key", func(value string) error {
 						if value != initialAPIKey {
 							return fmt.Errorf("expected api_key to be unchanged")
 						}
@@ -465,22 +465,22 @@ func TestAccResourceSecurityAPIKeyCrossCluster(t *testing.T) {
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(apikey.MinVersionWithCrossCluster),
 				Config:   testAccResourceSecurityAPIKeyCrossClusterCreate(apiKeyName),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_apikey.test", "name", apiKeyName),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_apikey.test", "type", "cross_cluster"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_apikey.test", "access.search.0.names.0", "logs-*"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_apikey.test", "access.search.0.names.1", "metrics-*"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_apikey.test", "access.replication.0.names.0", "archive-*"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "name", apiKeyName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "type", "cross_cluster"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "access.search.0.names.0", "logs-*"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "access.search.0.names.1", "metrics-*"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "access.replication.0.names.0", "archive-*"),
 				),
 			},
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(apikey.MinVersionWithCrossCluster),
 				Config:   testAccResourceSecurityAPIKeyCrossClusterUpdate(apiKeyName),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_apikey.test", "name", apiKeyName),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_apikey.test", "type", "cross_cluster"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_apikey.test", "access.search.0.names.0", "log-*"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_apikey.test", "access.search.0.names.1", "metrics-*"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_apikey.test", "access.replication.0.names.0", "archives-*"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "name", apiKeyName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "type", "cross_cluster"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "access.search.0.names.0", "log-*"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "access.search.0.names.1", "metrics-*"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "access.replication.0.names.0", "archives-*"),
 				),
 			},
 		},
@@ -566,8 +566,8 @@ func TestAccResourceSecurityAPIKeyWithDefaultAllowRestrictedIndices(t *testing.T
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(apikey.MinVersion),
 				Config:   testAccResourceSecurityAPIKeyWithoutAllowRestrictedIndices(apiKeyName),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_apikey.test", "name", apiKeyName),
-					resource.TestCheckResourceAttrWith("elasticstack_elasticsearch_security_apikey.test", "role_descriptors", func(testValue string) error {
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "name", apiKeyName),
+					resource.TestCheckResourceAttrWith("elasticstack_elasticsearch_security_api_key.test", "role_descriptors", func(testValue string) error {
 						var testRoleDescriptor map[string]models.APIKeyRoleDescriptor
 						if err := json.Unmarshal([]byte(testValue), &testRoleDescriptor); err != nil {
 							return err
@@ -589,9 +589,9 @@ func TestAccResourceSecurityAPIKeyWithDefaultAllowRestrictedIndices(t *testing.T
 
 						return nil
 					}),
-					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_apikey.test", "api_key"),
-					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_apikey.test", "encoded"),
-					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_apikey.test", "id"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "api_key"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "encoded"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "id"),
 				),
 			},
 		},
