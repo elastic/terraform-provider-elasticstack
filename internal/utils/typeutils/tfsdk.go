@@ -18,23 +18,20 @@ type Elementable interface {
 }
 
 type ListMeta struct {
-	Context context.Context
-	Index   int
-	Path    path.Path
-	Diags   *diag.Diagnostics
+	Index int
+	Path  path.Path
+	Diags *diag.Diagnostics
 }
 
 type MapMeta struct {
-	Context context.Context
-	Key     string
-	Path    path.Path
-	Diags   *diag.Diagnostics
+	Key   string
+	Path  path.Path
+	Diags *diag.Diagnostics
 }
 
 type ObjectMeta struct {
-	Context context.Context
-	Path    path.Path
-	Diags   *diag.Diagnostics
+	Path  path.Path
+	Diags *diag.Diagnostics
 }
 
 // ======================
@@ -288,52 +285,52 @@ func ObjectValueFrom[T any](ctx context.Context, value *T, attrTypes map[string]
 // ======================
 
 // TransformObject converts T1 to T2 via the transformee.
-func TransformObject[T1 any, T2 any](ctx context.Context, value *T1, p path.Path, diags *diag.Diagnostics, transformee func(item T1, meta ObjectMeta) T2) *T2 {
+func TransformObject[T1 any, T2 any](_ context.Context, value *T1, p path.Path, diags *diag.Diagnostics, transformee func(item T1, meta ObjectMeta) T2) *T2 {
 	if value == nil {
 		return nil
 	}
 
-	result := transformee(*value, ObjectMeta{Context: ctx, Path: p, Diags: diags})
+	result := transformee(*value, ObjectMeta{Path: p, Diags: diags})
 	return &result
 }
 
 // TransformMap converts map[string]T1 to map[string]T2 via the iteratee.
-func TransformMap[T1 any, T2 any](ctx context.Context, value map[string]T1, p path.Path, diags *diag.Diagnostics, iteratee func(item T1, meta MapMeta) T2) map[string]T2 {
+func TransformMap[T1 any, T2 any](_ context.Context, value map[string]T1, p path.Path, diags *diag.Diagnostics, iteratee func(item T1, meta MapMeta) T2) map[string]T2 {
 	if value == nil {
 		return nil
 	}
 
 	elems := make(map[string]T2, len(value))
 	for k, v := range value {
-		elems[k] = iteratee(v, MapMeta{Context: ctx, Key: k, Path: p.AtMapKey(k), Diags: diags})
+		elems[k] = iteratee(v, MapMeta{Key: k, Path: p.AtMapKey(k), Diags: diags})
 	}
 
 	return elems
 }
 
 // TransformSlice converts []T1 to []T2 via the iteratee.
-func TransformSlice[T1 any, T2 any](ctx context.Context, value []T1, p path.Path, diags *diag.Diagnostics, iteratee func(item T1, meta ListMeta) T2) []T2 {
+func TransformSlice[T1 any, T2 any](_ context.Context, value []T1, p path.Path, diags *diag.Diagnostics, iteratee func(item T1, meta ListMeta) T2) []T2 {
 	if value == nil {
 		return nil
 	}
 
 	elems := make([]T2, len(value))
 	for i, v := range value {
-		elems[i] = iteratee(v, ListMeta{Context: ctx, Index: i, Path: p.AtListIndex(i), Diags: diags})
+		elems[i] = iteratee(v, ListMeta{Index: i, Path: p.AtListIndex(i), Diags: diags})
 	}
 
 	return elems
 }
 
 // TransformSliceToMap converts []T1 to map[string]]T2 via the iteratee.
-func TransformSliceToMap[T1 any, T2 any](ctx context.Context, value []T1, p path.Path, diags *diag.Diagnostics, iteratee func(item T1, meta ListMeta) (key string, elem T2)) map[string]T2 {
+func TransformSliceToMap[T1 any, T2 any](_ context.Context, value []T1, p path.Path, diags *diag.Diagnostics, iteratee func(item T1, meta ListMeta) (key string, elem T2)) map[string]T2 {
 	if value == nil {
 		return nil
 	}
 
 	elems := make(map[string]T2, len(value))
 	for i, v := range value {
-		k, v := iteratee(v, ListMeta{Context: ctx, Index: i, Path: p.AtListIndex(i), Diags: diags})
+		k, v := iteratee(v, ListMeta{Index: i, Path: p.AtListIndex(i), Diags: diags})
 		elems[k] = v
 	}
 
@@ -341,14 +338,14 @@ func TransformSliceToMap[T1 any, T2 any](ctx context.Context, value []T1, p path
 }
 
 // TransformSliceToMap converts []T1 to map[string]]T2 via the iteratee.
-func TransformMapToSlice[T1 any, T2 any](ctx context.Context, value map[string]T1, p path.Path, diags *diag.Diagnostics, iteratee func(item T1, meta MapMeta) T2) []T2 {
+func TransformMapToSlice[T1 any, T2 any](_ context.Context, value map[string]T1, p path.Path, diags *diag.Diagnostics, iteratee func(item T1, meta MapMeta) T2) []T2 {
 	if value == nil {
 		return nil
 	}
 
 	elems := make([]T2, 0, len(value))
 	for k, v := range value {
-		v := iteratee(v, MapMeta{Context: ctx, Key: k, Path: p.AtMapKey(k), Diags: diags})
+		v := iteratee(v, MapMeta{Key: k, Path: p.AtMapKey(k), Diags: diags})
 		elems = append(elems, v)
 	}
 

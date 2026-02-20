@@ -559,7 +559,7 @@ func (d Data) actionsToAPI(ctx context.Context) ([]kbapi.SecurityDetectionsAPIRu
 			// Convert params map
 			if typeutils.IsKnown(action.Params) {
 				paramsStringMap := make(map[string]string)
-				paramsDiags := action.Params.ElementsAs(meta.Context, &paramsStringMap, false)
+				paramsDiags := action.Params.ElementsAs(ctx, &paramsStringMap, false)
 				if !paramsDiags.HasError() {
 					paramsMap := make(map[string]any)
 					for k, v := range paramsStringMap {
@@ -583,7 +583,7 @@ func (d Data) actionsToAPI(ctx context.Context) ([]kbapi.SecurityDetectionsAPIRu
 
 			if typeutils.IsKnown(action.AlertsFilter) {
 				alertsFilterStringMap := make(map[string]string)
-				alertsFilterDiags := action.AlertsFilter.ElementsAs(meta.Context, &alertsFilterStringMap, false)
+				alertsFilterDiags := action.AlertsFilter.ElementsAs(ctx, &alertsFilterStringMap, false)
 				if !alertsFilterDiags.HasError() {
 					alertsFilterMap := make(map[string]any)
 					for k, v := range alertsFilterStringMap {
@@ -597,7 +597,7 @@ func (d Data) actionsToAPI(ctx context.Context) ([]kbapi.SecurityDetectionsAPIRu
 
 			// Handle frequency using ObjectTypeToStruct
 			if typeutils.IsKnown(action.Frequency) {
-				frequency := typeutils.ObjectTypeToStruct(meta.Context, action.Frequency, meta.Path.AtName("frequency"), meta.Diags,
+				frequency := typeutils.ObjectTypeToStruct(ctx, action.Frequency, meta.Path.AtName("frequency"), meta.Diags,
 					func(frequencyModel ActionFrequencyModel, freqMeta typeutils.ObjectMeta) kbapi.SecurityDetectionsAPIRuleActionFrequency {
 						apiFreq := kbapi.SecurityDetectionsAPIRuleActionFrequency{
 							NotifyWhen: kbapi.SecurityDetectionsAPIRuleActionNotifyWhen(frequencyModel.NotifyWhen.ValueString()),

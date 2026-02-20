@@ -3,6 +3,7 @@ linters:
   enable:
     - misspell
     - bodyclose
+    - containedctx
     - contextcheck
     - errname
     - errorlint

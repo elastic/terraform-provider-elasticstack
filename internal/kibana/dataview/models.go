@@ -190,7 +190,10 @@ func (model dataViewModel) toAPICreateModel(ctx context.Context) (kbapi.DataView
 								CustomLabel: item.CustomLabel.ValueStringPointer(),
 							}
 						})),
-					FieldFormats:    schemautil.MapRef(convertFieldFormats(typeutils.MapTypeToMap(ctx, item.FieldFormats, meta.Path.AtName("field_formats"), &diags, convertFieldFormat))),
+					FieldFormats: schemautil.MapRef(convertFieldFormats(typeutils.MapTypeToMap(ctx, item.FieldFormats, meta.Path.AtName("field_formats"), &diags,
+						func(item fieldFormatModel, meta typeutils.MapMeta) kbapi.DataViewsFieldformat {
+							return convertFieldFormat(ctx, item, meta)
+						}))),
 					Id:              typeutils.ValueStringPointer(item.ID),
 					Name:            typeutils.ValueStringPointer(item.Name),
 					Namespaces:      schemautil.SliceRef(namespaces),
@@ -213,8 +216,11 @@ func (model dataViewModel) toAPIUpdateModel(ctx context.Context) (kbapi.DataView
 		DataView: schemautil.Deref(typeutils.ObjectTypeToStruct(ctx, model.DataView, path.Root("data_view"), &diags,
 			func(item innerModel, meta typeutils.ObjectMeta) kbapi.DataViewsUpdateDataViewRequestObjectInner {
 				return kbapi.DataViewsUpdateDataViewRequestObjectInner{
-					AllowNoIndex:    item.AllowNoIndex.ValueBoolPointer(),
-					FieldFormats:    schemautil.MapRef(convertFieldFormats(typeutils.MapTypeToMap(ctx, item.FieldFormats, meta.Path.AtName("field_formats"), &diags, convertFieldFormat))),
+					AllowNoIndex: item.AllowNoIndex.ValueBoolPointer(),
+					FieldFormats: schemautil.MapRef(convertFieldFormats(typeutils.MapTypeToMap(ctx, item.FieldFormats, meta.Path.AtName("field_formats"), &diags,
+						func(item fieldFormatModel, meta typeutils.MapMeta) kbapi.DataViewsFieldformat {
+							return convertFieldFormat(ctx, item, meta)
+						}))),
 					Name:            typeutils.ValueStringPointer(item.Name),
 					RuntimeFieldMap: schemautil.MapRef(typeutils.MapTypeToMap(ctx, item.RuntimeFieldMap, meta.Path.AtName("runtime_field_map"), &diags, convertRuntimeFieldMap)),
 					SourceFilters:   schemautil.SliceRef(typeutils.ListTypeToSlice(ctx, item.SourceFilters, meta.Path.AtName("source_filters"), &diags, convertSourceFilter)),
@@ -237,10 +243,10 @@ func convertFieldFormats(src map[string]kbapi.DataViewsFieldformat) kbapi.DataVi
 	return dst
 }
 
-func convertFieldFormat(item fieldFormatModel, meta typeutils.MapMeta) kbapi.DataViewsFieldformat {
+func convertFieldFormat(ctx context.Context, item fieldFormatModel, meta typeutils.MapMeta) kbapi.DataViewsFieldformat {
 	return kbapi.DataViewsFieldformat{
 		Id: item.ID.ValueStringPointer(),
-		Params: typeutils.ObjectTypeToStruct(meta.Context, item.Params, meta.Path.AtName("params"), meta.Diags,
+		Params: typeutils.ObjectTypeToStruct(ctx, item.Params, meta.Path.AtName("params"), meta.Diags,
 			func(item fieldFormatParamsModel, meta typeutils.ObjectMeta) kbapi.DataViewsFieldformatParams {
 				return kbapi.DataViewsFieldformatParams{
 					LabelTemplate:          item.LabelTemplate.ValueStringPointer(),
@@ -253,7 +259,7 @@ func convertFieldFormat(item fieldFormatModel, meta typeutils.MapMeta) kbapi.Dat
 					UseShortSuffix:         item.UseShortSuffix.ValueBoolPointer(),
 					Timezone:               item.Timezone.ValueStringPointer(),
 					FieldType:              item.FieldType.ValueStringPointer(),
-					Colors: schemautil.SliceRef(typeutils.ListTypeToSlice(meta.Context, item.Colors, meta.Path.AtName("colors"), meta.Diags,
+					Colors: schemautil.SliceRef(typeutils.ListTypeToSlice(ctx, item.Colors, meta.Path.AtName("colors"), meta.Diags,
 						func(item colorConfigModel, _ typeutils.ListMeta) kbapi.DataViewsFieldformatParamsColor {
 							return kbapi.DataViewsFieldformatParamsColor{
 								Background: item.Background.ValueStringPointer(),
@@ -264,7 +270,7 @@ func convertFieldFormat(item fieldFormatModel, meta typeutils.MapMeta) kbapi.Dat
 						})),
 					FieldLength: schemautil.Ltoi(item.FieldLength.ValueInt64Pointer()),
 					Transform:   item.Transform.ValueStringPointer(),
-					LookupEntries: schemautil.SliceRef(typeutils.ListTypeToSlice(meta.Context, item.LookupEntries, meta.Path.AtName("lookup_entries"), meta.Diags,
+					LookupEntries: schemautil.SliceRef(typeutils.ListTypeToSlice(ctx, item.LookupEntries, meta.Path.AtName("lookup_entries"), meta.Diags,
 						func(item lookupEntryModel, _ typeutils.ListMeta) kbapi.DataViewsFieldformatParamsLookup {
 							return kbapi.DataViewsFieldformatParamsLookup{
 								Key:   item.Key.ValueStringPointer(),
