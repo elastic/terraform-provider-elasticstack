@@ -7,7 +7,7 @@ provider "elasticstack" {
 # Use system (not tcp) to avoid conflicting with other Fleet tests. PreCheck installs it via API so it's available.
 resource "elasticstack_fleet_integration" "system" {
   name         = "system"
-  version      = "1.20.0"
+  version      = "1.18.0"
   force        = true
   skip_destroy = true
 }
