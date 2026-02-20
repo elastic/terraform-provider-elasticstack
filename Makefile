@@ -33,7 +33,6 @@ FLEET_ENDPOINT ?= https://$(FLEET_NAME):8220
 ifneq (,$(filter 7.17.% 8.0.% 8.1.%,$(STACK_VERSION)))
 FLEET_IMAGE := elastic/elastic-agent
 endif
-export FLEET_IMAGE
 
 RERUN_FAILS ?= 3
 

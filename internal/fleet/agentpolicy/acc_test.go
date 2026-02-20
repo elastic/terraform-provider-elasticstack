@@ -170,7 +170,7 @@ func TestAccResourceAgentPolicy(t *testing.T) {
 					"policy_name":  config.StringVariable(fmt.Sprintf("Updated Policy %s", policyName)),
 					"skip_destroy": config.BoolVariable(false),
 				},
-				ResourceName:            "elasticstack_fleet_.agentpolicy.test_policy",
+				ResourceName:            "elasticstack_fleet_agent_policy.test_policy",
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"skip_destroy"},
