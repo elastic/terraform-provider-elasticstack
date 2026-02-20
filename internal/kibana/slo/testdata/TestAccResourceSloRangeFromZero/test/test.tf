@@ -9,8 +9,8 @@ provider "elasticstack" {
 
 resource "elasticstack_kibana_slo" "xp_upjet_ext_api_duration" {
   name        = "[Crossplane] Managed Resource External API Request Duration ${var.suffix}"
-  description = "Measures in seconds how long it takes a Cloud SDK call to complete. This measures the time it takes for Crossplane Provider pods to complete external API requests, for example, the provider-aws-ec2 talks to AWS' EC2 API."
-  slo_id      = "xp_upjet_ext_api_duration_${var.suffix}"
+  description = "Tests that the SLO can be created with a range from 0."
+  slo_id      = "id-${var.suffix}"
 
   histogram_custom_indicator {
     index = "metrics-*:metrics-*"

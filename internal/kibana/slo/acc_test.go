@@ -653,8 +653,7 @@ func TestAccResourceSloFromSDK(t *testing.T) {
 }
 
 func TestAccResourceSloRangeFromZero(t *testing.T) {
-	// Histogram custom indicators require >= 8.10.0, and Kibana has a known bug in 8.11.x.
-	constraints, err := version.NewConstraint(">=8.10.0,!=8.11.0,!=8.11.1,!=8.11.2,!=8.11.3,!=8.11.4")
+	constraints, err := version.NewConstraint(">=8.12.0")
 	require.NoError(t, err)
 
 	suffix := sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
@@ -671,8 +670,12 @@ func TestAccResourceSloRangeFromZero(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.xp_upjet_ext_api_duration", "name", "[Crossplane] Managed Resource External API Request Duration "+suffix),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.xp_upjet_ext_api_duration", "description", "Measures in seconds how long it takes a Cloud SDK call to complete. This measures the time it takes for Crossplane Provider pods to complete external API requests, for example, the provider-aws-ec2 talks to AWS' EC2 API."),
-					resource.TestCheckResourceAttr("elasticstack_kibana_slo.xp_upjet_ext_api_duration", "slo_id", "xp_upjet_ext_api_duration_"+suffix),
+					resource.TestCheckResourceAttr(
+						"elasticstack_kibana_slo.xp_upjet_ext_api_duration",
+						"description",
+						"Tests that the SLO can be created with a range from 0.",
+					),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.xp_upjet_ext_api_duration", "slo_id", "id-"+suffix),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.xp_upjet_ext_api_duration", "budgeting_method", "occurrences"),
 
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.xp_upjet_ext_api_duration", "histogram_custom_indicator.0.index", "metrics-*:metrics-*"),
