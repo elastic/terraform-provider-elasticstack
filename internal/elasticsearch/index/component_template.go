@@ -10,7 +10,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/tfsdkutils"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -195,7 +195,7 @@ func resourceComponentTemplateRead(ctx context.Context, d *schema.ResourceData, 
 	}
 	templateID := compID.ResourceID
 
-	tpl, diags := elasticsearch.GetComponentTemplate(ctx, client, templateID)
+	tpl, diags := elasticsearch.GetComponentTemplate(ctx, client, templateID, false)
 	if tpl == nil && diags == nil {
 		tflog.Warn(ctx, fmt.Sprintf(`Component template "%s" not found, removing from state`, compID.ResourceID))
 		d.SetId("")

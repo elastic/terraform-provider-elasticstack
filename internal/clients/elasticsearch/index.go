@@ -115,14 +115,19 @@ func PutComponentTemplate(ctx context.Context, apiClient *clients.APIClient, tem
 	return diags
 }
 
-func GetComponentTemplate(ctx context.Context, apiClient *clients.APIClient, templateName string) (*models.ComponentTemplateResponse, diag.Diagnostics) {
+// GetComponentTemplate returns a component template by name. flatSettings controls the
+// response format: true = flat keys (e.g. "index.number_of_shards"), false = nested (default).
+func GetComponentTemplate(ctx context.Context, apiClient *clients.APIClient, templateName string, flatSettings bool) (*models.ComponentTemplateResponse, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
-	req := esClient.Cluster.GetComponentTemplate.WithName(templateName)
-	res, err := esClient.Cluster.GetComponentTemplate(req, esClient.Cluster.GetComponentTemplate.WithContext(ctx))
+	res, err := esClient.Cluster.GetComponentTemplate(
+		esClient.Cluster.GetComponentTemplate.WithName(templateName),
+		esClient.Cluster.GetComponentTemplate.WithContext(ctx),
+		esClient.Cluster.GetComponentTemplate.WithFlatSettings(flatSettings),
+	)
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
