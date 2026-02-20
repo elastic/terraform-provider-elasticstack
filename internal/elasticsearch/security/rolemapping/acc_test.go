@@ -73,9 +73,13 @@ func TestAccResourceSecurityRoleMapping(t *testing.T) {
 				},
 				{
 					ProtoV6ProviderFactories: acctest.Providers,
-					ResourceName:             "elasticstack_elasticsearch_security_role_mapping.test",
-					ImportState:              true,
-					ImportStateVerify:        true,
+					ConfigDirectory:          acctest.NamedTestCaseDirectory("role_templates"),
+					ConfigVariables: config.Variables{
+						"name": config.StringVariable(roleMappingName),
+					},
+					ResourceName:      "elasticstack_elasticsearch_security_role_mapping.test",
+					ImportState:       true,
+					ImportStateVerify: true,
 				},
 			},
 		})
