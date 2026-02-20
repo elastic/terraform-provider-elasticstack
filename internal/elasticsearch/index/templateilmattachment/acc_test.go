@@ -111,6 +111,13 @@ func TestAccResourceIndexTemplateIlmAttachment_preservesTemplateOnDestroy(t *tes
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			acctest.PreCheck(t)
+			notSupported, err := versionutils.CheckIfVersionIsUnsupported(templateilmattachment.MinVersion)()
+			if err != nil {
+				t.Fatalf("checking version: %v", err)
+			}
+			if notSupported {
+				t.Skip("Elasticsearch version does not support this test")
+			}
 			createPreservesTestComponentTemplate(t)
 		},
 		CheckDestroy: checkPreservesTemplateDestroy,
