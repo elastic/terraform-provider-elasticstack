@@ -10,7 +10,7 @@ import (
 )
 
 func CheckUserCanAuthenticate(username string, password string) func(*terraform.State) error {
-	return func(s *terraform.State) error {
+	return func(_ *terraform.State) error {
 		client, err := clients.NewAcceptanceTestingClient()
 		if err != nil {
 			return err

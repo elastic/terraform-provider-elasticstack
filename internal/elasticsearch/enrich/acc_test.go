@@ -171,15 +171,15 @@ func checkEnrichPolicyDestroyFW(name string) func(s *terraform.State) error {
 			if rs.Type != "elasticstack_elasticsearch_enrich_policy" {
 				continue
 			}
-			compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
-			if compId.ResourceId != name {
-				return fmt.Errorf("Found unexpectedly enrich policy: %s", compId.ResourceId)
+			compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
+			if compID.ResourceID != name {
+				return fmt.Errorf("Found unexpectedly enrich policy: %s", compID.ResourceID)
 			}
 			esClient, err := client.GetESClient()
 			if err != nil {
 				return err
 			}
-			req := esClient.EnrichGetPolicy.WithName(compId.ResourceId)
+			req := esClient.EnrichGetPolicy.WithName(compID.ResourceID)
 			res, err := esClient.EnrichGetPolicy(req)
 			if err != nil {
 				return err
@@ -191,7 +191,7 @@ func checkEnrichPolicyDestroyFW(name string) func(s *terraform.State) error {
 					return err
 				}
 				if len(policiesResponse["policies"].([]any)) != 0 {
-					return fmt.Errorf("Enrich policy (%s) still exists", compId.ResourceId)
+					return fmt.Errorf("Enrich policy (%s) still exists", compID.ResourceID)
 				}
 			}
 		}

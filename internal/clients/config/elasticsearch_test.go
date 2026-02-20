@@ -30,7 +30,7 @@ func Test_newElasticsearchConfigFromSDK(t *testing.T) {
 	}{
 		{
 			name: "should return nil if no config is specified",
-			args: func(key string) args {
+			args: func(_ string) args {
 				return args{}
 			},
 		},
@@ -163,7 +163,7 @@ func Test_newElasticsearchConfigFromFramework(t *testing.T) {
 										basetypes.NewStringValue("example.com"),
 									},
 								),
-								Insecure: basetypes.NewBoolPointerValue(utils.Pointer(true)),
+								Insecure: basetypes.NewBoolPointerValue(schemautil.Pointer(true)),
 							},
 						},
 					},
@@ -196,7 +196,7 @@ func Test_newElasticsearchConfigFromFramework(t *testing.T) {
 										basetypes.NewStringValue("example.com"),
 									},
 								),
-								Insecure: basetypes.NewBoolPointerValue(utils.Pointer(true)),
+								Insecure: basetypes.NewBoolPointerValue(schemautil.Pointer(true)),
 							},
 						},
 					},

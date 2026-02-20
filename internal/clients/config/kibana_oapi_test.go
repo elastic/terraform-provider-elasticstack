@@ -205,7 +205,7 @@ func Test_newKibanaOapiConfigFromFramework(t *testing.T) {
 			name: "should use api_key when provided in config options",
 			args: func() args {
 				baseCfg := baseConfig{
-					ApiKey: "test",
+					APIKey: "test",
 				}
 
 				return args{
@@ -213,7 +213,7 @@ func Test_newKibanaOapiConfigFromFramework(t *testing.T) {
 					providerConfig: ProviderConfiguration{
 						Kibana: []KibanaConnection{
 							{
-								ApiKey: types.StringValue("test"),
+								APIKey: types.StringValue("test"),
 								Endpoints: types.ListValueMust(types.StringType, []attr.Value{
 									types.StringValue("example.com/kibana"),
 								}),

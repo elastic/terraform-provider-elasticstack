@@ -1,4 +1,4 @@
-package integration_policy
+package integrationpolicy
 
 import (
 	"context"
@@ -275,42 +275,42 @@ func TestPopulateVarsJSONDefaults(t *testing.T) {
 	tests := []struct {
 		name           string
 		ctxVal         string
-		varsJson       string
+		varsJSON       string
 		expectedResult string
 		expectError    bool
 	}{
 		{
 			name:           "empty context value",
 			ctxVal:         "",
-			varsJson:       `{"foo": "bar"}`,
+			varsJSON:       `{"foo": "bar"}`,
 			expectedResult: `{"foo": "bar"}`,
 			expectError:    false,
 		},
 		{
 			name:           "unknown package",
 			ctxVal:         "unknown-pkg-1.0.0",
-			varsJson:       `{"foo": "bar"}`,
+			varsJSON:       `{"foo": "bar"}`,
 			expectedResult: `{"foo": "bar"}`,
 			expectError:    false,
 		},
 		{
 			name:           "apply defaults to empty json",
 			ctxVal:         cacheKey,
-			varsJson:       `{}`,
+			varsJSON:       `{}`,
 			expectedResult: `{"var1":"default1","var2":[]}`,
 			expectError:    false,
 		},
 		{
 			name:           "merge defaults with existing values",
 			ctxVal:         cacheKey,
-			varsJson:       `{"var1": "overridden", "foo": "bar"}`,
+			varsJSON:       `{"var1": "overridden", "foo": "bar"}`,
 			expectedResult: `{"var1":"overridden","foo":"bar","var2":[]}`,
 			expectError:    false,
 		},
 		{
 			name:           "invalid json input",
 			ctxVal:         cacheKey,
-			varsJson:       `{invalid`,
+			varsJSON:       `{invalid`,
 			expectedResult: `{invalid`,
 			expectError:    true,
 		},
@@ -318,7 +318,7 @@ func TestPopulateVarsJSONDefaults(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res, err := populateVarsJSONDefaults(tt.ctxVal, tt.varsJson)
+			res, err := populateVarsJSONDefaults(tt.ctxVal, tt.varsJSON)
 
 			if tt.expectError {
 				require.Error(t, err)

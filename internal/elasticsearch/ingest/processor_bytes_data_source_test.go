@@ -16,14 +16,14 @@ func TestAccDataSourceIngestProcessorBytes(t *testing.T) {
 				Config: testAccDataSourceIngestProcessorBytes,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_bytes.test", "field", "file.size"),
-					CheckResourceJson("data.elasticstack_elasticsearch_ingest_processor_bytes.test", "json", expectedJsonBytes),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_bytes.test", "json", expectedJSONBytes),
 				),
 			},
 		},
 	})
 }
 
-const expectedJsonBytes = `{
+const expectedJSONBytes = `{
 	"bytes": {
 		"field": "file.size", 
 		"ignore_failure": false,

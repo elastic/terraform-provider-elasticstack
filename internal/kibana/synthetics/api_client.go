@@ -3,17 +3,17 @@ package synthetics
 import (
 	"github.com/disaster37/go-kibana-rest/v8"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-// ESApiClient interface provides access to the underlying API client
-type ESApiClient interface {
-	GetClient() *clients.ApiClient
+// ESAPIClient interface provides access to the underlying API client
+type ESAPIClient interface {
+	GetClient() *clients.APIClient
 }
 
-// GetKibanaClient returns a configured Kibana client for the given ESApiClient
-func GetKibanaClient(c ESApiClient, dg diag.Diagnostics) *kibana.Client {
+// GetKibanaClient returns a configured Kibana client for the given ESAPIClient
+func GetKibanaClient(c ESAPIClient, dg diag.Diagnostics) *kibana.Client {
 	client := c.GetClient()
 	if client == nil {
 		dg.AddError(
@@ -31,8 +31,8 @@ func GetKibanaClient(c ESApiClient, dg diag.Diagnostics) *kibana.Client {
 	return kibanaClient
 }
 
-// GetKibanaOAPIClient returns a configured Kibana OpenAPI client for the given ESApiClient
-func GetKibanaOAPIClient(c ESApiClient, dg diag.Diagnostics) *kibana_oapi.Client {
+// GetKibanaOAPIClient returns a configured Kibana OpenAPI client for the given ESAPIClient
+func GetKibanaOAPIClient(c ESAPIClient, dg diag.Diagnostics) *kibanaoapi.Client {
 	client := c.GetClient()
 	if client == nil {
 		dg.AddError(

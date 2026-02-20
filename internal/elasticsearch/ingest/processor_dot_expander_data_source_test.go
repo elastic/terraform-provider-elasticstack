@@ -16,14 +16,14 @@ func TestAccDataSourceIngestProcessorDotExpander(t *testing.T) {
 				Config: testAccDataSourceIngestProcessorDotExpander,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_dot_expander.test", "field", "foo.bar"),
-					CheckResourceJson("data.elasticstack_elasticsearch_ingest_processor_dot_expander.test", "json", expectedJsonDotExpander),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_dot_expander.test", "json", expectedJSONDotExpander),
 				),
 			},
 		},
 	})
 }
 
-const expectedJsonDotExpander = `{
+const expectedJSONDotExpander = `{
   "dot_expander": {
 		"field": "foo.bar",
 		"ignore_failure": false,

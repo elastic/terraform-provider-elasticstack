@@ -1,4 +1,4 @@
-package prebuilt_rules_test
+package prebuiltrules_test
 
 import (
 	"encoding/json"
@@ -7,7 +7,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-version"
@@ -104,7 +104,7 @@ func deleteSingleDetectionRule(t *testing.T, spaceID string) {
 	oapiClient, err := client.GetKibanaOapiClient()
 	require.NoError(t, err)
 
-	resp, err := oapiClient.API.FindRulesWithResponse(t.Context(), &kbapi.FindRulesParams{}, kibana_oapi.SpaceAwarePathRequestEditor(spaceID))
+	resp, err := oapiClient.API.FindRulesWithResponse(t.Context(), &kbapi.FindRulesParams{}, kibanaoapi.SpaceAwarePathRequestEditor(spaceID))
 	require.NoError(t, err)
 	require.Equal(t, 200, resp.StatusCode())
 

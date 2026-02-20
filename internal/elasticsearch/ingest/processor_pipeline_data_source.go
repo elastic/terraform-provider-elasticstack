@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/tfsdkutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -48,7 +49,7 @@ func DataSourceProcessorPipeline() *schema.Resource {
 			Elem: &schema.Schema{
 				Type:             schema.TypeString,
 				ValidateFunc:     validation.StringIsJSON,
-				DiffSuppressFunc: utils.DiffJsonSuppress,
+				DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 			},
 		},
 		"tag": {
@@ -72,7 +73,7 @@ func DataSourceProcessorPipeline() *schema.Resource {
 	}
 }
 
-func dataSourceProcessorPipelineRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+func dataSourceProcessorPipelineRead(_ context.Context, d *schema.ResourceData, _ any) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	processor := &models.ProcessorPipeline{}
@@ -101,15 +102,15 @@ func dataSourceProcessorPipelineRead(ctx context.Context, d *schema.ResourceData
 		processor.OnFailure = onFailure
 	}
 
-	processorJson, err := json.MarshalIndent(map[string]*models.ProcessorPipeline{"pipeline": processor}, "", " ")
+	processorJSON, err := json.MarshalIndent(map[string]*models.ProcessorPipeline{"pipeline": processor}, "", " ")
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("json", string(processorJson)); err != nil {
+	if err := d.Set("json", string(processorJSON)); err != nil {
 		return diag.FromErr(err)
 	}
 
-	hash, err := utils.StringToHash(string(processorJson))
+	hash, err := schemautil.StringToHash(string(processorJSON))
 	if err != nil {
 		return diag.FromErr(err)
 	}

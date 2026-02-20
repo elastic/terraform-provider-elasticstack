@@ -9,10 +9,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccessControlValue_ToCreateAPI(t *testing.T) {
+func TestAccessControlValue_toCreateAPI(t *testing.T) {
 	t.Run("nil receiver", func(t *testing.T) {
 		var m *AccessControlValue
-		apiModel := m.ToCreateAPI()
+		apiModel := m.toCreateAPI()
 		assert.Nil(t, apiModel)
 	})
 
@@ -21,7 +21,7 @@ func TestAccessControlValue_ToCreateAPI(t *testing.T) {
 			AccessMode: types.StringNull(),
 			Owner:      types.StringNull(),
 		}
-		apiModel := m.ToCreateAPI()
+		apiModel := m.toCreateAPI()
 		assert.NotNil(t, apiModel)
 		assert.Nil(t, apiModel.AccessMode)
 		assert.Nil(t, apiModel.Owner)
@@ -32,10 +32,10 @@ func TestAccessControlValue_ToCreateAPI(t *testing.T) {
 			AccessMode: types.StringValue("private"),
 			Owner:      types.StringValue("user123"),
 		}
-		apiModel := m.ToCreateAPI()
+		apiModel := m.toCreateAPI()
 		assert.NotNil(t, apiModel)
-		assert.Equal(t, utils.Pointer(kbapi.PostDashboardsJSONBodyDataAccessControlAccessMode("private")), apiModel.AccessMode)
-		assert.Equal(t, utils.Pointer("user123"), apiModel.Owner)
+		assert.Equal(t, schemautil.Pointer(kbapi.PostDashboardsJSONBodyDataAccessControlAccessMode("private")), apiModel.AccessMode)
+		assert.Equal(t, schemautil.Pointer("user123"), apiModel.Owner)
 	})
 
 	t.Run("partial values - access_mode", func(t *testing.T) {
@@ -43,9 +43,9 @@ func TestAccessControlValue_ToCreateAPI(t *testing.T) {
 			AccessMode: types.StringValue("private"),
 			Owner:      types.StringNull(),
 		}
-		apiModel := m.ToCreateAPI()
+		apiModel := m.toCreateAPI()
 		assert.NotNil(t, apiModel)
-		assert.Equal(t, utils.Pointer(kbapi.PostDashboardsJSONBodyDataAccessControlAccessMode("private")), apiModel.AccessMode)
+		assert.Equal(t, schemautil.Pointer(kbapi.PostDashboardsJSONBodyDataAccessControlAccessMode("private")), apiModel.AccessMode)
 		assert.Nil(t, apiModel.Owner)
 	})
 
@@ -54,17 +54,17 @@ func TestAccessControlValue_ToCreateAPI(t *testing.T) {
 			AccessMode: types.StringNull(),
 			Owner:      types.StringValue("user123"),
 		}
-		apiModel := m.ToCreateAPI()
+		apiModel := m.toCreateAPI()
 		assert.NotNil(t, apiModel)
 		assert.Nil(t, apiModel.AccessMode)
-		assert.Equal(t, utils.Pointer("user123"), apiModel.Owner)
+		assert.Equal(t, schemautil.Pointer("user123"), apiModel.Owner)
 	})
 }
 
-func TestAccessControlValue_ToUpdateAPI(t *testing.T) {
+func TestAccessControlValue_toUpdateAPI(t *testing.T) {
 	t.Run("nil receiver", func(t *testing.T) {
 		var m *AccessControlValue
-		apiModel := m.ToUpdateAPI()
+		apiModel := m.toUpdateAPI()
 		assert.Nil(t, apiModel)
 	})
 
@@ -73,10 +73,10 @@ func TestAccessControlValue_ToUpdateAPI(t *testing.T) {
 			AccessMode: types.StringValue("public"),
 			Owner:      types.StringValue("admin"),
 		}
-		apiModel := m.ToUpdateAPI()
+		apiModel := m.toUpdateAPI()
 		assert.NotNil(t, apiModel)
-		assert.Equal(t, utils.Pointer(kbapi.PutDashboardsIdJSONBodyDataAccessControlAccessMode("public")), apiModel.AccessMode)
-		assert.Equal(t, utils.Pointer("admin"), apiModel.Owner)
+		assert.Equal(t, schemautil.Pointer(kbapi.PutDashboardsIdJSONBodyDataAccessControlAccessMode("public")), apiModel.AccessMode)
+		assert.Equal(t, schemautil.Pointer("admin"), apiModel.Owner)
 	})
 
 	t.Run("empty values", func(t *testing.T) {
@@ -84,7 +84,7 @@ func TestAccessControlValue_ToUpdateAPI(t *testing.T) {
 			AccessMode: types.StringNull(),
 			Owner:      types.StringNull(),
 		}
-		apiModel := m.ToUpdateAPI()
+		apiModel := m.toUpdateAPI()
 		assert.NotNil(t, apiModel)
 		assert.Nil(t, apiModel.AccessMode)
 		assert.Nil(t, apiModel.Owner)

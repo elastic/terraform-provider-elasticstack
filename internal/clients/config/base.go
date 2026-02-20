@@ -12,7 +12,7 @@ import (
 type baseConfig struct {
 	Username    string
 	Password    string
-	ApiKey      string
+	APIKey      string
 	BearerToken string
 	UserAgent   string
 	Header      http.Header
@@ -32,7 +32,7 @@ func newBaseConfigFromSDK(d *schema.ResourceData, version string, esKey string) 
 			if bearerToken, ok := config["bearer_token"]; ok && bearerToken != "" {
 				baseConfig.BearerToken = bearerToken.(string)
 			} else if apiKey, ok := config["api_key"]; ok && apiKey != "" {
-				baseConfig.ApiKey = apiKey.(string)
+				baseConfig.APIKey = apiKey.(string)
 			} else {
 				if username, ok := config["username"]; ok {
 					baseConfig.Username = username.(string)
@@ -58,7 +58,7 @@ func newBaseConfigFromFramework(config ProviderConfiguration, version string) ba
 		esConfig := config.Elasticsearch[0]
 		baseConfig.Username = esConfig.Username.ValueString()
 		baseConfig.Password = esConfig.Password.ValueString()
-		baseConfig.ApiKey = esConfig.APIKey.ValueString()
+		baseConfig.APIKey = esConfig.APIKey.ValueString()
 		baseConfig.BearerToken = esConfig.BearerToken.ValueString()
 	}
 
@@ -68,7 +68,7 @@ func newBaseConfigFromFramework(config ProviderConfiguration, version string) ba
 func (b baseConfig) withEnvironmentOverrides() baseConfig {
 	b.Username = withEnvironmentOverride(b.Username, "ELASTICSEARCH_USERNAME")
 	b.Password = withEnvironmentOverride(b.Password, "ELASTICSEARCH_PASSWORD")
-	b.ApiKey = withEnvironmentOverride(b.ApiKey, "ELASTICSEARCH_API_KEY")
+	b.APIKey = withEnvironmentOverride(b.APIKey, "ELASTICSEARCH_API_KEY")
 	b.BearerToken = withEnvironmentOverride(b.BearerToken, "ELASTICSEARCH_BEARER_TOKEN")
 
 	return b
@@ -78,7 +78,7 @@ func (b baseConfig) toKibanaConfig() kibanaConfig {
 	return kibanaConfig{
 		Username:    b.Username,
 		Password:    b.Password,
-		ApiKey:      b.ApiKey,
+		ApiKey:      b.APIKey,
 		BearerToken: b.BearerToken,
 	}
 }
@@ -87,7 +87,7 @@ func (b baseConfig) toKibanaOapiConfig() kibanaOapiConfig {
 	return kibanaOapiConfig{
 		Username:    b.Username,
 		Password:    b.Password,
-		APIKey:      b.ApiKey,
+		APIKey:      b.APIKey,
 		BearerToken: b.BearerToken,
 	}
 }
@@ -98,7 +98,7 @@ func (b baseConfig) toElasticsearchConfig() elasticsearchConfig {
 			Header:   b.Header.Clone(),
 			Username: b.Username,
 			Password: b.Password,
-			APIKey:   b.ApiKey,
+			APIKey:   b.APIKey,
 		},
 	}
 }

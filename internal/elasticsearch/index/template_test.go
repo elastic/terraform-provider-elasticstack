@@ -126,20 +126,20 @@ func checkResourceIndexTemplateDestroy(s *terraform.State) error {
 		if rs.Type != "elasticstack_elasticsearch_index_template" {
 			continue
 		}
-		compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
+		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
 		esClient, err := client.GetESClient()
 		if err != nil {
 			return err
 		}
-		req := esClient.Indices.GetIndexTemplate.WithName(compId.ResourceId)
+		req := esClient.Indices.GetIndexTemplate.WithName(compID.ResourceID)
 		res, err := esClient.Indices.GetIndexTemplate(req)
 		if err != nil {
 			return err
 		}
 
 		if res.StatusCode != 404 {
-			return fmt.Errorf("Index template (%s) still exists", compId.ResourceId)
+			return fmt.Errorf("Index template (%s) still exists", compID.ResourceID)
 		}
 	}
 	return nil

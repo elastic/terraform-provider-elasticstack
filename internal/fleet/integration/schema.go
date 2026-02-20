@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 )
 
-func (r *integrationResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *integrationResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema.Version = 1
 	resp.Schema.Description = `Installs or uninstalls a Fleet integration package. The Kibana Fleet UI can be
 used to view available packages. Additional information for managing integration

@@ -217,7 +217,7 @@ func DataSourceRole() *schema.Resource {
 		},
 	}
 
-	utils.AddConnectionSchema(roleSchema)
+	schemautil.AddConnectionSchema(roleSchema)
 
 	return &schema.Resource{
 		Description: "Retrieves roles in the native realm. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-get-role.html",
@@ -227,21 +227,21 @@ func DataSourceRole() *schema.Resource {
 }
 
 func dataSourceSecurityRoleRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
 
-	roleId := d.Get("name").(string)
-	id, diags := client.ID(ctx, roleId)
+	roleID := d.Get("name").(string)
+	id, diags := client.ID(ctx, roleID)
 	if diags.HasError() {
 		return diags
 	}
 	d.SetId(id.String())
 
-	role, diags := elasticsearch.GetRole(ctx, client, roleId)
+	role, diags := elasticsearch.GetRole(ctx, client, roleID)
 	if role == nil && diags == nil {
-		tflog.Warn(ctx, fmt.Sprintf(`Role "%s" not found, removing from state`, roleId))
+		tflog.Warn(ctx, fmt.Sprintf(`Role "%s" not found, removing from state`, roleID))
 		d.SetId("")
 		return diags
 	}
@@ -250,7 +250,7 @@ func dataSourceSecurityRoleRead(ctx context.Context, d *schema.ResourceData, met
 	}
 
 	// set the fields
-	if err := d.Set("name", roleId); err != nil {
+	if err := d.Set("name", roleID); err != nil {
 		return diag.FromErr(err)
 	}
 

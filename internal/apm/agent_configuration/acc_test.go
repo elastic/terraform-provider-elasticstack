@@ -1,4 +1,4 @@
-package agent_configuration_test
+package agentconfiguration_test
 
 import (
 	"fmt"

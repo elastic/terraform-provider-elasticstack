@@ -12,7 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
-func GetSlo(ctx context.Context, apiClient *clients.ApiClient, id, spaceID string) (*models.Slo, diag.Diagnostics) {
+func GetSlo(ctx context.Context, apiClient *clients.APIClient, id, spaceID string) (*models.Slo, diag.Diagnostics) {
 	client, err := apiClient.GetSloClient()
 	if err != nil {
 		return nil, diag.FromErr(err)
@@ -29,38 +29,38 @@ func GetSlo(ctx context.Context, apiClient *clients.ApiClient, id, spaceID strin
 	}
 	if err != nil {
 		diags := diag.FromErr(err)
-		diags = append(diags, diagutil.CheckHttpError(res, "unable to create slo with id "+id)...)
+		diags = append(diags, diagutil.CheckHTTPError(res, "unable to create slo with id "+id)...)
 		return nil, diags
 	}
 
 	defer res.Body.Close()
 
-	return sloResponseToModel(spaceID, sloRes), diagutil.CheckHttpError(res, "Unable to get slo with ID "+id)
+	return sloResponseToModel(spaceID, sloRes), diagutil.CheckHTTPError(res, "Unable to get slo with ID "+id)
 }
 
-func DeleteSlo(ctx context.Context, apiClient *clients.ApiClient, sloId string, spaceId string) diag.Diagnostics {
+func DeleteSlo(ctx context.Context, apiClient *clients.APIClient, sloID string, spaceID string) diag.Diagnostics {
 	client, err := apiClient.GetSloClient()
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
 	ctxWithAuth := apiClient.SetSloAuthContext(ctx)
-	req := client.DeleteSloOp(ctxWithAuth, sloId, spaceId).KbnXsrf("true")
+	req := client.DeleteSloOp(ctxWithAuth, sloID, spaceID).KbnXsrf("true")
 	res, err := req.Execute()
 
 	if err != nil {
 		diags := diag.FromErr(err)
 		if res != nil {
-			diags = append(diags, diagutil.CheckHttpError(res, "unable to delete slo with id "+sloId)...)
+			diags = append(diags, diagutil.CheckHTTPError(res, "unable to delete slo with id "+sloID)...)
 		}
 		return diags
 	}
 
 	defer res.Body.Close()
-	return diagutil.CheckHttpError(res, "Unable to delete slo with ID "+sloId)
+	return diagutil.CheckHTTPError(res, "Unable to delete slo with ID "+sloID)
 }
 
-func UpdateSlo(ctx context.Context, apiClient *clients.ApiClient, s models.Slo, supportsGroupByList bool) (*models.Slo, diag.Diagnostics) {
+func UpdateSlo(ctx context.Context, apiClient *clients.APIClient, s models.Slo, supportsGroupByList bool) (*models.Slo, diag.Diagnostics) {
 	client, err := apiClient.GetSloClient()
 	if err != nil {
 		return nil, diag.FromErr(err)
@@ -89,21 +89,21 @@ func UpdateSlo(ctx context.Context, apiClient *clients.ApiClient, s models.Slo, 
 	if err != nil {
 		diags := diag.FromErr(err)
 		if res != nil {
-			diags = append(diags, diagutil.CheckHttpError(res, "unable to update slo with id "+s.SloID)...)
+			diags = append(diags, diagutil.CheckHTTPError(res, "unable to update slo with id "+s.SloID)...)
 		}
 
 		return nil, diags
 	}
 
 	defer res.Body.Close()
-	if diags := diagutil.CheckHttpError(res, "unable to update slo with id "+s.SloID); diags.HasError() {
+	if diags := diagutil.CheckHTTPError(res, "unable to update slo with id "+s.SloID); diags.HasError() {
 		return nil, diags
 	}
 
 	return &s, diag.Diagnostics{}
 }
 
-func CreateSlo(ctx context.Context, apiClient *clients.ApiClient, s models.Slo, supportsGroupByList bool) (*models.Slo, diag.Diagnostics) {
+func CreateSlo(ctx context.Context, apiClient *clients.APIClient, s models.Slo, supportsGroupByList bool) (*models.Slo, diag.Diagnostics) {
 	client, err := apiClient.GetSloClient()
 	if err != nil {
 		return nil, diag.FromErr(err)
@@ -136,13 +136,13 @@ func CreateSlo(ctx context.Context, apiClient *clients.ApiClient, s models.Slo, 
 	if err != nil {
 		diags := diag.FromErr(err)
 		if res != nil {
-			diags = append(diags, diagutil.CheckHttpError(res, "unable to create slo with id "+s.SloID)...)
+			diags = append(diags, diagutil.CheckHTTPError(res, "unable to create slo with id "+s.SloID)...)
 		}
 		return nil, diags
 	}
 	defer res.Body.Close()
 
-	if diags := diagutil.CheckHttpError(res, "unable to create slo with id "+s.SloID); diags.HasError() {
+	if diags := diagutil.CheckHTTPError(res, "unable to create slo with id "+s.SloID); diags.HasError() {
 		return nil, diags
 	}
 

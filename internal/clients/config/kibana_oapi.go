@@ -6,13 +6,13 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	sdkdiags "github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-type kibanaOapiConfig kibana_oapi.Config
+type kibanaOapiConfig kibanaoapi.Config
 
 func newKibanaOapiConfigFromSDK(d *schema.ResourceData, base baseConfig) (kibanaOapiConfig, sdkdiags.Diagnostics) {
 	// Use ES details by default
@@ -141,8 +141,8 @@ func newKibanaOapiConfigFromFramework(ctx context.Context, cfg ProviderConfigura
 		if kibConfig.Password.ValueString() != "" {
 			config.Password = kibConfig.Password.ValueString()
 		}
-		if kibConfig.ApiKey.ValueString() != "" {
-			config.APIKey = kibConfig.ApiKey.ValueString()
+		if kibConfig.APIKey.ValueString() != "" {
+			config.APIKey = kibConfig.APIKey.ValueString()
 		}
 		if kibConfig.BearerToken.ValueString() != "" {
 			config.BearerToken = kibConfig.BearerToken.ValueString()

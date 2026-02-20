@@ -1,4 +1,4 @@
-package datafeed_state
+package datafeedstate
 
 const (
 	createTimeoutErrorMessage = "The operation to create the ML datafeed state timed out after %s." +

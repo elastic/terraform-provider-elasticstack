@@ -1,47 +1,10 @@
-package utils_test
+package schemautil_test
 
 import (
 	"testing"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/tfsdkutils"
 )
-
-func TestFlattenMap(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		in  map[string]any
-		out map[string]any
-	}{
-		{
-			map[string]any{"key1": map[string]any{"key2": 1}},
-			map[string]any{"key1.key2": 1},
-		},
-		{
-			map[string]any{"key1": map[string]any{"key2": map[string]any{"key3": 1}}},
-			map[string]any{"key1.key2.key3": 1},
-		},
-		{
-			map[string]any{"key1": 1},
-			map[string]any{"key1": 1},
-		},
-		{
-			map[string]any{"key1": "test"},
-			map[string]any{"key1": "test"},
-		},
-		{
-			map[string]any{"key1": map[string]any{"key2": 1, "key3": "test", "key4": []int{1, 2, 3}}},
-			map[string]any{"key1.key2": 1, "key1.key3": "test", "key1.key4": []int{1, 2, 3}},
-		},
-	}
-
-	for _, tc := range tests {
-		res := utils.FlattenMap(tc.in)
-		if !utils.MapsEqual(res, tc.out) {
-			t.Errorf("Could not properly flatten the map: %+v <> %+v", res, tc.out)
-		}
-	}
-}
 
 func TestDiffIndexTemplateSuppress(t *testing.T) {
 	t.Parallel()
@@ -79,7 +42,7 @@ func TestDiffIndexTemplateSuppress(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		if sup := utils.DiffIndexSettingSuppress("", tc.old, tc.new, nil); sup != tc.equal {
+		if sup := tfsdkutils.DiffIndexSettingSuppress("", tc.old, tc.new, nil); sup != tc.equal {
 			t.Errorf("Failed for test case: %+v", tc)
 		}
 	}

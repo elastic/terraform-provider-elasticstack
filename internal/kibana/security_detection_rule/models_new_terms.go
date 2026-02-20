@@ -1,11 +1,11 @@
-package security_detection_rule
+package securitydetectionrule
 
 import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -19,11 +19,11 @@ func (n NewTermsRuleProcessor) HandlesRuleType(t string) bool {
 	return t == "new_terms"
 }
 
-func (n NewTermsRuleProcessor) ToCreateProps(ctx context.Context, client clients.MinVersionEnforceable, d SecurityDetectionRuleData) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
+func (n NewTermsRuleProcessor) ToCreateProps(ctx context.Context, client clients.MinVersionEnforceable, d Data) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
 	return d.toNewTermsRuleCreateProps(ctx, client)
 }
 
-func (n NewTermsRuleProcessor) ToUpdateProps(ctx context.Context, client clients.MinVersionEnforceable, d SecurityDetectionRuleData) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
+func (n NewTermsRuleProcessor) ToUpdateProps(ctx context.Context, client clients.MinVersionEnforceable, d Data) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
 	return d.toNewTermsRuleUpdateProps(ctx, client)
 }
 
@@ -32,7 +32,7 @@ func (n NewTermsRuleProcessor) HandlesAPIRuleResponse(rule any) bool {
 	return ok
 }
 
-func (n NewTermsRuleProcessor) UpdateFromResponse(ctx context.Context, rule any, d *SecurityDetectionRuleData) diag.Diagnostics {
+func (n NewTermsRuleProcessor) UpdateFromResponse(ctx context.Context, rule any, d *Data) diag.Diagnostics {
 	var diags diag.Diagnostics
 	value, ok := rule.(kbapi.SecurityDetectionsAPINewTermsRule)
 	if !ok {
@@ -46,7 +46,7 @@ func (n NewTermsRuleProcessor) UpdateFromResponse(ctx context.Context, rule any,
 	return d.updateFromNewTermsRule(ctx, &value)
 }
 
-func (n NewTermsRuleProcessor) ExtractId(response any) (string, diag.Diagnostics) {
+func (n NewTermsRuleProcessor) ExtractID(response any) (string, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	value, ok := response.(kbapi.SecurityDetectionsAPINewTermsRule)
 	if !ok {
@@ -59,7 +59,7 @@ func (n NewTermsRuleProcessor) ExtractId(response any) (string, diag.Diagnostics
 	return value.Id.String(), diags
 }
 
-func (d SecurityDetectionRuleData) toNewTermsRuleCreateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
+func (d Data) toNewTermsRuleCreateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var createProps kbapi.SecurityDetectionsAPIRuleCreateProps
 
@@ -74,8 +74,8 @@ func (d SecurityDetectionRuleData) toNewTermsRuleCreateProps(ctx context.Context
 	}
 
 	// Set new terms fields
-	if utils.IsKnown(d.NewTermsFields) {
-		newTermsFields := utils.ListTypeAs[string](ctx, d.NewTermsFields, path.Root("new_terms_fields"), &diags)
+	if typeutils.IsKnown(d.NewTermsFields) {
+		newTermsFields := typeutils.ListTypeAs[string](ctx, d.NewTermsFields, path.Root("new_terms_fields"), &diags)
 		if !diags.HasError() {
 			newTermsRule.NewTermsFields = newTermsFields
 		}
@@ -84,7 +84,7 @@ func (d SecurityDetectionRuleData) toNewTermsRuleCreateProps(ctx context.Context
 	d.setCommonCreateProps(ctx, &CommonCreateProps{
 		Actions:                           &newTermsRule.Actions,
 		ResponseActions:                   &newTermsRule.ResponseActions,
-		RuleId:                            &newTermsRule.RuleId,
+		RuleID:                            &newTermsRule.RuleId,
 		Enabled:                           &newTermsRule.Enabled,
 		From:                              &newTermsRule.From,
 		To:                                &newTermsRule.To,
@@ -106,7 +106,7 @@ func (d SecurityDetectionRuleData) toNewTermsRuleCreateProps(ctx context.Context
 		RelatedIntegrations:               &newTermsRule.RelatedIntegrations,
 		RequiredFields:                    &newTermsRule.RequiredFields,
 		BuildingBlockType:                 &newTermsRule.BuildingBlockType,
-		DataViewId:                        &newTermsRule.DataViewId,
+		DataViewID:                        &newTermsRule.DataViewId,
 		Namespace:                         &newTermsRule.Namespace,
 		RuleNameOverride:                  &newTermsRule.RuleNameOverride,
 		TimestampOverride:                 &newTermsRule.TimestampOverride,
@@ -114,7 +114,7 @@ func (d SecurityDetectionRuleData) toNewTermsRuleCreateProps(ctx context.Context
 		InvestigationFields:               &newTermsRule.InvestigationFields,
 		Filters:                           &newTermsRule.Filters,
 		Threat:                            &newTermsRule.Threat,
-		TimelineId:                        &newTermsRule.TimelineId,
+		TimelineID:                        &newTermsRule.TimelineId,
 		TimelineTitle:                     &newTermsRule.TimelineTitle,
 	}, &diags, client)
 
@@ -132,15 +132,15 @@ func (d SecurityDetectionRuleData) toNewTermsRuleCreateProps(ctx context.Context
 
 	return createProps, diags
 }
-func (d SecurityDetectionRuleData) toNewTermsRuleUpdateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
+func (d Data) toNewTermsRuleUpdateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var updateProps kbapi.SecurityDetectionsAPIRuleUpdateProps
 
 	// Parse ID to get space_id and rule_id
-	compId, resourceIdDiags := clients.CompositeIdFromStrFw(d.Id.ValueString())
-	diags.Append(resourceIdDiags...)
+	compID, resourceIDDiags := clients.CompositeIDFromStrFw(d.ID.ValueString())
+	diags.Append(resourceIDDiags...)
 
-	uid, err := uuid.Parse(compId.ResourceId)
+	uid, err := uuid.Parse(compID.ResourceID)
 	if err != nil {
 		diags.AddError("ID was not a valid UUID", err.Error())
 		return updateProps, diags
@@ -158,15 +158,15 @@ func (d SecurityDetectionRuleData) toNewTermsRuleUpdateProps(ctx context.Context
 	}
 
 	// For updates, we need to include the rule_id if it's set
-	if utils.IsKnown(d.RuleId) {
-		ruleId := d.RuleId.ValueString()
-		newTermsRule.RuleId = &ruleId
+	if typeutils.IsKnown(d.RuleID) {
+		ruleID := d.RuleID.ValueString()
+		newTermsRule.RuleId = &ruleID
 		newTermsRule.Id = nil // if rule_id is set, we cant send id
 	}
 
 	// Set new terms fields
-	if utils.IsKnown(d.NewTermsFields) {
-		newTermsFields := utils.ListTypeAs[string](ctx, d.NewTermsFields, path.Root("new_terms_fields"), &diags)
+	if typeutils.IsKnown(d.NewTermsFields) {
+		newTermsFields := typeutils.ListTypeAs[string](ctx, d.NewTermsFields, path.Root("new_terms_fields"), &diags)
 		if !diags.HasError() {
 			newTermsRule.NewTermsFields = newTermsFields
 		}
@@ -175,7 +175,7 @@ func (d SecurityDetectionRuleData) toNewTermsRuleUpdateProps(ctx context.Context
 	d.setCommonUpdateProps(ctx, &CommonUpdateProps{
 		Actions:                           &newTermsRule.Actions,
 		ResponseActions:                   &newTermsRule.ResponseActions,
-		RuleId:                            &newTermsRule.RuleId,
+		RuleID:                            &newTermsRule.RuleId,
 		Enabled:                           &newTermsRule.Enabled,
 		From:                              &newTermsRule.From,
 		To:                                &newTermsRule.To,
@@ -198,14 +198,14 @@ func (d SecurityDetectionRuleData) toNewTermsRuleUpdateProps(ctx context.Context
 		RelatedIntegrations:               &newTermsRule.RelatedIntegrations,
 		RequiredFields:                    &newTermsRule.RequiredFields,
 		BuildingBlockType:                 &newTermsRule.BuildingBlockType,
-		DataViewId:                        &newTermsRule.DataViewId,
+		DataViewID:                        &newTermsRule.DataViewId,
 		Namespace:                         &newTermsRule.Namespace,
 		RuleNameOverride:                  &newTermsRule.RuleNameOverride,
 		TimestampOverride:                 &newTermsRule.TimestampOverride,
 		TimestampOverrideFallbackDisabled: &newTermsRule.TimestampOverrideFallbackDisabled,
 		Filters:                           &newTermsRule.Filters,
 		Threat:                            &newTermsRule.Threat,
-		TimelineId:                        &newTermsRule.TimelineId,
+		TimelineID:                        &newTermsRule.TimelineId,
 		TimelineTitle:                     &newTermsRule.TimelineTitle,
 	}, &diags, client)
 
@@ -223,34 +223,34 @@ func (d SecurityDetectionRuleData) toNewTermsRuleUpdateProps(ctx context.Context
 
 	return updateProps, diags
 }
-func (d *SecurityDetectionRuleData) updateFromNewTermsRule(ctx context.Context, rule *kbapi.SecurityDetectionsAPINewTermsRule) diag.Diagnostics {
+func (d *Data) updateFromNewTermsRule(ctx context.Context, rule *kbapi.SecurityDetectionsAPINewTermsRule) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	compId := clients.CompositeId{
-		ClusterId:  d.SpaceId.ValueString(),
-		ResourceId: rule.Id.String(),
+	compID := clients.CompositeID{
+		ClusterID:  d.SpaceID.ValueString(),
+		ResourceID: rule.Id.String(),
 	}
-	d.Id = types.StringValue(compId.String())
+	d.ID = types.StringValue(compID.String())
 
-	d.RuleId = types.StringValue(rule.RuleId)
+	d.RuleID = types.StringValue(rule.RuleId)
 	d.Name = types.StringValue(rule.Name)
 	d.Type = types.StringValue(string(rule.Type))
 
 	// Update common fields
-	diags.Append(d.updateTimelineIdFromApi(ctx, rule.TimelineId)...)
-	diags.Append(d.updateTimelineTitleFromApi(ctx, rule.TimelineTitle)...)
-	diags.Append(d.updateDataViewIdFromApi(ctx, rule.DataViewId)...)
-	diags.Append(d.updateNamespaceFromApi(ctx, rule.Namespace)...)
-	diags.Append(d.updateRuleNameOverrideFromApi(ctx, rule.RuleNameOverride)...)
-	diags.Append(d.updateTimestampOverrideFromApi(ctx, rule.TimestampOverride)...)
-	diags.Append(d.updateTimestampOverrideFallbackDisabledFromApi(ctx, rule.TimestampOverrideFallbackDisabled)...)
+	diags.Append(d.updateTimelineIDFromAPI(ctx, rule.TimelineId)...)
+	diags.Append(d.updateTimelineTitleFromAPI(ctx, rule.TimelineTitle)...)
+	diags.Append(d.updateDataViewIDFromAPI(ctx, rule.DataViewId)...)
+	diags.Append(d.updateNamespaceFromAPI(ctx, rule.Namespace)...)
+	diags.Append(d.updateRuleNameOverrideFromAPI(ctx, rule.RuleNameOverride)...)
+	diags.Append(d.updateTimestampOverrideFromAPI(ctx, rule.TimestampOverride)...)
+	diags.Append(d.updateTimestampOverrideFallbackDisabledFromAPI(ctx, rule.TimestampOverrideFallbackDisabled)...)
 
 	d.Query = types.StringValue(rule.Query)
 	d.Language = types.StringValue(string(rule.Language))
 	d.Enabled = types.BoolValue(rule.Enabled)
 
 	// Update building block type
-	diags.Append(d.updateBuildingBlockTypeFromApi(ctx, rule.BuildingBlockType)...)
+	diags.Append(d.updateBuildingBlockTypeFromAPI(ctx, rule.BuildingBlockType)...)
 	d.From = types.StringValue(rule.From)
 	d.To = types.StringValue(rule.To)
 	d.Interval = types.StringValue(rule.Interval)
@@ -268,75 +268,75 @@ func (d *SecurityDetectionRuleData) updateFromNewTermsRule(ctx context.Context, 
 	d.Revision = types.Int64Value(int64(rule.Revision))
 
 	// Update index patterns
-	diags.Append(d.updateIndexFromApi(ctx, rule.Index)...)
+	diags.Append(d.updateIndexFromAPI(ctx, rule.Index)...)
 
 	// New Terms-specific fields
 	d.HistoryWindowStart = types.StringValue(rule.HistoryWindowStart)
 	if len(rule.NewTermsFields) > 0 {
-		d.NewTermsFields = utils.ListValueFrom(ctx, rule.NewTermsFields, types.StringType, path.Root("new_terms_fields"), &diags)
+		d.NewTermsFields = typeutils.ListValueFrom(ctx, rule.NewTermsFields, types.StringType, path.Root("new_terms_fields"), &diags)
 	} else {
 		d.NewTermsFields = types.ListValueMust(types.StringType, []attr.Value{})
 	}
 
 	// Update author
-	diags.Append(d.updateAuthorFromApi(ctx, rule.Author)...)
+	diags.Append(d.updateAuthorFromAPI(ctx, rule.Author)...)
 
 	// Update tags
-	diags.Append(d.updateTagsFromApi(ctx, rule.Tags)...)
+	diags.Append(d.updateTagsFromAPI(ctx, rule.Tags)...)
 
 	// Update false positives
-	diags.Append(d.updateFalsePositivesFromApi(ctx, rule.FalsePositives)...)
+	diags.Append(d.updateFalsePositivesFromAPI(ctx, rule.FalsePositives)...)
 
 	// Update references
-	diags.Append(d.updateReferencesFromApi(ctx, rule.References)...)
+	diags.Append(d.updateReferencesFromAPI(ctx, rule.References)...)
 
 	// Update optional string fields
-	diags.Append(d.updateLicenseFromApi(ctx, rule.License)...)
-	diags.Append(d.updateNoteFromApi(ctx, rule.Note)...)
-	diags.Append(d.updateSetupFromApi(ctx, rule.Setup)...)
+	diags.Append(d.updateLicenseFromAPI(ctx, rule.License)...)
+	diags.Append(d.updateNoteFromAPI(ctx, rule.Note)...)
+	diags.Append(d.updateSetupFromAPI(ctx, rule.Setup)...)
 
 	// Update actions
-	actionDiags := d.updateActionsFromApi(ctx, rule.Actions)
+	actionDiags := d.updateActionsFromAPI(ctx, rule.Actions)
 	diags.Append(actionDiags...)
 
 	// Update exceptions list
-	exceptionsListDiags := d.updateExceptionsListFromApi(ctx, rule.ExceptionsList)
+	exceptionsListDiags := d.updateExceptionsListFromAPI(ctx, rule.ExceptionsList)
 	diags.Append(exceptionsListDiags...)
 
 	// Update risk score mapping
-	riskScoreMappingDiags := d.updateRiskScoreMappingFromApi(ctx, rule.RiskScoreMapping)
+	riskScoreMappingDiags := d.updateRiskScoreMappingFromAPI(ctx, rule.RiskScoreMapping)
 	diags.Append(riskScoreMappingDiags...)
 
 	// Update investigation fields
-	investigationFieldsDiags := d.updateInvestigationFieldsFromApi(ctx, rule.InvestigationFields)
+	investigationFieldsDiags := d.updateInvestigationFieldsFromAPI(ctx, rule.InvestigationFields)
 	diags.Append(investigationFieldsDiags...)
 
 	// Update filters field
-	filtersDiags := d.updateFiltersFromApi(ctx, rule.Filters)
+	filtersDiags := d.updateFiltersFromAPI(ctx, rule.Filters)
 	diags.Append(filtersDiags...)
 
 	// Update threat
-	threatDiags := d.updateThreatFromApi(ctx, &rule.Threat)
+	threatDiags := d.updateThreatFromAPI(ctx, &rule.Threat)
 	diags.Append(threatDiags...)
 
 	// Update severity mapping
-	severityMappingDiags := d.updateSeverityMappingFromApi(ctx, &rule.SeverityMapping)
+	severityMappingDiags := d.updateSeverityMappingFromAPI(ctx, &rule.SeverityMapping)
 	diags.Append(severityMappingDiags...)
 
 	// Update related integrations
-	relatedIntegrationsDiags := d.updateRelatedIntegrationsFromApi(ctx, &rule.RelatedIntegrations)
+	relatedIntegrationsDiags := d.updateRelatedIntegrationsFromAPI(ctx, &rule.RelatedIntegrations)
 	diags.Append(relatedIntegrationsDiags...)
 
 	// Update required fields
-	requiredFieldsDiags := d.updateRequiredFieldsFromApi(ctx, &rule.RequiredFields)
+	requiredFieldsDiags := d.updateRequiredFieldsFromAPI(ctx, &rule.RequiredFields)
 	diags.Append(requiredFieldsDiags...)
 
 	// Update alert suppression
-	alertSuppressionDiags := d.updateAlertSuppressionFromApi(ctx, rule.AlertSuppression)
+	alertSuppressionDiags := d.updateAlertSuppressionFromAPI(ctx, rule.AlertSuppression)
 	diags.Append(alertSuppressionDiags...)
 
 	// Update response actions
-	responseActionsDiags := d.updateResponseActionsFromApi(ctx, rule.ResponseActions)
+	responseActionsDiags := d.updateResponseActionsFromAPI(ctx, rule.ResponseActions)
 	diags.Append(responseActionsDiags...)
 
 	return diags

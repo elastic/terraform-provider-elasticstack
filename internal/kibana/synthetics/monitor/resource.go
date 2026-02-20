@@ -22,18 +22,18 @@ var _ resource.Resource = &Resource{}
 var _ resource.ResourceWithConfigure = &Resource{}
 var _ resource.ResourceWithImportState = &Resource{}
 var _ resource.ResourceWithConfigValidators = &Resource{}
-var _ synthetics.ESApiClient = &Resource{}
+var _ synthetics.ESAPIClient = &Resource{}
 
 // Resource represents a synthetics monitor resource
 type Resource struct {
-	client *clients.ApiClient
+	client *clients.APIClient
 }
 
-func (r *Resource) GetClient() *clients.ApiClient {
+func (r *Resource) GetClient() *clients.APIClient {
 	return r.client
 }
 
-func (r *Resource) ConfigValidators(ctx context.Context) []resource.ConfigValidator {
+func (r *Resource) ConfigValidators(_ context.Context) []resource.ConfigValidator {
 	return []resource.ConfigValidator{
 		resourcevalidator.ExactlyOneOf(
 			path.MatchRoot("http"),
@@ -52,16 +52,16 @@ func (r *Resource) ImportState(ctx context.Context, request resource.ImportState
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), request, response)
 }
 
-func (r *Resource) Configure(ctx context.Context, request resource.ConfigureRequest, response *resource.ConfigureResponse) {
+func (r *Resource) Configure(_ context.Context, request resource.ConfigureRequest, response *resource.ConfigureResponse) {
 	client, diags := clients.ConvertProviderData(request.ProviderData)
 	response.Diagnostics.Append(diags...)
 	r.client = client
 }
 
-func (r *Resource) Metadata(ctx context.Context, request resource.MetadataRequest, response *resource.MetadataResponse) {
+func (r *Resource) Metadata(_ context.Context, request resource.MetadataRequest, response *resource.MetadataResponse) {
 	response.TypeName = request.ProviderTypeName + resourceName
 }
 
-func (r *Resource) Schema(ctx context.Context, request resource.SchemaRequest, response *resource.SchemaResponse) {
+func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, response *resource.SchemaResponse) {
 	response.Schema = monitorConfigSchema()
 }

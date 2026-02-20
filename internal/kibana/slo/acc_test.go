@@ -35,7 +35,7 @@ func TestAccResourceSlo(t *testing.T) {
 		t.Run("with-data-view-id="+fmt.Sprint(testWithDataViewID), func(t *testing.T) {
 			dataviewCheckFunc := func(indicator string) resource.TestCheckFunc {
 				if !testWithDataViewID {
-					return func(s *terraform.State) error {
+					return func(_ *terraform.State) error {
 						return nil
 					}
 				}
@@ -662,9 +662,9 @@ func checkResourceSloDestroy(s *terraform.State) error {
 		if rs.Type != "elasticstack_kibana_slo" {
 			continue
 		}
-		compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
+		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
-		slo, diags := kibana.GetSlo(context.Background(), client, compId.ResourceId, compId.ClusterId)
+		slo, diags := kibana.GetSlo(context.Background(), client, compID.ResourceID, compID.ClusterID)
 		if diags.HasError() {
 			if len(diags) > 1 || diags[0].Summary != "404 Not Found" {
 				return fmt.Errorf("Failed to check if SLO was destroyed: %v", diags)
@@ -672,7 +672,7 @@ func checkResourceSloDestroy(s *terraform.State) error {
 		}
 
 		if slo != nil {
-			return fmt.Errorf("SLO (%s) still exists", compId.ResourceId)
+			return fmt.Errorf("SLO (%s) still exists", compID.ResourceID)
 		}
 	}
 	return nil

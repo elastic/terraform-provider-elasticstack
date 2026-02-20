@@ -8,7 +8,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/tfsdkutils"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -38,14 +38,14 @@ func ResourceWatch() *schema.Resource {
 			Description:      "The trigger that defines when the watch should run.",
 			Type:             schema.TypeString,
 			ValidateFunc:     validation.StringIsJSON,
-			DiffSuppressFunc: utils.DiffJsonSuppress,
+			DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 			Required:         true,
 		},
 		"input": {
 			Description:      "The input that defines the input that loads the data for the watch.",
 			Type:             schema.TypeString,
 			ValidateFunc:     validation.StringIsJSON,
-			DiffSuppressFunc: utils.DiffJsonSuppress,
+			DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 			Optional:         true,
 			Default:          "{\"none\":{}}",
 		},
@@ -53,7 +53,7 @@ func ResourceWatch() *schema.Resource {
 			Description:      "The condition that defines if the actions should be run.",
 			Type:             schema.TypeString,
 			ValidateFunc:     validation.StringIsJSON,
-			DiffSuppressFunc: utils.DiffJsonSuppress,
+			DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 			Optional:         true,
 			Default:          "{\"always\":{}}",
 		},
@@ -61,7 +61,7 @@ func ResourceWatch() *schema.Resource {
 			Description:      "The list of actions that will be run if the condition matches.",
 			Type:             schema.TypeString,
 			ValidateFunc:     validation.StringIsJSON,
-			DiffSuppressFunc: utils.DiffJsonSuppress,
+			DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 			Optional:         true,
 			Default:          "{}",
 		},
@@ -69,7 +69,7 @@ func ResourceWatch() *schema.Resource {
 			Description:      "Metadata json that will be copied into the history entries.",
 			Type:             schema.TypeString,
 			ValidateFunc:     validation.StringIsJSON,
-			DiffSuppressFunc: utils.DiffJsonSuppress,
+			DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 			Optional:         true,
 			Default:          "{}",
 		},
@@ -77,7 +77,7 @@ func ResourceWatch() *schema.Resource {
 			Description:      "Processes the watch payload to prepare it for the watch actions.",
 			Type:             schema.TypeString,
 			ValidateFunc:     validation.StringIsJSON,
-			DiffSuppressFunc: utils.DiffJsonSuppress,
+			DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 			Optional:         true,
 		},
 		"throttle_period_in_millis": {
@@ -105,7 +105,7 @@ func ResourceWatch() *schema.Resource {
 }
 
 func resourceWatchPut(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
@@ -158,7 +158,7 @@ func resourceWatchPut(ctx context.Context, d *schema.ResourceData, meta any) dia
 		watch.Body.Transform = transform
 	}
 
-	watch.Body.Throttle_period_in_millis = d.Get("throttle_period_in_millis").(int)
+	watch.Body.ThrottlePeriodInMillis = d.Get("throttle_period_in_millis").(int)
 
 	if diags := elasticsearch.PutWatch(ctx, client, &watch); diags.HasError() {
 		return diags
@@ -169,7 +169,7 @@ func resourceWatchPut(ctx context.Context, d *schema.ResourceData, meta any) dia
 }
 
 func resourceWatchRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
@@ -245,7 +245,7 @@ func resourceWatchRead(ctx context.Context, d *schema.ResourceData, meta any) di
 		}
 	}
 
-	if err := d.Set("throttle_period_in_millis", watch.Body.Throttle_period_in_millis); err != nil {
+	if err := d.Set("throttle_period_in_millis", watch.Body.ThrottlePeriodInMillis); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -253,7 +253,7 @@ func resourceWatchRead(ctx context.Context, d *schema.ResourceData, meta any) di
 }
 
 func resourceWatchDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}

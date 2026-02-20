@@ -16,14 +16,14 @@ func TestAccDataSourceIngestProcessorDateIndexName(t *testing.T) {
 				Config: testAccDataSourceIngestProcessorDateIndexName,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_date_index_name.test", "field", "date1"),
-					CheckResourceJson("data.elasticstack_elasticsearch_ingest_processor_date_index_name.test", "json", expectedJsonDateIndexName),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_date_index_name.test", "json", expectedJSONDateIndexName),
 				),
 			},
 		},
 	})
 }
 
-const expectedJsonDateIndexName = `{
+const expectedJSONDateIndexName = `{
   "date_index_name": {
 		"date_rounding": "M",
 		"description": "monthly date-time index naming",

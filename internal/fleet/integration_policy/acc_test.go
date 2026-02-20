@@ -1,4 +1,4 @@
-package integration_policy_test
+package integrationpolicy_test
 
 import (
 	"context"
@@ -24,9 +24,9 @@ import (
 
 var (
 	minVersionIntegrationPolicy    = version.Must(version.NewVersion("8.10.0"))
-	minVersionIntegrationPolicyIds = version.Must(version.NewVersion("8.15.0"))
-	minVersionOutputId             = version.Must(version.NewVersion("8.16.0"))
-	minVersionSqlIntegration       = version.Must(version.NewVersion("9.1.0"))
+	minVersionIntegrationPolicyIDs = version.Must(version.NewVersion("8.15.0"))
+	minVersionOutputID             = version.Must(version.NewVersion("8.16.0"))
+	minVersionSQLIntegration       = version.Must(version.NewVersion("9.1.0"))
 	minVersionGCPVertexAI          = version.Must(version.NewVersion("8.17.0"))
 )
 
@@ -97,7 +97,7 @@ func TestAccResourceIntegrationPolicyMultipleAgentPolicies(t *testing.T) {
 		CheckDestroy: checkResourceIntegrationPolicyDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicyIds),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicyIDs),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -114,7 +114,7 @@ func TestAccResourceIntegrationPolicyMultipleAgentPolicies(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicyIds),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicyIDs),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("multiple_agent_policies"),
 				ConfigVariables: config.Variables{
@@ -131,7 +131,7 @@ func TestAccResourceIntegrationPolicyMultipleAgentPolicies(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicyIds),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicyIDs),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("single_agent_policy"),
 				ConfigVariables: config.Variables{
@@ -160,7 +160,7 @@ func TestAccResourceIntegrationPolicyWithOutput(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutputId),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutputID),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -183,7 +183,7 @@ func TestAccResourceIntegrationPolicyWithOutput(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutputId),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutputID),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"policy_name":         config.StringVariable(policyName),
@@ -439,7 +439,7 @@ func TestAccResourceIntegrationPolicySecrets(t *testing.T) {
 			Steps: []resource.TestStep{
 				{
 					ProtoV6ProviderFactories: acctest.Providers,
-					SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionSqlIntegration),
+					SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionSQLIntegration),
 					ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 					ConfigVariables: config.Variables{
 						"policy_name": config.StringVariable(policyName),
@@ -462,7 +462,7 @@ func TestAccResourceIntegrationPolicySecrets(t *testing.T) {
 				{
 					ProtoV6ProviderFactories: acctest.Providers,
 					SkipFunc: func() (bool, error) {
-						return versionutils.CheckIfVersionIsUnsupported(minVersionSqlIntegration)()
+						return versionutils.CheckIfVersionIsUnsupported(minVersionSQLIntegration)()
 					},
 					ResourceName:    "elasticstack_fleet_integration_policy.test_policy",
 					ConfigDirectory: acctest.NamedTestCaseDirectory("import_test"),

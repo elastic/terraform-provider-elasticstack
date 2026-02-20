@@ -27,16 +27,16 @@ func NewResource() resource.Resource {
 }
 
 type outputResource struct {
-	client *clients.ApiClient
+	client *clients.APIClient
 }
 
-func (r *outputResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+func (r *outputResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	client, diags := clients.ConvertProviderData(req.ProviderData)
 	resp.Diagnostics.Append(diags...)
 	r.client = client
 }
 
-func (r *outputResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+func (r *outputResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = fmt.Sprintf("%s_%s", req.ProviderTypeName, "fleet_output")
 }
 
@@ -49,7 +49,7 @@ func (r *outputResource) UpgradeState(context.Context) map[int64]resource.StateU
 		0: {
 			// Legacy provider versions used a block for the `ssl` attribute which means it was stored as a list.
 			// This upgrader migrates the list into a single object if available within the raw state
-			StateUpgrader: func(ctx context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
+			StateUpgrader: func(_ context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
 				if req.RawState == nil || req.RawState.JSON == nil {
 					resp.Diagnostics.AddError("Invalid raw state", "Raw state or JSON is nil")
 					return

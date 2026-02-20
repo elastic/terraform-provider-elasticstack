@@ -63,7 +63,7 @@ func TestNewBaseConfigFromFramework(t *testing.T) {
 			expectedBaseConfig: baseConfig{
 				Username:  "elastic",
 				Password:  "changeme",
-				ApiKey:    "apikey",
+				APIKey:    "apikey",
 				UserAgent: expectedUA,
 				Header:    http.Header{"User-Agent": []string{expectedUA}},
 			},

@@ -9,6 +9,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/tfsdkutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -37,7 +38,7 @@ func ResourceIlm() *schema.Resource {
 			Type:             schema.TypeString,
 			Optional:         true,
 			ValidateFunc:     validation.StringIsJSON,
-			DiffSuppressFunc: utils.DiffJsonSuppress,
+			DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 		},
 		"hot": {
 			Description:  "The index is actively being updated and queried.",
@@ -96,7 +97,7 @@ func ResourceIlm() *schema.Resource {
 		},
 	}
 
-	utils.AddConnectionSchema(ilmSchema)
+	schemautil.AddConnectionSchema(ilmSchema)
 
 	return &schema.Resource{
 		Description: ilmResourceDescription,
@@ -139,7 +140,7 @@ var supportedActions = map[string]*schema.Schema{
 					Type:             schema.TypeString,
 					Optional:         true,
 					ValidateFunc:     validation.StringIsJSON,
-					DiffSuppressFunc: utils.DiffJsonSuppress,
+					DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 					Default:          "{}",
 				},
 				"exclude": {
@@ -147,7 +148,7 @@ var supportedActions = map[string]*schema.Schema{
 					Type:             schema.TypeString,
 					Optional:         true,
 					ValidateFunc:     validation.StringIsJSON,
-					DiffSuppressFunc: utils.DiffJsonSuppress,
+					DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 					Default:          "{}",
 				},
 				"require": {
@@ -155,7 +156,7 @@ var supportedActions = map[string]*schema.Schema{
 					Type:             schema.TypeString,
 					Optional:         true,
 					ValidateFunc:     validation.StringIsJSON,
-					DiffSuppressFunc: utils.DiffJsonSuppress,
+					DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 					Default:          "{}",
 				},
 			},
@@ -440,12 +441,12 @@ func getSchema(actions ...string) map[string]*schema.Schema {
 }
 
 func resourceIlmPut(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
-	ilmId := d.Get("name").(string)
-	id, diags := client.ID(ctx, ilmId)
+	ilmID := d.Get("name").(string)
+	id, diags := client.ID(ctx, ilmID)
 	if diags.HasError() {
 		return diags
 	}
@@ -459,7 +460,7 @@ func resourceIlmPut(ctx context.Context, d *schema.ResourceData, meta any) diag.
 	if diags.HasError() {
 		return diags
 	}
-	policy.Name = ilmId
+	policy.Name = ilmID
 
 	if diags := elasticsearch.PutIlm(ctx, client, policy); diags.HasError() {
 		return diags
@@ -620,7 +621,7 @@ func expandAction(a []any, serverVersion *version.Version, settings ...string) (
 					continue
 				}
 
-				if options.skipEmptyCheck || !utils.IsEmpty(v) {
+				if options.skipEmptyCheck || !schemautil.IsEmpty(v) {
 					// these 3 fields must be treated as JSON objects
 					if setting == "include" || setting == "exclude" || setting == "require" {
 						res := make(map[string]any)
@@ -639,21 +640,21 @@ func expandAction(a []any, serverVersion *version.Version, settings ...string) (
 }
 
 func resourceIlmRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
 
 	id := d.Id()
-	compId, diags := clients.CompositeIdFromStr(id)
+	compID, diags := clients.CompositeIDFromStr(id)
 	if diags.HasError() {
 		return diags
 	}
-	policyId := compId.ResourceId
+	policyID := compID.ResourceID
 
-	ilmDef, diags := elasticsearch.GetIlm(ctx, client, policyId)
+	ilmDef, diags := elasticsearch.GetIlm(ctx, client, policyID)
 	if ilmDef == nil && diags == nil {
-		tflog.Warn(ctx, fmt.Sprintf(`ILM policy "%s" not found, removing from state`, compId.ResourceId))
+		tflog.Warn(ctx, fmt.Sprintf(`ILM policy "%s" not found, removing from state`, compID.ResourceID))
 		d.SetId("")
 		return diags
 	}
@@ -673,7 +674,7 @@ func resourceIlmRead(ctx context.Context, d *schema.ResourceData, meta any) diag
 			return diag.FromErr(err)
 		}
 	}
-	if err := d.Set("name", policyId); err != nil {
+	if err := d.Set("name", policyID); err != nil {
 		return diag.FromErr(err)
 	}
 	for _, ph := range supportedIlmPhases {
@@ -698,10 +699,10 @@ func flattenPhase(phaseName string, p models.Phase, d *schema.ResourceData) (any
 	enabled := make(map[string]any)
 	ns := make(map[string]any)
 
-	_, new := d.GetChange(phaseName)
+	_, phaseConfigNew := d.GetChange(phaseName)
 
-	if new != nil && len(new.([]any)) > 0 {
-		ns = new.([]any)[0].(map[string]any)
+	if phaseConfigNew != nil && len(phaseConfigNew.([]any)) > 0 {
+		ns = phaseConfigNew.([]any)[0].(map[string]any)
 	}
 
 	existsAndNotEmpty := func(key string, m map[string]any) bool {
@@ -755,18 +756,18 @@ func flattenPhase(phaseName string, p models.Phase, d *schema.ResourceData) (any
 }
 
 func resourceIlmDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
 
 	id := d.Id()
-	compId, diags := clients.CompositeIdFromStr(id)
+	compID, diags := clients.CompositeIDFromStr(id)
 	if diags.HasError() {
 		return diags
 	}
 
-	if diags := elasticsearch.DeleteIlm(ctx, client, compId.ResourceId); diags.HasError() {
+	if diags := elasticsearch.DeleteIlm(ctx, client, compID.ResourceID); diags.HasError() {
 		return diags
 	}
 

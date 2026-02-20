@@ -8,14 +8,14 @@ import (
 func TestGetDatafeedState_Success(t *testing.T) {
 	tests := []struct {
 		name          string
-		datafeedId    string
+		datafeedID    string
 		response      map[string]any
 		expectedState string
 		expectError   bool
 	}{
 		{
 			name:       "running datafeed",
-			datafeedId: "test-datafeed",
+			datafeedID: "test-datafeed",
 			response: map[string]any{
 				"datafeeds": []any{
 					map[string]any{
@@ -29,7 +29,7 @@ func TestGetDatafeedState_Success(t *testing.T) {
 		},
 		{
 			name:       "stopped datafeed",
-			datafeedId: "test-datafeed",
+			datafeedID: "test-datafeed",
 			response: map[string]any{
 				"datafeeds": []any{
 					map[string]any{
@@ -43,13 +43,13 @@ func TestGetDatafeedState_Success(t *testing.T) {
 		},
 		{
 			name:        "datafeed not found",
-			datafeedId:  "test-datafeed",
+			datafeedID:  "test-datafeed",
 			response:    nil,
 			expectError: true,
 		},
 		{
 			name:       "empty datafeeds array",
-			datafeedId: "test-datafeed",
+			datafeedID: "test-datafeed",
 			response: map[string]any{
 				"datafeeds": []any{},
 			},
@@ -57,7 +57,7 @@ func TestGetDatafeedState_Success(t *testing.T) {
 		},
 		{
 			name:       "missing state field",
-			datafeedId: "test-datafeed",
+			datafeedID: "test-datafeed",
 			response: map[string]any{
 				"datafeeds": []any{
 					map[string]any{

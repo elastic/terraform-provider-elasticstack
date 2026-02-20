@@ -12,7 +12,8 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/tfsdkutils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -91,14 +92,14 @@ func ResourceTransform() *schema.Resource {
 						Type:             schema.TypeString,
 						Optional:         true,
 						Default:          `{"match_all":{}}`,
-						DiffSuppressFunc: utils.DiffJsonSuppress,
+						DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 						ValidateFunc:     validation.StringIsJSON,
 					},
 					"runtime_mappings": {
 						Description:      "Definitions of search-time runtime fields that can be used by the transform.",
 						Type:             schema.TypeString,
 						Optional:         true,
-						DiffSuppressFunc: utils.DiffJsonSuppress,
+						DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 						ValidateFunc:     validation.StringIsJSON,
 					},
 				},
@@ -158,7 +159,7 @@ func ResourceTransform() *schema.Resource {
 			Type:             schema.TypeString,
 			Optional:         true,
 			ExactlyOneOf:     []string{"pivot", "latest"},
-			DiffSuppressFunc: utils.DiffJsonSuppress,
+			DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 			ValidateFunc:     validation.StringIsJSON,
 			ForceNew:         true,
 		},
@@ -167,7 +168,7 @@ func ResourceTransform() *schema.Resource {
 			Type:             schema.TypeString,
 			Optional:         true,
 			ExactlyOneOf:     []string{"pivot", "latest"},
-			DiffSuppressFunc: utils.DiffJsonSuppress,
+			DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 			ValidateFunc:     validation.StringIsJSON,
 			ForceNew:         true,
 		},
@@ -176,14 +177,14 @@ func ResourceTransform() *schema.Resource {
 			Description:  "The interval between checks for changes in the source indices when the transform is running continuously. Defaults to `1m`.",
 			Optional:     true,
 			Default:      "1m",
-			ValidateFunc: utils.StringIsElasticDuration,
+			ValidateFunc: validators.StringIsElasticDuration,
 		},
 		"metadata": {
 			Description:      "Defines optional transform metadata.",
 			Type:             schema.TypeString,
 			Optional:         true,
 			ValidateFunc:     validation.StringIsJSON,
-			DiffSuppressFunc: utils.DiffJsonSuppress,
+			DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 		},
 		"retention_policy": {
 			Description: "Defines a retention policy for the transform.",
@@ -209,7 +210,7 @@ func ResourceTransform() *schema.Resource {
 									Description:  "Specifies the maximum age of a document in the destination index.",
 									Type:         schema.TypeString,
 									Required:     true,
-									ValidateFunc: utils.StringIsElasticDuration,
+									ValidateFunc: validators.StringIsElasticDuration,
 								},
 							},
 						},
@@ -242,7 +243,7 @@ func ResourceTransform() *schema.Resource {
 									Type:         schema.TypeString,
 									Optional:     true,
 									Default:      "60s",
-									ValidateFunc: utils.StringIsElasticDuration,
+									ValidateFunc: validators.StringIsElasticDuration,
 								},
 							},
 						},
@@ -299,7 +300,7 @@ func ResourceTransform() *schema.Resource {
 			Description:  timeoutDescription,
 			Optional:     true,
 			Default:      "30s",
-			ValidateFunc: utils.StringIsDuration,
+			ValidateFunc: validators.StringIsDuration,
 		},
 		"enabled": {
 			Type:        schema.TypeBool,
@@ -326,7 +327,7 @@ func ResourceTransform() *schema.Resource {
 
 func resourceTransformCreate(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
@@ -368,16 +369,16 @@ func resourceTransformCreate(ctx context.Context, d *schema.ResourceData, meta a
 
 func resourceTransformRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
-	compId, diags := clients.CompositeIdFromStr(d.Id())
+	compID, diags := clients.CompositeIDFromStr(d.Id())
 	if diags.HasError() {
 		return diags
 	}
 
-	transformName := compId.ResourceId
+	transformName := compID.ResourceID
 	if err := d.Set("name", transformName); err != nil {
 		return diag.FromErr(err)
 	}
@@ -386,7 +387,7 @@ func resourceTransformRead(ctx context.Context, d *schema.ResourceData, meta any
 	// 1. read transform definition
 	transform, diags := elasticsearch.GetTransform(ctx, client, &transformName)
 	if transform == nil && diags == nil {
-		tflog.Warn(ctx, fmt.Sprintf(`Transform "%s" not found, removing from state`, compId.ResourceId))
+		tflog.Warn(ctx, fmt.Sprintf(`Transform "%s" not found, removing from state`, compID.ResourceID))
 		d.SetId("")
 		return diags
 	}
@@ -413,7 +414,7 @@ func resourceTransformRead(ctx context.Context, d *schema.ResourceData, meta any
 
 func resourceTransformUpdate(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
@@ -459,18 +460,18 @@ func resourceTransformUpdate(ctx context.Context, d *schema.ResourceData, meta a
 
 func resourceTransformDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
 
 	id := d.Id()
-	compId, diags := clients.CompositeIdFromStr(id)
+	compID, diags := clients.CompositeIDFromStr(id)
 	if diags.HasError() {
 		return diags
 	}
 
-	if diags := elasticsearch.DeleteTransform(ctx, client, &compId.ResourceId); diags.HasError() {
+	if diags := elasticsearch.DeleteTransform(ctx, client, &compID.ResourceID); diags.HasError() {
 		return diags
 	}
 

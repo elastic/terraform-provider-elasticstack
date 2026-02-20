@@ -1,4 +1,4 @@
-package security_detection_rule
+package securitydetectionrule
 
 import (
 	"context"
@@ -9,8 +9,8 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
@@ -19,8 +19,8 @@ import (
 const kqlQueryLanguageKuery = "kuery"
 
 // getKQLQueryLanguage maps language string to kbapi.SecurityDetectionsAPIKqlQueryLanguage
-func (d SecurityDetectionRuleData) getKQLQueryLanguage() *kbapi.SecurityDetectionsAPIKqlQueryLanguage {
-	if !utils.IsKnown(d.Language) {
+func (d Data) getKQLQueryLanguage() *kbapi.SecurityDetectionsAPIKqlQueryLanguage {
+	if !typeutils.IsKnown(d.Language) {
 		return nil
 	}
 	var language kbapi.SecurityDetectionsAPIKqlQueryLanguage
@@ -36,7 +36,7 @@ func (d SecurityDetectionRuleData) getKQLQueryLanguage() *kbapi.SecurityDetectio
 }
 
 // buildOsqueryResponseAction creates an Osquery response action from the terraform model
-func (d SecurityDetectionRuleData) buildOsqueryResponseAction(ctx context.Context, params ResponseActionParamsModel) (kbapi.SecurityDetectionsAPIResponseAction, diag.Diagnostics) {
+func (d Data) buildOsqueryResponseAction(ctx context.Context, params ResponseActionParamsModel) (kbapi.SecurityDetectionsAPIResponseAction, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	osqueryAction := kbapi.SecurityDetectionsAPIOsqueryResponseAction{
@@ -45,20 +45,20 @@ func (d SecurityDetectionRuleData) buildOsqueryResponseAction(ctx context.Contex
 	}
 
 	// Set osquery-specific params
-	if utils.IsKnown(params.Query) {
+	if typeutils.IsKnown(params.Query) {
 		osqueryAction.Params.Query = params.Query.ValueStringPointer()
 	}
-	if utils.IsKnown(params.PackId) {
-		osqueryAction.Params.PackId = params.PackId.ValueStringPointer()
+	if typeutils.IsKnown(params.PackID) {
+		osqueryAction.Params.PackId = params.PackID.ValueStringPointer()
 	}
-	if utils.IsKnown(params.SavedQueryId) {
-		osqueryAction.Params.SavedQueryId = params.SavedQueryId.ValueStringPointer()
+	if typeutils.IsKnown(params.SavedQueryID) {
+		osqueryAction.Params.SavedQueryId = params.SavedQueryID.ValueStringPointer()
 	}
-	if utils.IsKnown(params.Timeout) {
+	if typeutils.IsKnown(params.Timeout) {
 		timeout := float32(params.Timeout.ValueInt64())
 		osqueryAction.Params.Timeout = &timeout
 	}
-	if utils.IsKnown(params.EcsMapping) {
+	if typeutils.IsKnown(params.EcsMapping) {
 
 		// Convert map to ECS mapping structure
 		ecsMappingElems := make(map[string]basetypes.StringValue)
@@ -66,7 +66,7 @@ func (d SecurityDetectionRuleData) buildOsqueryResponseAction(ctx context.Contex
 		if !elemDiags.HasError() {
 			ecsMapping := make(kbapi.SecurityDetectionsAPIEcsMapping)
 			for key, value := range ecsMappingElems {
-				if stringVal := value; utils.IsKnown(value) {
+				if stringVal := value; typeutils.IsKnown(value) {
 					ecsMapping[key] = struct {
 						Field *string                                      `json:"field,omitempty"`
 						Value *kbapi.SecurityDetectionsAPIEcsMapping_Value `json:"value,omitempty"`
@@ -80,36 +80,36 @@ func (d SecurityDetectionRuleData) buildOsqueryResponseAction(ctx context.Contex
 			diags.Append(elemDiags...)
 		}
 	}
-	if utils.IsKnown(params.Queries) {
+	if typeutils.IsKnown(params.Queries) {
 		queries := make([]OsqueryQueryModel, len(params.Queries.Elements()))
 		queriesDiags := params.Queries.ElementsAs(ctx, &queries, false)
 		if !queriesDiags.HasError() {
 			apiQueries := make([]kbapi.SecurityDetectionsAPIOsqueryQuery, 0)
 			for _, query := range queries {
 				apiQuery := kbapi.SecurityDetectionsAPIOsqueryQuery{
-					Id:    query.Id.ValueString(),
+					Id:    query.ID.ValueString(),
 					Query: query.Query.ValueString(),
 				}
-				if utils.IsKnown(query.Platform) {
+				if typeutils.IsKnown(query.Platform) {
 					apiQuery.Platform = query.Platform.ValueStringPointer()
 				}
-				if utils.IsKnown(query.Version) {
+				if typeutils.IsKnown(query.Version) {
 					apiQuery.Version = query.Version.ValueStringPointer()
 				}
-				if utils.IsKnown(query.Removed) {
+				if typeutils.IsKnown(query.Removed) {
 					apiQuery.Removed = query.Removed.ValueBoolPointer()
 				}
-				if utils.IsKnown(query.Snapshot) {
+				if typeutils.IsKnown(query.Snapshot) {
 					apiQuery.Snapshot = query.Snapshot.ValueBoolPointer()
 				}
-				if utils.IsKnown(query.EcsMapping) {
+				if typeutils.IsKnown(query.EcsMapping) {
 					// Convert map to ECS mapping structure for queries
 					queryEcsMappingElems := make(map[string]basetypes.StringValue)
 					queryElemDiags := query.EcsMapping.ElementsAs(ctx, &queryEcsMappingElems, false)
 					if !queryElemDiags.HasError() {
 						queryEcsMapping := make(kbapi.SecurityDetectionsAPIEcsMapping)
 						for key, value := range queryEcsMappingElems {
-							if stringVal := value; utils.IsKnown(value) {
+							if stringVal := value; typeutils.IsKnown(value) {
 								queryEcsMapping[key] = struct {
 									Field *string                                      `json:"field,omitempty"`
 									Value *kbapi.SecurityDetectionsAPIEcsMapping_Value `json:"value,omitempty"`
@@ -139,7 +139,7 @@ func (d SecurityDetectionRuleData) buildOsqueryResponseAction(ctx context.Contex
 }
 
 // buildEndpointResponseAction creates an Endpoint response action from the terraform model
-func (d SecurityDetectionRuleData) buildEndpointResponseAction(ctx context.Context, params ResponseActionParamsModel) (kbapi.SecurityDetectionsAPIResponseAction, diag.Diagnostics) {
+func (d Data) buildEndpointResponseAction(ctx context.Context, params ResponseActionParamsModel) (kbapi.SecurityDetectionsAPIResponseAction, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	endpointAction := kbapi.SecurityDetectionsAPIEndpointResponseAction{
@@ -147,7 +147,7 @@ func (d SecurityDetectionRuleData) buildEndpointResponseAction(ctx context.Conte
 	}
 
 	// Determine the type of endpoint action based on the command
-	if utils.IsKnown(params.Command) {
+	if typeutils.IsKnown(params.Command) {
 		command := params.Command.ValueString()
 		switch command {
 		case "isolate":
@@ -155,7 +155,7 @@ func (d SecurityDetectionRuleData) buildEndpointResponseAction(ctx context.Conte
 			defaultParams := kbapi.SecurityDetectionsAPIDefaultParams{
 				Command: kbapi.SecurityDetectionsAPIDefaultParamsCommand("isolate"),
 			}
-			if utils.IsKnown(params.Comment) {
+			if typeutils.IsKnown(params.Comment) {
 				defaultParams.Comment = params.Comment.ValueStringPointer()
 			}
 			err := endpointAction.Params.FromSecurityDetectionsAPIDefaultParams(defaultParams)
@@ -169,14 +169,14 @@ func (d SecurityDetectionRuleData) buildEndpointResponseAction(ctx context.Conte
 			processesParams := kbapi.SecurityDetectionsAPIProcessesParams{
 				Command: kbapi.SecurityDetectionsAPIProcessesParamsCommand(command),
 			}
-			if utils.IsKnown(params.Comment) {
+			if typeutils.IsKnown(params.Comment) {
 				processesParams.Comment = params.Comment.ValueStringPointer()
 			}
 
 			// Set config if provided
-			if utils.IsKnown(params.Config) {
-				config := utils.ObjectTypeToStruct(ctx, params.Config, path.Root("response_actions").AtName("params").AtName("config"), &diags,
-					func(item EndpointProcessConfigModel, meta utils.ObjectMeta) EndpointProcessConfigModel {
+			if typeutils.IsKnown(params.Config) {
+				config := typeutils.ObjectTypeToStruct(ctx, params.Config, path.Root("response_actions").AtName("params").AtName("config"), &diags,
+					func(item EndpointProcessConfigModel, _ typeutils.ObjectMeta) EndpointProcessConfigModel {
 						return item
 					})
 
@@ -186,7 +186,7 @@ func (d SecurityDetectionRuleData) buildEndpointResponseAction(ctx context.Conte
 				}{
 					Field: config.Field.ValueString(),
 				}
-				if utils.IsKnown(config.Overwrite) {
+				if typeutils.IsKnown(config.Overwrite) {
 					processesParams.Config.Overwrite = config.Overwrite.ValueBoolPointer()
 				}
 			}
@@ -214,20 +214,20 @@ func (d SecurityDetectionRuleData) buildEndpointResponseAction(ctx context.Conte
 }
 
 // Helper function to process threshold configuration for threshold rules
-func (d SecurityDetectionRuleData) thresholdToApi(ctx context.Context, diags *diag.Diagnostics) *kbapi.SecurityDetectionsAPIThreshold {
-	if !utils.IsKnown(d.Threshold) {
+func (d Data) thresholdToAPI(ctx context.Context, diags *diag.Diagnostics) *kbapi.SecurityDetectionsAPIThreshold {
+	if !typeutils.IsKnown(d.Threshold) {
 		return nil
 	}
 
-	threshold := utils.ObjectTypeToStruct(ctx, d.Threshold, path.Root("threshold"), diags,
-		func(item ThresholdModel, meta utils.ObjectMeta) kbapi.SecurityDetectionsAPIThreshold {
+	threshold := typeutils.ObjectTypeToStruct(ctx, d.Threshold, path.Root("threshold"), diags,
+		func(item ThresholdModel, meta typeutils.ObjectMeta) kbapi.SecurityDetectionsAPIThreshold {
 			threshold := kbapi.SecurityDetectionsAPIThreshold{
 				Value: kbapi.SecurityDetectionsAPIThresholdValue(item.Value.ValueInt64()),
 			}
 
 			// Handle threshold field(s)
-			if utils.IsKnown(item.Field) {
-				fieldList := utils.ListTypeToSlice_String(ctx, item.Field, meta.Path.AtName("field"), meta.Diags)
+			if typeutils.IsKnown(item.Field) {
+				fieldList := typeutils.ListTypeToSliceString(ctx, item.Field, meta.Path.AtName("field"), meta.Diags)
 				if len(fieldList) > 0 {
 					var thresholdField kbapi.SecurityDetectionsAPIThresholdField
 					if len(fieldList) == 1 {
@@ -249,9 +249,9 @@ func (d SecurityDetectionRuleData) thresholdToApi(ctx context.Context, diags *di
 			}
 
 			// Handle cardinality (optional)
-			if utils.IsKnown(item.Cardinality) {
-				cardinalityList := utils.ListTypeToSlice(ctx, item.Cardinality, meta.Path.AtName("cardinality"), meta.Diags,
-					func(item CardinalityModel, meta utils.ListMeta) struct {
+			if typeutils.IsKnown(item.Cardinality) {
+				cardinalityList := typeutils.ListTypeToSlice(ctx, item.Cardinality, meta.Path.AtName("cardinality"), meta.Diags,
+					func(item CardinalityModel, _ typeutils.ListMeta) struct {
 						Field string `json:"field"`
 						Value int    `json:"value"`
 					} {
@@ -275,8 +275,8 @@ func (d SecurityDetectionRuleData) thresholdToApi(ctx context.Context, diags *di
 }
 
 // Helper function to convert alert suppression from TF data to API type
-func (d SecurityDetectionRuleData) alertSuppressionToApi(ctx context.Context, diags *diag.Diagnostics) *kbapi.SecurityDetectionsAPIAlertSuppression {
-	if !utils.IsKnown(d.AlertSuppression) {
+func (d Data) alertSuppressionToAPI(ctx context.Context, diags *diag.Diagnostics) *kbapi.SecurityDetectionsAPIAlertSuppression {
+	if !typeutils.IsKnown(d.AlertSuppression) {
 		return nil
 	}
 
@@ -290,16 +290,16 @@ func (d SecurityDetectionRuleData) alertSuppressionToApi(ctx context.Context, di
 	suppression := &kbapi.SecurityDetectionsAPIAlertSuppression{}
 
 	// Handle group_by (required)
-	if utils.IsKnown(model.GroupBy) {
-		groupByList := utils.ListTypeToSlice_String(ctx, model.GroupBy, path.Root("alert_suppression").AtName("group_by"), diags)
+	if typeutils.IsKnown(model.GroupBy) {
+		groupByList := typeutils.ListTypeToSliceString(ctx, model.GroupBy, path.Root("alert_suppression").AtName("group_by"), diags)
 		if len(groupByList) > 0 {
 			suppression.GroupBy = groupByList
 		}
 	}
 
 	// Handle duration (optional)
-	if utils.IsKnown(model.Duration) {
-		duration, durationDiags := parseDurationToApi(model.Duration)
+	if typeutils.IsKnown(model.Duration) {
+		duration, durationDiags := parseDurationToAPI(model.Duration)
 		diags.Append(durationDiags...)
 		if !durationDiags.HasError() {
 			suppression.Duration = &duration
@@ -307,7 +307,7 @@ func (d SecurityDetectionRuleData) alertSuppressionToApi(ctx context.Context, di
 	}
 
 	// Handle missing_fields_strategy (optional)
-	if utils.IsKnown(model.MissingFieldsStrategy) {
+	if typeutils.IsKnown(model.MissingFieldsStrategy) {
 		strategy := kbapi.SecurityDetectionsAPIAlertSuppressionMissingFieldsStrategy(model.MissingFieldsStrategy.ValueString())
 		suppression.MissingFieldsStrategy = &strategy
 	}
@@ -316,8 +316,8 @@ func (d SecurityDetectionRuleData) alertSuppressionToApi(ctx context.Context, di
 }
 
 // Helper function to convert alert suppression from TF data to threshold-specific API type
-func (d SecurityDetectionRuleData) alertSuppressionToThresholdApi(ctx context.Context, diags *diag.Diagnostics) *kbapi.SecurityDetectionsAPIThresholdAlertSuppression {
-	if !utils.IsKnown(d.AlertSuppression) {
+func (d Data) alertSuppressionToThresholdAPI(ctx context.Context, diags *diag.Diagnostics) *kbapi.SecurityDetectionsAPIThresholdAlertSuppression {
+	if !typeutils.IsKnown(d.AlertSuppression) {
 		return nil
 	}
 
@@ -331,7 +331,7 @@ func (d SecurityDetectionRuleData) alertSuppressionToThresholdApi(ctx context.Co
 	suppression := &kbapi.SecurityDetectionsAPIThresholdAlertSuppression{}
 
 	// Handle duration (required for threshold alert suppression)
-	if !utils.IsKnown(model.Duration) {
+	if !typeutils.IsKnown(model.Duration) {
 		diags.AddError(
 			"Duration required for threshold alert suppression",
 			"Threshold alert suppression requires a duration to be specified",
@@ -339,7 +339,7 @@ func (d SecurityDetectionRuleData) alertSuppressionToThresholdApi(ctx context.Co
 		return nil
 	}
 
-	duration, durationDiags := parseDurationToApi(model.Duration)
+	duration, durationDiags := parseDurationToAPI(model.Duration)
 	diags.Append(durationDiags...)
 	if !durationDiags.HasError() {
 		suppression.Duration = duration
@@ -352,10 +352,10 @@ func (d SecurityDetectionRuleData) alertSuppressionToThresholdApi(ctx context.Co
 }
 
 // Helper function to process threat mapping configuration for threat match rules
-func (d SecurityDetectionRuleData) threatMappingToApi(ctx context.Context) (kbapi.SecurityDetectionsAPIThreatMapping, diag.Diagnostics) {
+func (d Data) threatMappingToAPI(ctx context.Context) (kbapi.SecurityDetectionsAPIThreatMapping, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	threatMapping := make([]SecurityDetectionRuleTfDataItem, len(d.ThreatMapping.Elements()))
+	threatMapping := make([]TfDataItem, len(d.ThreatMapping.Elements()))
 
 	threatMappingDiags := d.ThreatMapping.ElementsAs(ctx, &threatMapping, false)
 	if threatMappingDiags.HasError() {
@@ -365,11 +365,11 @@ func (d SecurityDetectionRuleData) threatMappingToApi(ctx context.Context) (kbap
 
 	apiThreatMapping := make(kbapi.SecurityDetectionsAPIThreatMapping, 0)
 	for _, mapping := range threatMapping {
-		if !utils.IsKnown(mapping.Entries) {
+		if !typeutils.IsKnown(mapping.Entries) {
 			continue
 		}
 
-		entries := make([]SecurityDetectionRuleTfDataItemEntry, len(mapping.Entries.Elements()))
+		entries := make([]TfDataItemEntry, len(mapping.Entries.Elements()))
 		entryDiag := mapping.Entries.ElementsAs(ctx, &entries, false)
 		diags = append(diags, entryDiag...)
 
@@ -394,10 +394,10 @@ func (d SecurityDetectionRuleData) threatMappingToApi(ctx context.Context) (kbap
 }
 
 // Helper function to convert MITRE ATT&CK threat data from Terraform to API format
-func (d SecurityDetectionRuleData) threatToApi(ctx context.Context) (kbapi.SecurityDetectionsAPIThreatArray, diag.Diagnostics) {
+func (d Data) threatToAPI(ctx context.Context) (kbapi.SecurityDetectionsAPIThreatArray, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	if !utils.IsKnown(d.Threat) || len(d.Threat.Elements()) == 0 {
+	if !typeutils.IsKnown(d.Threat) || len(d.Threat.Elements()) == 0 {
 		return nil, diags
 	}
 
@@ -423,13 +423,13 @@ func (d SecurityDetectionRuleData) threatToApi(ctx context.Context) (kbapi.Secur
 		}
 
 		apiThreat.Tactic = kbapi.SecurityDetectionsAPIThreatTactic{
-			Id:        tacticModel.Id.ValueString(),
+			Id:        tacticModel.ID.ValueString(),
 			Name:      tacticModel.Name.ValueString(),
 			Reference: tacticModel.Reference.ValueString(),
 		}
 
 		// Convert techniques (optional)
-		if utils.IsKnown(threat.Technique) && len(threat.Technique.Elements()) > 0 {
+		if typeutils.IsKnown(threat.Technique) && len(threat.Technique.Elements()) > 0 {
 			techniques := make([]ThreatTechniqueModel, len(threat.Technique.Elements()))
 			techniqueDiags := threat.Technique.ElementsAs(ctx, &techniques, false)
 			diags.Append(techniqueDiags...)
@@ -440,13 +440,13 @@ func (d SecurityDetectionRuleData) threatToApi(ctx context.Context) (kbapi.Secur
 			apiTechniques := make([]kbapi.SecurityDetectionsAPIThreatTechnique, 0)
 			for _, technique := range techniques {
 				apiTechnique := kbapi.SecurityDetectionsAPIThreatTechnique{
-					Id:        technique.Id.ValueString(),
+					Id:        technique.ID.ValueString(),
 					Name:      technique.Name.ValueString(),
 					Reference: technique.Reference.ValueString(),
 				}
 
 				// Convert subtechniques (optional)
-				if utils.IsKnown(technique.Subtechnique) && len(technique.Subtechnique.Elements()) > 0 {
+				if typeutils.IsKnown(technique.Subtechnique) && len(technique.Subtechnique.Elements()) > 0 {
 					subtechniques := make([]ThreatSubtechniqueModel, len(technique.Subtechnique.Elements()))
 					subtechniqueDiags := technique.Subtechnique.ElementsAs(ctx, &subtechniques, false)
 					diags.Append(subtechniqueDiags...)
@@ -457,7 +457,7 @@ func (d SecurityDetectionRuleData) threatToApi(ctx context.Context) (kbapi.Secur
 					apiSubtechniques := make([]kbapi.SecurityDetectionsAPIThreatSubtechnique, 0)
 					for _, subtechnique := range subtechniques {
 						apiSubtechnique := kbapi.SecurityDetectionsAPIThreatSubtechnique{
-							Id:        subtechnique.Id.ValueString(),
+							Id:        subtechnique.ID.ValueString(),
 							Name:      subtechnique.Name.ValueString(),
 							Reference: subtechnique.Reference.ValueString(),
 						}
@@ -478,7 +478,7 @@ func (d SecurityDetectionRuleData) threatToApi(ctx context.Context) (kbapi.Secur
 }
 
 // Helper function to process response actions configuration for all rule types
-func (d SecurityDetectionRuleData) responseActionsToApi(ctx context.Context, client clients.MinVersionEnforceable) ([]kbapi.SecurityDetectionsAPIResponseAction, diag.Diagnostics) {
+func (d Data) responseActionsToAPI(ctx context.Context, client clients.MinVersionEnforceable) ([]kbapi.SecurityDetectionsAPIResponseAction, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	if client == nil {
@@ -489,7 +489,7 @@ func (d SecurityDetectionRuleData) responseActionsToApi(ctx context.Context, cli
 		return nil, diags
 	}
 
-	if !utils.IsKnown(d.ResponseActions) || len(d.ResponseActions.Elements()) == 0 {
+	if !typeutils.IsKnown(d.ResponseActions) || len(d.ResponseActions.Elements()) == 0 {
 		return nil, diags
 	}
 
@@ -504,13 +504,13 @@ func (d SecurityDetectionRuleData) responseActionsToApi(ctx context.Context, cli
 		return nil, diags
 	}
 
-	apiResponseActions := utils.ListTypeToSlice(ctx, d.ResponseActions, path.Root("response_actions"), &diags,
-		func(responseAction ResponseActionModel, meta utils.ListMeta) kbapi.SecurityDetectionsAPIResponseAction {
+	apiResponseActions := typeutils.ListTypeToSlice(ctx, d.ResponseActions, path.Root("response_actions"), &diags,
+		func(responseAction ResponseActionModel, meta typeutils.ListMeta) kbapi.SecurityDetectionsAPIResponseAction {
 
-			actionTypeId := responseAction.ActionTypeId.ValueString()
+			actionTypeID := responseAction.ActionTypeID.ValueString()
 
-			params := utils.ObjectTypeToStruct(ctx, responseAction.Params, meta.Path.AtName("params"), &diags,
-				func(item ResponseActionParamsModel, meta utils.ObjectMeta) ResponseActionParamsModel {
+			params := typeutils.ObjectTypeToStruct(ctx, responseAction.Params, meta.Path.AtName("params"), &diags,
+				func(item ResponseActionParamsModel, _ typeutils.ObjectMeta) ResponseActionParamsModel {
 					return item
 				})
 
@@ -518,7 +518,7 @@ func (d SecurityDetectionRuleData) responseActionsToApi(ctx context.Context, cli
 				return kbapi.SecurityDetectionsAPIResponseAction{}
 			}
 
-			switch actionTypeId {
+			switch actionTypeID {
 			case ".osquery":
 				apiAction, actionDiags := d.buildOsqueryResponseAction(ctx, *params)
 				diags.Append(actionDiags...)
@@ -532,7 +532,7 @@ func (d SecurityDetectionRuleData) responseActionsToApi(ctx context.Context, cli
 			default:
 				diags.AddError(
 					"Unsupported action_type_id in response actions",
-					fmt.Sprintf("action_type_id '%s' is not supported", actionTypeId),
+					fmt.Sprintf("action_type_id '%s' is not supported", actionTypeID),
 				)
 				return kbapi.SecurityDetectionsAPIResponseAction{}
 			}
@@ -542,22 +542,22 @@ func (d SecurityDetectionRuleData) responseActionsToApi(ctx context.Context, cli
 }
 
 // Helper function to process actions configuration for all rule types
-func (d SecurityDetectionRuleData) actionsToApi(ctx context.Context) ([]kbapi.SecurityDetectionsAPIRuleAction, diag.Diagnostics) {
+func (d Data) actionsToAPI(ctx context.Context) ([]kbapi.SecurityDetectionsAPIRuleAction, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	if !utils.IsKnown(d.Actions) || len(d.Actions.Elements()) == 0 {
+	if !typeutils.IsKnown(d.Actions) || len(d.Actions.Elements()) == 0 {
 		return nil, diags
 	}
 
-	apiActions := utils.ListTypeToSlice(ctx, d.Actions, path.Root("actions"), &diags,
-		func(action ActionModel, meta utils.ListMeta) kbapi.SecurityDetectionsAPIRuleAction {
+	apiActions := typeutils.ListTypeToSlice(ctx, d.Actions, path.Root("actions"), &diags,
+		func(action ActionModel, meta typeutils.ListMeta) kbapi.SecurityDetectionsAPIRuleAction {
 			apiAction := kbapi.SecurityDetectionsAPIRuleAction{
-				ActionTypeId: action.ActionTypeId.ValueString(),
-				Id:           action.Id.ValueString(),
+				ActionTypeId: action.ActionTypeID.ValueString(),
+				Id:           action.ID.ValueString(),
 			}
 
 			// Convert params map
-			if utils.IsKnown(action.Params) {
+			if typeutils.IsKnown(action.Params) {
 				paramsStringMap := make(map[string]string)
 				paramsDiags := action.Params.ElementsAs(meta.Context, &paramsStringMap, false)
 				if !paramsDiags.HasError() {
@@ -571,17 +571,17 @@ func (d SecurityDetectionRuleData) actionsToApi(ctx context.Context) ([]kbapi.Se
 			}
 
 			// Set optional fields
-			if utils.IsKnown(action.Group) {
+			if typeutils.IsKnown(action.Group) {
 				group := action.Group.ValueString()
 				apiAction.Group = &group
 			}
 
-			if utils.IsKnown(action.Uuid) {
-				uuidStr := action.Uuid.ValueString()
+			if typeutils.IsKnown(action.UUID) {
+				uuidStr := action.UUID.ValueString()
 				apiAction.Uuid = &uuidStr
 			}
 
-			if utils.IsKnown(action.AlertsFilter) {
+			if typeutils.IsKnown(action.AlertsFilter) {
 				alertsFilterStringMap := make(map[string]string)
 				alertsFilterDiags := action.AlertsFilter.ElementsAs(meta.Context, &alertsFilterStringMap, false)
 				if !alertsFilterDiags.HasError() {
@@ -596,16 +596,16 @@ func (d SecurityDetectionRuleData) actionsToApi(ctx context.Context) ([]kbapi.Se
 			}
 
 			// Handle frequency using ObjectTypeToStruct
-			if utils.IsKnown(action.Frequency) {
-				frequency := utils.ObjectTypeToStruct(meta.Context, action.Frequency, meta.Path.AtName("frequency"), meta.Diags,
-					func(frequencyModel ActionFrequencyModel, freqMeta utils.ObjectMeta) kbapi.SecurityDetectionsAPIRuleActionFrequency {
+			if typeutils.IsKnown(action.Frequency) {
+				frequency := typeutils.ObjectTypeToStruct(meta.Context, action.Frequency, meta.Path.AtName("frequency"), meta.Diags,
+					func(frequencyModel ActionFrequencyModel, freqMeta typeutils.ObjectMeta) kbapi.SecurityDetectionsAPIRuleActionFrequency {
 						apiFreq := kbapi.SecurityDetectionsAPIRuleActionFrequency{
 							NotifyWhen: kbapi.SecurityDetectionsAPIRuleActionNotifyWhen(frequencyModel.NotifyWhen.ValueString()),
 							Summary:    frequencyModel.Summary.ValueBool(),
 						}
 
 						// Handle throttle - can be string or specific values
-						if utils.IsKnown(frequencyModel.Throttle) {
+						if typeutils.IsKnown(frequencyModel.Throttle) {
 							throttleStr := frequencyModel.Throttle.ValueString()
 							var throttle kbapi.SecurityDetectionsAPIRuleActionThrottle
 							if throttleStr == "no_actions" || throttleStr == "rule" {
@@ -641,7 +641,7 @@ func (d SecurityDetectionRuleData) actionsToApi(ctx context.Context) ([]kbapi.Se
 			return apiAction
 		})
 
-	// Filter out empty actions (where ActionTypeId or Id was null)
+	// Filter out empty actions (where ActionTypeID or Id was null)
 	validActions := make([]kbapi.SecurityDetectionsAPIRuleAction, 0)
 	for _, action := range apiActions {
 		if action.ActionTypeId != "" && action.Id != "" {
@@ -653,19 +653,19 @@ func (d SecurityDetectionRuleData) actionsToApi(ctx context.Context) ([]kbapi.Se
 }
 
 // Helper function to process exceptions list configuration for all rule types
-func (d SecurityDetectionRuleData) exceptionsListToApi(ctx context.Context) ([]kbapi.SecurityDetectionsAPIRuleExceptionList, diag.Diagnostics) {
+func (d Data) exceptionsListToAPI(ctx context.Context) ([]kbapi.SecurityDetectionsAPIRuleExceptionList, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	if !utils.IsKnown(d.ExceptionsList) || len(d.ExceptionsList.Elements()) == 0 {
+	if !typeutils.IsKnown(d.ExceptionsList) || len(d.ExceptionsList.Elements()) == 0 {
 		return nil, diags
 	}
 
-	apiExceptionsList := utils.ListTypeToSlice(ctx, d.ExceptionsList, path.Root("exceptions_list"), &diags,
-		func(exception ExceptionsListModel, meta utils.ListMeta) kbapi.SecurityDetectionsAPIRuleExceptionList {
+	apiExceptionsList := typeutils.ListTypeToSlice(ctx, d.ExceptionsList, path.Root("exceptions_list"), &diags,
+		func(exception ExceptionsListModel, _ typeutils.ListMeta) kbapi.SecurityDetectionsAPIRuleExceptionList {
 
 			apiException := kbapi.SecurityDetectionsAPIRuleExceptionList{
-				Id:            exception.Id.ValueString(),
-				ListId:        exception.ListId.ValueString(),
+				Id:            exception.ID.ValueString(),
+				ListId:        exception.ListID.ValueString(),
 				NamespaceType: kbapi.SecurityDetectionsAPIRuleExceptionListNamespaceType(exception.NamespaceType.ValueString()),
 				Type:          kbapi.SecurityDetectionsAPIExceptionListType(exception.Type.ValueString()),
 			}
@@ -685,15 +685,15 @@ func (d SecurityDetectionRuleData) exceptionsListToApi(ctx context.Context) ([]k
 }
 
 // Helper function to process risk score mapping configuration for all rule types
-func (d SecurityDetectionRuleData) riskScoreMappingToApi(ctx context.Context) (kbapi.SecurityDetectionsAPIRiskScoreMapping, diag.Diagnostics) {
+func (d Data) riskScoreMappingToAPI(ctx context.Context) (kbapi.SecurityDetectionsAPIRiskScoreMapping, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	if !utils.IsKnown(d.RiskScoreMapping) || len(d.RiskScoreMapping.Elements()) == 0 {
+	if !typeutils.IsKnown(d.RiskScoreMapping) || len(d.RiskScoreMapping.Elements()) == 0 {
 		return nil, diags
 	}
 
-	apiRiskScoreMapping := utils.ListTypeToSlice(ctx, d.RiskScoreMapping, path.Root("risk_score_mapping"), &diags,
-		func(mapping RiskScoreMappingModel, meta utils.ListMeta) struct {
+	apiRiskScoreMapping := typeutils.ListTypeToSlice(ctx, d.RiskScoreMapping, path.Root("risk_score_mapping"), &diags,
+		func(mapping RiskScoreMappingModel, _ typeutils.ListMeta) struct {
 			Field     string                                              `json:"field"`
 			Operator  kbapi.SecurityDetectionsAPIRiskScoreMappingOperator `json:"operator"`
 			RiskScore *kbapi.SecurityDetectionsAPIRiskScore               `json:"risk_score,omitempty"`
@@ -711,7 +711,7 @@ func (d SecurityDetectionRuleData) riskScoreMappingToApi(ctx context.Context) (k
 			}
 
 			// Set optional risk score if provided
-			if utils.IsKnown(mapping.RiskScore) {
+			if typeutils.IsKnown(mapping.RiskScore) {
 				riskScore := kbapi.SecurityDetectionsAPIRiskScore(mapping.RiskScore.ValueInt64())
 				apiMapping.RiskScore = &riskScore
 			}
@@ -724,10 +724,10 @@ func (d SecurityDetectionRuleData) riskScoreMappingToApi(ctx context.Context) (k
 }
 
 // Helper function to process investigation fields configuration for all rule types
-func (d SecurityDetectionRuleData) investigationFieldsToApi(ctx context.Context) (*kbapi.SecurityDetectionsAPIInvestigationFields, diag.Diagnostics) {
+func (d Data) investigationFieldsToAPI(ctx context.Context) (*kbapi.SecurityDetectionsAPIInvestigationFields, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	if !utils.IsKnown(d.InvestigationFields) || len(d.InvestigationFields.Elements()) == 0 {
+	if !typeutils.IsKnown(d.InvestigationFields) || len(d.InvestigationFields.Elements()) == 0 {
 		return nil, diags
 	}
 
@@ -748,15 +748,15 @@ func (d SecurityDetectionRuleData) investigationFieldsToApi(ctx context.Context)
 }
 
 // Helper function to process related integrations configuration for all rule types
-func (d SecurityDetectionRuleData) relatedIntegrationsToApi(ctx context.Context) (*kbapi.SecurityDetectionsAPIRelatedIntegrationArray, diag.Diagnostics) {
+func (d Data) relatedIntegrationsToAPI(ctx context.Context) (*kbapi.SecurityDetectionsAPIRelatedIntegrationArray, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	if !utils.IsKnown(d.RelatedIntegrations) || len(d.RelatedIntegrations.Elements()) == 0 {
+	if !typeutils.IsKnown(d.RelatedIntegrations) || len(d.RelatedIntegrations.Elements()) == 0 {
 		return nil, diags
 	}
 
-	apiRelatedIntegrations := utils.ListTypeToSlice(ctx, d.RelatedIntegrations, path.Root("related_integrations"), &diags,
-		func(integration RelatedIntegrationModel, meta utils.ListMeta) kbapi.SecurityDetectionsAPIRelatedIntegration {
+	apiRelatedIntegrations := typeutils.ListTypeToSlice(ctx, d.RelatedIntegrations, path.Root("related_integrations"), &diags,
+		func(integration RelatedIntegrationModel, _ typeutils.ListMeta) kbapi.SecurityDetectionsAPIRelatedIntegration {
 
 			apiIntegration := kbapi.SecurityDetectionsAPIRelatedIntegration{
 				Package: integration.Package.ValueString(),
@@ -764,7 +764,7 @@ func (d SecurityDetectionRuleData) relatedIntegrationsToApi(ctx context.Context)
 			}
 
 			// Set optional integration field if provided
-			if utils.IsKnown(integration.Integration) {
+			if typeutils.IsKnown(integration.Integration) {
 				integrationName := integration.Integration.ValueString()
 				apiIntegration.Integration = &integrationName
 			}
@@ -776,15 +776,15 @@ func (d SecurityDetectionRuleData) relatedIntegrationsToApi(ctx context.Context)
 }
 
 // Helper function to process required fields configuration for all rule types
-func (d SecurityDetectionRuleData) requiredFieldsToApi(ctx context.Context) (*[]kbapi.SecurityDetectionsAPIRequiredFieldInput, diag.Diagnostics) {
+func (d Data) requiredFieldsToAPI(ctx context.Context) (*[]kbapi.SecurityDetectionsAPIRequiredFieldInput, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	if !utils.IsKnown(d.RequiredFields) || len(d.RequiredFields.Elements()) == 0 {
+	if !typeutils.IsKnown(d.RequiredFields) || len(d.RequiredFields.Elements()) == 0 {
 		return nil, diags
 	}
 
-	apiRequiredFields := utils.ListTypeToSlice(ctx, d.RequiredFields, path.Root("required_fields"), &diags,
-		func(field RequiredFieldModel, meta utils.ListMeta) kbapi.SecurityDetectionsAPIRequiredFieldInput {
+	apiRequiredFields := typeutils.ListTypeToSlice(ctx, d.RequiredFields, path.Root("required_fields"), &diags,
+		func(field RequiredFieldModel, _ typeutils.ListMeta) kbapi.SecurityDetectionsAPIRequiredFieldInput {
 
 			return kbapi.SecurityDetectionsAPIRequiredFieldInput{
 				Name: field.Name.ValueString(),
@@ -796,15 +796,15 @@ func (d SecurityDetectionRuleData) requiredFieldsToApi(ctx context.Context) (*[]
 }
 
 // Helper function to process severity mapping configuration for all rule types
-func (d SecurityDetectionRuleData) severityMappingToApi(ctx context.Context) (*kbapi.SecurityDetectionsAPISeverityMapping, diag.Diagnostics) {
+func (d Data) severityMappingToAPI(ctx context.Context) (*kbapi.SecurityDetectionsAPISeverityMapping, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	if !utils.IsKnown(d.SeverityMapping) || len(d.SeverityMapping.Elements()) == 0 {
+	if !typeutils.IsKnown(d.SeverityMapping) || len(d.SeverityMapping.Elements()) == 0 {
 		return nil, diags
 	}
 
-	apiSeverityMapping := utils.ListTypeToSlice(ctx, d.SeverityMapping, path.Root("severity_mapping"), &diags,
-		func(mapping SeverityMappingModel, meta utils.ListMeta) struct {
+	apiSeverityMapping := typeutils.ListTypeToSlice(ctx, d.SeverityMapping, path.Root("severity_mapping"), &diags,
+		func(mapping SeverityMappingModel, _ typeutils.ListMeta) struct {
 			Field    string                                             `json:"field"`
 			Operator kbapi.SecurityDetectionsAPISeverityMappingOperator `json:"operator"`
 			Severity kbapi.SecurityDetectionsAPISeverity                `json:"severity"`
@@ -830,12 +830,12 @@ func (d SecurityDetectionRuleData) severityMappingToApi(ctx context.Context) (*k
 	return &severityMappingSlice, diags
 }
 
-// filtersToApi converts the Terraform filters field to the API type
-func (d SecurityDetectionRuleData) filtersToApi(ctx context.Context) (*kbapi.SecurityDetectionsAPIRuleFilterArray, diag.Diagnostics) {
+// filtersToAPI converts the Terraform filters field to the API type
+func (d Data) filtersToAPI(ctx context.Context) (*kbapi.SecurityDetectionsAPIRuleFilterArray, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	_ = ctx
 
-	if !utils.IsKnown(d.Filters) {
+	if !typeutils.IsKnown(d.Filters) {
 		return nil, diags
 	}
 
@@ -851,11 +851,11 @@ func (d SecurityDetectionRuleData) filtersToApi(ctx context.Context) (*kbapi.Sec
 	return &filters, diags
 }
 
-// parseDurationToApi converts a customtypes.Duration to the API structure
-func parseDurationToApi(duration customtypes.Duration) (kbapi.SecurityDetectionsAPIAlertSuppressionDuration, diag.Diagnostics) {
+// parseDurationToAPI converts a customtypes.Duration to the API structure
+func parseDurationToAPI(duration customtypes.Duration) (kbapi.SecurityDetectionsAPIAlertSuppressionDuration, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	if !utils.IsKnown(duration) {
+	if !typeutils.IsKnown(duration) {
 		diags.AddError("Duration Parse error", "duration string value is unknown")
 		return kbapi.SecurityDetectionsAPIAlertSuppressionDuration{}, diags
 	}

@@ -102,19 +102,19 @@ func checkResourceIngestPipelineDestroy(s *terraform.State) error {
 		if rs.Type != "elasticstack_elasticsearch_ingest_pipeline" {
 			continue
 		}
-		compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
+		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
 		esClient, err := client.GetESClient()
 		if err != nil {
 			return err
 		}
-		res, err := esClient.Indices.Get([]string{compId.ResourceId})
+		res, err := esClient.Indices.Get([]string{compID.ResourceID})
 		if err != nil {
 			return err
 		}
 
 		if res.StatusCode != 404 {
-			return fmt.Errorf("Ingest pipeline (%s) still exists", compId.ResourceId)
+			return fmt.Errorf("Ingest pipeline (%s) still exists", compID.ResourceID)
 		}
 	}
 	return nil

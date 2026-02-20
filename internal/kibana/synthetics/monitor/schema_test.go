@@ -453,7 +453,7 @@ func TestToModelV0(t *testing.T) {
 				Params:           jsontypes.NewNormalizedValue(`{"param1":"value1"}`),
 				Browser: &tfBrowserMonitorFieldsV0{
 					Screenshots:       types.StringValue("off"),
-					IgnoreHttpsErrors: types.BoolPointerValue(tBool),
+					IgnoreHTTPSErrors: types.BoolPointerValue(tBool),
 					InlineScript:      types.StringValue(`step('Go to https://google.com.co', () => page.goto('https://www.google.com'))`),
 					SyntheticsArgs:    []types.String{types.StringValue("--no-sandbox"), types.StringValue("--disable-setuid-sandbox")},
 					PlaywrightOptions: jsontypes.NewNormalizedValue(`{"httpCredentials":{"password":"test","username":"test"},"ignoreHTTPSErrors":false}`),
@@ -730,7 +730,7 @@ func TestToKibanaAPIRequest(t *testing.T) {
 				Params:           jsontypes.NewNormalizedValue(`{"param1":"value1"}`),
 				Browser: &tfBrowserMonitorFieldsV0{
 					Screenshots:       types.StringValue("off"),
-					IgnoreHttpsErrors: types.BoolPointerValue(tBool),
+					IgnoreHTTPSErrors: types.BoolPointerValue(tBool),
 					InlineScript:      types.StringValue(`step('Go to https://google.com.co', () => page.goto('https://www.google.com'))`),
 					SyntheticsArgs:    []types.String{types.StringValue("--no-sandbox"), types.StringValue("--disable-setuid-sandbox")},
 					PlaywrightOptions: jsontypes.NewNormalizedValue(`{"httpCredentials":{"password":"test","username":"test"},"ignoreHTTPSErrors":false}`),

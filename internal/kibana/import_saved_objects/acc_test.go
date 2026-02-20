@@ -1,4 +1,4 @@
-package import_saved_objects_test
+package importsavedobjects_test
 
 import (
 	"testing"

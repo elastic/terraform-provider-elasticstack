@@ -69,7 +69,7 @@ func DataSourceProcessorUserAgent() *schema.Resource {
 	}
 }
 
-func dataSourceProcessorUserAgentRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+func dataSourceProcessorUserAgentRead(_ context.Context, d *schema.ResourceData, _ any) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	processor := &models.ProcessorUserAgent{}
@@ -96,15 +96,15 @@ func dataSourceProcessorUserAgentRead(ctx context.Context, d *schema.ResourceDat
 		processor.ExtractDeviceType = &dev
 	}
 
-	processorJson, err := json.MarshalIndent(map[string]*models.ProcessorUserAgent{"user_agent": processor}, "", " ")
+	processorJSON, err := json.MarshalIndent(map[string]*models.ProcessorUserAgent{"user_agent": processor}, "", " ")
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("json", string(processorJson)); err != nil {
+	if err := d.Set("json", string(processorJSON)); err != nil {
 		return diag.FromErr(err)
 	}
 
-	hash, err := utils.StringToHash(string(processorJson))
+	hash, err := schemautil.StringToHash(string(processorJSON))
 	if err != nil {
 		return diag.FromErr(err)
 	}

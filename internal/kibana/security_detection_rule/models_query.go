@@ -1,4 +1,4 @@
-package security_detection_rule
+package securitydetectionrule
 
 import (
 	"context"
@@ -18,11 +18,11 @@ func (q QueryRuleProcessor) HandlesRuleType(t string) bool {
 	return t == "query"
 }
 
-func (q QueryRuleProcessor) ToCreateProps(ctx context.Context, client clients.MinVersionEnforceable, d SecurityDetectionRuleData) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
+func (q QueryRuleProcessor) ToCreateProps(ctx context.Context, client clients.MinVersionEnforceable, d Data) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
 	return toQueryRuleCreateProps(ctx, client, d)
 }
 
-func (q QueryRuleProcessor) ToUpdateProps(ctx context.Context, client clients.MinVersionEnforceable, d SecurityDetectionRuleData) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
+func (q QueryRuleProcessor) ToUpdateProps(ctx context.Context, client clients.MinVersionEnforceable, d Data) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
 	return toQueryRuleUpdateProps(ctx, client, d)
 }
 
@@ -31,7 +31,7 @@ func (q QueryRuleProcessor) HandlesAPIRuleResponse(rule any) bool {
 	return ok
 }
 
-func (q QueryRuleProcessor) UpdateFromResponse(ctx context.Context, rule any, d *SecurityDetectionRuleData) diag.Diagnostics {
+func (q QueryRuleProcessor) UpdateFromResponse(ctx context.Context, rule any, d *Data) diag.Diagnostics {
 	var diags diag.Diagnostics
 	value, ok := rule.(kbapi.SecurityDetectionsAPIQueryRule)
 	if !ok {
@@ -45,7 +45,7 @@ func (q QueryRuleProcessor) UpdateFromResponse(ctx context.Context, rule any, d 
 	return updateFromQueryRule(ctx, &value, d)
 }
 
-func (q QueryRuleProcessor) ExtractId(response any) (string, diag.Diagnostics) {
+func (q QueryRuleProcessor) ExtractID(response any) (string, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	value, ok := response.(kbapi.SecurityDetectionsAPIQueryRule)
 	if !ok {
@@ -58,7 +58,7 @@ func (q QueryRuleProcessor) ExtractId(response any) (string, diag.Diagnostics) {
 	return value.Id.String(), diags
 }
 
-func toQueryRuleCreateProps(ctx context.Context, client clients.MinVersionEnforceable, d SecurityDetectionRuleData) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
+func toQueryRuleCreateProps(ctx context.Context, client clients.MinVersionEnforceable, d Data) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var createProps kbapi.SecurityDetectionsAPIRuleCreateProps
 
@@ -75,7 +75,7 @@ func toQueryRuleCreateProps(ctx context.Context, client clients.MinVersionEnforc
 	d.setCommonCreateProps(ctx, &CommonCreateProps{
 		Actions:                           &queryRule.Actions,
 		ResponseActions:                   &queryRule.ResponseActions,
-		RuleId:                            &queryRule.RuleId,
+		RuleID:                            &queryRule.RuleId,
 		Enabled:                           &queryRule.Enabled,
 		From:                              &queryRule.From,
 		To:                                &queryRule.To,
@@ -97,7 +97,7 @@ func toQueryRuleCreateProps(ctx context.Context, client clients.MinVersionEnforc
 		RelatedIntegrations:               &queryRule.RelatedIntegrations,
 		RequiredFields:                    &queryRule.RequiredFields,
 		BuildingBlockType:                 &queryRule.BuildingBlockType,
-		DataViewId:                        &queryRule.DataViewId,
+		DataViewID:                        &queryRule.DataViewId,
 		Namespace:                         &queryRule.Namespace,
 		RuleNameOverride:                  &queryRule.RuleNameOverride,
 		TimestampOverride:                 &queryRule.TimestampOverride,
@@ -105,16 +105,16 @@ func toQueryRuleCreateProps(ctx context.Context, client clients.MinVersionEnforc
 		InvestigationFields:               &queryRule.InvestigationFields,
 		Filters:                           &queryRule.Filters,
 		Threat:                            &queryRule.Threat,
-		TimelineId:                        &queryRule.TimelineId,
+		TimelineID:                        &queryRule.TimelineId,
 		TimelineTitle:                     &queryRule.TimelineTitle,
 	}, &diags, client)
 
 	// Set query-specific fields
 	queryRule.Language = d.getKQLQueryLanguage()
 
-	if utils.IsKnown(d.SavedId) {
-		savedId := d.SavedId.ValueString()
-		queryRule.SavedId = &savedId
+	if typeutils.IsKnown(d.SavedID) {
+		savedID := d.SavedID.ValueString()
+		queryRule.SavedId = &savedID
 	}
 
 	// Convert to union type
@@ -129,17 +129,17 @@ func toQueryRuleCreateProps(ctx context.Context, client clients.MinVersionEnforc
 	return createProps, diags
 }
 
-func toQueryRuleUpdateProps(ctx context.Context, client clients.MinVersionEnforceable, d SecurityDetectionRuleData) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
+func toQueryRuleUpdateProps(ctx context.Context, client clients.MinVersionEnforceable, d Data) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var updateProps kbapi.SecurityDetectionsAPIRuleUpdateProps
 
 	queryRuleQuery := d.Query.ValueString()
 
 	// Parse ID to get space_id and rule_id
-	compId, resourceIdDiags := clients.CompositeIdFromStrFw(d.Id.ValueString())
-	diags.Append(resourceIdDiags...)
+	compID, resourceIDDiags := clients.CompositeIDFromStrFw(d.ID.ValueString())
+	diags.Append(resourceIDDiags...)
 
-	uid, err := uuid.Parse(compId.ResourceId)
+	uid, err := uuid.Parse(compID.ResourceID)
 	if err != nil {
 		diags.AddError("ID was not a valid UUID", err.Error())
 		return updateProps, diags
@@ -156,16 +156,16 @@ func toQueryRuleUpdateProps(ctx context.Context, client clients.MinVersionEnforc
 	}
 
 	// For updates, we need to include the rule_id if it's set
-	if utils.IsKnown(d.RuleId) {
-		ruleId := d.RuleId.ValueString()
-		queryRule.RuleId = &ruleId
+	if typeutils.IsKnown(d.RuleID) {
+		ruleID := d.RuleID.ValueString()
+		queryRule.RuleId = &ruleID
 		queryRule.Id = nil // if rule_id is set, we cant send id
 	}
 
 	d.setCommonUpdateProps(ctx, &CommonUpdateProps{
 		Actions:                           &queryRule.Actions,
 		ResponseActions:                   &queryRule.ResponseActions,
-		RuleId:                            &queryRule.RuleId,
+		RuleID:                            &queryRule.RuleId,
 		Enabled:                           &queryRule.Enabled,
 		From:                              &queryRule.From,
 		To:                                &queryRule.To,
@@ -187,7 +187,7 @@ func toQueryRuleUpdateProps(ctx context.Context, client clients.MinVersionEnforc
 		RelatedIntegrations:               &queryRule.RelatedIntegrations,
 		RequiredFields:                    &queryRule.RequiredFields,
 		BuildingBlockType:                 &queryRule.BuildingBlockType,
-		DataViewId:                        &queryRule.DataViewId,
+		DataViewID:                        &queryRule.DataViewId,
 		Namespace:                         &queryRule.Namespace,
 		RuleNameOverride:                  &queryRule.RuleNameOverride,
 		TimestampOverride:                 &queryRule.TimestampOverride,
@@ -195,16 +195,16 @@ func toQueryRuleUpdateProps(ctx context.Context, client clients.MinVersionEnforc
 		InvestigationFields:               &queryRule.InvestigationFields,
 		Filters:                           &queryRule.Filters,
 		Threat:                            &queryRule.Threat,
-		TimelineId:                        &queryRule.TimelineId,
+		TimelineID:                        &queryRule.TimelineId,
 		TimelineTitle:                     &queryRule.TimelineTitle,
 	}, &diags, client)
 
 	// Set query-specific fields
 	queryRule.Language = d.getKQLQueryLanguage()
 
-	if utils.IsKnown(d.SavedId) {
-		savedId := d.SavedId.ValueString()
-		queryRule.SavedId = &savedId
+	if typeutils.IsKnown(d.SavedID) {
+		savedID := d.SavedID.ValueString()
+		queryRule.SavedId = &savedID
 	}
 
 	// Convert to union type
@@ -218,35 +218,35 @@ func toQueryRuleUpdateProps(ctx context.Context, client clients.MinVersionEnforc
 
 	return updateProps, diags
 }
-func updateFromQueryRule(ctx context.Context, rule *kbapi.SecurityDetectionsAPIQueryRule, d *SecurityDetectionRuleData) diag.Diagnostics {
+func updateFromQueryRule(ctx context.Context, rule *kbapi.SecurityDetectionsAPIQueryRule, d *Data) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	compId := clients.CompositeId{
-		ClusterId:  d.SpaceId.ValueString(),
-		ResourceId: rule.Id.String(),
+	compID := clients.CompositeID{
+		ClusterID:  d.SpaceID.ValueString(),
+		ResourceID: rule.Id.String(),
 	}
-	d.Id = types.StringValue(compId.String())
+	d.ID = types.StringValue(compID.String())
 
-	d.RuleId = types.StringValue(rule.RuleId)
+	d.RuleID = types.StringValue(rule.RuleId)
 	d.Name = types.StringValue(rule.Name)
 	d.Type = typeutils.StringishValue(rule.Type)
 
 	// Update common fields
-	diags.Append(d.updateTimelineIdFromApi(ctx, rule.TimelineId)...)
-	diags.Append(d.updateTimelineTitleFromApi(ctx, rule.TimelineTitle)...)
-	dataViewIdDiags := d.updateDataViewIdFromApi(ctx, rule.DataViewId)
-	diags.Append(dataViewIdDiags...)
+	diags.Append(d.updateTimelineIDFromAPI(ctx, rule.TimelineId)...)
+	diags.Append(d.updateTimelineTitleFromAPI(ctx, rule.TimelineTitle)...)
+	dataViewIDDiags := d.updateDataViewIDFromAPI(ctx, rule.DataViewId)
+	diags.Append(dataViewIDDiags...)
 
-	namespaceDiags := d.updateNamespaceFromApi(ctx, rule.Namespace)
+	namespaceDiags := d.updateNamespaceFromAPI(ctx, rule.Namespace)
 	diags.Append(namespaceDiags...)
 
-	ruleNameOverrideDiags := d.updateRuleNameOverrideFromApi(ctx, rule.RuleNameOverride)
+	ruleNameOverrideDiags := d.updateRuleNameOverrideFromAPI(ctx, rule.RuleNameOverride)
 	diags.Append(ruleNameOverrideDiags...)
 
-	timestampOverrideDiags := d.updateTimestampOverrideFromApi(ctx, rule.TimestampOverride)
+	timestampOverrideDiags := d.updateTimestampOverrideFromAPI(ctx, rule.TimestampOverride)
 	diags.Append(timestampOverrideDiags...)
 
-	timestampOverrideFallbackDisabledDiags := d.updateTimestampOverrideFallbackDisabledFromApi(ctx, rule.TimestampOverrideFallbackDisabled)
+	timestampOverrideFallbackDisabledDiags := d.updateTimestampOverrideFallbackDisabledFromAPI(ctx, rule.TimestampOverrideFallbackDisabled)
 	diags.Append(timestampOverrideFallbackDisabledDiags...)
 
 	d.Query = types.StringValue(rule.Query)
@@ -262,88 +262,88 @@ func updateFromQueryRule(ctx context.Context, rule *kbapi.SecurityDetectionsAPIQ
 	d.Version = types.Int64Value(int64(rule.Version))
 
 	// Update building block type
-	buildingBlockTypeDiags := d.updateBuildingBlockTypeFromApi(ctx, rule.BuildingBlockType)
+	buildingBlockTypeDiags := d.updateBuildingBlockTypeFromAPI(ctx, rule.BuildingBlockType)
 	diags.Append(buildingBlockTypeDiags...)
 
 	// Update read-only fields
-	d.CreatedAt = utils.TimeToStringValue(rule.CreatedAt)
+	d.CreatedAt = schemautil.TimeToStringValue(rule.CreatedAt)
 	d.CreatedBy = types.StringValue(rule.CreatedBy)
-	d.UpdatedAt = utils.TimeToStringValue(rule.UpdatedAt)
+	d.UpdatedAt = schemautil.TimeToStringValue(rule.UpdatedAt)
 	d.UpdatedBy = types.StringValue(rule.UpdatedBy)
 	d.Revision = types.Int64Value(int64(rule.Revision))
 
 	// Update threat
-	threatDiags := d.updateThreatFromApi(ctx, &rule.Threat)
+	threatDiags := d.updateThreatFromAPI(ctx, &rule.Threat)
 	diags.Append(threatDiags...)
 
 	// Update index patterns
-	indexDiags := d.updateIndexFromApi(ctx, rule.Index)
+	indexDiags := d.updateIndexFromAPI(ctx, rule.Index)
 	diags.Append(indexDiags...)
 
 	// Update author
-	authorDiags := d.updateAuthorFromApi(ctx, rule.Author)
+	authorDiags := d.updateAuthorFromAPI(ctx, rule.Author)
 	diags.Append(authorDiags...)
 
 	// Update tags
-	tagsDiags := d.updateTagsFromApi(ctx, rule.Tags)
+	tagsDiags := d.updateTagsFromAPI(ctx, rule.Tags)
 	diags.Append(tagsDiags...)
 
 	// Update false positives
-	falsePositivesDiags := d.updateFalsePositivesFromApi(ctx, rule.FalsePositives)
+	falsePositivesDiags := d.updateFalsePositivesFromAPI(ctx, rule.FalsePositives)
 	diags.Append(falsePositivesDiags...)
 
 	// Update references
-	referencesDiags := d.updateReferencesFromApi(ctx, rule.References)
+	referencesDiags := d.updateReferencesFromAPI(ctx, rule.References)
 	diags.Append(referencesDiags...)
 
 	// Update optional string fields
-	licenseDiags := d.updateLicenseFromApi(ctx, rule.License)
+	licenseDiags := d.updateLicenseFromAPI(ctx, rule.License)
 	diags.Append(licenseDiags...)
 
-	noteDiags := d.updateNoteFromApi(ctx, rule.Note)
+	noteDiags := d.updateNoteFromAPI(ctx, rule.Note)
 	diags.Append(noteDiags...)
 
-	setupDiags := d.updateSetupFromApi(ctx, rule.Setup)
+	setupDiags := d.updateSetupFromAPI(ctx, rule.Setup)
 	diags.Append(setupDiags...)
 
 	// Update actions
-	actionDiags := d.updateActionsFromApi(ctx, rule.Actions)
+	actionDiags := d.updateActionsFromAPI(ctx, rule.Actions)
 	diags.Append(actionDiags...)
 
 	// Update exceptions list
-	exceptionsListDiags := d.updateExceptionsListFromApi(ctx, rule.ExceptionsList)
+	exceptionsListDiags := d.updateExceptionsListFromAPI(ctx, rule.ExceptionsList)
 	diags.Append(exceptionsListDiags...)
 
 	// Update risk score mapping
-	riskScoreMappingDiags := d.updateRiskScoreMappingFromApi(ctx, rule.RiskScoreMapping)
+	riskScoreMappingDiags := d.updateRiskScoreMappingFromAPI(ctx, rule.RiskScoreMapping)
 	diags.Append(riskScoreMappingDiags...)
 
 	// Update severity mapping
-	severityMappingDiags := d.updateSeverityMappingFromApi(ctx, &rule.SeverityMapping)
+	severityMappingDiags := d.updateSeverityMappingFromAPI(ctx, &rule.SeverityMapping)
 	diags.Append(severityMappingDiags...)
 
 	// Update related integrations
-	relatedIntegrationsDiags := d.updateRelatedIntegrationsFromApi(ctx, &rule.RelatedIntegrations)
+	relatedIntegrationsDiags := d.updateRelatedIntegrationsFromAPI(ctx, &rule.RelatedIntegrations)
 	diags.Append(relatedIntegrationsDiags...)
 
 	// Update required fields
-	requiredFieldsDiags := d.updateRequiredFieldsFromApi(ctx, &rule.RequiredFields)
+	requiredFieldsDiags := d.updateRequiredFieldsFromAPI(ctx, &rule.RequiredFields)
 	diags.Append(requiredFieldsDiags...)
 
 	// Update investigation fields
-	investigationFieldsDiags := d.updateInvestigationFieldsFromApi(ctx, rule.InvestigationFields)
+	investigationFieldsDiags := d.updateInvestigationFieldsFromAPI(ctx, rule.InvestigationFields)
 	diags.Append(investigationFieldsDiags...)
 
 	// Update filters field
-	filtersDiags := d.updateFiltersFromApi(ctx, rule.Filters)
+	filtersDiags := d.updateFiltersFromAPI(ctx, rule.Filters)
 	diags.Append(filtersDiags...)
 
 	// Update alert suppression
-	alertSuppressionDiags := d.updateAlertSuppressionFromApi(ctx, rule.AlertSuppression)
+	alertSuppressionDiags := d.updateAlertSuppressionFromAPI(ctx, rule.AlertSuppression)
 	diags.Append(alertSuppressionDiags...)
 
 	// Update response actions
-	responseActionsDiags := d.updateResponseActionsFromApi(ctx, rule.ResponseActions)
+	responseActionsDiags := d.updateResponseActionsFromAPI(ctx, rule.ResponseActions)
 	diags.Append(responseActionsDiags...)
 
 	return diags

@@ -247,7 +247,7 @@ func ResourceSnapshotRepository() *schema.Resource {
 			ConflictsWith: []string{"url", "gcs", "azure", "s3", "hdfs"},
 			ExactlyOneOf:  []string{"fs", "url", "gcs", "azure", "s3", "hdfs"},
 			Elem: &schema.Resource{
-				Schema: utils.MergeSchemaMaps(commonSettings, commonStdSettings, fsSettings),
+				Schema: schemautil.MergeSchemaMaps(commonSettings, commonStdSettings, fsSettings),
 			},
 		},
 		"url": {
@@ -259,7 +259,7 @@ func ResourceSnapshotRepository() *schema.Resource {
 			ConflictsWith: []string{"fs", "gcs", "azure", "s3", "hdfs"},
 			ExactlyOneOf:  []string{"fs", "url", "gcs", "azure", "s3", "hdfs"},
 			Elem: &schema.Resource{
-				Schema: utils.MergeSchemaMaps(commonSettings, commonStdSettings, urlSettings),
+				Schema: schemautil.MergeSchemaMaps(commonSettings, commonStdSettings, urlSettings),
 			},
 		},
 		"gcs": {
@@ -271,7 +271,7 @@ func ResourceSnapshotRepository() *schema.Resource {
 			ConflictsWith: []string{"fs", "s3", "azure", "hdfs", "url"},
 			ExactlyOneOf:  []string{"fs", "url", "gcs", "azure", "s3", "hdfs"},
 			Elem: &schema.Resource{
-				Schema: utils.MergeSchemaMaps(commonSettings, gcsSettings),
+				Schema: schemautil.MergeSchemaMaps(commonSettings, gcsSettings),
 			},
 		},
 		"azure": {
@@ -283,7 +283,7 @@ func ResourceSnapshotRepository() *schema.Resource {
 			ConflictsWith: []string{"fs", "gcs", "url", "s3", "hdfs"},
 			ExactlyOneOf:  []string{"fs", "url", "gcs", "azure", "s3", "hdfs"},
 			Elem: &schema.Resource{
-				Schema: utils.MergeSchemaMaps(commonSettings, azureSettings),
+				Schema: schemautil.MergeSchemaMaps(commonSettings, azureSettings),
 			},
 		},
 		"s3": {
@@ -295,7 +295,7 @@ func ResourceSnapshotRepository() *schema.Resource {
 			ConflictsWith: []string{"fs", "url", "gcs", "azure", "hdfs"},
 			ExactlyOneOf:  []string{"fs", "url", "gcs", "azure", "s3", "hdfs"},
 			Elem: &schema.Resource{
-				Schema: utils.MergeSchemaMaps(commonSettings, s3Settings),
+				Schema: schemautil.MergeSchemaMaps(commonSettings, s3Settings),
 			},
 		},
 		"hdfs": {
@@ -307,12 +307,12 @@ func ResourceSnapshotRepository() *schema.Resource {
 			ConflictsWith: []string{"fs", "url", "gcs", "azure", "s3"},
 			ExactlyOneOf:  []string{"fs", "url", "gcs", "azure", "s3", "hdfs"},
 			Elem: &schema.Resource{
-				Schema: utils.MergeSchemaMaps(commonSettings, hdfsSettings),
+				Schema: schemautil.MergeSchemaMaps(commonSettings, hdfsSettings),
 			},
 		},
 	}
 
-	utils.AddConnectionSchema(snapRepoSchema)
+	schemautil.AddConnectionSchema(snapRepoSchema)
 
 	return &schema.Resource{
 		Description: snapshotRepositoryResourceDescription,
@@ -331,18 +331,18 @@ func ResourceSnapshotRepository() *schema.Resource {
 }
 
 func resourceSnapRepoPut(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
-	repoId := d.Get("name").(string)
-	id, diags := client.ID(ctx, repoId)
+	repoID := d.Get("name").(string)
+	id, diags := client.ID(ctx, repoID)
 	if diags.HasError() {
 		return diags
 	}
 
 	var snapRepo models.SnapshotRepository
-	snapRepo.Name = repoId
+	snapRepo.Name = repoID
 	snapRepoSettings := make(map[string]any)
 
 	if v, ok := d.GetOk("verify"); ok {
@@ -369,27 +369,27 @@ func resourceSnapRepoPut(ctx context.Context, d *schema.ResourceData, meta any) 
 
 func expandFsSettings(source, target map[string]any) {
 	for k, v := range source {
-		if !utils.IsEmpty(v) {
+		if !schemautil.IsEmpty(v) {
 			target[k] = v
 		}
 	}
 }
 
 func resourceSnapRepoRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
 
 	id := d.Id()
-	compId, diags := clients.CompositeIdFromStr(id)
+	compID, diags := clients.CompositeIDFromStr(id)
 	if diags.HasError() {
 		return diags
 	}
 
-	currentRepo, diags := elasticsearch.GetSnapshotRepository(ctx, client, compId.ResourceId)
+	currentRepo, diags := elasticsearch.GetSnapshotRepository(ctx, client, compID.ResourceID)
 	if currentRepo == nil && diags == nil {
-		tflog.Warn(ctx, fmt.Sprintf(`Snapshot repository "%s" not found, removing from state`, compId.ResourceId))
+		tflog.Warn(ctx, fmt.Sprintf(`Snapshot repository "%s" not found, removing from state`, compID.ResourceID))
 		d.SetId("")
 		return diags
 	}
@@ -435,7 +435,7 @@ func flattenRepoSettings(r *models.SnapshotRepository, s map[string]*schema.Sche
 
 	// make sure the schema contains the fetched setting
 	for k, v := range r.Settings {
-		if schemaDef, ok := s[k]; ok && !utils.IsEmpty(v) {
+		if schemaDef, ok := s[k]; ok && !schemautil.IsEmpty(v) {
 			switch schemaDef.Type {
 			case schema.TypeInt, schema.TypeFloat:
 				i, err := strconv.Atoi(v.(string))
@@ -459,18 +459,18 @@ func flattenRepoSettings(r *models.SnapshotRepository, s map[string]*schema.Sche
 }
 
 func resourceSnapRepoDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
 
 	id := d.Id()
-	compId, diags := clients.CompositeIdFromStr(id)
+	compID, diags := clients.CompositeIDFromStr(id)
 	if diags.HasError() {
 		return diags
 	}
 
-	if diags := elasticsearch.DeleteSnapshotRepository(ctx, client, compId.ResourceId); diags.HasError() {
+	if diags := elasticsearch.DeleteSnapshotRepository(ctx, client, compID.ResourceID); diags.HasError() {
 		return diags
 	}
 	return diags

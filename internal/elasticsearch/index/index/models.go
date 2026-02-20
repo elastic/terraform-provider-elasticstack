@@ -10,8 +10,8 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -247,7 +247,7 @@ func (model tfModel) toAPIModel(ctx context.Context) (models.Index, diag.Diagnos
 		Settings: map[string]any{},
 	}
 
-	if utils.IsKnown(model.Alias) {
+	if typeutils.IsKnown(model.Alias) {
 		apiModel.Aliases = map[string]models.IndexAlias{}
 
 		var planAliases []aliasTfModel
@@ -273,7 +273,7 @@ func (model tfModel) toAPIModel(ctx context.Context) (models.Index, diag.Diagnos
 
 	apiModel.Settings = settings
 
-	if utils.IsKnown(model.Mappings) {
+	if typeutils.IsKnown(model.Mappings) {
 		diags.Append(model.Mappings.Unmarshal(&apiModel.Mappings)...)
 		if diags.HasError() {
 			return models.Index{}, diags
@@ -300,13 +300,13 @@ func (model tfModel) toPutIndexParams(serverFlavor string) models.PutIndexParams
 	return params
 }
 
-func (model tfModel) GetID() (*clients.CompositeId, diag.Diagnostics) {
-	compId, sdkDiags := clients.CompositeIdFromStr(model.ID.ValueString())
+func (model tfModel) GetID() (*clients.CompositeID, diag.Diagnostics) {
+	compID, sdkDiags := clients.CompositeIDFromStr(model.ID.ValueString())
 	if sdkDiags.HasError() {
 		return nil, diagutil.FrameworkDiagsFromSDK(sdkDiags)
 	}
 
-	return compId, nil
+	return compID, nil
 }
 
 func (model tfModel) toIndexSettings(ctx context.Context) (map[string]any, diag.Diagnostics) {
@@ -391,7 +391,7 @@ func (model tfModel) toIndexSettings(ctx context.Context) (map[string]any, diag.
 
 	analysis := map[string]any{}
 	for name, property := range analysisProperties {
-		if utils.IsKnown(property) {
+		if typeutils.IsKnown(property) {
 			var parsedValue map[string]any
 			if diags := property.Unmarshal(&parsedValue); diags.HasError() {
 				return map[string]any{}, diags
@@ -460,7 +460,7 @@ func (model aliasTfModel) toAPIModel() (models.IndexAlias, diag.Diagnostics) {
 		SearchRouting: model.SearchRouting.ValueString(),
 	}
 
-	if utils.IsKnown(model.Filter) {
+	if typeutils.IsKnown(model.Filter) {
 		if diags := model.Filter.Unmarshal(&apiModel.Filter); diags.HasError() {
 			return models.IndexAlias{}, diags
 		}

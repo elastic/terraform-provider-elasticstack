@@ -1,4 +1,4 @@
-package security_detection_rule
+package securitydetectionrule
 
 import (
 	"context"
@@ -13,7 +13,7 @@ import (
 )
 
 func (r *securityDetectionRuleResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var data SecurityDetectionRuleData
+	var data Data
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
@@ -21,14 +21,14 @@ func (r *securityDetectionRuleResource) Read(ctx context.Context, req resource.R
 	}
 
 	// Parse ID to get space_id and rule_id
-	compId, diags := clients.CompositeIdFromStrFw(data.Id.ValueString())
+	compID, diags := clients.CompositeIDFromStrFw(data.ID.ValueString())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	// Use the extracted read method
-	readData, diags := r.read(ctx, compId.ResourceId, compId.ClusterId)
+	readData, diags := r.read(ctx, compID.ResourceID, compID.ClusterID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -42,15 +42,15 @@ func (r *securityDetectionRuleResource) Read(ctx context.Context, req resource.R
 	}
 
 	// Set the composite ID and state
-	readData.Id = data.Id
+	readData.ID = data.ID
 	resp.Diagnostics.Append(resp.State.Set(ctx, readData)...)
 }
 
 // read extracts the core functionality of reading a security detection rule
-func (r *securityDetectionRuleResource) read(ctx context.Context, resourceId, spaceId string) (*SecurityDetectionRuleData, diag.Diagnostics) {
+func (r *securityDetectionRuleResource) read(ctx context.Context, resourceID, spaceID string) (*Data, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	data := &SecurityDetectionRuleData{}
+	data := &Data{}
 	data.initializeAllFieldsToDefaults()
 
 	// Get the rule using kbapi client
@@ -64,7 +64,7 @@ func (r *securityDetectionRuleResource) read(ctx context.Context, resourceId, sp
 	}
 
 	// Read the rule
-	uid, err := uuid.Parse(resourceId)
+	uid, err := uuid.Parse(resourceID)
 	if err != nil {
 		diags.AddError("ID was not a valid UUID", err.Error())
 		return nil, diags
@@ -73,7 +73,7 @@ func (r *securityDetectionRuleResource) read(ctx context.Context, resourceId, sp
 		Id: &uid,
 	}
 
-	response, err := kbClient.API.ReadRuleWithResponse(ctx, spaceId, params)
+	response, err := kbClient.API.ReadRuleWithResponse(ctx, spaceID, params)
 	if err != nil {
 		diags.AddError(
 			"Error reading security detection rule",
@@ -103,14 +103,14 @@ func (r *securityDetectionRuleResource) read(ctx context.Context, resourceId, sp
 	}
 
 	// Ensure space_id is set correctly
-	data.SpaceId = types.StringValue(spaceId)
+	data.SpaceID = types.StringValue(spaceID)
 
-	compId := clients.CompositeId{
-		ResourceId: resourceId,
-		ClusterId:  spaceId,
+	compID := clients.CompositeID{
+		ResourceID: resourceID,
+		ClusterID:  spaceID,
 	}
 
-	data.Id = types.StringValue(compId.String())
+	data.ID = types.StringValue(compID.String())
 
 	return data, diags
 }

@@ -1,4 +1,4 @@
-package utils
+package schemautil
 
 import (
 	"context"
@@ -25,47 +25,7 @@ func JSONBytesEqual(a, b []byte) (bool, error) {
 	if err := json.Unmarshal(b, &j2); err != nil {
 		return false, err
 	}
-	return MapsEqual(j, j2), nil
-}
-
-func MapsEqual(m1, m2 any) bool {
-	return reflect.DeepEqual(m2, m1)
-}
-
-// Flattens the multilevel map, and concatenates keys together with dot "."
-// # Examples
-// map of form:
-//
-//	map := map[string]interface{}{
-//	        "index": map[string]interface{}{
-//	                "key": 1
-//	        }
-//	}
-//
-// becomes:
-//
-//	map := map[string]interface{}{
-//	        "index.key": 1
-//	}
-func FlattenMap(m map[string]any) map[string]any {
-	out := make(map[string]any)
-
-	var flattener func(string, map[string]any, map[string]any)
-	flattener = func(k string, src, dst map[string]any) {
-		if len(k) > 0 {
-			k += "."
-		}
-		for key, v := range src {
-			switch inner := v.(type) {
-			case map[string]any:
-				flattener(k+key, inner, dst)
-			default:
-				dst[k+key] = v
-			}
-		}
-	}
-	flattener("", m, out)
-	return out
+	return reflect.DeepEqual(j, j2), nil
 }
 
 func MergeSchemaMaps(maps ...map[string]*schema.Schema) map[string]*schema.Schema {
@@ -175,9 +135,8 @@ func Deref[T any](value *T) T {
 	if value == nil {
 		var zero T
 		return zero
-	} else {
-		return *value
 	}
+	return *value
 }
 
 // Itol converts *int to *in64.

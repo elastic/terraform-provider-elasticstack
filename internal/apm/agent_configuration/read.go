@@ -1,4 +1,4 @@
-package agent_configuration
+package agentconfiguration
 
 import (
 	"context"
@@ -53,7 +53,7 @@ func (r *resourceAgentConfiguration) read(ctx context.Context, state *AgentConfi
 		return nil, diags
 	}
 
-	if httpDiags := diagutil.CheckHttpErrorFromFW(apiResp.HTTPResponse, "Failed to get APM agent configurations"); httpDiags.HasError() {
+	if httpDiags := diagutil.CheckHTTPErrorFromFW(apiResp.HTTPResponse, "Failed to get APM agent configurations"); httpDiags.HasError() {
 		diags.Append(httpDiags...)
 		return nil, diags
 	}

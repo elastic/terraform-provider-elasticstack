@@ -1,4 +1,4 @@
-package integration_policy
+package integrationpolicy
 
 import (
 	"context"
@@ -173,7 +173,7 @@ func TestIntegrationPolicyModelV1ToV2(t *testing.T) {
 			Force:              types.BoolValue(false),
 			IntegrationName:    types.StringValue("test-integration"),
 			IntegrationVersion: types.StringValue("1.0.0"),
-			VarsJson:           jsontypes.NewNormalizedValue(`{"var1":"value1"}`),
+			VarsJSON:           jsontypes.NewNormalizedValue(`{"var1":"value1"}`),
 			Input:              types.ListNull(getInputTypeV1()),
 		}
 
@@ -191,8 +191,8 @@ func TestIntegrationPolicyModelV1ToV2(t *testing.T) {
 		assert.Equal(t, v1Model.IntegrationName, v2Model.IntegrationName)
 		assert.Equal(t, v1Model.IntegrationVersion, v2Model.IntegrationVersion)
 
-		expectedVarsJson, _ := NewVarsJSONWithIntegration(`{"var1":"value1"}`, "test-integration", "1.0.0")
-		assert.True(t, expectedVarsJson.Equal(v2Model.VarsJson))
+		expectedVarsJSON, _ := NewVarsJSONWithIntegration(`{"var1":"value1"}`, "test-integration", "1.0.0")
+		assert.True(t, expectedVarsJSON.Equal(v2Model.VarsJSON))
 	})
 
 	t.Run("conversion with agent_policy_ids", func(t *testing.T) {
@@ -226,14 +226,14 @@ func TestIntegrationPolicyModelV1ToV2(t *testing.T) {
 			AgentPolicyID:      types.StringValue("agent-policy-1"),
 			IntegrationName:    types.StringValue("test-integration"),
 			IntegrationVersion: types.StringValue("1.0.0"),
-			SpaceIds:           spaceIDs,
+			SpaceIDs:           spaceIDs,
 			Input:              types.ListNull(getInputTypeV1()),
 		}
 
 		v2Model, diags := v1Model.toV2(ctx)
 		require.Empty(t, diags)
 
-		assert.Equal(t, v1Model.SpaceIds, v2Model.SpaceIds)
+		assert.Equal(t, v1Model.SpaceIDs, v2Model.SpaceIDs)
 	})
 
 	t.Run("conversion with empty inputs", func(t *testing.T) {
@@ -258,8 +258,8 @@ func TestIntegrationPolicyModelV1ToV2(t *testing.T) {
 			{
 				InputID:     types.StringValue("input-1"),
 				Enabled:     types.BoolValue(true),
-				VarsJson:    jsontypes.NewNormalizedValue(`{"input_var":"value"}`),
-				StreamsJson: jsontypes.NewNormalizedNull(),
+				VarsJSON:    jsontypes.NewNormalizedValue(`{"input_var":"value"}`),
+				StreamsJSON: jsontypes.NewNormalizedNull(),
 			},
 		}
 		inputList, diags := types.ListValueFrom(ctx, getInputTypeV1(), inputsV1)
@@ -307,8 +307,8 @@ func TestIntegrationPolicyModelV1ToV2(t *testing.T) {
 			{
 				InputID:     types.StringValue("input-1"),
 				Enabled:     types.BoolValue(true),
-				VarsJson:    jsontypes.NewNormalizedValue(`{"input_var":"value"}`),
-				StreamsJson: jsontypes.NewNormalizedValue(string(streamsJSON)),
+				VarsJSON:    jsontypes.NewNormalizedValue(`{"input_var":"value"}`),
+				StreamsJSON: jsontypes.NewNormalizedValue(string(streamsJSON)),
 			},
 		}
 		inputList, diags := types.ListValueFrom(ctx, getInputTypeV1(), inputsV1)
@@ -371,14 +371,14 @@ func TestIntegrationPolicyModelV1ToV2(t *testing.T) {
 			{
 				InputID:     types.StringValue("input-1"),
 				Enabled:     types.BoolValue(true),
-				VarsJson:    jsontypes.NewNormalizedValue(`{"input1_var":"value1"}`),
-				StreamsJson: jsontypes.NewNormalizedValue(string(streamsJSON1)),
+				VarsJSON:    jsontypes.NewNormalizedValue(`{"input1_var":"value1"}`),
+				StreamsJSON: jsontypes.NewNormalizedValue(string(streamsJSON1)),
 			},
 			{
 				InputID:     types.StringValue("input-2"),
 				Enabled:     types.BoolValue(false),
-				VarsJson:    jsontypes.NewNormalizedValue(`{"input2_var":"value2"}`),
-				StreamsJson: jsontypes.NewNormalizedValue(string(streamsJSON2)),
+				VarsJSON:    jsontypes.NewNormalizedValue(`{"input2_var":"value2"}`),
+				StreamsJSON: jsontypes.NewNormalizedValue(string(streamsJSON2)),
 			},
 		}
 		inputList, diags := types.ListValueFrom(ctx, getInputTypeV1(), inputsV1)
@@ -426,8 +426,8 @@ func TestIntegrationPolicyModelV1ToV2(t *testing.T) {
 			{
 				InputID:     types.StringValue("input-1"),
 				Enabled:     types.BoolValue(true),
-				VarsJson:    jsontypes.NewNormalizedValue(`{"input_var":"value"}`),
-				StreamsJson: jsontypes.NewNormalizedValue(`["array", "instead", "of", "map"]`),
+				VarsJSON:    jsontypes.NewNormalizedValue(`{"input_var":"value"}`),
+				StreamsJSON: jsontypes.NewNormalizedValue(`["array", "instead", "of", "map"]`),
 			},
 		}
 		inputList, diags := types.ListValueFrom(ctx, getInputTypeV1(), inputsV1)
@@ -457,8 +457,8 @@ func TestIntegrationPolicyModelV1ToV2(t *testing.T) {
 			IntegrationName:    types.StringValue("test-integration"),
 			IntegrationVersion: types.StringValue("1.0.0"),
 			Description:        types.StringNull(),
-			VarsJson:           jsontypes.NewNormalizedNull(),
-			SpaceIds:           types.SetNull(types.StringType),
+			VarsJSON:           jsontypes.NewNormalizedNull(),
+			SpaceIDs:           types.SetNull(types.StringType),
 			Input:              types.ListNull(getInputTypeV1()),
 		}
 
@@ -466,8 +466,8 @@ func TestIntegrationPolicyModelV1ToV2(t *testing.T) {
 		require.Empty(t, diags)
 
 		assert.True(t, v2Model.Description.IsNull())
-		assert.True(t, v2Model.VarsJson.IsNull())
-		assert.True(t, v2Model.SpaceIds.IsNull())
+		assert.True(t, v2Model.VarsJSON.IsNull())
+		assert.True(t, v2Model.SpaceIDs.IsNull())
 	})
 }
 

@@ -2,8 +2,7 @@ package kibana
 
 import (
 	"context"
-
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/tfsdkutils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -129,7 +128,7 @@ func DataSourceRole() *schema.Resource {
 									Description:      "A search query that defines the documents the owners of the role have read access to.",
 									Type:             schema.TypeString,
 									ValidateFunc:     validation.StringIsJSON,
-									DiffSuppressFunc: utils.DiffJsonSuppress,
+									DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 									Optional:         true,
 								},
 								"names": {
@@ -215,7 +214,7 @@ func DataSourceRole() *schema.Resource {
 			Optional:         true,
 			Computed:         true,
 			ValidateFunc:     validation.StringIsJSON,
-			DiffSuppressFunc: utils.DiffJsonSuppress,
+			DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 		},
 		"description": {
 			Description: "Description for the role",
@@ -232,8 +231,8 @@ func DataSourceRole() *schema.Resource {
 }
 
 func dataSourceSecurityRoleRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	roleId := d.Get("name").(string)
-	d.SetId(roleId)
+	roleID := d.Get("name").(string)
+	d.SetId(roleID)
 
 	return resourceRoleRead(ctx, d, meta)
 }

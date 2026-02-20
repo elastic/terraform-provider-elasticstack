@@ -1,7 +1,7 @@
 package dashboard
 
 import (
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -63,19 +63,19 @@ func (m *dashboardModel) mapOptionsFromAPI(options *optionsAPIModel) *optionsMod
 
 func (m optionsModel) toAPI() *optionsAPIModel {
 	options := optionsAPIModel{}
-	if utils.IsKnown(m.HidePanelTitles) {
+	if typeutils.IsKnown(m.HidePanelTitles) {
 		options.HidePanelTitles = m.HidePanelTitles.ValueBoolPointer()
 	}
-	if utils.IsKnown(m.UseMargins) {
+	if typeutils.IsKnown(m.UseMargins) {
 		options.UseMargins = m.UseMargins.ValueBoolPointer()
 	}
-	if utils.IsKnown(m.SyncColors) {
+	if typeutils.IsKnown(m.SyncColors) {
 		options.SyncColors = m.SyncColors.ValueBoolPointer()
 	}
-	if utils.IsKnown(m.SyncTooltips) {
+	if typeutils.IsKnown(m.SyncTooltips) {
 		options.SyncTooltips = m.SyncTooltips.ValueBoolPointer()
 	}
-	if utils.IsKnown(m.SyncCursor) {
+	if typeutils.IsKnown(m.SyncCursor) {
 		options.SyncCursor = m.SyncCursor.ValueBoolPointer()
 	}
 

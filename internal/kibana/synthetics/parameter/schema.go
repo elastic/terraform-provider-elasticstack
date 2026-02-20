@@ -99,7 +99,7 @@ func parameterSchema() schema.Schema {
 func (m *tfModelV0) toParameterRequest(forUpdate bool) kboapi.SyntheticsParameterRequest {
 	// share_across_spaces is not allowed to be set when updating an existing
 	// global parameter.
-	var shareAcrossSpaces *bool = nil
+	var shareAcrossSpaces *bool
 	if !forUpdate {
 		shareAcrossSpaces = m.ShareAcrossSpaces.ValueBoolPointer()
 	}
@@ -107,17 +107,17 @@ func (m *tfModelV0) toParameterRequest(forUpdate bool) kboapi.SyntheticsParamete
 	return kboapi.SyntheticsParameterRequest{
 		Key:         m.Key.ValueString(),
 		Value:       m.Value.ValueString(),
-		Description: utils.Pointer(m.Description.ValueString()),
+		Description: schemautil.Pointer(m.Description.ValueString()),
 		// We need this to marshal as an empty JSON array, not null.
-		Tags:              utils.Pointer(utils.NonNilSlice(synthetics.ValueStringSlice(m.Tags))),
+		Tags:              schemautil.Pointer(schemautil.NonNilSlice(synthetics.ValueStringSlice(m.Tags))),
 		ShareAcrossSpaces: shareAcrossSpaces,
 	}
 }
 
-func tryReadCompositeId(id string) (*clients.CompositeId, diag.Diagnostics) {
+func tryReadCompositeID(id string) (*clients.CompositeID, diag.Diagnostics) {
 	if strings.Contains(id, "/") {
-		compositeId, diagnostics := synthetics.GetCompositeId(id)
-		return compositeId, diagnostics
+		compositeID, diagnostics := synthetics.GetCompositeID(id)
+		return compositeID, diagnostics
 	}
 	return nil, diag.Diagnostics{}
 }
@@ -132,7 +132,7 @@ func modelV0FromOAPI(param kboapi.SyntheticsGetParameterResponse) tfModelV0 {
 		Description: types.StringPointerValue(param.Description),
 		// Terraform, like json.Marshal, treats empty slices as null. We need an
 		// actual backing array of size 0.
-		Tags:              utils.NonNilSlice(synthetics.StringSliceValue(utils.DefaultIfNil(param.Tags))),
+		Tags:              schemautil.NonNilSlice(synthetics.StringSliceValue(schemautil.DefaultIfNil(param.Tags))),
 		ShareAcrossSpaces: types.BoolValue(allSpaces),
 	}
 }

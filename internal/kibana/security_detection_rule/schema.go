@@ -1,11 +1,11 @@
-package security_detection_rule
+package securitydetectionrule
 
 import (
 	"context"
 	"regexp"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
@@ -950,7 +950,7 @@ func getThreatSubtechniqueElementType() attr.Type {
 //
 // The function adds appropriate error diagnostics if validation fails.
 func (r securityDetectionRuleResource) ValidateConfig(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
-	var data SecurityDetectionRuleData
+	var data Data
 
 	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
 
@@ -966,7 +966,7 @@ func (r securityDetectionRuleResource) ValidateConfig(ctx context.Context, req r
 		return
 	}
 
-	if utils.IsKnown(data.Index) && utils.IsKnown(data.DataViewId) {
+	if typeutils.IsKnown(data.Index) && typeutils.IsKnown(data.DataViewID) {
 		resp.Diagnostics.AddError(
 			"Invalid Configuration",
 			"Both 'index' and 'data_view_id' cannot be set at the same time.",
@@ -974,7 +974,7 @@ func (r securityDetectionRuleResource) ValidateConfig(ctx context.Context, req r
 
 	}
 
-	if data.Index.IsNull() && data.DataViewId.IsNull() {
+	if data.Index.IsNull() && data.DataViewID.IsNull() {
 		resp.Diagnostics.AddError(
 			"Invalid Configuration",
 			"One of 'index' or 'data_view_id' must be set.",

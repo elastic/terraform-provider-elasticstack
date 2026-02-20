@@ -1,10 +1,10 @@
-package integration_policy
+package integrationpolicy
 
 import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -41,10 +41,10 @@ func (r *integrationPolicyResource) Create(ctx context.Context, req resource.Cre
 	// Determine space context for creating the package policy
 	// The package policy must be created in the same space as the agent policy it references
 	var spaceID string
-	if !planModel.SpaceIds.IsNull() && !planModel.SpaceIds.IsUnknown() {
+	if !planModel.SpaceIDs.IsNull() && !planModel.SpaceIDs.IsUnknown() {
 		// Explicit space_ids provided - use the first one
 		var tempDiags diag.Diagnostics
-		spaceIDs := utils.SetTypeAs[types.String](ctx, planModel.SpaceIds, path.Root("space_ids"), &tempDiags)
+		spaceIDs := typeutils.SetTypeAs[types.String](ctx, planModel.SpaceIDs, path.Root("space_ids"), &tempDiags)
 		if !tempDiags.HasError() && len(spaceIDs) > 0 {
 			spaceID = spaceIDs[0].ValueString()
 		}
@@ -65,7 +65,7 @@ func (r *integrationPolicyResource) Create(ctx context.Context, req resource.Cre
 	}
 
 	// Remember if the user configured input in the plan
-	planHadInput := utils.IsKnown(planModel.Inputs) && !planModel.Inputs.IsNull() && len(planModel.Inputs.Elements()) > 0
+	planHadInput := typeutils.IsKnown(planModel.Inputs) && !planModel.Inputs.IsNull() && len(planModel.Inputs.Elements()) > 0
 
 	pkg, diags := getPackageInfo(ctx, client, policy.Package.Name, policy.Package.Version)
 	resp.Diagnostics.Append(diags...)

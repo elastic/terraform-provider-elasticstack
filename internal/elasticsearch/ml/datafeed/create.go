@@ -20,8 +20,8 @@ func (r *datafeedResource) create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	datafeedId := plan.DatafeedID.ValueString()
-	if datafeedId == "" {
+	datafeedID := plan.DatafeedID.ValueString()
+	if datafeedID == "" {
 		resp.Diagnostics.AddError("Invalid Configuration", "datafeed_id cannot be empty")
 		return
 	}
@@ -33,14 +33,14 @@ func (r *datafeedResource) create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	createDiags := elasticsearch.PutDatafeed(ctx, r.client, datafeedId, *createRequest)
+	createDiags := elasticsearch.PutDatafeed(ctx, r.client, datafeedID, *createRequest)
 	resp.Diagnostics.Append(createDiags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	// Read the created datafeed to get the full state.
-	compID, sdkDiags := r.client.ID(ctx, datafeedId)
+	compID, sdkDiags := r.client.ID(ctx, datafeedID)
 	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if resp.Diagnostics.HasError() {
 		return

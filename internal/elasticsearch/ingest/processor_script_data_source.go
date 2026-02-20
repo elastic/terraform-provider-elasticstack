@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/tfsdkutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -43,7 +44,7 @@ func DataSourceProcessorScript() *schema.Resource {
 			Type:             schema.TypeString,
 			Optional:         true,
 			ValidateFunc:     validation.StringIsJSON,
-			DiffSuppressFunc: utils.DiffJsonSuppress,
+			DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 		},
 		"description": {
 			Description: "Description of the processor. ",
@@ -69,7 +70,7 @@ func DataSourceProcessorScript() *schema.Resource {
 			Elem: &schema.Schema{
 				Type:             schema.TypeString,
 				ValidateFunc:     validation.StringIsJSON,
-				DiffSuppressFunc: utils.DiffJsonSuppress,
+				DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 			},
 		},
 		"tag": {
@@ -93,7 +94,7 @@ func DataSourceProcessorScript() *schema.Resource {
 	}
 }
 
-func dataSourceProcessorScriptRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+func dataSourceProcessorScriptRead(_ context.Context, d *schema.ResourceData, _ any) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	processor := &models.ProcessorScript{}
@@ -104,7 +105,7 @@ func dataSourceProcessorScriptRead(ctx context.Context, d *schema.ResourceData, 
 		processor.Lang = v.(string)
 	}
 	if v, ok := d.GetOk("script_id"); ok {
-		processor.ScriptId = v.(string)
+		processor.ScriptID = v.(string)
 	}
 	if v, ok := d.GetOk("source"); ok {
 		processor.Source = v.(string)
@@ -137,15 +138,15 @@ func dataSourceProcessorScriptRead(ctx context.Context, d *schema.ResourceData, 
 		processor.OnFailure = onFailure
 	}
 
-	processorJson, err := json.MarshalIndent(map[string]*models.ProcessorScript{"script": processor}, "", " ")
+	processorJSON, err := json.MarshalIndent(map[string]*models.ProcessorScript{"script": processor}, "", " ")
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("json", string(processorJson)); err != nil {
+	if err := d.Set("json", string(processorJSON)); err != nil {
 		return diag.FromErr(err)
 	}
 
-	hash, err := utils.StringToHash(string(processorJson))
+	hash, err := schemautil.StringToHash(string(processorJSON))
 	if err != nil {
 		return diag.FromErr(err)
 	}

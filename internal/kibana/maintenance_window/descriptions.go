@@ -1,4 +1,4 @@
-package maintenance_window
+package maintenancewindow
 
 import _ "embed"
 

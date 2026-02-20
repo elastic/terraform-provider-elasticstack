@@ -36,7 +36,7 @@ func getSchema() schema.Schema {
 	return schema.Schema{
 		Description: "Creates Elasticsearch indices. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-index.html",
 		Blocks: map[string]schema.Block{
-			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock("elasticsearch_connection", false),
+			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(false),
 			"settings": schema.ListNestedBlock{
 				Description:        deprecatedSettingsBlockDescription,
 				DeprecationMessage: "Using settings makes it easier to misconfigure.  Use dedicated field for the each setting instead.",

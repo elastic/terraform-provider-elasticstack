@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -15,12 +15,12 @@ import (
 
 type mappingsPlanModifier struct{}
 
-func (p mappingsPlanModifier) PlanModifyString(ctx context.Context, req planmodifier.StringRequest, resp *planmodifier.StringResponse) {
-	if !utils.IsKnown(req.StateValue) {
+func (p mappingsPlanModifier) PlanModifyString(_ context.Context, req planmodifier.StringRequest, resp *planmodifier.StringResponse) {
+	if !typeutils.IsKnown(req.StateValue) {
 		return
 	}
 
-	if !utils.IsKnown(req.ConfigValue) {
+	if !typeutils.IsKnown(req.ConfigValue) {
 		return
 	}
 
@@ -56,13 +56,13 @@ func (p mappingsPlanModifier) PlanModifyString(ctx context.Context, req planmodi
 	}
 }
 
-func (p mappingsPlanModifier) modifyMappings(initialPath path.Path, old map[string]any, new map[string]any) (bool, map[string]any, diag.Diagnostics) {
+func (p mappingsPlanModifier) modifyMappings(initialPath path.Path, oldMappings map[string]any, newMappings map[string]any) (bool, map[string]any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	warningDetail := "Elasticsearch will maintain the current field in it's mapping. " +
 		"Re-index to remove the field completely"
-	for k, v := range old {
+	for k, v := range oldMappings {
 		oldFieldSettings := v.(map[string]any)
-		newFieldSettings, ok := new[k]
+		newFieldSettings, ok := newMappings[k]
 		currentPath := initialPath.AtMapKey(k)
 		// When field is removed, it'll be ignored in elasticsearch
 		if !ok {
@@ -71,7 +71,7 @@ func (p mappingsPlanModifier) modifyMappings(initialPath path.Path, old map[stri
 				fmt.Sprintf("removing field [%s] in mappings is ignored.", currentPath),
 				warningDetail,
 			)
-			new[k] = v
+			newMappings[k] = v
 			continue
 		}
 		newSettings := newFieldSettings.(map[string]any)
@@ -79,12 +79,12 @@ func (p mappingsPlanModifier) modifyMappings(initialPath path.Path, old map[stri
 		if s, ok := oldFieldSettings["type"]; ok {
 			if ns, ok := newSettings["type"]; ok {
 				if !reflect.DeepEqual(s, ns) {
-					return true, new, diags
+					return true, newMappings, diags
 				}
 				continue
-			} else {
-				return true, new, diags
 			}
+
+			return true, newMappings, diags
 		}
 
 		// if we have "mapping" field, let's call ourself to check again
@@ -95,7 +95,7 @@ func (p mappingsPlanModifier) modifyMappings(initialPath path.Path, old map[stri
 				diags.Append(d...)
 				newSettings["properties"] = newProperties
 				if requiresReplace {
-					return true, new, diags
+					return true, newMappings, diags
 				}
 			} else {
 				diags.AddAttributeWarning(
@@ -108,7 +108,7 @@ func (p mappingsPlanModifier) modifyMappings(initialPath path.Path, old map[stri
 		}
 	}
 
-	return false, new, diags
+	return false, newMappings, diags
 }
 
 func (p mappingsPlanModifier) Description(_ context.Context) string {

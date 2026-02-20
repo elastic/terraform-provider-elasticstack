@@ -13,10 +13,10 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/slo"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/debugutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/go-version"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -26,14 +26,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-type CompositeId struct {
-	ClusterId  string
-	ResourceId string
+type CompositeID struct {
+	ClusterID  string
+	ResourceID string
 }
 
 const ServerlessFlavor = "serverless"
 
-func CompositeIdFromStr(id string) (*CompositeId, diag.Diagnostics) {
+func CompositeIDFromStr(id string) (*CompositeID, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	idParts := strings.Split(id, "/")
 	if len(idParts) != 2 {
@@ -44,48 +44,48 @@ func CompositeIdFromStr(id string) (*CompositeId, diag.Diagnostics) {
 		})
 		return nil, diags
 	}
-	return &CompositeId{
-			ClusterId:  idParts[0],
-			ResourceId: idParts[1],
+	return &CompositeID{
+			ClusterID:  idParts[0],
+			ResourceID: idParts[1],
 		},
 		diags
 }
 
-func CompositeIdFromStrFw(id string) (*CompositeId, fwdiags.Diagnostics) {
-	composite, diags := CompositeIdFromStr(id)
+func CompositeIDFromStrFw(id string) (*CompositeID, fwdiags.Diagnostics) {
+	composite, diags := CompositeIDFromStr(id)
 	return composite, diagutil.FrameworkDiagsFromSDK(diags)
 }
 
 func ResourceIDFromStr(id string) (string, diag.Diagnostics) {
-	compID, diags := CompositeIdFromStr(id)
+	compID, diags := CompositeIDFromStr(id)
 	if diags.HasError() {
 		return "", diags
 	}
-	return compID.ResourceId, nil
+	return compID.ResourceID, nil
 }
 
-func (c *CompositeId) String() string {
-	return fmt.Sprintf("%s/%s", c.ClusterId, c.ResourceId)
+func (c *CompositeID) String() string {
+	return fmt.Sprintf("%s/%s", c.ClusterID, c.ResourceID)
 }
 
-type ApiClient struct {
+type APIClient struct {
 	elasticsearch            *elasticsearch.Client
 	elasticsearchClusterInfo *models.ClusterInfo
 	kibana                   *kibana.Client
-	kibanaOapi               *kibana_oapi.Client
+	kibanaOapi               *kibanaoapi.Client
 	slo                      slo.SloAPI
 	kibanaConfig             kibana.Config
 	fleet                    *fleet.Client
 	version                  string
 }
 
-func NewApiClientFuncFromSDK(version string) func(context.Context, *schema.ResourceData) (any, diag.Diagnostics) {
-	return func(ctx context.Context, d *schema.ResourceData) (any, diag.Diagnostics) {
-		return newApiClientFromSDK(d, version)
+func NewAPIClientFuncFromSDK(version string) func(context.Context, *schema.ResourceData) (any, diag.Diagnostics) {
+	return func(_ context.Context, d *schema.ResourceData) (any, diag.Diagnostics) {
+		return newAPIClientFromSDK(d, version)
 	}
 }
 
-func NewAcceptanceTestingClient() (*ApiClient, error) {
+func NewAcceptanceTestingClient() (*APIClient, error) {
 	version := "tf-acceptance-testing"
 	cfg := config.NewFromEnv(version)
 
@@ -99,9 +99,9 @@ func NewAcceptanceTestingClient() (*ApiClient, error) {
 		return nil, err
 	}
 
-	kibanaHttpClient := kib.Client.GetClient()
+	kibanaHTTPClient := kib.Client.GetClient()
 
-	kibOapi, err := kibana_oapi.NewClient(*cfg.KibanaOapi)
+	kibOapi, err := kibanaoapi.NewClient(*cfg.KibanaOapi)
 	if err != nil {
 		return nil, err
 	}
@@ -111,11 +111,11 @@ func NewAcceptanceTestingClient() (*ApiClient, error) {
 		return nil, err
 	}
 
-	return &ApiClient{
+	return &APIClient{
 			elasticsearch: es,
 			kibana:        kib,
 			kibanaOapi:    kibOapi,
-			slo:           buildSloClient(cfg, kibanaHttpClient).SloAPI,
+			slo:           buildSloClient(cfg, kibanaHTTPClient).SloAPI,
 			kibanaConfig:  *cfg.Kibana,
 			fleet:         fleetClient,
 			version:       version,
@@ -123,13 +123,13 @@ func NewAcceptanceTestingClient() (*ApiClient, error) {
 		nil
 }
 
-func NewApiClientFromFramework(ctx context.Context, cfg config.ProviderConfiguration, version string) (*ApiClient, fwdiags.Diagnostics) {
+func NewAPIClientFromFramework(ctx context.Context, cfg config.ProviderConfiguration, version string) (*APIClient, fwdiags.Diagnostics) {
 	clientCfg, diags := config.NewFromFramework(ctx, cfg, version)
 	if diags.HasError() {
 		return nil, diags
 	}
 
-	client, err := newApiClientFromConfig(clientCfg, version)
+	client, err := newAPIClientFromConfig(clientCfg, version)
 	if err != nil {
 		return nil, fwdiags.Diagnostics{
 			fwdiags.NewErrorDiagnostic("Failed to create API client", err.Error()),
@@ -139,18 +139,18 @@ func NewApiClientFromFramework(ctx context.Context, cfg config.ProviderConfigura
 	return client, nil
 }
 
-func ConvertProviderData(providerData any) (*ApiClient, fwdiags.Diagnostics) {
+func ConvertProviderData(providerData any) (*APIClient, fwdiags.Diagnostics) {
 	var diags fwdiags.Diagnostics
 
 	if providerData == nil {
 		return nil, diags
 	}
 
-	client, ok := providerData.(*ApiClient)
+	client, ok := providerData.(*APIClient)
 	if !ok {
 		diags.AddError(
 			"Unexpected Provider Data",
-			fmt.Sprintf("Expected *ApiClient, got: %T. Please report this issue to the provider developers.", providerData),
+			fmt.Sprintf("Expected *APIClient, got: %T. Please report this issue to the provider developers.", providerData),
 		)
 
 		return nil, diags
@@ -164,7 +164,7 @@ func ConvertProviderData(providerData any) (*ApiClient, fwdiags.Diagnostics) {
 	return client, diags
 }
 
-func MaybeNewApiClientFromFrameworkResource(ctx context.Context, esConnList types.List, defaultClient *ApiClient) (*ApiClient, fwdiags.Diagnostics) {
+func MaybeNewAPIClientFromFrameworkResource(ctx context.Context, esConnList types.List, defaultClient *APIClient) (*APIClient, fwdiags.Diagnostics) {
 	var esConns []config.ElasticsearchConnection
 	if diags := esConnList.ElementsAs(ctx, &esConns, true); diags.HasError() {
 		return nil, diags
@@ -184,7 +184,7 @@ func MaybeNewApiClientFromFrameworkResource(ctx context.Context, esConnList type
 		return nil, fwdiags.Diagnostics{fwdiags.NewErrorDiagnostic(err.Error(), err.Error())}
 	}
 
-	return &ApiClient{
+	return &APIClient{
 		elasticsearch:            esClient,
 		elasticsearchClusterInfo: defaultClient.elasticsearchClusterInfo,
 		kibana:                   defaultClient.kibana,
@@ -193,8 +193,8 @@ func MaybeNewApiClientFromFrameworkResource(ctx context.Context, esConnList type
 	}, diags
 }
 
-func NewApiClientFromSDKResource(d *schema.ResourceData, meta any) (*ApiClient, diag.Diagnostics) {
-	defaultClient := meta.(*ApiClient)
+func NewAPIClientFromSDKResource(d *schema.ResourceData, meta any) (*APIClient, diag.Diagnostics) {
+	defaultClient := meta.(*APIClient)
 	version := defaultClient.version
 	resourceConfig, diags := config.NewFromSDKResource(d, version)
 	if diags.HasError() {
@@ -210,7 +210,7 @@ func NewApiClientFromSDKResource(d *schema.ResourceData, meta any) (*ApiClient, 
 		return nil, diag.FromErr(err)
 	}
 
-	return &ApiClient{
+	return &APIClient{
 		elasticsearch:            esClient,
 		elasticsearchClusterInfo: defaultClient.elasticsearchClusterInfo,
 		kibana:                   defaultClient.kibana,
@@ -219,7 +219,7 @@ func NewApiClientFromSDKResource(d *schema.ResourceData, meta any) (*ApiClient, 
 	}, diags
 }
 
-func (a *ApiClient) GetESClient() (*elasticsearch.Client, error) {
+func (a *APIClient) GetESClient() (*elasticsearch.Client, error) {
 	if a.elasticsearch == nil {
 		return nil, errors.New("elasticsearch client not found")
 	}
@@ -227,7 +227,7 @@ func (a *ApiClient) GetESClient() (*elasticsearch.Client, error) {
 	return a.elasticsearch, nil
 }
 
-func (a *ApiClient) GetKibanaClient() (*kibana.Client, error) {
+func (a *APIClient) GetKibanaClient() (*kibana.Client, error) {
 	if a.kibana == nil {
 		return nil, errors.New("kibana client not found")
 	}
@@ -235,15 +235,15 @@ func (a *ApiClient) GetKibanaClient() (*kibana.Client, error) {
 	return a.kibana, nil
 }
 
-func (a *ApiClient) GetKibanaOapiClient() (*kibana_oapi.Client, error) {
+func (a *APIClient) GetKibanaOapiClient() (*kibanaoapi.Client, error) {
 	if a.kibanaOapi == nil {
-		return nil, errors.New("kibana_oapi client not found")
+		return nil, errors.New("kibanaoapi client not found")
 	}
 
 	return a.kibanaOapi, nil
 }
 
-func (a *ApiClient) GetSloClient() (slo.SloAPI, error) {
+func (a *APIClient) GetSloClient() (slo.SloAPI, error) {
 	if a.slo == nil {
 		return nil, errors.New("slo client not found")
 	}
@@ -251,7 +251,7 @@ func (a *ApiClient) GetSloClient() (slo.SloAPI, error) {
 	return a.slo, nil
 }
 
-func (a *ApiClient) GetFleetClient() (*fleet.Client, error) {
+func (a *APIClient) GetFleetClient() (*fleet.Client, error) {
 	if a.fleet == nil {
 		return nil, errors.New("fleet client not found")
 	}
@@ -259,31 +259,31 @@ func (a *ApiClient) GetFleetClient() (*fleet.Client, error) {
 	return a.fleet, nil
 }
 
-func (a *ApiClient) SetSloAuthContext(ctx context.Context) context.Context {
+func (a *APIClient) SetSloAuthContext(ctx context.Context) context.Context {
 	if a.kibanaConfig.ApiKey != "" {
 		return context.WithValue(ctx, slo.ContextAPIKeys, map[string]slo.APIKey{
 			"apiKeyAuth": {
 				Prefix: "ApiKey",
 				Key:    a.kibanaConfig.ApiKey,
 			}})
-	} else {
-		return context.WithValue(ctx, slo.ContextBasicAuth, slo.BasicAuth{
-			UserName: a.kibanaConfig.Username,
-			Password: a.kibanaConfig.Password,
-		})
 	}
+
+	return context.WithValue(ctx, slo.ContextBasicAuth, slo.BasicAuth{
+		UserName: a.kibanaConfig.Username,
+		Password: a.kibanaConfig.Password,
+	})
 }
 
-func (a *ApiClient) ID(ctx context.Context, resourceId string) (*CompositeId, diag.Diagnostics) {
+func (a *APIClient) ID(ctx context.Context, resourceID string) (*CompositeID, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	clusterId, diags := a.ClusterID(ctx)
+	clusterID, diags := a.ClusterID(ctx)
 	if diags.HasError() {
 		return nil, diags
 	}
-	return &CompositeId{*clusterId, resourceId}, diags
+	return &CompositeID{*clusterID, resourceID}, diags
 }
 
-func (a *ApiClient) serverInfo(ctx context.Context) (*models.ClusterInfo, diag.Diagnostics) {
+func (a *APIClient) serverInfo(ctx context.Context) (*models.ClusterInfo, diag.Diagnostics) {
 	if a.elasticsearchClusterInfo != nil {
 		return a.elasticsearchClusterInfo, nil
 	}
@@ -312,7 +312,7 @@ func (a *ApiClient) serverInfo(ctx context.Context) (*models.ClusterInfo, diag.D
 	return &info, diags
 }
 
-func (a *ApiClient) EnforceMinVersion(ctx context.Context, minVersion *version.Version) (bool, diag.Diagnostics) {
+func (a *APIClient) EnforceMinVersion(ctx context.Context, minVersion *version.Version) (bool, diag.Diagnostics) {
 	flavor, diags := a.ServerFlavor(ctx)
 	if diags.HasError() {
 		return false, diags
@@ -334,7 +334,7 @@ type MinVersionEnforceable interface {
 	EnforceMinVersion(ctx context.Context, minVersion *version.Version) (bool, diag.Diagnostics)
 }
 
-func (a *ApiClient) ServerVersion(ctx context.Context) (*version.Version, diag.Diagnostics) {
+func (a *APIClient) ServerVersion(ctx context.Context) (*version.Version, diag.Diagnostics) {
 	if a.elasticsearch != nil {
 		return a.versionFromElasticsearch(ctx)
 	}
@@ -342,7 +342,7 @@ func (a *ApiClient) ServerVersion(ctx context.Context) (*version.Version, diag.D
 	return a.versionFromKibana()
 }
 
-func (a *ApiClient) versionFromKibana() (*version.Version, diag.Diagnostics) {
+func (a *APIClient) versionFromKibana() (*version.Version, diag.Diagnostics) {
 	kibClient, err := a.GetKibanaClient()
 	if err != nil {
 		return nil, diag.Errorf("failed to get version from Kibana API: %s, "+
@@ -373,7 +373,7 @@ func (a *ApiClient) versionFromKibana() (*version.Version, diag.Diagnostics) {
 	return serverVersion, nil
 }
 
-func (a *ApiClient) versionFromElasticsearch(ctx context.Context) (*version.Version, diag.Diagnostics) {
+func (a *APIClient) versionFromElasticsearch(ctx context.Context) (*version.Version, diag.Diagnostics) {
 	info, diags := a.serverInfo(ctx)
 	if diags.HasError() {
 		return nil, diags
@@ -388,7 +388,7 @@ func (a *ApiClient) versionFromElasticsearch(ctx context.Context) (*version.Vers
 	return serverVersion, nil
 }
 
-func (a *ApiClient) ServerFlavor(ctx context.Context) (string, diag.Diagnostics) {
+func (a *APIClient) ServerFlavor(ctx context.Context) (string, diag.Diagnostics) {
 	if a.elasticsearch != nil {
 		return a.flavorFromElasticsearch(ctx)
 	}
@@ -396,7 +396,7 @@ func (a *ApiClient) ServerFlavor(ctx context.Context) (string, diag.Diagnostics)
 	return a.flavorFromKibana()
 }
 
-func (a *ApiClient) flavorFromElasticsearch(ctx context.Context) (string, diag.Diagnostics) {
+func (a *APIClient) flavorFromElasticsearch(ctx context.Context) (string, diag.Diagnostics) {
 	info, diags := a.serverInfo(ctx)
 	if diags.HasError() {
 		return "", diags
@@ -405,7 +405,7 @@ func (a *ApiClient) flavorFromElasticsearch(ctx context.Context) (string, diag.D
 	return info.Version.BuildFlavor, nil
 }
 
-func (a *ApiClient) flavorFromKibana() (string, diag.Diagnostics) {
+func (a *APIClient) flavorFromKibana() (string, diag.Diagnostics) {
 	kibClient, err := a.GetKibanaClient()
 	if err != nil {
 		return "", diag.Errorf("failed to get flavor from Kibana API: %s, "+
@@ -433,7 +433,7 @@ func (a *ApiClient) flavorFromKibana() (string, diag.Diagnostics) {
 	return serverFlavor, nil
 }
 
-func (a *ApiClient) ClusterID(ctx context.Context) (*string, diag.Diagnostics) {
+func (a *APIClient) ClusterID(ctx context.Context) (*string, diag.Diagnostics) {
 	info, diags := a.serverInfo(ctx)
 	if diags.HasError() {
 		return nil, diags
@@ -485,15 +485,15 @@ func buildKibanaClient(cfg config.Client) (*kibana.Client, error) {
 		if err != nil {
 			return nil, err
 		}
-		var roundTripper http.RoundTripper = utils.NewDebugTransport("Kibana", transport)
+		roundTripper := debugutils.NewDebugTransport("Kibana", transport)
 		kib.Client.SetTransport(roundTripper)
 	}
 
 	return kib, nil
 }
 
-func buildKibanaOapiClient(cfg config.Client) (*kibana_oapi.Client, error) {
-	client, err := kibana_oapi.NewClient(*cfg.KibanaOapi)
+func buildKibanaOapiClient(cfg config.Client) (*kibanaoapi.Client, error) {
+	client, err := kibanaoapi.NewClient(*cfg.KibanaOapi)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create KibanaOapi client: %w", err)
 	}
@@ -524,13 +524,13 @@ func buildFleetClient(cfg config.Client) (*fleet.Client, error) {
 	return client, nil
 }
 
-func newApiClientFromSDK(d *schema.ResourceData, version string) (*ApiClient, diag.Diagnostics) {
+func newAPIClientFromSDK(d *schema.ResourceData, version string) (*APIClient, diag.Diagnostics) {
 	cfg, diags := config.NewFromSDK(d, version)
 	if diags.HasError() {
 		return nil, diags
 	}
 
-	client, err := newApiClientFromConfig(cfg, version)
+	client, err := newAPIClientFromConfig(cfg, version)
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
@@ -538,8 +538,8 @@ func newApiClientFromSDK(d *schema.ResourceData, version string) (*ApiClient, di
 	return client, nil
 }
 
-func newApiClientFromConfig(cfg config.Client, version string) (*ApiClient, error) {
-	client := &ApiClient{
+func newAPIClientFromConfig(cfg config.Client, version string) (*APIClient, error) {
+	client := &APIClient{
 		kibanaConfig: *cfg.Kibana,
 		version:      version,
 	}
@@ -565,9 +565,9 @@ func newApiClientFromConfig(cfg config.Client, version string) (*ApiClient, erro
 		}
 		client.kibanaOapi = kibanaOapiClient
 
-		kibanaHttpClient := kibanaClient.Client.GetClient()
+		kibanaHTTPClient := kibanaClient.Client.GetClient()
 
-		client.slo = buildSloClient(cfg, kibanaHttpClient).SloAPI
+		client.slo = buildSloClient(cfg, kibanaHTTPClient).SloAPI
 	}
 
 	if cfg.Fleet != nil {

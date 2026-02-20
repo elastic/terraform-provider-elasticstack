@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func mapToJsonStringValue(t *testing.T, m map[string]any) basetypes.StringValue {
+func mapToJSONStringValue(t *testing.T, m map[string]any) basetypes.StringValue {
 	mBytes, err := json.Marshal(m)
 	require.NoError(t, err)
 
@@ -53,7 +53,7 @@ func Test_PlanModifyString(t *testing.T) {
 		},
 		{
 			name: "should do nothing if the state mappings do not define any properties",
-			stateMappings: mapToJsonStringValue(t, map[string]any{
+			stateMappings: mapToJSONStringValue(t, map[string]any{
 				"not_properties": map[string]any{
 					"hello": "world",
 				},
@@ -62,7 +62,7 @@ func Test_PlanModifyString(t *testing.T) {
 		},
 		{
 			name: "requires replace if state mappings define properties but the config value does not",
-			stateMappings: mapToJsonStringValue(t, map[string]any{
+			stateMappings: mapToJSONStringValue(t, map[string]any{
 				"properties": map[string]any{
 					"hello": "world",
 				},
@@ -72,14 +72,14 @@ func Test_PlanModifyString(t *testing.T) {
 		},
 		{
 			name: "should not alter the final plan when a new field is added",
-			stateMappings: mapToJsonStringValue(t, map[string]any{
+			stateMappings: mapToJSONStringValue(t, map[string]any{
 				"properties": map[string]any{
 					"field1": map[string]any{
 						"type": "string",
 					},
 				},
 			}),
-			configMappings: mapToJsonStringValue(t, map[string]any{
+			configMappings: mapToJSONStringValue(t, map[string]any{
 				"properties": map[string]any{
 					"field1": map[string]any{
 						"type": "string",
@@ -89,7 +89,7 @@ func Test_PlanModifyString(t *testing.T) {
 					},
 				},
 			}),
-			expectedPlanMappings: mapToJsonStringValue(t, map[string]any{
+			expectedPlanMappings: mapToJSONStringValue(t, map[string]any{
 				"properties": map[string]any{
 					"field1": map[string]any{
 						"type": "string",
@@ -102,21 +102,21 @@ func Test_PlanModifyString(t *testing.T) {
 		},
 		{
 			name: "requires replace when the type of an existing field is changed",
-			stateMappings: mapToJsonStringValue(t, map[string]any{
+			stateMappings: mapToJSONStringValue(t, map[string]any{
 				"properties": map[string]any{
 					"field1": map[string]any{
 						"type": "string",
 					},
 				},
 			}),
-			configMappings: mapToJsonStringValue(t, map[string]any{
+			configMappings: mapToJSONStringValue(t, map[string]any{
 				"properties": map[string]any{
 					"field1": map[string]any{
 						"type": "int",
 					},
 				},
 			}),
-			expectedPlanMappings: mapToJsonStringValue(t, map[string]any{
+			expectedPlanMappings: mapToJSONStringValue(t, map[string]any{
 				"properties": map[string]any{
 					"field1": map[string]any{
 						"type": "int",
@@ -127,7 +127,7 @@ func Test_PlanModifyString(t *testing.T) {
 		},
 		{
 			name: "should add the removed field to the plan and include a warning when a field is removed from config",
-			stateMappings: mapToJsonStringValue(t, map[string]any{
+			stateMappings: mapToJSONStringValue(t, map[string]any{
 				"properties": map[string]any{
 					"field1": map[string]any{
 						"type": "string",
@@ -137,14 +137,14 @@ func Test_PlanModifyString(t *testing.T) {
 					},
 				},
 			}),
-			configMappings: mapToJsonStringValue(t, map[string]any{
+			configMappings: mapToJSONStringValue(t, map[string]any{
 				"properties": map[string]any{
 					"field1": map[string]any{
 						"type": "string",
 					},
 				},
 			}),
-			expectedPlanMappings: mapToJsonStringValue(t, map[string]any{
+			expectedPlanMappings: mapToJSONStringValue(t, map[string]any{
 				"properties": map[string]any{
 					"field1": map[string]any{
 						"type": "string",
@@ -164,7 +164,7 @@ func Test_PlanModifyString(t *testing.T) {
 		},
 		{
 			name: "should add the removed field to the plan and include a warning when a sub-field is removed from config",
-			stateMappings: mapToJsonStringValue(t, map[string]any{
+			stateMappings: mapToJSONStringValue(t, map[string]any{
 				"properties": map[string]any{
 					"field1": map[string]any{
 						"properties": map[string]any{
@@ -175,7 +175,7 @@ func Test_PlanModifyString(t *testing.T) {
 					},
 				},
 			}),
-			configMappings: mapToJsonStringValue(t, map[string]any{
+			configMappings: mapToJSONStringValue(t, map[string]any{
 				"properties": map[string]any{
 					"field1": map[string]any{
 						"properties": map[string]any{
@@ -186,7 +186,7 @@ func Test_PlanModifyString(t *testing.T) {
 					},
 				},
 			}),
-			expectedPlanMappings: mapToJsonStringValue(t, map[string]any{
+			expectedPlanMappings: mapToJSONStringValue(t, map[string]any{
 				"properties": map[string]any{
 					"field1": map[string]any{
 						"properties": map[string]any{
@@ -210,7 +210,7 @@ func Test_PlanModifyString(t *testing.T) {
 		},
 		{
 			name: "requires replace when a sub-fields type is changed",
-			stateMappings: mapToJsonStringValue(t, map[string]any{
+			stateMappings: mapToJSONStringValue(t, map[string]any{
 				"properties": map[string]any{
 					"field1": map[string]any{
 						"properties": map[string]any{
@@ -221,7 +221,7 @@ func Test_PlanModifyString(t *testing.T) {
 					},
 				},
 			}),
-			configMappings: mapToJsonStringValue(t, map[string]any{
+			configMappings: mapToJSONStringValue(t, map[string]any{
 				"properties": map[string]any{
 					"field1": map[string]any{
 						"properties": map[string]any{
@@ -232,7 +232,7 @@ func Test_PlanModifyString(t *testing.T) {
 					},
 				},
 			}),
-			expectedPlanMappings: mapToJsonStringValue(t, map[string]any{
+			expectedPlanMappings: mapToJSONStringValue(t, map[string]any{
 				"properties": map[string]any{
 					"field1": map[string]any{
 						"properties": map[string]any{

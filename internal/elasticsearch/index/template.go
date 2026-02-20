@@ -9,6 +9,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/tfsdkutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -86,7 +87,7 @@ func ResourceTemplate() *schema.Resource {
 			Type:             schema.TypeString,
 			Optional:         true,
 			ValidateFunc:     validation.StringIsJSON,
-			DiffSuppressFunc: utils.DiffJsonSuppress,
+			DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 		},
 		"priority": {
 			Description:  "Priority to determine index template precedence when a new data stream or index is created.",
@@ -117,7 +118,7 @@ func ResourceTemplate() *schema.Resource {
 									Type:             schema.TypeString,
 									Optional:         true,
 									Default:          "",
-									DiffSuppressFunc: utils.DiffJsonSuppress,
+									DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 									ValidateFunc:     validation.StringIsJSON,
 								},
 								"index_routing": {
@@ -157,7 +158,7 @@ func ResourceTemplate() *schema.Resource {
 						Description:      indexTemplateMappingsDescription,
 						Type:             schema.TypeString,
 						Optional:         true,
-						DiffSuppressFunc: utils.DiffJsonSuppress,
+						DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 						ValidateFunc: validation.All(
 							validation.StringIsJSON, stringIsJSONObject,
 						),
@@ -166,7 +167,7 @@ func ResourceTemplate() *schema.Resource {
 						Description:      "Configuration options for the index. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#index-modules-settings",
 						Type:             schema.TypeString,
 						Optional:         true,
-						DiffSuppressFunc: utils.DiffIndexSettingSuppress,
+						DiffSuppressFunc: tfsdkutils.DiffIndexSettingSuppress,
 						ValidateFunc: validation.All(
 							validation.StringIsJSON, stringIsJSONObject,
 						),
@@ -196,7 +197,7 @@ func ResourceTemplate() *schema.Resource {
 		},
 	}
 
-	utils.AddConnectionSchema(templateSchema)
+	schemautil.AddConnectionSchema(templateSchema)
 
 	return &schema.Resource{
 		Description: indexTemplateResourceDescription,
@@ -215,12 +216,12 @@ func ResourceTemplate() *schema.Resource {
 }
 
 func resourceIndexTemplatePut(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
-	templateId := d.Get("name").(string)
-	id, diags := client.ID(ctx, templateId)
+	templateID := d.Get("name").(string)
+	id, diags := client.ID(ctx, templateID)
 	if diags.HasError() {
 		return diags
 	}
@@ -231,7 +232,7 @@ func resourceIndexTemplatePut(ctx context.Context, d *schema.ResourceData, meta 
 	}
 
 	var indexTemplate models.IndexTemplate
-	indexTemplate.Name = templateId
+	indexTemplate.Name = templateID
 
 	compsOf := make([]string, 0)
 	if v, ok := d.GetOk("composed_of"); ok {
@@ -376,19 +377,19 @@ func expandTemplate(config any) (models.Template, bool, diag.Diagnostics) {
 }
 
 func resourceIndexTemplateRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
-	compId, diags := clients.CompositeIdFromStr(d.Id())
+	compID, diags := clients.CompositeIDFromStr(d.Id())
 	if diags.HasError() {
 		return diags
 	}
-	templateId := compId.ResourceId
+	templateID := compID.ResourceID
 
-	tpl, diags := elasticsearch.GetIndexTemplate(ctx, client, templateId)
+	tpl, diags := elasticsearch.GetIndexTemplate(ctx, client, templateID)
 	if tpl == nil && diags == nil {
-		tflog.Warn(ctx, fmt.Sprintf(`Index template "%s" not found, removing from state`, compId.ResourceId))
+		tflog.Warn(ctx, fmt.Sprintf(`Index template "%s" not found, removing from state`, compID.ResourceID))
 		d.SetId("")
 		return diags
 	}
@@ -488,17 +489,17 @@ func flattenTemplateData(template *models.Template) ([]any, diag.Diagnostics) {
 }
 
 func resourceIndexTemplateDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
 
 	id := d.Id()
-	compId, diags := clients.CompositeIdFromStr(id)
+	compID, diags := clients.CompositeIDFromStr(id)
 	if diags.HasError() {
 		return diags
 	}
-	if diags := elasticsearch.DeleteIndexTemplate(ctx, client, compId.ResourceId); diags.HasError() {
+	if diags := elasticsearch.DeleteIndexTemplate(ctx, client, compID.ResourceID); diags.HasError() {
 		return diags
 	}
 	return diags

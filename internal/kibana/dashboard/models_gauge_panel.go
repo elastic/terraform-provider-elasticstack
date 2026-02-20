@@ -6,8 +6,8 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -191,7 +191,7 @@ func (m *gaugeConfigModel) toAPI() (kbapi.GaugeNoESQL, diag.Diagnostics) {
 		api.Description = m.Description.ValueStringPointer()
 	}
 
-	if utils.IsKnown(m.Dataset) {
+	if typeutils.IsKnown(m.Dataset) {
 		if err := json.Unmarshal([]byte(m.Dataset.ValueString()), &api.Dataset); err != nil {
 			diags.AddError("Failed to unmarshal dataset", err.Error())
 			return api, diags
@@ -221,14 +221,14 @@ func (m *gaugeConfigModel) toAPI() (kbapi.GaugeNoESQL, diag.Diagnostics) {
 		api.Filters = &filters
 	}
 
-	if utils.IsKnown(m.Metric) {
+	if typeutils.IsKnown(m.Metric) {
 		if err := json.Unmarshal([]byte(m.Metric.ValueString()), &api.Metric); err != nil {
 			diags.AddError("Failed to unmarshal metric", err.Error())
 			return api, diags
 		}
 	}
 
-	if utils.IsKnown(m.Shape) {
+	if typeutils.IsKnown(m.Shape) {
 		var shape kbapi.GaugeNoESQL_Shape
 		shapeDiags := m.Shape.Unmarshal(&shape)
 		diags.Append(shapeDiags...)

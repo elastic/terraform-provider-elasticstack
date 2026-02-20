@@ -1,4 +1,4 @@
-package integration_policy
+package integrationpolicy
 
 import (
 	"context"
@@ -28,7 +28,7 @@ import (
 //go:embed resource-description.md
 var integrationPolicyDescription string
 
-func (r *integrationPolicyResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *integrationPolicyResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = getSchemaV2()
 }
 

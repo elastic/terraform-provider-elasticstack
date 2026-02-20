@@ -45,8 +45,8 @@ func Test_outputKafkaModel_toAPIHash(t *testing.T) {
 				Hash   *string `json:"hash,omitempty"`
 				Random *bool   `json:"random,omitempty"`
 			}{
-				Hash:   utils.Pointer("field"),
-				Random: utils.Pointer(true),
+				Hash:   schemautil.Pointer("field"),
+				Random: schemautil.Pointer(true),
 			},
 		},
 	}
@@ -156,7 +156,7 @@ func Test_outputKafkaModel_toAPIRandom(t *testing.T) {
 			want: &struct {
 				GroupEvents *float32 `json:"group_events,omitempty"`
 			}{
-				GroupEvents: utils.Pointer(float32(1)),
+				GroupEvents: schemautil.Pointer(float32(1)),
 			},
 		},
 	}
@@ -206,7 +206,7 @@ func Test_outputKafkaModel_toAPIRoundRobin(t *testing.T) {
 			want: &struct {
 				GroupEvents *float32 `json:"group_events,omitempty"`
 			}{
-				GroupEvents: utils.Pointer(float32(1)),
+				GroupEvents: schemautil.Pointer(float32(1)),
 			},
 		},
 	}
@@ -256,7 +256,7 @@ func Test_outputKafkaModel_toAPISasl(t *testing.T) {
 			want: &struct {
 				Mechanism *kbapi.NewOutputKafkaSaslMechanism `json:"mechanism,omitempty"`
 			}{
-				Mechanism: utils.Pointer(kbapi.NewOutputKafkaSaslMechanism("plain")),
+				Mechanism: schemautil.Pointer(kbapi.NewOutputKafkaSaslMechanism("plain")),
 			},
 		},
 	}
@@ -306,7 +306,7 @@ func Test_outputKafkaModel_toUpdateAPISasl(t *testing.T) {
 			want: &struct {
 				Mechanism *kbapi.UpdateOutputKafkaSaslMechanism `json:"mechanism,omitempty"`
 			}{
-				Mechanism: utils.Pointer(kbapi.UpdateOutputKafkaSaslMechanism("plain")),
+				Mechanism: schemautil.Pointer(kbapi.UpdateOutputKafkaSaslMechanism("plain")),
 			},
 		},
 	}
@@ -379,7 +379,7 @@ func Test_outputKafkaModel_toUpdateAuthType(t *testing.T) {
 			fields: fields{
 				AuthType: types.StringValue("user"),
 			},
-			want: utils.Pointer(kbapi.UpdateOutputKafkaAuthType("user")),
+			want: schemautil.Pointer(kbapi.UpdateOutputKafkaAuthType("user")),
 		},
 	}
 	for _, tt := range tests {

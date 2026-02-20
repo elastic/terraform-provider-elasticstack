@@ -1,4 +1,4 @@
-package security_exception_item
+package securityexceptionitem
 
 import (
 	"context"
@@ -9,7 +9,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -78,11 +77,11 @@ type NestedEntryModel struct {
 func convertEntriesToAPI(ctx context.Context, entries types.List) (kbapi.SecurityExceptionsAPIExceptionListItemEntryArray, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	if !utils.IsKnown(entries) {
+	if !typeutils.IsKnown(entries) {
 		return nil, diags
 	}
 
-	entryModels := utils.ListTypeAs[EntryModel](ctx, entries, path.Empty(), &diags)
+	entryModels := typeutils.ListTypeAs[EntryModel](ctx, entries, path.Empty(), &diags)
 	if diags.HasError() {
 		return nil, diags
 	}
@@ -110,7 +109,7 @@ func convertMatchEntryToAPI(
 	var result kbapi.SecurityExceptionsAPIExceptionListItemEntry
 
 	// Validate required field
-	if !utils.IsKnown(entry.Value) || entry.Value.ValueString() == "" {
+	if !typeutils.IsKnown(entry.Value) || entry.Value.ValueString() == "" {
 		diags.AddError("Invalid Configuration", "Attribute 'value' is required when type is 'match'")
 		return result, diags
 	}
@@ -139,12 +138,12 @@ func convertMatchAnyEntryToAPI(
 	var result kbapi.SecurityExceptionsAPIExceptionListItemEntry
 
 	// Validate required field
-	if !utils.IsKnown(entry.Values) {
+	if !typeutils.IsKnown(entry.Values) {
 		diags.AddError("Invalid Configuration", "Attribute 'values' is required when type is 'match_any'")
 		return result, diags
 	}
 
-	values := utils.ListTypeAs[string](ctx, entry.Values, path.Empty(), &diags)
+	values := typeutils.ListTypeAs[string](ctx, entry.Values, path.Empty(), &diags)
 	if diags.HasError() {
 		return result, diags
 	}
@@ -180,7 +179,7 @@ func convertListEntryToAPI(
 	var result kbapi.SecurityExceptionsAPIExceptionListItemEntry
 
 	// Validate required field
-	if !utils.IsKnown(entry.List) {
+	if !typeutils.IsKnown(entry.List) {
 		diags.AddError("Invalid Configuration", "Attribute 'list' is required when type is 'list'")
 		return result, diags
 	}
@@ -234,7 +233,7 @@ func convertWildcardEntryToAPI(
 	var result kbapi.SecurityExceptionsAPIExceptionListItemEntry
 
 	// Validate required field
-	if !utils.IsKnown(entry.Value) || entry.Value.ValueString() == "" {
+	if !typeutils.IsKnown(entry.Value) || entry.Value.ValueString() == "" {
 		diags.AddError("Invalid Configuration", "Attribute 'value' is required when type is 'wildcard'")
 		return result, diags
 	}
@@ -258,12 +257,12 @@ func convertNestedEntryArrayToAPI(ctx context.Context, entry EntryModel, field k
 	var result kbapi.SecurityExceptionsAPIExceptionListItemEntry
 
 	// Validate required field
-	if !utils.IsKnown(entry.Entries) {
+	if !typeutils.IsKnown(entry.Entries) {
 		diags.AddError("Invalid Configuration", "Attribute 'entries' is required when type is 'nested'")
 		return result, diags
 	}
 
-	nestedEntries := utils.ListTypeAs[NestedEntryModel](ctx, entry.Entries, path.Empty(), &diags)
+	nestedEntries := typeutils.ListTypeAs[NestedEntryModel](ctx, entry.Entries, path.Empty(), &diags)
 	if diags.HasError() {
 		return result, diags
 	}
@@ -333,7 +332,7 @@ func convertNestedMatchEntryToAPI(
 	var result kbapi.SecurityExceptionsAPIExceptionListItemEntryNestedEntryItem
 
 	// Validate required field
-	if !utils.IsKnown(entry.Value) || entry.Value.ValueString() == "" {
+	if !typeutils.IsKnown(entry.Value) || entry.Value.ValueString() == "" {
 		diags.AddError("Invalid Configuration", "Attribute 'value' is required for nested entry when type is 'match'")
 		return result, diags
 	}
@@ -362,12 +361,12 @@ func convertNestedMatchAnyEntryToAPI(
 	var result kbapi.SecurityExceptionsAPIExceptionListItemEntryNestedEntryItem
 
 	// Validate required field
-	if !utils.IsKnown(entry.Values) {
+	if !typeutils.IsKnown(entry.Values) {
 		diags.AddError("Invalid Configuration", "Attribute 'values' is required for nested entry when type is 'match_any'")
 		return result, diags
 	}
 
-	values := utils.ListTypeAs[string](ctx, entry.Values, path.Empty(), &diags)
+	values := typeutils.ListTypeAs[string](ctx, entry.Values, path.Empty(), &diags)
 	if diags.HasError() {
 		return result, diags
 	}
@@ -736,14 +735,14 @@ func (m *ExceptionItemModel) setCommonProps(
 	client clients.MinVersionEnforceable,
 ) {
 	// Set optional namespace_type
-	if utils.IsKnown(m.NamespaceType) {
+	if typeutils.IsKnown(m.NamespaceType) {
 		nsType := kbapi.SecurityExceptionsAPIExceptionNamespaceType(m.NamespaceType.ValueString())
 		*props.NamespaceType = nsType
 	}
 
 	// Set optional os_types
-	if utils.IsKnown(m.OsTypes) {
-		osTypes := utils.SetTypeAs[kbapi.SecurityExceptionsAPIExceptionListOsType](ctx, m.OsTypes, path.Empty(), diags)
+	if typeutils.IsKnown(m.OsTypes) {
+		osTypes := typeutils.SetTypeAs[kbapi.SecurityExceptionsAPIExceptionListOsType](ctx, m.OsTypes, path.Empty(), diags)
 		if diags.HasError() {
 			return
 		}
@@ -753,8 +752,8 @@ func (m *ExceptionItemModel) setCommonProps(
 	}
 
 	// Set optional tags
-	if utils.IsKnown(m.Tags) {
-		tags := utils.SetTypeAs[string](ctx, m.Tags, path.Empty(), diags)
+	if typeutils.IsKnown(m.Tags) {
+		tags := typeutils.SetTypeAs[string](ctx, m.Tags, path.Empty(), diags)
 		if diags.HasError() {
 			return
 		}
@@ -764,7 +763,7 @@ func (m *ExceptionItemModel) setCommonProps(
 	}
 
 	// Set optional meta
-	if utils.IsKnown(m.Meta) {
+	if typeutils.IsKnown(m.Meta) {
 		var meta kbapi.SecurityExceptionsAPIExceptionListItemMeta
 		unmarshalDiags := m.Meta.Unmarshal(&meta)
 		diags.Append(unmarshalDiags...)
@@ -775,7 +774,7 @@ func (m *ExceptionItemModel) setCommonProps(
 	}
 
 	// Set optional expire_time
-	if utils.IsKnown(m.ExpireTime) {
+	if typeutils.IsKnown(m.ExpireTime) {
 		// Check version support for expire_time
 		if supported, versionDiags := client.EnforceMinVersion(ctx, MinVersionExpireTime); versionDiags.HasError() {
 			diags.Append(diagutil.FrameworkDiagsFromSDK(versionDiags)...)
@@ -802,11 +801,11 @@ func (m *ExceptionItemModel) commentsToCreateAPI(
 	ctx context.Context,
 	diags *diag.Diagnostics,
 ) *kbapi.SecurityExceptionsAPICreateExceptionListItemCommentArray {
-	if !utils.IsKnown(m.Comments) {
+	if !typeutils.IsKnown(m.Comments) {
 		return nil
 	}
 
-	comments := utils.ListTypeAs[CommentModel](ctx, m.Comments, path.Empty(), diags)
+	comments := typeutils.ListTypeAs[CommentModel](ctx, m.Comments, path.Empty(), diags)
 	if diags.HasError() || len(comments) == 0 {
 		return nil
 	}
@@ -825,11 +824,11 @@ func (m *ExceptionItemModel) commentsToUpdateAPI(
 	ctx context.Context,
 	diags *diag.Diagnostics,
 ) *kbapi.SecurityExceptionsAPIUpdateExceptionListItemCommentArray {
-	if !utils.IsKnown(m.Comments) {
+	if !typeutils.IsKnown(m.Comments) {
 		return nil
 	}
 
-	comments := utils.ListTypeAs[CommentModel](ctx, m.Comments, path.Empty(), diags)
+	comments := typeutils.ListTypeAs[CommentModel](ctx, m.Comments, path.Empty(), diags)
 	if diags.HasError() || len(comments) == 0 {
 		return nil
 	}
@@ -862,7 +861,7 @@ func (m *ExceptionItemModel) toCreateRequest(ctx context.Context, client clients
 	}
 
 	// Set optional item_id
-	if utils.IsKnown(m.ItemID) {
+	if typeutils.IsKnown(m.ItemID) {
 		itemID := m.ItemID.ValueString()
 		genericReq.ItemId = &itemID
 	}
@@ -886,19 +885,19 @@ func (m *ExceptionItemModel) toCreateRequest(ctx context.Context, client clients
 	}
 
 	// Assign common properties to request if they were set
-	if utils.IsKnown(m.NamespaceType) {
+	if typeutils.IsKnown(m.NamespaceType) {
 		genericReq.NamespaceType = &nsType
 	}
-	if utils.IsKnown(m.OsTypes) && len(osTypes) > 0 {
+	if typeutils.IsKnown(m.OsTypes) && len(osTypes) > 0 {
 		genericReq.OsTypes = &osTypes
 	}
-	if utils.IsKnown(m.Tags) && len(tags) > 0 {
+	if typeutils.IsKnown(m.Tags) && len(tags) > 0 {
 		genericReq.Tags = &tags
 	}
-	if utils.IsKnown(m.Meta) {
+	if typeutils.IsKnown(m.Meta) {
 		genericReq.Meta = &meta
 	}
-	if utils.IsKnown(m.ExpireTime) {
+	if typeutils.IsKnown(m.ExpireTime) {
 		genericReq.ExpireTime = &expireTime
 	}
 
@@ -921,7 +920,7 @@ func (m *ExceptionItemModel) toCreateRequest(ctx context.Context, client clients
 }
 
 // toUpdateRequest converts the Terraform model to API update request
-func (m *ExceptionItemModel) toUpdateRequest(ctx context.Context, resourceId string, client clients.MinVersionEnforceable) (*kbapi.UpdateExceptionListItemJSONRequestBody, diag.Diagnostics) {
+func (m *ExceptionItemModel) toUpdateRequest(ctx context.Context, resourceID string, client clients.MinVersionEnforceable) (*kbapi.UpdateExceptionListItemJSONRequestBody, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	// Convert entries from Terraform model to API model
@@ -930,7 +929,7 @@ func (m *ExceptionItemModel) toUpdateRequest(ctx context.Context, resourceId str
 		return nil, diags
 	}
 
-	id := resourceId
+	id := resourceID
 	genericReq := kbapi.SecurityExceptionsAPIUpdateExceptionListItemGeneric{
 		Id:          &id,
 		Name:        m.Name.ValueString(),
@@ -958,19 +957,19 @@ func (m *ExceptionItemModel) toUpdateRequest(ctx context.Context, resourceId str
 	}
 
 	// Assign common properties to request if they were set
-	if utils.IsKnown(m.NamespaceType) {
+	if typeutils.IsKnown(m.NamespaceType) {
 		genericReq.NamespaceType = &nsType
 	}
-	if utils.IsKnown(m.OsTypes) && len(osTypes) > 0 {
+	if typeutils.IsKnown(m.OsTypes) && len(osTypes) > 0 {
 		genericReq.OsTypes = &osTypes
 	}
-	if utils.IsKnown(m.Tags) && len(tags) > 0 {
+	if typeutils.IsKnown(m.Tags) && len(tags) > 0 {
 		genericReq.Tags = &tags
 	}
-	if utils.IsKnown(m.Meta) {
+	if typeutils.IsKnown(m.Meta) {
 		genericReq.Meta = &meta
 	}
-	if utils.IsKnown(m.ExpireTime) {
+	if typeutils.IsKnown(m.ExpireTime) {
 		genericReq.ExpireTime = &expireTime
 	}
 
@@ -997,11 +996,11 @@ func (m *ExceptionItemModel) fromAPI(ctx context.Context, apiResp *kbapi.Securit
 	var diags diag.Diagnostics
 
 	// Create composite ID from space_id and item id
-	compId := clients.CompositeId{
-		ClusterId:  m.SpaceID.ValueString(),
-		ResourceId: typeutils.StringishValue(apiResp.Id).ValueString(),
+	compID := clients.CompositeID{
+		ClusterID:  m.SpaceID.ValueString(),
+		ResourceID: typeutils.StringishValue(apiResp.Id).ValueString(),
 	}
-	m.ID = types.StringValue(compId.String())
+	m.ID = types.StringValue(compID.String())
 
 	m.ItemID = typeutils.StringishValue(apiResp.ItemId)
 	m.ListID = typeutils.StringishValue(apiResp.ListId)

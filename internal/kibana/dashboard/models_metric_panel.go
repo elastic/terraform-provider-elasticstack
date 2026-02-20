@@ -8,6 +8,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -303,22 +304,22 @@ func (m *metricChartConfigModel) toAPIVariant0() (kbapi.MetricChartSchema, diag.
 	}
 
 	// Set simple fields
-	if utils.IsKnown(m.Title) {
-		variant0.Title = utils.Pointer(m.Title.ValueString())
+	if typeutils.IsKnown(m.Title) {
+		variant0.Title = schemautil.Pointer(m.Title.ValueString())
 	}
-	if utils.IsKnown(m.Description) {
-		variant0.Description = utils.Pointer(m.Description.ValueString())
+	if typeutils.IsKnown(m.Description) {
+		variant0.Description = schemautil.Pointer(m.Description.ValueString())
 	}
-	if utils.IsKnown(m.IgnoreGlobalFilters) {
-		variant0.IgnoreGlobalFilters = utils.Pointer(m.IgnoreGlobalFilters.ValueBool())
+	if typeutils.IsKnown(m.IgnoreGlobalFilters) {
+		variant0.IgnoreGlobalFilters = schemautil.Pointer(m.IgnoreGlobalFilters.ValueBool())
 	}
-	if utils.IsKnown(m.Sampling) {
+	if typeutils.IsKnown(m.Sampling) {
 		sampling := float32(m.Sampling.ValueFloat64())
 		variant0.Sampling = &sampling
 	}
 
 	// Set dataset
-	if utils.IsKnown(m.Dataset) {
+	if typeutils.IsKnown(m.Dataset) {
 		var dataset kbapi.MetricChartSchema_0_Dataset
 		datasetDiags := m.Dataset.Unmarshal(&dataset)
 		diags.Append(datasetDiags...)
@@ -347,7 +348,7 @@ func (m *metricChartConfigModel) toAPIVariant0() (kbapi.MetricChartSchema, diag.
 	if len(m.Metrics) > 0 {
 		metrics := make([]kbapi.MetricChartSchema_0_Metrics_Item, len(m.Metrics))
 		for i, metric := range m.Metrics {
-			if utils.IsKnown(metric.Config) {
+			if typeutils.IsKnown(metric.Config) {
 				var metricItem kbapi.MetricChartSchema_0_Metrics_Item
 				metricDiags := metric.Config.Unmarshal(&metricItem)
 				diags.Append(metricDiags...)
@@ -360,7 +361,7 @@ func (m *metricChartConfigModel) toAPIVariant0() (kbapi.MetricChartSchema, diag.
 	}
 
 	// Set breakdown_by
-	if utils.IsKnown(m.BreakdownBy) {
+	if typeutils.IsKnown(m.BreakdownBy) {
 		var breakdownBy kbapi.MetricChartSchema_0_BreakdownBy
 		breakdownDiags := m.BreakdownBy.Unmarshal(&breakdownBy)
 		diags.Append(breakdownDiags...)
@@ -385,22 +386,22 @@ func (m *metricChartConfigModel) toAPIVariant1() (kbapi.MetricChartSchema, diag.
 	}
 
 	// Set simple fields
-	if utils.IsKnown(m.Title) {
-		variant1.Title = utils.Pointer(m.Title.ValueString())
+	if typeutils.IsKnown(m.Title) {
+		variant1.Title = schemautil.Pointer(m.Title.ValueString())
 	}
-	if utils.IsKnown(m.Description) {
-		variant1.Description = utils.Pointer(m.Description.ValueString())
+	if typeutils.IsKnown(m.Description) {
+		variant1.Description = schemautil.Pointer(m.Description.ValueString())
 	}
-	if utils.IsKnown(m.IgnoreGlobalFilters) {
-		variant1.IgnoreGlobalFilters = utils.Pointer(m.IgnoreGlobalFilters.ValueBool())
+	if typeutils.IsKnown(m.IgnoreGlobalFilters) {
+		variant1.IgnoreGlobalFilters = schemautil.Pointer(m.IgnoreGlobalFilters.ValueBool())
 	}
-	if utils.IsKnown(m.Sampling) {
+	if typeutils.IsKnown(m.Sampling) {
 		sampling := float32(m.Sampling.ValueFloat64())
 		variant1.Sampling = &sampling
 	}
 
 	// Set dataset
-	if utils.IsKnown(m.Dataset) {
+	if typeutils.IsKnown(m.Dataset) {
 		var dataset kbapi.MetricChartSchema_1_Dataset
 		datasetDiags := m.Dataset.Unmarshal(&dataset)
 		diags.Append(datasetDiags...)
@@ -424,7 +425,7 @@ func (m *metricChartConfigModel) toAPIVariant1() (kbapi.MetricChartSchema, diag.
 	if len(m.Metrics) > 0 {
 		metrics := make([]kbapi.MetricChartSchema_1_Metrics_Item, len(m.Metrics))
 		for i, metric := range m.Metrics {
-			if utils.IsKnown(metric.Config) {
+			if typeutils.IsKnown(metric.Config) {
 				var metricItem kbapi.MetricChartSchema_1_Metrics_Item
 				metricDiags := metric.Config.Unmarshal(&metricItem)
 				diags.Append(metricDiags...)
@@ -437,7 +438,7 @@ func (m *metricChartConfigModel) toAPIVariant1() (kbapi.MetricChartSchema, diag.
 	}
 
 	// Set breakdown_by
-	if utils.IsKnown(m.BreakdownBy) {
+	if typeutils.IsKnown(m.BreakdownBy) {
 		var breakdownBy struct {
 			CollapseBy kbapi.CollapseBy                             `json:"collapse_by"`
 			Column     string                                       `json:"column"`

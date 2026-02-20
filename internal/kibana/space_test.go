@@ -17,7 +17,7 @@ import (
 var minSelfManagedVersionForSpaceSolution = version.Must(version.NewVersion("8.18.0"))
 
 func TestAccResourceSpace(t *testing.T) {
-	spaceId := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	spaceID := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -27,11 +27,11 @@ func TestAccResourceSpace(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
-					"space_id": config.StringVariable(spaceId),
+					"space_id": config.StringVariable(spaceID),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "space_id", spaceId),
-					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "name", fmt.Sprintf("Name %s", spaceId)),
+					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "space_id", spaceID),
+					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "name", fmt.Sprintf("Name %s", spaceID)),
 					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "description", "Test Space"),
 				),
 			},
@@ -39,11 +39,11 @@ func TestAccResourceSpace(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
-					"space_id": config.StringVariable(spaceId),
+					"space_id": config.StringVariable(spaceID),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "space_id", spaceId),
-					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "name", fmt.Sprintf("Updated %s", spaceId)),
+					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "space_id", spaceID),
+					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "name", fmt.Sprintf("Updated %s", spaceID)),
 					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "description", "Updated space description"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_space.test_space", "disabled_features.*", "ingestManager"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_space.test_space", "disabled_features.*", "enterpriseSearch"),
@@ -55,12 +55,12 @@ func TestAccResourceSpace(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_solution"),
 				ConfigVariables: config.Variables{
-					"space_id": config.StringVariable(spaceId),
+					"space_id": config.StringVariable(spaceID),
 				},
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSelfManagedVersionForSpaceSolution),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "space_id", spaceId),
-					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "name", fmt.Sprintf("Solution %s", spaceId)),
+					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "space_id", spaceID),
+					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "name", fmt.Sprintf("Solution %s", spaceID)),
 					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "description", "Test Space with Solution"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "solution", "security"),
 				),
@@ -69,11 +69,11 @@ func TestAccResourceSpace(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
-					"space_id": config.StringVariable(spaceId),
+					"space_id": config.StringVariable(spaceID),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "space_id", spaceId),
-					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "name", fmt.Sprintf("Name %s", spaceId)),
+					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "space_id", spaceID),
+					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "name", fmt.Sprintf("Name %s", spaceID)),
 					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "description", "Test Space"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "color", "#FFFFFF"),
 				),

@@ -1,12 +1,12 @@
-package user
+package securityuser
 
 import (
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-type UserData struct {
-	Id                      types.String         `tfsdk:"id"`
+type Data struct {
+	ID                      types.String         `tfsdk:"id"`
 	ElasticsearchConnection types.List           `tfsdk:"elasticsearch_connection"`
 	Username                types.String         `tfsdk:"username"`
 	Password                types.String         `tfsdk:"password"`

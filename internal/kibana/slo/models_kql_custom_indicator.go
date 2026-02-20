@@ -2,7 +2,7 @@ package slo
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/slo"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -25,7 +25,7 @@ func (m tfModel) kqlCustomIndicatorToAPI() (bool, slo.SloWithSummaryResponseIndi
 	ind := m.KqlCustomIndicator[0]
 
 	var filterObj *slo.KqlWithFilters
-	if utils.IsKnown(ind.Filter) {
+	if typeutils.IsKnown(ind.Filter) {
 		v := ind.Filter.ValueString()
 		filterObj = &slo.KqlWithFilters{String: &v}
 	}
@@ -33,13 +33,13 @@ func (m tfModel) kqlCustomIndicatorToAPI() (bool, slo.SloWithSummaryResponseIndi
 	// Default good and total to empty string if not provided, as they are required by the API
 	// and must be marshallable to valid JSON
 	goodStr := ""
-	if utils.IsKnown(ind.Good) {
+	if typeutils.IsKnown(ind.Good) {
 		goodStr = ind.Good.ValueString()
 	}
 	good := slo.KqlWithFiltersGood{String: &goodStr}
 
 	totalStr := ""
-	if utils.IsKnown(ind.Total) {
+	if typeutils.IsKnown(ind.Total) {
 		totalStr = ind.Total.ValueString()
 	}
 	total := slo.KqlWithFiltersTotal{String: &totalStr}

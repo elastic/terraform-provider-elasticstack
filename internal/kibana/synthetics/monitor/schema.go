@@ -12,7 +12,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
@@ -91,7 +91,7 @@ type tfBrowserMonitorFieldsV0 struct {
 	InlineScript      types.String         `tfsdk:"inline_script"`
 	Screenshots       types.String         `tfsdk:"screenshots"`
 	SyntheticsArgs    []types.String       `tfsdk:"synthetics_args"`
-	IgnoreHttpsErrors types.Bool           `tfsdk:"ignore_https_errors"`
+	IgnoreHTTPSErrors types.Bool           `tfsdk:"ignore_https_errors"`
 	PlaywrightOptions jsontypes.Normalized `tfsdk:"playwright_options"`
 }
 
@@ -502,7 +502,7 @@ func toNormalizedValue(jsObj kbapi.JsonObject) (jsontypes.Normalized, error) {
 	return jsontypes.NewNormalizedValue(string(res)), nil
 }
 
-func toJsonObject(v jsontypes.Normalized) (kbapi.JsonObject, diag.Diagnostics) {
+func toJSONObject(v jsontypes.Normalized) (kbapi.JsonObject, diag.Diagnostics) {
 	if v.IsNull() {
 		return nil, diag.Diagnostics{}
 	}
@@ -596,9 +596,9 @@ func (v *tfModelV0) toModelV0(ctx context.Context, api *kbapi.SyntheticsMonitor,
 		}
 	}
 
-	resourceID := clients.CompositeId{
-		ClusterId:  space,
-		ResourceId: string(api.Id),
+	resourceID := clients.CompositeID{
+		ClusterID:  space,
+		ResourceID: string(api.Id),
 	}
 
 	alertV0, dg := toTfAlertConfigV0(ctx, api.Alert)
@@ -616,7 +616,7 @@ func (v *tfModelV0) toModelV0(ctx context.Context, api *kbapi.SyntheticsMonitor,
 		PrivateLocations: synthetics.StringSliceValue(privateLocLabels),
 		Enabled:          types.BoolPointerValue(api.Enabled),
 		Tags:             synthetics.StringSliceValue(api.Tags),
-		Labels:           utils.MapValueFrom(ctx, api.Labels, types.StringType, path.Root("labels"), &dg),
+		Labels:           typeutils.MapValueFrom(ctx, api.Labels, types.StringType, path.Root("labels"), &dg),
 		Alert:            alertV0,
 		APMServiceName:   types.StringValue(api.APMServiceName),
 		TimeoutSeconds:   types.Int64Value(timeout),
@@ -689,7 +689,7 @@ func (v *tfBrowserMonitorFieldsV0) toTfBrowserMonitorFieldsV0(api *kbapi.Synthet
 		InlineScript:      inlineScript,
 		Screenshots:       types.StringValue(api.Screenshots),
 		SyntheticsArgs:    syntheticsArgs,
-		IgnoreHttpsErrors: types.BoolPointerValue(api.IgnoreHttpsErrors),
+		IgnoreHTTPSErrors: types.BoolPointerValue(api.IgnoreHttpsErrors),
 		PlaywrightOptions: playwrightOptions,
 	}, nil
 }
@@ -742,7 +742,7 @@ func (v *tfHTTPMonitorFieldsV0) toTfHTTPMonitorFieldsV0(ctx context.Context, dg 
 }
 
 func toTFSSLConfig(ctx context.Context, dg diag.Diagnostics, api *kbapi.SyntheticsMonitor, p string) (tfSSLConfig, diag.Diagnostics) {
-	sslSupportedProtocols := utils.SliceToListType_String(ctx, api.SslSupportedProtocols, path.Root(p).AtName("ssl_supported_protocols"), &dg)
+	sslSupportedProtocols := typeutils.SliceToListTypeString(ctx, api.SslSupportedProtocols, path.Root(p).AtName("ssl_supported_protocols"), &dg)
 	return tfSSLConfig{
 		SslVerificationMode:       types.StringValue(api.SslVerificationMode),
 		SslSupportedProtocols:     sslSupportedProtocols,
@@ -803,7 +803,7 @@ func (v *tfModelV0) toMonitorFields(ctx context.Context) (kbapi.MonitorFields, d
 
 	switch {
 	case v.HTTP != nil:
-		return v.toHttpMonitorFields(ctx)
+		return v.toHTTPMonitorFields(ctx)
 	case v.TCP != nil:
 		return v.toTCPMonitorFields(ctx)
 	case v.ICMP != nil:
@@ -828,12 +828,12 @@ func toTFAlertConfig(ctx context.Context, v basetypes.ObjectValue) *kbapi.Monito
 
 func (v *tfModelV0) toSyntheticsMonitorConfig(ctx context.Context) (*kbapi.SyntheticsMonitorConfig, diag.Diagnostics) {
 	locations := Map[types.String, kbapi.MonitorLocation](v.Locations, func(s types.String) kbapi.MonitorLocation { return kbapi.MonitorLocation(s.ValueString()) })
-	params, dg := toJsonObject(v.Params)
+	params, dg := toJSONObject(v.Params)
 	if dg.HasError() {
 		return nil, dg
 	}
 
-	labels := utils.MapTypeAs[string](ctx, v.Labels, path.Root("labels"), &dg)
+	labels := typeutils.MapTypeAs[string](ctx, v.Labels, path.Root("labels"), &dg)
 	if dg.HasError() {
 		return nil, dg
 	}
@@ -871,7 +871,7 @@ func toSSLConfig(ctx context.Context, dg diag.Diagnostics, v tfSSLConfig, p stri
 
 	var ssl *kbapi.SSLConfig
 	if !v.SslSupportedProtocols.IsNull() && !v.SslSupportedProtocols.IsUnknown() {
-		sslSupportedProtocols := utils.ListTypeToSlice_String(ctx, v.SslSupportedProtocols, path.Root(p).AtName("ssl_supported_protocols"), &dg)
+		sslSupportedProtocols := typeutils.ListTypeToSliceString(ctx, v.SslSupportedProtocols, path.Root(p).AtName("ssl_supported_protocols"), &dg)
 		if dg.HasError() {
 			return nil, dg
 		}
@@ -917,17 +917,17 @@ func toSSLConfig(ctx context.Context, dg diag.Diagnostics, v tfSSLConfig, p stri
 	return ssl, dg
 }
 
-func (v *tfModelV0) toHttpMonitorFields(ctx context.Context) (kbapi.MonitorFields, diag.Diagnostics) {
+func (v *tfModelV0) toHTTPMonitorFields(ctx context.Context) (kbapi.MonitorFields, diag.Diagnostics) {
 	http := v.HTTP
-	proxyHeaders, dg := toJsonObject(http.ProxyHeader)
+	proxyHeaders, dg := toJSONObject(http.ProxyHeader)
 	if dg.HasError() {
 		return nil, dg
 	}
-	response, dg := toJsonObject(http.Response)
+	response, dg := toJSONObject(http.Response)
 	if dg.HasError() {
 		return nil, dg
 	}
-	check, dg := toJsonObject(http.Check)
+	check, dg := toJSONObject(http.Check)
 	if dg.HasError() {
 		return nil, dg
 	}
@@ -976,7 +976,7 @@ func (v *tfModelV0) toICMPMonitorFields() kbapi.MonitorFields {
 }
 
 func (v *tfModelV0) toBrowserMonitorFields() (kbapi.MonitorFields, diag.Diagnostics) {
-	playwrightOptions, dg := toJsonObject(v.Browser.PlaywrightOptions)
+	playwrightOptions, dg := toJSONObject(v.Browser.PlaywrightOptions)
 	if dg.HasError() {
 		return nil, dg
 	}
@@ -984,7 +984,7 @@ func (v *tfModelV0) toBrowserMonitorFields() (kbapi.MonitorFields, diag.Diagnost
 		InlineScript:      v.Browser.InlineScript.ValueString(),
 		Screenshots:       kbapi.ScreenshotOption(v.Browser.Screenshots.ValueString()),
 		SyntheticsArgs:    synthetics.ValueStringSlice(v.Browser.SyntheticsArgs),
-		IgnoreHttpsErrors: v.Browser.IgnoreHttpsErrors.ValueBoolPointer(),
+		IgnoreHttpsErrors: v.Browser.IgnoreHTTPSErrors.ValueBoolPointer(),
 		PlaywrightOptions: playwrightOptions,
 	}, diag.Diagnostics{} // dg
 }
@@ -1018,8 +1018,8 @@ func (v tfStatusConfigV0) toTfStatusConfigV0() *kbapi.SyntheticsStatusConfig {
 	}
 }
 
-func (v tfModelV0) enforceVersionConstraints(ctx context.Context, client *clients.ApiClient) diag.Diagnostics {
-	if utils.IsKnown(v.Labels) {
+func (v tfModelV0) enforceVersionConstraints(ctx context.Context, client *clients.APIClient) diag.Diagnostics {
+	if typeutils.IsKnown(v.Labels) {
 		isSupported, sdkDiags := client.EnforceMinVersion(ctx, MinLabelsVersion)
 		diags := diagutil.FrameworkDiagsFromSDK(sdkDiags)
 		if diags.HasError() {

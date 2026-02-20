@@ -1,11 +1,11 @@
-package integration_policy
+package integrationpolicy
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -45,7 +45,7 @@ func (v InputValue) EnabledByDefault(ctx context.Context) (bool, diag.Diagnostic
 		return false, diags
 	}
 
-	if !utils.IsKnown(input.Defaults) {
+	if !typeutils.IsKnown(input.Defaults) {
 		return false, diags
 	}
 
@@ -58,7 +58,7 @@ func (v InputValue) EnabledByDefault(ctx context.Context) (bool, diag.Diagnostic
 	}
 
 	for _, stream := range defaults.Streams {
-		if utils.IsKnown(stream.Enabled) && stream.Enabled.ValueBool() {
+		if typeutils.IsKnown(stream.Enabled) && stream.Enabled.ValueBool() {
 			return true, nil
 		}
 	}
@@ -67,7 +67,7 @@ func (v InputValue) EnabledByDefault(ctx context.Context) (bool, diag.Diagnostic
 }
 
 func (v InputValue) MaybeEnabled(ctx context.Context) (bool, diag.Diagnostics) {
-	if !utils.IsKnown(v) {
+	if !typeutils.IsKnown(v) {
 		return false, nil
 	}
 
@@ -83,7 +83,7 @@ func (v InputValue) MaybeEnabled(ctx context.Context) (bool, diag.Diagnostics) {
 		return false, diags
 	}
 
-	if !utils.IsKnown(input.Enabled) {
+	if !typeutils.IsKnown(input.Enabled) {
 		return true, diags
 	}
 
@@ -96,7 +96,7 @@ func (v InputValue) MaybeEnabled(ctx context.Context) (bool, diag.Diagnostics) {
 			return false, diags
 		}
 
-		if !utils.IsKnown(streamModel.Enabled) || streamModel.Enabled.ValueBool() {
+		if !typeutils.IsKnown(streamModel.Enabled) || streamModel.Enabled.ValueBool() {
 			return true, diags
 		}
 	}
@@ -143,7 +143,7 @@ func (v InputValue) ObjectSemanticEquals(ctx context.Context, newValuable basety
 	}
 
 	defaults := oldInput.Defaults
-	if !utils.IsKnown(defaults) {
+	if !typeutils.IsKnown(defaults) {
 		defaults = newInput.Defaults
 	}
 
@@ -164,7 +164,7 @@ func (v InputValue) ObjectSemanticEquals(ctx context.Context, newValuable basety
 	// Disabled inputs are handled at the InputsValue level.
 
 	// Compare vars using semantic equality if both are known
-	if utils.IsKnown(oldInputWithDefaults.Vars) && utils.IsKnown(newInputWithDefaults.Vars) {
+	if typeutils.IsKnown(oldInputWithDefaults.Vars) && typeutils.IsKnown(newInputWithDefaults.Vars) {
 		varsEqual, d := oldInputWithDefaults.Vars.StringSemanticEquals(ctx, newInputWithDefaults.Vars)
 		diags.Append(d...)
 		if diags.HasError() {
@@ -196,7 +196,7 @@ func applyDefaultsToInput(ctx context.Context, input integrationPolicyInputsMode
 	var diags diag.Diagnostics
 
 	// If defaults is null or unknown, return input as-is
-	if !utils.IsKnown(defaultsObj) {
+	if !typeutils.IsKnown(defaultsObj) {
 		return input, diags
 	}
 
@@ -230,11 +230,11 @@ func applyDefaultsToInput(ctx context.Context, input integrationPolicyInputsMode
 }
 
 func applyDefaultsToVars(vars jsontypes.Normalized, defaults jsontypes.Normalized) (jsontypes.Normalized, diag.Diagnostics) {
-	if !utils.IsKnown(defaults) {
+	if !typeutils.IsKnown(defaults) {
 		return vars, nil
 	}
 
-	if !utils.IsKnown(vars) {
+	if !typeutils.IsKnown(vars) {
 		return defaults, nil
 	}
 
@@ -271,7 +271,7 @@ func applyDefaultsToStreams(ctx context.Context, streams basetypes.MapValue, def
 	}
 
 	// If streams is not known, create new streams from defaults
-	if !utils.IsKnown(streams) {
+	if !typeutils.IsKnown(streams) {
 		streamsMap := make(map[string]integrationPolicyInputStreamModel)
 		for streamID, streamDefaults := range defaultStreams {
 			streamsMap[streamID] = integrationPolicyInputStreamModel(streamDefaults)
@@ -281,7 +281,7 @@ func applyDefaultsToStreams(ctx context.Context, streams basetypes.MapValue, def
 
 	// Convert streams to model
 	var diags diag.Diagnostics
-	streamsMap := utils.MapTypeAs[integrationPolicyInputStreamModel](ctx, streams, path.Root("streams"), &diags)
+	streamsMap := typeutils.MapTypeAs[integrationPolicyInputStreamModel](ctx, streams, path.Root("streams"), &diags)
 	if diags.HasError() {
 		return streams, diags
 	}
@@ -296,7 +296,7 @@ func applyDefaultsToStreams(ctx context.Context, streams basetypes.MapValue, def
 		}
 
 		// Apply defaults to existing stream
-		if !utils.IsKnown(stream.Enabled) && utils.IsKnown(streamDefaults.Enabled) {
+		if !typeutils.IsKnown(stream.Enabled) && typeutils.IsKnown(streamDefaults.Enabled) {
 			stream.Enabled = streamDefaults.Enabled
 		}
 		varsWithDefaults, d := applyDefaultsToVars(stream.Vars, streamDefaults.Vars)
@@ -327,12 +327,12 @@ func compareStreams(ctx context.Context, oldInput, newInput integrationPolicyInp
 	}
 
 	// Convert both maps to model
-	oldStreamsMap := utils.MapTypeAs[integrationPolicyInputStreamModel](ctx, oldInput.Streams, path.Root("streams"), &diags)
+	oldStreamsMap := typeutils.MapTypeAs[integrationPolicyInputStreamModel](ctx, oldInput.Streams, path.Root("streams"), &diags)
 	if diags.HasError() {
 		return false, diags
 	}
 
-	newStreamsMap := utils.MapTypeAs[integrationPolicyInputStreamModel](ctx, newInput.Streams, path.Root("streams"), &diags)
+	newStreamsMap := typeutils.MapTypeAs[integrationPolicyInputStreamModel](ctx, newInput.Streams, path.Root("streams"), &diags)
 	if diags.HasError() {
 		return false, diags
 	}
@@ -354,7 +354,7 @@ func compareStreams(ctx context.Context, oldInput, newInput integrationPolicyInp
 		}
 
 		// Compare vars using semantic equality if both are known
-		if utils.IsKnown(oldStream.Vars) && utils.IsKnown(newStream.Vars) {
+		if typeutils.IsKnown(oldStream.Vars) && typeutils.IsKnown(newStream.Vars) {
 			varsEqual, d := oldStream.Vars.StringSemanticEquals(ctx, newStream.Vars)
 			diags.Append(d...)
 			if diags.HasError() {

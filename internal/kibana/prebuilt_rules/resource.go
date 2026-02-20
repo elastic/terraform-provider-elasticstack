@@ -1,11 +1,11 @@
-package prebuilt_rules
+package prebuiltrules
 
 import (
 	"context"
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -22,16 +22,16 @@ func NewResource() resource.Resource {
 }
 
 type PrebuiltRuleResource struct {
-	client *clients.ApiClient
+	client *clients.APIClient
 }
 
-func (r *PrebuiltRuleResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+func (r *PrebuiltRuleResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	client, diags := clients.ConvertProviderData(req.ProviderData)
 	resp.Diagnostics.Append(diags...)
 	r.client = client
 }
 
-func (r *PrebuiltRuleResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+func (r *PrebuiltRuleResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = fmt.Sprintf("%s_%s", req.ProviderTypeName, "kibana_install_prebuilt_rules")
 }
 
@@ -46,7 +46,7 @@ func (r *PrebuiltRuleResource) ModifyPlan(ctx context.Context, req resource.Modi
 		return
 	}
 
-	if !utils.IsKnown(model.ID) {
+	if !typeutils.IsKnown(model.ID) {
 		// Resource is being created, nothing to modify
 		return
 	}

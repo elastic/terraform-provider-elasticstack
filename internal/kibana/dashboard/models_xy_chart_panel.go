@@ -198,7 +198,7 @@ func (m *xyAxisConfigModel) isEmpty() bool {
 	if m == nil {
 		return true
 	}
-	if utils.IsKnown(m.Ticks) || utils.IsKnown(m.Grid) || utils.IsKnown(m.LabelOrientation) || utils.IsKnown(m.Extent) {
+	if typeutils.IsKnown(m.Ticks) || typeutils.IsKnown(m.Grid) || typeutils.IsKnown(m.LabelOrientation) || typeutils.IsKnown(m.Extent) {
 		return false
 	}
 	return axisTitleIsDefault(m.Title)
@@ -248,20 +248,20 @@ func (m *xyAxisConfigModel) toAPI() (*xyAxisConfigAPIModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	xAxis := &xyAxisConfigAPIModel{}
 
-	if utils.IsKnown(m.Grid) {
-		xAxis.Grid = utils.Pointer(m.Grid.ValueBool())
+	if typeutils.IsKnown(m.Grid) {
+		xAxis.Grid = schemautil.Pointer(m.Grid.ValueBool())
 	}
-	if utils.IsKnown(m.Ticks) {
-		xAxis.Ticks = utils.Pointer(m.Ticks.ValueBool())
+	if typeutils.IsKnown(m.Ticks) {
+		xAxis.Ticks = schemautil.Pointer(m.Ticks.ValueBool())
 	}
-	if utils.IsKnown(m.LabelOrientation) {
+	if typeutils.IsKnown(m.LabelOrientation) {
 		labelOrient := kbapi.XyAxisXLabelOrientation(m.LabelOrientation.ValueString())
 		xAxis.LabelOrientation = &labelOrient
 	}
 	if m.Title != nil {
 		xAxis.Title = m.Title.toAPI()
 	}
-	if utils.IsKnown(m.Extent) {
+	if typeutils.IsKnown(m.Extent) {
 		var extent kbapi.XyAxis_X_Extent
 		extentDiags := m.Extent.Unmarshal(&extent)
 		diags.Append(extentDiags...)
@@ -286,7 +286,7 @@ func (m *yAxisConfigModel) isEmpty() bool {
 	if m == nil {
 		return true
 	}
-	if utils.IsKnown(m.Ticks) || utils.IsKnown(m.Grid) || utils.IsKnown(m.LabelOrientation) || utils.IsKnown(m.Scale) || utils.IsKnown(m.Extent) {
+	if typeutils.IsKnown(m.Ticks) || typeutils.IsKnown(m.Grid) || typeutils.IsKnown(m.LabelOrientation) || typeutils.IsKnown(m.Scale) || typeutils.IsKnown(m.Extent) {
 		return false
 	}
 	return axisTitleIsDefault(m.Title)
@@ -338,24 +338,24 @@ func (m *yAxisConfigModel) toAPILeft() (*leftYAxisConfigAPIModel, diag.Diagnosti
 	var diags diag.Diagnostics
 	yAxis := &leftYAxisConfigAPIModel{}
 
-	if utils.IsKnown(m.Grid) {
-		yAxis.Grid = utils.Pointer(m.Grid.ValueBool())
+	if typeutils.IsKnown(m.Grid) {
+		yAxis.Grid = schemautil.Pointer(m.Grid.ValueBool())
 	}
-	if utils.IsKnown(m.Ticks) {
-		yAxis.Ticks = utils.Pointer(m.Ticks.ValueBool())
+	if typeutils.IsKnown(m.Ticks) {
+		yAxis.Ticks = schemautil.Pointer(m.Ticks.ValueBool())
 	}
-	if utils.IsKnown(m.LabelOrientation) {
+	if typeutils.IsKnown(m.LabelOrientation) {
 		labelOrient := kbapi.XyAxisLeftLabelOrientation(m.LabelOrientation.ValueString())
 		yAxis.LabelOrientation = &labelOrient
 	}
-	if utils.IsKnown(m.Scale) {
+	if typeutils.IsKnown(m.Scale) {
 		scale := kbapi.XyAxisLeftScale(m.Scale.ValueString())
 		yAxis.Scale = &scale
 	}
 	if m.Title != nil {
 		yAxis.Title = m.Title.toAPI()
 	}
-	if utils.IsKnown(m.Extent) {
+	if typeutils.IsKnown(m.Extent) {
 		var extent kbapi.XyAxis_Left_Extent
 		extentDiags := m.Extent.Unmarshal(&extent)
 		diags.Append(extentDiags...)
@@ -427,24 +427,24 @@ func (m *yAxisConfigModel) toAPIRight() (*rightYAxisConfigAPIModel, diag.Diagnos
 	var diags diag.Diagnostics
 	yAxis := &rightYAxisConfigAPIModel{}
 
-	if utils.IsKnown(m.Grid) {
-		yAxis.Grid = utils.Pointer(m.Grid.ValueBool())
+	if typeutils.IsKnown(m.Grid) {
+		yAxis.Grid = schemautil.Pointer(m.Grid.ValueBool())
 	}
-	if utils.IsKnown(m.Ticks) {
-		yAxis.Ticks = utils.Pointer(m.Ticks.ValueBool())
+	if typeutils.IsKnown(m.Ticks) {
+		yAxis.Ticks = schemautil.Pointer(m.Ticks.ValueBool())
 	}
-	if utils.IsKnown(m.LabelOrientation) {
+	if typeutils.IsKnown(m.LabelOrientation) {
 		labelOrient := kbapi.XyAxisRightLabelOrientation(m.LabelOrientation.ValueString())
 		yAxis.LabelOrientation = &labelOrient
 	}
-	if utils.IsKnown(m.Scale) {
+	if typeutils.IsKnown(m.Scale) {
 		scale := kbapi.XyAxisRightScale(m.Scale.ValueString())
 		yAxis.Scale = &scale
 	}
 	if m.Title != nil {
 		yAxis.Title = m.Title.toAPI()
 	}
-	if utils.IsKnown(m.Extent) {
+	if typeutils.IsKnown(m.Extent) {
 		var extent kbapi.XyAxis_Right_Extent
 		extentDiags := m.Extent.Unmarshal(&extent)
 		diags.Append(extentDiags...)
@@ -465,10 +465,10 @@ func axisTitleIsDefault(title *axisTitleModel) bool {
 	if title == nil {
 		return true
 	}
-	if utils.IsKnown(title.Value) {
+	if typeutils.IsKnown(title.Value) {
 		return false
 	}
-	if utils.IsKnown(title.Visible) {
+	if typeutils.IsKnown(title.Visible) {
 		return title.Visible.ValueBool()
 	}
 	return true
@@ -498,11 +498,11 @@ func (m *axisTitleModel) toAPI() *struct {
 		Visible *bool   `json:"visible,omitempty"`
 	}{}
 
-	if utils.IsKnown(m.Value) {
-		title.Value = utils.Pointer(m.Value.ValueString())
+	if typeutils.IsKnown(m.Value) {
+		title.Value = schemautil.Pointer(m.Value.ValueString())
 	}
-	if utils.IsKnown(m.Visible) {
-		title.Visible = utils.Pointer(m.Visible.ValueBool())
+	if typeutils.IsKnown(m.Visible) {
+		title.Visible = schemautil.Pointer(m.Visible.ValueBool())
 	}
 
 	return title
@@ -547,28 +547,28 @@ func (m *xyDecorationsModel) toAPI() kbapi.XyDecorations {
 
 	var decorations kbapi.XyDecorations
 
-	if utils.IsKnown(m.ShowEndZones) {
-		decorations.ShowEndZones = utils.Pointer(m.ShowEndZones.ValueBool())
+	if typeutils.IsKnown(m.ShowEndZones) {
+		decorations.ShowEndZones = schemautil.Pointer(m.ShowEndZones.ValueBool())
 	}
-	if utils.IsKnown(m.ShowCurrentTimeMarker) {
-		decorations.ShowCurrentTimeMarker = utils.Pointer(m.ShowCurrentTimeMarker.ValueBool())
+	if typeutils.IsKnown(m.ShowCurrentTimeMarker) {
+		decorations.ShowCurrentTimeMarker = schemautil.Pointer(m.ShowCurrentTimeMarker.ValueBool())
 	}
-	if utils.IsKnown(m.PointVisibility) {
+	if typeutils.IsKnown(m.PointVisibility) {
 		pointVisibility := kbapi.XyDecorationsPointVisibility(m.PointVisibility.ValueString())
 		decorations.PointVisibility = &pointVisibility
 	}
-	if utils.IsKnown(m.LineInterpolation) {
+	if typeutils.IsKnown(m.LineInterpolation) {
 		interp := kbapi.XyDecorationsLineInterpolation(m.LineInterpolation.ValueString())
 		decorations.LineInterpolation = &interp
 	}
-	if utils.IsKnown(m.MinimumBarHeight) {
-		decorations.MinimumBarHeight = utils.Pointer(float32(m.MinimumBarHeight.ValueInt64()))
+	if typeutils.IsKnown(m.MinimumBarHeight) {
+		decorations.MinimumBarHeight = schemautil.Pointer(float32(m.MinimumBarHeight.ValueInt64()))
 	}
-	if utils.IsKnown(m.ShowValueLabels) {
-		decorations.ShowValueLabels = utils.Pointer(m.ShowValueLabels.ValueBool())
+	if typeutils.IsKnown(m.ShowValueLabels) {
+		decorations.ShowValueLabels = schemautil.Pointer(m.ShowValueLabels.ValueBool())
 	}
-	if utils.IsKnown(m.FillOpacity) {
-		decorations.FillOpacity = utils.Pointer(float32(m.FillOpacity.ValueFloat64()))
+	if typeutils.IsKnown(m.FillOpacity) {
+		decorations.FillOpacity = schemautil.Pointer(float32(m.FillOpacity.ValueFloat64()))
 	}
 
 	return decorations
@@ -593,13 +593,13 @@ func (m *xyFittingModel) toAPI() kbapi.XyFitting {
 
 	var fitting kbapi.XyFitting
 
-	if utils.IsKnown(m.Type) {
+	if typeutils.IsKnown(m.Type) {
 		fitting.Type = kbapi.XyFittingType(m.Type.ValueString())
 	}
-	if utils.IsKnown(m.Dotted) {
-		fitting.Dotted = utils.Pointer(m.Dotted.ValueBool())
+	if typeutils.IsKnown(m.Dotted) {
+		fitting.Dotted = schemautil.Pointer(m.Dotted.ValueBool())
 	}
-	if utils.IsKnown(m.EndValue) {
+	if typeutils.IsKnown(m.EndValue) {
 		endVal := kbapi.XyFittingEndValue(m.EndValue.ValueString())
 		fitting.EndValue = &endVal
 	}
@@ -690,15 +690,15 @@ func (m *xyLegendModel) toAPI() (kbapi.XyLegend, diag.Diagnostics) {
 	}
 
 	var diags diag.Diagnostics
-	isInside := utils.IsKnown(m.Inside) && m.Inside.ValueBool()
+	isInside := typeutils.IsKnown(m.Inside) && m.Inside.ValueBool()
 	insideVisibility := kbapi.XyLegendInsideVisibilityAuto
 	outsideVisibility := kbapi.XyLegendOutsideVisibilityAuto
-	if utils.IsKnown(m.Visibility) {
+	if typeutils.IsKnown(m.Visibility) {
 		insideVisibility = kbapi.XyLegendInsideVisibility(m.Visibility.ValueString())
 		outsideVisibility = kbapi.XyLegendOutsideVisibility(m.Visibility.ValueString())
 	}
 	statsElemsToStrings := func() ([]string, bool) {
-		if !utils.IsKnown(m.Statistics) {
+		if !typeutils.IsKnown(m.Statistics) {
 			return nil, false
 		}
 
@@ -714,7 +714,7 @@ func (m *xyLegendModel) toAPI() (kbapi.XyLegend, diag.Diagnostics) {
 				diags.AddError("Invalid legend statistic value", "Expected statistics element to be a string")
 				return nil, false
 			}
-			if !utils.IsKnown(strVal) {
+			if !typeutils.IsKnown(strVal) {
 				diags.AddError("Invalid legend statistic value", "Statistics element must be known")
 				return nil, false
 			}
@@ -729,13 +729,13 @@ func (m *xyLegendModel) toAPI() (kbapi.XyLegend, diag.Diagnostics) {
 		legend.Inside = true
 		legend.Visibility = insideVisibility
 
-		if utils.IsKnown(m.TruncateAfterLines) {
-			legend.TruncateAfterLines = utils.Pointer(float32(m.TruncateAfterLines.ValueInt64()))
+		if typeutils.IsKnown(m.TruncateAfterLines) {
+			legend.TruncateAfterLines = schemautil.Pointer(float32(m.TruncateAfterLines.ValueInt64()))
 		}
-		if utils.IsKnown(m.Columns) {
-			legend.Columns = utils.Pointer(float32(m.Columns.ValueInt64()))
+		if typeutils.IsKnown(m.Columns) {
+			legend.Columns = schemautil.Pointer(float32(m.Columns.ValueInt64()))
 		}
-		if utils.IsKnown(m.Alignment) {
+		if typeutils.IsKnown(m.Alignment) {
 			align := kbapi.XyLegendInsideAlignment(m.Alignment.ValueString())
 			legend.Alignment = &align
 		}
@@ -758,14 +758,14 @@ func (m *xyLegendModel) toAPI() (kbapi.XyLegend, diag.Diagnostics) {
 	var legend kbapi.XyLegendOutside
 	legend.Visibility = outsideVisibility
 
-	if utils.IsKnown(m.TruncateAfterLines) {
-		legend.TruncateAfterLines = utils.Pointer(float32(m.TruncateAfterLines.ValueInt64()))
+	if typeutils.IsKnown(m.TruncateAfterLines) {
+		legend.TruncateAfterLines = schemautil.Pointer(float32(m.TruncateAfterLines.ValueInt64()))
 	}
-	if utils.IsKnown(m.Position) {
+	if typeutils.IsKnown(m.Position) {
 		pos := kbapi.XyLegendOutsidePosition(m.Position.ValueString())
 		legend.Position = &pos
 	}
-	if utils.IsKnown(m.Size) {
+	if typeutils.IsKnown(m.Size) {
 		size := kbapi.XyLegendOutsideSize(m.Size.ValueString())
 		legend.Size = &size
 	}
@@ -793,11 +793,11 @@ func (m *xyChartConfigModel) toAPI() (kbapi.XyChartSchema, diag.Diagnostics) {
 	}
 
 	// Convert title and description
-	if utils.IsKnown(m.Title) {
-		xyChart.Title = utils.Pointer(m.Title.ValueString())
+	if typeutils.IsKnown(m.Title) {
+		xyChart.Title = schemautil.Pointer(m.Title.ValueString())
 	}
-	if utils.IsKnown(m.Description) {
-		xyChart.Description = utils.Pointer(m.Description.ValueString())
+	if typeutils.IsKnown(m.Description) {
+		xyChart.Description = schemautil.Pointer(m.Description.ValueString())
 	}
 
 	// Convert axis

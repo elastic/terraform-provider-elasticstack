@@ -84,7 +84,7 @@ type Role struct {
 	RunAs         []string           `json:"run_as,omitempty"`
 }
 
-type ApiKeyRoleDescriptor struct {
+type APIKeyRoleDescriptor struct {
 	Name          string             `json:"-"`
 	Applications  []Application      `json:"applications,omitempty"`
 	Global        map[string]any     `json:"global,omitempty"`
@@ -109,55 +109,55 @@ type RoleMapping struct {
 	Metadata      any              `json:"metadata"`
 }
 
-type ApiKey struct {
+type APIKey struct {
 	ID               string                          `json:"-"`
 	Name             string                          `json:"name,omitempty"`
-	RolesDescriptors map[string]ApiKeyRoleDescriptor `json:"role_descriptors,omitempty"`
+	RolesDescriptors map[string]APIKeyRoleDescriptor `json:"role_descriptors,omitempty"`
 	Expiration       string                          `json:"expiration,omitempty"`
 	Metadata         map[string]any                  `json:"metadata,omitempty"`
 }
 
-type ApiKeyCreateResponse struct {
-	Id         string `json:"id,omitempty"`
+type APIKeyCreateResponse struct {
+	ID         string `json:"id,omitempty"`
 	Name       string `json:"name"`
 	Key        string `json:"api_key,omitempty"`
 	EncodedKey string `json:"encoded,omitempty"`
 }
 
-type ApiKeyResponse struct {
-	ApiKey
+type APIKeyResponse struct {
+	APIKey
 	Type             string                          `json:"type,omitempty"`
-	RolesDescriptors map[string]ApiKeyRoleDescriptor `json:"role_descriptors,omitempty"`
+	RolesDescriptors map[string]APIKeyRoleDescriptor `json:"role_descriptors,omitempty"`
 	Expiration       int64                           `json:"expiration,omitempty"`
-	Id               string                          `json:"id,omitempty"`
+	ID               string                          `json:"id,omitempty"`
 	Key              string                          `json:"api_key,omitempty"`
 	EncodedKey       string                          `json:"encoded,omitempty"`
 	Invalidated      bool                            `json:"invalidated,omitempty"`
-	Access           *CrossClusterApiKeyAccess       `json:"access,omitempty"`
+	Access           *CrossClusterAPIKeyAccess       `json:"access,omitempty"`
 }
 
-type CrossClusterApiKeyAccess struct {
-	Search      []CrossClusterApiKeyAccessEntry `json:"search,omitempty"`
-	Replication []CrossClusterApiKeyAccessEntry `json:"replication,omitempty"`
+type CrossClusterAPIKeyAccess struct {
+	Search      []CrossClusterAPIKeyAccessEntry `json:"search,omitempty"`
+	Replication []CrossClusterAPIKeyAccessEntry `json:"replication,omitempty"`
 }
 
-type CrossClusterApiKeyAccessEntry struct {
+type CrossClusterAPIKeyAccessEntry struct {
 	Names                  []string       `json:"names"`
 	FieldSecurity          *FieldSecurity `json:"field_security,omitempty"`
 	Query                  *string        `json:"query,omitempty"`
 	AllowRestrictedIndices *bool          `json:"allow_restricted_indices,omitempty"`
 }
 
-type CrossClusterApiKey struct {
+type CrossClusterAPIKey struct {
 	ID         string                    `json:"-"`
 	Name       string                    `json:"name,omitempty"`
 	Expiration string                    `json:"expiration,omitempty"`
-	Access     *CrossClusterApiKeyAccess `json:"access,omitempty"`
+	Access     *CrossClusterAPIKeyAccess `json:"access,omitempty"`
 	Metadata   map[string]any            `json:"metadata,omitempty"`
 }
 
-type CrossClusterApiKeyCreateResponse struct {
-	Id         string `json:"id,omitempty"`
+type CrossClusterAPIKeyCreateResponse struct {
+	ID         string `json:"id,omitempty"`
 	Name       string `json:"name"`
 	Key        string `json:"api_key,omitempty"`
 	EncodedKey string `json:"encoded,omitempty"`
@@ -265,7 +265,7 @@ type SnapshotRepository struct {
 }
 
 type SnapshotPolicy struct {
-	Id         string                `json:"-"`
+	ID         string                `json:"-"`
 	Config     *SnapshotPolicyConfig `json:"config,omitempty"`
 	Name       string                `json:"name"`
 	Repository string                `json:"repository"`
@@ -412,11 +412,11 @@ type PutWatch struct {
 }
 
 type WatchBody struct {
-	Trigger                   map[string]any `json:"trigger"`
-	Input                     map[string]any `json:"input"`
-	Condition                 map[string]any `json:"condition"`
-	Actions                   map[string]any `json:"actions"`
-	Metadata                  map[string]any `json:"metadata"`
-	Transform                 map[string]any `json:"transform,omitempty"`
-	Throttle_period_in_millis int            `json:"throttle_period_in_millis,omitempty"`
+	Trigger                map[string]any `json:"trigger"`
+	Input                  map[string]any `json:"input"`
+	Condition              map[string]any `json:"condition"`
+	Actions                map[string]any `json:"actions"`
+	Metadata               map[string]any `json:"metadata"`
+	Transform              map[string]any `json:"transform,omitempty"`
+	ThrottlePeriodInMillis int            `json:"throttle_period_in_millis,omitempty"`
 }

@@ -21,21 +21,21 @@ func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, r
 		return
 	}
 
-	resourceId := plan.ID.ValueString()
+	resourceID := plan.ID.ValueString()
 
-	compositeId, dg := tryReadCompositeId(resourceId)
+	compositeID, dg := tryReadCompositeID(resourceID)
 	response.Diagnostics.Append(dg...)
 	if response.Diagnostics.HasError() {
 		return
 	}
 
-	if compositeId != nil {
-		resourceId = compositeId.ResourceId
+	if compositeID != nil {
+		resourceID = compositeID.ResourceID
 	}
 
-	_, err := kibanaClient.KibanaSynthetics.Parameter.Delete(ctx, resourceId)
+	_, err := kibanaClient.KibanaSynthetics.Parameter.Delete(ctx, resourceID)
 	if err != nil {
-		response.Diagnostics.AddError(fmt.Sprintf("Failed to delete parameter `%s`", resourceId), err.Error())
+		response.Diagnostics.AddError(fmt.Sprintf("Failed to delete parameter `%s`", resourceID), err.Error())
 		return
 	}
 }

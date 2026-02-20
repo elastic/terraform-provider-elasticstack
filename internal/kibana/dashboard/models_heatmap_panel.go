@@ -328,17 +328,17 @@ func (m *heatmapConfigModel) toAPINoESQL() (kbapi.HeatmapNoESQL, diag.Diagnostic
 		Type: kbapi.HeatmapNoESQLTypeHeatmap,
 	}
 
-	if utils.IsKnown(m.Title) {
-		api.Title = utils.Pointer(m.Title.ValueString())
+	if typeutils.IsKnown(m.Title) {
+		api.Title = schemautil.Pointer(m.Title.ValueString())
 	}
-	if utils.IsKnown(m.Description) {
-		api.Description = utils.Pointer(m.Description.ValueString())
+	if typeutils.IsKnown(m.Description) {
+		api.Description = schemautil.Pointer(m.Description.ValueString())
 	}
-	if utils.IsKnown(m.IgnoreGlobalFilters) {
-		api.IgnoreGlobalFilters = utils.Pointer(m.IgnoreGlobalFilters.ValueBool())
+	if typeutils.IsKnown(m.IgnoreGlobalFilters) {
+		api.IgnoreGlobalFilters = schemautil.Pointer(m.IgnoreGlobalFilters.ValueBool())
 	}
-	if utils.IsKnown(m.Sampling) {
-		api.Sampling = utils.Pointer(float32(m.Sampling.ValueFloat64()))
+	if typeutils.IsKnown(m.Sampling) {
+		api.Sampling = schemautil.Pointer(float32(m.Sampling.ValueFloat64()))
 	}
 
 	if m.Dataset.IsNull() {
@@ -428,17 +428,17 @@ func (m *heatmapConfigModel) toAPIESQL() (kbapi.HeatmapESQL, diag.Diagnostics) {
 		Type: kbapi.HeatmapESQLTypeHeatmap,
 	}
 
-	if utils.IsKnown(m.Title) {
-		api.Title = utils.Pointer(m.Title.ValueString())
+	if typeutils.IsKnown(m.Title) {
+		api.Title = schemautil.Pointer(m.Title.ValueString())
 	}
-	if utils.IsKnown(m.Description) {
-		api.Description = utils.Pointer(m.Description.ValueString())
+	if typeutils.IsKnown(m.Description) {
+		api.Description = schemautil.Pointer(m.Description.ValueString())
 	}
-	if utils.IsKnown(m.IgnoreGlobalFilters) {
-		api.IgnoreGlobalFilters = utils.Pointer(m.IgnoreGlobalFilters.ValueBool())
+	if typeutils.IsKnown(m.IgnoreGlobalFilters) {
+		api.IgnoreGlobalFilters = schemautil.Pointer(m.IgnoreGlobalFilters.ValueBool())
 	}
-	if utils.IsKnown(m.Sampling) {
-		api.Sampling = utils.Pointer(float32(m.Sampling.ValueFloat64()))
+	if typeutils.IsKnown(m.Sampling) {
+		api.Sampling = schemautil.Pointer(float32(m.Sampling.ValueFloat64()))
 	}
 
 	if m.Dataset.IsNull() {
@@ -623,12 +623,12 @@ func (m *heatmapXAxisLabelsModel) toAPI() *struct {
 		Orientation *kbapi.HeatmapXAxisLabelsOrientation `json:"orientation,omitempty"`
 		Visible     *bool                                `json:"visible,omitempty"`
 	}{}
-	if utils.IsKnown(m.Orientation) {
+	if typeutils.IsKnown(m.Orientation) {
 		orientation := kbapi.HeatmapXAxisLabelsOrientation(m.Orientation.ValueString())
 		labels.Orientation = &orientation
 	}
-	if utils.IsKnown(m.Visible) {
-		labels.Visible = utils.Pointer(m.Visible.ValueBool())
+	if typeutils.IsKnown(m.Visible) {
+		labels.Visible = schemautil.Pointer(m.Visible.ValueBool())
 	}
 	return labels
 }
@@ -685,8 +685,8 @@ func (m *heatmapYAxisLabelsModel) toAPI() *struct {
 	labels := &struct {
 		Visible *bool `json:"visible,omitempty"`
 	}{}
-	if utils.IsKnown(m.Visible) {
-		labels.Visible = utils.Pointer(m.Visible.ValueBool())
+	if typeutils.IsKnown(m.Visible) {
+		labels.Visible = schemautil.Pointer(m.Visible.ValueBool())
 	}
 	return labels
 }
@@ -735,8 +735,8 @@ func (m *heatmapCellsLabelsModel) toAPI() *struct {
 	labels := &struct {
 		Visible *bool `json:"visible,omitempty"`
 	}{}
-	if utils.IsKnown(m.Visible) {
-		labels.Visible = utils.Pointer(m.Visible.ValueBool())
+	if typeutils.IsKnown(m.Visible) {
+		labels.Visible = schemautil.Pointer(m.Visible.ValueBool())
 	}
 	return labels
 }
@@ -769,20 +769,20 @@ func (m *heatmapLegendModel) toAPI() (kbapi.HeatmapLegend, diag.Diagnostics) {
 		return legend, diags
 	}
 
-	if utils.IsKnown(m.Visible) {
-		legend.Visible = utils.Pointer(m.Visible.ValueBool())
+	if typeutils.IsKnown(m.Visible) {
+		legend.Visible = schemautil.Pointer(m.Visible.ValueBool())
 	}
-	if utils.IsKnown(m.Position) {
+	if typeutils.IsKnown(m.Position) {
 		pos := kbapi.HeatmapLegendPosition(m.Position.ValueString())
 		legend.Position = &pos
 	}
-	if utils.IsKnown(m.Size) {
+	if typeutils.IsKnown(m.Size) {
 		legend.Size = kbapi.LegendSize(m.Size.ValueString())
 	} else {
 		diags.AddError("Missing legend size", "heatmap_config.legend.size must be provided")
 	}
-	if utils.IsKnown(m.TruncateAfterLines) {
-		legend.TruncateAfterLines = utils.Pointer(float32(m.TruncateAfterLines.ValueInt64()))
+	if typeutils.IsKnown(m.TruncateAfterLines) {
+		legend.TruncateAfterLines = schemautil.Pointer(float32(m.TruncateAfterLines.ValueInt64()))
 	}
 
 	return legend, diags

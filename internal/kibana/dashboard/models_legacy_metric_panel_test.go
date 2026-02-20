@@ -14,7 +14,7 @@ import (
 )
 
 // assertLegacyMetricConfigEqual verifies that two legacy metric config models are equivalent (round-trip safe).
-func assertLegacyMetricConfigEqual(t *testing.T, ctx context.Context, a, b *legacyMetricConfigModel) {
+func assertLegacyMetricConfigEqual(ctx context.Context, t *testing.T, a, b *legacyMetricConfigModel) {
 	t.Helper()
 	if a == nil && b == nil {
 		return
@@ -86,7 +86,7 @@ func Test_legacyMetricConfigModel_fromAPI_toAPI_NoESQL(t *testing.T) {
 	diags = model2.fromAPI(ctx, chart2)
 	require.False(t, diags.HasError())
 
-	assertLegacyMetricConfigEqual(t, ctx, model1, model2)
+	assertLegacyMetricConfigEqual(ctx, t, model1, model2)
 }
 
 func Test_legacyMetricConfigModel_fromAPI_toAPI_ESQL(t *testing.T) {
@@ -130,7 +130,7 @@ func Test_legacyMetricConfigModel_fromAPI_toAPI_ESQL(t *testing.T) {
 	model2 := &legacyMetricConfigModel{}
 	diags = model2.fromAPI(ctx, chart2)
 	if !diags.HasError() && model2.Query == nil {
-		assertLegacyMetricConfigEqual(t, ctx, model1, model2)
+		assertLegacyMetricConfigEqual(ctx, t, model1, model2)
 		return
 	}
 	apiRoundTrip, err := chart2.AsLegacyMetricESQL()
@@ -275,7 +275,7 @@ func Test_legacyMetricPanelConfigConverter_roundTrip(t *testing.T) {
 	require.False(t, diags.HasError())
 	require.NotNil(t, pm2.LegacyMetricConfig)
 
-	assertLegacyMetricConfigEqual(t, ctx, pm1.LegacyMetricConfig, pm2.LegacyMetricConfig)
+	assertLegacyMetricConfigEqual(ctx, t, pm1.LegacyMetricConfig, pm2.LegacyMetricConfig)
 }
 
 func Test_legacyMetricConfigModel_fromAPI_roundTrip(t *testing.T) {
@@ -297,7 +297,7 @@ func Test_legacyMetricConfigModel_fromAPI_roundTrip(t *testing.T) {
 		model2 := &legacyMetricConfigModel{}
 		diags = model2.fromAPI(ctx, chart2)
 		require.False(t, diags.HasError())
-		assertLegacyMetricConfigEqual(t, ctx, model1, model2)
+		assertLegacyMetricConfigEqual(ctx, t, model1, model2)
 	})
 
 	t.Run("ESQL round-trip", func(t *testing.T) {
@@ -320,7 +320,7 @@ func Test_legacyMetricConfigModel_fromAPI_roundTrip(t *testing.T) {
 		model2 := &legacyMetricConfigModel{}
 		diags = model2.fromAPI(ctx, chart2)
 		if !diags.HasError() && model2.Query == nil {
-			assertLegacyMetricConfigEqual(t, ctx, model1, model2)
+			assertLegacyMetricConfigEqual(ctx, t, model1, model2)
 			return
 		}
 		_, err := chart2.AsLegacyMetricESQL()

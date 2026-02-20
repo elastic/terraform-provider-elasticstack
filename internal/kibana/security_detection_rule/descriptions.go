@@ -1,4 +1,4 @@
-package security_detection_rule
+package securitydetectionrule
 
 import _ "embed"
 

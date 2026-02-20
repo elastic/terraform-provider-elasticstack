@@ -11,6 +11,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/tfsdkutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -70,7 +71,7 @@ func ResourceLogstashPipeline() *schema.Resource {
 			Description:      "Optional JSON metadata about the pipeline.",
 			Type:             schema.TypeString,
 			ValidateFunc:     validation.StringIsJSON,
-			DiffSuppressFunc: utils.DiffJsonSuppress,
+			DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 			Optional:         true,
 			Default:          "{\"type\":\"logstash_pipeline\",\"version\":1}",
 		},
@@ -164,7 +165,7 @@ func ResourceLogstashPipeline() *schema.Resource {
 		},
 	}
 
-	utils.AddConnectionSchema(logstashPipelineSchema)
+	schemautil.AddConnectionSchema(logstashPipelineSchema)
 
 	return &schema.Resource{
 		Description: "Manage Logstash Pipelines via Centralized Pipeline Management. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/logstash-apis.html",
@@ -183,7 +184,7 @@ func ResourceLogstashPipeline() *schema.Resource {
 }
 
 func resourceLogstashPipelinePut(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
@@ -198,7 +199,7 @@ func resourceLogstashPipelinePut(ctx context.Context, d *schema.ResourceData, me
 
 	logstashPipeline.PipelineID = pipelineID
 	logstashPipeline.Description = d.Get("description").(string)
-	logstashPipeline.LastModified = utils.FormatStrictDateTime(time.Now().UTC())
+	logstashPipeline.LastModified = schemautil.FormatStrictDateTime(time.Now().UTC())
 	logstashPipeline.Pipeline = d.Get("pipeline").(string)
 
 	var pipelineMetadata map[string]any
@@ -208,7 +209,7 @@ func resourceLogstashPipelinePut(ctx context.Context, d *schema.ResourceData, me
 	logstashPipeline.PipelineMetadata = pipelineMetadata
 
 	logstashPipeline.PipelineSettings = map[string]any{}
-	if settings := utils.ExpandIndividuallyDefinedSettings(ctx, d, allSettingsKeys); len(settings) > 0 {
+	if settings := schemautil.ExpandIndividuallyDefinedSettings(ctx, d, allSettingsKeys); len(settings) > 0 {
 		logstashPipeline.PipelineSettings = settings
 	}
 
@@ -223,7 +224,7 @@ func resourceLogstashPipelinePut(ctx context.Context, d *schema.ResourceData, me
 }
 
 func resourceLogstashPipelineRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
@@ -274,7 +275,7 @@ func resourceLogstashPipelineRead(ctx context.Context, d *schema.ResourceData, m
 		if typ == schema.TypeInt {
 			value = int(math.Round(value.(float64)))
 		}
-		if err := d.Set(utils.ConvertSettingsKeyToTFFieldKey(key), value); err != nil {
+		if err := d.Set(schemautil.ConvertSettingsKeyToTFFieldKey(key), value); err != nil {
 			return diag.FromErr(err)
 		}
 	}
@@ -286,7 +287,7 @@ func resourceLogstashPipelineRead(ctx context.Context, d *schema.ResourceData, m
 }
 
 func resourceLogstashPipelineDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}

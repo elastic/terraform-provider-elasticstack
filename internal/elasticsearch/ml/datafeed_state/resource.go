@@ -1,4 +1,4 @@
-package datafeed_state
+package datafeedstate
 
 import (
 	"context"
@@ -13,7 +13,7 @@ func NewMLDatafeedStateResource() resource.Resource {
 }
 
 type mlDatafeedStateResource struct {
-	client *clients.ApiClient
+	client *clients.APIClient
 }
 
 func (r *mlDatafeedStateResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {

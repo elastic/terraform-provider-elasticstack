@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/attr/xattr"
@@ -60,7 +60,7 @@ func (t JSONWithContextualDefaultsType) String() string {
 }
 
 // ValueType returns the Value type.
-func (t JSONWithContextualDefaultsType) ValueType(ctx context.Context) attr.Value {
+func (t JSONWithContextualDefaultsType) ValueType(_ context.Context) attr.Value {
 	return JSONWithContextualDefaultsValue{
 		populateDefaults: t.populateDefaults,
 	}
@@ -78,9 +78,9 @@ func (t JSONWithContextualDefaultsType) Equal(o attr.Type) bool {
 }
 
 // ValueFromString returns a StringValuable type given a StringValue.
-func (t JSONWithContextualDefaultsType) ValueFromString(ctx context.Context, in basetypes.StringValue) (basetypes.StringValuable, diag.Diagnostics) {
+func (t JSONWithContextualDefaultsType) ValueFromString(_ context.Context, in basetypes.StringValue) (basetypes.StringValuable, diag.Diagnostics) {
 	var contextValue string
-	if utils.IsKnown(in) {
+	if typeutils.IsKnown(in) {
 		var configMap map[string]any
 		if err := json.Unmarshal([]byte(in.ValueString()), &configMap); err != nil {
 			return nil, diag.Diagnostics{
@@ -142,12 +142,12 @@ func (v JSONWithContextualDefaultsValue) Equal(o attr.Value) bool {
 	return v.StringValue.Equal(other.StringValue)
 }
 
-func (t JSONWithContextualDefaultsValue) ValidateAttribute(ctx context.Context, req xattr.ValidateAttributeRequest, resp *xattr.ValidateAttributeResponse) {
-	if t.IsNull() || t.IsUnknown() {
+func (v JSONWithContextualDefaultsValue) ValidateAttribute(ctx context.Context, req xattr.ValidateAttributeRequest, resp *xattr.ValidateAttributeResponse) {
+	if v.IsNull() || v.IsUnknown() {
 		return
 	}
 
-	t.Normalized.ValidateAttribute(ctx, req, resp)
+	v.Normalized.ValidateAttribute(ctx, req, resp)
 }
 
 func (v JSONWithContextualDefaultsValue) SanitizedValue() (string, diag.Diagnostics) {

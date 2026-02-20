@@ -1,4 +1,4 @@
-package import_saved_objects
+package importsavedobjects
 
 import _ "embed"
 

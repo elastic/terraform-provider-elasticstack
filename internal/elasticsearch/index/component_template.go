@@ -9,6 +9,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/tfsdkutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -35,7 +36,7 @@ func ResourceComponentTemplate() *schema.Resource {
 			Type:             schema.TypeString,
 			Optional:         true,
 			ValidateFunc:     validation.StringIsJSON,
-			DiffSuppressFunc: utils.DiffJsonSuppress,
+			DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 		},
 		"template": {
 			Description: "Template to be applied. It may optionally include an aliases, mappings, or settings configuration.",
@@ -59,7 +60,7 @@ func ResourceComponentTemplate() *schema.Resource {
 									Description:      "Query used to limit documents the alias can access.",
 									Type:             schema.TypeString,
 									Optional:         true,
-									DiffSuppressFunc: utils.DiffJsonSuppress,
+									DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 									ValidateFunc:     validation.StringIsJSON,
 								},
 								"index_routing": {
@@ -96,7 +97,7 @@ func ResourceComponentTemplate() *schema.Resource {
 						Description:      indexTemplateMappingsDescription,
 						Type:             schema.TypeString,
 						Optional:         true,
-						DiffSuppressFunc: utils.DiffJsonSuppress,
+						DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 						ValidateFunc: validation.All(
 							validation.StringIsJSON, stringIsJSONObject,
 						),
@@ -105,7 +106,7 @@ func ResourceComponentTemplate() *schema.Resource {
 						Description:      componentTemplateSettingsDescription,
 						Type:             schema.TypeString,
 						Optional:         true,
-						DiffSuppressFunc: utils.DiffIndexSettingSuppress,
+						DiffSuppressFunc: tfsdkutils.DiffIndexSettingSuppress,
 						ValidateFunc: validation.All(
 							validation.StringIsJSON, stringIsJSONObject,
 						),
@@ -120,7 +121,7 @@ func ResourceComponentTemplate() *schema.Resource {
 		},
 	}
 
-	utils.AddConnectionSchema(componentTemplateSchema)
+	schemautil.AddConnectionSchema(componentTemplateSchema)
 
 	return &schema.Resource{
 		Description: componentTemplateResourceDescription,
@@ -139,17 +140,17 @@ func ResourceComponentTemplate() *schema.Resource {
 }
 
 func resourceComponentTemplatePut(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
-	componentId := d.Get("name").(string)
-	id, diags := client.ID(ctx, componentId)
+	componentID := d.Get("name").(string)
+	id, diags := client.ID(ctx, componentID)
 	if diags.HasError() {
 		return diags
 	}
 	var componentTemplate models.ComponentTemplate
-	componentTemplate.Name = componentId
+	componentTemplate.Name = componentID
 
 	if v, ok := d.GetOk("metadata"); ok {
 		metadata := make(map[string]any)
@@ -184,19 +185,19 @@ func resourceComponentTemplatePut(ctx context.Context, d *schema.ResourceData, m
 }
 
 func resourceComponentTemplateRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
-	compId, diags := clients.CompositeIdFromStr(d.Id())
+	compID, diags := clients.CompositeIDFromStr(d.Id())
 	if diags.HasError() {
 		return diags
 	}
-	templateId := compId.ResourceId
+	templateID := compID.ResourceID
 
-	tpl, diags := elasticsearch.GetComponentTemplate(ctx, client, templateId)
+	tpl, diags := elasticsearch.GetComponentTemplate(ctx, client, templateID)
 	if tpl == nil && diags == nil {
-		tflog.Warn(ctx, fmt.Sprintf(`Component template "%s" not found, removing from state`, compId.ResourceId))
+		tflog.Warn(ctx, fmt.Sprintf(`Component template "%s" not found, removing from state`, compID.ResourceID))
 		d.SetId("")
 		return diags
 	}
@@ -238,17 +239,17 @@ func resourceComponentTemplateRead(ctx context.Context, d *schema.ResourceData, 
 }
 
 func resourceComponentTemplateDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
 
 	id := d.Id()
-	compId, diags := clients.CompositeIdFromStr(id)
+	compID, diags := clients.CompositeIDFromStr(id)
 	if diags.HasError() {
 		return diags
 	}
-	if diags := elasticsearch.DeleteComponentTemplate(ctx, client, compId.ResourceId); diags.HasError() {
+	if diags := elasticsearch.DeleteComponentTemplate(ctx, client, compID.ResourceID); diags.HasError() {
 		return diags
 	}
 	return diags

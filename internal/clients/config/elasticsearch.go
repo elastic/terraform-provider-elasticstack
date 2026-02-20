@@ -60,12 +60,12 @@ func newElasticsearchConfigFromSDK(d *schema.ResourceData, base baseConfig, key 
 			}
 		}
 
-		if bearer_token, ok := esConfig["bearer_token"].(string); ok && bearer_token != "" {
-			config.bearerToken = bearer_token
+		if bearerToken, ok := esConfig["bearer_token"].(string); ok && bearerToken != "" {
+			config.bearerToken = bearerToken
 		}
 
-		if es_client_authentication, ok := esConfig["es_client_authentication"].(string); ok && es_client_authentication != "" {
-			config.esClientAuthentication = es_client_authentication
+		if esClientAuthentication, ok := esConfig["es_client_authentication"].(string); ok && esClientAuthentication != "" {
+			config.esClientAuthentication = esClientAuthentication
 		}
 
 		if insecure, ok := esConfig["insecure"]; ok && insecure.(bool) {

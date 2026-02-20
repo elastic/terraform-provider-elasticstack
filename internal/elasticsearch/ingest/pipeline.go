@@ -9,6 +9,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/tfsdkutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -42,7 +43,7 @@ func ResourceIngestPipeline() *schema.Resource {
 			Elem: &schema.Schema{
 				Type:             schema.TypeString,
 				ValidateFunc:     validation.StringIsJSON,
-				DiffSuppressFunc: utils.DiffJsonSuppress,
+				DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 			},
 		},
 		"processors": {
@@ -53,7 +54,7 @@ func ResourceIngestPipeline() *schema.Resource {
 			Elem: &schema.Schema{
 				Type:             schema.TypeString,
 				ValidateFunc:     validation.StringIsJSON,
-				DiffSuppressFunc: utils.DiffJsonSuppress,
+				DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 			},
 		},
 		"metadata": {
@@ -61,11 +62,11 @@ func ResourceIngestPipeline() *schema.Resource {
 			Type:             schema.TypeString,
 			Optional:         true,
 			ValidateFunc:     validation.StringIsJSON,
-			DiffSuppressFunc: utils.DiffJsonSuppress,
+			DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 		},
 	}
 
-	utils.AddConnectionSchema(pipelineSchema)
+	schemautil.AddConnectionSchema(pipelineSchema)
 
 	return &schema.Resource{
 		Description: "Manages tasks and resources related to ingest pipelines and processors. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/ingest-apis.html",
@@ -84,17 +85,17 @@ func ResourceIngestPipeline() *schema.Resource {
 }
 
 func resourceIngestPipelineTemplatePut(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
-	pipelineId := d.Get("name").(string)
-	id, diags := client.ID(ctx, pipelineId)
+	pipelineID := d.Get("name").(string)
+	id, diags := client.ID(ctx, pipelineID)
 	if diags.HasError() {
 		return diags
 	}
 	var pipeline models.IngestPipeline
-	pipeline.Name = pipelineId
+	pipeline.Name = pipelineID
 	if v, ok := d.GetOk("description"); ok {
 		r := v.(string)
 		pipeline.Description = &r
@@ -138,19 +139,19 @@ func resourceIngestPipelineTemplatePut(ctx context.Context, d *schema.ResourceDa
 }
 
 func resourceIngestPipelineTemplateRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
 	id := d.Id()
-	compId, diags := clients.CompositeIdFromStr(id)
+	compID, diags := clients.CompositeIDFromStr(id)
 	if diags.HasError() {
 		return diags
 	}
 
-	pipeline, diags := elasticsearch.GetIngestPipeline(ctx, client, &compId.ResourceId)
+	pipeline, diags := elasticsearch.GetIngestPipeline(ctx, client, &compID.ResourceID)
 	if pipeline == nil && diags == nil {
-		tflog.Warn(ctx, fmt.Sprintf(`Injest pipeline "%s" not found, removing from state`, compId.ResourceId))
+		tflog.Warn(ctx, fmt.Sprintf(`Injest pipeline "%s" not found, removing from state`, compID.ResourceID))
 		d.SetId("")
 		return diags
 	}
@@ -206,17 +207,17 @@ func resourceIngestPipelineTemplateRead(ctx context.Context, d *schema.ResourceD
 }
 
 func resourceIngestPipelineTemplateDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
 	id := d.Id()
-	compId, diags := clients.CompositeIdFromStr(id)
+	compID, diags := clients.CompositeIDFromStr(id)
 	if diags.HasError() {
 		return diags
 	}
 
-	if diags := elasticsearch.DeleteIngestPipeline(ctx, client, &compId.ResourceId); diags.HasError() {
+	if diags := elasticsearch.DeleteIngestPipeline(ctx, client, &compID.ResourceID); diags.HasError() {
 		return diags
 	}
 

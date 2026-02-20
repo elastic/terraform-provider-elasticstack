@@ -1,4 +1,4 @@
-package integration_policy
+package integrationpolicy
 
 import (
 	"encoding/json"

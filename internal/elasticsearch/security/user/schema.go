@@ -1,4 +1,4 @@
-package user
+package securityuser
 
 import (
 	"context"
@@ -31,7 +31,7 @@ func GetSchema() schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: userResourceDescription,
 		Blocks: map[string]schema.Block{
-			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock("elasticsearch_connection", false),
+			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(false),
 		},
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{

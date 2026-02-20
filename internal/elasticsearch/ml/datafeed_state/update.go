@@ -1,4 +1,4 @@
-package datafeed_state
+package datafeedstate
 
 import (
 	"context"
@@ -51,13 +51,13 @@ func (r *mlDatafeedStateResource) update(ctx context.Context, plan tfsdk.Plan, s
 		return diags
 	}
 
-	client, fwDiags := clients.MaybeNewApiClientFromFrameworkResource(ctx, data.ElasticsearchConnection, r.client)
+	client, fwDiags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, data.ElasticsearchConnection, r.client)
 	diags.Append(fwDiags...)
 	if diags.HasError() {
 		return diags
 	}
 
-	datafeedId := data.DatafeedId.ValueString()
+	datafeedID := data.DatafeedID.ValueString()
 	desiredState := data.State.ValueString()
 
 	// Create context with timeout
@@ -65,7 +65,7 @@ func (r *mlDatafeedStateResource) update(ctx context.Context, plan tfsdk.Plan, s
 	defer cancel()
 
 	// First, get the current datafeed stats to check if the datafeed exists and its current state
-	datafeedStats, fwDiags := elasticsearch.GetDatafeedStats(ctx, client, datafeedId)
+	datafeedStats, fwDiags := elasticsearch.GetDatafeedStats(ctx, client, datafeedID)
 	diags.Append(fwDiags...)
 	if diags.HasError() {
 		return diags
@@ -74,7 +74,7 @@ func (r *mlDatafeedStateResource) update(ctx context.Context, plan tfsdk.Plan, s
 	if datafeedStats == nil {
 		diags.AddError(
 			"ML Datafeed not found",
-			fmt.Sprintf("ML datafeed %s does not exist", datafeedId),
+			fmt.Sprintf("ML datafeed %s does not exist", datafeedID),
 		)
 		return diags
 	}
@@ -87,7 +87,7 @@ func (r *mlDatafeedStateResource) update(ctx context.Context, plan tfsdk.Plan, s
 	}
 
 	// Generate composite ID
-	compId, sdkDiags := client.ID(ctx, datafeedId)
+	compID, sdkDiags := client.ID(ctx, datafeedID)
 	if len(sdkDiags) > 0 {
 		for _, d := range sdkDiags {
 			diags.AddError(d.Summary, d.Detail)
@@ -96,7 +96,7 @@ func (r *mlDatafeedStateResource) update(ctx context.Context, plan tfsdk.Plan, s
 	}
 
 	// Set the response state
-	data.Id = types.StringValue(compId.String())
+	data.ID = types.StringValue(compID.String())
 
 	var finalData *MLDatafeedStateData
 	if inDesiredState {
@@ -126,12 +126,12 @@ func (r *mlDatafeedStateResource) update(ctx context.Context, plan tfsdk.Plan, s
 
 func (r *mlDatafeedStateResource) updateAfterMissedTransition(
 	ctx context.Context,
-	client *clients.ApiClient,
+	client *clients.APIClient,
 	data MLDatafeedStateData,
 	datafeedStats *models.DatafeedStats,
 ) (*MLDatafeedStateData, diag.Diagnostics) {
-	datafeedId := data.DatafeedId.ValueString()
-	statsAfterUpdate, diags := elasticsearch.GetDatafeedStats(ctx, client, datafeedId)
+	datafeedID := data.DatafeedID.ValueString()
+	statsAfterUpdate, diags := elasticsearch.GetDatafeedStats(ctx, client, datafeedID)
 	if diags.HasError() {
 		return nil, diags
 	}
@@ -139,7 +139,7 @@ func (r *mlDatafeedStateResource) updateAfterMissedTransition(
 	if statsAfterUpdate == nil {
 		diags.AddError(
 			"ML Datafeed not found",
-			fmt.Sprintf("ML datafeed %s does not exist after successful update", datafeedId),
+			fmt.Sprintf("ML datafeed %s does not exist after successful update", datafeedID),
 		)
 		return nil, diags
 	}
@@ -149,11 +149,11 @@ func (r *mlDatafeedStateResource) updateAfterMissedTransition(
 	// To handle this, we check if the search count has increased to determine if the datafeed actually started since the update.
 	if statsAfterUpdate.TimingStats == nil || datafeedStats.TimingStats == nil {
 		diags.AddWarning("Expected Datafeed to contain timing stats",
-			fmt.Sprintf("Stats for datafeed %s did not contain timing stats either before or after the update. Before %v - After %v", datafeedId, datafeedStats, statsAfterUpdate))
+			fmt.Sprintf("Stats for datafeed %s did not contain timing stats either before or after the update. Before %v - After %v", datafeedID, datafeedStats, statsAfterUpdate))
 	} else if statsAfterUpdate.TimingStats.SearchCount <= datafeedStats.TimingStats.SearchCount {
 		diags.AddError(
 			"Datafeed did not successfully transition to the desired state",
-			fmt.Sprintf("[%s] datafeed did not settle into the [%s] state. The current state is [%s]", datafeedId, data.State.ValueString(), statsAfterUpdate.State),
+			fmt.Sprintf("[%s] datafeed did not settle into the [%s] state. The current state is [%s]", datafeedID, data.State.ValueString(), statsAfterUpdate.State),
 		)
 		return nil, diags
 	}
@@ -166,8 +166,8 @@ func (r *mlDatafeedStateResource) updateAfterMissedTransition(
 }
 
 // performStateTransition handles the ML datafeed state transition process
-func (r *mlDatafeedStateResource) performStateTransition(ctx context.Context, client *clients.ApiClient, data MLDatafeedStateData, currentState datafeed.State) (bool, diag.Diagnostics) {
-	datafeedId := data.DatafeedId.ValueString()
+func (r *mlDatafeedStateResource) performStateTransition(ctx context.Context, client *clients.APIClient, data MLDatafeedStateData, currentState datafeed.State) (bool, diag.Diagnostics) {
+	datafeedID := data.DatafeedID.ValueString()
 	desiredState := datafeed.State(data.State.ValueString())
 	force := data.Force.ValueBool()
 
@@ -179,7 +179,7 @@ func (r *mlDatafeedStateResource) performStateTransition(ctx context.Context, cl
 
 	// Return early if no state change is needed
 	if currentState == desiredState {
-		tflog.Debug(ctx, fmt.Sprintf("ML datafeed %s is already in desired state %s", datafeedId, desiredState))
+		tflog.Debug(ctx, fmt.Sprintf("ML datafeed %s is already in desired state %s", datafeedID, desiredState))
 		return true, nil
 	}
 
@@ -189,12 +189,12 @@ func (r *mlDatafeedStateResource) performStateTransition(ctx context.Context, cl
 		start := data.Start.ValueString()
 		end := data.End.ValueString()
 
-		diags := elasticsearch.StartDatafeed(ctx, client, datafeedId, start, end, timeout)
+		diags := elasticsearch.StartDatafeed(ctx, client, datafeedID, start, end, timeout)
 		if diags.HasError() {
 			return false, diags
 		}
 	case datafeed.StateStopped:
-		if diags := elasticsearch.StopDatafeed(ctx, client, datafeedId, force, timeout); diags.HasError() {
+		if diags := elasticsearch.StopDatafeed(ctx, client, datafeedID, force, timeout); diags.HasError() {
 			return false, diags
 		}
 	default:
@@ -207,11 +207,11 @@ func (r *mlDatafeedStateResource) performStateTransition(ctx context.Context, cl
 	}
 
 	// Wait for state transition to complete
-	inDesiredState, diags := datafeed.WaitForDatafeedState(ctx, client, datafeedId, desiredState)
+	inDesiredState, diags := datafeed.WaitForDatafeedState(ctx, client, datafeedID, desiredState)
 	if diags.HasError() {
 		return false, diags
 	}
 
-	tflog.Info(ctx, fmt.Sprintf("ML datafeed %s successfully transitioned to state %s", datafeedId, desiredState))
+	tflog.Info(ctx, fmt.Sprintf("ML datafeed %s successfully transitioned to state %s", datafeedID, desiredState))
 	return inDesiredState, nil
 }

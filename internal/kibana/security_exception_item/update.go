@@ -1,12 +1,12 @@
-package security_exception_item
+package securityexceptionitem
 
 import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
@@ -20,8 +20,8 @@ func (r *ExceptionItemResource) Update(ctx context.Context, req resource.UpdateR
 	}
 
 	// Parse composite ID to get space_id and resource_id
-	compId, compIdDiags := clients.CompositeIdFromStrFw(plan.ID.ValueString())
-	resp.Diagnostics.Append(compIdDiags...)
+	compID, compIDDiags := clients.CompositeIDFromStrFw(plan.ID.ValueString())
+	resp.Diagnostics.Append(compIDDiags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -33,14 +33,14 @@ func (r *ExceptionItemResource) Update(ctx context.Context, req resource.UpdateR
 	}
 
 	// Build the update request body using model method
-	body, diags := plan.toUpdateRequest(ctx, compId.ResourceId, r.client)
+	body, diags := plan.toUpdateRequest(ctx, compID.ResourceID, r.client)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	// Update the exception item
-	updateResp, diags := kibana_oapi.UpdateExceptionListItem(ctx, client, plan.SpaceID.ValueString(), *body)
+	updateResp, diags := kibanaoapi.UpdateExceptionListItem(ctx, client, plan.SpaceID.ValueString(), *body)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -59,12 +59,12 @@ func (r *ExceptionItemResource) Update(ctx context.Context, req resource.UpdateR
 	}
 
 	// Include namespace_type if specified (required for agnostic items)
-	if utils.IsKnown(plan.NamespaceType) {
+	if typeutils.IsKnown(plan.NamespaceType) {
 		nsType := kbapi.SecurityExceptionsAPIExceptionNamespaceType(plan.NamespaceType.ValueString())
 		readParams.NamespaceType = &nsType
 	}
 
-	readResp, diags := kibana_oapi.GetExceptionListItem(ctx, client, plan.SpaceID.ValueString(), readParams)
+	readResp, diags := kibanaoapi.GetExceptionListItem(ctx, client, plan.SpaceID.ValueString(), readParams)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

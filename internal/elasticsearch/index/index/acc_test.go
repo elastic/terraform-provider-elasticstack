@@ -353,19 +353,19 @@ func checkResourceIndexDestroy(s *terraform.State) error {
 		if rs.Type != "elasticstack_elasticsearch_index" {
 			continue
 		}
-		compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
+		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
 		esClient, err := client.GetESClient()
 		if err != nil {
 			return err
 		}
-		res, err := esClient.Indices.Get([]string{compId.ResourceId})
+		res, err := esClient.Indices.Get([]string{compID.ResourceID})
 		if err != nil {
 			return err
 		}
 
 		if res.StatusCode != 404 {
-			return fmt.Errorf("Index (%s) still exists", compId.ResourceId)
+			return fmt.Errorf("Index (%s) still exists", compID.ResourceID)
 		}
 	}
 	return nil

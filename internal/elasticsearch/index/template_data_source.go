@@ -158,7 +158,7 @@ func DataSourceTemplate() *schema.Resource {
 		},
 	}
 
-	utils.AddConnectionSchema(templateSchema)
+	schemautil.AddConnectionSchema(templateSchema)
 
 	return &schema.Resource{
 		Description: "Retrieves information about an existing index template definition. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-get-template.html",
@@ -168,7 +168,7 @@ func DataSourceTemplate() *schema.Resource {
 }
 
 func dataSourceIndexTemplateRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}

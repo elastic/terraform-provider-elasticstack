@@ -3,10 +3,11 @@ package cluster
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -67,7 +68,7 @@ func ResourceSettings() *schema.Resource {
 		},
 	}
 
-	utils.AddConnectionSchema(settingsSchema)
+	schemautil.AddConnectionSchema(settingsSchema)
 
 	return &schema.Resource{
 		Description: settingsResourceDescription,
@@ -86,7 +87,7 @@ func ResourceSettings() *schema.Resource {
 }
 
 func resourceClusterSettingsPut(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
@@ -101,8 +102,8 @@ func resourceClusterSettingsPut(ctx context.Context, d *schema.ResourceData, met
 	}
 	for _, v := range []string{"persistent", "transient"} {
 		if d.HasChange(v) {
-			old, new := d.GetChange(v)
-			diags = updateRemovedSettings(v, old, new, settings)
+			oldValue, newValue := d.GetChange(v)
+			diags = updateRemovedSettings(v, oldValue, newValue, settings)
 			if diags.HasError() {
 				return diags
 			}
@@ -116,22 +117,22 @@ func resourceClusterSettingsPut(ctx context.Context, d *schema.ResourceData, met
 }
 
 // Updates the map of settings in place if there is a difference between old and new list of settings
-func updateRemovedSettings(name string, old, new any, settings map[string]any) diag.Diagnostics {
+func updateRemovedSettings(name string, oldValue, newValue any, settings map[string]any) diag.Diagnostics {
 	var diags diag.Diagnostics
-	if old != nil && new != nil {
+	if oldValue != nil && newValue != nil {
 		oldSettings := make(map[string]any)
-		if len(old.([]any)) > 0 {
-			oldSettings, _ = expandSettings(old)
+		if len(oldValue.([]any)) > 0 {
+			oldSettings, _ = expandSettings(oldValue)
 		}
 		newSettings := make(map[string]any)
-		if len(new.([]any)) > 0 {
-			newSettings, diags = expandSettings(new)
+		if len(newValue.([]any)) > 0 {
+			newSettings, diags = expandSettings(newValue)
 			if diags.HasError() {
 				return diags
 			}
 		}
 
-		if !utils.MapsEqual(oldSettings, newSettings) {
+		if !reflect.DeepEqual(oldSettings, newSettings) {
 			for s := range oldSettings {
 				if _, ok := newSettings[s]; !ok {
 					if settings[name] == nil {
@@ -204,7 +205,7 @@ func expandSettings(s any) (map[string]any, diag.Diagnostics) {
 }
 
 func resourceClusterSettingsRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
@@ -225,15 +226,15 @@ func resourceClusterSettingsRead(ctx context.Context, d *schema.ResourceData, me
 	return diags
 }
 
-func flattenSettings(name string, old, new map[string]any) []any {
+func flattenSettings(name string, oldSettings, newSettings map[string]any) []any {
 	setting := make(map[string]any)
 	settings := make([]any, 0)
 	result := make([]any, 0)
 
-	if old[name] != nil {
-		for k := range old[name].(map[string]any) {
-			if new[name] != nil {
-				if v, ok := new[name].(map[string]any)[k]; ok {
+	if oldSettings[name] != nil {
+		for k := range oldSettings[name].(map[string]any) {
+			if newSettings[name] != nil {
+				if v, ok := newSettings[name].(map[string]any)[k]; ok {
 					s := make(map[string]any)
 					s["name"] = k
 
@@ -258,7 +259,7 @@ func flattenSettings(name string, old, new map[string]any) []any {
 }
 
 func resourceClusterSettingsDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}

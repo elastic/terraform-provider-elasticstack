@@ -1,4 +1,4 @@
-package integration_policy
+package integrationpolicy
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -14,8 +15,8 @@ import (
 )
 
 type features struct {
-	SupportsPolicyIds bool
-	SupportsOutputId  bool
+	SupportsPolicyIDs bool
+	SupportsOutputID  bool
 }
 
 type integrationPolicyModel struct {
@@ -32,8 +33,8 @@ type integrationPolicyModel struct {
 	IntegrationVersion types.String  `tfsdk:"integration_version"`
 	OutputID           types.String  `tfsdk:"output_id"`
 	Inputs             InputsValue   `tfsdk:"inputs"` // > integrationPolicyInputsModel
-	VarsJson           VarsJSONValue `tfsdk:"vars_json"`
-	SpaceIds           types.Set     `tfsdk:"space_ids"`
+	VarsJSON           VarsJSONValue `tfsdk:"vars_json"`
+	SpaceIDs           types.Set     `tfsdk:"space_ids"`
 }
 
 type integrationPolicyInputsModel struct {
@@ -62,8 +63,8 @@ func (model *integrationPolicyModel) populateFromAPI(ctx context.Context, pkg *k
 
 	// Only populate the agent policy field that was originally configured
 	// to avoid Terraform detecting inconsistent state
-	originallyUsedAgentPolicyID := utils.IsKnown(model.AgentPolicyID)
-	originallyUsedAgentPolicyIDs := utils.IsKnown(model.AgentPolicyIDs)
+	originallyUsedAgentPolicyID := typeutils.IsKnown(model.AgentPolicyID)
+	originallyUsedAgentPolicyIDs := typeutils.IsKnown(model.AgentPolicyIDs)
 
 	if originallyUsedAgentPolicyID {
 		model.AgentPolicyID = types.StringPointerValue(data.PolicyId)
@@ -98,30 +99,30 @@ func (model *integrationPolicyModel) populateFromAPI(ctx context.Context, pkg *k
 	model.IntegrationVersion = types.StringValue(data.Package.Version)
 	model.OutputID = types.StringPointerValue(data.OutputId)
 
-	varsMap := utils.Deref(data.Vars)
+	varsMap := schemautil.Deref(data.Vars)
 	if varsMap == nil {
-		model.VarsJson = NewVarsJSONNull()
+		model.VarsJSON = NewVarsJSONNull()
 	} else {
 		jsonBytes, err := json.Marshal(varsMap)
 		if err != nil {
 			diags.AddError("Failed to marshal vars", err.Error())
 		} else {
 			var d diag.Diagnostics
-			model.VarsJson, d = NewVarsJSONWithIntegration(string(jsonBytes), data.Package.Name, data.Package.Version)
+			model.VarsJSON, d = NewVarsJSONWithIntegration(string(jsonBytes), data.Package.Name, data.Package.Version)
 			diags.Append(d...)
 		}
 	}
 
 	// Preserve space_ids if it was originally set in the plan/state
 	// The API response may not include space_ids, so we keep the original value
-	originallySetSpaceIds := utils.IsKnown(model.SpaceIds)
+	originallySetSpaceIDs := typeutils.IsKnown(model.SpaceIDs)
 	if data.SpaceIds != nil {
-		spaceIds, d := types.SetValueFrom(ctx, types.StringType, *data.SpaceIds)
+		spaceIDs, d := types.SetValueFrom(ctx, types.StringType, *data.SpaceIds)
 		diags.Append(d...)
-		model.SpaceIds = spaceIds
-	} else if !originallySetSpaceIds {
+		model.SpaceIDs = spaceIDs
+	} else if !originallySetSpaceIDs {
 		// Only set to null if it wasn't originally set
-		model.SpaceIds = types.SetNull(types.StringType)
+		model.SpaceIDs = types.SetNull(types.StringType)
 	}
 	// If originally set but API didn't return it, keep the original value
 	model.populateInputsFromAPI(ctx, pkg, data.Inputs, &diags)
@@ -135,20 +136,16 @@ func (model *integrationPolicyModel) populateInputsFromAPI(ctx context.Context, 
 	// 2. If model.Inputs is known and null/empty: user explicitly didn't configure inputs → don't populate (avoid inconsistent state)
 	// 3. If model.Inputs is known and has values: user configured inputs → populate from API
 
-	isInputKnown := utils.IsKnown(model.Inputs)
+	isInputKnown := typeutils.IsKnown(model.Inputs)
 	isInputNullOrEmpty := model.Inputs.IsNull() || (isInputKnown && len(model.Inputs.Elements()) == 0)
 
-	// Case 1: Unknown (import/fresh read) - always populate
-	if !isInputKnown {
-		// Import or fresh read - populate everything from API
-		// (continue to normal population below)
-	} else if isInputNullOrEmpty {
-		// Case 2: Known and null/empty - user explicitly didn't configure inputs
+	// Case 2: Known and null/empty - user explicitly didn't configure inputs
+	if isInputNullOrEmpty && isInputKnown {
 		// Don't populate to avoid "Provider produced inconsistent result" error
 		model.Inputs = NewInputsNull(getInputsElementType())
 		return
 	}
-	// Case 3: Known and not null/empty - user configured inputs, populate from API (continue below)
+	// Case 1 & 3: Unknown (import/fresh read) or known with values - populate from API
 
 	// Fetch package info to get defaults
 	inputDefaults, defaultsDiags := packageInfoToDefaults(pkg)
@@ -165,7 +162,7 @@ func (model *integrationPolicyModel) populateInputsFromAPI(ctx context.Context, 
 	for inputID, inputData := range inputs {
 		inputModel := integrationPolicyInputsModel{
 			Enabled: types.BoolPointerValue(inputData.Enabled),
-			Vars:    utils.MapToNormalizedType(utils.Deref(inputData.Vars), path.Root("inputs").AtMapKey(inputID).AtName("vars"), diags),
+			Vars:    typeutils.MapToNormalizedType(schemautil.Deref(inputData.Vars), path.Root("inputs").AtMapKey(inputID).AtName("vars"), diags),
 		}
 
 		// Populate streams
@@ -174,7 +171,7 @@ func (model *integrationPolicyModel) populateInputsFromAPI(ctx context.Context, 
 			for streamID, streamData := range *inputData.Streams {
 				streamModel := integrationPolicyInputStreamModel{
 					Enabled: types.BoolPointerValue(streamData.Enabled),
-					Vars:    utils.MapToNormalizedType(utils.Deref(streamData.Vars), path.Root("inputs").AtMapKey(inputID).AtName("streams").AtMapKey(streamID).AtName("vars"), diags),
+					Vars:    typeutils.MapToNormalizedType(schemautil.Deref(streamData.Vars), path.Root("inputs").AtMapKey(inputID).AtName("streams").AtMapKey(streamID).AtName("vars"), diags),
 				}
 
 				streams[streamID] = streamModel
@@ -208,26 +205,26 @@ func (model integrationPolicyModel) toAPIModel(ctx context.Context, feat feature
 	var diags diag.Diagnostics
 
 	// Check if agent_policy_ids is configured and version supports it
-	if utils.IsKnown(model.AgentPolicyIDs) {
-		if !feat.SupportsPolicyIds {
+	if typeutils.IsKnown(model.AgentPolicyIDs) {
+		if !feat.SupportsPolicyIDs {
 			return kbapi.PackagePolicyRequest{}, diag.Diagnostics{
 				diag.NewAttributeErrorDiagnostic(
 					path.Root("agent_policy_ids"),
 					"Unsupported Elasticsearch version",
-					fmt.Sprintf("Agent policy IDs are only supported in Elastic Stack %s and above", MinVersionPolicyIds),
+					fmt.Sprintf("Agent policy IDs are only supported in Elastic Stack %s and above", MinVersionPolicyIDs),
 				),
 			}
 		}
 	}
 
 	// Check if output_id is configured and version supports it
-	if utils.IsKnown(model.OutputID) {
-		if !feat.SupportsOutputId {
+	if typeutils.IsKnown(model.OutputID) {
+		if !feat.SupportsOutputID {
 			return kbapi.PackagePolicyRequest{}, diag.Diagnostics{
 				diag.NewAttributeErrorDiagnostic(
 					path.Root("output_id"),
 					"Unsupported Elasticsearch version",
-					fmt.Sprintf("Output ID is only supported in Elastic Stack %s and above", MinVersionOutputId),
+					fmt.Sprintf("Output ID is only supported in Elastic Stack %s and above", MinVersionOutputID),
 				),
 			}
 		}
@@ -252,20 +249,20 @@ func (model integrationPolicyModel) toAPIModel(ctx context.Context, feat feature
 				return &policyIDs
 			}
 			// Only return empty array for 8.15+ when agent_policy_ids is not defined
-			if feat.SupportsPolicyIds {
+			if feat.SupportsPolicyIDs {
 				emptyArray := []string{}
 				return &emptyArray
 			}
 			return nil
 		}(),
-		Vars: utils.MapRef(utils.NormalizedTypeToMap[any](model.VarsJson.Normalized, path.Root("vars_json"), &diags)),
+		Vars: schemautil.MapRef(typeutils.NormalizedTypeToMap[any](model.VarsJSON.Normalized, path.Root("vars_json"), &diags)),
 	}
 
-	if utils.IsKnown(model.PolicyID) {
+	if typeutils.IsKnown(model.PolicyID) {
 		body.Id = model.PolicyID.ValueStringPointer()
 	}
 
-	if utils.IsKnown(model.ID) {
+	if typeutils.IsKnown(model.ID) {
 		body.Id = model.ID.ValueStringPointer()
 	}
 
@@ -278,11 +275,11 @@ func (model integrationPolicyModel) toAPIModel(ctx context.Context, feat feature
 // toAPIInputsFromInputsAttribute converts the 'inputs' attribute to the API model format
 func (model integrationPolicyModel) toAPIInputsFromInputsAttribute(ctx context.Context, diags *diag.Diagnostics) *map[string]kbapi.PackagePolicyRequestInput {
 	result := make(map[string]kbapi.PackagePolicyRequestInput, len(model.Inputs.Elements()))
-	if !utils.IsKnown(model.Inputs.MapValue) {
+	if !typeutils.IsKnown(model.Inputs.MapValue) {
 		return &result
 	}
 
-	inputsMap := utils.MapTypeAs[integrationPolicyInputsModel](ctx, model.Inputs.MapValue, path.Root("inputs"), diags)
+	inputsMap := typeutils.MapTypeAs[integrationPolicyInputsModel](ctx, model.Inputs.MapValue, path.Root("inputs"), diags)
 	if inputsMap == nil {
 		return &result
 	}
@@ -292,18 +289,18 @@ func (model integrationPolicyModel) toAPIInputsFromInputsAttribute(ctx context.C
 
 		apiInput := kbapi.PackagePolicyRequestInput{
 			Enabled: inputModel.Enabled.ValueBoolPointer(),
-			Vars:    utils.MapRef(utils.NormalizedTypeToMap[any](inputModel.Vars, inputPath.AtName("vars"), diags)),
+			Vars:    schemautil.MapRef(typeutils.NormalizedTypeToMap[any](inputModel.Vars, inputPath.AtName("vars"), diags)),
 		}
 
 		// Convert streams if present
-		if utils.IsKnown(inputModel.Streams) && len(inputModel.Streams.Elements()) > 0 {
-			streamsMap := utils.MapTypeAs[integrationPolicyInputStreamModel](ctx, inputModel.Streams, inputPath.AtName("streams"), diags)
+		if typeutils.IsKnown(inputModel.Streams) && len(inputModel.Streams.Elements()) > 0 {
+			streamsMap := typeutils.MapTypeAs[integrationPolicyInputStreamModel](ctx, inputModel.Streams, inputPath.AtName("streams"), diags)
 			if streamsMap != nil {
 				streams := make(map[string]kbapi.PackagePolicyRequestInputStream, len(streamsMap))
 				for streamID, streamModel := range streamsMap {
 					streams[streamID] = kbapi.PackagePolicyRequestInputStream{
 						Enabled: streamModel.Enabled.ValueBoolPointer(),
-						Vars:    utils.MapRef(utils.NormalizedTypeToMap[any](streamModel.Vars, inputPath.AtName("streams").AtMapKey(streamID).AtName("vars"), diags)),
+						Vars:    schemautil.MapRef(typeutils.NormalizedTypeToMap[any](streamModel.Vars, inputPath.AtName("streams").AtMapKey(streamID).AtName("vars"), diags)),
 					}
 				}
 				apiInput.Streams = &streams

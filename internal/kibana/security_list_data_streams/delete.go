@@ -1,14 +1,14 @@
-package security_list_data_streams
+package securitylistdatastreams
 
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
 func (r *securityListDataStreamsResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var state SecurityListDataStreamsModel
+	var state Model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -22,6 +22,6 @@ func (r *securityListDataStreamsResource) Delete(ctx context.Context, req resour
 
 	spaceID := state.SpaceID.ValueString()
 
-	diags := kibana_oapi.DeleteListIndex(ctx, client, spaceID)
+	diags := kibanaoapi.DeleteListIndex(ctx, client, spaceID)
 	resp.Diagnostics.Append(diags...)
 }

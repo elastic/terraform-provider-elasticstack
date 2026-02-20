@@ -193,8 +193,8 @@ func checkResourceAliasDestroy(s *terraform.State) error {
 
 		// Handle the case where ID might not be in the expected format
 		aliasName := rs.Primary.ID
-		if compId, err := clients.CompositeIdFromStr(rs.Primary.ID); err == nil {
-			aliasName = compId.ResourceId
+		if compID, err := clients.CompositeIDFromStr(rs.Primary.ID); err == nil {
+			aliasName = compID.ResourceID
 		}
 
 		esClient, err := client.GetESClient()

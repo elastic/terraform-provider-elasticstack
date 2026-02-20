@@ -1,4 +1,4 @@
-package security_detection_rule_test
+package securitydetectionrule_test
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/google/uuid"
@@ -42,7 +42,7 @@ func checkResourceJSONAttr(expectedJSON string) resource.TestCheckFunc {
 			return fmt.Errorf("%s: Attribute '%s' not found", name, key)
 		}
 
-		if eq, jsonErr := utils.JSONBytesEqual([]byte(expectedJSON), []byte(actualJSON)); !eq {
+		if eq, jsonErr := schemautil.JSONBytesEqual([]byte(expectedJSON), []byte(actualJSON)); !eq {
 			if jsonErr != nil {
 				return fmt.Errorf(
 					"%s: Attribute '%s' expected %#v, got %#v: %w",
@@ -81,7 +81,7 @@ func TestAccResourceSecurityDetectionRule_Query(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
-				Config:   testAccSecurityDetectionRuleConfig_query("test-query-rule"),
+				Config:   testAccSecurityDetectionRuleConfigQuery("test-query-rule"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-query-rule"),
 					resource.TestCheckResourceAttr(resourceName, "type", "query"),
@@ -163,7 +163,7 @@ func TestAccResourceSecurityDetectionRule_Query(t *testing.T) {
 			},
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
-				Config:   testAccSecurityDetectionRuleConfig_queryUpdate("test-query-rule-updated"),
+				Config:   testAccSecurityDetectionRuleConfigQueryUpdate("test-query-rule-updated"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-query-rule-updated"),
 					resource.TestCheckResourceAttr(resourceName, "description", "Updated test query security detection rule"),
@@ -250,7 +250,7 @@ func TestAccResourceSecurityDetectionRule_Query(t *testing.T) {
 			},
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
-				Config:   testAccSecurityDetectionRuleConfig_queryRemoveFilters("test-query-rule-no-filters"),
+				Config:   testAccSecurityDetectionRuleConfigQueryRemoveFilters("test-query-rule-no-filters"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-query-rule-no-filters"),
 					resource.TestCheckResourceAttr(resourceName, "description", "Test query rule with filters removed"),
@@ -281,7 +281,7 @@ func TestAccResourceSecurityDetectionRule_EQL(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
-				Config:   testAccSecurityDetectionRuleConfig_eql("test-eql-rule"),
+				Config:   testAccSecurityDetectionRuleConfigEql("test-eql-rule"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-eql-rule"),
 					resource.TestCheckResourceAttr(resourceName, "type", "eql"),
@@ -347,7 +347,7 @@ func TestAccResourceSecurityDetectionRule_EQL(t *testing.T) {
 			},
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
-				Config:   testAccSecurityDetectionRuleConfig_eqlUpdate("test-eql-rule-updated"),
+				Config:   testAccSecurityDetectionRuleConfigEqlUpdate("test-eql-rule-updated"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-eql-rule-updated"),
 					resource.TestCheckResourceAttr(resourceName, "query", "process where process.name == \"powershell.exe\""),
@@ -426,7 +426,7 @@ func TestAccResourceSecurityDetectionRule_ESQL(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
-				Config:   testAccSecurityDetectionRuleConfig_esql("test-esql-rule"),
+				Config:   testAccSecurityDetectionRuleConfigEsql("test-esql-rule"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-esql-rule"),
 					resource.TestCheckResourceAttr(resourceName, "type", "esql"),
@@ -499,7 +499,7 @@ func TestAccResourceSecurityDetectionRule_ESQL(t *testing.T) {
 			},
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
-				Config:   testAccSecurityDetectionRuleConfig_esqlUpdate("test-esql-rule-updated"),
+				Config:   testAccSecurityDetectionRuleConfigEsqlUpdate("test-esql-rule-updated"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-esql-rule-updated"),
 					resource.TestCheckResourceAttr(resourceName, "query", "FROM logs-* | WHERE event.action == \"logout\" | STATS count(*) BY user.name, source.ip"),
@@ -575,7 +575,7 @@ func TestAccResourceSecurityDetectionRule_MachineLearning(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
-				Config:   testAccSecurityDetectionRuleConfig_machineLearning("test-ml-rule"),
+				Config:   testAccSecurityDetectionRuleConfigMachineLearning("test-ml-rule"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-ml-rule"),
 					resource.TestCheckResourceAttr(resourceName, "type", "machine_learning"),
@@ -646,7 +646,7 @@ func TestAccResourceSecurityDetectionRule_MachineLearning(t *testing.T) {
 			},
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
-				Config:   testAccSecurityDetectionRuleConfig_machineLearningUpdate("test-ml-rule-updated"),
+				Config:   testAccSecurityDetectionRuleConfigMachineLearningUpdate("test-ml-rule-updated"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-ml-rule-updated"),
 					resource.TestCheckResourceAttr(resourceName, "description", "Updated test ML security detection rule"),
@@ -733,7 +733,7 @@ func TestAccResourceSecurityDetectionRule_NewTerms(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
-				Config:   testAccSecurityDetectionRuleConfig_newTerms("test-new-terms-rule"),
+				Config:   testAccSecurityDetectionRuleConfigNewTerms("test-new-terms-rule"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-new-terms-rule"),
 					resource.TestCheckResourceAttr(resourceName, "type", "new_terms"),
@@ -811,7 +811,7 @@ func TestAccResourceSecurityDetectionRule_NewTerms(t *testing.T) {
 			},
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
-				Config:   testAccSecurityDetectionRuleConfig_newTermsUpdate("test-new-terms-rule-updated"),
+				Config:   testAccSecurityDetectionRuleConfigNewTermsUpdate("test-new-terms-rule-updated"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-new-terms-rule-updated"),
 					resource.TestCheckResourceAttr(resourceName, "query", "user.name:* AND source.ip:*"),
@@ -876,7 +876,7 @@ func TestAccResourceSecurityDetectionRule_SavedQuery(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
-				Config:   testAccSecurityDetectionRuleConfig_savedQuery("test-saved-query-rule"),
+				Config:   testAccSecurityDetectionRuleConfigSavedQuery("test-saved-query-rule"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-saved-query-rule"),
 					resource.TestCheckResourceAttr(resourceName, "type", "saved_query"),
@@ -951,7 +951,7 @@ func TestAccResourceSecurityDetectionRule_SavedQuery(t *testing.T) {
 			},
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
-				Config:   testAccSecurityDetectionRuleConfig_savedQueryUpdate("test-saved-query-rule-updated"),
+				Config:   testAccSecurityDetectionRuleConfigSavedQueryUpdate("test-saved-query-rule-updated"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-saved-query-rule-updated"),
 					resource.TestCheckResourceAttr(resourceName, "query", "event.action:*"),
@@ -1040,7 +1040,7 @@ func TestAccResourceSecurityDetectionRule_ThreatMatch(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
-				Config:   testAccSecurityDetectionRuleConfig_threatMatch("test-threat-match-rule"),
+				Config:   testAccSecurityDetectionRuleConfigThreatMatch("test-threat-match-rule"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-threat-match-rule"),
 					resource.TestCheckResourceAttr(resourceName, "type", "threat_match"),
@@ -1123,7 +1123,7 @@ func TestAccResourceSecurityDetectionRule_ThreatMatch(t *testing.T) {
 			},
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
-				Config:   testAccSecurityDetectionRuleConfig_threatMatchUpdate("test-threat-match-rule-updated"),
+				Config:   testAccSecurityDetectionRuleConfigThreatMatchUpdate("test-threat-match-rule-updated"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-threat-match-rule-updated"),
 					resource.TestCheckResourceAttr(resourceName, "query", "destination.ip:* OR source.ip:*"),
@@ -1212,7 +1212,7 @@ func TestAccResourceSecurityDetectionRule_Threshold(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
-				Config:   testAccSecurityDetectionRuleConfig_threshold("test-threshold-rule"),
+				Config:   testAccSecurityDetectionRuleConfigThreshold("test-threshold-rule"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-threshold-rule"),
 					resource.TestCheckResourceAttr(resourceName, "type", "threshold"),
@@ -1285,7 +1285,7 @@ func TestAccResourceSecurityDetectionRule_Threshold(t *testing.T) {
 			},
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
-				Config:   testAccSecurityDetectionRuleConfig_thresholdUpdate("test-threshold-rule-updated"),
+				Config:   testAccSecurityDetectionRuleConfigThresholdUpdate("test-threshold-rule-updated"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-threshold-rule-updated"),
 					resource.TestCheckResourceAttr(resourceName, "query", "event.action:(login OR logout)"),
@@ -1383,12 +1383,12 @@ func testAccCheckSecurityDetectionRuleDestroy(s *terraform.State) error {
 			if len(parts) != 2 {
 				return fmt.Errorf("invalid resource ID format: %s", rs.Primary.ID)
 			}
-			ruleId := parts[1]
+			ruleID := parts[1]
 
 			// Check if the rule still exists
-			ruleObjectId := uuid.MustParse(ruleId)
+			ruleObjectID := uuid.MustParse(ruleID)
 			params := &kbapi.ReadRuleParams{
-				Id: &ruleObjectId,
+				Id: &ruleObjectID,
 			}
 
 			response, err := kbClient.API.ReadRuleWithResponse(context.Background(), parts[0], params)
@@ -1398,7 +1398,7 @@ func testAccCheckSecurityDetectionRuleDestroy(s *terraform.State) error {
 
 			// If the rule still exists (status 200), it means destroy failed
 			if response.StatusCode() == 200 {
-				return fmt.Errorf("security detection rule (%s) still exists", ruleId)
+				return fmt.Errorf("security detection rule (%s) still exists", ruleID)
 			}
 
 			// If we get a 404, that's expected - the rule was properly destroyed
@@ -1409,7 +1409,7 @@ func testAccCheckSecurityDetectionRuleDestroy(s *terraform.State) error {
 
 		case "elasticstack_kibana_action_connector":
 			// Parse ID to get space_id and connector_id
-			compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
+			compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
 			// Get connector client from the Kibana OAPI client
 			oapiClient, err := client.GetKibanaOapiClient()
@@ -1417,13 +1417,13 @@ func testAccCheckSecurityDetectionRuleDestroy(s *terraform.State) error {
 				return err
 			}
 
-			connector, diags := kibana_oapi.GetConnector(context.Background(), oapiClient, compId.ResourceId, compId.ClusterId)
+			connector, diags := kibanaoapi.GetConnector(context.Background(), oapiClient, compID.ResourceID, compID.ClusterID)
 			if diags.HasError() {
 				return fmt.Errorf("failed to get connector: %v", diags)
 			}
 
 			if connector != nil {
-				return fmt.Errorf("action connector (%s) still exists", compId.ResourceId)
+				return fmt.Errorf("action connector (%s) still exists", compID.ResourceID)
 			}
 		}
 	}
@@ -1431,7 +1431,7 @@ func testAccCheckSecurityDetectionRuleDestroy(s *terraform.State) error {
 	return nil
 }
 
-func testAccSecurityDetectionRuleConfig_query(name string) string {
+func testAccSecurityDetectionRuleConfigQuery(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   kibana {}
@@ -1545,7 +1545,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 `, name)
 }
 
-func testAccSecurityDetectionRuleConfig_queryUpdate(name string) string {
+func testAccSecurityDetectionRuleConfigQueryUpdate(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   kibana {}
@@ -1688,7 +1688,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 `, name)
 }
 
-func testAccSecurityDetectionRuleConfig_eql(name string) string {
+func testAccSecurityDetectionRuleConfigEql(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   kibana {}
@@ -1792,7 +1792,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 `, name)
 }
 
-func testAccSecurityDetectionRuleConfig_eqlUpdate(name string) string {
+func testAccSecurityDetectionRuleConfigEqlUpdate(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   kibana {}
@@ -1894,7 +1894,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 `, name)
 }
 
-func testAccSecurityDetectionRuleConfig_esql(name string) string {
+func testAccSecurityDetectionRuleConfigEsql(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   kibana {}
@@ -1986,7 +1986,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 `, name)
 }
 
-func testAccSecurityDetectionRuleConfig_esqlUpdate(name string) string {
+func testAccSecurityDetectionRuleConfigEsqlUpdate(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   kibana {}
@@ -2077,7 +2077,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 `, name)
 }
 
-func testAccSecurityDetectionRuleConfig_machineLearning(name string) string {
+func testAccSecurityDetectionRuleConfigMachineLearning(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   kibana {}
@@ -2163,7 +2163,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 `, name, osqueryResponseActionQuery)
 }
 
-func testAccSecurityDetectionRuleConfig_machineLearningUpdate(name string) string {
+func testAccSecurityDetectionRuleConfigMachineLearningUpdate(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   kibana {}
@@ -2269,7 +2269,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 `, name)
 }
 
-func testAccSecurityDetectionRuleConfig_newTerms(name string) string {
+func testAccSecurityDetectionRuleConfigNewTerms(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   kibana {}
@@ -2377,7 +2377,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 `, name)
 }
 
-func testAccSecurityDetectionRuleConfig_newTermsUpdate(name string) string {
+func testAccSecurityDetectionRuleConfigNewTermsUpdate(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   kibana {}
@@ -2491,7 +2491,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 `, name)
 }
 
-func testAccSecurityDetectionRuleConfig_savedQuery(name string) string {
+func testAccSecurityDetectionRuleConfigSavedQuery(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   kibana {}
@@ -2586,7 +2586,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 `, name)
 }
 
-func testAccSecurityDetectionRuleConfig_savedQueryUpdate(name string) string {
+func testAccSecurityDetectionRuleConfigSavedQueryUpdate(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   kibana {}
@@ -2700,7 +2700,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 `, name)
 }
 
-func testAccSecurityDetectionRuleConfig_threatMatch(name string) string {
+func testAccSecurityDetectionRuleConfigThreatMatch(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   kibana {}
@@ -2822,7 +2822,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 `, name)
 }
 
-func testAccSecurityDetectionRuleConfig_threatMatchUpdate(name string) string {
+func testAccSecurityDetectionRuleConfigThreatMatchUpdate(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   kibana {}
@@ -2952,7 +2952,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 `, name)
 }
 
-func testAccSecurityDetectionRuleConfig_threshold(name string) string {
+func testAccSecurityDetectionRuleConfigThreshold(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   kibana {}
@@ -3058,7 +3058,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 `, name)
 }
 
-func testAccSecurityDetectionRuleConfig_thresholdUpdate(name string) string {
+func testAccSecurityDetectionRuleConfigThresholdUpdate(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   kibana {}
@@ -3197,7 +3197,7 @@ func TestAccResourceSecurityDetectionRule_WithConnectorAction(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
-				Config:   testAccSecurityDetectionRuleConfig_withConnectorAction("test-rule-with-action"),
+				Config:   testAccSecurityDetectionRuleConfigWithConnectorAction("test-rule-with-action"),
 				Check: resource.ComposeTestCheckFunc(
 					// Check connector attributes
 					resource.TestCheckResourceAttr(connectorResourceName, "name", "test connector 1"),
@@ -3243,7 +3243,7 @@ func TestAccResourceSecurityDetectionRule_WithConnectorAction(t *testing.T) {
 			},
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
-				Config:   testAccSecurityDetectionRuleConfig_withConnectorActionUpdate("test-rule-with-action-updated"),
+				Config:   testAccSecurityDetectionRuleConfigWithConnectorActionUpdate("test-rule-with-action-updated"),
 				Check: resource.ComposeTestCheckFunc(
 					// Check updated rule attributes
 					resource.TestCheckResourceAttr(resourceName, "name", "test-rule-with-action-updated"),
@@ -3278,7 +3278,7 @@ func TestAccResourceSecurityDetectionRule_WithConnectorAction(t *testing.T) {
 	})
 }
 
-func testAccSecurityDetectionRuleConfig_withConnectorAction(name string) string {
+func testAccSecurityDetectionRuleConfigWithConnectorAction(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   kibana {}
@@ -3348,7 +3348,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 `, name)
 }
 
-func testAccSecurityDetectionRuleConfig_withConnectorActionUpdate(name string) string {
+func testAccSecurityDetectionRuleConfigWithConnectorActionUpdate(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   kibana {}
@@ -3439,7 +3439,7 @@ func TestAccResourceSecurityDetectionRule_BuildingBlockType(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
-				Config:   testAccSecurityDetectionRuleConfig_buildingBlockType("test-building-block-rule"),
+				Config:   testAccSecurityDetectionRuleConfigBuildingBlockType("test-building-block-rule"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-building-block-rule"),
 					resource.TestCheckResourceAttr(resourceName, "type", "query"),
@@ -3459,7 +3459,7 @@ func TestAccResourceSecurityDetectionRule_BuildingBlockType(t *testing.T) {
 			},
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
-				Config:   testAccSecurityDetectionRuleConfig_buildingBlockTypeUpdate("test-building-block-rule-updated"),
+				Config:   testAccSecurityDetectionRuleConfigBuildingBlockTypeUpdate("test-building-block-rule-updated"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-building-block-rule-updated"),
 					resource.TestCheckResourceAttr(resourceName, "query", "process.name:* AND user.name:*"),
@@ -3476,7 +3476,7 @@ func TestAccResourceSecurityDetectionRule_BuildingBlockType(t *testing.T) {
 			},
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
-				Config:   testAccSecurityDetectionRuleConfig_buildingBlockTypeRemoved("test-building-block-rule-no-type"),
+				Config:   testAccSecurityDetectionRuleConfigBuildingBlockTypeRemoved("test-building-block-rule-no-type"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-building-block-rule-no-type"),
 					resource.TestCheckResourceAttr(resourceName, "description", "Test rule without building block type"),
@@ -3489,7 +3489,7 @@ func TestAccResourceSecurityDetectionRule_BuildingBlockType(t *testing.T) {
 	})
 }
 
-func testAccSecurityDetectionRuleConfig_buildingBlockType(name string) string {
+func testAccSecurityDetectionRuleConfigBuildingBlockType(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   kibana {}
@@ -3514,7 +3514,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 `, name)
 }
 
-func testAccSecurityDetectionRuleConfig_buildingBlockTypeUpdate(name string) string {
+func testAccSecurityDetectionRuleConfigBuildingBlockTypeUpdate(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   kibana {}
@@ -3542,7 +3542,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 `, name)
 }
 
-func testAccSecurityDetectionRuleConfig_buildingBlockTypeRemoved(name string) string {
+func testAccSecurityDetectionRuleConfigBuildingBlockTypeRemoved(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   kibana {}
@@ -3576,7 +3576,7 @@ func TestAccResourceSecurityDetectionRule_QueryMinimal(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
-				Config:   testAccSecurityDetectionRuleConfig_queryMinimal("test-query-rule-minimal"),
+				Config:   testAccSecurityDetectionRuleConfigQueryMinimal("test-query-rule-minimal"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-query-rule-minimal"),
 					resource.TestCheckResourceAttr(resourceName, "type", "query"),
@@ -3613,7 +3613,7 @@ func TestAccResourceSecurityDetectionRule_QueryMinimal(t *testing.T) {
 			},
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
-				Config:   testAccSecurityDetectionRuleConfig_queryMinimalUpdate("test-query-rule-minimal-updated"),
+				Config:   testAccSecurityDetectionRuleConfigQueryMinimalUpdate("test-query-rule-minimal-updated"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-query-rule-minimal-updated"),
 					resource.TestCheckResourceAttr(resourceName, "type", "query"),
@@ -3653,7 +3653,7 @@ func TestAccResourceSecurityDetectionRule_QueryMinimal(t *testing.T) {
 	})
 }
 
-func testAccSecurityDetectionRuleConfig_queryMinimal(name string) string {
+func testAccSecurityDetectionRuleConfigQueryMinimal(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   kibana {}
@@ -3676,7 +3676,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 `, name)
 }
 
-func testAccSecurityDetectionRuleConfig_queryMinimalUpdate(name string) string {
+func testAccSecurityDetectionRuleConfigQueryMinimalUpdate(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   kibana {}
@@ -3699,7 +3699,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 `, name)
 }
 
-func testAccSecurityDetectionRuleConfig_queryRemoveFilters(name string) string {
+func testAccSecurityDetectionRuleConfigQueryRemoveFilters(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   kibana {}
@@ -3737,7 +3737,7 @@ func TestAccResourceSecurityDetectionRule_QueryMinimalWithSpace(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
-				Config:   testAccSecurityDetectionRuleConfig_queryMinimalWithSpace("test-query-rule-with-space", spaceID),
+				Config:   testAccSecurityDetectionRuleConfigQueryMinimalWithSpace("test-query-rule-with-space", spaceID),
 				Check: resource.ComposeTestCheckFunc(
 					// Check space attributes
 					resource.TestCheckResourceAttr(spaceResourceName, "space_id", spaceID),
@@ -3780,7 +3780,7 @@ func TestAccResourceSecurityDetectionRule_QueryMinimalWithSpace(t *testing.T) {
 			},
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
-				Config:   testAccSecurityDetectionRuleConfig_queryMinimalWithSpaceUpdate("test-query-rule-with-space-updated", spaceID),
+				Config:   testAccSecurityDetectionRuleConfigQueryMinimalWithSpaceUpdate("test-query-rule-with-space-updated", spaceID),
 				Check: resource.ComposeTestCheckFunc(
 					// Check space attributes remain the same
 					resource.TestCheckResourceAttr(spaceResourceName, "space_id", spaceID),
@@ -3842,7 +3842,7 @@ func TestAccResourceSecurityDetectionRule_EQLMinimal(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
-				Config:   testAccSecurityDetectionRuleConfig_eqlMinimal("test-eql-rule-minimal"),
+				Config:   testAccSecurityDetectionRuleConfigEqlMinimal("test-eql-rule-minimal"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-eql-rule-minimal"),
 					resource.TestCheckResourceAttr(resourceName, "type", "eql"),
@@ -3880,7 +3880,7 @@ func TestAccResourceSecurityDetectionRule_EQLMinimal(t *testing.T) {
 			},
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
-				Config:   testAccSecurityDetectionRuleConfig_eqlMinimalUpdate("test-eql-rule-minimal-updated"),
+				Config:   testAccSecurityDetectionRuleConfigEqlMinimalUpdate("test-eql-rule-minimal-updated"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-eql-rule-minimal-updated"),
 					resource.TestCheckResourceAttr(resourceName, "query", "process where process.name == \"powershell.exe\""),
@@ -3903,7 +3903,7 @@ func TestAccResourceSecurityDetectionRule_ESQLMinimal(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
-				Config:   testAccSecurityDetectionRuleConfig_esqlMinimal("test-esql-rule-minimal"),
+				Config:   testAccSecurityDetectionRuleConfigEsqlMinimal("test-esql-rule-minimal"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-esql-rule-minimal"),
 					resource.TestCheckResourceAttr(resourceName, "type", "esql"),
@@ -3940,7 +3940,7 @@ func TestAccResourceSecurityDetectionRule_ESQLMinimal(t *testing.T) {
 			},
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
-				Config:   testAccSecurityDetectionRuleConfig_esqlMinimalUpdate("test-esql-rule-minimal-updated"),
+				Config:   testAccSecurityDetectionRuleConfigEsqlMinimalUpdate("test-esql-rule-minimal-updated"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-esql-rule-minimal-updated"),
 					resource.TestCheckResourceAttr(resourceName, "query", "FROM logs-* | WHERE event.action == \"logout\" | STATS count(*) BY user.name, source.ip"),
@@ -3963,7 +3963,7 @@ func TestAccResourceSecurityDetectionRule_MachineLearningMinimal(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
-				Config:   testAccSecurityDetectionRuleConfig_machineLearningMinimal("test-ml-rule-minimal"),
+				Config:   testAccSecurityDetectionRuleConfigMachineLearningMinimal("test-ml-rule-minimal"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-ml-rule-minimal"),
 					resource.TestCheckResourceAttr(resourceName, "type", "machine_learning"),
@@ -3999,7 +3999,7 @@ func TestAccResourceSecurityDetectionRule_MachineLearningMinimal(t *testing.T) {
 			},
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
-				Config:   testAccSecurityDetectionRuleConfig_machineLearningMinimalUpdate("test-ml-rule-minimal-updated"),
+				Config:   testAccSecurityDetectionRuleConfigMachineLearningMinimalUpdate("test-ml-rule-minimal-updated"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-ml-rule-minimal-updated"),
 					resource.TestCheckResourceAttr(resourceName, "description", "Updated minimal test ML security detection rule"),
@@ -4024,7 +4024,7 @@ func TestAccResourceSecurityDetectionRule_NewTermsMinimal(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
-				Config:   testAccSecurityDetectionRuleConfig_newTermsMinimal("test-new-terms-rule-minimal"),
+				Config:   testAccSecurityDetectionRuleConfigNewTermsMinimal("test-new-terms-rule-minimal"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-new-terms-rule-minimal"),
 					resource.TestCheckResourceAttr(resourceName, "type", "new_terms"),
@@ -4063,7 +4063,7 @@ func TestAccResourceSecurityDetectionRule_NewTermsMinimal(t *testing.T) {
 			},
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
-				Config:   testAccSecurityDetectionRuleConfig_newTermsMinimalUpdate("test-new-terms-rule-minimal-updated"),
+				Config:   testAccSecurityDetectionRuleConfigNewTermsMinimalUpdate("test-new-terms-rule-minimal-updated"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-new-terms-rule-minimal-updated"),
 					resource.TestCheckResourceAttr(resourceName, "query", "host.name:*"),
@@ -4088,7 +4088,7 @@ func TestAccResourceSecurityDetectionRule_SavedQueryMinimal(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
-				Config:   testAccSecurityDetectionRuleConfig_savedQueryMinimal("test-saved-query-rule-minimal"),
+				Config:   testAccSecurityDetectionRuleConfigSavedQueryMinimal("test-saved-query-rule-minimal"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-saved-query-rule-minimal"),
 					resource.TestCheckResourceAttr(resourceName, "type", "saved_query"),
@@ -4125,7 +4125,7 @@ func TestAccResourceSecurityDetectionRule_SavedQueryMinimal(t *testing.T) {
 			},
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
-				Config:   testAccSecurityDetectionRuleConfig_savedQueryMinimalUpdate("test-saved-query-rule-minimal-updated"),
+				Config:   testAccSecurityDetectionRuleConfigSavedQueryMinimalUpdate("test-saved-query-rule-minimal-updated"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-saved-query-rule-minimal-updated"),
 					resource.TestCheckResourceAttr(resourceName, "query", "event.category:authentication"),
@@ -4149,7 +4149,7 @@ func TestAccResourceSecurityDetectionRule_ThreatMatchMinimal(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
-				Config:   testAccSecurityDetectionRuleConfig_threatMatchMinimal("test-threat-match-rule-minimal"),
+				Config:   testAccSecurityDetectionRuleConfigThreatMatchMinimal("test-threat-match-rule-minimal"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-threat-match-rule-minimal"),
 					resource.TestCheckResourceAttr(resourceName, "type", "threat_match"),
@@ -4191,7 +4191,7 @@ func TestAccResourceSecurityDetectionRule_ThreatMatchMinimal(t *testing.T) {
 			},
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
-				Config:   testAccSecurityDetectionRuleConfig_threatMatchMinimalUpdate("test-threat-match-rule-minimal-updated"),
+				Config:   testAccSecurityDetectionRuleConfigThreatMatchMinimalUpdate("test-threat-match-rule-minimal-updated"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-threat-match-rule-minimal-updated"),
 					resource.TestCheckResourceAttr(resourceName, "query", "source.ip:*"),
@@ -4217,7 +4217,7 @@ func TestAccResourceSecurityDetectionRule_ThresholdMinimal(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
-				Config:   testAccSecurityDetectionRuleConfig_thresholdMinimal("test-threshold-rule-minimal"),
+				Config:   testAccSecurityDetectionRuleConfigThresholdMinimal("test-threshold-rule-minimal"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-threshold-rule-minimal"),
 					resource.TestCheckResourceAttr(resourceName, "type", "threshold"),
@@ -4256,7 +4256,7 @@ func TestAccResourceSecurityDetectionRule_ThresholdMinimal(t *testing.T) {
 			},
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
-				Config:   testAccSecurityDetectionRuleConfig_thresholdMinimalUpdate("test-threshold-rule-minimal-updated"),
+				Config:   testAccSecurityDetectionRuleConfigThresholdMinimalUpdate("test-threshold-rule-minimal-updated"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-threshold-rule-minimal-updated"),
 					resource.TestCheckResourceAttr(resourceName, "query", "event.action:logout"),
@@ -4271,7 +4271,7 @@ func TestAccResourceSecurityDetectionRule_ThresholdMinimal(t *testing.T) {
 	})
 }
 
-func testAccSecurityDetectionRuleConfig_eqlMinimal(name string) string {
+func testAccSecurityDetectionRuleConfigEqlMinimal(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   kibana {}
@@ -4294,7 +4294,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 `, name)
 }
 
-func testAccSecurityDetectionRuleConfig_eqlMinimalUpdate(name string) string {
+func testAccSecurityDetectionRuleConfigEqlMinimalUpdate(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   kibana {}
@@ -4317,7 +4317,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 `, name)
 }
 
-func testAccSecurityDetectionRuleConfig_esqlMinimal(name string) string {
+func testAccSecurityDetectionRuleConfigEsqlMinimal(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   kibana {}
@@ -4339,7 +4339,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 `, name)
 }
 
-func testAccSecurityDetectionRuleConfig_esqlMinimalUpdate(name string) string {
+func testAccSecurityDetectionRuleConfigEsqlMinimalUpdate(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   kibana {}
@@ -4361,7 +4361,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 `, name)
 }
 
-func testAccSecurityDetectionRuleConfig_machineLearningMinimal(name string) string {
+func testAccSecurityDetectionRuleConfigMachineLearningMinimal(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   kibana {}
@@ -4383,7 +4383,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 `, name)
 }
 
-func testAccSecurityDetectionRuleConfig_machineLearningMinimalUpdate(name string) string {
+func testAccSecurityDetectionRuleConfigMachineLearningMinimalUpdate(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   kibana {}
@@ -4405,7 +4405,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 `, name)
 }
 
-func testAccSecurityDetectionRuleConfig_newTermsMinimal(name string) string {
+func testAccSecurityDetectionRuleConfigNewTermsMinimal(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   kibana {}
@@ -4430,7 +4430,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 `, name)
 }
 
-func testAccSecurityDetectionRuleConfig_newTermsMinimalUpdate(name string) string {
+func testAccSecurityDetectionRuleConfigNewTermsMinimalUpdate(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   kibana {}
@@ -4455,7 +4455,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 `, name)
 }
 
-func testAccSecurityDetectionRuleConfig_savedQueryMinimal(name string) string {
+func testAccSecurityDetectionRuleConfigSavedQueryMinimal(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   kibana {}
@@ -4478,7 +4478,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 `, name)
 }
 
-func testAccSecurityDetectionRuleConfig_savedQueryMinimalUpdate(name string) string {
+func testAccSecurityDetectionRuleConfigSavedQueryMinimalUpdate(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   kibana {}
@@ -4501,7 +4501,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 `, name)
 }
 
-func testAccSecurityDetectionRuleConfig_threatMatchMinimal(name string) string {
+func testAccSecurityDetectionRuleConfigThreatMatchMinimal(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   kibana {}
@@ -4538,7 +4538,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 `, name)
 }
 
-func testAccSecurityDetectionRuleConfig_threatMatchMinimalUpdate(name string) string {
+func testAccSecurityDetectionRuleConfigThreatMatchMinimalUpdate(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   kibana {}
@@ -4575,7 +4575,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 `, name)
 }
 
-func testAccSecurityDetectionRuleConfig_thresholdMinimal(name string) string {
+func testAccSecurityDetectionRuleConfigThresholdMinimal(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   kibana {}
@@ -4603,7 +4603,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 `, name)
 }
 
-func testAccSecurityDetectionRuleConfig_thresholdMinimalUpdate(name string) string {
+func testAccSecurityDetectionRuleConfigThresholdMinimalUpdate(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   kibana {}
@@ -4641,7 +4641,7 @@ func TestAccResourceSecurityDetectionRule_QueryWithMitreThreat(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
-				Config:   testAccSecurityDetectionRuleConfig_queryWithMitreThreat("test-query-mitre-rule"),
+				Config:   testAccSecurityDetectionRuleConfigQueryWithMitreThreat("test-query-mitre-rule"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-query-mitre-rule"),
 					resource.TestCheckResourceAttr(resourceName, "type", "query"),
@@ -4701,7 +4701,7 @@ func TestAccResourceSecurityDetectionRule_QueryWithMitreThreat(t *testing.T) {
 			},
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
-				Config:   testAccSecurityDetectionRuleConfig_queryWithMitreThreatUpdate("test-query-mitre-rule-updated"),
+				Config:   testAccSecurityDetectionRuleConfigQueryWithMitreThreatUpdate("test-query-mitre-rule-updated"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-query-mitre-rule-updated"),
 					resource.TestCheckResourceAttr(resourceName, "description", "Updated detection rule for processes started by MS Office programs"),
@@ -4763,7 +4763,7 @@ func TestAccResourceSecurityDetectionRule_QueryWithMitreThreat(t *testing.T) {
 	})
 }
 
-func testAccSecurityDetectionRuleConfig_queryMinimalWithSpace(name, spaceID string) string {
+func testAccSecurityDetectionRuleConfigQueryMinimalWithSpace(name, spaceID string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   kibana {}
@@ -4793,7 +4793,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 `, spaceID, name)
 }
 
-func testAccSecurityDetectionRuleConfig_queryMinimalWithSpaceUpdate(name, spaceID string) string {
+func testAccSecurityDetectionRuleConfigQueryMinimalWithSpaceUpdate(name, spaceID string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   kibana {}
@@ -4823,7 +4823,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 `, spaceID, name)
 }
 
-func testAccSecurityDetectionRuleConfig_queryWithMitreThreat(name string) string {
+func testAccSecurityDetectionRuleConfigQueryWithMitreThreat(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   kibana {}
@@ -4872,7 +4872,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 `, name)
 }
 
-func testAccSecurityDetectionRuleConfig_queryWithMitreThreatUpdate(name string) string {
+func testAccSecurityDetectionRuleConfigQueryWithMitreThreatUpdate(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   kibana {}
@@ -4949,7 +4949,7 @@ func TestAccResourceSecurityDetectionRule_ValidateConfig(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Test 1: Valid config with only index (should succeed)
 			{
-				Config:   testAccSecurityDetectionRuleConfig_validationIndexOnly("test-validation-index-only"),
+				Config:   testAccSecurityDetectionRuleConfigValidationIndexOnly("test-validation-index-only"),
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(securityDetectionRuleResourceName, "name", "test-validation-index-only"),
@@ -4959,7 +4959,7 @@ func TestAccResourceSecurityDetectionRule_ValidateConfig(t *testing.T) {
 			},
 			// Test 2: Valid config with only data_view_id (should succeed)
 			{
-				Config:   testAccSecurityDetectionRuleConfig_validationDataViewOnly("test-validation-dataview-only"),
+				Config:   testAccSecurityDetectionRuleConfigValidationDataViewOnly("test-validation-dataview-only"),
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(securityDetectionRuleResourceName, "name", "test-validation-dataview-only"),
@@ -4969,21 +4969,21 @@ func TestAccResourceSecurityDetectionRule_ValidateConfig(t *testing.T) {
 			},
 			// Test 3: Invalid config with both index and data_view_id (should fail)
 			{
-				Config:      testAccSecurityDetectionRuleConfig_validationBothIndexAndDataView("test-validation-both"),
+				Config:      testAccSecurityDetectionRuleConfigValidationBothIndexAndDataView("test-validation-both"),
 				SkipFunc:    versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
 				ExpectError: regexp.MustCompile("Both 'index' and 'data_view_id' cannot be set at the same time"),
 				PlanOnly:    true,
 			},
 			// Test 4: Invalid config with neither index nor data_view_id (should fail)
 			{
-				Config:      testAccSecurityDetectionRuleConfig_validationNeither("test-validation-neither"),
+				Config:      testAccSecurityDetectionRuleConfigValidationNeither("test-validation-neither"),
 				SkipFunc:    versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
 				ExpectError: regexp.MustCompile("One of 'index' or 'data_view_id' must be set"),
 				PlanOnly:    true,
 			},
 			// Test 5: ESQL rule type should skip validation (both index and data_view_id allowed to be unset)
 			{
-				Config:   testAccSecurityDetectionRuleConfig_validationESQLType("test-validation-esql"),
+				Config:   testAccSecurityDetectionRuleConfigValidationESQLType("test-validation-esql"),
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(securityDetectionRuleResourceName, "name", "test-validation-esql"),
@@ -4994,7 +4994,7 @@ func TestAccResourceSecurityDetectionRule_ValidateConfig(t *testing.T) {
 			},
 			// Test 6: Machine learning rule type should skip validation (both index and data_view_id allowed to be unset)
 			{
-				Config:   testAccSecurityDetectionRuleConfig_validationMLType("test-validation-ml"),
+				Config:   testAccSecurityDetectionRuleConfigValidationMLType("test-validation-ml"),
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(securityDetectionRuleResourceName, "name", "test-validation-ml"),
@@ -5009,7 +5009,7 @@ func TestAccResourceSecurityDetectionRule_ValidateConfig(t *testing.T) {
 
 // Helper function configurations for validation tests
 
-func testAccSecurityDetectionRuleConfig_validationIndexOnly(name string) string {
+func testAccSecurityDetectionRuleConfigValidationIndexOnly(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   kibana {}
@@ -5029,7 +5029,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 `, name)
 }
 
-func testAccSecurityDetectionRuleConfig_validationDataViewOnly(name string) string {
+func testAccSecurityDetectionRuleConfigValidationDataViewOnly(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   kibana {}
@@ -5049,7 +5049,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 `, name)
 }
 
-func testAccSecurityDetectionRuleConfig_validationBothIndexAndDataView(name string) string {
+func testAccSecurityDetectionRuleConfigValidationBothIndexAndDataView(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   kibana {}
@@ -5070,7 +5070,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 `, name)
 }
 
-func testAccSecurityDetectionRuleConfig_validationNeither(name string) string {
+func testAccSecurityDetectionRuleConfigValidationNeither(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   kibana {}
@@ -5089,7 +5089,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 `, name)
 }
 
-func testAccSecurityDetectionRuleConfig_validationESQLType(name string) string {
+func testAccSecurityDetectionRuleConfigValidationESQLType(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   kibana {}
@@ -5108,7 +5108,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 `, name)
 }
 
-func testAccSecurityDetectionRuleConfig_validationMLType(name string) string {
+func testAccSecurityDetectionRuleConfigValidationMLType(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   kibana {}

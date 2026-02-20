@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
@@ -18,14 +18,14 @@ func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp 
 	}
 
 	// Parse composite ID
-	composite, diags := clients.CompositeIdFromStrFw(stateModel.ID.ValueString())
+	composite, diags := clients.CompositeIDFromStrFw(stateModel.ID.ValueString())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	dashboardID := composite.ResourceId
-	spaceID := composite.ClusterId
+	dashboardID := composite.ResourceID
+	spaceID := composite.ClusterID
 
 	// Get the Kibana client
 	kibanaClient, err := r.client.GetKibanaOapiClient()
@@ -35,6 +35,6 @@ func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp 
 	}
 
 	// Delete the dashboard
-	diags = kibana_oapi.DeleteDashboard(ctx, kibanaClient, spaceID, dashboardID)
+	diags = kibanaoapi.DeleteDashboard(ctx, kibanaClient, spaceID, dashboardID)
 	resp.Diagnostics.Append(diags...)
 }

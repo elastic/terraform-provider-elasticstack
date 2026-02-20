@@ -1,11 +1,11 @@
-package integration_policy
+package integrationpolicy
 
 import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
@@ -68,7 +68,7 @@ func (r *integrationPolicyResource) Update(ctx context.Context, req resource.Upd
 	}
 
 	// Remember the input configuration from state
-	stateHadInput := utils.IsKnown(stateModel.Inputs) && !stateModel.Inputs.IsNull() && len(stateModel.Inputs.Elements()) > 0
+	stateHadInput := typeutils.IsKnown(stateModel.Inputs) && !stateModel.Inputs.IsNull() && len(stateModel.Inputs.Elements()) > 0
 
 	pkg, diags := getPackageInfo(ctx, client, policy.Package.Name, policy.Package.Version)
 	resp.Diagnostics.Append(diags...)

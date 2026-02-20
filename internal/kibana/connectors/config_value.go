@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/attr/xattr"
@@ -75,7 +75,7 @@ func NewConfigUnknown() ConfigValue {
 
 // NewConfigValueWithConnectorID creates a ConfigValue with a known value and a connector type ID. Access the value via ValueString method.
 func NewConfigValueWithConnectorID(value string, connectorTypeID string) (ConfigValue, diag.Diagnostics) {
-	jsonWithContext, diags := customtypes.NewJSONWithContextualDefaultsValue(value, connectorTypeID, kibana_oapi.ConnectorConfigWithDefaults)
+	jsonWithContext, diags := customtypes.NewJSONWithContextualDefaultsValue(value, connectorTypeID, kibanaoapi.ConnectorConfigWithDefaults)
 	if diags.HasError() {
 		return ConfigValue{}, diags
 	}

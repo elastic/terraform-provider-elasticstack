@@ -8,7 +8,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
@@ -16,33 +16,33 @@ import (
 )
 
 func (r *scriptResource) update(ctx context.Context, plan tfsdk.Plan, state *tfsdk.State) diag.Diagnostics {
-	var data ScriptData
+	var data Data
 	var diags diag.Diagnostics
 	diags.Append(plan.Get(ctx, &data)...)
 	if diags.HasError() {
 		return diags
 	}
 
-	scriptId := data.ScriptId.ValueString()
-	id, sdkDiags := r.client.ID(ctx, scriptId)
+	scriptID := data.ScriptID.ValueString()
+	id, sdkDiags := r.client.ID(ctx, scriptID)
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
 		return diags
 	}
 
-	client, diags := clients.MaybeNewApiClientFromFrameworkResource(ctx, data.ElasticsearchConnection, r.client)
+	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, data.ElasticsearchConnection, r.client)
 	diags.Append(diags...)
 	if diags.HasError() {
 		return diags
 	}
 
 	script := models.Script{
-		ID:       scriptId,
+		ID:       scriptID,
 		Language: data.Lang.ValueString(),
 		Source:   data.Source.ValueString(),
 	}
 
-	if utils.IsKnown(data.Params) {
+	if typeutils.IsKnown(data.Params) {
 		paramsStr := data.Params.ValueString()
 		if paramsStr != "" {
 			var params map[string]any
@@ -55,7 +55,7 @@ func (r *scriptResource) update(ctx context.Context, plan tfsdk.Plan, state *tfs
 		}
 	}
 
-	if utils.IsKnown(data.Context) {
+	if typeutils.IsKnown(data.Context) {
 		script.Context = data.Context.ValueString()
 	}
 
@@ -65,7 +65,7 @@ func (r *scriptResource) update(ctx context.Context, plan tfsdk.Plan, state *tfs
 	}
 
 	// Read the script back from Elasticsearch to populate state
-	readData, readDiags := r.read(ctx, scriptId, client)
+	readData, readDiags := r.read(ctx, scriptID, client)
 	diags.Append(readDiags...)
 	if diags.HasError() {
 		return diags
@@ -73,7 +73,7 @@ func (r *scriptResource) update(ctx context.Context, plan tfsdk.Plan, state *tfs
 
 	// Preserve connection and ID from the original data
 	readData.ElasticsearchConnection = data.ElasticsearchConnection
-	readData.Id = types.StringValue(id.String())
+	readData.ID = types.StringValue(id.String())
 
 	// Preserve context from the original data as it's not returned by the API
 	readData.Context = data.Context

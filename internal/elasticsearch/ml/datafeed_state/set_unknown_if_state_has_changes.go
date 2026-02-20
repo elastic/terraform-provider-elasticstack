@@ -1,9 +1,9 @@
-package datafeed_state
+package datafeedstate
 
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -17,7 +17,7 @@ func SetUnknownIfStateHasChanges() planmodifier.String {
 
 type setUnknownIfStateHasChanges struct{}
 
-func (s setUnknownIfStateHasChanges) Description(ctx context.Context) string {
+func (s setUnknownIfStateHasChanges) Description(_ context.Context) string {
 	return "Sets the attribute value to unknown if the state attribute has changed"
 }
 
@@ -32,7 +32,7 @@ func (s setUnknownIfStateHasChanges) PlanModifyString(ctx context.Context, req p
 	}
 
 	// Continue using the config value if it's explicitly set
-	if utils.IsKnown(req.ConfigValue) {
+	if typeutils.IsKnown(req.ConfigValue) {
 		return
 	}
 

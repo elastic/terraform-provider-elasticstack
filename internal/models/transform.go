@@ -6,7 +6,7 @@ import (
 )
 
 type Transform struct {
-	Id              string                    `json:"id,omitempty"`
+	ID              string                    `json:"id,omitempty"`
 	Name            string                    `json:"-"`
 	Description     string                    `json:"description,omitempty"`
 	Source          *TransformSource          `json:"source"`
@@ -84,7 +84,7 @@ type GetTransformResponse struct {
 }
 
 type TransformStats struct {
-	Id    string `json:"id"`
+	ID    string `json:"id"`
 	State string `json:"state"`
 }
 

@@ -19,6 +19,6 @@ type integrationModel struct {
 }
 
 func getPackageID(name string, version string) string {
-	hash, _ := utils.StringToHash(name + version)
+	hash, _ := schemautil.StringToHash(name + version)
 	return *hash
 }

@@ -1,4 +1,4 @@
-package api_key
+package apikey
 
 import (
 	"context"
@@ -21,24 +21,24 @@ type requiresTypeValidator struct {
 	expectedType string
 }
 
-// RequiresType returns a validator which ensures that the configured attribute
+// requiresType returns a validator which ensures that the configured attribute
 // is only provided when the "type" attribute matches the expected value.
-func RequiresType(expectedType string) requiresTypeValidator {
+func requiresType(expectedType string) requiresTypeValidator {
 	return requiresTypeValidator{
 		expectedType: expectedType,
 	}
 }
 
-func (validator requiresTypeValidator) Description(_ context.Context) string {
-	return fmt.Sprintf("Ensures that the attribute is only provided when type=%s", validator.expectedType)
+func (v requiresTypeValidator) Description(_ context.Context) string {
+	return fmt.Sprintf("Ensures that the attribute is only provided when type=%s", v.expectedType)
 }
 
-func (validator requiresTypeValidator) MarkdownDescription(ctx context.Context) string {
-	return validator.Description(ctx)
+func (v requiresTypeValidator) MarkdownDescription(ctx context.Context) string {
+	return v.Description(ctx)
 }
 
 // validateType contains the common validation logic for both string and object validators
-func (validator requiresTypeValidator) validateType(ctx context.Context, config tfsdk.Config, attrPath path.Path, diagnostics *diag.Diagnostics) {
+func (v requiresTypeValidator) validateType(ctx context.Context, config tfsdk.Config, attrPath path.Path, diagnostics *diag.Diagnostics) {
 	// Get the type attribute value from the same configuration object
 	var typeAttr *string
 	diags := config.GetAttribute(ctx, path.Root("type"), &typeAttr)
@@ -53,31 +53,31 @@ func (validator requiresTypeValidator) validateType(ctx context.Context, config 
 	}
 
 	// Check if the current type matches the expected type
-	if *typeAttr != validator.expectedType {
+	if *typeAttr != v.expectedType {
 		diagnostics.AddAttributeError(
 			attrPath,
 			fmt.Sprintf("Attribute not valid for API key type '%s'", *typeAttr),
 			fmt.Sprintf("The %s attribute can only be used when type='%s', but type='%s' was specified.",
-				attrPath.String(), validator.expectedType, *typeAttr),
+				attrPath.String(), v.expectedType, *typeAttr),
 		)
 		return
 	}
 }
 
-func (validator requiresTypeValidator) ValidateObject(ctx context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {
+func (v requiresTypeValidator) ValidateObject(ctx context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {
 	// If the attribute is null or unknown, there's nothing to validate
 	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
 		return
 	}
 
-	validator.validateType(ctx, req.Config, req.Path, &resp.Diagnostics)
+	v.validateType(ctx, req.Config, req.Path, &resp.Diagnostics)
 }
 
-func (validator requiresTypeValidator) ValidateString(ctx context.Context, req validator.StringRequest, resp *validator.StringResponse) {
+func (v requiresTypeValidator) ValidateString(ctx context.Context, req validator.StringRequest, resp *validator.StringResponse) {
 	// If the attribute is null or unknown, there's nothing to validate
 	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
 		return
 	}
 
-	validator.validateType(ctx, req.Config, req.Path, &resp.Diagnostics)
+	v.validateType(ctx, req.Config, req.Path, &resp.Diagnostics)
 }

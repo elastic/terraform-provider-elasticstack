@@ -1,10 +1,10 @@
-package security_exception_item
+package securityexceptionitem
 
 import (
 	"context"
 	"fmt"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
@@ -43,7 +43,7 @@ func (r *ExceptionItemResource) ValidateConfig(ctx context.Context, req resource
 	}
 
 	// Validate entries
-	if !utils.IsKnown(data.Entries) {
+	if !typeutils.IsKnown(data.Entries) {
 		return
 	}
 
@@ -60,7 +60,7 @@ func (r *ExceptionItemResource) ValidateConfig(ctx context.Context, req resource
 
 // validateEntry validates a single entry based on its type
 func validateEntry(ctx context.Context, entry EntryModel, index int, diags *diag.Diagnostics, path string) {
-	if !utils.IsKnown(entry.Type) {
+	if !typeutils.IsKnown(entry.Type) {
 		return
 	}
 
@@ -164,7 +164,7 @@ func validateEntry(ctx context.Context, entry EntryModel, index int, diags *diag
 		}
 
 		// 'operator' should NOT be set for nested type
-		if utils.IsKnown(entry.Operator) {
+		if typeutils.IsKnown(entry.Operator) {
 			diags.AddWarning(
 				"Ignored Field",
 				fmt.Sprintf("Entry type '%s' does not support 'operator'. This field will be ignored at %s.", entryTypeNested, entryPath),
@@ -188,7 +188,7 @@ func validateEntry(ctx context.Context, entry EntryModel, index int, diags *diag
 // validateNestedEntry validates a nested entry within a "nested" type entry
 func validateNestedEntry(ctx context.Context, entry NestedEntryModel, index int, diags *diag.Diagnostics, path string) {
 	_ = ctx
-	if !utils.IsKnown(entry.Type) {
+	if !typeutils.IsKnown(entry.Type) {
 		return
 	}
 

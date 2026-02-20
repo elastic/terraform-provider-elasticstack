@@ -1,4 +1,4 @@
-package security_detection_rule
+package securitydetectionrule
 
 import (
 	"context"
@@ -12,10 +12,10 @@ import (
 type ruleProcessor interface {
 	HandlesRuleType(t string) bool
 	HandlesAPIRuleResponse(rule any) bool
-	ToCreateProps(ctx context.Context, client clients.MinVersionEnforceable, d SecurityDetectionRuleData) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics)
-	ToUpdateProps(ctx context.Context, client clients.MinVersionEnforceable, d SecurityDetectionRuleData) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics)
-	UpdateFromResponse(ctx context.Context, rule any, d *SecurityDetectionRuleData) diag.Diagnostics
-	ExtractId(response any) (string, diag.Diagnostics)
+	ToCreateProps(ctx context.Context, client clients.MinVersionEnforceable, d Data) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics)
+	ToUpdateProps(ctx context.Context, client clients.MinVersionEnforceable, d Data) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics)
+	UpdateFromResponse(ctx context.Context, rule any, d *Data) diag.Diagnostics
+	ExtractID(response any) (string, diag.Diagnostics)
 }
 
 func getRuleProcessors() []ruleProcessor {
@@ -66,7 +66,7 @@ func getProcessorForResponse(resp *kbapi.SecurityDetectionsAPIRuleResponse) (rul
 	return nil, nil, diags
 }
 
-func (d SecurityDetectionRuleData) toCreateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
+func (d Data) toCreateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var createProps kbapi.SecurityDetectionsAPIRuleCreateProps
 
@@ -81,7 +81,7 @@ func (d SecurityDetectionRuleData) toCreateProps(ctx context.Context, client cli
 	return processorForType.ToCreateProps(ctx, client, d)
 }
 
-func (d SecurityDetectionRuleData) toUpdateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
+func (d Data) toUpdateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var updateProps kbapi.SecurityDetectionsAPIRuleUpdateProps
 
@@ -96,7 +96,7 @@ func (d SecurityDetectionRuleData) toUpdateProps(ctx context.Context, client cli
 	return processorForType.ToUpdateProps(ctx, client, d)
 }
 
-func (d *SecurityDetectionRuleData) updateFromRule(ctx context.Context, response *kbapi.SecurityDetectionsAPIRuleResponse) diag.Diagnostics {
+func (d *Data) updateFromRule(ctx context.Context, response *kbapi.SecurityDetectionsAPIRuleResponse) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	// Get the processor for this rule type and use it to update the data
@@ -110,7 +110,7 @@ func (d *SecurityDetectionRuleData) updateFromRule(ctx context.Context, response
 }
 
 // Helper function to extract rule ID from any rule type
-func extractId(response *kbapi.SecurityDetectionsAPIRuleResponse) (string, diag.Diagnostics) {
+func extractID(response *kbapi.SecurityDetectionsAPIRuleResponse) (string, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	// Get the processor for this rule type and use it to update the data
@@ -120,5 +120,5 @@ func extractId(response *kbapi.SecurityDetectionsAPIRuleResponse) (string, diag.
 		return "", diags
 	}
 
-	return processorForType.ExtractId(respValue)
+	return processorForType.ExtractID(respValue)
 }

@@ -16,14 +16,14 @@ func TestAccDataSourceIngestProcessorGsub(t *testing.T) {
 				Config: testAccDataSourceIngestProcessorGsub,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_gsub.test", "field", "field1"),
-					CheckResourceJson("data.elasticstack_elasticsearch_ingest_processor_gsub.test", "json", expectedJsonGsub),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_gsub.test", "json", expectedJSONGsub),
 				),
 			},
 		},
 	})
 }
 
-const expectedJsonGsub = `{
+const expectedJSONGsub = `{
 	"gsub": {
 		"field": "field1",
 		"ignore_failure": false,

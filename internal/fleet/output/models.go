@@ -22,7 +22,7 @@ type outputModel struct {
 	DefaultIntegrations  types.Bool   `tfsdk:"default_integrations"`
 	DefaultMonitoring    types.Bool   `tfsdk:"default_monitoring"`
 	ConfigYaml           types.String `tfsdk:"config_yaml"`
-	SpaceIds             types.Set    `tfsdk:"space_ids"` // > string
+	SpaceIDs             types.Set    `tfsdk:"space_ids"` // > string
 	Ssl                  types.Object `tfsdk:"ssl"`       // > outputSslModel
 	Kafka                types.Object `tfsdk:"kafka"`     // > outputKafkaModel
 }
@@ -54,7 +54,7 @@ func (model *outputModel) populateFromAPI(ctx context.Context, union *kbapi.Outp
 	return
 }
 
-func (model outputModel) toAPICreateModel(ctx context.Context, client *clients.ApiClient) (kbapi.NewOutputUnion, diag.Diagnostics) {
+func (model outputModel) toAPICreateModel(ctx context.Context, client *clients.APIClient) (kbapi.NewOutputUnion, diag.Diagnostics) {
 	outputType := model.Type.ValueString()
 
 	switch outputType {
@@ -75,7 +75,7 @@ func (model outputModel) toAPICreateModel(ctx context.Context, client *clients.A
 	}
 }
 
-func (model outputModel) toAPIUpdateModel(ctx context.Context, client *clients.ApiClient) (union kbapi.UpdateOutputUnion, diags diag.Diagnostics) {
+func (model outputModel) toAPIUpdateModel(ctx context.Context, client *clients.APIClient) (union kbapi.UpdateOutputUnion, diags diag.Diagnostics) {
 	outputType := model.Type.ValueString()
 
 	switch outputType {
@@ -96,7 +96,7 @@ func (model outputModel) toAPIUpdateModel(ctx context.Context, client *clients.A
 	return
 }
 
-func assertKafkaSupport(ctx context.Context, client *clients.ApiClient) diag.Diagnostics {
+func assertKafkaSupport(ctx context.Context, client *clients.APIClient) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	// Check minimum version requirement for Kafka output type

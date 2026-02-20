@@ -6,8 +6,8 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -229,27 +229,27 @@ func (m *regionMapConfigModel) toAPI() (kbapi.RegionMapChartSchema, diag.Diagnos
 		return kbapi.RegionMapChartSchema{}, diags
 	}
 
-	if m.Query != nil && utils.IsKnown(m.Query.Query) {
+	if m.Query != nil && typeutils.IsKnown(m.Query.Query) {
 		api := kbapi.RegionMapNoESQL{
 			Type: kbapi.RegionMapNoESQLTypeRegionMap,
 		}
 
-		if utils.IsKnown(m.Title) {
+		if typeutils.IsKnown(m.Title) {
 			api.Title = m.Title.ValueStringPointer()
 		}
-		if utils.IsKnown(m.Description) {
+		if typeutils.IsKnown(m.Description) {
 			api.Description = m.Description.ValueStringPointer()
 		}
-		if utils.IsKnown(m.Dataset) {
+		if typeutils.IsKnown(m.Dataset) {
 			if err := json.Unmarshal([]byte(m.Dataset.ValueString()), &api.Dataset); err != nil {
 				diags.AddError("Failed to unmarshal dataset", err.Error())
 				return kbapi.RegionMapChartSchema{}, diags
 			}
 		}
-		if utils.IsKnown(m.IgnoreGlobalFilters) {
+		if typeutils.IsKnown(m.IgnoreGlobalFilters) {
 			api.IgnoreGlobalFilters = m.IgnoreGlobalFilters.ValueBoolPointer()
 		}
-		if utils.IsKnown(m.Sampling) {
+		if typeutils.IsKnown(m.Sampling) {
 			sampling := float32(m.Sampling.ValueFloat64())
 			api.Sampling = &sampling
 		}
@@ -265,13 +265,13 @@ func (m *regionMapConfigModel) toAPI() (kbapi.RegionMapChartSchema, diag.Diagnos
 			api.Filters = &filters
 		}
 
-		if utils.IsKnown(m.Metric) {
+		if typeutils.IsKnown(m.Metric) {
 			if err := json.Unmarshal([]byte(m.Metric.ValueString()), &api.Metric); err != nil {
 				diags.AddError("Failed to unmarshal metric", err.Error())
 				return kbapi.RegionMapChartSchema{}, diags
 			}
 		}
-		if utils.IsKnown(m.Region) {
+		if typeutils.IsKnown(m.Region) {
 			if err := json.Unmarshal([]byte(m.Region.ValueString()), &api.Region); err != nil {
 				diags.AddError("Failed to unmarshal region", err.Error())
 				return kbapi.RegionMapChartSchema{}, diags
@@ -289,22 +289,22 @@ func (m *regionMapConfigModel) toAPI() (kbapi.RegionMapChartSchema, diag.Diagnos
 		Type: kbapi.RegionMapESQLTypeRegionMap,
 	}
 
-	if utils.IsKnown(m.Title) {
+	if typeutils.IsKnown(m.Title) {
 		api.Title = m.Title.ValueStringPointer()
 	}
-	if utils.IsKnown(m.Description) {
+	if typeutils.IsKnown(m.Description) {
 		api.Description = m.Description.ValueStringPointer()
 	}
-	if utils.IsKnown(m.Dataset) {
+	if typeutils.IsKnown(m.Dataset) {
 		if err := json.Unmarshal([]byte(m.Dataset.ValueString()), &api.Dataset); err != nil {
 			diags.AddError("Failed to unmarshal dataset", err.Error())
 			return kbapi.RegionMapChartSchema{}, diags
 		}
 	}
-	if utils.IsKnown(m.IgnoreGlobalFilters) {
+	if typeutils.IsKnown(m.IgnoreGlobalFilters) {
 		api.IgnoreGlobalFilters = m.IgnoreGlobalFilters.ValueBoolPointer()
 	}
-	if utils.IsKnown(m.Sampling) {
+	if typeutils.IsKnown(m.Sampling) {
 		sampling := float32(m.Sampling.ValueFloat64())
 		api.Sampling = &sampling
 	}
@@ -319,13 +319,13 @@ func (m *regionMapConfigModel) toAPI() (kbapi.RegionMapChartSchema, diag.Diagnos
 		api.Filters = &filters
 	}
 
-	if utils.IsKnown(m.Metric) {
+	if typeutils.IsKnown(m.Metric) {
 		if err := json.Unmarshal([]byte(m.Metric.ValueString()), &api.Metric); err != nil {
 			diags.AddError("Failed to unmarshal metric", err.Error())
 			return kbapi.RegionMapChartSchema{}, diags
 		}
 	}
-	if utils.IsKnown(m.Region) {
+	if typeutils.IsKnown(m.Region) {
 		if err := json.Unmarshal([]byte(m.Region.ValueString()), &api.Region); err != nil {
 			diags.AddError("Failed to unmarshal region", err.Error())
 			return kbapi.RegionMapChartSchema{}, diags

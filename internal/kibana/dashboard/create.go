@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -34,15 +34,15 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 	}
 
 	// Create the dashboard
-	createResp, diags := kibana_oapi.CreateDashboard(ctx, kibanaClient, spaceID, apiReq)
+	createResp, diags := kibanaoapi.CreateDashboard(ctx, kibanaClient, spaceID, apiReq)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	compID := clients.CompositeId{
-		ClusterId:  spaceID,
-		ResourceId: createResp.JSON200.Id,
+	compID := clients.CompositeID{
+		ClusterID:  spaceID,
+		ResourceID: createResp.JSON200.Id,
 	}
 	planModel.ID = types.StringValue(compID.String())
 

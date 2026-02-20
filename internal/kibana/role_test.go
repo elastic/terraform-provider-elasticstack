@@ -328,15 +328,15 @@ func checkResourceSecurityRoleDestroy(s *terraform.State) error {
 		if rs.Type != "elasticstack_kibana_security_role" {
 			continue
 		}
-		compId := rs.Primary.ID
+		compID := rs.Primary.ID
 
 		kibanaClient, err := client.GetKibanaClient()
 		if err != nil {
 			return err
 		}
-		res, err := kibanaClient.KibanaRoleManagement.Get(compId)
+		res, err := kibanaClient.KibanaRoleManagement.Get(compID)
 		if err != nil || res != nil {
-			return fmt.Errorf("Role (%s) still exists", compId)
+			return fmt.Errorf("Role (%s) still exists", compID)
 		}
 	}
 	return nil

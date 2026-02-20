@@ -18,12 +18,12 @@ type outputSslModel struct {
 }
 
 func objectValueToSSL(ctx context.Context, obj types.Object) (*kbapi.NewOutputSsl, diag.Diagnostics) {
-	if !utils.IsKnown(obj) {
+	if !typeutils.IsKnown(obj) {
 		return nil, nil
 	}
 
 	var diags diag.Diagnostics
-	sslModel := utils.ObjectTypeAs[outputSslModel](ctx, obj, path.Root("ssl"), &diags)
+	sslModel := typeutils.ObjectTypeAs[outputSslModel](ctx, obj, path.Root("ssl"), &diags)
 	if diags.HasError() {
 		return nil, diags
 	}
@@ -34,7 +34,7 @@ func objectValueToSSL(ctx context.Context, obj types.Object) (*kbapi.NewOutputSs
 
 	return &kbapi.NewOutputSsl{
 		Certificate:            sslModel.Certificate.ValueStringPointer(),
-		CertificateAuthorities: utils.SliceRef(utils.ListTypeToSlice_String(ctx, sslModel.CertificateAuthorities, path.Root("certificate_authorities"), &diags)),
+		CertificateAuthorities: schemautil.SliceRef(typeutils.ListTypeToSliceString(ctx, sslModel.CertificateAuthorities, path.Root("certificate_authorities"), &diags)),
 		Key:                    sslModel.Key.ValueStringPointer(),
 	}, diags
 }
@@ -63,8 +63,8 @@ func sslToObjectValue(ctx context.Context, ssl *kbapi.OutputSsl) (types.Object, 
 		Key:         typeutils.NonEmptyStringishPointerValue(ssl.Key),
 	}
 
-	if cas := utils.Deref(ssl.CertificateAuthorities); len(cas) > 0 {
-		sslModel.CertificateAuthorities = utils.SliceToListType_String(ctx, cas, path.Root("ssl").AtName("certificate_authorities"), &diags)
+	if cas := schemautil.Deref(ssl.CertificateAuthorities); len(cas) > 0 {
+		sslModel.CertificateAuthorities = typeutils.SliceToListTypeString(ctx, cas, path.Root("ssl").AtName("certificate_authorities"), &diags)
 	} else {
 		sslModel.CertificateAuthorities = types.ListNull(types.StringType)
 	}

@@ -16,14 +16,14 @@ func TestAccDataSourceIngestProcessorSplit(t *testing.T) {
 				Config: testAccDataSourceIngestProcessorSplit,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_split.test", "field", "my_field"),
-					CheckResourceJson("data.elasticstack_elasticsearch_ingest_processor_split.test", "json", expectedJsonSplit),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_split.test", "json", expectedJSONSplit),
 				),
 			},
 		},
 	})
 }
 
-const expectedJsonSplit = `{
+const expectedJSONSplit = `{
 	"split": {
 		"field": "my_field",
 		"separator": "\\s+",

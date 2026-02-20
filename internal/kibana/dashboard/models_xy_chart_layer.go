@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -266,27 +266,27 @@ func (m *dataLayerModel) toAPI(layerType string) (json.RawMessage, diag.Diagnost
 		"type": layerType,
 	}
 
-	if utils.IsKnown(m.Dataset) {
+	if typeutils.IsKnown(m.Dataset) {
 		var dataset any
 		diags.Append(m.Dataset.Unmarshal(&dataset)...)
 		layer["dataset"] = dataset
 	}
 
-	if utils.IsKnown(m.IgnoreGlobalFilters) {
+	if typeutils.IsKnown(m.IgnoreGlobalFilters) {
 		layer["ignore_global_filters"] = m.IgnoreGlobalFilters.ValueBool()
 	}
 
-	if utils.IsKnown(m.Sampling) {
+	if typeutils.IsKnown(m.Sampling) {
 		layer["sampling"] = m.Sampling.ValueFloat64()
 	}
 
-	if utils.IsKnown(m.X) {
+	if typeutils.IsKnown(m.X) {
 		var x any
 		diags.Append(m.X.Unmarshal(&x)...)
 		layer["x"] = x
 	}
 
-	if utils.IsKnown(m.BreakdownBy) {
+	if typeutils.IsKnown(m.BreakdownBy) {
 		var breakdownBy any
 		diags.Append(m.BreakdownBy.Unmarshal(&breakdownBy)...)
 		layer["breakdown_by"] = breakdownBy
@@ -296,7 +296,7 @@ func (m *dataLayerModel) toAPI(layerType string) (json.RawMessage, diag.Diagnost
 	if len(m.Y) > 0 {
 		yMetrics := make([]any, 0, len(m.Y))
 		for _, y := range m.Y {
-			if utils.IsKnown(y.Config) {
+			if typeutils.IsKnown(y.Config) {
 				var yConfig any
 				diags.Append(y.Config.Unmarshal(&yConfig)...)
 				yMetrics = append(yMetrics, yConfig)
@@ -415,17 +415,17 @@ func (m *referenceLineLayerModel) toAPI(layerType string) (json.RawMessage, diag
 		"type": layerType,
 	}
 
-	if utils.IsKnown(m.Dataset) {
+	if typeutils.IsKnown(m.Dataset) {
 		var dataset any
 		diags.Append(m.Dataset.Unmarshal(&dataset)...)
 		layer["dataset"] = dataset
 	}
 
-	if utils.IsKnown(m.IgnoreGlobalFilters) {
+	if typeutils.IsKnown(m.IgnoreGlobalFilters) {
 		layer["ignore_global_filters"] = m.IgnoreGlobalFilters.ValueBool()
 	}
 
-	if utils.IsKnown(m.Sampling) {
+	if typeutils.IsKnown(m.Sampling) {
 		layer["sampling"] = m.Sampling.ValueFloat64()
 	}
 
@@ -434,7 +434,7 @@ func (m *referenceLineLayerModel) toAPI(layerType string) (json.RawMessage, diag
 		thresholds := make([]any, 0, len(m.Thresholds))
 		for _, t := range m.Thresholds {
 			// For NoESQL layers, thresholds are operation definitions; we model them via `threshold.value`.
-			if utils.IsKnown(t.Value) {
+			if typeutils.IsKnown(t.Value) {
 				var op any
 				diags.Append(t.Value.Unmarshal(&op)...)
 				thresholds = append(thresholds, op)
@@ -544,47 +544,47 @@ func (m *thresholdModel) toAPI() (map[string]any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	threshold := make(map[string]any)
 
-	if utils.IsKnown(m.Axis) {
+	if typeutils.IsKnown(m.Axis) {
 		threshold["axis"] = m.Axis.ValueString()
 	}
 
-	if utils.IsKnown(m.Color) {
+	if typeutils.IsKnown(m.Color) {
 		var color any
 		diags.Append(m.Color.Unmarshal(&color)...)
 		threshold["color"] = color
 	}
 
-	if utils.IsKnown(m.Column) {
+	if typeutils.IsKnown(m.Column) {
 		threshold["column"] = m.Column.ValueString()
 	}
 
-	if utils.IsKnown(m.Value) {
+	if typeutils.IsKnown(m.Value) {
 		var value any
 		diags.Append(m.Value.Unmarshal(&value)...)
 		threshold["value"] = value
 	}
 
-	if utils.IsKnown(m.Fill) {
+	if typeutils.IsKnown(m.Fill) {
 		threshold["fill"] = m.Fill.ValueString()
 	}
 
-	if utils.IsKnown(m.Icon) {
+	if typeutils.IsKnown(m.Icon) {
 		threshold["icon"] = m.Icon.ValueString()
 	}
 
-	if utils.IsKnown(m.Operation) {
+	if typeutils.IsKnown(m.Operation) {
 		threshold["operation"] = m.Operation.ValueString()
 	}
 
-	if utils.IsKnown(m.StrokeDash) {
+	if typeutils.IsKnown(m.StrokeDash) {
 		threshold["stroke_dash"] = m.StrokeDash.ValueString()
 	}
 
-	if utils.IsKnown(m.StrokeWidth) {
+	if typeutils.IsKnown(m.StrokeWidth) {
 		threshold["stroke_width"] = m.StrokeWidth.ValueFloat64()
 	}
 
-	if utils.IsKnown(m.Text) {
+	if typeutils.IsKnown(m.Text) {
 		threshold["text"] = m.Text.ValueString()
 	}
 

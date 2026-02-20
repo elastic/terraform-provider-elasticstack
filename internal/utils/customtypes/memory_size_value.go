@@ -47,12 +47,12 @@ func (v MemorySize) Equal(o attr.Value) bool {
 	return v.StringValue.Equal(other.StringValue)
 }
 
-func (t MemorySize) ValidateAttribute(ctx context.Context, req xattr.ValidateAttributeRequest, resp *xattr.ValidateAttributeResponse) {
-	if t.IsNull() || t.IsUnknown() {
+func (v MemorySize) ValidateAttribute(_ context.Context, req xattr.ValidateAttributeRequest, resp *xattr.ValidateAttributeResponse) {
+	if v.IsNull() || v.IsUnknown() {
 		return
 	}
 
-	valueString := t.ValueString()
+	valueString := v.ValueString()
 	if !memoryPattern.MatchString(valueString) {
 		resp.Diagnostics.AddAttributeError(
 			req.Path,

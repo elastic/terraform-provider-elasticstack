@@ -15,14 +15,14 @@ func TestAccDataSourceIngestProcessorFingerprint(t *testing.T) {
 			{
 				Config: testAccDataSourceIngestProcessorFingerprint,
 				Check: resource.ComposeTestCheckFunc(
-					CheckResourceJson("data.elasticstack_elasticsearch_ingest_processor_fingerprint.test", "json", expectedJsonFingerprint),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_fingerprint.test", "json", expectedJSONFingerprint),
 				),
 			},
 		},
 	})
 }
 
-const expectedJsonFingerprint = `{
+const expectedJSONFingerprint = `{
   "fingerprint": {
 		"fields": [
 			"user"

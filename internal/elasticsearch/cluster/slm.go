@@ -10,6 +10,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/tfsdkutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -36,7 +37,7 @@ func ResourceSlm() *schema.Resource {
 			Type:        schema.TypeString,
 			Optional:    true,
 			Default:     "open,hidden",
-			ValidateDiagFunc: func(value any, path cty.Path) diag.Diagnostics {
+			ValidateDiagFunc: func(value any, _ cty.Path) diag.Diagnostics {
 				validValues := []string{"all", "open", "closed", "hidden", "none"}
 
 				var diags diag.Diagnostics
@@ -90,7 +91,7 @@ func ResourceSlm() *schema.Resource {
 			Optional:         true,
 			Computed:         true,
 			ValidateFunc:     validation.StringIsJSON,
-			DiffSuppressFunc: utils.DiffJsonSuppress,
+			DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 		},
 		"partial": {
 			Description: "If `false`, the entire snapshot will fail if one or more indices included in the snapshot do not have all primary shards available.",
@@ -131,7 +132,7 @@ func ResourceSlm() *schema.Resource {
 		},
 	}
 
-	utils.AddConnectionSchema(slmSchema)
+	schemautil.AddConnectionSchema(slmSchema)
 
 	return &schema.Resource{
 		Description: slmResourceDescription,
@@ -150,18 +151,18 @@ func ResourceSlm() *schema.Resource {
 }
 
 func resourceSlmPut(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
-	slmId := d.Get("name").(string)
-	id, diags := client.ID(ctx, slmId)
+	slmID := d.Get("name").(string)
+	id, diags := client.ID(ctx, slmID)
 	if diags.HasError() {
 		return diags
 	}
 
 	var slm models.SnapshotPolicy
-	slm.Id = slmId
+	slm.ID = slmID
 	var slmConfig models.SnapshotPolicyConfig
 	slmRetention := models.SnapshortRetention{}
 
@@ -232,18 +233,18 @@ func resourceSlmPut(ctx context.Context, d *schema.ResourceData, meta any) diag.
 }
 
 func resourceSlmRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
-	id, diags := clients.CompositeIdFromStr(d.Id())
+	id, diags := clients.CompositeIDFromStr(d.Id())
 	if diags.HasError() {
 		return diags
 	}
 
-	slm, diags := elasticsearch.GetSlm(ctx, client, id.ResourceId)
+	slm, diags := elasticsearch.GetSlm(ctx, client, id.ResourceID)
 	if slm == nil && diags == nil {
-		tflog.Warn(ctx, fmt.Sprintf(`SLM policy "%s" not found, removing from state`, id.ResourceId))
+		tflog.Warn(ctx, fmt.Sprintf(`SLM policy "%s" not found, removing from state`, id.ResourceID))
 		d.SetId("")
 		return diags
 	}
@@ -251,7 +252,7 @@ func resourceSlmRead(ctx context.Context, d *schema.ResourceData, meta any) diag
 		return diags
 	}
 
-	if err := d.Set("name", id.ResourceId); err != nil {
+	if err := d.Set("name", id.ResourceID); err != nil {
 		return diag.FromErr(err)
 	}
 	if err := d.Set("snapshot_name", slm.Name); err != nil {
@@ -324,15 +325,15 @@ func resourceSlmRead(ctx context.Context, d *schema.ResourceData, meta any) diag
 }
 
 func resourceSlmDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
-	id, diags := clients.CompositeIdFromStr(d.Id())
+	id, diags := clients.CompositeIDFromStr(d.Id())
 	if diags.HasError() {
 		return diags
 	}
-	if diags := elasticsearch.DeleteSlm(ctx, client, id.ResourceId); diags.HasError() {
+	if diags := elasticsearch.DeleteSlm(ctx, client, id.ResourceID); diags.HasError() {
 		return diags
 	}
 	return diags

@@ -6,7 +6,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -306,15 +305,15 @@ func (m *datatableNoESQLConfigModel) toAPI() (kbapi.DatatableNoESQL, diag.Diagno
 	var diags diag.Diagnostics
 	api := kbapi.DatatableNoESQL{Type: kbapi.DatatableNoESQLTypeDatatable}
 
-	if utils.IsKnown(m.Title) {
+	if typeutils.IsKnown(m.Title) {
 		api.Title = m.Title.ValueStringPointer()
 	}
 
-	if utils.IsKnown(m.Description) {
+	if typeutils.IsKnown(m.Description) {
 		api.Description = m.Description.ValueStringPointer()
 	}
 
-	if utils.IsKnown(m.Dataset) {
+	if typeutils.IsKnown(m.Dataset) {
 		if err := json.Unmarshal([]byte(m.Dataset.ValueString()), &api.Dataset); err != nil {
 			diags.AddError("Failed to unmarshal dataset", err.Error())
 			return api, diags
@@ -330,11 +329,11 @@ func (m *datatableNoESQLConfigModel) toAPI() (kbapi.DatatableNoESQL, diag.Diagno
 		api.Density = density
 	}
 
-	if utils.IsKnown(m.IgnoreGlobalFilters) {
+	if typeutils.IsKnown(m.IgnoreGlobalFilters) {
 		api.IgnoreGlobalFilters = m.IgnoreGlobalFilters.ValueBoolPointer()
 	}
 
-	if utils.IsKnown(m.Sampling) {
+	if typeutils.IsKnown(m.Sampling) {
 		sampling := float32(m.Sampling.ValueFloat64())
 		api.Sampling = &sampling
 	}
@@ -356,7 +355,7 @@ func (m *datatableNoESQLConfigModel) toAPI() (kbapi.DatatableNoESQL, diag.Diagno
 	if len(m.Metrics) > 0 {
 		metrics := make([]kbapi.DatatableNoESQL_Metrics_Item, len(m.Metrics))
 		for i, metricModel := range m.Metrics {
-			if utils.IsKnown(metricModel.Config) {
+			if typeutils.IsKnown(metricModel.Config) {
 				if err := json.Unmarshal([]byte(metricModel.Config.ValueString()), &metrics[i]); err != nil {
 					diags.AddError("Failed to unmarshal metric", err.Error())
 					return api, diags
@@ -369,7 +368,7 @@ func (m *datatableNoESQLConfigModel) toAPI() (kbapi.DatatableNoESQL, diag.Diagno
 	if len(m.Rows) > 0 {
 		rows := make([]kbapi.DatatableNoESQL_Rows_Item, len(m.Rows))
 		for i, rowModel := range m.Rows {
-			if utils.IsKnown(rowModel.Config) {
+			if typeutils.IsKnown(rowModel.Config) {
 				if err := json.Unmarshal([]byte(rowModel.Config.ValueString()), &rows[i]); err != nil {
 					diags.AddError("Failed to unmarshal row", err.Error())
 					return api, diags
@@ -382,7 +381,7 @@ func (m *datatableNoESQLConfigModel) toAPI() (kbapi.DatatableNoESQL, diag.Diagno
 	if len(m.SplitMetricsBy) > 0 {
 		splits := make([]kbapi.DatatableNoESQL_SplitMetricsBy_Item, len(m.SplitMetricsBy))
 		for i, splitModel := range m.SplitMetricsBy {
-			if utils.IsKnown(splitModel.Config) {
+			if typeutils.IsKnown(splitModel.Config) {
 				if err := json.Unmarshal([]byte(splitModel.Config.ValueString()), &splits[i]); err != nil {
 					diags.AddError("Failed to unmarshal split_metrics_by", err.Error())
 					return api, diags
@@ -392,7 +391,7 @@ func (m *datatableNoESQLConfigModel) toAPI() (kbapi.DatatableNoESQL, diag.Diagno
 		api.SplitMetricsBy = &splits
 	}
 
-	if utils.IsKnown(m.SortBy) {
+	if typeutils.IsKnown(m.SortBy) {
 		var sortBy kbapi.DatatableNoESQL_SortBy
 		if err := json.Unmarshal([]byte(m.SortBy.ValueString()), &sortBy); err != nil {
 			diags.AddError("Failed to unmarshal sort_by", err.Error())
@@ -401,7 +400,7 @@ func (m *datatableNoESQLConfigModel) toAPI() (kbapi.DatatableNoESQL, diag.Diagno
 		api.SortBy = &sortBy
 	}
 
-	if utils.IsKnown(m.Paging) {
+	if typeutils.IsKnown(m.Paging) {
 		paging := kbapi.DatatableNoESQLPaging(m.Paging.ValueInt64())
 		api.Paging = &paging
 	}
@@ -503,15 +502,15 @@ func (m *datatableESQLConfigModel) toAPI() (kbapi.DatatableESQL, diag.Diagnostic
 	var diags diag.Diagnostics
 	api := kbapi.DatatableESQL{Type: kbapi.DatatableESQLTypeDatatable}
 
-	if utils.IsKnown(m.Title) {
+	if typeutils.IsKnown(m.Title) {
 		api.Title = m.Title.ValueStringPointer()
 	}
 
-	if utils.IsKnown(m.Description) {
+	if typeutils.IsKnown(m.Description) {
 		api.Description = m.Description.ValueStringPointer()
 	}
 
-	if utils.IsKnown(m.Dataset) {
+	if typeutils.IsKnown(m.Dataset) {
 		if err := json.Unmarshal([]byte(m.Dataset.ValueString()), &api.Dataset); err != nil {
 			diags.AddError("Failed to unmarshal dataset", err.Error())
 			return api, diags
@@ -527,11 +526,11 @@ func (m *datatableESQLConfigModel) toAPI() (kbapi.DatatableESQL, diag.Diagnostic
 		api.Density = density
 	}
 
-	if utils.IsKnown(m.IgnoreGlobalFilters) {
+	if typeutils.IsKnown(m.IgnoreGlobalFilters) {
 		api.IgnoreGlobalFilters = m.IgnoreGlobalFilters.ValueBoolPointer()
 	}
 
-	if utils.IsKnown(m.Sampling) {
+	if typeutils.IsKnown(m.Sampling) {
 		sampling := float32(m.Sampling.ValueFloat64())
 		api.Sampling = &sampling
 	}
@@ -549,7 +548,7 @@ func (m *datatableESQLConfigModel) toAPI() (kbapi.DatatableESQL, diag.Diagnostic
 	if len(m.Metrics) > 0 {
 		metrics := make([]kbapi.DatatableESQLMetric, len(m.Metrics))
 		for i, metricModel := range m.Metrics {
-			if utils.IsKnown(metricModel.Config) {
+			if typeutils.IsKnown(metricModel.Config) {
 				if err := json.Unmarshal([]byte(metricModel.Config.ValueString()), &metrics[i]); err != nil {
 					diags.AddError("Failed to unmarshal metric", err.Error())
 					return api, diags
@@ -572,7 +571,7 @@ func (m *datatableESQLConfigModel) toAPI() (kbapi.DatatableESQL, diag.Diagnostic
 			Width        *float32                             `json:"width,omitempty"`
 		}, len(m.Rows))
 		for i, rowModel := range m.Rows {
-			if utils.IsKnown(rowModel.Config) {
+			if typeutils.IsKnown(rowModel.Config) {
 				if err := json.Unmarshal([]byte(rowModel.Config.ValueString()), &rows[i]); err != nil {
 					diags.AddError("Failed to unmarshal row", err.Error())
 					return api, diags
@@ -588,7 +587,7 @@ func (m *datatableESQLConfigModel) toAPI() (kbapi.DatatableESQL, diag.Diagnostic
 			Operation kbapi.DatatableESQLSplitMetricsByOperation `json:"operation"`
 		}, len(m.SplitMetricsBy))
 		for i, splitModel := range m.SplitMetricsBy {
-			if utils.IsKnown(splitModel.Config) {
+			if typeutils.IsKnown(splitModel.Config) {
 				if err := json.Unmarshal([]byte(splitModel.Config.ValueString()), &splits[i]); err != nil {
 					diags.AddError("Failed to unmarshal split_metrics_by", err.Error())
 					return api, diags
@@ -598,7 +597,7 @@ func (m *datatableESQLConfigModel) toAPI() (kbapi.DatatableESQL, diag.Diagnostic
 		api.SplitMetricsBy = &splits
 	}
 
-	if utils.IsKnown(m.SortBy) {
+	if typeutils.IsKnown(m.SortBy) {
 		var sortBy kbapi.DatatableESQL_SortBy
 		if err := json.Unmarshal([]byte(m.SortBy.ValueString()), &sortBy); err != nil {
 			diags.AddError("Failed to unmarshal sort_by", err.Error())
@@ -607,7 +606,7 @@ func (m *datatableESQLConfigModel) toAPI() (kbapi.DatatableESQL, diag.Diagnostic
 		api.SortBy = &sortBy
 	}
 
-	if utils.IsKnown(m.Paging) {
+	if typeutils.IsKnown(m.Paging) {
 		paging := kbapi.DatatableESQLPaging(m.Paging.ValueInt64())
 		api.Paging = &paging
 	}
@@ -637,7 +636,7 @@ func (m *datatableDensityModel) toAPI() (kbapi.DatatableDensity, diag.Diagnostic
 	var diags diag.Diagnostics
 	var density kbapi.DatatableDensity
 
-	if utils.IsKnown(m.Mode) {
+	if typeutils.IsKnown(m.Mode) {
 		mode := kbapi.DatatableDensityMode(m.Mode.ValueString())
 		density.Mode = &mode
 	}
@@ -729,7 +728,7 @@ func (m *datatableDensityHeightHeaderModel) fromAPI(api *kbapi.DatatableDensity_
 }
 
 func (m *datatableDensityHeightHeaderModel) toAPI() (*kbapi.DatatableDensity_Height_Header, diag.Diagnostics) {
-	if m == nil || !utils.IsKnown(m.Type) {
+	if m == nil || !typeutils.IsKnown(m.Type) {
 		return nil, nil
 	}
 
@@ -745,7 +744,7 @@ func (m *datatableDensityHeightHeaderModel) toAPI() (*kbapi.DatatableDensity_Hei
 		}
 	case "custom":
 		custom := kbapi.DatatableDensityHeightHeader1{Type: kbapi.DatatableDensityHeightHeader1TypeCustom}
-		if utils.IsKnown(m.MaxLines) {
+		if typeutils.IsKnown(m.MaxLines) {
 			maxLines := float32(m.MaxLines.ValueFloat64())
 			custom.MaxLines = &maxLines
 		}
@@ -793,7 +792,7 @@ func (m *datatableDensityHeightValueModel) fromAPI(api *kbapi.DatatableDensity_H
 }
 
 func (m *datatableDensityHeightValueModel) toAPI() (*kbapi.DatatableDensity_Height_Value, diag.Diagnostics) {
-	if m == nil || !utils.IsKnown(m.Type) {
+	if m == nil || !typeutils.IsKnown(m.Type) {
 		return nil, nil
 	}
 
@@ -809,7 +808,7 @@ func (m *datatableDensityHeightValueModel) toAPI() (*kbapi.DatatableDensity_Heig
 		}
 	case "custom":
 		custom := kbapi.DatatableDensityHeightValue1{Type: kbapi.DatatableDensityHeightValue1TypeCustom}
-		if utils.IsKnown(m.Lines) {
+		if typeutils.IsKnown(m.Lines) {
 			lines := float32(m.Lines.ValueFloat64())
 			custom.Lines = &lines
 		}

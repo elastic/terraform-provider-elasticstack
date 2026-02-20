@@ -8,6 +8,7 @@ import (
 	_ "embed"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/tfsdkutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -15,9 +16,9 @@ import (
 )
 
 //go:embed processor_community_id_data_source.md
-var communityIdDataSourceDescription string
+var communityIDDataSourceDescription string
 
-func DataSourceProcessorCommunityId() *schema.Resource {
+func DataSourceProcessorCommunityID() *schema.Resource {
 	processorSchema := map[string]*schema.Schema{
 		"id": {
 			Description: "Internal identifier of the resource",
@@ -106,7 +107,7 @@ func DataSourceProcessorCommunityId() *schema.Resource {
 			Elem: &schema.Schema{
 				Type:             schema.TypeString,
 				ValidateFunc:     validation.StringIsJSON,
-				DiffSuppressFunc: utils.DiffJsonSuppress,
+				DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 			},
 		},
 		"tag": {
@@ -122,18 +123,18 @@ func DataSourceProcessorCommunityId() *schema.Resource {
 	}
 
 	return &schema.Resource{
-		Description: communityIdDataSourceDescription,
+		Description: communityIDDataSourceDescription,
 
-		ReadContext: dataSourceProcessorCommunityIdRead,
+		ReadContext: dataSourceProcessorCommunityIDRead,
 
 		Schema: processorSchema,
 	}
 }
 
-func dataSourceProcessorCommunityIdRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+func dataSourceProcessorCommunityIDRead(_ context.Context, d *schema.ResourceData, _ any) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	processor := &models.ProcessorCommunityId{}
+	processor := &models.ProcessorCommunityID{}
 
 	processor.IgnoreFailure = d.Get("ignore_failure").(bool)
 	processor.IgnoreMissing = d.Get("ignore_missing").(bool)
@@ -141,14 +142,14 @@ func dataSourceProcessorCommunityIdRead(ctx context.Context, d *schema.ResourceD
 	processor.Seed = &seed
 
 	if v, ok := d.GetOk("source_ip"); ok {
-		processor.SourceIp = v.(string)
+		processor.SourceIP = v.(string)
 	}
 	if v, ok := d.GetOk("source_port"); ok {
 		port := v.(int)
 		processor.SourcePort = &port
 	}
 	if v, ok := d.GetOk("destination_ip"); ok {
-		processor.DestinationIp = v.(string)
+		processor.DestinationIP = v.(string)
 	}
 	if v, ok := d.GetOk("destination_port"); ok {
 		port := v.(int)
@@ -192,15 +193,15 @@ func dataSourceProcessorCommunityIdRead(ctx context.Context, d *schema.ResourceD
 		processor.OnFailure = onFailure
 	}
 
-	processorJson, err := json.MarshalIndent(map[string]*models.ProcessorCommunityId{"community_id": processor}, "", " ")
+	processorJSON, err := json.MarshalIndent(map[string]*models.ProcessorCommunityID{"community_id": processor}, "", " ")
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("json", string(processorJson)); err != nil {
+	if err := d.Set("json", string(processorJSON)); err != nil {
 		return diag.FromErr(err)
 	}
 
-	hash, err := utils.StringToHash(string(processorJson))
+	hash, err := schemautil.StringToHash(string(processorJSON))
 	if err != nil {
 		return diag.FromErr(err)
 	}

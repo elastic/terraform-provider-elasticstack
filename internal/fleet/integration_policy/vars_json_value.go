@@ -1,4 +1,4 @@
-package integration_policy
+package integrationpolicy
 
 import (
 	"context"
@@ -88,39 +88,39 @@ func NewVarsJSONWithIntegration(value string, name, version string) (VarsJSONVal
 	}, nil
 }
 
-func populateVarsJSONDefaults(ctxVal string, varsJson string) (string, error) {
+func populateVarsJSONDefaults(ctxVal string, varsJSON string) (string, error) {
 	if ctxVal == "" {
-		return varsJson, nil
+		return varsJSON, nil
 	}
 
 	value, ok := knownPackages.Load(ctxVal)
 	if !ok {
-		return varsJson, nil
+		return varsJSON, nil
 	}
 	pkg, ok := value.(kbapi.PackageInfo)
 	if !ok {
-		return varsJson, fmt.Errorf("unexpected package cache value type for key %q", ctxVal)
+		return varsJSON, fmt.Errorf("unexpected package cache value type for key %q", ctxVal)
 	}
 
 	pkgVars, diags := varsFromPackageInfo(&pkg)
 	if diags.HasError() {
-		return varsJson, diagutil.FwDiagsAsError(diags)
+		return varsJSON, diagutil.FwDiagsAsError(diags)
 	}
 
 	defaults, diags := pkgVars.defaults()
 	if diags.HasError() {
-		return varsJson, diagutil.FwDiagsAsError(diags)
+		return varsJSON, diagutil.FwDiagsAsError(diags)
 	}
 
 	var vars map[string]any
-	if err := json.Unmarshal([]byte(varsJson), &vars); err != nil {
-		return varsJson, err
+	if err := json.Unmarshal([]byte(varsJSON), &vars); err != nil {
+		return varsJSON, err
 	}
 
 	var defaultsMap map[string]any
 	diags = defaults.Unmarshal(&defaultsMap)
 	if diags.HasError() {
-		return varsJson, diagutil.FwDiagsAsError(diags)
+		return varsJSON, diagutil.FwDiagsAsError(diags)
 	}
 
 	for k, v := range defaultsMap {
@@ -131,7 +131,7 @@ func populateVarsJSONDefaults(ctxVal string, varsJson string) (string, error) {
 
 	varsBytes, err := json.Marshal(vars)
 	if err != nil {
-		return varsJson, err
+		return varsJSON, err
 	}
 
 	return string(varsBytes), nil

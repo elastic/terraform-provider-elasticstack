@@ -276,12 +276,12 @@ func (m *tagcloudConfigModel) toAPI() (kbapi.TagcloudNoESQL, diag.Diagnostics) {
 			Min *float32 `json:"min,omitempty"`
 		}{}
 		if !m.FontSize.Min.IsNull() {
-			min := float32(m.FontSize.Min.ValueFloat64())
-			fontSize.Min = &min
+			minValue := float32(m.FontSize.Min.ValueFloat64())
+			fontSize.Min = &minValue
 		}
 		if !m.FontSize.Max.IsNull() {
-			max := float32(m.FontSize.Max.ValueFloat64())
-			fontSize.Max = &max
+			maxValue := float32(m.FontSize.Max.ValueFloat64())
+			fontSize.Max = &maxValue
 		}
 		api.FontSize = &fontSize
 	}

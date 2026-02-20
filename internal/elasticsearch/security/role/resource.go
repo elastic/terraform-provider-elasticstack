@@ -21,7 +21,7 @@ func NewRoleResource() resource.Resource {
 }
 
 type roleResource struct {
-	client *clients.ApiClient
+	client *clients.APIClient
 }
 
 func (r *roleResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -46,7 +46,7 @@ func (r *roleResource) UpgradeState(_ context.Context) map[int64]resource.StateU
 	}
 }
 
-func v0ToV1(ctx context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
+func v0ToV1(_ context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
 	var priorState map[string]any
 	err := json.Unmarshal(req.RawState.JSON, &priorState)
 	if err != nil {

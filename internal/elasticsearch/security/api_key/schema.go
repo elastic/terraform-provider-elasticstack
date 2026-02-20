@@ -1,4 +1,4 @@
-package api_key
+package apikey
 
 import (
 	"context"
@@ -38,7 +38,7 @@ func (r *Resource) getSchema(version int64) schema.Schema {
 		Version:     version,
 		Description: resourceDescription,
 		Blocks: map[string]schema.Block{
-			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock("elasticsearch_connection", false),
+			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(false),
 		},
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -88,7 +88,7 @@ func (r *Resource) getSchema(version int64) schema.Schema {
 				Optional:    true,
 				Computed:    true,
 				Validators: []validator.String{
-					RequiresType(defaultAPIKeyType),
+					requiresType(defaultAPIKeyType),
 				},
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -124,7 +124,7 @@ func (r *Resource) getSchema(version int64) schema.Schema {
 				Description: "Access configuration for cross-cluster API keys. Only applicable when type is 'cross_cluster'.",
 				Optional:    true,
 				Validators: []validator.Object{
-					RequiresType(crossClusterAPIKeyType),
+					requiresType(crossClusterAPIKeyType),
 				},
 				Attributes: map[string]schema.Attribute{
 					"search": schema.ListNestedAttribute{

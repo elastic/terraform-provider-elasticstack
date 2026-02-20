@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
-func BoolUseDefaultIfUnknown(defaultValue bool) boolDefault {
+func BoolUseDefaultIfUnknown(defaultValue bool) planmodifier.Bool {
 	return boolDefault{defaultValue: defaultValue}
 }
 
@@ -16,7 +16,7 @@ type boolDefault struct {
 	defaultValue bool
 }
 
-func (bd boolDefault) PlanModifyBool(ctx context.Context, req planmodifier.BoolRequest, resp *planmodifier.BoolResponse) {
+func (bd boolDefault) PlanModifyBool(_ context.Context, req planmodifier.BoolRequest, resp *planmodifier.BoolResponse) {
 	// Do nothing if there is a known planned value.
 	if !req.PlanValue.IsUnknown() {
 		return

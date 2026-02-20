@@ -261,7 +261,7 @@ func setSettingsFromAPI(ctx context.Context, model *indexTfModel, apiModel model
 			continue
 		}
 
-		tfFieldKey := utils.ConvertSettingsKeyToTFFieldKey(key)
+		tfFieldKey := schemautil.ConvertSettingsKeyToTFFieldKey(key)
 		value, ok := model.getFieldValueByTagValue(tfFieldKey, modelType)
 		if !ok {
 			return diag.Diagnostics{

@@ -113,7 +113,7 @@ func DataSourceClusterInfo() *schema.Resource {
 }
 
 func dataSourceClusterInfoRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}

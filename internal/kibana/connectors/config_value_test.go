@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
@@ -16,7 +16,7 @@ import (
 func TestConfigValue_StringSemanticEquals(t *testing.T) {
 	emailConnectorID := ".email"
 	emailConnectorConfig := `{"key": "value"}`
-	emailConnectorConfigWithDefaults, err := kibana_oapi.ConnectorConfigWithDefaults(emailConnectorID, emailConnectorConfig)
+	emailConnectorConfigWithDefaults, err := kibanaoapi.ConnectorConfigWithDefaults(emailConnectorID, emailConnectorConfig)
 	require.NoError(t, err)
 
 	tests := []struct {

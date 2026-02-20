@@ -212,20 +212,20 @@ func checkResourceSecurityRoleDestroy(s *terraform.State) error {
 		if rs.Type != "elasticstack_elasticsearch_security_role" {
 			continue
 		}
-		compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
+		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
 		esClient, err := client.GetESClient()
 		if err != nil {
 			return err
 		}
-		req := esClient.Security.GetRole.WithName(compId.ResourceId)
+		req := esClient.Security.GetRole.WithName(compID.ResourceID)
 		res, err := esClient.Security.GetRole(req)
 		if err != nil {
 			return err
 		}
 
 		if res.StatusCode != 404 {
-			return fmt.Errorf("role (%s) still exists", compId.ResourceId)
+			return fmt.Errorf("role (%s) still exists", compID.ResourceID)
 		}
 	}
 	return nil

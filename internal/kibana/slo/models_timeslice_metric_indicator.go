@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/slo"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -48,7 +48,7 @@ func (m tfModel) timesliceMetricIndicatorToAPI() (bool, slo.SloWithSummaryRespon
 	metrics := make([]slo.IndicatorPropertiesTimesliceMetricParamsMetricMetricsInner, 0, len(metricDef.Metrics))
 	for i, metric := range metricDef.Metrics {
 		var filter *string
-		if utils.IsKnown(metric.Filter) {
+		if typeutils.IsKnown(metric.Filter) {
 			filter = metric.Filter.ValueStringPointer()
 		}
 

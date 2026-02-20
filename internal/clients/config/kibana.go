@@ -141,8 +141,8 @@ func newKibanaConfigFromFramework(ctx context.Context, cfg ProviderConfiguration
 		if kibConfig.Password.ValueString() != "" {
 			config.Password = kibConfig.Password.ValueString()
 		}
-		if kibConfig.ApiKey.ValueString() != "" {
-			config.ApiKey = kibConfig.ApiKey.ValueString()
+		if kibConfig.APIKey.ValueString() != "" {
+			config.ApiKey = kibConfig.APIKey.ValueString()
 		}
 		if kibConfig.BearerToken.ValueString() != "" {
 			config.BearerToken = kibConfig.BearerToken.ValueString()

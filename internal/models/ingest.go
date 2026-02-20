@@ -44,12 +44,12 @@ type ProcessorCircle struct {
 	ShapeType     string  `json:"shape_type"`
 }
 
-type ProcessorCommunityId struct {
+type ProcessorCommunityID struct {
 	CommonProcessor
 
-	SourceIp        string `json:"source_ip,omitempty"`
+	SourceIP        string `json:"source_ip,omitempty"`
 	SourcePort      *int   `json:"source_port,omitempty"`
-	DestinationIp   string `json:"destination_ip,omitempty"`
+	DestinationIP   string `json:"destination_ip,omitempty"`
 	DestinationPort *int   `json:"destination_port,omitempty"`
 	IanaNumber      string `json:"iana_number,omitempty"`
 	IcmpType        *int   `json:"icmp_type,omitempty"`
@@ -184,7 +184,7 @@ type ProcessorGsub struct {
 	Replacement string `json:"replacement"`
 }
 
-type ProcessorHtmlStrip struct {
+type ProcessorHTMLStrip struct {
 	CommonProcessor
 	ProcessortFields
 }
@@ -197,7 +197,7 @@ type ProcessorJoin struct {
 	TargetField string `json:"target_field,omitempty"`
 }
 
-type ProcessorJson struct {
+type ProcessorJSON struct {
 	CommonProcessor
 
 	Field                     string `json:"field"`
@@ -229,8 +229,8 @@ type ProcessorLowercase struct {
 type ProcessorNetworkDirection struct {
 	CommonProcessor
 
-	SourceIp              string   `json:"source_ip,omitempty"`
-	DestinationIp         string   `json:"destination_ip,omitempty"`
+	SourceIP              string   `json:"source_ip,omitempty"`
+	DestinationIP         string   `json:"destination_ip,omitempty"`
 	TargetField           string   `json:"target_field,omitempty"`
 	InternalNetworks      []string `json:"internal_networks,omitempty"`
 	InternalNetworksField string   `json:"internal_networks_field,omitempty"`
@@ -272,7 +272,7 @@ type ProcessorScript struct {
 	CommonProcessor
 
 	Lang     string         `json:"lang,omitempty"`
-	ScriptId string         `json:"id,omitempty"`
+	ScriptID string         `json:"id,omitempty"`
 	Source   string         `json:"source,omitempty"`
 	Params   map[string]any `json:"params,omitempty"`
 }
@@ -326,7 +326,7 @@ type ProcessorUrldecode struct {
 	ProcessortFields
 }
 
-type ProcessorUriParts struct {
+type ProcessorURIParts struct {
 	CommonProcessor
 
 	Field              string `json:"field"`

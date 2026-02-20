@@ -1,4 +1,4 @@
-package datafeed_state
+package datafeedstate
 
 import (
 	"context"
