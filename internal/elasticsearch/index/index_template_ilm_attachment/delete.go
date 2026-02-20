@@ -24,7 +24,7 @@ func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp 
 		return
 	}
 
-	componentTemplateName := compId.ResourceId
+	componentTemplateName := compId.ResourceID
 
 	// Read existing component template
 	existing, sdkDiags := elasticsearch.GetComponentTemplate(ctx, r.client, componentTemplateName, true)

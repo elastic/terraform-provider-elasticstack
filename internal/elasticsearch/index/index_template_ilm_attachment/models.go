@@ -24,8 +24,8 @@ func (m *tfModel) getComponentTemplateName() string {
 }
 
 // GetID parses and returns the composite ID from the model.
-func (m *tfModel) GetID() (*clients.CompositeId, diag.Diagnostics) {
-	compId, sdkDiags := clients.CompositeIdFromStr(m.ID.ValueString())
+func (m *tfModel) GetID() (*clients.CompositeID, diag.Diagnostics) {
+	compId, sdkDiags := clients.CompositeIDFromStr(m.ID.ValueString())
 	if sdkDiags.HasError() {
 		return nil, diagutil.FrameworkDiagsFromSDK(sdkDiags)
 	}
@@ -83,7 +83,7 @@ func extractILMSetting(template *models.Template) string {
 // It returns (diags, true) on success, (diags, false) on SDK error, and (nil, false) when the
 // template or ILM setting is missing. The caller decides how to handle "not found" (e.g. Read
 // removes from state, Create/Update report an error).
-func readILMAttachment(ctx context.Context, client *clients.ApiClient, model *tfModel) (diag.Diagnostics, bool) {
+func readILMAttachment(ctx context.Context, client *clients.APIClient, model *tfModel) (diag.Diagnostics, bool) {
 	var diags diag.Diagnostics
 
 	componentTemplateName := model.getComponentTemplateName()

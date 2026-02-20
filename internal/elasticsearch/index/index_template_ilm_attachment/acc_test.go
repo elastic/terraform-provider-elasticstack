@@ -167,11 +167,11 @@ func checkPreservesTemplateDestroy(s *terraform.State) error {
 		if rs.Type != "elasticstack_elasticsearch_index_template_ilm_attachment" {
 			continue
 		}
-		compId, sdkDiags := clients.CompositeIdFromStr(rs.Primary.ID)
+		compId, sdkDiags := clients.CompositeIDFromStr(rs.Primary.ID)
 		if sdkDiags.HasError() {
 			return fmt.Errorf("failed to parse resource ID: %v", sdkDiags)
 		}
-		if compId.ResourceId != name {
+		if compId.ResourceID != name {
 			continue
 		}
 
@@ -225,12 +225,12 @@ func checkResourceDestroy(s *terraform.State) error {
 			continue
 		}
 
-		compId, sdkDiags := clients.CompositeIdFromStr(rs.Primary.ID)
+		compId, sdkDiags := clients.CompositeIDFromStr(rs.Primary.ID)
 		if sdkDiags.HasError() {
 			return fmt.Errorf("failed to parse resource ID: %v", sdkDiags)
 		}
 
-		tpl, sdkDiags := elasticsearch.GetComponentTemplate(context.Background(), client, compId.ResourceId, true)
+		tpl, sdkDiags := elasticsearch.GetComponentTemplate(context.Background(), client, compId.ResourceID, true)
 		if sdkDiags.HasError() {
 			return fmt.Errorf("failed to get component template: %v", sdkDiags)
 		}
@@ -239,7 +239,7 @@ func checkResourceDestroy(s *terraform.State) error {
 		if tpl != nil {
 			if tpl.ComponentTemplate.Template != nil && tpl.ComponentTemplate.Template.Settings != nil {
 				if _, hasILM := tpl.ComponentTemplate.Template.Settings["index.lifecycle.name"]; hasILM {
-					return fmt.Errorf("ILM setting still exists in component template %s", compId.ResourceId)
+					return fmt.Errorf("ILM setting still exists in component template %s", compId.ResourceID)
 				}
 			}
 		}

@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -26,9 +26,9 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 		return
 	}
 
-	componentTemplateName := compId.ResourceId
+	componentTemplateName := compId.ResourceID
 	// Derive index_template from component template name for import (component name is <index_template>@custom)
-	if !utils.IsKnown(state.IndexTemplate) {
+	if !typeutils.IsKnown(state.IndexTemplate) {
 		state.IndexTemplate = types.StringValue(strings.TrimSuffix(componentTemplateName, customSuffix))
 	}
 

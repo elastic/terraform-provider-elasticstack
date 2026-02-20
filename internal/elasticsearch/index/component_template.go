@@ -195,7 +195,7 @@ func resourceComponentTemplateRead(ctx context.Context, d *schema.ResourceData, 
 	}
 	templateID := compID.ResourceID
 
-	tpl, diags := elasticsearch.GetComponentTemplate(ctx, client, templateId, false)
+	tpl, diags := elasticsearch.GetComponentTemplate(ctx, client, templateID, false)
 	if tpl == nil && diags == nil {
 		tflog.Warn(ctx, fmt.Sprintf(`Component template "%s" not found, removing from state`, compID.ResourceID))
 		d.SetId("")
