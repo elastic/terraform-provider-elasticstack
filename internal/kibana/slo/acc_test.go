@@ -652,6 +652,59 @@ func TestAccResourceSloFromSDK(t *testing.T) {
 	})
 }
 
+func TestAccResourceSloRangeFromZero(t *testing.T) {
+	constraints, err := version.NewConstraint(">=8.12.0")
+	require.NoError(t, err)
+
+	suffix := sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceSloDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(constraints),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("test"),
+				ConfigVariables: config.Variables{
+					"suffix": config.StringVariable(suffix),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.xp_upjet_ext_api_duration", "name", "[Crossplane] Managed Resource External API Request Duration "+suffix),
+					resource.TestCheckResourceAttr(
+						"elasticstack_kibana_slo.xp_upjet_ext_api_duration",
+						"description",
+						"Tests that the SLO can be created with a range from 0.",
+					),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.xp_upjet_ext_api_duration", "slo_id", "id-"+suffix),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.xp_upjet_ext_api_duration", "budgeting_method", "occurrences"),
+
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.xp_upjet_ext_api_duration", "histogram_custom_indicator.0.index", "metrics-*:metrics-*"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.xp_upjet_ext_api_duration", "histogram_custom_indicator.0.filter", "prometheus.upjet_resource_ext_api_duration.histogram: *"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.xp_upjet_ext_api_duration", "histogram_custom_indicator.0.timestamp_field", "@timestamp"),
+
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.xp_upjet_ext_api_duration", "histogram_custom_indicator.0.good.0.field", "prometheus.upjet_resource_ext_api_duration.histogram"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.xp_upjet_ext_api_duration", "histogram_custom_indicator.0.good.0.aggregation", "range"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.xp_upjet_ext_api_duration", "histogram_custom_indicator.0.good.0.from", "0"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.xp_upjet_ext_api_duration", "histogram_custom_indicator.0.good.0.to", "10"),
+
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.xp_upjet_ext_api_duration", "histogram_custom_indicator.0.total.0.field", "prometheus.upjet_resource_ext_api_duration.histogram"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.xp_upjet_ext_api_duration", "histogram_custom_indicator.0.total.0.aggregation", "range"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.xp_upjet_ext_api_duration", "histogram_custom_indicator.0.total.0.from", "0"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.xp_upjet_ext_api_duration", "histogram_custom_indicator.0.total.0.to", "999999"),
+
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.xp_upjet_ext_api_duration", "time_window.0.duration", "30d"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.xp_upjet_ext_api_duration", "time_window.0.type", "rolling"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.xp_upjet_ext_api_duration", "objective.0.target", "0.99"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.xp_upjet_ext_api_duration", "group_by.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.xp_upjet_ext_api_duration", "group_by.0", "orchestrator.cluster.name"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.xp_upjet_ext_api_duration", "tags.0", "crossplane"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.xp_upjet_ext_api_duration", "tags.1", "infra-mki"),
+				),
+			},
+		},
+	})
+}
+
 func checkResourceSloDestroy(s *terraform.State) error {
 	client, err := clients.NewAcceptanceTestingClient()
 	if err != nil {
