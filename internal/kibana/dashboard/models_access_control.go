@@ -3,6 +3,7 @@ package dashboard
 import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -23,27 +24,27 @@ type accessControlAPIPutModel = struct {
 }
 
 // ToCreateAPI converts the Terraform model to the POST API model
-func (m *AccessControlValue) ToCreateAPI() *accessControlAPIPostModel {
+func (m *AccessControlValue) toCreateAPI() *accessControlAPIPostModel {
 	if m == nil {
 		return nil
 	}
 
 	apiModel := &accessControlAPIPostModel{}
 
-	if utils.IsKnown(m.AccessMode) {
-		apiModel.AccessMode = utils.Pointer(kbapi.PostDashboardsJSONBodyDataAccessControlAccessMode(m.AccessMode.ValueString()))
+	if typeutils.IsKnown(m.AccessMode) {
+		apiModel.AccessMode = schemautil.Pointer(kbapi.PostDashboardsJSONBodyDataAccessControlAccessMode(m.AccessMode.ValueString()))
 	}
 
-	if utils.IsKnown(m.Owner) {
-		apiModel.Owner = utils.Pointer(m.Owner.ValueString())
+	if typeutils.IsKnown(m.Owner) {
+		apiModel.Owner = schemautil.Pointer(m.Owner.ValueString())
 	}
 
 	return apiModel
 }
 
 // ToUpdateAPI converts the Terraform model to the PUT API model
-func (m *AccessControlValue) ToUpdateAPI() *accessControlAPIPutModel {
-	createModel := m.ToCreateAPI()
+func (m *AccessControlValue) toUpdateAPI() *accessControlAPIPutModel {
+	createModel := m.toCreateAPI()
 	if createModel == nil {
 		return nil
 	}

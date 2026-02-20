@@ -41,12 +41,12 @@ func (r *aliasResource) Update(ctx context.Context, req resource.UpdateRequest, 
 	var actions []elasticsearch.AliasAction
 
 	// Create maps for easy lookup
-	currentIndexMap := make(map[string]AliasIndexConfig)
+	currentIndexMap := make(map[string]IndexConfig)
 	for _, config := range currentConfigs {
 		currentIndexMap[config.Name] = config
 	}
 
-	plannedIndexMap := make(map[string]AliasIndexConfig)
+	plannedIndexMap := make(map[string]IndexConfig)
 	for _, config := range plannedConfigs {
 		plannedIndexMap[config.Name] = config
 	}

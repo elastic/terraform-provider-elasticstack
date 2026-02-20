@@ -15,14 +15,14 @@ func TestAccDataSourceIngestProcessorScript(t *testing.T) {
 			{
 				Config: testAccDataSourceIngestProcessorScript,
 				Check: resource.ComposeTestCheckFunc(
-					CheckResourceJson("data.elasticstack_elasticsearch_ingest_processor_script.test", "json", expectedJsonScript),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_script.test", "json", expectedJSONScript),
 				),
 			},
 		},
 	})
 }
 
-const expectedJsonScript = `{
+const expectedJSONScript = `{
 	"script": {
 		"description": "Extract 'tags' from 'env' field",
 		"ignore_failure": false,

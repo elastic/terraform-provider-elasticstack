@@ -3,7 +3,6 @@ package fleet
 import (
 	"context"
 
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
@@ -53,18 +52,4 @@ func GetOperationalSpaceFromState(ctx context.Context, state tfsdk.State) (strin
 	// Return first space (deterministic due to Set iteration)
 	// This is where the resource currently exists in the API
 	return spaceIDs[0], nil
-}
-
-// SpaceIDsToSet converts a Go string slice to a Terraform Set of strings.
-func SpaceIDsToSet(ctx context.Context, spaceIDs []string) (types.Set, diag.Diagnostics) {
-	if len(spaceIDs) == 0 {
-		return types.SetNull(types.StringType), nil
-	}
-
-	spaceIDValues := make([]attr.Value, len(spaceIDs))
-	for i, id := range spaceIDs {
-		spaceIDValues[i] = types.StringValue(id)
-	}
-
-	return types.SetValue(types.StringType, spaceIDValues)
 }

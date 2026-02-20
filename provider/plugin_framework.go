@@ -10,46 +10,46 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/cluster/script"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/enrich"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/alias"
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/data_stream_lifecycle"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamlifecycle"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/index_template_ilm_attachment"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/indices"
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/anomaly_detection_job"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/anomalydetectionjob"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed_state"
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/job_state"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/jobstate"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/api_key"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/role"
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/role_mapping"
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/system_user"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/rolemapping"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/systemuser"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/user"
-	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/agent_policy"
-	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/enrollment_tokens"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/agentpolicy"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/enrollmenttokens"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/integration"
-	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/integration_ds"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/integration_policy"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/integrationds"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/output"
-	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/server_host"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/alerting_rule"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/serverhost"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/alertingrule"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/connectors"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/data_view"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/default_data_view"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/export_saved_objects"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dataview"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/defaultdataview"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/exportsavedobjects"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/import_saved_objects"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/maintenance_window"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/prebuilt_rules"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_detection_rule"
+	prebuilt_rules "github.com/elastic/terraform-provider-elasticstack/internal/kibana/prebuilt_rules"
+	security_detection_rule "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_detection_rule"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_exception_item"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_exception_list"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_list"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_list_data_streams"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_list_item"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/securityexceptionlist"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/securitylist"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/securitylistitem"
 	kibanaslo "github.com/elastic/terraform-provider-elasticstack/internal/kibana/slo"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/spaces"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics/monitor"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics/parameter"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics/private_location"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics/privatelocation"
 	"github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	fwprovider "github.com/hashicorp/terraform-plugin-framework/provider"
@@ -86,7 +86,7 @@ func (p *Provider) Metadata(_ context.Context, _ fwprovider.MetadataRequest, res
 func (p *Provider) Schema(ctx context.Context, req fwprovider.SchemaRequest, res *fwprovider.SchemaResponse) {
 	res.Schema = fwschema.Schema{
 		Blocks: map[string]fwschema.Block{
-			esKeyName:    schema.GetEsFWConnectionBlock(esKeyName, true),
+			esKeyName:    schema.GetEsFWConnectionBlock(true),
 			kbKeyName:    schema.GetKbFWConnectionBlock(),
 			fleetKeyName: schema.GetFleetFWConnectionBlock(),
 		},
@@ -101,7 +101,7 @@ func (p *Provider) Configure(ctx context.Context, req fwprovider.ConfigureReques
 		return
 	}
 
-	client, diags := clients.NewApiClientFromFramework(ctx, cfg, p.version)
+	client, diags := clients.NewAPIClientFromFramework(ctx, cfg, p.version)
 	res.Diagnostics.Append(diags...)
 	if res.Diagnostics.HasError() {
 		return
@@ -133,44 +133,44 @@ func (p *Provider) Resources(ctx context.Context) []func() resource.Resource {
 
 func (p *Provider) resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
-		agent_configuration.NewAgentConfigurationResource,
-		func() resource.Resource { return &import_saved_objects.Resource{} },
-		alerting_rule.NewResource,
-		data_view.NewResource,
-		default_data_view.NewResource,
+		agentconfiguration.NewAgentConfigurationResource,
+		func() resource.Resource { return &importsavedobjects.Resource{} },
+		alertingrule.NewResource,
+		dataview.NewResource,
+		defaultdataview.NewResource,
 		func() resource.Resource { return &parameter.Resource{} },
-		func() resource.Resource { return &private_location.Resource{} },
+		func() resource.Resource { return &privatelocation.Resource{} },
 		func() resource.Resource { return &index.Resource{} },
 		monitor.NewResource,
-		func() resource.Resource { return &api_key.Resource{} },
-		func() resource.Resource { return &data_stream_lifecycle.Resource{} },
+		func() resource.Resource { return &apikey.Resource{} },
+		func() resource.Resource { return &datastreamlifecycle.Resource{} },
 		func() resource.Resource { return &connectors.Resource{} },
-		agent_policy.NewResource,
+		agentpolicy.NewResource,
 		integration.NewResource,
-		integration_policy.NewResource,
+		integrationpolicy.NewResource,
 		output.NewResource,
-		server_host.NewResource,
-		system_user.NewSystemUserResource,
-		user.NewUserResource,
+		serverhost.NewResource,
+		systemuser.NewSystemUserResource,
+		securityuser.NewUserResource,
 		role.NewRoleResource,
 		script.NewScriptResource,
-		maintenance_window.NewResource,
+		maintenancewindow.NewResource,
 		enrich.NewEnrichPolicyResource,
-		role_mapping.NewRoleMappingResource,
+		rolemapping.NewRoleMappingResource,
 		alias.NewAliasResource,
 		index_template_ilm_attachment.NewResource,
 		datafeed.NewDatafeedResource,
-		anomaly_detection_job.NewAnomalyDetectionJobResource,
+		anomalydetectionjob.NewAnomalyDetectionJobResource,
 		security_detection_rule.NewSecurityDetectionRuleResource,
-		job_state.NewMLJobStateResource,
-		datafeed_state.NewMLDatafeedStateResource,
+		jobstate.NewMLJobStateResource,
+		datafeedstate.NewMLDatafeedStateResource,
 		kibanaslo.NewResource,
 		prebuilt_rules.NewResource,
-		security_list_item.NewResource,
-		security_list.NewResource,
-		security_list_data_streams.NewResource,
-		security_exception_list.NewResource,
-		security_exception_item.NewResource,
+		securitylistitem.NewResource,
+		securitylist.NewResource,
+		securitylistdatastreams.NewResource,
+		securityexceptionlist.NewResource,
+		securityexceptionitem.NewResource,
 	}
 }
 
@@ -184,11 +184,11 @@ func (p *Provider) dataSources(ctx context.Context) []func() datasource.DataSour
 	return []func() datasource.DataSource{
 		indices.NewDataSource,
 		spaces.NewDataSource,
-		export_saved_objects.NewDataSource,
-		enrollment_tokens.NewDataSource,
-		integration_ds.NewDataSource,
+		exportsavedobjects.NewDataSource,
+		enrollmenttokens.NewDataSource,
+		integrationds.NewDataSource,
 		enrich.NewEnrichPolicyDataSource,
-		role_mapping.NewRoleMappingDataSource,
+		rolemapping.NewRoleMappingDataSource,
 	}
 }
 

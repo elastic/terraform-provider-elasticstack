@@ -1,4 +1,4 @@
-package agent_configuration
+package agentconfiguration
 
 import (
 	"strings"

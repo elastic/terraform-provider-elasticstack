@@ -24,7 +24,7 @@ func (t DurationType) String() string {
 }
 
 // ValueType returns the Value type.
-func (t DurationType) ValueType(ctx context.Context) attr.Value {
+func (t DurationType) ValueType(_ context.Context) attr.Value {
 	return Duration{}
 }
 
@@ -40,7 +40,7 @@ func (t DurationType) Equal(o attr.Type) bool {
 }
 
 // ValueFromString returns a StringValuable type given a StringValue.
-func (t DurationType) ValueFromString(ctx context.Context, in basetypes.StringValue) (basetypes.StringValuable, diag.Diagnostics) {
+func (t DurationType) ValueFromString(_ context.Context, in basetypes.StringValue) (basetypes.StringValuable, diag.Diagnostics) {
 	return Duration{
 		StringValue: in,
 	}, nil

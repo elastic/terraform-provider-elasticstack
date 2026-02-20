@@ -24,7 +24,7 @@ func (t MemorySizeType) String() string {
 }
 
 // ValueType returns the Value type.
-func (t MemorySizeType) ValueType(ctx context.Context) attr.Value {
+func (t MemorySizeType) ValueType(_ context.Context) attr.Value {
 	return MemorySize{}
 }
 
@@ -40,7 +40,7 @@ func (t MemorySizeType) Equal(o attr.Type) bool {
 }
 
 // ValueFromString returns a StringValuable type given a StringValue.
-func (t MemorySizeType) ValueFromString(ctx context.Context, in basetypes.StringValue) (basetypes.StringValuable, diag.Diagnostics) {
+func (t MemorySizeType) ValueFromString(_ context.Context, in basetypes.StringValue) (basetypes.StringValuable, diag.Diagnostics) {
 	return MemorySize{
 		StringValue: in,
 	}, nil

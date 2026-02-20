@@ -1,4 +1,4 @@
-package integration_policy
+package integrationpolicy
 
 import (
 	"context"
@@ -28,7 +28,7 @@ import (
 //go:embed resource-description.md
 var integrationPolicyDescription string
 
-func (r *integrationPolicyResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *integrationPolicyResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = getSchemaV2()
 }
 
@@ -117,7 +117,7 @@ func getSchemaV2() schema.Schema {
 				},
 			},
 			"space_ids": schema.SetAttribute{
-				Description: "The Kibana space IDs where this integration policy is available. When set, must match the space_ids of the referenced agent policy. If not set, will be inherited from the agent policy. Note: The order of space IDs does not matter as this is a set.",
+				Description: spaceIDsDescription,
 				ElementType: types.StringType,
 				Optional:    true,
 				Computed:    true,

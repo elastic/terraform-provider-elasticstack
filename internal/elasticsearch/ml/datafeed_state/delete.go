@@ -1,4 +1,4 @@
-package datafeed_state
+package datafeedstate
 
 import (
 	"context"
@@ -19,14 +19,14 @@ func (r *mlDatafeedStateResource) Delete(ctx context.Context, req resource.Delet
 		return
 	}
 
-	client, fwDiags := clients.MaybeNewApiClientFromFrameworkResource(ctx, data.ElasticsearchConnection, r.client)
+	client, fwDiags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, data.ElasticsearchConnection, r.client)
 	resp.Diagnostics.Append(fwDiags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	datafeedId := data.DatafeedId.ValueString()
-	currentState, fwDiags := datafeed.GetDatafeedState(ctx, client, datafeedId)
+	datafeedID := data.DatafeedID.ValueString()
+	currentState, fwDiags := datafeed.GetDatafeedState(ctx, client, datafeedID)
 	resp.Diagnostics.Append(fwDiags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -34,13 +34,13 @@ func (r *mlDatafeedStateResource) Delete(ctx context.Context, req resource.Delet
 
 	if currentState == nil {
 		// Datafeed already doesn't exist, nothing to do
-		tflog.Info(ctx, fmt.Sprintf("ML datafeed %s not found during delete", datafeedId))
+		tflog.Info(ctx, fmt.Sprintf("ML datafeed %s not found during delete", datafeedID))
 		return
 	}
 
 	// If the datafeed is started, stop it when deleting the resource
 	if *currentState == datafeed.StateStarted {
-		tflog.Info(ctx, fmt.Sprintf("Stopping ML datafeed %s during delete", datafeedId))
+		tflog.Info(ctx, fmt.Sprintf("Stopping ML datafeed %s during delete", datafeedID))
 
 		// Parse timeout duration
 		timeout, parseErrs := data.Timeout.Parse()
@@ -50,19 +50,19 @@ func (r *mlDatafeedStateResource) Delete(ctx context.Context, req resource.Delet
 		}
 
 		force := data.Force.ValueBool()
-		fwDiags = elasticsearch.StopDatafeed(ctx, client, datafeedId, force, timeout)
+		fwDiags = elasticsearch.StopDatafeed(ctx, client, datafeedID, force, timeout)
 		resp.Diagnostics.Append(fwDiags...)
 		if resp.Diagnostics.HasError() {
 			return
 		}
 
 		// Wait for the datafeed to stop
-		_, diags := datafeed.WaitForDatafeedState(ctx, client, datafeedId, datafeed.StateStopped)
+		_, diags := datafeed.WaitForDatafeedState(ctx, client, datafeedID, datafeed.StateStopped)
 		resp.Diagnostics.Append(diags...)
 		if resp.Diagnostics.HasError() {
 			return
 		}
 
-		tflog.Info(ctx, fmt.Sprintf("ML datafeed %s successfully stopped during delete", datafeedId))
+		tflog.Info(ctx, fmt.Sprintf("ML datafeed %s successfully stopped during delete", datafeedID))
 	}
 }

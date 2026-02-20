@@ -159,13 +159,13 @@ func checkResourceClusterSettingsDestroy(s *terraform.State) error {
 		}
 		defer res.Body.Close()
 
-		clusterSettings := make(map[string]interface{})
+		clusterSettings := make(map[string]any)
 		if err := json.NewDecoder(res.Body).Decode(&clusterSettings); err != nil {
 			return err
 		}
 
 		if clusterSettings["persistent"] != 0 {
-			settings := clusterSettings["persistent"].(map[string]interface{})
+			settings := clusterSettings["persistent"].(map[string]any)
 			for _, s := range listOfSettings {
 				if v, ok := settings[s]; ok {
 					return fmt.Errorf(`Setting "%s=%s" still in the cluster, but it should be removed`, s, v)

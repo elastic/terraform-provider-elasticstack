@@ -9,7 +9,7 @@ import (
 func Test_stringIsJSONObject(t *testing.T) {
 	tests := []struct {
 		name                  string
-		fieldVal              interface{}
+		fieldVal              any
 		expectedErrsToContain []string
 	}{
 		{
@@ -42,7 +42,7 @@ func Test_stringIsJSONObject(t *testing.T) {
 			warnings, errors := stringIsJSONObject(tt.fieldVal, "field-name")
 			require.Empty(t, warnings)
 
-			require.Equal(t, len(tt.expectedErrsToContain), len(errors))
+			require.Len(t, errors, len(tt.expectedErrsToContain))
 			for i, err := range errors {
 				require.ErrorContains(t, err, tt.expectedErrsToContain[i])
 			}

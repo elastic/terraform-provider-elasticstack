@@ -14,7 +14,7 @@ import (
 )
 
 // assertLegacyMetricConfigEqual verifies that two legacy metric config models are equivalent (round-trip safe).
-func assertLegacyMetricConfigEqual(t *testing.T, ctx context.Context, a, b *legacyMetricConfigModel) {
+func assertLegacyMetricConfigEqual(ctx context.Context, t *testing.T, a, b *legacyMetricConfigModel) {
 	t.Helper()
 	if a == nil && b == nil {
 		return
@@ -86,7 +86,7 @@ func Test_legacyMetricConfigModel_fromAPI_toAPI_NoESQL(t *testing.T) {
 	diags = model2.fromAPI(ctx, chart2)
 	require.False(t, diags.HasError())
 
-	assertLegacyMetricConfigEqual(t, ctx, model1, model2)
+	assertLegacyMetricConfigEqual(ctx, t, model1, model2)
 }
 
 func Test_legacyMetricConfigModel_fromAPI_toAPI_ESQL(t *testing.T) {
@@ -130,7 +130,7 @@ func Test_legacyMetricConfigModel_fromAPI_toAPI_ESQL(t *testing.T) {
 	model2 := &legacyMetricConfigModel{}
 	diags = model2.fromAPI(ctx, chart2)
 	if !diags.HasError() && model2.Query == nil {
-		assertLegacyMetricConfigEqual(t, ctx, model1, model2)
+		assertLegacyMetricConfigEqual(ctx, t, model1, model2)
 		return
 	}
 	apiRoundTrip, err := chart2.AsLegacyMetricESQL()
@@ -155,7 +155,7 @@ func Test_legacyMetricConfigModel_toAPI_requiresQueryForNoESQL(t *testing.T) {
 }
 
 func Test_legacyMetricPanelConfigConverter_handlesAPIPanelConfig(t *testing.T) {
-	buildConfig := func(t *testing.T, configMap map[string]interface{}) kbapi.DashboardPanelItem_Config {
+	buildConfig := func(t *testing.T, configMap map[string]any) kbapi.DashboardPanelItem_Config {
 		t.Helper()
 		var cfg kbapi.DashboardPanelItem_Config
 		require.NoError(t, cfg.FromDashboardPanelItemConfig2(configMap))
@@ -171,12 +171,12 @@ func Test_legacyMetricPanelConfigConverter_handlesAPIPanelConfig(t *testing.T) {
 		{
 			name:      "handles lens legacy metric config",
 			panelType: "lens",
-			config: buildConfig(t, map[string]interface{}{
-				"attributes": map[string]interface{}{
+			config: buildConfig(t, map[string]any{
+				"attributes": map[string]any{
 					"type":    "legacy_metric",
-					"dataset": map[string]interface{}{"type": "dataView", "id": "metrics-*"},
-					"query":   map[string]interface{}{"language": "kuery", "query": ""},
-					"metric":  map[string]interface{}{"operation": "count"},
+					"dataset": map[string]any{"type": "dataView", "id": "metrics-*"},
+					"query":   map[string]any{"language": "kuery", "query": ""},
+					"metric":  map[string]any{"operation": "count"},
 				},
 			}),
 			want: true,
@@ -184,41 +184,41 @@ func Test_legacyMetricPanelConfigConverter_handlesAPIPanelConfig(t *testing.T) {
 		{
 			name:      "does not handle lens non-legacy metric config",
 			panelType: "lens",
-			config: buildConfig(t, map[string]interface{}{
-				"attributes": map[string]interface{}{"type": "xy"},
+			config: buildConfig(t, map[string]any{
+				"attributes": map[string]any{"type": "xy"},
 			}),
 			want: false,
 		},
 		{
 			name:      "does not handle non-lens type",
 			panelType: "DASHBOARD_MARKDOWN",
-			config: buildConfig(t, map[string]interface{}{
-				"attributes": map[string]interface{}{"type": "legacy_metric"},
+			config: buildConfig(t, map[string]any{
+				"attributes": map[string]any{"type": "legacy_metric"},
 			}),
 			want: false,
 		},
 		{
 			name:      "does not handle empty type",
 			panelType: "",
-			config:    buildConfig(t, map[string]interface{}{"attributes": map[string]interface{}{"type": "legacy_metric"}}),
+			config:    buildConfig(t, map[string]any{"attributes": map[string]any{"type": "legacy_metric"}}),
 			want:      false,
 		},
 		{
 			name:      "does not handle missing attributes",
 			panelType: "lens",
-			config:    buildConfig(t, map[string]interface{}{}),
+			config:    buildConfig(t, map[string]any{}),
 			want:      false,
 		},
 		{
 			name:      "does not handle non-map attributes",
 			panelType: "lens",
-			config:    buildConfig(t, map[string]interface{}{"attributes": "legacy_metric"}),
+			config:    buildConfig(t, map[string]any{"attributes": "legacy_metric"}),
 			want:      false,
 		},
 		{
 			name:      "does not handle missing visualization type",
 			panelType: "lens",
-			config:    buildConfig(t, map[string]interface{}{"attributes": map[string]interface{}{"dataset": map[string]interface{}{"type": "dataView"}}}),
+			config:    buildConfig(t, map[string]any{"attributes": map[string]any{"dataset": map[string]any{"type": "dataView"}}}),
 			want:      false,
 		},
 		{
@@ -241,18 +241,18 @@ func Test_legacyMetricPanelConfigConverter_handlesAPIPanelConfig(t *testing.T) {
 func Test_legacyMetricPanelConfigConverter_roundTrip(t *testing.T) {
 	ctx := context.Background()
 	// Start from API config (dashboard panel config with legacy_metric attributes).
-	attrs := map[string]interface{}{
+	attrs := map[string]any{
 		"type":                  "legacy_metric",
 		"title":                 "Round-Trip Title",
 		"description":           "Round-trip description",
-		"dataset":               map[string]interface{}{"type": "dataView", "id": "logs-*"},
-		"query":                 map[string]interface{}{"language": "kuery", "query": "host:*"},
-		"metric":                map[string]interface{}{"operation": "count", "format": map[string]interface{}{"type": "number"}},
+		"dataset":               map[string]any{"type": "dataView", "id": "logs-*"},
+		"query":                 map[string]any{"language": "kuery", "query": "host:*"},
+		"metric":                map[string]any{"operation": "count", "format": map[string]any{"type": "number"}},
 		"sampling":              0.5,
 		"ignore_global_filters": true,
-		"filters":               []interface{}{map[string]interface{}{"query": "status:200", "language": "kuery"}},
+		"filters":               []any{map[string]any{"query": "status:200", "language": "kuery"}},
 	}
-	configMap := map[string]interface{}{"attributes": attrs}
+	configMap := map[string]any{"attributes": attrs}
 	var apiConfig1 kbapi.DashboardPanelItem_Config
 	require.NoError(t, apiConfig1.FromDashboardPanelItemConfig2(configMap))
 
@@ -275,7 +275,7 @@ func Test_legacyMetricPanelConfigConverter_roundTrip(t *testing.T) {
 	require.False(t, diags.HasError())
 	require.NotNil(t, pm2.LegacyMetricConfig)
 
-	assertLegacyMetricConfigEqual(t, ctx, pm1.LegacyMetricConfig, pm2.LegacyMetricConfig)
+	assertLegacyMetricConfigEqual(ctx, t, pm1.LegacyMetricConfig, pm2.LegacyMetricConfig)
 }
 
 func Test_legacyMetricConfigModel_fromAPI_roundTrip(t *testing.T) {
@@ -283,7 +283,12 @@ func Test_legacyMetricConfigModel_fromAPI_roundTrip(t *testing.T) {
 
 	t.Run("NoESQL round-trip", func(t *testing.T) {
 		var chart kbapi.LegacyMetricChartSchema
-		require.NoError(t, json.Unmarshal([]byte(`{"type":"legacy_metric","dataset":{"type":"dataView","id":"x"},"query":{"language":"kuery","query":""},"metric":{"operation":"count","format":{"type":"number"}}}`), &chart))
+		require.NoError(t, json.Unmarshal([]byte(`{
+		"type": "legacy_metric",
+		"dataset": {"type": "dataView", "id": "x"},
+		"query": {"language": "kuery", "query": ""},
+		"metric": {"operation": "count", "format": {"type": "number"}}
+	}`), &chart))
 		model1 := &legacyMetricConfigModel{}
 		diags := model1.fromAPI(ctx, chart)
 		require.False(t, diags.HasError())
@@ -292,12 +297,21 @@ func Test_legacyMetricConfigModel_fromAPI_roundTrip(t *testing.T) {
 		model2 := &legacyMetricConfigModel{}
 		diags = model2.fromAPI(ctx, chart2)
 		require.False(t, diags.HasError())
-		assertLegacyMetricConfigEqual(t, ctx, model1, model2)
+		assertLegacyMetricConfigEqual(ctx, t, model1, model2)
 	})
 
 	t.Run("ESQL round-trip", func(t *testing.T) {
 		var apiESQL kbapi.LegacyMetricESQL
-		require.NoError(t, json.Unmarshal([]byte(`{"type":"legacy_metric","dataset":{"type":"esql","query":"FROM x"},"metric":{"operation":"value","column":"y","format":{"type":"number"},"color":{"type":"static","color":"#fff"}}}`), &apiESQL))
+		require.NoError(t, json.Unmarshal([]byte(`{
+		"type": "legacy_metric",
+		"dataset": {"type": "esql", "query": "FROM x"},
+		"metric": {
+			"operation": "value",
+			"column": "y",
+			"format": {"type": "number"},
+			"color": {"type": "static", "color": "#fff"}
+		}
+	}`), &apiESQL))
 		model1 := &legacyMetricConfigModel{}
 		diags := model1.fromAPIESQL(ctx, apiESQL)
 		require.False(t, diags.HasError())
@@ -306,7 +320,7 @@ func Test_legacyMetricConfigModel_fromAPI_roundTrip(t *testing.T) {
 		model2 := &legacyMetricConfigModel{}
 		diags = model2.fromAPI(ctx, chart2)
 		if !diags.HasError() && model2.Query == nil {
-			assertLegacyMetricConfigEqual(t, ctx, model1, model2)
+			assertLegacyMetricConfigEqual(ctx, t, model1, model2)
 			return
 		}
 		_, err := chart2.AsLegacyMetricESQL()
@@ -334,7 +348,12 @@ func Test_legacyMetricConfigModel_toAPI_ESQL_withQuery(t *testing.T) {
 	model := &legacyMetricConfigModel{
 		Dataset: jsontypes.NewNormalizedValue(`{"type":"esql","query":"FROM x"}`),
 		Query:   &filterSimpleModel{Language: types.StringValue("kuery"), Query: types.StringValue("*")},
-		Metric:  customtypes.NewJSONWithDefaultsValue[map[string]any](`{"operation":"value","column":"y","format":{"type":"number"},"color":{"type":"static","color":"#fff"}}`, populateLegacyMetricMetricDefaults),
+		Metric: customtypes.NewJSONWithDefaultsValue[map[string]any](`{
+			"operation": "value",
+			"column": "y",
+			"format": {"type": "number"},
+			"color": {"type": "static", "color": "#fff"}
+		}`, populateLegacyMetricMetricDefaults),
 	}
 	_, diags := model.toAPI()
 	require.True(t, diags.HasError())

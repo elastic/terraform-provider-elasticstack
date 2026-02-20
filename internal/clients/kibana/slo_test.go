@@ -9,19 +9,17 @@ import (
 )
 
 func Test_sloResponseToModel(t *testing.T) {
-	var syncDelay = "2m"
+	syncDelay := "2m"
 
 	tests := []struct {
 		name          string
-		spaceId       string
-		sloId         string
+		spaceID       string
 		sloResponse   *slo.SloWithSummaryResponse
 		expectedModel *models.Slo
 	}{
 		{
 			name:    "should return a model with the correct values",
-			spaceId: "space-id",
-			sloId:   "slo-id",
+			spaceID: "space-id",
 			sloResponse: &slo.SloWithSummaryResponse{
 				Id:          "slo-id",
 				Name:        "slo-name",
@@ -53,6 +51,7 @@ func Test_sloResponseToModel(t *testing.T) {
 			},
 			expectedModel: &models.Slo{
 				SloID:       "slo-id",
+				SpaceID:     "space-id",
 				Name:        "slo-name",
 				Description: "slo-description",
 				Indicator: slo.SloWithSummaryResponseIndicator{
@@ -75,15 +74,12 @@ func Test_sloResponseToModel(t *testing.T) {
 				Settings: &slo.Settings{
 					SyncDelay: &syncDelay,
 				},
-				SpaceID: "space-id",
 				GroupBy: nil,
 			},
 		},
-
 		{
 			name:    "should return tags if available",
-			spaceId: "space-id",
-			sloId:   "slo-id",
+			spaceID: "space-id",
 			sloResponse: &slo.SloWithSummaryResponse{
 				Id:          "slo-id",
 				Name:        "slo-name",
@@ -116,6 +112,7 @@ func Test_sloResponseToModel(t *testing.T) {
 			},
 			expectedModel: &models.Slo{
 				SloID:       "slo-id",
+				SpaceID:     "space-id",
 				Name:        "slo-name",
 				Description: "slo-description",
 				Indicator: slo.SloWithSummaryResponseIndicator{
@@ -138,16 +135,13 @@ func Test_sloResponseToModel(t *testing.T) {
 				Settings: &slo.Settings{
 					SyncDelay: &syncDelay,
 				},
-				SpaceID: "space-id",
 				Tags:    []string{"tag-1", "another_tag"},
 				GroupBy: nil,
 			},
 		},
-
 		{
 			name:          "nil response should return a nil model",
-			spaceId:       "space-id",
-			sloId:         "slo-id",
+			spaceID:       "space-id",
 			sloResponse:   nil,
 			expectedModel: nil,
 		},
@@ -155,8 +149,7 @@ func Test_sloResponseToModel(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			model := sloResponseToModel(tt.spaceId, tt.sloResponse)
-
+			model := sloResponseToModel(tt.spaceID, tt.sloResponse)
 			require.Equal(t, tt.expectedModel, model)
 		})
 	}

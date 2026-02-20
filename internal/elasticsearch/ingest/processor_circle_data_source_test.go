@@ -16,14 +16,14 @@ func TestAccDataSourceIngestProcessorCircle(t *testing.T) {
 				Config: testAccDataSourceIngestProcessorCircle,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_circle.test", "field", "circle"),
-					CheckResourceJson("data.elasticstack_elasticsearch_ingest_processor_circle.test", "json", expectedJsonCircle),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_circle.test", "json", expectedJSONCircle),
 				),
 			},
 		},
 	})
 }
 
-const expectedJsonCircle = `{
+const expectedJSONCircle = `{
 	"circle": {
 		"field": "circle",
 		"error_distance": 28.1,

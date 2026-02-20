@@ -5,7 +5,7 @@ import (
 
 	"github.com/disaster37/go-kibana-rest/v8"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
@@ -22,7 +22,7 @@ func NewFromFramework(ctx context.Context, cfg ProviderConfiguration, version st
 	}
 
 	if esCfg != nil {
-		client.Elasticsearch = utils.Pointer(esCfg.toElasticsearchConfiguration())
+		client.Elasticsearch = schemautil.Pointer(esCfg.toElasticsearchConfiguration())
 	}
 
 	kibanaCfg, diags := newKibanaConfigFromFramework(ctx, cfg, base)
@@ -37,7 +37,7 @@ func NewFromFramework(ctx context.Context, cfg ProviderConfiguration, version st
 		return Client{}, diags
 	}
 
-	client.KibanaOapi = (*kibana_oapi.Config)(&kibanaOapiCfg)
+	client.KibanaOapi = (*kibanaoapi.Config)(&kibanaOapiCfg)
 
 	fleetCfg, diags := newFleetConfigFromFramework(ctx, cfg, kibanaOapiCfg)
 	if diags.HasError() {

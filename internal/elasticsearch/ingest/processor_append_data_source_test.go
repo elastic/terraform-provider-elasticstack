@@ -16,14 +16,14 @@ func TestAccDataSourceIngestProcessorAppend(t *testing.T) {
 				Config: testAccDataSourceIngestProcessorAppend,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_append.test", "field", "tags"),
-					CheckResourceJson("data.elasticstack_elasticsearch_ingest_processor_append.test", "json", expectedJsonAppend),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_append.test", "json", expectedJSONAppend),
 				),
 			},
 		},
 	})
 }
 
-const expectedJsonAppend = `{
+const expectedJSONAppend = `{
 	"append": {
 		"field": "tags", 
 		"value": ["production", "{{{app}}}", "{{{owner}}}"], 

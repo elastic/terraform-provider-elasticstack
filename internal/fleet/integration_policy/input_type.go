@@ -1,4 +1,4 @@
-package integration_policy
+package integrationpolicy
 
 import (
 	"context"
@@ -25,7 +25,7 @@ func (t InputType) String() string {
 }
 
 // ValueType returns the Value type.
-func (t InputType) ValueType(ctx context.Context) attr.Value {
+func (t InputType) ValueType(_ context.Context) attr.Value {
 	return InputValue{
 		ObjectValue: basetypes.NewObjectUnknown(t.AttributeTypes()),
 	}
@@ -41,7 +41,7 @@ func (t InputType) Equal(o attr.Type) bool {
 }
 
 // ValueFromObject returns an ObjectValuable type given a basetypes.ObjectValue.
-func (t InputType) ValueFromObject(ctx context.Context, in basetypes.ObjectValue) (basetypes.ObjectValuable, diag.Diagnostics) {
+func (t InputType) ValueFromObject(_ context.Context, in basetypes.ObjectValue) (basetypes.ObjectValuable, diag.Diagnostics) {
 	return InputValue{
 		ObjectValue: in,
 	}, nil

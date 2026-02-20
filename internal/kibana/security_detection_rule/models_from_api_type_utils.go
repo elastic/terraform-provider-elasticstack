@@ -1,4 +1,4 @@
-package security_detection_rule
+package securitydetectionrule
 
 import (
 	"context"
@@ -7,8 +7,8 @@ import (
 	"strconv"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -30,8 +30,8 @@ func convertActionsToModel(ctx context.Context, apiActions []kbapi.SecurityDetec
 
 	for _, apiAction := range apiActions {
 		action := ActionModel{
-			ActionTypeId: types.StringValue(apiAction.ActionTypeId),
-			Id:           types.StringValue(string(apiAction.Id)),
+			ActionTypeID: types.StringValue(apiAction.ActionTypeId),
+			ID:           types.StringValue(apiAction.Id),
 		}
 
 		// Convert params
@@ -53,9 +53,9 @@ func convertActionsToModel(ctx context.Context, apiActions []kbapi.SecurityDetec
 		action.Group = types.StringPointerValue(apiAction.Group)
 
 		if apiAction.Uuid != nil {
-			action.Uuid = types.StringValue(string(*apiAction.Uuid))
+			action.UUID = types.StringValue(*apiAction.Uuid)
 		} else {
-			action.Uuid = types.StringNull()
+			action.UUID = types.StringNull()
 		}
 
 		if apiAction.AlertsFilter != nil {
@@ -78,11 +78,11 @@ func convertActionsToModel(ctx context.Context, apiActions []kbapi.SecurityDetec
 			if throttle0, err := apiAction.Frequency.Throttle.AsSecurityDetectionsAPIRuleActionThrottle0(); err == nil {
 				throttleStr = string(throttle0)
 			} else if throttle1, err := apiAction.Frequency.Throttle.AsSecurityDetectionsAPIRuleActionThrottle1(); err == nil {
-				throttleStr = string(throttle1)
+				throttleStr = throttle1
 			}
 
 			frequencyModel := ActionFrequencyModel{
-				NotifyWhen: types.StringValue(string(apiAction.Frequency.NotifyWhen)),
+				NotifyWhen: typeutils.StringishValue(apiAction.Frequency.NotifyWhen),
 				Summary:    types.BoolValue(apiAction.Frequency.Summary),
 				Throttle:   types.StringValue(throttleStr),
 			}
@@ -114,8 +114,8 @@ func convertExceptionsListToModel(ctx context.Context, apiExceptionsList []kbapi
 
 	for _, apiException := range apiExceptionsList {
 		exception := ExceptionsListModel{
-			Id:            types.StringValue(apiException.Id),
-			ListId:        types.StringValue(apiException.ListId),
+			ID:            types.StringValue(apiException.Id),
+			ListID:        types.StringValue(apiException.ListId),
 			NamespaceType: types.StringValue(string(apiException.NamespaceType)),
 			Type:          types.StringValue(string(apiException.Type)),
 		}
@@ -169,11 +169,9 @@ func convertInvestigationFieldsToModel(ctx context.Context, apiInvestigationFiel
 	}
 
 	fieldNames := make([]string, len(apiInvestigationFields.FieldNames))
-	for i, field := range apiInvestigationFields.FieldNames {
-		fieldNames[i] = string(field)
-	}
+	copy(fieldNames, apiInvestigationFields.FieldNames)
 
-	return utils.SliceToListType_String(ctx, fieldNames, path.Root("investigation_fields"), &diags), diags
+	return typeutils.SliceToListTypeString(ctx, fieldNames, path.Root("investigation_fields"), &diags), diags
 }
 
 // convertRelatedIntegrationsToModel converts kbapi.SecurityDetectionsAPIRelatedIntegrationArray to Terraform model
@@ -188,13 +186,13 @@ func convertRelatedIntegrationsToModel(ctx context.Context, apiRelatedIntegratio
 
 	for _, apiIntegration := range *apiRelatedIntegrations {
 		integration := RelatedIntegrationModel{
-			Package: types.StringValue(string(apiIntegration.Package)),
-			Version: types.StringValue(string(apiIntegration.Version)),
+			Package: types.StringValue(apiIntegration.Package),
+			Version: types.StringValue(apiIntegration.Version),
 		}
 
 		// Set optional integration field if provided
 		if apiIntegration.Integration != nil {
-			integration.Integration = types.StringValue(string(*apiIntegration.Integration))
+			integration.Integration = types.StringValue(*apiIntegration.Integration)
 		} else {
 			integration.Integration = types.StringNull()
 		}
@@ -260,16 +258,16 @@ func convertSeverityMappingToModel(ctx context.Context, apiSeverityMapping *kbap
 
 // convertThreatMappingToModel converts kbapi.SecurityDetectionsAPIThreatMapping to the terraform model
 func convertThreatMappingToModel(ctx context.Context, apiThreatMappings kbapi.SecurityDetectionsAPIThreatMapping) (types.List, diag.Diagnostics) {
-	var threatMappings []SecurityDetectionRuleTfDataItem
+	var threatMappings []TfDataItem
 
 	for _, apiMapping := range apiThreatMappings {
-		var entries []SecurityDetectionRuleTfDataItemEntry
+		var entries []TfDataItemEntry
 
 		for _, apiEntry := range apiMapping.Entries {
-			entries = append(entries, SecurityDetectionRuleTfDataItemEntry{
-				Field: types.StringValue(string(apiEntry.Field)),
+			entries = append(entries, TfDataItemEntry{
+				Field: types.StringValue(apiEntry.Field),
 				Type:  types.StringValue(string(apiEntry.Type)),
-				Value: types.StringValue(string(apiEntry.Value)),
+				Value: types.StringValue(apiEntry.Value),
 			})
 		}
 
@@ -278,7 +276,7 @@ func convertThreatMappingToModel(ctx context.Context, apiThreatMappings kbapi.Se
 			return types.ListNull(getThreatMappingElementType()), diags
 		}
 
-		threatMappings = append(threatMappings, SecurityDetectionRuleTfDataItem{
+		threatMappings = append(threatMappings, TfDataItem{
 			Entries: entriesListValue,
 		})
 	}
@@ -343,20 +341,20 @@ func convertOsqueryResponseActionToModel(ctx context.Context, osqueryAction kbap
 	var diags diag.Diagnostics
 	var responseAction ResponseActionModel
 
-	responseAction.ActionTypeId = types.StringValue(string(osqueryAction.ActionTypeId))
+	responseAction.ActionTypeID = types.StringValue(string(osqueryAction.ActionTypeId))
 
 	// Convert osquery params
 	paramsModel := ResponseActionParamsModel{}
 	paramsModel.Query = types.StringPointerValue(osqueryAction.Params.Query)
 	if osqueryAction.Params.PackId != nil {
-		paramsModel.PackId = types.StringPointerValue(osqueryAction.Params.PackId)
+		paramsModel.PackID = types.StringPointerValue(osqueryAction.Params.PackId)
 	} else {
-		paramsModel.PackId = types.StringNull()
+		paramsModel.PackID = types.StringNull()
 	}
 	if osqueryAction.Params.SavedQueryId != nil {
-		paramsModel.SavedQueryId = types.StringPointerValue(osqueryAction.Params.SavedQueryId)
+		paramsModel.SavedQueryID = types.StringPointerValue(osqueryAction.Params.SavedQueryId)
 	} else {
-		paramsModel.SavedQueryId = types.StringNull()
+		paramsModel.SavedQueryID = types.StringNull()
 	}
 	if osqueryAction.Params.Timeout != nil {
 		paramsModel.Timeout = types.Int64Value(int64(*osqueryAction.Params.Timeout))
@@ -389,7 +387,7 @@ func convertOsqueryResponseActionToModel(ctx context.Context, osqueryAction kbap
 		var queries []OsqueryQueryModel
 		for _, apiQuery := range *osqueryAction.Params.Queries {
 			query := OsqueryQueryModel{
-				Id:    types.StringValue(apiQuery.Id),
+				ID:    types.StringValue(apiQuery.Id),
 				Query: types.StringValue(apiQuery.Query),
 			}
 			if apiQuery.Platform != nil {
@@ -466,7 +464,7 @@ func convertEndpointResponseActionToModel(ctx context.Context, endpointAction kb
 	var diags diag.Diagnostics
 	var responseAction ResponseActionModel
 
-	responseAction.ActionTypeId = types.StringValue(string(endpointAction.ActionTypeId))
+	responseAction.ActionTypeID = types.StringValue(string(endpointAction.ActionTypeId))
 
 	// Convert endpoint params
 	paramsModel := ResponseActionParamsModel{}
@@ -523,8 +521,8 @@ func convertEndpointResponseActionToModel(ctx context.Context, endpointAction kb
 
 	// Set osquery fields to null since this is endpoint
 	paramsModel.Query = types.StringNull()
-	paramsModel.PackId = types.StringNull()
-	paramsModel.SavedQueryId = types.StringNull()
+	paramsModel.PackID = types.StringNull()
+	paramsModel.SavedQueryID = types.StringNull()
 	paramsModel.Timeout = types.Int64Null()
 	paramsModel.EcsMapping = types.MapNull(types.StringType)
 	paramsModel.Queries = types.ListNull(getOsqueryQueryElementType())
@@ -547,14 +545,12 @@ func convertThresholdToModel(ctx context.Context, apiThreshold kbapi.SecurityDet
 	var fieldList types.List
 	if singleField, err := apiThreshold.Field.AsSecurityDetectionsAPIThresholdField0(); err == nil {
 		// Single field
-		fieldList = utils.SliceToListType_String(ctx, []string{string(singleField)}, path.Root("threshold").AtName("field"), &diags)
+		fieldList = typeutils.SliceToListTypeString(ctx, []string{singleField}, path.Root("threshold").AtName("field"), &diags)
 	} else if multipleFields, err := apiThreshold.Field.AsSecurityDetectionsAPIThresholdField1(); err == nil {
 		// Multiple fields
 		fieldStrings := make([]string, len(multipleFields))
-		for i, field := range multipleFields {
-			fieldStrings[i] = string(field)
-		}
-		fieldList = utils.SliceToListType_String(ctx, fieldStrings, path.Root("threshold").AtName("field"), &diags)
+		copy(fieldStrings, multipleFields)
+		fieldList = typeutils.SliceToListTypeString(ctx, fieldStrings, path.Root("threshold").AtName("field"), &diags)
 	} else {
 		fieldList = types.ListValueMust(types.StringType, []attr.Value{})
 	}
@@ -562,11 +558,11 @@ func convertThresholdToModel(ctx context.Context, apiThreshold kbapi.SecurityDet
 	// Handle cardinality (optional)
 	var cardinalityList types.List
 	if apiThreshold.Cardinality != nil && len(*apiThreshold.Cardinality) > 0 {
-		cardinalityList = utils.SliceToListType(ctx, *apiThreshold.Cardinality, getCardinalityType(), path.Root("threshold").AtName("cardinality"), &diags,
+		cardinalityList = typeutils.SliceToListType(ctx, *apiThreshold.Cardinality, getCardinalityType(), path.Root("threshold").AtName("cardinality"), &diags,
 			func(item struct {
 				Field string `json:"field"`
 				Value int    `json:"value"`
-			}, meta utils.ListMeta) CardinalityModel {
+			}, _ typeutils.ListMeta) CardinalityModel {
 				return CardinalityModel{
 					Field: types.StringValue(item.Field),
 					Value: types.Int64Value(int64(item.Value)),
@@ -587,9 +583,10 @@ func convertThresholdToModel(ctx context.Context, apiThreshold kbapi.SecurityDet
 	return thresholdObject, diags
 }
 
-// convertFiltersFromApi converts the API filters field back to the Terraform type
-func (d *SecurityDetectionRuleData) updateFiltersFromApi(ctx context.Context, apiFilters *kbapi.SecurityDetectionsAPIRuleFilterArray) diag.Diagnostics {
+// convertFiltersFromAPI converts the API filters field back to the Terraform type
+func (d *Data) updateFiltersFromAPI(ctx context.Context, apiFilters *kbapi.SecurityDetectionsAPIRuleFilterArray) diag.Diagnostics {
 	var diags diag.Diagnostics
+	_ = ctx
 
 	if apiFilters == nil || len(*apiFilters) == 0 {
 		d.Filters = jsontypes.NewNormalizedNull()
@@ -609,7 +606,7 @@ func (d *SecurityDetectionRuleData) updateFiltersFromApi(ctx context.Context, ap
 }
 
 // Helper function to update severity mapping from API response
-func (d *SecurityDetectionRuleData) updateSeverityMappingFromApi(ctx context.Context, severityMapping *kbapi.SecurityDetectionsAPISeverityMapping) diag.Diagnostics {
+func (d *Data) updateSeverityMappingFromAPI(ctx context.Context, severityMapping *kbapi.SecurityDetectionsAPISeverityMapping) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	if severityMapping != nil && len(*severityMapping) > 0 {
@@ -626,11 +623,11 @@ func (d *SecurityDetectionRuleData) updateSeverityMappingFromApi(ctx context.Con
 }
 
 // Helper function to update index patterns from API response
-func (d *SecurityDetectionRuleData) updateIndexFromApi(ctx context.Context, index *[]string) diag.Diagnostics {
+func (d *Data) updateIndexFromAPI(ctx context.Context, index *[]string) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	if index != nil && len(*index) > 0 {
-		d.Index = utils.ListValueFrom(ctx, *index, types.StringType, path.Root("index"), &diags)
+		d.Index = typeutils.ListValueFrom(ctx, *index, types.StringType, path.Root("index"), &diags)
 	} else {
 		d.Index = types.ListValueMust(types.StringType, []attr.Value{})
 	}
@@ -639,11 +636,11 @@ func (d *SecurityDetectionRuleData) updateIndexFromApi(ctx context.Context, inde
 }
 
 // Helper function to update author from API response
-func (d *SecurityDetectionRuleData) updateAuthorFromApi(ctx context.Context, author []string) diag.Diagnostics {
+func (d *Data) updateAuthorFromAPI(ctx context.Context, author []string) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	if len(author) > 0 {
-		d.Author = utils.ListValueFrom(ctx, author, types.StringType, path.Root("author"), &diags)
+		d.Author = typeutils.ListValueFrom(ctx, author, types.StringType, path.Root("author"), &diags)
 	} else {
 		d.Author = types.ListValueMust(types.StringType, []attr.Value{})
 	}
@@ -652,11 +649,11 @@ func (d *SecurityDetectionRuleData) updateAuthorFromApi(ctx context.Context, aut
 }
 
 // Helper function to update tags from API response
-func (d *SecurityDetectionRuleData) updateTagsFromApi(ctx context.Context, tags []string) diag.Diagnostics {
+func (d *Data) updateTagsFromAPI(ctx context.Context, tags []string) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	if len(tags) > 0 {
-		d.Tags = utils.ListValueFrom(ctx, tags, types.StringType, path.Root("tags"), &diags)
+		d.Tags = typeutils.ListValueFrom(ctx, tags, types.StringType, path.Root("tags"), &diags)
 	} else {
 		d.Tags = types.ListValueMust(types.StringType, []attr.Value{})
 	}
@@ -665,20 +662,20 @@ func (d *SecurityDetectionRuleData) updateTagsFromApi(ctx context.Context, tags 
 }
 
 // Helper function to update false positives from API response
-func (d *SecurityDetectionRuleData) updateFalsePositivesFromApi(ctx context.Context, falsePositives []string) diag.Diagnostics {
+func (d *Data) updateFalsePositivesFromAPI(ctx context.Context, falsePositives []string) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	d.FalsePositives = utils.ListValueFrom(ctx, falsePositives, types.StringType, path.Root("false_positives"), &diags)
+	d.FalsePositives = typeutils.ListValueFrom(ctx, falsePositives, types.StringType, path.Root("false_positives"), &diags)
 
 	return diags
 }
 
 // Helper function to update references from API response
-func (d *SecurityDetectionRuleData) updateReferencesFromApi(ctx context.Context, references []string) diag.Diagnostics {
+func (d *Data) updateReferencesFromAPI(ctx context.Context, references []string) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	if len(references) > 0 {
-		d.References = utils.ListValueFrom(ctx, references, types.StringType, path.Root("references"), &diags)
+		d.References = typeutils.ListValueFrom(ctx, references, types.StringType, path.Root("references"), &diags)
 	} else {
 		d.References = types.ListValueMust(types.StringType, []attr.Value{})
 	}
@@ -687,37 +684,40 @@ func (d *SecurityDetectionRuleData) updateReferencesFromApi(ctx context.Context,
 }
 
 // Helper function to update data view ID from API response
-func (d *SecurityDetectionRuleData) updateDataViewIdFromApi(ctx context.Context, dataViewId *kbapi.SecurityDetectionsAPIDataViewId) diag.Diagnostics {
-	var diags diag.Diagnostics
+func (d *Data) updateDataViewIDFromAPI(ctx context.Context, dataViewID *kbapi.SecurityDetectionsAPIDataViewId) diag.Diagnostics {
+	diags := diag.Diagnostics{}
+	_ = ctx
 
-	if dataViewId != nil {
-		d.DataViewId = types.StringValue(string(*dataViewId))
+	if dataViewID != nil {
+		d.DataViewID = types.StringValue(*dataViewID)
 	} else {
-		d.DataViewId = types.StringNull()
+		d.DataViewID = types.StringNull()
 	}
 
 	return diags
 }
 
 // Helper function to update timeline ID from API response
-func (d *SecurityDetectionRuleData) updateTimelineIdFromApi(ctx context.Context, timelineId *kbapi.SecurityDetectionsAPITimelineTemplateId) diag.Diagnostics {
-	var diags diag.Diagnostics
+func (d *Data) updateTimelineIDFromAPI(ctx context.Context, timelineID *kbapi.SecurityDetectionsAPITimelineTemplateId) diag.Diagnostics {
+	diags := diag.Diagnostics{}
+	_ = ctx
 
-	if timelineId != nil {
-		d.TimelineId = types.StringValue(string(*timelineId))
+	if timelineID != nil {
+		d.TimelineID = types.StringValue(*timelineID)
 	} else {
-		d.TimelineId = types.StringNull()
+		d.TimelineID = types.StringNull()
 	}
 
 	return diags
 }
 
 // Helper function to update timeline title from API response
-func (d *SecurityDetectionRuleData) updateTimelineTitleFromApi(ctx context.Context, timelineTitle *kbapi.SecurityDetectionsAPITimelineTemplateTitle) diag.Diagnostics {
-	var diags diag.Diagnostics
+func (d *Data) updateTimelineTitleFromAPI(ctx context.Context, timelineTitle *kbapi.SecurityDetectionsAPITimelineTemplateTitle) diag.Diagnostics {
+	diags := diag.Diagnostics{}
+	_ = ctx
 
 	if timelineTitle != nil {
-		d.TimelineTitle = types.StringValue(string(*timelineTitle))
+		d.TimelineTitle = types.StringValue(*timelineTitle)
 	} else {
 		d.TimelineTitle = types.StringNull()
 	}
@@ -726,11 +726,12 @@ func (d *SecurityDetectionRuleData) updateTimelineTitleFromApi(ctx context.Conte
 }
 
 // Helper function to update namespace from API response
-func (d *SecurityDetectionRuleData) updateNamespaceFromApi(ctx context.Context, namespace *kbapi.SecurityDetectionsAPIAlertsIndexNamespace) diag.Diagnostics {
-	var diags diag.Diagnostics
+func (d *Data) updateNamespaceFromAPI(ctx context.Context, namespace *kbapi.SecurityDetectionsAPIAlertsIndexNamespace) diag.Diagnostics {
+	diags := diag.Diagnostics{}
+	_ = ctx
 
 	if namespace != nil {
-		d.Namespace = types.StringValue(string(*namespace))
+		d.Namespace = types.StringValue(*namespace)
 	} else {
 		d.Namespace = types.StringNull()
 	}
@@ -739,11 +740,12 @@ func (d *SecurityDetectionRuleData) updateNamespaceFromApi(ctx context.Context, 
 }
 
 // Helper function to update rule name override from API response
-func (d *SecurityDetectionRuleData) updateRuleNameOverrideFromApi(ctx context.Context, ruleNameOverride *kbapi.SecurityDetectionsAPIRuleNameOverride) diag.Diagnostics {
-	var diags diag.Diagnostics
+func (d *Data) updateRuleNameOverrideFromAPI(ctx context.Context, ruleNameOverride *kbapi.SecurityDetectionsAPIRuleNameOverride) diag.Diagnostics {
+	diags := diag.Diagnostics{}
+	_ = ctx
 
 	if ruleNameOverride != nil {
-		d.RuleNameOverride = types.StringValue(string(*ruleNameOverride))
+		d.RuleNameOverride = types.StringValue(*ruleNameOverride)
 	} else {
 		d.RuleNameOverride = types.StringNull()
 	}
@@ -752,11 +754,12 @@ func (d *SecurityDetectionRuleData) updateRuleNameOverrideFromApi(ctx context.Co
 }
 
 // Helper function to update timestamp override from API response
-func (d *SecurityDetectionRuleData) updateTimestampOverrideFromApi(ctx context.Context, timestampOverride *kbapi.SecurityDetectionsAPITimestampOverride) diag.Diagnostics {
-	var diags diag.Diagnostics
+func (d *Data) updateTimestampOverrideFromAPI(ctx context.Context, timestampOverride *kbapi.SecurityDetectionsAPITimestampOverride) diag.Diagnostics {
+	diags := diag.Diagnostics{}
+	_ = ctx
 
 	if timestampOverride != nil {
-		d.TimestampOverride = types.StringValue(string(*timestampOverride))
+		d.TimestampOverride = types.StringValue(*timestampOverride)
 	} else {
 		d.TimestampOverride = types.StringNull()
 	}
@@ -765,11 +768,15 @@ func (d *SecurityDetectionRuleData) updateTimestampOverrideFromApi(ctx context.C
 }
 
 // Helper function to update timestamp override fallback disabled from API response
-func (d *SecurityDetectionRuleData) updateTimestampOverrideFallbackDisabledFromApi(ctx context.Context, timestampOverrideFallbackDisabled *kbapi.SecurityDetectionsAPITimestampOverrideFallbackDisabled) diag.Diagnostics {
-	var diags diag.Diagnostics
+func (d *Data) updateTimestampOverrideFallbackDisabledFromAPI(
+	ctx context.Context,
+	timestampOverrideFallbackDisabled *kbapi.SecurityDetectionsAPITimestampOverrideFallbackDisabled,
+) diag.Diagnostics {
+	diags := diag.Diagnostics{}
+	_ = ctx
 
 	if timestampOverrideFallbackDisabled != nil {
-		d.TimestampOverrideFallbackDisabled = types.BoolValue(bool(*timestampOverrideFallbackDisabled))
+		d.TimestampOverrideFallbackDisabled = types.BoolValue(*timestampOverrideFallbackDisabled)
 	} else {
 		d.TimestampOverrideFallbackDisabled = types.BoolNull()
 	}
@@ -778,11 +785,12 @@ func (d *SecurityDetectionRuleData) updateTimestampOverrideFallbackDisabledFromA
 }
 
 // Helper function to update building block type from API response
-func (d *SecurityDetectionRuleData) updateBuildingBlockTypeFromApi(ctx context.Context, buildingBlockType *kbapi.SecurityDetectionsAPIBuildingBlockType) diag.Diagnostics {
-	var diags diag.Diagnostics
+func (d *Data) updateBuildingBlockTypeFromAPI(ctx context.Context, buildingBlockType *kbapi.SecurityDetectionsAPIBuildingBlockType) diag.Diagnostics {
+	diags := diag.Diagnostics{}
+	_ = ctx
 
 	if buildingBlockType != nil {
-		d.BuildingBlockType = types.StringValue(string(*buildingBlockType))
+		d.BuildingBlockType = types.StringValue(*buildingBlockType)
 	} else {
 		d.BuildingBlockType = types.StringNull()
 	}
@@ -791,11 +799,12 @@ func (d *SecurityDetectionRuleData) updateBuildingBlockTypeFromApi(ctx context.C
 }
 
 // Helper function to update license from API response
-func (d *SecurityDetectionRuleData) updateLicenseFromApi(ctx context.Context, license *kbapi.SecurityDetectionsAPIRuleLicense) diag.Diagnostics {
-	var diags diag.Diagnostics
+func (d *Data) updateLicenseFromAPI(ctx context.Context, license *kbapi.SecurityDetectionsAPIRuleLicense) diag.Diagnostics {
+	diags := diag.Diagnostics{}
+	_ = ctx
 
 	if license != nil {
-		d.License = types.StringValue(string(*license))
+		d.License = types.StringValue(*license)
 	} else {
 		d.License = types.StringNull()
 	}
@@ -804,11 +813,12 @@ func (d *SecurityDetectionRuleData) updateLicenseFromApi(ctx context.Context, li
 }
 
 // Helper function to update note from API response
-func (d *SecurityDetectionRuleData) updateNoteFromApi(ctx context.Context, note *kbapi.SecurityDetectionsAPIInvestigationGuide) diag.Diagnostics {
-	var diags diag.Diagnostics
+func (d *Data) updateNoteFromAPI(ctx context.Context, note *kbapi.SecurityDetectionsAPIInvestigationGuide) diag.Diagnostics {
+	diags := diag.Diagnostics{}
+	_ = ctx
 
 	if note != nil {
-		d.Note = types.StringValue(string(*note))
+		d.Note = types.StringValue(*note)
 	} else {
 		d.Note = types.StringNull()
 	}
@@ -817,12 +827,13 @@ func (d *SecurityDetectionRuleData) updateNoteFromApi(ctx context.Context, note 
 }
 
 // Helper function to update setup from API response
-func (d *SecurityDetectionRuleData) updateSetupFromApi(ctx context.Context, setup kbapi.SecurityDetectionsAPISetupGuide) diag.Diagnostics {
-	var diags diag.Diagnostics
+func (d *Data) updateSetupFromAPI(ctx context.Context, setup kbapi.SecurityDetectionsAPISetupGuide) diag.Diagnostics {
+	diags := diag.Diagnostics{}
+	_ = ctx
 
 	// Handle setup field - if empty, set to null to maintain consistency with optional schema
-	if string(setup) != "" {
-		d.Setup = types.StringValue(string(setup))
+	if setup != "" {
+		d.Setup = types.StringValue(setup)
 	} else {
 		d.Setup = types.StringNull()
 	}
@@ -831,7 +842,7 @@ func (d *SecurityDetectionRuleData) updateSetupFromApi(ctx context.Context, setu
 }
 
 // Helper function to update exceptions list from API response
-func (d *SecurityDetectionRuleData) updateExceptionsListFromApi(ctx context.Context, exceptionsList []kbapi.SecurityDetectionsAPIRuleExceptionList) diag.Diagnostics {
+func (d *Data) updateExceptionsListFromAPI(ctx context.Context, exceptionsList []kbapi.SecurityDetectionsAPIRuleExceptionList) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	if len(exceptionsList) > 0 {
@@ -848,7 +859,7 @@ func (d *SecurityDetectionRuleData) updateExceptionsListFromApi(ctx context.Cont
 }
 
 // Helper function to update risk score mapping from API response
-func (d *SecurityDetectionRuleData) updateRiskScoreMappingFromApi(ctx context.Context, riskScoreMapping kbapi.SecurityDetectionsAPIRiskScoreMapping) diag.Diagnostics {
+func (d *Data) updateRiskScoreMappingFromAPI(ctx context.Context, riskScoreMapping kbapi.SecurityDetectionsAPIRiskScoreMapping) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	if len(riskScoreMapping) > 0 {
@@ -865,7 +876,7 @@ func (d *SecurityDetectionRuleData) updateRiskScoreMappingFromApi(ctx context.Co
 }
 
 // Helper function to update actions from API response
-func (d *SecurityDetectionRuleData) updateActionsFromApi(ctx context.Context, actions []kbapi.SecurityDetectionsAPIRuleAction) diag.Diagnostics {
+func (d *Data) updateActionsFromAPI(ctx context.Context, actions []kbapi.SecurityDetectionsAPIRuleAction) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	if len(actions) > 0 {
@@ -881,7 +892,7 @@ func (d *SecurityDetectionRuleData) updateActionsFromApi(ctx context.Context, ac
 	return diags
 }
 
-func (d *SecurityDetectionRuleData) updateAlertSuppressionFromApi(ctx context.Context, apiSuppression *kbapi.SecurityDetectionsAPIAlertSuppression) diag.Diagnostics {
+func (d *Data) updateAlertSuppressionFromAPI(ctx context.Context, apiSuppression *kbapi.SecurityDetectionsAPIAlertSuppression) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	if apiSuppression == nil {
@@ -904,7 +915,7 @@ func (d *SecurityDetectionRuleData) updateAlertSuppressionFromApi(ctx context.Co
 
 	// Convert duration (optional)
 	if apiSuppression.Duration != nil {
-		model.Duration = parseDurationFromApi(*apiSuppression.Duration)
+		model.Duration = parseDurationFromAPI(*apiSuppression.Duration)
 	} else {
 		model.Duration = customtypes.NewDurationNull()
 	}
@@ -924,7 +935,7 @@ func (d *SecurityDetectionRuleData) updateAlertSuppressionFromApi(ctx context.Co
 	return diags
 }
 
-func (d *SecurityDetectionRuleData) updateThresholdAlertSuppressionFromApi(ctx context.Context, apiSuppression *kbapi.SecurityDetectionsAPIThresholdAlertSuppression) diag.Diagnostics {
+func (d *Data) updateThresholdAlertSuppressionFromAPI(ctx context.Context, apiSuppression *kbapi.SecurityDetectionsAPIThresholdAlertSuppression) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	if apiSuppression == nil {
@@ -939,7 +950,7 @@ func (d *SecurityDetectionRuleData) updateThresholdAlertSuppressionFromApi(ctx c
 	model.MissingFieldsStrategy = types.StringNull()
 
 	// Convert duration (always present in threshold alert suppression)
-	model.Duration = parseDurationFromApi(apiSuppression.Duration)
+	model.Duration = parseDurationFromAPI(apiSuppression.Duration)
 
 	alertSuppressionObj, objDiags := types.ObjectValueFrom(ctx, getAlertSuppressionType(), model)
 	diags.Append(objDiags...)
@@ -949,8 +960,8 @@ func (d *SecurityDetectionRuleData) updateThresholdAlertSuppressionFromApi(ctx c
 	return diags
 }
 
-// updateResponseActionsFromApi updates the ResponseActions field from API response
-func (d *SecurityDetectionRuleData) updateResponseActionsFromApi(ctx context.Context, responseActions *[]kbapi.SecurityDetectionsAPIResponseAction) diag.Diagnostics {
+// updateResponseActionsFromAPI updates the ResponseActions field from API response
+func (d *Data) updateResponseActionsFromAPI(ctx context.Context, responseActions *[]kbapi.SecurityDetectionsAPIResponseAction) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	if responseActions != nil && len(*responseActions) > 0 {
@@ -967,7 +978,7 @@ func (d *SecurityDetectionRuleData) updateResponseActionsFromApi(ctx context.Con
 }
 
 // Helper function to update investigation fields from API response
-func (d *SecurityDetectionRuleData) updateInvestigationFieldsFromApi(ctx context.Context, investigationFields *kbapi.SecurityDetectionsAPIInvestigationFields) diag.Diagnostics {
+func (d *Data) updateInvestigationFieldsFromAPI(ctx context.Context, investigationFields *kbapi.SecurityDetectionsAPIInvestigationFields) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	investigationFieldsValue, investigationFieldsDiags := convertInvestigationFieldsToModel(ctx, investigationFields)
@@ -981,7 +992,7 @@ func (d *SecurityDetectionRuleData) updateInvestigationFieldsFromApi(ctx context
 }
 
 // Helper function to update related integrations from API response
-func (d *SecurityDetectionRuleData) updateRelatedIntegrationsFromApi(ctx context.Context, relatedIntegrations *kbapi.SecurityDetectionsAPIRelatedIntegrationArray) diag.Diagnostics {
+func (d *Data) updateRelatedIntegrationsFromAPI(ctx context.Context, relatedIntegrations *kbapi.SecurityDetectionsAPIRelatedIntegrationArray) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	if relatedIntegrations != nil && len(*relatedIntegrations) > 0 {
@@ -998,7 +1009,7 @@ func (d *SecurityDetectionRuleData) updateRelatedIntegrationsFromApi(ctx context
 }
 
 // Helper function to update required fields from API response
-func (d *SecurityDetectionRuleData) updateRequiredFieldsFromApi(ctx context.Context, requiredFields *kbapi.SecurityDetectionsAPIRequiredFieldArray) diag.Diagnostics {
+func (d *Data) updateRequiredFieldsFromAPI(ctx context.Context, requiredFields *kbapi.SecurityDetectionsAPIRequiredFieldArray) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	if requiredFields != nil && len(*requiredFields) > 0 {
@@ -1031,7 +1042,7 @@ func convertThreatToModel(ctx context.Context, apiThreats *kbapi.SecurityDetecti
 
 		// Convert tactic
 		tacticModel := ThreatTacticModel{
-			Id:        types.StringValue(apiThreat.Tactic.Id),
+			ID:        types.StringValue(apiThreat.Tactic.Id),
 			Name:      types.StringValue(apiThreat.Tactic.Name),
 			Reference: types.StringValue(apiThreat.Tactic.Reference),
 		}
@@ -1049,7 +1060,7 @@ func convertThreatToModel(ctx context.Context, apiThreats *kbapi.SecurityDetecti
 
 			for _, apiTechnique := range *apiThreat.Technique {
 				technique := ThreatTechniqueModel{
-					Id:        types.StringValue(apiTechnique.Id),
+					ID:        types.StringValue(apiTechnique.Id),
 					Name:      types.StringValue(apiTechnique.Name),
 					Reference: types.StringValue(apiTechnique.Reference),
 				}
@@ -1060,7 +1071,7 @@ func convertThreatToModel(ctx context.Context, apiThreats *kbapi.SecurityDetecti
 
 					for _, apiSubtechnique := range *apiTechnique.Subtechnique {
 						subtechnique := ThreatSubtechniqueModel{
-							Id:        types.StringValue(apiSubtechnique.Id),
+							ID:        types.StringValue(apiSubtechnique.Id),
 							Name:      types.StringValue(apiSubtechnique.Name),
 							Reference: types.StringValue(apiSubtechnique.Reference),
 						}
@@ -1097,7 +1108,7 @@ func convertThreatToModel(ctx context.Context, apiThreats *kbapi.SecurityDetecti
 }
 
 // Helper function to update threat from API response
-func (d *SecurityDetectionRuleData) updateThreatFromApi(ctx context.Context, threat *kbapi.SecurityDetectionsAPIThreatArray) diag.Diagnostics {
+func (d *Data) updateThreatFromAPI(ctx context.Context, threat *kbapi.SecurityDetectionsAPIThreatArray) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	if threat != nil && len(*threat) > 0 {
@@ -1113,8 +1124,8 @@ func (d *SecurityDetectionRuleData) updateThreatFromApi(ctx context.Context, thr
 	return diags
 }
 
-// parseDurationFromApi converts an API duration to customtypes.Duration
-func parseDurationFromApi(apiDuration kbapi.SecurityDetectionsAPIAlertSuppressionDuration) customtypes.Duration {
+// parseDurationFromAPI converts an API duration to customtypes.Duration
+func parseDurationFromAPI(apiDuration kbapi.SecurityDetectionsAPIAlertSuppressionDuration) customtypes.Duration {
 	// Convert the API's Value + Unit format back to a duration string
 	durationStr := strconv.Itoa(apiDuration.Value) + string(apiDuration.Unit)
 	return customtypes.NewDurationValue(durationStr)

@@ -1,4 +1,4 @@
-package datafeed_state
+package datafeedstate
 
 import (
 	"context"
@@ -34,14 +34,14 @@ func (r *mlDatafeedStateResource) Read(ctx context.Context, req resource.ReadReq
 }
 
 func (r *mlDatafeedStateResource) read(ctx context.Context, data MLDatafeedStateData) (*MLDatafeedStateData, diag.Diagnostics) {
-	client, diags := clients.MaybeNewApiClientFromFrameworkResource(ctx, data.ElasticsearchConnection, r.client)
+	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, data.ElasticsearchConnection, r.client)
 	if diags.HasError() {
 		return nil, diags
 	}
 
-	datafeedId := data.DatafeedId.ValueString()
+	datafeedID := data.DatafeedID.ValueString()
 	// Check if the datafeed exists by getting its stats
-	datafeedStats, getDiags := elasticsearch.GetDatafeedStats(ctx, client, datafeedId)
+	datafeedStats, getDiags := elasticsearch.GetDatafeedStats(ctx, client, datafeedID)
 	diags.Append(getDiags...)
 	if diags.HasError() {
 		return nil, diags
@@ -55,13 +55,13 @@ func (r *mlDatafeedStateResource) read(ctx context.Context, data MLDatafeedState
 	data.State = types.StringValue(datafeedStats.State)
 
 	// Regenerate composite ID to ensure it's current
-	compId, sdkDiags := client.ID(ctx, datafeedId)
+	compID, sdkDiags := client.ID(ctx, datafeedID)
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
 		return nil, diags
 	}
 
-	data.Id = types.StringValue(compId.String())
+	data.ID = types.StringValue(compID.String())
 
 	diags.Append(data.SetStartAndEndFromAPI(datafeedStats)...)
 

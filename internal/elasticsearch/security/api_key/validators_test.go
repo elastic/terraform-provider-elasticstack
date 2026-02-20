@@ -1,4 +1,4 @@
-package api_key
+package apikey
 
 import (
 	"context"
@@ -83,7 +83,7 @@ func TestRequiresTypeValidator(t *testing.T) {
 			}
 
 			response := &validator.StringResponse{}
-			RequiresType("rest").ValidateString(context.Background(), request, response)
+			requiresType("rest").ValidateString(context.Background(), request, response)
 
 			if testCase.expectError && !response.Diagnostics.HasError() {
 				t.Errorf("Expected error but got none")

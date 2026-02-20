@@ -16,6 +16,6 @@ type model struct {
 	DisabledFeatures types.List   `tfsdk:"disabled_features"`
 	Initials         types.String `tfsdk:"initials"`
 	Color            types.String `tfsdk:"color"`
-	ImageUrl         types.String `tfsdk:"image_url"`
+	ImageURL         types.String `tfsdk:"image_url"`
 	Solution         types.String `tfsdk:"solution"`
 }

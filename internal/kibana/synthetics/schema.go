@@ -12,9 +12,9 @@ const (
 	MetadataPrefix = "_kibana_synthetics_"
 )
 
-// GetCompositeId parses a composite ID and returns the parsed components
-func GetCompositeId(id string) (*clients.CompositeId, diag.Diagnostics) {
-	compositeID, sdkDiag := clients.CompositeIdFromStr(id)
+// GetCompositeID parses a composite ID and returns the parsed components
+func GetCompositeID(id string) (*clients.CompositeID, diag.Diagnostics) {
+	compositeID, sdkDiag := clients.CompositeIDFromStr(id)
 	dg := diag.Diagnostics{}
 	if sdkDiag.HasError() {
 		dg.AddError(fmt.Sprintf("Failed to parse monitor ID %s", id), fmt.Sprintf("Resource ID must have following format: <cluster_uuid>/<resource identifier>. Current value: %s", id))

@@ -5,7 +5,7 @@ import (
 
 	"github.com/disaster37/go-kibana-rest/v8"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 )
 
@@ -21,13 +21,13 @@ func NewFromEnv(version string) Client {
 	}
 
 	esCfg := base.toElasticsearchConfig().withEnvironmentOverrides()
-	client.Elasticsearch = utils.Pointer(esCfg.toElasticsearchConfiguration())
+	client.Elasticsearch = schemautil.Pointer(esCfg.toElasticsearchConfiguration())
 
 	kibanaCfg := base.toKibanaConfig().withEnvironmentOverrides()
 	client.Kibana = (*kibana.Config)(&kibanaCfg)
 
 	kibanaOapiCfg := base.toKibanaOapiConfig().withEnvironmentOverrides()
-	client.KibanaOapi = (*kibana_oapi.Config)(&kibanaOapiCfg)
+	client.KibanaOapi = (*kibanaoapi.Config)(&kibanaOapiCfg)
 
 	fleetCfg := kibanaOapiCfg.toFleetConfig().withEnvironmentOverrides()
 	client.Fleet = (*fleet.Config)(&fleetCfg)

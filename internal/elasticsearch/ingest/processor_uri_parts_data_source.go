@@ -6,13 +6,14 @@ import (
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/tfsdkutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func DataSourceProcessorUriParts() *schema.Resource {
+func DataSourceProcessorURIParts() *schema.Resource {
 	processorSchema := map[string]*schema.Schema{
 		"id": {
 			Description: "Internal identifier of the resource.",
@@ -65,7 +66,7 @@ func DataSourceProcessorUriParts() *schema.Resource {
 			Elem: &schema.Schema{
 				Type:             schema.TypeString,
 				ValidateFunc:     validation.StringIsJSON,
-				DiffSuppressFunc: utils.DiffJsonSuppress,
+				DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 			},
 		},
 		"tag": {
@@ -81,18 +82,18 @@ func DataSourceProcessorUriParts() *schema.Resource {
 	}
 
 	return &schema.Resource{
-		Description: "Helper data source which can be used to create the configuration for a URI parts processor. This processor parses a Uniform Resource Identifier (URI) string and extracts its components as an object. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/uri-parts-processor.html",
+		Description: processorURIPartsDataSourceDescription,
 
-		ReadContext: dataSourceProcessorUriPartsRead,
+		ReadContext: dataSourceProcessorURIPartsRead,
 
 		Schema: processorSchema,
 	}
 }
 
-func dataSourceProcessorUriPartsRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func dataSourceProcessorURIPartsRead(_ context.Context, d *schema.ResourceData, _ any) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	processor := &models.ProcessorUriParts{}
+	processor := &models.ProcessorURIParts{}
 
 	processor.Field = d.Get("field").(string)
 	processor.IgnoreFailure = d.Get("ignore_failure").(bool)
@@ -112,9 +113,9 @@ func dataSourceProcessorUriPartsRead(ctx context.Context, d *schema.ResourceData
 		processor.Tag = v.(string)
 	}
 	if v, ok := d.GetOk("on_failure"); ok {
-		onFailure := make([]map[string]interface{}, len(v.([]interface{})))
-		for i, f := range v.([]interface{}) {
-			item := make(map[string]interface{})
+		onFailure := make([]map[string]any, len(v.([]any)))
+		for i, f := range v.([]any) {
+			item := make(map[string]any)
 			if err := json.NewDecoder(strings.NewReader(f.(string))).Decode(&item); err != nil {
 				return diag.FromErr(err)
 			}
@@ -123,15 +124,15 @@ func dataSourceProcessorUriPartsRead(ctx context.Context, d *schema.ResourceData
 		processor.OnFailure = onFailure
 	}
 
-	processorJson, err := json.MarshalIndent(map[string]*models.ProcessorUriParts{"uri_parts": processor}, "", " ")
+	processorJSON, err := json.MarshalIndent(map[string]*models.ProcessorURIParts{"uri_parts": processor}, "", " ")
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("json", string(processorJson)); err != nil {
+	if err := d.Set("json", string(processorJSON)); err != nil {
 		return diag.FromErr(err)
 	}
 
-	hash, err := utils.StringToHash(string(processorJson))
+	hash, err := schemautil.StringToHash(string(processorJSON))
 	if err != nil {
 		return diag.FromErr(err)
 	}

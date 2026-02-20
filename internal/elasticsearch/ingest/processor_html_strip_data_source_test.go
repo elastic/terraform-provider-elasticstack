@@ -7,23 +7,23 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-func TestAccDataSourceIngestProcessorHtmlStrip(t *testing.T) {
+func TestAccDataSourceIngestProcessorHTMLStrip(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorHtmlStrip,
+				Config: testAccDataSourceIngestProcessorHTMLStrip,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_html_strip.test", "field", "foo"),
-					CheckResourceJson("data.elasticstack_elasticsearch_ingest_processor_html_strip.test", "json", expectedJsonHtmlStrip),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_html_strip.test", "json", expectedJSONHTMLStrip),
 				),
 			},
 		},
 	})
 }
 
-const expectedJsonHtmlStrip = `{
+const expectedJSONHTMLStrip = `{
 	"html_strip": {
 		"field": "foo",
 		"ignore_failure": false,
@@ -31,7 +31,7 @@ const expectedJsonHtmlStrip = `{
 	}
 }`
 
-const testAccDataSourceIngestProcessorHtmlStrip = `
+const testAccDataSourceIngestProcessorHTMLStrip = `
 provider "elasticstack" {
   elasticsearch {}
 }

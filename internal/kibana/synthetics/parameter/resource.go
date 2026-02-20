@@ -15,14 +15,13 @@ const resourceName = synthetics.MetadataPrefix + "parameter"
 var _ resource.Resource = &Resource{}
 var _ resource.ResourceWithConfigure = &Resource{}
 var _ resource.ResourceWithImportState = &Resource{}
-var _ synthetics.ESApiClient = &Resource{}
+var _ synthetics.ESAPIClient = &Resource{}
 
 type Resource struct {
-	client *clients.ApiClient
-	synthetics.ESApiClient
+	client *clients.APIClient
 }
 
-func (r *Resource) GetClient() *clients.ApiClient {
+func (r *Resource) GetClient() *clients.APIClient {
 	return r.client
 }
 
@@ -34,12 +33,12 @@ func (r *Resource) ImportState(ctx context.Context, request resource.ImportState
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), request, response)
 }
 
-func (r *Resource) Configure(ctx context.Context, request resource.ConfigureRequest, response *resource.ConfigureResponse) {
+func (r *Resource) Configure(_ context.Context, request resource.ConfigureRequest, response *resource.ConfigureResponse) {
 	client, diags := clients.ConvertProviderData(request.ProviderData)
 	response.Diagnostics.Append(diags...)
 	r.client = client
 }
 
-func (r *Resource) Metadata(ctx context.Context, request resource.MetadataRequest, response *resource.MetadataResponse) {
+func (r *Resource) Metadata(_ context.Context, request resource.MetadataRequest, response *resource.MetadataResponse) {
 	response.TypeName = request.ProviderTypeName + resourceName
 }

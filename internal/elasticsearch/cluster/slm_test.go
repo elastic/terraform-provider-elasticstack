@@ -171,25 +171,25 @@ func checkSlmDestroy(name string) func(s *terraform.State) error {
 
 		for _, rs := range s.RootModule().Resources {
 			if rs.Type != "elasticstack_elasticsearch_snapshot_lifecycle" {
-				compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
-				if compId.ResourceId != name {
+				compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
+				if compID.ResourceID != name {
 					continue
 				}
 			}
 
-			compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
+			compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 			esClient, err := client.GetESClient()
 			if err != nil {
 				return err
 			}
-			req := esClient.SlmGetLifecycle.WithPolicyID(compId.ResourceId)
+			req := esClient.SlmGetLifecycle.WithPolicyID(compID.ResourceID)
 			res, err := esClient.SlmGetLifecycle(req)
 			if err != nil {
 				return err
 			}
 
 			if res.StatusCode != 404 {
-				return fmt.Errorf("SLM policy (%s) still exists", compId.ResourceId)
+				return fmt.Errorf("SLM policy (%s) still exists", compID.ResourceID)
 			}
 		}
 		return nil

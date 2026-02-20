@@ -2,6 +2,24 @@ version: "2"
 linters:
   enable:
     - misspell
+    - bodyclose
+    - containedctx
+    - contextcheck
+    - errname
+    - errorlint
+    - exptostd
+    - goconst
+    - gocritic
+    - inamedparam
+    - intrange
+    - lll
+    - modernize
+    - nolintlint
+    - testifylint
+    - unconvert
+    - unparam
+    - usetesting
+    - revive
   exclusions:
     generated: lax
     presets:
@@ -13,6 +31,9 @@ linters:
       - third_party$
       - builtin$
       - examples$
+  settings:
+    lll:
+      line-length: 200
 formatters:
   exclusions:
     generated: lax

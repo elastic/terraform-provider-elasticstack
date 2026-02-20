@@ -2,6 +2,7 @@ package customtypes
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -113,7 +114,7 @@ func TestMemorySize_ValidateAttribute(t *testing.T) {
 				diag.NewAttributeErrorDiagnostic(
 					path.Root("memory_size"),
 					"Invalid memory size string value",
-					"A string value was provided that is not a valid memory size format\n\nGiven value \"not a memory size\"\nExpected format: number followed by optional unit (k/K, m/M, g/G, t/T) and optional 'b/B' suffix",
+					fmt.Sprintf(invalidMemorySizeErrorDetailFormat, "not a memory size"),
 				),
 			},
 		},
@@ -124,7 +125,7 @@ func TestMemorySize_ValidateAttribute(t *testing.T) {
 				diag.NewAttributeErrorDiagnostic(
 					path.Root("memory_size"),
 					"Invalid memory size string value",
-					"A string value was provided that is not a valid memory size format\n\nGiven value \"-128mb\"\nExpected format: number followed by optional unit (k/K, m/M, g/G, t/T) and optional 'b/B' suffix",
+					fmt.Sprintf(invalidMemorySizeErrorDetailFormat, "-128mb"),
 				),
 			},
 		},
@@ -135,7 +136,7 @@ func TestMemorySize_ValidateAttribute(t *testing.T) {
 				diag.NewAttributeErrorDiagnostic(
 					path.Root("memory_size"),
 					"Invalid memory size string value",
-					"A string value was provided that is not a valid memory size format\n\nGiven value \"128.5mb\"\nExpected format: number followed by optional unit (k/K, m/M, g/G, t/T) and optional 'b/B' suffix",
+					fmt.Sprintf(invalidMemorySizeErrorDetailFormat, "128.5mb"),
 				),
 			},
 		},

@@ -1,4 +1,4 @@
-package maintenance_window
+package maintenancewindow
 
 import (
 	"context"
@@ -6,36 +6,36 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-type MaintenanceWindowModel struct {
-	ID             types.String              `tfsdk:"id"`
-	SpaceID        types.String              `tfsdk:"space_id"`
-	Title          types.String              `tfsdk:"title"`
-	Enabled        types.Bool                `tfsdk:"enabled"`
-	CustomSchedule MaintenanceWindowSchedule `tfsdk:"custom_schedule"`
-	Scope          *MaintenanceWindowScope   `tfsdk:"scope"`
+type Model struct {
+	ID             types.String `tfsdk:"id"`
+	SpaceID        types.String `tfsdk:"space_id"`
+	Title          types.String `tfsdk:"title"`
+	Enabled        types.Bool   `tfsdk:"enabled"`
+	CustomSchedule Schedule     `tfsdk:"custom_schedule"`
+	Scope          *Scope       `tfsdk:"scope"`
 }
 
-type MaintenanceWindowScope struct {
-	Alerting MaintenanceWindowAlertingScope `tfsdk:"alerting"`
+type Scope struct {
+	Alerting AlertingScope `tfsdk:"alerting"`
 }
 
-type MaintenanceWindowAlertingScope struct {
+type AlertingScope struct {
 	Kql types.String `tfsdk:"kql"`
 }
 
-type MaintenanceWindowSchedule struct {
-	Start     types.String                        `tfsdk:"start"`
-	Duration  types.String                        `tfsdk:"duration"`
-	Timezone  types.String                        `tfsdk:"timezone"`
-	Recurring *MaintenanceWindowScheduleRecurring `tfsdk:"recurring"`
+type Schedule struct {
+	Start     types.String       `tfsdk:"start"`
+	Duration  types.String       `tfsdk:"duration"`
+	Timezone  types.String       `tfsdk:"timezone"`
+	Recurring *ScheduleRecurring `tfsdk:"recurring"`
 }
 
-type MaintenanceWindowScheduleRecurring struct {
+type ScheduleRecurring struct {
 	End         types.String `tfsdk:"end"`
 	Every       types.String `tfsdk:"every"`
 	Occurrences types.Int32  `tfsdk:"occurrences"`
@@ -46,7 +46,7 @@ type MaintenanceWindowScheduleRecurring struct {
 
 /* CREATE */
 
-func (model MaintenanceWindowModel) toAPICreateRequest(ctx context.Context) (kbapi.PostMaintenanceWindowJSONRequestBody, diag.Diagnostics) {
+func (model Model) toAPICreateRequest(ctx context.Context) (kbapi.PostMaintenanceWindowJSONRequestBody, diag.Diagnostics) {
 	body := kbapi.PostMaintenanceWindowJSONRequestBody{
 		Enabled: model.Enabled.ValueBoolPointer(),
 		Title:   model.Title.ValueString(),
@@ -68,13 +68,13 @@ func (model MaintenanceWindowModel) toAPICreateRequest(ctx context.Context) (kba
 
 /* READ */
 
-func (model *MaintenanceWindowModel) fromAPIReadResponse(ctx context.Context, data *kbapi.GetMaintenanceWindowIdResponse) diag.Diagnostics {
+func (model *Model) fromAPIReadResponse(ctx context.Context, data *kbapi.GetMaintenanceWindowIdResponse) diag.Diagnostics {
 	if data == nil {
 		return nil
 	}
 
 	var diags = diag.Diagnostics{}
-	var response = &ResponseJson{}
+	var response = &ResponseJSON{}
 
 	if err := json.Unmarshal(data.Body, response); err != nil {
 		diags.AddError(err.Error(), "cannot unmarshal GetMaintenanceWindowIdResponse")
@@ -86,7 +86,7 @@ func (model *MaintenanceWindowModel) fromAPIReadResponse(ctx context.Context, da
 
 /* UPDATE */
 
-func (model MaintenanceWindowModel) toAPIUpdateRequest(ctx context.Context) (kbapi.PatchMaintenanceWindowIdJSONRequestBody, diag.Diagnostics) {
+func (model Model) toAPIUpdateRequest(ctx context.Context) (kbapi.PatchMaintenanceWindowIdJSONRequestBody, diag.Diagnostics) {
 	body := kbapi.PatchMaintenanceWindowIdJSONRequestBody{
 		Enabled: model.Enabled.ValueBoolPointer(),
 		Title:   model.Title.ValueStringPointer(),
@@ -125,7 +125,7 @@ func (model MaintenanceWindowModel) toAPIUpdateRequest(ctx context.Context) (kba
 		},
 	}
 
-	if utils.IsKnown(model.CustomSchedule.Timezone) {
+	if typeutils.IsKnown(model.CustomSchedule.Timezone) {
 		body.Schedule.Custom.Timezone = model.CustomSchedule.Timezone.ValueStringPointer()
 	}
 
@@ -138,15 +138,15 @@ func (model MaintenanceWindowModel) toAPIUpdateRequest(ctx context.Context) (kba
 
 /* DELETE */
 
-func (model MaintenanceWindowModel) getMaintenanceWindowIDAndSpaceID() (maintenanceWindowID string, spaceID string) {
+func (model Model) getMaintenanceWindowIDAndSpaceID() (maintenanceWindowID string, spaceID string) {
 	maintenanceWindowID = model.ID.ValueString()
 	spaceID = model.SpaceID.ValueString()
 
 	resourceID := model.ID.ValueString()
-	maybeCompositeID, _ := clients.CompositeIdFromStr(resourceID)
+	maybeCompositeID, _ := clients.CompositeIDFromStr(resourceID)
 	if maybeCompositeID != nil {
-		maintenanceWindowID = maybeCompositeID.ResourceId
-		spaceID = maybeCompositeID.ClusterId
+		maintenanceWindowID = maybeCompositeID.ResourceID
+		spaceID = maybeCompositeID.ClusterID
 	}
 
 	return
@@ -154,17 +154,17 @@ func (model MaintenanceWindowModel) getMaintenanceWindowIDAndSpaceID() (maintena
 
 /* RESPONSE HANDLER */
 
-func (model *MaintenanceWindowModel) _fromAPIResponse(ctx context.Context, response ResponseJson) diag.Diagnostics {
+func (model *Model) _fromAPIResponse(ctx context.Context, response ResponseJSON) diag.Diagnostics {
 	var diags = diag.Diagnostics{}
 
 	model.Title = types.StringValue(response.Title)
 	model.Enabled = types.BoolValue(response.Enabled)
 
-	model.CustomSchedule = MaintenanceWindowSchedule{
+	model.CustomSchedule = Schedule{
 		Start:    types.StringValue(response.Schedule.Custom.Start),
 		Duration: types.StringValue(response.Schedule.Custom.Duration),
 		Timezone: types.StringPointerValue(response.Schedule.Custom.Timezone),
-		Recurring: &MaintenanceWindowScheduleRecurring{
+		Recurring: &ScheduleRecurring{
 			End:        types.StringNull(),
 			Every:      types.StringNull(),
 			OnWeekDay:  types.ListNull(types.StringType),
@@ -214,8 +214,8 @@ func (model *MaintenanceWindowModel) _fromAPIResponse(ctx context.Context, respo
 	}
 
 	if response.Scope != nil {
-		model.Scope = &MaintenanceWindowScope{
-			Alerting: MaintenanceWindowAlertingScope{
+		model.Scope = &Scope{
+			Alerting: AlertingScope{
 				Kql: types.StringValue(response.Scope.Alerting.Query.Kql),
 			},
 		}
@@ -226,7 +226,7 @@ func (model *MaintenanceWindowModel) _fromAPIResponse(ctx context.Context, respo
 
 /* HELPERS */
 
-func (model *MaintenanceWindowScope) toAPIRequest() *struct {
+func (model *Scope) toAPIRequest() *struct {
 	Alerting struct {
 		Query struct {
 			Kql string `json:"kql"`
@@ -258,7 +258,7 @@ func (model *MaintenanceWindowScope) toAPIRequest() *struct {
 	}
 }
 
-func (model *MaintenanceWindowScheduleRecurring) toAPIRequest(ctx context.Context) (*struct {
+func (model *ScheduleRecurring) toAPIRequest(ctx context.Context) (*struct {
 	End         *string    `json:"end,omitempty"`
 	Every       *string    `json:"every,omitempty"`
 	Occurrences *float32   `json:"occurrences,omitempty"`
@@ -280,32 +280,32 @@ func (model *MaintenanceWindowScheduleRecurring) toAPIRequest(ctx context.Contex
 		OnWeekDay   *[]string  `json:"onWeekDay,omitempty"`
 	}{}
 
-	if utils.IsKnown(model.End) {
+	if typeutils.IsKnown(model.End) {
 		result.End = model.End.ValueStringPointer()
 	}
 
-	if utils.IsKnown(model.Every) {
+	if typeutils.IsKnown(model.Every) {
 		result.Every = model.Every.ValueStringPointer()
 	}
 
-	if utils.IsKnown(model.Occurrences) {
+	if typeutils.IsKnown(model.Occurrences) {
 		occurrences := float32(model.Occurrences.ValueInt32())
 		result.Occurrences = &occurrences
 	}
 
-	if utils.IsKnown(model.OnWeekDay) {
+	if typeutils.IsKnown(model.OnWeekDay) {
 		var onWeekDay []string
 		diags.Append(model.OnWeekDay.ElementsAs(ctx, &onWeekDay, true)...)
 		result.OnWeekDay = &onWeekDay
 	}
 
-	if utils.IsKnown(model.OnMonth) {
+	if typeutils.IsKnown(model.OnMonth) {
 		var onMonth []float32
 		diags.Append(model.OnMonth.ElementsAs(ctx, &onMonth, true)...)
 		result.OnMonth = &onMonth
 	}
 
-	if utils.IsKnown(model.OnMonthDay) {
+	if typeutils.IsKnown(model.OnMonthDay) {
 		var onMonthDay []float32
 		diags.Append(model.OnMonthDay.ElementsAs(ctx, &onMonthDay, true)...)
 		result.OnMonthDay = &onMonthDay

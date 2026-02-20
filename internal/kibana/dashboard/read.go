@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -36,13 +36,13 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 
 func (r *Resource) read(ctx context.Context, stateModel dashboardModel) (*dashboardModel, diag.Diagnostics) {
 	// Parse composite ID
-	composite, diags := clients.CompositeIdFromStrFw(stateModel.ID.ValueString())
+	composite, diags := clients.CompositeIDFromStrFw(stateModel.ID.ValueString())
 	if diags.HasError() {
 		return nil, diags
 	}
 
-	dashboardID := composite.ResourceId
-	spaceID := composite.ClusterId
+	dashboardID := composite.ResourceID
+	spaceID := composite.ClusterID
 
 	// Get the Kibana client
 	kibanaClient, err := r.client.GetKibanaOapiClient()
@@ -52,7 +52,7 @@ func (r *Resource) read(ctx context.Context, stateModel dashboardModel) (*dashbo
 	}
 
 	// Get the dashboard
-	getResp, getDiags := kibana_oapi.GetDashboard(ctx, kibanaClient, spaceID, dashboardID)
+	getResp, getDiags := kibanaoapi.GetDashboard(ctx, kibanaClient, spaceID, dashboardID)
 	diags.Append(getDiags...)
 	if diags.HasError() {
 		return nil, diags
