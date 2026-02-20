@@ -1,5 +1,8 @@
 ## [Unreleased]
 
+### Changes
+* Add `elasticstack_elasticsearch_index_template_ilm_attachment` resource to attach ILM policies to Fleet-managed or externally-managed index templates via the `@custom` component template. ([#1641](https://github.com/elastic/terraform-provider-elasticstack/pull/1641))
+
 ## [0.14.2] - 2026-02-19
 
 ### Changes
