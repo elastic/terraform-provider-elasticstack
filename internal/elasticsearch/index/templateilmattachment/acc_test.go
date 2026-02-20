@@ -61,10 +61,10 @@ func TestAccResourceIndexTemplateIlmAttachment_fleet(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(
-						"elasticstack_elasticsearch_templateilmattachment.test",
+						"elasticstack_elasticsearch_index_template_ilm_attachment.test",
 						"index_template", "logs-system.syslog"),
 					resource.TestCheckResourceAttr(
-						"elasticstack_elasticsearch_templateilmattachment.test",
+						"elasticstack_elasticsearch_index_template_ilm_attachment.test",
 						"lifecycle_name", "test-fleet-policy-1"),
 					checkComponentTemplateHasILM("logs-system.syslog@custom", "test-fleet-policy-1"),
 				),
@@ -79,7 +79,7 @@ func TestAccResourceIndexTemplateIlmAttachment_fleet(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(
-						"elasticstack_elasticsearch_templateilmattachment.test",
+						"elasticstack_elasticsearch_index_template_ilm_attachment.test",
 						"lifecycle_name", "test-fleet-policy-2"),
 					checkComponentTemplateHasILM("logs-system.syslog@custom", "test-fleet-policy-2"),
 				),
@@ -92,7 +92,7 @@ func TestAccResourceIndexTemplateIlmAttachment_fleet(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable("test-fleet-policy-2"),
 				},
-				ResourceName:      "elasticstack_elasticsearch_templateilmattachment.test",
+				ResourceName:      "elasticstack_elasticsearch_index_template_ilm_attachment.test",
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
@@ -122,7 +122,7 @@ func TestAccResourceIndexTemplateIlmAttachment_preservesTemplateOnDestroy(t *tes
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(
-						"elasticstack_elasticsearch_templateilmattachment.test",
+						"elasticstack_elasticsearch_index_template_ilm_attachment.test",
 						"index_template", preservesTemplateIndexName),
 					checkComponentTemplateHasILM(preservesTemplateIndexName+"@custom", "test-preserves-policy"),
 				),
