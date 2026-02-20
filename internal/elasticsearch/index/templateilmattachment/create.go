@@ -105,7 +105,7 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 	}
 
 	// Read back to ensure state consistency
-	diags, found := readILMAttachment(ctx, r.client, &plan)
+	found, diags := readILMAttachment(ctx, r.client, &plan)
 	resp.Diagnostics.Append(diags...)
 	if !found && !resp.Diagnostics.HasError() {
 		resp.Diagnostics.AddError(

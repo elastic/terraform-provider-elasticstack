@@ -80,10 +80,10 @@ func extractILMSetting(template *models.Template) string {
 }
 
 // readILMAttachment reads the component template and updates the model with the actual ILM setting.
-// It returns (diags, true) on success, (diags, false) on SDK error, and (nil, false) when the
+// It returns (true, nil) on success, (false, diags) on SDK error, and (false, nil) when the
 // template or ILM setting is missing. The caller decides how to handle "not found" (e.g. Read
 // removes from state, Create/Update report an error).
-func readILMAttachment(ctx context.Context, client *clients.APIClient, model *tfModel) (diag.Diagnostics, bool) {
+func readILMAttachment(ctx context.Context, client *clients.APIClient, model *tfModel) (bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	componentTemplateName := model.getComponentTemplateName()
@@ -91,18 +91,18 @@ func readILMAttachment(ctx context.Context, client *clients.APIClient, model *tf
 	tpl, sdkDiags := elasticsearch.GetComponentTemplate(ctx, client, componentTemplateName, true)
 	if sdkDiags.HasError() {
 		diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
-		return diags, false
+		return false, diags
 	}
 
 	if tpl == nil {
-		return nil, false
+		return false, nil
 	}
 
 	lifecycleName := extractILMSetting(tpl.ComponentTemplate.Template)
 	if lifecycleName == "" {
-		return nil, false
+		return false, nil
 	}
 
 	model.LifecycleName = types.StringValue(lifecycleName)
-	return diags, true
+	return true, nil
 }

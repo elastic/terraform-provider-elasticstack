@@ -32,7 +32,7 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 		state.IndexTemplate = types.StringValue(strings.TrimSuffix(componentTemplateName, customSuffix))
 	}
 
-	diags, found := readILMAttachment(ctx, r.client, &state)
+	found, diags := readILMAttachment(ctx, r.client, &state)
 	if !found {
 		if diags.HasError() {
 			resp.Diagnostics.Append(diags...)
