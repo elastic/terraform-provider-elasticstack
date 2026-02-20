@@ -433,6 +433,41 @@ func TestAccResourceAlertingRuleEnabledFalseOnCreate(t *testing.T) {
 	})
 }
 
+func TestAccResourceAlertingRuleInconsistentParams(t *testing.T) {
+	minSupportedVersion := version.Must(version.NewSemver("8.13.0"))
+
+	t.Setenv("KIBANA_API_KEY", "")
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceAlertingRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("inconsistent_params"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.kafka_error_alert", "name", "[Motel Services] Kafka Error Rate"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.kafka_error_alert", "consumer", "infrastructure"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.kafka_error_alert", "rule_type_id", ".es-query"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.kafka_error_alert", "interval", "1m"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.kafka_error_alert", "enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.kafka_error_alert", "alert_delay", "2"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.kafka_error_alert", "actions.#", "2"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("inconsistent_params"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.kafka_error_alert", "actions.#", "2"),
+				),
+			},
+		},
+	})
+}
+
 //go:embed testdata/TestAccResourceAlertingRuleFromSDK/create/rule.tf
 var sdkCreateTestConfig string
 
