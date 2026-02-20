@@ -1,7 +1,7 @@
 .DEFAULT_GOAL = help
 SHELL := /bin/bash
 
-VERSION ?= 0.13.1
+VERSION ?= 0.14.2
 
 NAME = elasticstack
 BINARY = terraform-provider-${NAME}
@@ -27,6 +27,12 @@ KIBANA_API_KEY_NAME ?= kibana-api-key
 
 FLEET_NAME ?= terraform-elasticstack-fleet
 FLEET_ENDPOINT ?= https://$(FLEET_NAME):8220
+
+# Fleet Server image repository. Some older stack versions (notably 7.17.x, 8.0.x, 8.1.x)
+# do not publish elastic-agent images to docker.elastic.co, so fall back to Docker Hub.
+ifneq (,$(filter 7.17.% 8.0.% 8.1.%,$(STACK_VERSION)))
+FLEET_IMAGE := elastic/elastic-agent
+endif
 
 RERUN_FAILS ?= 3
 
@@ -112,7 +118,7 @@ setup-kibana-fleet: ## Creates the agent and integration policies required to ru
 
 .PHONY: docker-clean
 docker-clean: ## Try to remove provisioned nodes and assigned network
-	@ docker compose -f $(COMPOSE_FILE) --profile acceptance-tests down
+	@ docker compose -f $(COMPOSE_FILE) --profile acceptance-tests down --volumes
 
 .PHONY: copy-kibana-ca
 copy-kibana-ca: ## Copy Kibana CA certificate to local machine
@@ -141,7 +147,7 @@ install: build ## Install built provider into the local terraform cache
 
 .PHONY: tools
 tools: $(GOBIN)  ## Download golangci-lint locally if necessary.
-	@[[ -f $(GOBIN)/golangci-lint ]] || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOBIN) v2.8.0
+	@[[ -f $(GOBIN)/golangci-lint ]] || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOBIN) v2.10.1
 
 .PHONY: golangci-lint
 golangci-lint:
@@ -213,21 +219,6 @@ release-notes: ## greps UNRELEASED notes from the CHANGELOG
 help: ## this help
 	@ awk 'BEGIN {FS = ":.*##"; printf "Usage: make \033[36m<target>\033[0m\n\nTargets:\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-10s\033[0m\t%s\n", $$1, $$2 }' $(MAKEFILE_LIST) | column -s$$'\t' -t
 
-.PHONY: generate-alerting-client
-generate-alerting-client: ## generate Kibana alerting client
-	@ docker run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli:v7.0.1 generate \
-		-i /local/generated/alerting/bundled.yaml \
-		--skip-validate-spec \
-		--git-repo-id terraform-provider-elasticstack \
-		--git-user-id elastic \
-		-p isGoSubmodule=true \
-		-p packageName=alerting \
-		-p generateInterfaces=true \
-		-g go \
-		-o /local/generated/alerting
-	@ rm -rf generated/alerting/go.mod generated/alerting/go.sum generated/alerting/test
-	@ go fmt ./generated/alerting/...
-
 .PHONY: generate-slo-client
 generate-slo-client: tools ## generate Kibana slo client
 	@ rm -rf generated/slo
@@ -246,4 +237,4 @@ generate-slo-client: tools ## generate Kibana slo client
 	@ go fmt ./generated/slo/...
 
 .PHONY: generate-clients
-generate-clients: generate-alerting-client generate-slo-client ## generate all clients
+generate-clients: generate-slo-client gen ## generate all clients

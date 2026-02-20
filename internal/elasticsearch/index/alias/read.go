@@ -38,7 +38,7 @@ func (r *aliasResource) Read(ctx context.Context, req resource.ReadRequest, resp
 }
 
 // readAliasIntoModel reads an alias from Elasticsearch and populates the provided model
-func readAliasIntoModel(ctx context.Context, client *clients.ApiClient, aliasName string, model *tfModel) diag.Diagnostics {
+func readAliasIntoModel(ctx context.Context, client *clients.APIClient, aliasName string, model *tfModel) diag.Diagnostics {
 	// Get the alias
 	indices, diags := elasticsearch.GetAlias(ctx, client, aliasName)
 	if diags.HasError() {

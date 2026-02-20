@@ -1,4 +1,4 @@
-package agent_configuration
+package agentconfiguration
 
 import (
 	"context"
@@ -51,7 +51,7 @@ func (r *resourceAgentConfiguration) Update(ctx context.Context, req resource.Up
 	}
 	defer apiResp.Body.Close()
 
-	if diags := diagutil.CheckHttpErrorFromFW(apiResp, "Failed to update APM agent configuration"); diags.HasError() {
+	if diags := diagutil.CheckHTTPErrorFromFW(apiResp, "Failed to update APM agent configuration"); diags.HasError() {
 		resp.Diagnostics.Append(diags...)
 		return
 	}

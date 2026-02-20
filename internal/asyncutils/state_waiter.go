@@ -14,7 +14,7 @@ type StateChecker func(ctx context.Context) (isDesiredState bool, err error)
 
 // WaitForStateTransition waits for a resource to reach the desired state by polling its current state.
 // It uses exponential backoff with a maximum interval to avoid overwhelming the API.
-func WaitForStateTransition(ctx context.Context, resourceType, resourceId string, stateChecker StateChecker) error {
+func WaitForStateTransition(ctx context.Context, resourceType, resourceID string, stateChecker StateChecker) error {
 	const pollInterval = 2 * time.Second
 	ticker := time.NewTicker(pollInterval)
 	defer ticker.Stop()
@@ -32,7 +32,7 @@ func WaitForStateTransition(ctx context.Context, resourceType, resourceId string
 				return nil
 			}
 
-			tflog.Debug(ctx, fmt.Sprintf("Waiting for %s %s to reach desired state...", resourceType, resourceId))
+			tflog.Debug(ctx, fmt.Sprintf("Waiting for %s %s to reach desired state...", resourceType, resourceID))
 		}
 	}
 }

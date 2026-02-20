@@ -91,8 +91,8 @@ func ResourceSpace() *schema.Resource {
 	}
 }
 
-func resourceSpaceUpsert(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+func resourceSpaceUpsert(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
@@ -140,8 +140,8 @@ func resourceSpaceUpsert(ctx context.Context, d *schema.ResourceData, meta inter
 		space.Color = color.(string)
 	}
 
-	if imageUrl, ok := d.GetOk("image_url"); ok {
-		space.ImageURL = imageUrl.(string)
+	if imageURL, ok := d.GetOk("image_url"); ok {
+		space.ImageURL = imageURL.(string)
 	}
 
 	if solution, ok := d.GetOk("solution"); ok {
@@ -167,14 +167,14 @@ func resourceSpaceUpsert(ctx context.Context, d *schema.ResourceData, meta inter
 	return resourceSpaceRead(ctx, d, meta)
 }
 
-func resourceSpaceRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+func resourceSpaceRead(_ context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
 	id := d.Id()
-	if compId, diags := clients.CompositeIdFromStr(id); diags == nil {
-		id = compId.ResourceId
+	if compID, diags := clients.CompositeIDFromStr(id); diags == nil {
+		id = compID.ResourceID
 	}
 
 	kibana, err := client.GetKibanaClient()
@@ -217,14 +217,14 @@ func resourceSpaceRead(ctx context.Context, d *schema.ResourceData, meta interfa
 	return diags
 }
 
-func resourceSpaceDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+func resourceSpaceDelete(_ context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
 	id := d.Id()
-	if compId, diags := clients.CompositeIdFromStr(id); diags == nil {
-		id = compId.ResourceId
+	if compID, diags := clients.CompositeIDFromStr(id); diags == nil {
+		id = compID.ResourceID
 	}
 
 	kibana, err := client.GetKibanaClient()

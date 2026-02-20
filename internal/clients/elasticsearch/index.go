@@ -16,9 +16,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
-func PutIlm(ctx context.Context, apiClient *clients.ApiClient, policy *models.Policy) diag.Diagnostics {
+func PutIlm(ctx context.Context, apiClient *clients.APIClient, policy *models.Policy) diag.Diagnostics {
 	var diags diag.Diagnostics
-	policyBytes, err := json.Marshal(map[string]interface{}{"policy": policy})
+	policyBytes, err := json.Marshal(map[string]any{"policy": policy})
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -38,7 +38,7 @@ func PutIlm(ctx context.Context, apiClient *clients.ApiClient, policy *models.Po
 	return diags
 }
 
-func GetIlm(ctx context.Context, apiClient *clients.ApiClient, policyName string) (*models.PolicyDefinition, diag.Diagnostics) {
+func GetIlm(ctx context.Context, apiClient *clients.APIClient, policyName string) (*models.PolicyDefinition, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
@@ -74,7 +74,7 @@ func GetIlm(ctx context.Context, apiClient *clients.ApiClient, policyName string
 	return nil, diags
 }
 
-func DeleteIlm(ctx context.Context, apiClient *clients.ApiClient, policyName string) diag.Diagnostics {
+func DeleteIlm(ctx context.Context, apiClient *clients.APIClient, policyName string) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	esClient, err := apiClient.GetESClient()
@@ -92,7 +92,7 @@ func DeleteIlm(ctx context.Context, apiClient *clients.ApiClient, policyName str
 	return diags
 }
 
-func PutComponentTemplate(ctx context.Context, apiClient *clients.ApiClient, template *models.ComponentTemplate) diag.Diagnostics {
+func PutComponentTemplate(ctx context.Context, apiClient *clients.APIClient, template *models.ComponentTemplate) diag.Diagnostics {
 	var diags diag.Diagnostics
 	templateBytes, err := json.Marshal(template)
 	if err != nil {
@@ -115,7 +115,7 @@ func PutComponentTemplate(ctx context.Context, apiClient *clients.ApiClient, tem
 	return diags
 }
 
-func GetComponentTemplate(ctx context.Context, apiClient *clients.ApiClient, templateName string) (*models.ComponentTemplateResponse, diag.Diagnostics) {
+func GetComponentTemplate(ctx context.Context, apiClient *clients.APIClient, templateName string) (*models.ComponentTemplateResponse, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
@@ -152,7 +152,7 @@ func GetComponentTemplate(ctx context.Context, apiClient *clients.ApiClient, tem
 	return &tpl, diags
 }
 
-func DeleteComponentTemplate(ctx context.Context, apiClient *clients.ApiClient, templateName string) diag.Diagnostics {
+func DeleteComponentTemplate(ctx context.Context, apiClient *clients.APIClient, templateName string) diag.Diagnostics {
 	var diags diag.Diagnostics
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
@@ -169,7 +169,7 @@ func DeleteComponentTemplate(ctx context.Context, apiClient *clients.ApiClient, 
 	return diags
 }
 
-func PutIndexTemplate(ctx context.Context, apiClient *clients.ApiClient, template *models.IndexTemplate) diag.Diagnostics {
+func PutIndexTemplate(ctx context.Context, apiClient *clients.APIClient, template *models.IndexTemplate) diag.Diagnostics {
 	var diags diag.Diagnostics
 	templateBytes, err := json.Marshal(template)
 	if err != nil {
@@ -192,7 +192,7 @@ func PutIndexTemplate(ctx context.Context, apiClient *clients.ApiClient, templat
 	return diags
 }
 
-func GetIndexTemplate(ctx context.Context, apiClient *clients.ApiClient, templateName string) (*models.IndexTemplateResponse, diag.Diagnostics) {
+func GetIndexTemplate(ctx context.Context, apiClient *clients.APIClient, templateName string) (*models.IndexTemplateResponse, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
@@ -229,7 +229,7 @@ func GetIndexTemplate(ctx context.Context, apiClient *clients.ApiClient, templat
 	return &tpl, diags
 }
 
-func DeleteIndexTemplate(ctx context.Context, apiClient *clients.ApiClient, templateName string) diag.Diagnostics {
+func DeleteIndexTemplate(ctx context.Context, apiClient *clients.APIClient, templateName string) diag.Diagnostics {
 	var diags diag.Diagnostics
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
@@ -246,7 +246,7 @@ func DeleteIndexTemplate(ctx context.Context, apiClient *clients.ApiClient, temp
 	return diags
 }
 
-func PutIndex(ctx context.Context, apiClient *clients.ApiClient, index *models.Index, params *models.PutIndexParams) fwdiags.Diagnostics {
+func PutIndex(ctx context.Context, apiClient *clients.APIClient, index *models.Index, params *models.PutIndexParams) fwdiags.Diagnostics {
 	indexBytes, err := json.Marshal(index)
 	if err != nil {
 		return fwdiags.Diagnostics{
@@ -282,7 +282,7 @@ func PutIndex(ctx context.Context, apiClient *clients.ApiClient, index *models.I
 	return diagutil.FrameworkDiagsFromSDK(diags)
 }
 
-func DeleteIndex(ctx context.Context, apiClient *clients.ApiClient, name string) fwdiags.Diagnostics {
+func DeleteIndex(ctx context.Context, apiClient *clients.APIClient, name string) fwdiags.Diagnostics {
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
 		return fwdiags.Diagnostics{
@@ -300,7 +300,7 @@ func DeleteIndex(ctx context.Context, apiClient *clients.ApiClient, name string)
 	return diagutil.FrameworkDiagsFromSDK(diags)
 }
 
-func GetIndex(ctx context.Context, apiClient *clients.ApiClient, name string) (*models.Index, fwdiags.Diagnostics) {
+func GetIndex(ctx context.Context, apiClient *clients.APIClient, name string) (*models.Index, fwdiags.Diagnostics) {
 	indices, diags := GetIndices(ctx, apiClient, name)
 	if diags.HasError() {
 		return nil, diags
@@ -313,7 +313,7 @@ func GetIndex(ctx context.Context, apiClient *clients.ApiClient, name string) (*
 	return nil, nil
 }
 
-func GetIndices(ctx context.Context, apiClient *clients.ApiClient, name string) (map[string]models.Index, fwdiags.Diagnostics) {
+func GetIndices(ctx context.Context, apiClient *clients.APIClient, name string) (map[string]models.Index, fwdiags.Diagnostics) {
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
 		return nil, fwdiags.Diagnostics{
@@ -347,7 +347,7 @@ func GetIndices(ctx context.Context, apiClient *clients.ApiClient, name string) 
 	return indices, nil
 }
 
-func DeleteIndexAlias(ctx context.Context, apiClient *clients.ApiClient, index string, aliases []string) fwdiags.Diagnostics {
+func DeleteIndexAlias(ctx context.Context, apiClient *clients.APIClient, index string, aliases []string) fwdiags.Diagnostics {
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
 		return fwdiags.Diagnostics{
@@ -365,7 +365,7 @@ func DeleteIndexAlias(ctx context.Context, apiClient *clients.ApiClient, index s
 	return diagutil.FrameworkDiagsFromSDK(diags)
 }
 
-func UpdateIndexAlias(ctx context.Context, apiClient *clients.ApiClient, index string, alias *models.IndexAlias) fwdiags.Diagnostics {
+func UpdateIndexAlias(ctx context.Context, apiClient *clients.APIClient, index string, alias *models.IndexAlias) fwdiags.Diagnostics {
 	aliasBytes, err := json.Marshal(alias)
 	if err != nil {
 		return fwdiags.Diagnostics{
@@ -390,7 +390,7 @@ func UpdateIndexAlias(ctx context.Context, apiClient *clients.ApiClient, index s
 	return diagutil.FrameworkDiagsFromSDK(diags)
 }
 
-func UpdateIndexSettings(ctx context.Context, apiClient *clients.ApiClient, index string, settings map[string]interface{}) fwdiags.Diagnostics {
+func UpdateIndexSettings(ctx context.Context, apiClient *clients.APIClient, index string, settings map[string]any) fwdiags.Diagnostics {
 	settingsBytes, err := json.Marshal(settings)
 	if err != nil {
 		return fwdiags.Diagnostics{
@@ -415,7 +415,7 @@ func UpdateIndexSettings(ctx context.Context, apiClient *clients.ApiClient, inde
 	return diagutil.FrameworkDiagsFromSDK(diags)
 }
 
-func UpdateIndexMappings(ctx context.Context, apiClient *clients.ApiClient, index, mappings string) fwdiags.Diagnostics {
+func UpdateIndexMappings(ctx context.Context, apiClient *clients.APIClient, index, mappings string) fwdiags.Diagnostics {
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
 		return fwdiags.Diagnostics{
@@ -433,7 +433,7 @@ func UpdateIndexMappings(ctx context.Context, apiClient *clients.ApiClient, inde
 	return diagutil.FrameworkDiagsFromSDK(diags)
 }
 
-func PutDataStream(ctx context.Context, apiClient *clients.ApiClient, dataStreamName string) diag.Diagnostics {
+func PutDataStream(ctx context.Context, apiClient *clients.APIClient, dataStreamName string) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	esClient, err := apiClient.GetESClient()
@@ -452,7 +452,7 @@ func PutDataStream(ctx context.Context, apiClient *clients.ApiClient, dataStream
 	return diags
 }
 
-func GetDataStream(ctx context.Context, apiClient *clients.ApiClient, dataStreamName string) (*models.DataStream, diag.Diagnostics) {
+func GetDataStream(ctx context.Context, apiClient *clients.APIClient, dataStreamName string) (*models.DataStream, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
@@ -480,7 +480,7 @@ func GetDataStream(ctx context.Context, apiClient *clients.ApiClient, dataStream
 	return &ds, diags
 }
 
-func DeleteDataStream(ctx context.Context, apiClient *clients.ApiClient, dataStreamName string) diag.Diagnostics {
+func DeleteDataStream(ctx context.Context, apiClient *clients.APIClient, dataStreamName string) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	esClient, err := apiClient.GetESClient()
@@ -499,7 +499,7 @@ func DeleteDataStream(ctx context.Context, apiClient *clients.ApiClient, dataStr
 	return diags
 }
 
-func PutDataStreamLifecycle(ctx context.Context, apiClient *clients.ApiClient, dataStreamName string, expand_wildcards string, lifecycle models.LifecycleSettings) fwdiags.Diagnostics {
+func PutDataStreamLifecycle(ctx context.Context, apiClient *clients.APIClient, dataStreamName string, expandWildcards string, lifecycle models.LifecycleSettings) fwdiags.Diagnostics {
 
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
@@ -514,7 +514,7 @@ func PutDataStreamLifecycle(ctx context.Context, apiClient *clients.ApiClient, d
 	opts := []func(*esapi.IndicesPutDataLifecycleRequest){
 		esClient.Indices.PutDataLifecycle.WithBody(bytes.NewReader(lifecycleBytes)),
 		esClient.Indices.PutDataLifecycle.WithContext(ctx),
-		esClient.Indices.PutDataLifecycle.WithExpandWildcards(expand_wildcards),
+		esClient.Indices.PutDataLifecycle.WithExpandWildcards(expandWildcards),
 	}
 	res, err := esClient.Indices.PutDataLifecycle([]string{dataStreamName}, opts...)
 	if err != nil {
@@ -527,14 +527,14 @@ func PutDataStreamLifecycle(ctx context.Context, apiClient *clients.ApiClient, d
 	return nil
 }
 
-func GetDataStreamLifecycle(ctx context.Context, apiClient *clients.ApiClient, dataStreamName string, expand_wildcards string) (*[]models.DataStreamLifecycle, fwdiags.Diagnostics) {
+func GetDataStreamLifecycle(ctx context.Context, apiClient *clients.APIClient, dataStreamName string, expandWildcards string) (*[]models.DataStreamLifecycle, fwdiags.Diagnostics) {
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 	opts := []func(*esapi.IndicesGetDataLifecycleRequest){
 		esClient.Indices.GetDataLifecycle.WithContext(ctx),
-		esClient.Indices.GetDataLifecycle.WithExpandWildcards(expand_wildcards),
+		esClient.Indices.GetDataLifecycle.WithExpandWildcards(expandWildcards),
 	}
 	res, err := esClient.Indices.GetDataLifecycle([]string{dataStreamName}, opts...)
 	if err != nil {
@@ -559,7 +559,7 @@ func GetDataStreamLifecycle(ctx context.Context, apiClient *clients.ApiClient, d
 	return &ds, nil
 }
 
-func DeleteDataStreamLifecycle(ctx context.Context, apiClient *clients.ApiClient, dataStreamName string, expand_wildcards string) fwdiags.Diagnostics {
+func DeleteDataStreamLifecycle(ctx context.Context, apiClient *clients.APIClient, dataStreamName string, expandWildcards string) fwdiags.Diagnostics {
 
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
@@ -567,7 +567,7 @@ func DeleteDataStreamLifecycle(ctx context.Context, apiClient *clients.ApiClient
 	}
 	opts := []func(*esapi.IndicesDeleteDataLifecycleRequest){
 		esClient.Indices.DeleteDataLifecycle.WithContext(ctx),
-		esClient.Indices.DeleteDataLifecycle.WithExpandWildcards(expand_wildcards),
+		esClient.Indices.DeleteDataLifecycle.WithExpandWildcards(expandWildcards),
 	}
 	res, err := esClient.Indices.DeleteDataLifecycle([]string{dataStreamName}, opts...)
 	if err != nil {
@@ -581,7 +581,7 @@ func DeleteDataStreamLifecycle(ctx context.Context, apiClient *clients.ApiClient
 	return nil
 }
 
-func GetAlias(ctx context.Context, apiClient *clients.ApiClient, aliasName string) (map[string]models.Index, fwdiags.Diagnostics) {
+func GetAlias(ctx context.Context, apiClient *clients.APIClient, aliasName string) (map[string]models.Index, fwdiags.Diagnostics) {
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
 		return nil, fwdiags.Diagnostics{
@@ -625,7 +625,7 @@ type AliasAction struct {
 	Index         string
 	Alias         string
 	IsWriteIndex  bool
-	Filter        map[string]interface{}
+	Filter        map[string]any
 	IndexRouting  string
 	IsHidden      bool
 	Routing       string
@@ -633,7 +633,7 @@ type AliasAction struct {
 }
 
 // UpdateAliasesAtomic performs atomic alias updates using multiple actions
-func UpdateAliasesAtomic(ctx context.Context, apiClient *clients.ApiClient, actions []AliasAction) fwdiags.Diagnostics {
+func UpdateAliasesAtomic(ctx context.Context, apiClient *clients.APIClient, actions []AliasAction) fwdiags.Diagnostics {
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
 		return fwdiags.Diagnostics{
@@ -641,19 +641,19 @@ func UpdateAliasesAtomic(ctx context.Context, apiClient *clients.ApiClient, acti
 		}
 	}
 
-	var aliasActions []map[string]interface{}
+	var aliasActions []map[string]any
 
 	for _, action := range actions {
 		switch action.Type {
 		case "remove":
-			aliasActions = append(aliasActions, map[string]interface{}{
-				"remove": map[string]interface{}{
+			aliasActions = append(aliasActions, map[string]any{
+				"remove": map[string]any{
 					"index": action.Index,
 					"alias": action.Alias,
 				},
 			})
 		case "add":
-			addDetails := map[string]interface{}{
+			addDetails := map[string]any{
 				"index": action.Index,
 				"alias": action.Alias,
 			}
@@ -677,13 +677,13 @@ func UpdateAliasesAtomic(ctx context.Context, apiClient *clients.ApiClient, acti
 				addDetails["is_hidden"] = action.IsHidden
 			}
 
-			aliasActions = append(aliasActions, map[string]interface{}{
+			aliasActions = append(aliasActions, map[string]any{
 				"add": addDetails,
 			})
 		}
 	}
 
-	requestBody := map[string]interface{}{
+	requestBody := map[string]any{
 		"actions": aliasActions,
 	}
 
@@ -708,7 +708,7 @@ func UpdateAliasesAtomic(ctx context.Context, apiClient *clients.ApiClient, acti
 	return diagutil.CheckErrorFromFW(res, "Unable to update aliases atomically")
 }
 
-func PutIngestPipeline(ctx context.Context, apiClient *clients.ApiClient, pipeline *models.IngestPipeline) diag.Diagnostics {
+func PutIngestPipeline(ctx context.Context, apiClient *clients.APIClient, pipeline *models.IngestPipeline) diag.Diagnostics {
 	var diags diag.Diagnostics
 	pipelineBytes, err := json.Marshal(pipeline)
 	if err != nil {
@@ -731,7 +731,7 @@ func PutIngestPipeline(ctx context.Context, apiClient *clients.ApiClient, pipeli
 	return diags
 }
 
-func GetIngestPipeline(ctx context.Context, apiClient *clients.ApiClient, name *string) (*models.IngestPipeline, diag.Diagnostics) {
+func GetIngestPipeline(ctx context.Context, apiClient *clients.APIClient, name *string) (*models.IngestPipeline, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
@@ -760,7 +760,7 @@ func GetIngestPipeline(ctx context.Context, apiClient *clients.ApiClient, name *
 	return &pipeline, diags
 }
 
-func DeleteIngestPipeline(ctx context.Context, apiClient *clients.ApiClient, name *string) diag.Diagnostics {
+func DeleteIngestPipeline(ctx context.Context, apiClient *clients.APIClient, name *string) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	esClient, err := apiClient.GetESClient()

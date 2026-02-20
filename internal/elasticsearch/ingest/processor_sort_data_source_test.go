@@ -16,14 +16,14 @@ func TestAccDataSourceIngestProcessorSort(t *testing.T) {
 				Config: testAccDataSourceIngestProcessorSort,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_sort.test", "field", "array_field_to_sort"),
-					CheckResourceJson("data.elasticstack_elasticsearch_ingest_processor_sort.test", "json", expectedJsonSort),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_sort.test", "json", expectedJSONSort),
 				),
 			},
 		},
 	})
 }
 
-const expectedJsonSort = `{
+const expectedJSONSort = `{
 	"sort": {
 		"field": "array_field_to_sort",
 		"ignore_failure": false,

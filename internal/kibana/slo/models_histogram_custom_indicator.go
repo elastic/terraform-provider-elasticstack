@@ -66,7 +66,7 @@ func (m tfModel) histogramCustomIndicatorToAPI() (bool, slo.SloWithSummaryRespon
 }
 
 func (m *tfModel) populateFromHistogramCustomIndicator(apiIndicator *slo.IndicatorPropertiesHistogram) diag.Diagnostics {
-	var diags diag.Diagnostics
+	diags := diag.Diagnostics{}
 	if apiIndicator == nil {
 		return diags
 	}

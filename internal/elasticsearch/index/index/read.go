@@ -16,7 +16,7 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 		return
 	}
 
-	client, diags := clients.MaybeNewApiClientFromFrameworkResource(ctx, stateModel.ElasticsearchConnection, r.client)
+	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, stateModel.ElasticsearchConnection, r.client)
 	if diags.HasError() {
 		resp.Diagnostics.Append(diags...)
 		return
@@ -36,13 +36,13 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
 }
 
-func readIndex(ctx context.Context, stateModel tfModel, client *clients.ApiClient) (*tfModel, diag.Diagnostics) {
+func readIndex(ctx context.Context, stateModel tfModel, client *clients.APIClient) (*tfModel, diag.Diagnostics) {
 	id, diags := stateModel.GetID()
 	if diags.HasError() {
 		return nil, diags
 	}
 
-	indexName := id.ResourceId
+	indexName := id.ResourceID
 	apiModel, diags := elasticsearch.GetIndex(ctx, client, indexName)
 	if diags.HasError() {
 		return nil, diags

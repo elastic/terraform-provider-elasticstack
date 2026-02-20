@@ -3,6 +3,7 @@ package output
 import (
 	"context"
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -16,80 +17,80 @@ func TestOutputResourceUpgradeState(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		rawState      map[string]interface{}
-		expectedState map[string]interface{}
+		rawState      map[string]any
+		expectedState map[string]any
 		expectError   bool
 		errorContains string
 	}{
 		{
 			name: "successful upgrade - ssl list to object",
-			rawState: map[string]interface{}{
+			rawState: map[string]any{
 				"id":   "test-output",
 				"name": "Test Output",
 				"type": "elasticsearch",
-				"ssl": []interface{}{
-					map[string]interface{}{
+				"ssl": []any{
+					map[string]any{
 						"certificate":             "cert-content",
 						"key":                     "key-content",
-						"certificate_authorities": []interface{}{"ca1", "ca2"},
+						"certificate_authorities": []any{"ca1", "ca2"},
 					},
 				},
-				"hosts": []interface{}{"https://localhost:9200"},
+				"hosts": []any{"https://localhost:9200"},
 			},
-			expectedState: map[string]interface{}{
+			expectedState: map[string]any{
 				"id":   "test-output",
 				"name": "Test Output",
 				"type": "elasticsearch",
-				"ssl": map[string]interface{}{
+				"ssl": map[string]any{
 					"certificate":             "cert-content",
 					"key":                     "key-content",
-					"certificate_authorities": []interface{}{"ca1", "ca2"},
+					"certificate_authorities": []any{"ca1", "ca2"},
 				},
-				"hosts": []interface{}{"https://localhost:9200"},
+				"hosts": []any{"https://localhost:9200"},
 			},
 			expectError: false,
 		},
 		{
 			name: "no ssl field - no changes",
-			rawState: map[string]interface{}{
+			rawState: map[string]any{
 				"id":    "test-output",
 				"name":  "Test Output",
 				"type":  "elasticsearch",
-				"hosts": []interface{}{"https://localhost:9200"},
+				"hosts": []any{"https://localhost:9200"},
 			},
-			expectedState: map[string]interface{}{
+			expectedState: map[string]any{
 				"id":    "test-output",
 				"name":  "Test Output",
 				"type":  "elasticsearch",
-				"hosts": []interface{}{"https://localhost:9200"},
+				"hosts": []any{"https://localhost:9200"},
 			},
 			expectError: false,
 		},
 		{
 			name: "empty ssl list - removes ssl field",
-			rawState: map[string]interface{}{
+			rawState: map[string]any{
 				"id":    "test-output",
 				"name":  "Test Output",
 				"type":  "elasticsearch",
-				"ssl":   []interface{}{},
-				"hosts": []interface{}{"https://localhost:9200"},
+				"ssl":   []any{},
+				"hosts": []any{"https://localhost:9200"},
 			},
-			expectedState: map[string]interface{}{
+			expectedState: map[string]any{
 				"id":    "test-output",
 				"name":  "Test Output",
 				"type":  "elasticsearch",
-				"hosts": []interface{}{"https://localhost:9200"},
+				"hosts": []any{"https://localhost:9200"},
 			},
 			expectError: false,
 		},
 		{
 			name: "ssl not an array - returns error",
-			rawState: map[string]interface{}{
+			rawState: map[string]any{
 				"id":    "test-output",
 				"name":  "Test Output",
 				"type":  "elasticsearch",
 				"ssl":   "invalid-type",
-				"hosts": []interface{}{"https://localhost:9200"},
+				"hosts": []any{"https://localhost:9200"},
 			},
 			expectedState: nil,
 			expectError:   true,
@@ -97,22 +98,22 @@ func TestOutputResourceUpgradeState(t *testing.T) {
 		},
 		{
 			name: "multiple ssl items - takes first item",
-			rawState: map[string]interface{}{
+			rawState: map[string]any{
 				"id":   "test-output",
 				"name": "Test Output",
 				"type": "elasticsearch",
-				"ssl": []interface{}{
-					map[string]interface{}{"certificate": "cert1"},
-					map[string]interface{}{"certificate": "cert2"},
+				"ssl": []any{
+					map[string]any{"certificate": "cert1"},
+					map[string]any{"certificate": "cert2"},
 				},
-				"hosts": []interface{}{"https://localhost:9200"},
+				"hosts": []any{"https://localhost:9200"},
 			},
-			expectedState: map[string]interface{}{
+			expectedState: map[string]any{
 				"id":    "test-output",
 				"name":  "Test Output",
 				"type":  "elasticsearch",
-				"ssl":   map[string]interface{}{"certificate": "cert1"},
-				"hosts": []interface{}{"https://localhost:9200"},
+				"ssl":   map[string]any{"certificate": "cert1"},
+				"hosts": []any{"https://localhost:9200"},
 			},
 			expectError: false,
 		},
@@ -145,11 +146,11 @@ func TestOutputResourceUpgradeState(t *testing.T) {
 			if tt.expectError {
 				require.True(t, resp.Diagnostics.HasError(), "Expected error but got none")
 				if tt.errorContains != "" {
-					errorSummary := ""
+					var errorSummary strings.Builder
 					for _, diag := range resp.Diagnostics.Errors() {
-						errorSummary += diag.Summary() + " " + diag.Detail()
+						errorSummary.WriteString(diag.Summary() + " " + diag.Detail())
 					}
-					assert.Contains(t, errorSummary, tt.errorContains)
+					assert.Contains(t, errorSummary.String(), tt.errorContains)
 				}
 				return
 			}
@@ -161,7 +162,7 @@ func TestOutputResourceUpgradeState(t *testing.T) {
 			require.NotNil(t, resp.DynamicValue, "DynamicValue should always be returned")
 
 			// Unmarshal the upgraded state to compare
-			var actualState map[string]interface{}
+			var actualState map[string]any
 			err = json.Unmarshal(resp.DynamicValue.JSON, &actualState)
 			require.NoError(t, err)
 

@@ -66,7 +66,7 @@ resource "elasticstack_kibana_dashboard" "test" {
         }
       ]
       legend = {
-        visible              = true
+        visibility           = "visible"
         inside               = true
         columns              = 2
         alignment            = "top_left"

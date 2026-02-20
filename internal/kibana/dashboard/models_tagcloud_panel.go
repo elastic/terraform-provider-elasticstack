@@ -17,6 +17,7 @@ func newTagcloudPanelConfigConverter() tagcloudPanelConfigConverter {
 	return tagcloudPanelConfigConverter{
 		lensPanelConfigConverter: lensPanelConfigConverter{
 			visualizationType: string(kbapi.TagcloudNoESQLTypeTagcloud),
+			hasTFPanelConfig:  func(pm panelModel) bool { return pm.TagcloudConfig != nil },
 		},
 	}
 }
@@ -42,7 +43,7 @@ func (c tagcloudPanelConfigConverter) populateFromAPIPanel(ctx context.Context, 
 		return nil
 	}
 
-	attrsMap, ok := attrs.(map[string]interface{})
+	attrsMap, ok := attrs.(map[string]any)
 	if !ok {
 		return nil
 	}
@@ -138,6 +139,7 @@ type fontSizeModel struct {
 
 func (m *tagcloudConfigModel) fromAPI(ctx context.Context, api kbapi.TagcloudNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
+	_ = ctx
 
 	m.Title = types.StringPointerValue(api.Title)
 	m.Description = types.StringPointerValue(api.Description)
@@ -274,12 +276,12 @@ func (m *tagcloudConfigModel) toAPI() (kbapi.TagcloudNoESQL, diag.Diagnostics) {
 			Min *float32 `json:"min,omitempty"`
 		}{}
 		if !m.FontSize.Min.IsNull() {
-			min := float32(m.FontSize.Min.ValueFloat64())
-			fontSize.Min = &min
+			minValue := float32(m.FontSize.Min.ValueFloat64())
+			fontSize.Min = &minValue
 		}
 		if !m.FontSize.Max.IsNull() {
-			max := float32(m.FontSize.Max.ValueFloat64())
-			fontSize.Max = &max
+			maxValue := float32(m.FontSize.Max.ValueFloat64())
+			fontSize.Max = &maxValue
 		}
 		api.FontSize = &fontSize
 	}

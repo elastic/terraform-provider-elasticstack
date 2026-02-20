@@ -115,13 +115,10 @@ Optional:
 <a id="nestedblock--actions--frequency"></a>
 ### Nested Schema for `actions.frequency`
 
-Required:
+Optional:
 
 - `notify_when` (String) Defines how often alerts generate actions. Valid values include: `onActionGroupChange`: Actions run when the alert status changes; `onActiveAlert`: Actions run when the alert becomes active and at each check interval while the rule conditions are met; `onThrottleInterval`: Actions run when the alert becomes active and at the interval specified in the throttle property while the rule conditions are met.
 - `summary` (Boolean) Indicates whether the action is a summary.
-
-Optional:
-
 - `throttle` (String) Defines how often an alert generates repeated actions. This custom action interval must be specified in seconds, minutes, hours, or days. For example, 10m or 1h. This property is applicable only if `notify_when` is `onThrottleInterval`.
 
 ## Import

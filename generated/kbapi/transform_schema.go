@@ -577,6 +577,7 @@ var transformers = []TransformFunc{
 	transformRemoveExamples,
 	transformRemoveUnusedComponents,
 	transformOmitEmptyNullable,
+	fixAlertingRuleParams,
 }
 
 //go:embed dashboards.yaml
@@ -906,7 +907,6 @@ func transformKibanaPaths(schema *Schema) {
 		"propertyName": "action_type_id",
 	})
 	schema.Components.Delete("schemas.Security_Exceptions_API_ExceptionListItemExpireTime.format")
-
 }
 
 func removeBrokenDiscriminator(schema *Schema) {
@@ -1299,4 +1299,9 @@ func transformRemoveUnusedComponents(schema *Schema) {
 			break
 		}
 	}
+}
+
+func fixAlertingRuleParams(schema *Schema) {
+	postEndpoint := schema.MustGetPath("/api/alerting/rule/{id}").MustGetEndpoint("post")
+	postEndpoint.CreateRef(schema, "Alerting_Rule_API_Params", "requestBody.content.application/json.schema.properties.params")
 }

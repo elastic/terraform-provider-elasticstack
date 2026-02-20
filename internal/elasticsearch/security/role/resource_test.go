@@ -14,72 +14,72 @@ import (
 func TestV0ToV1(t *testing.T) {
 	tests := []struct {
 		name          string
-		input         map[string]interface{}
-		expected      map[string]interface{}
+		input         map[string]any
+		expected      map[string]any
 		expectError   bool
 		errorContains string
 	}{
 		{
 			name: "empty_global_and_metadata_removed",
-			input: map[string]interface{}{
+			input: map[string]any{
 				"name":        "test-role",
 				"description": "Test role",
 				"global":      "",
 				"metadata":    "",
 				"cluster":     []string{"all"},
 			},
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"name":        "test-role",
 				"description": "Test role",
-				"cluster":     []interface{}{"all"},
+				"cluster":     []any{"all"},
 			},
 		},
 		{
 			name: "non_empty_global_and_metadata_preserved",
-			input: map[string]interface{}{
+			input: map[string]any{
 				"name":        "test-role",
 				"description": "Test role",
 				"global":      `{"profile": {"privileges": ["manage"]}}`,
 				"metadata":    `{"version": 1}`,
 				"cluster":     []string{"all"},
 			},
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"name":        "test-role",
 				"description": "Test role",
 				"global":      `{"profile": {"privileges": ["manage"]}}`,
 				"metadata":    `{"version": 1}`,
-				"cluster":     []interface{}{"all"},
+				"cluster":     []any{"all"},
 			},
 		},
 		{
 			name: "empty_query_in_indices_removed",
-			input: map[string]interface{}{
+			input: map[string]any{
 				"name":        "test-role",
 				"description": "Test role",
-				"indices": []interface{}{
-					map[string]interface{}{
+				"indices": []any{
+					map[string]any{
 						"names":      []string{"index1", "index2"},
 						"privileges": []string{"read"},
 						"query":      "",
 					},
-					map[string]interface{}{
+					map[string]any{
 						"names":      []string{"index3"},
 						"privileges": []string{"write"},
 						"query":      `{"match": {"field": "value"}}`,
 					},
 				},
 			},
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"name":        "test-role",
 				"description": "Test role",
-				"indices": []interface{}{
-					map[string]interface{}{
-						"names":      []interface{}{"index1", "index2"},
-						"privileges": []interface{}{"read"},
+				"indices": []any{
+					map[string]any{
+						"names":      []any{"index1", "index2"},
+						"privileges": []any{"read"},
 					},
-					map[string]interface{}{
-						"names":      []interface{}{"index3"},
-						"privileges": []interface{}{"write"},
+					map[string]any{
+						"names":      []any{"index3"},
+						"privileges": []any{"write"},
 						"query":      `{"match": {"field": "value"}}`,
 					},
 				},
@@ -87,17 +87,17 @@ func TestV0ToV1(t *testing.T) {
 		},
 		{
 			name: "empty_query_in_remote_indices_removed",
-			input: map[string]interface{}{
+			input: map[string]any{
 				"name":        "test-role",
 				"description": "Test role",
-				"remote_indices": []interface{}{
-					map[string]interface{}{
+				"remote_indices": []any{
+					map[string]any{
 						"clusters":   []string{"cluster1"},
 						"names":      []string{"remote-index1"},
 						"privileges": []string{"read"},
 						"query":      "",
 					},
-					map[string]interface{}{
+					map[string]any{
 						"clusters":   []string{"cluster2"},
 						"names":      []string{"remote-index2"},
 						"privileges": []string{"write"},
@@ -105,19 +105,19 @@ func TestV0ToV1(t *testing.T) {
 					},
 				},
 			},
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"name":        "test-role",
 				"description": "Test role",
-				"remote_indices": []interface{}{
-					map[string]interface{}{
-						"clusters":   []interface{}{"cluster1"},
-						"names":      []interface{}{"remote-index1"},
-						"privileges": []interface{}{"read"},
+				"remote_indices": []any{
+					map[string]any{
+						"clusters":   []any{"cluster1"},
+						"names":      []any{"remote-index1"},
+						"privileges": []any{"read"},
 					},
-					map[string]interface{}{
-						"clusters":   []interface{}{"cluster2"},
-						"names":      []interface{}{"remote-index2"},
-						"privileges": []interface{}{"write"},
+					map[string]any{
+						"clusters":   []any{"cluster2"},
+						"names":      []any{"remote-index2"},
+						"privileges": []any{"write"},
 						"query":      `{"term": {"status": "active"}}`,
 					},
 				},
@@ -125,21 +125,21 @@ func TestV0ToV1(t *testing.T) {
 		},
 		{
 			name: "all_empty_fields_removed_comprehensive",
-			input: map[string]interface{}{
+			input: map[string]any{
 				"name":        "test-role",
 				"description": "Test role",
 				"global":      "",
 				"metadata":    "",
 				"cluster":     []string{"all"},
-				"indices": []interface{}{
-					map[string]interface{}{
+				"indices": []any{
+					map[string]any{
 						"names":      []string{"index1"},
 						"privileges": []string{"read"},
 						"query":      "",
 					},
 				},
-				"remote_indices": []interface{}{
-					map[string]interface{}{
+				"remote_indices": []any{
+					map[string]any{
 						"clusters":   []string{"cluster1"},
 						"names":      []string{"remote-index1"},
 						"privileges": []string{"read"},
@@ -147,74 +147,74 @@ func TestV0ToV1(t *testing.T) {
 					},
 				},
 			},
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"name":        "test-role",
 				"description": "Test role",
-				"cluster":     []interface{}{"all"},
-				"indices": []interface{}{
-					map[string]interface{}{
-						"names":      []interface{}{"index1"},
-						"privileges": []interface{}{"read"},
+				"cluster":     []any{"all"},
+				"indices": []any{
+					map[string]any{
+						"names":      []any{"index1"},
+						"privileges": []any{"read"},
 					},
 				},
-				"remote_indices": []interface{}{
-					map[string]interface{}{
-						"clusters":   []interface{}{"cluster1"},
-						"names":      []interface{}{"remote-index1"},
-						"privileges": []interface{}{"read"},
+				"remote_indices": []any{
+					map[string]any{
+						"clusters":   []any{"cluster1"},
+						"names":      []any{"remote-index1"},
+						"privileges": []any{"read"},
 					},
 				},
 			},
 		},
 		{
 			name: "no_indices_or_remote_indices",
-			input: map[string]interface{}{
+			input: map[string]any{
 				"name":        "test-role",
 				"description": "Test role",
 				"global":      "",
 				"metadata":    "",
 				"cluster":     []string{"all"},
 			},
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"name":        "test-role",
 				"description": "Test role",
-				"cluster":     []interface{}{"all"},
+				"cluster":     []any{"all"},
 			},
 		},
 		{
 			name: "index_item_not_map",
-			input: map[string]interface{}{
+			input: map[string]any{
 				"name":        "test-role",
 				"description": "Test role",
-				"indices": []interface{}{
+				"indices": []any{
 					"not-a-map",
-					map[string]interface{}{
+					map[string]any{
 						"names":      []string{"index1"},
 						"privileges": []string{"read"},
 						"query":      "",
 					},
 				},
 			},
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"name":        "test-role",
 				"description": "Test role",
-				"indices": []interface{}{
+				"indices": []any{
 					"not-a-map", // Should be preserved as-is if not a map
-					map[string]interface{}{
-						"names":      []interface{}{"index1"},
-						"privileges": []interface{}{"read"},
+					map[string]any{
+						"names":      []any{"index1"},
+						"privileges": []any{"read"},
 					},
 				},
 			},
 		},
 		{
 			name: "remote_index_item_not_map",
-			input: map[string]interface{}{
+			input: map[string]any{
 				"name":        "test-role",
 				"description": "Test role",
-				"remote_indices": []interface{}{
+				"remote_indices": []any{
 					"not-a-map",
-					map[string]interface{}{
+					map[string]any{
 						"clusters":   []string{"cluster1"},
 						"names":      []string{"remote-index1"},
 						"privileges": []string{"read"},
@@ -222,32 +222,32 @@ func TestV0ToV1(t *testing.T) {
 					},
 				},
 			},
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"name":        "test-role",
 				"description": "Test role",
-				"remote_indices": []interface{}{
+				"remote_indices": []any{
 					"not-a-map", // Should be preserved as-is if not a map
-					map[string]interface{}{
-						"clusters":   []interface{}{"cluster1"},
-						"names":      []interface{}{"remote-index1"},
-						"privileges": []interface{}{"read"},
+					map[string]any{
+						"clusters":   []any{"cluster1"},
+						"names":      []any{"remote-index1"},
+						"privileges": []any{"read"},
 					},
 				},
 			},
 		},
 		{
 			name: "nil_global_and_metadata_removed",
-			input: map[string]interface{}{
+			input: map[string]any{
 				"name":        "test-role",
 				"description": "Test role",
 				"global":      nil,
 				"metadata":    nil,
 				"cluster":     []string{"all"},
 			},
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"name":        "test-role",
 				"description": "Test role",
-				"cluster":     []interface{}{"all"},
+				"cluster":     []any{"all"},
 			},
 		},
 	}
@@ -293,7 +293,7 @@ func TestV0ToV1(t *testing.T) {
 			require.NotNil(t, resp.DynamicValue)
 			require.NotNil(t, resp.DynamicValue.JSON)
 
-			var actualState map[string]interface{}
+			var actualState map[string]any
 			err = json.Unmarshal(resp.DynamicValue.JSON, &actualState)
 			require.NoError(t, err)
 

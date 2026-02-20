@@ -18,7 +18,7 @@ func newFleetConfigFromSDK(d *schema.ResourceData, kibanaCfg kibanaOapiConfig) (
 
 	// Set variables from resource config.
 	if fleetDataRaw, ok := d.GetOk("fleet"); ok {
-		fleetData, ok := fleetDataRaw.([]interface{})[0].(map[string]any)
+		fleetData, ok := fleetDataRaw.([]any)[0].(map[string]any)
 		if !ok {
 			diags := sdkdiags.Diagnostics{
 				sdkdiags.Diagnostic{
@@ -41,7 +41,10 @@ func newFleetConfigFromSDK(d *schema.ResourceData, kibanaCfg kibanaOapiConfig) (
 		if v, ok := fleetData["api_key"].(string); ok && v != "" {
 			config.APIKey = v
 		}
-		if v, ok := fleetData["ca_certs"].([]interface{}); ok && len(v) > 0 {
+		if v, ok := fleetData["bearer_token"].(string); ok && v != "" {
+			config.BearerToken = v
+		}
+		if v, ok := fleetData["ca_certs"].([]any); ok && len(v) > 0 {
 			for _, elem := range v {
 				if vStr, elemOk := elem.(string); elemOk {
 					config.CACerts = append(config.CACerts, vStr)
@@ -72,6 +75,9 @@ func newFleetConfigFromFramework(ctx context.Context, cfg ProviderConfiguration,
 		}
 		if fleetCfg.APIKey.ValueString() != "" {
 			config.APIKey = fleetCfg.APIKey.ValueString()
+		}
+		if fleetCfg.BearerToken.ValueString() != "" {
+			config.BearerToken = fleetCfg.BearerToken.ValueString()
 		}
 
 		if !fleetCfg.Insecure.IsNull() && !fleetCfg.Insecure.IsUnknown() {
@@ -104,6 +110,9 @@ func (c fleetConfig) withEnvironmentOverrides() fleetConfig {
 	}
 	if v, ok := os.LookupEnv("FLEET_API_KEY"); ok {
 		c.APIKey = v
+	}
+	if v, ok := os.LookupEnv("FLEET_BEARER_TOKEN"); ok {
+		c.BearerToken = v
 	}
 	if v, ok := os.LookupEnv("FLEET_CA_CERTS"); ok {
 		c.CACerts = strings.Split(v, ",")

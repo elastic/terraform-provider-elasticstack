@@ -1,12 +1,12 @@
-package datafeed_state
+package datafeedstate
 
 import (
 	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -14,9 +14,9 @@ import (
 )
 
 type MLDatafeedStateData struct {
-	Id                      types.String         `tfsdk:"id"`
+	ID                      types.String         `tfsdk:"id"`
 	ElasticsearchConnection types.List           `tfsdk:"elasticsearch_connection"`
-	DatafeedId              types.String         `tfsdk:"datafeed_id"`
+	DatafeedID              types.String         `tfsdk:"datafeed_id"`
 	State                   types.String         `tfsdk:"state"`
 	Force                   types.Bool           `tfsdk:"force"`
 	Timeout                 customtypes.Duration `tfsdk:"datafeed_timeout"`
@@ -27,7 +27,7 @@ type MLDatafeedStateData struct {
 
 func timeInSameLocation(ms int64, source timetypes.RFC3339) (time.Time, diag.Diagnostics) {
 	t := time.UnixMilli(ms)
-	if !utils.IsKnown(source) {
+	if !typeutils.IsKnown(source) {
 		return t, nil
 	}
 
@@ -45,7 +45,10 @@ func (d *MLDatafeedStateData) SetStartAndEndFromAPI(datafeedStats *models.Datafe
 
 	if datafeed.State(datafeedStats.State) == datafeed.StateStarted {
 		if datafeedStats.RunningState == nil {
-			diags.AddWarning("Running state was empty for a started datafeed", "The Elasticsearch API returned an empty running state for a Datafeed which was successfully started. Ignoring start and end response values.")
+			diags.AddWarning(
+				"Running state was empty for a started datafeed",
+				"The Elasticsearch API returned an empty running state for a Datafeed which was successfully started. Ignoring start and end response values.",
+			)
 			return diags
 		}
 

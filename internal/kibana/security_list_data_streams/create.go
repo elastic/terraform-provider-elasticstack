@@ -1,14 +1,14 @@
-package security_list_data_streams
+package securitylistdatastreams
 
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
 func (r *securityListDataStreamsResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var plan SecurityListDataStreamsModel
+	var plan Model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -23,14 +23,14 @@ func (r *securityListDataStreamsResource) Create(ctx context.Context, req resour
 
 	// Create the list data streams
 	spaceID := plan.SpaceID.ValueString()
-	_, diags := kibana_oapi.CreateListIndex(ctx, client, spaceID)
+	_, diags := kibanaoapi.CreateListIndex(ctx, client, spaceID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	// Read the data streams to get the actual state
-	listIndex, listItemIndex, diags := kibana_oapi.ReadListIndex(ctx, client, spaceID)
+	listIndex, listItemIndex, diags := kibanaoapi.ReadListIndex(ctx, client, spaceID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

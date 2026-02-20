@@ -22,7 +22,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *outputResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *outputResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = getSchema()
 }
 
@@ -92,7 +92,7 @@ func getSchema() schema.Schema {
 				Sensitive:   true,
 			},
 			"space_ids": schema.SetAttribute{
-				Description: "The Kibana space IDs where this output is available. When set, the output will be created and managed within the specified space. Note: The order of space IDs does not matter as this is a set.",
+				Description: spaceIDsDescription,
 				ElementType: types.StringType,
 				Optional:    true,
 				Computed:    true,

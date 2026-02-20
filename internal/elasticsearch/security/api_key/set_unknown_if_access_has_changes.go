@@ -1,4 +1,4 @@
-package api_key
+package apikey
 
 import (
 	"context"
@@ -16,7 +16,7 @@ func SetUnknownIfAccessHasChanges() planmodifier.String {
 
 type setUnknownIfAccessHasChanges struct{}
 
-func (s setUnknownIfAccessHasChanges) Description(ctx context.Context) string {
+func (s setUnknownIfAccessHasChanges) Description(_ context.Context) string {
 	return "Sets the attribute value to unknown if the access attribute has changed for cross-cluster API keys"
 }
 

@@ -1,4 +1,4 @@
-package integration_policy
+package integrationpolicy
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 func TestOutputIdHandling(t *testing.T) {
 	t.Run("populateFromAPI", func(t *testing.T) {
 		model := &integrationPolicyModel{}
-		outputId := "test-output-id"
+		outputID := "test-output-id"
 		data := &kbapi.PackagePolicy{
 			Id:      "test-id",
 			Name:    "test-policy",
@@ -36,7 +36,7 @@ func TestOutputIdHandling(t *testing.T) {
 				Name:    "test-integration",
 				Version: "1.0.0",
 			},
-			OutputId: &outputId,
+			OutputId: &outputID,
 		}
 
 		diags := model.populateFromAPI(context.Background(), nil, data)
@@ -53,8 +53,8 @@ func TestOutputIdHandling(t *testing.T) {
 		}
 
 		feat := features{
-			SupportsPolicyIds: true,
-			SupportsOutputId:  true,
+			SupportsPolicyIDs: true,
+			SupportsOutputID:  true,
 		}
 
 		result, diags := model.toAPIModel(context.Background(), feat)
@@ -72,8 +72,8 @@ func TestOutputIdHandling(t *testing.T) {
 		}
 
 		feat := features{
-			SupportsPolicyIds: true,
-			SupportsOutputId:  false, // Simulate unsupported version
+			SupportsPolicyIDs: true,
+			SupportsOutputID:  false, // Simulate unsupported version
 		}
 
 		_, diags := model.toAPIModel(context.Background(), feat)

@@ -12,7 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func GetEsFWConnectionBlock(keyName string, isProviderConfiguration bool) fwschema.Block {
+func GetEsFWConnectionBlock(isProviderConfiguration bool) fwschema.Block {
 	usernamePath := path.MatchRelative().AtParent().AtName("username")
 	passwordPath := path.MatchRelative().AtParent().AtName("password")
 	apiKeyPath := path.MatchRelative().AtParent().AtName("api_key")
@@ -140,6 +140,8 @@ func GetEsFWConnectionBlock(keyName string, isProviderConfiguration bool) fwsche
 func GetKbFWConnectionBlock() fwschema.Block {
 	usernamePath := path.MatchRelative().AtParent().AtName("username")
 	passwordPath := path.MatchRelative().AtParent().AtName("password")
+	apiKeyPath := path.MatchRelative().AtParent().AtName("api_key")
+	bearerTokenPath := path.MatchRelative().AtParent().AtName("bearer_token")
 
 	return fwschema.ListNestedBlock{
 		MarkdownDescription: "Kibana connection configuration block.",
@@ -150,7 +152,15 @@ func GetKbFWConnectionBlock() fwschema.Block {
 					Optional:            true,
 					Sensitive:           true,
 					Validators: []validator.String{
-						stringvalidator.ConflictsWith(usernamePath, passwordPath),
+						stringvalidator.ConflictsWith(usernamePath, passwordPath, bearerTokenPath),
+					},
+				},
+				"bearer_token": fwschema.StringAttribute{
+					MarkdownDescription: "Bearer Token to use for authentication to Kibana",
+					Optional:            true,
+					Sensitive:           true,
+					Validators: []validator.String{
+						stringvalidator.ConflictsWith(usernamePath, passwordPath, apiKeyPath),
 					},
 				},
 				"username": fwschema.StringAttribute{
@@ -190,6 +200,8 @@ func GetKbFWConnectionBlock() fwschema.Block {
 func GetFleetFWConnectionBlock() fwschema.Block {
 	usernamePath := path.MatchRelative().AtParent().AtName("username")
 	passwordPath := path.MatchRelative().AtParent().AtName("password")
+	apiKeyPath := path.MatchRelative().AtParent().AtName("api_key")
+	bearerTokenPath := path.MatchRelative().AtParent().AtName("bearer_token")
 
 	return fwschema.ListNestedBlock{
 		MarkdownDescription: "Fleet connection configuration block.",
@@ -211,8 +223,15 @@ func GetFleetFWConnectionBlock() fwschema.Block {
 					Optional:            true,
 					Sensitive:           true,
 					Validators: []validator.String{
-						stringvalidator.ConflictsWith(usernamePath),
-						stringvalidator.ConflictsWith(passwordPath),
+						stringvalidator.ConflictsWith(usernamePath, passwordPath, bearerTokenPath),
+					},
+				},
+				"bearer_token": fwschema.StringAttribute{
+					MarkdownDescription: "Bearer Token to use for authentication to Fleet.",
+					Optional:            true,
+					Sensitive:           true,
+					Validators: []validator.String{
+						stringvalidator.ConflictsWith(usernamePath, passwordPath, apiKeyPath),
 					},
 				},
 				"endpoint": fwschema.StringAttribute{
@@ -252,10 +271,10 @@ func GetEsConnectionSchema(keyName string, isProviderConfiguration bool) *schema
 	usernameRequiredWithValidation := []string{passwordPath}
 	passwordRequiredWithValidation := []string{usernamePath}
 
-	withEnvDefault := func(key string, dv interface{}) schema.SchemaDefaultFunc { return nil }
+	withEnvDefault := func(_ string, _ any) schema.SchemaDefaultFunc { return nil }
 
 	if isProviderConfiguration {
-		withEnvDefault = func(key string, dv interface{}) schema.SchemaDefaultFunc { return schema.EnvDefaultFunc(key, dv) }
+		withEnvDefault = schema.EnvDefaultFunc
 
 		// RequireWith validation isn't compatible when used in conjunction with DefaultFunc
 		usernameRequiredWithValidation = nil
@@ -379,7 +398,7 @@ func GetEsConnectionSchema(keyName string, isProviderConfiguration bool) *schema
 }
 
 func GetKibanaConnectionSchema() *schema.Schema {
-	withEnvDefault := func(key string, dv interface{}) schema.SchemaDefaultFunc { return nil }
+	withEnvDefault := func(_ string, _ any) schema.SchemaDefaultFunc { return nil }
 	return &schema.Schema{
 		Description: "Kibana connection configuration block.",
 		Type:        schema.TypeList,
@@ -393,7 +412,15 @@ func GetKibanaConnectionSchema() *schema.Schema {
 					Optional:      true,
 					Sensitive:     true,
 					DefaultFunc:   withEnvDefault("KIBANA_API_KEY", nil),
-					ConflictsWith: []string{"kibana.0.password", "kibana.0.username"},
+					ConflictsWith: []string{"kibana.0.password", "kibana.0.username", "kibana.0.bearer_token"},
+				},
+				"bearer_token": {
+					Description:   "Bearer Token to use for authentication to Kibana",
+					Type:          schema.TypeString,
+					Optional:      true,
+					Sensitive:     true,
+					DefaultFunc:   withEnvDefault("KIBANA_BEARER_TOKEN", nil),
+					ConflictsWith: []string{"kibana.0.password", "kibana.0.username", "kibana.0.api_key"},
 				},
 				"username": {
 					Description:  "Username to use for API authentication to Kibana.",
@@ -459,10 +486,18 @@ func GetFleetConnectionSchema() *schema.Schema {
 					RequiredWith: []string{"fleet.0.username"},
 				},
 				"api_key": {
-					Description: "API Key to use for authentication to Fleet.",
-					Type:        schema.TypeString,
-					Optional:    true,
-					Sensitive:   true,
+					Description:   "API Key to use for authentication to Fleet.",
+					Type:          schema.TypeString,
+					Optional:      true,
+					Sensitive:     true,
+					ConflictsWith: []string{"fleet.0.username", "fleet.0.password", "fleet.0.bearer_token"},
+				},
+				"bearer_token": {
+					Description:   "Bearer Token to use for authentication to Fleet.",
+					Type:          schema.TypeString,
+					Optional:      true,
+					Sensitive:     true,
+					ConflictsWith: []string{"fleet.0.username", "fleet.0.password", "fleet.0.api_key"},
 				},
 				"endpoint": {
 					Description: "The Fleet server where the terraform provider will point to, this must include the http(s) schema and port number.",

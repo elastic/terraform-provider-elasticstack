@@ -61,7 +61,7 @@ func DataSourceProcessorUserAgent() *schema.Resource {
 	}
 
 	return &schema.Resource{
-		Description: "Helper data source which can be used to create the configuration for a user agent processor. This processor extracts details from the user agent string a browser sends with its web requests. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/user-agent-processor.html",
+		Description: processorUserAgentDataSourceDescription,
 
 		ReadContext: dataSourceProcessorUserAgentRead,
 
@@ -69,7 +69,7 @@ func DataSourceProcessorUserAgent() *schema.Resource {
 	}
 }
 
-func dataSourceProcessorUserAgentRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func dataSourceProcessorUserAgentRead(_ context.Context, d *schema.ResourceData, _ any) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	processor := &models.ProcessorUserAgent{}
@@ -96,15 +96,15 @@ func dataSourceProcessorUserAgentRead(ctx context.Context, d *schema.ResourceDat
 		processor.ExtractDeviceType = &dev
 	}
 
-	processorJson, err := json.MarshalIndent(map[string]*models.ProcessorUserAgent{"user_agent": processor}, "", " ")
+	processorJSON, err := json.MarshalIndent(map[string]*models.ProcessorUserAgent{"user_agent": processor}, "", " ")
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("json", string(processorJson)); err != nil {
+	if err := d.Set("json", string(processorJSON)); err != nil {
 		return diag.FromErr(err)
 	}
 
-	hash, err := utils.StringToHash(string(processorJson))
+	hash, err := schemautil.StringToHash(string(processorJSON))
 	if err != nil {
 		return diag.FromErr(err)
 	}

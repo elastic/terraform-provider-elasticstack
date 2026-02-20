@@ -16,14 +16,14 @@ func TestAccDataSourceIngestProcessorRename(t *testing.T) {
 				Config: testAccDataSourceIngestProcessorRename,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_rename.test", "field", "provider"),
-					CheckResourceJson("data.elasticstack_elasticsearch_ingest_processor_rename.test", "json", expectedJsonRename),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_rename.test", "json", expectedJSONRename),
 				),
 			},
 		},
 	})
 }
 
-const expectedJsonRename = `{
+const expectedJSONRename = `{
 	"rename": {
 		"field": "provider",
 		"target_field": "cloud.provider",

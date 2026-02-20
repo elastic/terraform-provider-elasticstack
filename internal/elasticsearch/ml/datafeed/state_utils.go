@@ -21,8 +21,8 @@ const (
 )
 
 // GetDatafeedState returns the current state of a datafeed
-func GetDatafeedState(ctx context.Context, client *clients.ApiClient, datafeedId string) (*State, diag.Diagnostics) {
-	statsResponse, diags := elasticsearch.GetDatafeedStats(ctx, client, datafeedId)
+func GetDatafeedState(ctx context.Context, client *clients.APIClient, datafeedID string) (*State, diag.Diagnostics) {
+	statsResponse, diags := elasticsearch.GetDatafeedStats(ctx, client, datafeedID)
 	if diags.HasError() {
 		return nil, diags
 	}
@@ -43,15 +43,15 @@ var terminalDatafeedStates = map[State]struct{}{
 var errDatafeedInUndesiredState = errors.New("datafeed stuck in undesired state")
 
 // WaitForDatafeedState waits for a datafeed to reach the desired state
-func WaitForDatafeedState(ctx context.Context, client *clients.ApiClient, datafeedId string, desiredState State) (bool, diag.Diagnostics) {
+func WaitForDatafeedState(ctx context.Context, client *clients.APIClient, datafeedID string, desiredState State) (bool, diag.Diagnostics) {
 	stateChecker := func(ctx context.Context) (bool, error) {
-		currentState, diags := GetDatafeedState(ctx, client, datafeedId)
+		currentState, diags := GetDatafeedState(ctx, client, datafeedID)
 		if diags.HasError() {
 			return false, diagutil.FwDiagsAsError(diags)
 		}
 
 		if currentState == nil {
-			return false, fmt.Errorf("datafeed %s not found", datafeedId)
+			return false, fmt.Errorf("datafeed %s not found", datafeedID)
 		}
 
 		if *currentState == desiredState {
@@ -66,7 +66,7 @@ func WaitForDatafeedState(ctx context.Context, client *clients.ApiClient, datafe
 		return false, nil
 	}
 
-	err := asyncutils.WaitForStateTransition(ctx, "datafeed", datafeedId, stateChecker)
+	err := asyncutils.WaitForStateTransition(ctx, "datafeed", datafeedID, stateChecker)
 	if errors.Is(err, errDatafeedInUndesiredState) {
 		return false, nil
 	}

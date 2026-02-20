@@ -43,7 +43,7 @@ func CheckErrorFromFW(res *esapi.Response, errMsg string) fwdiag.Diagnostics {
 	return diags
 }
 
-func CheckHttpError(res *http.Response, errMsg string) sdkdiag.Diagnostics {
+func CheckHTTPError(res *http.Response, errMsg string) sdkdiag.Diagnostics {
 	var diags sdkdiag.Diagnostics
 
 	if res.StatusCode >= 400 {
@@ -61,7 +61,7 @@ func CheckHttpError(res *http.Response, errMsg string) sdkdiag.Diagnostics {
 	return diags
 }
 
-func CheckHttpErrorFromFW(res *http.Response, errMsg string) fwdiag.Diagnostics {
+func CheckHTTPErrorFromFW(res *http.Response, errMsg string) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 
 	if res.StatusCode >= 400 {

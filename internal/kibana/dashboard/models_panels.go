@@ -6,19 +6,26 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 type panelModel struct {
-	Type           types.String         `tfsdk:"type"`
-	Grid           panelGridModel       `tfsdk:"grid"`
-	ID             types.String         `tfsdk:"id"`
-	MarkdownConfig *markdownConfigModel `tfsdk:"markdown_config"`
-	XYChartConfig  *xyChartConfigModel  `tfsdk:"xy_chart_config"`
-	TagcloudConfig *tagcloudConfigModel `tfsdk:"tagcloud_config"`
-	ConfigJSON     jsontypes.Normalized `tfsdk:"config_json"`
+	Type               types.String             `tfsdk:"type"`
+	Grid               panelGridModel           `tfsdk:"grid"`
+	ID                 types.String             `tfsdk:"id"`
+	MarkdownConfig     *markdownConfigModel     `tfsdk:"markdown_config"`
+	XYChartConfig      *xyChartConfigModel      `tfsdk:"xy_chart_config"`
+	DatatableConfig    *datatableConfigModel    `tfsdk:"datatable_config"`
+	TagcloudConfig     *tagcloudConfigModel     `tfsdk:"tagcloud_config"`
+	MetricChartConfig  *metricChartConfigModel  `tfsdk:"metric_chart_config"`
+	GaugeConfig        *gaugeConfigModel        `tfsdk:"gauge_config"`
+	LegacyMetricConfig *legacyMetricConfigModel `tfsdk:"legacy_metric_config"`
+	RegionMapConfig    *regionMapConfigModel    `tfsdk:"region_map_config"`
+	HeatmapConfig      *heatmapConfigModel      `tfsdk:"heatmap_config"`
+	ConfigJSON         jsontypes.Normalized     `tfsdk:"config_json"`
 }
 
 type panelGridModel struct {
@@ -41,16 +48,22 @@ type sectionGridModel struct {
 }
 
 type panelConfigConverter interface {
-	handlesAPIPanelConfig(string, kbapi.DashboardPanelItem_Config) bool
-	handlesTFPanelConfig(pm panelModel) bool
-	populateFromAPIPanel(context.Context, *panelModel, kbapi.DashboardPanelItem_Config) diag.Diagnostics
-	mapPanelToAPI(panelModel, *kbapi.DashboardPanelItem_Config) diag.Diagnostics
+	handlesAPIPanelConfig(ctx *panelModel, panelType string, config kbapi.DashboardPanelItem_Config) bool
+	handlesTFPanelConfig(tfModel panelModel) bool
+	populateFromAPIPanel(ctx context.Context, tfModel *panelModel, config kbapi.DashboardPanelItem_Config) diag.Diagnostics
+	mapPanelToAPI(tfModel panelModel, config *kbapi.DashboardPanelItem_Config) diag.Diagnostics
 }
 
 var panelConfigConverters = []panelConfigConverter{
 	markdownPanelConfigConverter{},
 	newXYChartPanelConfigConverter(),
+	newDatatablePanelConfigConverter(),
 	newTagcloudPanelConfigConverter(),
+	newHeatmapPanelConfigConverter(),
+	newRegionMapPanelConfigConverter(),
+	newLegacyMetricPanelConfigConverter(),
+	newGaugePanelConfigConverter(),
+	newMetricChartPanelConfigConverter(),
 }
 
 func (m *dashboardModel) mapPanelsFromAPI(ctx context.Context, apiPanels *kbapi.DashboardPanels) ([]panelModel, []sectionModel, diag.Diagnostics) {
@@ -66,7 +79,13 @@ func (m *dashboardModel) mapPanelsFromAPI(ctx context.Context, apiPanels *kbapi.
 		// Try to handle as DashboardPanelItem (requires type)
 		panelItem, err := item.AsDashboardPanelItem()
 		if err == nil && panelItem.Type != "" {
-			panel, d := m.mapPanelFromAPI(ctx, panelItem)
+			tfPanelIndex := len(panels)
+			var tfPanel *panelModel
+			if tfPanelIndex < len(m.Panels) {
+				tfPanel = &m.Panels[tfPanelIndex]
+			}
+
+			panel, d := m.mapPanelFromAPI(ctx, tfPanel, panelItem)
 			diags.Append(d...)
 			if diags.HasError() {
 				return nil, nil, diags
@@ -79,7 +98,12 @@ func (m *dashboardModel) mapPanelsFromAPI(ctx context.Context, apiPanels *kbapi.
 		// Try to handle as DashboardPanelSection
 		section, err := item.AsDashboardPanelSection()
 		if err == nil {
-			sectionModel, d := m.mapSectionFromAPI(ctx, section)
+			tfSectionIndex := len(sections)
+			var tfSection *sectionModel
+			if tfSectionIndex < len(m.Sections) {
+				tfSection = &m.Sections[tfSectionIndex]
+			}
+			sectionModel, d := m.mapSectionFromAPI(ctx, tfSection, section)
 			diags.Append(d...)
 			if diags.HasError() {
 				return nil, nil, diags
@@ -91,7 +115,7 @@ func (m *dashboardModel) mapPanelsFromAPI(ctx context.Context, apiPanels *kbapi.
 	return panels, sections, diags
 }
 
-func (m *dashboardModel) mapSectionFromAPI(ctx context.Context, section kbapi.DashboardPanelSection) (sectionModel, diag.Diagnostics) {
+func (m *dashboardModel) mapSectionFromAPI(ctx context.Context, tfSection *sectionModel, section kbapi.DashboardPanelSection) (sectionModel, diag.Diagnostics) {
 	sm := sectionModel{
 		Title:     types.StringValue(section.Title),
 		Collapsed: types.BoolPointerValue(section.Collapsed),
@@ -106,7 +130,13 @@ func (m *dashboardModel) mapSectionFromAPI(ctx context.Context, section kbapi.Da
 	if section.Panels != nil {
 		var innerPanels []panelModel
 		for _, p := range *section.Panels {
-			pm, d := m.mapPanelFromAPI(ctx, p)
+			tfPanelIndex := len(innerPanels)
+			var tfPanel *panelModel
+			if tfSection != nil && tfPanelIndex < len(tfSection.Panels) {
+				tfPanel = &tfSection.Panels[tfPanelIndex]
+			}
+
+			pm, d := m.mapPanelFromAPI(ctx, tfPanel, p)
 			diags.Append(d...)
 			if diags.HasError() {
 				return sectionModel{}, diags
@@ -119,7 +149,7 @@ func (m *dashboardModel) mapSectionFromAPI(ctx context.Context, section kbapi.Da
 	return sm, diags
 }
 
-func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, panelItem kbapi.DashboardPanelItem) (panelModel, diag.Diagnostics) {
+func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelModel, panelItem kbapi.DashboardPanelItem) (panelModel, diag.Diagnostics) {
 	pm := panelModel{
 		Type: types.StringValue(panelItem.Type),
 		Grid: panelGridModel{
@@ -146,7 +176,7 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, panelItem kbapi.Da
 
 	var diags diag.Diagnostics
 	for _, converter := range panelConfigConverters {
-		if converter.handlesAPIPanelConfig(panelItem.Type, panelItem.Config) {
+		if converter.handlesAPIPanelConfig(tfPanel, panelItem.Type, panelItem.Config) {
 			d := converter.populateFromAPIPanel(ctx, &pm, panelItem.Config)
 			diags.Append(d...)
 			if diags.HasError() {
@@ -203,11 +233,11 @@ func (m *dashboardModel) panelsToAPI() (*kbapi.DashboardPanels, diag.Diagnostics
 			},
 		}
 
-		if utils.IsKnown(sm.Collapsed) {
-			section.Collapsed = utils.Pointer(sm.Collapsed.ValueBool())
+		if typeutils.IsKnown(sm.Collapsed) {
+			section.Collapsed = schemautil.Pointer(sm.Collapsed.ValueBool())
 		}
-		if utils.IsKnown(sm.ID) {
-			section.Uid = utils.Pointer(sm.ID.ValueString())
+		if typeutils.IsKnown(sm.ID) {
+			section.Uid = schemautil.Pointer(sm.ID.ValueString())
 		}
 
 		if len(sm.Panels) > 0 {
@@ -250,17 +280,17 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 		},
 	}
 
-	if utils.IsKnown(pm.Grid.W) {
+	if typeutils.IsKnown(pm.Grid.W) {
 		w := float32(pm.Grid.W.ValueInt64())
 		panelItem.Grid.W = &w
 	}
-	if utils.IsKnown(pm.Grid.H) {
+	if typeutils.IsKnown(pm.Grid.H) {
 		h := float32(pm.Grid.H.ValueInt64())
 		panelItem.Grid.H = &h
 	}
 
-	if utils.IsKnown(pm.ID) {
-		panelItem.Uid = utils.Pointer(pm.ID.ValueString())
+	if typeutils.IsKnown(pm.ID) {
+		panelItem.Uid = schemautil.Pointer(pm.ID.ValueString())
 	}
 
 	var diags diag.Diagnostics
@@ -278,8 +308,8 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 		}
 	}
 
-	if !panelConfigHandled && utils.IsKnown(pm.ConfigJSON) {
-		var configMap map[string]interface{}
+	if !panelConfigHandled && typeutils.IsKnown(pm.ConfigJSON) {
+		var configMap map[string]any
 		diags.Append(pm.ConfigJSON.Unmarshal(&configMap)...)
 		if !diags.HasError() {
 			if err := panelItem.Config.FromDashboardPanelItemConfig2(configMap); err != nil {

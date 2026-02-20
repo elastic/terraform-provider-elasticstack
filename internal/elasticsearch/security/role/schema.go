@@ -33,7 +33,7 @@ func GetSchema(version int64) schema.Schema {
 		Version:             version,
 		MarkdownDescription: roleResourceDescription,
 		Blocks: map[string]schema.Block{
-			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock("elasticsearch_connection", false),
+			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(false),
 			"applications": schema.SetNestedBlock{
 				MarkdownDescription: "A list of application privilege entries.",
 				NestedObject: schema.NestedBlockObject{
@@ -111,7 +111,7 @@ func GetSchema(version int64) schema.Schema {
 							CustomType:          jsontypes.NormalizedType{},
 						},
 						"allow_restricted_indices": schema.BoolAttribute{
-							MarkdownDescription: "Include matching restricted indices in names parameter. Usage is strongly discouraged as it can grant unrestricted operations on critical data, make the entire system unstable or leak sensitive information.",
+							MarkdownDescription: allowRestrictedIndicesDescription,
 							Optional:            true,
 							Computed:            true,
 							PlanModifiers: []planmodifier.Bool{
@@ -122,7 +122,7 @@ func GetSchema(version int64) schema.Schema {
 				},
 			},
 			"remote_indices": schema.SetNestedBlock{
-				MarkdownDescription: "A list of remote indices permissions entries. Remote indices are effective for remote clusters configured with the API key based model. They have no effect for remote clusters configured with the certificate based model.",
+				MarkdownDescription: remoteIndicesDescription,
 				NestedObject: schema.NestedBlockObject{
 					Blocks: map[string]schema.Block{
 						"field_security": schema.SingleNestedBlock{
@@ -248,8 +248,7 @@ func getIndexPermsAttrTypes() map[string]attr.Type {
 	}
 	// Add blocks as attributes (field_security is a block in indices)
 	for name, block := range nestedObj.Blocks {
-		switch b := block.(type) {
-		case schema.SingleNestedBlock:
+		if b, ok := block.(schema.SingleNestedBlock); ok {
 			// For SingleNestedBlock, the type is ObjectType
 			blockAttrs := make(map[string]attr.Type)
 			for attrName, attr := range b.Attributes {
@@ -270,8 +269,7 @@ func getRemoteIndexPermsAttrTypes() map[string]attr.Type {
 	}
 	// Add blocks as attributes (field_security is a block in remote_indices)
 	for name, block := range nestedObj.Blocks {
-		switch b := block.(type) {
-		case schema.SingleNestedBlock:
+		if b, ok := block.(schema.SingleNestedBlock); ok {
 			// For SingleNestedBlock, the type is ObjectType
 			blockAttrs := make(map[string]attr.Type)
 			for attrName, attr := range b.Attributes {

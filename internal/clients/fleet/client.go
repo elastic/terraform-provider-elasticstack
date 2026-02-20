@@ -9,18 +9,19 @@ import (
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/debugutils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging"
 )
 
 // Config is the configuration for the fleet client.
 type Config struct {
-	URL      string
-	Username string
-	Password string
-	APIKey   string
-	Insecure bool
-	CACerts  []string
+	URL         string
+	Username    string
+	Password    string
+	APIKey      string
+	BearerToken string
+	Insecure    bool
+	CACerts     []string
 }
 
 // Client provides an API client for Elastic Fleet.
@@ -53,7 +54,7 @@ func NewClient(cfg Config) (*Client, error) {
 	}
 
 	if logging.IsDebugOrHigher() {
-		roundTripper = utils.NewDebugTransport("Fleet", roundTripper)
+		roundTripper = debugutils.NewDebugTransport("Fleet", roundTripper)
 	}
 
 	httpClient := &http.Client{
@@ -99,6 +100,10 @@ func (t *transport) RoundTrip(req *http.Request) (*http.Response, error) {
 
 	if t.APIKey != "" {
 		req.Header.Add("Authorization", "ApiKey "+t.APIKey)
+	}
+
+	if t.BearerToken != "" {
+		req.Header.Set("Authorization", "Bearer "+t.BearerToken)
 	}
 
 	return t.next.RoundTrip(req)

@@ -15,14 +15,14 @@ func TestAccDataSourceIngestProcessorRemove(t *testing.T) {
 			{
 				Config: testAccDataSourceIngestProcessorRemove,
 				Check: resource.ComposeTestCheckFunc(
-					CheckResourceJson("data.elasticstack_elasticsearch_ingest_processor_remove.test", "json", expectedJsonRemove),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_remove.test", "json", expectedJSONRemove),
 				),
 			},
 		},
 	})
 }
 
-const expectedJsonRemove = `{
+const expectedJSONRemove = `{
 	"remove": {
 		"field": ["user_agent"],
 		"ignore_failure": false,

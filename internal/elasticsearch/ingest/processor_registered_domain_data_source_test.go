@@ -17,14 +17,14 @@ func TestAccDataSourceIngestProcessorRegisteredDomain(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_registered_domain.test", "field", "fqdn"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_registered_domain.test", "target_field", "url"),
-					CheckResourceJson("data.elasticstack_elasticsearch_ingest_processor_registered_domain.test", "json", expectedJsonRegisteredDomain),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_registered_domain.test", "json", expectedJSONRegisteredDomain),
 				),
 			},
 		},
 	})
 }
 
-const expectedJsonRegisteredDomain = `{
+const expectedJSONRegisteredDomain = `{
 	"registered_domain": {
 		"field": "fqdn",
 		"target_field": "url",

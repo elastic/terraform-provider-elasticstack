@@ -1,4 +1,4 @@
-package security_list_data_streams
+package securitylistdatastreams
 
 import (
 	"context"
@@ -20,7 +20,7 @@ func NewResource() resource.Resource {
 }
 
 type securityListDataStreamsResource struct {
-	client *clients.ApiClient
+	client *clients.APIClient
 }
 
 func (r *securityListDataStreamsResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {

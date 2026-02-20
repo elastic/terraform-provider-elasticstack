@@ -1,0 +1,1 @@
+Helper data source which can be used to create the configuration for a drop processor. This processor drops the document without raising any errors. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/drop-processor.html

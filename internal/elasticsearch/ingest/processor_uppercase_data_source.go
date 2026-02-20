@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/tfsdkutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -59,7 +60,7 @@ func DataSourceProcessorUppercase() *schema.Resource {
 			Elem: &schema.Schema{
 				Type:             schema.TypeString,
 				ValidateFunc:     validation.StringIsJSON,
-				DiffSuppressFunc: utils.DiffJsonSuppress,
+				DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 			},
 		},
 		"tag": {
@@ -75,7 +76,7 @@ func DataSourceProcessorUppercase() *schema.Resource {
 	}
 
 	return &schema.Resource{
-		Description: "Helper data source which can be used to create the configuration for an uppercase processor. This processor converts a string to its uppercase equivalent. If the field is an array of strings, all members of the array will be converted. See the [uppercase processor documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/uppercase-processor.html) for more details.",
+		Description: processorUppercaseDataSourceDescription,
 
 		ReadContext: dataSourceProcessorUppercaseRead,
 
@@ -83,7 +84,7 @@ func DataSourceProcessorUppercase() *schema.Resource {
 	}
 }
 
-func dataSourceProcessorUppercaseRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func dataSourceProcessorUppercaseRead(_ context.Context, d *schema.ResourceData, _ any) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	processor := &models.ProcessorUppercase{}
@@ -105,9 +106,9 @@ func dataSourceProcessorUppercaseRead(ctx context.Context, d *schema.ResourceDat
 		processor.Tag = v.(string)
 	}
 	if v, ok := d.GetOk("on_failure"); ok {
-		onFailure := make([]map[string]interface{}, len(v.([]interface{})))
-		for i, f := range v.([]interface{}) {
-			item := make(map[string]interface{})
+		onFailure := make([]map[string]any, len(v.([]any)))
+		for i, f := range v.([]any) {
+			item := make(map[string]any)
 			if err := json.NewDecoder(strings.NewReader(f.(string))).Decode(&item); err != nil {
 				return diag.FromErr(err)
 			}
@@ -116,15 +117,15 @@ func dataSourceProcessorUppercaseRead(ctx context.Context, d *schema.ResourceDat
 		processor.OnFailure = onFailure
 	}
 
-	processorJson, err := json.MarshalIndent(map[string]*models.ProcessorUppercase{"uppercase": processor}, "", " ")
+	processorJSON, err := json.MarshalIndent(map[string]*models.ProcessorUppercase{"uppercase": processor}, "", " ")
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("json", string(processorJson)); err != nil {
+	if err := d.Set("json", string(processorJSON)); err != nil {
 		return diag.FromErr(err)
 	}
 
-	hash, err := utils.StringToHash(string(processorJson))
+	hash, err := schemautil.StringToHash(string(processorJSON))
 	if err != nil {
 		return diag.FromErr(err)
 	}

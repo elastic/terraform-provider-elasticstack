@@ -4,9 +4,14 @@ import "github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 
 type lensPanelConfigConverter struct {
 	visualizationType string
+	hasTFPanelConfig  func(pm panelModel) bool
 }
 
-func (c lensPanelConfigConverter) handlesAPIPanelConfig(panelType string, cfg kbapi.DashboardPanelItem_Config) bool {
+func (c lensPanelConfigConverter) handlesAPIPanelConfig(pm *panelModel, panelType string, cfg kbapi.DashboardPanelItem_Config) bool {
+	if c.hasTFPanelConfig != nil && pm != nil && !c.hasTFPanelConfig(*pm) {
+		return false
+	}
+
 	if panelType != "lens" {
 		return false
 	}
@@ -19,13 +24,13 @@ func (c lensPanelConfigConverter) handlesAPIPanelConfig(panelType string, cfg kb
 	return c.hasExpectedVisualizationType(cfgMap)
 }
 
-func (c lensPanelConfigConverter) hasExpectedVisualizationType(cfgMap map[string]interface{}) bool {
+func (c lensPanelConfigConverter) hasExpectedVisualizationType(cfgMap map[string]any) bool {
 	attrs, ok := cfgMap["attributes"]
 	if !ok {
 		return false
 	}
 
-	attrsMap, ok := attrs.(map[string]interface{})
+	attrsMap, ok := attrs.(map[string]any)
 	if !ok {
 		return false
 	}

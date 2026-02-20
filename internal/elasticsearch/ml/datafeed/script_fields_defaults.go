@@ -1,5 +1,7 @@
 package datafeed
 
+import "maps"
+
 // populateScriptFieldsDefaults ensures that all script fields have proper defaults
 func populateScriptFieldsDefaults(model map[string]any) map[string]any {
 	for fieldName, field := range model {
@@ -11,9 +13,7 @@ func populateScriptFieldsDefaults(model map[string]any) map[string]any {
 
 		resultField := make(map[string]any)
 		// Copy all existing fields
-		for k, v := range fieldMap {
-			resultField[k] = v
-		}
+		maps.Copy(resultField, fieldMap)
 
 		// Set ignore_failure default to false if not specified
 		if _, exists := resultField["ignore_failure"]; !exists {
@@ -25,9 +25,7 @@ func populateScriptFieldsDefaults(model map[string]any) map[string]any {
 			if scriptMap, ok := scriptInterface.(map[string]any); ok {
 				// Create a copy of the script map
 				newScriptMap := make(map[string]any)
-				for k, v := range scriptMap {
-					newScriptMap[k] = v
-				}
+				maps.Copy(newScriptMap, scriptMap)
 
 				// Set lang default to "painless" if not specified
 				if _, langExists := newScriptMap["lang"]; !langExists {

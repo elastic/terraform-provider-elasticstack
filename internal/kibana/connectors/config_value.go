@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/attr/xattr"
@@ -23,9 +23,9 @@ type ConfigValue struct {
 }
 
 // Type returns a ConfigType.
-func (v ConfigValue) Type(_ context.Context) attr.Type {
+func (v ConfigValue) Type(ctx context.Context) attr.Type {
 	return ConfigType{
-		JSONWithContextualDefaultsType: v.JSONWithContextualDefaultsValue.Type(context.Background()).(customtypes.JSONWithContextualDefaultsType),
+		JSONWithContextualDefaultsType: v.JSONWithContextualDefaultsValue.Type(ctx).(customtypes.JSONWithContextualDefaultsType),
 	}
 }
 
@@ -75,7 +75,7 @@ func NewConfigUnknown() ConfigValue {
 
 // NewConfigValueWithConnectorID creates a ConfigValue with a known value and a connector type ID. Access the value via ValueString method.
 func NewConfigValueWithConnectorID(value string, connectorTypeID string) (ConfigValue, diag.Diagnostics) {
-	jsonWithContext, diags := customtypes.NewJSONWithContextualDefaultsValue(value, connectorTypeID, kibana_oapi.ConnectorConfigWithDefaults)
+	jsonWithContext, diags := customtypes.NewJSONWithContextualDefaultsValue(value, connectorTypeID, kibanaoapi.ConnectorConfigWithDefaults)
 	if diags.HasError() {
 		return ConfigValue{}, diags
 	}

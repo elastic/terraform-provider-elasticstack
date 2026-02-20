@@ -12,9 +12,8 @@ import (
 func TestApmLatencyIndicator_ToAPI(t *testing.T) {
 	t.Run("returns ok=false when not configured", func(t *testing.T) {
 		m := tfModel{}
-		ok, _, diags := m.apmLatencyIndicatorToAPI()
+		ok, _ := m.apmLatencyIndicatorToAPI()
 		require.False(t, ok)
-		require.False(t, diags.HasError())
 	})
 
 	t.Run("maps all fields including threshold", func(t *testing.T) {
@@ -28,13 +27,12 @@ func TestApmLatencyIndicator_ToAPI(t *testing.T) {
 			Threshold:       types.Int64Value(500),
 		}}}
 
-		ok, ind, diags := m.apmLatencyIndicatorToAPI()
+		ok, ind := m.apmLatencyIndicatorToAPI()
 		require.True(t, ok)
-		require.False(t, diags.HasError())
 		require.NotNil(t, ind.IndicatorPropertiesApmLatency)
 
 		assert.Equal(t, indicatorAddressToType["apm_latency_indicator"], ind.IndicatorPropertiesApmLatency.Type)
-		assert.Equal(t, 500.0, ind.IndicatorPropertiesApmLatency.Params.Threshold)
+		assert.InDelta(t, 500.0, ind.IndicatorPropertiesApmLatency.Params.Threshold, 1e-9)
 		assert.Equal(t, "svc", ind.IndicatorPropertiesApmLatency.Params.Service)
 		assert.Equal(t, "apm-*", ind.IndicatorPropertiesApmLatency.Params.Index)
 		require.NotNil(t, ind.IndicatorPropertiesApmLatency.Params.Filter)
@@ -52,9 +50,8 @@ func TestApmLatencyIndicator_ToAPI(t *testing.T) {
 			Threshold:       types.Int64Value(500),
 		}}}
 
-		ok, ind, diags := m.apmLatencyIndicatorToAPI()
+		ok, ind := m.apmLatencyIndicatorToAPI()
 		require.True(t, ok)
-		require.False(t, diags.HasError())
 		require.NotNil(t, ind.IndicatorPropertiesApmLatency)
 		assert.Nil(t, ind.IndicatorPropertiesApmLatency.Params.Filter)
 	})

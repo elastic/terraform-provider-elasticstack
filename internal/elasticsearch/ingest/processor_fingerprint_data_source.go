@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/tfsdkutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -76,7 +77,7 @@ func DataSourceProcessorFingerprint() *schema.Resource {
 			Elem: &schema.Schema{
 				Type:             schema.TypeString,
 				ValidateFunc:     validation.StringIsJSON,
-				DiffSuppressFunc: utils.DiffJsonSuppress,
+				DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 			},
 		},
 		"tag": {
@@ -92,7 +93,7 @@ func DataSourceProcessorFingerprint() *schema.Resource {
 	}
 
 	return &schema.Resource{
-		Description: "Helper data source which can be used to create the configuration for a fingerprint processor. This processor computes a hash of the document’s content. See the [fingerprint processor documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/fingerprint-processor.html) for more details.",
+		Description: processorFingerprintDataSourceDescription,
 
 		ReadContext: dataSourceProcessorFingerprintRead,
 
@@ -100,7 +101,7 @@ func DataSourceProcessorFingerprint() *schema.Resource {
 	}
 }
 
-func dataSourceProcessorFingerprintRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func dataSourceProcessorFingerprintRead(_ context.Context, d *schema.ResourceData, _ any) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	processor := &models.ProcessorFingerprint{}
@@ -110,7 +111,7 @@ func dataSourceProcessorFingerprintRead(ctx context.Context, d *schema.ResourceD
 	processor.Method = d.Get("method").(string)
 	processor.TargetField = d.Get("target_field").(string)
 
-	fields := d.Get("fields").([]interface{})
+	fields := d.Get("fields").([]any)
 	flds := make([]string, len(fields))
 	for i, v := range fields {
 		flds[i] = v.(string)
@@ -130,9 +131,9 @@ func dataSourceProcessorFingerprintRead(ctx context.Context, d *schema.ResourceD
 		processor.Tag = v.(string)
 	}
 	if v, ok := d.GetOk("on_failure"); ok {
-		onFailure := make([]map[string]interface{}, len(v.([]interface{})))
-		for i, f := range v.([]interface{}) {
-			item := make(map[string]interface{})
+		onFailure := make([]map[string]any, len(v.([]any)))
+		for i, f := range v.([]any) {
+			item := make(map[string]any)
 			if err := json.NewDecoder(strings.NewReader(f.(string))).Decode(&item); err != nil {
 				return diag.FromErr(err)
 			}
@@ -141,15 +142,15 @@ func dataSourceProcessorFingerprintRead(ctx context.Context, d *schema.ResourceD
 		processor.OnFailure = onFailure
 	}
 
-	processorJson, err := json.MarshalIndent(map[string]*models.ProcessorFingerprint{"fingerprint": processor}, "", " ")
+	processorJSON, err := json.MarshalIndent(map[string]*models.ProcessorFingerprint{"fingerprint": processor}, "", " ")
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("json", string(processorJson)); err != nil {
+	if err := d.Set("json", string(processorJSON)); err != nil {
 		return diag.FromErr(err)
 	}
 
-	hash, err := utils.StringToHash(string(processorJson))
+	hash, err := schemautil.StringToHash(string(processorJSON))
 	if err != nil {
 		return diag.FromErr(err)
 	}

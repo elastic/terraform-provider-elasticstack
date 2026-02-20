@@ -1,4 +1,4 @@
-package security_list_data_streams
+package securitylistdatastreams
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 // If this method is called, it means the framework has determined no replacement is needed,
 // so we simply pass the plan through to state.
 func (r *securityListDataStreamsResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var plan SecurityListDataStreamsModel
+	var plan Model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return

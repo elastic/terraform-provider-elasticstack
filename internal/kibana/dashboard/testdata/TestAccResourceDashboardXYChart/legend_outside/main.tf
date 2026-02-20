@@ -66,7 +66,7 @@ resource "elasticstack_kibana_dashboard" "test" {
         }
       ]
       legend = {
-        visible              = true
+        visibility           = "visible"
         inside               = false
         position             = "bottom"
         size                 = "large"

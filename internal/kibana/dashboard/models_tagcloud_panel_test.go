@@ -31,17 +31,17 @@ func Test_tagcloudConfigModel_fromAPI_toAPI(t *testing.T) {
 			api: func() kbapi.TagcloudNoESQL {
 				api := kbapi.TagcloudNoESQL{
 					Type:                "tagcloud",
-					Title:               utils.Pointer("Test Tagcloud"),
-					Description:         utils.Pointer("A test tagcloud description"),
-					IgnoreGlobalFilters: utils.Pointer(true),
-					Sampling:            utils.Pointer(float32(0.5)),
-					Orientation:         utils.Pointer(kbapi.TagcloudNoESQLOrientation("horizontal")),
+					Title:               schemautil.Pointer("Test Tagcloud"),
+					Description:         schemautil.Pointer("A test tagcloud description"),
+					IgnoreGlobalFilters: schemautil.Pointer(true),
+					Sampling:            schemautil.Pointer(float32(0.5)),
+					Orientation:         schemautil.Pointer(kbapi.TagcloudNoESQLOrientation("horizontal")),
 					FontSize: &struct {
 						Max *float32 `json:"max,omitempty"`
 						Min *float32 `json:"min,omitempty"`
 					}{
-						Min: utils.Pointer(float32(18)),
-						Max: utils.Pointer(float32(72)),
+						Min: schemautil.Pointer(float32(18)),
+						Max: schemautil.Pointer(float32(72)),
 					},
 				}
 
@@ -96,7 +96,7 @@ func Test_tagcloudConfigModel_fromAPI_toAPI(t *testing.T) {
 				IgnoreGlobalFilters: types.BoolNull(),
 				Sampling:            types.Float64Null(),
 				Query: &filterSimpleModel{
-					Language: types.StringNull(),
+					Language: types.StringValue("kuery"),
 					Query:    types.StringValue("*"),
 				},
 				Orientation: types.StringNull(),
@@ -192,8 +192,8 @@ func Test_fontSizeModel_roundTrip(t *testing.T) {
 				Max *float32 `json:"max,omitempty"`
 				Min *float32 `json:"min,omitempty"`
 			}{
-				Min: utils.Pointer(float32(10)),
-				Max: utils.Pointer(float32(100)),
+				Min: schemautil.Pointer(float32(10)),
+				Max: schemautil.Pointer(float32(100)),
 			},
 		},
 		{
@@ -202,7 +202,7 @@ func Test_fontSizeModel_roundTrip(t *testing.T) {
 				Max *float32 `json:"max,omitempty"`
 				Min *float32 `json:"min,omitempty"`
 			}{
-				Min: utils.Pointer(float32(15)),
+				Min: schemautil.Pointer(float32(15)),
 			},
 		},
 		{
@@ -211,7 +211,7 @@ func Test_fontSizeModel_roundTrip(t *testing.T) {
 				Max *float32 `json:"max,omitempty"`
 				Min *float32 `json:"min,omitempty"`
 			}{
-				Max: utils.Pointer(float32(80)),
+				Max: schemautil.Pointer(float32(80)),
 			},
 		},
 		{
@@ -337,7 +337,7 @@ func Test_tagcloudPanelConfigConverter_mapPanelToAPI(t *testing.T) {
 	attrs, ok := configMap["attributes"]
 	require.True(t, ok, "attributes should exist in config")
 
-	attrsMap, ok := attrs.(map[string]interface{})
+	attrsMap, ok := attrs.(map[string]any)
 	require.True(t, ok, "attributes should be a map")
 
 	// Verify the type field exists with tagcloud

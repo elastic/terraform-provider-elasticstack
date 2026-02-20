@@ -1,0 +1,1 @@
+Creates or updates a stored script or search template. See the [create stored script API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/create-stored-script-api.html) for more details.
