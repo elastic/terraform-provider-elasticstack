@@ -19,7 +19,7 @@ import (
 
 // fleetSystemVersion is the system package version used by TestAccResourceIndexTemplateIlmAttachment_fleet.
 // PreCheck installs it via Fleet API so it is available; must match version in testdata create/main.tf.
-const fleetSystemVersion = "1.20.0"
+const fleetSystemVersion = "1.18.0"
 
 const preservesTemplateIndexName = "logs-ilm-preserve"
 
@@ -57,7 +57,8 @@ func TestAccResourceIndexTemplateIlmAttachment_fleet(t *testing.T) {
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(templateilmattachment.MinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
-					"policy_name": config.StringVariable("test-fleet-policy-1"),
+					"policy_name":         config.StringVariable("test-fleet-policy-1"),
+					"fleet_system_version": config.StringVariable(fleetSystemVersion),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(
@@ -75,7 +76,8 @@ func TestAccResourceIndexTemplateIlmAttachment_fleet(t *testing.T) {
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(templateilmattachment.MinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
-					"policy_name": config.StringVariable("test-fleet-policy-2"),
+					"policy_name":         config.StringVariable("test-fleet-policy-2"),
+					"fleet_system_version": config.StringVariable(fleetSystemVersion),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(
@@ -90,7 +92,8 @@ func TestAccResourceIndexTemplateIlmAttachment_fleet(t *testing.T) {
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(templateilmattachment.MinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
-					"policy_name": config.StringVariable("test-fleet-policy-2"),
+					"policy_name":         config.StringVariable("test-fleet-policy-2"),
+					"fleet_system_version": config.StringVariable(fleetSystemVersion),
 				},
 				ResourceName:      "elasticstack_elasticsearch_index_template_ilm_attachment.test",
 				ImportState:       true,
