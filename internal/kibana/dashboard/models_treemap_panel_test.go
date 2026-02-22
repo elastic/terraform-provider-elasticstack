@@ -1,12 +1,11 @@
 package dashboard
 
 import (
-	"context"
 	"encoding/json"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -21,10 +20,10 @@ func Test_newTreemapPanelConfigConverter(t *testing.T) {
 func Test_treemapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 	api := kbapi.TreemapNoESQL{
 		Type:                kbapi.TreemapNoESQLTypeTreemap,
-		Title:               utils.Pointer("Test Treemap"),
-		Description:         utils.Pointer("Treemap description"),
-		IgnoreGlobalFilters: utils.Pointer(true),
-		Sampling:            utils.Pointer(float32(0.5)),
+		Title:               schemautil.Pointer("Test Treemap"),
+		Description:         schemautil.Pointer("Treemap description"),
+		IgnoreGlobalFilters: schemautil.Pointer(true),
+		Sampling:            schemautil.Pointer(float32(0.5)),
 		Query: kbapi.FilterSimpleSchema{
 			Query: "status:200",
 			Language: func() *kbapi.FilterSimpleSchemaLanguage {
@@ -38,7 +37,7 @@ func Test_treemapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 				b := true
 				return &b
 			}(),
-			TruncateAfterLines: utils.Pointer(float32(4)),
+			TruncateAfterLines: schemautil.Pointer(float32(4)),
 			Visible: func() *kbapi.TreemapLegendVisible {
 				v := kbapi.TreemapLegendVisibleAuto
 				return &v
@@ -49,7 +48,7 @@ func Test_treemapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 			PercentDecimals *float32                            `json:"percent_decimals,omitempty"`
 		}{
 			Mode:            kbapi.TreemapNoESQLValueDisplayModePercentage,
-			PercentDecimals: utils.Pointer(float32(2)),
+			PercentDecimals: schemautil.Pointer(float32(2)),
 		},
 	}
 
@@ -74,7 +73,7 @@ func Test_treemapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 	api.LabelPosition = &lp
 
 	model := &treemapConfigModel{}
-	diags := model.fromAPINoESQL(context.Background(), api)
+	diags := model.fromAPINoESQL(api)
 	require.False(t, diags.HasError())
 
 	assert.Equal(t, types.StringValue("Test Treemap"), model.Title)
@@ -146,10 +145,10 @@ func Test_treemapConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 
 	api := kbapi.TreemapESQL{
 		Type:                kbapi.TreemapESQLTypeTreemap,
-		Title:               utils.Pointer("ESQL Treemap"),
-		Description:         utils.Pointer("ESQL description"),
-		IgnoreGlobalFilters: utils.Pointer(false),
-		Sampling:            utils.Pointer(float32(1)),
+		Title:               schemautil.Pointer("ESQL Treemap"),
+		Description:         schemautil.Pointer("ESQL description"),
+		IgnoreGlobalFilters: schemautil.Pointer(false),
+		Sampling:            schemautil.Pointer(float32(1)),
 		Legend:              kbapi.TreemapLegend{Size: kbapi.LegendSizeSmall},
 		Metrics:             metrics,
 		GroupBy:             &groupBy,
@@ -166,7 +165,7 @@ func Test_treemapConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 	api.LabelPosition = &lp
 
 	model := &treemapConfigModel{}
-	diags := model.fromAPIESQL(context.Background(), api)
+	diags := model.fromAPIESQL(api)
 	require.False(t, diags.HasError())
 
 	assert.Equal(t, types.StringValue("ESQL Treemap"), model.Title)

@@ -25,14 +25,14 @@ resource "elasticstack_kibana_dashboard" "test" {
       title       = "ESQL Treemap"
       description = "Treemap visualization using ES|QL"
 
-      dataset = jsonencode({
+      dataset_json = jsonencode({
         type  = "esql"
         query = "FROM metrics-* | KEEP host.name, bytes | LIMIT 50"
       })
 
       # Note: omit `query` block for ES|QL mode.
 
-      group_by = jsonencode([
+      group_by_json = jsonencode([
         {
           operation   = "value"
           column      = "host.name"
@@ -40,7 +40,7 @@ resource "elasticstack_kibana_dashboard" "test" {
         }
       ])
 
-      metrics = jsonencode([
+      metrics_json = jsonencode([
         {
           operation = "value"
           column    = "bytes"

@@ -1260,7 +1260,7 @@ func getTreemapSchema() map[string]schema.Attribute {
 			MarkdownDescription: "The description of the chart.",
 			Optional:            true,
 		},
-		"dataset": schema.StringAttribute{
+		"dataset_json": schema.StringAttribute{
 			MarkdownDescription: "Dataset configuration as JSON. For non-ES|QL, this specifies the data view or index; for ES|QL, this specifies the ES|QL query dataset.",
 			CustomType:          jsontypes.NormalizedType{},
 			Required:            true,
@@ -1283,15 +1283,19 @@ func getTreemapSchema() map[string]schema.Attribute {
 			Optional:            true,
 			NestedObject:        getSearchFilterSchema(),
 		},
-		"group_by": schema.StringAttribute{
-			MarkdownDescription: "Array of breakdown dimensions as JSON (minimum 1). For non-ES|QL, each item can be date histogram, terms, histogram, range, or filters operations; for ES|QL, each item is the column/operation/color configuration.",
-			CustomType:          customtypes.NewJSONWithDefaultsType(populateTreemapGroupByDefaults),
-			Required:            true,
+		"group_by_json": schema.StringAttribute{
+			MarkdownDescription: "Array of breakdown dimensions as JSON (minimum 1). " +
+				"For non-ES|QL, each item can be date histogram, terms, histogram, range, or filters operations; " +
+				"for ES|QL, each item is the column/operation/color configuration.",
+			CustomType: customtypes.NewJSONWithDefaultsType(populateTreemapGroupByDefaults),
+			Required:   true,
 		},
-		"metrics": schema.StringAttribute{
-			MarkdownDescription: "Array of metric configurations as JSON (minimum 1). For non-ES|QL, each item can be a field metric, pipeline metric, or formula; for ES|QL, each item is the column/operation/color/format configuration.",
-			CustomType:          customtypes.NewJSONWithDefaultsType(populateTreemapMetricsDefaults),
-			Required:            true,
+		"metrics_json": schema.StringAttribute{
+			MarkdownDescription: "Array of metric configurations as JSON (minimum 1). " +
+				"For non-ES|QL, each item can be a field metric, pipeline metric, or formula; " +
+				"for ES|QL, each item is the column/operation/color/format configuration.",
+			CustomType: customtypes.NewJSONWithDefaultsType(populateTreemapMetricsDefaults),
+			Required:   true,
 		},
 		"label_position": schema.StringAttribute{
 			MarkdownDescription: "Position of the labels: hidden or visible.",

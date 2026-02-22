@@ -6,8 +6,9 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -30,7 +31,7 @@ func (c treemapPanelConfigConverter) handlesTFPanelConfig(pm panelModel) bool {
 	return pm.TreemapConfig != nil
 }
 
-func (c treemapPanelConfigConverter) populateFromAPIPanel(ctx context.Context, pm *panelModel, config kbapi.DashboardPanelItem_Config) diag.Diagnostics {
+func (c treemapPanelConfigConverter) populateFromAPIPanel(_ context.Context, pm *panelModel, config kbapi.DashboardPanelItem_Config) diag.Diagnostics {
 	cfgMap, err := config.AsDashboardPanelItemConfig2()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
@@ -41,7 +42,7 @@ func (c treemapPanelConfigConverter) populateFromAPIPanel(ctx context.Context, p
 		return nil
 	}
 
-	attrsMap, ok := attrs.(map[string]interface{})
+	attrsMap, ok := attrs.(map[string]any)
 	if !ok {
 		return nil
 	}
@@ -66,14 +67,14 @@ func (c treemapPanelConfigConverter) populateFromAPIPanel(ctx context.Context, p
 		if err != nil {
 			return diagutil.FrameworkDiagFromError(err)
 		}
-		return pm.TreemapConfig.fromAPINoESQL(ctx, treemapNoESQL)
+		return pm.TreemapConfig.fromAPINoESQL(treemapNoESQL)
 	}
 
 	treemapESQL, err := treemapChart.AsTreemapESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	return pm.TreemapConfig.fromAPIESQL(ctx, treemapESQL)
+	return pm.TreemapConfig.fromAPIESQL(treemapESQL)
 }
 
 func (c treemapPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *kbapi.DashboardPanelItem_Config) diag.Diagnostics {
@@ -118,13 +119,13 @@ func (c treemapPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *kba
 type treemapConfigModel struct {
 	Title               types.String                                        `tfsdk:"title"`
 	Description         types.String                                        `tfsdk:"description"`
-	Dataset             jsontypes.Normalized                                `tfsdk:"dataset"`
+	Dataset             jsontypes.Normalized                                `tfsdk:"dataset_json"`
 	IgnoreGlobalFilters types.Bool                                          `tfsdk:"ignore_global_filters"`
 	Sampling            types.Float64                                       `tfsdk:"sampling"`
 	Query               *filterSimpleModel                                  `tfsdk:"query"`
 	Filters             []searchFilterModel                                 `tfsdk:"filters"`
-	GroupBy             customtypes.JSONWithDefaultsValue[[]map[string]any] `tfsdk:"group_by"`
-	Metrics             customtypes.JSONWithDefaultsValue[[]map[string]any] `tfsdk:"metrics"`
+	GroupBy             customtypes.JSONWithDefaultsValue[[]map[string]any] `tfsdk:"group_by_json"`
+	Metrics             customtypes.JSONWithDefaultsValue[[]map[string]any] `tfsdk:"metrics_json"`
 	LabelPosition       types.String                                        `tfsdk:"label_position"`
 	Legend              *treemapLegendModel                                 `tfsdk:"legend"`
 	ValueDisplay        *treemapValueDisplay                                `tfsdk:"value_display"`
@@ -142,7 +143,7 @@ type treemapValueDisplay struct {
 	PercentDecimals types.Float64 `tfsdk:"percent_decimals"`
 }
 
-func (m *treemapConfigModel) fromAPINoESQL(ctx context.Context, api kbapi.TreemapNoESQL) diag.Diagnostics {
+func (m *treemapConfigModel) fromAPINoESQL(api kbapi.TreemapNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	m.Title = types.StringPointerValue(api.Title)
@@ -211,7 +212,7 @@ func (m *treemapConfigModel) fromAPINoESQL(ctx context.Context, api kbapi.Treema
 	return diags
 }
 
-func (m *treemapConfigModel) fromAPIESQL(ctx context.Context, api kbapi.TreemapESQL) diag.Diagnostics {
+func (m *treemapConfigModel) fromAPIESQL(api kbapi.TreemapESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	// ES|QL charts don't have a query block. Clear it to avoid carrying over
@@ -352,21 +353,21 @@ func (m *treemapConfigModel) toAPIESQLChartSchema() (kbapi.TreemapChartSchema, d
 		"type": string(kbapi.TreemapESQLTypeTreemap),
 	}
 
-	if utils.IsKnown(m.Title) {
+	if typeutils.IsKnown(m.Title) {
 		attrs["title"] = m.Title.ValueString()
 	}
-	if utils.IsKnown(m.Description) {
+	if typeutils.IsKnown(m.Description) {
 		attrs["description"] = m.Description.ValueString()
 	}
-	if utils.IsKnown(m.IgnoreGlobalFilters) {
+	if typeutils.IsKnown(m.IgnoreGlobalFilters) {
 		attrs["ignore_global_filters"] = m.IgnoreGlobalFilters.ValueBool()
 	}
-	if utils.IsKnown(m.Sampling) {
+	if typeutils.IsKnown(m.Sampling) {
 		attrs["sampling"] = m.Sampling.ValueFloat64()
 	}
 
 	if m.Dataset.IsNull() {
-		diags.AddError("Missing dataset", "treemap_config.dataset must be provided")
+		diags.AddError("Missing dataset_json", "treemap_config.dataset_json must be provided")
 		return treemapChart, diags
 	}
 	var dataset any
@@ -377,7 +378,7 @@ func (m *treemapConfigModel) toAPIESQLChartSchema() (kbapi.TreemapChartSchema, d
 	attrs["dataset"] = dataset
 
 	if m.GroupBy.IsNull() {
-		diags.AddError("Missing group_by", "treemap_config.group_by must be provided")
+		diags.AddError("Missing group_by_json", "treemap_config.group_by_json must be provided")
 		return treemapChart, diags
 	}
 	var groupBy any
@@ -388,7 +389,7 @@ func (m *treemapConfigModel) toAPIESQLChartSchema() (kbapi.TreemapChartSchema, d
 	attrs["group_by"] = groupBy
 
 	if m.Metrics.IsNull() {
-		diags.AddError("Missing metrics", "treemap_config.metrics must be provided")
+		diags.AddError("Missing metrics_json", "treemap_config.metrics_json must be provided")
 		return treemapChart, diags
 	}
 	var metrics any
@@ -422,7 +423,7 @@ func (m *treemapConfigModel) toAPIESQLChartSchema() (kbapi.TreemapChartSchema, d
 		attrs["filters"] = filters
 	}
 
-	if utils.IsKnown(m.LabelPosition) {
+	if typeutils.IsKnown(m.LabelPosition) {
 		attrs["label_position"] = m.LabelPosition.ValueString()
 	}
 
@@ -483,21 +484,21 @@ func (m *treemapConfigModel) toAPINoESQL() (kbapi.TreemapNoESQL, diag.Diagnostic
 	var diags diag.Diagnostics
 	api := kbapi.TreemapNoESQL{Type: kbapi.TreemapNoESQLTypeTreemap}
 
-	if utils.IsKnown(m.Title) {
-		api.Title = utils.Pointer(m.Title.ValueString())
+	if typeutils.IsKnown(m.Title) {
+		api.Title = schemautil.Pointer(m.Title.ValueString())
 	}
-	if utils.IsKnown(m.Description) {
-		api.Description = utils.Pointer(m.Description.ValueString())
+	if typeutils.IsKnown(m.Description) {
+		api.Description = schemautil.Pointer(m.Description.ValueString())
 	}
-	if utils.IsKnown(m.IgnoreGlobalFilters) {
-		api.IgnoreGlobalFilters = utils.Pointer(m.IgnoreGlobalFilters.ValueBool())
+	if typeutils.IsKnown(m.IgnoreGlobalFilters) {
+		api.IgnoreGlobalFilters = schemautil.Pointer(m.IgnoreGlobalFilters.ValueBool())
 	}
-	if utils.IsKnown(m.Sampling) {
-		api.Sampling = utils.Pointer(float32(m.Sampling.ValueFloat64()))
+	if typeutils.IsKnown(m.Sampling) {
+		api.Sampling = schemautil.Pointer(float32(m.Sampling.ValueFloat64()))
 	}
 
 	if m.Dataset.IsNull() {
-		diags.AddError("Missing dataset", "treemap_config.dataset must be provided")
+		diags.AddError("Missing dataset_json", "treemap_config.dataset_json must be provided")
 		return api, diags
 	}
 	if err := json.Unmarshal([]byte(m.Dataset.ValueString()), &api.Dataset); err != nil {
@@ -506,7 +507,7 @@ func (m *treemapConfigModel) toAPINoESQL() (kbapi.TreemapNoESQL, diag.Diagnostic
 	}
 
 	if m.GroupBy.IsNull() {
-		diags.AddError("Missing group_by", "treemap_config.group_by must be provided")
+		diags.AddError("Missing group_by_json", "treemap_config.group_by_json must be provided")
 		return api, diags
 	}
 	var groupBy []kbapi.TreemapNoESQL_GroupBy_Item
@@ -515,13 +516,13 @@ func (m *treemapConfigModel) toAPINoESQL() (kbapi.TreemapNoESQL, diag.Diagnostic
 		return api, diags
 	}
 	if len(groupBy) == 0 {
-		diags.AddError("Invalid group_by", "treemap_config.group_by must contain at least one item")
+		diags.AddError("Invalid group_by_json", "treemap_config.group_by_json must contain at least one item")
 		return api, diags
 	}
 	api.GroupBy = &groupBy
 
 	if m.Metrics.IsNull() {
-		diags.AddError("Missing metrics", "treemap_config.metrics must be provided")
+		diags.AddError("Missing metrics_json", "treemap_config.metrics_json must be provided")
 		return api, diags
 	}
 	var metrics []kbapi.TreemapNoESQL_Metrics_Item
@@ -530,7 +531,7 @@ func (m *treemapConfigModel) toAPINoESQL() (kbapi.TreemapNoESQL, diag.Diagnostic
 		return api, diags
 	}
 	if len(metrics) == 0 {
-		diags.AddError("Invalid metrics", "treemap_config.metrics must contain at least one item")
+		diags.AddError("Invalid metrics_json", "treemap_config.metrics_json must contain at least one item")
 		return api, diags
 	}
 	api.Metrics = metrics
@@ -551,7 +552,7 @@ func (m *treemapConfigModel) toAPINoESQL() (kbapi.TreemapNoESQL, diag.Diagnostic
 		api.Filters = &filters
 	}
 
-	if utils.IsKnown(m.LabelPosition) {
+	if typeutils.IsKnown(m.LabelPosition) {
 		lp := kbapi.TreemapNoESQLLabelPosition(m.LabelPosition.ValueString())
 		api.LabelPosition = &lp
 	}
@@ -572,13 +573,13 @@ func (m *treemapConfigModel) toAPINoESQL() (kbapi.TreemapNoESQL, diag.Diagnostic
 
 func (m *treemapLegendModel) toAPI() kbapi.TreemapLegend {
 	legend := kbapi.TreemapLegend{Size: kbapi.LegendSize(m.Size.ValueString())}
-	if utils.IsKnown(m.Nested) {
-		legend.Nested = utils.Pointer(m.Nested.ValueBool())
+	if typeutils.IsKnown(m.Nested) {
+		legend.Nested = schemautil.Pointer(m.Nested.ValueBool())
 	}
-	if utils.IsKnown(m.TruncateAfterLine) {
-		legend.TruncateAfterLines = utils.Pointer(float32(m.TruncateAfterLine.ValueFloat64()))
+	if typeutils.IsKnown(m.TruncateAfterLine) {
+		legend.TruncateAfterLines = schemautil.Pointer(float32(m.TruncateAfterLine.ValueFloat64()))
 	}
-	if utils.IsKnown(m.Visible) {
+	if typeutils.IsKnown(m.Visible) {
 		v := kbapi.TreemapLegendVisible(m.Visible.ValueString())
 		legend.Visible = &v
 	}
@@ -595,8 +596,8 @@ func (m *treemapValueDisplay) toAPINoESQL() struct {
 	}{
 		Mode: kbapi.TreemapNoESQLValueDisplayMode(m.Mode.ValueString()),
 	}
-	if utils.IsKnown(m.PercentDecimals) {
-		vd.PercentDecimals = utils.Pointer(float32(m.PercentDecimals.ValueFloat64()))
+	if typeutils.IsKnown(m.PercentDecimals) {
+		vd.PercentDecimals = schemautil.Pointer(float32(m.PercentDecimals.ValueFloat64()))
 	}
 	return vd
 }
@@ -611,8 +612,8 @@ func (m *treemapValueDisplay) toAPIESQL() struct {
 	}{
 		Mode: kbapi.TreemapESQLValueDisplayMode(m.Mode.ValueString()),
 	}
-	if utils.IsKnown(m.PercentDecimals) {
-		vd.PercentDecimals = utils.Pointer(float32(m.PercentDecimals.ValueFloat64()))
+	if typeutils.IsKnown(m.PercentDecimals) {
+		vd.PercentDecimals = schemautil.Pointer(float32(m.PercentDecimals.ValueFloat64()))
 	}
 	return vd
 }

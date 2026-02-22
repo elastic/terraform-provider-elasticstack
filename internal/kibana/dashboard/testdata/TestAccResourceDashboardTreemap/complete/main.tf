@@ -25,7 +25,7 @@ resource "elasticstack_kibana_dashboard" "test" {
       title       = "Complete Treemap"
       description = "Complete treemap visualization"
 
-      dataset = jsonencode({
+      dataset_json = jsonencode({
         type = "dataView"
         id   = "metrics-*"
       })
@@ -42,7 +42,7 @@ resource "elasticstack_kibana_dashboard" "test" {
         }
       ]
 
-      group_by = jsonencode([
+      group_by_json = jsonencode([
         {
           operation = "terms"
           color = {
@@ -59,7 +59,7 @@ resource "elasticstack_kibana_dashboard" "test" {
         }
       ])
 
-      metrics = jsonencode([
+      metrics_json = jsonencode([
         {
           operation = "count"
         }
