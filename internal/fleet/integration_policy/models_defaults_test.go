@@ -1,4 +1,4 @@
-package integration_policy
+package integrationpolicy
 
 import (
 	_ "embed"
@@ -43,7 +43,7 @@ func TestApiVarsDefaults(t *testing.T) {
 			vars: apiVars{
 				{
 					Name:    "hosts",
-					Default: []interface{}{"http://127.0.0.1:8778"},
+					Default: []any{"http://127.0.0.1:8778"},
 				},
 			},
 			expectedJSON: `{"hosts":["http://127.0.0.1:8778"]}`,
@@ -63,7 +63,7 @@ func TestApiVarsDefaults(t *testing.T) {
 			vars: apiVars{
 				{
 					Name:    "hosts",
-					Default: []interface{}{"localhost:9092"},
+					Default: []any{"localhost:9092"},
 				},
 				{
 					Name:    "period",
@@ -108,7 +108,7 @@ func TestApiVarsDefaults(t *testing.T) {
 			vars: apiVars{
 				{
 					Name:    "tags",
-					Default: []interface{}{"kafka-log"},
+					Default: []any{"kafka-log"},
 				},
 			},
 			expectedJSON: `{"tags":["kafka-log"]}`,
@@ -118,7 +118,7 @@ func TestApiVarsDefaults(t *testing.T) {
 			vars: apiVars{
 				{
 					Name: "paths",
-					Default: []interface{}{
+					Default: []any{
 						"/logs/controller.log*",
 						"/logs/server.log*",
 						"/logs/state-change.log*",
@@ -144,11 +144,11 @@ func TestApiVarsDefaults(t *testing.T) {
 					assert.False(t, result.IsNull(), "Expected non-null result")
 
 					// Normalize JSON for comparison
-					var expectedMap map[string]interface{}
+					var expectedMap map[string]any
 					err := json.Unmarshal([]byte(tt.expectedJSON), &expectedMap)
 					require.NoError(t, err, "Failed to unmarshal expected JSON")
 
-					var actualMap map[string]interface{}
+					var actualMap map[string]any
 					err = json.Unmarshal([]byte(result.ValueString()), &actualMap)
 					require.NoError(t, err, "Failed to unmarshal actual JSON")
 
@@ -196,7 +196,7 @@ func TestApiPolicyTemplateDefaults(t *testing.T) {
 							Vars: apiVars{
 								{
 									Name:    "hosts",
-									Default: []interface{}{"http://127.0.0.1:8778"},
+									Default: []any{"http://127.0.0.1:8778"},
 								},
 							},
 						},
@@ -216,7 +216,7 @@ func TestApiPolicyTemplateDefaults(t *testing.T) {
 							Vars: apiVars{
 								{
 									Name:    "hosts",
-									Default: []interface{}{"http://127.0.0.1:8778"},
+									Default: []any{"http://127.0.0.1:8778"},
 								},
 							},
 						},
@@ -229,7 +229,7 @@ func TestApiPolicyTemplateDefaults(t *testing.T) {
 							Vars: apiVars{
 								{
 									Name:    "hosts",
-									Default: []interface{}{"localhost:9092"},
+									Default: []any{"localhost:9092"},
 								},
 								{
 									Name:    "period",
@@ -320,7 +320,7 @@ func TestApiDatastreamsDefaults(t *testing.T) {
 							Vars: apiVars{
 								{
 									Name:    "jolokia_hosts",
-									Default: []interface{}{"localhost:8778"},
+									Default: []any{"localhost:8778"},
 								},
 							},
 						},
@@ -452,7 +452,7 @@ func TestApiDatastreamsDefaults_StreamProperties(t *testing.T) {
 					Vars: apiVars{
 						{
 							Name:    "jolokia_hosts",
-							Default: []interface{}{"localhost:8774"},
+							Default: []any{"localhost:8774"},
 						},
 						{
 							Name:    "period",
@@ -476,11 +476,11 @@ func TestApiDatastreamsDefaults_StreamProperties(t *testing.T) {
 	assert.False(t, stream.Vars.IsNull(), "Expected non-null vars")
 
 	// Verify vars content
-	var varsMap map[string]interface{}
+	var varsMap map[string]any
 	err := json.Unmarshal([]byte(stream.Vars.ValueString()), &varsMap)
 	require.NoError(t, err, "Failed to unmarshal vars")
 
-	assert.Equal(t, []interface{}{"localhost:8774"}, varsMap["jolokia_hosts"])
+	assert.Equal(t, []any{"localhost:8774"}, varsMap["jolokia_hosts"])
 	assert.Equal(t, "60s", varsMap["period"])
 }
 
@@ -545,7 +545,7 @@ func TestPackageInfoToDefaults_Kafka(t *testing.T) {
 	jolokiaInput := result["kafka-jolokia/metrics"]
 	assert.False(t, jolokiaInput.Vars.IsNull(), "Expected non-null vars for jolokia/metrics")
 
-	var jolokiaVars map[string]interface{}
+	var jolokiaVars map[string]any
 	err = json.Unmarshal([]byte(jolokiaInput.Vars.ValueString()), &jolokiaVars)
 	require.NoError(t, err, "Failed to unmarshal jolokia/metrics vars")
 
@@ -555,7 +555,7 @@ func TestPackageInfoToDefaults_Kafka(t *testing.T) {
 	assert.Contains(t, jolokiaVars, "http_method", "Expected 'http_method' var")
 	assert.Contains(t, jolokiaVars, "ssl.verification_mode", "Expected 'ssl.verification_mode' var")
 
-	assert.Equal(t, []interface{}{"http://127.0.0.1:8778"}, jolokiaVars["hosts"])
+	assert.Equal(t, []any{"http://127.0.0.1:8778"}, jolokiaVars["hosts"])
 	assert.Equal(t, "/jolokia", jolokiaVars["metrics_path"])
 	assert.Equal(t, "GET", jolokiaVars["http_method"])
 	assert.Equal(t, "none", jolokiaVars["ssl.verification_mode"])
@@ -564,13 +564,13 @@ func TestPackageInfoToDefaults_Kafka(t *testing.T) {
 	kafkaInput := result["kafka-kafka/metrics"]
 	assert.False(t, kafkaInput.Vars.IsNull(), "Expected non-null vars for kafka-kafka/metrics")
 
-	var kafkaVars map[string]interface{}
+	var kafkaVars map[string]any
 	err = json.Unmarshal([]byte(kafkaInput.Vars.ValueString()), &kafkaVars)
 	require.NoError(t, err, "Failed to unmarshal kafka-kafka/metrics vars")
 	assert.Contains(t, kafkaVars, "hosts", "Expected 'hosts' var")
 	assert.Contains(t, kafkaVars, "period", "Expected 'period' var")
 
-	assert.Equal(t, []interface{}{"localhost:9092"}, kafkaVars["hosts"])
+	assert.Equal(t, []any{"localhost:9092"}, kafkaVars["hosts"])
 	assert.Equal(t, "10s", kafkaVars["period"])
 
 	// Verify streams are populated correctly
@@ -582,14 +582,14 @@ func TestPackageInfoToDefaults_Kafka(t *testing.T) {
 	require.True(t, ok, "Expected kafka.consumer stream")
 	assert.Equal(t, types.BoolValue(false), consumerStream.Enabled, "kafka.consumer should be disabled by default")
 
-	var consumerVars map[string]interface{}
+	var consumerVars map[string]any
 	err = json.Unmarshal([]byte(consumerStream.Vars.ValueString()), &consumerVars)
 	require.NoError(t, err, "Failed to unmarshal kafka.consumer vars")
 
 	assert.Contains(t, consumerVars, "jolokia_hosts", "Expected 'jolokia_hosts' var in stream")
 	assert.Contains(t, consumerVars, "period", "Expected 'period' var in stream")
 
-	assert.Equal(t, []interface{}{"localhost:8774"}, consumerVars["jolokia_hosts"])
+	assert.Equal(t, []any{"localhost:8774"}, consumerVars["jolokia_hosts"])
 	assert.Equal(t, "60s", consumerVars["period"])
 
 	// Verify logfile input and log stream
@@ -600,7 +600,7 @@ func TestPackageInfoToDefaults_Kafka(t *testing.T) {
 	require.True(t, ok, "Expected kafka.log stream")
 	assert.Equal(t, types.BoolValue(true), logStream.Enabled, "kafka.log should be enabled by default")
 
-	var logVars map[string]interface{}
+	var logVars map[string]any
 	err = json.Unmarshal([]byte(logStream.Vars.ValueString()), &logVars)
 	require.NoError(t, err, "Failed to unmarshal kafka.log vars")
 
@@ -610,13 +610,13 @@ func TestPackageInfoToDefaults_Kafka(t *testing.T) {
 	assert.Contains(t, logVars, "preserve_original_event", "Expected 'preserve_original_event' var")
 
 	assert.Equal(t, "/opt/kafka*", logVars["kafka_home"])
-	assert.Equal(t, []interface{}{
+	assert.Equal(t, []any{
 		"/logs/controller.log*",
 		"/logs/server.log*",
 		"/logs/state-change.log*",
 		"/logs/kafka-*.log*",
 	}, logVars["paths"])
-	assert.Equal(t, []interface{}{"kafka-log"}, logVars["tags"])
+	assert.Equal(t, []any{"kafka-log"}, logVars["tags"])
 	assert.Equal(t, false, logVars["preserve_original_event"])
 
 	// Verify kafka/metrics streams

@@ -1,10 +1,11 @@
-package utils
+package schemautil
 
 import (
 	"context"
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
+	maps0 "maps"
 	"reflect"
 	"strings"
 	"time"
@@ -17,67 +18,25 @@ import (
 
 // Compares the JSON in two byte slices
 func JSONBytesEqual(a, b []byte) (bool, error) {
-	var j, j2 interface{}
+	var j, j2 any
 	if err := json.Unmarshal(a, &j); err != nil {
 		return false, err
 	}
 	if err := json.Unmarshal(b, &j2); err != nil {
 		return false, err
 	}
-	return MapsEqual(j, j2), nil
-}
-
-func MapsEqual(m1, m2 interface{}) bool {
-	return reflect.DeepEqual(m2, m1)
-}
-
-// Flattens the multilevel map, and concatenates keys together with dot "."
-// # Examples
-// map of form:
-//
-//	map := map[string]interface{}{
-//	        "index": map[string]interface{}{
-//	                "key": 1
-//	        }
-//	}
-//
-// becomes:
-//
-//	map := map[string]interface{}{
-//	        "index.key": 1
-//	}
-func FlattenMap(m map[string]interface{}) map[string]interface{} {
-	out := make(map[string]interface{})
-
-	var flattener func(string, map[string]interface{}, map[string]interface{})
-	flattener = func(k string, src, dst map[string]interface{}) {
-		if len(k) > 0 {
-			k += "."
-		}
-		for key, v := range src {
-			switch inner := v.(type) {
-			case map[string]interface{}:
-				flattener(k+key, inner, dst)
-			default:
-				dst[k+key] = v
-			}
-		}
-	}
-	flattener("", m, out)
-	return out
+	return reflect.DeepEqual(j, j2), nil
 }
 
 func MergeSchemaMaps(maps ...map[string]*schema.Schema) map[string]*schema.Schema {
 	result := make(map[string]*schema.Schema)
 	for _, m := range maps {
-		for k, v := range m {
-			result[k] = v
-		}
+		maps0.Copy(result, m)
 	}
 	return result
 }
 
-func IsEmpty(v interface{}) bool {
+func IsEmpty(v any) bool {
 	switch t := v.(type) {
 	case int, int8, int16, int32, int64, float32, float64:
 		if t == 0 {
@@ -87,11 +46,11 @@ func IsEmpty(v interface{}) bool {
 		if strings.TrimSpace(t) == "" {
 			return true
 		}
-	case []interface{}:
+	case []any:
 		if len(t) == 0 {
 			return true
 		}
-	case map[interface{}]interface{}:
+	case map[any]any:
 		if len(t) == 0 {
 			return true
 		}
@@ -125,8 +84,8 @@ func FormatStrictDateTime(t time.Time) string {
 	return strictDateTime
 }
 
-func ExpandIndividuallyDefinedSettings(ctx context.Context, d *schema.ResourceData, settingsKeys map[string]schema.ValueType) map[string]interface{} {
-	settings := make(map[string]interface{})
+func ExpandIndividuallyDefinedSettings(ctx context.Context, d *schema.ResourceData, settingsKeys map[string]schema.ValueType) map[string]any {
+	settings := make(map[string]any)
 	for key := range settingsKeys {
 		tfFieldKey := ConvertSettingsKeyToTFFieldKey(key)
 		if raw, ok := d.GetOk(tfFieldKey); ok {
@@ -176,9 +135,8 @@ func Deref[T any](value *T) T {
 	if value == nil {
 		var zero T
 		return zero
-	} else {
-		return *value
 	}
+	return *value
 }
 
 // Itol converts *int to *in64.

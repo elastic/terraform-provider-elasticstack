@@ -15,14 +15,14 @@ func TestAccDataSourceIngestProcessorFail(t *testing.T) {
 			{
 				Config: testAccDataSourceIngestProcessorFail,
 				Check: resource.ComposeTestCheckFunc(
-					CheckResourceJson("data.elasticstack_elasticsearch_ingest_processor_fail.test", "json", expectedJsonFail),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_fail.test", "json", expectedJSONFail),
 				),
 			},
 		},
 	})
 }
 
-const expectedJsonFail = `{
+const expectedJSONFail = `{
   "fail": {
 		"message": "The production tag is not present, found tags: {{{tags}}}",
 		"ignore_failure": false,

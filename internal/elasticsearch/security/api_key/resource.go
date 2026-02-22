@@ -1,4 +1,4 @@
-package api_key
+package apikey
 
 import (
 	"context"
@@ -25,19 +25,19 @@ var (
 )
 
 type Resource struct {
-	client *clients.ApiClient
+	client *clients.APIClient
 }
 
 var configuredResources = []*Resource{}
 
-func (r *Resource) Configure(ctx context.Context, request resource.ConfigureRequest, response *resource.ConfigureResponse) {
+func (r *Resource) Configure(_ context.Context, request resource.ConfigureRequest, response *resource.ConfigureResponse) {
 	client, diags := clients.ConvertProviderData(request.ProviderData)
 	response.Diagnostics.Append(diags...)
 	r.client = client
 	configuredResources = append(configuredResources, r)
 }
 
-func (r *Resource) Metadata(ctx context.Context, request resource.MetadataRequest, response *resource.MetadataResponse) {
+func (r *Resource) Metadata(_ context.Context, request resource.MetadataRequest, response *resource.MetadataResponse) {
 	response.TypeName = request.ProviderTypeName + "_elasticsearch_security_api_key"
 }
 
@@ -74,7 +74,7 @@ type clusterVersionPrivateData struct {
 	Version string
 }
 
-func (r *Resource) saveClusterVersion(ctx context.Context, client *clients.ApiClient, priv privateData) diag.Diagnostics {
+func (r *Resource) saveClusterVersion(ctx context.Context, client *clients.APIClient, priv privateData) diag.Diagnostics {
 	version, sdkDiags := client.ServerVersion(ctx)
 	diags := diagutil.FrameworkDiagsFromSDK(sdkDiags)
 	if diags.HasError() {

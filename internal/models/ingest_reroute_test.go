@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestProcessorReroute_JSON(t *testing.T) {
@@ -16,13 +17,13 @@ func TestProcessorReroute_JSON(t *testing.T) {
 	processor.IgnoreFailure = false
 
 	// Marshal to JSON
-	processorJson, err := json.Marshal(map[string]*ProcessorReroute{"reroute": processor})
-	assert.NoError(t, err)
+	processorJSON, err := json.Marshal(map[string]*ProcessorReroute{"reroute": processor})
+	require.NoError(t, err)
 
 	// Unmarshal back to verify structure
-	var result map[string]map[string]interface{}
-	err = json.Unmarshal(processorJson, &result)
-	assert.NoError(t, err)
+	var result map[string]map[string]any
+	err = json.Unmarshal(processorJSON, &result)
+	require.NoError(t, err)
 
 	// Verify the structure
 	assert.Contains(t, result, "reroute")

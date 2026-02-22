@@ -31,9 +31,9 @@ func Test_roundtrip(t *testing.T) {
 			request: kboapi.SyntheticsParameterRequest{
 				Key:               "key-2",
 				Value:             "value-2",
-				Description:       utils.Pointer("description-2"),
-				Tags:              utils.Pointer([]string{"tag-1", "tag-2", "tag-3"}),
-				ShareAcrossSpaces: utils.Pointer(true),
+				Description:       schemautil.Pointer("description-2"),
+				Tags:              schemautil.Pointer([]string{"tag-1", "tag-2", "tag-3"}),
+				ShareAcrossSpaces: schemautil.Pointer(true),
 			},
 		},
 		{
@@ -43,7 +43,7 @@ func Test_roundtrip(t *testing.T) {
 			request: kboapi.SyntheticsParameterRequest{
 				Key:         "key-3",
 				Value:       "value-3",
-				Description: utils.Pointer("description-3"),
+				Description: schemautil.Pointer("description-3"),
 			},
 		},
 		{
@@ -53,7 +53,7 @@ func Test_roundtrip(t *testing.T) {
 			request: kboapi.SyntheticsParameterRequest{
 				Key:         "key-4",
 				Value:       "value-4",
-				Description: utils.Pointer("description-4"),
+				Description: schemautil.Pointer("description-4"),
 			},
 		},
 		{
@@ -63,7 +63,7 @@ func Test_roundtrip(t *testing.T) {
 			request: kboapi.SyntheticsParameterRequest{
 				Key:         "key-5",
 				Value:       "value-5",
-				Description: utils.Pointer("description-5"),
+				Description: schemautil.Pointer("description-5"),
 			},
 		},
 	}
@@ -83,9 +83,9 @@ func Test_roundtrip(t *testing.T) {
 
 			assert.Equal(t, tt.request.Key, actual.Key)
 			assert.Equal(t, tt.request.Value, actual.Value)
-			assert.Equal(t, utils.DefaultIfNil(tt.request.Description), utils.DefaultIfNil(actual.Description))
-			assert.Equal(t, utils.NonNilSlice(utils.DefaultIfNil(tt.request.Tags)), utils.NonNilSlice(utils.DefaultIfNil(actual.Tags)))
-			assert.Equal(t, utils.DefaultIfNil(tt.request.ShareAcrossSpaces), utils.DefaultIfNil(actual.ShareAcrossSpaces))
+			assert.Equal(t, schemautil.DefaultIfNil(tt.request.Description), schemautil.DefaultIfNil(actual.Description))
+			assert.Equal(t, schemautil.NonNilSlice(schemautil.DefaultIfNil(tt.request.Tags)), schemautil.NonNilSlice(schemautil.DefaultIfNil(actual.Tags)))
+			assert.Equal(t, schemautil.DefaultIfNil(tt.request.ShareAcrossSpaces), schemautil.DefaultIfNil(actual.ShareAcrossSpaces))
 		})
 	}
 }

@@ -1,9 +1,9 @@
-package api_key
+package apikey
 
 import "github.com/elastic/terraform-provider-elasticstack/internal/models"
 
 // populateRoleDescriptorsDefaults ensures that all role descriptors have proper defaults
-func populateRoleDescriptorsDefaults(model map[string]models.ApiKeyRoleDescriptor) map[string]models.ApiKeyRoleDescriptor {
+func populateRoleDescriptorsDefaults(model map[string]models.APIKeyRoleDescriptor) map[string]models.APIKeyRoleDescriptor {
 	for role, descriptor := range model {
 		resultDescriptor := descriptor
 

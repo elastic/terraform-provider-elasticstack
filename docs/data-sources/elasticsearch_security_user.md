@@ -3,12 +3,15 @@
 page_title: "elasticstack_elasticsearch_security_user Data Source - terraform-provider-elasticstack"
 subcategory: "Security"
 description: |-
-  Get the information about the user in the ES cluster. See the security API get user documentation https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-get-user.html for more details.
+  Get the information about the user in the ES cluster.
+  See the security API get user documentation https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-get-user.html for more details.
 ---
 
 # elasticstack_elasticsearch_security_user (Data Source)
 
-Get the information about the user in the ES cluster. See the [security API get user documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-get-user.html) for more details.
+Get the information about the user in the ES cluster.
+
+See the [security API get user documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-get-user.html) for more details.
 
 ## Example Usage
 

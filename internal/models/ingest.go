@@ -1,19 +1,19 @@
 package models
 
 type IngestPipeline struct {
-	Name        string                   `json:"-"`
-	Description *string                  `json:"description,omitempty"`
-	OnFailure   []map[string]interface{} `json:"on_failure,omitempty"`
-	Processors  []map[string]interface{} `json:"processors"`
-	Metadata    map[string]interface{}   `json:"_meta,omitempty"`
+	Name        string           `json:"-"`
+	Description *string          `json:"description,omitempty"`
+	OnFailure   []map[string]any `json:"on_failure,omitempty"`
+	Processors  []map[string]any `json:"processors"`
+	Metadata    map[string]any   `json:"_meta,omitempty"`
 }
 
 type CommonProcessor struct {
-	Description   string                   `json:"description,omitempty"`
-	If            string                   `json:"if,omitempty"`
-	IgnoreFailure bool                     `json:"ignore_failure"`
-	OnFailure     []map[string]interface{} `json:"on_failure,omitempty"`
-	Tag           string                   `json:"tag,omitempty"`
+	Description   string           `json:"description,omitempty"`
+	If            string           `json:"if,omitempty"`
+	IgnoreFailure bool             `json:"ignore_failure"`
+	OnFailure     []map[string]any `json:"on_failure,omitempty"`
+	Tag           string           `json:"tag,omitempty"`
 }
 
 type ProcessortFields struct {
@@ -44,12 +44,12 @@ type ProcessorCircle struct {
 	ShapeType     string  `json:"shape_type"`
 }
 
-type ProcessorCommunityId struct {
+type ProcessorCommunityID struct {
 	CommonProcessor
 
-	SourceIp        string `json:"source_ip,omitempty"`
+	SourceIP        string `json:"source_ip,omitempty"`
 	SourcePort      *int   `json:"source_port,omitempty"`
-	DestinationIp   string `json:"destination_ip,omitempty"`
+	DestinationIP   string `json:"destination_ip,omitempty"`
 	DestinationPort *int   `json:"destination_port,omitempty"`
 	IanaNumber      string `json:"iana_number,omitempty"`
 	IcmpType        *int   `json:"icmp_type,omitempty"`
@@ -152,9 +152,9 @@ type ProcessorFingerprint struct {
 type ProcessorForeach struct {
 	CommonProcessor
 
-	Field         string                 `json:"field"`
-	IgnoreMissing bool                   `json:"ignore_missing"`
-	Processor     map[string]interface{} `json:"processor"`
+	Field         string         `json:"field"`
+	IgnoreMissing bool           `json:"ignore_missing"`
+	Processor     map[string]any `json:"processor"`
 }
 
 type ProcessorGeoip struct {
@@ -184,7 +184,7 @@ type ProcessorGsub struct {
 	Replacement string `json:"replacement"`
 }
 
-type ProcessorHtmlStrip struct {
+type ProcessorHTMLStrip struct {
 	CommonProcessor
 	ProcessortFields
 }
@@ -197,7 +197,7 @@ type ProcessorJoin struct {
 	TargetField string `json:"target_field,omitempty"`
 }
 
-type ProcessorJson struct {
+type ProcessorJSON struct {
 	CommonProcessor
 
 	Field                     string `json:"field"`
@@ -229,8 +229,8 @@ type ProcessorLowercase struct {
 type ProcessorNetworkDirection struct {
 	CommonProcessor
 
-	SourceIp              string   `json:"source_ip,omitempty"`
-	DestinationIp         string   `json:"destination_ip,omitempty"`
+	SourceIP              string   `json:"source_ip,omitempty"`
+	DestinationIP         string   `json:"destination_ip,omitempty"`
 	TargetField           string   `json:"target_field,omitempty"`
 	InternalNetworks      []string `json:"internal_networks,omitempty"`
 	InternalNetworksField string   `json:"internal_networks_field,omitempty"`
@@ -271,10 +271,10 @@ type ProcessorReroute struct {
 type ProcessorScript struct {
 	CommonProcessor
 
-	Lang     string                 `json:"lang,omitempty"`
-	ScriptId string                 `json:"id,omitempty"`
-	Source   string                 `json:"source,omitempty"`
-	Params   map[string]interface{} `json:"params,omitempty"`
+	Lang     string         `json:"lang,omitempty"`
+	ScriptID string         `json:"id,omitempty"`
+	Source   string         `json:"source,omitempty"`
+	Params   map[string]any `json:"params,omitempty"`
 }
 
 type ProcessorSet struct {
@@ -326,7 +326,7 @@ type ProcessorUrldecode struct {
 	ProcessortFields
 }
 
-type ProcessorUriParts struct {
+type ProcessorURIParts struct {
 	CommonProcessor
 
 	Field              string `json:"field"`

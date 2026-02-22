@@ -15,14 +15,14 @@ func TestAccDataSourceIngestProcessorKV(t *testing.T) {
 			{
 				Config: testAccDataSourceIngestProcessorKV,
 				Check: resource.ComposeTestCheckFunc(
-					CheckResourceJson("data.elasticstack_elasticsearch_ingest_processor_kv.test", "json", expectedJsonKV),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_kv.test", "json", expectedJSONKV),
 				),
 			},
 		},
 	})
 }
 
-const expectedJsonKV = `{
+const expectedJSONKV = `{
   "kv": {
 		"exclude_keys": [
 			"tags"

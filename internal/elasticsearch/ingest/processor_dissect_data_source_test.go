@@ -16,14 +16,14 @@ func TestAccDataSourceIngestProcessorDissect(t *testing.T) {
 				Config: testAccDataSourceIngestProcessorDissect,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_dissect.test", "field", "message"),
-					CheckResourceJson("data.elasticstack_elasticsearch_ingest_processor_dissect.test", "json", expectedJsonDissect),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_dissect.test", "json", expectedJSONDissect),
 				),
 			},
 		},
 	})
 }
 
-const expectedJsonDissect = `{
+const expectedJSONDissect = `{
   "dissect": {
 		"append_separator": "",
 		"field": "message",

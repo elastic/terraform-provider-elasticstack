@@ -22,7 +22,7 @@ func (d *dataSource) Read(ctx context.Context, req datasource.ReadRequest, resp 
 	}
 
 	// Call client API
-	indexApiModels, diags := elasticsearch.GetIndices(ctx, &d.client, target)
+	indexAPIModels, diags := elasticsearch.GetIndices(ctx, &d.client, target)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -30,10 +30,10 @@ func (d *dataSource) Read(ctx context.Context, req datasource.ReadRequest, resp 
 
 	// Map response body to model
 	indices := []indexTfModel{}
-	for indexName, indexApiModel := range indexApiModels {
+	for indexName, indexAPIModel := range indexAPIModels {
 		indexStateModel := indexTfModel{}
 
-		diags := indexStateModel.populateFromAPI(ctx, indexName, indexApiModel)
+		diags := indexStateModel.populateFromAPI(ctx, indexName, indexAPIModel)
 		resp.Diagnostics.Append(diags...)
 		if resp.Diagnostics.HasError() {
 			return

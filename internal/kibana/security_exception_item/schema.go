@@ -1,4 +1,4 @@
-package security_exception_item
+package securityexceptionitem
 
 import (
 	"context"

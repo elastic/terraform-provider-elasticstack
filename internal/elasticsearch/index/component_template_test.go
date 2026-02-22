@@ -63,20 +63,20 @@ func checkResourceComponentTemplateDestroy(s *terraform.State) error {
 		if rs.Type != "elasticstack_elasticsearch_component_template" {
 			continue
 		}
-		compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
+		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
 		esClient, err := client.GetESClient()
 		if err != nil {
 			return err
 		}
-		req := esClient.Cluster.GetComponentTemplate.WithName(compId.ResourceId)
+		req := esClient.Cluster.GetComponentTemplate.WithName(compID.ResourceID)
 		res, err := esClient.Cluster.GetComponentTemplate(req)
 		if err != nil {
 			return err
 		}
 
 		if res.StatusCode != 404 {
-			return fmt.Errorf("Component template (%s) still exists", compId.ResourceId)
+			return fmt.Errorf("Component template (%s) still exists", compID.ResourceID)
 		}
 	}
 	return nil

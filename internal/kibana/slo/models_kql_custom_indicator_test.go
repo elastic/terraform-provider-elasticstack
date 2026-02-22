@@ -46,7 +46,7 @@ func TestKqlCustomIndicator_ToAPI(t *testing.T) {
 		assert.Equal(t, "@timestamp", params.TimestampField)
 	})
 
-	t.Run("handles unknown values by omitting pointers", func(t *testing.T) {
+	t.Run("handles unknown/null values by defaulting to empty strings for required fields", func(t *testing.T) {
 		m := tfModel{KqlCustomIndicator: []tfKqlCustomIndicator{{
 			Index:          types.StringValue("logs-*"),
 			DataViewID:     types.StringNull(),
@@ -65,9 +65,32 @@ func TestKqlCustomIndicator_ToAPI(t *testing.T) {
 		assert.Equal(t, "logs-*", params.Index)
 		assert.Nil(t, params.DataViewId)
 		assert.Nil(t, params.Filter)
-		assert.Nil(t, params.Good.String)
-		assert.Nil(t, params.Total.String)
+		// Good and Total are required fields, so they default to empty strings
+		require.NotNil(t, params.Good.String)
+		assert.Empty(t, *params.Good.String)
+		require.NotNil(t, params.Total.String)
+		assert.Empty(t, *params.Total.String)
 		assert.Equal(t, "@timestamp", params.TimestampField)
+	})
+
+	t.Run("preserves empty strings when explicitly provided", func(t *testing.T) {
+		m := tfModel{KqlCustomIndicator: []tfKqlCustomIndicator{{
+			Index:          types.StringValue("logs-*"),
+			Good:           types.StringValue(""),
+			Total:          types.StringValue(""),
+			TimestampField: types.StringValue("@timestamp"),
+		}}}
+
+		ok, ind, diags := m.kqlCustomIndicatorToAPI()
+		require.True(t, ok)
+		require.False(t, diags.HasError())
+		require.NotNil(t, ind.IndicatorPropertiesCustomKql)
+
+		params := ind.IndicatorPropertiesCustomKql.Params
+		require.NotNil(t, params.Good.String)
+		assert.Empty(t, *params.Good.String)
+		require.NotNil(t, params.Total.String)
+		assert.Empty(t, *params.Total.String)
 	})
 }
 

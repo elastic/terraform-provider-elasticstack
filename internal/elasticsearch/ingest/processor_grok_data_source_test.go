@@ -16,14 +16,14 @@ func TestAccDataSourceIngestProcessorGrok(t *testing.T) {
 				Config: testAccDataSourceIngestProcessorGrok,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_grok.test", "field", "message"),
-					CheckResourceJson("data.elasticstack_elasticsearch_ingest_processor_grok.test", "json", expectedJsonGrok),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_grok.test", "json", expectedJSONGrok),
 				),
 			},
 		},
 	})
 }
 
-const expectedJsonGrok = `{
+const expectedJSONGrok = `{
   "grok": {
 		"field": "message",
 		"ignore_failure": false,

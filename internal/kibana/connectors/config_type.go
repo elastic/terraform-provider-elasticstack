@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -22,7 +22,7 @@ type ConfigType struct {
 
 func NewConfigType() ConfigType {
 	return ConfigType{
-		JSONWithContextualDefaultsType: customtypes.NewJSONWithContextualDefaultsType(kibana_oapi.ConnectorConfigWithDefaults),
+		JSONWithContextualDefaultsType: customtypes.NewJSONWithContextualDefaultsType(kibanaoapi.ConnectorConfigWithDefaults),
 	}
 }
 

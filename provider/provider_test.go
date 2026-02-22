@@ -31,7 +31,7 @@ func TestElasticsearchAPIKeyConnection(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(api_key.MinVersion),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(apikey.MinVersion),
 				Config:   testElasticsearchConnection(apiKeyName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_security_user.test", "username", "elastic"),

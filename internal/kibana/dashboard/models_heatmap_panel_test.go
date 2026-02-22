@@ -23,10 +23,10 @@ func Test_newHeatmapPanelConfigConverter(t *testing.T) {
 func Test_heatmapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 	heatmap := kbapi.HeatmapNoESQL{
 		Type:                kbapi.HeatmapNoESQLTypeHeatmap,
-		Title:               utils.Pointer("Test Heatmap"),
-		Description:         utils.Pointer("Heatmap description"),
-		IgnoreGlobalFilters: utils.Pointer(true),
-		Sampling:            utils.Pointer(float32(0.5)),
+		Title:               schemautil.Pointer("Test Heatmap"),
+		Description:         schemautil.Pointer("Heatmap description"),
+		IgnoreGlobalFilters: schemautil.Pointer(true),
+		Sampling:            schemautil.Pointer(float32(0.5)),
 		Query: kbapi.FilterSimpleSchema{
 			Query: "status:200",
 			Language: func() *kbapi.FilterSimpleSchemaLanguage {
@@ -44,28 +44,28 @@ func Test_heatmapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 						orientation := kbapi.HeatmapXAxisLabelsOrientation("horizontal")
 						return &orientation
 					}(),
-					Visible: utils.Pointer(true),
+					Visible: schemautil.Pointer(true),
 				},
 				Title: &struct {
 					Value   *string `json:"value,omitempty"`
 					Visible *bool   `json:"visible,omitempty"`
 				}{
-					Value:   utils.Pointer("X Axis"),
-					Visible: utils.Pointer(true),
+					Value:   schemautil.Pointer("X Axis"),
+					Visible: schemautil.Pointer(true),
 				},
 			},
 			Y: kbapi.HeatmapYAxis{
 				Labels: &struct {
 					Visible *bool `json:"visible,omitempty"`
 				}{
-					Visible: utils.Pointer(false),
+					Visible: schemautil.Pointer(false),
 				},
 				Title: &struct {
 					Value   *string `json:"value,omitempty"`
 					Visible *bool   `json:"visible,omitempty"`
 				}{
-					Value:   utils.Pointer("Y Axis"),
-					Visible: utils.Pointer(true),
+					Value:   schemautil.Pointer("Y Axis"),
+					Visible: schemautil.Pointer(true),
 				},
 			},
 		},
@@ -73,7 +73,7 @@ func Test_heatmapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 			Labels: &struct {
 				Visible *bool `json:"visible,omitempty"`
 			}{
-				Visible: utils.Pointer(true),
+				Visible: schemautil.Pointer(true),
 			},
 		},
 		Legend: kbapi.HeatmapLegend{
@@ -82,8 +82,8 @@ func Test_heatmapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 				pos := kbapi.HeatmapLegendPosition("right")
 				return &pos
 			}(),
-			Visible:            utils.Pointer(true),
-			TruncateAfterLines: utils.Pointer(float32(4)),
+			Visible:            schemautil.Pointer(true),
+			TruncateAfterLines: schemautil.Pointer(float32(4)),
 		},
 	}
 
@@ -113,10 +113,10 @@ func Test_heatmapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 	require.NotNil(t, model.Query)
 	assert.Equal(t, types.StringValue("status:200"), model.Query.Query)
 	assert.Equal(t, types.StringValue("kuery"), model.Query.Language)
-	assert.False(t, model.Dataset.IsNull())
-	assert.False(t, model.Metric.IsNull())
-	assert.False(t, model.XAxis.IsNull())
-	assert.False(t, model.YAxis.IsNull())
+	assert.False(t, model.DatasetJSON.IsNull())
+	assert.False(t, model.MetricJSON.IsNull())
+	assert.False(t, model.XAxisJSON.IsNull())
+	assert.False(t, model.YAxisJSON.IsNull())
 	require.NotNil(t, model.Axes)
 	require.NotNil(t, model.Cells)
 	require.NotNil(t, model.Legend)
@@ -136,10 +136,10 @@ func Test_heatmapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 func Test_heatmapConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 	heatmap := kbapi.HeatmapESQL{
 		Type:                kbapi.HeatmapESQLTypeHeatmap,
-		Title:               utils.Pointer("ESQL Heatmap"),
-		Description:         utils.Pointer("ESQL heatmap description"),
-		IgnoreGlobalFilters: utils.Pointer(false),
-		Sampling:            utils.Pointer(float32(1)),
+		Title:               schemautil.Pointer("ESQL Heatmap"),
+		Description:         schemautil.Pointer("ESQL heatmap description"),
+		IgnoreGlobalFilters: schemautil.Pointer(false),
+		Sampling:            schemautil.Pointer(float32(1)),
 		Axes: kbapi.HeatmapAxes{
 			X: kbapi.HeatmapXAxis{
 				Labels: &struct {
@@ -150,14 +150,14 @@ func Test_heatmapConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 						orientation := kbapi.HeatmapXAxisLabelsOrientation("angled")
 						return &orientation
 					}(),
-					Visible: utils.Pointer(true),
+					Visible: schemautil.Pointer(true),
 				},
 			},
 			Y: kbapi.HeatmapYAxis{
 				Labels: &struct {
 					Visible *bool `json:"visible,omitempty"`
 				}{
-					Visible: utils.Pointer(true),
+					Visible: schemautil.Pointer(true),
 				},
 			},
 		},
@@ -165,12 +165,12 @@ func Test_heatmapConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 			Labels: &struct {
 				Visible *bool `json:"visible,omitempty"`
 			}{
-				Visible: utils.Pointer(false),
+				Visible: schemautil.Pointer(false),
 			},
 		},
 		Legend: kbapi.HeatmapLegend{
 			Size:    kbapi.LegendSizeSmall,
-			Visible: utils.Pointer(false),
+			Visible: schemautil.Pointer(false),
 		},
 		Metric: struct {
 			Color     kbapi.ColorByValue               `json:"color"`
@@ -226,10 +226,10 @@ func Test_heatmapPanelConfigConverter_mapPanelToAPI_populateFromAPIPanel_roundTr
 		HeatmapConfig: &heatmapConfigModel{
 			Title:       types.StringValue("Round Trip Heatmap"),
 			Description: types.StringValue("Round-trip test"),
-			Dataset:     jsontypes.NewNormalizedValue(`{"type":"dataView","id":"metrics-*"}`),
-			Metric:      customtypes.NewJSONWithDefaultsValue[map[string]any](`{"operation":"count"}`, populateTagcloudMetricDefaults),
-			XAxis:       jsontypes.NewNormalizedValue(`{"operation":"filters","filters":[{"label":"All","filter":{"query":"*","language":"kuery"}}]}`),
-			YAxis:       jsontypes.NewNormalizedValue(`{"operation":"filters","filters":[{"label":"All","filter":{"query":"*","language":"kuery"}}]}`),
+			DatasetJSON: jsontypes.NewNormalizedValue(`{"type":"dataView","id":"metrics-*"}`),
+			MetricJSON:  customtypes.NewJSONWithDefaultsValue[map[string]any](`{"operation":"count"}`, populateTagcloudMetricDefaults),
+			XAxisJSON:   jsontypes.NewNormalizedValue(`{"operation":"filters","filters":[{"label":"All","filter":{"query":"*","language":"kuery"}}]}`),
+			YAxisJSON:   jsontypes.NewNormalizedValue(`{"operation":"filters","filters":[{"label":"All","filter":{"query":"*","language":"kuery"}}]}`),
 			Query:       &filterSimpleModel{Language: types.StringValue("kuery"), Query: types.StringValue("status:active")},
 			Axes:        &heatmapAxesModel{X: &heatmapXAxisModel{}, Y: &heatmapYAxisModel{}},
 			Cells:       &heatmapCellsModel{},
@@ -247,9 +247,10 @@ func Test_heatmapPanelConfigConverter_mapPanelToAPI_populateFromAPIPanel_roundTr
 	require.NotNil(t, newPanel.HeatmapConfig)
 	assert.Equal(t, types.StringValue("Round Trip Heatmap"), newPanel.HeatmapConfig.Title)
 	assert.Equal(t, types.StringValue("Round-trip test"), newPanel.HeatmapConfig.Description)
-	assert.False(t, newPanel.HeatmapConfig.Dataset.IsNull())
-	assert.False(t, newPanel.HeatmapConfig.Metric.IsNull())
-	assert.False(t, newPanel.HeatmapConfig.XAxis.IsNull())
+	assert.False(t, newPanel.HeatmapConfig.DatasetJSON.IsNull())
+	assert.False(t, newPanel.HeatmapConfig.MetricJSON.IsNull())
+	assert.False(t, newPanel.HeatmapConfig.XAxisJSON.IsNull())
+	assert.False(t, newPanel.HeatmapConfig.YAxisJSON.IsNull())
 	require.NotNil(t, newPanel.HeatmapConfig.Query)
 	assert.Equal(t, types.StringValue("kuery"), newPanel.HeatmapConfig.Query.Language)
 	assert.Equal(t, types.StringValue("status:active"), newPanel.HeatmapConfig.Query.Query)

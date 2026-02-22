@@ -7,23 +7,23 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-func TestAccDataSourceIngestProcessorJson(t *testing.T) {
+func TestAccDataSourceIngestProcessorJSON(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorJson,
+				Config: testAccDataSourceIngestProcessorJSON,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_json.test", "field", "string_source"),
-					CheckResourceJson("data.elasticstack_elasticsearch_ingest_processor_json.test", "json", expectedJsonJson),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_json.test", "json", expectedJSONJSON),
 				),
 			},
 		},
 	})
 }
 
-const expectedJsonJson = `{
+const expectedJSONJSON = `{
 	"json": {
 		"field": "string_source",
 		"ignore_failure": false,
@@ -31,7 +31,7 @@ const expectedJsonJson = `{
 	}
 }`
 
-const testAccDataSourceIngestProcessorJson = `
+const testAccDataSourceIngestProcessorJSON = `
 provider "elasticstack" {
   elasticsearch {}
 }

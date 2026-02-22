@@ -22,13 +22,13 @@ func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, r
 		return
 	}
 
-	compID, diags := clients.CompositeIdFromStrFw(state.ID.ValueString())
+	compID, diags := clients.CompositeIDFromStrFw(state.ID.ValueString())
 	response.Diagnostics.Append(diags...)
 	if response.Diagnostics.HasError() {
 		return
 	}
 
 	// Note: internal/clients/kibana.DeleteSlo expects (spaceId, sloId).
-	sdkDiags := clientkibana.DeleteSlo(ctx, r.client, compID.ClusterId, compID.ResourceId)
+	sdkDiags := clientkibana.DeleteSlo(ctx, r.client, compID.ClusterID, compID.ResourceID)
 	response.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 }

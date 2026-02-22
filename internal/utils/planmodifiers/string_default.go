@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
-func StringUseDefaultIfUnknown(defaultValue string) stringDefault {
+func StringUseDefaultIfUnknown(defaultValue string) planmodifier.String {
 	return stringDefault{defaultValue: defaultValue}
 }
 
@@ -16,7 +16,7 @@ type stringDefault struct {
 	defaultValue string
 }
 
-func (bd stringDefault) PlanModifyString(ctx context.Context, req planmodifier.StringRequest, resp *planmodifier.StringResponse) {
+func (bd stringDefault) PlanModifyString(_ context.Context, req planmodifier.StringRequest, resp *planmodifier.StringResponse) {
 	// Do nothing if there is a known planned value.
 	if !req.PlanValue.IsUnknown() {
 		return

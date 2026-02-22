@@ -24,7 +24,7 @@ resource "elasticstack_kibana_dashboard" "test" {
       no_esql = {
         title       = "Sample Datatable"
         description = "Test datatable visualization"
-        dataset = jsonencode({
+        dataset_json = jsonencode({
           type = "dataView"
           id   = "metrics-*"
         })
@@ -37,7 +37,7 @@ resource "elasticstack_kibana_dashboard" "test" {
         }
         metrics = [
           {
-            config = jsonencode({
+            config_json = jsonencode({
               operation     = "count"
               empty_as_null = false
               format = {

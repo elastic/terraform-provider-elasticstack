@@ -16,14 +16,14 @@ func TestAccDataSourceIngestProcessorTrim(t *testing.T) {
 				Config: testAccDataSourceIngestProcessorTrim,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_trim.test", "field", "foo"),
-					CheckResourceJson("data.elasticstack_elasticsearch_ingest_processor_trim.test", "json", expectedJsonTrim),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_trim.test", "json", expectedJSONTrim),
 				),
 			},
 		},
 	})
 }
 
-const expectedJsonTrim = `{
+const expectedJSONTrim = `{
 	"trim": {
 		"field": "foo",
 		"ignore_failure": false,

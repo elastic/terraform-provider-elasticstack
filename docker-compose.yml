@@ -46,7 +46,7 @@ services:
     command: >
       bash -c '
       echo "Setup the kibana_system password";
-      curl -sS --retry 5 --retry-delay 5 --retry-all-errors -u "elastic:${ELASTICSEARCH_PASSWORD}" -X POST http://elasticsearch:9200/_security/user/kibana_system/_password -d "{\"password\":\"${KIBANA_PASSWORD}\"}" -H "Content-Type: application/json"
+      curl -sS --retry 5 --retry-delay 5 -u "elastic:${ELASTICSEARCH_PASSWORD}" -X POST http://elasticsearch:9200/_security/user/kibana_system/_password -d "{\"password\":\"${KIBANA_PASSWORD}\"}" -H "Content-Type: application/json"
       '
 
   kibana:
@@ -90,18 +90,18 @@ services:
     command: >
       bash -c '
       echo "Setting fleet server host";
-      curl -sS --retry 5 --retry-delay 5 --retry-all-errors $$CACERT -u "elastic:${ELASTICSEARCH_PASSWORD}" -H "kbn-xsrf: true" $$KIBANA_HOST/api/fleet/fleet_server_hosts -d "{\"name\":\"default\",\"host_urls\":[\"http://fleet:8220\"],\"is_default\":true}" -H "Content-Type: application/json";
+      curl -sS --retry 5 --retry-delay 5 $$CACERT -u "elastic:${ELASTICSEARCH_PASSWORD}" -H "kbn-xsrf: true" $$KIBANA_HOST/api/fleet/fleet_server_hosts -d "{\"name\":\"default\",\"host_urls\":[\"http://fleet:8220\"],\"is_default\":true}" -H "Content-Type: application/json";
       echo "Setting fleet server agent policy";
-      curl -sS --retry 5 --retry-delay 5 --retry-all-errors $$CACERT -u "elastic:${ELASTICSEARCH_PASSWORD}" -H "kbn-xsrf: true" $$KIBANA_HOST/api/fleet/agent_policies -d "{\"id\":\"fleet-server\",\"name\":\"Fleet Server\",\"namespace\":\"default\",\"monitoring_enabled\":[\"logs\",\"metrics\"]}" -H "Content-Type: application/json";
+      curl -sS --retry 5 --retry-delay 5 $$CACERT -u "elastic:${ELASTICSEARCH_PASSWORD}" -H "kbn-xsrf: true" $$KIBANA_HOST/api/fleet/agent_policies -d "{\"id\":\"fleet-server\",\"name\":\"Fleet Server\",\"namespace\":\"default\",\"monitoring_enabled\":[\"logs\",\"metrics\"]}" -H "Content-Type: application/json";
       echo "Setting fleet server package policy";
-      curl -sS --retry 5 --retry-delay 5 --retry-all-errors $$CACERT -u "elastic:${ELASTICSEARCH_PASSWORD}" -H "kbn-xsrf: true" $$KIBANA_HOST/api/fleet/package_policies -d "{\"name\":\"fleet-server\",\"namespace\":\"default\",\"policy_id\":\"fleet-server\",\"enabled\":true,\"inputs\":[{\"type\":\"fleet-server\",\"enabled\":true,\"streams\":[],\"vars\":{}}],\"package\":{\"name\":\"fleet_server\",\"version\":\"1.5.0\"}}" -H "Content-Type: application/json";
+      curl -sS --retry 5 --retry-delay 5 $$CACERT -u "elastic:${ELASTICSEARCH_PASSWORD}" -H "kbn-xsrf: true" $$KIBANA_HOST/api/fleet/package_policies -d "{\"name\":\"fleet-server\",\"namespace\":\"default\",\"policy_id\":\"fleet-server\",\"enabled\":true,\"inputs\":[{\"type\":\"fleet-server\",\"enabled\":true,\"streams\":[],\"vars\":{}}],\"package\":{\"name\":\"fleet_server\",\"version\":\"1.5.0\"}}" -H "Content-Type: application/json";
       '
   
   fleet:
     depends_on:
       fleet_settings:
         condition: service_completed_successfully
-    image: docker.elastic.co/elastic-agent/elastic-agent:${STACK_VERSION}
+    image: ${FLEET_IMAGE}:${STACK_VERSION}
     container_name: ${FLEET_CONTAINER_NAME}
     restart: unless-stopped
     volumes:

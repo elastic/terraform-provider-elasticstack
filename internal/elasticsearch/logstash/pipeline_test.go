@@ -171,19 +171,19 @@ func checkResourceLogstashPipelineDestroy(s *terraform.State) error {
 		if rs.Type != "elasticstack_elasticsearch_logstash_pipeline" {
 			continue
 		}
-		compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
+		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
 		esClient, err := client.GetESClient()
 		if err != nil {
 			return err
 		}
-		res, err := esClient.LogstashGetPipeline(esClient.LogstashGetPipeline.WithDocumentID(compId.ResourceId))
+		res, err := esClient.LogstashGetPipeline(esClient.LogstashGetPipeline.WithDocumentID(compID.ResourceID))
 		if err != nil {
 			return err
 		}
 
 		if res.StatusCode != http.StatusNotFound {
-			return fmt.Errorf("logstash pipeline (%s) still exists", compId.ResourceId)
+			return fmt.Errorf("logstash pipeline (%s) still exists", compID.ResourceID)
 		}
 	}
 	return nil

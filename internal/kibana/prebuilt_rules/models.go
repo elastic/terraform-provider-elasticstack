@@ -1,4 +1,4 @@
-package prebuilt_rules
+package prebuiltrules
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"

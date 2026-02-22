@@ -15,14 +15,14 @@ func TestAccDataSourceIngestProcessorPipeline(t *testing.T) {
 			{
 				Config: testAccDataSourceIngestProcessorPipeline,
 				Check: resource.ComposeTestCheckFunc(
-					CheckResourceJson("data.elasticstack_elasticsearch_ingest_processor_pipeline.test", "json", expectedJsonPipeline),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_pipeline.test", "json", expectedJSONPipeline),
 				),
 			},
 		},
 	})
 }
 
-const expectedJsonPipeline = `{
+const expectedJSONPipeline = `{
 	"pipeline": {
 		"name": "pipeline_a",
 		"ignore_failure": false

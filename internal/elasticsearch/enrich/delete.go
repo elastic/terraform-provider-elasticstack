@@ -10,20 +10,20 @@ import (
 )
 
 func (r *enrichPolicyResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var data EnrichPolicyDataWithExecute
+	var data PolicyDataWithExecute
 	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	compId, diags := clients.CompositeIdFromStrFw(data.Id.ValueString())
+	compID, diags := clients.CompositeIDFromStrFw(data.ID.ValueString())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	policyName := compId.ResourceId
+	policyName := compID.ResourceID
 
-	client, diags := clients.MaybeNewApiClientFromFrameworkResource(ctx, data.ElasticsearchConnection, r.client)
+	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, data.ElasticsearchConnection, r.client)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

@@ -1,4 +1,4 @@
-package security_detection_rule
+package securitydetectionrule
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 )
 
 func (r *securityDetectionRuleResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var data SecurityDetectionRuleData
+	var data Data
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
@@ -35,7 +35,7 @@ func (r *securityDetectionRuleResource) Create(ctx context.Context, req resource
 	}
 
 	// Create the rule
-	response, err := kbClient.API.CreateRuleWithResponse(ctx, data.SpaceId.ValueString(), createProps)
+	response, err := kbClient.API.CreateRuleWithResponse(ctx, data.SpaceID.ValueString(), createProps)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating security detection rule",
@@ -59,18 +59,18 @@ func (r *securityDetectionRuleResource) Create(ctx context.Context, req resource
 	}
 
 	// Set the ID based on the created rule
-	id, diags := extractId(response.JSON200)
+	id, diags := extractID(response.JSON200)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	compId := clients.CompositeId{
-		ClusterId:  data.SpaceId.ValueString(),
-		ResourceId: id,
+	compID := clients.CompositeID{
+		ClusterID:  data.SpaceID.ValueString(),
+		ResourceID: id,
 	}
-	data.Id = types.StringValue(compId.String())
-	readData, diags := r.read(ctx, id, data.SpaceId.ValueString())
+	data.ID = types.StringValue(compID.String())
+	readData, diags := r.read(ctx, id, data.SpaceID.ValueString())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

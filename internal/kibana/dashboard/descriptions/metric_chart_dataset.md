@@ -1,0 +1,1 @@
+Dataset configuration as JSON. Can be a data view dataset (`type: 'dataview'`), index dataset (`type: 'index'`), ES|QL dataset (`type: 'esql'`), or table ES|QL dataset (`type: 'tableESQLDatasetType'`).

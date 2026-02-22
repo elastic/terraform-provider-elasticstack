@@ -1,22 +1,22 @@
-package security_list_data_streams
+package securitylistdatastreams
 
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
 func (r *securityListDataStreamsResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var state SecurityListDataStreamsModel
+	var state Model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	// During import, space_id might not be set yet, derive it from ID
-	if !utils.IsKnown(state.SpaceID) && utils.IsKnown(state.ID) {
+	if !typeutils.IsKnown(state.SpaceID) && typeutils.IsKnown(state.ID) {
 		state.SpaceID = state.ID
 	}
 
@@ -30,7 +30,7 @@ func (r *securityListDataStreamsResource) Read(ctx context.Context, req resource
 	}
 
 	// Check if the data streams exist
-	listIndex, listItemIndex, diags := kibana_oapi.ReadListIndex(ctx, client, spaceID)
+	listIndex, listItemIndex, diags := kibanaoapi.ReadListIndex(ctx, client, spaceID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

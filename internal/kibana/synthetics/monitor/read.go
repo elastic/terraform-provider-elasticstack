@@ -23,15 +23,15 @@ func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, respo
 		return
 	}
 
-	compositeId, dg := synthetics.GetCompositeId(state.ID.ValueString())
+	compositeID, dg := synthetics.GetCompositeID(state.ID.ValueString())
 	response.Diagnostics.Append(dg...)
 	if response.Diagnostics.HasError() {
 		return
 	}
 
-	spaceId := compositeId.ClusterId
-	monitorId := kbapi.MonitorID(compositeId.ResourceId)
-	result, err := kibanaClient.KibanaSynthetics.Monitor.Get(ctx, monitorId, spaceId)
+	spaceID := compositeID.ClusterID
+	monitorID := kbapi.MonitorID(compositeID.ResourceID)
+	result, err := kibanaClient.KibanaSynthetics.Monitor.Get(ctx, monitorID, spaceID)
 	if err != nil {
 		var apiError *kbapi.APIError
 		if errors.As(err, &apiError) && apiError.Code == 404 {
@@ -39,11 +39,11 @@ func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, respo
 			return
 		}
 
-		response.Diagnostics.AddError(fmt.Sprintf("Failed to get monitor `%s`, space %s", monitorId, spaceId), err.Error())
+		response.Diagnostics.AddError(fmt.Sprintf("Failed to get monitor `%s`, space %s", monitorID, spaceID), err.Error())
 		return
 	}
 
-	state, diags = state.toModelV0(ctx, result, spaceId)
+	state, diags = state.toModelV0(ctx, result, spaceID)
 	response.Diagnostics.Append(diags...)
 	if response.Diagnostics.HasError() {
 		return

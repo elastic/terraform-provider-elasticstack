@@ -23,7 +23,7 @@ resource "elasticstack_kibana_dashboard" "test" {
     legacy_metric_config = {
       title       = "Legacy Metric"
       description = "Legacy metric chart"
-      dataset = jsonencode({
+      dataset_json = jsonencode({
         type = "dataView"
         id   = "metrics-*"
       })
@@ -36,7 +36,7 @@ resource "elasticstack_kibana_dashboard" "test" {
           query = "status:200"
         }
       ]
-      metric = jsonencode({
+      metric_json = jsonencode({
         operation     = "count"
         empty_as_null = false
         format = {

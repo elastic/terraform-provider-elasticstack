@@ -111,7 +111,7 @@ func DataSourceSnapshotRespository() *schema.Resource {
 			Computed:    true,
 		},
 		"location_mode": {
-			Description: "Location mode. `primary_only` or `secondary_only`. See the [Azure storage redundancy documentation](https://docs.microsoft.com/en-us/azure/storage/common/storage-redundancy) for more details.",
+			Description: snapshotRepositoryLocationModeDescription,
 			Type:        schema.TypeString,
 			Computed:    true,
 		},
@@ -201,7 +201,7 @@ func DataSourceSnapshotRespository() *schema.Resource {
 			Type:        schema.TypeList,
 			Computed:    true,
 			Elem: &schema.Resource{
-				Schema: utils.MergeSchemaMaps(commonSettings, commonStdSettings, fsSettings),
+				Schema: schemautil.MergeSchemaMaps(commonSettings, commonStdSettings, fsSettings),
 			},
 		},
 		"url": {
@@ -209,7 +209,7 @@ func DataSourceSnapshotRespository() *schema.Resource {
 			Type:        schema.TypeList,
 			Computed:    true,
 			Elem: &schema.Resource{
-				Schema: utils.MergeSchemaMaps(commonSettings, commonStdSettings, urlSettings),
+				Schema: schemautil.MergeSchemaMaps(commonSettings, commonStdSettings, urlSettings),
 			},
 		},
 		"gcs": {
@@ -217,7 +217,7 @@ func DataSourceSnapshotRespository() *schema.Resource {
 			Type:        schema.TypeList,
 			Computed:    true,
 			Elem: &schema.Resource{
-				Schema: utils.MergeSchemaMaps(commonSettings, gcsSettings),
+				Schema: schemautil.MergeSchemaMaps(commonSettings, gcsSettings),
 			},
 		},
 		"azure": {
@@ -225,7 +225,7 @@ func DataSourceSnapshotRespository() *schema.Resource {
 			Type:        schema.TypeList,
 			Computed:    true,
 			Elem: &schema.Resource{
-				Schema: utils.MergeSchemaMaps(commonSettings, azureSettings),
+				Schema: schemautil.MergeSchemaMaps(commonSettings, azureSettings),
 			},
 		},
 		"s3": {
@@ -233,7 +233,7 @@ func DataSourceSnapshotRespository() *schema.Resource {
 			Type:        schema.TypeList,
 			Computed:    true,
 			Elem: &schema.Resource{
-				Schema: utils.MergeSchemaMaps(commonSettings, s3Settings),
+				Schema: schemautil.MergeSchemaMaps(commonSettings, s3Settings),
 			},
 		},
 		"hdfs": {
@@ -241,12 +241,12 @@ func DataSourceSnapshotRespository() *schema.Resource {
 			Type:        schema.TypeList,
 			Computed:    true,
 			Elem: &schema.Resource{
-				Schema: utils.MergeSchemaMaps(commonSettings, hdfsSettings),
+				Schema: schemautil.MergeSchemaMaps(commonSettings, hdfsSettings),
 			},
 		},
 	}
 
-	utils.AddConnectionSchema(snapRepoSchema)
+	schemautil.AddConnectionSchema(snapRepoSchema)
 
 	return &schema.Resource{
 		Description: "Gets information about the registered snapshot repositories.",
@@ -257,8 +257,8 @@ func DataSourceSnapshotRespository() *schema.Resource {
 	}
 }
 
-func dataSourceSnapRepoRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+func dataSourceSnapRepoRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}

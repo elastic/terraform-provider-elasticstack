@@ -1,9 +1,9 @@
-package integration_policy
+package integrationpolicy
 
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -27,15 +27,15 @@ type integrationPolicyModelV0 struct {
 	Force              types.Bool   `tfsdk:"force"`
 	IntegrationName    types.String `tfsdk:"integration_name"`
 	IntegrationVersion types.String `tfsdk:"integration_version"`
-	Input              types.List   `tfsdk:"input"` //> integrationPolicyInputModelV0
-	VarsJson           types.String `tfsdk:"vars_json"`
+	Input              types.List   `tfsdk:"input"` // > integrationPolicyInputModelV0
+	VarsJSON           types.String `tfsdk:"vars_json"`
 }
 
 type integrationPolicyInputModelV0 struct {
 	InputID     types.String `tfsdk:"input_id"`
 	Enabled     types.Bool   `tfsdk:"enabled"`
-	StreamsJson types.String `tfsdk:"streams_json"`
-	VarsJson    types.String `tfsdk:"vars_json"`
+	StreamsJSON types.String `tfsdk:"streams_json"`
+	VarsJSON    types.String `tfsdk:"vars_json"`
 }
 
 func getSchemaV0() *schema.Schema {
@@ -111,22 +111,22 @@ func upgradeV0ToV1(ctx context.Context, req resource.UpgradeStateRequest) (integ
 		Force:              stateModelV0.Force,
 		IntegrationName:    stateModelV0.IntegrationName,
 		IntegrationVersion: stateModelV0.IntegrationVersion,
-		SpaceIds:           types.SetNull(types.StringType), // V0 didn't have space_ids
+		SpaceIDs:           types.SetNull(types.StringType), // V0 didn't have space_ids
 	}
 
 	// Convert vars_json from string to normalized JSON type
-	if varsJSON := stateModelV0.VarsJson.ValueStringPointer(); varsJSON != nil {
+	if varsJSON := stateModelV0.VarsJSON.ValueStringPointer(); varsJSON != nil {
 		if *varsJSON == "" {
-			stateModelV1.VarsJson = jsontypes.NewNormalizedNull()
+			stateModelV1.VarsJSON = jsontypes.NewNormalizedNull()
 		} else {
-			stateModelV1.VarsJson = jsontypes.NewNormalizedValue(*varsJSON)
+			stateModelV1.VarsJSON = jsontypes.NewNormalizedValue(*varsJSON)
 		}
 	} else {
-		stateModelV1.VarsJson = jsontypes.NewNormalizedNull()
+		stateModelV1.VarsJSON = jsontypes.NewNormalizedNull()
 	}
 
 	// Convert inputs from V0 to V1
-	inputsV0 := utils.ListTypeAs[integrationPolicyInputModelV0](ctx, stateModelV0.Input, path.Root("input"), &diags)
+	inputsV0 := typeutils.ListTypeAs[integrationPolicyInputModelV0](ctx, stateModelV0.Input, path.Root("input"), &diags)
 	var inputsV1 []integrationPolicyInputModelV1
 
 	for _, inputV0 := range inputsV0 {
@@ -136,30 +136,30 @@ func upgradeV0ToV1(ctx context.Context, req resource.UpgradeStateRequest) (integ
 		}
 
 		// Convert vars_json
-		if varsJSON := inputV0.VarsJson.ValueStringPointer(); varsJSON != nil {
+		if varsJSON := inputV0.VarsJSON.ValueStringPointer(); varsJSON != nil {
 			if *varsJSON == "" {
-				inputV1.VarsJson = jsontypes.NewNormalizedNull()
+				inputV1.VarsJSON = jsontypes.NewNormalizedNull()
 			} else {
-				inputV1.VarsJson = jsontypes.NewNormalizedValue(*varsJSON)
+				inputV1.VarsJSON = jsontypes.NewNormalizedValue(*varsJSON)
 			}
 		} else {
-			inputV1.VarsJson = jsontypes.NewNormalizedNull()
+			inputV1.VarsJSON = jsontypes.NewNormalizedNull()
 		}
 
 		// Convert streams_json
-		if streamsJSON := inputV0.StreamsJson.ValueStringPointer(); streamsJSON != nil {
+		if streamsJSON := inputV0.StreamsJSON.ValueStringPointer(); streamsJSON != nil {
 			if *streamsJSON == "" {
-				inputV1.StreamsJson = jsontypes.NewNormalizedNull()
+				inputV1.StreamsJSON = jsontypes.NewNormalizedNull()
 			} else {
-				inputV1.StreamsJson = jsontypes.NewNormalizedValue(*streamsJSON)
+				inputV1.StreamsJSON = jsontypes.NewNormalizedValue(*streamsJSON)
 			}
 		} else {
-			inputV1.StreamsJson = jsontypes.NewNormalizedNull()
+			inputV1.StreamsJSON = jsontypes.NewNormalizedNull()
 		}
 
 		inputsV1 = append(inputsV1, inputV1)
 	}
 
-	stateModelV1.Input = utils.ListValueFrom(ctx, inputsV1, getInputTypeV1(), path.Root("input"), &diags)
+	stateModelV1.Input = typeutils.ListValueFrom(ctx, inputsV1, getInputTypeV1(), path.Root("input"), &diags)
 	return stateModelV1, diags
 }

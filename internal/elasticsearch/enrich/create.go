@@ -7,7 +7,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -32,7 +32,7 @@ func (r *enrichPolicyResource) Update(ctx context.Context, req resource.UpdateRe
 }
 
 func (r *enrichPolicyResource) upsert(ctx context.Context, plan tfsdk.Plan, state *tfsdk.State) diag.Diagnostics {
-	var data EnrichPolicyDataWithExecute
+	var data PolicyDataWithExecute
 	var diags diag.Diagnostics
 	diags.Append(plan.Get(ctx, &data)...)
 	if diags.HasError() {
@@ -46,19 +46,19 @@ func (r *enrichPolicyResource) upsert(ctx context.Context, plan tfsdk.Plan, stat
 		return diags
 	}
 
-	client, diags := clients.MaybeNewApiClientFromFrameworkResource(ctx, data.ElasticsearchConnection, r.client)
+	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, data.ElasticsearchConnection, r.client)
 	diags.Append(diags...)
 	if diags.HasError() {
 		return diags
 	}
 
 	// Convert framework types to model
-	indices := utils.SetTypeAs[string](ctx, data.Indices, path.Empty(), &diags)
+	indices := typeutils.SetTypeAs[string](ctx, data.Indices, path.Empty(), &diags)
 	if diags.HasError() {
 		return diags
 	}
 
-	enrichFields := utils.SetTypeAs[string](ctx, data.EnrichFields, path.Empty(), &diags)
+	enrichFields := typeutils.SetTypeAs[string](ctx, data.EnrichFields, path.Empty(), &diags)
 	if diags.HasError() {
 		return diags
 	}
@@ -80,7 +80,7 @@ func (r *enrichPolicyResource) upsert(ctx context.Context, plan tfsdk.Plan, stat
 		return diags
 	}
 
-	data.Id = types.StringValue(id.String())
+	data.ID = types.StringValue(id.String())
 
 	// Execute policy if requested
 	if !data.Execute.IsNull() && !data.Execute.IsUnknown() && data.Execute.ValueBool() {

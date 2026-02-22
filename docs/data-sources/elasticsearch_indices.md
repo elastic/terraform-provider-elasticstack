@@ -28,7 +28,9 @@ data "elasticstack_elasticsearch_indices" "security_indices" {
 
 ### Optional
 
-- `target` (String) Comma-separated list of data streams, indices, and aliases used to limit the request. Supports wildcards (*). To target all data streams and indices, omit this attribute or use * or _all.
+- `target` (String) Comma-separated list of data streams, indices, and aliases used to limit the request. Supports wildcards (*).
+
+To target all data streams and indices, omit this attribute or use `*` or `_all`.
 
 ### Read-Only
 
@@ -60,11 +62,11 @@ Optional:
 - `codec` (String) The `default` value compresses stored data with LZ4 compression, but this can be set to `best_compression` which uses DEFLATE for a higher compression ratio. This can be set only on creation.
 - `default_pipeline` (String) The default ingest node pipeline for this index. Index requests will fail if the default pipeline is set and the pipeline does not exist.
 - `deletion_protection` (Boolean) Whether to allow Terraform to destroy the index. Unless this field is set to false in Terraform state, a terraform destroy or terraform apply command that deletes the instance will fail.
-- `final_pipeline` (String) Final ingest pipeline for the index. Indexing requests will fail if the final pipeline is set and the pipeline does not exist. The final pipeline always runs after the request pipeline (if specified) and the default pipeline (if it exists). The special pipeline name _none indicates no ingest pipeline will run.
+- `final_pipeline` (String) Final ingest pipeline for the index. Indexing requests will fail if the final pipeline is set and the pipeline does not exist. The final pipeline always runs after the request pipeline (if specified) and the default pipeline (if it exists). The special pipeline name `_none` indicates no ingest pipeline will run.
 - `gc_deletes` (String) The length of time that a deleted document's version number remains available for further versioned operations.
 - `highlight_max_analyzed_offset` (Number) The maximum number of characters that will be analyzed for a highlight request.
 - `indexing_slowlog_level` (String) Set which logging level to use for the search slow log, can be: `warn`, `info`, `debug`, `trace`
-- `indexing_slowlog_source` (String) Set the number of characters of the `_source` to include in the slowlog lines, `false` or `0` will skip logging the source entirely and setting it to `true` will log the entire source regardless of size. The original `_source` is reformatted by default to make sure that it fits on a single log line.
+- `indexing_slowlog_source` (String) Set the number of characters of the `_source` to include in the slowlog lines. `false` or `0` skips logging the source entirely; `true` logs the entire source regardless of size. The original `_source` is reformatted by default to make sure that it fits on a single log line.
 - `indexing_slowlog_threshold_index_debug` (String) Set the cutoff for shard level slow search logging of slow searches for indexing queries, in time units, e.g. `2s`
 - `indexing_slowlog_threshold_index_info` (String) Set the cutoff for shard level slow search logging of slow searches for indexing queries, in time units, e.g. `5s`
 - `indexing_slowlog_threshold_index_trace` (String) Set the cutoff for shard level slow search logging of slow searches for indexing queries, in time units, e.g. `500ms`
@@ -72,10 +74,12 @@ Optional:
 - `load_fixed_bitset_filters_eagerly` (Boolean) Indicates whether cached filters are pre-loaded for nested queries. This can be set only on creation.
 - `mapping_coerce` (Boolean) Set index level coercion setting that is applied to all mapping types.
 - `mappings` (String) Mapping for fields in the index.
-							If specified, this mapping can include: field names, [field data types](https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-types.html), [mapping parameters](https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-params.html).
-							**NOTE:**
-							- Changing datatypes in the existing _mappings_ will force index to be re-created.
-							- Removing field will be ignored by default same as elasticsearch. You need to recreate the index to remove field completely.
+
+If specified, this mapping can include: field names, [field data types](https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-types.html), [mapping parameters](https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-params.html).
+
+**NOTE:**
+- Changing datatypes in the existing _mappings_ will force index to be re-created.
+- Removing a field will be ignored by default (same as Elasticsearch). You need to recreate the index to remove the field completely.
 - `master_timeout` (String) Period to wait for a connection to the master node. If no response is received before the timeout expires, the request fails and returns an error. Defaults to `30s`. This value is ignored when running against Serverless projects.
 - `max_docvalue_fields_search` (Number) The maximum number of `docvalue_fields` that are allowed in a query.
 - `max_inner_result_window` (Number) The maximum value of `from + size` for inner hits definition and top hits aggregations to this index.
@@ -110,7 +114,7 @@ Optional:
 - `sort_order` (List of String) The direction to sort shards in. Accepts `asc`, `desc`.
 - `timeout` (String) Period to wait for a response. If no response is received before the timeout expires, the request fails and returns an error. Defaults to `30s`.
 - `unassigned_node_left_delayed_timeout` (String) Time to delay the allocation of replica shards which become unassigned because a node has left, in time units, e.g. `10s`
-- `wait_for_active_shards` (String) The number of shard copies that must be active before proceeding with the operation. Set to `all` or any positive integer up to the total number of shards in the index (number_of_replicas+1). Default: `1`, the primary shard. This value is ignored when running against Serverless projects.
+- `wait_for_active_shards` (String) The number of shard copies that must be active before proceeding with the operation. Set to `all` or any positive integer up to the total number of shards in the index (`number_of_replicas+1`). Default: `1`, the primary shard. This value is ignored when running against Serverless projects.
 
 Read-Only:
 

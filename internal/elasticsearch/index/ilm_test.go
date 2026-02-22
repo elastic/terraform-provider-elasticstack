@@ -404,20 +404,20 @@ func checkResourceILMDestroy(s *terraform.State) error {
 		if rs.Type != "elasticstack_elasticsearch_index_lifecycle" {
 			continue
 		}
-		compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
+		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
 		esClient, err := client.GetESClient()
 		if err != nil {
 			return err
 		}
-		req := esClient.ILM.GetLifecycle.WithPolicy(compId.ResourceId)
+		req := esClient.ILM.GetLifecycle.WithPolicy(compID.ResourceID)
 		res, err := esClient.ILM.GetLifecycle(req)
 		if err != nil {
 			return err
 		}
 
 		if res.StatusCode != 404 {
-			return fmt.Errorf("ILM policy (%s) still exists", compId.ResourceId)
+			return fmt.Errorf("ILM policy (%s) still exists", compID.ResourceID)
 		}
 	}
 	return nil
