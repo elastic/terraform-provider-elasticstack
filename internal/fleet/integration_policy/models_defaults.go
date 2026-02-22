@@ -1,4 +1,4 @@
-package integration_policy
+package integrationpolicy
 
 import (
 	"encoding/json"
@@ -98,13 +98,13 @@ func (dataStreams apiDatastreams) defaults() (map[string]map[string]inputDefault
 
 type apiVars []apiVar
 type apiVar struct {
-	Name    string      `json:"name"`
-	Default interface{} `json:"default"`
-	Multi   bool        `json:"multi"`
+	Name    string `json:"name"`
+	Default any    `json:"default"`
+	Multi   bool   `json:"multi"`
 }
 
 func (v apiVars) defaults() (jsontypes.Normalized, diag.Diagnostics) {
-	varDefaults := map[string]interface{}{}
+	varDefaults := map[string]any{}
 	for _, inputVar := range v {
 		if inputVar.Default != nil {
 			varDefaults[inputVar.Name] = inputVar.Default
@@ -112,7 +112,7 @@ func (v apiVars) defaults() (jsontypes.Normalized, diag.Diagnostics) {
 		}
 
 		if inputVar.Multi {
-			varDefaults[inputVar.Name] = []interface{}{}
+			varDefaults[inputVar.Name] = []any{}
 			continue
 		}
 	}

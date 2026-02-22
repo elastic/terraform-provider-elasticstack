@@ -16,6 +16,10 @@ import (
 )
 
 func ResourceDataStream() *schema.Resource {
+	const dataStreamNameAllowedCharsError = "must contain lower case alphanumeric characters and selected punctuation, see: " +
+		"https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-data-stream.html" +
+		"#indices-create-data-stream-api-path-params"
+
 	dataStreamSchema := map[string]*schema.Schema{
 		"id": {
 			Description: "Internal identifier of the resource",
@@ -31,7 +35,10 @@ func ResourceDataStream() *schema.Resource {
 				validation.StringLenBetween(1, 255),
 				validation.StringNotInSlice([]string{".", ".."}, true),
 				validation.StringMatch(regexp.MustCompile(`^[^-_+]`), "cannot start with -, _, +"),
-				validation.StringMatch(regexp.MustCompile(`^[a-z0-9!$%&'()+.;=@[\]^{}~_-]+$`), "must contain lower case alphanumeric characters and selected punctuation, see: https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-data-stream.html#indices-create-data-stream-api-path-params"),
+				validation.StringMatch(
+					regexp.MustCompile(`^[a-z0-9!$%&'()+.;=@[\]^{}~_-]+$`),
+					dataStreamNameAllowedCharsError,
+				),
 			),
 		},
 		"timestamp_field": {
@@ -100,7 +107,7 @@ func ResourceDataStream() *schema.Resource {
 		},
 	}
 
-	utils.AddConnectionSchema(dataStreamSchema)
+	schemautil.AddConnectionSchema(dataStreamSchema)
 
 	return &schema.Resource{
 		Description: "Managing Elasticsearch data streams, see: https://www.elastic.co/guide/en/elasticsearch/reference/current/data-stream-apis.html",
@@ -118,18 +125,18 @@ func ResourceDataStream() *schema.Resource {
 	}
 }
 
-func resourceDataStreamPut(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+func resourceDataStreamPut(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
-	dsId := d.Get("name").(string)
-	id, diags := client.ID(ctx, dsId)
+	dsID := d.Get("name").(string)
+	id, diags := client.ID(ctx, dsID)
 	if diags.HasError() {
 		return diags
 	}
 
-	if diags := elasticsearch.PutDataStream(ctx, client, dsId); diags.HasError() {
+	if diags := elasticsearch.PutDataStream(ctx, client, dsID); diags.HasError() {
 		return diags
 	}
 
@@ -137,21 +144,21 @@ func resourceDataStreamPut(ctx context.Context, d *schema.ResourceData, meta int
 	return resourceDataStreamRead(ctx, d, meta)
 }
 
-func resourceDataStreamRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+func resourceDataStreamRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
 	id := d.Id()
-	compId, diags := clients.CompositeIdFromStr(id)
+	compID, diags := clients.CompositeIDFromStr(id)
 	if diags.HasError() {
 		return diags
 	}
 
-	ds, diags := elasticsearch.GetDataStream(ctx, client, compId.ResourceId)
+	ds, diags := elasticsearch.GetDataStream(ctx, client, compID.ResourceID)
 	if ds == nil && diags == nil {
 		// no data stream found on ES side
-		tflog.Warn(ctx, fmt.Sprintf(`Data stream "%s" not found, removing from state`, compId.ResourceId))
+		tflog.Warn(ctx, fmt.Sprintf(`Data stream "%s" not found, removing from state`, compID.ResourceID))
 		d.SetId("")
 		return diags
 	}
@@ -196,9 +203,9 @@ func resourceDataStreamRead(ctx context.Context, d *schema.ResourceData, meta in
 		}
 	}
 
-	indices := make([]interface{}, len(ds.Indices))
+	indices := make([]any, len(ds.Indices))
 	for i, idx := range ds.Indices {
-		index := make(map[string]interface{})
+		index := make(map[string]any)
 		index["index_name"] = idx.IndexName
 		index["index_uuid"] = idx.IndexUUID
 		indices[i] = index
@@ -210,17 +217,17 @@ func resourceDataStreamRead(ctx context.Context, d *schema.ResourceData, meta in
 	return diags
 }
 
-func resourceDataStreamDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+func resourceDataStreamDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
 	id := d.Id()
-	compId, diags := clients.CompositeIdFromStr(id)
+	compID, diags := clients.CompositeIDFromStr(id)
 	if diags.HasError() {
 		return diags
 	}
-	if diags := elasticsearch.DeleteDataStream(ctx, client, compId.ResourceId); diags.HasError() {
+	if diags := elasticsearch.DeleteDataStream(ctx, client, compID.ResourceID); diags.HasError() {
 		return diags
 	}
 

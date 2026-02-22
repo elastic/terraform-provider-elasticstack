@@ -25,7 +25,7 @@ func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp 
 		return
 	}
 
-	client, diags := clients.MaybeNewApiClientFromFrameworkResource(ctx, model.ElasticsearchConnection, r.client)
+	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, model.ElasticsearchConnection, r.client)
 	if diags.HasError() {
 		resp.Diagnostics.Append(diags...)
 		return
@@ -37,5 +37,5 @@ func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp 
 		return
 	}
 
-	resp.Diagnostics.Append(elasticsearch.DeleteIndex(ctx, client, id.ResourceId)...)
+	resp.Diagnostics.Append(elasticsearch.DeleteIndex(ctx, client, id.ResourceID)...)
 }

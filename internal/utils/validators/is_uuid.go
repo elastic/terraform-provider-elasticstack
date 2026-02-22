@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/go-uuid"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
@@ -16,7 +16,7 @@ func IsUUID() validator.String {
 }
 
 func (v uuidValidator) ValidateString(_ context.Context, req validator.StringRequest, resp *validator.StringResponse) {
-	if !utils.IsKnown(req.ConfigValue) {
+	if !typeutils.IsKnown(req.ConfigValue) {
 		return
 	}
 

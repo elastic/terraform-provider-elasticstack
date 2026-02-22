@@ -50,15 +50,15 @@ resource "elasticstack_kibana_dashboard" "test" {
           data_layer = {
             ignore_global_filters = false
             sampling              = 1
-            dataset = jsonencode({
+            dataset_json = jsonencode({
               type  = "esql"
               query = "FROM metrics-* | KEEP @timestamp, host.name, system.cpu.user.pct | LIMIT 10"
             })
-            x = jsonencode({
+            x_json = jsonencode({
               operation = "value"
               column    = "@timestamp"
             })
-            breakdown_by = jsonencode({
+            breakdown_by_json = jsonencode({
               operation   = "value"
               column      = "host.name"
               collapse_by = "avg"
@@ -82,7 +82,7 @@ resource "elasticstack_kibana_dashboard" "test" {
             })
             y = [
               {
-                config = jsonencode({
+                config_json = jsonencode({
                   operation = "value"
                   column    = "system.cpu.user.pct"
                   color = {

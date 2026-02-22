@@ -23,7 +23,7 @@ type integrationModelV0 struct {
 	SkipDataStreamRollover    types.Bool   `tfsdk:"skip_data_stream_rollover"`
 	IgnoreConstraints         types.Bool   `tfsdk:"ignore_constraints"`
 	SkipDestroy               types.Bool   `tfsdk:"skip_destroy"`
-	SpaceIds                  types.Set    `tfsdk:"space_ids"`
+	SpaceIDs                  types.Set    `tfsdk:"space_ids"`
 }
 
 func getSchemaV0() *schema.Schema {
@@ -96,9 +96,9 @@ func (r *integrationResource) UpgradeState(context.Context) map[int64]resource.S
 					SpaceID:                   types.StringNull(),
 				}
 
-				if !priorState.SpaceIds.IsNull() && !priorState.SpaceIds.IsUnknown() {
+				if !priorState.SpaceIDs.IsNull() && !priorState.SpaceIDs.IsUnknown() {
 					var spaceIDs []string
-					resp.Diagnostics.Append(priorState.SpaceIds.ElementsAs(ctx, &spaceIDs, false)...)
+					resp.Diagnostics.Append(priorState.SpaceIDs.ElementsAs(ctx, &spaceIDs, false)...)
 					if resp.Diagnostics.HasError() {
 						return
 					}

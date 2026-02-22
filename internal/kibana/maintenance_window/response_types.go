@@ -1,33 +1,33 @@
-package maintenance_window
+package maintenancewindow
 
 /*
-* The types generated automatically for kibana_oapi are deeply nested a very hard to use.
+* The types generated automatically for kibanaoapi are deeply nested a very hard to use.
 * This file defines convenience types that can be used to define these neestes objects
 * when needed.
  */
 
-type ResponseJson struct {
+type ResponseJSON struct {
 	CreatedAt string               `json:"created_at"`
 	CreatedBy *string              `json:"created_by"`
 	Enabled   bool                 `json:"enabled"`
-	Id        string               `json:"id"`
-	Schedule  ResponseJsonSchedule `json:"schedule"`
-	Scope     *ResponseJsonScope   `json:"scope,omitempty"`
+	ID        string               `json:"id"`
+	Schedule  ResponseJSONSchedule `json:"schedule"`
+	Scope     *ResponseJSONScope   `json:"scope,omitempty"`
 	Title     string               `json:"title"`
 }
 
-type ResponseJsonSchedule struct {
-	Custom ResponseJsonCustomSchedule `json:"custom"`
+type ResponseJSONSchedule struct {
+	Custom ResponseJSONCustomSchedule `json:"custom"`
 }
 
-type ResponseJsonCustomSchedule struct {
+type ResponseJSONCustomSchedule struct {
 	Duration  string                 `json:"duration"`
-	Recurring *ResponseJsonRecurring `json:"recurring,omitempty"`
+	Recurring *ResponseJSONRecurring `json:"recurring,omitempty"`
 	Start     string                 `json:"start"`
 	Timezone  *string                `json:"timezone,omitempty"`
 }
 
-type ResponseJsonRecurring struct {
+type ResponseJSONRecurring struct {
 	End         *string    `json:"end,omitempty"`
 	Every       *string    `json:"every,omitempty"`
 	Occurrences *float32   `json:"occurrences,omitempty"`
@@ -36,14 +36,14 @@ type ResponseJsonRecurring struct {
 	OnWeekDay   *[]string  `json:"onWeekDay,omitempty"`
 }
 
-type ResponseJsonScope struct {
-	Alerting ResponseJsonAlerting `json:"alerting"`
+type ResponseJSONScope struct {
+	Alerting ResponseJSONAlerting `json:"alerting"`
 }
 
-type ResponseJsonAlerting struct {
-	Query ResponseJsonAlertingQuery `json:"query"`
+type ResponseJSONAlerting struct {
+	Query ResponseJSONAlertingQuery `json:"query"`
 }
 
-type ResponseJsonAlertingQuery struct {
+type ResponseJSONAlertingQuery struct {
 	Kql string `json:"kql"`
 }

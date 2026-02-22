@@ -16,14 +16,14 @@ func TestAccDataSourceIngestProcessorLowercase(t *testing.T) {
 				Config: testAccDataSourceIngestProcessorLowercase,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_lowercase.test", "field", "foo"),
-					CheckResourceJson("data.elasticstack_elasticsearch_ingest_processor_lowercase.test", "json", expectedJsonLowercase),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_lowercase.test", "json", expectedJSONLowercase),
 				),
 			},
 		},
 	})
 }
 
-const expectedJsonLowercase = `{
+const expectedJSONLowercase = `{
 	"lowercase": {
 		"field": "foo",
 		"ignore_failure": false,

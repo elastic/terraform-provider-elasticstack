@@ -1,4 +1,4 @@
-package security_list_data_streams_test
+package securitylistdatastreams_test
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-version"
@@ -108,7 +108,7 @@ func checkResourceListDataStreamsDestroy(s *terraform.State) error {
 		spaceID := rs.Primary.ID
 
 		// Check if the data streams still exist
-		listIndex, listItemIndex, diags := kibana_oapi.ReadListIndex(context.Background(), oapiClient, spaceID)
+		listIndex, listItemIndex, diags := kibanaoapi.ReadListIndex(context.Background(), oapiClient, spaceID)
 		if diags.HasError() {
 			// All errors must be 404s (resource doesn't exist), which is what we want
 			// Any other error should fail the test

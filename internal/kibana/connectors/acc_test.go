@@ -9,7 +9,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/connectors"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/google/uuid"
@@ -171,15 +171,15 @@ func checkResourceKibanaConnectorDestroy(s *terraform.State) error {
 		if rs.Type != "elasticstack_kibana_action_connector" {
 			continue
 		}
-		compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
+		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
-		connector, diags := kibana_oapi.GetConnector(context.Background(), oapiClient, compId.ResourceId, compId.ClusterId)
+		connector, diags := kibanaoapi.GetConnector(context.Background(), oapiClient, compID.ResourceID, compID.ClusterID)
 		if diags.HasError() {
 			return fmt.Errorf("Failed to get connector: %v", diags)
 		}
 
 		if connector != nil {
-			return fmt.Errorf("Action connector (%s) still exists", compId.ResourceId)
+			return fmt.Errorf("Action connector (%s) still exists", compID.ResourceID)
 		}
 	}
 	return nil

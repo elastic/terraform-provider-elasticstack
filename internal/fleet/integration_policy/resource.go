@@ -1,4 +1,4 @@
-package integration_policy
+package integrationpolicy
 
 import (
 	"context"
@@ -23,8 +23,8 @@ var (
 )
 
 var (
-	MinVersionPolicyIds = version.Must(version.NewVersion("8.15.0"))
-	MinVersionOutputId  = version.Must(version.NewVersion("8.16.0"))
+	MinVersionPolicyIDs = version.Must(version.NewVersion("8.15.0"))
+	MinVersionOutputID  = version.Must(version.NewVersion("8.16.0"))
 )
 
 // NewResource is a helper function to simplify the provider implementation.
@@ -33,16 +33,16 @@ func NewResource() resource.Resource {
 }
 
 type integrationPolicyResource struct {
-	client *clients.ApiClient
+	client *clients.APIClient
 }
 
-func (r *integrationPolicyResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+func (r *integrationPolicyResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	client, diags := clients.ConvertProviderData(req.ProviderData)
 	resp.Diagnostics.Append(diags...)
 	r.client = client
 }
 
-func (r *integrationPolicyResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+func (r *integrationPolicyResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = fmt.Sprintf("%s_%s", req.ProviderTypeName, "fleet_integration_policy")
 }
 
@@ -58,19 +58,19 @@ func (r *integrationPolicyResource) UpgradeState(context.Context) map[int64]reso
 }
 
 func (r *integrationPolicyResource) buildFeatures(ctx context.Context) (features, diag.Diagnostics) {
-	supportsPolicyIds, diags := r.client.EnforceMinVersion(ctx, MinVersionPolicyIds)
+	supportsPolicyIDs, diags := r.client.EnforceMinVersion(ctx, MinVersionPolicyIDs)
 	if diags.HasError() {
 		return features{}, diagutil.FrameworkDiagsFromSDK(diags)
 	}
 
-	supportsOutputId, outputIdDiags := r.client.EnforceMinVersion(ctx, MinVersionOutputId)
-	if outputIdDiags.HasError() {
-		return features{}, diagutil.FrameworkDiagsFromSDK(outputIdDiags)
+	supportsOutputID, outputIDDiags := r.client.EnforceMinVersion(ctx, MinVersionOutputID)
+	if outputIDDiags.HasError() {
+		return features{}, diagutil.FrameworkDiagsFromSDK(outputIDDiags)
 	}
 
 	return features{
-		SupportsPolicyIds: supportsPolicyIds,
-		SupportsOutputId:  supportsOutputId,
+		SupportsPolicyIDs: supportsPolicyIDs,
+		SupportsOutputID:  supportsOutputID,
 	}, nil
 }
 

@@ -1,4 +1,4 @@
-package integration_policy
+package integrationpolicy
 
 import (
 	"testing"
@@ -16,27 +16,27 @@ func TestUpgradeV0ToV2_JSONConversions(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		v0VarsJson     types.String
+		v0VarsJSON     types.String
 		expectedV1Null bool
 	}{
 		{
 			name:           "valid JSON string is preserved",
-			v0VarsJson:     types.StringValue(`{"key":"value"}`),
+			v0VarsJSON:     types.StringValue(`{"key":"value"}`),
 			expectedV1Null: false,
 		},
 		{
 			name:           "empty string converts to null",
-			v0VarsJson:     types.StringValue(""),
+			v0VarsJSON:     types.StringValue(""),
 			expectedV1Null: true,
 		},
 		{
 			name:           "null remains null",
-			v0VarsJson:     types.StringNull(),
+			v0VarsJSON:     types.StringNull(),
 			expectedV1Null: true,
 		},
 		{
 			name:           "complex JSON is preserved",
-			v0VarsJson:     types.StringValue(`{"nested":{"key":"value"},"array":[1,2,3]}`),
+			v0VarsJSON:     types.StringValue(`{"nested":{"key":"value"},"array":[1,2,3]}`),
 			expectedV1Null: false,
 		},
 	}
@@ -46,25 +46,25 @@ func TestUpgradeV0ToV2_JSONConversions(t *testing.T) {
 			t.Parallel()
 
 			// Simulate the conversion logic from upgradeV0ToV2
-			var v1VarsJson jsontypes.Normalized
-			if varsJSON := tt.v0VarsJson.ValueStringPointer(); varsJSON != nil {
+			var v1VarsJSON jsontypes.Normalized
+			if varsJSON := tt.v0VarsJSON.ValueStringPointer(); varsJSON != nil {
 				if *varsJSON == "" {
-					v1VarsJson = jsontypes.NewNormalizedNull()
+					v1VarsJSON = jsontypes.NewNormalizedNull()
 				} else {
-					v1VarsJson = jsontypes.NewNormalizedValue(*varsJSON)
+					v1VarsJSON = jsontypes.NewNormalizedValue(*varsJSON)
 				}
 			} else {
-				v1VarsJson = jsontypes.NewNormalizedNull()
+				v1VarsJSON = jsontypes.NewNormalizedNull()
 			}
 
 			if tt.expectedV1Null {
-				assert.True(t, v1VarsJson.IsNull(), "Expected null but got non-null value")
+				assert.True(t, v1VarsJSON.IsNull(), "Expected null but got non-null value")
 			} else {
-				assert.False(t, v1VarsJson.IsNull(), "Expected non-null but got null value")
+				assert.False(t, v1VarsJSON.IsNull(), "Expected non-null but got null value")
 
 				// For non-null values, verify the JSON content
-				var result map[string]interface{}
-				diags := v1VarsJson.Unmarshal(&result)
+				var result map[string]any
+				diags := v1VarsJSON.Unmarshal(&result)
 				require.Empty(t, diags, "Failed to unmarshal JSON")
 			}
 		})
@@ -77,36 +77,36 @@ func TestUpgradeV0ToV2_InputJSONConversions(t *testing.T) {
 
 	tests := []struct {
 		name                string
-		v0VarsJson          types.String
-		v0StreamsJson       types.String
+		v0VarsJSON          types.String
+		v0StreamsJSON       types.String
 		expectedVarsNull    bool
 		expectedStreamsNull bool
 	}{
 		{
 			name:                "valid JSON strings are preserved",
-			v0VarsJson:          types.StringValue(`{"var":"value"}`),
-			v0StreamsJson:       types.StringValue(`{"stream-1":{"enabled":true}}`),
+			v0VarsJSON:          types.StringValue(`{"var":"value"}`),
+			v0StreamsJSON:       types.StringValue(`{"stream-1":{"enabled":true}}`),
 			expectedVarsNull:    false,
 			expectedStreamsNull: false,
 		},
 		{
 			name:                "empty strings convert to null",
-			v0VarsJson:          types.StringValue(""),
-			v0StreamsJson:       types.StringValue(""),
+			v0VarsJSON:          types.StringValue(""),
+			v0StreamsJSON:       types.StringValue(""),
 			expectedVarsNull:    true,
 			expectedStreamsNull: true,
 		},
 		{
 			name:                "null values remain null",
-			v0VarsJson:          types.StringNull(),
-			v0StreamsJson:       types.StringNull(),
+			v0VarsJSON:          types.StringNull(),
+			v0StreamsJSON:       types.StringNull(),
 			expectedVarsNull:    true,
 			expectedStreamsNull: true,
 		},
 		{
 			name:                "mixed empty and valid JSON",
-			v0VarsJson:          types.StringValue(`{"key":"value"}`),
-			v0StreamsJson:       types.StringValue(""),
+			v0VarsJSON:          types.StringValue(`{"key":"value"}`),
+			v0StreamsJSON:       types.StringValue(""),
 			expectedVarsNull:    false,
 			expectedStreamsNull: true,
 		},
@@ -117,41 +117,41 @@ func TestUpgradeV0ToV2_InputJSONConversions(t *testing.T) {
 			t.Parallel()
 
 			// Simulate the conversion logic for vars_json
-			var v1VarsJson jsontypes.Normalized
-			if varsJSON := tt.v0VarsJson.ValueStringPointer(); varsJSON != nil {
+			var v1VarsJSON jsontypes.Normalized
+			if varsJSON := tt.v0VarsJSON.ValueStringPointer(); varsJSON != nil {
 				if *varsJSON == "" {
-					v1VarsJson = jsontypes.NewNormalizedNull()
+					v1VarsJSON = jsontypes.NewNormalizedNull()
 				} else {
-					v1VarsJson = jsontypes.NewNormalizedValue(*varsJSON)
+					v1VarsJSON = jsontypes.NewNormalizedValue(*varsJSON)
 				}
 			} else {
-				v1VarsJson = jsontypes.NewNormalizedNull()
+				v1VarsJSON = jsontypes.NewNormalizedNull()
 			}
 
 			// Simulate the conversion logic for streams_json
-			var v1StreamsJson jsontypes.Normalized
-			if streamsJSON := tt.v0StreamsJson.ValueStringPointer(); streamsJSON != nil {
+			var v1StreamsJSON jsontypes.Normalized
+			if streamsJSON := tt.v0StreamsJSON.ValueStringPointer(); streamsJSON != nil {
 				if *streamsJSON == "" {
-					v1StreamsJson = jsontypes.NewNormalizedNull()
+					v1StreamsJSON = jsontypes.NewNormalizedNull()
 				} else {
-					v1StreamsJson = jsontypes.NewNormalizedValue(*streamsJSON)
+					v1StreamsJSON = jsontypes.NewNormalizedValue(*streamsJSON)
 				}
 			} else {
-				v1StreamsJson = jsontypes.NewNormalizedNull()
+				v1StreamsJSON = jsontypes.NewNormalizedNull()
 			}
 
 			// Verify vars_json
 			if tt.expectedVarsNull {
-				assert.True(t, v1VarsJson.IsNull(), "Expected vars_json to be null")
+				assert.True(t, v1VarsJSON.IsNull(), "Expected vars_json to be null")
 			} else {
-				assert.False(t, v1VarsJson.IsNull(), "Expected vars_json to be non-null")
+				assert.False(t, v1VarsJSON.IsNull(), "Expected vars_json to be non-null")
 			}
 
 			// Verify streams_json
 			if tt.expectedStreamsNull {
-				assert.True(t, v1StreamsJson.IsNull(), "Expected streams_json to be null")
+				assert.True(t, v1StreamsJSON.IsNull(), "Expected streams_json to be null")
 			} else {
-				assert.False(t, v1StreamsJson.IsNull(), "Expected streams_json to be non-null")
+				assert.False(t, v1StreamsJSON.IsNull(), "Expected streams_json to be non-null")
 			}
 		})
 	}
@@ -163,10 +163,10 @@ func TestUpgradeV0ToV2_NewFieldsAddedAsNull(t *testing.T) {
 
 	// V0 didn't have these fields, verify they're initialized as null in the upgrade
 	agentPolicyIDs := types.ListNull(types.StringType)
-	spaceIds := types.SetNull(types.StringType)
+	spaceIDs := types.SetNull(types.StringType)
 
 	assert.True(t, agentPolicyIDs.IsNull(), "agent_policy_ids should be null (didn't exist in V0)")
-	assert.True(t, spaceIds.IsNull(), "space_ids should be null (didn't exist in V0)")
+	assert.True(t, spaceIDs.IsNull(), "space_ids should be null (didn't exist in V0)")
 }
 
 // TestUpgradeV0ToV2_FieldsPreserved tests that all V0 fields are preserved during upgrade
@@ -185,7 +185,7 @@ func TestUpgradeV0ToV2_FieldsPreserved(t *testing.T) {
 		Force:              types.BoolValue(true),
 		IntegrationName:    types.StringValue("test-integration"),
 		IntegrationVersion: types.StringValue("2.0.0"),
-		VarsJson:           types.StringValue(`{"complex":{"nested":"value"}}`),
+		VarsJSON:           types.StringValue(`{"complex":{"nested":"value"}}`),
 		Input:              types.ListNull(getInputTypeV0()),
 	}
 
@@ -196,11 +196,11 @@ func TestUpgradeV0ToV2_FieldsPreserved(t *testing.T) {
 	assert.Equal(t, "test-namespace", v0Model.Namespace.ValueString())
 	assert.Equal(t, "agent-policy-1", v0Model.AgentPolicyID.ValueString())
 	assert.Equal(t, "test description", v0Model.Description.ValueString())
-	assert.Equal(t, false, v0Model.Enabled.ValueBool())
-	assert.Equal(t, true, v0Model.Force.ValueBool())
+	assert.False(t, v0Model.Enabled.ValueBool())
+	assert.True(t, v0Model.Force.ValueBool())
 	assert.Equal(t, "test-integration", v0Model.IntegrationName.ValueString())
 	assert.Equal(t, "2.0.0", v0Model.IntegrationVersion.ValueString())
-	assert.Equal(t, `{"complex":{"nested":"value"}}`, v0Model.VarsJson.ValueString())
+	assert.JSONEq(t, `{"complex":{"nested":"value"}}`, v0Model.VarsJSON.ValueString())
 	assert.True(t, v0Model.Input.IsNull())
 }
 

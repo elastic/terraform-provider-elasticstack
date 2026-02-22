@@ -1,4 +1,4 @@
-package agent_configuration
+package agentconfiguration
 
 import (
 	"context"
@@ -53,7 +53,7 @@ func (r *resourceAgentConfiguration) Create(ctx context.Context, req resource.Cr
 	}
 	defer apiResp.Body.Close()
 
-	if diags := diagutil.CheckHttpErrorFromFW(apiResp, "Failed to create APM agent configuration"); diags.HasError() {
+	if diags := diagutil.CheckHTTPErrorFromFW(apiResp, "Failed to create APM agent configuration"); diags.HasError() {
 		resp.Diagnostics.Append(diags...)
 		return
 	}

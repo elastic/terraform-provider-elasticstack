@@ -14,14 +14,14 @@ func (r *datafeedResource) read(ctx context.Context, model *Datafeed) (bool, fwd
 		return false, diags
 	}
 
-	datafeedId := model.DatafeedID.ValueString()
-	if datafeedId == "" {
+	datafeedID := model.DatafeedID.ValueString()
+	if datafeedID == "" {
 		diags.AddError("Invalid Configuration", "datafeed_id cannot be empty")
 		return false, diags
 	}
 
 	// Get the datafeed from Elasticsearch
-	apiModel, getDiags := elasticsearch.GetDatafeed(ctx, r.client, datafeedId)
+	apiModel, getDiags := elasticsearch.GetDatafeed(ctx, r.client, datafeedID)
 	diags.Append(getDiags...)
 	if diags.HasError() {
 		return false, diags

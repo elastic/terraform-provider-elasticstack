@@ -1,11 +1,11 @@
-package security_detection_rule
+package securitydetectionrule
 
 import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -19,11 +19,19 @@ func (m MachineLearningRuleProcessor) HandlesRuleType(t string) bool {
 	return t == "machine_learning"
 }
 
-func (m MachineLearningRuleProcessor) ToCreateProps(ctx context.Context, client clients.MinVersionEnforceable, d SecurityDetectionRuleData) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
+func (m MachineLearningRuleProcessor) ToCreateProps(
+	ctx context.Context,
+	client clients.MinVersionEnforceable,
+	d Data,
+) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
 	return d.toMachineLearningRuleCreateProps(ctx, client)
 }
 
-func (m MachineLearningRuleProcessor) ToUpdateProps(ctx context.Context, client clients.MinVersionEnforceable, d SecurityDetectionRuleData) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
+func (m MachineLearningRuleProcessor) ToUpdateProps(
+	ctx context.Context,
+	client clients.MinVersionEnforceable,
+	d Data,
+) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
 	return d.toMachineLearningRuleUpdateProps(ctx, client)
 }
 
@@ -32,7 +40,7 @@ func (m MachineLearningRuleProcessor) HandlesAPIRuleResponse(rule any) bool {
 	return ok
 }
 
-func (m MachineLearningRuleProcessor) UpdateFromResponse(ctx context.Context, rule any, d *SecurityDetectionRuleData) diag.Diagnostics {
+func (m MachineLearningRuleProcessor) UpdateFromResponse(ctx context.Context, rule any, d *Data) diag.Diagnostics {
 	var diags diag.Diagnostics
 	value, ok := rule.(kbapi.SecurityDetectionsAPIMachineLearningRule)
 	if !ok {
@@ -46,7 +54,7 @@ func (m MachineLearningRuleProcessor) UpdateFromResponse(ctx context.Context, ru
 	return d.updateFromMachineLearningRule(ctx, &value)
 }
 
-func (m MachineLearningRuleProcessor) ExtractId(response any) (string, diag.Diagnostics) {
+func (m MachineLearningRuleProcessor) ExtractID(response any) (string, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	value, ok := response.(kbapi.SecurityDetectionsAPIMachineLearningRule)
 	if !ok {
@@ -59,13 +67,13 @@ func (m MachineLearningRuleProcessor) ExtractId(response any) (string, diag.Diag
 	return value.Id.String(), diags
 }
 
-func (d SecurityDetectionRuleData) toMachineLearningRuleCreateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
+func (d Data) toMachineLearningRuleCreateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var createProps kbapi.SecurityDetectionsAPIRuleCreateProps
 
 	mlRule := kbapi.SecurityDetectionsAPIMachineLearningRuleCreateProps{
-		Name:             kbapi.SecurityDetectionsAPIRuleName(d.Name.ValueString()),
-		Description:      kbapi.SecurityDetectionsAPIRuleDescription(d.Description.ValueString()),
+		Name:             d.Name.ValueString(),
+		Description:      d.Description.ValueString(),
 		Type:             kbapi.SecurityDetectionsAPIMachineLearningRuleCreatePropsType("machine_learning"),
 		AnomalyThreshold: kbapi.SecurityDetectionsAPIAnomalyThreshold(d.AnomalyThreshold.ValueInt64()),
 		RiskScore:        kbapi.SecurityDetectionsAPIRiskScore(d.RiskScore.ValueInt64()),
@@ -73,15 +81,15 @@ func (d SecurityDetectionRuleData) toMachineLearningRuleCreateProps(ctx context.
 	}
 
 	// Set ML job ID(s) - can be single string or array
-	if utils.IsKnown(d.MachineLearningJobId) {
-		jobIds := utils.ListTypeAs[string](ctx, d.MachineLearningJobId, path.Root("machine_learning_job_id"), &diags)
+	if typeutils.IsKnown(d.MachineLearningJobID) {
+		jobIDs := typeutils.ListTypeAs[string](ctx, d.MachineLearningJobID, path.Root("machine_learning_job_id"), &diags)
 		if !diags.HasError() {
-			var mlJobId kbapi.SecurityDetectionsAPIMachineLearningJobId
-			err := mlJobId.FromSecurityDetectionsAPIMachineLearningJobId1(jobIds)
+			var mlJobID kbapi.SecurityDetectionsAPIMachineLearningJobId
+			err := mlJobID.FromSecurityDetectionsAPIMachineLearningJobId1(jobIDs)
 			if err != nil {
 				diags.AddError("Error setting ML job IDs", err.Error())
 			} else {
-				mlRule.MachineLearningJobId = mlJobId
+				mlRule.MachineLearningJobId = mlJobID
 			}
 		}
 	}
@@ -89,7 +97,7 @@ func (d SecurityDetectionRuleData) toMachineLearningRuleCreateProps(ctx context.
 	d.setCommonCreateProps(ctx, &CommonCreateProps{
 		Actions:                           &mlRule.Actions,
 		ResponseActions:                   &mlRule.ResponseActions,
-		RuleId:                            &mlRule.RuleId,
+		RuleID:                            &mlRule.RuleId,
 		Enabled:                           &mlRule.Enabled,
 		From:                              &mlRule.From,
 		To:                                &mlRule.To,
@@ -111,7 +119,7 @@ func (d SecurityDetectionRuleData) toMachineLearningRuleCreateProps(ctx context.
 		RelatedIntegrations:               &mlRule.RelatedIntegrations,
 		RequiredFields:                    &mlRule.RequiredFields,
 		BuildingBlockType:                 &mlRule.BuildingBlockType,
-		DataViewId:                        nil, // ML rules don't have DataViewId
+		DataViewID:                        nil, // ML rules don't have DataViewID
 		Namespace:                         &mlRule.Namespace,
 		RuleNameOverride:                  &mlRule.RuleNameOverride,
 		TimestampOverride:                 &mlRule.TimestampOverride,
@@ -119,7 +127,7 @@ func (d SecurityDetectionRuleData) toMachineLearningRuleCreateProps(ctx context.
 		InvestigationFields:               &mlRule.InvestigationFields,
 		Filters:                           nil, // ML rules don't have Filters
 		Threat:                            &mlRule.Threat,
-		TimelineId:                        &mlRule.TimelineId,
+		TimelineID:                        &mlRule.TimelineId,
 		TimelineTitle:                     &mlRule.TimelineTitle,
 	}, &diags, client)
 
@@ -136,15 +144,15 @@ func (d SecurityDetectionRuleData) toMachineLearningRuleCreateProps(ctx context.
 
 	return createProps, diags
 }
-func (d SecurityDetectionRuleData) toMachineLearningRuleUpdateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
+func (d Data) toMachineLearningRuleUpdateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var updateProps kbapi.SecurityDetectionsAPIRuleUpdateProps
 
 	// Parse ID to get space_id and rule_id
-	compId, resourceIdDiags := clients.CompositeIdFromStrFw(d.Id.ValueString())
-	diags.Append(resourceIdDiags...)
+	compID, resourceIDDiags := clients.CompositeIDFromStrFw(d.ID.ValueString())
+	diags.Append(resourceIDDiags...)
 
-	uid, err := uuid.Parse(compId.ResourceId)
+	uid, err := uuid.Parse(compID.ResourceID)
 	if err != nil {
 		diags.AddError("ID was not a valid UUID", err.Error())
 		return updateProps, diags
@@ -152,8 +160,8 @@ func (d SecurityDetectionRuleData) toMachineLearningRuleUpdateProps(ctx context.
 
 	mlRule := kbapi.SecurityDetectionsAPIMachineLearningRuleUpdateProps{
 		Id:               &uid,
-		Name:             kbapi.SecurityDetectionsAPIRuleName(d.Name.ValueString()),
-		Description:      kbapi.SecurityDetectionsAPIRuleDescription(d.Description.ValueString()),
+		Name:             d.Name.ValueString(),
+		Description:      d.Description.ValueString(),
 		Type:             kbapi.SecurityDetectionsAPIMachineLearningRuleUpdatePropsType("machine_learning"),
 		AnomalyThreshold: kbapi.SecurityDetectionsAPIAnomalyThreshold(d.AnomalyThreshold.ValueInt64()),
 		RiskScore:        kbapi.SecurityDetectionsAPIRiskScore(d.RiskScore.ValueInt64()),
@@ -161,22 +169,22 @@ func (d SecurityDetectionRuleData) toMachineLearningRuleUpdateProps(ctx context.
 	}
 
 	// For updates, we need to include the rule_id if it's set
-	if utils.IsKnown(d.RuleId) {
-		ruleId := kbapi.SecurityDetectionsAPIRuleSignatureId(d.RuleId.ValueString())
-		mlRule.RuleId = &ruleId
+	if typeutils.IsKnown(d.RuleID) {
+		ruleID := d.RuleID.ValueString()
+		mlRule.RuleId = &ruleID
 		mlRule.Id = nil // if rule_id is set, we cant send id
 	}
 
 	// Set ML job ID(s) - can be single string or array
-	if utils.IsKnown(d.MachineLearningJobId) {
-		jobIds := utils.ListTypeAs[string](ctx, d.MachineLearningJobId, path.Root("machine_learning_job_id"), &diags)
+	if typeutils.IsKnown(d.MachineLearningJobID) {
+		jobIDs := typeutils.ListTypeAs[string](ctx, d.MachineLearningJobID, path.Root("machine_learning_job_id"), &diags)
 		if !diags.HasError() {
-			var mlJobId kbapi.SecurityDetectionsAPIMachineLearningJobId
-			err := mlJobId.FromSecurityDetectionsAPIMachineLearningJobId1(jobIds)
+			var mlJobID kbapi.SecurityDetectionsAPIMachineLearningJobId
+			err := mlJobID.FromSecurityDetectionsAPIMachineLearningJobId1(jobIDs)
 			if err != nil {
 				diags.AddError("Error setting ML job IDs", err.Error())
 			} else {
-				mlRule.MachineLearningJobId = mlJobId
+				mlRule.MachineLearningJobId = mlJobID
 			}
 		}
 	}
@@ -184,7 +192,7 @@ func (d SecurityDetectionRuleData) toMachineLearningRuleUpdateProps(ctx context.
 	d.setCommonUpdateProps(ctx, &CommonUpdateProps{
 		Actions:                           &mlRule.Actions,
 		ResponseActions:                   &mlRule.ResponseActions,
-		RuleId:                            &mlRule.RuleId,
+		RuleID:                            &mlRule.RuleId,
 		Enabled:                           &mlRule.Enabled,
 		From:                              &mlRule.From,
 		To:                                &mlRule.To,
@@ -206,7 +214,7 @@ func (d SecurityDetectionRuleData) toMachineLearningRuleUpdateProps(ctx context.
 		RelatedIntegrations:               &mlRule.RelatedIntegrations,
 		RequiredFields:                    &mlRule.RequiredFields,
 		BuildingBlockType:                 &mlRule.BuildingBlockType,
-		DataViewId:                        nil, // ML rules don't have DataViewId
+		DataViewID:                        nil, // ML rules don't have DataViewID
 		Namespace:                         &mlRule.Namespace,
 		RuleNameOverride:                  &mlRule.RuleNameOverride,
 		TimestampOverride:                 &mlRule.TimestampOverride,
@@ -214,7 +222,7 @@ func (d SecurityDetectionRuleData) toMachineLearningRuleUpdateProps(ctx context.
 		InvestigationFields:               &mlRule.InvestigationFields,
 		Filters:                           nil, // ML rules don't have Filters
 		Threat:                            &mlRule.Threat,
-		TimelineId:                        &mlRule.TimelineId,
+		TimelineID:                        &mlRule.TimelineId,
 		TimelineTitle:                     &mlRule.TimelineTitle,
 	}, &diags, client)
 
@@ -232,38 +240,38 @@ func (d SecurityDetectionRuleData) toMachineLearningRuleUpdateProps(ctx context.
 	return updateProps, diags
 }
 
-func (d *SecurityDetectionRuleData) updateFromMachineLearningRule(ctx context.Context, rule *kbapi.SecurityDetectionsAPIMachineLearningRule) diag.Diagnostics {
+func (d *Data) updateFromMachineLearningRule(ctx context.Context, rule *kbapi.SecurityDetectionsAPIMachineLearningRule) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	compId := clients.CompositeId{
-		ClusterId:  d.SpaceId.ValueString(),
-		ResourceId: rule.Id.String(),
+	compID := clients.CompositeID{
+		ClusterID:  d.SpaceID.ValueString(),
+		ResourceID: rule.Id.String(),
 	}
-	d.Id = types.StringValue(compId.String())
+	d.ID = types.StringValue(compID.String())
 
-	d.RuleId = types.StringValue(string(rule.RuleId))
-	d.Name = types.StringValue(string(rule.Name))
+	d.RuleID = types.StringValue(rule.RuleId)
+	d.Name = types.StringValue(rule.Name)
 	d.Type = types.StringValue(string(rule.Type))
 
-	// Update common fields (ML doesn't support DataViewId)
-	d.DataViewId = types.StringNull()
-	diags.Append(d.updateTimelineIdFromApi(ctx, rule.TimelineId)...)
-	diags.Append(d.updateTimelineTitleFromApi(ctx, rule.TimelineTitle)...)
-	diags.Append(d.updateNamespaceFromApi(ctx, rule.Namespace)...)
-	diags.Append(d.updateRuleNameOverrideFromApi(ctx, rule.RuleNameOverride)...)
-	diags.Append(d.updateTimestampOverrideFromApi(ctx, rule.TimestampOverride)...)
-	diags.Append(d.updateTimestampOverrideFallbackDisabledFromApi(ctx, rule.TimestampOverrideFallbackDisabled)...)
+	// Update common fields (ML doesn't support DataViewID)
+	d.DataViewID = types.StringNull()
+	diags.Append(d.updateTimelineIDFromAPI(ctx, rule.TimelineId)...)
+	diags.Append(d.updateTimelineTitleFromAPI(ctx, rule.TimelineTitle)...)
+	diags.Append(d.updateNamespaceFromAPI(ctx, rule.Namespace)...)
+	diags.Append(d.updateRuleNameOverrideFromAPI(ctx, rule.RuleNameOverride)...)
+	diags.Append(d.updateTimestampOverrideFromAPI(ctx, rule.TimestampOverride)...)
+	diags.Append(d.updateTimestampOverrideFallbackDisabledFromAPI(ctx, rule.TimestampOverrideFallbackDisabled)...)
 
-	d.Enabled = types.BoolValue(bool(rule.Enabled))
-	d.From = types.StringValue(string(rule.From))
-	d.To = types.StringValue(string(rule.To))
-	d.Interval = types.StringValue(string(rule.Interval))
-	d.Description = types.StringValue(string(rule.Description))
+	d.Enabled = types.BoolValue(rule.Enabled)
+	d.From = types.StringValue(rule.From)
+	d.To = types.StringValue(rule.To)
+	d.Interval = types.StringValue(rule.Interval)
+	d.Description = types.StringValue(rule.Description)
 	d.RiskScore = types.Int64Value(int64(rule.RiskScore))
 	d.Severity = types.StringValue(string(rule.Severity))
 
 	// Update building block type
-	diags.Append(d.updateBuildingBlockTypeFromApi(ctx, rule.BuildingBlockType)...)
+	diags.Append(d.updateBuildingBlockTypeFromAPI(ctx, rule.BuildingBlockType)...)
 	d.MaxSignals = types.Int64Value(int64(rule.MaxSignals))
 	d.Version = types.Int64Value(int64(rule.Version))
 
@@ -284,75 +292,73 @@ func (d *SecurityDetectionRuleData) updateFromMachineLearningRule(ctx context.Co
 
 	// Handle ML job ID(s) - can be single string or array
 	// Try to extract as single job ID first, then as array
-	if singleJobId, err := rule.MachineLearningJobId.AsSecurityDetectionsAPIMachineLearningJobId0(); err == nil {
+	if singleJobID, err := rule.MachineLearningJobId.AsSecurityDetectionsAPIMachineLearningJobId0(); err == nil {
 		// Single job ID
-		d.MachineLearningJobId = utils.ListValueFrom(ctx, []string{string(singleJobId)}, types.StringType, path.Root("machine_learning_job_id"), &diags)
-	} else if multipleJobIds, err := rule.MachineLearningJobId.AsSecurityDetectionsAPIMachineLearningJobId1(); err == nil {
+		d.MachineLearningJobID = typeutils.ListValueFrom(ctx, []string{singleJobID}, types.StringType, path.Root("machine_learning_job_id"), &diags)
+	} else if multipleJobIDs, err := rule.MachineLearningJobId.AsSecurityDetectionsAPIMachineLearningJobId1(); err == nil {
 		// Multiple job IDs
-		jobIdStrings := make([]string, len(multipleJobIds))
-		for i, jobId := range multipleJobIds {
-			jobIdStrings[i] = string(jobId)
-		}
-		d.MachineLearningJobId = utils.ListValueFrom(ctx, jobIdStrings, types.StringType, path.Root("machine_learning_job_id"), &diags)
+		jobIDStrings := make([]string, len(multipleJobIDs))
+		copy(jobIDStrings, multipleJobIDs)
+		d.MachineLearningJobID = typeutils.ListValueFrom(ctx, jobIDStrings, types.StringType, path.Root("machine_learning_job_id"), &diags)
 	} else {
-		d.MachineLearningJobId = types.ListValueMust(types.StringType, []attr.Value{})
+		d.MachineLearningJobID = types.ListValueMust(types.StringType, []attr.Value{})
 	}
 
 	// Update author
-	diags.Append(d.updateAuthorFromApi(ctx, rule.Author)...)
+	diags.Append(d.updateAuthorFromAPI(ctx, rule.Author)...)
 
 	// Update tags
-	diags.Append(d.updateTagsFromApi(ctx, rule.Tags)...)
+	diags.Append(d.updateTagsFromAPI(ctx, rule.Tags)...)
 
 	// Update false positives
-	diags.Append(d.updateFalsePositivesFromApi(ctx, rule.FalsePositives)...)
+	diags.Append(d.updateFalsePositivesFromAPI(ctx, rule.FalsePositives)...)
 
 	// Update references
-	diags.Append(d.updateReferencesFromApi(ctx, rule.References)...)
+	diags.Append(d.updateReferencesFromAPI(ctx, rule.References)...)
 
 	// Update optional string fields
-	diags.Append(d.updateLicenseFromApi(ctx, rule.License)...)
-	diags.Append(d.updateNoteFromApi(ctx, rule.Note)...)
-	diags.Append(d.updateSetupFromApi(ctx, rule.Setup)...)
+	diags.Append(d.updateLicenseFromAPI(ctx, rule.License)...)
+	diags.Append(d.updateNoteFromAPI(ctx, rule.Note)...)
+	diags.Append(d.updateSetupFromAPI(ctx, rule.Setup)...)
 
 	// Update actions
-	actionDiags := d.updateActionsFromApi(ctx, rule.Actions)
+	actionDiags := d.updateActionsFromAPI(ctx, rule.Actions)
 	diags.Append(actionDiags...)
 
 	// Update exceptions list
-	exceptionsListDiags := d.updateExceptionsListFromApi(ctx, rule.ExceptionsList)
+	exceptionsListDiags := d.updateExceptionsListFromAPI(ctx, rule.ExceptionsList)
 	diags.Append(exceptionsListDiags...)
 
 	// Update risk score mapping
-	riskScoreMappingDiags := d.updateRiskScoreMappingFromApi(ctx, rule.RiskScoreMapping)
+	riskScoreMappingDiags := d.updateRiskScoreMappingFromAPI(ctx, rule.RiskScoreMapping)
 	diags.Append(riskScoreMappingDiags...)
 
 	// Update investigation fields
-	investigationFieldsDiags := d.updateInvestigationFieldsFromApi(ctx, rule.InvestigationFields)
+	investigationFieldsDiags := d.updateInvestigationFieldsFromAPI(ctx, rule.InvestigationFields)
 	diags.Append(investigationFieldsDiags...)
 
 	// Update threat
-	threatDiags := d.updateThreatFromApi(ctx, &rule.Threat)
+	threatDiags := d.updateThreatFromAPI(ctx, &rule.Threat)
 	diags.Append(threatDiags...)
 
 	// Update severity mapping
-	severityMappingDiags := d.updateSeverityMappingFromApi(ctx, &rule.SeverityMapping)
+	severityMappingDiags := d.updateSeverityMappingFromAPI(ctx, &rule.SeverityMapping)
 	diags.Append(severityMappingDiags...)
 
 	// Update related integrations
-	relatedIntegrationsDiags := d.updateRelatedIntegrationsFromApi(ctx, &rule.RelatedIntegrations)
+	relatedIntegrationsDiags := d.updateRelatedIntegrationsFromAPI(ctx, &rule.RelatedIntegrations)
 	diags.Append(relatedIntegrationsDiags...)
 
 	// Update required fields
-	requiredFieldsDiags := d.updateRequiredFieldsFromApi(ctx, &rule.RequiredFields)
+	requiredFieldsDiags := d.updateRequiredFieldsFromAPI(ctx, &rule.RequiredFields)
 	diags.Append(requiredFieldsDiags...)
 
 	// Update alert suppression
-	alertSuppressionDiags := d.updateAlertSuppressionFromApi(ctx, rule.AlertSuppression)
+	alertSuppressionDiags := d.updateAlertSuppressionFromAPI(ctx, rule.AlertSuppression)
 	diags.Append(alertSuppressionDiags...)
 
 	// Update response actions
-	responseActionsDiags := d.updateResponseActionsFromApi(ctx, rule.ResponseActions)
+	responseActionsDiags := d.updateResponseActionsFromAPI(ctx, rule.ResponseActions)
 	diags.Append(responseActionsDiags...)
 
 	return diags

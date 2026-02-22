@@ -22,7 +22,7 @@ var (
 )
 
 func TestSyntheticParameterResource(t *testing.T) {
-	resourceId := "elasticstack_kibana_synthetics_parameter.test"
+	resourceID := "elasticstack_kibana_synthetics_parameter.test"
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV6ProviderFactories: acctest.Providers,
@@ -39,18 +39,18 @@ resource "elasticstack_kibana_synthetics_parameter" "test" {
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceId, "key", "test-key"),
-					resource.TestCheckResourceAttr(resourceId, "value", "test-value"),
-					resource.TestCheckResourceAttr(resourceId, "description", "Test description"),
-					resource.TestCheckResourceAttr(resourceId, "tags.#", "2"),
-					resource.TestCheckResourceAttr(resourceId, "tags.0", "a"),
-					resource.TestCheckResourceAttr(resourceId, "tags.1", "b"),
+					resource.TestCheckResourceAttr(resourceID, "key", "test-key"),
+					resource.TestCheckResourceAttr(resourceID, "value", "test-value"),
+					resource.TestCheckResourceAttr(resourceID, "description", "Test description"),
+					resource.TestCheckResourceAttr(resourceID, "tags.#", "2"),
+					resource.TestCheckResourceAttr(resourceID, "tags.0", "a"),
+					resource.TestCheckResourceAttr(resourceID, "tags.1", "b"),
 				),
 			},
 			// ImportState testing
 			{
 				SkipFunc:          versionutils.CheckIfVersionIsUnsupported(minKibanaParameterAPIVersion),
-				ResourceName:      resourceId,
+				ResourceName:      resourceID,
 				ImportState:       true,
 				ImportStateVerify: true,
 				Config: providerConfig + `
@@ -74,13 +74,13 @@ resource "elasticstack_kibana_synthetics_parameter" "test" {
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceId, "key", "test-key-2"),
-					resource.TestCheckResourceAttr(resourceId, "value", "test-value-2"),
-					resource.TestCheckResourceAttr(resourceId, "description", "Test description 2"),
-					resource.TestCheckResourceAttr(resourceId, "tags.#", "3"),
-					resource.TestCheckResourceAttr(resourceId, "tags.0", "c"),
-					resource.TestCheckResourceAttr(resourceId, "tags.1", "d"),
-					resource.TestCheckResourceAttr(resourceId, "tags.2", "e"),
+					resource.TestCheckResourceAttr(resourceID, "key", "test-key-2"),
+					resource.TestCheckResourceAttr(resourceID, "value", "test-value-2"),
+					resource.TestCheckResourceAttr(resourceID, "description", "Test description 2"),
+					resource.TestCheckResourceAttr(resourceID, "tags.#", "3"),
+					resource.TestCheckResourceAttr(resourceID, "tags.0", "c"),
+					resource.TestCheckResourceAttr(resourceID, "tags.1", "d"),
+					resource.TestCheckResourceAttr(resourceID, "tags.2", "e"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase

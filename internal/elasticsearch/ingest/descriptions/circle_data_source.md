@@ -1,0 +1,1 @@
+Helper data source which can be used to create the configuration for an circle processor. This processor converts circle definitions of shapes to regular polygons which approximate them. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/ingest-circle-processor.html

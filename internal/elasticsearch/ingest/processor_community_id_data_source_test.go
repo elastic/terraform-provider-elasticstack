@@ -7,22 +7,22 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-func TestAccDataSourceIngestProcessorCommunityId(t *testing.T) {
+func TestAccDataSourceIngestProcessorCommunityID(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorCommunityId,
+				Config: testAccDataSourceIngestProcessorCommunityID,
 				Check: resource.ComposeTestCheckFunc(
-					CheckResourceJson("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "json", expectedJsonCommunityId),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "json", expectedJSONCommunityID),
 				),
 			},
 		},
 	})
 }
 
-const expectedJsonCommunityId = `{
+const expectedJSONCommunityID = `{
 	"community_id": {
 		"seed": 0,
 		"ignore_failure": false,
@@ -30,7 +30,7 @@ const expectedJsonCommunityId = `{
 	}
 }`
 
-const testAccDataSourceIngestProcessorCommunityId = `
+const testAccDataSourceIngestProcessorCommunityID = `
 provider "elasticstack" {
   elasticsearch {}
 }

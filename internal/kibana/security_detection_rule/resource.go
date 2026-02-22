@@ -1,4 +1,4 @@
-package security_detection_rule
+package securitydetectionrule
 
 import (
 	"context"
@@ -17,7 +17,7 @@ func NewSecurityDetectionRuleResource() resource.Resource {
 }
 
 type securityDetectionRuleResource struct {
-	client *clients.ApiClient
+	client *clients.APIClient
 }
 
 func (r *securityDetectionRuleResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {

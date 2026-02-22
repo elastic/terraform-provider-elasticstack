@@ -6,7 +6,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
@@ -41,7 +41,7 @@ func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state 
 	}
 
 	// Check if version-dependent parameters are set and validate version support
-	needsVersionCheck := utils.IsKnown(planModel.IgnoreMappingUpdateErrors) || utils.IsKnown(planModel.SkipDataStreamRollover)
+	needsVersionCheck := typeutils.IsKnown(planModel.IgnoreMappingUpdateErrors) || typeutils.IsKnown(planModel.SkipDataStreamRollover)
 	if needsVersionCheck {
 		serverVersion, versionDiags := r.client.ServerVersion(ctx)
 		respDiags.Append(diagutil.FrameworkDiagsFromSDK(versionDiags)...)
@@ -50,7 +50,7 @@ func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state 
 		}
 
 		// Validate ignore_mapping_update_errors
-		if utils.IsKnown(planModel.IgnoreMappingUpdateErrors) {
+		if typeutils.IsKnown(planModel.IgnoreMappingUpdateErrors) {
 			if serverVersion.LessThan(MinVersionIgnoreMappingUpdateErrors) {
 				respDiags.AddError(
 					"Unsupported parameter for server version",
@@ -63,7 +63,7 @@ func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state 
 		}
 
 		// Validate skip_data_stream_rollover
-		if utils.IsKnown(planModel.SkipDataStreamRollover) {
+		if typeutils.IsKnown(planModel.SkipDataStreamRollover) {
 			if serverVersion.LessThan(MinVersionSkipDataStreamRollover) {
 				respDiags.AddError(
 					"Unsupported parameter for server version",
@@ -77,7 +77,7 @@ func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state 
 	}
 
 	// If space_id is set, use space-aware installation
-	if utils.IsKnown(planModel.SpaceID) {
+	if typeutils.IsKnown(planModel.SpaceID) {
 		installOptions.SpaceID = planModel.SpaceID.ValueString()
 	}
 

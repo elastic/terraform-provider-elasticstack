@@ -1,9 +1,9 @@
-package prebuilt_rules
+package prebuiltrules
 
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -38,7 +38,7 @@ func (r *PrebuiltRuleResource) Read(ctx context.Context, req resource.ReadReques
 	spaceID := model.ID.ValueString()
 
 	// Get current status
-	status, statusDiags := kibana_oapi.GetPrebuiltRulesStatus(ctx, client, spaceID)
+	status, statusDiags := kibanaoapi.GetPrebuiltRulesStatus(ctx, client, spaceID)
 	resp.Diagnostics.Append(statusDiags...)
 	if resp.Diagnostics.HasError() {
 		return

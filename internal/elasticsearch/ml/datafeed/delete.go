@@ -19,21 +19,21 @@ func (r *datafeedResource) delete(ctx context.Context, req resource.DeleteReques
 		return
 	}
 
-	datafeedId := state.DatafeedID.ValueString()
-	if datafeedId == "" {
+	datafeedID := state.DatafeedID.ValueString()
+	if datafeedID == "" {
 		resp.Diagnostics.AddError("Invalid Configuration", "datafeed_id cannot be empty")
 		return
 	}
 
 	// Before deleting, we need to stop the datafeed if it's running
-	_, stopDiags := r.maybeStopDatafeed(ctx, datafeedId)
+	_, stopDiags := r.maybeStopDatafeed(ctx, datafeedID)
 	resp.Diagnostics.Append(stopDiags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	// Delete the datafeed
-	deleteDiags := elasticsearch.DeleteDatafeed(ctx, r.client, datafeedId, false)
+	deleteDiags := elasticsearch.DeleteDatafeed(ctx, r.client, datafeedID, false)
 	resp.Diagnostics.Append(deleteDiags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -42,9 +42,9 @@ func (r *datafeedResource) delete(ctx context.Context, req resource.DeleteReques
 	// The resource is automatically removed from state on successful delete
 }
 
-func (r *datafeedResource) maybeStopDatafeed(ctx context.Context, datafeedId string) (bool, diag.Diagnostics) {
+func (r *datafeedResource) maybeStopDatafeed(ctx context.Context, datafeedID string) (bool, diag.Diagnostics) {
 	// Check current state
-	currentState, diags := GetDatafeedState(ctx, r.client, datafeedId)
+	currentState, diags := GetDatafeedState(ctx, r.client, datafeedID)
 	if diags.HasError() {
 		return false, diags
 	}
@@ -59,14 +59,14 @@ func (r *datafeedResource) maybeStopDatafeed(ctx context.Context, datafeedId str
 	}
 
 	// Stop the datafeed
-	stopDiags := elasticsearch.StopDatafeed(ctx, r.client, datafeedId, false, 0)
+	stopDiags := elasticsearch.StopDatafeed(ctx, r.client, datafeedID, false, 0)
 	diags.Append(stopDiags...)
 	if diags.HasError() {
 		return true, diags
 	}
 
 	// Wait for the datafeed to reach stopped state
-	_, waitDiags := WaitForDatafeedState(ctx, r.client, datafeedId, StateStopped)
+	_, waitDiags := WaitForDatafeedState(ctx, r.client, datafeedID, StateStopped)
 	diags.Append(waitDiags...)
 	if diags.HasError() {
 		return true, diags

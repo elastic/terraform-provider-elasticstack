@@ -6,7 +6,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -41,7 +41,7 @@ func (c heatmapPanelConfigConverter) populateFromAPIPanel(ctx context.Context, p
 		return nil
 	}
 
-	attrsMap, ok := attrs.(map[string]interface{})
+	attrsMap, ok := attrs.(map[string]any)
 	if !ok {
 		return nil
 	}
@@ -116,7 +116,7 @@ func (c heatmapPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *kba
 type heatmapConfigModel struct {
 	Title               types.String                                      `tfsdk:"title"`
 	Description         types.String                                      `tfsdk:"description"`
-	Dataset             jsontypes.Normalized                              `tfsdk:"dataset"`
+	DatasetJSON         jsontypes.Normalized                              `tfsdk:"dataset_json"`
 	IgnoreGlobalFilters types.Bool                                        `tfsdk:"ignore_global_filters"`
 	Sampling            types.Float64                                     `tfsdk:"sampling"`
 	Query               *filterSimpleModel                                `tfsdk:"query"`
@@ -124,13 +124,14 @@ type heatmapConfigModel struct {
 	Axes                *heatmapAxesModel                                 `tfsdk:"axes"`
 	Cells               *heatmapCellsModel                                `tfsdk:"cells"`
 	Legend              *heatmapLegendModel                               `tfsdk:"legend"`
-	Metric              customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"metric"`
-	XAxis               jsontypes.Normalized                              `tfsdk:"x_axis"`
-	YAxis               jsontypes.Normalized                              `tfsdk:"y_axis"`
+	MetricJSON          customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"metric_json"`
+	XAxisJSON           jsontypes.Normalized                              `tfsdk:"x_axis_json"`
+	YAxisJSON           jsontypes.Normalized                              `tfsdk:"y_axis_json"`
 }
 
 func (m *heatmapConfigModel) fromAPINoESQL(ctx context.Context, api kbapi.HeatmapNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
+	_ = ctx
 
 	m.Title = types.StringPointerValue(api.Title)
 	m.Description = types.StringPointerValue(api.Description)
@@ -144,37 +145,37 @@ func (m *heatmapConfigModel) fromAPINoESQL(ctx context.Context, api kbapi.Heatma
 
 	datasetBytes, err := api.Dataset.MarshalJSON()
 	if err != nil {
-		diags.AddError("Failed to marshal dataset", err.Error())
+		diags.AddError("Failed to marshal dataset_json", err.Error())
 		return diags
 	}
-	m.Dataset = jsontypes.NewNormalizedValue(string(datasetBytes))
+	m.DatasetJSON = jsontypes.NewNormalizedValue(string(datasetBytes))
 
 	metricBytes, err := api.Metric.MarshalJSON()
 	if err != nil {
-		diags.AddError("Failed to marshal metric", err.Error())
+		diags.AddError("Failed to marshal metric_json", err.Error())
 		return diags
 	}
-	m.Metric = customtypes.NewJSONWithDefaultsValue[map[string]any](
+	m.MetricJSON = customtypes.NewJSONWithDefaultsValue[map[string]any](
 		string(metricBytes),
 		populateTagcloudMetricDefaults,
 	)
 
 	xAxisBytes, err := api.XAxis.MarshalJSON()
 	if err != nil {
-		diags.AddError("Failed to marshal x_axis", err.Error())
+		diags.AddError("Failed to marshal x_axis_json", err.Error())
 		return diags
 	}
-	m.XAxis = jsontypes.NewNormalizedValue(string(xAxisBytes))
+	m.XAxisJSON = jsontypes.NewNormalizedValue(string(xAxisBytes))
 
 	if api.YAxis != nil {
 		yAxisBytes, err := api.YAxis.MarshalJSON()
 		if err != nil {
-			diags.AddError("Failed to marshal y_axis", err.Error())
+			diags.AddError("Failed to marshal y_axis_json", err.Error())
 			return diags
 		}
-		m.YAxis = jsontypes.NewNormalizedValue(string(yAxisBytes))
+		m.YAxisJSON = jsontypes.NewNormalizedValue(string(yAxisBytes))
 	} else {
-		m.YAxis = jsontypes.NewNormalizedNull()
+		m.YAxisJSON = jsontypes.NewNormalizedNull()
 	}
 
 	m.Axes = &heatmapAxesModel{}
@@ -207,6 +208,7 @@ func (m *heatmapConfigModel) fromAPINoESQL(ctx context.Context, api kbapi.Heatma
 
 func (m *heatmapConfigModel) fromAPIESQL(ctx context.Context, api kbapi.HeatmapESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
+	_ = ctx
 
 	m.Title = types.StringPointerValue(api.Title)
 	m.Description = types.StringPointerValue(api.Description)
@@ -220,37 +222,37 @@ func (m *heatmapConfigModel) fromAPIESQL(ctx context.Context, api kbapi.HeatmapE
 
 	datasetBytes, err := api.Dataset.MarshalJSON()
 	if err != nil {
-		diags.AddError("Failed to marshal dataset", err.Error())
+		diags.AddError("Failed to marshal dataset_json", err.Error())
 		return diags
 	}
-	m.Dataset = jsontypes.NewNormalizedValue(string(datasetBytes))
+	m.DatasetJSON = jsontypes.NewNormalizedValue(string(datasetBytes))
 
 	metricBytes, err := json.Marshal(api.Metric)
 	if err != nil {
-		diags.AddError("Failed to marshal metric", err.Error())
+		diags.AddError("Failed to marshal metric_json", err.Error())
 		return diags
 	}
-	m.Metric = customtypes.NewJSONWithDefaultsValue[map[string]any](
+	m.MetricJSON = customtypes.NewJSONWithDefaultsValue[map[string]any](
 		string(metricBytes),
 		populateTagcloudMetricDefaults,
 	)
 
 	xAxisBytes, err := json.Marshal(api.XAxis)
 	if err != nil {
-		diags.AddError("Failed to marshal x_axis", err.Error())
+		diags.AddError("Failed to marshal x_axis_json", err.Error())
 		return diags
 	}
-	m.XAxis = jsontypes.NewNormalizedValue(string(xAxisBytes))
+	m.XAxisJSON = jsontypes.NewNormalizedValue(string(xAxisBytes))
 
 	if api.YAxis != nil {
 		yAxisBytes, err := json.Marshal(api.YAxis)
 		if err != nil {
-			diags.AddError("Failed to marshal y_axis", err.Error())
+			diags.AddError("Failed to marshal y_axis_json", err.Error())
 			return diags
 		}
-		m.YAxis = jsontypes.NewNormalizedValue(string(yAxisBytes))
+		m.YAxisJSON = jsontypes.NewNormalizedValue(string(yAxisBytes))
 	} else {
-		m.YAxis = jsontypes.NewNormalizedNull()
+		m.YAxisJSON = jsontypes.NewNormalizedNull()
 	}
 
 	m.Axes = &heatmapAxesModel{}
@@ -326,50 +328,50 @@ func (m *heatmapConfigModel) toAPINoESQL() (kbapi.HeatmapNoESQL, diag.Diagnostic
 		Type: kbapi.HeatmapNoESQLTypeHeatmap,
 	}
 
-	if utils.IsKnown(m.Title) {
-		api.Title = utils.Pointer(m.Title.ValueString())
+	if typeutils.IsKnown(m.Title) {
+		api.Title = schemautil.Pointer(m.Title.ValueString())
 	}
-	if utils.IsKnown(m.Description) {
-		api.Description = utils.Pointer(m.Description.ValueString())
+	if typeutils.IsKnown(m.Description) {
+		api.Description = schemautil.Pointer(m.Description.ValueString())
 	}
-	if utils.IsKnown(m.IgnoreGlobalFilters) {
-		api.IgnoreGlobalFilters = utils.Pointer(m.IgnoreGlobalFilters.ValueBool())
+	if typeutils.IsKnown(m.IgnoreGlobalFilters) {
+		api.IgnoreGlobalFilters = schemautil.Pointer(m.IgnoreGlobalFilters.ValueBool())
 	}
-	if utils.IsKnown(m.Sampling) {
-		api.Sampling = utils.Pointer(float32(m.Sampling.ValueFloat64()))
+	if typeutils.IsKnown(m.Sampling) {
+		api.Sampling = schemautil.Pointer(float32(m.Sampling.ValueFloat64()))
 	}
 
-	if m.Dataset.IsNull() {
-		diags.AddError("Missing dataset", "heatmap_config.dataset must be provided")
+	if m.DatasetJSON.IsNull() {
+		diags.AddError("Missing dataset", "heatmap_config.dataset_json must be provided")
 		return api, diags
 	}
-	if err := json.Unmarshal([]byte(m.Dataset.ValueString()), &api.Dataset); err != nil {
+	if err := json.Unmarshal([]byte(m.DatasetJSON.ValueString()), &api.Dataset); err != nil {
 		diags.AddError("Failed to unmarshal dataset", err.Error())
 		return api, diags
 	}
 
-	if m.Metric.IsNull() {
-		diags.AddError("Missing metric", "heatmap_config.metric must be provided")
+	if m.MetricJSON.IsNull() {
+		diags.AddError("Missing metric", "heatmap_config.metric_json must be provided")
 		return api, diags
 	}
-	if err := json.Unmarshal([]byte(m.Metric.ValueString()), &api.Metric); err != nil {
+	if err := json.Unmarshal([]byte(m.MetricJSON.ValueString()), &api.Metric); err != nil {
 		diags.AddError("Failed to unmarshal metric", err.Error())
 		return api, diags
 	}
 
-	if m.XAxis.IsNull() {
-		diags.AddError("Missing x_axis", "heatmap_config.x_axis must be provided")
+	if m.XAxisJSON.IsNull() {
+		diags.AddError("Missing x_axis", "heatmap_config.x_axis_json must be provided")
 		return api, diags
 	}
-	if err := json.Unmarshal([]byte(m.XAxis.ValueString()), &api.XAxis); err != nil {
-		diags.AddError("Failed to unmarshal x_axis", err.Error())
+	if err := json.Unmarshal([]byte(m.XAxisJSON.ValueString()), &api.XAxis); err != nil {
+		diags.AddError("Failed to unmarshal x_axis_json", err.Error())
 		return api, diags
 	}
 
-	if !m.YAxis.IsNull() {
+	if !m.YAxisJSON.IsNull() {
 		var yAxis kbapi.HeatmapNoESQL_YAxis
-		if err := json.Unmarshal([]byte(m.YAxis.ValueString()), &yAxis); err != nil {
-			diags.AddError("Failed to unmarshal y_axis", err.Error())
+		if err := json.Unmarshal([]byte(m.YAxisJSON.ValueString()), &yAxis); err != nil {
+			diags.AddError("Failed to unmarshal y_axis_json", err.Error())
 			return api, diags
 		}
 		api.YAxis = &yAxis
@@ -426,30 +428,30 @@ func (m *heatmapConfigModel) toAPIESQL() (kbapi.HeatmapESQL, diag.Diagnostics) {
 		Type: kbapi.HeatmapESQLTypeHeatmap,
 	}
 
-	if utils.IsKnown(m.Title) {
-		api.Title = utils.Pointer(m.Title.ValueString())
+	if typeutils.IsKnown(m.Title) {
+		api.Title = schemautil.Pointer(m.Title.ValueString())
 	}
-	if utils.IsKnown(m.Description) {
-		api.Description = utils.Pointer(m.Description.ValueString())
+	if typeutils.IsKnown(m.Description) {
+		api.Description = schemautil.Pointer(m.Description.ValueString())
 	}
-	if utils.IsKnown(m.IgnoreGlobalFilters) {
-		api.IgnoreGlobalFilters = utils.Pointer(m.IgnoreGlobalFilters.ValueBool())
+	if typeutils.IsKnown(m.IgnoreGlobalFilters) {
+		api.IgnoreGlobalFilters = schemautil.Pointer(m.IgnoreGlobalFilters.ValueBool())
 	}
-	if utils.IsKnown(m.Sampling) {
-		api.Sampling = utils.Pointer(float32(m.Sampling.ValueFloat64()))
-	}
-
-	if m.Dataset.IsNull() {
-		diags.AddError("Missing dataset", "heatmap_config.dataset must be provided")
-		return api, diags
-	}
-	if err := json.Unmarshal([]byte(m.Dataset.ValueString()), &api.Dataset); err != nil {
-		diags.AddError("Failed to unmarshal dataset", err.Error())
-		return api, diags
+	if typeutils.IsKnown(m.Sampling) {
+		api.Sampling = schemautil.Pointer(float32(m.Sampling.ValueFloat64()))
 	}
 
-	if m.Metric.IsNull() {
-		diags.AddError("Missing metric", "heatmap_config.metric must be provided")
+	if m.DatasetJSON.IsNull() {
+		diags.AddError("Missing dataset", "heatmap_config.dataset_json must be provided")
+		return api, diags
+	}
+	if err := json.Unmarshal([]byte(m.DatasetJSON.ValueString()), &api.Dataset); err != nil {
+		diags.AddError("Failed to unmarshal dataset_json", err.Error())
+		return api, diags
+	}
+
+	if m.MetricJSON.IsNull() {
+		diags.AddError("Missing metric", "heatmap_config.metric_json must be provided")
 		return api, diags
 	}
 	var metric struct {
@@ -457,33 +459,33 @@ func (m *heatmapConfigModel) toAPIESQL() (kbapi.HeatmapESQL, diag.Diagnostics) {
 		Column    string                           `json:"column"`
 		Operation kbapi.HeatmapESQLMetricOperation `json:"operation"`
 	}
-	if err := json.Unmarshal([]byte(m.Metric.ValueString()), &metric); err != nil {
-		diags.AddError("Failed to unmarshal metric", err.Error())
+	if err := json.Unmarshal([]byte(m.MetricJSON.ValueString()), &metric); err != nil {
+		diags.AddError("Failed to unmarshal metric_json", err.Error())
 		return api, diags
 	}
 	api.Metric = metric
 
-	if m.XAxis.IsNull() {
-		diags.AddError("Missing x_axis", "heatmap_config.x_axis must be provided")
+	if m.XAxisJSON.IsNull() {
+		diags.AddError("Missing x_axis", "heatmap_config.x_axis_json must be provided")
 		return api, diags
 	}
 	var xAxis struct {
 		Column    string                          `json:"column"`
 		Operation kbapi.HeatmapESQLXAxisOperation `json:"operation"`
 	}
-	if err := json.Unmarshal([]byte(m.XAxis.ValueString()), &xAxis); err != nil {
-		diags.AddError("Failed to unmarshal x_axis", err.Error())
+	if err := json.Unmarshal([]byte(m.XAxisJSON.ValueString()), &xAxis); err != nil {
+		diags.AddError("Failed to unmarshal x_axis_json", err.Error())
 		return api, diags
 	}
 	api.XAxis = xAxis
 
-	if !m.YAxis.IsNull() {
+	if !m.YAxisJSON.IsNull() {
 		var yAxis struct {
 			Column    string                          `json:"column"`
 			Operation kbapi.HeatmapESQLYAxisOperation `json:"operation"`
 		}
-		if err := json.Unmarshal([]byte(m.YAxis.ValueString()), &yAxis); err != nil {
-			diags.AddError("Failed to unmarshal y_axis", err.Error())
+		if err := json.Unmarshal([]byte(m.YAxisJSON.ValueString()), &yAxis); err != nil {
+			diags.AddError("Failed to unmarshal y_axis_json", err.Error())
 			return api, diags
 		}
 		api.YAxis = &yAxis
@@ -534,7 +536,7 @@ type heatmapAxesModel struct {
 }
 
 func (m *heatmapAxesModel) fromAPI(api kbapi.HeatmapAxes) diag.Diagnostics {
-	var diags diag.Diagnostics
+	diags := diag.Diagnostics{}
 
 	m.X = &heatmapXAxisModel{}
 	m.X.fromAPI(api.X)
@@ -621,12 +623,12 @@ func (m *heatmapXAxisLabelsModel) toAPI() *struct {
 		Orientation *kbapi.HeatmapXAxisLabelsOrientation `json:"orientation,omitempty"`
 		Visible     *bool                                `json:"visible,omitempty"`
 	}{}
-	if utils.IsKnown(m.Orientation) {
+	if typeutils.IsKnown(m.Orientation) {
 		orientation := kbapi.HeatmapXAxisLabelsOrientation(m.Orientation.ValueString())
 		labels.Orientation = &orientation
 	}
-	if utils.IsKnown(m.Visible) {
-		labels.Visible = utils.Pointer(m.Visible.ValueBool())
+	if typeutils.IsKnown(m.Visible) {
+		labels.Visible = schemautil.Pointer(m.Visible.ValueBool())
 	}
 	return labels
 }
@@ -683,8 +685,8 @@ func (m *heatmapYAxisLabelsModel) toAPI() *struct {
 	labels := &struct {
 		Visible *bool `json:"visible,omitempty"`
 	}{}
-	if utils.IsKnown(m.Visible) {
-		labels.Visible = utils.Pointer(m.Visible.ValueBool())
+	if typeutils.IsKnown(m.Visible) {
+		labels.Visible = schemautil.Pointer(m.Visible.ValueBool())
 	}
 	return labels
 }
@@ -733,8 +735,8 @@ func (m *heatmapCellsLabelsModel) toAPI() *struct {
 	labels := &struct {
 		Visible *bool `json:"visible,omitempty"`
 	}{}
-	if utils.IsKnown(m.Visible) {
-		labels.Visible = utils.Pointer(m.Visible.ValueBool())
+	if typeutils.IsKnown(m.Visible) {
+		labels.Visible = schemautil.Pointer(m.Visible.ValueBool())
 	}
 	return labels
 }
@@ -767,20 +769,20 @@ func (m *heatmapLegendModel) toAPI() (kbapi.HeatmapLegend, diag.Diagnostics) {
 		return legend, diags
 	}
 
-	if utils.IsKnown(m.Visible) {
-		legend.Visible = utils.Pointer(m.Visible.ValueBool())
+	if typeutils.IsKnown(m.Visible) {
+		legend.Visible = schemautil.Pointer(m.Visible.ValueBool())
 	}
-	if utils.IsKnown(m.Position) {
+	if typeutils.IsKnown(m.Position) {
 		pos := kbapi.HeatmapLegendPosition(m.Position.ValueString())
 		legend.Position = &pos
 	}
-	if utils.IsKnown(m.Size) {
+	if typeutils.IsKnown(m.Size) {
 		legend.Size = kbapi.LegendSize(m.Size.ValueString())
 	} else {
 		diags.AddError("Missing legend size", "heatmap_config.legend.size must be provided")
 	}
-	if utils.IsKnown(m.TruncateAfterLines) {
-		legend.TruncateAfterLines = utils.Pointer(float32(m.TruncateAfterLines.ValueInt64()))
+	if typeutils.IsKnown(m.TruncateAfterLines) {
+		legend.TruncateAfterLines = schemautil.Pointer(float32(m.TruncateAfterLines.ValueInt64()))
 	}
 
 	return legend, diags

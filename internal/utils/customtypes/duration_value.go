@@ -37,12 +37,12 @@ func (v Duration) Equal(o attr.Value) bool {
 	return v.StringValue.Equal(other.StringValue)
 }
 
-func (t Duration) ValidateAttribute(ctx context.Context, req xattr.ValidateAttributeRequest, resp *xattr.ValidateAttributeResponse) {
-	if t.IsNull() || t.IsUnknown() {
+func (v Duration) ValidateAttribute(_ context.Context, req xattr.ValidateAttributeRequest, resp *xattr.ValidateAttributeResponse) {
+	if v.IsNull() || v.IsUnknown() {
 		return
 	}
 
-	valueString := t.ValueString()
+	valueString := v.ValueString()
 	if _, err := time.ParseDuration(valueString); err != nil {
 		resp.Diagnostics.AddAttributeError(
 			req.Path,

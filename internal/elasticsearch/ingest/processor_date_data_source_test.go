@@ -16,14 +16,14 @@ func TestAccDataSourceIngestProcessorDate(t *testing.T) {
 				Config: testAccDataSourceIngestProcessorDate,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_date.test", "field", "initial_date"),
-					CheckResourceJson("data.elasticstack_elasticsearch_ingest_processor_date.test", "json", expectedJsonDate),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_date.test", "json", expectedJSONDate),
 				),
 			},
 		},
 	})
 }
 
-const expectedJsonDate = `{
+const expectedJSONDate = `{
   "date": {
     "field": "initial_date",
     "formats": [

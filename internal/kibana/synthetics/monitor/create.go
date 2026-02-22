@@ -35,14 +35,14 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 		return
 	}
 
-	spaceId := plan.SpaceID.ValueString()
-	result, err := kibanaClient.KibanaSynthetics.Monitor.Add(ctx, input.config, input.fields, spaceId)
+	spaceID := plan.SpaceID.ValueString()
+	result, err := kibanaClient.KibanaSynthetics.Monitor.Add(ctx, input.config, input.fields, spaceID)
 	if err != nil {
-		response.Diagnostics.AddError(fmt.Sprintf("Failed to create Kibana monitor `%s`, space %s", input.config.Name, spaceId), err.Error())
+		response.Diagnostics.AddError(fmt.Sprintf("Failed to create Kibana monitor `%s`, space %s", input.config.Name, spaceID), err.Error())
 		return
 	}
 
-	plan, diags = plan.toModelV0(ctx, result, spaceId)
+	plan, diags = plan.toModelV0(ctx, result, spaceID)
 	response.Diagnostics.Append(diags...)
 	if response.Diagnostics.HasError() {
 		return

@@ -1,4 +1,4 @@
-package maintenance_window_test
+package maintenancewindow_test
 
 import (
 	"testing"

@@ -1,4 +1,4 @@
-package security_detection_rule
+package securitydetectionrule
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 )
 
 func (r *securityDetectionRuleResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var data SecurityDetectionRuleData
+	var data Data
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
@@ -19,11 +19,13 @@ func (r *securityDetectionRuleResource) Delete(ctx context.Context, req resource
 	}
 
 	// Parse ID to get space_id and rule_id
-	compId, diags := clients.CompositeIdFromStrFw(data.Id.ValueString())
+	compID, diags := clients.CompositeIDFromStrFw(data.ID.ValueString())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	spaceID := compID.ClusterID
 
 	// Get the rule using kbapi client
 	kbClient, err := r.client.GetKibanaOapiClient()
@@ -36,7 +38,7 @@ func (r *securityDetectionRuleResource) Delete(ctx context.Context, req resource
 	}
 
 	// Delete the rule
-	uid, err := uuid.Parse(compId.ResourceId)
+	uid, err := uuid.Parse(compID.ResourceID)
 	if err != nil {
 		resp.Diagnostics.AddError("ID was not a valid UUID", err.Error())
 		return
@@ -45,7 +47,7 @@ func (r *securityDetectionRuleResource) Delete(ctx context.Context, req resource
 		Id: &uid,
 	}
 
-	response, err := kbClient.API.DeleteRuleWithResponse(ctx, data.SpaceId.ValueString(), params)
+	response, err := kbClient.API.DeleteRuleWithResponse(ctx, spaceID, params)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error deleting security detection rule",

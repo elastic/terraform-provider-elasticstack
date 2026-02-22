@@ -16,14 +16,14 @@ func TestAccDataSourceIngestProcessorUppercase(t *testing.T) {
 				Config: testAccDataSourceIngestProcessorUppercase,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_uppercase.test", "field", "foo"),
-					CheckResourceJson("data.elasticstack_elasticsearch_ingest_processor_uppercase.test", "json", expectedJsonUppercase),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_uppercase.test", "json", expectedJSONUppercase),
 				),
 			},
 		},
 	})
 }
 
-const expectedJsonUppercase = `{
+const expectedJSONUppercase = `{
 	"uppercase": {
 		"field": "foo",
 		"ignore_failure": false,

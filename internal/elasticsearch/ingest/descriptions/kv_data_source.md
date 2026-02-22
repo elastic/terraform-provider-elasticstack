@@ -1,0 +1,1 @@
+Helper data source which can be used to create the configuration for a KV processor. This processor helps automatically parse messages (or specific event fields) which are of the foo=bar variety. See the [KV processor documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/kv-processor.html) for more details.

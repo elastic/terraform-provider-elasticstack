@@ -24,13 +24,13 @@ func (c lensPanelConfigConverter) handlesAPIPanelConfig(pm *panelModel, panelTyp
 	return c.hasExpectedVisualizationType(cfgMap)
 }
 
-func (c lensPanelConfigConverter) hasExpectedVisualizationType(cfgMap map[string]interface{}) bool {
+func (c lensPanelConfigConverter) hasExpectedVisualizationType(cfgMap map[string]any) bool {
 	attrs, ok := cfgMap["attributes"]
 	if !ok {
 		return false
 	}
 
-	attrsMap, ok := attrs.(map[string]interface{})
+	attrsMap, ok := attrs.(map[string]any)
 	if !ok {
 		return false
 	}

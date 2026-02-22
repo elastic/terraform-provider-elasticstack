@@ -1,11 +1,12 @@
-package integration_policy
+package integrationpolicy
 
 import (
 	"context"
-	_ "embed"
+	_ "embed" // Used for embedding schema descriptions
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -34,29 +35,30 @@ type integrationPolicyModelV1 struct {
 	IntegrationName    types.String         `tfsdk:"integration_name"`
 	IntegrationVersion types.String         `tfsdk:"integration_version"`
 	OutputID           types.String         `tfsdk:"output_id"`
-	Input              types.List           `tfsdk:"input"` //> integrationPolicyInputModel
-	VarsJson           jsontypes.Normalized `tfsdk:"vars_json"`
-	SpaceIds           types.Set            `tfsdk:"space_ids"`
+	Input              types.List           `tfsdk:"input"` // > integrationPolicyInputModel
+	VarsJSON           jsontypes.Normalized `tfsdk:"vars_json"`
+	SpaceIDs           types.Set            `tfsdk:"space_ids"`
 }
 
 type integrationPolicyInputModelV1 struct {
 	InputID     types.String         `tfsdk:"input_id"`
 	Enabled     types.Bool           `tfsdk:"enabled"`
-	StreamsJson jsontypes.Normalized `tfsdk:"streams_json"`
-	VarsJson    jsontypes.Normalized `tfsdk:"vars_json"`
+	StreamsJSON jsontypes.Normalized `tfsdk:"streams_json"`
+	VarsJSON    jsontypes.Normalized `tfsdk:"vars_json"`
 }
 
 func (m integrationPolicyModelV1) toV2(ctx context.Context) (integrationPolicyModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	var varsJson VarsJSONValue
-	if m.VarsJson.IsNull() {
-		varsJson = NewVarsJSONNull()
-	} else if m.VarsJson.IsUnknown() {
-		varsJson = NewVarsJSONUnknown()
-	} else {
+	var varsJSONVal VarsJSONValue
+	switch {
+	case m.VarsJSON.IsNull():
+		varsJSONVal = NewVarsJSONNull()
+	case m.VarsJSON.IsUnknown():
+		varsJSONVal = NewVarsJSONUnknown()
+	default:
 		var d diag.Diagnostics
-		varsJson, d = NewVarsJSONWithIntegration(m.VarsJson.ValueString(), m.IntegrationName.ValueString(), m.IntegrationVersion.ValueString())
+		varsJSONVal, d = NewVarsJSONWithIntegration(m.VarsJSON.ValueString(), m.IntegrationName.ValueString(), m.IntegrationVersion.ValueString())
 		diags.Append(d...)
 	}
 
@@ -74,17 +76,17 @@ func (m integrationPolicyModelV1) toV2(ctx context.Context) (integrationPolicyMo
 		IntegrationName:    m.IntegrationName,
 		IntegrationVersion: m.IntegrationVersion,
 		OutputID:           m.OutputID,
-		SpaceIds:           m.SpaceIds,
-		VarsJson:           varsJson,
+		SpaceIDs:           m.SpaceIDs,
+		VarsJSON:           varsJSONVal,
 	}
 
 	// Convert inputs from V1 to V2
-	inputsV1 := utils.ListTypeAs[integrationPolicyInputModelV1](ctx, m.Input, path.Root("input"), &diags)
+	inputsV1 := typeutils.ListTypeAs[integrationPolicyInputModelV1](ctx, m.Input, path.Root("input"), &diags)
 	inputsV2 := make(map[string]integrationPolicyInputsModel, len(inputsV1))
 
 	for _, inputV1 := range inputsV1 {
 		id := inputV1.InputID.ValueString()
-		streams, d := updateStreamsV1ToV2(ctx, inputV1.StreamsJson, id)
+		streams, d := updateStreamsV1ToV2(ctx, inputV1.StreamsJSON, id)
 		diags.Append(d...)
 		if diags.HasError() {
 			return stateModelV2, diags
@@ -92,7 +94,7 @@ func (m integrationPolicyModelV1) toV2(ctx context.Context) (integrationPolicyMo
 
 		inputsV2[id] = integrationPolicyInputsModel{
 			Enabled:  inputV1.Enabled,
-			Vars:     inputV1.VarsJson,
+			Vars:     inputV1.VarsJSON,
 			Streams:  streams,
 			Defaults: types.ObjectNull(getInputDefaultsAttrTypes()),
 		}
@@ -129,7 +131,7 @@ func upgradeV1ToV2(ctx context.Context, req resource.UpgradeStateRequest, resp *
 }
 
 func updateStreamsV1ToV2(ctx context.Context, v1 jsontypes.Normalized, inputID string) (types.Map, diag.Diagnostics) {
-	if !utils.IsKnown(v1) {
+	if !typeutils.IsKnown(v1) {
 		return types.MapNull(getInputStreamType()), nil
 	}
 
@@ -147,7 +149,7 @@ func updateStreamsV1ToV2(ctx context.Context, v1 jsontypes.Normalized, inputID s
 	for streamID, streamData := range apiStreams {
 		streamModel := integrationPolicyInputStreamModel{
 			Enabled: types.BoolPointerValue(streamData.Enabled),
-			Vars:    utils.MapToNormalizedType(utils.Deref(streamData.Vars), path.Root("inputs").AtMapKey(inputID).AtName("streams").AtMapKey(streamID).AtName("vars"), &diags),
+			Vars:    typeutils.MapToNormalizedType(schemautil.Deref(streamData.Vars), path.Root("inputs").AtMapKey(inputID).AtName("streams").AtMapKey(streamID).AtName("vars"), &diags),
 		}
 
 		streams[streamID] = streamModel
@@ -235,7 +237,7 @@ func getSchemaV1() *schema.Schema {
 				Sensitive:   true,
 			},
 			"space_ids": schema.SetAttribute{
-				Description: "The Kibana space IDs where this integration policy is available. When set, must match the space_ids of the referenced agent policy. If not set, will be inherited from the agent policy. Note: The order of space IDs does not matter as this is a set.",
+				Description: spaceIDsDescription,
 				ElementType: types.StringType,
 				Optional:    true,
 				Computed:    true,

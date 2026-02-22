@@ -1,4 +1,4 @@
-package security_list_data_streams
+package securitylistdatastreams
 
 import (
 	"context"

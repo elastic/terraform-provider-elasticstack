@@ -62,7 +62,7 @@ func Test_tfModel_toAPIModel(t *testing.T) {
 	tests := []struct {
 		name             string
 		model            tfModel
-		expectedApiModel models.Index
+		expectedAPIModel models.Index
 		hasError         bool
 		expectedDiags    diag.Diagnostics
 	}{
@@ -73,9 +73,9 @@ func Test_tfModel_toAPIModel(t *testing.T) {
 				Alias:    basetypes.NewSetNull(basetypes.ObjectType{}),
 				Settings: basetypes.NewListNull(basetypes.ObjectType{}),
 			},
-			expectedApiModel: models.Index{
+			expectedAPIModel: models.Index{
 				Name:     "index-name",
-				Settings: map[string]interface{}{},
+				Settings: map[string]any{},
 			},
 		},
 		{
@@ -85,9 +85,9 @@ func Test_tfModel_toAPIModel(t *testing.T) {
 				Alias:    basetypes.NewSetUnknown(basetypes.ObjectType{}),
 				Settings: basetypes.NewListNull(basetypes.ObjectType{}),
 			},
-			expectedApiModel: models.Index{
+			expectedAPIModel: models.Index{
 				Name:     "index-name",
-				Settings: map[string]interface{}{},
+				Settings: map[string]any{},
 			},
 		},
 		{
@@ -97,9 +97,9 @@ func Test_tfModel_toAPIModel(t *testing.T) {
 				Alias:    validAliases,
 				Settings: basetypes.NewListNull(basetypes.ObjectType{}),
 			},
-			expectedApiModel: models.Index{
+			expectedAPIModel: models.Index{
 				Name:     "index-name",
-				Settings: map[string]interface{}{},
+				Settings: map[string]any{},
 				Aliases: map[string]models.IndexAlias{
 					"alias-0": {Name: "alias-0"},
 					"alias-1": {
@@ -109,7 +109,7 @@ func Test_tfModel_toAPIModel(t *testing.T) {
 						IsWriteIndex:  true,
 						Routing:       "slow",
 						SearchRouting: "just_right",
-						Filter: map[string]interface{}{
+						Filter: map[string]any{
 							"a": "b",
 						},
 					},
@@ -123,9 +123,9 @@ func Test_tfModel_toAPIModel(t *testing.T) {
 				Mappings: jsontypes.NewNormalizedNull(),
 				Settings: basetypes.NewListNull(basetypes.ObjectType{}),
 			},
-			expectedApiModel: models.Index{
+			expectedAPIModel: models.Index{
 				Name:     "index-name",
-				Settings: map[string]interface{}{},
+				Settings: map[string]any{},
 			},
 		},
 		{
@@ -135,9 +135,9 @@ func Test_tfModel_toAPIModel(t *testing.T) {
 				Mappings: jsontypes.NewNormalizedUnknown(),
 				Settings: basetypes.NewListNull(basetypes.ObjectType{}),
 			},
-			expectedApiModel: models.Index{
+			expectedAPIModel: models.Index{
 				Name:     "index-name",
-				Settings: map[string]interface{}{},
+				Settings: map[string]any{},
 			},
 		},
 		{
@@ -147,10 +147,10 @@ func Test_tfModel_toAPIModel(t *testing.T) {
 				Mappings: jsontypes.NewNormalizedValue(`{"a": "b"}`),
 				Settings: basetypes.NewListNull(basetypes.ObjectType{}),
 			},
-			expectedApiModel: models.Index{
+			expectedAPIModel: models.Index{
 				Name:     "index-name",
-				Settings: map[string]interface{}{},
-				Mappings: map[string]interface{}{
+				Settings: map[string]any{},
+				Mappings: map[string]any{
 					"a": "b",
 				},
 			},
@@ -243,9 +243,9 @@ func Test_tfModel_toAPIModel(t *testing.T) {
 				IndexingSlowlogSource:              basetypes.NewStringValue("source"),
 				Settings:                           basetypes.NewListNull(basetypes.ObjectType{}),
 			},
-			expectedApiModel: models.Index{
+			expectedAPIModel: models.Index{
 				Name: "index-name",
-				Settings: map[string]interface{}{
+				Settings: map[string]any{
 					"number_of_shards":                       int64(3),
 					"number_of_routing_shards":               int64(5),
 					"codec":                                  "codec",
@@ -307,9 +307,9 @@ func Test_tfModel_toAPIModel(t *testing.T) {
 				Name:     basetypes.NewStringValue("index-name"),
 				Settings: validSettings,
 			},
-			expectedApiModel: models.Index{
+			expectedAPIModel: models.Index{
 				Name: "index-name",
-				Settings: map[string]interface{}{
+				Settings: map[string]any{
 					"number_of_replicas": "5",
 				},
 			},
@@ -344,7 +344,7 @@ func Test_tfModel_toAPIModel(t *testing.T) {
 			if tt.expectedDiags != nil {
 				require.Equal(t, tt.expectedDiags, diags)
 			}
-			require.Equal(t, tt.expectedApiModel, apiModel)
+			require.Equal(t, tt.expectedAPIModel, apiModel)
 		})
 	}
 }

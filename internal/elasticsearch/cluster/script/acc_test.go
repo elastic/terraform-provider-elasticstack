@@ -82,17 +82,17 @@ func TestAccResourceScriptImport(t *testing.T) {
 			},
 			{
 				ResourceName: "elasticstack_elasticsearch_script.test",
-				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+				ImportStateIdFunc: func(_ *terraform.State) (string, error) {
 					client, err := clients.NewAcceptanceTestingClient()
 					if err != nil {
 						return "", err
 					}
-					clusterId, diag := client.ClusterID(context.Background())
+					clusterID, diag := client.ClusterID(context.Background())
 					if diag.HasError() {
 						return "", fmt.Errorf("failed to get cluster uuid: %s", diag[0].Summary)
 					}
 
-					return fmt.Sprintf("%s/%s", *clusterId, scriptID), nil
+					return fmt.Sprintf("%s/%s", *clusterID, scriptID), nil
 				},
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -243,18 +243,18 @@ func checkScriptDestroy(s *terraform.State) error {
 			continue
 		}
 
-		compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
+		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 		esClient, err := client.GetESClient()
 		if err != nil {
 			return err
 		}
-		res, err := esClient.GetScript(compId.ResourceId)
+		res, err := esClient.GetScript(compID.ResourceID)
 		if err != nil {
 			return err
 		}
 
 		if res.StatusCode != 404 {
-			return fmt.Errorf("script (%s) still exists", compId.ResourceId)
+			return fmt.Errorf("script (%s) still exists", compID.ResourceID)
 		}
 	}
 	return nil

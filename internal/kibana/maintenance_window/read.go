@@ -1,16 +1,16 @@
-package maintenance_window
+package maintenancewindow
 
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *MaintenanceWindowResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var stateModel MaintenanceWindowModel
+func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var stateModel Model
 
 	req.State.GetAttribute(ctx, path.Root("id"), &stateModel.ID)
 	req.State.GetAttribute(ctx, path.Root("space_id"), &stateModel.SpaceID)
@@ -37,7 +37,7 @@ func (r *MaintenanceWindowResource) Read(ctx context.Context, req resource.ReadR
 	}
 
 	maintenanceWindowID, spaceID := stateModel.getMaintenanceWindowIDAndSpaceID()
-	maintenanceWindow, diags := kibana_oapi.GetMaintenanceWindow(ctx, client, spaceID, maintenanceWindowID)
+	maintenanceWindow, diags := kibanaoapi.GetMaintenanceWindow(ctx, client, spaceID, maintenanceWindowID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

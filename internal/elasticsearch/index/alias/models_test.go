@@ -6,28 +6,28 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAliasIndexConfig_Equals(t *testing.T) {
+func TestIndexConfig_Equals(t *testing.T) {
 	tests := []struct {
 		name     string
-		a        AliasIndexConfig
-		b        AliasIndexConfig
+		a        IndexConfig
+		b        IndexConfig
 		expected bool
 	}{
 		{
 			name: "identical configs",
-			a: AliasIndexConfig{
+			a: IndexConfig{
 				Name:          "test-index",
 				IsWriteIndex:  true,
-				Filter:        map[string]interface{}{"user": "admin", "status": "active"},
+				Filter:        map[string]any{"user": "admin", "status": "active"},
 				IndexRouting:  "1",
 				IsHidden:      false,
 				Routing:       "2",
 				SearchRouting: "3",
 			},
-			b: AliasIndexConfig{
+			b: IndexConfig{
 				Name:          "test-index",
 				IsWriteIndex:  true,
-				Filter:        map[string]interface{}{"user": "admin", "status": "active"},
+				Filter:        map[string]any{"user": "admin", "status": "active"},
 				IndexRouting:  "1",
 				IsHidden:      false,
 				Routing:       "2",
@@ -37,11 +37,11 @@ func TestAliasIndexConfig_Equals(t *testing.T) {
 		},
 		{
 			name: "different name",
-			a: AliasIndexConfig{
+			a: IndexConfig{
 				Name:         "test-index-1",
 				IsWriteIndex: true,
 			},
-			b: AliasIndexConfig{
+			b: IndexConfig{
 				Name:         "test-index-2",
 				IsWriteIndex: true,
 			},
@@ -49,11 +49,11 @@ func TestAliasIndexConfig_Equals(t *testing.T) {
 		},
 		{
 			name: "different IsWriteIndex",
-			a: AliasIndexConfig{
+			a: IndexConfig{
 				Name:         "test-index",
 				IsWriteIndex: true,
 			},
-			b: AliasIndexConfig{
+			b: IndexConfig{
 				Name:         "test-index",
 				IsWriteIndex: false,
 			},
@@ -61,11 +61,11 @@ func TestAliasIndexConfig_Equals(t *testing.T) {
 		},
 		{
 			name: "different IndexRouting",
-			a: AliasIndexConfig{
+			a: IndexConfig{
 				Name:         "test-index",
 				IndexRouting: "1",
 			},
-			b: AliasIndexConfig{
+			b: IndexConfig{
 				Name:         "test-index",
 				IndexRouting: "2",
 			},
@@ -73,11 +73,11 @@ func TestAliasIndexConfig_Equals(t *testing.T) {
 		},
 		{
 			name: "different IsHidden",
-			a: AliasIndexConfig{
+			a: IndexConfig{
 				Name:     "test-index",
 				IsHidden: true,
 			},
-			b: AliasIndexConfig{
+			b: IndexConfig{
 				Name:     "test-index",
 				IsHidden: false,
 			},
@@ -85,11 +85,11 @@ func TestAliasIndexConfig_Equals(t *testing.T) {
 		},
 		{
 			name: "different Routing",
-			a: AliasIndexConfig{
+			a: IndexConfig{
 				Name:    "test-index",
 				Routing: "route-1",
 			},
-			b: AliasIndexConfig{
+			b: IndexConfig{
 				Name:    "test-index",
 				Routing: "route-2",
 			},
@@ -97,11 +97,11 @@ func TestAliasIndexConfig_Equals(t *testing.T) {
 		},
 		{
 			name: "different SearchRouting",
-			a: AliasIndexConfig{
+			a: IndexConfig{
 				Name:          "test-index",
 				SearchRouting: "search-1",
 			},
-			b: AliasIndexConfig{
+			b: IndexConfig{
 				Name:          "test-index",
 				SearchRouting: "search-2",
 			},
@@ -109,35 +109,35 @@ func TestAliasIndexConfig_Equals(t *testing.T) {
 		},
 		{
 			name: "different Filter - different values",
-			a: AliasIndexConfig{
+			a: IndexConfig{
 				Name:   "test-index",
-				Filter: map[string]interface{}{"user": "admin"},
+				Filter: map[string]any{"user": "admin"},
 			},
-			b: AliasIndexConfig{
+			b: IndexConfig{
 				Name:   "test-index",
-				Filter: map[string]interface{}{"user": "guest"},
+				Filter: map[string]any{"user": "guest"},
 			},
 			expected: false,
 		},
 		{
 			name: "different Filter - different keys",
-			a: AliasIndexConfig{
+			a: IndexConfig{
 				Name:   "test-index",
-				Filter: map[string]interface{}{"user": "admin"},
+				Filter: map[string]any{"user": "admin"},
 			},
-			b: AliasIndexConfig{
+			b: IndexConfig{
 				Name:   "test-index",
-				Filter: map[string]interface{}{"role": "admin"},
+				Filter: map[string]any{"role": "admin"},
 			},
 			expected: false,
 		},
 		{
 			name: "one nil Filter, one non-nil",
-			a: AliasIndexConfig{
+			a: IndexConfig{
 				Name:   "test-index",
-				Filter: map[string]interface{}{"term": "value"},
+				Filter: map[string]any{"term": "value"},
 			},
-			b: AliasIndexConfig{
+			b: IndexConfig{
 				Name:   "test-index",
 				Filter: nil,
 			},
@@ -145,11 +145,11 @@ func TestAliasIndexConfig_Equals(t *testing.T) {
 		},
 		{
 			name: "both nil Filters",
-			a: AliasIndexConfig{
+			a: IndexConfig{
 				Name:   "test-index",
 				Filter: nil,
 			},
-			b: AliasIndexConfig{
+			b: IndexConfig{
 				Name:   "test-index",
 				Filter: nil,
 			},
@@ -157,37 +157,37 @@ func TestAliasIndexConfig_Equals(t *testing.T) {
 		},
 		{
 			name: "both empty Filters",
-			a: AliasIndexConfig{
+			a: IndexConfig{
 				Name:   "test-index",
-				Filter: map[string]interface{}{},
+				Filter: map[string]any{},
 			},
-			b: AliasIndexConfig{
+			b: IndexConfig{
 				Name:   "test-index",
-				Filter: map[string]interface{}{},
+				Filter: map[string]any{},
 			},
 			expected: true,
 		},
 		{
 			name: "complex nested Filter match",
-			a: AliasIndexConfig{
+			a: IndexConfig{
 				Name:   "test-index",
-				Filter: map[string]interface{}{"environment": "prod", "tier": "premium"},
+				Filter: map[string]any{"environment": "prod", "tier": "premium"},
 			},
-			b: AliasIndexConfig{
+			b: IndexConfig{
 				Name:   "test-index",
-				Filter: map[string]interface{}{"environment": "prod", "tier": "premium"},
+				Filter: map[string]any{"environment": "prod", "tier": "premium"},
 			},
 			expected: true,
 		},
 		{
 			name: "all empty string fields",
-			a: AliasIndexConfig{
+			a: IndexConfig{
 				Name:          "test-index",
 				IndexRouting:  "",
 				Routing:       "",
 				SearchRouting: "",
 			},
-			b: AliasIndexConfig{
+			b: IndexConfig{
 				Name:          "test-index",
 				IndexRouting:  "",
 				Routing:       "",
@@ -197,11 +197,11 @@ func TestAliasIndexConfig_Equals(t *testing.T) {
 		},
 		{
 			name: "empty string vs populated string",
-			a: AliasIndexConfig{
+			a: IndexConfig{
 				Name:    "test-index",
 				Routing: "",
 			},
-			b: AliasIndexConfig{
+			b: IndexConfig{
 				Name:    "test-index",
 				Routing: "route",
 			},
@@ -209,13 +209,13 @@ func TestAliasIndexConfig_Equals(t *testing.T) {
 		},
 		{
 			name: "multiple fields different",
-			a: AliasIndexConfig{
+			a: IndexConfig{
 				Name:          "test-index-1",
 				IsWriteIndex:  true,
 				IndexRouting:  "1",
 				SearchRouting: "search-1",
 			},
-			b: AliasIndexConfig{
+			b: IndexConfig{
 				Name:          "test-index-2",
 				IsWriteIndex:  false,
 				IndexRouting:  "2",
@@ -225,19 +225,19 @@ func TestAliasIndexConfig_Equals(t *testing.T) {
 		},
 		{
 			name: "fully populated identical configs",
-			a: AliasIndexConfig{
+			a: IndexConfig{
 				Name:          "production-index",
 				IsWriteIndex:  true,
-				Filter:        map[string]interface{}{"environment": "prod"},
+				Filter:        map[string]any{"environment": "prod"},
 				IndexRouting:  "prod-route",
 				IsHidden:      true,
 				Routing:       "main-route",
 				SearchRouting: "search-route",
 			},
-			b: AliasIndexConfig{
+			b: IndexConfig{
 				Name:          "production-index",
 				IsWriteIndex:  true,
-				Filter:        map[string]interface{}{"environment": "prod"},
+				Filter:        map[string]any{"environment": "prod"},
 				IndexRouting:  "prod-route",
 				IsHidden:      true,
 				Routing:       "main-route",
@@ -247,38 +247,38 @@ func TestAliasIndexConfig_Equals(t *testing.T) {
 		},
 		{
 			name: "Filter with nested maps",
-			a: AliasIndexConfig{
+			a: IndexConfig{
 				Name: "test-index",
-				Filter: map[string]interface{}{
-					"term": map[string]interface{}{"user": "admin"},
+				Filter: map[string]any{
+					"term": map[string]any{"user": "admin"},
 				},
 			},
-			b: AliasIndexConfig{
+			b: IndexConfig{
 				Name: "test-index",
-				Filter: map[string]interface{}{
-					"term": map[string]interface{}{"user": "admin"},
+				Filter: map[string]any{
+					"term": map[string]any{"user": "admin"},
 				},
 			},
 			expected: true,
 		},
 		{
 			name: "Filter with slices",
-			a: AliasIndexConfig{
+			a: IndexConfig{
 				Name: "test-index",
-				Filter: map[string]interface{}{
-					"bool": map[string]interface{}{
-						"must": []interface{}{
-							map[string]interface{}{"term": map[string]interface{}{"status": "active"}},
+				Filter: map[string]any{
+					"bool": map[string]any{
+						"must": []any{
+							map[string]any{"term": map[string]any{"status": "active"}},
 						},
 					},
 				},
 			},
-			b: AliasIndexConfig{
+			b: IndexConfig{
 				Name: "test-index",
-				Filter: map[string]interface{}{
-					"bool": map[string]interface{}{
-						"must": []interface{}{
-							map[string]interface{}{"term": map[string]interface{}{"status": "active"}},
+				Filter: map[string]any{
+					"bool": map[string]any{
+						"must": []any{
+							map[string]any{"term": map[string]any{"status": "active"}},
 						},
 					},
 				},

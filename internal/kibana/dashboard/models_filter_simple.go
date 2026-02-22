@@ -2,7 +2,6 @@ package dashboard
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -29,7 +28,7 @@ func (m *filterSimpleModel) toAPI() kbapi.FilterSimpleSchema {
 	query := kbapi.FilterSimpleSchema{
 		Query: m.Query.ValueString(),
 	}
-	if utils.IsKnown(m.Language) {
+	if typeutils.IsKnown(m.Language) {
 		lang := kbapi.FilterSimpleSchemaLanguage(m.Language.ValueString())
 		query.Language = &lang
 	}

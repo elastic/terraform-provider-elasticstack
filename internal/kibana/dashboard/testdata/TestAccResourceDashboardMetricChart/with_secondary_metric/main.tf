@@ -23,7 +23,7 @@ resource "elasticstack_kibana_dashboard" "test" {
     metric_chart_config = {
       title       = "Sample Metric Chart with Secondary Metric"
       description = "Test metric chart with secondary metric"
-      dataset = jsonencode({
+      dataset_json = jsonencode({
         type = "dataView"
         id   = "metrics-*"
       })
@@ -33,7 +33,7 @@ resource "elasticstack_kibana_dashboard" "test" {
       }
       metrics = [
         {
-          config = jsonencode({
+          config_json = jsonencode({
             type      = "primary"
             operation = "count"
             format = {
@@ -48,7 +48,7 @@ resource "elasticstack_kibana_dashboard" "test" {
           })
         },
         {
-          config = jsonencode({
+          config_json = jsonencode({
             type              = "secondary",
             operation         = "last_value",
             field             = "@timestamp",

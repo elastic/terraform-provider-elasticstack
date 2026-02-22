@@ -1,4 +1,4 @@
-package api_key
+package apikey
 
 import (
 	"context"
@@ -7,8 +7,8 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -38,7 +38,7 @@ type tfModel struct {
 	KeyID                   types.String                                                              `tfsdk:"key_id"`
 	Name                    types.String                                                              `tfsdk:"name"`
 	Type                    types.String                                                              `tfsdk:"type"`
-	RoleDescriptors         customtypes.JSONWithDefaultsValue[map[string]models.ApiKeyRoleDescriptor] `tfsdk:"role_descriptors"`
+	RoleDescriptors         customtypes.JSONWithDefaultsValue[map[string]models.APIKeyRoleDescriptor] `tfsdk:"role_descriptors"`
 	Expiration              types.String                                                              `tfsdk:"expiration"`
 	ExpirationTimestamp     types.Int64                                                               `tfsdk:"expiration_timestamp"`
 	Metadata                jsontypes.Normalized                                                      `tfsdk:"metadata"`
@@ -47,96 +47,96 @@ type tfModel struct {
 	Encoded                 types.String                                                              `tfsdk:"encoded"`
 }
 
-func (model tfModel) GetID() (*clients.CompositeId, diag.Diagnostics) {
-	compId, sdkDiags := clients.CompositeIdFromStr(model.ID.ValueString())
+func (model tfModel) GetID() (*clients.CompositeID, diag.Diagnostics) {
+	compID, sdkDiags := clients.CompositeIDFromStr(model.ID.ValueString())
 	if sdkDiags.HasError() {
 		return nil, diagutil.FrameworkDiagsFromSDK(sdkDiags)
 	}
 
-	return compId, nil
+	return compID, nil
 }
 
-func (model tfModel) toAPIModel() (models.ApiKey, diag.Diagnostics) {
-	apiModel := models.ApiKey{
+func (model tfModel) toAPIModel() (models.APIKey, diag.Diagnostics) {
+	apiModel := models.APIKey{
 		ID:         model.KeyID.ValueString(),
 		Name:       model.Name.ValueString(),
 		Expiration: model.Expiration.ValueString(),
 	}
 
-	if utils.IsKnown(model.Metadata) {
+	if typeutils.IsKnown(model.Metadata) {
 		diags := model.Metadata.Unmarshal(&apiModel.Metadata)
 		if diags.HasError() {
-			return models.ApiKey{}, diags
+			return models.APIKey{}, diags
 		}
 	}
 
 	diags := model.RoleDescriptors.Unmarshal(&apiModel.RolesDescriptors)
 	if diags.HasError() {
-		return models.ApiKey{}, diags
+		return models.APIKey{}, diags
 	}
 
 	return apiModel, nil
 }
 
-func (model tfModel) toCrossClusterAPIModel(ctx context.Context) (models.CrossClusterApiKey, diag.Diagnostics) {
-	apiModel := models.CrossClusterApiKey{
+func (model tfModel) toCrossClusterAPIModel(ctx context.Context) (models.CrossClusterAPIKey, diag.Diagnostics) {
+	apiModel := models.CrossClusterAPIKey{
 		ID:         model.KeyID.ValueString(),
 		Name:       model.Name.ValueString(),
 		Expiration: model.Expiration.ValueString(),
 	}
 
-	if utils.IsKnown(model.Metadata) {
+	if typeutils.IsKnown(model.Metadata) {
 		diags := model.Metadata.Unmarshal(&apiModel.Metadata)
 		if diags.HasError() {
-			return models.CrossClusterApiKey{}, diags
+			return models.CrossClusterAPIKey{}, diags
 		}
 	}
 
 	// Build the access configuration
-	access := &models.CrossClusterApiKeyAccess{}
+	access := &models.CrossClusterAPIKeyAccess{}
 
-	if utils.IsKnown(model.Access) {
+	if typeutils.IsKnown(model.Access) {
 		var accessData accessModel
 		diags := model.Access.As(ctx, &accessData, basetypes.ObjectAsOptions{})
 		if diags.HasError() {
-			return models.CrossClusterApiKey{}, diags
+			return models.CrossClusterAPIKey{}, diags
 		}
 
-		if utils.IsKnown(accessData.Search) {
+		if typeutils.IsKnown(accessData.Search) {
 			var searchObjects []searchModel
 			diags := accessData.Search.ElementsAs(ctx, &searchObjects, false)
 			if diags.HasError() {
-				return models.CrossClusterApiKey{}, diags
+				return models.CrossClusterAPIKey{}, diags
 			}
 
-			var searchEntries []models.CrossClusterApiKeyAccessEntry
+			var searchEntries []models.CrossClusterAPIKeyAccessEntry
 			for _, searchObj := range searchObjects {
-				entry := models.CrossClusterApiKeyAccessEntry{}
+				entry := models.CrossClusterAPIKeyAccessEntry{}
 
-				if utils.IsKnown(searchObj.Names) {
+				if typeutils.IsKnown(searchObj.Names) {
 					var names []string
 					diags := searchObj.Names.ElementsAs(ctx, &names, false)
 					if diags.HasError() {
-						return models.CrossClusterApiKey{}, diags
+						return models.CrossClusterAPIKey{}, diags
 					}
 					entry.Names = names
 				}
 
-				if utils.IsKnown(searchObj.FieldSecurity) && !searchObj.FieldSecurity.IsNull() {
+				if typeutils.IsKnown(searchObj.FieldSecurity) && !searchObj.FieldSecurity.IsNull() {
 					var fieldSecurity models.FieldSecurity
 					diags := json.Unmarshal([]byte(searchObj.FieldSecurity.ValueString()), &fieldSecurity)
 					if diags != nil {
-						return models.CrossClusterApiKey{}, diag.Diagnostics{diag.NewErrorDiagnostic("Failed to unmarshal field_security", diags.Error())}
+						return models.CrossClusterAPIKey{}, diag.Diagnostics{diag.NewErrorDiagnostic("Failed to unmarshal field_security", diags.Error())}
 					}
 					entry.FieldSecurity = &fieldSecurity
 				}
 
-				if utils.IsKnown(searchObj.Query) && !searchObj.Query.IsNull() {
+				if typeutils.IsKnown(searchObj.Query) && !searchObj.Query.IsNull() {
 					query := searchObj.Query.ValueString()
 					entry.Query = &query
 				}
 
-				if utils.IsKnown(searchObj.AllowRestrictedIndices) {
+				if typeutils.IsKnown(searchObj.AllowRestrictedIndices) {
 					allowRestricted := searchObj.AllowRestrictedIndices.ValueBool()
 					entry.AllowRestrictedIndices = &allowRestricted
 				}
@@ -148,23 +148,23 @@ func (model tfModel) toCrossClusterAPIModel(ctx context.Context) (models.CrossCl
 			}
 		}
 
-		if utils.IsKnown(accessData.Replication) {
+		if typeutils.IsKnown(accessData.Replication) {
 			var replicationObjects []replicationModel
 			diags := accessData.Replication.ElementsAs(ctx, &replicationObjects, false)
 			if diags.HasError() {
-				return models.CrossClusterApiKey{}, diags
+				return models.CrossClusterAPIKey{}, diags
 			}
 
-			var replicationEntries []models.CrossClusterApiKeyAccessEntry
+			var replicationEntries []models.CrossClusterAPIKeyAccessEntry
 			for _, replicationObj := range replicationObjects {
-				if utils.IsKnown(replicationObj.Names) {
+				if typeutils.IsKnown(replicationObj.Names) {
 					var names []string
 					diags := replicationObj.Names.ElementsAs(ctx, &names, false)
 					if diags.HasError() {
-						return models.CrossClusterApiKey{}, diags
+						return models.CrossClusterAPIKey{}, diags
 					}
 					if len(names) > 0 {
-						replicationEntries = append(replicationEntries, models.CrossClusterApiKeyAccessEntry{
+						replicationEntries = append(replicationEntries, models.CrossClusterAPIKeyAccessEntry{
 							Names: names,
 						})
 					}
@@ -183,15 +183,15 @@ func (model tfModel) toCrossClusterAPIModel(ctx context.Context) (models.CrossCl
 	return apiModel, nil
 }
 
-func (model *tfModel) populateFromCreate(apiKey models.ApiKeyCreateResponse) {
-	model.KeyID = basetypes.NewStringValue(apiKey.Id)
+func (model *tfModel) populateFromCreate(apiKey models.APIKeyCreateResponse) {
+	model.KeyID = basetypes.NewStringValue(apiKey.ID)
 	model.Name = basetypes.NewStringValue(apiKey.Name)
 	model.APIKey = basetypes.NewStringValue(apiKey.Key)
 	model.Encoded = basetypes.NewStringValue(apiKey.EncodedKey)
 }
 
-func (model *tfModel) populateFromCrossClusterCreate(apiKey models.CrossClusterApiKeyCreateResponse) {
-	model.KeyID = basetypes.NewStringValue(apiKey.Id)
+func (model *tfModel) populateFromCrossClusterCreate(apiKey models.CrossClusterAPIKeyCreateResponse) {
+	model.KeyID = basetypes.NewStringValue(apiKey.ID)
 	model.Name = basetypes.NewStringValue(apiKey.Name)
 	model.APIKey = basetypes.NewStringValue(apiKey.Key)
 	model.Encoded = basetypes.NewStringValue(apiKey.EncodedKey)
@@ -200,8 +200,8 @@ func (model *tfModel) populateFromCrossClusterCreate(apiKey models.CrossClusterA
 	}
 }
 
-func (model *tfModel) populateFromAPI(apiKey models.ApiKeyResponse, serverVersion *version.Version) diag.Diagnostics {
-	model.KeyID = basetypes.NewStringValue(apiKey.Id)
+func (model *tfModel) populateFromAPI(apiKey models.APIKeyResponse, serverVersion *version.Version) diag.Diagnostics {
+	model.KeyID = basetypes.NewStringValue(apiKey.ID)
 	model.Name = basetypes.NewStringValue(apiKey.Name)
 	model.ExpirationTimestamp = basetypes.NewInt64Value(apiKey.Expiration)
 	model.Metadata = jsontypes.NewNormalizedNull()
@@ -210,7 +210,7 @@ func (model *tfModel) populateFromAPI(apiKey models.ApiKeyResponse, serverVersio
 		model.RoleDescriptors = customtypes.NewJSONWithDefaultsNull(populateRoleDescriptorsDefaults)
 
 		if apiKey.RolesDescriptors != nil {
-			descriptors, diags := marshalNormalizedJsonValue(apiKey.RolesDescriptors)
+			descriptors, diags := marshalNormalizedJSONValue(apiKey.RolesDescriptors)
 			if diags.HasError() {
 				return diags
 			}
@@ -220,7 +220,7 @@ func (model *tfModel) populateFromAPI(apiKey models.ApiKeyResponse, serverVersio
 	}
 
 	if apiKey.Metadata != nil {
-		metadata, diags := marshalNormalizedJsonValue(apiKey.Metadata)
+		metadata, diags := marshalNormalizedJSONValue(apiKey.Metadata)
 		if diags.HasError() {
 			return diags
 		}
@@ -231,7 +231,7 @@ func (model *tfModel) populateFromAPI(apiKey models.ApiKeyResponse, serverVersio
 	return nil
 }
 
-func marshalNormalizedJsonValue(item any) (jsontypes.Normalized, diag.Diagnostics) {
+func marshalNormalizedJSONValue(item any) (jsontypes.Normalized, diag.Diagnostics) {
 	jsonBytes, err := json.Marshal(item)
 	if err != nil {
 		return jsontypes.Normalized{}, diagutil.FrameworkDiagFromError(err)

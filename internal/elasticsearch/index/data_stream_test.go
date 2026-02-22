@@ -99,20 +99,20 @@ func checkResourceDataStreamDestroy(s *terraform.State) error {
 		if rs.Type != "elasticstack_elasticsearch_data_stream" {
 			continue
 		}
-		compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
+		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
 		esClient, err := client.GetESClient()
 		if err != nil {
 			return err
 		}
-		req := esClient.Indices.GetDataStream.WithName(compId.ResourceId)
+		req := esClient.Indices.GetDataStream.WithName(compID.ResourceID)
 		res, err := esClient.Indices.GetDataStream(req)
 		if err != nil {
 			return err
 		}
 
 		if res.StatusCode != 404 {
-			return fmt.Errorf("Data Stream (%s) still exists", compId.ResourceId)
+			return fmt.Errorf("Data Stream (%s) still exists", compID.ResourceID)
 		}
 	}
 	return nil

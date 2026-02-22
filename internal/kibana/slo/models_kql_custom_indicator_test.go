@@ -67,9 +67,9 @@ func TestKqlCustomIndicator_ToAPI(t *testing.T) {
 		assert.Nil(t, params.Filter)
 		// Good and Total are required fields, so they default to empty strings
 		require.NotNil(t, params.Good.String)
-		assert.Equal(t, "", *params.Good.String)
+		assert.Empty(t, *params.Good.String)
 		require.NotNil(t, params.Total.String)
-		assert.Equal(t, "", *params.Total.String)
+		assert.Empty(t, *params.Total.String)
 		assert.Equal(t, "@timestamp", params.TimestampField)
 	})
 
@@ -88,9 +88,9 @@ func TestKqlCustomIndicator_ToAPI(t *testing.T) {
 
 		params := ind.IndicatorPropertiesCustomKql.Params
 		require.NotNil(t, params.Good.String)
-		assert.Equal(t, "", *params.Good.String)
+		assert.Empty(t, *params.Good.String)
 		require.NotNil(t, params.Total.String)
-		assert.Equal(t, "", *params.Total.String)
+		assert.Empty(t, *params.Total.String)
 	})
 }
 

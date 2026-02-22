@@ -14,16 +14,16 @@ var _ resource.ResourceWithConfigure = &Resource{}
 var _ resource.ResourceWithImportState = &Resource{}
 
 type Resource struct {
-	client *clients.ApiClient
+	client *clients.APIClient
 }
 
-func (r *Resource) Configure(ctx context.Context, request resource.ConfigureRequest, response *resource.ConfigureResponse) {
+func (r *Resource) Configure(_ context.Context, request resource.ConfigureRequest, response *resource.ConfigureResponse) {
 	client, diags := clients.ConvertProviderData(request.ProviderData)
 	response.Diagnostics.Append(diags...)
 	r.client = client
 }
 
-func (r *Resource) Metadata(ctx context.Context, request resource.MetadataRequest, response *resource.MetadataResponse) {
+func (r *Resource) Metadata(_ context.Context, request resource.MetadataRequest, response *resource.MetadataResponse) {
 	response.TypeName = request.ProviderTypeName + "_elasticsearch_index"
 }
 

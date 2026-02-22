@@ -6,6 +6,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -47,10 +48,10 @@ type sectionGridModel struct {
 }
 
 type panelConfigConverter interface {
-	handlesAPIPanelConfig(*panelModel, string, kbapi.DashboardPanelItem_Config) bool
-	handlesTFPanelConfig(pm panelModel) bool
-	populateFromAPIPanel(context.Context, *panelModel, kbapi.DashboardPanelItem_Config) diag.Diagnostics
-	mapPanelToAPI(panelModel, *kbapi.DashboardPanelItem_Config) diag.Diagnostics
+	handlesAPIPanelConfig(ctx *panelModel, panelType string, config kbapi.DashboardPanelItem_Config) bool
+	handlesTFPanelConfig(tfModel panelModel) bool
+	populateFromAPIPanel(ctx context.Context, tfModel *panelModel, config kbapi.DashboardPanelItem_Config) diag.Diagnostics
+	mapPanelToAPI(tfModel panelModel, config *kbapi.DashboardPanelItem_Config) diag.Diagnostics
 }
 
 var panelConfigConverters = []panelConfigConverter{
@@ -232,11 +233,11 @@ func (m *dashboardModel) panelsToAPI() (*kbapi.DashboardPanels, diag.Diagnostics
 			},
 		}
 
-		if utils.IsKnown(sm.Collapsed) {
-			section.Collapsed = utils.Pointer(sm.Collapsed.ValueBool())
+		if typeutils.IsKnown(sm.Collapsed) {
+			section.Collapsed = schemautil.Pointer(sm.Collapsed.ValueBool())
 		}
-		if utils.IsKnown(sm.ID) {
-			section.Uid = utils.Pointer(sm.ID.ValueString())
+		if typeutils.IsKnown(sm.ID) {
+			section.Uid = schemautil.Pointer(sm.ID.ValueString())
 		}
 
 		if len(sm.Panels) > 0 {
@@ -279,17 +280,17 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 		},
 	}
 
-	if utils.IsKnown(pm.Grid.W) {
+	if typeutils.IsKnown(pm.Grid.W) {
 		w := float32(pm.Grid.W.ValueInt64())
 		panelItem.Grid.W = &w
 	}
-	if utils.IsKnown(pm.Grid.H) {
+	if typeutils.IsKnown(pm.Grid.H) {
 		h := float32(pm.Grid.H.ValueInt64())
 		panelItem.Grid.H = &h
 	}
 
-	if utils.IsKnown(pm.ID) {
-		panelItem.Uid = utils.Pointer(pm.ID.ValueString())
+	if typeutils.IsKnown(pm.ID) {
+		panelItem.Uid = schemautil.Pointer(pm.ID.ValueString())
 	}
 
 	var diags diag.Diagnostics
@@ -307,8 +308,8 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 		}
 	}
 
-	if !panelConfigHandled && utils.IsKnown(pm.ConfigJSON) {
-		var configMap map[string]interface{}
+	if !panelConfigHandled && typeutils.IsKnown(pm.ConfigJSON) {
+		var configMap map[string]any
 		diags.Append(pm.ConfigJSON.Unmarshal(&configMap)...)
 		if !diags.HasError() {
 			if err := panelItem.Config.FromDashboardPanelItemConfig2(configMap); err != nil {

@@ -15,14 +15,14 @@ func TestAccDataSourceIngestProcessorForeach(t *testing.T) {
 			{
 				Config: testAccDataSourceIngestProcessorForeach,
 				Check: resource.ComposeTestCheckFunc(
-					CheckResourceJson("data.elasticstack_elasticsearch_ingest_processor_foreach.test", "json", expectedJsonForeach),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_foreach.test", "json", expectedJSONForeach),
 				),
 			},
 		},
 	})
 }
 
-const expectedJsonForeach = `{
+const expectedJSONForeach = `{
   "foreach": {
 		"field": "values",
 		"ignore_failure": false,

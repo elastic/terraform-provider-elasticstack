@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
@@ -35,7 +35,7 @@ func (r *integrationResource) Delete(ctx context.Context, req resource.DeleteReq
 
 	// If space_id is set, use space-aware uninstallation
 	var spaceID string
-	if utils.IsKnown(stateModel.SpaceID) {
+	if typeutils.IsKnown(stateModel.SpaceID) {
 		spaceID = stateModel.SpaceID.ValueString()
 	}
 
