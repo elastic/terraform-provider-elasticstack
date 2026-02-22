@@ -17,7 +17,7 @@ import (
 func Test_newKibanaConfigFromSDK(t *testing.T) {
 	type args struct {
 		baseCfg        baseConfig
-		resourceData   map[string]interface{}
+		resourceData   map[string]any
 		expectedConfig kibanaConfig
 		expectedDiags  sdkdiags.Diagnostics
 		env            map[string]string
@@ -36,7 +36,7 @@ func Test_newKibanaConfigFromSDK(t *testing.T) {
 
 				return args{
 					baseCfg:        baseCfg,
-					resourceData:   map[string]interface{}{},
+					resourceData:   map[string]any{},
 					expectedConfig: baseCfg.toKibanaConfig(),
 				}
 			},
@@ -51,13 +51,13 @@ func Test_newKibanaConfigFromSDK(t *testing.T) {
 
 				return args{
 					baseCfg: baseCfg,
-					resourceData: map[string]interface{}{
-						"kibana": []interface{}{
-							map[string]interface{}{
-								"endpoints": []interface{}{"example.com/kibana"},
+					resourceData: map[string]any{
+						"kibana": []any{
+							map[string]any{
+								"endpoints": []any{"example.com/kibana"},
 								"username":  "kibana",
 								"password":  "baltic",
-								"ca_certs":  []interface{}{"internal", "lets_decrypt"},
+								"ca_certs":  []any{"internal", "lets_decrypt"},
 								"insecure":  false,
 							},
 						},
@@ -82,13 +82,13 @@ func Test_newKibanaConfigFromSDK(t *testing.T) {
 
 				return args{
 					baseCfg: baseCfg,
-					resourceData: map[string]interface{}{
-						"kibana": []interface{}{
-							map[string]interface{}{
-								"endpoints": []interface{}{"example.com/kibana"},
+					resourceData: map[string]any{
+						"kibana": []any{
+							map[string]any{
+								"endpoints": []any{"example.com/kibana"},
 								"username":  "kibana",
 								"password":  "baltic",
-								"ca_certs":  []interface{}{"internal", "lets_decrypt"},
+								"ca_certs":  []any{"internal", "lets_decrypt"},
 								"insecure":  true,
 							},
 						},
@@ -128,7 +128,7 @@ func Test_newKibanaConfigFromSDK(t *testing.T) {
 			}, args.resourceData)
 
 			for key, val := range args.env {
-				os.Setenv(key, val)
+				t.Setenv(key, val)
 			}
 
 			kibanaCfg, diags := newKibanaConfigFromSDK(rd, args.baseCfg)
@@ -151,10 +151,10 @@ func Test_newKibanaConfigFromSDK_BearerToken(t *testing.T) {
 	baseCfg := baseConfig{}
 	rd := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
 		"kibana": providerSchema.GetKibanaConnectionSchema(),
-	}, map[string]interface{}{
-		"kibana": []interface{}{
-			map[string]interface{}{
-				"endpoints":    []interface{}{"example.com/kibana"},
+	}, map[string]any{
+		"kibana": []any{
+			map[string]any{
+				"endpoints":    []any{"example.com/kibana"},
 				"bearer_token": "my-jwt-token",
 				"insecure":     true,
 			},
@@ -178,16 +178,15 @@ func Test_newKibanaConfigFromSDK_BearerTokenEnvOverride(t *testing.T) {
 	os.Unsetenv("KIBANA_BEARER_TOKEN")
 	os.Unsetenv("KIBANA_CA_CERTS")
 
-	os.Setenv("KIBANA_BEARER_TOKEN", "env-jwt-token")
-	defer os.Unsetenv("KIBANA_BEARER_TOKEN")
+	t.Setenv("KIBANA_BEARER_TOKEN", "env-jwt-token")
 
 	baseCfg := baseConfig{}
 	rd := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
 		"kibana": providerSchema.GetKibanaConnectionSchema(),
-	}, map[string]interface{}{
-		"kibana": []interface{}{
-			map[string]interface{}{
-				"endpoints":    []interface{}{"example.com/kibana"},
+	}, map[string]any{
+		"kibana": []any{
+			map[string]any{
+				"endpoints":    []any{"example.com/kibana"},
 				"bearer_token": "config-jwt-token",
 			},
 		},
@@ -266,7 +265,7 @@ func Test_newKibanaConfigFromFramework(t *testing.T) {
 			name: "should use api_key when provided in config options",
 			args: func() args {
 				baseCfg := baseConfig{
-					ApiKey: "test",
+					APIKey: "test",
 				}
 
 				return args{
@@ -274,7 +273,7 @@ func Test_newKibanaConfigFromFramework(t *testing.T) {
 					providerConfig: ProviderConfiguration{
 						Kibana: []KibanaConnection{
 							{
-								ApiKey: types.StringValue("test"),
+								APIKey: types.StringValue("test"),
 								Endpoints: types.ListValueMust(types.StringType, []attr.Value{
 									types.StringValue("example.com/kibana"),
 								}),
@@ -349,7 +348,7 @@ func Test_newKibanaConfigFromFramework(t *testing.T) {
 			args := tt.args()
 
 			for key, val := range args.env {
-				os.Setenv(key, val)
+				t.Setenv(key, val)
 			}
 
 			kibanaCfg, diags := newKibanaConfigFromFramework(context.Background(), args.providerConfig, args.baseCfg)
@@ -400,8 +399,7 @@ func Test_newKibanaConfigFromFramework_BearerTokenEnvOverride(t *testing.T) {
 	os.Unsetenv("KIBANA_CA_CERTS")
 	os.Unsetenv("KIBANA_INSECURE")
 
-	os.Setenv("KIBANA_BEARER_TOKEN", "env-jwt-token")
-	defer os.Unsetenv("KIBANA_BEARER_TOKEN")
+	t.Setenv("KIBANA_BEARER_TOKEN", "env-jwt-token")
 
 	baseCfg := baseConfig{}
 	providerConfig := ProviderConfiguration{

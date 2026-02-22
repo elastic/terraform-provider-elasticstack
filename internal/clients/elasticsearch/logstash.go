@@ -13,7 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
-func PutLogstashPipeline(ctx context.Context, apiClient *clients.ApiClient, logstashPipeline *models.LogstashPipeline) diag.Diagnostics {
+func PutLogstashPipeline(ctx context.Context, apiClient *clients.APIClient, logstashPipeline *models.LogstashPipeline) diag.Diagnostics {
 	var diags diag.Diagnostics
 	logstashPipelineBytes, err := json.Marshal(logstashPipeline)
 	if err != nil {
@@ -35,7 +35,7 @@ func PutLogstashPipeline(ctx context.Context, apiClient *clients.ApiClient, logs
 	return diags
 }
 
-func GetLogstashPipeline(ctx context.Context, apiClient *clients.ApiClient, pipelineID string) (*models.LogstashPipeline, diag.Diagnostics) {
+func GetLogstashPipeline(ctx context.Context, apiClient *clients.APIClient, pipelineID string) (*models.LogstashPipeline, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
@@ -71,13 +71,13 @@ func GetLogstashPipeline(ctx context.Context, apiClient *clients.ApiClient, pipe
 	return nil, diags
 }
 
-func DeleteLogstashPipeline(ctx context.Context, apiClient *clients.ApiClient, pipeline_id string) diag.Diagnostics {
+func DeleteLogstashPipeline(ctx context.Context, apiClient *clients.APIClient, pipelineID string) diag.Diagnostics {
 	var diags diag.Diagnostics
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	res, err := esClient.LogstashDeletePipeline(pipeline_id, esClient.LogstashDeletePipeline.WithContext(ctx))
+	res, err := esClient.LogstashDeletePipeline(pipelineID, esClient.LogstashDeletePipeline.WithContext(ctx))
 
 	if err != nil {
 		return diag.FromErr(err)

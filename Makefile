@@ -1,7 +1,7 @@
 .DEFAULT_GOAL = help
 SHELL := /bin/bash
 
-VERSION ?= 0.13.1
+VERSION ?= 0.14.2
 
 NAME = elasticstack
 BINARY = terraform-provider-${NAME}
@@ -27,6 +27,12 @@ KIBANA_API_KEY_NAME ?= kibana-api-key
 
 FLEET_NAME ?= terraform-elasticstack-fleet
 FLEET_ENDPOINT ?= https://$(FLEET_NAME):8220
+
+# Fleet Server image repository. Some older stack versions (notably 7.17.x, 8.0.x, 8.1.x)
+# do not publish elastic-agent images to docker.elastic.co, so fall back to Docker Hub.
+ifneq (,$(filter 7.17.% 8.0.% 8.1.%,$(STACK_VERSION)))
+FLEET_IMAGE := elastic/elastic-agent
+endif
 
 RERUN_FAILS ?= 3
 
@@ -141,7 +147,7 @@ install: build ## Install built provider into the local terraform cache
 
 .PHONY: tools
 tools: $(GOBIN)  ## Download golangci-lint locally if necessary.
-	@[[ -f $(GOBIN)/golangci-lint ]] || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOBIN) v2.9.0
+	@[[ -f $(GOBIN)/golangci-lint ]] || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOBIN) v2.10.1
 
 .PHONY: golangci-lint
 golangci-lint:

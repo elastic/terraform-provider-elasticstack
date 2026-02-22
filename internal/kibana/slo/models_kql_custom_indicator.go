@@ -2,7 +2,7 @@ package slo
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/slo"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -17,7 +17,7 @@ type tfKqlCustomIndicator struct {
 }
 
 func (m tfModel) kqlCustomIndicatorToAPI() (bool, slo.SloWithSummaryResponseIndicator, diag.Diagnostics) {
-	var diags diag.Diagnostics
+	diags := diag.Diagnostics{}
 	if len(m.KqlCustomIndicator) != 1 {
 		return false, slo.SloWithSummaryResponseIndicator{}, diags
 	}
@@ -25,22 +25,24 @@ func (m tfModel) kqlCustomIndicatorToAPI() (bool, slo.SloWithSummaryResponseIndi
 	ind := m.KqlCustomIndicator[0]
 
 	var filterObj *slo.KqlWithFilters
-	if utils.IsKnown(ind.Filter) {
+	if typeutils.IsKnown(ind.Filter) {
 		v := ind.Filter.ValueString()
 		filterObj = &slo.KqlWithFilters{String: &v}
 	}
 
-	good := slo.KqlWithFiltersGood{}
-	if utils.IsKnown(ind.Good) {
-		v := ind.Good.ValueString()
-		good.String = &v
+	// Default good and total to empty string if not provided, as they are required by the API
+	// and must be marshallable to valid JSON
+	goodStr := ""
+	if typeutils.IsKnown(ind.Good) {
+		goodStr = ind.Good.ValueString()
 	}
+	good := slo.KqlWithFiltersGood{String: &goodStr}
 
-	total := slo.KqlWithFiltersTotal{}
-	if utils.IsKnown(ind.Total) {
-		v := ind.Total.ValueString()
-		total.String = &v
+	totalStr := ""
+	if typeutils.IsKnown(ind.Total) {
+		totalStr = ind.Total.ValueString()
 	}
+	total := slo.KqlWithFiltersTotal{String: &totalStr}
 
 	params := slo.IndicatorPropertiesCustomKqlParams{
 		Index:          ind.Index.ValueString(),
@@ -60,7 +62,7 @@ func (m tfModel) kqlCustomIndicatorToAPI() (bool, slo.SloWithSummaryResponseIndi
 }
 
 func (m *tfModel) populateFromKqlCustomIndicator(apiIndicator *slo.IndicatorPropertiesCustomKql) diag.Diagnostics {
-	var diags diag.Diagnostics
+	diags := diag.Diagnostics{}
 	if apiIndicator == nil {
 		return diags
 	}
@@ -77,6 +79,8 @@ func (m *tfModel) populateFromKqlCustomIndicator(apiIndicator *slo.IndicatorProp
 	if p.Filter != nil && p.Filter.String != nil {
 		ind.Filter = types.StringValue(*p.Filter.String)
 	}
+	// Handle good and total fields - these are always present in the API response
+	// If they are empty strings, preserve that in the state
 	if p.Good.String != nil {
 		ind.Good = types.StringValue(*p.Good.String)
 	}

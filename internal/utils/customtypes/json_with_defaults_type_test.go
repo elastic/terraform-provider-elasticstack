@@ -10,11 +10,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // testPopulateDefaults is a test function that mimics testPopulateDefaults for testing purposes
-func testPopulateDefaults(model map[string]models.ApiKeyRoleDescriptor) map[string]models.ApiKeyRoleDescriptor {
-	result := make(map[string]models.ApiKeyRoleDescriptor)
+func testPopulateDefaults(model map[string]models.APIKeyRoleDescriptor) map[string]models.APIKeyRoleDescriptor {
+	result := make(map[string]models.APIKeyRoleDescriptor)
 
 	for role, descriptor := range model {
 		resultDescriptor := descriptor
@@ -46,14 +47,14 @@ func TestRoleDescriptorsType_ValueType(t *testing.T) {
 
 	value := roleDescriptorsType.ValueType(ctx)
 
-	expectedType := JSONWithDefaultsValue[map[string]models.ApiKeyRoleDescriptor]{}
+	expectedType := JSONWithDefaultsValue[map[string]models.APIKeyRoleDescriptor]{}
 	assert.IsType(t, expectedType, value)
 }
 
 func TestRoleDescriptorsType_Equal(t *testing.T) {
 	tests := []struct {
 		name     string
-		thisType JSONWithDefaultsType[map[string]models.ApiKeyRoleDescriptor]
+		thisType JSONWithDefaultsType[map[string]models.APIKeyRoleDescriptor]
 		other    attr.Type
 		expected bool
 	}{
@@ -89,7 +90,7 @@ func TestRoleDescriptorsType_ValueFromString(t *testing.T) {
 	tests := []struct {
 		name          string
 		input         basetypes.StringValue
-		expectedValue JSONWithDefaultsValue[map[string]models.ApiKeyRoleDescriptor]
+		expectedValue JSONWithDefaultsValue[map[string]models.APIKeyRoleDescriptor]
 		expectedDiags bool
 	}{
 		{
@@ -120,7 +121,7 @@ func TestRoleDescriptorsType_ValueFromString(t *testing.T) {
 		{
 			name:  "empty string value",
 			input: basetypes.NewStringValue(""),
-			expectedValue: JSONWithDefaultsValue[map[string]models.ApiKeyRoleDescriptor]{
+			expectedValue: JSONWithDefaultsValue[map[string]models.APIKeyRoleDescriptor]{
 				Normalized: jsontypes.NewNormalizedValue(""),
 			},
 			expectedDiags: false,
@@ -142,7 +143,7 @@ func TestRoleDescriptorsType_ValueFromString(t *testing.T) {
 
 			// For value comparison, we check the string representation since the internal structure might differ
 			if !tt.expectedDiags {
-				actualValue, ok := value.(JSONWithDefaultsValue[map[string]models.ApiKeyRoleDescriptor])
+				actualValue, ok := value.(JSONWithDefaultsValue[map[string]models.APIKeyRoleDescriptor])
 				assert.True(t, ok)
 				assert.Equal(t, tt.expectedValue.IsNull(), actualValue.IsNull())
 				assert.Equal(t, tt.expectedValue.IsUnknown(), actualValue.IsUnknown())
@@ -159,25 +160,25 @@ func TestRoleDescriptorsType_ValueFromTerraform(t *testing.T) {
 		name          string
 		input         tftypes.Value
 		expectedError bool
-		expectedType  interface{}
+		expectedType  any
 	}{
 		{
 			name:          "valid string terraform value",
 			input:         tftypes.NewValue(tftypes.String, `{"role1": {"cluster": ["read"]}}`),
 			expectedError: false,
-			expectedType:  JSONWithDefaultsValue[map[string]models.ApiKeyRoleDescriptor]{},
+			expectedType:  JSONWithDefaultsValue[map[string]models.APIKeyRoleDescriptor]{},
 		},
 		{
 			name:          "null terraform value",
 			input:         tftypes.NewValue(tftypes.String, nil),
 			expectedError: false,
-			expectedType:  JSONWithDefaultsValue[map[string]models.ApiKeyRoleDescriptor]{},
+			expectedType:  JSONWithDefaultsValue[map[string]models.APIKeyRoleDescriptor]{},
 		},
 		{
 			name:          "unknown terraform value",
 			input:         tftypes.NewValue(tftypes.String, tftypes.UnknownValue),
 			expectedError: false,
-			expectedType:  JSONWithDefaultsValue[map[string]models.ApiKeyRoleDescriptor]{},
+			expectedType:  JSONWithDefaultsValue[map[string]models.APIKeyRoleDescriptor]{},
 		},
 		{
 			name:          "invalid terraform value type",
@@ -195,10 +196,10 @@ func TestRoleDescriptorsType_ValueFromTerraform(t *testing.T) {
 			value, err := roleDescriptorsType.ValueFromTerraform(ctx, tt.input)
 
 			if tt.expectedError {
-				assert.Error(t, err)
-				assert.Nil(t, value)
+				require.Error(t, err)
+				require.Nil(t, value)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				if tt.expectedType != nil {
 					assert.IsType(t, tt.expectedType, value)
 				}

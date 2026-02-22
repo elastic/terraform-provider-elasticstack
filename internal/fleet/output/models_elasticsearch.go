@@ -16,7 +16,7 @@ func (model *outputModel) fromAPIElasticsearchModel(ctx context.Context, data *k
 	model.OutputID = types.StringPointerValue(data.Id)
 	model.Name = types.StringValue(data.Name)
 	model.Type = types.StringValue(string(data.Type))
-	model.Hosts = utils.SliceToListType_String(ctx, data.Hosts, path.Root("hosts"), &diags)
+	model.Hosts = typeutils.SliceToListTypeString(ctx, data.Hosts, path.Root("hosts"), &diags)
 	model.CaSha256 = types.StringPointerValue(data.CaSha256)
 	model.CaTrustedFingerprint = typeutils.NonEmptyStringishPointerValue(data.CaTrustedFingerprint)
 	model.DefaultIntegrations = types.BoolPointerValue(data.IsDefault)
@@ -24,11 +24,11 @@ func (model *outputModel) fromAPIElasticsearchModel(ctx context.Context, data *k
 	model.ConfigYaml = types.StringPointerValue(data.ConfigYaml)
 	model.Ssl, diags = sslToObjectValue(ctx, data.Ssl)
 
-	// Note: SpaceIds is not returned by the API for outputs
+	// Note: SpaceIDs is not returned by the API for outputs
 	// If it's currently null/unknown, set to explicit null to satisfy Terraform's requirement
 	// If it has a value from plan, preserve it to avoid plan diffs
-	if model.SpaceIds.IsNull() || model.SpaceIds.IsUnknown() {
-		model.SpaceIds = types.SetNull(types.StringType)
+	if model.SpaceIDs.IsNull() || model.SpaceIDs.IsUnknown() {
+		model.SpaceIDs = types.SetNull(types.StringType)
 	}
 
 	return
@@ -45,7 +45,7 @@ func (model outputModel) toAPICreateElasticsearchModel(ctx context.Context) (kba
 		CaSha256:             model.CaSha256.ValueStringPointer(),
 		CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
 		ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
-		Hosts:                utils.ListTypeToSlice_String(ctx, model.Hosts, path.Root("hosts"), &diags),
+		Hosts:                typeutils.ListTypeToSliceString(ctx, model.Hosts, path.Root("hosts"), &diags),
 		Id:                   model.OutputID.ValueStringPointer(),
 		IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
 		IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
@@ -69,11 +69,11 @@ func (model outputModel) toAPIUpdateElasticsearchModel(ctx context.Context) (kba
 		return kbapi.UpdateOutputUnion{}, diags
 	}
 	body := kbapi.UpdateOutputElasticsearch{
-		Type:                 utils.Pointer(kbapi.Elasticsearch),
+		Type:                 schemautil.Pointer(kbapi.Elasticsearch),
 		CaSha256:             model.CaSha256.ValueStringPointer(),
 		CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
 		ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
-		Hosts:                utils.SliceRef(utils.ListTypeToSlice_String(ctx, model.Hosts, path.Root("hosts"), &diags)),
+		Hosts:                schemautil.SliceRef(typeutils.ListTypeToSliceString(ctx, model.Hosts, path.Root("hosts"), &diags)),
 		IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
 		IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
 		Name:                 model.Name.ValueStringPointer(),

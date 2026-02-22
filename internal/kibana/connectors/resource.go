@@ -21,16 +21,16 @@ var (
 )
 
 type Resource struct {
-	client *clients.ApiClient
+	client *clients.APIClient
 }
 
-func (r *Resource) Configure(ctx context.Context, request resource.ConfigureRequest, response *resource.ConfigureResponse) {
+func (r *Resource) Configure(_ context.Context, request resource.ConfigureRequest, response *resource.ConfigureResponse) {
 	client, diags := clients.ConvertProviderData(request.ProviderData)
 	response.Diagnostics.Append(diags...)
 	r.client = client
 }
 
-func (r *Resource) Metadata(ctx context.Context, request resource.MetadataRequest, response *resource.MetadataResponse) {
+func (r *Resource) Metadata(_ context.Context, request resource.MetadataRequest, response *resource.MetadataResponse) {
 	response.TypeName = request.ProviderTypeName + "_kibana_action_connector"
 }
 
@@ -47,10 +47,10 @@ func (r *Resource) UpgradeState(context.Context) map[int64]resource.StateUpgrade
 // The schema between V0 and V1 is mostly the same, however config saved ""
 // values to the state when null values were in the config. jsontypes.Normalized
 // correctly states this is invalid JSON.
-func upgradeV0(ctx context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
-	var state map[string]interface{}
+func upgradeV0(_ context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
+	var state map[string]any
 
-	removeEmptyString := func(state map[string]interface{}, key string) map[string]interface{} {
+	removeEmptyString := func(state map[string]any, key string) map[string]any {
 		value, ok := state[key]
 		if !ok {
 			return state

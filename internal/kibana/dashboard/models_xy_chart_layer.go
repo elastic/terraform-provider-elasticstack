@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -84,7 +84,7 @@ func (m *xyLayerModel) fromAPI(apiLayer kbapi.XyChartSchema_Layers_Item) diag.Di
 		// successfully unmarshal into the NoESQL structs, so we need a discriminator.
 		isESQL := false
 		var meta struct {
-			Dataset map[string]interface{} `json:"dataset"`
+			Dataset map[string]any `json:"dataset"`
 		}
 		if err := json.Unmarshal(layerJSON, &meta); err == nil {
 			if datasetType, ok := meta.Dataset["type"].(string); ok && datasetType == "esql" {
@@ -262,42 +262,42 @@ func (m *dataLayerModel) toAPI(layerType string) (json.RawMessage, diag.Diagnost
 	var diags diag.Diagnostics
 
 	// Build a map with all the fields
-	layer := map[string]interface{}{
+	layer := map[string]any{
 		"type": layerType,
 	}
 
-	if utils.IsKnown(m.DatasetJSON) {
-		var dataset interface{}
+	if typeutils.IsKnown(m.DatasetJSON) {
+		var dataset any
 		diags.Append(m.DatasetJSON.Unmarshal(&dataset)...)
 		layer["dataset"] = dataset
 	}
 
-	if utils.IsKnown(m.IgnoreGlobalFilters) {
+	if typeutils.IsKnown(m.IgnoreGlobalFilters) {
 		layer["ignore_global_filters"] = m.IgnoreGlobalFilters.ValueBool()
 	}
 
-	if utils.IsKnown(m.Sampling) {
+	if typeutils.IsKnown(m.Sampling) {
 		layer["sampling"] = m.Sampling.ValueFloat64()
 	}
 
-	if utils.IsKnown(m.XJSON) {
-		var x interface{}
+	if typeutils.IsKnown(m.XJSON) {
+		var x any
 		diags.Append(m.XJSON.Unmarshal(&x)...)
 		layer["x"] = x
 	}
 
-	if utils.IsKnown(m.BreakdownByJSON) {
-		var breakdownBy interface{}
+	if typeutils.IsKnown(m.BreakdownByJSON) {
+		var breakdownBy any
 		diags.Append(m.BreakdownByJSON.Unmarshal(&breakdownBy)...)
 		layer["breakdown_by"] = breakdownBy
 	}
 
 	// Convert Y metrics
 	if len(m.Y) > 0 {
-		yMetrics := make([]interface{}, 0, len(m.Y))
+		yMetrics := make([]any, 0, len(m.Y))
 		for _, y := range m.Y {
-			if utils.IsKnown(y.ConfigJSON) {
-				var yConfig interface{}
+			if typeutils.IsKnown(y.ConfigJSON) {
+				var yConfig any
 				diags.Append(y.ConfigJSON.Unmarshal(&yConfig)...)
 				yMetrics = append(yMetrics, yConfig)
 			}
@@ -411,31 +411,31 @@ func (m *referenceLineLayerModel) toAPI(layerType string) (json.RawMessage, diag
 	var diags diag.Diagnostics
 
 	// Build a map with all the fields
-	layer := map[string]interface{}{
+	layer := map[string]any{
 		"type": layerType,
 	}
 
-	if utils.IsKnown(m.DatasetJSON) {
-		var dataset interface{}
+	if typeutils.IsKnown(m.DatasetJSON) {
+		var dataset any
 		diags.Append(m.DatasetJSON.Unmarshal(&dataset)...)
 		layer["dataset"] = dataset
 	}
 
-	if utils.IsKnown(m.IgnoreGlobalFilters) {
+	if typeutils.IsKnown(m.IgnoreGlobalFilters) {
 		layer["ignore_global_filters"] = m.IgnoreGlobalFilters.ValueBool()
 	}
 
-	if utils.IsKnown(m.Sampling) {
+	if typeutils.IsKnown(m.Sampling) {
 		layer["sampling"] = m.Sampling.ValueFloat64()
 	}
 
 	// Convert thresholds
 	if len(m.Thresholds) > 0 {
-		thresholds := make([]interface{}, 0, len(m.Thresholds))
+		thresholds := make([]any, 0, len(m.Thresholds))
 		for _, t := range m.Thresholds {
 			// For NoESQL layers, thresholds are operation definitions; we model them via `threshold.value`.
-			if utils.IsKnown(t.ValueJSON) {
-				var op interface{}
+			if typeutils.IsKnown(t.ValueJSON) {
+				var op any
 				diags.Append(t.ValueJSON.Unmarshal(&op)...)
 				thresholds = append(thresholds, op)
 				continue
@@ -468,7 +468,7 @@ func (m *referenceLineLayerModel) toAPI(layerType string) (json.RawMessage, diag
 func (m *thresholdModel) fromAPIJSON(jsonData []byte) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	var thresholdData map[string]interface{}
+	var thresholdData map[string]any
 	if err := json.Unmarshal(jsonData, &thresholdData); err != nil {
 		diags.AddError("Failed to unmarshal threshold", err.Error())
 		return diags
@@ -540,51 +540,51 @@ func (m *thresholdModel) fromAPIJSON(jsonData []byte) diag.Diagnostics {
 }
 
 // toAPI converts threshold to API map
-func (m *thresholdModel) toAPI() (map[string]interface{}, diag.Diagnostics) {
+func (m *thresholdModel) toAPI() (map[string]any, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	threshold := make(map[string]interface{})
+	threshold := make(map[string]any)
 
-	if utils.IsKnown(m.Axis) {
+	if typeutils.IsKnown(m.Axis) {
 		threshold["axis"] = m.Axis.ValueString()
 	}
 
-	if utils.IsKnown(m.ColorJSON) {
-		var color interface{}
+	if typeutils.IsKnown(m.ColorJSON) {
+		var color any
 		diags.Append(m.ColorJSON.Unmarshal(&color)...)
 		threshold["color"] = color
 	}
 
-	if utils.IsKnown(m.Column) {
+	if typeutils.IsKnown(m.Column) {
 		threshold["column"] = m.Column.ValueString()
 	}
 
-	if utils.IsKnown(m.ValueJSON) {
-		var value interface{}
+	if typeutils.IsKnown(m.ValueJSON) {
+		var value any
 		diags.Append(m.ValueJSON.Unmarshal(&value)...)
 		threshold["value"] = value
 	}
 
-	if utils.IsKnown(m.Fill) {
+	if typeutils.IsKnown(m.Fill) {
 		threshold["fill"] = m.Fill.ValueString()
 	}
 
-	if utils.IsKnown(m.Icon) {
+	if typeutils.IsKnown(m.Icon) {
 		threshold["icon"] = m.Icon.ValueString()
 	}
 
-	if utils.IsKnown(m.Operation) {
+	if typeutils.IsKnown(m.Operation) {
 		threshold["operation"] = m.Operation.ValueString()
 	}
 
-	if utils.IsKnown(m.StrokeDash) {
+	if typeutils.IsKnown(m.StrokeDash) {
 		threshold["stroke_dash"] = m.StrokeDash.ValueString()
 	}
 
-	if utils.IsKnown(m.StrokeWidth) {
+	if typeutils.IsKnown(m.StrokeWidth) {
 		threshold["stroke_width"] = m.StrokeWidth.ValueFloat64()
 	}
 
-	if utils.IsKnown(m.Text) {
+	if typeutils.IsKnown(m.Text) {
 		threshold["text"] = m.Text.ValueString()
 	}
 

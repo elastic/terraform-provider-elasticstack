@@ -252,7 +252,7 @@ func newAliasModelFromAPI(name string, apiModel models.IndexAlias) (aliasTfModel
 }
 
 func setSettingsFromAPI(ctx context.Context, model *indexTfModel, apiModel models.Index) diag.Diagnostics {
-	modelType := reflect.TypeOf(*model)
+	modelType := reflect.TypeFor[indexTfModel]()
 
 	for _, key := range allSettingsKeys {
 		settingsValue, ok := apiModel.Settings["index."+key]
@@ -261,7 +261,7 @@ func setSettingsFromAPI(ctx context.Context, model *indexTfModel, apiModel model
 			continue
 		}
 
-		tfFieldKey := utils.ConvertSettingsKeyToTFFieldKey(key)
+		tfFieldKey := schemautil.ConvertSettingsKeyToTFFieldKey(key)
 		value, ok := model.getFieldValueByTagValue(tfFieldKey, modelType)
 		if !ok {
 			return diag.Diagnostics{
@@ -342,7 +342,7 @@ func setSettingsFromAPI(ctx context.Context, model *indexTfModel, apiModel model
 				}
 			}
 
-			elems, ok := settingsValue.([]interface{})
+			elems, ok := settingsValue.([]any)
 			if !ok {
 				return diag.Diagnostics{
 					diag.NewErrorDiagnostic(
@@ -367,7 +367,7 @@ func setSettingsFromAPI(ctx context.Context, model *indexTfModel, apiModel model
 				}
 			}
 
-			elems, ok := settingsValue.([]interface{})
+			elems, ok := settingsValue.([]any)
 			if !ok {
 				return diag.Diagnostics{
 					diag.NewErrorDiagnostic(
@@ -418,7 +418,7 @@ func setSettingsFromAPI(ctx context.Context, model *indexTfModel, apiModel model
 
 func (model indexTfModel) getFieldValueByTagValue(tagName string, t reflect.Type) (attr.Value, bool) {
 	numField := t.NumField()
-	for i := 0; i < numField; i++ {
+	for i := range numField {
 		field := t.Field(i)
 		if field.Tag.Get("tfsdk") == tagName {
 			return reflect.ValueOf(model).Field(i).Interface().(attr.Value), true
@@ -430,7 +430,7 @@ func (model indexTfModel) getFieldValueByTagValue(tagName string, t reflect.Type
 
 func (model *indexTfModel) setFieldValueByTagValue(tagName string, t reflect.Type, value attr.Value) bool {
 	numField := t.NumField()
-	for i := 0; i < numField; i++ {
+	for i := range numField {
 		field := t.Field(i)
 		if field.Tag.Get("tfsdk") == tagName {
 			reflect.ValueOf(model).Elem().Field(i).Set(reflect.ValueOf(value))

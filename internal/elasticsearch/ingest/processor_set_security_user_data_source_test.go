@@ -16,14 +16,14 @@ func TestAccDataSourceIngestProcessorSetSecurityUser(t *testing.T) {
 				Config: testAccDataSourceIngestProcessorSetSecurityUser,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_set_security_user.test", "field", "user"),
-					CheckResourceJson("data.elasticstack_elasticsearch_ingest_processor_set_security_user.test", "json", expectedJsonSetSecurityUser),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_set_security_user.test", "json", expectedJSONSetSecurityUser),
 				),
 			},
 		},
 	})
 }
 
-const expectedJsonSetSecurityUser = `{
+const expectedJSONSetSecurityUser = `{
 	"set_security_user": {
 		"field": "user",
 		"ignore_failure": false

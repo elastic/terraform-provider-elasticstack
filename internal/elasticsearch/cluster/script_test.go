@@ -151,18 +151,18 @@ func checkScriptDestroy(s *terraform.State) error {
 			continue
 		}
 
-		compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
+		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 		esClient, err := client.GetESClient()
 		if err != nil {
 			return err
 		}
-		res, err := esClient.GetScript(compId.ResourceId)
+		res, err := esClient.GetScript(compID.ResourceID)
 		if err != nil {
 			return err
 		}
 
 		if res.StatusCode != 404 {
-			return fmt.Errorf("script (%s) still exists", compId.ResourceId)
+			return fmt.Errorf("script (%s) still exists", compID.ResourceID)
 		}
 	}
 	return nil

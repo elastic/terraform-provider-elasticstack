@@ -40,9 +40,9 @@ func Test_objectValueToSSL(t *testing.T) {
 				),
 			},
 			want: &kbapi.NewOutputSsl{
-				Certificate:            utils.Pointer("cert"),
+				Certificate:            schemautil.Pointer("cert"),
 				CertificateAuthorities: &[]string{"ca"},
-				Key:                    utils.Pointer("key"),
+				Key:                    schemautil.Pointer("key"),
 			},
 		},
 	}
@@ -87,9 +87,9 @@ func Test_objectValueToSSLUpdate(t *testing.T) {
 				),
 			},
 			want: &kbapi.UpdateOutputSsl{
-				Certificate:            utils.Pointer("cert"),
+				Certificate:            schemautil.Pointer("cert"),
 				CertificateAuthorities: &[]string{"ca"},
-				Key:                    utils.Pointer("key"),
+				Key:                    schemautil.Pointer("key"),
 			},
 		},
 	}
@@ -137,9 +137,9 @@ func Test_sslToObjectValue(t *testing.T) {
 			name: "returns null object when ssl has empty string pointers and empty slice",
 			args: args{
 				ssl: &kbapi.OutputSsl{
-					Certificate:            utils.Pointer(""),
+					Certificate:            schemautil.Pointer(""),
 					CertificateAuthorities: &[]string{},
-					Key:                    utils.Pointer(""),
+					Key:                    schemautil.Pointer(""),
 				},
 			},
 			want: types.ObjectNull(getSslAttrTypes()),
@@ -148,9 +148,9 @@ func Test_sslToObjectValue(t *testing.T) {
 			name: "returns an object when populated",
 			args: args{
 				ssl: &kbapi.OutputSsl{
-					Certificate:            utils.Pointer("cert"),
+					Certificate:            schemautil.Pointer("cert"),
 					CertificateAuthorities: &[]string{"ca"},
-					Key:                    utils.Pointer("key"),
+					Key:                    schemautil.Pointer("key"),
 				},
 			},
 			want: types.ObjectValueMust(

@@ -1,4 +1,4 @@
-package api_key
+package apikey
 
 import (
 	"context"
@@ -15,18 +15,18 @@ func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp 
 		return
 	}
 
-	client, diags := clients.MaybeNewApiClientFromFrameworkResource(ctx, stateModel.ElasticsearchConnection, r.client)
+	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, stateModel.ElasticsearchConnection, r.client)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	compId, diags := stateModel.GetID()
+	compID, diags := stateModel.GetID()
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	resp.Diagnostics.Append(elasticsearch.DeleteApiKey(client, compId.ResourceId)...)
+	resp.Diagnostics.Append(elasticsearch.DeleteAPIKey(client, compID.ResourceID)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}

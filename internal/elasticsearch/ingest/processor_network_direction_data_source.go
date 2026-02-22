@@ -8,6 +8,7 @@ import (
 	_ "embed"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/tfsdkutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -87,7 +88,7 @@ func DataSourceProcessorNetworkDirection() *schema.Resource {
 			Elem: &schema.Schema{
 				Type:             schema.TypeString,
 				ValidateFunc:     validation.StringIsJSON,
-				DiffSuppressFunc: utils.DiffJsonSuppress,
+				DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 			},
 		},
 		"tag": {
@@ -110,7 +111,7 @@ func DataSourceProcessorNetworkDirection() *schema.Resource {
 	}
 }
 
-func dataSourceProcessorNetworkDirectionRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func dataSourceProcessorNetworkDirectionRead(_ context.Context, d *schema.ResourceData, _ any) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	processor := &models.ProcessorNetworkDirection{}
@@ -119,10 +120,10 @@ func dataSourceProcessorNetworkDirectionRead(ctx context.Context, d *schema.Reso
 	processor.IgnoreMissing = d.Get("ignore_missing").(bool)
 
 	if v, ok := d.GetOk("source_ip"); ok {
-		processor.SourceIp = v.(string)
+		processor.SourceIP = v.(string)
 	}
 	if v, ok := d.GetOk("destination_ip"); ok {
-		processor.DestinationIp = v.(string)
+		processor.DestinationIP = v.(string)
 	}
 	if v, ok := d.GetOk("internal_networks"); ok {
 		nets := v.(*schema.Set)
@@ -148,9 +149,9 @@ func dataSourceProcessorNetworkDirectionRead(ctx context.Context, d *schema.Reso
 		processor.Tag = v.(string)
 	}
 	if v, ok := d.GetOk("on_failure"); ok {
-		onFailure := make([]map[string]interface{}, len(v.([]interface{})))
-		for i, f := range v.([]interface{}) {
-			item := make(map[string]interface{})
+		onFailure := make([]map[string]any, len(v.([]any)))
+		for i, f := range v.([]any) {
+			item := make(map[string]any)
 			if err := json.NewDecoder(strings.NewReader(f.(string))).Decode(&item); err != nil {
 				return diag.FromErr(err)
 			}
@@ -159,15 +160,15 @@ func dataSourceProcessorNetworkDirectionRead(ctx context.Context, d *schema.Reso
 		processor.OnFailure = onFailure
 	}
 
-	processorJson, err := json.MarshalIndent(map[string]*models.ProcessorNetworkDirection{"network_direction": processor}, "", " ")
+	processorJSON, err := json.MarshalIndent(map[string]*models.ProcessorNetworkDirection{"network_direction": processor}, "", " ")
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("json", string(processorJson)); err != nil {
+	if err := d.Set("json", string(processorJSON)); err != nil {
 		return diag.FromErr(err)
 	}
 
-	hash, err := utils.StringToHash(string(processorJson))
+	hash, err := schemautil.StringToHash(string(processorJSON))
 	if err != nil {
 		return diag.FromErr(err)
 	}

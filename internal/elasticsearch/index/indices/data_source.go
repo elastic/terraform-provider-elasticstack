@@ -20,7 +20,7 @@ func NewDataSource() datasource.DataSource {
 
 // dataSource is the data source implementation.
 type dataSource struct {
-	client clients.ApiClient
+	client clients.APIClient
 }
 
 // Metadata returns the data source type name.

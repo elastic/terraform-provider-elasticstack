@@ -4,13 +4,13 @@ import "time"
 
 // Datafeed represents the complete datafeed as returned by the Elasticsearch API
 type Datafeed struct {
-	DatafeedId             string                  `json:"datafeed_id"`
-	JobId                  string                  `json:"job_id"`
+	DatafeedID             string                  `json:"datafeed_id"`
+	JobID                  string                  `json:"job_id"`
 	Indices                []string                `json:"indices"`
-	Query                  map[string]interface{}  `json:"query,omitempty"`
-	Aggregations           map[string]interface{}  `json:"aggregations,omitempty"`
-	ScriptFields           map[string]interface{}  `json:"script_fields,omitempty"`
-	RuntimeMappings        map[string]interface{}  `json:"runtime_mappings,omitempty"`
+	Query                  map[string]any          `json:"query,omitempty"`
+	Aggregations           map[string]any          `json:"aggregations,omitempty"`
+	ScriptFields           map[string]any          `json:"script_fields,omitempty"`
+	RuntimeMappings        map[string]any          `json:"runtime_mappings,omitempty"`
 	ScrollSize             *int                    `json:"scroll_size,omitempty"`
 	ChunkingConfig         *ChunkingConfig         `json:"chunking_config,omitempty"`
 	Frequency              *string                 `json:"frequency,omitempty"`
@@ -48,12 +48,12 @@ type Authorization struct {
 
 // DatafeedCreateRequest represents the request body for creating a datafeed
 type DatafeedCreateRequest struct {
-	JobId                  string                  `json:"job_id"`
+	JobID                  string                  `json:"job_id"`
 	Indices                []string                `json:"indices"`
-	Query                  map[string]interface{}  `json:"query,omitempty"`
-	Aggregations           map[string]interface{}  `json:"aggregations,omitempty"`
-	ScriptFields           map[string]interface{}  `json:"script_fields,omitempty"`
-	RuntimeMappings        map[string]interface{}  `json:"runtime_mappings,omitempty"`
+	Query                  map[string]any          `json:"query,omitempty"`
+	Aggregations           map[string]any          `json:"aggregations,omitempty"`
+	ScriptFields           map[string]any          `json:"script_fields,omitempty"`
+	RuntimeMappings        map[string]any          `json:"runtime_mappings,omitempty"`
 	ScrollSize             *int                    `json:"scroll_size,omitempty"`
 	ChunkingConfig         *ChunkingConfig         `json:"chunking_config,omitempty"`
 	Frequency              *string                 `json:"frequency,omitempty"`
@@ -65,12 +65,12 @@ type DatafeedCreateRequest struct {
 
 // DatafeedUpdateRequest represents the request body for updating a datafeed
 type DatafeedUpdateRequest struct {
-	JobId                  *string                 `json:"job_id,omitempty"`
+	JobID                  *string                 `json:"job_id,omitempty"`
 	Indices                []string                `json:"indices,omitempty"`
-	Query                  map[string]interface{}  `json:"query,omitempty"`
-	Aggregations           map[string]interface{}  `json:"aggregations,omitempty"`
-	ScriptFields           map[string]interface{}  `json:"script_fields,omitempty"`
-	RuntimeMappings        map[string]interface{}  `json:"runtime_mappings,omitempty"`
+	Query                  map[string]any          `json:"query,omitempty"`
+	Aggregations           map[string]any          `json:"aggregations,omitempty"`
+	ScriptFields           map[string]any          `json:"script_fields,omitempty"`
+	RuntimeMappings        map[string]any          `json:"runtime_mappings,omitempty"`
 	ScrollSize             *int                    `json:"scroll_size,omitempty"`
 	ChunkingConfig         *ChunkingConfig         `json:"chunking_config,omitempty"`
 	Frequency              *string                 `json:"frequency,omitempty"`
@@ -82,13 +82,13 @@ type DatafeedUpdateRequest struct {
 
 // DatafeedResponse represents the response from the datafeed API
 type DatafeedResponse struct {
-	DatafeedId             string                  `json:"datafeed_id"`
-	JobId                  string                  `json:"job_id"`
+	DatafeedID             string                  `json:"datafeed_id"`
+	JobID                  string                  `json:"job_id"`
 	Indices                []string                `json:"indices"`
-	Query                  map[string]interface{}  `json:"query"`
-	Aggregations           map[string]interface{}  `json:"aggregations,omitempty"`
-	ScriptFields           map[string]interface{}  `json:"script_fields,omitempty"`
-	RuntimeMappings        map[string]interface{}  `json:"runtime_mappings,omitempty"`
+	Query                  map[string]any          `json:"query"`
+	Aggregations           map[string]any          `json:"aggregations,omitempty"`
+	ScriptFields           map[string]any          `json:"script_fields,omitempty"`
+	RuntimeMappings        map[string]any          `json:"runtime_mappings,omitempty"`
 	ScrollSize             int                     `json:"scroll_size"`
 	ChunkingConfig         ChunkingConfig          `json:"chunking_config"`
 	Frequency              string                  `json:"frequency"`
@@ -106,7 +106,7 @@ type DatafeedStatsResponse struct {
 
 // DatafeedStats represents the statistics for a single datafeed
 type DatafeedStats struct {
-	DatafeedId            string               `json:"datafeed_id"`
+	DatafeedID            string               `json:"datafeed_id"`
 	State                 string               `json:"state"`
 	Node                  *DatafeedNode        `json:"node,omitempty"`
 	AssignmentExplanation *string              `json:"assignment_explanation,omitempty"`
@@ -116,9 +116,9 @@ type DatafeedStats struct {
 
 // DatafeedNode represents the node information for a datafeed
 type DatafeedNode struct {
-	Id               string            `json:"id"`
+	ID               string            `json:"id"`
 	Name             string            `json:"name"`
-	EphemeralId      string            `json:"ephemeral_id"`
+	EphemeralID      string            `json:"ephemeral_id"`
 	TransportAddress string            `json:"transport_address"`
 	Attributes       map[string]string `json:"attributes"`
 }
@@ -147,14 +147,14 @@ type MLJobStats struct {
 
 // MLJob represents a single ML job in the stats response
 type MLJob struct {
-	JobId string     `json:"job_id"`
+	JobID string     `json:"job_id"`
 	State string     `json:"state"`
 	Node  *MLJobNode `json:"node,omitempty"`
 }
 
 // MLJobNode represents the node information for an ML job
 type MLJobNode struct {
-	Id         string                 `json:"id"`
-	Name       string                 `json:"name"`
-	Attributes map[string]interface{} `json:"attributes"`
+	ID         string         `json:"id"`
+	Name       string         `json:"name"`
+	Attributes map[string]any `json:"attributes"`
 }

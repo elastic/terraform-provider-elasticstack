@@ -1,4 +1,4 @@
-package datafeed_state_test
+package datafeedstate_test
 
 import (
 	"fmt"

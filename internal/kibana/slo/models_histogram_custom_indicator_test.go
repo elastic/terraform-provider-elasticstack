@@ -67,13 +67,13 @@ func TestHistogramCustomIndicator_ToAPI(t *testing.T) {
 		require.NotNil(t, params.Good.Filter)
 		assert.Equal(t, "status:200", *params.Good.Filter)
 		require.NotNil(t, params.Good.From)
-		assert.Equal(t, 0.0, *params.Good.From)
+		assert.InDelta(t, 0.0, *params.Good.From, 1e-9)
 		assert.Nil(t, params.Good.To)
 
 		assert.Nil(t, params.Total.Filter)
 		assert.Nil(t, params.Total.From)
 		require.NotNil(t, params.Total.To)
-		assert.Equal(t, 10.0, *params.Total.To)
+		assert.InDelta(t, 10.0, *params.Total.To, 1e-9)
 	})
 }
 
@@ -112,10 +112,10 @@ func TestHistogramCustomIndicator_PopulateFromAPI(t *testing.T) {
 		require.Len(t, ind.Good, 1)
 		require.Len(t, ind.Total, 1)
 		assert.Equal(t, "status:200", ind.Good[0].Filter.ValueString())
-		assert.Equal(t, 0.0, ind.Good[0].From.ValueFloat64())
+		assert.InDelta(t, 0.0, ind.Good[0].From.ValueFloat64(), 1e-9)
 		assert.True(t, ind.Good[0].To.IsNull())
 		assert.True(t, ind.Total[0].From.IsNull())
-		assert.Equal(t, 10.0, ind.Total[0].To.ValueFloat64())
+		assert.InDelta(t, 10.0, ind.Total[0].To.ValueFloat64(), 1e-9)
 	})
 
 	t.Run("sets optional fields to null when not present", func(t *testing.T) {

@@ -15,14 +15,14 @@ func TestAccDataSourceIngestProcessorReroute(t *testing.T) {
 			{
 				Config: testAccDataSourceIngestProcessorReroute,
 				Check: resource.ComposeTestCheckFunc(
-					CheckResourceJson("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "json", expectedJsonReroute),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "json", expectedJSONReroute),
 				),
 			},
 		},
 	})
 }
 
-const expectedJsonReroute = `{
+const expectedJSONReroute = `{
 	"reroute": {
 		"ignore_failure": false,
 		"destination": "logs-generic-default"

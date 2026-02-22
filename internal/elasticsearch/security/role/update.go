@@ -7,7 +7,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -21,21 +21,21 @@ var (
 )
 
 func (r *roleResource) update(ctx context.Context, plan tfsdk.Plan, state *tfsdk.State) diag.Diagnostics {
-	var data RoleData
+	var data Data
 	var diags diag.Diagnostics
 	diags.Append(plan.Get(ctx, &data)...)
 	if diags.HasError() {
 		return diags
 	}
 
-	roleId := data.Name.ValueString()
-	id, sdkDiags := r.client.ID(ctx, roleId)
+	roleID := data.Name.ValueString()
+	id, sdkDiags := r.client.ID(ctx, roleID)
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
 		return diags
 	}
 
-	client, clientDiags := clients.MaybeNewApiClientFromFrameworkResource(ctx, data.ElasticsearchConnection, r.client)
+	client, clientDiags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, data.ElasticsearchConnection, r.client)
 	diags.Append(clientDiags...)
 	if diags.HasError() {
 		return diags
@@ -48,14 +48,14 @@ func (r *roleResource) update(ctx context.Context, plan tfsdk.Plan, state *tfsdk
 	}
 
 	// Check version requirements
-	if utils.IsKnown(data.Description) {
+	if typeutils.IsKnown(data.Description) {
 		if serverVersion.LessThan(MinSupportedDescriptionVersion) {
 			diags.AddError("Unsupported Feature", fmt.Sprintf("'description' is supported only for Elasticsearch v%s and above", MinSupportedDescriptionVersion.String()))
 			return diags
 		}
 	}
 
-	if utils.IsKnown(data.RemoteIndices) {
+	if typeutils.IsKnown(data.RemoteIndices) {
 		var remoteIndicesList []RemoteIndexPermsData
 		diags.Append(data.RemoteIndices.ElementsAs(ctx, &remoteIndicesList, false)...)
 		if len(remoteIndicesList) > 0 && serverVersion.LessThan(MinSupportedRemoteIndicesVersion) {
@@ -78,7 +78,7 @@ func (r *roleResource) update(ctx context.Context, plan tfsdk.Plan, state *tfsdk
 		return diags
 	}
 
-	data.Id = types.StringValue(id.String())
+	data.ID = types.StringValue(id.String())
 	readData, readDiags := r.read(ctx, data)
 	diags.Append(readDiags...)
 	if diags.HasError() {
@@ -86,7 +86,7 @@ func (r *roleResource) update(ctx context.Context, plan tfsdk.Plan, state *tfsdk
 	}
 
 	if readData == nil {
-		diags.AddError("Not Found", fmt.Sprintf("Role %q was not found after update", roleId))
+		diags.AddError("Not Found", fmt.Sprintf("Role %q was not found after update", roleID))
 		return diags
 	}
 

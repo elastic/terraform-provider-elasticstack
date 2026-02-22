@@ -12,7 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func GetEsFWConnectionBlock(keyName string, isProviderConfiguration bool) fwschema.Block {
+func GetEsFWConnectionBlock(isProviderConfiguration bool) fwschema.Block {
 	usernamePath := path.MatchRelative().AtParent().AtName("username")
 	passwordPath := path.MatchRelative().AtParent().AtName("password")
 	apiKeyPath := path.MatchRelative().AtParent().AtName("api_key")
@@ -271,10 +271,10 @@ func GetEsConnectionSchema(keyName string, isProviderConfiguration bool) *schema
 	usernameRequiredWithValidation := []string{passwordPath}
 	passwordRequiredWithValidation := []string{usernamePath}
 
-	withEnvDefault := func(key string, dv interface{}) schema.SchemaDefaultFunc { return nil }
+	withEnvDefault := func(_ string, _ any) schema.SchemaDefaultFunc { return nil }
 
 	if isProviderConfiguration {
-		withEnvDefault = func(key string, dv interface{}) schema.SchemaDefaultFunc { return schema.EnvDefaultFunc(key, dv) }
+		withEnvDefault = schema.EnvDefaultFunc
 
 		// RequireWith validation isn't compatible when used in conjunction with DefaultFunc
 		usernameRequiredWithValidation = nil
@@ -398,7 +398,7 @@ func GetEsConnectionSchema(keyName string, isProviderConfiguration bool) *schema
 }
 
 func GetKibanaConnectionSchema() *schema.Schema {
-	withEnvDefault := func(key string, dv interface{}) schema.SchemaDefaultFunc { return nil }
+	withEnvDefault := func(_ string, _ any) schema.SchemaDefaultFunc { return nil }
 	return &schema.Schema{
 		Description: "Kibana connection configuration block.",
 		Type:        schema.TypeList,

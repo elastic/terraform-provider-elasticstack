@@ -17,7 +17,7 @@ import (
 func Test_newKibanaOapiConfigFromSDK(t *testing.T) {
 	type args struct {
 		baseCfg        baseConfig
-		resourceData   map[string]interface{}
+		resourceData   map[string]any
 		expectedConfig kibanaOapiConfig
 		expectedDiags  sdkdiags.Diagnostics
 		env            map[string]string
@@ -36,7 +36,7 @@ func Test_newKibanaOapiConfigFromSDK(t *testing.T) {
 
 				return args{
 					baseCfg:        baseCfg,
-					resourceData:   map[string]interface{}{},
+					resourceData:   map[string]any{},
 					expectedConfig: baseCfg.toKibanaOapiConfig(),
 				}
 			},
@@ -51,13 +51,13 @@ func Test_newKibanaOapiConfigFromSDK(t *testing.T) {
 
 				return args{
 					baseCfg: baseCfg,
-					resourceData: map[string]interface{}{
-						"kibana": []interface{}{
-							map[string]interface{}{
-								"endpoints": []interface{}{"example.com/kibana"},
+					resourceData: map[string]any{
+						"kibana": []any{
+							map[string]any{
+								"endpoints": []any{"example.com/kibana"},
 								"username":  "kibana",
 								"password":  "baltic",
-								"ca_certs":  []interface{}{"internal", "lets_decrypt"},
+								"ca_certs":  []any{"internal", "lets_decrypt"},
 								"insecure":  false,
 							},
 						},
@@ -82,13 +82,13 @@ func Test_newKibanaOapiConfigFromSDK(t *testing.T) {
 
 				return args{
 					baseCfg: baseCfg,
-					resourceData: map[string]interface{}{
-						"kibana": []interface{}{
-							map[string]interface{}{
-								"endpoints": []interface{}{"example.com/kibana"},
+					resourceData: map[string]any{
+						"kibana": []any{
+							map[string]any{
+								"endpoints": []any{"example.com/kibana"},
 								"username":  "kibana",
 								"password":  "baltic",
-								"ca_certs":  []interface{}{"internal", "lets_decrypt"},
+								"ca_certs":  []any{"internal", "lets_decrypt"},
 								"insecure":  true,
 							},
 						},
@@ -127,7 +127,7 @@ func Test_newKibanaOapiConfigFromSDK(t *testing.T) {
 			}, args.resourceData)
 
 			for key, val := range args.env {
-				os.Setenv(key, val)
+				t.Setenv(key, val)
 			}
 
 			kibanaCfg, diags := newKibanaOapiConfigFromSDK(rd, args.baseCfg)
@@ -205,7 +205,7 @@ func Test_newKibanaOapiConfigFromFramework(t *testing.T) {
 			name: "should use api_key when provided in config options",
 			args: func() args {
 				baseCfg := baseConfig{
-					ApiKey: "test",
+					APIKey: "test",
 				}
 
 				return args{
@@ -213,7 +213,7 @@ func Test_newKibanaOapiConfigFromFramework(t *testing.T) {
 					providerConfig: ProviderConfiguration{
 						Kibana: []KibanaConnection{
 							{
-								ApiKey: types.StringValue("test"),
+								APIKey: types.StringValue("test"),
 								Endpoints: types.ListValueMust(types.StringType, []attr.Value{
 									types.StringValue("example.com/kibana"),
 								}),
@@ -287,7 +287,7 @@ func Test_newKibanaOapiConfigFromFramework(t *testing.T) {
 			args := tt.args()
 
 			for key, val := range args.env {
-				os.Setenv(key, val)
+				t.Setenv(key, val)
 			}
 
 			kibanaCfg, diags := newKibanaOapiConfigFromFramework(context.Background(), args.providerConfig, args.baseCfg)

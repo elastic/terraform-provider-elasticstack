@@ -22,6 +22,11 @@ var (
 // memoryPattern matches memory size strings with optional 'b' suffix
 var memoryPattern = regexp.MustCompile(`^(\d+)([kmgtKMGT])?[bB]?$`)
 
+const invalidMemorySizeErrorDetailFormat = `A string value was provided that is not a valid memory size format
+
+Given value "%s"
+Expected format: number followed by optional unit (k/K, m/M, g/G, t/T) and optional 'b/B' suffix`
+
 type MemorySize struct {
 	basetypes.StringValue
 }
@@ -42,17 +47,17 @@ func (v MemorySize) Equal(o attr.Value) bool {
 	return v.StringValue.Equal(other.StringValue)
 }
 
-func (t MemorySize) ValidateAttribute(ctx context.Context, req xattr.ValidateAttributeRequest, resp *xattr.ValidateAttributeResponse) {
-	if t.IsNull() || t.IsUnknown() {
+func (v MemorySize) ValidateAttribute(_ context.Context, req xattr.ValidateAttributeRequest, resp *xattr.ValidateAttributeResponse) {
+	if v.IsNull() || v.IsUnknown() {
 		return
 	}
 
-	valueString := t.ValueString()
+	valueString := v.ValueString()
 	if !memoryPattern.MatchString(valueString) {
 		resp.Diagnostics.AddAttributeError(
 			req.Path,
 			"Invalid memory size string value",
-			fmt.Sprintf("A string value was provided that is not a valid memory size format\n\nGiven value \"%s\"\nExpected format: number followed by optional unit (k/K, m/M, g/G, t/T) and optional 'b/B' suffix", valueString),
+			fmt.Sprintf(invalidMemorySizeErrorDetailFormat, valueString),
 		)
 	}
 }

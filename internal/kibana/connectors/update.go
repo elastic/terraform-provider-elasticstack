@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -17,7 +17,7 @@ func (r *Resource) Update(ctx context.Context, request resource.UpdateRequest, r
 		return
 	}
 
-	client, diags := clients.MaybeNewApiClientFromFrameworkResource(ctx, plan.KibanaConnection, r.client)
+	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, plan.KibanaConnection, r.client)
 	response.Diagnostics.Append(diags...)
 	if response.Diagnostics.HasError() {
 		return
@@ -40,19 +40,19 @@ func (r *Resource) Update(ctx context.Context, request resource.UpdateRequest, r
 	if response.Diagnostics.HasError() {
 		return
 	}
-	apiModel.ConnectorID = compositeID.ResourceId
+	apiModel.ConnectorID = compositeID.ResourceID
 
-	connectorID, diags := kibana_oapi.UpdateConnector(ctx, oapiClient, apiModel)
+	connectorID, diags := kibanaoapi.UpdateConnector(ctx, oapiClient, apiModel)
 	response.Diagnostics.Append(diags...)
 	if response.Diagnostics.HasError() {
 		return
 	}
 
-	newCompositeID := &clients.CompositeId{ClusterId: apiModel.SpaceID, ResourceId: connectorID}
+	newCompositeID := &clients.CompositeID{ClusterID: apiModel.SpaceID, ResourceID: connectorID}
 	plan.ID = types.StringValue(newCompositeID.String())
 
 	// Read the connector back to populate all computed fields
-	client, diags = clients.MaybeNewApiClientFromFrameworkResource(ctx, plan.KibanaConnection, r.client)
+	client, diags = clients.MaybeNewAPIClientFromFrameworkResource(ctx, plan.KibanaConnection, r.client)
 	response.Diagnostics.Append(diags...)
 	if response.Diagnostics.HasError() {
 		return

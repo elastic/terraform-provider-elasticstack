@@ -15,14 +15,14 @@ func TestAccDataSourceIngestProcessorNetworkDirection(t *testing.T) {
 			{
 				Config: testAccDataSourceIngestProcessorNetworkDirection,
 				Check: resource.ComposeTestCheckFunc(
-					CheckResourceJson("data.elasticstack_elasticsearch_ingest_processor_network_direction.test", "json", expectedJsonNetworkDirection),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_network_direction.test", "json", expectedJSONNetworkDirection),
 				),
 			},
 		},
 	})
 }
 
-const expectedJsonNetworkDirection = `{
+const expectedJSONNetworkDirection = `{
 	"network_direction": {
 		"ignore_failure": false,
 		"ignore_missing": true,

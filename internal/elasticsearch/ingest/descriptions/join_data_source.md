@@ -1,0 +1,1 @@
+Helper data source which can be used to create the configuration for a join processor. This processor joins each element of an array into a single string using a separator character between each element. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/join-processor.html

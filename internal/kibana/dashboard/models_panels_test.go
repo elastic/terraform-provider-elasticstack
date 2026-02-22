@@ -351,8 +351,8 @@ func Test_panelsToAPI(t *testing.T) {
 			jsonBytes, err := json.Marshal(result)
 			require.NoError(t, err)
 
-			var expectedJSON interface{}
-			var actualJSON interface{}
+			var expectedJSON any
+			var actualJSON any
 
 			require.NoError(t, json.Unmarshal([]byte(tt.expected), &expectedJSON))
 			require.NoError(t, json.Unmarshal(jsonBytes, &actualJSON))

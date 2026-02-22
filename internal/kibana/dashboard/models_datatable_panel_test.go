@@ -23,17 +23,17 @@ func Test_datatableDensityModel_fromAPI_toAPI(t *testing.T) {
 	header := kbapi.DatatableDensity_Height_Header{}
 	require.NoError(t, header.FromDatatableDensityHeightHeader1(kbapi.DatatableDensityHeightHeader1{
 		Type:     kbapi.DatatableDensityHeightHeader1TypeCustom,
-		MaxLines: utils.Pointer(float32(2)),
+		MaxLines: schemautil.Pointer(float32(2)),
 	}))
 
 	value := kbapi.DatatableDensity_Height_Value{}
 	require.NoError(t, value.FromDatatableDensityHeightValue1(kbapi.DatatableDensityHeightValue1{
 		Type:  kbapi.DatatableDensityHeightValue1TypeCustom,
-		Lines: utils.Pointer(float32(3)),
+		Lines: schemautil.Pointer(float32(3)),
 	}))
 
 	api := kbapi.DatatableDensity{
-		Mode: utils.Pointer(kbapi.DatatableDensityModeCompact),
+		Mode: schemautil.Pointer(kbapi.DatatableDensityModeCompact),
 		Height: &struct {
 			Header *kbapi.DatatableDensity_Height_Header `json:"header,omitempty"`
 			Value  *kbapi.DatatableDensity_Height_Value  `json:"value,omitempty"`
@@ -74,7 +74,7 @@ func Test_datatableNoESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 	}))
 
 	density := kbapi.DatatableDensity{
-		Mode: utils.Pointer(kbapi.DatatableDensityModeDefault),
+		Mode: schemautil.Pointer(kbapi.DatatableDensityModeDefault),
 		Height: &struct {
 			Header *kbapi.DatatableDensity_Height_Header `json:"header,omitempty"`
 			Value  *kbapi.DatatableDensity_Height_Value  `json:"value,omitempty"`
@@ -86,10 +86,10 @@ func Test_datatableNoESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 
 	api := kbapi.DatatableNoESQL{
 		Type:                kbapi.DatatableNoESQLTypeDatatable,
-		Title:               utils.Pointer("Datatable NoESQL"),
-		Description:         utils.Pointer("NoESQL description"),
-		IgnoreGlobalFilters: utils.Pointer(true),
-		Sampling:            utils.Pointer(float32(0.5)),
+		Title:               schemautil.Pointer("Datatable NoESQL"),
+		Description:         schemautil.Pointer("NoESQL description"),
+		IgnoreGlobalFilters: schemautil.Pointer(true),
+		Sampling:            schemautil.Pointer(float32(0.5)),
 		Density:             density,
 		Query:               kbapi.FilterSimpleSchema{},
 		Metrics:             []kbapi.DatatableNoESQL_Metrics_Item{},
@@ -143,7 +143,7 @@ func Test_datatableNoESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 
 func Test_datatableESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 	density := kbapi.DatatableDensity{
-		Mode: utils.Pointer(kbapi.DatatableDensityModeExpanded),
+		Mode: schemautil.Pointer(kbapi.DatatableDensityModeExpanded),
 	}
 
 	metric := kbapi.DatatableESQLMetric{
@@ -179,10 +179,10 @@ func Test_datatableESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 
 	api := kbapi.DatatableESQL{
 		Type:                kbapi.DatatableESQLTypeDatatable,
-		Title:               utils.Pointer("Datatable ESQL"),
-		Description:         utils.Pointer("ESQL description"),
-		IgnoreGlobalFilters: utils.Pointer(false),
-		Sampling:            utils.Pointer(float32(1)),
+		Title:               schemautil.Pointer("Datatable ESQL"),
+		Description:         schemautil.Pointer("ESQL description"),
+		IgnoreGlobalFilters: schemautil.Pointer(false),
+		Sampling:            schemautil.Pointer(float32(1)),
 		Density:             density,
 		Metrics:             []kbapi.DatatableESQLMetric{metric},
 		Rows: &[]struct {

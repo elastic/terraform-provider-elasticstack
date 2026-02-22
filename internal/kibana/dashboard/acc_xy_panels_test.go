@@ -10,6 +10,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
+const xyChartDataLayerBreakdownExpected = `{"collapse_by":"avg","color":{"mapping":[{"color":{"type":"colorCode","value":"#54B399"},` +
+	`"values":["host-a"]}],"mode":"categorical","palette":"default","unassignedColor":{"type":"colorCode","value":"#D3DAE6"}},` +
+	`"column":"host.name","operation":"value"}`
+
 func TestAccResourceDashboardXYChart(t *testing.T) {
 	dashboardTitle := "Test Dashboard with XY Chart " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
@@ -172,7 +176,7 @@ func TestAccResourceDashboardXYChart(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"elasticstack_kibana_dashboard.test",
 						"panels.0.xy_chart_config.layers.0.data_layer.breakdown_by_json",
-						"{\"collapse_by\":\"avg\",\"color\":{\"mapping\":[{\"color\":{\"type\":\"colorCode\",\"value\":\"#54B399\"},\"values\":[\"host-a\"]}],\"mode\":\"categorical\",\"palette\":\"default\",\"unassignedColor\":{\"type\":\"colorCode\",\"value\":\"#D3DAE6\"}},\"column\":\"host.name\",\"operation\":\"value\"}",
+						xyChartDataLayerBreakdownExpected,
 					),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.layers.0.data_layer.y.#", "1"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.layers.0.data_layer.y.0.config_json"),

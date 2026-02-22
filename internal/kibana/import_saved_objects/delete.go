@@ -1,4 +1,4 @@
-package import_saved_objects
+package importsavedobjects
 
 import (
 	"context"
@@ -7,6 +7,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, response *resource.DeleteResponse) {
+func (r *Resource) Delete(ctx context.Context, _ resource.DeleteRequest, _ *resource.DeleteResponse) {
 	tflog.Info(ctx, "Delete isn't supported for elasticstack_kibana_import_saved_objects")
 }

@@ -10,7 +10,7 @@ type AlertingRule struct {
 	Name       string
 	Consumer   string
 	NotifyWhen *string
-	Params     map[string]interface{}
+	Params     map[string]any
 	RuleTypeID string
 	Schedule   AlertingRuleSchedule
 	Actions    []AlertingRuleAction
@@ -30,7 +30,7 @@ type AlertingRuleSchedule struct {
 type AlertingRuleAction struct {
 	Group        string
 	ID           string
-	Params       map[string]interface{}
+	Params       map[string]any
 	Frequency    *ActionFrequency
 	AlertsFilter *ActionAlertsFilter
 }

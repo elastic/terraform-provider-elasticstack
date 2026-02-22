@@ -1,4 +1,4 @@
-package import_saved_objects
+package importsavedobjects
 
 import (
 	"context"
@@ -62,7 +62,8 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 				Optional:    true,
 			},
 			// "compatibility_mode": schema.BoolAttribute{
-			// 	Description: "Applies various adjustments to the saved objects that are being imported to maintain compatibility between different Kibana versions. Use this option only if you encounter issues with imported saved objects.",
+			// 	Description: "Applies various adjustments to the saved objects that are being imported to maintain compatibility between different Kibana versions.
+			// 	Use this option only if you encounter issues with imported saved objects.",
 			// 	Optional:    true,
 			// },
 			"file_contents": schema.StringAttribute{
@@ -71,7 +72,7 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 			},
 
 			"success": schema.BoolAttribute{
-				Description: "Indicates when the import was successfully completed. When set to false, some objects may not have been created. For additional information, refer to the errors and success_results properties.",
+				Description: successDescription,
 				Computed:    true,
 			},
 			"success_count": schema.Int64Attribute{
@@ -120,16 +121,16 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 }
 
 type Resource struct {
-	client *clients.ApiClient
+	client *clients.APIClient
 }
 
-func (r *Resource) Configure(ctx context.Context, request resource.ConfigureRequest, response *resource.ConfigureResponse) {
+func (r *Resource) Configure(_ context.Context, request resource.ConfigureRequest, response *resource.ConfigureResponse) {
 	client, diags := clients.ConvertProviderData(request.ProviderData)
 	response.Diagnostics.Append(diags...)
 	r.client = client
 }
 
-func (r *Resource) Metadata(ctx context.Context, request resource.MetadataRequest, response *resource.MetadataResponse) {
+func (r *Resource) Metadata(_ context.Context, request resource.MetadataRequest, response *resource.MetadataResponse) {
 	response.TypeName = request.ProviderTypeName + "_kibana_import_saved_objects"
 }
 

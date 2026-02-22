@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -57,7 +57,7 @@ func (m *searchFilterModel) toAPI() (kbapi.SearchFilterSchema, diag.Diagnostics)
 	var diags diag.Diagnostics
 
 	filter := kbapi.SearchFilterSchema0{}
-	if utils.IsKnown(m.Query) {
+	if typeutils.IsKnown(m.Query) {
 		query := m.Query.ValueString()
 		var queryUnion kbapi.SearchFilterSchema_0_Query
 		if err := queryUnion.FromSearchFilterSchema0Query0(query); err != nil {
@@ -66,12 +66,12 @@ func (m *searchFilterModel) toAPI() (kbapi.SearchFilterSchema, diag.Diagnostics)
 		}
 		filter.Query = queryUnion
 	}
-	if utils.IsKnown(m.Language) {
+	if typeutils.IsKnown(m.Language) {
 		lang := kbapi.SearchFilterSchema0Language(m.Language.ValueString())
 		filter.Language = &lang
 	}
-	if utils.IsKnown(m.MetaJSON) {
-		var meta map[string]interface{}
+	if typeutils.IsKnown(m.MetaJSON) {
+		var meta map[string]any
 		diags.Append(m.MetaJSON.Unmarshal(&meta)...)
 		if !diags.HasError() {
 			filter.Meta = &meta

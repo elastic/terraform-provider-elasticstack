@@ -79,7 +79,7 @@ func TestTimesliceMetricIndicator_ToAPI(t *testing.T) {
 		assert.Equal(t, "status:200", *metrics[0].TimesliceMetricBasicMetricWithField.Filter)
 
 		require.NotNil(t, metrics[1].TimesliceMetricPercentileMetric)
-		assert.Equal(t, 95.0, metrics[1].TimesliceMetricPercentileMetric.Percentile)
+		assert.InDelta(t, 95.0, metrics[1].TimesliceMetricPercentileMetric.Percentile, 1e-9)
 
 		require.NotNil(t, metrics[2].TimesliceMetricDocCountMetric)
 		require.NotNil(t, metrics[2].TimesliceMetricDocCountMetric.Filter)
@@ -170,7 +170,7 @@ func TestTimesliceMetricIndicator_PopulateFromAPI(t *testing.T) {
 
 		assert.Equal(t, "percentile", ind.Metric[0].Metrics[1].Aggregation.ValueString())
 		assert.True(t, ind.Metric[0].Metrics[1].Filter.IsNull())
-		assert.Equal(t, 95.0, ind.Metric[0].Metrics[1].Percentile.ValueFloat64())
+		assert.InDelta(t, 95.0, ind.Metric[0].Metrics[1].Percentile.ValueFloat64(), 1e-9)
 
 		assert.Equal(t, "doc_count", ind.Metric[0].Metrics[2].Aggregation.ValueString())
 		assert.Equal(t, "labels.env:prod", ind.Metric[0].Metrics[2].Filter.ValueString())

@@ -31,10 +31,10 @@ func Test_gaugeConfigModel_fromAPI_toAPI(t *testing.T) {
 			api: func() kbapi.GaugeNoESQL {
 				api := kbapi.GaugeNoESQL{
 					Type:                kbapi.GaugeNoESQLTypeGauge,
-					Title:               utils.Pointer("Test Gauge"),
-					Description:         utils.Pointer("A test gauge description"),
-					IgnoreGlobalFilters: utils.Pointer(true),
-					Sampling:            utils.Pointer(float32(0.5)),
+					Title:               schemautil.Pointer("Test Gauge"),
+					Description:         schemautil.Pointer("A test gauge description"),
+					IgnoreGlobalFilters: schemautil.Pointer(true),
+					Sampling:            schemautil.Pointer(float32(0.5)),
 				}
 
 				err := json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &api.Dataset)

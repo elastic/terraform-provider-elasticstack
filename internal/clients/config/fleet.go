@@ -18,7 +18,7 @@ func newFleetConfigFromSDK(d *schema.ResourceData, kibanaCfg kibanaOapiConfig) (
 
 	// Set variables from resource config.
 	if fleetDataRaw, ok := d.GetOk("fleet"); ok {
-		fleetData, ok := fleetDataRaw.([]interface{})[0].(map[string]any)
+		fleetData, ok := fleetDataRaw.([]any)[0].(map[string]any)
 		if !ok {
 			diags := sdkdiags.Diagnostics{
 				sdkdiags.Diagnostic{
@@ -44,7 +44,7 @@ func newFleetConfigFromSDK(d *schema.ResourceData, kibanaCfg kibanaOapiConfig) (
 		if v, ok := fleetData["bearer_token"].(string); ok && v != "" {
 			config.BearerToken = v
 		}
-		if v, ok := fleetData["ca_certs"].([]interface{}); ok && len(v) > 0 {
+		if v, ok := fleetData["ca_certs"].([]any); ok && len(v) > 0 {
 			for _, elem := range v {
 				if vStr, elemOk := elem.(string); elemOk {
 					config.CACerts = append(config.CACerts, vStr)

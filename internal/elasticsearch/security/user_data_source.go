@@ -53,10 +53,10 @@ func DataSourceUser() *schema.Resource {
 		},
 	}
 
-	utils.AddConnectionSchema(userSchema)
+	schemautil.AddConnectionSchema(userSchema)
 
 	return &schema.Resource{
-		Description: "Get the information about the user in the ES cluster. See the [security API get user documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-get-user.html) for more details.",
+		Description: userDataSourceDescription,
 
 		ReadContext: dataSourceSecurityUserRead,
 
@@ -64,19 +64,19 @@ func DataSourceUser() *schema.Resource {
 	}
 }
 
-func dataSourceSecurityUserRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+func dataSourceSecurityUserRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
-	usernameId := d.Get("username").(string)
-	id, diags := client.ID(ctx, usernameId)
+	usernameID := d.Get("username").(string)
+	id, diags := client.ID(ctx, usernameID)
 	if diags.HasError() {
 		return diags
 	}
 	d.SetId(id.String())
 
-	user, diags := elasticsearch.GetUser(ctx, client, usernameId)
+	user, diags := elasticsearch.GetUser(ctx, client, usernameID)
 	if user == nil && diags == nil {
 		d.SetId("")
 		return diags
@@ -91,7 +91,7 @@ func dataSourceSecurityUserRead(ctx context.Context, d *schema.ResourceData, met
 	}
 
 	// set the fields
-	if err := d.Set("username", usernameId); err != nil {
+	if err := d.Set("username", usernameID); err != nil {
 		return diag.FromErr(err)
 	}
 	if err := d.Set("email", user.Email); err != nil {

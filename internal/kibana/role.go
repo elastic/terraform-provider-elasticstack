@@ -10,7 +10,7 @@ import (
 
 	"github.com/disaster37/go-kibana-rest/v8/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/tfsdkutils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -84,7 +84,7 @@ func ResourceRole() *schema.Resource {
 									Description:      "A search query that defines the documents the owners of the role have read access to.",
 									Type:             schema.TypeString,
 									ValidateFunc:     validation.StringIsJSON,
-									DiffSuppressFunc: utils.DiffJsonSuppress,
+									DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 									Optional:         true,
 								},
 								"names": {
@@ -107,7 +107,7 @@ func ResourceRole() *schema.Resource {
 						},
 					},
 					"remote_indices": {
-						Description: "A list of remote indices permissions entries. Remote indices are effective for remote clusters configured with the API key based model. They have no effect for remote clusters configured with the certificate based model.",
+						Description: remoteIndicesPermissionsDescription,
 						Type:        schema.TypeSet,
 						Optional:    true,
 						Elem: &schema.Resource{
@@ -150,7 +150,7 @@ func ResourceRole() *schema.Resource {
 									Description:      "A search query that defines the documents the owners of the role have read access to.",
 									Type:             schema.TypeString,
 									ValidateFunc:     validation.StringIsJSON,
-									DiffSuppressFunc: utils.DiffJsonSuppress,
+									DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 									Optional:         true,
 								},
 								"names": {
@@ -238,7 +238,7 @@ func ResourceRole() *schema.Resource {
 			Optional:         true,
 			Computed:         true,
 			ValidateFunc:     validation.StringIsJSON,
-			DiffSuppressFunc: utils.DiffJsonSuppress,
+			DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 		},
 		"description": {
 			Description: "Optional description for the role",
@@ -263,8 +263,8 @@ func ResourceRole() *schema.Resource {
 	}
 }
 
-func resourceRoleUpsert(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+func resourceRoleUpsert(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
@@ -323,8 +323,8 @@ func resourceRoleUpsert(ctx context.Context, d *schema.ResourceData, meta interf
 	return resourceRoleRead(ctx, d, meta)
 }
 
-func resourceRoleRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+func resourceRoleRead(_ context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
@@ -370,19 +370,19 @@ func resourceRoleRead(ctx context.Context, d *schema.ResourceData, meta interfac
 	return diags
 }
 
-func resourceRoleDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+func resourceRoleDelete(_ context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
-	resourceId := d.Id()
+	resourceID := d.Id()
 
 	kibana, err := client.GetKibanaClient()
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	err = kibana.KibanaRoleManagement.Delete(resourceId)
+	err = kibana.KibanaRoleManagement.Delete(resourceID)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -393,20 +393,20 @@ func resourceRoleDelete(ctx context.Context, d *schema.ResourceData, meta interf
 
 // Helper functions
 
-func expandKibanaRoleMetadata(v interface{}) (map[string]interface{}, diag.Diagnostics) {
-	metadata := make(map[string]interface{})
+func expandKibanaRoleMetadata(v any) (map[string]any, diag.Diagnostics) {
+	metadata := make(map[string]any)
 	if err := json.NewDecoder(strings.NewReader(v.(string))).Decode(&metadata); err != nil {
 		return nil, diag.FromErr(err)
 	}
 	return metadata, nil
 }
 
-func expandKibanaRoleElasticsearch(v interface{}, serverVersion *version.Version) (*kbapi.KibanaRoleElasticsearch, diag.Diagnostics) {
+func expandKibanaRoleElasticsearch(v any, serverVersion *version.Version) (*kbapi.KibanaRoleElasticsearch, diag.Diagnostics) {
 	elasticConfig := &kbapi.KibanaRoleElasticsearch{}
 	var diags diag.Diagnostics
 
 	if definedElasticConfigs := v.(*schema.Set); definedElasticConfigs.Len() > 0 {
-		userElasticConfig := definedElasticConfigs.List()[0].(map[string]interface{})
+		userElasticConfig := definedElasticConfigs.List()[0].(map[string]any)
 		if v, ok := userElasticConfig["cluster"]; ok {
 			definedCluster := v.(*schema.Set)
 			cls := make([]string, definedCluster.Len())
@@ -419,7 +419,7 @@ func expandKibanaRoleElasticsearch(v interface{}, serverVersion *version.Version
 				definedIndices := v.(*schema.Set)
 				indices := make([]kbapi.KibanaRoleElasticsearchIndice, definedIndices.Len())
 				for i, idx := range definedIndices.List() {
-					index := idx.(map[string]interface{})
+					index := idx.(map[string]any)
 
 					definedNames := index["names"].(*schema.Set)
 					names := make([]string, definedNames.Len())
@@ -440,10 +440,10 @@ func expandKibanaRoleElasticsearch(v interface{}, serverVersion *version.Version
 					if query := index["query"].(string); query != "" {
 						newIndex.Query = &query
 					}
-					if fieldSec := index["field_security"].([]interface{}); len(fieldSec) > 0 {
-						fieldSecurity := map[string]interface{}{}
+					if fieldSec := index["field_security"].([]any); len(fieldSec) > 0 {
+						fieldSecurity := map[string]any{}
 						// there must be only 1 entry
-						definedFieldSec := fieldSec[0].(map[string]interface{})
+						definedFieldSec := fieldSec[0].(map[string]any)
 
 						// grants
 						if gr := definedFieldSec["grant"].(*schema.Set); gr != nil {
@@ -476,9 +476,9 @@ func expandKibanaRoleElasticsearch(v interface{}, serverVersion *version.Version
 						return nil, diag.FromErr(fmt.Errorf("'remote_indices' is supported only for Kibana v%s and above", minSupportedRemoteIndicesVersion.String()))
 					}
 				}
-				remote_indices := make([]kbapi.KibanaRoleElasticsearchRemoteIndice, definedRemoteIndices.Len())
+				remoteIndices := make([]kbapi.KibanaRoleElasticsearchRemoteIndice, definedRemoteIndices.Len())
 				for i, idx := range definedRemoteIndices.List() {
-					index := idx.(map[string]interface{})
+					index := idx.(map[string]any)
 
 					definedNames := index["names"].(*schema.Set)
 					names := make([]string, definedNames.Len())
@@ -505,10 +505,10 @@ func expandKibanaRoleElasticsearch(v interface{}, serverVersion *version.Version
 					if query := index["query"].(string); query != "" {
 						newRemoteIndex.Query = &query
 					}
-					if fieldSec := index["field_security"].([]interface{}); len(fieldSec) > 0 {
-						fieldSecurity := map[string]interface{}{}
+					if fieldSec := index["field_security"].([]any); len(fieldSec) > 0 {
+						fieldSecurity := map[string]any{}
 						// there must be only 1 entry
-						definedFieldSec := fieldSec[0].(map[string]interface{})
+						definedFieldSec := fieldSec[0].(map[string]any)
 
 						// grants
 						if gr := definedFieldSec["grant"].(*schema.Set); gr != nil {
@@ -529,9 +529,9 @@ func expandKibanaRoleElasticsearch(v interface{}, serverVersion *version.Version
 						newRemoteIndex.FieldSecurity = fieldSecurity
 					}
 
-					remote_indices[i] = newRemoteIndex
+					remoteIndices[i] = newRemoteIndex
 				}
-				elasticConfig.RemoteIndices = remote_indices
+				elasticConfig.RemoteIndices = remoteIndices
 			}
 
 			if v, ok := userElasticConfig["run_as"]; ok {
@@ -547,12 +547,12 @@ func expandKibanaRoleElasticsearch(v interface{}, serverVersion *version.Version
 	return elasticConfig, diags
 }
 
-func expandKibanaRoleKibana(v interface{}) ([]kbapi.KibanaRoleKibana, diag.Diagnostics) {
+func expandKibanaRoleKibana(v any) ([]kbapi.KibanaRoleKibana, diag.Diagnostics) {
 	kibanaConfigs := []kbapi.KibanaRoleKibana{}
 	definedKibanaConfigs := v.(*schema.Set)
 
 	for _, item := range definedKibanaConfigs.List() {
-		each := item.(map[string]interface{})
+		each := item.(map[string]any)
 		config := kbapi.KibanaRoleKibana{
 			Base:    []string{},
 			Feature: map[string][]string{},
@@ -568,7 +568,7 @@ func expandKibanaRoleKibana(v interface{}) ([]kbapi.KibanaRoleKibana, diag.Diagn
 			}
 		} else if kibanaFeatures, ok := each["feature"].(*schema.Set); ok && kibanaFeatures.Len() > 0 {
 			for _, item := range kibanaFeatures.List() {
-				featureData := item.(map[string]interface{})
+				featureData := item.(map[string]any)
 				featurePrivileges := featureData["privileges"].(*schema.Set)
 				_features := make([]string, featurePrivileges.Len())
 				for i, f := range featurePrivileges.List() {
@@ -591,58 +591,58 @@ func expandKibanaRoleKibana(v interface{}) ([]kbapi.KibanaRoleKibana, diag.Diagn
 	return kibanaConfigs, nil
 }
 
-func flattenKibanaRoleIndicesData(indices []kbapi.KibanaRoleElasticsearchIndice) []interface{} {
-	oindx := make([]interface{}, len(indices))
+func flattenKibanaRoleIndicesData(indices []kbapi.KibanaRoleElasticsearchIndice) []any {
+	oindx := make([]any, len(indices))
 
 	for i, index := range indices {
-		oi := make(map[string]interface{})
+		oi := make(map[string]any)
 		oi["names"] = index.Names
 		oi["privileges"] = index.Privileges
 		oi["query"] = index.Query
 
 		if index.FieldSecurity != nil {
-			fsec := make(map[string]interface{})
-			if grant_v, ok := index.FieldSecurity["grant"]; ok {
-				fsec["grant"] = grant_v
+			fsec := make(map[string]any)
+			if grantV, ok := index.FieldSecurity["grant"]; ok {
+				fsec["grant"] = grantV
 			}
-			if except_v, ok := index.FieldSecurity["except"]; ok {
-				fsec["except"] = except_v
+			if exceptV, ok := index.FieldSecurity["except"]; ok {
+				fsec["except"] = exceptV
 			}
-			oi["field_security"] = []interface{}{fsec}
+			oi["field_security"] = []any{fsec}
 		}
 		oindx[i] = oi
 	}
 	return oindx
 }
 
-func flattenKibanaRoleRemoteIndicesData(indices []kbapi.KibanaRoleElasticsearchRemoteIndice) []interface{} {
-	oindx := make([]interface{}, len(indices))
+func flattenKibanaRoleRemoteIndicesData(indices []kbapi.KibanaRoleElasticsearchRemoteIndice) []any {
+	oindx := make([]any, len(indices))
 
 	for i, index := range indices {
-		oi := make(map[string]interface{})
+		oi := make(map[string]any)
 		oi["clusters"] = index.Clusters
 		oi["names"] = index.Names
 		oi["privileges"] = index.Privileges
 		oi["query"] = index.Query
 
 		if index.FieldSecurity != nil {
-			fsec := make(map[string]interface{})
-			if grant_v, ok := index.FieldSecurity["grant"]; ok {
-				fsec["grant"] = grant_v
+			fsec := make(map[string]any)
+			if grantV, ok := index.FieldSecurity["grant"]; ok {
+				fsec["grant"] = grantV
 			}
-			if except_v, ok := index.FieldSecurity["except"]; ok {
-				fsec["except"] = except_v
+			if exceptV, ok := index.FieldSecurity["except"]; ok {
+				fsec["except"] = exceptV
 			}
-			oi["field_security"] = []interface{}{fsec}
+			oi["field_security"] = []any{fsec}
 		}
 		oindx[i] = oi
 	}
 	return oindx
 }
 
-func flattenKibanaRoleElasticsearchData(elastic *kbapi.KibanaRoleElasticsearch) []interface{} {
+func flattenKibanaRoleElasticsearchData(elastic *kbapi.KibanaRoleElasticsearch) []any {
 	if elastic != nil {
-		result := make(map[string]interface{})
+		result := make(map[string]any)
 		if len(elastic.Cluster) > 0 {
 			result["cluster"] = elastic.Cluster
 		}
@@ -651,32 +651,32 @@ func flattenKibanaRoleElasticsearchData(elastic *kbapi.KibanaRoleElasticsearch) 
 		if len(elastic.RunAs) > 0 {
 			result["run_as"] = elastic.RunAs
 		}
-		return []interface{}{result}
+		return []any{result}
 	}
-	return make([]interface{}, 0)
+	return make([]any, 0)
 }
 
-func flattenKibanaRoleKibanaFeatureData(features map[string][]string) []interface{} {
+func flattenKibanaRoleKibanaFeatureData(features map[string][]string) []any {
 	if features != nil {
-		result := make([]interface{}, len(features))
+		result := make([]any, len(features))
 		i := 0
 		for k, v := range features {
-			m := make(map[string]interface{})
+			m := make(map[string]any)
 			m["name"] = k
 			m["privileges"] = v
 			result[i] = m
-			i += 1
+			i++
 		}
 		return result
 	}
-	return make([]interface{}, 0)
+	return make([]any, 0)
 }
 
-func flattenKibanaRoleKibanaData(kibana_configs *[]kbapi.KibanaRoleKibana) []interface{} {
-	if kibana_configs != nil {
-		result := make([]interface{}, len(*kibana_configs))
-		for i, index := range *kibana_configs {
-			nk := make(map[string]interface{})
+func flattenKibanaRoleKibanaData(kibanaConfigs *[]kbapi.KibanaRoleKibana) []any {
+	if kibanaConfigs != nil {
+		result := make([]any, len(*kibanaConfigs))
+		for i, index := range *kibanaConfigs {
+			nk := make(map[string]any)
 			nk["base"] = index.Base
 			nk["feature"] = flattenKibanaRoleKibanaFeatureData(index.Feature)
 			nk["spaces"] = index.Spaces
@@ -684,5 +684,5 @@ func flattenKibanaRoleKibanaData(kibana_configs *[]kbapi.KibanaRoleKibana) []int
 		}
 		return result
 	}
-	return make([]interface{}, 0)
+	return make([]any, 0)
 }

@@ -1,4 +1,4 @@
-package integration_policy
+package integrationpolicy
 
 import (
 	"context"
@@ -80,7 +80,7 @@ func TestVarsJSONType_ValueFromString(t *testing.T) {
 			require.True(t, ok, "Result should be of type ConfigValue")
 
 			if !configValue.IsNull() && !configValue.IsUnknown() {
-				var resultMap map[string]interface{}
+				var resultMap map[string]any
 				err := json.Unmarshal([]byte(configValue.ValueString()), &resultMap)
 				require.NoError(t, err)
 
@@ -182,7 +182,7 @@ func TestVarsJSONType_ValueFromTerraform(t *testing.T) {
 			require.True(t, ok, "Expected value should be of type ConfigValue")
 
 			// Compare the underlying string values
-			require.Equal(t, expectedConfigValue.StringValue.Equal(configValue.StringValue), true, "String values should be equal")
+			require.True(t, expectedConfigValue.StringValue.Equal(configValue.StringValue), "String values should be equal")
 		})
 	}
 }

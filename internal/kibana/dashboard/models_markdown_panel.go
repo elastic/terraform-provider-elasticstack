@@ -6,6 +6,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -47,14 +48,14 @@ func (c markdownPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *kb
 	config0 := kbapi.DashboardPanelItemConfig0{
 		Content: pm.MarkdownConfig.Content.ValueString(),
 	}
-	if utils.IsKnown(pm.MarkdownConfig.Description) {
-		config0.Description = utils.Pointer(pm.MarkdownConfig.Description.ValueString())
+	if typeutils.IsKnown(pm.MarkdownConfig.Description) {
+		config0.Description = schemautil.Pointer(pm.MarkdownConfig.Description.ValueString())
 	}
-	if utils.IsKnown(pm.MarkdownConfig.HideTitle) {
-		config0.HideTitle = utils.Pointer(pm.MarkdownConfig.HideTitle.ValueBool())
+	if typeutils.IsKnown(pm.MarkdownConfig.HideTitle) {
+		config0.HideTitle = schemautil.Pointer(pm.MarkdownConfig.HideTitle.ValueBool())
 	}
-	if utils.IsKnown(pm.MarkdownConfig.Title) {
-		config0.Title = utils.Pointer(pm.MarkdownConfig.Title.ValueString())
+	if typeutils.IsKnown(pm.MarkdownConfig.Title) {
+		config0.Title = schemautil.Pointer(pm.MarkdownConfig.Title.ValueString())
 	}
 
 	var diags diag.Diagnostics

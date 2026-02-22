@@ -16,14 +16,14 @@ func TestAccDataSourceIngestProcessorUrldecode(t *testing.T) {
 				Config: testAccDataSourceIngestProcessorUrldecode,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_urldecode.test", "field", "my_url_to_decode"),
-					CheckResourceJson("data.elasticstack_elasticsearch_ingest_processor_urldecode.test", "json", expectedJsonUrldecode),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_urldecode.test", "json", expectedJSONUrldecode),
 				),
 			},
 		},
 	})
 }
 
-const expectedJsonUrldecode = `{
+const expectedJSONUrldecode = `{
 	"urldecode": {
 		"field": "my_url_to_decode",
 		"ignore_failure": false,
