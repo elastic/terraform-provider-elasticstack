@@ -48,7 +48,7 @@ resource "elasticstack_kibana_dashboard" "test" {
         {
           type = "line"
           data_layer = {
-            dataset = jsonencode({
+            dataset_json = jsonencode({
               type = "dataView"
               id   = "metrics-*"
             })
@@ -56,7 +56,7 @@ resource "elasticstack_kibana_dashboard" "test" {
             sampling              = 1
             y = [
               {
-                config = jsonencode({
+                config_json = jsonencode({
                   operation     = "count"
                   empty_as_null = true
                 })

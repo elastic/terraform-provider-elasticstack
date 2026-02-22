@@ -113,10 +113,10 @@ func Test_heatmapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 	require.NotNil(t, model.Query)
 	assert.Equal(t, types.StringValue("status:200"), model.Query.Query)
 	assert.Equal(t, types.StringValue("kuery"), model.Query.Language)
-	assert.False(t, model.Dataset.IsNull())
-	assert.False(t, model.Metric.IsNull())
-	assert.False(t, model.XAxis.IsNull())
-	assert.False(t, model.YAxis.IsNull())
+	assert.False(t, model.DatasetJSON.IsNull())
+	assert.False(t, model.MetricJSON.IsNull())
+	assert.False(t, model.XAxisJSON.IsNull())
+	assert.False(t, model.YAxisJSON.IsNull())
 	require.NotNil(t, model.Axes)
 	require.NotNil(t, model.Cells)
 	require.NotNil(t, model.Legend)
@@ -226,10 +226,10 @@ func Test_heatmapPanelConfigConverter_mapPanelToAPI_populateFromAPIPanel_roundTr
 		HeatmapConfig: &heatmapConfigModel{
 			Title:       types.StringValue("Round Trip Heatmap"),
 			Description: types.StringValue("Round-trip test"),
-			Dataset:     jsontypes.NewNormalizedValue(`{"type":"dataView","id":"metrics-*"}`),
-			Metric:      customtypes.NewJSONWithDefaultsValue[map[string]any](`{"operation":"count"}`, populateTagcloudMetricDefaults),
-			XAxis:       jsontypes.NewNormalizedValue(`{"operation":"filters","filters":[{"label":"All","filter":{"query":"*","language":"kuery"}}]}`),
-			YAxis:       jsontypes.NewNormalizedValue(`{"operation":"filters","filters":[{"label":"All","filter":{"query":"*","language":"kuery"}}]}`),
+			DatasetJSON: jsontypes.NewNormalizedValue(`{"type":"dataView","id":"metrics-*"}`),
+			MetricJSON:  customtypes.NewJSONWithDefaultsValue[map[string]any](`{"operation":"count"}`, populateTagcloudMetricDefaults),
+			XAxisJSON:   jsontypes.NewNormalizedValue(`{"operation":"filters","filters":[{"label":"All","filter":{"query":"*","language":"kuery"}}]}`),
+			YAxisJSON:   jsontypes.NewNormalizedValue(`{"operation":"filters","filters":[{"label":"All","filter":{"query":"*","language":"kuery"}}]}`),
 			Query:       &filterSimpleModel{Language: types.StringValue("kuery"), Query: types.StringValue("status:active")},
 			Axes:        &heatmapAxesModel{X: &heatmapXAxisModel{}, Y: &heatmapYAxisModel{}},
 			Cells:       &heatmapCellsModel{},
@@ -247,9 +247,10 @@ func Test_heatmapPanelConfigConverter_mapPanelToAPI_populateFromAPIPanel_roundTr
 	require.NotNil(t, newPanel.HeatmapConfig)
 	assert.Equal(t, types.StringValue("Round Trip Heatmap"), newPanel.HeatmapConfig.Title)
 	assert.Equal(t, types.StringValue("Round-trip test"), newPanel.HeatmapConfig.Description)
-	assert.False(t, newPanel.HeatmapConfig.Dataset.IsNull())
-	assert.False(t, newPanel.HeatmapConfig.Metric.IsNull())
-	assert.False(t, newPanel.HeatmapConfig.XAxis.IsNull())
+	assert.False(t, newPanel.HeatmapConfig.DatasetJSON.IsNull())
+	assert.False(t, newPanel.HeatmapConfig.MetricJSON.IsNull())
+	assert.False(t, newPanel.HeatmapConfig.XAxisJSON.IsNull())
+	assert.False(t, newPanel.HeatmapConfig.YAxisJSON.IsNull())
 	require.NotNil(t, newPanel.HeatmapConfig.Query)
 	assert.Equal(t, types.StringValue("kuery"), newPanel.HeatmapConfig.Query.Language)
 	assert.Equal(t, types.StringValue("status:active"), newPanel.HeatmapConfig.Query.Query)

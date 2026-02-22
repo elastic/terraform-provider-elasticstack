@@ -23,7 +23,7 @@ resource "elasticstack_kibana_dashboard" "test" {
     gauge_config = {
       title       = "Sample Gauge"
       description = "Test gauge visualization"
-      dataset = jsonencode({
+      dataset_json = jsonencode({
         type = "dataView"
         id   = "metrics-*"
       })
@@ -31,13 +31,13 @@ resource "elasticstack_kibana_dashboard" "test" {
         language = "kuery"
         query    = ""
       }
-      metric = jsonencode({
+      metric_json = jsonencode({
         operation     = "count"
         empty_as_null = false
         hide_title    = false
         ticks         = "auto"
       })
-      shape = jsonencode({
+      shape_json = jsonencode({
         type = "circle"
       })
       ignore_global_filters = false

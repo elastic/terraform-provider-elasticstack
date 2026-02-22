@@ -39,8 +39,8 @@ func TestAccResourceDashboardLegacyMetricChart(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.legacy_metric_config.query.language", "kuery"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.legacy_metric_config.query.query", ""),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.legacy_metric_config.filters.#", "1"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.legacy_metric_config.dataset"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.legacy_metric_config.metric"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.legacy_metric_config.dataset_json"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.legacy_metric_config.metric_json"),
 				),
 			},
 			{

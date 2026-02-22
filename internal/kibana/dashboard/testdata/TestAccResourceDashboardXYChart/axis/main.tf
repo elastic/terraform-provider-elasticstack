@@ -33,7 +33,7 @@ resource "elasticstack_kibana_dashboard" "test" {
           ticks             = true
           grid              = true
           label_orientation = "horizontal"
-          extent = jsonencode({
+          extent_json = jsonencode({
             type  = "custom"
             start = 0
             end   = 100
@@ -48,7 +48,7 @@ resource "elasticstack_kibana_dashboard" "test" {
           ticks             = false
           grid              = false
           label_orientation = "vertical"
-          extent = jsonencode({
+          extent_json = jsonencode({
             type = "focus"
           })
         }
@@ -60,7 +60,7 @@ resource "elasticstack_kibana_dashboard" "test" {
           ticks             = true
           grid              = true
           label_orientation = "angled"
-          extent = jsonencode({
+          extent_json = jsonencode({
             type             = "full"
             integer_rounding = true
           })
@@ -78,13 +78,13 @@ resource "elasticstack_kibana_dashboard" "test" {
           data_layer = {
             ignore_global_filters = false
             sampling              = 1
-            dataset = jsonencode({
+            dataset_json = jsonencode({
               type = "dataView"
               id   = "metrics-*"
             })
             y = [
               {
-                config = jsonencode({
+                config_json = jsonencode({
                   operation     = "count"
                   empty_as_null = true
                 })

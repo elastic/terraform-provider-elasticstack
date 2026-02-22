@@ -44,9 +44,9 @@ func TestAccResourceDashboardTagcloud(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.tagcloud_config.query.language", "kuery"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.tagcloud_config.query.query", ""),
 					// Check JSON fields are set
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.tagcloud_config.dataset"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.tagcloud_config.metric"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.tagcloud_config.tag_by"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.tagcloud_config.dataset_json"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.tagcloud_config.metric_json"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.tagcloud_config.tag_by_json"),
 				),
 			},
 			{
@@ -88,8 +88,8 @@ func TestAccResourceDashboardTagcloud(t *testing.T) {
 				ImportStateVerify: true,
 				// Ignore JSON fields with API defaults
 				ImportStateVerifyIgnore: []string{
-					"panels.0.tagcloud_config.metric",
-					"panels.0.tagcloud_config.tag_by",
+					"panels.0.tagcloud_config.metric_json",
+					"panels.0.tagcloud_config.tag_by_json",
 				},
 			},
 		},

@@ -744,10 +744,10 @@ func Test_xyChartConfigModel_toAPI_fromAPI(t *testing.T) {
 					{
 						Type: types.StringValue("area"),
 						DataLayer: &dataLayerModel{
-							Dataset: jsontypes.NewNormalizedValue(`{"type":"dataView","id":"logs-*"}`),
+							DatasetJSON: jsontypes.NewNormalizedValue(`{"type":"dataView","id":"logs-*"}`),
 							Y: []yMetricModel{
 								{
-									Config: jsontypes.NewNormalizedValue(`{"operation":"count","color":"#68BC00","axis":"left"}`),
+									ConfigJSON: jsontypes.NewNormalizedValue(`{"operation":"count","color":"#68BC00","axis":"left"}`),
 								},
 							},
 						},

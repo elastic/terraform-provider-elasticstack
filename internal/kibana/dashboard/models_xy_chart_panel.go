@@ -7,7 +7,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -191,14 +191,14 @@ type xyAxisConfigModel struct {
 	Ticks            types.Bool           `tfsdk:"ticks"`
 	Grid             types.Bool           `tfsdk:"grid"`
 	LabelOrientation types.String         `tfsdk:"label_orientation"`
-	Extent           jsontypes.Normalized `tfsdk:"extent"`
+	ExtentJSON       jsontypes.Normalized `tfsdk:"extent_json"`
 }
 
 func (m *xyAxisConfigModel) isEmpty() bool {
 	if m == nil {
 		return true
 	}
-	if typeutils.IsKnown(m.Ticks) || typeutils.IsKnown(m.Grid) || typeutils.IsKnown(m.LabelOrientation) || typeutils.IsKnown(m.Extent) {
+	if typeutils.IsKnown(m.Ticks) || typeutils.IsKnown(m.Grid) || typeutils.IsKnown(m.LabelOrientation) || typeutils.IsKnown(m.ExtentJSON) {
 		return false
 	}
 	return axisTitleIsDefault(m.Title)
@@ -233,7 +233,7 @@ func (m *xyAxisConfigModel) fromAPI(apiAxis *xyAxisConfigAPIModel) diag.Diagnost
 	if apiAxis.Extent != nil {
 		extentJSON, err := json.Marshal(apiAxis.Extent)
 		if err == nil {
-			m.Extent = jsontypes.NewNormalizedValue(string(extentJSON))
+			m.ExtentJSON = jsontypes.NewNormalizedValue(string(extentJSON))
 		}
 	}
 
@@ -261,9 +261,9 @@ func (m *xyAxisConfigModel) toAPI() (*xyAxisConfigAPIModel, diag.Diagnostics) {
 	if m.Title != nil {
 		xAxis.Title = m.Title.toAPI()
 	}
-	if typeutils.IsKnown(m.Extent) {
+	if typeutils.IsKnown(m.ExtentJSON) {
 		var extent kbapi.XyAxis_X_Extent
-		extentDiags := m.Extent.Unmarshal(&extent)
+		extentDiags := m.ExtentJSON.Unmarshal(&extent)
 		diags.Append(extentDiags...)
 		if !extentDiags.HasError() {
 			xAxis.Extent = &extent
@@ -279,14 +279,14 @@ type yAxisConfigModel struct {
 	Grid             types.Bool           `tfsdk:"grid"`
 	LabelOrientation types.String         `tfsdk:"label_orientation"`
 	Scale            types.String         `tfsdk:"scale"`
-	Extent           jsontypes.Normalized `tfsdk:"extent"`
+	ExtentJSON       jsontypes.Normalized `tfsdk:"extent_json"`
 }
 
 func (m *yAxisConfigModel) isEmpty() bool {
 	if m == nil {
 		return true
 	}
-	if typeutils.IsKnown(m.Ticks) || typeutils.IsKnown(m.Grid) || typeutils.IsKnown(m.LabelOrientation) || typeutils.IsKnown(m.Scale) || typeutils.IsKnown(m.Extent) {
+	if typeutils.IsKnown(m.Ticks) || typeutils.IsKnown(m.Grid) || typeutils.IsKnown(m.LabelOrientation) || typeutils.IsKnown(m.Scale) || typeutils.IsKnown(m.ExtentJSON) {
 		return false
 	}
 	return axisTitleIsDefault(m.Title)
@@ -323,7 +323,7 @@ func (m *yAxisConfigModel) fromAPILeft(apiAxis *leftYAxisConfigAPIModel) diag.Di
 	if apiAxis.Extent != nil {
 		extentJSON, err := json.Marshal(apiAxis.Extent)
 		if err == nil {
-			m.Extent = jsontypes.NewNormalizedValue(string(extentJSON))
+			m.ExtentJSON = jsontypes.NewNormalizedValue(string(extentJSON))
 		}
 	}
 
@@ -355,9 +355,9 @@ func (m *yAxisConfigModel) toAPILeft() (*leftYAxisConfigAPIModel, diag.Diagnosti
 	if m.Title != nil {
 		yAxis.Title = m.Title.toAPI()
 	}
-	if typeutils.IsKnown(m.Extent) {
+	if typeutils.IsKnown(m.ExtentJSON) {
 		var extent kbapi.XyAxis_Left_Extent
-		extentDiags := m.Extent.Unmarshal(&extent)
+		extentDiags := m.ExtentJSON.Unmarshal(&extent)
 		diags.Append(extentDiags...)
 		if !extentDiags.HasError() {
 			yAxis.Extent = &extent
@@ -412,7 +412,7 @@ func (m *yAxisConfigModel) fromAPIRight(apiAxis *rightYAxisConfigAPIModel) diag.
 	if apiAxis.Extent != nil {
 		extentJSON, err := json.Marshal(apiAxis.Extent)
 		if err == nil {
-			m.Extent = jsontypes.NewNormalizedValue(string(extentJSON))
+			m.ExtentJSON = jsontypes.NewNormalizedValue(string(extentJSON))
 		}
 	}
 
@@ -444,9 +444,9 @@ func (m *yAxisConfigModel) toAPIRight() (*rightYAxisConfigAPIModel, diag.Diagnos
 	if m.Title != nil {
 		yAxis.Title = m.Title.toAPI()
 	}
-	if typeutils.IsKnown(m.Extent) {
+	if typeutils.IsKnown(m.ExtentJSON) {
 		var extent kbapi.XyAxis_Right_Extent
-		extentDiags := m.Extent.Unmarshal(&extent)
+		extentDiags := m.ExtentJSON.Unmarshal(&extent)
 		diags.Append(extentDiags...)
 		if !extentDiags.HasError() {
 			yAxis.Extent = &extent

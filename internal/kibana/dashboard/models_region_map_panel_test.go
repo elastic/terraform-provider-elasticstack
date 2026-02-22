@@ -109,9 +109,9 @@ func Test_regionMapConfigModel_fromAPI_toAPI(t *testing.T) {
 			}
 
 			assert.Equal(t, types.StringValue(tt.expectTitle), model.Title)
-			assert.False(t, model.Dataset.IsNull())
-			assert.False(t, model.Metric.IsNull())
-			assert.False(t, model.Region.IsNull())
+			assert.False(t, model.DatasetJSON.IsNull())
+			assert.False(t, model.MetricJSON.IsNull())
+			assert.False(t, model.RegionJSON.IsNull())
 
 			if tt.expectQuery {
 				require.NotNil(t, model.Query)

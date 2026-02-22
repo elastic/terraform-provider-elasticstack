@@ -122,11 +122,11 @@ func Test_gaugeConfigModel_fromAPI_toAPI(t *testing.T) {
 				assert.Equal(t, tt.expected.Query.Query, model.Query.Query, "Query text should match")
 			}
 
-			assert.False(t, model.Dataset.IsNull(), "Dataset should not be null")
-			assert.False(t, model.Metric.IsNull(), "Metric should not be null")
+			assert.False(t, model.DatasetJSON.IsNull(), "Dataset should not be null")
+			assert.False(t, model.MetricJSON.IsNull(), "Metric should not be null")
 
 			if tt.name == "full gauge config" {
-				assert.False(t, model.Shape.IsNull(), "Shape should not be null")
+				assert.False(t, model.ShapeJSON.IsNull(), "Shape should not be null")
 				assert.Len(t, model.Filters, 1, "Filters should be populated")
 			}
 
@@ -165,13 +165,13 @@ func Test_gaugePanelConfigConverter_roundTrip(t *testing.T) {
 		GaugeConfig: &gaugeConfigModel{
 			Title:       types.StringValue("Round Trip Gauge"),
 			Description: types.StringValue("Round-trip test"),
-			Dataset:     jsontypes.NewNormalizedValue(`{"type":"dataView","id":"metrics-*"}`),
+			DatasetJSON: jsontypes.NewNormalizedValue(`{"type":"dataView","id":"metrics-*"}`),
 			Query: &filterSimpleModel{
 				Language: types.StringValue("kuery"),
 				Query:    types.StringValue("status:active"),
 			},
-			Metric: customtypes.NewJSONWithDefaultsValue[map[string]any](`{"operation":"count"}`, populateGaugeMetricDefaults),
-			Shape:  jsontypes.NewNormalizedValue(`{"type":"circle"}`),
+			MetricJSON: customtypes.NewJSONWithDefaultsValue[map[string]any](`{"operation":"count"}`, populateGaugeMetricDefaults),
+			ShapeJSON:  jsontypes.NewNormalizedValue(`{"type":"circle"}`),
 		},
 	}
 
@@ -185,9 +185,9 @@ func Test_gaugePanelConfigConverter_roundTrip(t *testing.T) {
 	require.NotNil(t, newPanel.GaugeConfig)
 	assert.Equal(t, types.StringValue("Round Trip Gauge"), newPanel.GaugeConfig.Title)
 	assert.Equal(t, types.StringValue("Round-trip test"), newPanel.GaugeConfig.Description)
-	assert.False(t, newPanel.GaugeConfig.Dataset.IsNull())
-	assert.False(t, newPanel.GaugeConfig.Metric.IsNull())
-	assert.False(t, newPanel.GaugeConfig.Shape.IsNull())
+	assert.False(t, newPanel.GaugeConfig.DatasetJSON.IsNull())
+	assert.False(t, newPanel.GaugeConfig.MetricJSON.IsNull())
+	assert.False(t, newPanel.GaugeConfig.ShapeJSON.IsNull())
 	require.NotNil(t, newPanel.GaugeConfig.Query)
 	assert.Equal(t, types.StringValue("kuery"), newPanel.GaugeConfig.Query.Language)
 	assert.Equal(t, types.StringValue("status:active"), newPanel.GaugeConfig.Query.Query)

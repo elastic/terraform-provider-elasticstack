@@ -23,7 +23,7 @@ resource "elasticstack_kibana_dashboard" "test" {
     datatable_config = {
       esql = {
         title = "count"
-        dataset = jsonencode({
+        dataset_json = jsonencode({
           type  = "esql"
           query = "FROM metrics-* | STATS count = COUNT(*) BY TBUCKET(5m)"
         })
@@ -32,13 +32,13 @@ resource "elasticstack_kibana_dashboard" "test" {
         }
         metrics = [
           {
-            config = jsonencode({
+            config_json = jsonencode({
               operation = "value"
               column    = "TBUCKET(5m)"
             })
           },
           {
-            config = jsonencode({
+            config_json = jsonencode({
               operation = "value"
               column    = "count"
             })
