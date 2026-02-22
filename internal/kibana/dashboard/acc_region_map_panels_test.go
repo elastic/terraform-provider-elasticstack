@@ -39,9 +39,9 @@ func TestAccResourceDashboardRegionMap(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.region_map_config.query.language", "kuery"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.region_map_config.query.query", ""),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.region_map_config.filters.#", "1"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.region_map_config.dataset"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.region_map_config.metric"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.region_map_config.region"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.region_map_config.dataset_json"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.region_map_config.metric_json"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.region_map_config.region_json"),
 				),
 			},
 			{
@@ -55,7 +55,7 @@ func TestAccResourceDashboardRegionMap(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: true,
 				ImportStateVerifyIgnore: []string{
-					"panels.0.region_map_config.metric",
+					"panels.0.region_map_config.metric_json",
 				},
 			},
 		},

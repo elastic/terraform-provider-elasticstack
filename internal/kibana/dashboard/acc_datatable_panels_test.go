@@ -63,9 +63,9 @@ func TestAccResourceDashboardDatatableChart(t *testing.T) {
 			// 		resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.datatable_config.esql.density.mode", "default"),
 			// 		resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.datatable_config.esql.ignore_global_filters", "false"),
 			// 		resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.datatable_config.esql.sampling", "1"),
-			// 		resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.datatable_config.esql.dataset"),
-			// 		resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.datatable_config.esql.metrics.0.config"),
-			// 		resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.datatable_config.esql.metrics.1.config"),
+			// 		resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.datatable_config.esql.dataset_json"),
+			// 		resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.datatable_config.esql.metrics.0.config_json"),
+			// 		resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.datatable_config.esql.metrics.1.config_json"),
 			// 	),
 			// },
 			{

@@ -25,12 +25,12 @@ func assertLegacyMetricConfigEqual(ctx context.Context, t *testing.T, a, b *lega
 	assert.Equal(t, a.Description, b.Description)
 	assert.Equal(t, a.IgnoreGlobalFilters, b.IgnoreGlobalFilters)
 	assert.Equal(t, a.Sampling, b.Sampling)
-	if a.Dataset.IsNull() != b.Dataset.IsNull() || a.Dataset.IsUnknown() != b.Dataset.IsUnknown() {
+	if a.DatasetJSON.IsNull() != b.DatasetJSON.IsNull() || a.DatasetJSON.IsUnknown() != b.DatasetJSON.IsUnknown() {
 		assert.Fail(t, "dataset null/unknown state mismatch")
 		return
 	}
-	if !a.Dataset.IsNull() && !a.Dataset.IsUnknown() {
-		eq, d := a.Dataset.StringSemanticEquals(ctx, b.Dataset)
+	if !a.DatasetJSON.IsNull() && !a.DatasetJSON.IsUnknown() {
+		eq, d := a.DatasetJSON.StringSemanticEquals(ctx, b.DatasetJSON)
 		require.False(t, d.HasError())
 		assert.True(t, eq, "dataset should be semantically equal")
 	}
@@ -46,12 +46,12 @@ func assertLegacyMetricConfigEqual(ctx context.Context, t *testing.T, a, b *lega
 	for i := range a.Filters {
 		assert.Equal(t, a.Filters[i].Query, b.Filters[i].Query)
 	}
-	if a.Metric.IsNull() != b.Metric.IsNull() || a.Metric.IsUnknown() != b.Metric.IsUnknown() {
+	if a.MetricJSON.IsNull() != b.MetricJSON.IsNull() || a.MetricJSON.IsUnknown() != b.MetricJSON.IsUnknown() {
 		assert.Fail(t, "metric null/unknown state mismatch")
 		return
 	}
-	if !a.Metric.IsNull() && !a.Metric.IsUnknown() {
-		eq, d := a.Metric.StringSemanticEquals(ctx, b.Metric)
+	if !a.MetricJSON.IsNull() && !a.MetricJSON.IsUnknown() {
+		eq, d := a.MetricJSON.StringSemanticEquals(ctx, b.MetricJSON)
 		require.False(t, d.HasError())
 		assert.True(t, eq, "metric should be semantically equal")
 	}
@@ -142,9 +142,9 @@ func Test_legacyMetricConfigModel_fromAPI_toAPI_ESQL(t *testing.T) {
 
 func Test_legacyMetricConfigModel_toAPI_requiresQueryForNoESQL(t *testing.T) {
 	model := &legacyMetricConfigModel{
-		Title:   types.StringValue("Missing Query"),
-		Dataset: jsontypes.NewNormalizedValue(`{"type":"dataView","id":"metrics-*"}`),
-		Metric: customtypes.NewJSONWithDefaultsValue[map[string]any](
+		Title:       types.StringValue("Missing Query"),
+		DatasetJSON: jsontypes.NewNormalizedValue(`{"type":"dataView","id":"metrics-*"}`),
+		MetricJSON: customtypes.NewJSONWithDefaultsValue[map[string]any](
 			`{"operation":"count","format":{"type":"number"}}`,
 			populateLegacyMetricMetricDefaults,
 		),
@@ -336,8 +336,8 @@ func Test_legacyMetricConfigModel_toAPI_nil(t *testing.T) {
 
 func Test_legacyMetricConfigModel_toAPI_unsupportedDataset(t *testing.T) {
 	model := &legacyMetricConfigModel{
-		Dataset: jsontypes.NewNormalizedValue(`{"type":"unknown"}`),
-		Metric:  customtypes.NewJSONWithDefaultsValue[map[string]any](`{}`, populateLegacyMetricMetricDefaults),
+		DatasetJSON: jsontypes.NewNormalizedValue(`{"type":"unknown"}`),
+		MetricJSON:  customtypes.NewJSONWithDefaultsValue[map[string]any](`{}`, populateLegacyMetricMetricDefaults),
 	}
 	_, diags := model.toAPI()
 	require.True(t, diags.HasError())
@@ -346,9 +346,9 @@ func Test_legacyMetricConfigModel_toAPI_unsupportedDataset(t *testing.T) {
 
 func Test_legacyMetricConfigModel_toAPI_ESQL_withQuery(t *testing.T) {
 	model := &legacyMetricConfigModel{
-		Dataset: jsontypes.NewNormalizedValue(`{"type":"esql","query":"FROM x"}`),
-		Query:   &filterSimpleModel{Language: types.StringValue("kuery"), Query: types.StringValue("*")},
-		Metric: customtypes.NewJSONWithDefaultsValue[map[string]any](`{
+		DatasetJSON: jsontypes.NewNormalizedValue(`{"type":"esql","query":"FROM x"}`),
+		Query:       &filterSimpleModel{Language: types.StringValue("kuery"), Query: types.StringValue("*")},
+		MetricJSON: customtypes.NewJSONWithDefaultsValue[map[string]any](`{
 			"operation": "value",
 			"column": "y",
 			"format": {"type": "number"},
@@ -362,10 +362,10 @@ func Test_legacyMetricConfigModel_toAPI_ESQL_withQuery(t *testing.T) {
 
 func Test_legacyMetricConfigModel_toAPI_missingMetric(t *testing.T) {
 	model := &legacyMetricConfigModel{
-		Title:   types.StringValue("T"),
-		Dataset: jsontypes.NewNormalizedValue(`{"type":"dataView","id":"x"}`),
-		Query:   &filterSimpleModel{Language: types.StringValue("kuery"), Query: types.StringValue("")},
-		Metric:  customtypes.NewJSONWithDefaultsNull[map[string]any](populateLegacyMetricMetricDefaults),
+		Title:       types.StringValue("T"),
+		DatasetJSON: jsontypes.NewNormalizedValue(`{"type":"dataView","id":"x"}`),
+		Query:       &filterSimpleModel{Language: types.StringValue("kuery"), Query: types.StringValue("")},
+		MetricJSON:  customtypes.NewJSONWithDefaultsNull[map[string]any](populateLegacyMetricMetricDefaults),
 	}
 	_, diags := model.toAPI()
 	require.True(t, diags.HasError())
@@ -382,7 +382,7 @@ func Test_legacyMetricConfigModel_datasetType_errors(t *testing.T) {
 
 	t.Run("invalid JSON", func(t *testing.T) {
 		model := &legacyMetricConfigModel{
-			Dataset: jsontypes.NewNormalizedValue(`{invalid`),
+			DatasetJSON: jsontypes.NewNormalizedValue(`{invalid`),
 		}
 		_, diags := model.datasetType()
 		require.True(t, diags.HasError())
@@ -391,7 +391,7 @@ func Test_legacyMetricConfigModel_datasetType_errors(t *testing.T) {
 
 	t.Run("missing type field", func(t *testing.T) {
 		model := &legacyMetricConfigModel{
-			Dataset: jsontypes.NewNormalizedValue(`{"id":"x"}`),
+			DatasetJSON: jsontypes.NewNormalizedValue(`{"id":"x"}`),
 		}
 		_, diags := model.datasetType()
 		require.True(t, diags.HasError())

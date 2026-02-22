@@ -136,13 +136,13 @@ func Test_tagcloudConfigModel_fromAPI_toAPI(t *testing.T) {
 			}
 
 			// Validate dataset is not null
-			assert.False(t, model.Dataset.IsNull(), "Dataset should not be null")
+			assert.False(t, model.DatasetJSON.IsNull(), "Dataset should not be null")
 
 			// Validate metric and tagBy exist when present in API
 			if tt.name == "full tagcloud config" || tt.name == "minimal tagcloud config" {
 				// These should have metric and tagBy JSON
-				assert.False(t, model.Metric.IsNull(), "Metric should not be null")
-				assert.False(t, model.TagBy.IsNull(), "TagBy should not be null")
+				assert.False(t, model.MetricJSON.IsNull(), "Metric should not be null")
+				assert.False(t, model.TagByJSON.IsNull(), "TagBy should not be null")
 			}
 
 			// Test toAPI round-trip
@@ -315,13 +315,13 @@ func Test_tagcloudPanelConfigConverter_mapPanelToAPI(t *testing.T) {
 		TagcloudConfig: &tagcloudConfigModel{
 			Title:       types.StringValue("Test Tagcloud"),
 			Description: types.StringValue("Test description"),
-			Dataset:     jsontypes.NewNormalizedValue(datasetJSON),
+			DatasetJSON: jsontypes.NewNormalizedValue(datasetJSON),
 			Query: &filterSimpleModel{
 				Language: types.StringValue("kuery"),
 				Query:    types.StringValue("*"),
 			},
-			Metric: customtypes.NewJSONWithDefaultsValue[map[string]any](metricJSON, populateTagcloudMetricDefaults),
-			TagBy:  customtypes.NewJSONWithDefaultsValue[map[string]any](tagByJSON, populateTagcloudTagByDefaults),
+			MetricJSON: customtypes.NewJSONWithDefaultsValue[map[string]any](metricJSON, populateTagcloudMetricDefaults),
+			TagByJSON:  customtypes.NewJSONWithDefaultsValue[map[string]any](tagByJSON, populateTagcloudTagByDefaults),
 		},
 	}
 
@@ -394,12 +394,12 @@ func Test_tagcloudConfig_JSONFields(t *testing.T) {
 			model := &tagcloudConfigModel{
 				Title:       types.StringValue("Test"),
 				Description: types.StringValue("Test description"),
-				Dataset:     jsontypes.NewNormalizedValue(tt.datasetJSON),
+				DatasetJSON: jsontypes.NewNormalizedValue(tt.datasetJSON),
 				Query: &filterSimpleModel{
 					Query: types.StringValue("*"),
 				},
-				Metric: customtypes.NewJSONWithDefaultsValue[map[string]any](tt.metricJSON, populateTagcloudMetricDefaults),
-				TagBy:  customtypes.NewJSONWithDefaultsValue[map[string]any](tt.tagByJSON, populateTagcloudTagByDefaults),
+				MetricJSON: customtypes.NewJSONWithDefaultsValue[map[string]any](tt.metricJSON, populateTagcloudMetricDefaults),
+				TagByJSON:  customtypes.NewJSONWithDefaultsValue[map[string]any](tt.tagByJSON, populateTagcloudTagByDefaults),
 			}
 
 			_, diags := model.toAPI()
