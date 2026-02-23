@@ -153,8 +153,8 @@ tools: $(GOBIN)  ## Download golangci-lint locally if necessary.
 golangci-lint:
 	@ $(GOBIN)/golangci-lint run --max-same-issues=0 $(GOLANGCIFLAGS) ./internal/...
 
-
 .PHONY: lint
+lint: GOLANGCIFLAGS += --fix
 lint: setup golangci-lint fmt docs-generate ## Run lints to check the spelling and common go patterns
 
 .PHONY: check-lint
