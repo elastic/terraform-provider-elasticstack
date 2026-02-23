@@ -103,6 +103,40 @@ func TestTimesliceMetricIndicator_ToAPI(t *testing.T) {
 		assert.Equal(t, "labels.env:prod", *metrics[2].TimesliceMetricDocCountMetric.Filter)
 	})
 
+	for _, agg := range []string{"last_value", "cardinality", "std_deviation"} {
+		t.Run("maps "+agg+" aggregation as basic metric with field", func(t *testing.T) {
+			m := tfModel{TimesliceMetricIndicator: []tfTimesliceMetricIndicator{{
+				Index:          types.StringValue("metrics-*"),
+				DataViewID:     types.StringNull(),
+				TimestampField: types.StringValue("@timestamp"),
+				Filter:         types.StringNull(),
+				Metric: []tfTimesliceMetricDefinition{{
+					Equation:   types.StringValue("A"),
+					Comparator: types.StringValue("GT"),
+					Threshold:  types.Float64Value(0),
+					Metrics: []tfTimesliceMetricMetric{{
+						Name:        types.StringValue("A"),
+						Aggregation: types.StringValue(agg),
+						Field:       types.StringValue("some.field"),
+						Percentile:  types.Float64Null(),
+						Filter:      types.StringNull(),
+					}},
+				}},
+			}}}
+
+			ok, ind, diags := m.timesliceMetricIndicatorToAPI()
+			require.True(t, ok)
+			require.False(t, diags.HasError())
+			require.NotNil(t, ind.IndicatorPropertiesTimesliceMetric)
+
+			metrics := ind.IndicatorPropertiesTimesliceMetric.Params.Metric.Metrics
+			require.Len(t, metrics, 1)
+			require.NotNil(t, metrics[0].TimesliceMetricBasicMetricWithField)
+			assert.Equal(t, agg, metrics[0].TimesliceMetricBasicMetricWithField.Aggregation)
+			assert.Equal(t, "some.field", metrics[0].TimesliceMetricBasicMetricWithField.Field)
+		})
+	}
+
 	t.Run("emits error on unsupported aggregation", func(t *testing.T) {
 		m := tfModel{TimesliceMetricIndicator: []tfTimesliceMetricIndicator{{
 			Index:          types.StringValue("metrics-*"),

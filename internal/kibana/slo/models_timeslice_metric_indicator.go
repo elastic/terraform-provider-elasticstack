@@ -71,7 +71,7 @@ func (m tfModel) timesliceMetricIndicatorToAPI() (bool, slo.SloWithSummaryRespon
 
 		agg := metric.Aggregation.ValueString()
 		switch agg {
-		case "sum", "avg", "min", "max", "value_count":
+		case "sum", "avg", "min", "max", "value_count", "last_value", "cardinality", "std_deviation":
 			metrics = append(metrics, slo.IndicatorPropertiesTimesliceMetricParamsMetricMetricsInner{
 				TimesliceMetricBasicMetricWithField: &slo.TimesliceMetricBasicMetricWithField{
 					Name:        metric.Name.ValueString(),

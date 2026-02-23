@@ -487,7 +487,7 @@ Optional:
 
 Required:
 
-- `aggregation` (String) The aggregation type for this metric. One of: sum, avg, min, max, value_count, percentile, doc_count. Determines which other fields are required:
+- `aggregation` (String) The aggregation type for this metric. One of: sum, avg, min, max, value_count, last_value, cardinality, std_deviation, percentile, doc_count. Determines which other fields are required:
 - `name` (String) The unique name for this metric. Used as a variable in the equation field.
 
 Optional:
