@@ -38,14 +38,9 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/exportsavedobjects"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/import_saved_objects"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/maintenance_window"
-<<<<<<< enable_rules
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/prebuilt_rules"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_detection_rule"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_enable_rule"
-=======
 	prebuilt_rules "github.com/elastic/terraform-provider-elasticstack/internal/kibana/prebuilt_rules"
 	security_detection_rule "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_detection_rule"
->>>>>>> main
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_enable_rule"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_exception_item"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_list_data_streams"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/securityexceptionlist"
@@ -172,20 +167,12 @@ func (p *Provider) resources(ctx context.Context) []func() resource.Resource {
 		datafeedstate.NewMLDatafeedStateResource,
 		kibanaslo.NewResource,
 		prebuilt_rules.NewResource,
-<<<<<<< enable_rules
 		security_enable_rule.NewResource,
-		security_list_item.NewResource,
-		security_list.NewResource,
-		security_list_data_streams.NewResource,
-		security_exception_list.NewResource,
-		security_exception_item.NewResource,
-=======
 		securitylistitem.NewResource,
 		securitylist.NewResource,
 		securitylistdatastreams.NewResource,
 		securityexceptionlist.NewResource,
 		securityexceptionitem.NewResource,
->>>>>>> main
 	}
 }
 
