@@ -6,7 +6,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
@@ -31,8 +30,7 @@ func (r *EnableRuleResource) upsert(ctx context.Context, plan tfsdk.Plan, state 
 		return diags
 	}
 
-	minVersion := version.Must(version.NewVersion("8.11.0"))
-	if serverVersion.LessThan(minVersion) {
+	if serverVersion.LessThan(minSupportedVersion) {
 		diags.AddError("Unsupported server version", "Security detection rules bulk actions are not supported until Elastic Stack v8.11.0. Upgrade the target server to use this resource")
 		return diags
 	}
