@@ -16,7 +16,11 @@
   ],
   "postUpgradeTasks": {
     "commands": ["make -C generated/kbapi all"],
-    "fileFilters": ["generated/kbapi/kibana.gen.go", "generated/kbapi/oas-filtered.yaml"]
+    "fileFilters": [
+      "generated/kbapi/kibana.gen.go", 
+      "generated/kbapi/oas-filtered.yaml", 
+      "NOTICE"
+    ]
   },
   "automerge": true,
   "automergeStrategy": "squash",

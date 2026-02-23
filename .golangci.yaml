@@ -36,7 +36,7 @@ linters:
     lll:
       line-length: 200
     goheader:
-      template-path: ./LICENSE_HEADER.tmpl
+      template-path: ./.LICENSE_HEADER.tmpl
 formatters:
   exclusions:
     generated: lax
