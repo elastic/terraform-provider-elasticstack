@@ -3,7 +3,7 @@ package security_enable_rule
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -39,7 +39,7 @@ func (r *EnableRuleResource) Read(ctx context.Context, req resource.ReadRequest,
 	key := model.Key.ValueString()
 	value := model.Value.ValueString()
 
-	allEnabled, checkDiags := kibana_oapi.CheckRulesEnabledByTag(ctx, client, spaceID, key, value)
+	allEnabled, checkDiags := kibanaoapi.CheckRulesEnabledByTag(ctx, client, spaceID, key, value)
 	resp.Diagnostics.Append(checkDiags...)
 	if resp.Diagnostics.HasError() {
 		return

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -51,7 +51,7 @@ func (r *EnableRuleResource) upsert(ctx context.Context, plan tfsdk.Plan, state 
 
 	model.ID = types.StringValue(fmt.Sprintf("%s/%s:%s", spaceID, key, value))
 
-	diags.Append(kibana_oapi.EnableRulesByTag(ctx, client, spaceID, key, value)...)
+	diags.Append(kibanaoapi.EnableRulesByTag(ctx, client, spaceID, key, value)...)
 	if diags.HasError() {
 		return diags
 	}

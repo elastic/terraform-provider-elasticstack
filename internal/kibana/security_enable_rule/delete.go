@@ -3,7 +3,7 @@ package security_enable_rule
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -54,5 +54,5 @@ func (r *EnableRuleResource) Delete(ctx context.Context, req resource.DeleteRequ
 		"value":    value,
 	})
 
-	resp.Diagnostics.Append(kibana_oapi.DisableRulesByTag(ctx, client, spaceID, key, value)...)
+	resp.Diagnostics.Append(kibanaoapi.DisableRulesByTag(ctx, client, spaceID, key, value)...)
 }

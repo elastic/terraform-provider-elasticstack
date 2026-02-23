@@ -22,7 +22,7 @@ func NewResource() resource.Resource {
 }
 
 type EnableRuleResource struct {
-	client *clients.ApiClient
+	client *clients.APIClient
 }
 
 func (r *EnableRuleResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {

@@ -1,4 +1,4 @@
-package kibana_oapi
+package kibanaoapi
 
 import (
 	"bytes"
@@ -45,7 +45,7 @@ func EnableRulesByTag(ctx context.Context, client *Client, spaceID, key, value s
 	})
 
 	if resp.StatusCode() != 200 {
-		return diagutil.CheckHttpErrorFromFW(resp.HTTPResponse, "failed to enable rules by tag")
+		return diagutil.CheckHTTPErrorFromFW(resp.HTTPResponse, "failed to enable rules by tag")
 	}
 
 	return nil
@@ -71,7 +71,7 @@ func DisableRulesByTag(ctx context.Context, client *Client, spaceID, key, value 
 	}
 
 	if resp.StatusCode() != 200 {
-		return diagutil.CheckHttpErrorFromFW(resp.HTTPResponse, "failed to disable rules by tag")
+		return diagutil.CheckHTTPErrorFromFW(resp.HTTPResponse, "failed to disable rules by tag")
 	}
 
 	return nil
@@ -96,7 +96,7 @@ func CheckRulesEnabledByTag(ctx context.Context, client *Client, spaceID, key, v
 	}
 
 	if resp.StatusCode() != 200 {
-		return false, diagutil.CheckHttpErrorFromFW(resp.HTTPResponse, "failed to query rules by tag")
+		return false, diagutil.CheckHTTPErrorFromFW(resp.HTTPResponse, "failed to query rules by tag")
 	}
 
 	if resp.JSON200 == nil {
