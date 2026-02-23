@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package slo
 
 import (
@@ -12,9 +29,8 @@ import (
 func TestApmLatencyIndicator_ToAPI(t *testing.T) {
 	t.Run("returns ok=false when not configured", func(t *testing.T) {
 		m := tfModel{}
-		ok, _, diags := m.apmLatencyIndicatorToAPI()
+		ok, _ := m.apmLatencyIndicatorToAPI()
 		require.False(t, ok)
-		require.False(t, diags.HasError())
 	})
 
 	t.Run("maps all fields including threshold", func(t *testing.T) {
@@ -28,13 +44,12 @@ func TestApmLatencyIndicator_ToAPI(t *testing.T) {
 			Threshold:       types.Int64Value(500),
 		}}}
 
-		ok, ind, diags := m.apmLatencyIndicatorToAPI()
+		ok, ind := m.apmLatencyIndicatorToAPI()
 		require.True(t, ok)
-		require.False(t, diags.HasError())
 		require.NotNil(t, ind.IndicatorPropertiesApmLatency)
 
 		assert.Equal(t, indicatorAddressToType["apm_latency_indicator"], ind.IndicatorPropertiesApmLatency.Type)
-		assert.Equal(t, 500.0, ind.IndicatorPropertiesApmLatency.Params.Threshold)
+		assert.InDelta(t, 500.0, ind.IndicatorPropertiesApmLatency.Params.Threshold, 1e-9)
 		assert.Equal(t, "svc", ind.IndicatorPropertiesApmLatency.Params.Service)
 		assert.Equal(t, "apm-*", ind.IndicatorPropertiesApmLatency.Params.Index)
 		require.NotNil(t, ind.IndicatorPropertiesApmLatency.Params.Filter)
@@ -52,9 +67,8 @@ func TestApmLatencyIndicator_ToAPI(t *testing.T) {
 			Threshold:       types.Int64Value(500),
 		}}}
 
-		ok, ind, diags := m.apmLatencyIndicatorToAPI()
+		ok, ind := m.apmLatencyIndicatorToAPI()
 		require.True(t, ok)
-		require.False(t, diags.HasError())
 		require.NotNil(t, ind.IndicatorPropertiesApmLatency)
 		assert.Nil(t, ind.IndicatorPropertiesApmLatency.Params.Filter)
 	})

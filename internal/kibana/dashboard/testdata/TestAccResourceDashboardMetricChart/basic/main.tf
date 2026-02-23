@@ -23,7 +23,7 @@ resource "elasticstack_kibana_dashboard" "test" {
     metric_chart_config = {
       title       = "Sample Metric Chart"
       description = "Test metric chart visualization"
-      dataset = jsonencode({
+      dataset_json = jsonencode({
         type = "dataView"
         id   = "metrics-*"
       })
@@ -33,7 +33,7 @@ resource "elasticstack_kibana_dashboard" "test" {
       }
       metrics = [
         {
-          config = jsonencode({
+          config_json = jsonencode({
             type      = "primary"
             operation = "count"
             format = {

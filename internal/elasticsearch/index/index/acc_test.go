@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package index_test
 
 import (
@@ -14,16 +31,22 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
+const indexSettingsAnalysisAnalyzerExpected = `{"text_en":{"char_filter":"zero_width_spaces","filter":["lowercase","minimal_english_stemmer"],` +
+	`"tokenizer":"standard","type":"custom"}}`
+
 func TestAccResourceIndex(t *testing.T) {
 	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceIndexDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIndexDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceIndexCreate(indexName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "name", indexName),
 					resource.TestMatchTypeSetElemNestedAttrs("elasticstack_elasticsearch_index.test", "alias.*", map[string]*regexp.Regexp{
@@ -36,13 +59,21 @@ func TestAccResourceIndex(t *testing.T) {
 				),
 			},
 			{
-				Config:       testAccResourceIndexCreate(indexName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
 				ResourceName: "elasticstack_elasticsearch_index.test",
 				Destroy:      true,
 				ExpectError:  regexp.MustCompile("cannot destroy index without setting deletion_protection=false and running `terraform apply`"),
 			},
 			{
-				Config: testAccResourceIndexUpdate(indexName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "name", indexName),
 					resource.TestMatchTypeSetElemNestedAttrs("elasticstack_elasticsearch_index.test", "alias.*", map[string]*regexp.Regexp{
@@ -52,7 +83,11 @@ func TestAccResourceIndex(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccResourceIndexZeroReplicas(indexName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("zero_replicas"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "name", indexName),
 					resource.TestMatchTypeSetElemNestedAttrs("elasticstack_elasticsearch_index.test", "alias.*", map[string]*regexp.Regexp{
@@ -63,7 +98,11 @@ func TestAccResourceIndex(t *testing.T) {
 				),
 			},
 			{
-				Config:       testAccResourceIndexZeroReplicas(indexName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("zero_replicas"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
 				ImportState:  true,
 				ResourceName: "elasticstack_elasticsearch_index.test",
 				Check: resource.ComposeTestCheckFunc(
@@ -131,7 +170,11 @@ func TestAccResourceIndexFromSDK(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "routing_rebalance_enable", "primaries"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "gc_deletes", "30s"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "unassigned_node_left_delayed_timeout", "5m"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "analysis_analyzer", `{"text_en":{"char_filter":"zero_width_spaces","filter":["lowercase","minimal_english_stemmer"],"tokenizer":"standard","type":"custom"}}`),
+					resource.TestCheckResourceAttr(
+						"elasticstack_elasticsearch_index.test_settings",
+						"analysis_analyzer",
+						indexSettingsAnalysisAnalyzerExpected,
+					),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "analysis_char_filter", `{"zero_width_spaces":{"mappings":["\\u200C=\u003e\\u0020"],"type":"mapping"}}`),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "analysis_filter", `{"minimal_english_stemmer":{"language":"minimal_english","type":"stemmer"}}`),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "settings.0.setting.0.name", "number_of_replicas"),
@@ -174,7 +217,11 @@ func TestAccResourceIndexFromSDK(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "routing_rebalance_enable", "primaries"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "gc_deletes", "30s"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "unassigned_node_left_delayed_timeout", "5m"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "analysis_analyzer", `{"text_en":{"char_filter":"zero_width_spaces","filter":["lowercase","minimal_english_stemmer"],"tokenizer":"standard","type":"custom"}}`),
+					resource.TestCheckResourceAttr(
+						"elasticstack_elasticsearch_index.test_settings",
+						"analysis_analyzer",
+						indexSettingsAnalysisAnalyzerExpected,
+					),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "analysis_char_filter", `{"zero_width_spaces":{"mappings":["\\u200C=\u003e\\u0020"],"type":"mapping"}}`),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "analysis_filter", `{"minimal_english_stemmer":{"language":"minimal_english","type":"stemmer"}}`),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "settings.0.setting.0.name", "number_of_replicas"),
@@ -229,7 +276,11 @@ func TestAccResourceIndexSettings(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "routing_rebalance_enable", "primaries"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "gc_deletes", "30s"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "unassigned_node_left_delayed_timeout", "5m"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "analysis_analyzer", `{"text_en":{"char_filter":"zero_width_spaces","filter":["lowercase","minimal_english_stemmer"],"tokenizer":"standard","type":"custom"}}`),
+					resource.TestCheckResourceAttr(
+						"elasticstack_elasticsearch_index.test_settings",
+						"analysis_analyzer",
+						indexSettingsAnalysisAnalyzerExpected,
+					),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "analysis_char_filter", `{"zero_width_spaces":{"mappings":["\\u200C=\u003e\\u0020"],"type":"mapping"}}`),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "analysis_filter", `{"minimal_english_stemmer":{"language":"minimal_english","type":"stemmer"}}`),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "settings.0.setting.0.name", "number_of_replicas"),
@@ -255,12 +306,15 @@ func TestAccResourceIndexWithTemplate(t *testing.T) {
 	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceIndexDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIndexDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceIndexWithTemplate(indexName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "name", indexName),
 					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_index.test", "default_pipeline"),
@@ -275,212 +329,35 @@ func TestAccResourceIndexRemovingField(t *testing.T) {
 	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceIndexDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIndexDestroy,
 		Steps: []resource.TestStep{
 			// Confirm removing field doesn't produce recreate by using prevent_destroy
-			{Config: testAccResourceIndexRemovingFieldCreate(indexName)},
-			{Config: testAccResourceIndexRemovingFieldUpdate(indexName), ExpectNonEmptyPlan: true},
-			{Config: testAccResourceIndexRemovingFieldPostUpdate(indexName), ExpectNonEmptyPlan: true},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("post_update"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				ExpectNonEmptyPlan: true,
+			},
 		},
 	})
-}
-
-func testAccResourceIndexCreate(name string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_index" "test" {
-  name = "%s"
-
-  alias = [
-    {
-      name = "test_alias_1"
-    },
-    {
-      name = "test_alias_2"
-      filter = jsonencode({
-        term = { "user.id" = "developer" }
-      })
-    }
-  ]
-
-  mappings = jsonencode({
-    properties = {
-      field1 = { type = "text" }
-    }
-  })
-
-	wait_for_active_shards = "all"
-	master_timeout = "1m"
-	timeout = "1m"
-}
-	`, name)
-}
-
-func testAccResourceIndexUpdate(name string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_index" "test" {
-  name = "%s"
-
-  alias = [
-    {
-      name = "test_alias_1"
-    }
-  ]
-
-  mappings = jsonencode({
-    properties = {
-      field1 = { type = "text" }
-    }
-  })
-
-  deletion_protection = false
-}
-	`, name)
-}
-
-func testAccResourceIndexZeroReplicas(name string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_index" "test" {
-  name = "%s"
-  number_of_replicas = 0
-
-  alias = [
-    {
-      name = "test_alias_1"
-    }
-  ]
-
-  mappings = jsonencode({
-    properties = {
-      field1 = { type = "text" }
-    }
-  })
-
-  deletion_protection = false
-}
-	`, name)
-}
-
-func testAccResourceIndexRemovingFieldCreate(name string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_index" "test_settings_removing_field" {
-  name = "%s"
-
-  mappings = jsonencode({
-    properties = {
-      field1    = { type = "text" }
-      field2    = { type = "text" }
-    }
-  })
-  lifecycle {
-    prevent_destroy = true
-  }
-}
-	`, name)
-}
-
-func testAccResourceIndexRemovingFieldUpdate(name string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_index" "test_settings_removing_field" {
-  name = "%s"
-
-  mappings = jsonencode({
-    properties = {
-      field1    = { type = "text" }
-    }
-  })
-  lifecycle {
-    prevent_destroy = true
-  }
-}
-	`, name)
-}
-
-func testAccResourceIndexRemovingFieldPostUpdate(name string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_index" "test_settings_removing_field" {
-  name = "%s"
-
-  mappings = jsonencode({
-    properties = {
-      field1    = { type = "text" }
-    }
-  })
-  deletion_protection = false
-}
-	`, name)
-}
-
-func testAccResourceIndexWithTemplate(name string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_index_template" "test" {
-  name           = "%s"
-  index_patterns = ["%s"]
-  template {
-    settings = jsonencode({
-      default_pipeline = ".fleet_final_pipeline-1"
-      lifecycle        = { name = ".monitoring-8-ilm-policy" }
-    })
-	mappings = jsonencode({
-      dynamic_templates = [
-        {
-          strings_as_ip = {
-            match_mapping_type = "string",
-            match              = "ip*",
-            runtime = {
-              type = "ip"
-            }
-          }
-        }
-      ]
-	})
-  }
-}
-
-resource "elasticstack_elasticsearch_index" "test" {
-  name                = "%s"
-  deletion_protection = false
-  alias = [
-    {
-      name           = "%s-alias"
-      is_write_index = true
-    }
-  ]
-  lifecycle {
-    ignore_changes = [mappings]
-  }
-  depends_on = [elasticstack_elasticsearch_index_template.test]
-}
-`, name, name, name, name)
 }
 
 func checkResourceIndexDestroy(s *terraform.State) error {
@@ -493,19 +370,19 @@ func checkResourceIndexDestroy(s *terraform.State) error {
 		if rs.Type != "elasticstack_elasticsearch_index" {
 			continue
 		}
-		compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
+		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
 		esClient, err := client.GetESClient()
 		if err != nil {
 			return err
 		}
-		res, err := esClient.Indices.Get([]string{compId.ResourceId})
+		res, err := esClient.Indices.Get([]string{compID.ResourceID})
 		if err != nil {
 			return err
 		}
 
 		if res.StatusCode != 404 {
-			return fmt.Errorf("Index (%s) still exists", compId.ResourceId)
+			return fmt.Errorf("Index (%s) still exists", compID.ResourceID)
 		}
 	}
 	return nil

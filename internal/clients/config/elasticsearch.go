@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package config
 
 import (
@@ -26,37 +43,46 @@ type elasticsearchConfig struct {
 func newElasticsearchConfigFromSDK(d *schema.ResourceData, base baseConfig, key string, useEnvAsDefault bool) (*elasticsearchConfig, sdkdiags.Diagnostics) {
 	esConn, ok := d.GetOk(key)
 	if !ok {
-		return nil, nil
+		if !useEnvAsDefault {
+			return nil, nil
+		}
+
+		cfg := base.toElasticsearchConfig().withEnvironmentOverrides()
+		if len(cfg.config.Addresses) == 0 {
+			return nil, nil
+		}
+
+		return &cfg, nil
 	}
 
 	var diags sdkdiags.Diagnostics
 	config := base.toElasticsearchConfig()
 
 	// if defined, then we only have a single entry
-	if es := esConn.([]interface{})[0]; es != nil {
-		esConfig := es.(map[string]interface{})
+	if es := esConn.([]any)[0]; es != nil {
+		esConfig := es.(map[string]any)
 
-		if endpoints, ok := esConfig["endpoints"]; ok && len(endpoints.([]interface{})) > 0 {
+		if endpoints, ok := esConfig["endpoints"]; ok && len(endpoints.([]any)) > 0 {
 			var addrs []string
-			for _, e := range endpoints.([]interface{}) {
+			for _, e := range endpoints.([]any) {
 				addrs = append(addrs, e.(string))
 			}
 			config.config.Addresses = addrs
 		}
 
-		if headers, ok := esConfig["headers"]; ok && len(headers.(map[string]interface{})) > 0 {
-			headersMap := headers.(map[string]interface{})
+		if headers, ok := esConfig["headers"]; ok && len(headers.(map[string]any)) > 0 {
+			headersMap := headers.(map[string]any)
 			for header, value := range headersMap {
 				config.config.Header.Add(strings.TrimSpace(header), strings.TrimSpace(value.(string)))
 			}
 		}
 
-		if bearer_token, ok := esConfig["bearer_token"].(string); ok && bearer_token != "" {
-			config.bearerToken = bearer_token
+		if bearerToken, ok := esConfig["bearer_token"].(string); ok && bearerToken != "" {
+			config.bearerToken = bearerToken
 		}
 
-		if es_client_authentication, ok := esConfig["es_client_authentication"].(string); ok && es_client_authentication != "" {
-			config.esClientAuthentication = es_client_authentication
+		if esClientAuthentication, ok := esConfig["es_client_authentication"].(string); ok && esClientAuthentication != "" {
+			config.esClientAuthentication = esClientAuthentication
 		}
 
 		if insecure, ok := esConfig["insecure"]; ok && insecure.(bool) {
@@ -234,7 +260,7 @@ func (c *elasticsearchConfig) ensureTLSClientConfig() *tls.Config {
 func (c elasticsearchConfig) withEnvironmentOverrides() elasticsearchConfig {
 	if endpointsCSV, ok := os.LookupEnv("ELASTICSEARCH_ENDPOINTS"); ok {
 		endpoints := make([]string, 0)
-		for _, e := range strings.Split(endpointsCSV, ",") {
+		for e := range strings.SplitSeq(endpointsCSV, ",") {
 			endpoints = append(endpoints, strings.TrimSpace(e))
 		}
 		c.config.Addresses = endpoints

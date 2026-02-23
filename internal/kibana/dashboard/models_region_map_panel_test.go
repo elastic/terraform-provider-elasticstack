@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package dashboard
 
 import (
@@ -33,10 +50,10 @@ func Test_regionMapConfigModel_fromAPI_toAPI(t *testing.T) {
 			apiNoESQL: func() *kbapi.RegionMapNoESQL {
 				api := kbapi.RegionMapNoESQL{
 					Type:                kbapi.RegionMapNoESQLTypeRegionMap,
-					Title:               utils.Pointer("Region Map"),
-					Description:         utils.Pointer("Region map description"),
-					IgnoreGlobalFilters: utils.Pointer(true),
-					Sampling:            utils.Pointer(float32(0.75)),
+					Title:               schemautil.Pointer("Region Map"),
+					Description:         schemautil.Pointer("Region map description"),
+					IgnoreGlobalFilters: schemautil.Pointer(true),
+					Sampling:            schemautil.Pointer(float32(0.75)),
 				}
 
 				lang := kbapi.FilterSimpleSchemaLanguage("kuery")
@@ -69,10 +86,10 @@ func Test_regionMapConfigModel_fromAPI_toAPI(t *testing.T) {
 			apiESQL: func() *kbapi.RegionMapESQL {
 				api := kbapi.RegionMapESQL{
 					Type:                kbapi.RegionMapESQLTypeRegionMap,
-					Title:               utils.Pointer("ESQL Region Map"),
-					Description:         utils.Pointer("ESQL description"),
-					IgnoreGlobalFilters: utils.Pointer(false),
-					Sampling:            utils.Pointer(float32(0.25)),
+					Title:               schemautil.Pointer("ESQL Region Map"),
+					Description:         schemautil.Pointer("ESQL description"),
+					IgnoreGlobalFilters: schemautil.Pointer(false),
+					Sampling:            schemautil.Pointer(float32(0.25)),
 				}
 
 				_ = json.Unmarshal([]byte(`{"type":"esql","query":"FROM metrics-* | LIMIT 10"}`), &api.Dataset)
@@ -109,9 +126,9 @@ func Test_regionMapConfigModel_fromAPI_toAPI(t *testing.T) {
 			}
 
 			assert.Equal(t, types.StringValue(tt.expectTitle), model.Title)
-			assert.False(t, model.Dataset.IsNull())
-			assert.False(t, model.Metric.IsNull())
-			assert.False(t, model.Region.IsNull())
+			assert.False(t, model.DatasetJSON.IsNull())
+			assert.False(t, model.MetricJSON.IsNull())
+			assert.False(t, model.RegionJSON.IsNull())
 
 			if tt.expectQuery {
 				require.NotNil(t, model.Query)

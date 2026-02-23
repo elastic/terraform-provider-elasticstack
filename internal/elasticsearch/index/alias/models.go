@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package alias
 
 import (
@@ -29,18 +46,18 @@ type indexModel struct {
 	SearchRouting types.String         `tfsdk:"search_routing"`
 }
 
-// AliasIndexConfig represents a single index configuration within an alias
-type AliasIndexConfig struct {
+// IndexConfig represents a single index configuration within an alias
+type IndexConfig struct {
 	Name          string
 	IsWriteIndex  bool
-	Filter        map[string]interface{}
+	Filter        map[string]any
 	IndexRouting  string
 	IsHidden      bool
 	Routing       string
 	SearchRouting string
 }
 
-func (a AliasIndexConfig) Equals(b AliasIndexConfig) bool {
+func (a IndexConfig) Equals(b IndexConfig) bool {
 	return a.Name == b.Name &&
 		a.IsWriteIndex == b.IsWriteIndex &&
 		a.IndexRouting == b.IndexRouting &&
@@ -116,8 +133,8 @@ func indexFromAlias(indexName string, aliasData models.IndexAlias) (indexModel, 
 	return index, nil
 }
 
-func (model *tfModel) toAliasConfigs(ctx context.Context) ([]AliasIndexConfig, diag.Diagnostics) {
-	var configs []AliasIndexConfig
+func (model *tfModel) toAliasConfigs(ctx context.Context) ([]IndexConfig, diag.Diagnostics) {
+	var configs []IndexConfig
 
 	// Handle write index
 	if !model.WriteIndex.IsNull() {
@@ -154,9 +171,9 @@ func (model *tfModel) toAliasConfigs(ctx context.Context) ([]AliasIndexConfig, d
 	return configs, nil
 }
 
-// indexToConfig converts an indexModel to AliasIndexConfig
-func indexToConfig(index indexModel, isWriteIndex bool) (AliasIndexConfig, diag.Diagnostics) {
-	config := AliasIndexConfig{
+// indexToConfig converts an indexModel to IndexConfig
+func indexToConfig(index indexModel, isWriteIndex bool) (IndexConfig, diag.Diagnostics) {
+	config := IndexConfig{
 		Name:         index.Name.ValueString(),
 		IsWriteIndex: isWriteIndex,
 		IsHidden:     index.IsHidden.ValueBool(),
@@ -173,7 +190,7 @@ func indexToConfig(index indexModel, isWriteIndex bool) (AliasIndexConfig, diag.
 	}
 	if !index.Filter.IsNull() {
 		if diags := index.Filter.Unmarshal(&config.Filter); diags.HasError() {
-			return AliasIndexConfig{}, diags
+			return IndexConfig{}, diags
 		}
 	}
 

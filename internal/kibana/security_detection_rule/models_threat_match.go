@@ -1,11 +1,28 @@
-package security_detection_rule
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package securitydetectionrule
 
 import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -19,11 +36,11 @@ func (t ThreatMatchRuleProcessor) HandlesRuleType(ruleType string) bool {
 	return ruleType == "threat_match"
 }
 
-func (t ThreatMatchRuleProcessor) ToCreateProps(ctx context.Context, client clients.MinVersionEnforceable, d SecurityDetectionRuleData) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
+func (t ThreatMatchRuleProcessor) ToCreateProps(ctx context.Context, client clients.MinVersionEnforceable, d Data) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
 	return d.toThreatMatchRuleCreateProps(ctx, client)
 }
 
-func (t ThreatMatchRuleProcessor) ToUpdateProps(ctx context.Context, client clients.MinVersionEnforceable, d SecurityDetectionRuleData) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
+func (t ThreatMatchRuleProcessor) ToUpdateProps(ctx context.Context, client clients.MinVersionEnforceable, d Data) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
 	return d.toThreatMatchRuleUpdateProps(ctx, client)
 }
 
@@ -32,7 +49,7 @@ func (t ThreatMatchRuleProcessor) HandlesAPIRuleResponse(rule any) bool {
 	return ok
 }
 
-func (t ThreatMatchRuleProcessor) UpdateFromResponse(ctx context.Context, rule any, d *SecurityDetectionRuleData) diag.Diagnostics {
+func (t ThreatMatchRuleProcessor) UpdateFromResponse(ctx context.Context, rule any, d *Data) diag.Diagnostics {
 	var diags diag.Diagnostics
 	value, ok := rule.(kbapi.SecurityDetectionsAPIThreatMatchRule)
 	if !ok {
@@ -46,7 +63,7 @@ func (t ThreatMatchRuleProcessor) UpdateFromResponse(ctx context.Context, rule a
 	return d.updateFromThreatMatchRule(ctx, &value)
 }
 
-func (t ThreatMatchRuleProcessor) ExtractId(response any) (string, diag.Diagnostics) {
+func (t ThreatMatchRuleProcessor) ExtractID(response any) (string, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	value, ok := response.(kbapi.SecurityDetectionsAPIThreatMatchRule)
 	if !ok {
@@ -59,29 +76,29 @@ func (t ThreatMatchRuleProcessor) ExtractId(response any) (string, diag.Diagnost
 	return value.Id.String(), diags
 }
 
-func (d SecurityDetectionRuleData) toThreatMatchRuleCreateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
+func (d Data) toThreatMatchRuleCreateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleCreateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var createProps kbapi.SecurityDetectionsAPIRuleCreateProps
 
 	threatMatchRule := kbapi.SecurityDetectionsAPIThreatMatchRuleCreateProps{
-		Name:        kbapi.SecurityDetectionsAPIRuleName(d.Name.ValueString()),
-		Description: kbapi.SecurityDetectionsAPIRuleDescription(d.Description.ValueString()),
+		Name:        d.Name.ValueString(),
+		Description: d.Description.ValueString(),
 		Type:        kbapi.SecurityDetectionsAPIThreatMatchRuleCreatePropsType("threat_match"),
-		Query:       kbapi.SecurityDetectionsAPIRuleQuery(d.Query.ValueString()),
+		Query:       d.Query.ValueString(),
 		RiskScore:   kbapi.SecurityDetectionsAPIRiskScore(d.RiskScore.ValueInt64()),
 		Severity:    kbapi.SecurityDetectionsAPISeverity(d.Severity.ValueString()),
 	}
 
 	// Set threat index
-	if utils.IsKnown(d.ThreatIndex) {
-		threatIndex := utils.ListTypeAs[string](ctx, d.ThreatIndex, path.Root("threat_index"), &diags)
+	if typeutils.IsKnown(d.ThreatIndex) {
+		threatIndex := typeutils.ListTypeAs[string](ctx, d.ThreatIndex, path.Root("threat_index"), &diags)
 		if !diags.HasError() {
 			threatMatchRule.ThreatIndex = threatIndex
 		}
 	}
 
-	if utils.IsKnown(d.ThreatMapping) && len(d.ThreatMapping.Elements()) > 0 {
-		apiThreatMapping, threatMappingDiags := d.threatMappingToApi(ctx)
+	if typeutils.IsKnown(d.ThreatMapping) && len(d.ThreatMapping.Elements()) > 0 {
+		apiThreatMapping, threatMappingDiags := d.threatMappingToAPI(ctx)
 		if !threatMappingDiags.HasError() {
 			threatMatchRule.ThreatMapping = apiThreatMapping
 		}
@@ -91,7 +108,7 @@ func (d SecurityDetectionRuleData) toThreatMatchRuleCreateProps(ctx context.Cont
 	d.setCommonCreateProps(ctx, &CommonCreateProps{
 		Actions:                           &threatMatchRule.Actions,
 		ResponseActions:                   &threatMatchRule.ResponseActions,
-		RuleId:                            &threatMatchRule.RuleId,
+		RuleID:                            &threatMatchRule.RuleId,
 		Enabled:                           &threatMatchRule.Enabled,
 		From:                              &threatMatchRule.From,
 		To:                                &threatMatchRule.To,
@@ -113,7 +130,7 @@ func (d SecurityDetectionRuleData) toThreatMatchRuleCreateProps(ctx context.Cont
 		RelatedIntegrations:               &threatMatchRule.RelatedIntegrations,
 		RequiredFields:                    &threatMatchRule.RequiredFields,
 		BuildingBlockType:                 &threatMatchRule.BuildingBlockType,
-		DataViewId:                        &threatMatchRule.DataViewId,
+		DataViewID:                        &threatMatchRule.DataViewId,
 		Namespace:                         &threatMatchRule.Namespace,
 		RuleNameOverride:                  &threatMatchRule.RuleNameOverride,
 		TimestampOverride:                 &threatMatchRule.TimestampOverride,
@@ -121,26 +138,26 @@ func (d SecurityDetectionRuleData) toThreatMatchRuleCreateProps(ctx context.Cont
 		InvestigationFields:               &threatMatchRule.InvestigationFields,
 		Filters:                           &threatMatchRule.Filters,
 		Threat:                            &threatMatchRule.Threat,
-		TimelineId:                        &threatMatchRule.TimelineId,
+		TimelineID:                        &threatMatchRule.TimelineId,
 		TimelineTitle:                     &threatMatchRule.TimelineTitle,
 	}, &diags, client)
 
 	// Set threat-specific fields
-	if utils.IsKnown(d.ThreatQuery) {
-		threatMatchRule.ThreatQuery = kbapi.SecurityDetectionsAPIThreatQuery(d.ThreatQuery.ValueString())
+	if typeutils.IsKnown(d.ThreatQuery) {
+		threatMatchRule.ThreatQuery = d.ThreatQuery.ValueString()
 	}
 
-	if utils.IsKnown(d.ThreatIndicatorPath) {
-		threatIndicatorPath := kbapi.SecurityDetectionsAPIThreatIndicatorPath(d.ThreatIndicatorPath.ValueString())
+	if typeutils.IsKnown(d.ThreatIndicatorPath) {
+		threatIndicatorPath := d.ThreatIndicatorPath.ValueString()
 		threatMatchRule.ThreatIndicatorPath = &threatIndicatorPath
 	}
 
-	if utils.IsKnown(d.ConcurrentSearches) {
+	if typeutils.IsKnown(d.ConcurrentSearches) {
 		concurrentSearches := kbapi.SecurityDetectionsAPIConcurrentSearches(d.ConcurrentSearches.ValueInt64())
 		threatMatchRule.ConcurrentSearches = &concurrentSearches
 	}
 
-	if utils.IsKnown(d.ItemsPerSearch) {
+	if typeutils.IsKnown(d.ItemsPerSearch) {
 		itemsPerSearch := kbapi.SecurityDetectionsAPIItemsPerSearch(d.ItemsPerSearch.ValueInt64())
 		threatMatchRule.ItemsPerSearch = &itemsPerSearch
 	}
@@ -148,9 +165,9 @@ func (d SecurityDetectionRuleData) toThreatMatchRuleCreateProps(ctx context.Cont
 	// Set query language
 	threatMatchRule.Language = d.getKQLQueryLanguage()
 
-	if utils.IsKnown(d.SavedId) {
-		savedId := kbapi.SecurityDetectionsAPISavedQueryId(d.SavedId.ValueString())
-		threatMatchRule.SavedId = &savedId
+	if typeutils.IsKnown(d.SavedID) {
+		savedID := d.SavedID.ValueString()
+		threatMatchRule.SavedId = &savedID
 	}
 
 	// Convert to union type
@@ -164,15 +181,15 @@ func (d SecurityDetectionRuleData) toThreatMatchRuleCreateProps(ctx context.Cont
 
 	return createProps, diags
 }
-func (d SecurityDetectionRuleData) toThreatMatchRuleUpdateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
+func (d Data) toThreatMatchRuleUpdateProps(ctx context.Context, client clients.MinVersionEnforceable) (kbapi.SecurityDetectionsAPIRuleUpdateProps, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var updateProps kbapi.SecurityDetectionsAPIRuleUpdateProps
 
 	// Parse ID to get space_id and rule_id
-	compId, resourceIdDiags := clients.CompositeIdFromStrFw(d.Id.ValueString())
-	diags.Append(resourceIdDiags...)
+	compID, resourceIDDiags := clients.CompositeIDFromStrFw(d.ID.ValueString())
+	diags.Append(resourceIDDiags...)
 
-	uid, err := uuid.Parse(compId.ResourceId)
+	uid, err := uuid.Parse(compID.ResourceID)
 	if err != nil {
 		diags.AddError("ID was not a valid UUID", err.Error())
 		return updateProps, diags
@@ -180,31 +197,31 @@ func (d SecurityDetectionRuleData) toThreatMatchRuleUpdateProps(ctx context.Cont
 
 	threatMatchRule := kbapi.SecurityDetectionsAPIThreatMatchRuleUpdateProps{
 		Id:          &uid,
-		Name:        kbapi.SecurityDetectionsAPIRuleName(d.Name.ValueString()),
-		Description: kbapi.SecurityDetectionsAPIRuleDescription(d.Description.ValueString()),
+		Name:        d.Name.ValueString(),
+		Description: d.Description.ValueString(),
 		Type:        kbapi.SecurityDetectionsAPIThreatMatchRuleUpdatePropsType("threat_match"),
-		Query:       kbapi.SecurityDetectionsAPIRuleQuery(d.Query.ValueString()),
+		Query:       d.Query.ValueString(),
 		RiskScore:   kbapi.SecurityDetectionsAPIRiskScore(d.RiskScore.ValueInt64()),
 		Severity:    kbapi.SecurityDetectionsAPISeverity(d.Severity.ValueString()),
 	}
 
 	// For updates, we need to include the rule_id if it's set
-	if utils.IsKnown(d.RuleId) {
-		ruleId := kbapi.SecurityDetectionsAPIRuleSignatureId(d.RuleId.ValueString())
-		threatMatchRule.RuleId = &ruleId
+	if typeutils.IsKnown(d.RuleID) {
+		ruleID := d.RuleID.ValueString()
+		threatMatchRule.RuleId = &ruleID
 		threatMatchRule.Id = nil // if rule_id is set, we cant send id
 	}
 
 	// Set threat index
-	if utils.IsKnown(d.ThreatIndex) {
-		threatIndex := utils.ListTypeAs[string](ctx, d.ThreatIndex, path.Root("threat_index"), &diags)
+	if typeutils.IsKnown(d.ThreatIndex) {
+		threatIndex := typeutils.ListTypeAs[string](ctx, d.ThreatIndex, path.Root("threat_index"), &diags)
 		if !diags.HasError() {
 			threatMatchRule.ThreatIndex = threatIndex
 		}
 	}
 
-	if utils.IsKnown(d.ThreatMapping) && len(d.ThreatMapping.Elements()) > 0 {
-		apiThreatMapping, threatMappingDiags := d.threatMappingToApi(ctx)
+	if typeutils.IsKnown(d.ThreatMapping) && len(d.ThreatMapping.Elements()) > 0 {
+		apiThreatMapping, threatMappingDiags := d.threatMappingToAPI(ctx)
 		if !threatMappingDiags.HasError() {
 			threatMatchRule.ThreatMapping = apiThreatMapping
 		}
@@ -214,7 +231,7 @@ func (d SecurityDetectionRuleData) toThreatMatchRuleUpdateProps(ctx context.Cont
 	d.setCommonUpdateProps(ctx, &CommonUpdateProps{
 		Actions:                           &threatMatchRule.Actions,
 		ResponseActions:                   &threatMatchRule.ResponseActions,
-		RuleId:                            &threatMatchRule.RuleId,
+		RuleID:                            &threatMatchRule.RuleId,
 		Enabled:                           &threatMatchRule.Enabled,
 		From:                              &threatMatchRule.From,
 		To:                                &threatMatchRule.To,
@@ -237,33 +254,33 @@ func (d SecurityDetectionRuleData) toThreatMatchRuleUpdateProps(ctx context.Cont
 		RelatedIntegrations:               &threatMatchRule.RelatedIntegrations,
 		RequiredFields:                    &threatMatchRule.RequiredFields,
 		BuildingBlockType:                 &threatMatchRule.BuildingBlockType,
-		DataViewId:                        &threatMatchRule.DataViewId,
+		DataViewID:                        &threatMatchRule.DataViewId,
 		Namespace:                         &threatMatchRule.Namespace,
 		RuleNameOverride:                  &threatMatchRule.RuleNameOverride,
 		TimestampOverride:                 &threatMatchRule.TimestampOverride,
 		TimestampOverrideFallbackDisabled: &threatMatchRule.TimestampOverrideFallbackDisabled,
 		Filters:                           &threatMatchRule.Filters,
 		Threat:                            &threatMatchRule.Threat,
-		TimelineId:                        &threatMatchRule.TimelineId,
+		TimelineID:                        &threatMatchRule.TimelineId,
 		TimelineTitle:                     &threatMatchRule.TimelineTitle,
 	}, &diags, client)
 
 	// Set threat-specific fields
-	if utils.IsKnown(d.ThreatQuery) {
-		threatMatchRule.ThreatQuery = kbapi.SecurityDetectionsAPIThreatQuery(d.ThreatQuery.ValueString())
+	if typeutils.IsKnown(d.ThreatQuery) {
+		threatMatchRule.ThreatQuery = d.ThreatQuery.ValueString()
 	}
 
-	if utils.IsKnown(d.ThreatIndicatorPath) {
-		threatIndicatorPath := kbapi.SecurityDetectionsAPIThreatIndicatorPath(d.ThreatIndicatorPath.ValueString())
+	if typeutils.IsKnown(d.ThreatIndicatorPath) {
+		threatIndicatorPath := d.ThreatIndicatorPath.ValueString()
 		threatMatchRule.ThreatIndicatorPath = &threatIndicatorPath
 	}
 
-	if utils.IsKnown(d.ConcurrentSearches) {
+	if typeutils.IsKnown(d.ConcurrentSearches) {
 		concurrentSearches := kbapi.SecurityDetectionsAPIConcurrentSearches(d.ConcurrentSearches.ValueInt64())
 		threatMatchRule.ConcurrentSearches = &concurrentSearches
 	}
 
-	if utils.IsKnown(d.ItemsPerSearch) {
+	if typeutils.IsKnown(d.ItemsPerSearch) {
 		itemsPerSearch := kbapi.SecurityDetectionsAPIItemsPerSearch(d.ItemsPerSearch.ValueInt64())
 		threatMatchRule.ItemsPerSearch = &itemsPerSearch
 	}
@@ -271,9 +288,9 @@ func (d SecurityDetectionRuleData) toThreatMatchRuleUpdateProps(ctx context.Cont
 	// Set query language
 	threatMatchRule.Language = d.getKQLQueryLanguage()
 
-	if utils.IsKnown(d.SavedId) {
-		savedId := kbapi.SecurityDetectionsAPISavedQueryId(d.SavedId.ValueString())
-		threatMatchRule.SavedId = &savedId
+	if typeutils.IsKnown(d.SavedID) {
+		savedID := d.SavedID.ValueString()
+		threatMatchRule.SavedId = &savedID
 	}
 
 	// Convert to union type
@@ -288,37 +305,37 @@ func (d SecurityDetectionRuleData) toThreatMatchRuleUpdateProps(ctx context.Cont
 	return updateProps, diags
 }
 
-func (d *SecurityDetectionRuleData) updateFromThreatMatchRule(ctx context.Context, rule *kbapi.SecurityDetectionsAPIThreatMatchRule) diag.Diagnostics {
+func (d *Data) updateFromThreatMatchRule(ctx context.Context, rule *kbapi.SecurityDetectionsAPIThreatMatchRule) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	compId := clients.CompositeId{
-		ClusterId:  d.SpaceId.ValueString(),
-		ResourceId: rule.Id.String(),
+	compID := clients.CompositeID{
+		ClusterID:  d.SpaceID.ValueString(),
+		ResourceID: rule.Id.String(),
 	}
-	d.Id = types.StringValue(compId.String())
+	d.ID = types.StringValue(compID.String())
 
-	d.RuleId = types.StringValue(string(rule.RuleId))
-	d.Name = types.StringValue(string(rule.Name))
+	d.RuleID = types.StringValue(rule.RuleId)
+	d.Name = types.StringValue(rule.Name)
 	d.Type = types.StringValue(string(rule.Type))
 
 	// Update common fields
-	diags.Append(d.updateTimelineIdFromApi(ctx, rule.TimelineId)...)
-	diags.Append(d.updateTimelineTitleFromApi(ctx, rule.TimelineTitle)...)
-	diags.Append(d.updateDataViewIdFromApi(ctx, rule.DataViewId)...)
-	diags.Append(d.updateNamespaceFromApi(ctx, rule.Namespace)...)
-	diags.Append(d.updateRuleNameOverrideFromApi(ctx, rule.RuleNameOverride)...)
-	diags.Append(d.updateTimestampOverrideFromApi(ctx, rule.TimestampOverride)...)
-	diags.Append(d.updateTimestampOverrideFallbackDisabledFromApi(ctx, rule.TimestampOverrideFallbackDisabled)...)
+	diags.Append(d.updateTimelineIDFromAPI(ctx, rule.TimelineId)...)
+	diags.Append(d.updateTimelineTitleFromAPI(ctx, rule.TimelineTitle)...)
+	diags.Append(d.updateDataViewIDFromAPI(ctx, rule.DataViewId)...)
+	diags.Append(d.updateNamespaceFromAPI(ctx, rule.Namespace)...)
+	diags.Append(d.updateRuleNameOverrideFromAPI(ctx, rule.RuleNameOverride)...)
+	diags.Append(d.updateTimestampOverrideFromAPI(ctx, rule.TimestampOverride)...)
+	diags.Append(d.updateTimestampOverrideFallbackDisabledFromAPI(ctx, rule.TimestampOverrideFallbackDisabled)...)
 
 	// Update building block type
-	diags.Append(d.updateBuildingBlockTypeFromApi(ctx, rule.BuildingBlockType)...)
+	diags.Append(d.updateBuildingBlockTypeFromAPI(ctx, rule.BuildingBlockType)...)
 	d.Query = types.StringValue(rule.Query)
 	d.Language = types.StringValue(string(rule.Language))
-	d.Enabled = types.BoolValue(bool(rule.Enabled))
-	d.From = types.StringValue(string(rule.From))
-	d.To = types.StringValue(string(rule.To))
-	d.Interval = types.StringValue(string(rule.Interval))
-	d.Description = types.StringValue(string(rule.Description))
+	d.Enabled = types.BoolValue(rule.Enabled)
+	d.From = types.StringValue(rule.From)
+	d.To = types.StringValue(rule.To)
+	d.Interval = types.StringValue(rule.Interval)
+	d.Description = types.StringValue(rule.Description)
 	d.RiskScore = types.Int64Value(int64(rule.RiskScore))
 	d.Severity = types.StringValue(string(rule.Severity))
 	d.MaxSignals = types.Int64Value(int64(rule.MaxSignals))
@@ -332,22 +349,22 @@ func (d *SecurityDetectionRuleData) updateFromThreatMatchRule(ctx context.Contex
 	d.Revision = types.Int64Value(int64(rule.Revision))
 
 	// Update threat
-	threatDiags := d.updateThreatFromApi(ctx, &rule.Threat)
+	threatDiags := d.updateThreatFromAPI(ctx, &rule.Threat)
 	diags.Append(threatDiags...)
 
 	// Update index patterns
-	diags.Append(d.updateIndexFromApi(ctx, rule.Index)...)
+	diags.Append(d.updateIndexFromAPI(ctx, rule.Index)...)
 
 	// Threat Match-specific fields
-	d.ThreatQuery = types.StringValue(string(rule.ThreatQuery))
+	d.ThreatQuery = types.StringValue(rule.ThreatQuery)
 	if len(rule.ThreatIndex) > 0 {
-		d.ThreatIndex = utils.ListValueFrom(ctx, rule.ThreatIndex, types.StringType, path.Root("threat_index"), &diags)
+		d.ThreatIndex = typeutils.ListValueFrom(ctx, rule.ThreatIndex, types.StringType, path.Root("threat_index"), &diags)
 	} else {
 		d.ThreatIndex = types.ListValueMust(types.StringType, []attr.Value{})
 	}
 
 	if rule.ThreatIndicatorPath != nil {
-		d.ThreatIndicatorPath = types.StringValue(string(*rule.ThreatIndicatorPath))
+		d.ThreatIndicatorPath = types.StringValue(*rule.ThreatIndicatorPath)
 	} else {
 		d.ThreatIndicatorPath = types.StringNull()
 	}
@@ -366,27 +383,27 @@ func (d *SecurityDetectionRuleData) updateFromThreatMatchRule(ctx context.Contex
 
 	// Optional saved query ID
 	if rule.SavedId != nil {
-		d.SavedId = types.StringValue(string(*rule.SavedId))
+		d.SavedID = types.StringValue(*rule.SavedId)
 	} else {
-		d.SavedId = types.StringNull()
+		d.SavedID = types.StringNull()
 	}
 
 	// Update author
-	diags.Append(d.updateAuthorFromApi(ctx, rule.Author)...)
+	diags.Append(d.updateAuthorFromAPI(ctx, rule.Author)...)
 
 	// Update tags
-	diags.Append(d.updateTagsFromApi(ctx, rule.Tags)...)
+	diags.Append(d.updateTagsFromAPI(ctx, rule.Tags)...)
 
 	// Update false positives
-	diags.Append(d.updateFalsePositivesFromApi(ctx, rule.FalsePositives)...)
+	diags.Append(d.updateFalsePositivesFromAPI(ctx, rule.FalsePositives)...)
 
 	// Update references
-	diags.Append(d.updateReferencesFromApi(ctx, rule.References)...)
+	diags.Append(d.updateReferencesFromAPI(ctx, rule.References)...)
 
 	// Update optional string fields
-	diags.Append(d.updateLicenseFromApi(ctx, rule.License)...)
-	diags.Append(d.updateNoteFromApi(ctx, rule.Note)...)
-	diags.Append(d.updateSetupFromApi(ctx, rule.Setup)...)
+	diags.Append(d.updateLicenseFromAPI(ctx, rule.License)...)
+	diags.Append(d.updateNoteFromAPI(ctx, rule.Note)...)
+	diags.Append(d.updateSetupFromAPI(ctx, rule.Setup)...)
 
 	// Convert threat mapping
 	if len(rule.ThreatMapping) > 0 {
@@ -398,43 +415,43 @@ func (d *SecurityDetectionRuleData) updateFromThreatMatchRule(ctx context.Contex
 	}
 
 	// Update actions
-	actionDiags := d.updateActionsFromApi(ctx, rule.Actions)
+	actionDiags := d.updateActionsFromAPI(ctx, rule.Actions)
 	diags.Append(actionDiags...)
 
 	// Update exceptions list
-	exceptionsListDiags := d.updateExceptionsListFromApi(ctx, rule.ExceptionsList)
+	exceptionsListDiags := d.updateExceptionsListFromAPI(ctx, rule.ExceptionsList)
 	diags.Append(exceptionsListDiags...)
 
 	// Update risk score mapping
-	riskScoreMappingDiags := d.updateRiskScoreMappingFromApi(ctx, rule.RiskScoreMapping)
+	riskScoreMappingDiags := d.updateRiskScoreMappingFromAPI(ctx, rule.RiskScoreMapping)
 	diags.Append(riskScoreMappingDiags...)
 
 	// Update investigation fields
-	investigationFieldsDiags := d.updateInvestigationFieldsFromApi(ctx, rule.InvestigationFields)
+	investigationFieldsDiags := d.updateInvestigationFieldsFromAPI(ctx, rule.InvestigationFields)
 	diags.Append(investigationFieldsDiags...)
 
 	// Update filters field
-	filtersDiags := d.updateFiltersFromApi(ctx, rule.Filters)
+	filtersDiags := d.updateFiltersFromAPI(ctx, rule.Filters)
 	diags.Append(filtersDiags...)
 
 	// Update severity mapping
-	severityMappingDiags := d.updateSeverityMappingFromApi(ctx, &rule.SeverityMapping)
+	severityMappingDiags := d.updateSeverityMappingFromAPI(ctx, &rule.SeverityMapping)
 	diags.Append(severityMappingDiags...)
 
 	// Update related integrations
-	relatedIntegrationsDiags := d.updateRelatedIntegrationsFromApi(ctx, &rule.RelatedIntegrations)
+	relatedIntegrationsDiags := d.updateRelatedIntegrationsFromAPI(ctx, &rule.RelatedIntegrations)
 	diags.Append(relatedIntegrationsDiags...)
 
 	// Update required fields
-	requiredFieldsDiags := d.updateRequiredFieldsFromApi(ctx, &rule.RequiredFields)
+	requiredFieldsDiags := d.updateRequiredFieldsFromAPI(ctx, &rule.RequiredFields)
 	diags.Append(requiredFieldsDiags...)
 
 	// Update alert suppression
-	alertSuppressionDiags := d.updateAlertSuppressionFromApi(ctx, rule.AlertSuppression)
+	alertSuppressionDiags := d.updateAlertSuppressionFromAPI(ctx, rule.AlertSuppression)
 	diags.Append(alertSuppressionDiags...)
 
 	// Update response actions
-	responseActionsDiags := d.updateResponseActionsFromApi(ctx, rule.ResponseActions)
+	responseActionsDiags := d.updateResponseActionsFromAPI(ctx, rule.ResponseActions)
 	diags.Append(responseActionsDiags...)
 
 	return diags

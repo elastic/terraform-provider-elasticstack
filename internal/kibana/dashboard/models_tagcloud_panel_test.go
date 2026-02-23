@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package dashboard
 
 import (
@@ -31,17 +48,17 @@ func Test_tagcloudConfigModel_fromAPI_toAPI(t *testing.T) {
 			api: func() kbapi.TagcloudNoESQL {
 				api := kbapi.TagcloudNoESQL{
 					Type:                "tagcloud",
-					Title:               utils.Pointer("Test Tagcloud"),
-					Description:         utils.Pointer("A test tagcloud description"),
-					IgnoreGlobalFilters: utils.Pointer(true),
-					Sampling:            utils.Pointer(float32(0.5)),
-					Orientation:         utils.Pointer(kbapi.TagcloudNoESQLOrientation("horizontal")),
+					Title:               schemautil.Pointer("Test Tagcloud"),
+					Description:         schemautil.Pointer("A test tagcloud description"),
+					IgnoreGlobalFilters: schemautil.Pointer(true),
+					Sampling:            schemautil.Pointer(float32(0.5)),
+					Orientation:         schemautil.Pointer(kbapi.TagcloudNoESQLOrientation("horizontal")),
 					FontSize: &struct {
 						Max *float32 `json:"max,omitempty"`
 						Min *float32 `json:"min,omitempty"`
 					}{
-						Min: utils.Pointer(float32(18)),
-						Max: utils.Pointer(float32(72)),
+						Min: schemautil.Pointer(float32(18)),
+						Max: schemautil.Pointer(float32(72)),
 					},
 				}
 
@@ -136,13 +153,13 @@ func Test_tagcloudConfigModel_fromAPI_toAPI(t *testing.T) {
 			}
 
 			// Validate dataset is not null
-			assert.False(t, model.Dataset.IsNull(), "Dataset should not be null")
+			assert.False(t, model.DatasetJSON.IsNull(), "Dataset should not be null")
 
 			// Validate metric and tagBy exist when present in API
 			if tt.name == "full tagcloud config" || tt.name == "minimal tagcloud config" {
 				// These should have metric and tagBy JSON
-				assert.False(t, model.Metric.IsNull(), "Metric should not be null")
-				assert.False(t, model.TagBy.IsNull(), "TagBy should not be null")
+				assert.False(t, model.MetricJSON.IsNull(), "Metric should not be null")
+				assert.False(t, model.TagByJSON.IsNull(), "TagBy should not be null")
 			}
 
 			// Test toAPI round-trip
@@ -192,8 +209,8 @@ func Test_fontSizeModel_roundTrip(t *testing.T) {
 				Max *float32 `json:"max,omitempty"`
 				Min *float32 `json:"min,omitempty"`
 			}{
-				Min: utils.Pointer(float32(10)),
-				Max: utils.Pointer(float32(100)),
+				Min: schemautil.Pointer(float32(10)),
+				Max: schemautil.Pointer(float32(100)),
 			},
 		},
 		{
@@ -202,7 +219,7 @@ func Test_fontSizeModel_roundTrip(t *testing.T) {
 				Max *float32 `json:"max,omitempty"`
 				Min *float32 `json:"min,omitempty"`
 			}{
-				Min: utils.Pointer(float32(15)),
+				Min: schemautil.Pointer(float32(15)),
 			},
 		},
 		{
@@ -211,7 +228,7 @@ func Test_fontSizeModel_roundTrip(t *testing.T) {
 				Max *float32 `json:"max,omitempty"`
 				Min *float32 `json:"min,omitempty"`
 			}{
-				Max: utils.Pointer(float32(80)),
+				Max: schemautil.Pointer(float32(80)),
 			},
 		},
 		{
@@ -315,13 +332,13 @@ func Test_tagcloudPanelConfigConverter_mapPanelToAPI(t *testing.T) {
 		TagcloudConfig: &tagcloudConfigModel{
 			Title:       types.StringValue("Test Tagcloud"),
 			Description: types.StringValue("Test description"),
-			Dataset:     jsontypes.NewNormalizedValue(datasetJSON),
+			DatasetJSON: jsontypes.NewNormalizedValue(datasetJSON),
 			Query: &filterSimpleModel{
 				Language: types.StringValue("kuery"),
 				Query:    types.StringValue("*"),
 			},
-			Metric: customtypes.NewJSONWithDefaultsValue[map[string]any](metricJSON, populateTagcloudMetricDefaults),
-			TagBy:  customtypes.NewJSONWithDefaultsValue[map[string]any](tagByJSON, populateTagcloudTagByDefaults),
+			MetricJSON: customtypes.NewJSONWithDefaultsValue[map[string]any](metricJSON, populateTagcloudMetricDefaults),
+			TagByJSON:  customtypes.NewJSONWithDefaultsValue[map[string]any](tagByJSON, populateTagcloudTagByDefaults),
 		},
 	}
 
@@ -337,7 +354,7 @@ func Test_tagcloudPanelConfigConverter_mapPanelToAPI(t *testing.T) {
 	attrs, ok := configMap["attributes"]
 	require.True(t, ok, "attributes should exist in config")
 
-	attrsMap, ok := attrs.(map[string]interface{})
+	attrsMap, ok := attrs.(map[string]any)
 	require.True(t, ok, "attributes should be a map")
 
 	// Verify the type field exists with tagcloud
@@ -394,12 +411,12 @@ func Test_tagcloudConfig_JSONFields(t *testing.T) {
 			model := &tagcloudConfigModel{
 				Title:       types.StringValue("Test"),
 				Description: types.StringValue("Test description"),
-				Dataset:     jsontypes.NewNormalizedValue(tt.datasetJSON),
+				DatasetJSON: jsontypes.NewNormalizedValue(tt.datasetJSON),
 				Query: &filterSimpleModel{
 					Query: types.StringValue("*"),
 				},
-				Metric: customtypes.NewJSONWithDefaultsValue[map[string]any](tt.metricJSON, populateTagcloudMetricDefaults),
-				TagBy:  customtypes.NewJSONWithDefaultsValue[map[string]any](tt.tagByJSON, populateTagcloudTagByDefaults),
+				MetricJSON: customtypes.NewJSONWithDefaultsValue[map[string]any](tt.metricJSON, populateTagcloudMetricDefaults),
+				TagByJSON:  customtypes.NewJSONWithDefaultsValue[map[string]any](tt.tagByJSON, populateTagcloudTagByDefaults),
 			}
 
 			_, diags := model.toAPI()

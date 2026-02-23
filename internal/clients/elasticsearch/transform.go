@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package elasticsearch
 
 import (
@@ -21,7 +38,7 @@ var transformFeatureMinSupportedVersion = version.Must(version.NewVersion("7.2.0
 
 var apiOperationTimeoutParamMinSupportedVersion = version.Must(version.NewVersion("7.17.0"))
 
-func PutTransform(ctx context.Context, apiClient *clients.ApiClient, transform *models.Transform, params *models.PutTransformParams) diag.Diagnostics {
+func PutTransform(ctx context.Context, apiClient *clients.APIClient, transform *models.Transform, params *models.PutTransformParams) diag.Diagnostics {
 
 	var diags diag.Diagnostics
 	transformBytes, err := json.Marshal(transform)
@@ -86,7 +103,7 @@ func PutTransform(ctx context.Context, apiClient *clients.ApiClient, transform *
 	return diags
 }
 
-func GetTransform(ctx context.Context, apiClient *clients.ApiClient, name *string) (*models.Transform, diag.Diagnostics) {
+func GetTransform(ctx context.Context, apiClient *clients.APIClient, name *string) (*models.Transform, diag.Diagnostics) {
 
 	var diags diag.Diagnostics
 	esClient, err := apiClient.GetESClient()
@@ -113,9 +130,9 @@ func GetTransform(ctx context.Context, apiClient *clients.ApiClient, name *strin
 		return nil, diag.FromErr(err)
 	}
 
-	var foundTransform *models.Transform = nil
+	var foundTransform *models.Transform
 	for _, t := range transformsResponse.Transforms {
-		if t.Id == *name {
+		if t.ID == *name {
 			foundTransform = &t
 			break
 		}
@@ -135,7 +152,7 @@ func GetTransform(ctx context.Context, apiClient *clients.ApiClient, name *strin
 	return foundTransform, diags
 }
 
-func GetTransformStats(ctx context.Context, apiClient *clients.ApiClient, name *string) (*models.TransformStats, diag.Diagnostics) {
+func GetTransformStats(ctx context.Context, apiClient *clients.APIClient, name *string) (*models.TransformStats, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
@@ -161,9 +178,9 @@ func GetTransformStats(ctx context.Context, apiClient *clients.ApiClient, name *
 		return nil, diag.FromErr(err)
 	}
 
-	var foundTransformStats *models.TransformStats = nil
+	var foundTransformStats *models.TransformStats
 	for _, ts := range transformsStatsResponse.TransformStats {
-		if ts.Id == *name {
+		if ts.ID == *name {
 			foundTransformStats = &ts
 			break
 		}
@@ -181,7 +198,7 @@ func GetTransformStats(ctx context.Context, apiClient *clients.ApiClient, name *
 	return foundTransformStats, diags
 }
 
-func UpdateTransform(ctx context.Context, apiClient *clients.ApiClient, transform *models.Transform, params *models.UpdateTransformParams) diag.Diagnostics {
+func UpdateTransform(ctx context.Context, apiClient *clients.APIClient, transform *models.Transform, params *models.UpdateTransformParams) diag.Diagnostics {
 
 	var diags diag.Diagnostics
 	transformBytes, err := json.Marshal(transform)
@@ -251,7 +268,7 @@ func UpdateTransform(ctx context.Context, apiClient *clients.ApiClient, transfor
 	return diags
 }
 
-func DeleteTransform(ctx context.Context, apiClient *clients.ApiClient, name *string) diag.Diagnostics {
+func DeleteTransform(ctx context.Context, apiClient *clients.APIClient, name *string) diag.Diagnostics {
 
 	var diags diag.Diagnostics
 	esClient, err := apiClient.GetESClient()

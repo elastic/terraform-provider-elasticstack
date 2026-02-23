@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package kibana
 
 import (
@@ -9,19 +26,17 @@ import (
 )
 
 func Test_sloResponseToModel(t *testing.T) {
-	var syncDelay = "2m"
+	syncDelay := "2m"
 
 	tests := []struct {
 		name          string
-		spaceId       string
-		sloId         string
+		spaceID       string
 		sloResponse   *slo.SloWithSummaryResponse
 		expectedModel *models.Slo
 	}{
 		{
 			name:    "should return a model with the correct values",
-			spaceId: "space-id",
-			sloId:   "slo-id",
+			spaceID: "space-id",
 			sloResponse: &slo.SloWithSummaryResponse{
 				Id:          "slo-id",
 				Name:        "slo-name",
@@ -53,6 +68,7 @@ func Test_sloResponseToModel(t *testing.T) {
 			},
 			expectedModel: &models.Slo{
 				SloID:       "slo-id",
+				SpaceID:     "space-id",
 				Name:        "slo-name",
 				Description: "slo-description",
 				Indicator: slo.SloWithSummaryResponseIndicator{
@@ -75,15 +91,12 @@ func Test_sloResponseToModel(t *testing.T) {
 				Settings: &slo.Settings{
 					SyncDelay: &syncDelay,
 				},
-				SpaceID: "space-id",
 				GroupBy: nil,
 			},
 		},
-
 		{
 			name:    "should return tags if available",
-			spaceId: "space-id",
-			sloId:   "slo-id",
+			spaceID: "space-id",
 			sloResponse: &slo.SloWithSummaryResponse{
 				Id:          "slo-id",
 				Name:        "slo-name",
@@ -116,6 +129,7 @@ func Test_sloResponseToModel(t *testing.T) {
 			},
 			expectedModel: &models.Slo{
 				SloID:       "slo-id",
+				SpaceID:     "space-id",
 				Name:        "slo-name",
 				Description: "slo-description",
 				Indicator: slo.SloWithSummaryResponseIndicator{
@@ -138,16 +152,13 @@ func Test_sloResponseToModel(t *testing.T) {
 				Settings: &slo.Settings{
 					SyncDelay: &syncDelay,
 				},
-				SpaceID: "space-id",
 				Tags:    []string{"tag-1", "another_tag"},
 				GroupBy: nil,
 			},
 		},
-
 		{
 			name:          "nil response should return a nil model",
-			spaceId:       "space-id",
-			sloId:         "slo-id",
+			spaceID:       "space-id",
 			sloResponse:   nil,
 			expectedModel: nil,
 		},
@@ -155,8 +166,7 @@ func Test_sloResponseToModel(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			model := sloResponseToModel(tt.spaceId, tt.sloResponse)
-
+			model := sloResponseToModel(tt.spaceID, tt.sloResponse)
 			require.Equal(t, tt.expectedModel, model)
 		})
 	}

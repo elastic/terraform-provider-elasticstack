@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package customtypes
 
 import (
@@ -23,14 +40,14 @@ func TestRoleDescriptorsValue_Type(t *testing.T) {
 func TestRoleDescriptorsValue_WithDefaults(t *testing.T) {
 	tests := []struct {
 		name           string
-		input          JSONWithDefaultsValue[map[string]models.ApiKeyRoleDescriptor]
-		expectedResult func(t *testing.T, result JSONWithDefaultsValue[map[string]models.ApiKeyRoleDescriptor], diags diag.Diagnostics)
+		input          JSONWithDefaultsValue[map[string]models.APIKeyRoleDescriptor]
+		expectedResult func(t *testing.T, result JSONWithDefaultsValue[map[string]models.APIKeyRoleDescriptor], diags diag.Diagnostics)
 		expectError    bool
 	}{
 		{
 			name:  "null value returns same value without error",
 			input: NewJSONWithDefaultsNull(testPopulateDefaults),
-			expectedResult: func(t *testing.T, result JSONWithDefaultsValue[map[string]models.ApiKeyRoleDescriptor], diags diag.Diagnostics) {
+			expectedResult: func(t *testing.T, result JSONWithDefaultsValue[map[string]models.APIKeyRoleDescriptor], diags diag.Diagnostics) {
 				assert.True(t, result.IsNull())
 				assert.False(t, diags.HasError())
 			},
@@ -39,7 +56,7 @@ func TestRoleDescriptorsValue_WithDefaults(t *testing.T) {
 		{
 			name:  "unknown value returns same value without error",
 			input: NewJSONWithDefaultsUnknown(testPopulateDefaults),
-			expectedResult: func(t *testing.T, result JSONWithDefaultsValue[map[string]models.ApiKeyRoleDescriptor], diags diag.Diagnostics) {
+			expectedResult: func(t *testing.T, result JSONWithDefaultsValue[map[string]models.APIKeyRoleDescriptor], diags diag.Diagnostics) {
 				assert.True(t, result.IsUnknown())
 				assert.False(t, diags.HasError())
 			},
@@ -48,7 +65,7 @@ func TestRoleDescriptorsValue_WithDefaults(t *testing.T) {
 		{
 			name:  "valid JSON with missing allow_restricted_indices sets default",
 			input: NewJSONWithDefaultsValue(`{"admin":{"indices":[{"names":["index1"],"privileges":["read"]}]}}`, testPopulateDefaults),
-			expectedResult: func(t *testing.T, result JSONWithDefaultsValue[map[string]models.ApiKeyRoleDescriptor], diags diag.Diagnostics) {
+			expectedResult: func(t *testing.T, result JSONWithDefaultsValue[map[string]models.APIKeyRoleDescriptor], diags diag.Diagnostics) {
 				assert.False(t, result.IsNull())
 				assert.False(t, result.IsUnknown())
 				assert.False(t, diags.HasError())
@@ -60,7 +77,7 @@ func TestRoleDescriptorsValue_WithDefaults(t *testing.T) {
 		{
 			name:  "valid JSON with existing allow_restricted_indices preserves value",
 			input: NewJSONWithDefaultsValue(`{"admin":{"indices":[{"names":["index1"],"privileges":["read"],"allow_restricted_indices":true}]}}`, testPopulateDefaults),
-			expectedResult: func(t *testing.T, result JSONWithDefaultsValue[map[string]models.ApiKeyRoleDescriptor], diags diag.Diagnostics) {
+			expectedResult: func(t *testing.T, result JSONWithDefaultsValue[map[string]models.APIKeyRoleDescriptor], diags diag.Diagnostics) {
 				assert.False(t, result.IsNull())
 				assert.False(t, result.IsUnknown())
 				assert.False(t, diags.HasError())
@@ -72,7 +89,7 @@ func TestRoleDescriptorsValue_WithDefaults(t *testing.T) {
 		{
 			name:  "empty role descriptor object",
 			input: NewJSONWithDefaultsValue(`{"admin":{}}`, testPopulateDefaults),
-			expectedResult: func(t *testing.T, result JSONWithDefaultsValue[map[string]models.ApiKeyRoleDescriptor], diags diag.Diagnostics) {
+			expectedResult: func(t *testing.T, result JSONWithDefaultsValue[map[string]models.APIKeyRoleDescriptor], diags diag.Diagnostics) {
 				assert.False(t, result.IsNull())
 				assert.False(t, result.IsUnknown())
 				assert.False(t, diags.HasError())
@@ -92,10 +109,8 @@ func TestRoleDescriptorsValue_WithDefaults(t *testing.T) {
 
 			if tt.expectError {
 				assert.True(t, diags.HasError())
-			} else {
-				if tt.expectedResult != nil {
-					tt.expectedResult(t, result, diags)
-				}
+			} else if tt.expectedResult != nil {
+				tt.expectedResult(t, result, diags)
 			}
 		})
 	}
@@ -106,7 +121,7 @@ func TestRoleDescriptorsValue_StringSemanticEquals(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		value1      JSONWithDefaultsValue[map[string]models.ApiKeyRoleDescriptor]
+		value1      JSONWithDefaultsValue[map[string]models.APIKeyRoleDescriptor]
 		value2      basetypes.StringValuable
 		expected    bool
 		expectError bool

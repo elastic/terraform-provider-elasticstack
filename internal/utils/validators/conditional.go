@@ -1,8 +1,26 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package validators
 
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -21,7 +39,7 @@ type valueValidator func(dependentFieldHasAllowedValue bool, dependentValueStr s
 // When the dependent field matches one of the allowed values, additional
 // validation logic can be applied to the current field.
 // Use dependentPath for absolute paths, or dependentPathExpression for relative paths.
-type condition struct {
+type Condition struct {
 	description             func() string
 	dependentPath           *path.Path
 	dependentPathExpression *path.Expression
@@ -30,18 +48,18 @@ type condition struct {
 }
 
 // Description describes the validation in plain text formatting.
-func (v condition) Description(ctx context.Context) string {
+func (v Condition) Description(_ context.Context) string {
 	return v.description()
 }
 
 // MarkdownDescription describes the validation in Markdown formatting.
-func (v condition) MarkdownDescription(ctx context.Context) string {
+func (v Condition) MarkdownDescription(_ context.Context) string {
 	return v.description()
 }
 
 // checkPathExpression evaluates a path expression and checks if any matched paths contain an allowed value.
 // It returns true if any matched path has a value matching one of the allowed values.
-func (v condition) checkPathExpression(ctx context.Context, config tfsdk.Config, currentPath path.Path) (bool, string, diag.Diagnostics) {
+func (v Condition) checkPathExpression(ctx context.Context, config tfsdk.Config, currentPath path.Path) (bool, string, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	// Merge the path expression with the current path to resolve relative references
@@ -72,11 +90,9 @@ func (v condition) checkPathExpression(ctx context.Context, config tfsdk.Config,
 
 		// Check if this path's value matches any allowed value
 		if !pathValue.IsNull() && !pathValue.IsUnknown() {
-			for _, allowedValue := range v.allowedValues {
-				if lastDependentValueStr == allowedValue {
-					// Found a match, condition is met
-					return true, lastDependentValueStr, nil
-				}
+			if slices.Contains(v.allowedValues, lastDependentValueStr) {
+				// Found a match, condition is met
+				return true, lastDependentValueStr, nil
 			}
 		}
 	}
@@ -86,7 +102,7 @@ func (v condition) checkPathExpression(ctx context.Context, config tfsdk.Config,
 }
 
 // checkStaticPath evaluates a static path and checks if it contains an allowed value.
-func (v condition) checkStaticPath(ctx context.Context, config tfsdk.Config) (bool, string, diag.Diagnostics) {
+func (v Condition) checkStaticPath(ctx context.Context, config tfsdk.Config) (bool, string, diag.Diagnostics) {
 	var dependentValue types.String
 	var diags diag.Diagnostics
 
@@ -99,11 +115,8 @@ func (v condition) checkStaticPath(ctx context.Context, config tfsdk.Config) (bo
 	dependentFieldHasAllowedValue := false
 
 	if !dependentValue.IsNull() && !dependentValue.IsUnknown() {
-		for _, allowedValue := range v.allowedValues {
-			if dependentValueStr == allowedValue {
-				dependentFieldHasAllowedValue = true
-				break
-			}
+		if slices.Contains(v.allowedValues, dependentValueStr) {
+			dependentFieldHasAllowedValue = true
 		}
 	}
 
@@ -123,14 +136,14 @@ func (v condition) checkStaticPath(ctx context.Context, config tfsdk.Config) (bo
 //
 // If the dependent field is null, unknown, or its value doesn't match any of the
 // allowed values, the condition is considered not met and the method returns false.
-func (v condition) dependentFieldHasAllowedValue(ctx context.Context, config tfsdk.Config, currentPath path.Path) (bool, string, diag.Diagnostics) {
+func (v Condition) dependentFieldHasAllowedValue(ctx context.Context, config tfsdk.Config, currentPath path.Path) (bool, string, diag.Diagnostics) {
 	if v.dependentPathExpression != nil {
 		return v.checkPathExpression(ctx, config, currentPath)
 	}
 	return v.checkStaticPath(ctx, config)
 }
 
-func (v condition) validate(ctx context.Context, config tfsdk.Config, val attr.Value, p path.Path) diag.Diagnostics {
+func (v Condition) validate(ctx context.Context, config tfsdk.Config, val attr.Value, p path.Path) diag.Diagnostics {
 	dependentFieldHasAllowedValue, dependentValueStr, diags := v.dependentFieldHasAllowedValue(ctx, config, p)
 	if diags.HasError() {
 		return diags
@@ -139,19 +152,19 @@ func (v condition) validate(ctx context.Context, config tfsdk.Config, val attr.V
 	return v.validateValue(dependentFieldHasAllowedValue, dependentValueStr, val, p)
 }
 
-func (v condition) ValidateString(ctx context.Context, request validator.StringRequest, response *validator.StringResponse) {
+func (v Condition) ValidateString(ctx context.Context, request validator.StringRequest, response *validator.StringResponse) {
 	response.Diagnostics.Append(v.validate(ctx, request.Config, request.ConfigValue, request.Path)...)
 }
 
-func (v condition) ValidateList(ctx context.Context, request validator.ListRequest, response *validator.ListResponse) {
+func (v Condition) ValidateList(ctx context.Context, request validator.ListRequest, response *validator.ListResponse) {
 	response.Diagnostics.Append(v.validate(ctx, request.Config, request.ConfigValue, request.Path)...)
 }
 
-func (v condition) ValidateInt64(ctx context.Context, request validator.Int64Request, response *validator.Int64Response) {
+func (v Condition) ValidateInt64(ctx context.Context, request validator.Int64Request, response *validator.Int64Response) {
 	response.Diagnostics.Append(v.validate(ctx, request.Config, request.ConfigValue, request.Path)...)
 }
 
-func (v condition) ValidateObject(ctx context.Context, request validator.ObjectRequest, response *validator.ObjectResponse) {
+func (v Condition) ValidateObject(ctx context.Context, request validator.ObjectRequest, response *validator.ObjectResponse) {
 	response.Diagnostics.Append(v.validate(ctx, request.Config, request.ConfigValue, request.Path)...)
 }
 
@@ -166,8 +179,8 @@ func (v condition) ValidateObject(ctx context.Context, request validator.ObjectR
 //
 // Returns:
 //   - condition: A condition struct that can be used for validation
-func DependantPathOneOf(dependentPath path.Path, allowedValues []string) condition {
-	return condition{
+func DependantPathOneOf(dependentPath path.Path, allowedValues []string) Condition {
+	return Condition{
 		dependentPath: &dependentPath,
 		allowedValues: allowedValues,
 		description: func() string {
@@ -176,7 +189,7 @@ func DependantPathOneOf(dependentPath path.Path, allowedValues []string) conditi
 				allowedValues,
 			)
 		},
-		validateValue: func(dependentFieldHasAllowedValue bool, dependentValueStr string, val attr.Value, p path.Path) diag.Diagnostics {
+		validateValue: func(dependentFieldHasAllowedValue bool, dependentValueStr string, _ attr.Value, p path.Path) diag.Diagnostics {
 			if !dependentFieldHasAllowedValue {
 				var diags diag.Diagnostics
 				diags.AddAttributeError(p, "Invalid Configuration", fmt.Sprintf("Attribute '%s' is not one of %v, %s is %q",
@@ -208,8 +221,8 @@ func DependantPathOneOf(dependentPath path.Path, allowedValues []string) conditi
 //
 //	// Only allow "ssl_cert" to be set when "protocol" is "https"
 //	AllowedIfDependentPathOneOf(path.Root("protocol"), []string{"https"})
-func AllowedIfDependentPathOneOf(dependentPath path.Path, allowedValues []string) condition {
-	return condition{
+func AllowedIfDependentPathOneOf(dependentPath path.Path, allowedValues []string) Condition {
+	return Condition{
 		dependentPath: &dependentPath,
 		allowedValues: allowedValues,
 		description: func() string {
@@ -267,7 +280,7 @@ func AllowedIfDependentPathOneOf(dependentPath path.Path, allowedValues []string
 //
 // Returns:
 //   - condition: A validation condition that enforces the dependency rule
-func AllowedIfDependentPathEquals(dependentPath path.Path, requiredValue string) condition {
+func AllowedIfDependentPathEquals(dependentPath path.Path, requiredValue string) Condition {
 	return AllowedIfDependentPathOneOf(dependentPath, []string{requiredValue})
 }
 
@@ -282,7 +295,7 @@ func AllowedIfDependentPathEquals(dependentPath path.Path, requiredValue string)
 //
 // Returns:
 //   - condition: A validation condition function
-func RequiredIfDependentPathEquals(dependentPath path.Path, requiredValue string) condition {
+func RequiredIfDependentPathEquals(dependentPath path.Path, requiredValue string) Condition {
 	return RequiredIfDependentPathOneOf(dependentPath, []string{requiredValue})
 }
 
@@ -307,8 +320,8 @@ func RequiredIfDependentPathEquals(dependentPath path.Path, requiredValue string
 //	  []string{"custom", "advanced"},
 //	)
 //	// This would require the current attribute when "type" equals "custom" or "advanced"
-func RequiredIfDependentPathOneOf(dependentPath path.Path, allowedValues []string) condition {
-	return condition{
+func RequiredIfDependentPathOneOf(dependentPath path.Path, allowedValues []string) Condition {
+	return Condition{
 		dependentPath: &dependentPath,
 		allowedValues: allowedValues,
 		description: func() string {
@@ -317,7 +330,7 @@ func RequiredIfDependentPathOneOf(dependentPath path.Path, allowedValues []strin
 			}
 			return fmt.Sprintf("value required when %s is one of %v", dependentPath, allowedValues)
 		},
-		validateValue: func(dependentFieldHasAllowedValue bool, dependentValueStr string, val attr.Value, p path.Path) diag.Diagnostics {
+		validateValue: func(dependentFieldHasAllowedValue bool, _ string, val attr.Value, p path.Path) diag.Diagnostics {
 			var diags diag.Diagnostics
 			isEmpty := val.IsNull() || val.IsUnknown()
 
@@ -361,8 +374,8 @@ func RequiredIfDependentPathOneOf(dependentPath path.Path, allowedValues []strin
 //	  []string{"basic", "simple"},
 //	)
 //	// This will prevent setting the current attribute when "type" equals "basic" or "simple"
-func ForbiddenIfDependentPathOneOf(dependentPath path.Path, allowedValues []string) condition {
-	return condition{
+func ForbiddenIfDependentPathOneOf(dependentPath path.Path, allowedValues []string) Condition {
+	return Condition{
 		dependentPath: &dependentPath,
 		allowedValues: allowedValues,
 		description: func() string {
@@ -371,7 +384,7 @@ func ForbiddenIfDependentPathOneOf(dependentPath path.Path, allowedValues []stri
 			}
 			return fmt.Sprintf("value cannot be set when %s is one of %v", dependentPath, allowedValues)
 		},
-		validateValue: func(dependentFieldHasAllowedValue bool, dependentValueStr string, val attr.Value, p path.Path) diag.Diagnostics {
+		validateValue: func(dependentFieldHasAllowedValue bool, _ string, val attr.Value, p path.Path) diag.Diagnostics {
 			var diags diag.Diagnostics
 
 			if !dependentFieldHasAllowedValue {
@@ -409,9 +422,9 @@ func ForbiddenIfDependentPathOneOf(dependentPath path.Path, allowedValues []stri
 //
 //	// Only allow "ssl_cert" to be set when a sibling "protocol" field is "https"
 //	AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("protocol"), []string{"https"})
-func AllowedIfDependentPathExpressionOneOf(dependentPathExpression path.Expression, allowedValues []string) condition {
-	descStr := "dependent field"
-	return condition{
+func AllowedIfDependentPathExpressionOneOf(dependentPathExpression path.Expression, allowedValues []string) Condition {
+	const descStr = "dependent field"
+	return Condition{
 		dependentPathExpression: &dependentPathExpression,
 		allowedValues:           allowedValues,
 		description: func() string {
@@ -476,9 +489,9 @@ func AllowedIfDependentPathExpressionOneOf(dependentPathExpression path.Expressi
 //	  []string{"custom", "advanced"},
 //	)
 //	// This would require the current attribute when sibling "type" equals "custom" or "advanced"
-func RequiredIfDependentPathExpressionOneOf(dependentPathExpression path.Expression, allowedValues []string) condition {
+func RequiredIfDependentPathExpressionOneOf(dependentPathExpression path.Expression, allowedValues []string) Condition {
 	descStr := "dependent field"
-	return condition{
+	return Condition{
 		dependentPathExpression: &dependentPathExpression,
 		allowedValues:           allowedValues,
 		description: func() string {
@@ -487,7 +500,7 @@ func RequiredIfDependentPathExpressionOneOf(dependentPathExpression path.Express
 			}
 			return fmt.Sprintf("value required when %s is one of %v", descStr, allowedValues)
 		},
-		validateValue: func(dependentFieldHasAllowedValue bool, dependentValueStr string, val attr.Value, p path.Path) diag.Diagnostics {
+		validateValue: func(dependentFieldHasAllowedValue bool, _ string, val attr.Value, p path.Path) diag.Diagnostics {
 			var diags diag.Diagnostics
 			isEmpty := val.IsNull() || val.IsUnknown()
 
@@ -543,9 +556,9 @@ func RequiredIfDependentPathExpressionOneOf(dependentPathExpression path.Express
 //	  []string{"basic", "simple"},
 //	)
 //	// This will prevent setting the current attribute when sibling "type" equals "basic" or "simple"
-func ForbiddenIfDependentPathExpressionOneOf(dependentPathExpression path.Expression, allowedValues []string) condition {
+func ForbiddenIfDependentPathExpressionOneOf(dependentPathExpression path.Expression, allowedValues []string) Condition {
 	descStr := "dependent field"
-	return condition{
+	return Condition{
 		dependentPathExpression: &dependentPathExpression,
 		allowedValues:           allowedValues,
 		description: func() string {
@@ -554,7 +567,7 @@ func ForbiddenIfDependentPathExpressionOneOf(dependentPathExpression path.Expres
 			}
 			return fmt.Sprintf("value cannot be set when %s is one of %v", descStr, allowedValues)
 		},
-		validateValue: func(dependentFieldHasAllowedValue bool, dependentValueStr string, val attr.Value, p path.Path) diag.Diagnostics {
+		validateValue: func(dependentFieldHasAllowedValue bool, _ string, val attr.Value, p path.Path) diag.Diagnostics {
 			var diags diag.Diagnostics
 
 			if !dependentFieldHasAllowedValue {

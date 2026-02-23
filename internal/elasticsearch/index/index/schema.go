@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package index
 
 import (
@@ -25,6 +42,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+const indexNameAllowedCharsMessage = "must contain lower case alphanumeric characters and selected punctuation, see: " +
+	"https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-index.html#indices-create-api-path-params"
+
 func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = getSchema()
 }
@@ -33,10 +53,9 @@ func getSchema() schema.Schema {
 	return schema.Schema{
 		Description: "Creates Elasticsearch indices. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-index.html",
 		Blocks: map[string]schema.Block{
-			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock("elasticsearch_connection", false),
+			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(false),
 			"settings": schema.ListNestedBlock{
-				Description: `DEPRECATED: Please use dedicated setting field. Configuration options for the index. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#index-modules-settings.
-**NOTE:** Static index settings (see: https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#_static_index_settings) can be only set on the index creation and later cannot be removed or updated - _apply_ will return error`,
+				Description:        deprecatedSettingsBlockDescription,
 				DeprecationMessage: "Using settings makes it easier to misconfigure.  Use dedicated field for the each setting instead.",
 				Validators: []validator.List{
 					listvalidator.SizeBetween(1, 1),
@@ -83,7 +102,10 @@ func getSchema() schema.Schema {
 					stringvalidator.LengthBetween(1, 255),
 					stringvalidator.NoneOf(".", ".."),
 					stringvalidator.RegexMatches(regexp.MustCompile(`^[^-_+]`), "cannot start with -, _, +"),
-					stringvalidator.RegexMatches(regexp.MustCompile(`^[a-z0-9!$%&'()+.;=@[\]^{}~_-]+$`), "must contain lower case alphanumeric characters and selected punctuation, see: https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-index.html#indices-create-api-path-params"),
+					stringvalidator.RegexMatches(
+						regexp.MustCompile(`^[a-z0-9!$%&'()+.;=@[\]^{}~_-]+$`),
+						indexNameAllowedCharsMessage,
+					),
 				},
 			},
 			"alias": schema.SetNestedAttribute{
@@ -168,7 +190,7 @@ func getSchema() schema.Schema {
 				},
 			},
 			"codec": schema.StringAttribute{
-				Description: "The `default` value compresses stored data with LZ4 compression, but this can be set to `best_compression` which uses DEFLATE for a higher compression ratio. This can be set only on creation.",
+				Description: codecDescription,
 				Optional:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
@@ -192,7 +214,7 @@ func getSchema() schema.Schema {
 				},
 			},
 			"shard_check_on_startup": schema.StringAttribute{
-				Description: "Whether or not shards should be checked for corruption before opening. When corruption is detected, it will prevent the shard from being opened. Accepts `false`, `true`, `checksum`.",
+				Description: shardCheckOnStartupDescription,
 				Optional:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
@@ -342,7 +364,7 @@ func getSchema() schema.Schema {
 				Optional:    true,
 			},
 			"final_pipeline": schema.StringAttribute{
-				Description: "Final ingest pipeline for the index. Indexing requests will fail if the final pipeline is set and the pipeline does not exist. The final pipeline always runs after the request pipeline (if specified) and the default pipeline (if it exists). The special pipeline name _none indicates no ingest pipeline will run.",
+				Description: finalPipelineDescription,
 				Optional:    true,
 			},
 			"unassigned_node_left_delayed_timeout": schema.StringAttribute{
@@ -412,7 +434,7 @@ func getSchema() schema.Schema {
 				},
 			},
 			"indexing_slowlog_source": schema.StringAttribute{
-				Description: "Set the number of characters of the `_source` to include in the slowlog lines, `false` or `0` will skip logging the source entirely and setting it to `true` will log the entire source regardless of size. The original `_source` is reformatted by default to make sure that it fits on a single log line.",
+				Description: indexingSlowlogSourceDescription,
 				Optional:    true,
 			},
 			// To change analyzer setting, the index must be closed, updated, and then reopened but it can't be handled in terraform.
@@ -458,15 +480,10 @@ func getSchema() schema.Schema {
 				},
 			},
 			"mappings": schema.StringAttribute{
-				Description: `Mapping for fields in the index.
-			If specified, this mapping can include: field names, [field data types](https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-types.html), [mapping parameters](https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-params.html).
-			**NOTE:**
-			- Changing datatypes in the existing _mappings_ will force index to be re-created.
-			- Removing field will be ignored by default same as elasticsearch. You need to recreate the index to remove field completely.
-			`,
-				Optional:   true,
-				Computed:   true,
-				CustomType: jsontypes.NormalizedType{},
+				Description: mappingsDescription,
+				Optional:    true,
+				Computed:    true,
+				CustomType:  jsontypes.NormalizedType{},
 				Validators: []validator.String{
 					index.StringIsJSONObject{},
 				},
@@ -484,13 +501,13 @@ func getSchema() schema.Schema {
 			"deletion_protection": schema.BoolAttribute{
 				Optional:    true,
 				Computed:    true,
-				Description: "Whether to allow Terraform to destroy the index. Unless this field is set to false in Terraform state, a terraform destroy or terraform apply command that deletes the instance will fail.",
+				Description: deletionProtectionDescription,
 				PlanModifiers: []planmodifier.Bool{
 					planmodifiers.BoolUseDefaultIfUnknown(true),
 				},
 			},
 			"wait_for_active_shards": schema.StringAttribute{
-				Description: "The number of shard copies that must be active before proceeding with the operation. Set to `all` or any positive integer up to the total number of shards in the index (number_of_replicas+1). Default: `1`, the primary shard. This value is ignored when running against Serverless projects.",
+				Description: waitForActiveShardsDescription,
 				Optional:    true,
 				Computed:    true,
 				PlanModifiers: []planmodifier.String{
@@ -498,7 +515,7 @@ func getSchema() schema.Schema {
 				},
 			},
 			"master_timeout": schema.StringAttribute{
-				Description: "Period to wait for a connection to the master node. If no response is received before the timeout expires, the request fails and returns an error. Defaults to `30s`. This value is ignored when running against Serverless projects.",
+				Description: masterTimeoutDescription,
 				Optional:    true,
 				Computed:    true,
 				PlanModifiers: []planmodifier.String{

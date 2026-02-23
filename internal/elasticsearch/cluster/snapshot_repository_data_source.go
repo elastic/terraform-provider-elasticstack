@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package cluster
 
 import (
@@ -111,7 +128,7 @@ func DataSourceSnapshotRespository() *schema.Resource {
 			Computed:    true,
 		},
 		"location_mode": {
-			Description: "Location mode. `primary_only` or `secondary_only`. See the [Azure storage redundancy documentation](https://docs.microsoft.com/en-us/azure/storage/common/storage-redundancy) for more details.",
+			Description: snapshotRepositoryLocationModeDescription,
 			Type:        schema.TypeString,
 			Computed:    true,
 		},
@@ -201,7 +218,7 @@ func DataSourceSnapshotRespository() *schema.Resource {
 			Type:        schema.TypeList,
 			Computed:    true,
 			Elem: &schema.Resource{
-				Schema: utils.MergeSchemaMaps(commonSettings, commonStdSettings, fsSettings),
+				Schema: schemautil.MergeSchemaMaps(commonSettings, commonStdSettings, fsSettings),
 			},
 		},
 		"url": {
@@ -209,7 +226,7 @@ func DataSourceSnapshotRespository() *schema.Resource {
 			Type:        schema.TypeList,
 			Computed:    true,
 			Elem: &schema.Resource{
-				Schema: utils.MergeSchemaMaps(commonSettings, commonStdSettings, urlSettings),
+				Schema: schemautil.MergeSchemaMaps(commonSettings, commonStdSettings, urlSettings),
 			},
 		},
 		"gcs": {
@@ -217,7 +234,7 @@ func DataSourceSnapshotRespository() *schema.Resource {
 			Type:        schema.TypeList,
 			Computed:    true,
 			Elem: &schema.Resource{
-				Schema: utils.MergeSchemaMaps(commonSettings, gcsSettings),
+				Schema: schemautil.MergeSchemaMaps(commonSettings, gcsSettings),
 			},
 		},
 		"azure": {
@@ -225,7 +242,7 @@ func DataSourceSnapshotRespository() *schema.Resource {
 			Type:        schema.TypeList,
 			Computed:    true,
 			Elem: &schema.Resource{
-				Schema: utils.MergeSchemaMaps(commonSettings, azureSettings),
+				Schema: schemautil.MergeSchemaMaps(commonSettings, azureSettings),
 			},
 		},
 		"s3": {
@@ -233,7 +250,7 @@ func DataSourceSnapshotRespository() *schema.Resource {
 			Type:        schema.TypeList,
 			Computed:    true,
 			Elem: &schema.Resource{
-				Schema: utils.MergeSchemaMaps(commonSettings, s3Settings),
+				Schema: schemautil.MergeSchemaMaps(commonSettings, s3Settings),
 			},
 		},
 		"hdfs": {
@@ -241,12 +258,12 @@ func DataSourceSnapshotRespository() *schema.Resource {
 			Type:        schema.TypeList,
 			Computed:    true,
 			Elem: &schema.Resource{
-				Schema: utils.MergeSchemaMaps(commonSettings, hdfsSettings),
+				Schema: schemautil.MergeSchemaMaps(commonSettings, hdfsSettings),
 			},
 		},
 	}
 
-	utils.AddConnectionSchema(snapRepoSchema)
+	schemautil.AddConnectionSchema(snapRepoSchema)
 
 	return &schema.Resource{
 		Description: "Gets information about the registered snapshot repositories.",
@@ -257,8 +274,8 @@ func DataSourceSnapshotRespository() *schema.Resource {
 	}
 }
 
-func dataSourceSnapRepoRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+func dataSourceSnapRepoRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}

@@ -1,4 +1,21 @@
-package import_saved_objects
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package importsavedobjects
 
 import (
 	"context"
@@ -62,7 +79,8 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 				Optional:    true,
 			},
 			// "compatibility_mode": schema.BoolAttribute{
-			// 	Description: "Applies various adjustments to the saved objects that are being imported to maintain compatibility between different Kibana versions. Use this option only if you encounter issues with imported saved objects.",
+			// 	Description: "Applies various adjustments to the saved objects that are being imported to maintain compatibility between different Kibana versions.
+			// 	Use this option only if you encounter issues with imported saved objects.",
 			// 	Optional:    true,
 			// },
 			"file_contents": schema.StringAttribute{
@@ -71,7 +89,7 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 			},
 
 			"success": schema.BoolAttribute{
-				Description: "Indicates when the import was successfully completed. When set to false, some objects may not have been created. For additional information, refer to the errors and success_results properties.",
+				Description: successDescription,
 				Computed:    true,
 			},
 			"success_count": schema.Int64Attribute{
@@ -120,16 +138,16 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 }
 
 type Resource struct {
-	client *clients.ApiClient
+	client *clients.APIClient
 }
 
-func (r *Resource) Configure(ctx context.Context, request resource.ConfigureRequest, response *resource.ConfigureResponse) {
+func (r *Resource) Configure(_ context.Context, request resource.ConfigureRequest, response *resource.ConfigureResponse) {
 	client, diags := clients.ConvertProviderData(request.ProviderData)
 	response.Diagnostics.Append(diags...)
 	r.client = client
 }
 
-func (r *Resource) Metadata(ctx context.Context, request resource.MetadataRequest, response *resource.MetadataResponse) {
+func (r *Resource) Metadata(_ context.Context, request resource.MetadataRequest, response *resource.MetadataResponse) {
 	response.TypeName = request.ProviderTypeName + "_kibana_import_saved_objects"
 }
 

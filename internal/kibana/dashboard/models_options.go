@@ -1,7 +1,24 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package dashboard
 
 import (
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -16,10 +33,10 @@ type optionsModel struct {
 
 func (m *dashboardModel) optionsToAPI() (*optionsAPIModel, diag.Diagnostics) {
 	if m.Options == nil {
-		return nil, nil
+		return nil, diag.Diagnostics{}
 	}
 
-	return m.Options.toAPI(), nil
+	return m.Options.toAPI(), diag.Diagnostics{}
 }
 
 // optionsAPIModel introduces a type alias for the generated API model.
@@ -63,19 +80,19 @@ func (m *dashboardModel) mapOptionsFromAPI(options *optionsAPIModel) *optionsMod
 
 func (m optionsModel) toAPI() *optionsAPIModel {
 	options := optionsAPIModel{}
-	if utils.IsKnown(m.HidePanelTitles) {
+	if typeutils.IsKnown(m.HidePanelTitles) {
 		options.HidePanelTitles = m.HidePanelTitles.ValueBoolPointer()
 	}
-	if utils.IsKnown(m.UseMargins) {
+	if typeutils.IsKnown(m.UseMargins) {
 		options.UseMargins = m.UseMargins.ValueBoolPointer()
 	}
-	if utils.IsKnown(m.SyncColors) {
+	if typeutils.IsKnown(m.SyncColors) {
 		options.SyncColors = m.SyncColors.ValueBoolPointer()
 	}
-	if utils.IsKnown(m.SyncTooltips) {
+	if typeutils.IsKnown(m.SyncTooltips) {
 		options.SyncTooltips = m.SyncTooltips.ValueBoolPointer()
 	}
-	if utils.IsKnown(m.SyncCursor) {
+	if typeutils.IsKnown(m.SyncCursor) {
 		options.SyncCursor = m.SyncCursor.ValueBoolPointer()
 	}
 

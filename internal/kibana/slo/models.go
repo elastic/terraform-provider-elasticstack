@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package slo
 
 import (
@@ -5,7 +22,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/slo"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -83,17 +100,17 @@ func (m tfModel) toAPIModel() (models.Slo, diag.Diagnostics) {
 	obj := slo.Objective{
 		Target: m.Objective[0].Target.ValueFloat64(),
 	}
-	if utils.IsKnown(m.Objective[0].TimesliceTarget) {
+	if typeutils.IsKnown(m.Objective[0].TimesliceTarget) {
 		v := m.Objective[0].TimesliceTarget.ValueFloat64()
 		obj.TimesliceTarget = &v
 	}
-	if utils.IsKnown(m.Objective[0].TimesliceWindow) {
+	if typeutils.IsKnown(m.Objective[0].TimesliceWindow) {
 		v := m.Objective[0].TimesliceWindow.ValueString()
 		obj.TimesliceWindow = &v
 	}
 
 	var settings *slo.Settings
-	if utils.IsKnown(m.Settings) {
+	if typeutils.IsKnown(m.Settings) {
 		settingsModel, settingsDiags := tfSettingsFromObject(m.Settings)
 		diags.Append(settingsDiags...)
 		if diags.HasError() {
@@ -113,27 +130,27 @@ func (m tfModel) toAPIModel() (models.Slo, diag.Diagnostics) {
 		SpaceID:         m.SpaceID.ValueString(),
 	}
 
-	if utils.IsKnown(m.SloID) {
+	if typeutils.IsKnown(m.SloID) {
 		sloID := m.SloID.ValueString()
 		if sloID != "" {
 			apiModel.SloID = sloID
 		}
 	}
 
-	if utils.IsKnown(m.GroupBy) {
+	if typeutils.IsKnown(m.GroupBy) {
 		for i, v := range m.GroupBy.Elements() {
 			g, ok := v.(types.String)
 			if !ok {
 				diags.AddError("Invalid configuration", fmt.Sprintf("group_by[%d] is not a string", i))
 				continue
 			}
-			if utils.IsKnown(g) {
+			if typeutils.IsKnown(g) {
 				apiModel.GroupBy = append(apiModel.GroupBy, g.ValueString())
 			}
 		}
 	}
 	for _, t := range m.Tags {
-		if utils.IsKnown(t) {
+		if typeutils.IsKnown(t) {
 			apiModel.Tags = append(apiModel.Tags, t.ValueString())
 		}
 	}
@@ -154,8 +171,7 @@ func (m tfModel) indicatorToAPI() (slo.SloWithSummaryResponseIndicator, diag.Dia
 		return ind, diags
 	}
 
-	if ok, ind, indDiags := m.apmLatencyIndicatorToAPI(); ok {
-		diags.Append(indDiags...)
+	if ok, ind := m.apmLatencyIndicatorToAPI(); ok {
 		return ind, diags
 	}
 
@@ -213,7 +229,7 @@ func (m *tfModel) populateFromAPI(apiModel *models.Slo) diag.Diagnostics {
 	}
 	m.Objective = []tfObjective{obj}
 
-	if utils.IsKnown(m.Settings) && apiModel.Settings != nil {
+	if typeutils.IsKnown(m.Settings) && apiModel.Settings != nil {
 		attrValues := map[string]attr.Value{
 			"sync_delay":               types.StringPointerValue(apiModel.Settings.SyncDelay),
 			"frequency":                types.StringPointerValue(apiModel.Settings.Frequency),
@@ -310,17 +326,17 @@ func (s tfSettings) toAPIModel() *slo.Settings {
 	settings := slo.Settings{}
 	hasAny := false
 
-	if utils.IsKnown(s.SyncDelay) {
+	if typeutils.IsKnown(s.SyncDelay) {
 		v := s.SyncDelay.ValueString()
 		settings.SyncDelay = &v
 		hasAny = true
 	}
-	if utils.IsKnown(s.Frequency) {
+	if typeutils.IsKnown(s.Frequency) {
 		v := s.Frequency.ValueString()
 		settings.Frequency = &v
 		hasAny = true
 	}
-	if utils.IsKnown(s.PreventInitialBackfill) {
+	if typeutils.IsKnown(s.PreventInitialBackfill) {
 		v := s.PreventInitialBackfill.ValueBool()
 		settings.PreventInitialBackfill = &v
 		hasAny = true
@@ -333,7 +349,7 @@ func (s tfSettings) toAPIModel() *slo.Settings {
 }
 
 func stringPtr(v types.String) *string {
-	if !utils.IsKnown(v) {
+	if !typeutils.IsKnown(v) {
 		return nil
 	}
 	s := v.ValueString()
@@ -341,7 +357,7 @@ func stringPtr(v types.String) *string {
 }
 
 func float64Ptr(v types.Float64) *float64 {
-	if !utils.IsKnown(v) {
+	if !typeutils.IsKnown(v) {
 		return nil
 	}
 	f := v.ValueFloat64()
@@ -363,8 +379,8 @@ func float64OrNull(v *float64) types.Float64 {
 }
 
 func (m tfModel) hasDataViewID() bool {
-	return (len(m.MetricCustomIndicator) == 1 && utils.IsKnown(m.MetricCustomIndicator[0].DataViewID) && m.MetricCustomIndicator[0].DataViewID.ValueString() != "") ||
-		(len(m.HistogramCustomIndicator) == 1 && utils.IsKnown(m.HistogramCustomIndicator[0].DataViewID) && m.HistogramCustomIndicator[0].DataViewID.ValueString() != "") ||
-		(len(m.KqlCustomIndicator) == 1 && utils.IsKnown(m.KqlCustomIndicator[0].DataViewID) && m.KqlCustomIndicator[0].DataViewID.ValueString() != "") ||
-		(len(m.TimesliceMetricIndicator) == 1 && utils.IsKnown(m.TimesliceMetricIndicator[0].DataViewID) && m.TimesliceMetricIndicator[0].DataViewID.ValueString() != "")
+	return (len(m.MetricCustomIndicator) == 1 && typeutils.IsKnown(m.MetricCustomIndicator[0].DataViewID) && m.MetricCustomIndicator[0].DataViewID.ValueString() != "") ||
+		(len(m.HistogramCustomIndicator) == 1 && typeutils.IsKnown(m.HistogramCustomIndicator[0].DataViewID) && m.HistogramCustomIndicator[0].DataViewID.ValueString() != "") ||
+		(len(m.KqlCustomIndicator) == 1 && typeutils.IsKnown(m.KqlCustomIndicator[0].DataViewID) && m.KqlCustomIndicator[0].DataViewID.ValueString() != "") ||
+		(len(m.TimesliceMetricIndicator) == 1 && typeutils.IsKnown(m.TimesliceMetricIndicator[0].DataViewID) && m.TimesliceMetricIndicator[0].DataViewID.ValueString() != "")
 }

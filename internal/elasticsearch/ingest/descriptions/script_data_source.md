@@ -1,0 +1,1 @@
+Helper data source which can be used to create the configuration for a script processor. This processor runs an inline or stored script on incoming documents. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/script-processor.html

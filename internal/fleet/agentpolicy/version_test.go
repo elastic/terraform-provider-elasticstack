@@ -1,0 +1,633 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package agentpolicy
+
+import (
+	"context"
+	"testing"
+
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+)
+
+const unsupportedElasticsearchVersionSummary = "Unsupported Elasticsearch version"
+
+func TestMinVersionInactivityTimeout(t *testing.T) {
+	// Test that the MinVersionInactivityTimeout constant is set correctly
+	expected := "8.7.0"
+	actual := MinVersionInactivityTimeout.String()
+	if actual != expected {
+		t.Errorf("Expected MinVersionInactivityTimeout to be '%s', got '%s'", expected, actual)
+	}
+
+	// Test version comparison - should be greater than 8.6.0
+	olderVersion := version.Must(version.NewVersion("8.6.0"))
+	if MinVersionInactivityTimeout.LessThan(olderVersion) {
+		t.Errorf("MinVersionInactivityTimeout (%s) should be greater than %s", MinVersionInactivityTimeout.String(), olderVersion.String())
+	}
+
+	// Test version comparison - should be less than 8.8.0
+	newerVersion := version.Must(version.NewVersion("8.8.0"))
+	if MinVersionInactivityTimeout.GreaterThan(newerVersion) {
+		t.Errorf("MinVersionInactivityTimeout (%s) should be less than %s", MinVersionInactivityTimeout.String(), newerVersion.String())
+	}
+}
+
+func TestMinVersionUnenrollmentTimeout(t *testing.T) {
+	// Test that the MinVersionUnenrollmentTimeout constant is set correctly
+	expected := "8.15.0"
+	actual := MinVersionUnenrollmentTimeout.String()
+	if actual != expected {
+		t.Errorf("Expected MinVersionUnenrollmentTimeout to be '%s', got '%s'", expected, actual)
+	}
+
+	// Test version comparison - should be greater than 8.14.0
+	olderVersion := version.Must(version.NewVersion("8.14.0"))
+	if MinVersionUnenrollmentTimeout.LessThan(olderVersion) {
+		t.Errorf("MinVersionUnenrollmentTimeout (%s) should be greater than %s", MinVersionUnenrollmentTimeout.String(), olderVersion.String())
+	}
+
+	// Test version comparison - should be less than 8.16.0
+	newerVersion := version.Must(version.NewVersion("8.16.0"))
+	if MinVersionUnenrollmentTimeout.GreaterThan(newerVersion) {
+		t.Errorf("MinVersionUnenrollmentTimeout (%s) should be less than %s", MinVersionUnenrollmentTimeout.String(), newerVersion.String())
+	}
+}
+
+func TestInactivityTimeoutVersionValidation(t *testing.T) {
+	ctx := context.Background()
+
+	// Test case where inactivity_timeout is not supported (older version)
+	model := &agentPolicyModel{
+		Name:              types.StringValue("test"),
+		Namespace:         types.StringValue("default"),
+		InactivityTimeout: customtypes.NewDurationValue("2m"),
+	}
+
+	// Create features with inactivity timeout NOT supported
+	feat := features{
+		SupportsInactivityTimeout: false,
+	}
+
+	// Test toAPICreateModel - should return error when inactivity_timeout is used but not supported
+	_, diags := model.toAPICreateModel(ctx, feat)
+	if !diags.HasError() {
+		t.Error("Expected error when using inactivity_timeout on unsupported version, but got none")
+	}
+
+	// Check that the error message contains the expected text
+	found := false
+	for _, diag := range diags {
+		if diag.Summary() == unsupportedElasticsearchVersionSummary {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("Expected %q error, but didn't find it", unsupportedElasticsearchVersionSummary)
+	}
+
+	// Test toAPIUpdateModel - should return error when inactivity_timeout is used but not supported
+	_, diags = model.toAPIUpdateModel(ctx, feat, nil)
+	if !diags.HasError() {
+		t.Error("Expected error when using inactivity_timeout on unsupported version in update, but got none")
+	}
+
+	// Test case where inactivity_timeout IS supported (newer version)
+	featSupported := features{
+		SupportsInactivityTimeout: true,
+	}
+
+	// Test toAPICreateModel - should NOT return error when inactivity_timeout is supported
+	_, diags = model.toAPICreateModel(ctx, featSupported)
+	if diags.HasError() {
+		t.Errorf("Did not expect error when using inactivity_timeout on supported version: %v", diags)
+	}
+
+	// Test toAPIUpdateModel - should NOT return error when inactivity_timeout is supported
+	_, diags = model.toAPIUpdateModel(ctx, featSupported, nil)
+	if diags.HasError() {
+		t.Errorf("Did not expect error when using inactivity_timeout on supported version in update: %v", diags)
+	}
+
+	// Test case where inactivity_timeout is not set (should not cause validation errors)
+	modelWithoutTimeout := &agentPolicyModel{
+		Name:      types.StringValue("test"),
+		Namespace: types.StringValue("default"),
+		// InactivityTimeout is not set (null/unknown)
+	}
+
+	// Test toAPICreateModel - should NOT return error when inactivity_timeout is not set, even on unsupported version
+	_, diags = modelWithoutTimeout.toAPICreateModel(ctx, feat)
+	if diags.HasError() {
+		t.Errorf("Did not expect error when inactivity_timeout is not set: %v", diags)
+	}
+
+	// Test toAPIUpdateModel - should NOT return error when inactivity_timeout is not set, even on unsupported version
+	_, diags = modelWithoutTimeout.toAPIUpdateModel(ctx, feat, nil)
+	if diags.HasError() {
+		t.Errorf("Did not expect error when inactivity_timeout is not set in update: %v", diags)
+	}
+}
+
+func TestUnenrollmentTimeoutVersionValidation(t *testing.T) {
+	ctx := context.Background()
+
+	// Test case where unenrollment_timeout is not supported (older version)
+	model := &agentPolicyModel{
+		Name:                types.StringValue("test"),
+		Namespace:           types.StringValue("default"),
+		UnenrollmentTimeout: customtypes.NewDurationValue("5m"),
+	}
+
+	// Create features with unenrollment timeout NOT supported
+	feat := features{
+		SupportsUnenrollmentTimeout: false,
+	}
+
+	// Test toAPICreateModel - should return error when unenrollment_timeout is used but not supported
+	_, diags := model.toAPICreateModel(ctx, feat)
+	if !diags.HasError() {
+		t.Error("Expected error when using unenrollment_timeout on unsupported version, but got none")
+	}
+
+	// Check that the error message contains the expected text
+	found := false
+	for _, diag := range diags {
+		if diag.Summary() == unsupportedElasticsearchVersionSummary {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("Expected %q error, but didn't find it", unsupportedElasticsearchVersionSummary)
+	}
+
+	// Test toAPIUpdateModel - should return error when unenrollment_timeout is used but not supported
+	_, diags = model.toAPIUpdateModel(ctx, feat, nil)
+	if !diags.HasError() {
+		t.Error("Expected error when using unenrollment_timeout on unsupported version in update, but got none")
+	}
+
+	// Test case where unenrollment_timeout IS supported (newer version)
+	featSupported := features{
+		SupportsUnenrollmentTimeout: true,
+	}
+
+	// Test toAPICreateModel - should NOT return error when unenrollment_timeout is supported
+	_, diags = model.toAPICreateModel(ctx, featSupported)
+	if diags.HasError() {
+		t.Errorf("Did not expect error when using unenrollment_timeout on supported version: %v", diags)
+	}
+
+	// Test toAPIUpdateModel - should NOT return error when unenrollment_timeout is supported
+	_, diags = model.toAPIUpdateModel(ctx, featSupported, nil)
+	if diags.HasError() {
+		t.Errorf("Did not expect error when using unenrollment_timeout on supported version in update: %v", diags)
+	}
+
+	// Test case where unenrollment_timeout is not set (should not cause validation errors)
+	modelWithoutTimeout := &agentPolicyModel{
+		Name:      types.StringValue("test"),
+		Namespace: types.StringValue("default"),
+		// UnenrollmentTimeout is not set (null/unknown)
+	}
+
+	// Test toAPICreateModel - should NOT return error when unenrollment_timeout is not set, even on unsupported version
+	_, diags = modelWithoutTimeout.toAPICreateModel(ctx, feat)
+	if diags.HasError() {
+		t.Errorf("Did not expect error when unenrollment_timeout is not set: %v", diags)
+	}
+
+	// Test toAPIUpdateModel - should NOT return error when unenrollment_timeout is not set, even on unsupported version
+	_, diags = modelWithoutTimeout.toAPIUpdateModel(ctx, feat, nil)
+	if diags.HasError() {
+		t.Errorf("Did not expect error when unenrollment_timeout is not set in update: %v", diags)
+	}
+}
+
+func TestAdvancedMonitoringVersionValidation(t *testing.T) {
+	ctx := context.Background()
+
+	// Create advanced_monitoring_options object
+	httpEndpoint, _ := types.ObjectValueFrom(ctx, httpMonitoringEndpointAttrTypes(), httpMonitoringEndpointModel{
+		Enabled:       types.BoolValue(true),
+		Host:          types.StringValue("localhost"),
+		Port:          types.Int32Value(6791),
+		BufferEnabled: types.BoolValue(false),
+		PprofEnabled:  types.BoolValue(false),
+	})
+
+	rateLimits, _ := types.ObjectValueFrom(ctx, rateLimitsAttrTypes(), rateLimitsModel{
+		Interval: customtypes.NewDurationValue("1m"),
+		Burst:    types.Int32Value(1),
+	})
+
+	fileUploader, _ := types.ObjectValueFrom(ctx, fileUploaderAttrTypes(), fileUploaderModel{
+		InitDuration:    customtypes.NewDurationValue("1s"),
+		BackoffDuration: customtypes.NewDurationValue("1m"),
+		MaxRetries:      types.Int32Value(10),
+	})
+
+	diagnostics, _ := types.ObjectValueFrom(ctx, diagnosticsAttrTypes(), diagnosticsModel{
+		RateLimits:   rateLimits,
+		FileUploader: fileUploader,
+	})
+
+	advancedMonitoringOptions, _ := types.ObjectValueFrom(ctx, advancedMonitoringOptionsAttrTypes(), advancedMonitoringOptionsModel{
+		HTTPMonitoringEndpoint: httpEndpoint,
+		Diagnostics:            diagnostics,
+	})
+
+	// Test case where advanced_monitoring_options is not supported (older version)
+	model := &agentPolicyModel{
+		Name:                      types.StringValue("test"),
+		Namespace:                 types.StringValue("default"),
+		AdvancedMonitoringOptions: advancedMonitoringOptions,
+	}
+
+	// Create features with advanced_monitoring NOT supported
+	feat := features{
+		SupportsAdvancedMonitoring: false,
+	}
+
+	// Test toAPICreateModel - should return error when advanced_monitoring_options is used but not supported
+	_, diags := model.toAPICreateModel(ctx, feat)
+	if !diags.HasError() {
+		t.Error("Expected error when using advanced_monitoring_options on unsupported version, but got none")
+	}
+
+	// Check that the error message contains the expected text
+	found := false
+	for _, diag := range diags {
+		if diag.Summary() == unsupportedElasticsearchVersionSummary {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("Expected %q error, but didn't find it", unsupportedElasticsearchVersionSummary)
+	}
+
+	// Test toAPIUpdateModel - should return error when advanced_monitoring_options is used but not supported
+	_, diags = model.toAPIUpdateModel(ctx, feat, nil)
+	if !diags.HasError() {
+		t.Error("Expected error when using advanced_monitoring_options on unsupported version in update, but got none")
+	}
+
+	// Test case where advanced_monitoring_options IS supported (newer version)
+	featSupported := features{
+		SupportsAdvancedMonitoring: true,
+	}
+
+	// Test toAPICreateModel - should NOT return error when advanced_monitoring_options is supported
+	_, diags = model.toAPICreateModel(ctx, featSupported)
+	if diags.HasError() {
+		t.Errorf("Did not expect error when using advanced_monitoring_options on supported version: %v", diags)
+	}
+
+	// Test toAPIUpdateModel - should NOT return error when advanced_monitoring_options is supported
+	_, diags = model.toAPIUpdateModel(ctx, featSupported, nil)
+	if diags.HasError() {
+		t.Errorf("Did not expect error when using advanced_monitoring_options on supported version in update: %v", diags)
+	}
+
+	// Test case where advanced_monitoring_options is not set (should not cause validation errors)
+	modelWithoutAdvancedMonitoring := &agentPolicyModel{
+		Name:      types.StringValue("test"),
+		Namespace: types.StringValue("default"),
+		// AdvancedMonitoringOptions is not set (null/unknown)
+	}
+
+	// Test toAPICreateModel - should NOT return error when advanced_monitoring_options is not set, even on unsupported version
+	_, diags = modelWithoutAdvancedMonitoring.toAPICreateModel(ctx, feat)
+	if diags.HasError() {
+		t.Errorf("Did not expect error when advanced_monitoring_options is not set: %v", diags)
+	}
+
+	// Test toAPIUpdateModel - should NOT return error when advanced_monitoring_options is not set, even on unsupported version
+	_, diags = modelWithoutAdvancedMonitoring.toAPIUpdateModel(ctx, feat, nil)
+	if diags.HasError() {
+		t.Errorf("Did not expect error when advanced_monitoring_options is not set in update: %v", diags)
+	}
+}
+
+func TestAdvancedSettingsVersionValidation(t *testing.T) {
+	ctx := context.Background()
+
+	// Create advanced_settings object with some values set
+	advancedSettings, _ := types.ObjectValueFrom(ctx, advancedSettingsAttrTypes(), advancedSettingsModel{
+		LoggingLevel:                  types.StringValue("debug"),
+		LoggingToFiles:                types.BoolValue(true),
+		LoggingFilesInterval:          customtypes.NewDurationNull(),
+		LoggingFilesKeepfiles:         types.Int32Value(7),
+		LoggingFilesRotateeverybytes:  types.Int64Null(),
+		LoggingMetricsPeriod:          customtypes.NewDurationNull(),
+		GoMaxProcs:                    types.Int32Value(4),
+		DownloadTimeout:               customtypes.NewDurationNull(),
+		DownloadTargetDirectory:       types.StringNull(),
+		MonitoringRuntimeExperimental: types.StringNull(),
+	})
+
+	// Test case where advanced_settings is not supported (older version)
+	model := &agentPolicyModel{
+		Name:             types.StringValue("test"),
+		Namespace:        types.StringValue("default"),
+		AdvancedSettings: advancedSettings,
+	}
+
+	// Create features with advanced_settings NOT supported
+	feat := features{
+		SupportsAdvancedSettings: false,
+	}
+
+	// Test toAPICreateModel - should return error when advanced_settings is used but not supported
+	_, diags := model.toAPICreateModel(ctx, feat)
+	if !diags.HasError() {
+		t.Error("Expected error when using advanced_settings on unsupported version, but got none")
+	}
+
+	// Check that the error message contains the expected text
+	found := false
+	for _, diag := range diags {
+		if diag.Summary() == unsupportedElasticsearchVersionSummary {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("Expected %q error, but didn't find it", unsupportedElasticsearchVersionSummary)
+	}
+
+	// Test toAPIUpdateModel - should return error when advanced_settings is used but not supported
+	_, diags = model.toAPIUpdateModel(ctx, feat, nil)
+	if !diags.HasError() {
+		t.Error("Expected error when using advanced_settings on unsupported version in update, but got none")
+	}
+
+	// Test case where advanced_settings IS supported (newer version)
+	featSupported := features{
+		SupportsAdvancedSettings: true,
+	}
+
+	// Test toAPICreateModel - should NOT return error when advanced_settings is supported
+	_, diags = model.toAPICreateModel(ctx, featSupported)
+	if diags.HasError() {
+		t.Errorf("Did not expect error when using advanced_settings on supported version: %v", diags)
+	}
+
+	// Test toAPIUpdateModel - should NOT return error when advanced_settings is supported
+	_, diags = model.toAPIUpdateModel(ctx, featSupported, nil)
+	if diags.HasError() {
+		t.Errorf("Did not expect error when using advanced_settings on supported version in update: %v", diags)
+	}
+
+	// Test case where advanced_settings is not set (should not cause validation errors)
+	modelWithoutAdvancedSettings := &agentPolicyModel{
+		Name:      types.StringValue("test"),
+		Namespace: types.StringValue("default"),
+		// AdvancedSettings is not set (null/unknown)
+	}
+
+	// Test toAPICreateModel - should NOT return error when advanced_settings is not set, even on unsupported version
+	_, diags = modelWithoutAdvancedSettings.toAPICreateModel(ctx, feat)
+	if diags.HasError() {
+		t.Errorf("Did not expect error when advanced_settings is not set: %v", diags)
+	}
+
+	// Test toAPIUpdateModel - should NOT return error when advanced_settings is not set, even on unsupported version
+	_, diags = modelWithoutAdvancedSettings.toAPIUpdateModel(ctx, feat, nil)
+	if diags.HasError() {
+		t.Errorf("Did not expect error when advanced_settings is not set in update: %v", diags)
+	}
+}
+
+func TestMinVersionSpaceIDs(t *testing.T) {
+	// Test that the MinVersionSpaceIDs constant is set correctly
+	expected := "9.1.0"
+	actual := MinVersionSpaceIDs.String()
+	if actual != expected {
+		t.Errorf("Expected MinVersionSpaceIDs to be '%s', got '%s'", expected, actual)
+	}
+
+	// Test version comparison - should be greater than 9.0.0
+	olderVersion := version.Must(version.NewVersion("9.0.0"))
+	if MinVersionSpaceIDs.LessThan(olderVersion) {
+		t.Errorf("MinVersionSpaceIDs (%s) should be greater than %s", MinVersionSpaceIDs.String(), olderVersion.String())
+	}
+
+	// Test version comparison - should be less than 9.2.0
+	newerVersion := version.Must(version.NewVersion("9.2.0"))
+	if MinVersionSpaceIDs.GreaterThan(newerVersion) {
+		t.Errorf("MinVersionSpaceIDs (%s) should be less than %s", MinVersionSpaceIDs.String(), newerVersion.String())
+	}
+}
+
+func TestSpaceIDsVersionValidation(t *testing.T) {
+	ctx := context.Background()
+
+	// Test case where space_ids is not supported (older version)
+	spaceIDs, _ := types.SetValueFrom(ctx, types.StringType, []string{"default", "marketing"})
+	model := &agentPolicyModel{
+		Name:      types.StringValue("test"),
+		Namespace: types.StringValue("default"),
+		SpaceIDs:  spaceIDs,
+	}
+
+	// Create features with space_ids NOT supported
+	feat := features{
+		SupportsSpaceIDs: false,
+	}
+
+	// Test toAPICreateModel - should return error when space_ids is used but not supported
+	_, diags := model.toAPICreateModel(ctx, feat)
+	if !diags.HasError() {
+		t.Error("Expected error when using space_ids on unsupported version, but got none")
+	}
+
+	// Check that the error message contains the expected text
+	found := false
+	for _, diag := range diags {
+		if diag.Summary() == unsupportedElasticsearchVersionSummary {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("Expected %q error, but didn't find it", unsupportedElasticsearchVersionSummary)
+	}
+
+	// Test toAPIUpdateModel - should return error when space_ids is used but not supported
+	_, diags = model.toAPIUpdateModel(ctx, feat, nil)
+	if !diags.HasError() {
+		t.Error("Expected error when using space_ids on unsupported version in update, but got none")
+	}
+
+	// Test case where space_ids IS supported (newer version)
+	featSupported := features{
+		SupportsSpaceIDs: true,
+	}
+
+	// Test toAPICreateModel - should NOT return error when space_ids is supported
+	_, diags = model.toAPICreateModel(ctx, featSupported)
+	if diags.HasError() {
+		t.Errorf("Did not expect error when using space_ids on supported version: %v", diags)
+	}
+
+	// Test toAPIUpdateModel - should NOT return error when space_ids is supported
+	_, diags = model.toAPIUpdateModel(ctx, featSupported, nil)
+	if diags.HasError() {
+		t.Errorf("Did not expect error when using space_ids on supported version in update: %v", diags)
+	}
+
+	// Test case where space_ids is not set (should not cause validation errors)
+	modelWithoutSpaceIDs := &agentPolicyModel{
+		Name:      types.StringValue("test"),
+		Namespace: types.StringValue("default"),
+		// SpaceIDs is not set (null/unknown)
+	}
+
+	// Test toAPICreateModel - should NOT return error when space_ids is not set, even on unsupported version
+	_, diags = modelWithoutSpaceIDs.toAPICreateModel(ctx, feat)
+	if diags.HasError() {
+		t.Errorf("Did not expect error when space_ids is not set: %v", diags)
+	}
+
+	// Test toAPIUpdateModel - should NOT return error when space_ids is not set, even on unsupported version
+	_, diags = modelWithoutSpaceIDs.toAPIUpdateModel(ctx, feat, nil)
+	if diags.HasError() {
+		t.Errorf("Did not expect error when space_ids is not set in update: %v", diags)
+	}
+}
+
+func TestMinVersionAgentFeatures(t *testing.T) {
+	// Test that the MinVersionAgentFeatures constant is set correctly
+	expected := "8.7.0"
+	actual := MinVersionAgentFeatures.String()
+	if actual != expected {
+		t.Errorf("Expected MinVersionAgentFeatures to be '%s', got '%s'", expected, actual)
+	}
+
+	// Test version comparison - should be greater than 8.6.0
+	olderVersion := version.Must(version.NewVersion("8.6.0"))
+	if MinVersionAgentFeatures.LessThan(olderVersion) {
+		t.Errorf("MinVersionAgentFeatures (%s) should be greater than %s", MinVersionAgentFeatures.String(), olderVersion.String())
+	}
+
+	// Test version comparison - should be less than 8.8.0
+	newerVersion := version.Must(version.NewVersion("8.8.0"))
+	if MinVersionAgentFeatures.GreaterThan(newerVersion) {
+		t.Errorf("MinVersionAgentFeatures (%s) should be less than %s", MinVersionAgentFeatures.String(), newerVersion.String())
+	}
+}
+
+func TestAgentFeaturesVersionValidation(t *testing.T) {
+	ctx := context.Background()
+
+	// Test case where agent_features is not supported (older version) with FQDN
+	model := &agentPolicyModel{
+		Name:           types.StringValue("test"),
+		Namespace:      types.StringValue("default"),
+		HostNameFormat: types.StringValue(HostNameFormatFQDN),
+	}
+
+	// Create features with agent_features NOT supported
+	feat := features{
+		SupportsAgentFeatures: false,
+	}
+
+	// Test toAPICreateModel - should return error when host_name_format=fqdn on unsupported version
+	_, diags := model.toAPICreateModel(ctx, feat)
+	if !diags.HasError() {
+		t.Error("Expected error when using host_name_format=fqdn on unsupported version, but got none")
+	}
+
+	// Check that the error message contains the expected text
+	found := false
+	for _, diag := range diags {
+		if diag.Summary() == unsupportedElasticsearchVersionSummary {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("Expected %q error, but didn't find it", unsupportedElasticsearchVersionSummary)
+	}
+
+	// Test toAPIUpdateModel - should return error when host_name_format=fqdn on unsupported version
+	_, diags = model.toAPIUpdateModel(ctx, feat, nil)
+	if !diags.HasError() {
+		t.Error("Expected error when using host_name_format=fqdn on unsupported version in update, but got none")
+	}
+
+	// Test case where host_name_format=hostname (default) on unsupported version - should NOT error
+	modelWithHostname := &agentPolicyModel{
+		Name:           types.StringValue("test"),
+		Namespace:      types.StringValue("default"),
+		HostNameFormat: types.StringValue(HostNameFormatHostname),
+	}
+
+	// Test toAPICreateModel - should NOT return error for hostname (default) on unsupported version
+	_, diags = modelWithHostname.toAPICreateModel(ctx, feat)
+	if diags.HasError() {
+		t.Errorf("Did not expect error when using host_name_format=hostname on unsupported version: %v", diags)
+	}
+
+	// Test toAPIUpdateModel - should NOT return error for hostname (default) on unsupported version
+	_, diags = modelWithHostname.toAPIUpdateModel(ctx, feat, nil)
+	if diags.HasError() {
+		t.Errorf("Did not expect error when using host_name_format=hostname on unsupported version in update: %v", diags)
+	}
+
+	// Test case where agent_features IS supported (newer version)
+	featSupported := features{
+		SupportsAgentFeatures: true,
+	}
+
+	// Test toAPICreateModel - should NOT return error when agent_features is supported
+	_, diags = model.toAPICreateModel(ctx, featSupported)
+	if diags.HasError() {
+		t.Errorf("Did not expect error when using host_name_format on supported version: %v", diags)
+	}
+
+	// Test toAPIUpdateModel - should NOT return error when agent_features is supported
+	_, diags = model.toAPIUpdateModel(ctx, featSupported, nil)
+	if diags.HasError() {
+		t.Errorf("Did not expect error when using host_name_format on supported version in update: %v", diags)
+	}
+
+	// Test case where host_name_format is not set (should not cause validation errors)
+	modelWithoutHostNameFormat := &agentPolicyModel{
+		Name:      types.StringValue("test"),
+		Namespace: types.StringValue("default"),
+		// HostNameFormat is not set (null/unknown)
+	}
+
+	// Test toAPICreateModel - should NOT return error when host_name_format is not set, even on unsupported version
+	_, diags = modelWithoutHostNameFormat.toAPICreateModel(ctx, feat)
+	if diags.HasError() {
+		t.Errorf("Did not expect error when host_name_format is not set: %v", diags)
+	}
+
+	// Test toAPIUpdateModel - should NOT return error when host_name_format is not set, even on unsupported version
+	_, diags = modelWithoutHostNameFormat.toAPIUpdateModel(ctx, feat, nil)
+	if diags.HasError() {
+		t.Errorf("Did not expect error when host_name_format is not set in update: %v", diags)
+	}
+}

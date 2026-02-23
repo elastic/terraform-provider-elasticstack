@@ -1,14 +1,33 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package cluster
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/tfsdkutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -35,18 +54,12 @@ func ResourceSlm() *schema.Resource {
 			Type:        schema.TypeString,
 			Optional:    true,
 			Default:     "open,hidden",
-			ValidateDiagFunc: func(value interface{}, path cty.Path) diag.Diagnostics {
+			ValidateDiagFunc: func(value any, _ cty.Path) diag.Diagnostics {
 				validValues := []string{"all", "open", "closed", "hidden", "none"}
 
 				var diags diag.Diagnostics
-				for _, pv := range strings.Split(value.(string), ",") {
-					found := false
-					for _, vv := range validValues {
-						if vv == strings.TrimSpace(pv) {
-							found = true
-							break
-						}
-					}
+				for pv := range strings.SplitSeq(value.(string), ",") {
+					found := slices.Contains(validValues, strings.TrimSpace(pv))
 					if !found {
 						diags = append(diags, diag.Diagnostic{
 							Severity: diag.Error,
@@ -95,7 +108,7 @@ func ResourceSlm() *schema.Resource {
 			Optional:         true,
 			Computed:         true,
 			ValidateFunc:     validation.StringIsJSON,
-			DiffSuppressFunc: utils.DiffJsonSuppress,
+			DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 		},
 		"partial": {
 			Description: "If `false`, the entire snapshot will fail if one or more indices included in the snapshot do not have all primary shards available.",
@@ -136,10 +149,10 @@ func ResourceSlm() *schema.Resource {
 		},
 	}
 
-	utils.AddConnectionSchema(slmSchema)
+	schemautil.AddConnectionSchema(slmSchema)
 
 	return &schema.Resource{
-		Description: "Creates or updates a snapshot lifecycle policy. See the [SLM API policy documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/slm-api-put-policy.html) for more details.",
+		Description: slmResourceDescription,
 
 		CreateContext: resourceSlmPut,
 		UpdateContext: resourceSlmPut,
@@ -154,19 +167,19 @@ func ResourceSlm() *schema.Resource {
 	}
 }
 
-func resourceSlmPut(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+func resourceSlmPut(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
-	slmId := d.Get("name").(string)
-	id, diags := client.ID(ctx, slmId)
+	slmID := d.Get("name").(string)
+	id, diags := client.ID(ctx, slmID)
 	if diags.HasError() {
 		return diags
 	}
 
 	var slm models.SnapshotPolicy
-	slm.Id = slmId
+	slm.ID = slmID
 	var slmConfig models.SnapshotPolicyConfig
 	slmRetention := models.SnapshortRetention{}
 
@@ -201,7 +214,7 @@ func resourceSlmPut(ctx context.Context, d *schema.ResourceData, meta interface{
 	}
 	indices := make([]string, 0)
 	if v, ok := d.GetOk("indices"); ok {
-		list := v.([]interface{})
+		list := v.([]any)
 		for _, idx := range list {
 			indices = append(indices, idx.(string))
 		}
@@ -216,7 +229,7 @@ func resourceSlmPut(ctx context.Context, d *schema.ResourceData, meta interface{
 	}
 	slmConfig.FeatureStates = states
 	if v, ok := d.GetOk("metadata"); ok {
-		metadata := make(map[string]interface{})
+		metadata := make(map[string]any)
 		if err := json.NewDecoder(strings.NewReader(v.(string))).Decode(&metadata); err != nil {
 			return diag.FromErr(err)
 		}
@@ -236,19 +249,19 @@ func resourceSlmPut(ctx context.Context, d *schema.ResourceData, meta interface{
 	return resourceSlmRead(ctx, d, meta)
 }
 
-func resourceSlmRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+func resourceSlmRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
-	id, diags := clients.CompositeIdFromStr(d.Id())
+	id, diags := clients.CompositeIDFromStr(d.Id())
 	if diags.HasError() {
 		return diags
 	}
 
-	slm, diags := elasticsearch.GetSlm(ctx, client, id.ResourceId)
+	slm, diags := elasticsearch.GetSlm(ctx, client, id.ResourceID)
 	if slm == nil && diags == nil {
-		tflog.Warn(ctx, fmt.Sprintf(`SLM policy "%s" not found, removing from state`, id.ResourceId))
+		tflog.Warn(ctx, fmt.Sprintf(`SLM policy "%s" not found, removing from state`, id.ResourceID))
 		d.SetId("")
 		return diags
 	}
@@ -256,7 +269,7 @@ func resourceSlmRead(ctx context.Context, d *schema.ResourceData, meta interface
 		return diags
 	}
 
-	if err := d.Set("name", id.ResourceId); err != nil {
+	if err := d.Set("name", id.ResourceID); err != nil {
 		return diag.FromErr(err)
 	}
 	if err := d.Set("snapshot_name", slm.Name); err != nil {
@@ -328,16 +341,16 @@ func resourceSlmRead(ctx context.Context, d *schema.ResourceData, meta interface
 	return diags
 }
 
-func resourceSlmDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+func resourceSlmDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
-	id, diags := clients.CompositeIdFromStr(d.Id())
+	id, diags := clients.CompositeIDFromStr(d.Id())
 	if diags.HasError() {
 		return diags
 	}
-	if diags := elasticsearch.DeleteSlm(ctx, client, id.ResourceId); diags.HasError() {
+	if diags := elasticsearch.DeleteSlm(ctx, client, id.ResourceID); diags.HasError() {
 		return diags
 	}
 	return diags

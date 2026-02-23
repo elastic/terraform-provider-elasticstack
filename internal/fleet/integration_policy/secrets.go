@@ -1,4 +1,21 @@
-package integration_policy
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package integrationpolicy
 
 import (
 	"context"
@@ -37,7 +54,7 @@ func newSecretStore(ctx context.Context, resp *kbapi.PackagePolicy, private priv
 
 	// Remove any saved secret refs not present in the API response.
 	refs := make(map[string]any)
-	for _, r := range utils.Deref(resp.SecretReferences) {
+	for _, r := range schemautil.Deref(resp.SecretReferences) {
 		refs[r.Id] = nil
 	}
 
@@ -112,11 +129,11 @@ func HandleRespSecrets(ctx context.Context, resp *kbapi.PackagePolicy, private p
 		}
 	}
 
-	handleVars(utils.Deref(resp.Vars))
+	handleVars(schemautil.Deref(resp.Vars))
 	for _, input := range resp.Inputs {
-		handleVars(utils.Deref(input.Vars))
-		for _, stream := range utils.Deref(input.Streams) {
-			handleVars(utils.Deref(stream.Vars))
+		handleVars(schemautil.Deref(input.Vars))
+		for _, stream := range schemautil.Deref(input.Streams) {
+			handleVars(schemautil.Deref(stream.Vars))
 		}
 	}
 
@@ -188,14 +205,14 @@ func HandleReqRespSecrets(ctx context.Context, req kbapi.PackagePolicyRequest, r
 		}
 	}
 
-	handleVars(utils.Deref(req.Vars), utils.Deref(resp.Vars))
-	for inputID, inputReq := range utils.Deref(req.Inputs) {
+	handleVars(schemautil.Deref(req.Vars), schemautil.Deref(resp.Vars))
+	for inputID, inputReq := range schemautil.Deref(req.Inputs) {
 		inputResp := resp.Inputs[inputID]
-		handleVars(utils.Deref(inputReq.Vars), utils.Deref(inputResp.Vars))
-		streamsResp := utils.Deref(inputResp.Streams)
-		for streamID, streamReq := range utils.Deref(inputReq.Streams) {
+		handleVars(schemautil.Deref(inputReq.Vars), schemautil.Deref(inputResp.Vars))
+		streamsResp := schemautil.Deref(inputResp.Streams)
+		for streamID, streamReq := range schemautil.Deref(inputReq.Streams) {
 			streamResp := streamsResp[streamID]
-			handleVars(utils.Deref(streamReq.Vars), utils.Deref(streamResp.Vars))
+			handleVars(schemautil.Deref(streamReq.Vars), schemautil.Deref(streamResp.Vars))
 		}
 	}
 

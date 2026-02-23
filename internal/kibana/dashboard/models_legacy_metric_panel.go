@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package dashboard
 
 import (
@@ -6,8 +23,9 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -47,7 +65,7 @@ func (c legacyMetricPanelConfigConverter) populateFromAPIPanel(ctx context.Conte
 		return nil
 	}
 
-	attrsMap, ok := attrs.(map[string]interface{})
+	attrsMap, ok := attrs.(map[string]any)
 	if !ok {
 		return nil
 	}
@@ -108,12 +126,12 @@ func (c legacyMetricPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig
 type legacyMetricConfigModel struct {
 	Title               types.String                                      `tfsdk:"title"`
 	Description         types.String                                      `tfsdk:"description"`
-	Dataset             jsontypes.Normalized                              `tfsdk:"dataset"`
+	DatasetJSON         jsontypes.Normalized                              `tfsdk:"dataset_json"`
 	IgnoreGlobalFilters types.Bool                                        `tfsdk:"ignore_global_filters"`
 	Sampling            types.Float64                                     `tfsdk:"sampling"`
 	Query               *filterSimpleModel                                `tfsdk:"query"`
 	Filters             []searchFilterModel                               `tfsdk:"filters"`
-	Metric              customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"metric"`
+	MetricJSON          customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"metric_json"`
 }
 
 func (m *legacyMetricConfigModel) fromAPI(ctx context.Context, apiChart kbapi.LegacyMetricChartSchema) diag.Diagnostics {
@@ -135,6 +153,7 @@ func (m *legacyMetricConfigModel) fromAPI(ctx context.Context, apiChart kbapi.Le
 
 func (m *legacyMetricConfigModel) fromAPINoESQL(ctx context.Context, api kbapi.LegacyMetricNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
+	_ = ctx
 
 	m.Title = types.StringPointerValue(api.Title)
 	m.Description = types.StringPointerValue(api.Description)
@@ -144,7 +163,7 @@ func (m *legacyMetricConfigModel) fromAPINoESQL(ctx context.Context, api kbapi.L
 		diags.AddError("Failed to marshal dataset", err.Error())
 		return diags
 	}
-	m.Dataset = jsontypes.NewNormalizedValue(string(datasetBytes))
+	m.DatasetJSON = jsontypes.NewNormalizedValue(string(datasetBytes))
 
 	m.IgnoreGlobalFilters = types.BoolPointerValue(api.IgnoreGlobalFilters)
 	if api.Sampling != nil {
@@ -169,7 +188,7 @@ func (m *legacyMetricConfigModel) fromAPINoESQL(ctx context.Context, api kbapi.L
 		diags.AddError("Failed to marshal metric", err.Error())
 		return diags
 	}
-	m.Metric = customtypes.NewJSONWithDefaultsValue[map[string]any](
+	m.MetricJSON = customtypes.NewJSONWithDefaultsValue[map[string]any](
 		string(metricBytes),
 		populateLegacyMetricMetricDefaults,
 	)
@@ -179,6 +198,7 @@ func (m *legacyMetricConfigModel) fromAPINoESQL(ctx context.Context, api kbapi.L
 
 func (m *legacyMetricConfigModel) fromAPIESQL(ctx context.Context, api kbapi.LegacyMetricESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
+	_ = ctx
 
 	m.Title = types.StringPointerValue(api.Title)
 	m.Description = types.StringPointerValue(api.Description)
@@ -188,7 +208,7 @@ func (m *legacyMetricConfigModel) fromAPIESQL(ctx context.Context, api kbapi.Leg
 		diags.AddError("Failed to marshal dataset", err.Error())
 		return diags
 	}
-	m.Dataset = jsontypes.NewNormalizedValue(string(datasetBytes))
+	m.DatasetJSON = jsontypes.NewNormalizedValue(string(datasetBytes))
 
 	m.IgnoreGlobalFilters = types.BoolPointerValue(api.IgnoreGlobalFilters)
 	if api.Sampling != nil {
@@ -210,7 +230,7 @@ func (m *legacyMetricConfigModel) fromAPIESQL(ctx context.Context, api kbapi.Leg
 		diags.AddError("Failed to marshal metric", err.Error())
 		return diags
 	}
-	m.Metric = customtypes.NewJSONWithDefaultsValue[map[string]any](
+	m.MetricJSON = customtypes.NewJSONWithDefaultsValue[map[string]any](
 		string(metricBytes),
 		populateLegacyMetricMetricDefaults,
 	)
@@ -241,16 +261,16 @@ func (m *legacyMetricConfigModel) toAPI() (kbapi.LegacyMetricChartSchema, diag.D
 			Type: kbapi.LegacyMetricESQLTypeLegacyMetric,
 		}
 
-		if utils.IsKnown(m.Title) {
-			api.Title = utils.Pointer(m.Title.ValueString())
+		if typeutils.IsKnown(m.Title) {
+			api.Title = schemautil.Pointer(m.Title.ValueString())
 		}
-		if utils.IsKnown(m.Description) {
-			api.Description = utils.Pointer(m.Description.ValueString())
+		if typeutils.IsKnown(m.Description) {
+			api.Description = schemautil.Pointer(m.Description.ValueString())
 		}
-		if utils.IsKnown(m.IgnoreGlobalFilters) {
-			api.IgnoreGlobalFilters = utils.Pointer(m.IgnoreGlobalFilters.ValueBool())
+		if typeutils.IsKnown(m.IgnoreGlobalFilters) {
+			api.IgnoreGlobalFilters = schemautil.Pointer(m.IgnoreGlobalFilters.ValueBool())
 		}
-		if utils.IsKnown(m.Sampling) {
+		if typeutils.IsKnown(m.Sampling) {
 			sampling := float32(m.Sampling.ValueFloat64())
 			api.Sampling = &sampling
 		}
@@ -270,20 +290,20 @@ func (m *legacyMetricConfigModel) toAPI() (kbapi.LegacyMetricChartSchema, diag.D
 			return result, diags
 		}
 
-		if utils.IsKnown(m.Dataset) {
-			if err := json.Unmarshal([]byte(m.Dataset.ValueString()), &api.Dataset); err != nil {
+		if typeutils.IsKnown(m.DatasetJSON) {
+			if err := json.Unmarshal([]byte(m.DatasetJSON.ValueString()), &api.Dataset); err != nil {
 				diags.AddError("Failed to unmarshal dataset", err.Error())
 				return result, diags
 			}
 		}
 
-		if !utils.IsKnown(m.Metric) {
+		if !typeutils.IsKnown(m.MetricJSON) {
 			diags.AddError("Missing metric", "Metric is required for ESQL legacy metric charts")
 			return result, diags
 		}
 
 		var metric legacyMetricESQLMetricAPIModel
-		if err := json.Unmarshal([]byte(m.Metric.ValueString()), &metric); err != nil {
+		if err := json.Unmarshal([]byte(m.MetricJSON.ValueString()), &metric); err != nil {
 			diags.AddError("Failed to unmarshal metric", err.Error())
 			return result, diags
 		}
@@ -305,16 +325,16 @@ func (m *legacyMetricConfigModel) toAPI() (kbapi.LegacyMetricChartSchema, diag.D
 			Type: kbapi.LegacyMetricNoESQLTypeLegacyMetric,
 		}
 
-		if utils.IsKnown(m.Title) {
-			api.Title = utils.Pointer(m.Title.ValueString())
+		if typeutils.IsKnown(m.Title) {
+			api.Title = schemautil.Pointer(m.Title.ValueString())
 		}
-		if utils.IsKnown(m.Description) {
-			api.Description = utils.Pointer(m.Description.ValueString())
+		if typeutils.IsKnown(m.Description) {
+			api.Description = schemautil.Pointer(m.Description.ValueString())
 		}
-		if utils.IsKnown(m.IgnoreGlobalFilters) {
-			api.IgnoreGlobalFilters = utils.Pointer(m.IgnoreGlobalFilters.ValueBool())
+		if typeutils.IsKnown(m.IgnoreGlobalFilters) {
+			api.IgnoreGlobalFilters = schemautil.Pointer(m.IgnoreGlobalFilters.ValueBool())
 		}
-		if utils.IsKnown(m.Sampling) {
+		if typeutils.IsKnown(m.Sampling) {
 			sampling := float32(m.Sampling.ValueFloat64())
 			api.Sampling = &sampling
 		}
@@ -336,18 +356,18 @@ func (m *legacyMetricConfigModel) toAPI() (kbapi.LegacyMetricChartSchema, diag.D
 			return result, diags
 		}
 
-		if utils.IsKnown(m.Dataset) {
-			if err := json.Unmarshal([]byte(m.Dataset.ValueString()), &api.Dataset); err != nil {
+		if typeutils.IsKnown(m.DatasetJSON) {
+			if err := json.Unmarshal([]byte(m.DatasetJSON.ValueString()), &api.Dataset); err != nil {
 				diags.AddError("Failed to unmarshal dataset", err.Error())
 				return result, diags
 			}
 		}
 
-		if !utils.IsKnown(m.Metric) {
+		if !typeutils.IsKnown(m.MetricJSON) {
 			diags.AddError("Missing metric", "Metric is required for legacy metric charts")
 			return result, diags
 		}
-		if err := json.Unmarshal([]byte(m.Metric.ValueString()), &api.Metric); err != nil {
+		if err := json.Unmarshal([]byte(m.MetricJSON.ValueString()), &api.Metric); err != nil {
 			diags.AddError("Failed to unmarshal metric", err.Error())
 			return result, diags
 		}
@@ -365,7 +385,7 @@ func (m *legacyMetricConfigModel) toAPI() (kbapi.LegacyMetricChartSchema, diag.D
 func (m *legacyMetricConfigModel) datasetType() (string, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	if !utils.IsKnown(m.Dataset) {
+	if !typeutils.IsKnown(m.DatasetJSON) {
 		diags.AddError("Missing dataset", "Dataset is required for legacy metric charts")
 		return "", diags
 	}
@@ -373,7 +393,7 @@ func (m *legacyMetricConfigModel) datasetType() (string, diag.Diagnostics) {
 	var datasetType struct {
 		Type string `json:"type"`
 	}
-	if err := json.Unmarshal([]byte(m.Dataset.ValueString()), &datasetType); err != nil {
+	if err := json.Unmarshal([]byte(m.DatasetJSON.ValueString()), &datasetType); err != nil {
 		diags.AddError("Failed to decode dataset type", err.Error())
 		return "", diags
 	}

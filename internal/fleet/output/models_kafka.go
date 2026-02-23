@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package output
 
 import (
@@ -15,7 +32,7 @@ import (
 type outputKafkaModel struct {
 	AuthType         types.String  `tfsdk:"auth_type"`
 	BrokerTimeout    types.Float32 `tfsdk:"broker_timeout"`
-	ClientId         types.String  `tfsdk:"client_id"`
+	ClientID         types.String  `tfsdk:"client_id"`
 	Compression      types.String  `tfsdk:"compression"`
 	CompressionLevel types.Int64   `tfsdk:"compression_level"`
 	ConnectionType   types.String  `tfsdk:"connection_type"`
@@ -27,11 +44,11 @@ type outputKafkaModel struct {
 	Username         types.String  `tfsdk:"username"`
 	Password         types.String  `tfsdk:"password"`
 	Key              types.String  `tfsdk:"key"`
-	Headers          types.List    `tfsdk:"headers"`     //> outputHeadersModel
-	Hash             types.Object  `tfsdk:"hash"`        //> outputHashModel
-	Random           types.Object  `tfsdk:"random"`      //> outputRandomModel
-	RoundRobin       types.Object  `tfsdk:"round_robin"` //> outputRoundRobinModel
-	Sasl             types.Object  `tfsdk:"sasl"`        //> outputSaslModel
+	Headers          types.List    `tfsdk:"headers"`     // > outputHeadersModel
+	Hash             types.Object  `tfsdk:"hash"`        // > outputHashModel
+	Random           types.Object  `tfsdk:"random"`      // > outputRandomModel
+	RoundRobin       types.Object  `tfsdk:"round_robin"` // > outputRoundRobinModel
+	Sasl             types.Object  `tfsdk:"sasl"`        // > outputSaslModel
 }
 
 type outputHeadersModel struct {
@@ -60,7 +77,7 @@ func (m outputKafkaModel) toAPIHash(ctx context.Context) (*struct {
 	Hash   *string `json:"hash,omitempty"`
 	Random *bool   `json:"random,omitempty"`
 }, diag.Diagnostics) {
-	if !utils.IsKnown(m.Hash) {
+	if !typeutils.IsKnown(m.Hash) {
 		return nil, nil
 	}
 
@@ -83,12 +100,12 @@ func (m outputKafkaModel) toAPIHeaders(ctx context.Context) (*[]struct {
 	Key   string `json:"key"`
 	Value string `json:"value"`
 }, diag.Diagnostics) {
-	if !utils.IsKnown(m.Headers) {
+	if !typeutils.IsKnown(m.Headers) {
 		return nil, nil
 	}
 
 	var diags diag.Diagnostics
-	headerModels := utils.ListTypeAs[outputHeadersModel](ctx, m.Headers, path.Root("kafka").AtName("headers"), &diags)
+	headerModels := typeutils.ListTypeAs[outputHeadersModel](ctx, m.Headers, path.Root("kafka").AtName("headers"), &diags)
 	if len(headerModels) == 0 {
 		return nil, diags
 	}
@@ -112,7 +129,7 @@ func (m outputKafkaModel) toAPIHeaders(ctx context.Context) (*[]struct {
 func (m outputKafkaModel) toAPIRandom(ctx context.Context) (*struct {
 	GroupEvents *float32 `json:"group_events,omitempty"`
 }, diag.Diagnostics) {
-	if !utils.IsKnown(m.Random) {
+	if !typeutils.IsKnown(m.Random) {
 		return nil, nil
 	}
 
@@ -138,7 +155,7 @@ func (m outputKafkaModel) toAPIRandom(ctx context.Context) (*struct {
 func (m outputKafkaModel) toAPIRoundRobin(ctx context.Context) (*struct {
 	GroupEvents *float32 `json:"group_events,omitempty"`
 }, diag.Diagnostics) {
-	if !utils.IsKnown(m.RoundRobin) {
+	if !typeutils.IsKnown(m.RoundRobin) {
 		return nil, nil
 	}
 
@@ -163,7 +180,7 @@ func (m outputKafkaModel) toAPIRoundRobin(ctx context.Context) (*struct {
 func (m outputKafkaModel) toAPISasl(ctx context.Context) (*struct {
 	Mechanism *kbapi.NewOutputKafkaSaslMechanism `json:"mechanism,omitempty"`
 }, diag.Diagnostics) {
-	if !utils.IsKnown(m.Sasl) {
+	if !typeutils.IsKnown(m.Sasl) {
 		return nil, nil
 	}
 	var saslModel outputSaslModel
@@ -201,7 +218,7 @@ func (m outputKafkaModel) toUpdateAPISasl(ctx context.Context) (*struct {
 }
 
 func (m outputKafkaModel) toAuthType() kbapi.NewOutputKafkaAuthType {
-	if !utils.IsKnown(m.AuthType) {
+	if !typeutils.IsKnown(m.AuthType) {
 		return kbapi.NewOutputKafkaAuthTypeNone
 	}
 
@@ -209,11 +226,11 @@ func (m outputKafkaModel) toAuthType() kbapi.NewOutputKafkaAuthType {
 }
 
 func (m outputKafkaModel) toUpdateAuthType() *kbapi.UpdateOutputKafkaAuthType {
-	if !utils.IsKnown(m.AuthType) {
+	if !typeutils.IsKnown(m.AuthType) {
 		return nil
 	}
 
-	return utils.Pointer(kbapi.UpdateOutputKafkaAuthType(m.AuthType.ValueString()))
+	return schemautil.Pointer(kbapi.UpdateOutputKafkaAuthType(m.AuthType.ValueString()))
 }
 
 func (model outputModel) toAPICreateKafkaModel(ctx context.Context) (kbapi.NewOutputUnion, diag.Diagnostics) {
@@ -225,7 +242,7 @@ func (model outputModel) toAPICreateKafkaModel(ctx context.Context) (kbapi.NewOu
 	// Extract kafka model from nested structure
 	var kafkaModel outputKafkaModel
 	if !model.Kafka.IsNull() {
-		kafkaObj := utils.ObjectTypeAs[outputKafkaModel](ctx, model.Kafka, path.Root("kafka"), &diags)
+		kafkaObj := typeutils.ObjectTypeAs[outputKafkaModel](ctx, model.Kafka, path.Root("kafka"), &diags)
 		kafkaModel = *kafkaObj
 	}
 
@@ -249,7 +266,7 @@ func (model outputModel) toAPICreateKafkaModel(ctx context.Context) (kbapi.NewOu
 		CaSha256:             model.CaSha256.ValueStringPointer(),
 		CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
 		ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
-		Hosts:                utils.ListTypeToSlice_String(ctx, model.Hosts, path.Root("hosts"), &diags),
+		Hosts:                typeutils.ListTypeToSliceString(ctx, model.Hosts, path.Root("hosts"), &diags),
 		Id:                   model.OutputID.ValueStringPointer(),
 		IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
 		IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
@@ -258,22 +275,22 @@ func (model outputModel) toAPICreateKafkaModel(ctx context.Context) (kbapi.NewOu
 		// Kafka-specific fields
 		AuthType: kafkaModel.toAuthType(),
 		BrokerTimeout: func() *float32 {
-			if !utils.IsKnown(kafkaModel.BrokerTimeout) {
+			if !typeutils.IsKnown(kafkaModel.BrokerTimeout) {
 				return nil
 			}
 			val := kafkaModel.BrokerTimeout.ValueFloat32()
 			return &val
 		}(),
-		ClientId: kafkaModel.ClientId.ValueStringPointer(),
+		ClientId: kafkaModel.ClientID.ValueStringPointer(),
 		Compression: func() *kbapi.NewOutputKafkaCompression {
-			if !utils.IsKnown(kafkaModel.Compression) {
+			if !typeutils.IsKnown(kafkaModel.Compression) {
 				return nil
 			}
 			comp := kbapi.NewOutputKafkaCompression(kafkaModel.Compression.ValueString())
 			return &comp
 		}(),
 		CompressionLevel: func() *int {
-			if !utils.IsKnown(kafkaModel.CompressionLevel) || kafkaModel.Compression.ValueString() != "gzip" {
+			if !typeutils.IsKnown(kafkaModel.CompressionLevel) || kafkaModel.Compression.ValueString() != "gzip" {
 				return nil
 			}
 
@@ -283,21 +300,21 @@ func (model outputModel) toAPICreateKafkaModel(ctx context.Context) (kbapi.NewOu
 		ConnectionType: kafkaModel.ConnectionType.ValueStringPointer(),
 		Topic:          kafkaModel.Topic.ValueStringPointer(),
 		Partition: func() *kbapi.NewOutputKafkaPartition {
-			if !utils.IsKnown(kafkaModel.Partition) {
+			if !typeutils.IsKnown(kafkaModel.Partition) {
 				return nil
 			}
 			part := kbapi.NewOutputKafkaPartition(kafkaModel.Partition.ValueString())
 			return &part
 		}(),
 		RequiredAcks: func() *kbapi.NewOutputKafkaRequiredAcks {
-			if !utils.IsKnown(kafkaModel.RequiredAcks) {
+			if !typeutils.IsKnown(kafkaModel.RequiredAcks) {
 				return nil
 			}
 			val := kbapi.NewOutputKafkaRequiredAcks(kafkaModel.RequiredAcks.ValueInt64())
 			return &val
 		}(),
 		Timeout: func() *float32 {
-			if !utils.IsKnown(kafkaModel.Timeout) {
+			if !typeutils.IsKnown(kafkaModel.Timeout) {
 				return nil
 			}
 
@@ -334,7 +351,7 @@ func (model outputModel) toAPIUpdateKafkaModel(ctx context.Context) (kbapi.Updat
 	// Extract kafka model from nested structure
 	var kafkaModel outputKafkaModel
 	if !model.Kafka.IsNull() {
-		kafkaObj := utils.ObjectTypeAs[outputKafkaModel](ctx, model.Kafka, path.Root("kafka"), &diags)
+		kafkaObj := typeutils.ObjectTypeAs[outputKafkaModel](ctx, model.Kafka, path.Root("kafka"), &diags)
 		kafkaModel = *kafkaObj
 	}
 
@@ -354,11 +371,11 @@ func (model outputModel) toAPIUpdateKafkaModel(ctx context.Context) (kbapi.Updat
 	diags.Append(saslDiags...)
 
 	body := kbapi.UpdateOutputKafka{
-		Type:                 utils.Pointer(kbapi.Kafka),
+		Type:                 schemautil.Pointer(kbapi.Kafka),
 		CaSha256:             model.CaSha256.ValueStringPointer(),
 		CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
 		ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
-		Hosts:                utils.SliceRef(utils.ListTypeToSlice_String(ctx, model.Hosts, path.Root("hosts"), &diags)),
+		Hosts:                schemautil.SliceRef(typeutils.ListTypeToSliceString(ctx, model.Hosts, path.Root("hosts"), &diags)),
 		IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
 		IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
 		Name:                 model.Name.ValueString(),
@@ -366,22 +383,22 @@ func (model outputModel) toAPIUpdateKafkaModel(ctx context.Context) (kbapi.Updat
 		// Kafka-specific fields
 		AuthType: kafkaModel.toUpdateAuthType(),
 		BrokerTimeout: func() *float32 {
-			if !utils.IsKnown(kafkaModel.BrokerTimeout) {
+			if !typeutils.IsKnown(kafkaModel.BrokerTimeout) {
 				return nil
 			}
 			val := kafkaModel.BrokerTimeout.ValueFloat32()
 			return &val
 		}(),
-		ClientId: kafkaModel.ClientId.ValueStringPointer(),
+		ClientId: kafkaModel.ClientID.ValueStringPointer(),
 		Compression: func() *kbapi.UpdateOutputKafkaCompression {
-			if !utils.IsKnown(kafkaModel.Compression) {
+			if !typeutils.IsKnown(kafkaModel.Compression) {
 				return nil
 			}
 			comp := kbapi.UpdateOutputKafkaCompression(kafkaModel.Compression.ValueString())
 			return &comp
 		}(),
 		CompressionLevel: func() *int {
-			if !utils.IsKnown(kafkaModel.CompressionLevel) || kafkaModel.Compression.ValueString() != "gzip" {
+			if !typeutils.IsKnown(kafkaModel.CompressionLevel) || kafkaModel.Compression.ValueString() != "gzip" {
 				return nil
 			}
 			val := int(kafkaModel.CompressionLevel.ValueInt64())
@@ -390,21 +407,21 @@ func (model outputModel) toAPIUpdateKafkaModel(ctx context.Context) (kbapi.Updat
 		ConnectionType: kafkaModel.ConnectionType.ValueStringPointer(),
 		Topic:          kafkaModel.Topic.ValueStringPointer(),
 		Partition: func() *kbapi.UpdateOutputKafkaPartition {
-			if !utils.IsKnown(kafkaModel.Partition) {
+			if !typeutils.IsKnown(kafkaModel.Partition) {
 				return nil
 			}
 			part := kbapi.UpdateOutputKafkaPartition(kafkaModel.Partition.ValueString())
 			return &part
 		}(),
 		RequiredAcks: func() *kbapi.UpdateOutputKafkaRequiredAcks {
-			if !utils.IsKnown(kafkaModel.RequiredAcks) {
+			if !typeutils.IsKnown(kafkaModel.RequiredAcks) {
 				return nil
 			}
 			val := kbapi.UpdateOutputKafkaRequiredAcks(kafkaModel.RequiredAcks.ValueInt64())
 			return &val
 		}(),
 		Timeout: func() *float32 {
-			if !utils.IsKnown(kafkaModel.Timeout) {
+			if !typeutils.IsKnown(kafkaModel.Timeout) {
 				return nil
 			}
 			val := kafkaModel.Timeout.ValueFloat32()
@@ -436,7 +453,7 @@ func (model *outputModel) fromAPIKafkaModel(ctx context.Context, data *kbapi.Out
 	model.OutputID = types.StringPointerValue(data.Id)
 	model.Name = types.StringValue(data.Name)
 	model.Type = types.StringValue(string(data.Type))
-	model.Hosts = utils.SliceToListType_String(ctx, data.Hosts, path.Root("hosts"), &diags)
+	model.Hosts = typeutils.SliceToListTypeString(ctx, data.Hosts, path.Root("hosts"), &diags)
 	model.CaSha256 = types.StringPointerValue(data.CaSha256)
 	model.CaTrustedFingerprint = typeutils.NonEmptyStringishPointerValue(data.CaTrustedFingerprint)
 	model.DefaultIntegrations = types.BoolPointerValue(data.IsDefault)
@@ -448,7 +465,7 @@ func (model *outputModel) fromAPIKafkaModel(ctx context.Context, data *kbapi.Out
 	kafkaModel := outputKafkaModel{}
 	kafkaModel.AuthType = types.StringValue(string(data.AuthType))
 	kafkaModel.BrokerTimeout = types.Float32PointerValue(data.BrokerTimeout)
-	kafkaModel.ClientId = types.StringPointerValue(data.ClientId)
+	kafkaModel.ClientID = types.StringPointerValue(data.ClientId)
 	kafkaModel.Compression = types.StringPointerValue((*string)(data.Compression))
 	// Handle CompressionLevel
 	if data.CompressionLevel != nil {
@@ -557,11 +574,11 @@ func (model *outputModel) fromAPIKafkaModel(ctx context.Context, data *kbapi.Out
 	diags.Append(nd...)
 	model.Kafka = kafkaObj
 
-	// Note: SpaceIds is not returned by the API for outputs
+	// Note: SpaceIDs is not returned by the API for outputs
 	// If it's currently null/unknown, set to explicit null to satisfy Terraform's requirement
 	// If it has a value from plan, preserve it to avoid plan diffs
-	if model.SpaceIds.IsNull() || model.SpaceIds.IsUnknown() {
-		model.SpaceIds = types.SetNull(types.StringType)
+	if model.SpaceIDs.IsNull() || model.SpaceIDs.IsUnknown() {
+		model.SpaceIDs = types.SetNull(types.StringType)
 	}
 
 	return

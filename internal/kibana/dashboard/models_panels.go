@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package dashboard
 
 import (
@@ -6,6 +23,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -23,6 +41,7 @@ type panelModel struct {
 	GaugeConfig        *gaugeConfigModel        `tfsdk:"gauge_config"`
 	LegacyMetricConfig *legacyMetricConfigModel `tfsdk:"legacy_metric_config"`
 	RegionMapConfig    *regionMapConfigModel    `tfsdk:"region_map_config"`
+	HeatmapConfig      *heatmapConfigModel      `tfsdk:"heatmap_config"`
 	ConfigJSON         jsontypes.Normalized     `tfsdk:"config_json"`
 }
 
@@ -46,10 +65,10 @@ type sectionGridModel struct {
 }
 
 type panelConfigConverter interface {
-	handlesAPIPanelConfig(*panelModel, string, kbapi.DashboardPanelItem_Config) bool
-	handlesTFPanelConfig(pm panelModel) bool
-	populateFromAPIPanel(context.Context, *panelModel, kbapi.DashboardPanelItem_Config) diag.Diagnostics
-	mapPanelToAPI(panelModel, *kbapi.DashboardPanelItem_Config) diag.Diagnostics
+	handlesAPIPanelConfig(ctx *panelModel, panelType string, config kbapi.DashboardPanelItem_Config) bool
+	handlesTFPanelConfig(tfModel panelModel) bool
+	populateFromAPIPanel(ctx context.Context, tfModel *panelModel, config kbapi.DashboardPanelItem_Config) diag.Diagnostics
+	mapPanelToAPI(tfModel panelModel, config *kbapi.DashboardPanelItem_Config) diag.Diagnostics
 }
 
 var panelConfigConverters = []panelConfigConverter{
@@ -57,6 +76,7 @@ var panelConfigConverters = []panelConfigConverter{
 	newXYChartPanelConfigConverter(),
 	newDatatablePanelConfigConverter(),
 	newTagcloudPanelConfigConverter(),
+	newHeatmapPanelConfigConverter(),
 	newRegionMapPanelConfigConverter(),
 	newLegacyMetricPanelConfigConverter(),
 	newGaugePanelConfigConverter(),
@@ -230,11 +250,11 @@ func (m *dashboardModel) panelsToAPI() (*kbapi.DashboardPanels, diag.Diagnostics
 			},
 		}
 
-		if utils.IsKnown(sm.Collapsed) {
-			section.Collapsed = utils.Pointer(sm.Collapsed.ValueBool())
+		if typeutils.IsKnown(sm.Collapsed) {
+			section.Collapsed = schemautil.Pointer(sm.Collapsed.ValueBool())
 		}
-		if utils.IsKnown(sm.ID) {
-			section.Uid = utils.Pointer(sm.ID.ValueString())
+		if typeutils.IsKnown(sm.ID) {
+			section.Uid = schemautil.Pointer(sm.ID.ValueString())
 		}
 
 		if len(sm.Panels) > 0 {
@@ -277,17 +297,17 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 		},
 	}
 
-	if utils.IsKnown(pm.Grid.W) {
+	if typeutils.IsKnown(pm.Grid.W) {
 		w := float32(pm.Grid.W.ValueInt64())
 		panelItem.Grid.W = &w
 	}
-	if utils.IsKnown(pm.Grid.H) {
+	if typeutils.IsKnown(pm.Grid.H) {
 		h := float32(pm.Grid.H.ValueInt64())
 		panelItem.Grid.H = &h
 	}
 
-	if utils.IsKnown(pm.ID) {
-		panelItem.Uid = utils.Pointer(pm.ID.ValueString())
+	if typeutils.IsKnown(pm.ID) {
+		panelItem.Uid = schemautil.Pointer(pm.ID.ValueString())
 	}
 
 	var diags diag.Diagnostics
@@ -305,8 +325,8 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 		}
 	}
 
-	if !panelConfigHandled && utils.IsKnown(pm.ConfigJSON) {
-		var configMap map[string]interface{}
+	if !panelConfigHandled && typeutils.IsKnown(pm.ConfigJSON) {
+		var configMap map[string]any
 		diags.Append(pm.ConfigJSON.Unmarshal(&configMap)...)
 		if !diags.HasError() {
 			if err := panelItem.Config.FromDashboardPanelItemConfig2(configMap); err != nil {

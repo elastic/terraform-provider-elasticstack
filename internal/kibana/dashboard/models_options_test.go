@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package dashboard
 
 import (
@@ -31,11 +48,11 @@ func Test_dashboardModel_optionsToAPI(t *testing.T) {
 				SyncCursor:      types.BoolValue(true),
 			},
 			want: &optionsAPIModel{
-				HidePanelTitles: utils.Pointer(true),
-				UseMargins:      utils.Pointer(true),
-				SyncColors:      utils.Pointer(true),
-				SyncTooltips:    utils.Pointer(true),
-				SyncCursor:      utils.Pointer(true),
+				HidePanelTitles: schemautil.Pointer(true),
+				UseMargins:      schemautil.Pointer(true),
+				SyncColors:      schemautil.Pointer(true),
+				SyncTooltips:    schemautil.Pointer(true),
+				SyncCursor:      schemautil.Pointer(true),
 			},
 		},
 		{
@@ -48,11 +65,11 @@ func Test_dashboardModel_optionsToAPI(t *testing.T) {
 				SyncCursor:      types.BoolValue(false),
 			},
 			want: &optionsAPIModel{
-				HidePanelTitles: utils.Pointer(false),
-				UseMargins:      utils.Pointer(false),
-				SyncColors:      utils.Pointer(false),
-				SyncTooltips:    utils.Pointer(false),
-				SyncCursor:      utils.Pointer(false),
+				HidePanelTitles: schemautil.Pointer(false),
+				UseMargins:      schemautil.Pointer(false),
+				SyncColors:      schemautil.Pointer(false),
+				SyncTooltips:    schemautil.Pointer(false),
+				SyncCursor:      schemautil.Pointer(false),
 			},
 		},
 		{
@@ -65,11 +82,11 @@ func Test_dashboardModel_optionsToAPI(t *testing.T) {
 				SyncCursor:      types.BoolValue(true),
 			},
 			want: &optionsAPIModel{
-				HidePanelTitles: utils.Pointer(true),
+				HidePanelTitles: schemautil.Pointer(true),
 				UseMargins:      nil,
-				SyncColors:      utils.Pointer(false),
+				SyncColors:      schemautil.Pointer(false),
 				SyncTooltips:    nil,
-				SyncCursor:      utils.Pointer(true),
+				SyncCursor:      schemautil.Pointer(true),
 			},
 		},
 		{
@@ -83,9 +100,9 @@ func Test_dashboardModel_optionsToAPI(t *testing.T) {
 			},
 			want: &optionsAPIModel{
 				HidePanelTitles: nil,
-				UseMargins:      utils.Pointer(true),
+				UseMargins:      schemautil.Pointer(true),
 				SyncColors:      nil,
-				SyncTooltips:    utils.Pointer(false),
+				SyncTooltips:    schemautil.Pointer(false),
 				SyncCursor:      nil,
 			},
 		},
@@ -123,11 +140,11 @@ func Test_dashboardModel_mapOptionsFromAPI(t *testing.T) {
 		{
 			name: "converts all fields when set to true",
 			options: &optionsAPIModel{
-				HidePanelTitles: utils.Pointer(true),
-				UseMargins:      utils.Pointer(true),
-				SyncColors:      utils.Pointer(true),
-				SyncTooltips:    utils.Pointer(true),
-				SyncCursor:      utils.Pointer(true),
+				HidePanelTitles: schemautil.Pointer(true),
+				UseMargins:      schemautil.Pointer(true),
+				SyncColors:      schemautil.Pointer(true),
+				SyncTooltips:    schemautil.Pointer(true),
+				SyncCursor:      schemautil.Pointer(true),
 			},
 			want: &optionsModel{
 				HidePanelTitles: types.BoolValue(true),
@@ -140,11 +157,11 @@ func Test_dashboardModel_mapOptionsFromAPI(t *testing.T) {
 		{
 			name: "converts all fields when set to false",
 			options: &optionsAPIModel{
-				HidePanelTitles: utils.Pointer(false),
-				UseMargins:      utils.Pointer(false),
-				SyncColors:      utils.Pointer(false),
-				SyncTooltips:    utils.Pointer(false),
-				SyncCursor:      utils.Pointer(false),
+				HidePanelTitles: schemautil.Pointer(false),
+				UseMargins:      schemautil.Pointer(false),
+				SyncColors:      schemautil.Pointer(false),
+				SyncTooltips:    schemautil.Pointer(false),
+				SyncCursor:      schemautil.Pointer(false),
 			},
 			want: &optionsModel{
 				HidePanelTitles: types.BoolValue(false),
@@ -157,11 +174,11 @@ func Test_dashboardModel_mapOptionsFromAPI(t *testing.T) {
 		{
 			name: "handles mixed nil and set values",
 			options: &optionsAPIModel{
-				HidePanelTitles: utils.Pointer(true),
+				HidePanelTitles: schemautil.Pointer(true),
 				UseMargins:      nil,
-				SyncColors:      utils.Pointer(false),
+				SyncColors:      schemautil.Pointer(false),
 				SyncTooltips:    nil,
-				SyncCursor:      utils.Pointer(true),
+				SyncCursor:      schemautil.Pointer(true),
 			},
 			want: &optionsModel{
 				HidePanelTitles: types.BoolValue(true),
@@ -226,11 +243,11 @@ func Test_optionsModel_toAPI(t *testing.T) {
 				SyncCursor:      types.BoolValue(true),
 			},
 			want: &optionsAPIModel{
-				HidePanelTitles: utils.Pointer(true),
-				UseMargins:      utils.Pointer(true),
-				SyncColors:      utils.Pointer(true),
-				SyncTooltips:    utils.Pointer(true),
-				SyncCursor:      utils.Pointer(true),
+				HidePanelTitles: schemautil.Pointer(true),
+				UseMargins:      schemautil.Pointer(true),
+				SyncColors:      schemautil.Pointer(true),
+				SyncTooltips:    schemautil.Pointer(true),
+				SyncCursor:      schemautil.Pointer(true),
 			},
 		},
 		{
@@ -243,11 +260,11 @@ func Test_optionsModel_toAPI(t *testing.T) {
 				SyncCursor:      types.BoolValue(false),
 			},
 			want: &optionsAPIModel{
-				HidePanelTitles: utils.Pointer(false),
-				UseMargins:      utils.Pointer(false),
-				SyncColors:      utils.Pointer(false),
-				SyncTooltips:    utils.Pointer(false),
-				SyncCursor:      utils.Pointer(false),
+				HidePanelTitles: schemautil.Pointer(false),
+				UseMargins:      schemautil.Pointer(false),
+				SyncColors:      schemautil.Pointer(false),
+				SyncTooltips:    schemautil.Pointer(false),
+				SyncCursor:      schemautil.Pointer(false),
 			},
 		},
 		{
@@ -260,11 +277,11 @@ func Test_optionsModel_toAPI(t *testing.T) {
 				SyncCursor:      types.BoolValue(true),
 			},
 			want: &optionsAPIModel{
-				HidePanelTitles: utils.Pointer(true),
+				HidePanelTitles: schemautil.Pointer(true),
 				UseMargins:      nil,
-				SyncColors:      utils.Pointer(false),
+				SyncColors:      schemautil.Pointer(false),
 				SyncTooltips:    nil,
-				SyncCursor:      utils.Pointer(true),
+				SyncCursor:      schemautil.Pointer(true),
 			},
 		},
 		{
@@ -278,9 +295,9 @@ func Test_optionsModel_toAPI(t *testing.T) {
 			},
 			want: &optionsAPIModel{
 				HidePanelTitles: nil,
-				UseMargins:      utils.Pointer(true),
+				UseMargins:      schemautil.Pointer(true),
 				SyncColors:      nil,
-				SyncTooltips:    utils.Pointer(false),
+				SyncTooltips:    schemautil.Pointer(false),
 				SyncCursor:      nil,
 			},
 		},
@@ -339,7 +356,7 @@ func Test_optionsModel_toAPI(t *testing.T) {
 				SyncCursor:      types.BoolNull(),
 			},
 			want: &optionsAPIModel{
-				HidePanelTitles: utils.Pointer(true),
+				HidePanelTitles: schemautil.Pointer(true),
 				UseMargins:      nil,
 				SyncColors:      nil,
 				SyncTooltips:    nil,

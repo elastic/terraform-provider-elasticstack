@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package index
 
 import (
@@ -10,8 +27,8 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -196,7 +213,7 @@ func (model *tfModel) populateFromAPI(ctx context.Context, indexName string, api
 		model.Mappings = jsontypes.NewNormalizedValue(string(mappingBytes))
 	}
 
-	diags = setSettingsFromAPI(ctx, model, apiModel)
+	diags = setSettingsFromAPI(model, apiModel)
 	if diags.HasError() {
 		return diags
 	}
@@ -223,7 +240,7 @@ func aliasesFromAPI(ctx context.Context, apiModel models.Index) (basetypes.SetVa
 	return modelAliases, nil
 }
 
-func setSettingsFromAPI(ctx context.Context, model *tfModel, apiModel models.Index) diag.Diagnostics {
+func setSettingsFromAPI(model *tfModel, apiModel models.Index) diag.Diagnostics {
 	settingsBytes, err := json.Marshal(apiModel.Settings)
 	if err != nil {
 		return diag.Diagnostics{
@@ -244,10 +261,10 @@ func (model tfModel) toAPIModel(ctx context.Context) (models.Index, diag.Diagnos
 
 	apiModel := models.Index{
 		Name:     model.Name.ValueString(),
-		Settings: map[string]interface{}{},
+		Settings: map[string]any{},
 	}
 
-	if utils.IsKnown(model.Alias) {
+	if typeutils.IsKnown(model.Alias) {
 		apiModel.Aliases = map[string]models.IndexAlias{}
 
 		var planAliases []aliasTfModel
@@ -273,7 +290,7 @@ func (model tfModel) toAPIModel(ctx context.Context) (models.Index, diag.Diagnos
 
 	apiModel.Settings = settings
 
-	if utils.IsKnown(model.Mappings) {
+	if typeutils.IsKnown(model.Mappings) {
 		diags.Append(model.Mappings.Unmarshal(&apiModel.Mappings)...)
 		if diags.HasError() {
 			return models.Index{}, diags
@@ -300,24 +317,24 @@ func (model tfModel) toPutIndexParams(serverFlavor string) models.PutIndexParams
 	return params
 }
 
-func (model tfModel) GetID() (*clients.CompositeId, diag.Diagnostics) {
-	compId, sdkDiags := clients.CompositeIdFromStr(model.ID.ValueString())
+func (model tfModel) GetID() (*clients.CompositeID, diag.Diagnostics) {
+	compID, sdkDiags := clients.CompositeIDFromStr(model.ID.ValueString())
 	if sdkDiags.HasError() {
 		return nil, diagutil.FrameworkDiagsFromSDK(sdkDiags)
 	}
 
-	return compId, nil
+	return compID, nil
 }
 
-func (model tfModel) toIndexSettings(ctx context.Context) (map[string]interface{}, diag.Diagnostics) {
-	settings := map[string]interface{}{}
-	modelType := reflect.TypeOf(model)
+func (model tfModel) toIndexSettings(ctx context.Context) (map[string]any, diag.Diagnostics) {
+	settings := map[string]any{}
+	modelType := reflect.TypeFor[tfModel]()
 
 	for _, key := range allSettingsKeys {
 		tfFieldKey := convertSettingsKeyToTFFieldKey(key)
 		value, ok := model.getFieldValueByTagValue(tfFieldKey, modelType)
 		if !ok {
-			return map[string]interface{}{}, diag.Diagnostics{
+			return map[string]any{}, diag.Diagnostics{
 				diag.NewErrorDiagnostic(
 					"failed to find setting value",
 					fmt.Sprintf("expected setting with key %s", tfFieldKey),
@@ -326,7 +343,7 @@ func (model tfModel) toIndexSettings(ctx context.Context) (map[string]interface{
 		}
 
 		if !value.IsNull() && !value.IsUnknown() {
-			var settingsValue interface{}
+			var settingsValue any
 			switch a := value.(type) {
 			case types.String:
 				settingsValue = a.ValueString()
@@ -337,7 +354,7 @@ func (model tfModel) toIndexSettings(ctx context.Context) (map[string]interface{
 			case types.List:
 				elemType := a.ElementType(ctx)
 				if elemType != types.StringType {
-					return map[string]interface{}{}, diag.Diagnostics{
+					return map[string]any{}, diag.Diagnostics{
 						diag.NewErrorDiagnostic(
 							"expected list of string",
 							fmt.Sprintf("expected list element type to be string but got %s", elemType),
@@ -347,14 +364,14 @@ func (model tfModel) toIndexSettings(ctx context.Context) (map[string]interface{
 
 				elems := []string{}
 				if diags := a.ElementsAs(ctx, &elems, true); diags.HasError() {
-					return map[string]interface{}{}, diags
+					return map[string]any{}, diags
 				}
 
 				settingsValue = elems
 			case types.Set:
 				elemType := a.ElementType(ctx)
 				if elemType != types.StringType {
-					return map[string]interface{}{}, diag.Diagnostics{
+					return map[string]any{}, diag.Diagnostics{
 						diag.NewErrorDiagnostic(
 							"expected set of string",
 							fmt.Sprintf("expected set element type to be string but got %s", elemType),
@@ -364,12 +381,12 @@ func (model tfModel) toIndexSettings(ctx context.Context) (map[string]interface{
 
 				elems := []string{}
 				if diags := a.ElementsAs(ctx, &elems, true); diags.HasError() {
-					return map[string]interface{}{}, diags
+					return map[string]any{}, diags
 				}
 
 				settingsValue = elems
 			default:
-				return map[string]interface{}{}, diag.Diagnostics{
+				return map[string]any{}, diag.Diagnostics{
 					diag.NewErrorDiagnostic(
 						"unknown value type",
 						fmt.Sprintf("unknown index setting value type %s", a.Type(ctx)),
@@ -389,12 +406,12 @@ func (model tfModel) toIndexSettings(ctx context.Context) (map[string]interface{
 		"normalizer":  model.AnalysisNormalizer,
 	}
 
-	analysis := map[string]interface{}{}
+	analysis := map[string]any{}
 	for name, property := range analysisProperties {
-		if utils.IsKnown(property) {
-			var parsedValue map[string]interface{}
+		if typeutils.IsKnown(property) {
+			var parsedValue map[string]any
 			if diags := property.Unmarshal(&parsedValue); diags.HasError() {
-				return map[string]interface{}{}, diags
+				return map[string]any{}, diags
 			}
 
 			analysis[name] = parsedValue
@@ -407,19 +424,19 @@ func (model tfModel) toIndexSettings(ctx context.Context) (map[string]interface{
 
 	var settingSet []settingsTfSet
 	if diags := model.Settings.ElementsAs(ctx, &settingSet, true); diags.HasError() {
-		return map[string]interface{}{}, diags
+		return map[string]any{}, diags
 	}
 
 	if len(settingSet) == 1 {
 		var rawSettings []settingTfModel
 		if diags := settingSet[0].Setting.ElementsAs(ctx, &rawSettings, true); diags.HasError() {
-			return map[string]interface{}{}, diags
+			return map[string]any{}, diags
 		}
 
 		for _, setting := range rawSettings {
 			name := setting.Name.ValueString()
 			if _, ok := settings[name]; ok {
-				return map[string]interface{}{}, diag.Diagnostics{
+				return map[string]any{}, diag.Diagnostics{
 					diag.NewErrorDiagnostic(
 						"duplicate setting definition",
 						fmt.Sprintf("setting [%s] is both explicitly defined and included in the deprecated raw settings blocks. Please remove it from `settings` to avoid unexpected settings", name),
@@ -436,7 +453,7 @@ func (model tfModel) toIndexSettings(ctx context.Context) (map[string]interface{
 
 func (model tfModel) getFieldValueByTagValue(tagName string, t reflect.Type) (attr.Value, bool) {
 	numField := t.NumField()
-	for i := 0; i < numField; i++ {
+	for i := range numField {
 		field := t.Field(i)
 		if field.Tag.Get("tfsdk") == tagName {
 			return reflect.ValueOf(model).Field(i).Interface().(attr.Value), true
@@ -460,7 +477,7 @@ func (model aliasTfModel) toAPIModel() (models.IndexAlias, diag.Diagnostics) {
 		SearchRouting: model.SearchRouting.ValueString(),
 	}
 
-	if utils.IsKnown(model.Filter) {
+	if typeutils.IsKnown(model.Filter) {
 		if diags := model.Filter.Unmarshal(&apiModel.Filter); diags.HasError() {
 			return models.IndexAlias{}, diags
 		}

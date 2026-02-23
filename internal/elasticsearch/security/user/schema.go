@@ -1,8 +1,24 @@
-package user
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package securityuser
 
 import (
 	"context"
-	_ "embed"
 	"regexp"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -21,18 +37,18 @@ import (
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 )
 
-//go:embed resource-description.md
-var userResourceDescription string
-
 func (r *userResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = GetSchema()
 }
 
 func GetSchema() schema.Schema {
+	const usernameAllowedCharsError = "must contain alphanumeric characters (a-z, A-Z, 0-9), spaces, punctuation, and printable symbols " +
+		"in the Basic Latin (ASCII) block. Leading or trailing whitespace is not allowed"
+
 	return schema.Schema{
 		MarkdownDescription: userResourceDescription,
 		Blocks: map[string]schema.Block{
-			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock("elasticsearch_connection", false),
+			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(false),
 		},
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -40,14 +56,17 @@ func GetSchema() schema.Schema {
 				Computed:            true,
 			},
 			"username": schema.StringAttribute{
-				MarkdownDescription: "An identifier for the user (see the [security API put user documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-put-user.html#security-api-put-user-path-params) for more details).",
+				MarkdownDescription: usernameDescription,
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(1, 1024),
-					stringvalidator.RegexMatches(regexp.MustCompile(`^[[:graph:]]+$`), "must contain alphanumeric characters (a-z, A-Z, 0-9), spaces, punctuation, and printable symbols in the Basic Latin (ASCII) block. Leading or trailing whitespace is not allowed"),
+					stringvalidator.RegexMatches(
+						regexp.MustCompile(`^[[:graph:]]+$`),
+						usernameAllowedCharsError,
+					),
 				},
 			},
 			"password": schema.StringAttribute{
@@ -61,7 +80,7 @@ func GetSchema() schema.Schema {
 				},
 			},
 			"password_hash": schema.StringAttribute{
-				MarkdownDescription: "A hash of the user's password. This must be produced using the same hashing algorithm as has been configured for password storage (see the [security settings documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-settings.html#hashing-settings)).",
+				MarkdownDescription: passwordHashDescription,
 				Optional:            true,
 				Sensitive:           true,
 				Validators: []validator.String{
@@ -70,7 +89,7 @@ func GetSchema() schema.Schema {
 				},
 			},
 			"password_wo": schema.StringAttribute{
-				MarkdownDescription: "Write-only password attribute for use with ephemeral resources. Passwords must be at least 6 characters long. This attribute is designed for use with ephemeral resources like `vault_kv_secret_v2` to prevent secrets from being stored in the Terraform state. Must be used with `password_wo_version`.",
+				MarkdownDescription: passwordWriteOnlyDescription,
 				Optional:            true,
 				Sensitive:           true,
 				WriteOnly:           true,
@@ -80,7 +99,7 @@ func GetSchema() schema.Schema {
 				},
 			},
 			"password_wo_version": schema.StringAttribute{
-				MarkdownDescription: "Version identifier for the write-only password. This field is used to trigger updates when the password changes. Required when `password_wo` is set. Typically, you would use a hash of the password or a version identifier from your secret management system.",
+				MarkdownDescription: passwordWriteOnlyVersionDescription,
 				Optional:            true,
 				Validators: []validator.String{
 					stringvalidator.AlsoRequires(path.MatchRoot("password_wo")),

@@ -34,7 +34,7 @@ This document outlines the coding standards and conventions used in the terrafor
   - Resource, area, application specific shared logic should live at that level. For example within `internal/kibana` for Kibana specific shared logic.
   - Provider wide shared logic should be packaged together by a logical concept. For example [diagutil](./internal/diagutil) contains shared code for managing Terraform Diagnostics, and translating between errors, SDKv2 diags, and Plugin Framework diags.
 - Prefer using existing util functions over longer form, duplicated code:
-  - `utils.IsKnown(val)` instead of `!val.IsNull() && !val.IsUnknown()`
+  - `typeutils.IsKnown(val)` instead of `!val.IsNull() && !val.IsUnknown()`
   - `utils.ListTypeAs` instead of `val.ElementsAs` or similar for other collection types
   - `typeutils.StringishValue` instead of casting to a string e.g. `types.StringValue(string(apiResp.Id))`. Use `typeutils.StringishPointerValue` for pointers
 - The final state for a resource should be derived from a read request following a mutative request (eg create or update). We should not use the response from a mutative request to build the final resource state.

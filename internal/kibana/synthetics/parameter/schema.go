@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package parameter
 
 import (
@@ -30,7 +47,7 @@ type tfModelV0 struct {
 	Key               types.String   `tfsdk:"key"`
 	Value             types.String   `tfsdk:"value"`
 	Description       types.String   `tfsdk:"description"`
-	Tags              []types.String `tfsdk:"tags"` //> string
+	Tags              []types.String `tfsdk:"tags"` // > string
 	ShareAcrossSpaces types.Bool     `tfsdk:"share_across_spaces"`
 }
 
@@ -99,7 +116,7 @@ func parameterSchema() schema.Schema {
 func (m *tfModelV0) toParameterRequest(forUpdate bool) kboapi.SyntheticsParameterRequest {
 	// share_across_spaces is not allowed to be set when updating an existing
 	// global parameter.
-	var shareAcrossSpaces *bool = nil
+	var shareAcrossSpaces *bool
 	if !forUpdate {
 		shareAcrossSpaces = m.ShareAcrossSpaces.ValueBoolPointer()
 	}
@@ -107,17 +124,17 @@ func (m *tfModelV0) toParameterRequest(forUpdate bool) kboapi.SyntheticsParamete
 	return kboapi.SyntheticsParameterRequest{
 		Key:         m.Key.ValueString(),
 		Value:       m.Value.ValueString(),
-		Description: utils.Pointer(m.Description.ValueString()),
+		Description: schemautil.Pointer(m.Description.ValueString()),
 		// We need this to marshal as an empty JSON array, not null.
-		Tags:              utils.Pointer(utils.NonNilSlice(synthetics.ValueStringSlice(m.Tags))),
+		Tags:              schemautil.Pointer(schemautil.NonNilSlice(synthetics.ValueStringSlice(m.Tags))),
 		ShareAcrossSpaces: shareAcrossSpaces,
 	}
 }
 
-func tryReadCompositeId(id string) (*clients.CompositeId, diag.Diagnostics) {
+func tryReadCompositeID(id string) (*clients.CompositeID, diag.Diagnostics) {
 	if strings.Contains(id, "/") {
-		compositeId, diagnostics := synthetics.GetCompositeId(id)
-		return compositeId, diagnostics
+		compositeID, diagnostics := synthetics.GetCompositeID(id)
+		return compositeID, diagnostics
 	}
 	return nil, diag.Diagnostics{}
 }
@@ -132,7 +149,7 @@ func modelV0FromOAPI(param kboapi.SyntheticsGetParameterResponse) tfModelV0 {
 		Description: types.StringPointerValue(param.Description),
 		// Terraform, like json.Marshal, treats empty slices as null. We need an
 		// actual backing array of size 0.
-		Tags:              utils.NonNilSlice(synthetics.StringSliceValue(utils.DefaultIfNil(param.Tags))),
+		Tags:              schemautil.NonNilSlice(synthetics.StringSliceValue(schemautil.DefaultIfNil(param.Tags))),
 		ShareAcrossSpaces: types.BoolValue(allSpaces),
 	}
 }

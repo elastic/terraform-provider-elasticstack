@@ -1,4 +1,21 @@
-package api_key
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package apikey
 
 import (
 	"context"
@@ -24,6 +41,9 @@ const (
 	restAPIKeyType               = "rest"
 	crossClusterAPIKeyType       = "cross_cluster"
 	defaultAPIKeyType            = restAPIKeyType
+
+	apiKeyNameInvalidMessage = "must contain alphanumeric characters (a-z, A-Z, 0-9), spaces, punctuation, and printable symbols in the Basic Latin (ASCII) block. " +
+		"Leading or trailing whitespace is not allowed"
 )
 
 func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
@@ -33,9 +53,9 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 func (r *Resource) getSchema(version int64) schema.Schema {
 	return schema.Schema{
 		Version:     version,
-		Description: "Creates an API key for access without requiring basic authentication. Supports both regular API keys and cross-cluster API keys. See the [security API create API key documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-create-api-key.html) and [create cross-cluster API key documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-create-cross-cluster-api-key.html) for more details.",
+		Description: resourceDescription,
 		Blocks: map[string]schema.Block{
-			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock("elasticsearch_connection", false),
+			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(false),
 		},
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -57,7 +77,10 @@ func (r *Resource) getSchema(version int64) schema.Schema {
 				Required:    true,
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(1, 1024),
-					stringvalidator.RegexMatches(regexp.MustCompile(`^([[:graph:]]| )+$`), "must contain alphanumeric characters (a-z, A-Z, 0-9), spaces, punctuation, and printable symbols in the Basic Latin (ASCII) block. Leading or trailing whitespace is not allowed"),
+					stringvalidator.RegexMatches(
+						regexp.MustCompile(`^([[:graph:]]| )+$`),
+						apiKeyNameInvalidMessage,
+					),
 				},
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
@@ -82,7 +105,7 @@ func (r *Resource) getSchema(version int64) schema.Schema {
 				Optional:    true,
 				Computed:    true,
 				Validators: []validator.String{
-					RequiresType(defaultAPIKeyType),
+					requiresType(defaultAPIKeyType),
 				},
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -118,7 +141,7 @@ func (r *Resource) getSchema(version int64) schema.Schema {
 				Description: "Access configuration for cross-cluster API keys. Only applicable when type is 'cross_cluster'.",
 				Optional:    true,
 				Validators: []validator.Object{
-					RequiresType(crossClusterAPIKeyType),
+					requiresType(crossClusterAPIKeyType),
 				},
 				Attributes: map[string]schema.Attribute{
 					"search": schema.ListNestedAttribute{

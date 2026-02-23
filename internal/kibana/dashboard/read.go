@@ -1,10 +1,27 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package dashboard
 
 import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -36,13 +53,13 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 
 func (r *Resource) read(ctx context.Context, stateModel dashboardModel) (*dashboardModel, diag.Diagnostics) {
 	// Parse composite ID
-	composite, diags := clients.CompositeIdFromStrFw(stateModel.ID.ValueString())
+	composite, diags := clients.CompositeIDFromStrFw(stateModel.ID.ValueString())
 	if diags.HasError() {
 		return nil, diags
 	}
 
-	dashboardID := composite.ResourceId
-	spaceID := composite.ClusterId
+	dashboardID := composite.ResourceID
+	spaceID := composite.ClusterID
 
 	// Get the Kibana client
 	kibanaClient, err := r.client.GetKibanaOapiClient()
@@ -52,7 +69,7 @@ func (r *Resource) read(ctx context.Context, stateModel dashboardModel) (*dashbo
 	}
 
 	// Get the dashboard
-	getResp, getDiags := kibana_oapi.GetDashboard(ctx, kibanaClient, spaceID, dashboardID)
+	getResp, getDiags := kibanaoapi.GetDashboard(ctx, kibanaClient, spaceID, dashboardID)
 	diags.Append(getDiags...)
 	if diags.HasError() {
 		return nil, diags

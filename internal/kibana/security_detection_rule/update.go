@@ -1,4 +1,21 @@
-package security_detection_rule
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package securitydetectionrule
 
 import (
 	"context"
@@ -10,7 +27,7 @@ import (
 )
 
 func (r *securityDetectionRuleResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var data SecurityDetectionRuleData
+	var data Data
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
@@ -35,7 +52,7 @@ func (r *securityDetectionRuleResource) Update(ctx context.Context, req resource
 	}
 
 	// Update the rule
-	response, err := kbClient.API.UpdateRuleWithResponse(ctx, data.SpaceId.ValueString(), updateProps)
+	response, err := kbClient.API.UpdateRuleWithResponse(ctx, data.SpaceID.ValueString(), updateProps)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error updating security detection rule",
@@ -53,19 +70,19 @@ func (r *securityDetectionRuleResource) Update(ctx context.Context, req resource
 	}
 
 	// Parse ID to get space_id and rule_id
-	compId, resourceIdDiags := clients.CompositeIdFromStrFw(data.Id.ValueString())
-	resp.Diagnostics.Append(resourceIdDiags...)
+	compID, resourceIDDiags := clients.CompositeIDFromStrFw(data.ID.ValueString())
+	resp.Diagnostics.Append(resourceIDDiags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	uid, err := uuid.Parse(compId.ResourceId)
+	uid, err := uuid.Parse(compID.ResourceID)
 	if err != nil {
 		resp.Diagnostics.AddError("ID was not a valid UUID", err.Error())
 		return
 	}
 
-	readData, diags := r.read(ctx, uid.String(), data.SpaceId.ValueString())
+	readData, diags := r.read(ctx, uid.String(), compID.ClusterID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

@@ -1,5 +1,22 @@
 ## [Unreleased]
 
+### Changes
+* Add `elasticstack_elasticsearch_index_template_ilm_attachment` resource to attach ILM policies to Fleet-managed or externally-managed index templates via the `@custom` component template. ([#1641](https://github.com/elastic/terraform-provider-elasticstack/pull/1641))
+
+## [0.14.2] - 2026-02-19
+
+### Changes
+* Add parameter validation and default normalization for `elasticstack_kibana_alerting_rule` to prevent inconsistent state errors caused by API-injected defaults. ([#1648](https://github.com/elastic/terraform-provider-elasticstack/pull/1648))
+* Fix JSON marshaling error in `elasticstack_kibana_slo` when `good` or `total` fields in `kql_custom_indicator` are empty or null. ([#1729](https://github.com/elastic/terraform-provider-elasticstack/pull/1729))
+
+## [0.14.1] - 2026-02-18
+
+### Changes
+* Fix provider panic in `elasticstack_kibana_slo` when SLO updates error without a HTTP response. ([#1725](https://github.com/elastic/terraform-provider-elasticstack/pull/1725))
+* Fix inconsistent state error in `elasticstack_kibana_alerting_rule` when `alert_delay` is not specified. ([#1726](https://github.com/elastic/terraform-provider-elasticstack/pull/1726))
+
+## [0.14.0] - 2026-02-16
+
 ### Breaking changes
 
 #### `elasticstack_fleet_integration` `space_ids` attribute has been reduced to a single `space_id`
@@ -41,7 +58,7 @@ This transition:
   * Allow practitioners to only define configuration for the inputs, streams, and variables that differ from the package defined defaults.
 * Reduces the scope of the large `streams_json` string. Instead allowing each stream to be defined as it's own object for Terraform drift checking. 
 
-Existing usage of the `input` block must be migrated to the attribute syntax. Some [examples](https://github.com/elastic/terraform-provider-elasticstack/compare/input-attribute?expand=1#diff-3346189f5ed24da90a529a5fa0d06be1745ee9013775c4b8e42a0e909155e5b6) of this migration can be seen in the changes to the provider automated tests. As a step-by-step guide however:
+Existing usage of the `input` block must be migrated to the attribute syntax. Some [examples of this migration](https://github.com/elastic/terraform-provider-elasticstack/pull/1482/files) can be seen in the changes to the provider automated tests. As a step-by-step guide however:
 
 1. `input` blocks are merged together into a single `inputs` attribute
 2. The `input_id` attribute is removed, and instead used as the map key when defining an input
@@ -727,7 +744,10 @@ resource "elasticstack_fleet_output" "output" {
 - Initial set of docs
 - CI integration
 
-[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.13.1...HEAD
+[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.14.2...HEAD
+[0.14.2]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.14.1...v0.14.2
+[0.14.1]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.14.0...v0.14.1
+[0.14.0]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.13.1...v0.14.0
 [0.13.1]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.13.0...v0.13.1
 [0.13.0]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.12.2...v0.13.0
 [0.12.2]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.12.1...v0.12.2

@@ -1,10 +1,27 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package connectors
 
 import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -18,7 +35,7 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 		return
 	}
 
-	client, diags := clients.MaybeNewApiClientFromFrameworkResource(ctx, plan.KibanaConnection, r.client)
+	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, plan.KibanaConnection, r.client)
 	response.Diagnostics.Append(diags...)
 	if response.Diagnostics.HasError() {
 		return
@@ -45,22 +62,23 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 	if apiModel.ConnectorID != "" && version.LessThan(MinVersionSupportingPreconfiguredIDs) {
 		response.Diagnostics.AddError(
 			"Unsupported Elastic Stack version",
-			"Preconfigured connector IDs are only supported for Elastic Stack v"+MinVersionSupportingPreconfiguredIDs.String()+" and above. Either remove the `connector_id` attribute or upgrade your target cluster to supported version",
+			"Preconfigured connector IDs are only supported for Elastic Stack v"+MinVersionSupportingPreconfiguredIDs.String()+" and above."+
+				" Either remove the `connector_id` attribute or upgrade your target cluster to supported version",
 		)
 		return
 	}
 
-	connectorID, diags := kibana_oapi.CreateConnector(ctx, oapiClient, apiModel)
+	connectorID, diags := kibanaoapi.CreateConnector(ctx, oapiClient, apiModel)
 	response.Diagnostics.Append(diags...)
 	if response.Diagnostics.HasError() {
 		return
 	}
 
-	compositeID := &clients.CompositeId{ClusterId: apiModel.SpaceID, ResourceId: connectorID}
+	compositeID := &clients.CompositeID{ClusterID: apiModel.SpaceID, ResourceID: connectorID}
 	plan.ID = types.StringValue(compositeID.String())
 
 	// Read the connector back to populate all computed fields
-	client, diags = clients.MaybeNewApiClientFromFrameworkResource(ctx, plan.KibanaConnection, r.client)
+	client, diags = clients.MaybeNewAPIClientFromFrameworkResource(ctx, plan.KibanaConnection, r.client)
 	response.Diagnostics.Append(diags...)
 	if response.Diagnostics.HasError() {
 		return

@@ -1,8 +1,26 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package connectors
 
 import (
 	"context"
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -16,20 +34,20 @@ func TestUpgradeV0(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		rawState      map[string]interface{}
-		expectedState map[string]interface{}
+		rawState      map[string]any
+		expectedState map[string]any
 		expectError   bool
 		errorContains string
 	}{
 		{
 			name: "removes empty config field",
-			rawState: map[string]interface{}{
+			rawState: map[string]any{
 				"id":     "test-connector",
 				"name":   "Test Connector",
 				"config": "",
 				"type":   "webhook",
 			},
-			expectedState: map[string]interface{}{
+			expectedState: map[string]any{
 				"id":   "test-connector",
 				"name": "Test Connector",
 				"type": "webhook",
@@ -38,13 +56,13 @@ func TestUpgradeV0(t *testing.T) {
 		},
 		{
 			name: "removes empty secrets field",
-			rawState: map[string]interface{}{
+			rawState: map[string]any{
 				"id":      "test-connector",
 				"name":    "Test Connector",
 				"secrets": "",
 				"type":    "webhook",
 			},
-			expectedState: map[string]interface{}{
+			expectedState: map[string]any{
 				"id":   "test-connector",
 				"name": "Test Connector",
 				"type": "webhook",
@@ -53,14 +71,14 @@ func TestUpgradeV0(t *testing.T) {
 		},
 		{
 			name: "removes both empty config and secrets fields",
-			rawState: map[string]interface{}{
+			rawState: map[string]any{
 				"id":      "test-connector",
 				"name":    "Test Connector",
 				"config":  "",
 				"secrets": "",
 				"type":    "webhook",
 			},
-			expectedState: map[string]interface{}{
+			expectedState: map[string]any{
 				"id":   "test-connector",
 				"name": "Test Connector",
 				"type": "webhook",
@@ -69,13 +87,13 @@ func TestUpgradeV0(t *testing.T) {
 		},
 		{
 			name: "preserves non-empty config field",
-			rawState: map[string]interface{}{
+			rawState: map[string]any{
 				"id":     "test-connector",
 				"name":   "Test Connector",
 				"config": `{"url": "https://example.com"}`,
 				"type":   "webhook",
 			},
-			expectedState: map[string]interface{}{
+			expectedState: map[string]any{
 				"id":     "test-connector",
 				"name":   "Test Connector",
 				"config": `{"url": "https://example.com"}`,
@@ -85,13 +103,13 @@ func TestUpgradeV0(t *testing.T) {
 		},
 		{
 			name: "preserves non-empty secrets field",
-			rawState: map[string]interface{}{
+			rawState: map[string]any{
 				"id":      "test-connector",
 				"name":    "Test Connector",
 				"secrets": `{"apiKey": "secret123"}`,
 				"type":    "webhook",
 			},
-			expectedState: map[string]interface{}{
+			expectedState: map[string]any{
 				"id":      "test-connector",
 				"name":    "Test Connector",
 				"secrets": `{"apiKey": "secret123"}`,
@@ -101,44 +119,44 @@ func TestUpgradeV0(t *testing.T) {
 		},
 		{
 			name: "preserves non-string config field",
-			rawState: map[string]interface{}{
+			rawState: map[string]any{
 				"id":     "test-connector",
 				"name":   "Test Connector",
-				"config": map[string]interface{}{"url": "https://example.com"},
+				"config": map[string]any{"url": "https://example.com"},
 				"type":   "webhook",
 			},
-			expectedState: map[string]interface{}{
+			expectedState: map[string]any{
 				"id":     "test-connector",
 				"name":   "Test Connector",
-				"config": map[string]interface{}{"url": "https://example.com"},
+				"config": map[string]any{"url": "https://example.com"},
 				"type":   "webhook",
 			},
 			expectError: false,
 		},
 		{
 			name: "preserves non-string secrets field",
-			rawState: map[string]interface{}{
+			rawState: map[string]any{
 				"id":      "test-connector",
 				"name":    "Test Connector",
-				"secrets": map[string]interface{}{"apiKey": "secret123"},
+				"secrets": map[string]any{"apiKey": "secret123"},
 				"type":    "webhook",
 			},
-			expectedState: map[string]interface{}{
+			expectedState: map[string]any{
 				"id":      "test-connector",
 				"name":    "Test Connector",
-				"secrets": map[string]interface{}{"apiKey": "secret123"},
+				"secrets": map[string]any{"apiKey": "secret123"},
 				"type":    "webhook",
 			},
 			expectError: false,
 		},
 		{
 			name: "handles missing config and secrets fields",
-			rawState: map[string]interface{}{
+			rawState: map[string]any{
 				"id":   "test-connector",
 				"name": "Test Connector",
 				"type": "webhook",
 			},
-			expectedState: map[string]interface{}{
+			expectedState: map[string]any{
 				"id":   "test-connector",
 				"name": "Test Connector",
 				"type": "webhook",
@@ -147,13 +165,13 @@ func TestUpgradeV0(t *testing.T) {
 		},
 		{
 			name: "handles null config field",
-			rawState: map[string]interface{}{
+			rawState: map[string]any{
 				"id":     "test-connector",
 				"name":   "Test Connector",
 				"config": nil,
 				"type":   "webhook",
 			},
-			expectedState: map[string]interface{}{
+			expectedState: map[string]any{
 				"id":     "test-connector",
 				"name":   "Test Connector",
 				"config": nil,
@@ -163,13 +181,13 @@ func TestUpgradeV0(t *testing.T) {
 		},
 		{
 			name: "handles null secrets field",
-			rawState: map[string]interface{}{
+			rawState: map[string]any{
 				"id":      "test-connector",
 				"name":    "Test Connector",
 				"secrets": nil,
 				"type":    "webhook",
 			},
-			expectedState: map[string]interface{}{
+			expectedState: map[string]any{
 				"id":      "test-connector",
 				"name":    "Test Connector",
 				"secrets": nil,
@@ -179,7 +197,7 @@ func TestUpgradeV0(t *testing.T) {
 		},
 		{
 			name: "handles complex state with other fields",
-			rawState: map[string]interface{}{
+			rawState: map[string]any{
 				"id":                  "test-connector",
 				"name":                "Test Connector",
 				"config":              "",
@@ -192,7 +210,7 @@ func TestUpgradeV0(t *testing.T) {
 				"referenced_by_count": float64(0), // JSON unmarshaling converts numbers to float64
 				"is_system_action":    false,
 			},
-			expectedState: map[string]interface{}{
+			expectedState: map[string]any{
 				"id":                  "test-connector",
 				"name":                "Test Connector",
 				"type":                "webhook",
@@ -207,14 +225,14 @@ func TestUpgradeV0(t *testing.T) {
 		},
 		{
 			name: "handles mixed cases - empty config, non-empty secrets",
-			rawState: map[string]interface{}{
+			rawState: map[string]any{
 				"id":      "test-connector",
 				"name":    "Test Connector",
 				"config":  "",
 				"secrets": `{"password": "secret"}`,
 				"type":    "webhook",
 			},
-			expectedState: map[string]interface{}{
+			expectedState: map[string]any{
 				"id":      "test-connector",
 				"name":    "Test Connector",
 				"secrets": `{"password": "secret"}`,
@@ -224,14 +242,14 @@ func TestUpgradeV0(t *testing.T) {
 		},
 		{
 			name: "handles mixed cases - non-empty config, empty secrets",
-			rawState: map[string]interface{}{
+			rawState: map[string]any{
 				"id":      "test-connector",
 				"name":    "Test Connector",
 				"config":  `{"endpoint": "https://api.example.com"}`,
 				"secrets": "",
 				"type":    "webhook",
 			},
-			expectedState: map[string]interface{}{
+			expectedState: map[string]any{
 				"id":     "test-connector",
 				"name":   "Test Connector",
 				"config": `{"endpoint": "https://api.example.com"}`,
@@ -241,10 +259,10 @@ func TestUpgradeV0(t *testing.T) {
 		},
 		{
 			name: "handles minimal state",
-			rawState: map[string]interface{}{
+			rawState: map[string]any{
 				"id": "minimal-connector",
 			},
-			expectedState: map[string]interface{}{
+			expectedState: map[string]any{
 				"id": "minimal-connector",
 			},
 			expectError: false,
@@ -291,11 +309,11 @@ func TestUpgradeV0(t *testing.T) {
 			if tt.expectError {
 				require.True(t, resp.Diagnostics.HasError(), "Expected error but got none")
 				if tt.errorContains != "" {
-					errorSummary := ""
+					var errorSummary strings.Builder
 					for _, diag := range resp.Diagnostics.Errors() {
-						errorSummary += diag.Summary() + " " + diag.Detail()
+						errorSummary.WriteString(diag.Summary() + " " + diag.Detail())
 					}
-					assert.Contains(t, errorSummary, tt.errorContains)
+					assert.Contains(t, errorSummary.String(), tt.errorContains)
 				}
 				return
 			}
@@ -308,7 +326,7 @@ func TestUpgradeV0(t *testing.T) {
 			require.NotNil(t, resp.DynamicValue.JSON, "DynamicValue.JSON should not be nil")
 
 			// Unmarshal the upgraded state to compare
-			var actualState map[string]interface{}
+			var actualState map[string]any
 			err = json.Unmarshal(resp.DynamicValue.JSON, &actualState)
 			require.NoError(t, err)
 
@@ -323,7 +341,7 @@ func TestUpgradeV0_JsonMarshalError(t *testing.T) {
 	ctx := context.Background()
 
 	// Create a valid raw state
-	rawState := map[string]interface{}{
+	rawState := map[string]any{
 		"id":     "test-connector",
 		"config": "",
 	}
@@ -402,52 +420,52 @@ func TestRemoveEmptyStringHelper(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		state    map[string]interface{}
+		state    map[string]any
 		key      string
-		expected map[string]interface{}
+		expected map[string]any
 	}{
 		{
 			name: "removes empty string",
-			state: map[string]interface{}{
+			state: map[string]any{
 				"id":     "test",
 				"config": "",
 			},
 			key: "config",
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"id": "test",
 			},
 		},
 		{
 			name: "preserves non-empty string",
-			state: map[string]interface{}{
+			state: map[string]any{
 				"id":     "test",
 				"config": "value",
 			},
 			key: "config",
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"id":     "test",
 				"config": "value",
 			},
 		},
 		{
 			name: "preserves non-string value",
-			state: map[string]interface{}{
+			state: map[string]any{
 				"id":     "test",
 				"config": float64(123), // JSON marshaling/unmarshaling converts numbers to float64
 			},
 			key: "config",
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"id":     "test",
 				"config": float64(123),
 			},
 		},
 		{
 			name: "handles missing key",
-			state: map[string]interface{}{
+			state: map[string]any{
 				"id": "test",
 			},
 			key: "config",
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"id": "test",
 			},
 		},
@@ -475,7 +493,7 @@ func TestRemoveEmptyStringHelper(t *testing.T) {
 			require.False(t, resp.Diagnostics.HasError())
 			require.NotNil(t, resp.DynamicValue)
 
-			var actualState map[string]interface{}
+			var actualState map[string]any
 			err = json.Unmarshal(resp.DynamicValue.JSON, &actualState)
 			require.NoError(t, err)
 
