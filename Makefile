@@ -162,7 +162,7 @@ check-lint: setup golangci-lint check-fmt check-docs
 
 .PHONY: renovate-post-upgrade
 renovate-post-upgrade: vendor notice
-  @ make -C generated/kbapi all
+	@ make -C generated/kbapi all
 
 .PHONY: notice
 notice: vendor
