@@ -61,7 +61,7 @@ func (m tfModel) metricCustomIndicatorToAPI() (bool, slo.SloWithSummaryResponseI
 		goodMetrics = append(goodMetrics, slo.IndicatorPropertiesCustomMetricParamsGoodMetricsInner{
 			Name:        metric.Name.ValueString(),
 			Aggregation: metric.Aggregation.ValueString(),
-			Field:       metric.Field.ValueString(),
+			Field:       stringPtr(metric.Field),
 			Filter:      stringPtr(metric.Filter),
 		})
 	}
@@ -70,7 +70,7 @@ func (m tfModel) metricCustomIndicatorToAPI() (bool, slo.SloWithSummaryResponseI
 		totalMetrics = append(totalMetrics, slo.IndicatorPropertiesCustomMetricParamsGoodMetricsInner{
 			Name:        metric.Name.ValueString(),
 			Aggregation: metric.Aggregation.ValueString(),
-			Field:       metric.Field.ValueString(),
+			Field:       stringPtr(metric.Field),
 			Filter:      stringPtr(metric.Filter),
 		})
 	}
@@ -118,7 +118,7 @@ func (m *tfModel) populateFromMetricCustomIndicator(apiIndicator *slo.IndicatorP
 		goodMetrics = append(goodMetrics, tfMetricCustomMetric{
 			Name:        types.StringValue(mtr.Name),
 			Aggregation: types.StringValue(mtr.Aggregation),
-			Field:       types.StringValue(mtr.Field),
+			Field:       stringOrNull(mtr.Field),
 			Filter:      stringOrNull(mtr.Filter),
 		})
 	}
@@ -128,7 +128,7 @@ func (m *tfModel) populateFromMetricCustomIndicator(apiIndicator *slo.IndicatorP
 		totalMetrics = append(totalMetrics, tfMetricCustomMetric{
 			Name:        types.StringValue(mtr.Name),
 			Aggregation: types.StringValue(mtr.Aggregation),
-			Field:       types.StringValue(mtr.Field),
+			Field:       stringOrNull(mtr.Field),
 			Filter:      stringOrNull(mtr.Filter),
 		})
 	}

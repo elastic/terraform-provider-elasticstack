@@ -387,11 +387,11 @@ Optional:
 Required:
 
 - `aggregation` (String)
-- `field` (String)
 - `name` (String)
 
 Optional:
 
+- `field` (String) The field of the metric. Required for all aggregations except doc_count.
 - `filter` (String)
 
 
@@ -413,11 +413,11 @@ Optional:
 Required:
 
 - `aggregation` (String)
-- `field` (String)
 - `name` (String)
 
 Optional:
 
+- `field` (String) The field of the metric. Required for all aggregations except doc_count.
 - `filter` (String)
 
 
