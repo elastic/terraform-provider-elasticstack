@@ -13,7 +13,7 @@ import (
 
 func (r *EnableRuleResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Enables Elastic Security detection rules based on tags. This resource uses the Kibana bulk action API to enable all rules matching the specified tag key-value pair. Requires Elastic Stack version 8.11.0 or higher. See https://www.elastic.co/guide/en/security/current/rules-ui-management.html",
+		Description: "Enables Elastic Security detection rules based on tags. This resource uses the Kibana bulk action API to enable all rules matching the specified tag key-value pair. Requires Elastic Stack version 8.11.0 or higher. See the [documentation](https://www.elastic.co/guide/en/security/current/rules-ui-management.html) for more details. ",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,
@@ -54,6 +54,7 @@ func (r *EnableRuleResource) Schema(_ context.Context, _ resource.SchemaRequest,
 			"all_rules_enabled": schema.BoolAttribute{
 				Description: "Computed attribute indicating whether all rules matching the tag are currently enabled. Used for drift detection.",
 				Computed:    true,
+				Default:     booldefault.StaticBool(true),
 			},
 		},
 	}
