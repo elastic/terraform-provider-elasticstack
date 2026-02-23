@@ -34,7 +34,7 @@ linters:
       - examples$
   settings:
     lll:
-      line-length: 200 
+      line-length: 200
     goheader:
       template-path: ./LICENSE_HEADER.tmpl
 formatters:
