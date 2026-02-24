@@ -2,6 +2,7 @@
 
 ### Changes
 * Add `elasticstack_elasticsearch_index_template_ilm_attachment` resource to attach ILM policies to Fleet-managed or externally-managed index templates via the `@custom` component template. ([#1641](https://github.com/elastic/terraform-provider-elasticstack/pull/1641))
+- Add `elasticstack_kibana_security_enable_rule` resource ([1710](https://github.com/elastic/terraform-provider-elasticstack/pull/1710))
 
 ## [0.14.2] - 2026-02-19
 
@@ -113,7 +114,6 @@ inputs = {
 
 ### Changes
 
-- Add `elasticstack_kibana_security_enable_rule` resource ([1710](https://github.com/elastic/terraform-provider-elasticstack/pull/1710))
 - Add import support for `elasticstack_elasticsearch_script` resource ([#1637](https://github.com/elastic/terraform-provider-elasticstack/pull/1637))
 - Migrate `elasticstack_kibana_alerting_rule` to use plugin framework ([#1664](https://github.com/elastic/terraform-provider-elasticstack/pull/1664))
 - Migrate `elasticstack_kibana_slo` resource to the Terraform plugin framework ([#1647](https://github.com/elastic/terraform-provider-elasticstack/pull/1647))
