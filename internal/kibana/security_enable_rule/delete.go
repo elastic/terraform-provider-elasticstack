@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package security_enable_rule
 
 import (
@@ -40,7 +57,7 @@ func (r *EnableRuleResource) Delete(ctx context.Context, req resource.DeleteRequ
 	disableOnDestroy := model.DisableOnDestroy.ValueBool()
 
 	if !disableOnDestroy {
-		tflog.Info(ctx, "Skipping rule disable on delete (disable_on_destroy=false)", map[string]interface{}{
+		tflog.Info(ctx, "Skipping rule disable on delete (disable_on_destroy=false)", map[string]any{
 			"space_id": spaceID,
 			"key":      key,
 			"value":    value,
@@ -48,7 +65,7 @@ func (r *EnableRuleResource) Delete(ctx context.Context, req resource.DeleteRequ
 		return
 	}
 
-	tflog.Info(ctx, "Disabling rules on delete", map[string]interface{}{
+	tflog.Info(ctx, "Disabling rules on delete", map[string]any{
 		"space_id": spaceID,
 		"key":      key,
 		"value":    value,
