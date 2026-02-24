@@ -3,12 +3,18 @@
 page_title: "elasticstack_kibana_security_enable_rule Resource - terraform-provider-elasticstack"
 subcategory: "Kibana"
 description: |-
-  Enables Elastic Security detection rules based on tags. This resource uses the Kibana bulk action API to enable all rules matching the specified tag key-value pair. Requires Elastic Stack version 8.11.0 or higher. See https://www.elastic.co/guide/en/security/current/rules-ui-management.html
+  Enables Elastic Security detection rules based on tags.
+  This resource uses Kibana’s bulk action API to enable all rules matching the specified tag key-value pair.
+  Requires Elastic Stack version 8.11.0 or higher. See the documentation https://www.elastic.co/guide/en/security/current/rules-ui-management.html for more details.
 ---
 
 # elasticstack_kibana_security_enable_rule (Resource)
 
-Enables Elastic Security detection rules based on tags. This resource uses the Kibana bulk action API to enable all rules matching the specified tag key-value pair. Requires Elastic Stack version 8.11.0 or higher. See https://www.elastic.co/guide/en/security/current/rules-ui-management.html
+Enables Elastic Security detection rules based on tags.
+
+This resource uses Kibana’s bulk action API to enable all rules matching the specified tag key-value pair.
+
+Requires Elastic Stack version 8.11.0 or higher. See the [documentation](https://www.elastic.co/guide/en/security/current/rules-ui-management.html) for more details.
 
 ## Example Usage
 

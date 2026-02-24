@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package security_enable_rule_test
+package securityenablerule_test
 
 import (
 	"bytes"
@@ -37,6 +37,8 @@ import (
 
 var minVersionEnableRule = version.Must(version.NewVersion("8.11.0"))
 
+const defaultSpaceID = "default"
+
 func TestAccResourceEnableRule(t *testing.T) {
 	// Skip entire test if version is below 8.11.0
 	skipFunc := versionutils.CheckIfVersionIsUnsupported(minVersionEnableRule)
@@ -53,7 +55,7 @@ func TestAccResourceEnableRule(t *testing.T) {
 			{
 				Config: testAccResourceEnableRuleBasic(),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "space_id", "default"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "space_id", defaultSpaceID),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "key", "test_tag"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "value", "terraform_test"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_enable_rule.test", "id"),
@@ -75,7 +77,7 @@ func TestAccResourceEnableRuleWithManualDisable(t *testing.T) {
 
 	tagKey := "test_tag"
 	tagValue := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
-	spaceID := "default"
+	spaceID := defaultSpaceID
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -88,7 +90,7 @@ func TestAccResourceEnableRuleWithManualDisable(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "key", tagKey),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "value", tagValue),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "all_rules_enabled", "true"),
-					checkRulesEnabled(spaceID, tagKey, tagValue, true),
+					checkRulesEnabled(spaceID, tagKey, tagValue),
 				),
 			},
 			{
@@ -99,7 +101,7 @@ func TestAccResourceEnableRuleWithManualDisable(t *testing.T) {
 				Config: testAccResourceEnableRuleWithRules(tagKey, tagValue),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "all_rules_enabled", "true"),
-					checkRulesEnabled(spaceID, tagKey, tagValue, true),
+					checkRulesEnabled(spaceID, tagKey, tagValue),
 				),
 			},
 		},
@@ -117,7 +119,7 @@ func TestAccResourceEnableRuleDisableOnDestroyFalse(t *testing.T) {
 
 	tagKey := "test_tag"
 	tagValue := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
-	spaceID := "default"
+	spaceID := defaultSpaceID
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -131,7 +133,7 @@ func TestAccResourceEnableRuleDisableOnDestroyFalse(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "value", tagValue),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "disable_on_destroy", "false"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "all_rules_enabled", "true"),
-					checkRulesEnabled(spaceID, tagKey, tagValue, true),
+					checkRulesEnabled(spaceID, tagKey, tagValue),
 				),
 			},
 			{
@@ -139,7 +141,7 @@ func TestAccResourceEnableRuleDisableOnDestroyFalse(t *testing.T) {
 				Config: testAccResourceEnableRuleDisableOnDestroyFalseRulesOnly(tagKey, tagValue),
 				Check: resource.ComposeTestCheckFunc(
 					// Verify rules are still enabled after destroying the enable_rule resource
-					checkRulesEnabled(spaceID, tagKey, tagValue, true),
+					checkRulesEnabled(spaceID, tagKey, tagValue),
 				),
 			},
 		},
@@ -251,8 +253,8 @@ provider "elasticstack" {
 }
 
 // checkRulesEnabled verifies that all rules matching the tag are in the expected enabled state
-func checkRulesEnabled(spaceID, key, value string, expectedEnabled bool) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
+func checkRulesEnabled(spaceID, key, value string) resource.TestCheckFunc {
+	return func(_ *terraform.State) error {
 		client, err := clients.NewAcceptanceTestingClient()
 		if err != nil {
 			return fmt.Errorf("failed to create client: %w", err)
@@ -273,8 +275,8 @@ func checkRulesEnabled(spaceID, key, value string, expectedEnabled bool) resourc
 			PerPage: &perPage,
 		}
 
-		resp, err := kbClient.API.FindRulesWithResponse(ctx, params, func(ctx context.Context, req *http.Request) error {
-			if spaceID != "" && spaceID != "default" {
+		resp, err := kbClient.API.FindRulesWithResponse(ctx, params, func(_ context.Context, req *http.Request) error {
+			if spaceID != "" && spaceID != defaultSpaceID {
 				req.URL.Path = fmt.Sprintf("/s/%s%s", spaceID, req.URL.Path)
 			}
 			return nil
@@ -298,8 +300,8 @@ func checkRulesEnabled(spaceID, key, value string, expectedEnabled bool) resourc
 		for _, ruleResp := range resp.JSON200.Data {
 			queryRule, err := ruleResp.AsSecurityDetectionsAPIQueryRule()
 			if err == nil {
-				if queryRule.Enabled != expectedEnabled {
-					return fmt.Errorf("rule has enabled=%v, expected %v", queryRule.Enabled, expectedEnabled)
+				if !queryRule.Enabled {
+					return fmt.Errorf("rule has enabled=%v, expected %v", queryRule.Enabled, true)
 				}
 				continue
 			}
@@ -331,8 +333,8 @@ func disableOneRule(t *testing.T, spaceID, key, value string) {
 		PerPage: &perPage,
 	}
 
-	resp, err := kbClient.API.FindRulesWithResponse(ctx, params, func(ctx context.Context, req *http.Request) error {
-		if spaceID != "" && spaceID != "default" {
+	resp, err := kbClient.API.FindRulesWithResponse(ctx, params, func(_ context.Context, req *http.Request) error {
+		if spaceID != "" && spaceID != defaultSpaceID {
 			req.URL.Path = fmt.Sprintf("/s/%s%s", spaceID, req.URL.Path)
 		}
 		return nil
@@ -360,12 +362,18 @@ func disableOneRule(t *testing.T, spaceID, key, value string) {
 		t.Fatalf("failed to marshal bulk action: %v", err)
 	}
 
-	bulkResp, err := kbClient.API.PerformRulesBulkActionWithBodyWithResponse(ctx, &kbapi.PerformRulesBulkActionParams{}, "application/json", bytes.NewReader(bodyBytes), func(ctx context.Context, req *http.Request) error {
-		if spaceID != "" && spaceID != "default" {
-			req.URL.Path = fmt.Sprintf("/s/%s%s", spaceID, req.URL.Path)
-		}
-		return nil
-	})
+	bulkResp, err := kbClient.API.PerformRulesBulkActionWithBodyWithResponse(
+		ctx,
+		&kbapi.PerformRulesBulkActionParams{},
+		"application/json",
+		bytes.NewReader(bodyBytes),
+		func(_ context.Context, req *http.Request) error {
+			if spaceID != "" && spaceID != defaultSpaceID {
+				req.URL.Path = fmt.Sprintf("/s/%s%s", spaceID, req.URL.Path)
+			}
+			return nil
+		},
+	)
 	if err != nil {
 		t.Fatalf("failed to disable rule: %v", err)
 	}

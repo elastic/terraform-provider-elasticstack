@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package security_enable_rule
+package securityenablerule
 
 import (
 	"context"
@@ -42,12 +42,12 @@ type EnableRuleResource struct {
 	client *clients.APIClient
 }
 
-func (r *EnableRuleResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+func (r *EnableRuleResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	client, diags := clients.ConvertProviderData(req.ProviderData)
 	resp.Diagnostics.Append(diags...)
 	r.client = client
 }
 
-func (r *EnableRuleResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+func (r *EnableRuleResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = fmt.Sprintf("%s_%s", req.ProviderTypeName, "kibana_security_enable_rule")
 }

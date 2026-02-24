@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package security_enable_rule
+package securityenablerule
 
 import (
 	"context"
@@ -30,7 +30,7 @@ import (
 
 func (r *EnableRuleResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Enables Elastic Security detection rules based on tags. This resource uses the Kibana bulk action API to enable all rules matching the specified tag key-value pair. Requires Elastic Stack version 8.11.0 or higher. See the [documentation](https://www.elastic.co/guide/en/security/current/rules-ui-management.html) for more details. ",
+		MarkdownDescription: enableRuleResourceDescription,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,

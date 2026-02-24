@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package security_enable_rule
+package securityenablerule
 
 import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
