@@ -148,11 +148,11 @@ func (m *treemapConfigModel) fromAPINoESQL(api kbapi.TreemapNoESQL) diag.Diagnos
 
 	m.Title = types.StringPointerValue(api.Title)
 	m.Description = types.StringPointerValue(api.Description)
-	if api.IgnoreGlobalFilters != nil {
-		m.IgnoreGlobalFilters = types.BoolValue(*api.IgnoreGlobalFilters)
-	}
+	m.IgnoreGlobalFilters = types.BoolPointerValue(api.IgnoreGlobalFilters)
 	if api.Sampling != nil {
 		m.Sampling = types.Float64Value(float64(*api.Sampling))
+	} else {
+		m.Sampling = types.Float64Null()
 	}
 
 	datasetBytes, err := api.Dataset.MarshalJSON()
@@ -207,6 +207,8 @@ func (m *treemapConfigModel) fromAPINoESQL(api kbapi.TreemapNoESQL) diag.Diagnos
 	if api.ValueDisplay != nil {
 		m.ValueDisplay = &treemapValueDisplay{}
 		m.ValueDisplay.fromAPINoESQL(api.ValueDisplay)
+	} else {
+		m.ValueDisplay = nil
 	}
 
 	return diags
@@ -221,11 +223,11 @@ func (m *treemapConfigModel) fromAPIESQL(api kbapi.TreemapESQL) diag.Diagnostics
 
 	m.Title = types.StringPointerValue(api.Title)
 	m.Description = types.StringPointerValue(api.Description)
-	if api.IgnoreGlobalFilters != nil {
-		m.IgnoreGlobalFilters = types.BoolValue(*api.IgnoreGlobalFilters)
-	}
+	m.IgnoreGlobalFilters = types.BoolPointerValue(api.IgnoreGlobalFilters)
 	if api.Sampling != nil {
 		m.Sampling = types.Float64Value(float64(*api.Sampling))
+	} else {
+		m.Sampling = types.Float64Null()
 	}
 
 	datasetBytes, err := api.Dataset.MarshalJSON()
@@ -277,6 +279,8 @@ func (m *treemapConfigModel) fromAPIESQL(api kbapi.TreemapESQL) diag.Diagnostics
 	if api.ValueDisplay != nil {
 		m.ValueDisplay = &treemapValueDisplay{}
 		m.ValueDisplay.fromAPIESQL(api.ValueDisplay)
+	} else {
+		m.ValueDisplay = nil
 	}
 
 	return diags
