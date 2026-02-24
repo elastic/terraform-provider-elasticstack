@@ -27,9 +27,3 @@ var timeWindowDescription string
 
 //go:embed descriptions/objective.md
 var objectiveDescription string
-
-//go:embed descriptions/timeslice_metric_aggregation.md
-var timesliceMetricAggregationDescription string
-
-//go:embed descriptions/timeslice_metric_field.md
-var timesliceMetricFieldDescription string
