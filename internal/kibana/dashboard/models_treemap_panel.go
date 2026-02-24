@@ -197,9 +197,7 @@ func (m *treemapConfigModel) fromAPINoESQL(api kbapi.TreemapNoESQL) diag.Diagnos
 		m.Filters = nil
 	}
 
-	if api.LabelPosition != nil {
-		m.LabelPosition = types.StringValue(string(*api.LabelPosition))
-	}
+	m.LabelPosition = typeutils.StringishPointerValue(api.LabelPosition)
 
 	m.Legend = &treemapLegendModel{}
 	m.Legend.fromAPI(api.Legend)
@@ -269,9 +267,7 @@ func (m *treemapConfigModel) fromAPIESQL(api kbapi.TreemapESQL) diag.Diagnostics
 		m.Filters = nil
 	}
 
-	if api.LabelPosition != nil {
-		m.LabelPosition = types.StringValue(string(*api.LabelPosition))
-	}
+	m.LabelPosition = typeutils.StringishPointerValue(api.LabelPosition)
 
 	m.Legend = &treemapLegendModel{}
 	m.Legend.fromAPI(api.Legend)

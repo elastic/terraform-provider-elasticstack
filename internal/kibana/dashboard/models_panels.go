@@ -5,7 +5,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -179,14 +179,6 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 	var diags diag.Diagnostics
 	for _, converter := range panelConfigConverters {
 		if converter.handlesAPIPanelConfig(tfPanel, panelItem.Type, panelItem.Config) {
-			// Some Lens visualizations omit optional/defaulted fields on read.
-			// For treemap panels, preserve configured values when the API doesn't return them.
-			if tfPanel != nil {
-				if _, ok := converter.(treemapPanelConfigConverter); ok {
-					pm.TreemapConfig = tfPanel.TreemapConfig
-				}
-			}
-
 			d := converter.populateFromAPIPanel(ctx, &pm, panelItem.Config)
 			diags.Append(d...)
 			if diags.HasError() {
