@@ -18,6 +18,7 @@
 package dashboard
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 
@@ -32,6 +33,289 @@ func Test_newTreemapPanelConfigConverter(t *testing.T) {
 	converter := newTreemapPanelConfigConverter()
 	assert.NotNil(t, converter)
 	assert.Equal(t, "treemap", converter.visualizationType)
+}
+
+func Test_treemapPanelConfigConverter_roundTrip_populateFromAPIPanel_mapPanelToAPI_noESQL(t *testing.T) {
+	t.Parallel()
+
+	attrs := map[string]any{
+		"type":                  "treemap",
+		"title":                 "Test Treemap",
+		"description":           "Treemap description",
+		"ignore_global_filters": true,
+		"sampling":              0.5,
+		"dataset": map[string]any{
+			"type": "dataView",
+			"id":   "metrics-*",
+		},
+		"group_by": []any{
+			map[string]any{
+				"operation":   "terms",
+				"collapse_by": "avg",
+				"rank_by": map[string]any{
+					"type":      "column",
+					"metric":    float64(0),
+					"direction": "desc",
+				},
+				"size": float64(5),
+				"color": map[string]any{
+					"mode":    "categorical",
+					"palette": "default",
+					"mapping": []any{},
+					"unassignedColor": map[string]any{
+						"type":  "colorCode",
+						"value": "#D3DAE6",
+					},
+				},
+				"fields": []any{"host.name"},
+				"format": map[string]any{
+					"type":     "number",
+					"decimals": float64(2),
+				},
+			},
+		},
+		"metrics": []any{
+			map[string]any{
+				"operation": "count",
+			},
+		},
+		"label_position": "visible",
+		"legend": map[string]any{
+			"nested":              true,
+			"size":                "medium",
+			"truncate_after_lines": 4.0,
+			"visible":             "auto",
+		},
+		"value_display": map[string]any{
+			"mode":             "percentage",
+			"percent_decimals": 2.0,
+		},
+		"query": map[string]any{
+			"query":    "status:200",
+			"language": "kuery",
+		},
+		"filters": []any{
+			map[string]any{
+				"query":    "response:200",
+				"language": "kuery",
+				"meta": map[string]any{
+					"disabled": false,
+					"negate":   false,
+					"alias":    nil,
+				},
+			},
+		},
+	}
+
+	apiConfig := dashboardPanelItemConfigFromAttributes(t, attrs)
+
+	converter := newTreemapPanelConfigConverter()
+	var pm panelModel
+	diags := converter.populateFromAPIPanel(context.Background(), &pm, apiConfig)
+	require.False(t, diags.HasError())
+	require.NotNil(t, pm.TreemapConfig)
+
+	assert.Equal(t, types.StringValue("Test Treemap"), pm.TreemapConfig.Title)
+	assert.Equal(t, types.StringValue("Treemap description"), pm.TreemapConfig.Description)
+	assert.Equal(t, types.BoolValue(true), pm.TreemapConfig.IgnoreGlobalFilters)
+	assert.Equal(t, types.Float64Value(0.5), pm.TreemapConfig.Sampling)
+
+	require.NotNil(t, pm.TreemapConfig.Query)
+	assert.Equal(t, types.StringValue("status:200"), pm.TreemapConfig.Query.Query)
+	assert.Equal(t, types.StringValue("kuery"), pm.TreemapConfig.Query.Language)
+
+	require.False(t, pm.TreemapConfig.Dataset.IsNull())
+	assert.Equal(t, normalizeAny(t, attrs["dataset"]), normalizeAny(t, mustUnmarshalJSON(t, pm.TreemapConfig.Dataset.ValueString())))
+
+	require.False(t, pm.TreemapConfig.GroupBy.IsNull())
+	assert.Equal(t, normalizeAny(t, attrs["group_by"]), normalizeAny(t, mustUnmarshalJSON(t, pm.TreemapConfig.GroupBy.ValueString())))
+
+	require.False(t, pm.TreemapConfig.Metrics.IsNull())
+	assert.Equal(t, normalizeAny(t, attrs["metrics"]), normalizeAny(t, mustUnmarshalJSON(t, pm.TreemapConfig.Metrics.ValueString())))
+
+	assert.Equal(t, types.StringValue("visible"), pm.TreemapConfig.LabelPosition)
+
+	require.NotNil(t, pm.TreemapConfig.Legend)
+	assert.Equal(t, types.BoolValue(true), pm.TreemapConfig.Legend.Nested)
+	assert.Equal(t, types.StringValue("medium"), pm.TreemapConfig.Legend.Size)
+	assert.Equal(t, types.Float64Value(4), pm.TreemapConfig.Legend.TruncateAfterLine)
+	assert.Equal(t, types.StringValue("auto"), pm.TreemapConfig.Legend.Visible)
+
+	require.NotNil(t, pm.TreemapConfig.ValueDisplay)
+	assert.Equal(t, types.StringValue("percentage"), pm.TreemapConfig.ValueDisplay.Mode)
+	assert.Equal(t, types.Float64Value(2), pm.TreemapConfig.ValueDisplay.PercentDecimals)
+
+	require.Len(t, pm.TreemapConfig.Filters, 1)
+	assert.Equal(t, types.StringValue("response:200"), pm.TreemapConfig.Filters[0].Query)
+	assert.Equal(t, types.StringValue("kuery"), pm.TreemapConfig.Filters[0].Language)
+	require.False(t, pm.TreemapConfig.Filters[0].MetaJSON.IsNull())
+	assert.Equal(t, normalizeAny(t, attrs["filters"].([]any)[0].(map[string]any)["meta"]), normalizeAny(t, mustUnmarshalJSON(t, pm.TreemapConfig.Filters[0].MetaJSON.ValueString())))
+
+	var roundTripConfig kbapi.DashboardPanelItem_Config
+	diags = converter.mapPanelToAPI(pm, &roundTripConfig)
+	require.False(t, diags.HasError())
+
+	roundTripAttrs := dashboardPanelItemAttributes(t, roundTripConfig)
+	assert.Equal(t, normalizeAny(t, attrs), normalizeAny(t, roundTripAttrs))
+}
+
+func Test_treemapPanelConfigConverter_roundTrip_populateFromAPIPanel_mapPanelToAPI_esql(t *testing.T) {
+	t.Parallel()
+
+	attrs := map[string]any{
+		"type":                  "treemap",
+		"title":                 "ESQL Treemap",
+		"description":           "ESQL description",
+		"ignore_global_filters": false,
+		"sampling":              1.0,
+		"dataset": map[string]any{
+			"type":  "esql",
+			"query": "FROM metrics-* | KEEP host.name, bytes | LIMIT 10",
+		},
+		"group_by": []any{
+			map[string]any{
+				"operation":   "value",
+				"collapse_by": "avg",
+				"column":      "host.name",
+				"color": map[string]any{
+					"mode":    "categorical",
+					"palette": "default",
+					"mapping": []any{},
+					"unassignedColor": map[string]any{
+						"type":  "colorCode",
+						"value": "#D3DAE6",
+					},
+				},
+			},
+		},
+		"metrics": []any{
+			map[string]any{
+				"operation": "value",
+				"column":    "bytes",
+				"format": map[string]any{
+					"type":     "number",
+					"decimals": float64(2),
+				},
+				"color": map[string]any{
+					"type":  "static",
+					"color": "#54B399",
+				},
+			},
+		},
+		"label_position": "hidden",
+		"legend": map[string]any{
+			"nested":              false,
+			"size":                "small",
+		},
+		"value_display": map[string]any{
+			"mode":             "absolute",
+			"percent_decimals": 1.0,
+		},
+		"filters": []any{
+			map[string]any{
+				"query":    "host.name: test-host",
+				"language": "kuery",
+				"meta": map[string]any{
+					"disabled": false,
+					"negate":   true,
+					"alias":    "host filter",
+				},
+			},
+		},
+	}
+
+	apiConfig := dashboardPanelItemConfigFromAttributes(t, attrs)
+
+	converter := newTreemapPanelConfigConverter()
+	var pm panelModel
+	diags := converter.populateFromAPIPanel(context.Background(), &pm, apiConfig)
+	require.False(t, diags.HasError())
+	require.NotNil(t, pm.TreemapConfig)
+
+	assert.Equal(t, types.StringValue("ESQL Treemap"), pm.TreemapConfig.Title)
+	assert.Equal(t, types.StringValue("ESQL description"), pm.TreemapConfig.Description)
+	assert.Equal(t, types.BoolValue(false), pm.TreemapConfig.IgnoreGlobalFilters)
+	assert.Equal(t, types.Float64Value(1), pm.TreemapConfig.Sampling)
+	assert.Nil(t, pm.TreemapConfig.Query)
+
+	require.False(t, pm.TreemapConfig.Dataset.IsNull())
+	assert.Equal(t, normalizeAny(t, attrs["dataset"]), normalizeAny(t, mustUnmarshalJSON(t, pm.TreemapConfig.Dataset.ValueString())))
+
+	require.False(t, pm.TreemapConfig.GroupBy.IsNull())
+	assert.Equal(t, normalizeAny(t, attrs["group_by"]), normalizeAny(t, mustUnmarshalJSON(t, pm.TreemapConfig.GroupBy.ValueString())))
+
+	require.False(t, pm.TreemapConfig.Metrics.IsNull())
+	assert.Equal(t, normalizeAny(t, attrs["metrics"]), normalizeAny(t, mustUnmarshalJSON(t, pm.TreemapConfig.Metrics.ValueString())))
+
+	assert.Equal(t, types.StringValue("hidden"), pm.TreemapConfig.LabelPosition)
+
+	require.NotNil(t, pm.TreemapConfig.Legend)
+	assert.Equal(t, types.BoolValue(false), pm.TreemapConfig.Legend.Nested)
+	assert.Equal(t, types.StringValue("small"), pm.TreemapConfig.Legend.Size)
+	assert.True(t, pm.TreemapConfig.Legend.TruncateAfterLine.IsNull())
+	assert.True(t, pm.TreemapConfig.Legend.Visible.IsNull())
+
+	require.NotNil(t, pm.TreemapConfig.ValueDisplay)
+	assert.Equal(t, types.StringValue("absolute"), pm.TreemapConfig.ValueDisplay.Mode)
+	assert.Equal(t, types.Float64Value(1), pm.TreemapConfig.ValueDisplay.PercentDecimals)
+
+	require.Len(t, pm.TreemapConfig.Filters, 1)
+	assert.Equal(t, types.StringValue("host.name: test-host"), pm.TreemapConfig.Filters[0].Query)
+	assert.Equal(t, types.StringValue("kuery"), pm.TreemapConfig.Filters[0].Language)
+	require.False(t, pm.TreemapConfig.Filters[0].MetaJSON.IsNull())
+	assert.Equal(t, normalizeAny(t, attrs["filters"].([]any)[0].(map[string]any)["meta"]), normalizeAny(t, mustUnmarshalJSON(t, pm.TreemapConfig.Filters[0].MetaJSON.ValueString())))
+
+	var roundTripConfig kbapi.DashboardPanelItem_Config
+	diags = converter.mapPanelToAPI(pm, &roundTripConfig)
+	require.False(t, diags.HasError())
+
+	roundTripAttrs := dashboardPanelItemAttributes(t, roundTripConfig)
+	assert.Equal(t, normalizeAny(t, attrs), normalizeAny(t, roundTripAttrs))
+}
+
+func dashboardPanelItemConfigFromAttributes(t *testing.T, attributes map[string]any) kbapi.DashboardPanelItem_Config {
+	t.Helper()
+
+	configMap := map[string]any{
+		"attributes": attributes,
+	}
+
+	// The generated kbapi unions can be picky about the exact shape; populate the union
+	// via the From* helper then also JSON-roundtrip the map into the union for parity
+	// with the other panel converter tests in this package.
+	configJSON, err := json.Marshal(configMap)
+	require.NoError(t, err)
+
+	var config kbapi.DashboardPanelItem_Config
+	require.NoError(t, config.FromDashboardPanelItemConfig2(configMap))
+	require.NoError(t, json.Unmarshal(configJSON, &config))
+	return config
+}
+
+func dashboardPanelItemAttributes(t *testing.T, config kbapi.DashboardPanelItem_Config) map[string]any {
+	t.Helper()
+
+	cfgMap, err := config.AsDashboardPanelItemConfig2()
+	require.NoError(t, err)
+	attrs, ok := cfgMap["attributes"].(map[string]any)
+	require.True(t, ok)
+	return attrs
+}
+
+func mustUnmarshalJSON(t *testing.T, s string) any {
+	t.Helper()
+	var v any
+	require.NoError(t, json.Unmarshal([]byte(s), &v))
+	return v
+}
+
+func normalizeAny(t *testing.T, v any) any {
+	t.Helper()
+	b, err := json.Marshal(v)
+	require.NoError(t, err)
+	var out any
+	require.NoError(t, json.Unmarshal(b, &out))
+	return out
 }
 
 func Test_treemapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
