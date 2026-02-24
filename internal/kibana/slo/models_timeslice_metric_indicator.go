@@ -19,6 +19,7 @@ package slo
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/slo"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -70,8 +71,8 @@ func (m tfModel) timesliceMetricIndicatorToAPI() (bool, slo.SloWithSummaryRespon
 		}
 
 		agg := metric.Aggregation.ValueString()
-		switch agg {
-		case "sum", "avg", "min", "max", "value_count":
+		switch {
+		case slices.Contains(timesliceMetricAggregationsBasic, agg):
 			metrics = append(metrics, slo.IndicatorPropertiesTimesliceMetricParamsMetricMetricsInner{
 				TimesliceMetricBasicMetricWithField: &slo.TimesliceMetricBasicMetricWithField{
 					Name:        metric.Name.ValueString(),
@@ -80,7 +81,7 @@ func (m tfModel) timesliceMetricIndicatorToAPI() (bool, slo.SloWithSummaryRespon
 					Filter:      filter,
 				},
 			})
-		case "percentile":
+		case agg == timesliceMetricAggregationPercentile:
 			metrics = append(metrics, slo.IndicatorPropertiesTimesliceMetricParamsMetricMetricsInner{
 				TimesliceMetricPercentileMetric: &slo.TimesliceMetricPercentileMetric{
 					Name:        metric.Name.ValueString(),
@@ -90,7 +91,7 @@ func (m tfModel) timesliceMetricIndicatorToAPI() (bool, slo.SloWithSummaryRespon
 					Filter:      filter,
 				},
 			})
-		case "doc_count":
+		case agg == timesliceMetricAggregationDocCount:
 			metrics = append(metrics, slo.IndicatorPropertiesTimesliceMetricParamsMetricMetricsInner{
 				TimesliceMetricDocCountMetric: &slo.TimesliceMetricDocCountMetric{
 					Name:        metric.Name.ValueString(),

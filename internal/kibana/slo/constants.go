@@ -18,6 +18,8 @@
 package slo
 
 import (
+	"slices"
+
 	"github.com/hashicorp/go-version"
 )
 
@@ -37,3 +39,25 @@ var indicatorAddressToType = map[string]string{
 	"histogram_custom_indicator": "sli.histogram.custom",
 	"timeslice_metric_indicator": "sli.metric.timeslice",
 }
+
+// Timeslice metric aggregation types - single source of truth
+var (
+	timesliceMetricAggregationsBasic = []string{
+		"sum", "avg", "min", "max", "value_count", "last_value",
+		"cardinality", "std_deviation",
+	}
+	timesliceMetricAggregationPercentile = "percentile"
+	timesliceMetricAggregationDocCount   = "doc_count"
+)
+
+// Derived: all valid aggregations (built from Basic + Percentile + DocCount)
+var timesliceMetricAggregations = slices.Concat(
+	timesliceMetricAggregationsBasic,
+	[]string{timesliceMetricAggregationPercentile, timesliceMetricAggregationDocCount},
+)
+
+// Derived: aggregations that require field (Basic + Percentile; doc_count does not)
+var timesliceMetricAggregationsWithField = slices.Concat(
+	timesliceMetricAggregationsBasic,
+	[]string{timesliceMetricAggregationPercentile},
+)

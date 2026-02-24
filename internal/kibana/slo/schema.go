@@ -19,7 +19,9 @@ package slo
 
 import (
 	"context"
+	"fmt"
 	"regexp"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -320,11 +322,18 @@ func timesliceMetricIndicatorSchema() schema.Block {
 								Validators: []validator.List{listvalidator.SizeAtLeast(1)},
 								NestedObject: schema.NestedBlockObject{
 									Attributes: map[string]schema.Attribute{
-										"name":        schema.StringAttribute{Required: true, Description: "The unique name for this metric. Used as a variable in the equation field."},
-										"aggregation": schema.StringAttribute{Required: true, Description: timesliceMetricAggregationDescription},
-										"field":       schema.StringAttribute{Optional: true, Description: timesliceMetricFieldDescription},
-										"percentile":  schema.Float64Attribute{Optional: true, Description: "Percentile value (e.g., 99). Required if aggregation is 'percentile'. Must NOT be set for other aggregations."},
-										"filter":      schema.StringAttribute{Optional: true, Description: "Optional KQL filter for this metric. Supported for all aggregations except doc_count."},
+										"name": schema.StringAttribute{Required: true, Description: "The unique name for this metric. Used as a variable in the equation field."},
+										"aggregation": schema.StringAttribute{
+											Required:    true,
+											Description: fmt.Sprintf("The aggregation type for this metric. One of: %s. Determines which other fields are required.", strings.Join(timesliceMetricAggregations, ", ")),
+											Validators:  []validator.String{stringvalidator.OneOf(timesliceMetricAggregations...)},
+										},
+										"field": schema.StringAttribute{
+											Optional:    true,
+											Description: fmt.Sprintf("Field to aggregate. Required for %s. Must NOT be set for doc_count.", strings.Join(timesliceMetricAggregationsWithField, ", ")),
+										},
+										"percentile": schema.Float64Attribute{Optional: true, Description: "Percentile value (e.g., 99). Required if aggregation is 'percentile'. Must NOT be set for other aggregations."},
+										"filter":     schema.StringAttribute{Optional: true, Description: "Optional KQL filter for this metric. Supported for all aggregations except doc_count."},
 									},
 								},
 							},
