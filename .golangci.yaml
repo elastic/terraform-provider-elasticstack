@@ -10,6 +10,7 @@ linters:
     - exptostd
     - goconst
     - gocritic
+    - goheader
     - inamedparam
     - intrange
     - lll
@@ -34,6 +35,8 @@ linters:
   settings:
     lll:
       line-length: 200
+    goheader:
+      template-path: ./.LICENSE_HEADER.tmpl
 formatters:
   exclusions:
     generated: lax

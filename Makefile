@@ -153,12 +153,20 @@ tools: $(GOBIN)  ## Download golangci-lint locally if necessary.
 golangci-lint:
 	@ $(GOBIN)/golangci-lint run --max-same-issues=0 $(GOLANGCIFLAGS) ./internal/...
 
-
 .PHONY: lint
+lint: GOLANGCIFLAGS += --fix
 lint: setup golangci-lint fmt docs-generate ## Run lints to check the spelling and common go patterns
 
 .PHONY: check-lint
 check-lint: setup golangci-lint check-fmt check-docs
+
+.PHONY: renovate-post-upgrade
+renovate-post-upgrade: vendor notice
+	@ make -C generated/kbapi all
+
+.PHONY: notice
+notice: vendor
+	@ go list -m -json all | go tool go.elastic.co/go-licence-detector  -noticeOut=NOTICE -noticeTemplate ./.NOTICE.tmpl -includeIndirect -rules .notice_rules.json -overrides .notice_overrides.ndjson
 
 .PHONY: fmt
 fmt: ## Format code
@@ -176,7 +184,6 @@ check-docs: docs-generate  ## Check uncommitted changes on docs
 	@if [ "`git status --porcelain docs/`" ]; then \
 	  echo "Uncommitted changes were detected in the docs folder. Please run 'make docs-generate' to autogenerate the docs, and commit the changes" && echo `git status --porcelain docs/` && exit 1; \
 	fi
-
 
 .PHONY: setup
 setup: tools vendor ## Setup the dev environment
