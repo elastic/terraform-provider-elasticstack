@@ -54,48 +54,73 @@
                                       "type": "string",
                                       "description": "A description for the control"
                                     },
-                                    "dataViewId": {
+                                    "data_view_id": {
                                       "type": "string",
                                       "description": "The ID of the data view that the control is tied to"
                                     },
-                                    "fieldName": {
+                                    "field_name": {
                                       "type": "string",
                                       "description": "The name of the field in the data view that the control is tied to"
                                     },
-                                    "useGlobalFilters": {
+                                    "use_global_filters": {
                                       "type": "boolean"
                                     },
-                                    "ignoreValidations": {
+                                    "ignore_validations": {
                                       "type": "boolean"
                                     },
-                                    "displaySettings": {
+                                    "display_settings": {
                                       "type": "object",
                                       "properties": {
                                         "placeholder": {
                                           "type": "string"
                                         },
-                                        "hideActionBar": {
+                                        "hide_action_bar": {
                                           "type": "boolean"
                                         },
-                                        "hideExclude": {
+                                        "hide_exclude": {
                                           "type": "boolean"
                                         },
-                                        "hideExists": {
+                                        "hide_exists": {
                                           "type": "boolean"
                                         },
-                                        "hideSort": {
+                                        "hide_sort": {
                                           "type": "boolean"
                                         }
                                       },
                                       "additionalProperties": true
                                     },
-                                    "searchTechnique": {
+                                    "single_select": {
+                                      "type": "boolean"
+                                    },
+                                    "exclude": {
+                                      "type": "boolean"
+                                    },
+                                    "exists_selected": {
+                                      "type": "boolean"
+                                    },
+                                    "run_past_timeout": {
+                                      "type": "boolean"
+                                    },
+                                    "search_technique": {
                                       "type": "string",
                                       "enum": [
                                         "prefix",
                                         "wildcard",
                                         "exact"
                                       ]
+                                    },
+                                    "selected_options": {
+                                      "type": "array",
+                                      "items": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string"
+                                          },
+                                          {
+                                            "type": "number"
+                                          }
+                                        ]
+                                      }
                                     },
                                     "sort": {
                                       "type": "object",
@@ -120,37 +145,12 @@
                                         "by",
                                         "direction"
                                       ]
-                                    },
-                                    "existsSelected": {
-                                      "type": "boolean"
-                                    },
-                                    "runPastTimeout": {
-                                      "type": "boolean"
-                                    },
-                                    "singleSelect": {
-                                      "type": "boolean"
-                                    },
-                                    "exclude": {
-                                      "type": "boolean"
-                                    },
-                                    "selectedOptions": {
-                                      "type": "array",
-                                      "items": {
-                                        "anyOf": [
-                                          {
-                                            "type": "string"
-                                          },
-                                          {
-                                            "type": "number"
-                                          }
-                                        ]
-                                      }
                                     }
                                   },
                                   "additionalProperties": true,
                                   "required": [
-                                    "dataViewId",
-                                    "fieldName"
+                                    "data_view_id",
+                                    "field_name"
                                   ]
                                 },
                                 "uid": {
@@ -197,18 +197,18 @@
                                       "type": "string",
                                       "description": "A description for the control"
                                     },
-                                    "dataViewId": {
+                                    "data_view_id": {
                                       "type": "string",
                                       "description": "The ID of the data view that the control is tied to"
                                     },
-                                    "fieldName": {
+                                    "field_name": {
                                       "type": "string",
                                       "description": "The name of the field in the data view that the control is tied to"
                                     },
-                                    "useGlobalFilters": {
+                                    "use_global_filters": {
                                       "type": "boolean"
                                     },
-                                    "ignoreValidations": {
+                                    "ignore_validations": {
                                       "type": "boolean"
                                     },
                                     "value": {
@@ -225,8 +225,8 @@
                                   },
                                   "additionalProperties": true,
                                   "required": [
-                                    "dataViewId",
-                                    "fieldName"
+                                    "data_view_id",
+                                    "field_name"
                                   ]
                                 },
                                 "uid": {
@@ -265,13 +265,13 @@
                                 "config": {
                                   "type": "object",
                                   "properties": {
-                                    "timesliceStartAsPercentageOfTimeRange": {
+                                    "start_percentage_of_time_range": {
                                       "type": "number"
                                     },
-                                    "timesliceEndAsPercentageOfTimeRange": {
+                                    "end_percentage_of_time_range": {
                                       "type": "number"
                                     },
-                                    "isAnchored": {
+                                    "is_anchored": {
                                       "type": "boolean"
                                     }
                                   },
@@ -321,81 +321,40 @@
                                       "type": "string",
                                       "description": "A description for the control"
                                     },
-                                    "displaySettings": {
+                                    "display_settings": {
                                       "type": "object",
                                       "properties": {
                                         "placeholder": {
                                           "type": "string"
                                         },
-                                        "hideActionBar": {
+                                        "hide_action_bar": {
                                           "type": "boolean"
                                         },
-                                        "hideExclude": {
+                                        "hide_exclude": {
                                           "type": "boolean"
                                         },
-                                        "hideExists": {
+                                        "hide_exists": {
                                           "type": "boolean"
                                         },
-                                        "hideSort": {
+                                        "hide_sort": {
                                           "type": "boolean"
                                         }
                                       },
                                       "additionalProperties": false
                                     },
-                                    "searchTechnique": {
-                                      "type": "string",
-                                      "enum": [
-                                        "prefix",
-                                        "wildcard",
-                                        "exact"
-                                      ]
-                                    },
-                                    "sort": {
-                                      "type": "object",
-                                      "properties": {
-                                        "by": {
-                                          "type": "string",
-                                          "enum": [
-                                            "_count",
-                                            "_key"
-                                          ]
-                                        },
-                                        "direction": {
-                                          "type": "string",
-                                          "enum": [
-                                            "asc",
-                                            "desc"
-                                          ]
-                                        }
-                                      },
-                                      "additionalProperties": false,
-                                      "required": [
-                                        "by",
-                                        "direction"
-                                      ]
-                                    },
-                                    "existsSelected": {
+                                    "single_select": {
                                       "type": "boolean"
                                     },
-                                    "runPastTimeout": {
-                                      "type": "boolean"
-                                    },
-                                    "singleSelect": {
-                                      "type": "boolean"
-                                    },
-                                    "exclude": {
-                                      "type": "boolean"
-                                    },
-                                    "selectedOptions": {
+                                    "selected_options": {
                                       "type": "array",
                                       "items": {
                                         "type": "string"
                                       }
                                     },
-                                    "variableName": {
+                                    "variable_name": {
                                       "type": "string"
                                     },
-                                    "variableType": {
+                                    "variable_type": {
                                       "type": "string",
                                       "enum": [
                                         "fields",
@@ -405,17 +364,17 @@
                                         "multi_values"
                                       ]
                                     },
-                                    "esqlQuery": {
+                                    "esql_query": {
                                       "type": "string"
                                     },
-                                    "controlType": {
+                                    "control_type": {
                                       "type": "string",
                                       "enum": [
                                         "STATIC_VALUES",
                                         "VALUES_FROM_QUERY"
                                       ]
                                     },
-                                    "availableOptions": {
+                                    "available_options": {
                                       "type": "array",
                                       "items": {
                                         "type": "string"
@@ -424,11 +383,11 @@
                                   },
                                   "additionalProperties": true,
                                   "required": [
-                                    "selectedOptions",
-                                    "variableName",
-                                    "variableType",
-                                    "esqlQuery",
-                                    "controlType"
+                                    "selected_options",
+                                    "variable_name",
+                                    "variable_type",
+                                    "esql_query",
+                                    "control_type"
                                   ]
                                 },
                                 "uid": {
@@ -1044,48 +1003,73 @@
                                         "type": "string",
                                         "description": "A description for the control"
                                       },
-                                      "dataViewId": {
+                                      "data_view_id": {
                                         "type": "string",
                                         "description": "The ID of the data view that the control is tied to"
                                       },
-                                      "fieldName": {
+                                      "field_name": {
                                         "type": "string",
                                         "description": "The name of the field in the data view that the control is tied to"
                                       },
-                                      "useGlobalFilters": {
+                                      "use_global_filters": {
                                         "type": "boolean"
                                       },
-                                      "ignoreValidations": {
+                                      "ignore_validations": {
                                         "type": "boolean"
                                       },
-                                      "displaySettings": {
+                                      "display_settings": {
                                         "type": "object",
                                         "properties": {
                                           "placeholder": {
                                             "type": "string"
                                           },
-                                          "hideActionBar": {
+                                          "hide_action_bar": {
                                             "type": "boolean"
                                           },
-                                          "hideExclude": {
+                                          "hide_exclude": {
                                             "type": "boolean"
                                           },
-                                          "hideExists": {
+                                          "hide_exists": {
                                             "type": "boolean"
                                           },
-                                          "hideSort": {
+                                          "hide_sort": {
                                             "type": "boolean"
                                           }
                                         },
                                         "additionalProperties": true
                                       },
-                                      "searchTechnique": {
+                                      "single_select": {
+                                        "type": "boolean"
+                                      },
+                                      "exclude": {
+                                        "type": "boolean"
+                                      },
+                                      "exists_selected": {
+                                        "type": "boolean"
+                                      },
+                                      "run_past_timeout": {
+                                        "type": "boolean"
+                                      },
+                                      "search_technique": {
                                         "type": "string",
                                         "enum": [
                                           "prefix",
                                           "wildcard",
                                           "exact"
                                         ]
+                                      },
+                                      "selected_options": {
+                                        "type": "array",
+                                        "items": {
+                                          "anyOf": [
+                                            {
+                                              "type": "string"
+                                            },
+                                            {
+                                              "type": "number"
+                                            }
+                                          ]
+                                        }
                                       },
                                       "sort": {
                                         "type": "object",
@@ -1110,37 +1094,12 @@
                                           "by",
                                           "direction"
                                         ]
-                                      },
-                                      "existsSelected": {
-                                        "type": "boolean"
-                                      },
-                                      "runPastTimeout": {
-                                        "type": "boolean"
-                                      },
-                                      "singleSelect": {
-                                        "type": "boolean"
-                                      },
-                                      "exclude": {
-                                        "type": "boolean"
-                                      },
-                                      "selectedOptions": {
-                                        "type": "array",
-                                        "items": {
-                                          "anyOf": [
-                                            {
-                                              "type": "string"
-                                            },
-                                            {
-                                              "type": "number"
-                                            }
-                                          ]
-                                        }
                                       }
                                     },
                                     "additionalProperties": true,
                                     "required": [
-                                      "dataViewId",
-                                      "fieldName"
+                                      "data_view_id",
+                                      "field_name"
                                     ]
                                   },
                                   "uid": {
@@ -1187,18 +1146,18 @@
                                         "type": "string",
                                         "description": "A description for the control"
                                       },
-                                      "dataViewId": {
+                                      "data_view_id": {
                                         "type": "string",
                                         "description": "The ID of the data view that the control is tied to"
                                       },
-                                      "fieldName": {
+                                      "field_name": {
                                         "type": "string",
                                         "description": "The name of the field in the data view that the control is tied to"
                                       },
-                                      "useGlobalFilters": {
+                                      "use_global_filters": {
                                         "type": "boolean"
                                       },
-                                      "ignoreValidations": {
+                                      "ignore_validations": {
                                         "type": "boolean"
                                       },
                                       "value": {
@@ -1215,8 +1174,8 @@
                                     },
                                     "additionalProperties": true,
                                     "required": [
-                                      "dataViewId",
-                                      "fieldName"
+                                      "data_view_id",
+                                      "field_name"
                                     ]
                                   },
                                   "uid": {
@@ -1255,13 +1214,13 @@
                                   "config": {
                                     "type": "object",
                                     "properties": {
-                                      "timesliceStartAsPercentageOfTimeRange": {
+                                      "start_percentage_of_time_range": {
                                         "type": "number"
                                       },
-                                      "timesliceEndAsPercentageOfTimeRange": {
+                                      "end_percentage_of_time_range": {
                                         "type": "number"
                                       },
-                                      "isAnchored": {
+                                      "is_anchored": {
                                         "type": "boolean"
                                       }
                                     },
@@ -1311,81 +1270,40 @@
                                         "type": "string",
                                         "description": "A description for the control"
                                       },
-                                      "displaySettings": {
+                                      "display_settings": {
                                         "type": "object",
                                         "properties": {
                                           "placeholder": {
                                             "type": "string"
                                           },
-                                          "hideActionBar": {
+                                          "hide_action_bar": {
                                             "type": "boolean"
                                           },
-                                          "hideExclude": {
+                                          "hide_exclude": {
                                             "type": "boolean"
                                           },
-                                          "hideExists": {
+                                          "hide_exists": {
                                             "type": "boolean"
                                           },
-                                          "hideSort": {
+                                          "hide_sort": {
                                             "type": "boolean"
                                           }
                                         },
                                         "additionalProperties": false
                                       },
-                                      "searchTechnique": {
-                                        "type": "string",
-                                        "enum": [
-                                          "prefix",
-                                          "wildcard",
-                                          "exact"
-                                        ]
-                                      },
-                                      "sort": {
-                                        "type": "object",
-                                        "properties": {
-                                          "by": {
-                                            "type": "string",
-                                            "enum": [
-                                              "_count",
-                                              "_key"
-                                            ]
-                                          },
-                                          "direction": {
-                                            "type": "string",
-                                            "enum": [
-                                              "asc",
-                                              "desc"
-                                            ]
-                                          }
-                                        },
-                                        "additionalProperties": false,
-                                        "required": [
-                                          "by",
-                                          "direction"
-                                        ]
-                                      },
-                                      "existsSelected": {
+                                      "single_select": {
                                         "type": "boolean"
                                       },
-                                      "runPastTimeout": {
-                                        "type": "boolean"
-                                      },
-                                      "singleSelect": {
-                                        "type": "boolean"
-                                      },
-                                      "exclude": {
-                                        "type": "boolean"
-                                      },
-                                      "selectedOptions": {
+                                      "selected_options": {
                                         "type": "array",
                                         "items": {
                                           "type": "string"
                                         }
                                       },
-                                      "variableName": {
+                                      "variable_name": {
                                         "type": "string"
                                       },
-                                      "variableType": {
+                                      "variable_type": {
                                         "type": "string",
                                         "enum": [
                                           "fields",
@@ -1395,17 +1313,17 @@
                                           "multi_values"
                                         ]
                                       },
-                                      "esqlQuery": {
+                                      "esql_query": {
                                         "type": "string"
                                       },
-                                      "controlType": {
+                                      "control_type": {
                                         "type": "string",
                                         "enum": [
                                           "STATIC_VALUES",
                                           "VALUES_FROM_QUERY"
                                         ]
                                       },
-                                      "availableOptions": {
+                                      "available_options": {
                                         "type": "array",
                                         "items": {
                                           "type": "string"
@@ -1414,11 +1332,11 @@
                                     },
                                     "additionalProperties": true,
                                     "required": [
-                                      "selectedOptions",
-                                      "variableName",
-                                      "variableType",
-                                      "esqlQuery",
-                                      "controlType"
+                                      "selected_options",
+                                      "variable_name",
+                                      "variable_type",
+                                      "esql_query",
+                                      "control_type"
                                     ]
                                   },
                                   "uid": {
@@ -2129,48 +2047,73 @@
                                         "type": "string",
                                         "description": "A description for the control"
                                       },
-                                      "dataViewId": {
+                                      "data_view_id": {
                                         "type": "string",
                                         "description": "The ID of the data view that the control is tied to"
                                       },
-                                      "fieldName": {
+                                      "field_name": {
                                         "type": "string",
                                         "description": "The name of the field in the data view that the control is tied to"
                                       },
-                                      "useGlobalFilters": {
+                                      "use_global_filters": {
                                         "type": "boolean"
                                       },
-                                      "ignoreValidations": {
+                                      "ignore_validations": {
                                         "type": "boolean"
                                       },
-                                      "displaySettings": {
+                                      "display_settings": {
                                         "type": "object",
                                         "properties": {
                                           "placeholder": {
                                             "type": "string"
                                           },
-                                          "hideActionBar": {
+                                          "hide_action_bar": {
                                             "type": "boolean"
                                           },
-                                          "hideExclude": {
+                                          "hide_exclude": {
                                             "type": "boolean"
                                           },
-                                          "hideExists": {
+                                          "hide_exists": {
                                             "type": "boolean"
                                           },
-                                          "hideSort": {
+                                          "hide_sort": {
                                             "type": "boolean"
                                           }
                                         },
                                         "additionalProperties": true
                                       },
-                                      "searchTechnique": {
+                                      "single_select": {
+                                        "type": "boolean"
+                                      },
+                                      "exclude": {
+                                        "type": "boolean"
+                                      },
+                                      "exists_selected": {
+                                        "type": "boolean"
+                                      },
+                                      "run_past_timeout": {
+                                        "type": "boolean"
+                                      },
+                                      "search_technique": {
                                         "type": "string",
                                         "enum": [
                                           "prefix",
                                           "wildcard",
                                           "exact"
                                         ]
+                                      },
+                                      "selected_options": {
+                                        "type": "array",
+                                        "items": {
+                                          "anyOf": [
+                                            {
+                                              "type": "string"
+                                            },
+                                            {
+                                              "type": "number"
+                                            }
+                                          ]
+                                        }
                                       },
                                       "sort": {
                                         "type": "object",
@@ -2195,37 +2138,12 @@
                                           "by",
                                           "direction"
                                         ]
-                                      },
-                                      "existsSelected": {
-                                        "type": "boolean"
-                                      },
-                                      "runPastTimeout": {
-                                        "type": "boolean"
-                                      },
-                                      "singleSelect": {
-                                        "type": "boolean"
-                                      },
-                                      "exclude": {
-                                        "type": "boolean"
-                                      },
-                                      "selectedOptions": {
-                                        "type": "array",
-                                        "items": {
-                                          "anyOf": [
-                                            {
-                                              "type": "string"
-                                            },
-                                            {
-                                              "type": "number"
-                                            }
-                                          ]
-                                        }
                                       }
                                     },
                                     "additionalProperties": true,
                                     "required": [
-                                      "dataViewId",
-                                      "fieldName"
+                                      "data_view_id",
+                                      "field_name"
                                     ]
                                   },
                                   "uid": {
@@ -2272,18 +2190,18 @@
                                         "type": "string",
                                         "description": "A description for the control"
                                       },
-                                      "dataViewId": {
+                                      "data_view_id": {
                                         "type": "string",
                                         "description": "The ID of the data view that the control is tied to"
                                       },
-                                      "fieldName": {
+                                      "field_name": {
                                         "type": "string",
                                         "description": "The name of the field in the data view that the control is tied to"
                                       },
-                                      "useGlobalFilters": {
+                                      "use_global_filters": {
                                         "type": "boolean"
                                       },
-                                      "ignoreValidations": {
+                                      "ignore_validations": {
                                         "type": "boolean"
                                       },
                                       "value": {
@@ -2300,8 +2218,8 @@
                                     },
                                     "additionalProperties": true,
                                     "required": [
-                                      "dataViewId",
-                                      "fieldName"
+                                      "data_view_id",
+                                      "field_name"
                                     ]
                                   },
                                   "uid": {
@@ -2340,13 +2258,13 @@
                                   "config": {
                                     "type": "object",
                                     "properties": {
-                                      "timesliceStartAsPercentageOfTimeRange": {
+                                      "start_percentage_of_time_range": {
                                         "type": "number"
                                       },
-                                      "timesliceEndAsPercentageOfTimeRange": {
+                                      "end_percentage_of_time_range": {
                                         "type": "number"
                                       },
-                                      "isAnchored": {
+                                      "is_anchored": {
                                         "type": "boolean"
                                       }
                                     },
@@ -2396,81 +2314,40 @@
                                         "type": "string",
                                         "description": "A description for the control"
                                       },
-                                      "displaySettings": {
+                                      "display_settings": {
                                         "type": "object",
                                         "properties": {
                                           "placeholder": {
                                             "type": "string"
                                           },
-                                          "hideActionBar": {
+                                          "hide_action_bar": {
                                             "type": "boolean"
                                           },
-                                          "hideExclude": {
+                                          "hide_exclude": {
                                             "type": "boolean"
                                           },
-                                          "hideExists": {
+                                          "hide_exists": {
                                             "type": "boolean"
                                           },
-                                          "hideSort": {
+                                          "hide_sort": {
                                             "type": "boolean"
                                           }
                                         },
                                         "additionalProperties": false
                                       },
-                                      "searchTechnique": {
-                                        "type": "string",
-                                        "enum": [
-                                          "prefix",
-                                          "wildcard",
-                                          "exact"
-                                        ]
-                                      },
-                                      "sort": {
-                                        "type": "object",
-                                        "properties": {
-                                          "by": {
-                                            "type": "string",
-                                            "enum": [
-                                              "_count",
-                                              "_key"
-                                            ]
-                                          },
-                                          "direction": {
-                                            "type": "string",
-                                            "enum": [
-                                              "asc",
-                                              "desc"
-                                            ]
-                                          }
-                                        },
-                                        "additionalProperties": false,
-                                        "required": [
-                                          "by",
-                                          "direction"
-                                        ]
-                                      },
-                                      "existsSelected": {
+                                      "single_select": {
                                         "type": "boolean"
                                       },
-                                      "runPastTimeout": {
-                                        "type": "boolean"
-                                      },
-                                      "singleSelect": {
-                                        "type": "boolean"
-                                      },
-                                      "exclude": {
-                                        "type": "boolean"
-                                      },
-                                      "selectedOptions": {
+                                      "selected_options": {
                                         "type": "array",
                                         "items": {
                                           "type": "string"
                                         }
                                       },
-                                      "variableName": {
+                                      "variable_name": {
                                         "type": "string"
                                       },
-                                      "variableType": {
+                                      "variable_type": {
                                         "type": "string",
                                         "enum": [
                                           "fields",
@@ -2480,17 +2357,17 @@
                                           "multi_values"
                                         ]
                                       },
-                                      "esqlQuery": {
+                                      "esql_query": {
                                         "type": "string"
                                       },
-                                      "controlType": {
+                                      "control_type": {
                                         "type": "string",
                                         "enum": [
                                           "STATIC_VALUES",
                                           "VALUES_FROM_QUERY"
                                         ]
                                       },
-                                      "availableOptions": {
+                                      "available_options": {
                                         "type": "array",
                                         "items": {
                                           "type": "string"
@@ -2499,11 +2376,11 @@
                                     },
                                     "additionalProperties": true,
                                     "required": [
-                                      "selectedOptions",
-                                      "variableName",
-                                      "variableType",
-                                      "esqlQuery",
-                                      "controlType"
+                                      "selected_options",
+                                      "variable_name",
+                                      "variable_type",
+                                      "esql_query",
+                                      "control_type"
                                     ]
                                   },
                                   "uid": {
@@ -3234,48 +3111,73 @@
                                       "type": "string",
                                       "description": "A description for the control"
                                     },
-                                    "dataViewId": {
+                                    "data_view_id": {
                                       "type": "string",
                                       "description": "The ID of the data view that the control is tied to"
                                     },
-                                    "fieldName": {
+                                    "field_name": {
                                       "type": "string",
                                       "description": "The name of the field in the data view that the control is tied to"
                                     },
-                                    "useGlobalFilters": {
+                                    "use_global_filters": {
                                       "type": "boolean"
                                     },
-                                    "ignoreValidations": {
+                                    "ignore_validations": {
                                       "type": "boolean"
                                     },
-                                    "displaySettings": {
+                                    "display_settings": {
                                       "type": "object",
                                       "properties": {
                                         "placeholder": {
                                           "type": "string"
                                         },
-                                        "hideActionBar": {
+                                        "hide_action_bar": {
                                           "type": "boolean"
                                         },
-                                        "hideExclude": {
+                                        "hide_exclude": {
                                           "type": "boolean"
                                         },
-                                        "hideExists": {
+                                        "hide_exists": {
                                           "type": "boolean"
                                         },
-                                        "hideSort": {
+                                        "hide_sort": {
                                           "type": "boolean"
                                         }
                                       },
                                       "additionalProperties": true
                                     },
-                                    "searchTechnique": {
+                                    "single_select": {
+                                      "type": "boolean"
+                                    },
+                                    "exclude": {
+                                      "type": "boolean"
+                                    },
+                                    "exists_selected": {
+                                      "type": "boolean"
+                                    },
+                                    "run_past_timeout": {
+                                      "type": "boolean"
+                                    },
+                                    "search_technique": {
                                       "type": "string",
                                       "enum": [
                                         "prefix",
                                         "wildcard",
                                         "exact"
                                       ]
+                                    },
+                                    "selected_options": {
+                                      "type": "array",
+                                      "items": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string"
+                                          },
+                                          {
+                                            "type": "number"
+                                          }
+                                        ]
+                                      }
                                     },
                                     "sort": {
                                       "type": "object",
@@ -3300,37 +3202,12 @@
                                         "by",
                                         "direction"
                                       ]
-                                    },
-                                    "existsSelected": {
-                                      "type": "boolean"
-                                    },
-                                    "runPastTimeout": {
-                                      "type": "boolean"
-                                    },
-                                    "singleSelect": {
-                                      "type": "boolean"
-                                    },
-                                    "exclude": {
-                                      "type": "boolean"
-                                    },
-                                    "selectedOptions": {
-                                      "type": "array",
-                                      "items": {
-                                        "anyOf": [
-                                          {
-                                            "type": "string"
-                                          },
-                                          {
-                                            "type": "number"
-                                          }
-                                        ]
-                                      }
                                     }
                                   },
                                   "additionalProperties": true,
                                   "required": [
-                                    "dataViewId",
-                                    "fieldName"
+                                    "data_view_id",
+                                    "field_name"
                                   ]
                                 },
                                 "uid": {
@@ -3377,18 +3254,18 @@
                                       "type": "string",
                                       "description": "A description for the control"
                                     },
-                                    "dataViewId": {
+                                    "data_view_id": {
                                       "type": "string",
                                       "description": "The ID of the data view that the control is tied to"
                                     },
-                                    "fieldName": {
+                                    "field_name": {
                                       "type": "string",
                                       "description": "The name of the field in the data view that the control is tied to"
                                     },
-                                    "useGlobalFilters": {
+                                    "use_global_filters": {
                                       "type": "boolean"
                                     },
-                                    "ignoreValidations": {
+                                    "ignore_validations": {
                                       "type": "boolean"
                                     },
                                     "value": {
@@ -3405,8 +3282,8 @@
                                   },
                                   "additionalProperties": true,
                                   "required": [
-                                    "dataViewId",
-                                    "fieldName"
+                                    "data_view_id",
+                                    "field_name"
                                   ]
                                 },
                                 "uid": {
@@ -3445,13 +3322,13 @@
                                 "config": {
                                   "type": "object",
                                   "properties": {
-                                    "timesliceStartAsPercentageOfTimeRange": {
+                                    "start_percentage_of_time_range": {
                                       "type": "number"
                                     },
-                                    "timesliceEndAsPercentageOfTimeRange": {
+                                    "end_percentage_of_time_range": {
                                       "type": "number"
                                     },
-                                    "isAnchored": {
+                                    "is_anchored": {
                                       "type": "boolean"
                                     }
                                   },
@@ -3501,81 +3378,40 @@
                                       "type": "string",
                                       "description": "A description for the control"
                                     },
-                                    "displaySettings": {
+                                    "display_settings": {
                                       "type": "object",
                                       "properties": {
                                         "placeholder": {
                                           "type": "string"
                                         },
-                                        "hideActionBar": {
+                                        "hide_action_bar": {
                                           "type": "boolean"
                                         },
-                                        "hideExclude": {
+                                        "hide_exclude": {
                                           "type": "boolean"
                                         },
-                                        "hideExists": {
+                                        "hide_exists": {
                                           "type": "boolean"
                                         },
-                                        "hideSort": {
+                                        "hide_sort": {
                                           "type": "boolean"
                                         }
                                       },
                                       "additionalProperties": false
                                     },
-                                    "searchTechnique": {
-                                      "type": "string",
-                                      "enum": [
-                                        "prefix",
-                                        "wildcard",
-                                        "exact"
-                                      ]
-                                    },
-                                    "sort": {
-                                      "type": "object",
-                                      "properties": {
-                                        "by": {
-                                          "type": "string",
-                                          "enum": [
-                                            "_count",
-                                            "_key"
-                                          ]
-                                        },
-                                        "direction": {
-                                          "type": "string",
-                                          "enum": [
-                                            "asc",
-                                            "desc"
-                                          ]
-                                        }
-                                      },
-                                      "additionalProperties": false,
-                                      "required": [
-                                        "by",
-                                        "direction"
-                                      ]
-                                    },
-                                    "existsSelected": {
+                                    "single_select": {
                                       "type": "boolean"
                                     },
-                                    "runPastTimeout": {
-                                      "type": "boolean"
-                                    },
-                                    "singleSelect": {
-                                      "type": "boolean"
-                                    },
-                                    "exclude": {
-                                      "type": "boolean"
-                                    },
-                                    "selectedOptions": {
+                                    "selected_options": {
                                       "type": "array",
                                       "items": {
                                         "type": "string"
                                       }
                                     },
-                                    "variableName": {
+                                    "variable_name": {
                                       "type": "string"
                                     },
-                                    "variableType": {
+                                    "variable_type": {
                                       "type": "string",
                                       "enum": [
                                         "fields",
@@ -3585,17 +3421,17 @@
                                         "multi_values"
                                       ]
                                     },
-                                    "esqlQuery": {
+                                    "esql_query": {
                                       "type": "string"
                                     },
-                                    "controlType": {
+                                    "control_type": {
                                       "type": "string",
                                       "enum": [
                                         "STATIC_VALUES",
                                         "VALUES_FROM_QUERY"
                                       ]
                                     },
-                                    "availableOptions": {
+                                    "available_options": {
                                       "type": "array",
                                       "items": {
                                         "type": "string"
@@ -3604,11 +3440,11 @@
                                   },
                                   "additionalProperties": true,
                                   "required": [
-                                    "selectedOptions",
-                                    "variableName",
-                                    "variableType",
-                                    "esqlQuery",
-                                    "controlType"
+                                    "selected_options",
+                                    "variable_name",
+                                    "variable_type",
+                                    "esql_query",
+                                    "control_type"
                                   ]
                                 },
                                 "uid": {
@@ -4216,48 +4052,73 @@
                                         "type": "string",
                                         "description": "A description for the control"
                                       },
-                                      "dataViewId": {
+                                      "data_view_id": {
                                         "type": "string",
                                         "description": "The ID of the data view that the control is tied to"
                                       },
-                                      "fieldName": {
+                                      "field_name": {
                                         "type": "string",
                                         "description": "The name of the field in the data view that the control is tied to"
                                       },
-                                      "useGlobalFilters": {
+                                      "use_global_filters": {
                                         "type": "boolean"
                                       },
-                                      "ignoreValidations": {
+                                      "ignore_validations": {
                                         "type": "boolean"
                                       },
-                                      "displaySettings": {
+                                      "display_settings": {
                                         "type": "object",
                                         "properties": {
                                           "placeholder": {
                                             "type": "string"
                                           },
-                                          "hideActionBar": {
+                                          "hide_action_bar": {
                                             "type": "boolean"
                                           },
-                                          "hideExclude": {
+                                          "hide_exclude": {
                                             "type": "boolean"
                                           },
-                                          "hideExists": {
+                                          "hide_exists": {
                                             "type": "boolean"
                                           },
-                                          "hideSort": {
+                                          "hide_sort": {
                                             "type": "boolean"
                                           }
                                         },
                                         "additionalProperties": true
                                       },
-                                      "searchTechnique": {
+                                      "single_select": {
+                                        "type": "boolean"
+                                      },
+                                      "exclude": {
+                                        "type": "boolean"
+                                      },
+                                      "exists_selected": {
+                                        "type": "boolean"
+                                      },
+                                      "run_past_timeout": {
+                                        "type": "boolean"
+                                      },
+                                      "search_technique": {
                                         "type": "string",
                                         "enum": [
                                           "prefix",
                                           "wildcard",
                                           "exact"
                                         ]
+                                      },
+                                      "selected_options": {
+                                        "type": "array",
+                                        "items": {
+                                          "anyOf": [
+                                            {
+                                              "type": "string"
+                                            },
+                                            {
+                                              "type": "number"
+                                            }
+                                          ]
+                                        }
                                       },
                                       "sort": {
                                         "type": "object",
@@ -4282,37 +4143,12 @@
                                           "by",
                                           "direction"
                                         ]
-                                      },
-                                      "existsSelected": {
-                                        "type": "boolean"
-                                      },
-                                      "runPastTimeout": {
-                                        "type": "boolean"
-                                      },
-                                      "singleSelect": {
-                                        "type": "boolean"
-                                      },
-                                      "exclude": {
-                                        "type": "boolean"
-                                      },
-                                      "selectedOptions": {
-                                        "type": "array",
-                                        "items": {
-                                          "anyOf": [
-                                            {
-                                              "type": "string"
-                                            },
-                                            {
-                                              "type": "number"
-                                            }
-                                          ]
-                                        }
                                       }
                                     },
                                     "additionalProperties": true,
                                     "required": [
-                                      "dataViewId",
-                                      "fieldName"
+                                      "data_view_id",
+                                      "field_name"
                                     ]
                                   },
                                   "uid": {
@@ -4359,18 +4195,18 @@
                                         "type": "string",
                                         "description": "A description for the control"
                                       },
-                                      "dataViewId": {
+                                      "data_view_id": {
                                         "type": "string",
                                         "description": "The ID of the data view that the control is tied to"
                                       },
-                                      "fieldName": {
+                                      "field_name": {
                                         "type": "string",
                                         "description": "The name of the field in the data view that the control is tied to"
                                       },
-                                      "useGlobalFilters": {
+                                      "use_global_filters": {
                                         "type": "boolean"
                                       },
-                                      "ignoreValidations": {
+                                      "ignore_validations": {
                                         "type": "boolean"
                                       },
                                       "value": {
@@ -4387,8 +4223,8 @@
                                     },
                                     "additionalProperties": true,
                                     "required": [
-                                      "dataViewId",
-                                      "fieldName"
+                                      "data_view_id",
+                                      "field_name"
                                     ]
                                   },
                                   "uid": {
@@ -4427,13 +4263,13 @@
                                   "config": {
                                     "type": "object",
                                     "properties": {
-                                      "timesliceStartAsPercentageOfTimeRange": {
+                                      "start_percentage_of_time_range": {
                                         "type": "number"
                                       },
-                                      "timesliceEndAsPercentageOfTimeRange": {
+                                      "end_percentage_of_time_range": {
                                         "type": "number"
                                       },
-                                      "isAnchored": {
+                                      "is_anchored": {
                                         "type": "boolean"
                                       }
                                     },
@@ -4483,81 +4319,40 @@
                                         "type": "string",
                                         "description": "A description for the control"
                                       },
-                                      "displaySettings": {
+                                      "display_settings": {
                                         "type": "object",
                                         "properties": {
                                           "placeholder": {
                                             "type": "string"
                                           },
-                                          "hideActionBar": {
+                                          "hide_action_bar": {
                                             "type": "boolean"
                                           },
-                                          "hideExclude": {
+                                          "hide_exclude": {
                                             "type": "boolean"
                                           },
-                                          "hideExists": {
+                                          "hide_exists": {
                                             "type": "boolean"
                                           },
-                                          "hideSort": {
+                                          "hide_sort": {
                                             "type": "boolean"
                                           }
                                         },
                                         "additionalProperties": false
                                       },
-                                      "searchTechnique": {
-                                        "type": "string",
-                                        "enum": [
-                                          "prefix",
-                                          "wildcard",
-                                          "exact"
-                                        ]
-                                      },
-                                      "sort": {
-                                        "type": "object",
-                                        "properties": {
-                                          "by": {
-                                            "type": "string",
-                                            "enum": [
-                                              "_count",
-                                              "_key"
-                                            ]
-                                          },
-                                          "direction": {
-                                            "type": "string",
-                                            "enum": [
-                                              "asc",
-                                              "desc"
-                                            ]
-                                          }
-                                        },
-                                        "additionalProperties": false,
-                                        "required": [
-                                          "by",
-                                          "direction"
-                                        ]
-                                      },
-                                      "existsSelected": {
+                                      "single_select": {
                                         "type": "boolean"
                                       },
-                                      "runPastTimeout": {
-                                        "type": "boolean"
-                                      },
-                                      "singleSelect": {
-                                        "type": "boolean"
-                                      },
-                                      "exclude": {
-                                        "type": "boolean"
-                                      },
-                                      "selectedOptions": {
+                                      "selected_options": {
                                         "type": "array",
                                         "items": {
                                           "type": "string"
                                         }
                                       },
-                                      "variableName": {
+                                      "variable_name": {
                                         "type": "string"
                                       },
-                                      "variableType": {
+                                      "variable_type": {
                                         "type": "string",
                                         "enum": [
                                           "fields",
@@ -4567,17 +4362,17 @@
                                           "multi_values"
                                         ]
                                       },
-                                      "esqlQuery": {
+                                      "esql_query": {
                                         "type": "string"
                                       },
-                                      "controlType": {
+                                      "control_type": {
                                         "type": "string",
                                         "enum": [
                                           "STATIC_VALUES",
                                           "VALUES_FROM_QUERY"
                                         ]
                                       },
-                                      "availableOptions": {
+                                      "available_options": {
                                         "type": "array",
                                         "items": {
                                           "type": "string"
@@ -4586,11 +4381,11 @@
                                     },
                                     "additionalProperties": true,
                                     "required": [
-                                      "selectedOptions",
-                                      "variableName",
-                                      "variableType",
-                                      "esqlQuery",
-                                      "controlType"
+                                      "selected_options",
+                                      "variable_name",
+                                      "variable_type",
+                                      "esql_query",
+                                      "control_type"
                                     ]
                                   },
                                   "uid": {
@@ -5557,13 +5352,12 @@
                 "type": "string"
               },
               "params": {},
-              "value": {
-                "type": "string"
-              }
+              "value": {}
             },
             "additionalProperties": true,
             "required": [
-              "params"
+              "params",
+              "value"
             ]
           },
           "query": {
@@ -5941,7 +5735,7 @@
           },
           "align": {
             "description": "Icon alignment",
-            "default": "left",
+            "default": "right",
             "type": "string",
             "enum": [
               "left",
@@ -6062,6 +5856,134 @@
           "steps",
           "range"
         ]
+      },
+      "colorByValueRelative": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "dynamic"
+            ]
+          },
+          "steps": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "from"
+                      ]
+                    },
+                    "from": {
+                      "type": "number",
+                      "description": "The value from which this color applies (inclusive)."
+                    },
+                    "color": {
+                      "type": "string",
+                      "description": "The color to use for this step."
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "type",
+                    "from",
+                    "color"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "to"
+                      ]
+                    },
+                    "to": {
+                      "type": "number",
+                      "description": "The value up to which this color applies (inclusive)."
+                    },
+                    "color": {
+                      "type": "string",
+                      "description": "The color to use for this step."
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "type",
+                    "to",
+                    "color"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "exact"
+                      ]
+                    },
+                    "value": {
+                      "type": "number",
+                      "description": "The exact value to which this color applies."
+                    },
+                    "color": {
+                      "type": "string",
+                      "description": "The color to use for this exact value."
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "type",
+                    "value",
+                    "color"
+                  ]
+                }
+              ]
+            }
+          },
+          "min": {
+            "type": "number",
+            "description": "The minimum value for the color range. Used as the lower bound for value-based color assignment."
+          },
+          "max": {
+            "type": "number",
+            "description": "The maximum value for the color range. Used as the upper bound for value-based color assignment."
+          },
+          "range": {
+            "type": "string",
+            "enum": [
+              "percentage"
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "title": "colorByValueRelative",
+        "required": [
+          "type",
+          "steps",
+          "min",
+          "max",
+          "range"
+        ]
+      },
+      "colorByValue": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/colorByValueAbsolute"
+          },
+          {
+            "$ref": "#/components/schemas/colorByValueRelative"
+          }
+        ],
+        "title": "colorByValue"
       },
       "staticColor": {
         "type": "object",
@@ -7321,7 +7243,7 @@
               "horizontal"
             ]
           },
-          "goal_value": {
+          "max_value": {
             "type": "object",
             "properties": {
               "operation": {
@@ -7344,26 +7266,10 @@
         },
         "additionalProperties": false,
         "title": "metricComplementaryBar",
+        "x-oas-optional": true,
         "required": [
           "type",
-          "goal_value"
-        ]
-      },
-      "metricComplementaryTrend": {
-        "type": "object",
-        "description": "Trend complementary viz",
-        "properties": {
-          "type": {
-            "type": "string",
-            "enum": [
-              "trend"
-            ]
-          }
-        },
-        "additionalProperties": false,
-        "title": "metricComplementaryTrend",
-        "required": [
-          "type"
+          "max_value"
         ]
       },
       "metricChartSchema": {
@@ -7684,7 +7590,7 @@
                         "color": {
                           "anyOf": [
                             {
-                              "$ref": "#/components/schemas/colorByValueAbsolute"
+                              "$ref": "#/components/schemas/colorByValue"
                             },
                             {
                               "$ref": "#/components/schemas/staticColor"
@@ -7700,14 +7606,7 @@
                           ]
                         },
                         "background_chart": {
-                          "anyOf": [
-                            {
-                              "$ref": "#/components/schemas/metricComplementaryBar"
-                            },
-                            {
-                              "$ref": "#/components/schemas/metricComplementaryTrend"
-                            }
-                          ]
+                          "$ref": "#/components/schemas/metricComplementaryBar"
                         }
                       },
                       "additionalProperties": false,
@@ -7717,7 +7616,8 @@
                         "column",
                         "type",
                         "alignments",
-                        "icon"
+                        "icon",
+                        "background_chart"
                       ]
                     },
                     {
@@ -7749,6 +7649,15 @@
                         "prefix": {
                           "type": "string",
                           "description": "Prefix"
+                        },
+                        "label_position": {
+                          "description": "Label position relative to the secondary metric value",
+                          "default": "before",
+                          "type": "string",
+                          "enum": [
+                            "before",
+                            "after"
+                          ]
                         },
                         "compare": {
                           "anyOf": [
@@ -9990,134 +9899,6 @@
           "type"
         ]
       },
-      "colorByValueRelative": {
-        "type": "object",
-        "properties": {
-          "type": {
-            "type": "string",
-            "enum": [
-              "dynamic"
-            ]
-          },
-          "steps": {
-            "type": "array",
-            "maxItems": 100,
-            "items": {
-              "anyOf": [
-                {
-                  "type": "object",
-                  "properties": {
-                    "type": {
-                      "type": "string",
-                      "enum": [
-                        "from"
-                      ]
-                    },
-                    "from": {
-                      "type": "number",
-                      "description": "The value from which this color applies (inclusive)."
-                    },
-                    "color": {
-                      "type": "string",
-                      "description": "The color to use for this step."
-                    }
-                  },
-                  "additionalProperties": false,
-                  "required": [
-                    "type",
-                    "from",
-                    "color"
-                  ]
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "type": {
-                      "type": "string",
-                      "enum": [
-                        "to"
-                      ]
-                    },
-                    "to": {
-                      "type": "number",
-                      "description": "The value up to which this color applies (inclusive)."
-                    },
-                    "color": {
-                      "type": "string",
-                      "description": "The color to use for this step."
-                    }
-                  },
-                  "additionalProperties": false,
-                  "required": [
-                    "type",
-                    "to",
-                    "color"
-                  ]
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "type": {
-                      "type": "string",
-                      "enum": [
-                        "exact"
-                      ]
-                    },
-                    "value": {
-                      "type": "number",
-                      "description": "The exact value to which this color applies."
-                    },
-                    "color": {
-                      "type": "string",
-                      "description": "The color to use for this exact value."
-                    }
-                  },
-                  "additionalProperties": false,
-                  "required": [
-                    "type",
-                    "value",
-                    "color"
-                  ]
-                }
-              ]
-            }
-          },
-          "min": {
-            "type": "number",
-            "description": "The minimum value for the color range. Used as the lower bound for value-based color assignment."
-          },
-          "max": {
-            "type": "number",
-            "description": "The maximum value for the color range. Used as the upper bound for value-based color assignment."
-          },
-          "range": {
-            "type": "string",
-            "enum": [
-              "percentage"
-            ]
-          }
-        },
-        "additionalProperties": false,
-        "title": "colorByValueRelative",
-        "required": [
-          "type",
-          "steps",
-          "min",
-          "max",
-          "range"
-        ]
-      },
-      "colorByValue": {
-        "anyOf": [
-          {
-            "$ref": "#/components/schemas/colorByValueAbsolute"
-          },
-          {
-            "$ref": "#/components/schemas/colorByValueRelative"
-          }
-        ],
-        "title": "colorByValue"
-      },
       "gaugeNoESQL": {
         "type": "object",
         "properties": {
@@ -11744,22 +11525,22 @@
               },
               {
                 "type": "object",
-                "description": "Sort by a transposed metric column (created when metrics are pivoted by split_metrics_by)",
+                "description": "Sort by a pivoted metric column (created when metrics are pivoted by split_metrics_by)",
                 "properties": {
                   "column_type": {
                     "type": "string",
                     "enum": [
-                      "split_metrics_by"
+                      "pivoted_metric"
                     ]
                   },
-                  "metric_index": {
+                  "index": {
                     "type": "number",
-                    "description": "Index of the metric column to sort by (0-based)",
+                    "description": "0-based index into the \"metrics\" array for the metric to sort; use \"values\" to identify the pivoted column",
                     "minimum": 0
                   },
                   "values": {
                     "type": "array",
-                    "description": "Array of transposed column values, one for each split_metrics_by column in order",
+                    "description": "Array of pivot values, one for each split_metrics_by column in order",
                     "minItems": 1,
                     "maxItems": 20,
                     "items": {
@@ -11778,7 +11559,7 @@
                 "additionalProperties": false,
                 "required": [
                   "column_type",
-                  "metric_index",
+                  "index",
                   "values",
                   "direction"
                 ]
@@ -12184,22 +11965,22 @@
               },
               {
                 "type": "object",
-                "description": "Sort by a transposed metric column (created when metrics are pivoted by split_metrics_by)",
+                "description": "Sort by a pivoted metric column (created when metrics are pivoted by split_metrics_by)",
                 "properties": {
                   "column_type": {
                     "type": "string",
                     "enum": [
-                      "split_metrics_by"
+                      "pivoted_metric"
                     ]
                   },
-                  "metric_index": {
+                  "index": {
                     "type": "number",
-                    "description": "Index of the metric column to sort by (0-based)",
+                    "description": "0-based index into the \"metrics\" array for the metric to sort; use \"values\" to identify the pivoted column",
                     "minimum": 0
                   },
                   "values": {
                     "type": "array",
-                    "description": "Array of transposed column values, one for each split_metrics_by column in order",
+                    "description": "Array of pivot values, one for each split_metrics_by column in order",
                     "minItems": 1,
                     "maxItems": 20,
                     "items": {
@@ -12218,7 +11999,7 @@
                 "additionalProperties": false,
                 "required": [
                   "column_type",
-                  "metric_index",
+                  "index",
                   "values",
                   "direction"
                 ]
@@ -12336,8 +12117,7 @@
         "required": [
           "type",
           "dataset",
-          "density",
-          "metrics"
+          "density"
         ]
       },
       "datatableChartSchema": {

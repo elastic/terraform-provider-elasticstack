@@ -975,14 +975,17 @@ func fixDashboardPanelItemRefs(schema *Schema) {
 	dashboardsPath.Post.CreateRef(schema, "dashboard_panel_item", "requestBody.content.application/json.schema.properties.data.properties.panels.items.anyOf.0")
 	dashboardsPath.Post.CreateRef(schema, "dashboard_panel_section", "requestBody.content.application/json.schema.properties.data.properties.panels.items.anyOf.1")
 	dashboardsPath.Post.CreateRef(schema, "dashboard_panels", "requestBody.content.application/json.schema.properties.data.properties.panels")
+	dashboardsPath.Post.CreateRef(schema, "dashboard_pinned_panel_item", "requestBody.content.application/json.schema.properties.data.properties.pinned_panels.items")
 
 	dashboardPath.Put.CreateRef(schema, "dashboard_panel_item", "requestBody.content.application/json.schema.properties.data.properties.panels.items.anyOf.0")
 	dashboardPath.Put.CreateRef(schema, "dashboard_panel_section", "requestBody.content.application/json.schema.properties.data.properties.panels.items.anyOf.1")
 	dashboardPath.Put.CreateRef(schema, "dashboard_panels", "requestBody.content.application/json.schema.properties.data.properties.panels")
+	dashboardPath.Put.CreateRef(schema, "dashboard_pinned_panel_item", "requestBody.content.application/json.schema.properties.data.properties.pinned_panels.items")
 
 	dashboardPath.Get.CreateRef(schema, "dashboard_panel_item", "responses.200.content.application/json.schema.properties.data.properties.panels.items.anyOf.0")
 	dashboardPath.Get.CreateRef(schema, "dashboard_panel_section", "responses.200.content.application/json.schema.properties.data.properties.panels.items.anyOf.1")
 	dashboardPath.Get.CreateRef(schema, "dashboard_panels", "responses.200.content.application/json.schema.properties.data.properties.panels")
+	dashboardPath.Get.CreateRef(schema, "dashboard_pinned_panel_item", "responses.200.content.application/json.schema.properties.data.properties.pinned_panels.items")
 
 	schema.Components.CreateRef(schema, "dashboard_panel_item", "schemas.dashboard_panel_section.properties.panels.items")
 }
