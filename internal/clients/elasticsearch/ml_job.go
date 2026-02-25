@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package elasticsearch
 
 import (
@@ -16,7 +33,7 @@ import (
 )
 
 // OpenMLJob opens a machine learning job
-func OpenMLJob(ctx context.Context, apiClient *clients.ApiClient, jobId string) diag.Diagnostics {
+func OpenMLJob(ctx context.Context, apiClient *clients.APIClient, jobID string) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	esClient, err := apiClient.GetESClient()
@@ -25,20 +42,20 @@ func OpenMLJob(ctx context.Context, apiClient *clients.ApiClient, jobId string) 
 		return diags
 	}
 
-	res, err := esClient.ML.OpenJob(jobId, esClient.ML.OpenJob.WithContext(ctx))
+	res, err := esClient.ML.OpenJob(jobID, esClient.ML.OpenJob.WithContext(ctx))
 	if err != nil {
 		diags.AddError("Failed to open ML job", err.Error())
 		return diags
 	}
 	defer res.Body.Close()
-	fwDiags := diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to open ML job: %s", jobId))
+	fwDiags := diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to open ML job: %s", jobID))
 	diags.Append(fwDiags...)
 
 	return diags
 }
 
 // PutDatafeed creates a machine learning datafeed
-func PutDatafeed(ctx context.Context, apiClient *clients.ApiClient, datafeedId string, createRequest models.DatafeedCreateRequest) diag.Diagnostics {
+func PutDatafeed(ctx context.Context, apiClient *clients.APIClient, datafeedID string, createRequest models.DatafeedCreateRequest) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	esClient, err := apiClient.GetESClient()
@@ -54,21 +71,21 @@ func PutDatafeed(ctx context.Context, apiClient *clients.ApiClient, datafeedId s
 		return diags
 	}
 
-	res, err := esClient.ML.PutDatafeed(bytes.NewReader(body), datafeedId, esClient.ML.PutDatafeed.WithContext(ctx))
+	res, err := esClient.ML.PutDatafeed(bytes.NewReader(body), datafeedID, esClient.ML.PutDatafeed.WithContext(ctx))
 	if err != nil {
 		diags.AddError("Failed to create ML datafeed", err.Error())
 		return diags
 	}
 	defer res.Body.Close()
 
-	fwDiags := diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to create ML datafeed: %s", datafeedId))
+	fwDiags := diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to create ML datafeed: %s", datafeedID))
 	diags.Append(fwDiags...)
 
 	return diags
 }
 
 // CloseMLJob closes a machine learning job
-func CloseMLJob(ctx context.Context, apiClient *clients.ApiClient, jobId string, force bool, timeout time.Duration) diag.Diagnostics {
+func CloseMLJob(ctx context.Context, apiClient *clients.APIClient, jobID string, force bool, timeout time.Duration) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	esClient, err := apiClient.GetESClient()
@@ -87,21 +104,21 @@ func CloseMLJob(ctx context.Context, apiClient *clients.ApiClient, jobId string,
 		options = append(options, esClient.ML.CloseJob.WithTimeout(timeout))
 	}
 
-	res, err := esClient.ML.CloseJob(jobId, options...)
+	res, err := esClient.ML.CloseJob(jobID, options...)
 	if err != nil {
 		diags.AddError("Failed to close ML job", err.Error())
 		return diags
 	}
 	defer res.Body.Close()
 
-	fwDiags := diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to close ML job: %s", jobId))
+	fwDiags := diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to close ML job: %s", jobID))
 	diags.Append(fwDiags...)
 
 	return diags
 }
 
 // GetMLJobStats retrieves the stats for a specific machine learning job
-func GetMLJobStats(ctx context.Context, apiClient *clients.ApiClient, jobId string) (*models.MLJob, diag.Diagnostics) {
+func GetMLJobStats(ctx context.Context, apiClient *clients.APIClient, jobID string) (*models.MLJob, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	esClient, err := apiClient.GetESClient()
@@ -111,7 +128,7 @@ func GetMLJobStats(ctx context.Context, apiClient *clients.ApiClient, jobId stri
 	}
 	options := []func(*esapi.MLGetJobStatsRequest){
 		esClient.ML.GetJobStats.WithContext(ctx),
-		esClient.ML.GetJobStats.WithJobID(jobId),
+		esClient.ML.GetJobStats.WithJobID(jobID),
 		esClient.ML.GetJobStats.WithAllowNoMatch(true),
 	}
 
@@ -125,7 +142,7 @@ func GetMLJobStats(ctx context.Context, apiClient *clients.ApiClient, jobId stri
 	if res.StatusCode == http.StatusNotFound {
 		return nil, diags
 	}
-	diags.Append(diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to get ML job stats: %s", jobId))...)
+	diags.Append(diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to get ML job stats: %s", jobID))...)
 	if diags.HasError() {
 		return nil, diags
 	}
@@ -137,7 +154,7 @@ func GetMLJobStats(ctx context.Context, apiClient *clients.ApiClient, jobId stri
 
 	// Find the specific job in the response
 	for _, job := range jobStats.Jobs {
-		if job.JobId == jobId {
+		if job.JobID == jobID {
 			return &job, diags
 		}
 	}
@@ -147,7 +164,7 @@ func GetMLJobStats(ctx context.Context, apiClient *clients.ApiClient, jobId stri
 }
 
 // GetDatafeed retrieves a machine learning datafeed
-func GetDatafeed(ctx context.Context, apiClient *clients.ApiClient, datafeedId string) (*models.Datafeed, diag.Diagnostics) {
+func GetDatafeed(ctx context.Context, apiClient *clients.APIClient, datafeedID string) (*models.Datafeed, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	esClient, err := apiClient.GetESClient()
@@ -158,7 +175,7 @@ func GetDatafeed(ctx context.Context, apiClient *clients.ApiClient, datafeedId s
 
 	options := []func(*esapi.MLGetDatafeedsRequest){
 		esClient.ML.GetDatafeeds.WithContext(ctx),
-		esClient.ML.GetDatafeeds.WithDatafeedID(datafeedId),
+		esClient.ML.GetDatafeeds.WithDatafeedID(datafeedID),
 		esClient.ML.GetDatafeeds.WithAllowNoMatch(true),
 	}
 
@@ -173,7 +190,7 @@ func GetDatafeed(ctx context.Context, apiClient *clients.ApiClient, datafeedId s
 		return nil, diags
 	}
 
-	diags.Append(diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to get ML datafeed: %s", datafeedId))...)
+	diags.Append(diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to get ML datafeed: %s", datafeedID))...)
 	if diags.HasError() {
 		return nil, diags
 	}
@@ -188,7 +205,7 @@ func GetDatafeed(ctx context.Context, apiClient *clients.ApiClient, datafeedId s
 
 	// Find the specific datafeed in the response
 	for _, df := range response.Datafeeds {
-		if df.DatafeedId == datafeedId {
+		if df.DatafeedID == datafeedID {
 			return &df, diags
 		}
 	}
@@ -197,7 +214,7 @@ func GetDatafeed(ctx context.Context, apiClient *clients.ApiClient, datafeedId s
 }
 
 // UpdateDatafeed updates a machine learning datafeed
-func UpdateDatafeed(ctx context.Context, apiClient *clients.ApiClient, datafeedId string, request models.DatafeedUpdateRequest) diag.Diagnostics {
+func UpdateDatafeed(ctx context.Context, apiClient *clients.APIClient, datafeedID string, request models.DatafeedUpdateRequest) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	esClient, err := apiClient.GetESClient()
@@ -213,20 +230,20 @@ func UpdateDatafeed(ctx context.Context, apiClient *clients.ApiClient, datafeedI
 		return diags
 	}
 
-	res, err := esClient.ML.UpdateDatafeed(bytes.NewReader(body), datafeedId, esClient.ML.UpdateDatafeed.WithContext(ctx))
+	res, err := esClient.ML.UpdateDatafeed(bytes.NewReader(body), datafeedID, esClient.ML.UpdateDatafeed.WithContext(ctx))
 	if err != nil {
 		diags.AddError("Failed to update ML datafeed", err.Error())
 		return diags
 	}
 	defer res.Body.Close()
 
-	diags.Append(diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to update ML datafeed: %s", datafeedId))...)
+	diags.Append(diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to update ML datafeed: %s", datafeedID))...)
 
 	return diags
 }
 
 // DeleteDatafeed deletes a machine learning datafeed
-func DeleteDatafeed(ctx context.Context, apiClient *clients.ApiClient, datafeedId string, force bool) diag.Diagnostics {
+func DeleteDatafeed(ctx context.Context, apiClient *clients.APIClient, datafeedID string, force bool) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	esClient, err := apiClient.GetESClient()
@@ -240,20 +257,20 @@ func DeleteDatafeed(ctx context.Context, apiClient *clients.ApiClient, datafeedI
 		esClient.ML.DeleteDatafeed.WithForce(force),
 	}
 
-	res, err := esClient.ML.DeleteDatafeed(datafeedId, options...)
+	res, err := esClient.ML.DeleteDatafeed(datafeedID, options...)
 	if err != nil {
 		diags.AddError("Failed to delete ML datafeed", err.Error())
 		return diags
 	}
 	defer res.Body.Close()
 
-	diags.Append(diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to delete ML datafeed: %s", datafeedId))...)
+	diags.Append(diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to delete ML datafeed: %s", datafeedID))...)
 
 	return diags
 }
 
 // StopDatafeed stops a machine learning datafeed
-func StopDatafeed(ctx context.Context, apiClient *clients.ApiClient, datafeedId string, force bool, timeout time.Duration) diag.Diagnostics {
+func StopDatafeed(ctx context.Context, apiClient *clients.APIClient, datafeedID string, force bool, timeout time.Duration) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	esClient, err := apiClient.GetESClient()
@@ -272,20 +289,20 @@ func StopDatafeed(ctx context.Context, apiClient *clients.ApiClient, datafeedId 
 		options = append(options, esClient.ML.StopDatafeed.WithTimeout(timeout))
 	}
 
-	res, err := esClient.ML.StopDatafeed(datafeedId, options...)
+	res, err := esClient.ML.StopDatafeed(datafeedID, options...)
 	if err != nil {
 		diags.AddError("Failed to stop ML datafeed", err.Error())
 		return diags
 	}
 	defer res.Body.Close()
 
-	diags.Append(diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to stop ML datafeed: %s", datafeedId))...)
+	diags.Append(diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to stop ML datafeed: %s", datafeedID))...)
 
 	return diags
 }
 
 // StartDatafeed starts a machine learning datafeed
-func StartDatafeed(ctx context.Context, apiClient *clients.ApiClient, datafeedId string, start string, end string, timeout time.Duration) diag.Diagnostics {
+func StartDatafeed(ctx context.Context, apiClient *clients.APIClient, datafeedID string, start string, end string, timeout time.Duration) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	esClient, err := apiClient.GetESClient()
@@ -310,20 +327,20 @@ func StartDatafeed(ctx context.Context, apiClient *clients.ApiClient, datafeedId
 		options = append(options, esClient.ML.StartDatafeed.WithTimeout(timeout))
 	}
 
-	res, err := esClient.ML.StartDatafeed(datafeedId, options...)
+	res, err := esClient.ML.StartDatafeed(datafeedID, options...)
 	if err != nil {
 		diags.AddError("Failed to start ML datafeed", err.Error())
 		return diags
 	}
 	defer res.Body.Close()
 
-	diags.Append(diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to start ML datafeed: %s", datafeedId))...)
+	diags.Append(diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to start ML datafeed: %s", datafeedID))...)
 
 	return diags
 }
 
 // GetDatafeedStats retrieves the statistics for a machine learning datafeed
-func GetDatafeedStats(ctx context.Context, apiClient *clients.ApiClient, datafeedId string) (*models.DatafeedStats, diag.Diagnostics) {
+func GetDatafeedStats(ctx context.Context, apiClient *clients.APIClient, datafeedID string) (*models.DatafeedStats, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	esClient, err := apiClient.GetESClient()
@@ -334,7 +351,7 @@ func GetDatafeedStats(ctx context.Context, apiClient *clients.ApiClient, datafee
 
 	options := []func(*esapi.MLGetDatafeedStatsRequest){
 		esClient.ML.GetDatafeedStats.WithContext(ctx),
-		esClient.ML.GetDatafeedStats.WithDatafeedID(datafeedId),
+		esClient.ML.GetDatafeedStats.WithDatafeedID(datafeedID),
 		esClient.ML.GetDatafeedStats.WithAllowNoMatch(true),
 	}
 
@@ -349,7 +366,7 @@ func GetDatafeedStats(ctx context.Context, apiClient *clients.ApiClient, datafee
 		return nil, diags
 	}
 
-	diags.Append(diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to get ML datafeed stats: %s", datafeedId))...)
+	diags.Append(diagutil.CheckErrorFromFW(res, fmt.Sprintf("Unable to get ML datafeed stats: %s", datafeedID))...)
 	if diags.HasError() {
 		return nil, diags
 	}
@@ -366,7 +383,7 @@ func GetDatafeedStats(ctx context.Context, apiClient *clients.ApiClient, datafee
 	}
 
 	if len(response.Datafeeds) > 1 {
-		diags.AddError("Unexpected response", fmt.Sprintf("Expected single datafeed stats for ID %s, got %d", datafeedId, len(response.Datafeeds)))
+		diags.AddError("Unexpected response", fmt.Sprintf("Expected single datafeed stats for ID %s, got %d", datafeedID, len(response.Datafeeds)))
 		return nil, diags
 	}
 

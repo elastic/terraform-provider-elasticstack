@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package alias_test
 
 import (
@@ -67,6 +84,59 @@ func TestAccResourceAlias(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index_alias.test_alias", "write_index.filter"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "write_index.index_routing", "write-routing"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "read_indices.#", "1"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceAliasIssue1750(t *testing.T) {
+	aliasName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlpha)
+	writeIndexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlpha)
+	readIndexName1 := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlpha)
+	readIndexName2 := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlpha)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceAliasDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("repro"),
+				ConfigVariables: config.Variables{
+					"aliases": config.ListVariable(
+						config.ObjectVariable(map[string]config.Variable{
+							"name": config.StringVariable(aliasName),
+							"write_index": config.ObjectVariable(map[string]config.Variable{
+								"name": config.StringVariable(writeIndexName),
+							}),
+							"read_indices": config.SetVariable(
+								config.ObjectVariable(map[string]config.Variable{
+									"name": config.StringVariable(readIndexName1),
+								}),
+								config.ObjectVariable(map[string]config.Variable{
+									"name": config.StringVariable(readIndexName2),
+								}),
+							),
+						}),
+					),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(
+						"elasticstack_elasticsearch_index_alias.this.0",
+						"name",
+						aliasName,
+					),
+					resource.TestCheckResourceAttr(
+						"elasticstack_elasticsearch_index_alias.this.0",
+						"write_index.name",
+						writeIndexName,
+					),
+					resource.TestCheckResourceAttr(
+						"elasticstack_elasticsearch_index_alias.this.0",
+						"read_indices.#",
+						"2",
+					),
 				),
 			},
 		},
@@ -193,8 +263,8 @@ func checkResourceAliasDestroy(s *terraform.State) error {
 
 		// Handle the case where ID might not be in the expected format
 		aliasName := rs.Primary.ID
-		if compId, err := clients.CompositeIdFromStr(rs.Primary.ID); err == nil {
-			aliasName = compId.ResourceId
+		if compID, err := clients.CompositeIDFromStr(rs.Primary.ID); err == nil {
+			aliasName = compID.ResourceID
 		}
 
 		esClient, err := client.GetESClient()

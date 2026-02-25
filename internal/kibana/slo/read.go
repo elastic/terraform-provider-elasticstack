@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package slo
 
 import (
@@ -41,13 +58,13 @@ func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, respo
 func (r *Resource) readSloFromAPI(ctx context.Context, state *tfModel) (bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	compID, idDiags := clients.CompositeIdFromStrFw(state.ID.ValueString())
+	compID, idDiags := clients.CompositeIDFromStrFw(state.ID.ValueString())
 	diags.Append(idDiags...)
 	if diags.HasError() {
 		return false, diags
 	}
 
-	apiModel, sdkDiags := clientkibana.GetSlo(ctx, r.client, compID.ResourceId, compID.ClusterId)
+	apiModel, sdkDiags := clientkibana.GetSlo(ctx, r.client, compID.ResourceID, compID.ClusterID)
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
 		return false, diags
@@ -56,7 +73,7 @@ func (r *Resource) readSloFromAPI(ctx context.Context, state *tfModel) (bool, di
 		return false, diags
 	}
 
-	state.ID = types.StringValue((&clients.CompositeId{ClusterId: apiModel.SpaceID, ResourceId: apiModel.SloID}).String())
+	state.ID = types.StringValue((&clients.CompositeID{ClusterID: apiModel.SpaceID, ResourceID: apiModel.SloID}).String())
 	diags.Append(state.populateFromAPI(apiModel)...)
 	if diags.HasError() {
 		return true, diags

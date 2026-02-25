@@ -1,4 +1,21 @@
-package user
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package securityuser
 
 import (
 	"context"
@@ -8,7 +25,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -22,7 +39,7 @@ func (r *userResource) Update(ctx context.Context, req resource.UpdateRequest, r
 }
 
 func (r *userResource) update(ctx context.Context, plan tfsdk.Plan, config tfsdk.Config, state *tfsdk.State) diag.Diagnostics {
-	var planData UserData
+	var planData Data
 	var diags diag.Diagnostics
 	diags.Append(plan.Get(ctx, &planData)...)
 	if diags.HasError() {
@@ -31,7 +48,7 @@ func (r *userResource) update(ctx context.Context, plan tfsdk.Plan, config tfsdk
 
 	// Check if we have existing state (this is an update, not a create)
 	hasState := false
-	var stateData UserData
+	var stateData Data
 	if state != nil && !state.Raw.IsNull() {
 		hasState = true
 		diags.Append(state.Get(ctx, &stateData)...)
@@ -40,21 +57,21 @@ func (r *userResource) update(ctx context.Context, plan tfsdk.Plan, config tfsdk
 		}
 	}
 
-	usernameId := planData.Username.ValueString()
-	id, sdkDiags := r.client.ID(ctx, usernameId)
+	usernameID := planData.Username.ValueString()
+	id, sdkDiags := r.client.ID(ctx, usernameID)
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
 		return diags
 	}
 
-	client, connDiags := clients.MaybeNewApiClientFromFrameworkResource(ctx, planData.ElasticsearchConnection, r.client)
+	client, connDiags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, planData.ElasticsearchConnection, r.client)
 	diags.Append(connDiags...)
 	if diags.HasError() {
 		return diags
 	}
 
 	var user models.User
-	user.Username = usernameId
+	user.Username = usernameID
 
 	// Handle password fields - only set password if it's in the plan AND (it's a create OR it has changed from state)
 	// Priority: password_wo > password > password_hash
@@ -65,22 +82,23 @@ func (r *userResource) update(ctx context.Context, plan tfsdk.Plan, config tfsdk
 		return diags
 	}
 
-	if utils.IsKnown(passwordWoFromConfig) && (!hasState || !planData.PasswordWoVersion.Equal(stateData.PasswordWoVersion)) {
+	switch {
+	case typeutils.IsKnown(passwordWoFromConfig) && (!hasState || !planData.PasswordWoVersion.Equal(stateData.PasswordWoVersion)):
 		// Use write-only password - changes triggered by version change
 		password := passwordWoFromConfig.ValueString()
 		user.Password = &password
-	} else if utils.IsKnown(planData.Password) && (!hasState || !planData.Password.Equal(stateData.Password)) {
+	case typeutils.IsKnown(planData.Password) && (!hasState || !planData.Password.Equal(stateData.Password)):
 		password := planData.Password.ValueString()
 		user.Password = &password
-	} else if utils.IsKnown(planData.PasswordHash) && (!hasState || !planData.PasswordHash.Equal(stateData.PasswordHash)) {
+	case typeutils.IsKnown(planData.PasswordHash) && (!hasState || !planData.PasswordHash.Equal(stateData.PasswordHash)):
 		passwordHash := planData.PasswordHash.ValueString()
 		user.PasswordHash = &passwordHash
 	}
 
-	if utils.IsKnown(planData.Email) {
+	if typeutils.IsKnown(planData.Email) {
 		user.Email = planData.Email.ValueString()
 	}
-	if utils.IsKnown(planData.FullName) {
+	if typeutils.IsKnown(planData.FullName) {
 		user.FullName = planData.FullName.ValueString()
 	}
 	user.Enabled = planData.Enabled.ValueBool()
@@ -93,7 +111,7 @@ func (r *userResource) update(ctx context.Context, plan tfsdk.Plan, config tfsdk
 	user.Roles = roles
 
 	if !planData.Metadata.IsNull() && !planData.Metadata.IsUnknown() {
-		var metadata map[string]interface{}
+		var metadata map[string]any
 		err := json.Unmarshal([]byte(planData.Metadata.ValueString()), &metadata)
 		if err != nil {
 			diags.AddError("Failed to decode metadata", err.Error())
@@ -108,7 +126,7 @@ func (r *userResource) update(ctx context.Context, plan tfsdk.Plan, config tfsdk
 	}
 
 	// Read the user back to get computed fields like metadata
-	readUser, sdkDiags := elasticsearch.GetUser(ctx, client, usernameId)
+	readUser, sdkDiags := elasticsearch.GetUser(ctx, client, usernameID)
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
 		return diags
@@ -119,7 +137,7 @@ func (r *userResource) update(ctx context.Context, plan tfsdk.Plan, config tfsdk
 		return diags
 	}
 
-	planData.Id = types.StringValue(id.String())
+	planData.ID = types.StringValue(id.String())
 
 	// Set computed fields from the API response
 	if len(readUser.Metadata) > 0 {

@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package dashboard
 
 import (
@@ -421,9 +438,9 @@ func Test_markdownPanelConfigConverter_mapPanelToAPI(t *testing.T) {
 			},
 			wantConfig: kbapi.DashboardPanelItemConfig0{
 				Content:     "# Test Content",
-				Description: strPtr("Test Description"),
-				HideTitle:   boolPtr(true),
-				Title:       strPtr("Test Title"),
+				Description: new("Test Description"),
+				HideTitle:   new(true),
+				Title:       new("Test Title"),
 			},
 			wantDiags: false,
 		},
@@ -475,7 +492,7 @@ func Test_markdownPanelConfigConverter_mapPanelToAPI(t *testing.T) {
 			},
 			wantConfig: kbapi.DashboardPanelItemConfig0{
 				Content:     "# Content",
-				HideTitle:   boolPtr(false),
+				HideTitle:   new(false),
 				Description: nil,
 				Title:       nil,
 			},
@@ -492,8 +509,8 @@ func Test_markdownPanelConfigConverter_mapPanelToAPI(t *testing.T) {
 			},
 			wantConfig: kbapi.DashboardPanelItemConfig0{
 				Content:     "",
-				Description: strPtr(""),
-				Title:       strPtr(""),
+				Description: new(""),
+				Title:       new(""),
 			},
 			wantDiags: false,
 		},
@@ -542,8 +559,8 @@ Some **bold** text and *italic* text.
 			},
 			wantConfig: kbapi.DashboardPanelItemConfig0{
 				Content:     `Content with special chars: <>&"'`,
-				Description: strPtr(`Description with special chars: <>&"'`),
-				Title:       strPtr(`Title with special chars: <>&"'`),
+				Description: new(`Description with special chars: <>&"'`),
+				Title:       new(`Title with special chars: <>&"'`),
 			},
 			wantDiags: false,
 		},
@@ -590,13 +607,4 @@ Some **bold** text and *italic* text.
 			}
 		})
 	}
-}
-
-// Helper functions for pointer values
-func strPtr(s string) *string {
-	return &s
-}
-
-func boolPtr(b bool) *bool {
-	return &b
 }

@@ -1,4 +1,21 @@
-package datafeed_state
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package datafeedstate
 
 import (
 	"context"
@@ -34,14 +51,14 @@ func (r *mlDatafeedStateResource) Read(ctx context.Context, req resource.ReadReq
 }
 
 func (r *mlDatafeedStateResource) read(ctx context.Context, data MLDatafeedStateData) (*MLDatafeedStateData, diag.Diagnostics) {
-	client, diags := clients.MaybeNewApiClientFromFrameworkResource(ctx, data.ElasticsearchConnection, r.client)
+	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, data.ElasticsearchConnection, r.client)
 	if diags.HasError() {
 		return nil, diags
 	}
 
-	datafeedId := data.DatafeedId.ValueString()
+	datafeedID := data.DatafeedID.ValueString()
 	// Check if the datafeed exists by getting its stats
-	datafeedStats, getDiags := elasticsearch.GetDatafeedStats(ctx, client, datafeedId)
+	datafeedStats, getDiags := elasticsearch.GetDatafeedStats(ctx, client, datafeedID)
 	diags.Append(getDiags...)
 	if diags.HasError() {
 		return nil, diags
@@ -55,13 +72,13 @@ func (r *mlDatafeedStateResource) read(ctx context.Context, data MLDatafeedState
 	data.State = types.StringValue(datafeedStats.State)
 
 	// Regenerate composite ID to ensure it's current
-	compId, sdkDiags := client.ID(ctx, datafeedId)
+	compID, sdkDiags := client.ID(ctx, datafeedID)
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
 		return nil, diags
 	}
 
-	data.Id = types.StringValue(compId.String())
+	data.ID = types.StringValue(compID.String())
 
 	diags.Append(data.SetStartAndEndFromAPI(datafeedStats)...)
 

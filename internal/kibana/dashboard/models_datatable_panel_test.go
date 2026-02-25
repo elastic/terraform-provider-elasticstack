@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package dashboard
 
 import (
@@ -6,7 +23,6 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
@@ -23,17 +39,17 @@ func Test_datatableDensityModel_fromAPI_toAPI(t *testing.T) {
 	header := kbapi.DatatableDensity_Height_Header{}
 	require.NoError(t, header.FromDatatableDensityHeightHeader1(kbapi.DatatableDensityHeightHeader1{
 		Type:     kbapi.DatatableDensityHeightHeader1TypeCustom,
-		MaxLines: utils.Pointer(float32(2)),
+		MaxLines: new(float32(2)),
 	}))
 
 	value := kbapi.DatatableDensity_Height_Value{}
 	require.NoError(t, value.FromDatatableDensityHeightValue1(kbapi.DatatableDensityHeightValue1{
 		Type:  kbapi.DatatableDensityHeightValue1TypeCustom,
-		Lines: utils.Pointer(float32(3)),
+		Lines: new(float32(3)),
 	}))
 
 	api := kbapi.DatatableDensity{
-		Mode: utils.Pointer(kbapi.DatatableDensityModeCompact),
+		Mode: new(kbapi.DatatableDensityModeCompact),
 		Height: &struct {
 			Header *kbapi.DatatableDensity_Height_Header `json:"header,omitempty"`
 			Value  *kbapi.DatatableDensity_Height_Value  `json:"value,omitempty"`
@@ -74,7 +90,7 @@ func Test_datatableNoESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 	}))
 
 	density := kbapi.DatatableDensity{
-		Mode: utils.Pointer(kbapi.DatatableDensityModeDefault),
+		Mode: new(kbapi.DatatableDensityModeDefault),
 		Height: &struct {
 			Header *kbapi.DatatableDensity_Height_Header `json:"header,omitempty"`
 			Value  *kbapi.DatatableDensity_Height_Value  `json:"value,omitempty"`
@@ -86,10 +102,10 @@ func Test_datatableNoESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 
 	api := kbapi.DatatableNoESQL{
 		Type:                kbapi.DatatableNoESQLTypeDatatable,
-		Title:               utils.Pointer("Datatable NoESQL"),
-		Description:         utils.Pointer("NoESQL description"),
-		IgnoreGlobalFilters: utils.Pointer(true),
-		Sampling:            utils.Pointer(float32(0.5)),
+		Title:               new("Datatable NoESQL"),
+		Description:         new("NoESQL description"),
+		IgnoreGlobalFilters: new(true),
+		Sampling:            new(float32(0.5)),
 		Density:             density,
 		Query:               kbapi.FilterSimpleSchema{},
 		Metrics:             []kbapi.DatatableNoESQL_Metrics_Item{},
@@ -125,7 +141,7 @@ func Test_datatableNoESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 
 	assert.Equal(t, types.StringValue("Datatable NoESQL"), model.Title)
 	assert.Equal(t, types.StringValue("NoESQL description"), model.Description)
-	assert.False(t, model.Dataset.IsNull())
+	assert.False(t, model.DatasetJSON.IsNull())
 	assert.Equal(t, types.BoolValue(true), model.IgnoreGlobalFilters)
 	assert.Equal(t, types.Float64Value(0.5), model.Sampling)
 	require.NotNil(t, model.Query)
@@ -143,7 +159,7 @@ func Test_datatableNoESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 
 func Test_datatableESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 	density := kbapi.DatatableDensity{
-		Mode: utils.Pointer(kbapi.DatatableDensityModeExpanded),
+		Mode: new(kbapi.DatatableDensityModeExpanded),
 	}
 
 	metric := kbapi.DatatableESQLMetric{
@@ -179,10 +195,10 @@ func Test_datatableESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 
 	api := kbapi.DatatableESQL{
 		Type:                kbapi.DatatableESQLTypeDatatable,
-		Title:               utils.Pointer("Datatable ESQL"),
-		Description:         utils.Pointer("ESQL description"),
-		IgnoreGlobalFilters: utils.Pointer(false),
-		Sampling:            utils.Pointer(float32(1)),
+		Title:               new("Datatable ESQL"),
+		Description:         new("ESQL description"),
+		IgnoreGlobalFilters: new(false),
+		Sampling:            new(float32(1)),
 		Density:             density,
 		Metrics:             []kbapi.DatatableESQLMetric{metric},
 		Rows: &[]struct {
@@ -217,7 +233,7 @@ func Test_datatableESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 
 	assert.Equal(t, types.StringValue("Datatable ESQL"), model.Title)
 	assert.Equal(t, types.StringValue("ESQL description"), model.Description)
-	assert.False(t, model.Dataset.IsNull())
+	assert.False(t, model.DatasetJSON.IsNull())
 	assert.Equal(t, types.BoolValue(false), model.IgnoreGlobalFilters)
 	assert.Equal(t, types.Float64Value(1), model.Sampling)
 	assert.Len(t, model.Metrics, 1)
@@ -235,8 +251,8 @@ func Test_datatableESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 func Test_datatablePanelConfigConverter_roundTrip(t *testing.T) {
 	converter := newDatatablePanelConfigConverter()
 	configModel := &datatableNoESQLConfigModel{
-		Title:   types.StringValue("Round Trip"),
-		Dataset: jsontypes.NewNormalizedValue(`{"type":"dataView","id":"metrics-*"}`),
+		Title:       types.StringValue("Round Trip"),
+		DatasetJSON: jsontypes.NewNormalizedValue(`{"type":"dataView","id":"metrics-*"}`),
 		Density: &datatableDensityModel{
 			Mode: types.StringValue("default"),
 		},
@@ -245,7 +261,7 @@ func Test_datatablePanelConfigConverter_roundTrip(t *testing.T) {
 			Query:    types.StringValue(""),
 		},
 		Metrics: []datatableMetricModel{
-			{Config: jsontypes.NewNormalizedValue(`{"operation":"count"}`)},
+			{ConfigJSON: jsontypes.NewNormalizedValue(`{"operation":"count"}`)},
 		},
 	}
 
@@ -271,21 +287,21 @@ func Test_datatablePanelConfigConverter_roundTrip_ESQL(t *testing.T) {
 	esqlConfigModel := &datatableESQLConfigModel{
 		Title:               types.StringValue("Round Trip ESQL"),
 		Description:         types.StringValue("ESQL round-trip test"),
-		Dataset:             jsontypes.NewNormalizedValue(`{"type":"esql","query":"FROM metrics-* | KEEP host.name, system.cpu.user.pct | LIMIT 10"}`),
+		DatasetJSON:         jsontypes.NewNormalizedValue(`{"type":"esql","query":"FROM metrics-* | KEEP host.name, system.cpu.user.pct | LIMIT 10"}`),
 		Density:             &datatableDensityModel{Mode: types.StringValue("expanded")},
 		IgnoreGlobalFilters: types.BoolValue(false),
 		Sampling:            types.Float64Value(1),
 		Metrics: []datatableMetricModel{
-			{Config: jsontypes.NewNormalizedValue(`{"column":"system.cpu.user.pct","operation":"value","format":{"type":"number","decimals":2}}`)},
+			{ConfigJSON: jsontypes.NewNormalizedValue(`{"column":"system.cpu.user.pct","operation":"value","format":{"type":"number","decimals":2}}`)},
 		},
 		Rows: []datatableRowModel{
-			{Config: jsontypes.NewNormalizedValue(`{"column":"host.name","operation":"value","collapse_by":"avg"}`)},
+			{ConfigJSON: jsontypes.NewNormalizedValue(`{"column":"host.name","operation":"value","collapse_by":"avg"}`)},
 		},
 		SplitMetricsBy: []datatableSplitByModel{
-			{Config: jsontypes.NewNormalizedValue(`{"column":"host.name","operation":"value"}`)},
+			{ConfigJSON: jsontypes.NewNormalizedValue(`{"column":"host.name","operation":"value"}`)},
 		},
-		SortBy: jsontypes.NewNormalizedValue(`{"column_type":"metric","direction":"desc","index":0}`),
-		Paging: types.Int64Value(20),
+		SortByJSON: jsontypes.NewNormalizedValue(`{"column_type":"metric","direction":"desc","index":0}`),
+		Paging:     types.Int64Value(20),
 	}
 	panel := panelModel{
 		Type:            types.StringValue("lens"),
@@ -303,7 +319,7 @@ func Test_datatablePanelConfigConverter_roundTrip_ESQL(t *testing.T) {
 	require.NotNil(t, newPanel.DatatableConfig.ESQL)
 	assert.Equal(t, types.StringValue("Round Trip ESQL"), newPanel.DatatableConfig.ESQL.Title)
 	assert.Equal(t, types.StringValue("ESQL round-trip test"), newPanel.DatatableConfig.ESQL.Description)
-	assert.False(t, newPanel.DatatableConfig.ESQL.Dataset.IsNull())
+	assert.False(t, newPanel.DatatableConfig.ESQL.DatasetJSON.IsNull())
 	assert.Equal(t, types.Int64Value(20), newPanel.DatatableConfig.ESQL.Paging)
 	assert.Len(t, newPanel.DatatableConfig.ESQL.Metrics, 1)
 	assert.Len(t, newPanel.DatatableConfig.ESQL.Rows, 1)

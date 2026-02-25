@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package slo
 
 import (
@@ -79,12 +96,46 @@ func TestTimesliceMetricIndicator_ToAPI(t *testing.T) {
 		assert.Equal(t, "status:200", *metrics[0].TimesliceMetricBasicMetricWithField.Filter)
 
 		require.NotNil(t, metrics[1].TimesliceMetricPercentileMetric)
-		assert.Equal(t, 95.0, metrics[1].TimesliceMetricPercentileMetric.Percentile)
+		assert.InDelta(t, 95.0, metrics[1].TimesliceMetricPercentileMetric.Percentile, 1e-9)
 
 		require.NotNil(t, metrics[2].TimesliceMetricDocCountMetric)
 		require.NotNil(t, metrics[2].TimesliceMetricDocCountMetric.Filter)
 		assert.Equal(t, "labels.env:prod", *metrics[2].TimesliceMetricDocCountMetric.Filter)
 	})
+
+	for _, agg := range []string{"last_value", "cardinality", "std_deviation"} {
+		t.Run("maps "+agg+" aggregation as basic metric with field", func(t *testing.T) {
+			m := tfModel{TimesliceMetricIndicator: []tfTimesliceMetricIndicator{{
+				Index:          types.StringValue("metrics-*"),
+				DataViewID:     types.StringNull(),
+				TimestampField: types.StringValue("@timestamp"),
+				Filter:         types.StringNull(),
+				Metric: []tfTimesliceMetricDefinition{{
+					Equation:   types.StringValue("A"),
+					Comparator: types.StringValue("GT"),
+					Threshold:  types.Float64Value(0),
+					Metrics: []tfTimesliceMetricMetric{{
+						Name:        types.StringValue("A"),
+						Aggregation: types.StringValue(agg),
+						Field:       types.StringValue("some.field"),
+						Percentile:  types.Float64Null(),
+						Filter:      types.StringNull(),
+					}},
+				}},
+			}}}
+
+			ok, ind, diags := m.timesliceMetricIndicatorToAPI()
+			require.True(t, ok)
+			require.False(t, diags.HasError())
+			require.NotNil(t, ind.IndicatorPropertiesTimesliceMetric)
+
+			metrics := ind.IndicatorPropertiesTimesliceMetric.Params.Metric.Metrics
+			require.Len(t, metrics, 1)
+			require.NotNil(t, metrics[0].TimesliceMetricBasicMetricWithField)
+			assert.Equal(t, agg, metrics[0].TimesliceMetricBasicMetricWithField.Aggregation)
+			assert.Equal(t, "some.field", metrics[0].TimesliceMetricBasicMetricWithField.Field)
+		})
+	}
 
 	t.Run("emits error on unsupported aggregation", func(t *testing.T) {
 		m := tfModel{TimesliceMetricIndicator: []tfTimesliceMetricIndicator{{
@@ -118,7 +169,7 @@ func TestTimesliceMetricIndicator_PopulateFromAPI(t *testing.T) {
 		api := &generatedslo.IndicatorPropertiesTimesliceMetric{
 			Params: generatedslo.IndicatorPropertiesTimesliceMetricParams{
 				Index:          "metrics-*",
-				DataViewId:     strPtr("dv-1"),
+				DataViewId:     new("dv-1"),
 				TimestampField: "@timestamp",
 				Filter:         nil,
 				Metric: generatedslo.IndicatorPropertiesTimesliceMetricParamsMetric{
@@ -131,7 +182,7 @@ func TestTimesliceMetricIndicator_PopulateFromAPI(t *testing.T) {
 								Name:        "a",
 								Aggregation: "sum",
 								Field:       "foo",
-								Filter:      strPtr("status:200"),
+								Filter:      new("status:200"),
 							},
 						},
 						{
@@ -147,7 +198,7 @@ func TestTimesliceMetricIndicator_PopulateFromAPI(t *testing.T) {
 							TimesliceMetricDocCountMetric: &generatedslo.TimesliceMetricDocCountMetric{
 								Name:        "c",
 								Aggregation: "doc_count",
-								Filter:      strPtr("labels.env:prod"),
+								Filter:      new("labels.env:prod"),
 							},
 						},
 					},
@@ -170,7 +221,7 @@ func TestTimesliceMetricIndicator_PopulateFromAPI(t *testing.T) {
 
 		assert.Equal(t, "percentile", ind.Metric[0].Metrics[1].Aggregation.ValueString())
 		assert.True(t, ind.Metric[0].Metrics[1].Filter.IsNull())
-		assert.Equal(t, 95.0, ind.Metric[0].Metrics[1].Percentile.ValueFloat64())
+		assert.InDelta(t, 95.0, ind.Metric[0].Metrics[1].Percentile.ValueFloat64(), 1e-9)
 
 		assert.Equal(t, "doc_count", ind.Metric[0].Metrics[2].Aggregation.ValueString())
 		assert.Equal(t, "labels.env:prod", ind.Metric[0].Metrics[2].Filter.ValueString())

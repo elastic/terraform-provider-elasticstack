@@ -1,8 +1,27 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package slo
 
 import (
 	"context"
+	"fmt"
 	"regexp"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -54,7 +73,7 @@ func getSchema() schema.Schema {
 				Required:    true,
 			},
 			"budgeting_method": schema.StringAttribute{
-				Description: "An `occurrences` budgeting method uses the number of good and total events during the time window. A `timeslices` budgeting method uses the number of good slices and total slices during the time window. A slice is an arbitrary time window (smaller than the overall SLO time window) that is either considered good or bad, calculated from the timeslice threshold and the ratio of good over total events that happened during the slice window. A budgeting method is required and must be either occurrences or timeslices.",
+				Description: budgetingMethodDescription,
 				Required:    true,
 				Validators:  []validator.String{stringvalidator.OneOf("occurrences", "timeslices")},
 			},
@@ -100,7 +119,7 @@ func getSchema() schema.Schema {
 				},
 			},
 			"time_window": schema.ListNestedBlock{
-				Description: "Currently support `calendarAligned` and `rolling` time windows. Any duration greater than 1 day can be used: days, weeks, months, quarters, years. Rolling time window requires a duration, e.g. `1w` for one week, and type: `rolling`. SLOs defined with such time window, will only consider the SLI data from the last duration period as a moving window. Calendar aligned time window requires a duration, limited to `1M` for monthly or `1w` for weekly, and type: `calendarAligned`.",
+				Description: timeWindowDescription,
 				Validators:  []validator.List{listvalidator.SizeBetween(1, 1)},
 				NestedObject: schema.NestedBlockObject{
 					Attributes: map[string]schema.Attribute{
@@ -110,7 +129,7 @@ func getSchema() schema.Schema {
 				},
 			},
 			"objective": schema.ListNestedBlock{
-				Description: "The target objective is the value the SLO needs to meet during the time window. If a timeslices budgeting method is used, we also need to define the timesliceTarget which can be different than the overall SLO target.",
+				Description: objectiveDescription,
 				Validators:  []validator.List{listvalidator.SizeBetween(1, 1)},
 				NestedObject: schema.NestedBlockObject{
 					Attributes: map[string]schema.Attribute{
@@ -270,8 +289,8 @@ func kqlCustomIndicatorSchema() schema.Block {
 				"index":           schema.StringAttribute{Required: true},
 				"data_view_id":    schema.StringAttribute{Optional: true, Description: "Optional data view id to use for this indicator."},
 				"filter":          schema.StringAttribute{Optional: true},
-				"good":            schema.StringAttribute{Optional: true},
-				"total":           schema.StringAttribute{Optional: true},
+				"good":            schema.StringAttribute{Optional: true, Computed: true, Default: stringdefault.StaticString("")},
+				"total":           schema.StringAttribute{Optional: true, Computed: true, Default: stringdefault.StaticString("")},
 				"timestamp_field": schema.StringAttribute{Optional: true, Computed: true, Default: stringdefault.StaticString("@timestamp")},
 			},
 		},
@@ -303,11 +322,18 @@ func timesliceMetricIndicatorSchema() schema.Block {
 								Validators: []validator.List{listvalidator.SizeAtLeast(1)},
 								NestedObject: schema.NestedBlockObject{
 									Attributes: map[string]schema.Attribute{
-										"name":        schema.StringAttribute{Required: true, Description: "The unique name for this metric. Used as a variable in the equation field."},
-										"aggregation": schema.StringAttribute{Required: true, Description: "The aggregation type for this metric. One of: sum, avg, min, max, value_count, percentile, doc_count. Determines which other fields are required:"},
-										"field":       schema.StringAttribute{Optional: true, Description: "Field to aggregate. Required for aggregations: sum, avg, min, max, value_count, percentile. Must NOT be set for doc_count."},
-										"percentile":  schema.Float64Attribute{Optional: true, Description: "Percentile value (e.g., 99). Required if aggregation is 'percentile'. Must NOT be set for other aggregations."},
-										"filter":      schema.StringAttribute{Optional: true, Description: "Optional KQL filter for this metric. Supported for all aggregations except doc_count."},
+										"name": schema.StringAttribute{Required: true, Description: "The unique name for this metric. Used as a variable in the equation field."},
+										"aggregation": schema.StringAttribute{
+											Required:    true,
+											Description: fmt.Sprintf("The aggregation type for this metric. One of: %s. Determines which other fields are required.", strings.Join(timesliceMetricAggregations, ", ")),
+											Validators:  []validator.String{stringvalidator.OneOf(timesliceMetricAggregations...)},
+										},
+										"field": schema.StringAttribute{
+											Optional:    true,
+											Description: fmt.Sprintf("Field to aggregate. Required for %s. Must NOT be set for doc_count.", strings.Join(timesliceMetricAggregationsWithField, ", ")),
+										},
+										"percentile": schema.Float64Attribute{Optional: true, Description: "Percentile value (e.g., 99). Required if aggregation is 'percentile'. Must NOT be set for other aggregations."},
+										"filter":     schema.StringAttribute{Optional: true, Description: "Optional KQL filter for this metric. Supported for all aggregations except doc_count."},
 									},
 								},
 							},

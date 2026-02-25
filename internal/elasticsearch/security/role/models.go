@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package role
 
 import (
@@ -15,8 +32,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
-type RoleData struct {
-	Id                      types.String         `tfsdk:"id"`
+type Data struct {
+	ID                      types.String         `tfsdk:"id"`
 	ElasticsearchConnection types.List           `tfsdk:"elasticsearch_connection"`
 	Name                    types.String         `tfsdk:"name"`
 	Description             types.String         `tfsdk:"description"`
@@ -58,20 +75,20 @@ type FieldSecurityData struct {
 }
 
 // toAPIModel converts the Terraform model to the API model
-func (data *RoleData) toAPIModel(ctx context.Context) (*models.Role, diag.Diagnostics) {
+func (data *Data) toAPIModel(ctx context.Context) (*models.Role, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var role models.Role
 
 	role.Name = data.Name.ValueString()
 
 	// Description
-	if utils.IsKnown(data.Description) {
+	if typeutils.IsKnown(data.Description) {
 		description := data.Description.ValueString()
 		role.Description = &description
 	}
 
 	// Applications
-	if utils.IsKnown(data.Applications) {
+	if typeutils.IsKnown(data.Applications) {
 		var applicationsList []ApplicationData
 		diags.Append(data.Applications.ElementsAs(ctx, &applicationsList, false)...)
 		if diags.HasError() {
@@ -97,8 +114,8 @@ func (data *RoleData) toAPIModel(ctx context.Context) (*models.Role, diag.Diagno
 	}
 
 	// Global
-	if utils.IsKnown(data.Global) {
-		var global map[string]interface{}
+	if typeutils.IsKnown(data.Global) {
+		var global map[string]any
 		if err := json.Unmarshal([]byte(data.Global.ValueString()), &global); err != nil {
 			diags.AddError("Invalid JSON", fmt.Sprintf("Error parsing global JSON: %s", err))
 			return nil, diags
@@ -107,7 +124,7 @@ func (data *RoleData) toAPIModel(ctx context.Context) (*models.Role, diag.Diagno
 	}
 
 	// Cluster
-	if utils.IsKnown(data.Cluster) {
+	if typeutils.IsKnown(data.Cluster) {
 		var cluster []string
 		diags.Append(data.Cluster.ElementsAs(ctx, &cluster, false)...)
 		if diags.HasError() {
@@ -117,7 +134,7 @@ func (data *RoleData) toAPIModel(ctx context.Context) (*models.Role, diag.Diagno
 	}
 
 	// Indices
-	if utils.IsKnown(data.Indices) {
+	if typeutils.IsKnown(data.Indices) {
 		var indicesList []IndexPermsData
 		diags.Append(data.Indices.ElementsAs(ctx, &indicesList, false)...)
 		if diags.HasError() {
@@ -131,7 +148,7 @@ func (data *RoleData) toAPIModel(ctx context.Context) (*models.Role, diag.Diagno
 				return nil, diags
 			}
 
-			if utils.IsKnown(idx.AllowRestrictedIndices) {
+			if typeutils.IsKnown(idx.AllowRestrictedIndices) {
 				newIndex.AllowRestrictedIndices = idx.AllowRestrictedIndices.ValueBoolPointer()
 			}
 			indices[i] = newIndex
@@ -140,7 +157,7 @@ func (data *RoleData) toAPIModel(ctx context.Context) (*models.Role, diag.Diagno
 	}
 
 	// Remote Indices
-	if utils.IsKnown(data.RemoteIndices) {
+	if typeutils.IsKnown(data.RemoteIndices) {
 		var remoteIndicesList []RemoteIndexPermsData
 		diags.Append(data.RemoteIndices.ElementsAs(ctx, &remoteIndicesList, false)...)
 		if diags.HasError() {
@@ -170,8 +187,8 @@ func (data *RoleData) toAPIModel(ctx context.Context) (*models.Role, diag.Diagno
 	}
 
 	// Metadata
-	if utils.IsKnown(data.Metadata) {
-		var metadata map[string]interface{}
+	if typeutils.IsKnown(data.Metadata) {
+		var metadata map[string]any
 		if err := json.Unmarshal([]byte(data.Metadata.ValueString()), &metadata); err != nil {
 			diags.AddError("Invalid JSON", fmt.Sprintf("Error parsing metadata JSON: %s", err))
 			return nil, diags
@@ -180,7 +197,7 @@ func (data *RoleData) toAPIModel(ctx context.Context) (*models.Role, diag.Diagno
 	}
 
 	// Run As
-	if utils.IsKnown(data.RunAs) {
+	if typeutils.IsKnown(data.RunAs) {
 		var runAs []string
 		diags.Append(data.RunAs.ElementsAs(ctx, &runAs, false)...)
 		if diags.HasError() {
@@ -205,13 +222,13 @@ func indexPermissionsToAPIModel(ctx context.Context, data CommonIndexPermsData) 
 		Privileges: privileges,
 	}
 
-	if utils.IsKnown(data.Query) {
+	if typeutils.IsKnown(data.Query) {
 		query := data.Query.ValueString()
 		newIndex.Query = &query
 	}
 
 	// Field Security
-	if utils.IsKnown(data.FieldSecurity) {
+	if typeutils.IsKnown(data.FieldSecurity) {
 		newIndex.FieldSecurity, diags = fieldSecurityToAPIModel(ctx, data.FieldSecurity)
 		if diags.HasError() {
 			return models.IndexPerms{}, diags
@@ -229,7 +246,7 @@ func fieldSecurityToAPIModel(ctx context.Context, data types.Object) (*models.Fi
 	}
 
 	fieldSecurity := models.FieldSecurity{}
-	if utils.IsKnown(fieldSec.Grant) {
+	if typeutils.IsKnown(fieldSec.Grant) {
 		var grants []string
 		diags.Append(fieldSec.Grant.ElementsAs(ctx, &grants, false)...)
 		if diags.HasError() {
@@ -238,7 +255,7 @@ func fieldSecurityToAPIModel(ctx context.Context, data types.Object) (*models.Fi
 		fieldSecurity.Grant = grants
 	}
 
-	if utils.IsKnown(fieldSec.Except) {
+	if typeutils.IsKnown(fieldSec.Except) {
 		var excepts []string
 		diags.Append(fieldSec.Except.ElementsAs(ctx, &excepts, false)...)
 		if diags.HasError() {
@@ -250,7 +267,7 @@ func fieldSecurityToAPIModel(ctx context.Context, data types.Object) (*models.Fi
 }
 
 // fromAPIModel converts the API model to the Terraform model
-func (data *RoleData) fromAPIModel(ctx context.Context, role *models.Role) diag.Diagnostics {
+func (data *Data) fromAPIModel(ctx context.Context, role *models.Role) diag.Diagnostics {
 	var diags diag.Diagnostics
 	// Preserve original null values for optional attributes to distinguish between:
 	// - User doesn't set attribute (null) - should remain null even if API returns empty array
@@ -354,13 +371,13 @@ func (data *RoleData) fromAPIModel(ctx context.Context, role *models.Role) diag.
 
 			var fieldSecObj types.Object
 			if index.FieldSecurity != nil {
-				grantSet, d := types.SetValueFrom(ctx, types.StringType, utils.NonNilSlice(index.FieldSecurity.Grant))
+				grantSet, d := types.SetValueFrom(ctx, types.StringType, schemautil.NonNilSlice(index.FieldSecurity.Grant))
 				diags.Append(d...)
 				if diags.HasError() {
 					return diags
 				}
 
-				exceptSet, d := types.SetValueFrom(ctx, types.StringType, utils.NonNilSlice(index.FieldSecurity.Except))
+				exceptSet, d := types.SetValueFrom(ctx, types.StringType, schemautil.NonNilSlice(index.FieldSecurity.Except))
 				diags.Append(d...)
 				if diags.HasError() {
 					return diags
@@ -434,13 +451,13 @@ func (data *RoleData) fromAPIModel(ctx context.Context, role *models.Role) diag.
 
 			var fieldSecObj types.Object
 			if remoteIndex.FieldSecurity != nil {
-				grantSet, d := types.SetValueFrom(ctx, types.StringType, utils.NonNilSlice(remoteIndex.FieldSecurity.Grant))
+				grantSet, d := types.SetValueFrom(ctx, types.StringType, schemautil.NonNilSlice(remoteIndex.FieldSecurity.Grant))
 				diags.Append(d...)
 				if diags.HasError() {
 					return diags
 				}
 
-				exceptSet, d := types.SetValueFrom(ctx, types.StringType, utils.NonNilSlice(remoteIndex.FieldSecurity.Except))
+				exceptSet, d := types.SetValueFrom(ctx, types.StringType, schemautil.NonNilSlice(remoteIndex.FieldSecurity.Except))
 				diags.Append(d...)
 				if diags.HasError() {
 					return diags

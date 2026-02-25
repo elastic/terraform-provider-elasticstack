@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package indices
 
 import (
@@ -252,7 +269,7 @@ func newAliasModelFromAPI(name string, apiModel models.IndexAlias) (aliasTfModel
 }
 
 func setSettingsFromAPI(ctx context.Context, model *indexTfModel, apiModel models.Index) diag.Diagnostics {
-	modelType := reflect.TypeOf(*model)
+	modelType := reflect.TypeFor[indexTfModel]()
 
 	for _, key := range allSettingsKeys {
 		settingsValue, ok := apiModel.Settings["index."+key]
@@ -261,7 +278,7 @@ func setSettingsFromAPI(ctx context.Context, model *indexTfModel, apiModel model
 			continue
 		}
 
-		tfFieldKey := utils.ConvertSettingsKeyToTFFieldKey(key)
+		tfFieldKey := schemautil.ConvertSettingsKeyToTFFieldKey(key)
 		value, ok := model.getFieldValueByTagValue(tfFieldKey, modelType)
 		if !ok {
 			return diag.Diagnostics{
@@ -342,7 +359,7 @@ func setSettingsFromAPI(ctx context.Context, model *indexTfModel, apiModel model
 				}
 			}
 
-			elems, ok := settingsValue.([]interface{})
+			elems, ok := settingsValue.([]any)
 			if !ok {
 				return diag.Diagnostics{
 					diag.NewErrorDiagnostic(
@@ -367,7 +384,7 @@ func setSettingsFromAPI(ctx context.Context, model *indexTfModel, apiModel model
 				}
 			}
 
-			elems, ok := settingsValue.([]interface{})
+			elems, ok := settingsValue.([]any)
 			if !ok {
 				return diag.Diagnostics{
 					diag.NewErrorDiagnostic(
@@ -418,7 +435,7 @@ func setSettingsFromAPI(ctx context.Context, model *indexTfModel, apiModel model
 
 func (model indexTfModel) getFieldValueByTagValue(tagName string, t reflect.Type) (attr.Value, bool) {
 	numField := t.NumField()
-	for i := 0; i < numField; i++ {
+	for i := range numField {
 		field := t.Field(i)
 		if field.Tag.Get("tfsdk") == tagName {
 			return reflect.ValueOf(model).Field(i).Interface().(attr.Value), true
@@ -430,7 +447,7 @@ func (model indexTfModel) getFieldValueByTagValue(tagName string, t reflect.Type
 
 func (model *indexTfModel) setFieldValueByTagValue(tagName string, t reflect.Type, value attr.Value) bool {
 	numField := t.NumField()
-	for i := 0; i < numField; i++ {
+	for i := range numField {
 		field := t.Field(i)
 		if field.Tag.Get("tfsdk") == tagName {
 			reflect.ValueOf(model).Elem().Field(i).Set(reflect.ValueOf(value))

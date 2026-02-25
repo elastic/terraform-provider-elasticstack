@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package script
 
 import (
@@ -15,42 +32,42 @@ import (
 )
 
 func (r *scriptResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var data ScriptData
+	var data Data
 	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	compId, diags := clients.CompositeIdFromStrFw(data.Id.ValueString())
+	compID, diags := clients.CompositeIDFromStrFw(data.ID.ValueString())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	scriptId := compId.ResourceId
+	scriptID := compID.ResourceID
 
-	client, diags := clients.MaybeNewApiClientFromFrameworkResource(ctx, data.ElasticsearchConnection, r.client)
+	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, data.ElasticsearchConnection, r.client)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	// Use the helper read function
-	readData, readDiags := r.read(ctx, scriptId, client)
+	readData, readDiags := r.read(ctx, scriptID, client)
 	resp.Diagnostics.Append(readDiags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	// Check if script was found
-	if readData.ScriptId.IsNull() {
-		tflog.Warn(ctx, fmt.Sprintf(`Script "%s" not found, removing from state`, compId.ResourceId))
+	if readData.ScriptID.IsNull() {
+		tflog.Warn(ctx, fmt.Sprintf(`Script "%s" not found, removing from state`, compID.ResourceID))
 		resp.State.RemoveResource(ctx)
 		return
 	}
 
 	// Preserve connection and ID from original state
 	readData.ElasticsearchConnection = data.ElasticsearchConnection
-	readData.Id = data.Id
+	readData.ID = data.ID
 
 	// Preserve context from state as it's not returned by the API
 	readData.Context = data.Context
@@ -63,8 +80,8 @@ func (r *scriptResource) Read(ctx context.Context, req resource.ReadRequest, res
 	resp.Diagnostics.Append(resp.State.Set(ctx, &readData)...)
 }
 
-func (r *scriptResource) read(ctx context.Context, scriptID string, client *clients.ApiClient) (ScriptData, diag.Diagnostics) {
-	var data ScriptData
+func (r *scriptResource) read(ctx context.Context, scriptID string, client *clients.APIClient) (Data, diag.Diagnostics) {
+	var data Data
 	var diags diag.Diagnostics
 
 	script, frameworkDiags := elasticsearch.GetScript(ctx, client, scriptID)
@@ -75,11 +92,11 @@ func (r *scriptResource) read(ctx context.Context, scriptID string, client *clie
 
 	if script == nil {
 		// Script not found - return empty data with null ScriptId to signal not found
-		data.ScriptId = types.StringNull()
+		data.ScriptID = types.StringNull()
 		return data, diags
 	}
 
-	data.ScriptId = types.StringValue(scriptID)
+	data.ScriptID = types.StringValue(scriptID)
 	data.Lang = types.StringValue(script.Language)
 	data.Source = types.StringValue(script.Source)
 

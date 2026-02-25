@@ -1,0 +1,133 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package rolemapping
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+)
+
+func NewRoleMappingDataSource() datasource.DataSource {
+	return &roleMappingDataSource{}
+}
+
+type roleMappingDataSource struct {
+	client *clients.APIClient
+}
+
+func (d *roleMappingDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_elasticsearch_security_role_mapping"
+}
+
+func (d *roleMappingDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+	resp.Schema = schema.Schema{
+		MarkdownDescription: "Retrieves role mappings. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-get-role-mapping.html",
+		Blocks: map[string]schema.Block{
+			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(false),
+		},
+		Attributes: map[string]schema.Attribute{
+			"id": schema.StringAttribute{
+				MarkdownDescription: "Internal identifier of the resource",
+				Computed:            true,
+			},
+			"name": schema.StringAttribute{
+				MarkdownDescription: "The distinct name that identifies the role mapping, used solely as an identifier.",
+				Required:            true,
+			},
+			"enabled": schema.BoolAttribute{
+				MarkdownDescription: "Mappings that have `enabled` set to `false` are ignored when role mapping is performed.",
+				Computed:            true,
+			},
+			"rules": schema.StringAttribute{
+				MarkdownDescription: "The rules that determine which users should be matched by the mapping. A rule is a logical condition that is expressed by using a JSON DSL.",
+				Computed:            true,
+				CustomType:          jsontypes.NormalizedType{},
+			},
+			"roles": schema.SetAttribute{
+				MarkdownDescription: "A list of role names that are granted to the users that match the role mapping rules.",
+				ElementType:         types.StringType,
+				Computed:            true,
+			},
+			"role_templates": schema.StringAttribute{
+				MarkdownDescription: "A list of mustache templates that will be evaluated to determine the roles names that should granted to the users that match the role mapping rules.",
+				Computed:            true,
+				CustomType:          jsontypes.NormalizedType{},
+			},
+			"metadata": schema.StringAttribute{
+				MarkdownDescription: "Additional metadata that helps define which roles are assigned to each user. Keys beginning with `_` are reserved for system usage.",
+				Computed:            true,
+				CustomType:          jsontypes.NormalizedType{},
+			},
+		},
+	}
+}
+
+func (d *roleMappingDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
+	client, diags := clients.ConvertProviderData(req.ProviderData)
+	resp.Diagnostics.Append(diags...)
+	d.client = client
+}
+
+func (d *roleMappingDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+	var data Data
+	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	roleMappingName := data.Name.ValueString()
+
+	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, data.ElasticsearchConnection, d.client)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	id, sdkDiags := client.ID(ctx, roleMappingName)
+	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	data.ID = types.StringValue(id.String())
+
+	// Use the extracted read function
+	readData, readDiags := readRoleMapping(ctx, client, roleMappingName, data.ElasticsearchConnection)
+	resp.Diagnostics.Append(readDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if readData == nil {
+		resp.Diagnostics.AddError(
+			"Role mapping not found",
+			fmt.Sprintf("Role mapping '%s' not found", roleMappingName),
+		)
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, readData)...)
+}

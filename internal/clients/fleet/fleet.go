@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package fleet
 
 import (
@@ -9,7 +26,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
@@ -24,7 +40,7 @@ func buildSpaceAwarePath(spaceID, basePath string) string {
 }
 
 func spaceAwarePathRequestEditor(spaceID string) func(ctx context.Context, req *http.Request) error {
-	return func(ctx context.Context, req *http.Request) error {
+	return func(_ context.Context, req *http.Request) error {
 		req.URL.Path = buildSpaceAwarePath(spaceID, req.URL.Path)
 		return nil
 	}
@@ -48,7 +64,7 @@ func GetEnrollmentTokens(ctx context.Context, client *Client, spaceID string) ([
 // GetEnrollmentTokensByPolicy Get enrollment tokens by given policy ID.
 func GetEnrollmentTokensByPolicy(ctx context.Context, client *Client, policyID string) ([]kbapi.EnrollmentApiKey, diag.Diagnostics) {
 	params := kbapi.GetFleetEnrollmentApiKeysParams{
-		Kuery: utils.Pointer("policy_id:" + policyID),
+		Kuery: new("policy_id:" + policyID),
 	}
 
 	resp, err := client.API.GetFleetEnrollmentApiKeysWithResponse(ctx, &params)
@@ -115,7 +131,7 @@ func GetAgentPolicy(ctx context.Context, client *Client, id string, spaceID stri
 // CreateAgentPolicy creates a new agent policy.
 func CreateAgentPolicy(ctx context.Context, client *Client, req kbapi.PostFleetAgentPoliciesJSONRequestBody, sysMonitoring bool, spaceID string) (*kbapi.AgentPolicy, diag.Diagnostics) {
 	params := kbapi.PostFleetAgentPoliciesParams{
-		SysMonitoring: utils.Pointer(sysMonitoring),
+		SysMonitoring: new(sysMonitoring),
 	}
 
 	resp, err := client.API.PostFleetAgentPoliciesWithResponse(ctx, &params, req, spaceAwarePathRequestEditor(spaceID))
@@ -298,7 +314,7 @@ func DeleteFleetServerHost(ctx context.Context, client *Client, id string, space
 // GetPackagePolicy reads a specific package policy from the API.
 func GetPackagePolicy(ctx context.Context, client *Client, id string, spaceID string) (*kbapi.PackagePolicy, diag.Diagnostics) {
 	params := kbapi.GetFleetPackagePoliciesPackagepolicyidParams{
-		Format: utils.Pointer(kbapi.GetFleetPackagePoliciesPackagepolicyidParamsFormatSimplified),
+		Format: new(kbapi.GetFleetPackagePoliciesPackagepolicyidParamsFormatSimplified),
 	}
 
 	resp, err := client.API.GetFleetPackagePoliciesPackagepolicyidWithResponse(ctx, id, &params, spaceAwarePathRequestEditor(spaceID))
@@ -319,7 +335,7 @@ func GetPackagePolicy(ctx context.Context, client *Client, id string, spaceID st
 // CreatePackagePolicy creates a new package policy.
 func CreatePackagePolicy(ctx context.Context, client *Client, spaceID string, req kbapi.PackagePolicyRequest) (*kbapi.PackagePolicy, diag.Diagnostics) {
 	params := kbapi.PostFleetPackagePoliciesParams{
-		Format: utils.Pointer(kbapi.PostFleetPackagePoliciesParamsFormatSimplified),
+		Format: new(kbapi.PostFleetPackagePoliciesParamsFormatSimplified),
 	}
 
 	resp, err := client.API.PostFleetPackagePoliciesWithResponse(ctx, &params, req, spaceAwarePathRequestEditor(spaceID))
@@ -338,7 +354,7 @@ func CreatePackagePolicy(ctx context.Context, client *Client, spaceID string, re
 // UpdatePackagePolicy updates an existing package policy.
 func UpdatePackagePolicy(ctx context.Context, client *Client, id string, spaceID string, req kbapi.PackagePolicyRequest) (*kbapi.PackagePolicy, diag.Diagnostics) {
 	params := kbapi.PutFleetPackagePoliciesPackagepolicyidParams{
-		Format: utils.Pointer(kbapi.Simplified),
+		Format: new(kbapi.Simplified),
 	}
 
 	resp, err := client.API.PutFleetPackagePoliciesPackagepolicyidWithResponse(ctx, id, &params, req, spaceAwarePathRequestEditor(spaceID))
@@ -430,7 +446,7 @@ func InstallPackage(ctx context.Context, client *Client, name, version string, o
 }
 
 // Uninstall uninstalls a package.
-func Uninstall(ctx context.Context, client *Client, name, version string, spaceID string, force bool) diag.Diagnostics {
+func Uninstall(ctx context.Context, client *Client, name, version string, spaceID string, _ bool) diag.Diagnostics {
 	resp, err := client.API.DeleteFleetEpmPackagesPkgnamePkgversionWithResponse(ctx, name, version, nil, spaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
@@ -443,9 +459,8 @@ func Uninstall(ctx context.Context, client *Client, name, version string, spaceI
 		msg := resp.JSON400.Message
 		if msg == fmt.Sprintf("%s is not installed", name) {
 			return nil
-		} else {
-			return reportUnknownError(resp.StatusCode(), resp.Body)
 		}
+		return reportUnknownError(resp.StatusCode(), resp.Body)
 	case http.StatusNotFound:
 		return nil
 	default:

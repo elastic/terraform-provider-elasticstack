@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package cluster
 
 import (
@@ -132,7 +149,7 @@ func ResourceSnapshotRepository() *schema.Resource {
 			Computed:    true,
 		},
 		"location_mode": {
-			Description:  "Location mode. `primary_only` or `secondary_only`. See the [Azure storage redundancy documentation](https://docs.microsoft.com/en-us/azure/storage/common/storage-redundancy) for more details.",
+			Description:  snapshotRepositoryLocationModeDescription,
 			Type:         schema.TypeString,
 			Optional:     true,
 			Default:      "primary_only",
@@ -247,11 +264,11 @@ func ResourceSnapshotRepository() *schema.Resource {
 			ConflictsWith: []string{"url", "gcs", "azure", "s3", "hdfs"},
 			ExactlyOneOf:  []string{"fs", "url", "gcs", "azure", "s3", "hdfs"},
 			Elem: &schema.Resource{
-				Schema: utils.MergeSchemaMaps(commonSettings, commonStdSettings, fsSettings),
+				Schema: schemautil.MergeSchemaMaps(commonSettings, commonStdSettings, fsSettings),
 			},
 		},
 		"url": {
-			Description:   "URL repository. Repositories of this type are read-only for the cluster. This means the cluster can retrieve or restore snapshots from the repository but cannot write or create snapshots in it.",
+			Description:   snapshotRepositoryURLAttrDescription,
 			Type:          schema.TypeList,
 			ForceNew:      true,
 			Optional:      true,
@@ -259,11 +276,11 @@ func ResourceSnapshotRepository() *schema.Resource {
 			ConflictsWith: []string{"fs", "gcs", "azure", "s3", "hdfs"},
 			ExactlyOneOf:  []string{"fs", "url", "gcs", "azure", "s3", "hdfs"},
 			Elem: &schema.Resource{
-				Schema: utils.MergeSchemaMaps(commonSettings, commonStdSettings, urlSettings),
+				Schema: schemautil.MergeSchemaMaps(commonSettings, commonStdSettings, urlSettings),
 			},
 		},
 		"gcs": {
-			Description:   "Support for using the Google Cloud Storage service as a repository for Snapshot/Restore. See the [repository GCS plugin documentation](https://www.elastic.co/guide/en/elasticsearch/plugins/current/repository-gcs.html) for more details.",
+			Description:   snapshotRepositoryGCSAttrDescription,
 			Type:          schema.TypeList,
 			ForceNew:      true,
 			Optional:      true,
@@ -271,11 +288,11 @@ func ResourceSnapshotRepository() *schema.Resource {
 			ConflictsWith: []string{"fs", "s3", "azure", "hdfs", "url"},
 			ExactlyOneOf:  []string{"fs", "url", "gcs", "azure", "s3", "hdfs"},
 			Elem: &schema.Resource{
-				Schema: utils.MergeSchemaMaps(commonSettings, gcsSettings),
+				Schema: schemautil.MergeSchemaMaps(commonSettings, gcsSettings),
 			},
 		},
 		"azure": {
-			Description:   "Support for using Azure Blob storage as a repository for Snapshot/Restore. See the [repository Azure plugin documentation](https://www.elastic.co/guide/en/elasticsearch/plugins/current/repository-azure.html) for more details.",
+			Description:   snapshotRepositoryAzureAttrDescription,
 			Type:          schema.TypeList,
 			ForceNew:      true,
 			Optional:      true,
@@ -283,11 +300,11 @@ func ResourceSnapshotRepository() *schema.Resource {
 			ConflictsWith: []string{"fs", "gcs", "url", "s3", "hdfs"},
 			ExactlyOneOf:  []string{"fs", "url", "gcs", "azure", "s3", "hdfs"},
 			Elem: &schema.Resource{
-				Schema: utils.MergeSchemaMaps(commonSettings, azureSettings),
+				Schema: schemautil.MergeSchemaMaps(commonSettings, azureSettings),
 			},
 		},
 		"s3": {
-			Description:   "Support for using AWS S3 as a repository for Snapshot/Restore. See the [repository S3 plugin documentation](https://www.elastic.co/guide/en/elasticsearch/plugins/current/repository-s3-repository.html) for more details.",
+			Description:   snapshotRepositoryS3AttrDescription,
 			Type:          schema.TypeList,
 			ForceNew:      true,
 			Optional:      true,
@@ -295,11 +312,11 @@ func ResourceSnapshotRepository() *schema.Resource {
 			ConflictsWith: []string{"fs", "url", "gcs", "azure", "hdfs"},
 			ExactlyOneOf:  []string{"fs", "url", "gcs", "azure", "s3", "hdfs"},
 			Elem: &schema.Resource{
-				Schema: utils.MergeSchemaMaps(commonSettings, s3Settings),
+				Schema: schemautil.MergeSchemaMaps(commonSettings, s3Settings),
 			},
 		},
 		"hdfs": {
-			Description:   "Support for using HDFS File System as a repository for Snapshot/Restore. See the [repository HDFS plugin documentation](https://www.elastic.co/guide/en/elasticsearch/plugins/current/repository-hdfs.html) for more details.",
+			Description:   snapshotRepositoryHDFSAttrDescription,
 			Type:          schema.TypeList,
 			ForceNew:      true,
 			Optional:      true,
@@ -307,15 +324,15 @@ func ResourceSnapshotRepository() *schema.Resource {
 			ConflictsWith: []string{"fs", "url", "gcs", "azure", "s3"},
 			ExactlyOneOf:  []string{"fs", "url", "gcs", "azure", "s3", "hdfs"},
 			Elem: &schema.Resource{
-				Schema: utils.MergeSchemaMaps(commonSettings, hdfsSettings),
+				Schema: schemautil.MergeSchemaMaps(commonSettings, hdfsSettings),
 			},
 		},
 	}
 
-	utils.AddConnectionSchema(snapRepoSchema)
+	schemautil.AddConnectionSchema(snapRepoSchema)
 
 	return &schema.Resource{
-		Description: "Registers or updates a snapshot repository. See the [put snapshot repository API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/put-snapshot-repo-api.html) and [register repository documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/snapshots-register-repository.html) for more details.",
+		Description: snapshotRepositoryResourceDescription,
 
 		CreateContext: resourceSnapRepoPut,
 		UpdateContext: resourceSnapRepoPut,
@@ -330,20 +347,20 @@ func ResourceSnapshotRepository() *schema.Resource {
 	}
 }
 
-func resourceSnapRepoPut(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+func resourceSnapRepoPut(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
-	repoId := d.Get("name").(string)
-	id, diags := client.ID(ctx, repoId)
+	repoID := d.Get("name").(string)
+	id, diags := client.ID(ctx, repoID)
 	if diags.HasError() {
 		return diags
 	}
 
 	var snapRepo models.SnapshotRepository
-	snapRepo.Name = repoId
-	snapRepoSettings := make(map[string]interface{})
+	snapRepo.Name = repoID
+	snapRepoSettings := make(map[string]any)
 
 	if v, ok := d.GetOk("verify"); ok {
 		snapRepo.Verify = v.(bool)
@@ -355,7 +372,7 @@ func resourceSnapRepoPut(ctx context.Context, d *schema.ResourceData, meta inter
 	for t := range schemaTypes {
 		if v, ok := d.GetOk(t); ok && reflect.TypeOf(v).Kind() == reflect.Slice {
 			snapRepo.Type = t
-			expandFsSettings(v.([]interface{})[0].(map[string]interface{}), snapRepoSettings)
+			expandFsSettings(v.([]any)[0].(map[string]any), snapRepoSettings)
 		}
 	}
 	snapRepo.Settings = snapRepoSettings
@@ -367,29 +384,29 @@ func resourceSnapRepoPut(ctx context.Context, d *schema.ResourceData, meta inter
 	return resourceSnapRepoRead(ctx, d, meta)
 }
 
-func expandFsSettings(source, target map[string]interface{}) {
+func expandFsSettings(source, target map[string]any) {
 	for k, v := range source {
-		if !utils.IsEmpty(v) {
+		if !schemautil.IsEmpty(v) {
 			target[k] = v
 		}
 	}
 }
 
-func resourceSnapRepoRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+func resourceSnapRepoRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
 
 	id := d.Id()
-	compId, diags := clients.CompositeIdFromStr(id)
+	compID, diags := clients.CompositeIDFromStr(id)
 	if diags.HasError() {
 		return diags
 	}
 
-	currentRepo, diags := elasticsearch.GetSnapshotRepository(ctx, client, compId.ResourceId)
+	currentRepo, diags := elasticsearch.GetSnapshotRepository(ctx, client, compID.ResourceID)
 	if currentRepo == nil && diags == nil {
-		tflog.Warn(ctx, fmt.Sprintf(`Snapshot repository "%s" not found, removing from state`, compId.ResourceId))
+		tflog.Warn(ctx, fmt.Sprintf(`Snapshot repository "%s" not found, removing from state`, compID.ResourceID))
 		d.SetId("")
 		return diags
 	}
@@ -429,13 +446,13 @@ func resourceSnapRepoRead(ctx context.Context, d *schema.ResourceData, meta inte
 	return diags
 }
 
-func flattenRepoSettings(r *models.SnapshotRepository, s map[string]*schema.Schema) ([]interface{}, error) {
-	settings := make(map[string]interface{})
-	result := make([]interface{}, 1)
+func flattenRepoSettings(r *models.SnapshotRepository, s map[string]*schema.Schema) ([]any, error) {
+	settings := make(map[string]any)
+	result := make([]any, 1)
 
 	// make sure the schema contains the fetched setting
 	for k, v := range r.Settings {
-		if schemaDef, ok := s[k]; ok && !utils.IsEmpty(v) {
+		if schemaDef, ok := s[k]; ok && !schemautil.IsEmpty(v) {
 			switch schemaDef.Type {
 			case schema.TypeInt, schema.TypeFloat:
 				i, err := strconv.Atoi(v.(string))
@@ -458,25 +475,25 @@ func flattenRepoSettings(r *models.SnapshotRepository, s map[string]*schema.Sche
 	return result, nil
 }
 
-func resourceSnapRepoDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+func resourceSnapRepoDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
 
 	id := d.Id()
-	compId, diags := clients.CompositeIdFromStr(id)
+	compID, diags := clients.CompositeIDFromStr(id)
 	if diags.HasError() {
 		return diags
 	}
 
-	if diags := elasticsearch.DeleteSnapshotRepository(ctx, client, compId.ResourceId); diags.HasError() {
+	if diags := elasticsearch.DeleteSnapshotRepository(ctx, client, compID.ResourceID); diags.HasError() {
 		return diags
 	}
 	return diags
 }
 
-func validateURLEndpoint(val interface{}, key string) ([]string, []error) {
+func validateURLEndpoint(val any, key string) ([]string, []error) {
 	v := val.(string)
 	if v == "" {
 		return nil, nil

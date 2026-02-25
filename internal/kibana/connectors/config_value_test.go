@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package connectors
 
 import (
@@ -6,7 +23,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
@@ -16,7 +33,7 @@ import (
 func TestConfigValue_StringSemanticEquals(t *testing.T) {
 	emailConnectorID := ".email"
 	emailConnectorConfig := `{"key": "value"}`
-	emailConnectorConfigWithDefaults, err := kibana_oapi.ConnectorConfigWithDefaults(emailConnectorID, emailConnectorConfig)
+	emailConnectorConfigWithDefaults, err := kibanaoapi.ConnectorConfigWithDefaults(emailConnectorID, emailConnectorConfig)
 	require.NoError(t, err)
 
 	tests := []struct {
@@ -219,7 +236,7 @@ func TestNewConfigValueWithConnectorID(t *testing.T) {
 				require.False(t, result.IsNull())
 
 				// Check that the connector type ID was added to the JSON
-				var resultMap map[string]interface{}
+				var resultMap map[string]any
 				err := json.Unmarshal([]byte(result.ValueString()), &resultMap)
 				require.NoError(t, err)
 				require.Equal(t, "test-connector", resultMap["__tf_provider_context"])
@@ -234,7 +251,7 @@ func TestNewConfigValueWithConnectorID(t *testing.T) {
 			validateResult: func(t *testing.T, result ConfigValue) {
 				require.False(t, result.IsNull())
 
-				var resultMap map[string]interface{}
+				var resultMap map[string]any
 				err := json.Unmarshal([]byte(result.ValueString()), &resultMap)
 				require.NoError(t, err)
 				require.Equal(t, "test-connector", resultMap["__tf_provider_context"])
@@ -248,16 +265,16 @@ func TestNewConfigValueWithConnectorID(t *testing.T) {
 			validateResult: func(t *testing.T, result ConfigValue) {
 				require.False(t, result.IsNull())
 
-				var resultMap map[string]interface{}
+				var resultMap map[string]any
 				err := json.Unmarshal([]byte(result.ValueString()), &resultMap)
 				require.NoError(t, err)
 				require.Equal(t, "complex-connector", resultMap["__tf_provider_context"])
 
-				config, ok := resultMap["config"].(map[string]interface{})
+				config, ok := resultMap["config"].(map[string]any)
 				require.True(t, ok)
 				require.Equal(t, "value", config["nested"])
 
-				array, ok := resultMap["array"].([]interface{})
+				array, ok := resultMap["array"].([]any)
 				require.True(t, ok)
 				require.Len(t, array, 3)
 			},
@@ -277,10 +294,10 @@ func TestNewConfigValueWithConnectorID(t *testing.T) {
 			validateResult: func(t *testing.T, result ConfigValue) {
 				require.False(t, result.IsNull())
 
-				var resultMap map[string]interface{}
+				var resultMap map[string]any
 				err := json.Unmarshal([]byte(result.ValueString()), &resultMap)
 				require.NoError(t, err)
-				require.Equal(t, "", resultMap["__tf_provider_context"])
+				require.Empty(t, resultMap["__tf_provider_context"])
 				require.Equal(t, "value", resultMap["key"])
 			},
 		},

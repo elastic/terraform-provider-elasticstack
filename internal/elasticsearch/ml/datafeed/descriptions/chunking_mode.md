@@ -1,0 +1,1 @@
+The chunking mode. Can be `auto`, `manual`, or `off`. In `auto` mode, the chunk size is dynamically calculated. In `manual` mode, chunking is applied according to the specified `time_span`. In `off` mode, no chunking is applied.

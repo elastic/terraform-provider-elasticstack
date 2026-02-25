@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package transform
 
 import (
@@ -12,7 +29,8 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/tfsdkutils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -45,6 +63,10 @@ func init() {
 }
 
 func ResourceTransform() *schema.Resource {
+	const destinationIndexAllowedCharsError = "must contain lower case alphanumeric characters and selected punctuation, see the " +
+		"[indices create API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-index.html" +
+		"#indices-create-api-path-params) for more details"
+
 	transformSchema := map[string]*schema.Schema{
 		"id": {
 			Description: "Internal identifier of the resource",
@@ -87,14 +109,14 @@ func ResourceTransform() *schema.Resource {
 						Type:             schema.TypeString,
 						Optional:         true,
 						Default:          `{"match_all":{}}`,
-						DiffSuppressFunc: utils.DiffJsonSuppress,
+						DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 						ValidateFunc:     validation.StringIsJSON,
 					},
 					"runtime_mappings": {
 						Description:      "Definitions of search-time runtime fields that can be used by the transform.",
 						Type:             schema.TypeString,
 						Optional:         true,
-						DiffSuppressFunc: utils.DiffJsonSuppress,
+						DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 						ValidateFunc:     validation.StringIsJSON,
 					},
 				},
@@ -115,7 +137,10 @@ func ResourceTransform() *schema.Resource {
 							validation.StringLenBetween(1, 255),
 							validation.StringNotInSlice([]string{".", ".."}, true),
 							validation.StringMatch(regexp.MustCompile(`^[^-_+]`), "cannot start with -, _, +"),
-							validation.StringMatch(regexp.MustCompile(`^[a-z0-9!$%&'()+.;=@[\]^{}~_-]+$`), "must contain lower case alphanumeric characters and selected punctuation, see the [indices create API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-index.html#indices-create-api-path-params) for more details"),
+							validation.StringMatch(
+								regexp.MustCompile(`^[a-z0-9!$%&'()+.;=@[\]^{}~_-]+$`),
+								destinationIndexAllowedCharsError,
+							),
 						),
 					},
 					"aliases": {
@@ -151,7 +176,7 @@ func ResourceTransform() *schema.Resource {
 			Type:             schema.TypeString,
 			Optional:         true,
 			ExactlyOneOf:     []string{"pivot", "latest"},
-			DiffSuppressFunc: utils.DiffJsonSuppress,
+			DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 			ValidateFunc:     validation.StringIsJSON,
 			ForceNew:         true,
 		},
@@ -160,7 +185,7 @@ func ResourceTransform() *schema.Resource {
 			Type:             schema.TypeString,
 			Optional:         true,
 			ExactlyOneOf:     []string{"pivot", "latest"},
-			DiffSuppressFunc: utils.DiffJsonSuppress,
+			DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 			ValidateFunc:     validation.StringIsJSON,
 			ForceNew:         true,
 		},
@@ -169,14 +194,14 @@ func ResourceTransform() *schema.Resource {
 			Description:  "The interval between checks for changes in the source indices when the transform is running continuously. Defaults to `1m`.",
 			Optional:     true,
 			Default:      "1m",
-			ValidateFunc: utils.StringIsElasticDuration,
+			ValidateFunc: validators.StringIsElasticDuration,
 		},
 		"metadata": {
 			Description:      "Defines optional transform metadata.",
 			Type:             schema.TypeString,
 			Optional:         true,
 			ValidateFunc:     validation.StringIsJSON,
-			DiffSuppressFunc: utils.DiffJsonSuppress,
+			DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 		},
 		"retention_policy": {
 			Description: "Defines a retention policy for the transform.",
@@ -202,7 +227,7 @@ func ResourceTransform() *schema.Resource {
 									Description:  "Specifies the maximum age of a document in the destination index.",
 									Type:         schema.TypeString,
 									Required:     true,
-									ValidateFunc: utils.StringIsElasticDuration,
+									ValidateFunc: validators.StringIsElasticDuration,
 								},
 							},
 						},
@@ -235,7 +260,7 @@ func ResourceTransform() *schema.Resource {
 									Type:         schema.TypeString,
 									Optional:     true,
 									Default:      "60s",
-									ValidateFunc: utils.StringIsElasticDuration,
+									ValidateFunc: validators.StringIsElasticDuration,
 								},
 							},
 						},
@@ -283,16 +308,16 @@ func ResourceTransform() *schema.Resource {
 		},
 		"defer_validation": {
 			Type:        schema.TypeBool,
-			Description: "When true, deferrable validations are not run upon creation, but rather when the transform is started. This behavior may be desired if the source index does not exist until after the transform is created. Default is `false`",
+			Description: deferValidationDescription,
 			Optional:    true,
 			Default:     false,
 		},
 		"timeout": {
 			Type:         schema.TypeString,
-			Description:  "Period to wait for a response from Elasticsearch when performing any management operation. If no response is received before the timeout expires, the operation fails and returns an error. Defaults to `30s`.",
+			Description:  timeoutDescription,
 			Optional:     true,
 			Default:      "30s",
-			ValidateFunc: utils.StringIsDuration,
+			ValidateFunc: validators.StringIsDuration,
 		},
 		"enabled": {
 			Type:        schema.TypeBool,
@@ -317,9 +342,9 @@ func ResourceTransform() *schema.Resource {
 	}
 }
 
-func resourceTransformCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceTransformCreate(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
@@ -359,18 +384,18 @@ func resourceTransformCreate(ctx context.Context, d *schema.ResourceData, meta i
 	return resourceTransformRead(ctx, d, meta)
 }
 
-func resourceTransformRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceTransformRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
-	compId, diags := clients.CompositeIdFromStr(d.Id())
+	compID, diags := clients.CompositeIDFromStr(d.Id())
 	if diags.HasError() {
 		return diags
 	}
 
-	transformName := compId.ResourceId
+	transformName := compID.ResourceID
 	if err := d.Set("name", transformName); err != nil {
 		return diag.FromErr(err)
 	}
@@ -379,7 +404,7 @@ func resourceTransformRead(ctx context.Context, d *schema.ResourceData, meta int
 	// 1. read transform definition
 	transform, diags := elasticsearch.GetTransform(ctx, client, &transformName)
 	if transform == nil && diags == nil {
-		tflog.Warn(ctx, fmt.Sprintf(`Transform "%s" not found, removing from state`, compId.ResourceId))
+		tflog.Warn(ctx, fmt.Sprintf(`Transform "%s" not found, removing from state`, compID.ResourceID))
 		d.SetId("")
 		return diags
 	}
@@ -404,9 +429,9 @@ func resourceTransformRead(ctx context.Context, d *schema.ResourceData, meta int
 	return diags
 }
 
-func resourceTransformUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceTransformUpdate(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
@@ -450,20 +475,20 @@ func resourceTransformUpdate(ctx context.Context, d *schema.ResourceData, meta i
 	return resourceTransformRead(ctx, d, meta)
 }
 
-func resourceTransformDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceTransformDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
 
 	id := d.Id()
-	compId, diags := clients.CompositeIdFromStr(id)
+	compID, diags := clients.CompositeIDFromStr(id)
 	if diags.HasError() {
 		return diags
 	}
 
-	if diags := elasticsearch.DeleteTransform(ctx, client, &compId.ResourceId); diags.HasError() {
+	if diags := elasticsearch.DeleteTransform(ctx, client, &compID.ResourceID); diags.HasError() {
 		return diags
 	}
 
@@ -480,17 +505,17 @@ func getTransformFromResourceData(ctx context.Context, d *schema.ResourceData, n
 	}
 
 	if v, ok := d.GetOk("source"); ok {
-		definedSource := v.([]interface{})[0].(map[string]interface{})
+		definedSource := v.([]any)[0].(map[string]any)
 
 		transform.Source = new(models.TransformSource)
 		indices := make([]string, 0)
-		for _, i := range definedSource["indices"].([]interface{}) {
+		for _, i := range definedSource["indices"].([]any) {
 			indices = append(indices, i.(string))
 		}
 		transform.Source.Indices = indices
 
 		if v, ok := definedSource["query"]; ok && len(v.(string)) > 0 {
-			var query interface{}
+			var query any
 			if err := json.NewDecoder(strings.NewReader(v.(string))).Decode(&query); err != nil {
 				return nil, err
 			}
@@ -498,7 +523,7 @@ func getTransformFromResourceData(ctx context.Context, d *schema.ResourceData, n
 		}
 
 		if v, ok := definedSource["runtime_mappings"]; ok && len(v.(string)) > 0 && isSettingAllowed(ctx, "source.runtime_mappings", serverVersion) {
-			var runtimeMappings interface{}
+			var runtimeMappings any
 			if err := json.NewDecoder(strings.NewReader(v.(string))).Decode(&runtimeMappings); err != nil {
 				return nil, err
 			}
@@ -507,16 +532,16 @@ func getTransformFromResourceData(ctx context.Context, d *schema.ResourceData, n
 	}
 
 	if v, ok := d.GetOk("destination"); ok {
-		definedDestination := v.([]interface{})[0].(map[string]interface{})
+		definedDestination := v.([]any)[0].(map[string]any)
 
 		transform.Destination = &models.TransformDestination{
 			Index: definedDestination["index"].(string),
 		}
 
-		if aliases, ok := definedDestination["aliases"].([]interface{}); ok && len(aliases) > 0 && isSettingAllowed(ctx, "destination.aliases", serverVersion) {
+		if aliases, ok := definedDestination["aliases"].([]any); ok && len(aliases) > 0 && isSettingAllowed(ctx, "destination.aliases", serverVersion) {
 			transform.Destination.Aliases = make([]models.TransformAlias, len(aliases))
 			for i, alias := range aliases {
-				aliasMap := alias.(map[string]interface{})
+				aliasMap := alias.(map[string]any)
 				transform.Destination.Aliases[i] = models.TransformAlias{
 					Alias:          aliasMap["alias"].(string),
 					MoveOnCreation: aliasMap["move_on_creation"].(bool),
@@ -530,7 +555,7 @@ func getTransformFromResourceData(ctx context.Context, d *schema.ResourceData, n
 	}
 
 	if v, ok := d.GetOk("pivot"); ok {
-		var pivot interface{}
+		var pivot any
 		if err := json.NewDecoder(strings.NewReader(v.(string))).Decode(&pivot); err != nil {
 			return nil, err
 		}
@@ -538,7 +563,7 @@ func getTransformFromResourceData(ctx context.Context, d *schema.ResourceData, n
 	}
 
 	if v, ok := d.GetOk("latest"); ok && isSettingAllowed(ctx, "latest", serverVersion) {
-		var latest interface{}
+		var latest any
 		if err := json.NewDecoder(strings.NewReader(v.(string))).Decode(&latest); err != nil {
 			return nil, err
 		}
@@ -550,7 +575,7 @@ func getTransformFromResourceData(ctx context.Context, d *schema.ResourceData, n
 	}
 
 	if v, ok := d.GetOk("metadata"); ok && isSettingAllowed(ctx, "metadata", serverVersion) {
-		var metadata map[string]interface{}
+		var metadata map[string]any
 		if err := json.NewDecoder(strings.NewReader(v.(string))).Decode(&metadata); err != nil {
 			return nil, err
 		}
@@ -558,11 +583,11 @@ func getTransformFromResourceData(ctx context.Context, d *schema.ResourceData, n
 	}
 
 	if v, ok := d.GetOk("retention_policy"); ok && isSettingAllowed(ctx, "retention_policy", serverVersion) {
-		definedRetentionPolicy := v.([]interface{})[0].(map[string]interface{})
+		definedRetentionPolicy := v.([]any)[0].(map[string]any)
 
 		if v, ok := definedRetentionPolicy["time"]; ok {
 			retentionTime := models.TransformRetentionPolicyTime{}
-			var definedRetentionTime = v.([]interface{})[0].(map[string]interface{})
+			var definedRetentionTime = v.([]any)[0].(map[string]any)
 			if f, ok := definedRetentionTime["field"]; ok {
 				retentionTime.Field = f.(string)
 			}
@@ -576,11 +601,11 @@ func getTransformFromResourceData(ctx context.Context, d *schema.ResourceData, n
 	}
 
 	if v, ok := d.GetOk("sync"); ok {
-		definedSync := v.([]interface{})[0].(map[string]interface{})
+		definedSync := v.([]any)[0].(map[string]any)
 
 		if v, ok := definedSync["time"]; ok {
 			syncTime := models.TransformSyncTime{}
-			var definedSyncTime = v.([]interface{})[0].(map[string]interface{})
+			var definedSyncTime = v.([]any)[0].(map[string]any)
 			if f, ok := definedSyncTime["field"]; ok {
 				syncTime.Field = f.(string)
 			}
@@ -766,12 +791,12 @@ func updateResourceDataFromStats(d *schema.ResourceData, transformStats *models.
 	return nil
 }
 
-func flattenSource(source *models.TransformSource) []interface{} {
+func flattenSource(source *models.TransformSource) []any {
 	if source == nil {
-		return []interface{}{}
+		return []any{}
 	}
 
-	s := make(map[string]interface{})
+	s := make(map[string]any)
 
 	if source.Indices != nil {
 		s["indices"] = source.Indices
@@ -780,7 +805,7 @@ func flattenSource(source *models.TransformSource) []interface{} {
 	if source.Query != nil {
 		query, err := json.Marshal(source.Query)
 		if err != nil {
-			return []interface{}{}
+			return []any{}
 		}
 		if len(query) > 0 {
 			s["query"] = string(query)
@@ -790,28 +815,28 @@ func flattenSource(source *models.TransformSource) []interface{} {
 	if source.RuntimeMappings != nil {
 		rm, err := json.Marshal(source.RuntimeMappings)
 		if err != nil {
-			return []interface{}{}
+			return []any{}
 		}
 		if len(rm) > 0 {
 			s["runtime_mappings"] = string(rm)
 		}
 	}
 
-	return []interface{}{s}
+	return []any{s}
 }
 
-func flattenDestination(dest *models.TransformDestination) []interface{} {
+func flattenDestination(dest *models.TransformDestination) []any {
 	if dest == nil {
-		return []interface{}{}
+		return []any{}
 	}
 
-	d := make(map[string]interface{})
+	d := make(map[string]any)
 	d["index"] = dest.Index
 
 	if len(dest.Aliases) > 0 {
-		aliases := make([]interface{}, len(dest.Aliases))
+		aliases := make([]any, len(dest.Aliases))
 		for i, alias := range dest.Aliases {
-			aliasMap := make(map[string]interface{})
+			aliasMap := make(map[string]any)
 			aliasMap["alias"] = alias.Alias
 			aliasMap["move_on_creation"] = alias.MoveOnCreation
 			aliases[i] = aliasMap
@@ -823,15 +848,15 @@ func flattenDestination(dest *models.TransformDestination) []interface{} {
 		d["pipeline"] = dest.Pipeline
 	}
 
-	return []interface{}{d}
+	return []any{d}
 }
 
-func flattenSync(sync *models.TransformSync) []interface{} {
+func flattenSync(sync *models.TransformSync) []any {
 	if sync == nil {
 		return nil
 	}
 
-	t := make(map[string]interface{})
+	t := make(map[string]any)
 
 	if sync.Time.Delay != "" {
 		t["delay"] = sync.Time.Delay
@@ -841,18 +866,18 @@ func flattenSync(sync *models.TransformSync) []interface{} {
 		t["field"] = sync.Time.Field
 	}
 
-	s := make(map[string]interface{})
-	s["time"] = []interface{}{t}
+	s := make(map[string]any)
+	s["time"] = []any{t}
 
-	return []interface{}{s}
+	return []any{s}
 }
 
-func flattenRetentionPolicy(retention *models.TransformRetentionPolicy) []interface{} {
+func flattenRetentionPolicy(retention *models.TransformRetentionPolicy) []any {
 	if retention == nil {
-		return []interface{}{}
+		return []any{}
 	}
 
-	t := make(map[string]interface{})
+	t := make(map[string]any)
 
 	if retention.Time.MaxAge != "" {
 		t["max_age"] = retention.Time.MaxAge
@@ -862,10 +887,10 @@ func flattenRetentionPolicy(retention *models.TransformRetentionPolicy) []interf
 		t["field"] = retention.Time.Field
 	}
 
-	r := make(map[string]interface{})
-	r["time"] = []interface{}{t}
+	r := make(map[string]any)
+	r["time"] = []any{t}
 
-	return []interface{}{r}
+	return []any{r}
 }
 
 func isSettingAllowed(ctx context.Context, settingName string, serverVersion *version.Version) bool {

@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package dashboard
 
 import (
@@ -7,7 +24,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -42,7 +59,7 @@ func (m *dashboardModel) populateFromAPI(ctx context.Context, resp *kbapi.GetDas
 	data := resp.JSON200
 
 	// Set composite ID
-	resourceID := clients.CompositeId{ClusterId: spaceID, ResourceId: dashboardID}
+	resourceID := clients.CompositeID{ClusterID: spaceID, ResourceID: dashboardID}
 	m.ID = types.StringValue(resourceID.String())
 	m.DashboardID = types.StringValue(dashboardID)
 	m.SpaceID = types.StringValue(spaceID)
@@ -94,7 +111,7 @@ func (m *dashboardModel) populateFromAPI(ctx context.Context, resp *kbapi.GetDas
 
 	// Map tags
 	if data.Data.Tags != nil && len(*data.Data.Tags) > 0 {
-		m.Tags = utils.SliceToListType_String(ctx, *data.Data.Tags, path.Root("tags"), &diags)
+		m.Tags = typeutils.SliceToListTypeString(ctx, *data.Data.Tags, path.Root("tags"), &diags)
 	} else {
 		m.Tags = types.ListNull(types.StringType)
 	}
@@ -131,22 +148,22 @@ func (m *dashboardModel) toAPICreateRequest(ctx context.Context, diags *diag.Dia
 	req.Data.TimeRange.To = m.TimeTo.ValueString()
 
 	// Set optional dashboard ID
-	if utils.IsKnown(m.DashboardID) {
-		req.Id = utils.Pointer(m.DashboardID.ValueString())
+	if typeutils.IsKnown(m.DashboardID) {
+		req.Id = new(m.DashboardID.ValueString())
 	}
 
 	// Set space
-	if utils.IsKnown(m.SpaceID) && m.SpaceID.ValueString() != "default" {
+	if typeutils.IsKnown(m.SpaceID) && m.SpaceID.ValueString() != "default" {
 		req.Spaces = &[]string{m.SpaceID.ValueString()}
 	}
 
 	// Set description
-	if utils.IsKnown(m.Description) {
-		req.Data.Description = utils.Pointer(m.Description.ValueString())
+	if typeutils.IsKnown(m.Description) {
+		req.Data.Description = new(m.Description.ValueString())
 	}
 
 	// Set time range mode
-	if utils.IsKnown(m.TimeRangeMode) {
+	if typeutils.IsKnown(m.TimeRangeMode) {
 		mode := kbapi.KbnEsQueryServerTimeRangeSchemaMode(m.TimeRangeMode.ValueString())
 		req.Data.TimeRange.Mode = &mode
 	}
@@ -157,8 +174,8 @@ func (m *dashboardModel) toAPICreateRequest(ctx context.Context, diags *diag.Dia
 	req.Data.Query = queryModel
 
 	// Set tags
-	if utils.IsKnown(m.Tags) {
-		tags := utils.ListTypeToSlice_String(ctx, m.Tags, path.Root("tags"), diags)
+	if typeutils.IsKnown(m.Tags) {
+		tags := typeutils.ListTypeToSliceString(ctx, m.Tags, path.Root("tags"), diags)
 		if tags != nil {
 			req.Data.Tags = &tags
 		}
@@ -175,7 +192,7 @@ func (m *dashboardModel) toAPICreateRequest(ctx context.Context, diags *diag.Dia
 	req.Data.Panels = panels
 
 	// Set access control
-	req.Data.AccessControl = m.AccessControl.ToCreateAPI()
+	req.Data.AccessControl = m.AccessControl.toCreateAPI()
 
 	return req
 }
@@ -190,12 +207,12 @@ func (m *dashboardModel) toAPIUpdateRequest(ctx context.Context, diags *diag.Dia
 	req.Data.TimeRange.To = m.TimeTo.ValueString()
 
 	// Set description
-	if utils.IsKnown(m.Description) {
-		req.Data.Description = utils.Pointer(m.Description.ValueString())
+	if typeutils.IsKnown(m.Description) {
+		req.Data.Description = new(m.Description.ValueString())
 	}
 
 	// Set time range mode
-	if utils.IsKnown(m.TimeRangeMode) {
+	if typeutils.IsKnown(m.TimeRangeMode) {
 		mode := kbapi.KbnEsQueryServerTimeRangeSchemaMode(m.TimeRangeMode.ValueString())
 		req.Data.TimeRange.Mode = &mode
 	}
@@ -206,8 +223,8 @@ func (m *dashboardModel) toAPIUpdateRequest(ctx context.Context, diags *diag.Dia
 	req.Data.Query = queryModel
 
 	// Set tags
-	if utils.IsKnown(m.Tags) {
-		tags := utils.ListTypeToSlice_String(ctx, m.Tags, path.Root("tags"), diags)
+	if typeutils.IsKnown(m.Tags) {
+		tags := typeutils.ListTypeToSliceString(ctx, m.Tags, path.Root("tags"), diags)
 		if tags != nil {
 			req.Data.Tags = &tags
 		}
@@ -224,7 +241,7 @@ func (m *dashboardModel) toAPIUpdateRequest(ctx context.Context, diags *diag.Dia
 	req.Data.Panels = panels
 
 	// Set access control
-	req.Data.AccessControl = m.AccessControl.ToUpdateAPI()
+	req.Data.AccessControl = m.AccessControl.toUpdateAPI()
 
 	return req
 }
@@ -234,14 +251,14 @@ func (m *dashboardModel) queryToAPI() (kbapi.KbnEsQueryServerQuerySchema, diag.D
 		Language: m.QueryLanguage.ValueString(),
 	}
 	// Set query text - Query is a union type with json.RawMessage
-	if utils.IsKnown(m.QueryText) {
+	if typeutils.IsKnown(m.QueryText) {
 		err := query.Query.FromKbnEsQueryServerQuerySchemaQuery0(m.QueryText.ValueString())
 		if err != nil {
 			return query, diagutil.FrameworkDiagFromError(err)
 		}
-	} else if utils.IsKnown(m.QueryJSON) {
+	} else if typeutils.IsKnown(m.QueryJSON) {
 		// For JSON queries, use the raw JSON directly
-		var qj map[string]interface{}
+		var qj map[string]any
 		diags := m.QueryJSON.Unmarshal(&qj)
 		if diags.HasError() {
 			return query, diags

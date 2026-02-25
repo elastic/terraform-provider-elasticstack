@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package index_test
 
 import (
@@ -7,6 +24,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
@@ -17,65 +35,50 @@ func TestAccIndexTemplateDataSource(t *testing.T) {
 	templateNameComponent := "test-template-" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccIndexTemplateDataSourceConfig(templateName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"template_name": config.StringVariable(templateName),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "name", templateName),
-					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_index_template.test", "index_patterns.*", fmt.Sprintf("tf-acc-%s-*", templateName)),
+					resource.TestCheckTypeSetElemAttr(
+						"data.elasticstack_elasticsearch_index_template.test",
+						"index_patterns.*",
+						fmt.Sprintf("tf-acc-%s-*", templateName),
+					),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "priority", "100"),
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(index.MinSupportedIgnoreMissingComponentTemplateVersion),
-				Config:   testAccIndexTemplateDataSourceWithIgnoreComponentConfig(templateNameComponent),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(index.MinSupportedIgnoreMissingComponentTemplateVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("ignore_component"),
+				ConfigVariables: config.Variables{
+					"template_name": config.StringVariable(templateNameComponent),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test_component", "name", templateNameComponent),
-					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_index_template.test_component", "index_patterns.*", fmt.Sprintf("tf-acc-component-%s-*", templateNameComponent)),
-					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_index_template.test_component", "composed_of.*", fmt.Sprintf("%s-logscomponent@custom", templateNameComponent)),
-					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_index_template.test_component", "ignore_missing_component_templates.*", fmt.Sprintf("%s-logscomponent@custom", templateNameComponent)),
+					resource.TestCheckTypeSetElemAttr(
+						"data.elasticstack_elasticsearch_index_template.test_component",
+						"index_patterns.*",
+						fmt.Sprintf("tf-acc-component-%s-*", templateNameComponent),
+					),
+					resource.TestCheckTypeSetElemAttr(
+						"data.elasticstack_elasticsearch_index_template.test_component",
+						"composed_of.*",
+						fmt.Sprintf("%s-logscomponent@custom", templateNameComponent),
+					),
+					resource.TestCheckTypeSetElemAttr(
+						"data.elasticstack_elasticsearch_index_template.test_component",
+						"ignore_missing_component_templates.*",
+						fmt.Sprintf("%s-logscomponent@custom", templateNameComponent),
+					),
 				),
 			},
 		},
 	})
-}
-
-func testAccIndexTemplateDataSourceConfig(templateName string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-	elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_index_template" "test" {
-	name = "%s"
-
-	priority       = 100
-	index_patterns = ["tf-acc-%s-*"]
-}
-
-data "elasticstack_elasticsearch_index_template" "test" {
-	name = elasticstack_elasticsearch_index_template.test.name
-}
-	`, templateName, templateName)
-}
-
-func testAccIndexTemplateDataSourceWithIgnoreComponentConfig(templateName string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-	elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_index_template" "test_component" {
-	name = "%s"
-	index_patterns = ["tf-acc-component-%s-*"]
-	composed_of = ["%s-logscomponent@custom"]
-	ignore_missing_component_templates = ["%s-logscomponent@custom"]
-}
-
-data "elasticstack_elasticsearch_index_template" "test_component" {
-	name = elasticstack_elasticsearch_index_template.test_component.name
-}
-	`, templateName, templateName, templateName, templateName)
 }

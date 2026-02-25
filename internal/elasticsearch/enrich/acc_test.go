@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package enrich_test
 
 import (
@@ -171,15 +188,15 @@ func checkEnrichPolicyDestroyFW(name string) func(s *terraform.State) error {
 			if rs.Type != "elasticstack_elasticsearch_enrich_policy" {
 				continue
 			}
-			compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
-			if compId.ResourceId != name {
-				return fmt.Errorf("Found unexpectedly enrich policy: %s", compId.ResourceId)
+			compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
+			if compID.ResourceID != name {
+				return fmt.Errorf("Found unexpectedly enrich policy: %s", compID.ResourceID)
 			}
 			esClient, err := client.GetESClient()
 			if err != nil {
 				return err
 			}
-			req := esClient.EnrichGetPolicy.WithName(compId.ResourceId)
+			req := esClient.EnrichGetPolicy.WithName(compID.ResourceID)
 			res, err := esClient.EnrichGetPolicy(req)
 			if err != nil {
 				return err
@@ -191,7 +208,7 @@ func checkEnrichPolicyDestroyFW(name string) func(s *terraform.State) error {
 					return err
 				}
 				if len(policiesResponse["policies"].([]any)) != 0 {
-					return fmt.Errorf("Enrich policy (%s) still exists", compId.ResourceId)
+					return fmt.Errorf("Enrich policy (%s) still exists", compID.ResourceID)
 				}
 			}
 		}

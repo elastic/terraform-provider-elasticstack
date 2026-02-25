@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package output
 
 import (
@@ -27,16 +44,16 @@ func NewResource() resource.Resource {
 }
 
 type outputResource struct {
-	client *clients.ApiClient
+	client *clients.APIClient
 }
 
-func (r *outputResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+func (r *outputResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	client, diags := clients.ConvertProviderData(req.ProviderData)
 	resp.Diagnostics.Append(diags...)
 	r.client = client
 }
 
-func (r *outputResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+func (r *outputResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = fmt.Sprintf("%s_%s", req.ProviderTypeName, "fleet_output")
 }
 
@@ -49,7 +66,7 @@ func (r *outputResource) UpgradeState(context.Context) map[int64]resource.StateU
 		0: {
 			// Legacy provider versions used a block for the `ssl` attribute which means it was stored as a list.
 			// This upgrader migrates the list into a single object if available within the raw state
-			StateUpgrader: func(ctx context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
+			StateUpgrader: func(_ context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
 				if req.RawState == nil || req.RawState.JSON == nil {
 					resp.Diagnostics.AddError("Invalid raw state", "Raw state or JSON is nil")
 					return
@@ -60,7 +77,7 @@ func (r *outputResource) UpgradeState(context.Context) map[int64]resource.StateU
 					JSON: req.RawState.JSON,
 				}
 
-				var stateMap map[string]interface{}
+				var stateMap map[string]any
 				err := json.Unmarshal(req.RawState.JSON, &stateMap)
 				if err != nil {
 					resp.Diagnostics.AddError("Failed to unmarshal raw state", err.Error())

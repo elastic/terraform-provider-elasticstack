@@ -1,4 +1,21 @@
-package api_key_test
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package apikey_test
 
 import (
 	"context"
@@ -14,42 +31,41 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/api_key"
+	apikey "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/api_key"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-func TestAccResourceSecurityApiKey(t *testing.T) {
+func TestAccResourceSecurityAPIKey(t *testing.T) {
 	// generate a random name
 	apiKeyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceSecurityApiKeyDestroy,
+		CheckDestroy:             checkResourceSecurityAPIKeyDestroy,
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(api_key.MinVersion),
-				Config:   testAccResourceSecurityApiKeyCreate(apiKeyName),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(apikey.MinVersion),
+				Config:   testAccResourceSecurityAPIKeyCreate(apiKeyName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "name", apiKeyName),
 					resource.TestCheckResourceAttrWith("elasticstack_elasticsearch_security_api_key.test", "role_descriptors", func(testValue string) error {
-						var testRoleDescriptor map[string]models.ApiKeyRoleDescriptor
+						var testRoleDescriptor map[string]models.APIKeyRoleDescriptor
 						if err := json.Unmarshal([]byte(testValue), &testRoleDescriptor); err != nil {
 							return err
 						}
 
-						expectedRoleDescriptor := map[string]models.ApiKeyRoleDescriptor{
+						expectedRoleDescriptor := map[string]models.APIKeyRoleDescriptor{
 							"role-a": {
 								Cluster: []string{"all"},
 								Indices: []models.IndexPerms{{
 									Names:                  []string{"index-a*"},
 									Privileges:             []string{"read"},
-									AllowRestrictedIndices: utils.Pointer(false),
+									AllowRestrictedIndices: new(false),
 								}},
 							},
 						}
@@ -67,23 +83,23 @@ func TestAccResourceSecurityApiKey(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(api_key.MinVersionWithUpdate),
-				Config:   testAccResourceSecurityApiKeyUpdate(apiKeyName),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(apikey.MinVersionWithUpdate),
+				Config:   testAccResourceSecurityAPIKeyUpdate(apiKeyName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "name", apiKeyName),
 					resource.TestCheckResourceAttrWith("elasticstack_elasticsearch_security_api_key.test", "role_descriptors", func(testValue string) error {
-						var testRoleDescriptor map[string]models.ApiKeyRoleDescriptor
+						var testRoleDescriptor map[string]models.APIKeyRoleDescriptor
 						if err := json.Unmarshal([]byte(testValue), &testRoleDescriptor); err != nil {
 							return err
 						}
 
-						expectedRoleDescriptor := map[string]models.ApiKeyRoleDescriptor{
+						expectedRoleDescriptor := map[string]models.APIKeyRoleDescriptor{
 							"role-a": {
 								Cluster: []string{"manage"},
 								Indices: []models.IndexPerms{{
 									Names:                  []string{"index-b*"},
 									Privileges:             []string{"read"},
-									AllowRestrictedIndices: utils.Pointer(false),
+									AllowRestrictedIndices: new(false),
 								}},
 							},
 						}
@@ -104,7 +120,7 @@ func TestAccResourceSecurityApiKey(t *testing.T) {
 	})
 }
 
-func TestAccResourceSecurityApiKeyWithRemoteIndices(t *testing.T) {
+func TestAccResourceSecurityAPIKeyWithRemoteIndices(t *testing.T) {
 	minSupportedRemoteIndicesVersion := version.Must(version.NewSemver("8.10.0"))
 
 	// generate a random name
@@ -112,34 +128,34 @@ func TestAccResourceSecurityApiKeyWithRemoteIndices(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceSecurityApiKeyDestroy,
+		CheckDestroy:             checkResourceSecurityAPIKeyDestroy,
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedRemoteIndicesVersion),
-				Config:   testAccResourceSecurityApiKeyRemoteIndices(apiKeyName),
+				Config:   testAccResourceSecurityAPIKeyRemoteIndices(apiKeyName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "name", apiKeyName),
 					resource.TestCheckResourceAttrWith("elasticstack_elasticsearch_security_api_key.test", "role_descriptors", func(testValue string) error {
-						var testRoleDescriptor map[string]models.ApiKeyRoleDescriptor
+						var testRoleDescriptor map[string]models.APIKeyRoleDescriptor
 						if err := json.Unmarshal([]byte(testValue), &testRoleDescriptor); err != nil {
 							return err
 						}
 
-						expectedRoleDescriptor := map[string]models.ApiKeyRoleDescriptor{
+						expectedRoleDescriptor := map[string]models.APIKeyRoleDescriptor{
 							"role-a": {
 								Cluster: []string{"all"},
 								Indices: []models.IndexPerms{{
 									Names:                  []string{"index-a*"},
 									Privileges:             []string{"read"},
-									AllowRestrictedIndices: utils.Pointer(false),
+									AllowRestrictedIndices: new(false),
 								}},
 								RemoteIndices: []models.RemoteIndexPerms{{
 									Clusters: []string{"*"},
 									IndexPerms: models.IndexPerms{
 										Names:                  []string{"index-a*"},
 										Privileges:             []string{"read"},
-										AllowRestrictedIndices: utils.Pointer(true),
+										AllowRestrictedIndices: new(true),
 									},
 								}},
 							},
@@ -160,28 +176,28 @@ func TestAccResourceSecurityApiKeyWithRemoteIndices(t *testing.T) {
 	})
 }
 
-func TestAccResourceSecurityApiKeyWithWorkflowRestriction(t *testing.T) {
+func TestAccResourceSecurityAPIKeyWithWorkflowRestriction(t *testing.T) {
 	// generate a random name
 	apiKeyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceSecurityApiKeyDestroy,
+		CheckDestroy:             checkResourceSecurityAPIKeyDestroy,
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(api_key.MinVersionWithRestriction),
-				Config:   testAccResourceSecurityApiKeyCreateWithWorkflowRestriction(apiKeyName),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(apikey.MinVersionWithRestriction),
+				Config:   testAccResourceSecurityAPIKeyCreateWithWorkflowRestriction(apiKeyName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "name", apiKeyName),
 					resource.TestCheckResourceAttrWith("elasticstack_elasticsearch_security_api_key.test", "role_descriptors", func(testValue string) error {
-						var testRoleDescriptor map[string]models.ApiKeyRoleDescriptor
+						var testRoleDescriptor map[string]models.APIKeyRoleDescriptor
 						if err := json.Unmarshal([]byte(testValue), &testRoleDescriptor); err != nil {
 							return err
 						}
 
 						allowRestrictedIndices := false
-						expectedRoleDescriptor := map[string]models.ApiKeyRoleDescriptor{
+						expectedRoleDescriptor := map[string]models.APIKeyRoleDescriptor{
 							"role-a": {
 								Cluster: []string{"all"},
 								Indices: []models.IndexPerms{{
@@ -208,7 +224,7 @@ func TestAccResourceSecurityApiKeyWithWorkflowRestriction(t *testing.T) {
 	})
 }
 
-func TestAccResourceSecurityApiKeyWithWorkflowRestrictionOnElasticPre8_9_x(t *testing.T) {
+func TestAccResourceSecurityAPIKeyWithWorkflowRestrictionOnElasticPre8_9_x(t *testing.T) {
 	// generate a random name
 	apiKeyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	errorPattern := fmt.Sprintf(".*Specifying `restriction` on an API key role description is not supported in this version of Elasticsearch. Role descriptor\\(s\\) %s.*", "role-a")
@@ -216,19 +232,19 @@ func TestAccResourceSecurityApiKeyWithWorkflowRestrictionOnElasticPre8_9_x(t *te
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceSecurityApiKeyDestroy,
+		CheckDestroy:             checkResourceSecurityAPIKeyDestroy,
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:    SkipWhenApiKeysAreNotSupportedOrRestrictionsAreSupported(api_key.MinVersion, api_key.MinVersionWithRestriction),
-				Config:      testAccResourceSecurityApiKeyCreateWithWorkflowRestriction(apiKeyName),
+				SkipFunc:    SkipWhenAPIKeysAreNotSupportedOrRestrictionsAreSupported(apikey.MinVersion, apikey.MinVersionWithRestriction),
+				Config:      testAccResourceSecurityAPIKeyCreateWithWorkflowRestriction(apiKeyName),
 				ExpectError: regexp.MustCompile(errorPattern),
 			},
 		},
 	})
 }
 
-func SkipWhenApiKeysAreNotSupportedOrRestrictionsAreSupported(minApiKeySupportedVersion *version.Version, minRestrictionSupportedVersion *version.Version) func() (bool, error) {
+func SkipWhenAPIKeysAreNotSupportedOrRestrictionsAreSupported(minAPIKeySupportedVersion *version.Version, minRestrictionSupportedVersion *version.Version) func() (bool, error) {
 	return func() (b bool, err error) {
 		client, err := clients.NewAcceptanceTestingClient()
 		if err != nil {
@@ -239,18 +255,18 @@ func SkipWhenApiKeysAreNotSupportedOrRestrictionsAreSupported(minApiKeySupported
 			return false, fmt.Errorf("failed to parse the elasticsearch version %v", diags)
 		}
 
-		return serverVersion.LessThan(minApiKeySupportedVersion) || serverVersion.GreaterThanOrEqual(minRestrictionSupportedVersion), nil
+		return serverVersion.LessThan(minAPIKeySupportedVersion) || serverVersion.GreaterThanOrEqual(minRestrictionSupportedVersion), nil
 	}
 }
 
-func TestAccResourceSecurityApiKeyFromSDK(t *testing.T) {
+func TestAccResourceSecurityAPIKeyFromSDK(t *testing.T) {
 	// generate a random name
 	apiKeyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
-	var initialApiKey string
+	var initialAPIKey string
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
-		CheckDestroy: checkResourceSecurityApiKeyDestroy,
+		CheckDestroy: checkResourceSecurityAPIKeyDestroy,
 		Steps: []resource.TestStep{
 			{
 				// Create the api_key with the last provider version where the api_key resource was built on the SDK
@@ -260,15 +276,15 @@ func TestAccResourceSecurityApiKeyFromSDK(t *testing.T) {
 						VersionConstraint: "0.11.9",
 					},
 				},
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(api_key.MinVersion),
-				Config:   testAccResourceSecurityApiKeyWithoutExpiration(apiKeyName),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(apikey.MinVersion),
+				Config:   testAccResourceSecurityAPIKeyWithoutExpiration(apiKeyName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "name", apiKeyName),
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "role_descriptors"),
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "encoded"),
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "id"),
 					resource.TestCheckResourceAttrWith("elasticstack_elasticsearch_security_api_key.test", "api_key", func(value string) error {
-						initialApiKey = value
+						initialAPIKey = value
 
 						if value == "" {
 							return fmt.Errorf("expected api_key to be non-empty")
@@ -280,11 +296,11 @@ func TestAccResourceSecurityApiKeyFromSDK(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(api_key.MinVersion),
-				Config:                   testAccResourceSecurityApiKeyWithoutExpiration(apiKeyName),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(apikey.MinVersion),
+				Config:                   testAccResourceSecurityAPIKeyWithoutExpiration(apiKeyName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrWith("elasticstack_elasticsearch_security_api_key.test", "api_key", func(value string) error {
-						if value != initialApiKey {
+						if value != initialAPIKey {
 							return fmt.Errorf("expected api_key to be unchanged")
 						}
 
@@ -296,7 +312,7 @@ func TestAccResourceSecurityApiKeyFromSDK(t *testing.T) {
 	})
 }
 
-func testAccResourceSecurityApiKeyCreate(apiKeyName string) string {
+func testAccResourceSecurityAPIKeyCreate(apiKeyName string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   elasticsearch {}
@@ -321,7 +337,7 @@ resource "elasticstack_elasticsearch_security_api_key" "test" {
 	`, apiKeyName)
 }
 
-func testAccResourceSecurityApiKeyUpdate(apiKeyName string) string {
+func testAccResourceSecurityAPIKeyUpdate(apiKeyName string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   elasticsearch {}
@@ -346,7 +362,7 @@ resource "elasticstack_elasticsearch_security_api_key" "test" {
 	`, apiKeyName)
 }
 
-func testAccResourceSecurityApiKeyWithoutExpiration(apiKeyName string) string {
+func testAccResourceSecurityAPIKeyWithoutExpiration(apiKeyName string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   elasticsearch {}
@@ -369,7 +385,7 @@ resource "elasticstack_elasticsearch_security_api_key" "test" {
 	`, apiKeyName)
 }
 
-func testAccResourceSecurityApiKeyRemoteIndices(apiKeyName string) string {
+func testAccResourceSecurityAPIKeyRemoteIndices(apiKeyName string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   elasticsearch {}
@@ -400,7 +416,7 @@ resource "elasticstack_elasticsearch_security_api_key" "test" {
 	`, apiKeyName)
 }
 
-func testAccResourceSecurityApiKeyCreateWithWorkflowRestriction(apiKeyName string) string {
+func testAccResourceSecurityAPIKeyCreateWithWorkflowRestriction(apiKeyName string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   elasticsearch {}
@@ -428,7 +444,7 @@ resource "elasticstack_elasticsearch_security_api_key" "test" {
 	`, apiKeyName)
 }
 
-func checkResourceSecurityApiKeyDestroy(s *terraform.State) error {
+func checkResourceSecurityAPIKeyDestroy(s *terraform.State) error {
 	client, err := clients.NewAcceptanceTestingClient()
 	if err != nil {
 		return err
@@ -438,32 +454,32 @@ func checkResourceSecurityApiKeyDestroy(s *terraform.State) error {
 		if rs.Type != "elasticstack_elasticsearch_security_api_key" {
 			continue
 		}
-		compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
+		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
-		apiKey, diags := elasticsearch.GetApiKey(client, compId.ResourceId)
+		apiKey, diags := elasticsearch.GetAPIKey(client, compID.ResourceID)
 		if diags.HasError() {
 			return fmt.Errorf("Unable to get API key %v", diags)
 		}
 
 		if !apiKey.Invalidated {
-			return fmt.Errorf("ApiKey (%s) has not been invalidated", compId.ResourceId)
+			return fmt.Errorf("API key (%s) has not been invalidated", compID.ResourceID)
 		}
 	}
 	return nil
 }
 
-func TestAccResourceSecurityApiKeyCrossCluster(t *testing.T) {
+func TestAccResourceSecurityAPIKeyCrossCluster(t *testing.T) {
 	// generate a random name
 	apiKeyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceSecurityApiKeyDestroy,
+		CheckDestroy:             checkResourceSecurityAPIKeyDestroy,
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(api_key.MinVersionWithCrossCluster),
-				Config:   testAccResourceSecurityApiKeyCrossClusterCreate(apiKeyName),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(apikey.MinVersionWithCrossCluster),
+				Config:   testAccResourceSecurityAPIKeyCrossClusterCreate(apiKeyName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "name", apiKeyName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "type", "cross_cluster"),
@@ -473,8 +489,8 @@ func TestAccResourceSecurityApiKeyCrossCluster(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(api_key.MinVersionWithCrossCluster),
-				Config:   testAccResourceSecurityApiKeyCrossClusterUpdate(apiKeyName),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(apikey.MinVersionWithCrossCluster),
+				Config:   testAccResourceSecurityAPIKeyCrossClusterUpdate(apiKeyName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "name", apiKeyName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "type", "cross_cluster"),
@@ -487,7 +503,7 @@ func TestAccResourceSecurityApiKeyCrossCluster(t *testing.T) {
 	})
 }
 
-func testAccResourceSecurityApiKeyCrossClusterCreate(apiKeyName string) string {
+func testAccResourceSecurityAPIKeyCrossClusterCreate(apiKeyName string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   elasticsearch {}
@@ -520,7 +536,7 @@ resource "elasticstack_elasticsearch_security_api_key" "test" {
 	`, apiKeyName)
 }
 
-func testAccResourceSecurityApiKeyCrossClusterUpdate(apiKeyName string) string {
+func testAccResourceSecurityAPIKeyCrossClusterUpdate(apiKeyName string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   elasticsearch {}
@@ -553,27 +569,27 @@ resource "elasticstack_elasticsearch_security_api_key" "test" {
 	`, apiKeyName)
 }
 
-func TestAccResourceSecurityApiKeyWithDefaultAllowRestrictedIndices(t *testing.T) {
+func TestAccResourceSecurityAPIKeyWithDefaultAllowRestrictedIndices(t *testing.T) {
 	// generate a random name
 	apiKeyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceSecurityApiKeyDestroy,
+		CheckDestroy:             checkResourceSecurityAPIKeyDestroy,
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(api_key.MinVersion),
-				Config:   testAccResourceSecurityApiKeyWithoutAllowRestrictedIndices(apiKeyName),
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(apikey.MinVersion),
+				Config:   testAccResourceSecurityAPIKeyWithoutAllowRestrictedIndices(apiKeyName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.test", "name", apiKeyName),
 					resource.TestCheckResourceAttrWith("elasticstack_elasticsearch_security_api_key.test", "role_descriptors", func(testValue string) error {
-						var testRoleDescriptor map[string]models.ApiKeyRoleDescriptor
+						var testRoleDescriptor map[string]models.APIKeyRoleDescriptor
 						if err := json.Unmarshal([]byte(testValue), &testRoleDescriptor); err != nil {
 							return err
 						}
 
-						expectedRoleDescriptor := map[string]models.ApiKeyRoleDescriptor{
+						expectedRoleDescriptor := map[string]models.APIKeyRoleDescriptor{
 							"role-default": {
 								Cluster: []string{"monitor"},
 								Indices: []models.IndexPerms{{
@@ -598,7 +614,7 @@ func TestAccResourceSecurityApiKeyWithDefaultAllowRestrictedIndices(t *testing.T
 	})
 }
 
-func testAccResourceSecurityApiKeyWithoutAllowRestrictedIndices(apiKeyName string) string {
+func testAccResourceSecurityAPIKeyWithoutAllowRestrictedIndices(apiKeyName string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   elasticsearch {}

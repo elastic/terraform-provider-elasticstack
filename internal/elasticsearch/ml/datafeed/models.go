@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package datafeed
 
 import (
@@ -5,8 +22,8 @@ import (
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
@@ -60,14 +77,14 @@ func (m *Datafeed) ToAPIModel(ctx context.Context) (*models.Datafeed, fwdiags.Di
 	var diags fwdiags.Diagnostics
 
 	apiModel := &models.Datafeed{
-		DatafeedId: m.DatafeedID.ValueString(),
-		JobId:      m.JobID.ValueString(),
-		Indices:    utils.ListTypeToSlice_String(ctx, m.Indices, path.Root("indices"), &diags),
+		DatafeedID: m.DatafeedID.ValueString(),
+		JobID:      m.JobID.ValueString(),
+		Indices:    typeutils.ListTypeToSliceString(ctx, m.Indices, path.Root("indices"), &diags),
 	}
 
 	// Convert query
-	if utils.IsKnown(m.Query) {
-		var query map[string]interface{}
+	if typeutils.IsKnown(m.Query) {
+		var query map[string]any
 		diags.Append(m.Query.Unmarshal(&query)...)
 		if diags.HasError() {
 			return nil, diags
@@ -76,8 +93,8 @@ func (m *Datafeed) ToAPIModel(ctx context.Context) (*models.Datafeed, fwdiags.Di
 	}
 
 	// Convert aggregations
-	if utils.IsKnown(m.Aggregations) {
-		var aggregations map[string]interface{}
+	if typeutils.IsKnown(m.Aggregations) {
+		var aggregations map[string]any
 		diags.Append(m.Aggregations.Unmarshal(&aggregations)...)
 		if diags.HasError() {
 			return nil, diags
@@ -86,8 +103,8 @@ func (m *Datafeed) ToAPIModel(ctx context.Context) (*models.Datafeed, fwdiags.Di
 	}
 
 	// Convert script_fields
-	if utils.IsKnown(m.ScriptFields) {
-		var scriptFields map[string]interface{}
+	if typeutils.IsKnown(m.ScriptFields) {
+		var scriptFields map[string]any
 		err := json.Unmarshal([]byte(m.ScriptFields.ValueString()), &scriptFields)
 		if err != nil {
 			diags.AddError("Failed to unmarshal script_fields", err.Error())
@@ -97,8 +114,8 @@ func (m *Datafeed) ToAPIModel(ctx context.Context) (*models.Datafeed, fwdiags.Di
 	}
 
 	// Convert runtime_mappings
-	if utils.IsKnown(m.RuntimeMappings) {
-		var runtimeMappings map[string]interface{}
+	if typeutils.IsKnown(m.RuntimeMappings) {
+		var runtimeMappings map[string]any
 		diags.Append(m.RuntimeMappings.Unmarshal(&runtimeMappings)...)
 		if diags.HasError() {
 			return nil, diags
@@ -107,29 +124,29 @@ func (m *Datafeed) ToAPIModel(ctx context.Context) (*models.Datafeed, fwdiags.Di
 	}
 
 	// Convert scroll_size
-	if utils.IsKnown(m.ScrollSize) {
+	if typeutils.IsKnown(m.ScrollSize) {
 		scrollSize := int(m.ScrollSize.ValueInt64())
 		apiModel.ScrollSize = &scrollSize
 	}
 
 	// Convert frequency
-	if utils.IsKnown(m.Frequency) {
+	if typeutils.IsKnown(m.Frequency) {
 		apiModel.Frequency = m.Frequency.ValueStringPointer()
 	}
 
 	// Convert query_delay
-	if utils.IsKnown(m.QueryDelay) {
+	if typeutils.IsKnown(m.QueryDelay) {
 		apiModel.QueryDelay = m.QueryDelay.ValueStringPointer()
 	}
 
 	// Convert max_empty_searches
-	if utils.IsKnown(m.MaxEmptySearches) {
+	if typeutils.IsKnown(m.MaxEmptySearches) {
 		maxEmptySearches := int(m.MaxEmptySearches.ValueInt64())
 		apiModel.MaxEmptySearches = &maxEmptySearches
 	}
 
 	// Convert chunking_config
-	if utils.IsKnown(m.ChunkingConfig) {
+	if typeutils.IsKnown(m.ChunkingConfig) {
 		var chunkingConfig ChunkingConfig
 		diags.Append(m.ChunkingConfig.As(ctx, &chunkingConfig, basetypes.ObjectAsOptions{})...)
 		if diags.HasError() {
@@ -147,7 +164,7 @@ func (m *Datafeed) ToAPIModel(ctx context.Context) (*models.Datafeed, fwdiags.Di
 	}
 
 	// Convert delayed_data_check_config
-	if utils.IsKnown(m.DelayedDataCheckConfig) {
+	if typeutils.IsKnown(m.DelayedDataCheckConfig) {
 		var delayedDataCheckConfig DelayedDataCheckConfig
 		diags.Append(m.DelayedDataCheckConfig.As(ctx, &delayedDataCheckConfig, basetypes.ObjectAsOptions{})...)
 		if diags.HasError() {
@@ -158,14 +175,14 @@ func (m *Datafeed) ToAPIModel(ctx context.Context) (*models.Datafeed, fwdiags.Di
 			Enabled: delayedDataCheckConfig.Enabled.ValueBoolPointer(),
 		}
 
-		if utils.IsKnown(delayedDataCheckConfig.CheckWindow) {
+		if typeutils.IsKnown(delayedDataCheckConfig.CheckWindow) {
 			apiDelayedDataCheckConfig.CheckWindow = delayedDataCheckConfig.CheckWindow.ValueStringPointer()
 		}
 		apiModel.DelayedDataCheckConfig = apiDelayedDataCheckConfig
 	}
 
 	// Convert indices_options
-	if utils.IsKnown(m.IndicesOptions) {
+	if typeutils.IsKnown(m.IndicesOptions) {
 		var indicesOptions IndicesOptions
 		diags.Append(m.IndicesOptions.As(ctx, &indicesOptions, basetypes.ObjectAsOptions{})...)
 		if diags.HasError() {
@@ -173,7 +190,7 @@ func (m *Datafeed) ToAPIModel(ctx context.Context) (*models.Datafeed, fwdiags.Di
 		}
 
 		apiIndicesOptions := &models.IndicesOptions{}
-		if utils.IsKnown(indicesOptions.ExpandWildcards) {
+		if typeutils.IsKnown(indicesOptions.ExpandWildcards) {
 			var expandWildcards []string
 			diags.Append(indicesOptions.ExpandWildcards.ElementsAs(ctx, &expandWildcards, false)...)
 			if diags.HasError() {
@@ -181,13 +198,13 @@ func (m *Datafeed) ToAPIModel(ctx context.Context) (*models.Datafeed, fwdiags.Di
 			}
 			apiIndicesOptions.ExpandWildcards = expandWildcards
 		}
-		if utils.IsKnown(indicesOptions.IgnoreUnavailable) {
+		if typeutils.IsKnown(indicesOptions.IgnoreUnavailable) {
 			apiIndicesOptions.IgnoreUnavailable = indicesOptions.IgnoreUnavailable.ValueBoolPointer()
 		}
-		if utils.IsKnown(indicesOptions.AllowNoIndices) {
+		if typeutils.IsKnown(indicesOptions.AllowNoIndices) {
 			apiIndicesOptions.AllowNoIndices = indicesOptions.AllowNoIndices.ValueBoolPointer()
 		}
-		if utils.IsKnown(indicesOptions.IgnoreThrottled) {
+		if typeutils.IsKnown(indicesOptions.IgnoreThrottled) {
 			apiIndicesOptions.IgnoreThrottled = indicesOptions.IgnoreThrottled.ValueBoolPointer()
 		}
 		apiModel.IndicesOptions = apiIndicesOptions
@@ -200,8 +217,8 @@ func (m *Datafeed) ToAPIModel(ctx context.Context) (*models.Datafeed, fwdiags.Di
 func (m *Datafeed) FromAPIModel(ctx context.Context, apiModel *models.Datafeed) fwdiags.Diagnostics {
 	var diags fwdiags.Diagnostics
 
-	m.DatafeedID = types.StringValue(apiModel.DatafeedId)
-	m.JobID = types.StringValue(apiModel.JobId)
+	m.DatafeedID = types.StringValue(apiModel.DatafeedID)
+	m.JobID = types.StringValue(apiModel.JobID)
 
 	// Convert indices
 	if len(apiModel.Indices) > 0 {
@@ -387,7 +404,7 @@ func (m *Datafeed) toAPICreateModel(ctx context.Context) (*models.DatafeedCreate
 	}
 
 	createRequest := &models.DatafeedCreateRequest{
-		JobId:                  apiModel.JobId,
+		JobID:                  apiModel.JobID,
 		Indices:                apiModel.Indices,
 		Query:                  apiModel.Query,
 		Aggregations:           apiModel.Aggregations,

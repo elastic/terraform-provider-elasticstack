@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package output
 
 import (
@@ -5,7 +22,6 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
@@ -45,8 +61,8 @@ func Test_outputKafkaModel_toAPIHash(t *testing.T) {
 				Hash   *string `json:"hash,omitempty"`
 				Random *bool   `json:"random,omitempty"`
 			}{
-				Hash:   utils.Pointer("field"),
-				Random: utils.Pointer(true),
+				Hash:   new("field"),
+				Random: new(true),
 			},
 		},
 	}
@@ -156,7 +172,7 @@ func Test_outputKafkaModel_toAPIRandom(t *testing.T) {
 			want: &struct {
 				GroupEvents *float32 `json:"group_events,omitempty"`
 			}{
-				GroupEvents: utils.Pointer(float32(1)),
+				GroupEvents: new(float32(1)),
 			},
 		},
 	}
@@ -206,7 +222,7 @@ func Test_outputKafkaModel_toAPIRoundRobin(t *testing.T) {
 			want: &struct {
 				GroupEvents *float32 `json:"group_events,omitempty"`
 			}{
-				GroupEvents: utils.Pointer(float32(1)),
+				GroupEvents: new(float32(1)),
 			},
 		},
 	}
@@ -256,7 +272,7 @@ func Test_outputKafkaModel_toAPISasl(t *testing.T) {
 			want: &struct {
 				Mechanism *kbapi.NewOutputKafkaSaslMechanism `json:"mechanism,omitempty"`
 			}{
-				Mechanism: utils.Pointer(kbapi.NewOutputKafkaSaslMechanism("plain")),
+				Mechanism: new(kbapi.NewOutputKafkaSaslMechanism("plain")),
 			},
 		},
 	}
@@ -306,7 +322,7 @@ func Test_outputKafkaModel_toUpdateAPISasl(t *testing.T) {
 			want: &struct {
 				Mechanism *kbapi.UpdateOutputKafkaSaslMechanism `json:"mechanism,omitempty"`
 			}{
-				Mechanism: utils.Pointer(kbapi.UpdateOutputKafkaSaslMechanism("plain")),
+				Mechanism: new(kbapi.UpdateOutputKafkaSaslMechanism("plain")),
 			},
 		},
 	}
@@ -379,7 +395,7 @@ func Test_outputKafkaModel_toUpdateAuthType(t *testing.T) {
 			fields: fields{
 				AuthType: types.StringValue("user"),
 			},
-			want: utils.Pointer(kbapi.UpdateOutputKafkaAuthType("user")),
+			want: new(kbapi.UpdateOutputKafkaAuthType("user")),
 		},
 	}
 	for _, tt := range tests {

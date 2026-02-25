@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package config
 
 import (
@@ -5,8 +22,7 @@ import (
 
 	"github.com/disaster37/go-kibana-rest/v8"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 )
 
 func NewFromEnv(version string) Client {
@@ -20,14 +36,17 @@ func NewFromEnv(version string) Client {
 		UserAgent: base.UserAgent,
 	}
 
-	esCfg := base.toElasticsearchConfig().withEnvironmentOverrides()
-	client.Elasticsearch = utils.Pointer(esCfg.toElasticsearchConfiguration())
+	client.Elasticsearch = new(base.
+		toElasticsearchConfig().
+		withEnvironmentOverrides().
+		toElasticsearchConfiguration(),
+	)
 
 	kibanaCfg := base.toKibanaConfig().withEnvironmentOverrides()
 	client.Kibana = (*kibana.Config)(&kibanaCfg)
 
 	kibanaOapiCfg := base.toKibanaOapiConfig().withEnvironmentOverrides()
-	client.KibanaOapi = (*kibana_oapi.Config)(&kibanaOapiCfg)
+	client.KibanaOapi = (*kibanaoapi.Config)(&kibanaOapiCfg)
 
 	fleetCfg := kibanaOapiCfg.toFleetConfig().withEnvironmentOverrides()
 	client.Fleet = (*fleet.Config)(&fleetCfg)

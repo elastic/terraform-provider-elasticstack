@@ -1,5 +1,4 @@
 //go:build ignore
-// +build ignore
 
 package main
 
@@ -574,10 +573,10 @@ var transformers = []TransformFunc{
 	fixSecurityExceptionListItems,
 	removeDuplicateOneOfRefs,
 	fixDashboardPanelItemRefs,
-	fixAlertingRuleParams,
 	transformRemoveExamples,
 	transformRemoveUnusedComponents,
 	transformOmitEmptyNullable,
+	fixAlertingRuleParams,
 }
 
 //go:embed dashboards.yaml
@@ -987,21 +986,6 @@ func fixDashboardPanelItemRefs(schema *Schema) {
 	schema.Components.CreateRef(schema, "dashboard_panel_item", "schemas.dashboard_panel_section.properties.panels.items")
 }
 
-// fixAlertingRuleParams simplifies the POST alerting rule params schema.
-// The upstream spec defines params with an anyOf union of specific param types,
-// which causes oapi-codegen to generate a union struct whose
-// AdditionalProperties field is tagged json:"-" (with no custom MarshalJSON).
-// This means params serialize as an empty object. Simplify it to a plain object
-// with additionalProperties (matching the PUT endpoint) so that oapi-codegen
-// generates a usable map[string]interface{} type.
-func fixAlertingRuleParams(schema *Schema) {
-	postEndpoint := schema.MustGetPath("/api/alerting/rule/{id}").MustGetEndpoint("post")
-	paramsSchema := postEndpoint.MustGetMap("requestBody.content.application/json.schema.properties.params")
-
-	paramsSchema.Delete("anyOf")
-	paramsSchema.Set("type", "object")
-}
-
 func fixSecurityExceptionListItems(schema *Schema) {
 	exceptionListItems := schema.MustGetPath("/s/{spaceId}/api/exception_lists/items")
 
@@ -1314,4 +1298,9 @@ func transformRemoveUnusedComponents(schema *Schema) {
 			break
 		}
 	}
+}
+
+func fixAlertingRuleParams(schema *Schema) {
+	postEndpoint := schema.MustGetPath("/api/alerting/rule/{id}").MustGetEndpoint("post")
+	postEndpoint.CreateRef(schema, "Alerting_Rule_API_Params", "requestBody.content.application/json.schema.properties.params")
 }
