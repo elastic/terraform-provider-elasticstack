@@ -36,7 +36,4 @@ resource "elasticstack_kibana_security_exception_list" "test" {
   namespace_type = var.namespace_type
   os_types       = ["linux", "windows"]
   tags           = var.tags
-  meta = jsonencode({
-    "test" = "test"
-  })
 }
