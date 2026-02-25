@@ -21,7 +21,6 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
@@ -158,7 +157,7 @@ func (u *UpdateAPIModel) BuildFromPlan(ctx context.Context, plan, state *TFModel
 	hasChanges := false
 
 	if !plan.Description.Equal(state.Description) {
-		u.Description = schemautil.Pointer(plan.Description.ValueString())
+		u.Description = new(plan.Description.ValueString())
 		hasChanges = true
 	}
 
@@ -179,7 +178,7 @@ func (u *UpdateAPIModel) BuildFromPlan(ctx context.Context, plan, state *TFModel
 		}
 		apiModelPlotConfig := &ModelPlotConfigAPIModel{
 			Enabled:            modelPlotConfig.Enabled.ValueBool(),
-			AnnotationsEnabled: schemautil.Pointer(modelPlotConfig.AnnotationsEnabled.ValueBool()),
+			AnnotationsEnabled: new(modelPlotConfig.AnnotationsEnabled.ValueBool()),
 			Terms:              modelPlotConfig.Terms.ValueString(),
 		}
 		u.ModelPlotConfig = apiModelPlotConfig
@@ -197,19 +196,19 @@ func (u *UpdateAPIModel) BuildFromPlan(ctx context.Context, plan, state *TFModel
 			ModelMemoryLimit: analysisLimits.ModelMemoryLimit.ValueString(),
 		}
 		if !analysisLimits.CategorizationExamplesLimit.IsNull() {
-			apiAnalysisLimits.CategorizationExamplesLimit = schemautil.Pointer(analysisLimits.CategorizationExamplesLimit.ValueInt64())
+			apiAnalysisLimits.CategorizationExamplesLimit = new(analysisLimits.CategorizationExamplesLimit.ValueInt64())
 		}
 		u.AnalysisLimits = apiAnalysisLimits
 		hasChanges = true
 	}
 
 	if !plan.AllowLazyOpen.Equal(state.AllowLazyOpen) {
-		u.AllowLazyOpen = schemautil.Pointer(plan.AllowLazyOpen.ValueBool())
+		u.AllowLazyOpen = new(plan.AllowLazyOpen.ValueBool())
 		hasChanges = true
 	}
 
 	if !plan.BackgroundPersistInterval.Equal(state.BackgroundPersistInterval) && !plan.BackgroundPersistInterval.IsNull() {
-		u.BackgroundPersistInterval = schemautil.Pointer(plan.BackgroundPersistInterval.ValueString())
+		u.BackgroundPersistInterval = new(plan.BackgroundPersistInterval.ValueString())
 		hasChanges = true
 	}
 
@@ -224,22 +223,22 @@ func (u *UpdateAPIModel) BuildFromPlan(ctx context.Context, plan, state *TFModel
 	}
 
 	if !plan.DailyModelSnapshotRetentionAfterDays.Equal(state.DailyModelSnapshotRetentionAfterDays) && !plan.DailyModelSnapshotRetentionAfterDays.IsNull() {
-		u.DailyModelSnapshotRetentionAfterDays = schemautil.Pointer(plan.DailyModelSnapshotRetentionAfterDays.ValueInt64())
+		u.DailyModelSnapshotRetentionAfterDays = new(plan.DailyModelSnapshotRetentionAfterDays.ValueInt64())
 		hasChanges = true
 	}
 
 	if !plan.ModelSnapshotRetentionDays.Equal(state.ModelSnapshotRetentionDays) && !plan.ModelSnapshotRetentionDays.IsNull() {
-		u.ModelSnapshotRetentionDays = schemautil.Pointer(plan.ModelSnapshotRetentionDays.ValueInt64())
+		u.ModelSnapshotRetentionDays = new(plan.ModelSnapshotRetentionDays.ValueInt64())
 		hasChanges = true
 	}
 
 	if !plan.RenormalizationWindowDays.Equal(state.RenormalizationWindowDays) && !plan.RenormalizationWindowDays.IsNull() {
-		u.RenormalizationWindowDays = schemautil.Pointer(plan.RenormalizationWindowDays.ValueInt64())
+		u.RenormalizationWindowDays = new(plan.RenormalizationWindowDays.ValueInt64())
 		hasChanges = true
 	}
 
 	if !plan.ResultsRetentionDays.Equal(state.ResultsRetentionDays) && !plan.ResultsRetentionDays.IsNull() {
-		u.ResultsRetentionDays = schemautil.Pointer(plan.ResultsRetentionDays.ValueInt64())
+		u.ResultsRetentionDays = new(plan.ResultsRetentionDays.ValueInt64())
 		hasChanges = true
 	}
 

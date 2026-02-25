@@ -21,7 +21,6 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -82,7 +81,7 @@ func TestPopulateRoleDescriptorsDefaults(t *testing.T) {
 						{
 							Names:                  []string{"index1"},
 							Privileges:             []string{"read"},
-							AllowRestrictedIndices: schemautil.Pointer(false),
+							AllowRestrictedIndices: new(false),
 						},
 					},
 				},
@@ -96,7 +95,7 @@ func TestPopulateRoleDescriptorsDefaults(t *testing.T) {
 						{
 							Names:                  []string{"index1"},
 							Privileges:             []string{"read"},
-							AllowRestrictedIndices: schemautil.Pointer(true),
+							AllowRestrictedIndices: new(true),
 						},
 					},
 				},
@@ -107,7 +106,7 @@ func TestPopulateRoleDescriptorsDefaults(t *testing.T) {
 						{
 							Names:                  []string{"index1"},
 							Privileges:             []string{"read"},
-							AllowRestrictedIndices: schemautil.Pointer(true),
+							AllowRestrictedIndices: new(true),
 						},
 					},
 				},
@@ -121,7 +120,7 @@ func TestPopulateRoleDescriptorsDefaults(t *testing.T) {
 						{
 							Names:                  []string{"index1"},
 							Privileges:             []string{"read"},
-							AllowRestrictedIndices: schemautil.Pointer(false),
+							AllowRestrictedIndices: new(false),
 						},
 					},
 				},
@@ -132,7 +131,7 @@ func TestPopulateRoleDescriptorsDefaults(t *testing.T) {
 						{
 							Names:                  []string{"index1"},
 							Privileges:             []string{"read"},
-							AllowRestrictedIndices: schemautil.Pointer(false),
+							AllowRestrictedIndices: new(false),
 						},
 					},
 				},
@@ -151,12 +150,12 @@ func TestPopulateRoleDescriptorsDefaults(t *testing.T) {
 						{
 							Names:                  []string{"index2"},
 							Privileges:             []string{"write"},
-							AllowRestrictedIndices: schemautil.Pointer(true),
+							AllowRestrictedIndices: new(true),
 						},
 						{
 							Names:                  []string{"index3"},
 							Privileges:             []string{"read", "write"},
-							AllowRestrictedIndices: schemautil.Pointer(false),
+							AllowRestrictedIndices: new(false),
 						},
 					},
 				},
@@ -167,17 +166,17 @@ func TestPopulateRoleDescriptorsDefaults(t *testing.T) {
 						{
 							Names:                  []string{"index1"},
 							Privileges:             []string{"read"},
-							AllowRestrictedIndices: schemautil.Pointer(false),
+							AllowRestrictedIndices: new(false),
 						},
 						{
 							Names:                  []string{"index2"},
 							Privileges:             []string{"write"},
-							AllowRestrictedIndices: schemautil.Pointer(true),
+							AllowRestrictedIndices: new(true),
 						},
 						{
 							Names:                  []string{"index3"},
 							Privileges:             []string{"read", "write"},
-							AllowRestrictedIndices: schemautil.Pointer(false),
+							AllowRestrictedIndices: new(false),
 						},
 					},
 				},
@@ -200,7 +199,7 @@ func TestPopulateRoleDescriptorsDefaults(t *testing.T) {
 						{
 							Names:                  []string{"logs-*"},
 							Privileges:             []string{"read"},
-							AllowRestrictedIndices: schemautil.Pointer(true),
+							AllowRestrictedIndices: new(true),
 						},
 					},
 				},
@@ -216,7 +215,7 @@ func TestPopulateRoleDescriptorsDefaults(t *testing.T) {
 						{
 							Names:                  []string{"admin-*"},
 							Privileges:             []string{"all"},
-							AllowRestrictedIndices: schemautil.Pointer(false),
+							AllowRestrictedIndices: new(false),
 						},
 					},
 				},
@@ -225,7 +224,7 @@ func TestPopulateRoleDescriptorsDefaults(t *testing.T) {
 						{
 							Names:                  []string{"logs-*"},
 							Privileges:             []string{"read"},
-							AllowRestrictedIndices: schemautil.Pointer(true),
+							AllowRestrictedIndices: new(true),
 						},
 					},
 				},
@@ -243,7 +242,7 @@ func TestPopulateRoleDescriptorsDefaults(t *testing.T) {
 						{
 							Names:      []string{"sensitive-*"},
 							Privileges: []string{"read", "view_index_metadata"},
-							Query:      schemautil.Pointer(`{"term": {"public": true}}`),
+							Query:      new(`{"term": {"public": true}}`),
 							FieldSecurity: &models.FieldSecurity{
 								Grant: []string{"public_*"},
 							},
@@ -262,11 +261,11 @@ func TestPopulateRoleDescriptorsDefaults(t *testing.T) {
 						{
 							Names:      []string{"sensitive-*"},
 							Privileges: []string{"read", "view_index_metadata"},
-							Query:      schemautil.Pointer(`{"term": {"public": true}}`),
+							Query:      new(`{"term": {"public": true}}`),
 							FieldSecurity: &models.FieldSecurity{
 								Grant: []string{"public_*"},
 							},
-							AllowRestrictedIndices: schemautil.Pointer(false),
+							AllowRestrictedIndices: new(false),
 						},
 					},
 					Metadata: map[string]any{

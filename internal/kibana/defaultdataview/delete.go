@@ -22,7 +22,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
@@ -49,7 +48,7 @@ func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp 
 
 	// Unset the default data view by setting it to null
 	setReq := kbapi.SetDefaultDatailViewDefaultJSONRequestBody{
-		Force: schemautil.Pointer(true),
+		Force: new(true),
 	}
 
 	diags = kibanaoapi.SetDefaultDataView(ctx, client, spaceID, setReq)

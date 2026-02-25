@@ -169,7 +169,7 @@ func TestTimesliceMetricIndicator_PopulateFromAPI(t *testing.T) {
 		api := &generatedslo.IndicatorPropertiesTimesliceMetric{
 			Params: generatedslo.IndicatorPropertiesTimesliceMetricParams{
 				Index:          "metrics-*",
-				DataViewId:     strPtr("dv-1"),
+				DataViewId:     new("dv-1"),
 				TimestampField: "@timestamp",
 				Filter:         nil,
 				Metric: generatedslo.IndicatorPropertiesTimesliceMetricParamsMetric{
@@ -182,7 +182,7 @@ func TestTimesliceMetricIndicator_PopulateFromAPI(t *testing.T) {
 								Name:        "a",
 								Aggregation: "sum",
 								Field:       "foo",
-								Filter:      strPtr("status:200"),
+								Filter:      new("status:200"),
 							},
 						},
 						{
@@ -198,7 +198,7 @@ func TestTimesliceMetricIndicator_PopulateFromAPI(t *testing.T) {
 							TimesliceMetricDocCountMetric: &generatedslo.TimesliceMetricDocCountMetric{
 								Name:        "c",
 								Aggregation: "doc_count",
-								Filter:      strPtr("labels.env:prod"),
+								Filter:      new("labels.env:prod"),
 							},
 						},
 					},

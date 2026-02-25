@@ -23,7 +23,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -322,13 +321,13 @@ func (m *metricChartConfigModel) toAPIVariant0() (kbapi.MetricChartSchema, diag.
 
 	// Set simple fields
 	if typeutils.IsKnown(m.Title) {
-		variant0.Title = schemautil.Pointer(m.Title.ValueString())
+		variant0.Title = new(m.Title.ValueString())
 	}
 	if typeutils.IsKnown(m.Description) {
-		variant0.Description = schemautil.Pointer(m.Description.ValueString())
+		variant0.Description = new(m.Description.ValueString())
 	}
 	if typeutils.IsKnown(m.IgnoreGlobalFilters) {
-		variant0.IgnoreGlobalFilters = schemautil.Pointer(m.IgnoreGlobalFilters.ValueBool())
+		variant0.IgnoreGlobalFilters = new(m.IgnoreGlobalFilters.ValueBool())
 	}
 	if typeutils.IsKnown(m.Sampling) {
 		sampling := float32(m.Sampling.ValueFloat64())
@@ -404,13 +403,13 @@ func (m *metricChartConfigModel) toAPIVariant1() (kbapi.MetricChartSchema, diag.
 
 	// Set simple fields
 	if typeutils.IsKnown(m.Title) {
-		variant1.Title = schemautil.Pointer(m.Title.ValueString())
+		variant1.Title = new(m.Title.ValueString())
 	}
 	if typeutils.IsKnown(m.Description) {
-		variant1.Description = schemautil.Pointer(m.Description.ValueString())
+		variant1.Description = new(m.Description.ValueString())
 	}
 	if typeutils.IsKnown(m.IgnoreGlobalFilters) {
-		variant1.IgnoreGlobalFilters = schemautil.Pointer(m.IgnoreGlobalFilters.ValueBool())
+		variant1.IgnoreGlobalFilters = new(m.IgnoreGlobalFilters.ValueBool())
 	}
 	if typeutils.IsKnown(m.Sampling) {
 		sampling := float32(m.Sampling.ValueFloat64())

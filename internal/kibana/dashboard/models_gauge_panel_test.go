@@ -23,7 +23,6 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -48,10 +47,10 @@ func Test_gaugeConfigModel_fromAPI_toAPI(t *testing.T) {
 			api: func() kbapi.GaugeNoESQL {
 				api := kbapi.GaugeNoESQL{
 					Type:                kbapi.GaugeNoESQLTypeGauge,
-					Title:               schemautil.Pointer("Test Gauge"),
-					Description:         schemautil.Pointer("A test gauge description"),
-					IgnoreGlobalFilters: schemautil.Pointer(true),
-					Sampling:            schemautil.Pointer(float32(0.5)),
+					Title:               new("Test Gauge"),
+					Description:         new("A test gauge description"),
+					IgnoreGlobalFilters: new(true),
+					Sampling:            new(float32(0.5)),
 				}
 
 				err := json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &api.Dataset)
@@ -187,7 +186,7 @@ func Test_gaugePanelConfigConverter_roundTrip(t *testing.T) {
 				Language: types.StringValue("kuery"),
 				Query:    types.StringValue("status:active"),
 			},
-			MetricJSON: customtypes.NewJSONWithDefaultsValue[map[string]any](`{"operation":"count"}`, populateGaugeMetricDefaults),
+			MetricJSON: customtypes.NewJSONWithDefaultsValue(`{"operation":"count"}`, populateGaugeMetricDefaults),
 			ShapeJSON:  jsontypes.NewNormalizedValue(`{"type":"circle"}`),
 		},
 	}

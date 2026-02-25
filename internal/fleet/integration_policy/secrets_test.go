@@ -23,8 +23,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/integration_policy"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	integrationpolicy "github.com/elastic/terraform-provider-elasticstack/internal/fleet/integration_policy"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/stretchr/testify/require"
 )
@@ -110,16 +109,16 @@ func TestHandleRespSecrets(t *testing.T) {
 				SecretReferences: secretRefs,
 				Inputs: map[string]kbapi.PackagePolicyInput{
 					"input1": {
-						Streams: &map[string]kbapi.PackagePolicyInputStream{"stream1": {Vars: schemautil.Pointer(maps.Clone(tt.input))}},
-						Vars:    schemautil.Pointer(maps.Clone(tt.input)),
+						Streams: &map[string]kbapi.PackagePolicyInputStream{"stream1": {Vars: new(maps.Clone(tt.input))}},
+						Vars:    new(maps.Clone(tt.input)),
 					},
 				},
-				Vars: schemautil.Pointer(maps.Clone(tt.input)),
+				Vars: new(maps.Clone(tt.input)),
 			}
 			wants := kbapi.PackagePolicy{
 				Inputs: map[string]kbapi.PackagePolicyInput{
 					"input1": {
-						Streams: &map[string]kbapi.PackagePolicyInputStream{"stream1": {Vars: schemautil.Pointer(tt.want)}},
+						Streams: &map[string]kbapi.PackagePolicyInputStream{"stream1": {Vars: new(tt.want)}},
 						Vars:    &tt.want,
 					},
 				},
@@ -222,26 +221,26 @@ func TestHandleReqRespSecrets(t *testing.T) {
 			req := kbapi.PackagePolicyRequest{
 				Inputs: &map[string]kbapi.PackagePolicyRequestInput{
 					"input1": {
-						Streams: &map[string]kbapi.PackagePolicyRequestInputStream{"stream1": {Vars: schemautil.Pointer(maps.Clone(tt.reqInput))}},
-						Vars:    schemautil.Pointer(maps.Clone(tt.reqInput)),
+						Streams: &map[string]kbapi.PackagePolicyRequestInputStream{"stream1": {Vars: new(maps.Clone(tt.reqInput))}},
+						Vars:    new(maps.Clone(tt.reqInput)),
 					},
 				},
-				Vars: schemautil.Pointer(maps.Clone(tt.reqInput)),
+				Vars: new(maps.Clone(tt.reqInput)),
 			}
 			resp := kbapi.PackagePolicy{
 				SecretReferences: secretRefs,
 				Inputs: map[string]kbapi.PackagePolicyInput{
 					"input1": {
-						Streams: &map[string]kbapi.PackagePolicyInputStream{"stream1": {Vars: schemautil.Pointer(maps.Clone(tt.respInput))}},
-						Vars:    schemautil.Pointer(maps.Clone(tt.respInput)),
+						Streams: &map[string]kbapi.PackagePolicyInputStream{"stream1": {Vars: new(maps.Clone(tt.respInput))}},
+						Vars:    new(maps.Clone(tt.respInput)),
 					},
 				},
-				Vars: schemautil.Pointer(maps.Clone(tt.respInput)),
+				Vars: new(maps.Clone(tt.respInput)),
 			}
 			wants := kbapi.PackagePolicy{
 				Inputs: map[string]kbapi.PackagePolicyInput{
 					"input1": {
-						Streams: &map[string]kbapi.PackagePolicyInputStream{"stream1": {Vars: schemautil.Pointer(tt.want)}},
+						Streams: &map[string]kbapi.PackagePolicyInputStream{"stream1": {Vars: new(tt.want)}},
 						Vars:    &tt.want,
 					},
 				},

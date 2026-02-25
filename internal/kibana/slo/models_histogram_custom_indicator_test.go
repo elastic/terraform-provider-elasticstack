@@ -99,14 +99,14 @@ func TestHistogramCustomIndicator_PopulateFromAPI(t *testing.T) {
 		api := &generatedslo.IndicatorPropertiesHistogram{
 			Params: generatedslo.IndicatorPropertiesHistogramParams{
 				Index:          "logs-*",
-				DataViewId:     strPtr("dv-1"),
+				DataViewId:     new("dv-1"),
 				Filter:         nil,
 				TimestampField: "@timestamp",
 				Good: generatedslo.IndicatorPropertiesHistogramParamsGood{
 					Aggregation: "sum",
 					Field:       "latency",
-					Filter:      strPtr("status:200"),
-					From:        floatPtr(0),
+					Filter:      new("status:200"),
+					From:        new(0.0),
 					To:          nil,
 				},
 				Total: generatedslo.IndicatorPropertiesHistogramParamsTotal{
@@ -114,7 +114,7 @@ func TestHistogramCustomIndicator_PopulateFromAPI(t *testing.T) {
 					Field:       "latency",
 					Filter:      nil,
 					From:        nil,
-					To:          floatPtr(10),
+					To:          new(10.0),
 				},
 			},
 		}

@@ -23,7 +23,6 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -40,10 +39,10 @@ func Test_newHeatmapPanelConfigConverter(t *testing.T) {
 func Test_heatmapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 	heatmap := kbapi.HeatmapNoESQL{
 		Type:                kbapi.HeatmapNoESQLTypeHeatmap,
-		Title:               schemautil.Pointer("Test Heatmap"),
-		Description:         schemautil.Pointer("Heatmap description"),
-		IgnoreGlobalFilters: schemautil.Pointer(true),
-		Sampling:            schemautil.Pointer(float32(0.5)),
+		Title:               new("Test Heatmap"),
+		Description:         new("Heatmap description"),
+		IgnoreGlobalFilters: new(true),
+		Sampling:            new(float32(0.5)),
 		Query: kbapi.FilterSimpleSchema{
 			Query: "status:200",
 			Language: func() *kbapi.FilterSimpleSchemaLanguage {
@@ -61,28 +60,28 @@ func Test_heatmapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 						orientation := kbapi.HeatmapXAxisLabelsOrientation("horizontal")
 						return &orientation
 					}(),
-					Visible: schemautil.Pointer(true),
+					Visible: new(true),
 				},
 				Title: &struct {
 					Value   *string `json:"value,omitempty"`
 					Visible *bool   `json:"visible,omitempty"`
 				}{
-					Value:   schemautil.Pointer("X Axis"),
-					Visible: schemautil.Pointer(true),
+					Value:   new("X Axis"),
+					Visible: new(true),
 				},
 			},
 			Y: kbapi.HeatmapYAxis{
 				Labels: &struct {
 					Visible *bool `json:"visible,omitempty"`
 				}{
-					Visible: schemautil.Pointer(false),
+					Visible: new(false),
 				},
 				Title: &struct {
 					Value   *string `json:"value,omitempty"`
 					Visible *bool   `json:"visible,omitempty"`
 				}{
-					Value:   schemautil.Pointer("Y Axis"),
-					Visible: schemautil.Pointer(true),
+					Value:   new("Y Axis"),
+					Visible: new(true),
 				},
 			},
 		},
@@ -90,7 +89,7 @@ func Test_heatmapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 			Labels: &struct {
 				Visible *bool `json:"visible,omitempty"`
 			}{
-				Visible: schemautil.Pointer(true),
+				Visible: new(true),
 			},
 		},
 		Legend: kbapi.HeatmapLegend{
@@ -99,8 +98,8 @@ func Test_heatmapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 				pos := kbapi.HeatmapLegendPosition("right")
 				return &pos
 			}(),
-			Visible:            schemautil.Pointer(true),
-			TruncateAfterLines: schemautil.Pointer(float32(4)),
+			Visible:            new(true),
+			TruncateAfterLines: new(float32(4)),
 		},
 	}
 
@@ -153,10 +152,10 @@ func Test_heatmapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 func Test_heatmapConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 	heatmap := kbapi.HeatmapESQL{
 		Type:                kbapi.HeatmapESQLTypeHeatmap,
-		Title:               schemautil.Pointer("ESQL Heatmap"),
-		Description:         schemautil.Pointer("ESQL heatmap description"),
-		IgnoreGlobalFilters: schemautil.Pointer(false),
-		Sampling:            schemautil.Pointer(float32(1)),
+		Title:               new("ESQL Heatmap"),
+		Description:         new("ESQL heatmap description"),
+		IgnoreGlobalFilters: new(false),
+		Sampling:            new(float32(1)),
 		Axes: kbapi.HeatmapAxes{
 			X: kbapi.HeatmapXAxis{
 				Labels: &struct {
@@ -167,14 +166,14 @@ func Test_heatmapConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 						orientation := kbapi.HeatmapXAxisLabelsOrientation("angled")
 						return &orientation
 					}(),
-					Visible: schemautil.Pointer(true),
+					Visible: new(true),
 				},
 			},
 			Y: kbapi.HeatmapYAxis{
 				Labels: &struct {
 					Visible *bool `json:"visible,omitempty"`
 				}{
-					Visible: schemautil.Pointer(true),
+					Visible: new(true),
 				},
 			},
 		},
@@ -182,12 +181,12 @@ func Test_heatmapConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 			Labels: &struct {
 				Visible *bool `json:"visible,omitempty"`
 			}{
-				Visible: schemautil.Pointer(false),
+				Visible: new(false),
 			},
 		},
 		Legend: kbapi.HeatmapLegend{
 			Size:    kbapi.LegendSizeSmall,
-			Visible: schemautil.Pointer(false),
+			Visible: new(false),
 		},
 		Metric: struct {
 			Color     kbapi.ColorByValue               `json:"color"`
@@ -244,7 +243,7 @@ func Test_heatmapPanelConfigConverter_mapPanelToAPI_populateFromAPIPanel_roundTr
 			Title:       types.StringValue("Round Trip Heatmap"),
 			Description: types.StringValue("Round-trip test"),
 			DatasetJSON: jsontypes.NewNormalizedValue(`{"type":"dataView","id":"metrics-*"}`),
-			MetricJSON:  customtypes.NewJSONWithDefaultsValue[map[string]any](`{"operation":"count"}`, populateTagcloudMetricDefaults),
+			MetricJSON:  customtypes.NewJSONWithDefaultsValue(`{"operation":"count"}`, populateTagcloudMetricDefaults),
 			XAxisJSON:   jsontypes.NewNormalizedValue(`{"operation":"filters","filters":[{"label":"All","filter":{"query":"*","language":"kuery"}}]}`),
 			YAxisJSON:   jsontypes.NewNormalizedValue(`{"operation":"filters","filters":[{"label":"All","filter":{"query":"*","language":"kuery"}}]}`),
 			Query:       &filterSimpleModel{Language: types.StringValue("kuery"), Query: types.StringValue("status:active")},

@@ -39,10 +39,6 @@ type aware struct {
 	ID types.String `tfsdk:"id"`
 }
 
-func pointer[T any](v T) *T {
-	return &v
-}
-
 var (
 	naiveSliceNil   = ([]naive)(nil)
 	naiveSliceEmpty = []naive{}
@@ -148,8 +144,8 @@ func TestValueStringPointer(t *testing.T) {
 	}{
 		{name: "converts unknown", input: types.StringUnknown(), want: nil},
 		{name: "converts nil", input: types.StringNull(), want: nil},
-		{name: "converts empty", input: types.StringValue(""), want: pointer("")},
-		{name: "converts value", input: types.StringValue("value"), want: pointer("value")},
+		{name: "converts empty", input: types.StringValue(""), want: new("")},
+		{name: "converts value", input: types.StringValue("value"), want: new("value")},
 	}
 
 	for _, tt := range tests {

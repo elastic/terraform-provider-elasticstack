@@ -1,6 +1,6 @@
 module github.com/elastic/terraform-provider-elasticstack
 
-go 1.25.4
+go 1.26.0
 
 require (
 	github.com/disaster37/go-kibana-rest/v8 v8.5.0
