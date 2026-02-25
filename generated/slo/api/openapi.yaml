@@ -2152,7 +2152,7 @@ components:
           example: sum
           type: string
         field:
-          description: The field of the metric.
+          description: The field of the metric. Not required for doc_count aggregation.
           example: processor.processed
           type: string
         filter:
@@ -2161,7 +2161,6 @@ components:
           type: string
       required:
       - aggregation
-      - field
       - name
       type: object
     indicator_properties_custom_metric_params_good:

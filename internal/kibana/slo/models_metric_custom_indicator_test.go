@@ -98,6 +98,49 @@ func TestMetricCustomIndicator_ToAPI(t *testing.T) {
 		assert.Equal(t, "status:200", *params.Total.Metrics[0].Filter)
 		assert.Equal(t, "c", params.Total.Equation)
 	})
+
+	t.Run("supports doc_count aggregation without field", func(t *testing.T) {
+		m := tfModel{MetricCustomIndicator: []tfMetricCustomIndicator{{
+			Index:          types.StringValue("metrics-*"),
+			DataViewID:     types.StringNull(),
+			Filter:         types.StringNull(),
+			TimestampField: types.StringValue("@timestamp"),
+			Good: []tfMetricCustomEquation{{
+				Equation: types.StringValue("A"),
+				Metrics: []tfMetricCustomMetric{{
+					Name:        types.StringValue("A"),
+					Aggregation: types.StringValue("doc_count"),
+					Field:       types.StringNull(),
+					Filter:      types.StringNull(),
+				}},
+			}},
+			Total: []tfMetricCustomEquation{{
+				Equation: types.StringValue("B"),
+				Metrics: []tfMetricCustomMetric{{
+					Name:        types.StringValue("B"),
+					Aggregation: types.StringValue("doc_count"),
+					Field:       types.StringNull(),
+					Filter:      types.StringNull(),
+				}},
+			}},
+		}}}
+
+		ok, ind, diags := m.metricCustomIndicatorToAPI()
+		require.True(t, ok)
+		require.False(t, diags.HasError())
+		require.NotNil(t, ind.IndicatorPropertiesCustomMetric)
+
+		params := ind.IndicatorPropertiesCustomMetric.Params
+		require.Len(t, params.Good.Metrics, 1)
+		assert.Equal(t, "A", params.Good.Metrics[0].Name)
+		assert.Equal(t, "doc_count", params.Good.Metrics[0].Aggregation)
+		assert.Nil(t, params.Good.Metrics[0].Field)
+
+		require.Len(t, params.Total.Metrics, 1)
+		assert.Equal(t, "B", params.Total.Metrics[0].Name)
+		assert.Equal(t, "doc_count", params.Total.Metrics[0].Aggregation)
+		assert.Nil(t, params.Total.Metrics[0].Field)
+	})
 }
 
 func TestMetricCustomIndicator_PopulateFromAPI(t *testing.T) {
@@ -113,7 +156,7 @@ func TestMetricCustomIndicator_PopulateFromAPI(t *testing.T) {
 					Metrics: []generatedslo.IndicatorPropertiesCustomMetricParamsGoodMetricsInner{{
 						Name:        "a",
 						Aggregation: "sum",
-						Field:       "good",
+						Field:       strPtr("good"),
 						Filter:      nil,
 					}},
 				},
@@ -122,7 +165,7 @@ func TestMetricCustomIndicator_PopulateFromAPI(t *testing.T) {
 					Metrics: []generatedslo.IndicatorPropertiesCustomMetricParamsGoodMetricsInner{{
 						Name:        "c",
 						Aggregation: "sum",
-						Field:       "total",
+						Field:       strPtr("total"),
 						Filter:      strPtr("status:200"),
 					}},
 				},
@@ -177,6 +220,47 @@ func TestMetricCustomIndicator_PopulateFromAPI(t *testing.T) {
 		ind := m.MetricCustomIndicator[0]
 		assert.True(t, ind.DataViewID.IsNull())
 		assert.True(t, ind.Filter.IsNull())
+	})
+
+	t.Run("sets field to null for doc_count metrics", func(t *testing.T) {
+		api := &generatedslo.IndicatorPropertiesCustomMetric{
+			Params: generatedslo.IndicatorPropertiesCustomMetricParams{
+				Index:          "metrics-*",
+				DataViewId:     nil,
+				Filter:         nil,
+				TimestampField: "@timestamp",
+				Good: generatedslo.IndicatorPropertiesCustomMetricParamsGood{
+					Equation: "A",
+					Metrics: []generatedslo.IndicatorPropertiesCustomMetricParamsGoodMetricsInner{{
+						Name:        "A",
+						Aggregation: "doc_count",
+						Field:       nil,
+						Filter:      nil,
+					}},
+				},
+				Total: generatedslo.IndicatorPropertiesCustomMetricParamsTotal{
+					Equation: "B",
+					Metrics: []generatedslo.IndicatorPropertiesCustomMetricParamsGoodMetricsInner{{
+						Name:        "B",
+						Aggregation: "doc_count",
+						Field:       nil,
+						Filter:      nil,
+					}},
+				},
+			},
+		}
+
+		var m tfModel
+		diags := m.populateFromMetricCustomIndicator(api)
+		require.False(t, diags.HasError())
+		require.Len(t, m.MetricCustomIndicator, 1)
+
+		ind := m.MetricCustomIndicator[0]
+		require.Len(t, ind.Good[0].Metrics, 1)
+		assert.True(t, ind.Good[0].Metrics[0].Field.IsNull())
+
+		require.Len(t, ind.Total[0].Metrics, 1)
+		assert.True(t, ind.Total[0].Metrics[0].Field.IsNull())
 	})
 
 	t.Run("returns empty diagnostics when api is nil", func(t *testing.T) {

@@ -174,7 +174,7 @@ func metricCustomIndicatorSchema() schema.Block {
 									Attributes: map[string]schema.Attribute{
 										"name":        schema.StringAttribute{Required: true},
 										"aggregation": schema.StringAttribute{Required: true},
-										"field":       schema.StringAttribute{Required: true},
+										"field":       schema.StringAttribute{Optional: true, Description: "The field of the metric. Required for all aggregations except doc_count."},
 										"filter":      schema.StringAttribute{Optional: true},
 									},
 								},
@@ -195,7 +195,7 @@ func metricCustomIndicatorSchema() schema.Block {
 									Attributes: map[string]schema.Attribute{
 										"name":        schema.StringAttribute{Required: true},
 										"aggregation": schema.StringAttribute{Required: true},
-										"field":       schema.StringAttribute{Required: true},
+										"field":       schema.StringAttribute{Optional: true, Description: "The field of the metric. Required for all aggregations except doc_count."},
 										"filter":      schema.StringAttribute{Optional: true},
 									},
 								},

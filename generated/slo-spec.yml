@@ -969,7 +969,6 @@ components:
                     required:
                       - name
                       - aggregation
-                      - field
                     properties:
                       name:
                         description: The name of the metric. Only valid options are A-Z
@@ -1011,7 +1010,6 @@ components:
                     required:
                       - name
                       - aggregation
-                      - field
                     properties:
                       name:
                         description: The name of the metric. Only valid options are A-Z
