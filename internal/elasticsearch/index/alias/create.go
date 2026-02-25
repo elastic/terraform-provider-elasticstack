@@ -34,6 +34,11 @@ func (r *aliasResource) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 
+	resp.Diagnostics.Append(planModel.Validate(ctx)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	aliasName := planModel.Name.ValueString()
 
 	// Set the ID using client.ID

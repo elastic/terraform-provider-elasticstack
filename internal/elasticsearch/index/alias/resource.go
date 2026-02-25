@@ -19,12 +19,10 @@ package alias
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces
@@ -64,47 +62,5 @@ func (r *aliasResource) ValidateConfig(ctx context.Context, req resource.Validat
 		return
 	}
 
-	// Validate that write_index doesn't appear in read_indices
-	if config.WriteIndex.IsNull() || config.WriteIndex.IsUnknown() {
-		return
-	}
-
-	if config.ReadIndices.IsNull() || config.ReadIndices.IsUnknown() {
-		return
-	}
-
-	// Get the write index name
-	var writeIndex indexModel
-	diags := config.WriteIndex.As(ctx, &writeIndex, basetypes.ObjectAsOptions{})
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	if writeIndex.Name.IsUnknown() {
-		return
-	}
-	writeIndexName := writeIndex.Name.ValueString()
-
-	// Only validate if write index name is not empty
-	if writeIndexName == "" {
-		return
-	}
-
-	// Get all read indices
-	var readIndices []indexModel
-	if diags := config.ReadIndices.ElementsAs(ctx, &readIndices, false); !diags.HasError() {
-		for _, readIndex := range readIndices {
-			if readIndex.Name.IsUnknown() {
-				continue
-			}
-			readIndexName := readIndex.Name.ValueString()
-			if readIndexName != "" && readIndexName == writeIndexName {
-				resp.Diagnostics.AddError(
-					"Invalid Configuration",
-					fmt.Sprintf("Index '%s' cannot be both a write index and a read index", writeIndexName),
-				)
-				return
-			}
-		}
-	}
+	resp.Diagnostics.Append(config.Validate(ctx)...)
 }

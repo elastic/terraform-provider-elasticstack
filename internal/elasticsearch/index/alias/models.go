@@ -20,6 +20,7 @@ package alias
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"reflect"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
@@ -35,6 +36,58 @@ type tfModel struct {
 	Name        types.String `tfsdk:"name"`
 	WriteIndex  types.Object `tfsdk:"write_index"`
 	ReadIndices types.Set    `tfsdk:"read_indices"`
+}
+
+func (model *tfModel) Validate(ctx context.Context) diag.Diagnostics {
+	// Validate that write_index doesn't appear in read_indices.
+	// This can be called during plan-time validation (unknown values possible) and during apply (typically known).
+
+	if model.WriteIndex.IsNull() || model.WriteIndex.IsUnknown() {
+		return nil
+	}
+
+	if model.ReadIndices.IsNull() || model.ReadIndices.IsUnknown() {
+		return nil
+	}
+
+	// Decode write index
+	var writeIndex indexModel
+	diags := model.WriteIndex.As(ctx, &writeIndex, basetypes.ObjectAsOptions{})
+	if diags.HasError() {
+		return diags
+	}
+
+	if writeIndex.Name.IsNull() || writeIndex.Name.IsUnknown() {
+		return nil
+	}
+	writeIndexName := writeIndex.Name.ValueString()
+	if writeIndexName == "" {
+		return nil
+	}
+
+	// Decode read indices and compare
+	var readIndices []indexModel
+	diags = model.ReadIndices.ElementsAs(ctx, &readIndices, false)
+	if diags.HasError() {
+		return diags
+	}
+
+	for _, readIndex := range readIndices {
+		if readIndex.Name.IsNull() || readIndex.Name.IsUnknown() {
+			continue
+		}
+		readIndexName := readIndex.Name.ValueString()
+		if readIndexName != "" && readIndexName == writeIndexName {
+			return diag.Diagnostics{
+				diag.NewErrorDiagnostic(
+					"Invalid Configuration",
+					fmt.Sprintf("Index '%s' cannot be both a write index and a read index", writeIndexName),
+				),
+			}
+		}
+	}
+
+	return nil
 }
 
 type indexModel struct {
