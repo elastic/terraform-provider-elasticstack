@@ -37,6 +37,7 @@ type panelModel struct {
 	DatatableConfig    *datatableConfigModel    `tfsdk:"datatable_config"`
 	TagcloudConfig     *tagcloudConfigModel     `tfsdk:"tagcloud_config"`
 	MetricChartConfig  *metricChartConfigModel  `tfsdk:"metric_chart_config"`
+	PieChartConfig     *pieChartConfigModel     `tfsdk:"pie_chart_config"`
 	GaugeConfig        *gaugeConfigModel        `tfsdk:"gauge_config"`
 	LegacyMetricConfig *legacyMetricConfigModel `tfsdk:"legacy_metric_config"`
 	RegionMapConfig    *regionMapConfigModel    `tfsdk:"region_map_config"`
@@ -80,6 +81,7 @@ var panelConfigConverters = []panelConfigConverter{
 	newLegacyMetricPanelConfigConverter(),
 	newGaugePanelConfigConverter(),
 	newMetricChartPanelConfigConverter(),
+	newPieChartPanelConfigConverter(),
 }
 
 func (m *dashboardModel) mapPanelsFromAPI(ctx context.Context, apiPanels *kbapi.DashboardPanels) ([]panelModel, []sectionModel, diag.Diagnostics) {
