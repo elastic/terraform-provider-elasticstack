@@ -42,6 +42,7 @@ import (
 const (
 	dashboardValueAuto    = "auto"
 	dashboardValueAverage = "average"
+	pieChartTypeNumber    = "number"
 )
 
 var panelConfigNames = []string{
@@ -125,12 +126,30 @@ func populateMetricChartMetricDefaults(model map[string]any) map[string]any {
 
 	// Set defaults for format
 	if format, ok := model["format"].(map[string]any); ok {
-		if format["type"] == "number" || format["type"] == "percent" {
-			if _, exists := format["compact"]; !exists {
-				format["compact"] = false
-			}
-			if _, exists := format["decimals"]; !exists {
-				format["decimals"] = float64(2)
+		// Kibana has used both `type` and `id` as discriminators for number/percent format across
+		// different visualizations/versions. Support both, and support both top-level params as well
+		// as nested `params`.
+		formatType, _ := format["type"].(string)
+		formatID, _ := format["id"].(string)
+		isNumberish := formatType == pieChartTypeNumber || formatType == "percent" || formatID == pieChartTypeNumber || formatID == "percent"
+
+		if isNumberish {
+			// If a nested params map exists, prefer setting defaults there.
+			if params, ok := format["params"].(map[string]any); ok {
+				if _, exists := params["compact"]; !exists {
+					params["compact"] = false
+				}
+				if _, exists := params["decimals"]; !exists {
+					params["decimals"] = float64(2)
+				}
+				format["params"] = params
+			} else {
+				if _, exists := format["compact"]; !exists {
+					format["compact"] = false
+				}
+				if _, exists := format["decimals"]; !exists {
+					format["decimals"] = float64(2)
+				}
 			}
 		}
 	}
@@ -143,10 +162,18 @@ func populateMetricChartMetricDefaults(model map[string]any) map[string]any {
 		model["fit"] = false
 	}
 
+	// Secondary metrics have label position defaults.
+	if metricType, ok := model["type"].(string); ok && metricType == "secondary" {
+		if _, exists := model["label_position"]; !exists {
+			model["label_position"] = "before"
+		}
+	}
+
 	// Set defaults for icon alignment if icon exists
 	if icon, ok := model["icon"].(map[string]any); ok {
 		if _, exists := icon["align"]; !exists {
-			icon["align"] = "left"
+			// Kibana defaults metric icon alignment to the right.
+			icon["align"] = "right"
 		}
 	}
 
@@ -193,7 +220,7 @@ func populateLegacyMetricMetricDefaults(model map[string]any) map[string]any {
 	if ok {
 		if formatType, ok := format["type"].(string); ok {
 			switch formatType {
-			case "number", "percent":
+			case pieChartTypeNumber, "percent":
 				if _, exists := format["decimals"]; !exists {
 					format["decimals"] = float64(2)
 				}
@@ -1774,7 +1801,7 @@ func populatePieChartMetricDefaults(model map[string]any) map[string]any {
 
 	// Set defaults for format
 	if format, ok := model["format"].(map[string]any); ok {
-		if format["type"] == "number" {
+		if format["type"] == pieChartTypeNumber {
 			if _, exists := format["compact"]; !exists {
 				format["compact"] = false
 			}
@@ -1885,6 +1912,9 @@ func getPieChartSchema() map[string]schema.Attribute {
 		"group_by": schema.ListNestedAttribute{
 			MarkdownDescription: "Array of breakdown dimensions (minimum 1).",
 			Optional:            true,
+			Validators: []validator.List{
+				listvalidator.SizeAtLeast(1),
+			},
 			NestedObject: schema.NestedAttributeObject{
 				Attributes: map[string]schema.Attribute{
 					"config": schema.StringAttribute{

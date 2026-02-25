@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package dashboard
 
 import (
@@ -42,7 +59,7 @@ func (c pieChartPanelConfigConverter) populateFromAPIPanel(ctx context.Context, 
 		return nil
 	}
 
-	attrsMap, ok := attrs.(map[string]interface{})
+	attrsMap, ok := attrs.(map[string]any)
 	if !ok {
 		return nil
 	}
@@ -58,9 +75,24 @@ func (c pieChartPanelConfigConverter) populateFromAPIPanel(ctx context.Context, 
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	// Populate the model
+	// Populate the model.
+	//
+	// Disambiguate NoESQL vs ESQL using the presence of the `query` key. The generated union
+	// types can successfully unmarshal into both variants, so we need an external discriminator.
 	pm.PieChartConfig = &pieChartConfigModel{}
-	return pm.PieChartConfig.fromAPI(ctx, pieChart)
+	if _, ok := attrsMap["query"]; ok {
+		noESQL, err := pieChart.AsPieNoESQL()
+		if err != nil {
+			return diagutil.FrameworkDiagFromError(err)
+		}
+		return pm.PieChartConfig.fromAPINoESQL(noESQL)
+	}
+
+	esql, err := pieChart.AsPieESQL()
+	if err != nil {
+		return diagutil.FrameworkDiagFromError(err)
+	}
+	return pm.PieChartConfig.fromAPIESQL(esql)
 }
 
 func (c pieChartPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *kbapi.DashboardPanelItem_Config) diag.Diagnostics {
@@ -128,26 +160,26 @@ type pieGroupByModel struct {
 	Config customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config"`
 }
 
-func (m *pieChartConfigModel) fromAPI(ctx context.Context, apiChart kbapi.PieChartSchema) diag.Diagnostics {
+func (m *pieChartConfigModel) fromAPI(_ context.Context, apiChart kbapi.PieChartSchema) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	// Try with non-ESQL first (most common)
 	noESQL, err := apiChart.AsPieNoESQL()
 	if err == nil {
 		// Check that Query is present if it's supposed to be there, or use that to disambiguate if needed
-		return m.fromAPINoESQL(ctx, noESQL)
+		return m.fromAPINoESQL(noESQL)
 	}
 
 	esql, err := apiChart.AsPieESQL()
 	if err == nil {
-		return m.fromAPIESQL(ctx, esql)
+		return m.fromAPIESQL(esql)
 	}
 
 	diags.AddError("Failed to parse pie chart schema", "Could not parse as either PieNoESQL or PieESQL")
 	return diags
 }
 
-func (m *pieChartConfigModel) fromAPINoESQL(ctx context.Context, apiChart kbapi.PieNoESQL) diag.Diagnostics {
+func (m *pieChartConfigModel) fromAPINoESQL(apiChart kbapi.PieNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	m.Title = types.StringPointerValue(apiChart.Title)
@@ -231,7 +263,7 @@ func (m *pieChartConfigModel) fromAPINoESQL(ctx context.Context, apiChart kbapi.
 				diags.AddError("Failed to marshal group_by", err.Error())
 				continue
 			}
-			m.GroupBy[i].Config = customtypes.NewJSONWithDefaultsValue[map[string]any](
+			m.GroupBy[i].Config = customtypes.NewJSONWithDefaultsValue(
 				string(groupByJSON),
 				populatePieChartGroupByDefaults,
 			)
@@ -241,7 +273,7 @@ func (m *pieChartConfigModel) fromAPINoESQL(ctx context.Context, apiChart kbapi.
 	return diags
 }
 
-func (m *pieChartConfigModel) fromAPIESQL(ctx context.Context, apiChart kbapi.PieESQL) diag.Diagnostics {
+func (m *pieChartConfigModel) fromAPIESQL(apiChart kbapi.PieESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	m.Title = types.StringPointerValue(apiChart.Title)
