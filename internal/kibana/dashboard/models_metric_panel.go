@@ -154,92 +154,6 @@ type metricItemModel struct {
 	ConfigJSON customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config_json"`
 }
 
-func normalizeMetricChartMetricConfigJSON(raw []byte) string {
-	var model map[string]any
-	if err := json.Unmarshal(raw, &model); err != nil {
-		return string(raw)
-	}
-
-	// Strip defaults that Kibana injects, so state remains stable for user-supplied JSON.
-	//
-	// This is critical for required `config_json` attributes: Terraform Core will fail an apply if
-	// the provider writes a different (even if semantically equivalent) value to state.
-	if v, ok := model["empty_as_null"].(bool); ok && !v {
-		delete(model, "empty_as_null")
-	}
-	if v, ok := model["fit"].(bool); ok && !v {
-		delete(model, "fit")
-	}
-
-	if metricType, ok := model["type"].(string); ok && metricType == "secondary" {
-		if lp, ok := model["label_position"].(string); ok && lp == "before" {
-			delete(model, "label_position")
-		}
-	}
-
-	if icon, ok := model["icon"].(map[string]any); ok {
-		if align, ok := icon["align"].(string); ok && align == "right" {
-			delete(icon, "align")
-		}
-		if len(icon) == 0 {
-			delete(model, "icon")
-		} else {
-			model["icon"] = icon
-		}
-	}
-
-	if alignments, ok := model["alignments"].(map[string]any); ok {
-		if v, ok := alignments["value"].(string); ok && v == "right" {
-			delete(alignments, "value")
-		}
-		if len(alignments) == 0 {
-			delete(model, "alignments")
-		} else {
-			model["alignments"] = alignments
-		}
-	}
-
-	if format, ok := model["format"].(map[string]any); ok {
-		formatType, _ := format["type"].(string)
-		formatID, _ := format["id"].(string)
-		isNumberish := formatType == pieChartTypeNumber || formatType == "percent" || formatID == pieChartTypeNumber || formatID == "percent"
-
-		if isNumberish {
-			if d, ok := format["decimals"].(float64); ok && d == 2 {
-				delete(format, "decimals")
-			}
-			if c, ok := format["compact"].(bool); ok && !c {
-				delete(format, "compact")
-			}
-			if params, ok := format["params"].(map[string]any); ok {
-				if d, ok := params["decimals"].(float64); ok && d == 2 {
-					delete(params, "decimals")
-				}
-				if c, ok := params["compact"].(bool); ok && !c {
-					delete(params, "compact")
-				}
-				if len(params) == 0 {
-					delete(format, "params")
-				} else {
-					format["params"] = params
-				}
-			}
-		}
-
-		if len(format) == 0 {
-			delete(model, "format")
-		} else {
-			model["format"] = format
-		}
-	}
-
-	b, err := json.Marshal(model)
-	if err != nil {
-		return string(raw)
-	}
-	return string(b)
-}
-
 func (m *metricChartConfigModel) fromAPI(ctx context.Context, apiChart kbapi.MetricChartSchema) diag.Diagnostics {
 	var diags diag.Diagnostics
 
@@ -315,9 +229,8 @@ func (m *metricChartConfigModel) fromAPIVariant0(ctx context.Context, apiChart k
 				diags.AddError("Failed to marshal metric", err.Error())
 				continue
 			}
-			metricConfig := normalizeMetricChartMetricConfigJSON(metricJSON)
 			m.Metrics[i].ConfigJSON = customtypes.NewJSONWithDefaultsValue[map[string]any](
-				metricConfig,
+				string(metricJSON),
 				populateMetricChartMetricDefaults,
 			)
 		}
@@ -381,9 +294,8 @@ func (m *metricChartConfigModel) fromAPIVariant1(ctx context.Context, apiChart k
 				diags.AddError("Failed to marshal metric", err.Error())
 				continue
 			}
-			metricConfig := normalizeMetricChartMetricConfigJSON(metricJSON)
 			m.Metrics[i].ConfigJSON = customtypes.NewJSONWithDefaultsValue[map[string]any](
-				metricConfig,
+				string(metricJSON),
 				populateMetricChartMetricDefaults,
 			)
 		}
