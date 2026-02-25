@@ -81,8 +81,7 @@ func GetDashboard(ctx context.Context, client *Client, spaceID string, dashboard
 // CreateDashboard creates a new dashboard.
 func CreateDashboard(ctx context.Context, client *Client, spaceID string, req kbapi.PostDashboardsJSONRequestBody) (*kbapi.PostDashboardsResponse, diag.Diagnostics) {
 	resp, err := client.API.PostDashboardsWithResponse(
-		ctx, &kbapi.PostDashboardsParams{},
-		req,
+		ctx, &kbapi.PostDashboardsParams{}, req,
 		spaceAwarePathRequestEditor(spaceID),
 		addAPIVersionQueryParamRequestEditor(),
 	)

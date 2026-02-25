@@ -6,15 +6,21 @@ resource "elasticstack_kibana_dashboard" "test" {
   title       = var.dashboard_title
   description = "Test dashboard with options"
 
-  time_from       = "2024-01-01T00:00:00.000Z"
-  time_to         = "2024-01-01T01:00:00.000Z"
-  time_range_mode = "absolute"
+  time_range = {
+    from = "2024-01-01T00:00:00.000Z"
+    to   = "2024-01-01T01:00:00.000Z"
+    mode = "absolute"
+  }
 
-  refresh_interval_pause = true
-  refresh_interval_value = 60000
+  refresh_interval = {
+    pause = true
+    value = 60000
+  }
 
-  query_language = "kuery"
-  query_text     = ""
+  query = {
+    language = "kuery"
+    text     = ""
+  }
 
   options = {
     hide_panel_titles = true

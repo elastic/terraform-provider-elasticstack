@@ -40,6 +40,10 @@ import (
 const (
 	dashboardValueAuto    = "auto"
 	dashboardValueAverage = "average"
+	dashboardValueRight   = "right"
+
+	dashboardFormatTypeNumber  = "number"
+	dashboardFormatTypePercent = "percent"
 )
 
 var panelConfigNames = []string{
@@ -120,9 +124,16 @@ func populateMetricChartMetricDefaults(model map[string]any) map[string]any {
 		return model
 	}
 
+	// Secondary metrics default the label position.
+	if metricType, ok := model["type"].(string); ok && metricType == "secondary" {
+		if _, exists := model["label_position"]; !exists {
+			model["label_position"] = "before"
+		}
+	}
+
 	// Set defaults for format
 	if format, ok := model["format"].(map[string]any); ok {
-		if format["type"] == "number" || format["type"] == "percent" {
+		if format["type"] == dashboardFormatTypeNumber || format["type"] == dashboardFormatTypePercent {
 			if _, exists := format["compact"]; !exists {
 				format["compact"] = false
 			}
@@ -143,14 +154,75 @@ func populateMetricChartMetricDefaults(model map[string]any) map[string]any {
 	// Set defaults for icon alignment if icon exists
 	if icon, ok := model["icon"].(map[string]any); ok {
 		if _, exists := icon["align"]; !exists {
-			icon["align"] = "left"
+			icon["align"] = dashboardValueRight
 		}
 	}
 
 	// Set defaults for alignments if present
 	if alignments, ok := model["alignments"].(map[string]any); ok {
 		if _, exists := alignments["value"]; !exists {
-			alignments["value"] = "right"
+			alignments["value"] = dashboardValueRight
+		}
+	}
+
+	return model
+}
+
+// stripMetricChartMetricDefaults removes known Kibana-defaulted fields so that
+// state remains stable across read/import when the API may inject defaults.
+func stripMetricChartMetricDefaults(model map[string]any) map[string]any {
+	if model == nil {
+		return model
+	}
+
+	if v, ok := model["empty_as_null"].(bool); ok && !v {
+		delete(model, "empty_as_null")
+	}
+	if v, ok := model["fit"].(bool); ok && !v {
+		delete(model, "fit")
+	}
+
+	if metricType, ok := model["type"].(string); ok && metricType == "secondary" {
+		if v, ok := model["label_position"].(string); ok && v == "before" {
+			delete(model, "label_position")
+		}
+	}
+
+	if icon, ok := model["icon"].(map[string]any); ok {
+		if v, ok := icon["align"].(string); ok && v == dashboardValueRight {
+			delete(icon, "align")
+		}
+		if len(icon) == 0 {
+			delete(model, "icon")
+		} else {
+			model["icon"] = icon
+		}
+	}
+
+	if alignments, ok := model["alignments"].(map[string]any); ok {
+		if v, ok := alignments["value"].(string); ok && v == dashboardValueRight {
+			delete(alignments, "value")
+		}
+		if len(alignments) == 0 {
+			delete(model, "alignments")
+		} else {
+			model["alignments"] = alignments
+		}
+	}
+
+	if format, ok := model["format"].(map[string]any); ok {
+		if formatType, ok := format["type"].(string); ok && (formatType == dashboardFormatTypeNumber || formatType == dashboardFormatTypePercent) {
+			if v, ok := format["compact"].(bool); ok && !v {
+				delete(format, "compact")
+			}
+			if v, ok := format["decimals"].(float64); ok && v == float64(2) {
+				delete(format, "decimals")
+			}
+		}
+		if len(format) == 0 {
+			delete(model, "format")
+		} else {
+			model["format"] = format
 		}
 	}
 
@@ -190,7 +262,7 @@ func populateLegacyMetricMetricDefaults(model map[string]any) map[string]any {
 	if ok {
 		if formatType, ok := format["type"].(string); ok {
 			switch formatType {
-			case "number", "percent":
+			case dashboardFormatTypeNumber, dashboardFormatTypePercent:
 				if _, exists := format["decimals"]; !exists {
 					format["decimals"] = float64(2)
 				}
@@ -285,46 +357,70 @@ func getSchema() schema.Schema {
 				MarkdownDescription: "A short description of the dashboard.",
 				Optional:            true,
 			},
-			"time_from": schema.StringAttribute{
-				MarkdownDescription: "The start time for the dashboard's time range (e.g., 'now-15m', '2023-01-01T00:00:00Z').",
+			"time_range": schema.SingleNestedAttribute{
+				MarkdownDescription: "The time range for the dashboard.",
 				Required:            true,
-			},
-			"time_to": schema.StringAttribute{
-				MarkdownDescription: "The end time for the dashboard's time range (e.g., 'now', '2023-12-31T23:59:59Z').",
-				Required:            true,
-			},
-			"time_range_mode": schema.StringAttribute{
-				MarkdownDescription: "The time range mode. Valid values are 'absolute' or 'relative'.",
-				Optional:            true,
-				Validators: []validator.String{
-					stringvalidator.OneOf("absolute", "relative"),
+				Attributes: map[string]schema.Attribute{
+					"from": schema.StringAttribute{
+						MarkdownDescription: "The start time for the dashboard's time range (e.g., 'now-15m', '2023-01-01T00:00:00Z').",
+						Required:            true,
+					},
+					"to": schema.StringAttribute{
+						MarkdownDescription: "The end time for the dashboard's time range (e.g., 'now', '2023-12-31T23:59:59Z').",
+						Required:            true,
+					},
+					"mode": schema.StringAttribute{
+						MarkdownDescription: "The time range mode. Valid values are 'absolute' or 'relative'. Note: this is not currently returned by the API on reads/import.",
+						Optional:            true,
+						Validators: []validator.String{
+							stringvalidator.OneOf("absolute", "relative"),
+						},
+					},
 				},
 			},
-			"refresh_interval_pause": schema.BoolAttribute{
-				MarkdownDescription: "Set to false to auto-refresh data on an interval.",
+			"refresh_interval": schema.SingleNestedAttribute{
+				MarkdownDescription: "Refresh interval settings for the dashboard.",
 				Required:            true,
-			},
-			"refresh_interval_value": schema.Int64Attribute{
-				MarkdownDescription: "A numeric value indicating refresh frequency in milliseconds.",
-				Required:            true,
-			},
-			"query_language": schema.StringAttribute{
-				MarkdownDescription: "The query language (e.g., 'kuery', 'lucene').",
-				Required:            true,
-			},
-			"query_text": schema.StringAttribute{
-				MarkdownDescription: "The query text for text-based queries such as Kibana Query Language (KQL) or Lucene query language. Mutually exclusive with `query_json`.",
-				Optional:            true,
-				Validators: []validator.String{
-					stringvalidator.ConflictsWith(path.MatchRoot("query_json")),
+				Attributes: map[string]schema.Attribute{
+					"pause": schema.BoolAttribute{
+						MarkdownDescription: "Set to false to auto-refresh data on an interval.",
+						Required:            true,
+					},
+					"value": schema.Int64Attribute{
+						MarkdownDescription: "A numeric value indicating refresh frequency in milliseconds.",
+						Required:            true,
+					},
 				},
 			},
-			"query_json": schema.StringAttribute{
-				MarkdownDescription: "The query as a JSON object for structured queries. Mutually exclusive with `query_text`.",
-				CustomType:          jsontypes.NormalizedType{},
-				Optional:            true,
-				Validators: []validator.String{
-					stringvalidator.ConflictsWith(path.MatchRoot("query_text")),
+			"query": schema.SingleNestedAttribute{
+				MarkdownDescription: "Query settings for the dashboard.",
+				Required:            true,
+				Validators: []validator.Object{
+					objectvalidator.AtLeastOneOf(
+						path.MatchRelative().AtName("text"),
+						path.MatchRelative().AtName("json"),
+					),
+				},
+				Attributes: map[string]schema.Attribute{
+					"language": schema.StringAttribute{
+						MarkdownDescription: "The query language (e.g., 'kuery', 'lucene').",
+						Required:            true,
+					},
+					"text": schema.StringAttribute{
+						MarkdownDescription: "Text-based query (e.g. KQL/Lucene). Mutually exclusive with `query.json`.",
+						Optional:            true,
+						Validators: []validator.String{
+							stringvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("json")),
+						},
+					},
+					"json": schema.StringAttribute{
+						MarkdownDescription: "JSON query object, encoded as a JSON string (e.g. from `jsonencode({ ... })`). Mutually exclusive with `query.text`.",
+						CustomType:          jsontypes.NormalizedType{},
+						Optional:            true,
+						Validators: []validator.String{
+							stringvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("text")),
+						},
+					},
 				},
 			},
 			"tags": schema.ListAttribute{
@@ -688,7 +784,7 @@ func getXYAxisSchema() map[string]schema.Attribute {
 			Optional:            true,
 			Attributes:          getYAxisAttributes(),
 		},
-		"right": schema.SingleNestedAttribute{
+		dashboardValueRight: schema.SingleNestedAttribute{
 			MarkdownDescription: "Right Y-axis configuration with scale and bounds.",
 			Optional:            true,
 			Attributes:          getYAxisAttributes(),
@@ -834,7 +930,7 @@ func getXYLegendSchema() map[string]schema.Attribute {
 			MarkdownDescription: "Legend position when positioned outside the chart. Valid when 'inside' is false or omitted.",
 			Optional:            true,
 			Validators: []validator.String{
-				stringvalidator.OneOf("top", "bottom", "left", "right"),
+				stringvalidator.OneOf("top", "bottom", "left", dashboardValueRight),
 			},
 		},
 		"size": schema.StringAttribute{
@@ -996,7 +1092,7 @@ func getReferenceLineLayerAttributes() map[string]schema.Attribute {
 						MarkdownDescription: "Which axis the reference line applies to. Valid values: 'left', 'right'.",
 						Optional:            true,
 						Validators: []validator.String{
-							stringvalidator.OneOf("bottom", "left", "right"),
+							stringvalidator.OneOf("bottom", "left", dashboardValueRight),
 						},
 					},
 					"color_json": schema.StringAttribute{

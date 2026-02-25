@@ -459,9 +459,9 @@ func (m *datatableESQLConfigModel) fromAPI(ctx context.Context, api kbapi.Datata
 		}
 	}
 
-	if len(api.Metrics) > 0 {
-		m.Metrics = make([]datatableMetricModel, len(api.Metrics))
-		for i, metric := range api.Metrics {
+	if api.Metrics != nil && len(*api.Metrics) > 0 {
+		m.Metrics = make([]datatableMetricModel, len(*api.Metrics))
+		for i, metric := range *api.Metrics {
 			metricBytes, err := json.Marshal(metric)
 			if err != nil {
 				diags.AddError("Failed to marshal metric", err.Error())
@@ -572,7 +572,7 @@ func (m *datatableESQLConfigModel) toAPI() (kbapi.DatatableESQL, diag.Diagnostic
 				}
 			}
 		}
-		api.Metrics = metrics
+		api.Metrics = &metrics
 	}
 
 	if len(m.Rows) > 0 {

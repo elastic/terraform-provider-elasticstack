@@ -3,47 +3,59 @@ resource "elasticstack_kibana_dashboard" "my_dashboard" {
   description = "A dashboard showing key metrics"
 
   # Time range
-  time_from = "now-15m"
-  time_to   = "now"
+  time_range = {
+    from = "now-15m"
+    to   = "now"
+  }
 
   # Refresh settings
-  refresh_interval_pause = false
-  refresh_interval_value = 60000 # 60 seconds
+  refresh_interval = {
+    pause = false
+    value = 60000 # 60 seconds
+  }
 
   # Query settings with text-based query (KQL or Lucene)
-  query_language = "kuery"
-  query_text     = "status:success"
+  query = {
+    language = "kuery"
+    text     = "status:success"
+  }
 
   # Optional tags
   tags = ["production", "monitoring"]
 }
 
-# Example with JSON query (mutually exclusive with query_text)
+# Example with JSON query
 resource "elasticstack_kibana_dashboard" "my_dashboard_json" {
   title       = "My Dashboard with JSON Query"
   description = "A dashboard with a structured query"
 
   # Time range
-  time_from = "now-15m"
-  time_to   = "now"
+  time_range = {
+    from = "now-15m"
+    to   = "now"
+  }
 
   # Refresh settings
-  refresh_interval_pause = false
-  refresh_interval_value = 60000 # 60 seconds
+  refresh_interval = {
+    pause = false
+    value = 60000 # 60 seconds
+  }
 
   # Query settings with JSON query object
-  query_language = "kuery"
-  query_json = jsonencode({
-    bool = {
-      must = [
-        {
-          match = {
-            status = "success"
+  query = {
+    language = "kuery"
+    json = jsonencode({
+      bool = {
+        must = [
+          {
+            match = {
+              status = "success"
+            }
           }
-        }
-      ]
-    }
-  })
+        ]
+      }
+    })
+  }
 
   # Optional tags
   tags = ["production", "monitoring"]

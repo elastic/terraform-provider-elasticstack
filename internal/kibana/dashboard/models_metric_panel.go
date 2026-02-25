@@ -215,8 +215,22 @@ func (m *metricChartConfigModel) fromAPIVariant0(ctx context.Context, apiChart k
 				diags.AddError("Failed to marshal metric", err.Error())
 				continue
 			}
+
+			var metricMap map[string]any
+			if err := json.Unmarshal(metricJSON, &metricMap); err != nil {
+				diags.AddError("Failed to unmarshal metric", err.Error())
+				continue
+			}
+
+			metricMap = stripMetricChartMetricDefaults(metricMap)
+			strippedJSON, err := json.Marshal(metricMap)
+			if err != nil {
+				diags.AddError("Failed to marshal metric", err.Error())
+				continue
+			}
+
 			m.Metrics[i].ConfigJSON = customtypes.NewJSONWithDefaultsValue[map[string]any](
-				string(metricJSON),
+				string(strippedJSON),
 				populateMetricChartMetricDefaults,
 			)
 		}
@@ -280,8 +294,22 @@ func (m *metricChartConfigModel) fromAPIVariant1(ctx context.Context, apiChart k
 				diags.AddError("Failed to marshal metric", err.Error())
 				continue
 			}
+
+			var metricMap map[string]any
+			if err := json.Unmarshal(metricJSON, &metricMap); err != nil {
+				diags.AddError("Failed to unmarshal metric", err.Error())
+				continue
+			}
+
+			metricMap = stripMetricChartMetricDefaults(metricMap)
+			strippedJSON, err := json.Marshal(metricMap)
+			if err != nil {
+				diags.AddError("Failed to marshal metric", err.Error())
+				continue
+			}
+
 			m.Metrics[i].ConfigJSON = customtypes.NewJSONWithDefaultsValue[map[string]any](
-				string(metricJSON),
+				string(strippedJSON),
 				populateMetricChartMetricDefaults,
 			)
 		}

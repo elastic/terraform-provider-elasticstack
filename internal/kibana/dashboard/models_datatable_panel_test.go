@@ -201,7 +201,7 @@ func Test_datatableESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 		IgnoreGlobalFilters: schemautil.Pointer(false),
 		Sampling:            schemautil.Pointer(float32(1)),
 		Density:             density,
-		Metrics:             []kbapi.DatatableESQLMetric{metric},
+		Metrics:             &[]kbapi.DatatableESQLMetric{metric},
 		Rows: &[]struct {
 			Alignment    *kbapi.DatatableESQLRowsAlignment    `json:"alignment,omitempty"`
 			ApplyColorTo *kbapi.DatatableESQLRowsApplyColorTo `json:"apply_color_to,omitempty"`

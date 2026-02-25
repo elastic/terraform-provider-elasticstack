@@ -34,24 +34,36 @@ import (
 
 // dashboardModel is the top-level Terraform model
 type dashboardModel struct {
-	ID                   types.String         `tfsdk:"id"`
-	SpaceID              types.String         `tfsdk:"space_id"`
-	DashboardID          types.String         `tfsdk:"dashboard_id"`
-	Title                types.String         `tfsdk:"title"`
-	Description          types.String         `tfsdk:"description"`
-	TimeFrom             types.String         `tfsdk:"time_from"`
-	TimeTo               types.String         `tfsdk:"time_to"`
-	TimeRangeMode        types.String         `tfsdk:"time_range_mode"`
-	RefreshIntervalPause types.Bool           `tfsdk:"refresh_interval_pause"`
-	RefreshIntervalValue types.Int64          `tfsdk:"refresh_interval_value"`
-	QueryLanguage        types.String         `tfsdk:"query_language"`
-	QueryText            types.String         `tfsdk:"query_text"`
-	QueryJSON            jsontypes.Normalized `tfsdk:"query_json"`
-	Tags                 types.List           `tfsdk:"tags"`
-	Options              *optionsModel        `tfsdk:"options"`
-	AccessControl        *AccessControlValue  `tfsdk:"access_control"`
-	Panels               []panelModel         `tfsdk:"panels"`
-	Sections             []sectionModel       `tfsdk:"sections"`
+	ID              types.String          `tfsdk:"id"`
+	SpaceID         types.String          `tfsdk:"space_id"`
+	DashboardID     types.String          `tfsdk:"dashboard_id"`
+	Title           types.String          `tfsdk:"title"`
+	Description     types.String          `tfsdk:"description"`
+	TimeRange       *timeRangeModel       `tfsdk:"time_range"`
+	RefreshInterval *refreshIntervalModel `tfsdk:"refresh_interval"`
+	Query           *dashboardQueryModel  `tfsdk:"query"`
+	Tags            types.List            `tfsdk:"tags"`
+	Options         *optionsModel         `tfsdk:"options"`
+	AccessControl   *AccessControlValue   `tfsdk:"access_control"`
+	Panels          []panelModel          `tfsdk:"panels"`
+	Sections        []sectionModel        `tfsdk:"sections"`
+}
+
+type timeRangeModel struct {
+	From types.String `tfsdk:"from"`
+	To   types.String `tfsdk:"to"`
+	Mode types.String `tfsdk:"mode"`
+}
+
+type refreshIntervalModel struct {
+	Pause types.Bool  `tfsdk:"pause"`
+	Value types.Int64 `tfsdk:"value"`
+}
+
+type dashboardQueryModel struct {
+	Language types.String         `tfsdk:"language"`
+	Text     types.String         `tfsdk:"text"`
+	JSON     jsontypes.Normalized `tfsdk:"json"`
 }
 
 // populateFromAPI populates the Terraform model from the API response
@@ -75,38 +87,44 @@ func (m *dashboardModel) populateFromAPI(ctx context.Context, resp *kbapi.GetDas
 	}
 
 	// Map time range
-	m.TimeFrom = types.StringValue(data.Data.TimeRange.From)
-	m.TimeTo = types.StringValue(data.Data.TimeRange.To)
-	// TODO: Dashboards
-	// TimeRange.Mode isn't currently returned by the API on GET requests
-	// if data.Data.TimeRange.Mode != nil {
-	// 	m.TimeRangeMode = types.StringValue(string(*data.Data.TimeRange.Mode))
-	// } else {
-	// 	m.TimeRangeMode = types.StringNull()
-	// }
+	preservedMode := types.StringNull()
+	if m.TimeRange != nil && typeutils.IsKnown(m.TimeRange.Mode) {
+		preservedMode = m.TimeRange.Mode
+	}
+	m.TimeRange = &timeRangeModel{
+		From: types.StringValue(data.Data.TimeRange.From),
+		To:   types.StringValue(data.Data.TimeRange.To),
+		// TimeRange.Mode isn't currently returned by the API on GET requests
+		Mode: preservedMode,
+	}
 
 	// Map refresh interval
-	m.RefreshIntervalPause = types.BoolValue(data.Data.RefreshInterval.Pause)
-	m.RefreshIntervalValue = types.Int64Value(int64(data.Data.RefreshInterval.Value))
+	m.RefreshInterval = &refreshIntervalModel{
+		Pause: types.BoolValue(data.Data.RefreshInterval.Pause),
+		Value: types.Int64Value(int64(data.Data.RefreshInterval.Value)),
+	}
 
 	// Map query
-	m.QueryLanguage = types.StringValue(data.Data.Query.Language)
+	if m.Query == nil {
+		m.Query = &dashboardQueryModel{}
+	}
+	m.Query.Language = types.StringValue(data.Data.Query.Language)
 	// Query.Query is a union type with json.RawMessage - can be string or JSON object
 	queryBytes, err := json.Marshal(data.Data.Query.Query)
 	if err != nil {
 		diags.AddError("Failed to marshal query", err.Error())
-		m.QueryText = types.StringNull()
-		m.QueryJSON = jsontypes.NewNormalizedNull()
+		m.Query.Text = types.StringNull()
+		m.Query.JSON = jsontypes.NewNormalizedNull()
 	} else {
 		// Try to unmarshal as string first (KQL/Lucene)
 		var queryString string
 		if err := json.Unmarshal(queryBytes, &queryString); err == nil {
-			m.QueryText = types.StringValue(queryString)
-			m.QueryJSON = jsontypes.NewNormalizedNull()
+			m.Query.Text = types.StringValue(queryString)
+			m.Query.JSON = jsontypes.NewNormalizedNull()
 		} else {
-			// It's a JSON object
-			m.QueryText = types.StringNull()
-			m.QueryJSON = jsontypes.NewNormalizedValue(string(queryBytes))
+			// Store JSON objects as a JSON string (e.g. from `jsonencode({ ... })`)
+			m.Query.Text = types.StringNull()
+			m.Query.JSON = jsontypes.NewNormalizedValue(string(queryBytes))
 		}
 	}
 
@@ -143,10 +161,23 @@ func (m *dashboardModel) populateFromAPI(ctx context.Context, resp *kbapi.GetDas
 func (m *dashboardModel) toAPICreateRequest(ctx context.Context, diags *diag.Diagnostics) kbapi.PostDashboardsJSONRequestBody {
 	req := kbapi.PostDashboardsJSONRequestBody{}
 	req.Data.Title = m.Title.ValueString()
-	req.Data.RefreshInterval.Pause = m.RefreshIntervalPause.ValueBool()
-	req.Data.RefreshInterval.Value = float32(m.RefreshIntervalValue.ValueInt64())
-	req.Data.TimeRange.From = m.TimeFrom.ValueString()
-	req.Data.TimeRange.To = m.TimeTo.ValueString()
+	if m.RefreshInterval == nil {
+		diags.AddError("Missing refresh_interval", "refresh_interval is required but was not provided")
+		return req
+	}
+	if m.TimeRange == nil {
+		diags.AddError("Missing time_range", "time_range is required but was not provided")
+		return req
+	}
+	if m.Query == nil {
+		diags.AddError("Missing query", "query is required but was not provided")
+		return req
+	}
+
+	req.Data.RefreshInterval.Pause = m.RefreshInterval.Pause.ValueBool()
+	req.Data.RefreshInterval.Value = float32(m.RefreshInterval.Value.ValueInt64())
+	req.Data.TimeRange.From = m.TimeRange.From.ValueString()
+	req.Data.TimeRange.To = m.TimeRange.To.ValueString()
 
 	// Set optional dashboard ID
 	if typeutils.IsKnown(m.DashboardID) {
@@ -154,9 +185,8 @@ func (m *dashboardModel) toAPICreateRequest(ctx context.Context, diags *diag.Dia
 	}
 
 	// Set space
-	if typeutils.IsKnown(m.SpaceID) && m.SpaceID.ValueString() != "default" {
-		req.Spaces = &[]string{m.SpaceID.ValueString()}
-	}
+	// NOTE: Space routing is handled via the request path ("/s/{space_id}").
+	// Kibana currently rejects a "spaces" field in the request body.
 
 	// Set description
 	if typeutils.IsKnown(m.Description) {
@@ -164,12 +194,12 @@ func (m *dashboardModel) toAPICreateRequest(ctx context.Context, diags *diag.Dia
 	}
 
 	// Set time range mode
-	if typeutils.IsKnown(m.TimeRangeMode) {
-		mode := kbapi.KbnEsQueryServerTimeRangeSchemaMode(m.TimeRangeMode.ValueString())
+	if typeutils.IsKnown(m.TimeRange.Mode) {
+		mode := kbapi.KbnEsQueryServerTimeRangeSchemaMode(m.TimeRange.Mode.ValueString())
 		req.Data.TimeRange.Mode = &mode
 	}
 
-	// Set query text - Query is a union type with json.RawMessage
+	// Set query - Query is a union type with json.RawMessage
 	queryModel, queryDiags := m.queryToAPI()
 	diags.Append(queryDiags...)
 	req.Data.Query = queryModel
@@ -202,10 +232,23 @@ func (m *dashboardModel) toAPICreateRequest(ctx context.Context, diags *diag.Dia
 func (m *dashboardModel) toAPIUpdateRequest(ctx context.Context, diags *diag.Diagnostics) kbapi.PutDashboardsIdJSONRequestBody {
 	req := kbapi.PutDashboardsIdJSONRequestBody{}
 	req.Data.Title = m.Title.ValueString()
-	req.Data.RefreshInterval.Pause = m.RefreshIntervalPause.ValueBool()
-	req.Data.RefreshInterval.Value = float32(m.RefreshIntervalValue.ValueInt64())
-	req.Data.TimeRange.From = m.TimeFrom.ValueString()
-	req.Data.TimeRange.To = m.TimeTo.ValueString()
+	if m.RefreshInterval == nil {
+		diags.AddError("Missing refresh_interval", "refresh_interval is required but was not provided")
+		return req
+	}
+	if m.TimeRange == nil {
+		diags.AddError("Missing time_range", "time_range is required but was not provided")
+		return req
+	}
+	if m.Query == nil {
+		diags.AddError("Missing query", "query is required but was not provided")
+		return req
+	}
+
+	req.Data.RefreshInterval.Pause = m.RefreshInterval.Pause.ValueBool()
+	req.Data.RefreshInterval.Value = float32(m.RefreshInterval.Value.ValueInt64())
+	req.Data.TimeRange.From = m.TimeRange.From.ValueString()
+	req.Data.TimeRange.To = m.TimeRange.To.ValueString()
 
 	// Set description
 	if typeutils.IsKnown(m.Description) {
@@ -213,12 +256,12 @@ func (m *dashboardModel) toAPIUpdateRequest(ctx context.Context, diags *diag.Dia
 	}
 
 	// Set time range mode
-	if typeutils.IsKnown(m.TimeRangeMode) {
-		mode := kbapi.KbnEsQueryServerTimeRangeSchemaMode(m.TimeRangeMode.ValueString())
+	if typeutils.IsKnown(m.TimeRange.Mode) {
+		mode := kbapi.KbnEsQueryServerTimeRangeSchemaMode(m.TimeRange.Mode.ValueString())
 		req.Data.TimeRange.Mode = &mode
 	}
 
-	// Set query text - Query is a union type with json.RawMessage
+	// Set query - Query is a union type with json.RawMessage
 	queryModel, queryDiags := m.queryToAPI()
 	diags.Append(queryDiags...)
 	req.Data.Query = queryModel
@@ -248,27 +291,50 @@ func (m *dashboardModel) toAPIUpdateRequest(ctx context.Context, diags *diag.Dia
 }
 
 func (m *dashboardModel) queryToAPI() (kbapi.KbnEsQueryServerQuerySchema, diag.Diagnostics) {
-	query := kbapi.KbnEsQueryServerQuerySchema{
-		Language: m.QueryLanguage.ValueString(),
+	if m.Query == nil {
+		var diags diag.Diagnostics
+		diags.AddError("Missing query", "query is required but was not provided")
+		return kbapi.KbnEsQueryServerQuerySchema{}, diags
 	}
-	// Set query text - Query is a union type with json.RawMessage
-	if typeutils.IsKnown(m.QueryText) {
-		err := query.Query.FromKbnEsQueryServerQuerySchemaQuery0(m.QueryText.ValueString())
-		if err != nil {
+	query := kbapi.KbnEsQueryServerQuerySchema{
+		Language: m.Query.Language.ValueString(),
+	}
+
+	textKnown := typeutils.IsKnown(m.Query.Text)
+	jsonKnown := !m.Query.JSON.IsNull() && !m.Query.JSON.IsUnknown()
+
+	if textKnown && jsonKnown {
+		var diags diag.Diagnostics
+		diags.AddError("Invalid query configuration", "Exactly one of query.text or query.json must be set")
+		return query, diags
+	}
+	if !textKnown && !jsonKnown {
+		var diags diag.Diagnostics
+		diags.AddError("Missing query configuration", "Exactly one of query.text or query.json must be set")
+		return query, diags
+	}
+
+	// Set query - union type (string or JSON object)
+	if jsonKnown {
+		raw := m.Query.JSON.ValueString()
+		var decoded any
+		if err := json.Unmarshal([]byte(raw), &decoded); err != nil {
 			return query, diagutil.FrameworkDiagFromError(err)
 		}
-	} else if typeutils.IsKnown(m.QueryJSON) {
-		// For JSON queries, use the raw JSON directly
-		var qj map[string]any
-		diags := m.QueryJSON.Unmarshal(&qj)
-		if diags.HasError() {
+		obj, ok := decoded.(map[string]any)
+		if !ok {
+			var diags diag.Diagnostics
+			diags.AddError("Invalid query.json value", "query.json must encode a JSON object")
 			return query, diags
 		}
-
-		err := query.Query.FromKbnEsQueryServerQuerySchemaQuery1(qj)
-		if err != nil {
+		if err := query.Query.FromKbnEsQueryServerQuerySchemaQuery1(obj); err != nil {
 			return query, diagutil.FrameworkDiagFromError(err)
 		}
+		return query, nil
+	}
+
+	if err := query.Query.FromKbnEsQueryServerQuerySchemaQuery0(m.Query.Text.ValueString()); err != nil {
+		return query, diagutil.FrameworkDiagFromError(err)
 	}
 
 	return query, nil
