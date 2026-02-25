@@ -46,7 +46,7 @@ func (c pieChartPanelConfigConverter) handlesTFPanelConfig(pm panelModel) bool {
 	return pm.PieChartConfig != nil
 }
 
-func (c pieChartPanelConfigConverter) populateFromAPIPanel(ctx context.Context, pm *panelModel, config kbapi.DashboardPanelItem_Config) diag.Diagnostics {
+func (c pieChartPanelConfigConverter) populateFromAPIPanel(_ context.Context, pm *panelModel, config kbapi.DashboardPanelItem_Config) diag.Diagnostics {
 	// Try to extract the pie chart config from the panel config
 	cfgMap, err := config.AsDashboardPanelItemConfig2()
 	if err != nil {

@@ -43,6 +43,7 @@ const (
 	dashboardValueAuto    = "auto"
 	dashboardValueAverage = "average"
 	pieChartTypeNumber    = "number"
+	pieChartTypePercent   = "percent"
 )
 
 var panelConfigNames = []string{
@@ -131,7 +132,7 @@ func populateMetricChartMetricDefaults(model map[string]any) map[string]any {
 		// as nested `params`.
 		formatType, _ := format["type"].(string)
 		formatID, _ := format["id"].(string)
-		isNumberish := formatType == pieChartTypeNumber || formatType == "percent" || formatID == pieChartTypeNumber || formatID == "percent"
+		isNumberish := formatType == pieChartTypeNumber || formatType == pieChartTypePercent || formatID == pieChartTypeNumber || formatID == pieChartTypePercent
 
 		if isNumberish {
 			// If a nested params map exists, prefer setting defaults there.
@@ -220,7 +221,7 @@ func populateLegacyMetricMetricDefaults(model map[string]any) map[string]any {
 	if ok {
 		if formatType, ok := format["type"].(string); ok {
 			switch formatType {
-			case pieChartTypeNumber, "percent":
+			case pieChartTypeNumber, pieChartTypePercent:
 				if _, exists := format["decimals"]; !exists {
 					format["decimals"] = float64(2)
 				}

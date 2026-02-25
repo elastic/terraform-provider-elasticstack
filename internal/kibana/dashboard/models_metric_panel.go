@@ -229,7 +229,7 @@ func (m *metricChartConfigModel) fromAPIVariant0(ctx context.Context, apiChart k
 				diags.AddError("Failed to marshal metric", err.Error())
 				continue
 			}
-			m.Metrics[i].ConfigJSON = customtypes.NewJSONWithDefaultsValue[map[string]any](
+			m.Metrics[i].ConfigJSON = customtypes.NewJSONWithDefaultsValue(
 				string(metricJSON),
 				populateMetricChartMetricDefaults,
 			)
@@ -294,7 +294,7 @@ func (m *metricChartConfigModel) fromAPIVariant1(ctx context.Context, apiChart k
 				diags.AddError("Failed to marshal metric", err.Error())
 				continue
 			}
-			m.Metrics[i].ConfigJSON = customtypes.NewJSONWithDefaultsValue[map[string]any](
+			m.Metrics[i].ConfigJSON = customtypes.NewJSONWithDefaultsValue(
 				string(metricJSON),
 				populateMetricChartMetricDefaults,
 			)
