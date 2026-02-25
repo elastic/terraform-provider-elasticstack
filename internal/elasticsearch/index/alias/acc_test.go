@@ -90,6 +90,59 @@ func TestAccResourceAlias(t *testing.T) {
 	})
 }
 
+func TestAccResourceAliasIssue1750(t *testing.T) {
+	aliasName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlpha)
+	writeIndexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlpha)
+	readIndexName1 := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlpha)
+	readIndexName2 := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlpha)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceAliasDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("repro"),
+				ConfigVariables: config.Variables{
+					"aliases": config.ListVariable(
+						config.ObjectVariable(map[string]config.Variable{
+							"name": config.StringVariable(aliasName),
+							"write_index": config.ObjectVariable(map[string]config.Variable{
+								"name": config.StringVariable(writeIndexName),
+							}),
+							"read_indices": config.SetVariable(
+								config.ObjectVariable(map[string]config.Variable{
+									"name": config.StringVariable(readIndexName1),
+								}),
+								config.ObjectVariable(map[string]config.Variable{
+									"name": config.StringVariable(readIndexName2),
+								}),
+							),
+						}),
+					),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(
+						"elasticstack_elasticsearch_index_alias.this.0",
+						"name",
+						aliasName,
+					),
+					resource.TestCheckResourceAttr(
+						"elasticstack_elasticsearch_index_alias.this.0",
+						"write_index.name",
+						writeIndexName,
+					),
+					resource.TestCheckResourceAttr(
+						"elasticstack_elasticsearch_index_alias.this.0",
+						"read_indices.#",
+						"2",
+					),
+				),
+			},
+		},
+	})
+}
+
 func TestAccResourceAliasWriteIndex(t *testing.T) {
 	// generate random names
 	aliasName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlpha)
