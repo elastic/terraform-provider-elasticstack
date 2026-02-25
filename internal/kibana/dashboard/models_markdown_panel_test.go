@@ -438,9 +438,9 @@ func Test_markdownPanelConfigConverter_mapPanelToAPI(t *testing.T) {
 			},
 			wantConfig: kbapi.DashboardPanelItemConfig0{
 				Content:     "# Test Content",
-				Description: strPtr("Test Description"),
-				HideTitle:   boolPtr(true),
-				Title:       strPtr("Test Title"),
+				Description: new("Test Description"),
+				HideTitle:   new(true),
+				Title:       new("Test Title"),
 			},
 			wantDiags: false,
 		},
@@ -492,7 +492,7 @@ func Test_markdownPanelConfigConverter_mapPanelToAPI(t *testing.T) {
 			},
 			wantConfig: kbapi.DashboardPanelItemConfig0{
 				Content:     "# Content",
-				HideTitle:   boolPtr(false),
+				HideTitle:   new(false),
 				Description: nil,
 				Title:       nil,
 			},
@@ -509,8 +509,8 @@ func Test_markdownPanelConfigConverter_mapPanelToAPI(t *testing.T) {
 			},
 			wantConfig: kbapi.DashboardPanelItemConfig0{
 				Content:     "",
-				Description: strPtr(""),
-				Title:       strPtr(""),
+				Description: new(""),
+				Title:       new(""),
 			},
 			wantDiags: false,
 		},
@@ -559,8 +559,8 @@ Some **bold** text and *italic* text.
 			},
 			wantConfig: kbapi.DashboardPanelItemConfig0{
 				Content:     `Content with special chars: <>&"'`,
-				Description: strPtr(`Description with special chars: <>&"'`),
-				Title:       strPtr(`Title with special chars: <>&"'`),
+				Description: new(`Description with special chars: <>&"'`),
+				Title:       new(`Title with special chars: <>&"'`),
 			},
 			wantDiags: false,
 		},
@@ -607,13 +607,4 @@ Some **bold** text and *italic* text.
 			}
 		})
 	}
-}
-
-// Helper functions for pointer values
-func strPtr(s string) *string {
-	return &s
-}
-
-func boolPtr(b bool) *bool {
-	return &b
 }

@@ -23,7 +23,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -188,7 +187,7 @@ func (m *legacyMetricConfigModel) fromAPINoESQL(ctx context.Context, api kbapi.L
 		diags.AddError("Failed to marshal metric", err.Error())
 		return diags
 	}
-	m.MetricJSON = customtypes.NewJSONWithDefaultsValue[map[string]any](
+	m.MetricJSON = customtypes.NewJSONWithDefaultsValue(
 		string(metricBytes),
 		populateLegacyMetricMetricDefaults,
 	)
@@ -262,13 +261,13 @@ func (m *legacyMetricConfigModel) toAPI() (kbapi.LegacyMetricChartSchema, diag.D
 		}
 
 		if typeutils.IsKnown(m.Title) {
-			api.Title = schemautil.Pointer(m.Title.ValueString())
+			api.Title = new(m.Title.ValueString())
 		}
 		if typeutils.IsKnown(m.Description) {
-			api.Description = schemautil.Pointer(m.Description.ValueString())
+			api.Description = new(m.Description.ValueString())
 		}
 		if typeutils.IsKnown(m.IgnoreGlobalFilters) {
-			api.IgnoreGlobalFilters = schemautil.Pointer(m.IgnoreGlobalFilters.ValueBool())
+			api.IgnoreGlobalFilters = new(m.IgnoreGlobalFilters.ValueBool())
 		}
 		if typeutils.IsKnown(m.Sampling) {
 			sampling := float32(m.Sampling.ValueFloat64())
@@ -326,13 +325,13 @@ func (m *legacyMetricConfigModel) toAPI() (kbapi.LegacyMetricChartSchema, diag.D
 		}
 
 		if typeutils.IsKnown(m.Title) {
-			api.Title = schemautil.Pointer(m.Title.ValueString())
+			api.Title = new(m.Title.ValueString())
 		}
 		if typeutils.IsKnown(m.Description) {
-			api.Description = schemautil.Pointer(m.Description.ValueString())
+			api.Description = new(m.Description.ValueString())
 		}
 		if typeutils.IsKnown(m.IgnoreGlobalFilters) {
-			api.IgnoreGlobalFilters = schemautil.Pointer(m.IgnoreGlobalFilters.ValueBool())
+			api.IgnoreGlobalFilters = new(m.IgnoreGlobalFilters.ValueBool())
 		}
 		if typeutils.IsKnown(m.Sampling) {
 			sampling := float32(m.Sampling.ValueFloat64())

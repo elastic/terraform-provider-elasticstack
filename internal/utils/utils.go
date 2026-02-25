@@ -122,11 +122,7 @@ func ConvertSettingsKeyToTFFieldKey(settingKey string) string {
 	return strings.ReplaceAll(settingKey, ".", "_")
 }
 
-func Pointer[T any](value T) *T {
-	return &value
-}
-
-// MapRef is similar to Pointer, in that it takes the reference of
+// MapRef is similar to new(value), in that it takes the reference of
 // the given value, however if the value is already nil then it returns
 // nil rather than a pointer to nil.
 func MapRef[T any, M ~map[string]T](value M) *M {
@@ -136,7 +132,7 @@ func MapRef[T any, M ~map[string]T](value M) *M {
 	return &value
 }
 
-// SliceRef is similar to Pointer, in that it takes the reference of
+// SliceRef is similar to new(value), in that it takes the reference of
 // the given value, however if the value is already nil then it returns
 // nil rather than a pointer to nil.
 func SliceRef[T any, S ~[]T](value S) *S {
@@ -161,7 +157,7 @@ func Itol(value *int) *int64 {
 	if value == nil {
 		return nil
 	}
-	return Pointer(int64(*value))
+	return new(int64(*value))
 }
 
 // Ltoi converts *int64 to *int.
@@ -169,7 +165,7 @@ func Ltoi(value *int64) *int {
 	if value == nil {
 		return nil
 	}
-	return Pointer(int(*value))
+	return new(int(*value))
 }
 
 func FlipMap[K comparable, V comparable](m map[K]V) map[V]K {

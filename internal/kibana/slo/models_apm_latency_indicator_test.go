@@ -84,7 +84,7 @@ func TestApmLatencyIndicator_PopulateFromAPI(t *testing.T) {
 				TransactionName: "GET /",
 				Index:           "apm-*",
 				Threshold:       500,
-				Filter:          strPtr("status:200"),
+				Filter:          new("status:200"),
 			},
 		}
 

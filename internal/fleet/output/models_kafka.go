@@ -21,7 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -230,7 +230,7 @@ func (m outputKafkaModel) toUpdateAuthType() *kbapi.UpdateOutputKafkaAuthType {
 		return nil
 	}
 
-	return schemautil.Pointer(kbapi.UpdateOutputKafkaAuthType(m.AuthType.ValueString()))
+	return new(kbapi.UpdateOutputKafkaAuthType(m.AuthType.ValueString()))
 }
 
 func (model outputModel) toAPICreateKafkaModel(ctx context.Context) (kbapi.NewOutputUnion, diag.Diagnostics) {
@@ -371,7 +371,7 @@ func (model outputModel) toAPIUpdateKafkaModel(ctx context.Context) (kbapi.Updat
 	diags.Append(saslDiags...)
 
 	body := kbapi.UpdateOutputKafka{
-		Type:                 schemautil.Pointer(kbapi.Kafka),
+		Type:                 new(kbapi.Kafka),
 		CaSha256:             model.CaSha256.ValueStringPointer(),
 		CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
 		ConfigYaml:           model.ConfigYaml.ValueStringPointer(),

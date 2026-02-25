@@ -105,8 +105,8 @@ func TestMetricCustomIndicator_PopulateFromAPI(t *testing.T) {
 		api := &generatedslo.IndicatorPropertiesCustomMetric{
 			Params: generatedslo.IndicatorPropertiesCustomMetricParams{
 				Index:          "metrics-*",
-				DataViewId:     strPtr("dv-1"),
-				Filter:         strPtr("labels.env:prod"),
+				DataViewId:     new("dv-1"),
+				Filter:         new("labels.env:prod"),
 				TimestampField: "@timestamp",
 				Good: generatedslo.IndicatorPropertiesCustomMetricParamsGood{
 					Equation: "a / b",
@@ -123,7 +123,7 @@ func TestMetricCustomIndicator_PopulateFromAPI(t *testing.T) {
 						Name:        "c",
 						Aggregation: "sum",
 						Field:       "total",
-						Filter:      strPtr("status:200"),
+						Filter:      new("status:200"),
 					}},
 				},
 			},

@@ -198,7 +198,7 @@ func (m *ExceptionListModel) fromAPI(ctx context.Context, apiList *kbapi.Securit
 		set, d := types.SetValueFrom(ctx, types.StringType, apiList.OsTypes)
 		diags.Append(d...)
 		m.OsTypes = set
-	} else {
+	} else if m.OsTypes.IsUnknown() {
 		m.OsTypes = types.SetNull(types.StringType)
 	}
 

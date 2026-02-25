@@ -23,7 +23,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -502,16 +501,16 @@ func (m *treemapConfigModel) toAPINoESQL() (kbapi.TreemapNoESQL, diag.Diagnostic
 	api := kbapi.TreemapNoESQL{Type: kbapi.TreemapNoESQLTypeTreemap}
 
 	if typeutils.IsKnown(m.Title) {
-		api.Title = schemautil.Pointer(m.Title.ValueString())
+		api.Title = new(m.Title.ValueString())
 	}
 	if typeutils.IsKnown(m.Description) {
-		api.Description = schemautil.Pointer(m.Description.ValueString())
+		api.Description = new(m.Description.ValueString())
 	}
 	if typeutils.IsKnown(m.IgnoreGlobalFilters) {
-		api.IgnoreGlobalFilters = schemautil.Pointer(m.IgnoreGlobalFilters.ValueBool())
+		api.IgnoreGlobalFilters = new(m.IgnoreGlobalFilters.ValueBool())
 	}
 	if typeutils.IsKnown(m.Sampling) {
-		api.Sampling = schemautil.Pointer(float32(m.Sampling.ValueFloat64()))
+		api.Sampling = new(float32(m.Sampling.ValueFloat64()))
 	}
 
 	if m.Dataset.IsNull() {
@@ -591,10 +590,10 @@ func (m *treemapConfigModel) toAPINoESQL() (kbapi.TreemapNoESQL, diag.Diagnostic
 func (m *treemapLegendModel) toAPI() kbapi.TreemapLegend {
 	legend := kbapi.TreemapLegend{Size: kbapi.LegendSize(m.Size.ValueString())}
 	if typeutils.IsKnown(m.Nested) {
-		legend.Nested = schemautil.Pointer(m.Nested.ValueBool())
+		legend.Nested = new(m.Nested.ValueBool())
 	}
 	if typeutils.IsKnown(m.TruncateAfterLine) {
-		legend.TruncateAfterLines = schemautil.Pointer(float32(m.TruncateAfterLine.ValueFloat64()))
+		legend.TruncateAfterLines = new(float32(m.TruncateAfterLine.ValueFloat64()))
 	}
 	if typeutils.IsKnown(m.Visible) {
 		v := kbapi.TreemapLegendVisible(m.Visible.ValueString())
@@ -614,7 +613,7 @@ func (m *treemapValueDisplay) toAPINoESQL() struct {
 		Mode: kbapi.TreemapNoESQLValueDisplayMode(m.Mode.ValueString()),
 	}
 	if typeutils.IsKnown(m.PercentDecimals) {
-		vd.PercentDecimals = schemautil.Pointer(float32(m.PercentDecimals.ValueFloat64()))
+		vd.PercentDecimals = new(float32(m.PercentDecimals.ValueFloat64()))
 	}
 	return vd
 }
@@ -630,7 +629,7 @@ func (m *treemapValueDisplay) toAPIESQL() struct {
 		Mode: kbapi.TreemapESQLValueDisplayMode(m.Mode.ValueString()),
 	}
 	if typeutils.IsKnown(m.PercentDecimals) {
-		vd.PercentDecimals = schemautil.Pointer(float32(m.PercentDecimals.ValueFloat64()))
+		vd.PercentDecimals = new(float32(m.PercentDecimals.ValueFloat64()))
 	}
 	return vd
 }

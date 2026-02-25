@@ -128,22 +128,18 @@ copy-kibana-ca: ## Copy Kibana CA certificate to local machine
 docs-generate: tools ## Generate documentation for the provider
 	@ go tool github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate --provider-name terraform-provider-elasticstack
 
-
 .PHONY: gen
 gen: docs-generate ## Generate the code and documentation
 	@ go generate ./...
-
 
 .PHONY: clean
 clean: ## Remove built binary
 	rm -f ${BINARY}
 
-
 .PHONY: install
 install: build ## Install built provider into the local terraform cache
 	mkdir -p ~/.terraform.d/plugins/registry.terraform.io/elastic/${NAME}/${VERSION}/${MARCH}
 	mv ${BINARY} ~/.terraform.d/plugins/registry.terraform.io/elastic/${NAME}/${VERSION}/${MARCH}
-
 
 .PHONY: tools
 tools: $(GOBIN)  ## Download golangci-lint locally if necessary.

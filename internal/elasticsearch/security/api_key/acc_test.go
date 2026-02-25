@@ -33,7 +33,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	apikey "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/api_key"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -66,7 +65,7 @@ func TestAccResourceSecurityAPIKey(t *testing.T) {
 								Indices: []models.IndexPerms{{
 									Names:                  []string{"index-a*"},
 									Privileges:             []string{"read"},
-									AllowRestrictedIndices: schemautil.Pointer(false),
+									AllowRestrictedIndices: new(false),
 								}},
 							},
 						}
@@ -100,7 +99,7 @@ func TestAccResourceSecurityAPIKey(t *testing.T) {
 								Indices: []models.IndexPerms{{
 									Names:                  []string{"index-b*"},
 									Privileges:             []string{"read"},
-									AllowRestrictedIndices: schemautil.Pointer(false),
+									AllowRestrictedIndices: new(false),
 								}},
 							},
 						}
@@ -149,14 +148,14 @@ func TestAccResourceSecurityAPIKeyWithRemoteIndices(t *testing.T) {
 								Indices: []models.IndexPerms{{
 									Names:                  []string{"index-a*"},
 									Privileges:             []string{"read"},
-									AllowRestrictedIndices: schemautil.Pointer(false),
+									AllowRestrictedIndices: new(false),
 								}},
 								RemoteIndices: []models.RemoteIndexPerms{{
 									Clusters: []string{"*"},
 									IndexPerms: models.IndexPerms{
 										Names:                  []string{"index-a*"},
 										Privileges:             []string{"read"},
-										AllowRestrictedIndices: schemautil.Pointer(true),
+										AllowRestrictedIndices: new(true),
 									},
 								}},
 							},

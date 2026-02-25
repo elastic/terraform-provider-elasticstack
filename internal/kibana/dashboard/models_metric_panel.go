@@ -23,7 +23,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -77,9 +76,24 @@ func (c metricChartPanelConfigConverter) populateFromAPIPanel(ctx context.Contex
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	// Populate the model
+	// Populate the model.
+	//
+	// Disambiguate variant 0 vs 1 using the presence of the `query` key. The generated union types can
+	// successfully unmarshal into both variants, so relying on decoded field contents is brittle.
 	pm.MetricChartConfig = &metricChartConfigModel{}
-	return pm.MetricChartConfig.fromAPI(ctx, metricChart)
+	if _, ok := attrsMap["query"]; ok {
+		variant0, err := metricChart.AsMetricChartSchema0()
+		if err != nil {
+			return diagutil.FrameworkDiagFromError(err)
+		}
+		return pm.MetricChartConfig.fromAPIVariant0(ctx, variant0)
+	}
+
+	variant1, err := metricChart.AsMetricChartSchema1()
+	if err != nil {
+		return diagutil.FrameworkDiagFromError(err)
+	}
+	return pm.MetricChartConfig.fromAPIVariant1(ctx, variant1)
 }
 
 func (c metricChartPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *kbapi.DashboardPanelItem_Config) diag.Diagnostics {
@@ -215,7 +229,7 @@ func (m *metricChartConfigModel) fromAPIVariant0(ctx context.Context, apiChart k
 				diags.AddError("Failed to marshal metric", err.Error())
 				continue
 			}
-			m.Metrics[i].ConfigJSON = customtypes.NewJSONWithDefaultsValue[map[string]any](
+			m.Metrics[i].ConfigJSON = customtypes.NewJSONWithDefaultsValue(
 				string(metricJSON),
 				populateMetricChartMetricDefaults,
 			)
@@ -280,7 +294,7 @@ func (m *metricChartConfigModel) fromAPIVariant1(ctx context.Context, apiChart k
 				diags.AddError("Failed to marshal metric", err.Error())
 				continue
 			}
-			m.Metrics[i].ConfigJSON = customtypes.NewJSONWithDefaultsValue[map[string]any](
+			m.Metrics[i].ConfigJSON = customtypes.NewJSONWithDefaultsValue(
 				string(metricJSON),
 				populateMetricChartMetricDefaults,
 			)
@@ -322,13 +336,13 @@ func (m *metricChartConfigModel) toAPIVariant0() (kbapi.MetricChartSchema, diag.
 
 	// Set simple fields
 	if typeutils.IsKnown(m.Title) {
-		variant0.Title = schemautil.Pointer(m.Title.ValueString())
+		variant0.Title = new(m.Title.ValueString())
 	}
 	if typeutils.IsKnown(m.Description) {
-		variant0.Description = schemautil.Pointer(m.Description.ValueString())
+		variant0.Description = new(m.Description.ValueString())
 	}
 	if typeutils.IsKnown(m.IgnoreGlobalFilters) {
-		variant0.IgnoreGlobalFilters = schemautil.Pointer(m.IgnoreGlobalFilters.ValueBool())
+		variant0.IgnoreGlobalFilters = new(m.IgnoreGlobalFilters.ValueBool())
 	}
 	if typeutils.IsKnown(m.Sampling) {
 		sampling := float32(m.Sampling.ValueFloat64())
@@ -404,13 +418,13 @@ func (m *metricChartConfigModel) toAPIVariant1() (kbapi.MetricChartSchema, diag.
 
 	// Set simple fields
 	if typeutils.IsKnown(m.Title) {
-		variant1.Title = schemautil.Pointer(m.Title.ValueString())
+		variant1.Title = new(m.Title.ValueString())
 	}
 	if typeutils.IsKnown(m.Description) {
-		variant1.Description = schemautil.Pointer(m.Description.ValueString())
+		variant1.Description = new(m.Description.ValueString())
 	}
 	if typeutils.IsKnown(m.IgnoreGlobalFilters) {
-		variant1.IgnoreGlobalFilters = schemautil.Pointer(m.IgnoreGlobalFilters.ValueBool())
+		variant1.IgnoreGlobalFilters = new(m.IgnoreGlobalFilters.ValueBool())
 	}
 	if typeutils.IsKnown(m.Sampling) {
 		sampling := float32(m.Sampling.ValueFloat64())

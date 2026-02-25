@@ -1,10 +1,10 @@
 module github.com/elastic/terraform-provider-elasticstack
 
-go 1.25.4
+go 1.26.0
 
 require (
 	github.com/disaster37/go-kibana-rest/v8 v8.5.0
-	github.com/elastic/elastic-transport-go/v8 v8.8.0
+	github.com/elastic/elastic-transport-go/v8 v8.9.0
 	github.com/elastic/go-elasticsearch/v8 v8.19.3
 	github.com/google/gofuzz v1.2.0
 	github.com/google/uuid v1.6.0

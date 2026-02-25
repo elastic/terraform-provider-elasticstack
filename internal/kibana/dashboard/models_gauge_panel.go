@@ -175,7 +175,7 @@ func (m *gaugeConfigModel) fromAPI(ctx context.Context, api kbapi.GaugeNoESQL) d
 		diags.AddError("Failed to marshal metric", err.Error())
 		return diags
 	}
-	m.MetricJSON = customtypes.NewJSONWithDefaultsValue[map[string]any](
+	m.MetricJSON = customtypes.NewJSONWithDefaultsValue(
 		string(metricBytes),
 		populateGaugeMetricDefaults,
 	)

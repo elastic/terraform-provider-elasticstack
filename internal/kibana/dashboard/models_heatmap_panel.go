@@ -23,7 +23,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -346,16 +345,16 @@ func (m *heatmapConfigModel) toAPINoESQL() (kbapi.HeatmapNoESQL, diag.Diagnostic
 	}
 
 	if typeutils.IsKnown(m.Title) {
-		api.Title = schemautil.Pointer(m.Title.ValueString())
+		api.Title = new(m.Title.ValueString())
 	}
 	if typeutils.IsKnown(m.Description) {
-		api.Description = schemautil.Pointer(m.Description.ValueString())
+		api.Description = new(m.Description.ValueString())
 	}
 	if typeutils.IsKnown(m.IgnoreGlobalFilters) {
-		api.IgnoreGlobalFilters = schemautil.Pointer(m.IgnoreGlobalFilters.ValueBool())
+		api.IgnoreGlobalFilters = new(m.IgnoreGlobalFilters.ValueBool())
 	}
 	if typeutils.IsKnown(m.Sampling) {
-		api.Sampling = schemautil.Pointer(float32(m.Sampling.ValueFloat64()))
+		api.Sampling = new(float32(m.Sampling.ValueFloat64()))
 	}
 
 	if m.DatasetJSON.IsNull() {
@@ -446,16 +445,16 @@ func (m *heatmapConfigModel) toAPIESQL() (kbapi.HeatmapESQL, diag.Diagnostics) {
 	}
 
 	if typeutils.IsKnown(m.Title) {
-		api.Title = schemautil.Pointer(m.Title.ValueString())
+		api.Title = new(m.Title.ValueString())
 	}
 	if typeutils.IsKnown(m.Description) {
-		api.Description = schemautil.Pointer(m.Description.ValueString())
+		api.Description = new(m.Description.ValueString())
 	}
 	if typeutils.IsKnown(m.IgnoreGlobalFilters) {
-		api.IgnoreGlobalFilters = schemautil.Pointer(m.IgnoreGlobalFilters.ValueBool())
+		api.IgnoreGlobalFilters = new(m.IgnoreGlobalFilters.ValueBool())
 	}
 	if typeutils.IsKnown(m.Sampling) {
-		api.Sampling = schemautil.Pointer(float32(m.Sampling.ValueFloat64()))
+		api.Sampling = new(float32(m.Sampling.ValueFloat64()))
 	}
 
 	if m.DatasetJSON.IsNull() {
@@ -645,7 +644,7 @@ func (m *heatmapXAxisLabelsModel) toAPI() *struct {
 		labels.Orientation = &orientation
 	}
 	if typeutils.IsKnown(m.Visible) {
-		labels.Visible = schemautil.Pointer(m.Visible.ValueBool())
+		labels.Visible = new(m.Visible.ValueBool())
 	}
 	return labels
 }
@@ -703,7 +702,7 @@ func (m *heatmapYAxisLabelsModel) toAPI() *struct {
 		Visible *bool `json:"visible,omitempty"`
 	}{}
 	if typeutils.IsKnown(m.Visible) {
-		labels.Visible = schemautil.Pointer(m.Visible.ValueBool())
+		labels.Visible = new(m.Visible.ValueBool())
 	}
 	return labels
 }
@@ -753,7 +752,7 @@ func (m *heatmapCellsLabelsModel) toAPI() *struct {
 		Visible *bool `json:"visible,omitempty"`
 	}{}
 	if typeutils.IsKnown(m.Visible) {
-		labels.Visible = schemautil.Pointer(m.Visible.ValueBool())
+		labels.Visible = new(m.Visible.ValueBool())
 	}
 	return labels
 }
@@ -787,7 +786,7 @@ func (m *heatmapLegendModel) toAPI() (kbapi.HeatmapLegend, diag.Diagnostics) {
 	}
 
 	if typeutils.IsKnown(m.Visible) {
-		legend.Visible = schemautil.Pointer(m.Visible.ValueBool())
+		legend.Visible = new(m.Visible.ValueBool())
 	}
 	if typeutils.IsKnown(m.Position) {
 		pos := kbapi.HeatmapLegendPosition(m.Position.ValueString())
@@ -799,7 +798,7 @@ func (m *heatmapLegendModel) toAPI() (kbapi.HeatmapLegend, diag.Diagnostics) {
 		diags.AddError("Missing legend size", "heatmap_config.legend.size must be provided")
 	}
 	if typeutils.IsKnown(m.TruncateAfterLines) {
-		legend.TruncateAfterLines = schemautil.Pointer(float32(m.TruncateAfterLines.ValueInt64()))
+		legend.TruncateAfterLines = new(float32(m.TruncateAfterLines.ValueInt64()))
 	}
 
 	return legend, diags

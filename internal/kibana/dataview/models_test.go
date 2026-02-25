@@ -22,7 +22,6 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -55,24 +54,24 @@ func TestPopulateFromAPI(t *testing.T) {
 			},
 			response: kbapi.DataViewsDataViewResponseObject{
 				DataView: &kbapi.DataViewsDataViewResponseObjectInner{
-					Title:         schemautil.Pointer("title"),
-					Name:          schemautil.Pointer("name"),
-					Id:            schemautil.Pointer("id"),
-					TimeFieldName: schemautil.Pointer("time_field_name"),
-					AllowNoIndex:  schemautil.Pointer(true),
+					Title:         new("title"),
+					Name:          new("name"),
+					Id:            new("id"),
+					TimeFieldName: new("time_field_name"),
+					AllowNoIndex:  new(true),
 					SourceFilters: &kbapi.DataViewsSourcefilters{
 						{Value: "field1"},
 						{Value: "field2"},
 					},
 					FieldAttrs: &map[string]kbapi.DataViewsFieldattrs{
 						"field1": {
-							CustomLabel: schemautil.Pointer("custom_label"),
-							Count:       schemautil.Pointer(10),
+							CustomLabel: new("custom_label"),
+							Count:       new(10),
 						},
 					},
 					FieldFormats: &kbapi.DataViewsFieldformats{
 						"field1": kbapi.DataViewsFieldformat{
-							Id:     schemautil.Pointer("field1"),
+							Id:     new("field1"),
 							Params: nil,
 						},
 					},
@@ -80,7 +79,7 @@ func TestPopulateFromAPI(t *testing.T) {
 						"runtime_field": {
 							Type: "keyword",
 							Script: kbapi.DataViewsRuntimefieldmapScript{
-								Source: schemautil.Pointer("emit('hello')"),
+								Source: new("emit('hello')"),
 							},
 						},
 					},
@@ -135,7 +134,7 @@ func TestPopulateFromAPI(t *testing.T) {
 			},
 			response: kbapi.DataViewsDataViewResponseObject{
 				DataView: &kbapi.DataViewsDataViewResponseObjectInner{
-					Id:         schemautil.Pointer("id"),
+					Id:         new("id"),
 					Namespaces: &[]string{"default"},
 				},
 			},
@@ -169,7 +168,7 @@ func TestPopulateFromAPI(t *testing.T) {
 			},
 			response: kbapi.DataViewsDataViewResponseObject{
 				DataView: &kbapi.DataViewsDataViewResponseObjectInner{
-					Id:         schemautil.Pointer("dataview_id"),
+					Id:         new("dataview_id"),
 					Namespaces: &[]string{"space_id"},
 				},
 			},
@@ -203,7 +202,7 @@ func TestPopulateFromAPI(t *testing.T) {
 			},
 			response: kbapi.DataViewsDataViewResponseObject{
 				DataView: &kbapi.DataViewsDataViewResponseObjectInner{
-					Id:         schemautil.Pointer("placeholder"),
+					Id:         new("placeholder"),
 					Namespaces: &[]string{"test", "ns1", "ns2"},
 				},
 			},
@@ -393,122 +392,122 @@ func TestToAPICreateModel(t *testing.T) {
 			},
 			expectedRequest: kbapi.DataViewsCreateDataViewRequestObject{
 				DataView: kbapi.DataViewsCreateDataViewRequestObjectInner{
-					AllowNoIndex: schemautil.Pointer(true),
+					AllowNoIndex: new(true),
 					FieldAttrs: &map[string]kbapi.DataViewsFieldattrs{
 						"field1": {
-							CustomLabel: schemautil.Pointer("custom_label"),
-							Count:       schemautil.Pointer(10),
+							CustomLabel: new("custom_label"),
+							Count:       new(10),
 						},
 					},
 					FieldFormats: &kbapi.DataViewsFieldformats{
 						"field1": kbapi.DataViewsFieldformat{
-							Id: schemautil.Pointer("field1"),
+							Id: new("field1"),
 							Params: &kbapi.DataViewsFieldformatParams{
-								Pattern:       schemautil.Pointer("0.00"),
-								UrlTemplate:   schemautil.Pointer("https://test.com/{{value}}"),
-								LabelTemplate: schemautil.Pointer("{{value}}"),
+								Pattern:       new("0.00"),
+								UrlTemplate:   new("https://test.com/{{value}}"),
+								LabelTemplate: new("{{value}}"),
 							},
 						},
 						"host.uptime": kbapi.DataViewsFieldformat{
-							Id: schemautil.Pointer("duration"),
+							Id: new("duration"),
 							Params: &kbapi.DataViewsFieldformatParams{
-								InputFormat:            schemautil.Pointer("hours"),
-								OutputFormat:           schemautil.Pointer("humanizePrecise"),
-								OutputPrecision:        schemautil.Pointer(2),
-								IncludeSpaceWithSuffix: schemautil.Pointer(true),
-								UseShortSuffix:         schemautil.Pointer(true),
+								InputFormat:            new("hours"),
+								OutputFormat:           new("humanizePrecise"),
+								OutputPrecision:        new(2),
+								IncludeSpaceWithSuffix: new(true),
+								UseShortSuffix:         new(true),
 							},
 						},
 						"user.last_password_change": kbapi.DataViewsFieldformat{
-							Id: schemautil.Pointer("relative_date"),
+							Id: new("relative_date"),
 						},
 						"user.last_login": kbapi.DataViewsFieldformat{
-							Id: schemautil.Pointer("date"),
+							Id: new("date"),
 							Params: &kbapi.DataViewsFieldformatParams{
-								Pattern:  schemautil.Pointer("MMM D, YYYY @ HH:mm:ss.SSS"),
-								Timezone: schemautil.Pointer("America/New_York"),
+								Pattern:  new("MMM D, YYYY @ HH:mm:ss.SSS"),
+								Timezone: new("America/New_York"),
 							},
 						},
 						"user.is_active": kbapi.DataViewsFieldformat{
-							Id: schemautil.Pointer("boolean"),
+							Id: new("boolean"),
 						},
 						"user.status": kbapi.DataViewsFieldformat{
-							Id: schemautil.Pointer("color"),
+							Id: new("color"),
 							Params: &kbapi.DataViewsFieldformatParams{
-								FieldType: schemautil.Pointer("string"),
+								FieldType: new("string"),
 								Colors: &[]kbapi.DataViewsFieldformatParamsColor{
 									{
-										Range:      schemautil.Pointer("-Infinity:Infinity"),
-										Regex:      schemautil.Pointer("inactive*"),
-										Text:       schemautil.Pointer("#000000"),
-										Background: schemautil.Pointer("#ffffff"),
+										Range:      new("-Infinity:Infinity"),
+										Regex:      new("inactive*"),
+										Text:       new("#000000"),
+										Background: new("#ffffff"),
 									},
 								},
 							},
 						},
 						"user.message": kbapi.DataViewsFieldformat{
-							Id: schemautil.Pointer("truncate"),
+							Id: new("truncate"),
 							Params: &kbapi.DataViewsFieldformatParams{
-								FieldLength: schemautil.Pointer(10),
+								FieldLength: new(10),
 							},
 						},
 						"host.name": kbapi.DataViewsFieldformat{
-							Id: schemautil.Pointer("string"),
+							Id: new("string"),
 							Params: &kbapi.DataViewsFieldformatParams{
-								Transform: schemautil.Pointer("upper"),
+								Transform: new("upper"),
 							},
 						},
 						"response.code": kbapi.DataViewsFieldformat{
-							Id: schemautil.Pointer("static_lookup"),
+							Id: new("static_lookup"),
 							Params: &kbapi.DataViewsFieldformatParams{
 								LookupEntries: &[]kbapi.DataViewsFieldformatParamsLookup{
 									{
-										Key:   schemautil.Pointer("200"),
-										Value: schemautil.Pointer("OK"),
+										Key:   new("200"),
+										Value: new("OK"),
 									},
 									{
-										Key:   schemautil.Pointer("404"),
-										Value: schemautil.Pointer("Not Found"),
+										Key:   new("404"),
+										Value: new("Not Found"),
 									},
 								},
-								UnknownKeyValue: schemautil.Pointer("Unknown"),
+								UnknownKeyValue: new("Unknown"),
 							},
 						},
 						"url.original": kbapi.DataViewsFieldformat{
-							Id: schemautil.Pointer("url"),
+							Id: new("url"),
 							Params: &kbapi.DataViewsFieldformatParams{
-								Type:          schemautil.Pointer("a"),
-								UrlTemplate:   schemautil.Pointer("URL TEMPLATE"),
-								LabelTemplate: schemautil.Pointer("LABEL TEMPLATE"),
+								Type:          new("a"),
+								UrlTemplate:   new("URL TEMPLATE"),
+								LabelTemplate: new("LABEL TEMPLATE"),
 							},
 						},
 						"user.profile_picture": kbapi.DataViewsFieldformat{
-							Id: schemautil.Pointer("url"),
+							Id: new("url"),
 							Params: &kbapi.DataViewsFieldformatParams{
-								Type:          schemautil.Pointer("img"),
-								UrlTemplate:   schemautil.Pointer("URL TEMPLATE"),
-								LabelTemplate: schemautil.Pointer("LABEL TEMPLATE"),
-								Width:         schemautil.Pointer(6),
-								Height:        schemautil.Pointer(4),
+								Type:          new("img"),
+								UrlTemplate:   new("URL TEMPLATE"),
+								LabelTemplate: new("LABEL TEMPLATE"),
+								Width:         new(6),
+								Height:        new(4),
 							},
 						},
 						"user.answering_message": kbapi.DataViewsFieldformat{
-							Id: schemautil.Pointer("url"),
+							Id: new("url"),
 							Params: &kbapi.DataViewsFieldformatParams{
-								Type:          schemautil.Pointer("audio"),
-								UrlTemplate:   schemautil.Pointer("URL TEMPLATE"),
-								LabelTemplate: schemautil.Pointer("LABEL TEMPLATE"),
+								Type:          new("audio"),
+								UrlTemplate:   new("URL TEMPLATE"),
+								LabelTemplate: new("LABEL TEMPLATE"),
 							},
 						},
 					},
-					Id:         schemautil.Pointer("id"),
-					Name:       schemautil.Pointer("name"),
+					Id:         new("id"),
+					Name:       new("name"),
 					Namespaces: &[]string{"backend", "o11y", "default"},
 					RuntimeFieldMap: &map[string]kbapi.DataViewsRuntimefieldmap{
 						"runtime_field": {
 							Type: "keyword",
 							Script: kbapi.DataViewsRuntimefieldmapScript{
-								Source: schemautil.Pointer("emit(\"hello\")"),
+								Source: new("emit(\"hello\")"),
 							},
 						},
 					},
@@ -516,10 +515,10 @@ func TestToAPICreateModel(t *testing.T) {
 						{Value: "field1"},
 						{Value: "field2"},
 					},
-					TimeFieldName: schemautil.Pointer("time_field_name"),
+					TimeFieldName: new("time_field_name"),
 					Title:         "title",
 				},
-				Override: schemautil.Pointer(true),
+				Override: new(true),
 			},
 		},
 		{
@@ -542,10 +541,10 @@ func TestToAPICreateModel(t *testing.T) {
 			expectedRequest: kbapi.DataViewsCreateDataViewRequestObject{
 				Override: nil,
 				DataView: kbapi.DataViewsCreateDataViewRequestObjectInner{
-					AllowNoIndex:  schemautil.Pointer(true),
-					Id:            schemautil.Pointer("id"),
-					Name:          schemautil.Pointer("name"),
-					TimeFieldName: schemautil.Pointer("time_field_name"),
+					AllowNoIndex:  new(true),
+					Id:            new("id"),
+					Name:          new("name"),
+					TimeFieldName: new("time_field_name"),
 					Title:         "title",
 				},
 			},
@@ -720,114 +719,114 @@ func TestToAPIUpdateModel(t *testing.T) {
 			},
 			expectedRequest: kbapi.DataViewsUpdateDataViewRequestObject{
 				DataView: kbapi.DataViewsUpdateDataViewRequestObjectInner{
-					AllowNoIndex: schemautil.Pointer(true),
+					AllowNoIndex: new(true),
 					FieldFormats: &kbapi.DataViewsFieldformats{
 						"field1": {
-							Id: schemautil.Pointer("field1"),
+							Id: new("field1"),
 							Params: &kbapi.DataViewsFieldformatParams{
-								Pattern:       schemautil.Pointer("0.00"),
-								UrlTemplate:   schemautil.Pointer("https://test.com/{{value}}"),
-								LabelTemplate: schemautil.Pointer("{{value}}"),
+								Pattern:       new("0.00"),
+								UrlTemplate:   new("https://test.com/{{value}}"),
+								LabelTemplate: new("{{value}}"),
 							},
 						},
 						"host.uptime": {
-							Id: schemautil.Pointer("duration"),
+							Id: new("duration"),
 							Params: &kbapi.DataViewsFieldformatParams{
-								InputFormat:            schemautil.Pointer("hours"),
-								OutputFormat:           schemautil.Pointer("humanizePrecise"),
-								OutputPrecision:        schemautil.Pointer(2),
-								IncludeSpaceWithSuffix: schemautil.Pointer(true),
-								UseShortSuffix:         schemautil.Pointer(true),
+								InputFormat:            new("hours"),
+								OutputFormat:           new("humanizePrecise"),
+								OutputPrecision:        new(2),
+								IncludeSpaceWithSuffix: new(true),
+								UseShortSuffix:         new(true),
 							},
 						},
 						"user.last_password_change": {
-							Id: schemautil.Pointer("relative_date"),
+							Id: new("relative_date"),
 						},
 						"user.last_login": {
-							Id: schemautil.Pointer("date"),
+							Id: new("date"),
 							Params: &kbapi.DataViewsFieldformatParams{
-								Pattern:  schemautil.Pointer("MMM D, YYYY @ HH:mm:ss.SSS"),
-								Timezone: schemautil.Pointer("America/New_York"),
+								Pattern:  new("MMM D, YYYY @ HH:mm:ss.SSS"),
+								Timezone: new("America/New_York"),
 							},
 						},
 						"user.is_active": {
-							Id: schemautil.Pointer("boolean"),
+							Id: new("boolean"),
 						},
 						"user.status": {
-							Id: schemautil.Pointer("color"),
+							Id: new("color"),
 							Params: &kbapi.DataViewsFieldformatParams{
-								FieldType: schemautil.Pointer("string"),
+								FieldType: new("string"),
 								Colors: &[]kbapi.DataViewsFieldformatParamsColor{
 									{
-										Range:      schemautil.Pointer("-Infinity:Infinity"),
-										Regex:      schemautil.Pointer("inactive*"),
-										Text:       schemautil.Pointer("#000000"),
-										Background: schemautil.Pointer("#ffffff"),
+										Range:      new("-Infinity:Infinity"),
+										Regex:      new("inactive*"),
+										Text:       new("#000000"),
+										Background: new("#ffffff"),
 									},
 								},
 							},
 						},
 						"user.message": {
-							Id: schemautil.Pointer("truncate"),
+							Id: new("truncate"),
 							Params: &kbapi.DataViewsFieldformatParams{
-								FieldLength: schemautil.Pointer(10),
+								FieldLength: new(10),
 							},
 						},
 						"host.name": {
-							Id: schemautil.Pointer("string"),
+							Id: new("string"),
 							Params: &kbapi.DataViewsFieldformatParams{
-								Transform: schemautil.Pointer("upper"),
+								Transform: new("upper"),
 							},
 						},
 						"response.code": {
-							Id: schemautil.Pointer("static_lookup"),
+							Id: new("static_lookup"),
 							Params: &kbapi.DataViewsFieldformatParams{
 								LookupEntries: &[]kbapi.DataViewsFieldformatParamsLookup{
 									{
-										Key:   schemautil.Pointer("200"),
-										Value: schemautil.Pointer("OK"),
+										Key:   new("200"),
+										Value: new("OK"),
 									},
 									{
-										Key:   schemautil.Pointer("404"),
-										Value: schemautil.Pointer("Not Found"),
+										Key:   new("404"),
+										Value: new("Not Found"),
 									},
 								},
-								UnknownKeyValue: schemautil.Pointer("Unknown"),
+								UnknownKeyValue: new("Unknown"),
 							},
 						},
 						"url.original": {
-							Id: schemautil.Pointer("url"),
+							Id: new("url"),
 							Params: &kbapi.DataViewsFieldformatParams{
-								Type:          schemautil.Pointer("a"),
-								UrlTemplate:   schemautil.Pointer("URL TEMPLATE"),
-								LabelTemplate: schemautil.Pointer("LABEL TEMPLATE"),
+								Type:          new("a"),
+								UrlTemplate:   new("URL TEMPLATE"),
+								LabelTemplate: new("LABEL TEMPLATE"),
 							},
 						},
 						"user.profile_picture": {
-							Id: schemautil.Pointer("url"),
+							Id: new("url"),
 							Params: &kbapi.DataViewsFieldformatParams{
-								Type:          schemautil.Pointer("img"),
-								UrlTemplate:   schemautil.Pointer("URL TEMPLATE"),
-								LabelTemplate: schemautil.Pointer("LABEL TEMPLATE"),
-								Width:         schemautil.Pointer(6),
-								Height:        schemautil.Pointer(4),
+								Type:          new("img"),
+								UrlTemplate:   new("URL TEMPLATE"),
+								LabelTemplate: new("LABEL TEMPLATE"),
+								Width:         new(6),
+								Height:        new(4),
 							},
 						},
 						"user.answering_message": {
-							Id: schemautil.Pointer("url"),
+							Id: new("url"),
 							Params: &kbapi.DataViewsFieldformatParams{
-								Type:          schemautil.Pointer("audio"),
-								UrlTemplate:   schemautil.Pointer("URL TEMPLATE"),
-								LabelTemplate: schemautil.Pointer("LABEL TEMPLATE"),
+								Type:          new("audio"),
+								UrlTemplate:   new("URL TEMPLATE"),
+								LabelTemplate: new("LABEL TEMPLATE"),
 							},
 						},
 					},
-					Name: schemautil.Pointer("name"),
+					Name: new("name"),
 					RuntimeFieldMap: &map[string]kbapi.DataViewsRuntimefieldmap{
 						"runtime_field": {
 							Type: "keyword",
 							Script: kbapi.DataViewsRuntimefieldmapScript{
-								Source: schemautil.Pointer("emit(\"hello\")"),
+								Source: new("emit(\"hello\")"),
 							},
 						},
 					},
@@ -835,8 +834,8 @@ func TestToAPIUpdateModel(t *testing.T) {
 						{Value: "field1"},
 						{Value: "field2"},
 					},
-					TimeFieldName: schemautil.Pointer("time_field_name"),
-					Title:         schemautil.Pointer("title"),
+					TimeFieldName: new("time_field_name"),
+					Title:         new("title"),
 				},
 			},
 		},
@@ -858,10 +857,10 @@ func TestToAPIUpdateModel(t *testing.T) {
 			},
 			expectedRequest: kbapi.DataViewsUpdateDataViewRequestObject{
 				DataView: kbapi.DataViewsUpdateDataViewRequestObjectInner{
-					AllowNoIndex:  schemautil.Pointer(true),
-					Name:          schemautil.Pointer("name"),
-					TimeFieldName: schemautil.Pointer("time_field_name"),
-					Title:         schemautil.Pointer("title"),
+					AllowNoIndex:  new(true),
+					Name:          new("name"),
+					TimeFieldName: new("time_field_name"),
+					Title:         new("title"),
 				},
 			},
 		},

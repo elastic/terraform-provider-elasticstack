@@ -23,7 +23,6 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -50,10 +49,10 @@ func Test_regionMapConfigModel_fromAPI_toAPI(t *testing.T) {
 			apiNoESQL: func() *kbapi.RegionMapNoESQL {
 				api := kbapi.RegionMapNoESQL{
 					Type:                kbapi.RegionMapNoESQLTypeRegionMap,
-					Title:               schemautil.Pointer("Region Map"),
-					Description:         schemautil.Pointer("Region map description"),
-					IgnoreGlobalFilters: schemautil.Pointer(true),
-					Sampling:            schemautil.Pointer(float32(0.75)),
+					Title:               new("Region Map"),
+					Description:         new("Region map description"),
+					IgnoreGlobalFilters: new(true),
+					Sampling:            new(float32(0.75)),
 				}
 
 				lang := kbapi.FilterSimpleSchemaLanguage("kuery")
@@ -86,10 +85,10 @@ func Test_regionMapConfigModel_fromAPI_toAPI(t *testing.T) {
 			apiESQL: func() *kbapi.RegionMapESQL {
 				api := kbapi.RegionMapESQL{
 					Type:                kbapi.RegionMapESQLTypeRegionMap,
-					Title:               schemautil.Pointer("ESQL Region Map"),
-					Description:         schemautil.Pointer("ESQL description"),
-					IgnoreGlobalFilters: schemautil.Pointer(false),
-					Sampling:            schemautil.Pointer(float32(0.25)),
+					Title:               new("ESQL Region Map"),
+					Description:         new("ESQL description"),
+					IgnoreGlobalFilters: new(false),
+					Sampling:            new(float32(0.25)),
 				}
 
 				_ = json.Unmarshal([]byte(`{"type":"esql","query":"FROM metrics-* | LIMIT 10"}`), &api.Dataset)

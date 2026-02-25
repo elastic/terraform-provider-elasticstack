@@ -26,7 +26,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
@@ -65,7 +64,7 @@ func GetEnrollmentTokens(ctx context.Context, client *Client, spaceID string) ([
 // GetEnrollmentTokensByPolicy Get enrollment tokens by given policy ID.
 func GetEnrollmentTokensByPolicy(ctx context.Context, client *Client, policyID string) ([]kbapi.EnrollmentApiKey, diag.Diagnostics) {
 	params := kbapi.GetFleetEnrollmentApiKeysParams{
-		Kuery: schemautil.Pointer("policy_id:" + policyID),
+		Kuery: new("policy_id:" + policyID),
 	}
 
 	resp, err := client.API.GetFleetEnrollmentApiKeysWithResponse(ctx, &params)
@@ -132,7 +131,7 @@ func GetAgentPolicy(ctx context.Context, client *Client, id string, spaceID stri
 // CreateAgentPolicy creates a new agent policy.
 func CreateAgentPolicy(ctx context.Context, client *Client, req kbapi.PostFleetAgentPoliciesJSONRequestBody, sysMonitoring bool, spaceID string) (*kbapi.AgentPolicy, diag.Diagnostics) {
 	params := kbapi.PostFleetAgentPoliciesParams{
-		SysMonitoring: schemautil.Pointer(sysMonitoring),
+		SysMonitoring: new(sysMonitoring),
 	}
 
 	resp, err := client.API.PostFleetAgentPoliciesWithResponse(ctx, &params, req, spaceAwarePathRequestEditor(spaceID))
@@ -315,7 +314,7 @@ func DeleteFleetServerHost(ctx context.Context, client *Client, id string, space
 // GetPackagePolicy reads a specific package policy from the API.
 func GetPackagePolicy(ctx context.Context, client *Client, id string, spaceID string) (*kbapi.PackagePolicy, diag.Diagnostics) {
 	params := kbapi.GetFleetPackagePoliciesPackagepolicyidParams{
-		Format: schemautil.Pointer(kbapi.GetFleetPackagePoliciesPackagepolicyidParamsFormatSimplified),
+		Format: new(kbapi.GetFleetPackagePoliciesPackagepolicyidParamsFormatSimplified),
 	}
 
 	resp, err := client.API.GetFleetPackagePoliciesPackagepolicyidWithResponse(ctx, id, &params, spaceAwarePathRequestEditor(spaceID))
@@ -336,7 +335,7 @@ func GetPackagePolicy(ctx context.Context, client *Client, id string, spaceID st
 // CreatePackagePolicy creates a new package policy.
 func CreatePackagePolicy(ctx context.Context, client *Client, spaceID string, req kbapi.PackagePolicyRequest) (*kbapi.PackagePolicy, diag.Diagnostics) {
 	params := kbapi.PostFleetPackagePoliciesParams{
-		Format: schemautil.Pointer(kbapi.PostFleetPackagePoliciesParamsFormatSimplified),
+		Format: new(kbapi.PostFleetPackagePoliciesParamsFormatSimplified),
 	}
 
 	resp, err := client.API.PostFleetPackagePoliciesWithResponse(ctx, &params, req, spaceAwarePathRequestEditor(spaceID))
@@ -355,7 +354,7 @@ func CreatePackagePolicy(ctx context.Context, client *Client, spaceID string, re
 // UpdatePackagePolicy updates an existing package policy.
 func UpdatePackagePolicy(ctx context.Context, client *Client, id string, spaceID string, req kbapi.PackagePolicyRequest) (*kbapi.PackagePolicy, diag.Diagnostics) {
 	params := kbapi.PutFleetPackagePoliciesPackagepolicyidParams{
-		Format: schemautil.Pointer(kbapi.Simplified),
+		Format: new(kbapi.Simplified),
 	}
 
 	resp, err := client.API.PutFleetPackagePoliciesPackagepolicyidWithResponse(ctx, id, &params, req, spaceAwarePathRequestEditor(spaceID))

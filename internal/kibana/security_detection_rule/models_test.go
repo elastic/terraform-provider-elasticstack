@@ -24,7 +24,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/google/uuid"
@@ -107,14 +106,14 @@ func TestUpdateFromQueryRule(t *testing.T) {
 				Version:        1,
 				Author:         []string{"Test Author"},
 				Tags:           []string{"test", "detection"},
-				Index:          schemautil.Pointer([]string{"logs-*", "metrics-*"}),
+				Index:          new([]string{"logs-*", "metrics-*"}),
 				CreatedBy:      "test-user",
 				UpdatedBy:      "test-user",
 				Revision:       1,
 				FalsePositives: []string{"Known false positive"},
 				References:     []string{"https://example.com/test"},
-				License:        schemautil.Pointer(kbapi.SecurityDetectionsAPIRuleLicense("MIT")),
-				Note:           schemautil.Pointer(kbapi.SecurityDetectionsAPIInvestigationGuide("Investigation note")),
+				License:        new(kbapi.SecurityDetectionsAPIRuleLicense("MIT")),
+				Note:           new(kbapi.SecurityDetectionsAPIInvestigationGuide("Investigation note")),
 				Setup:          "Setup instructions",
 			},
 			expected: Data{
@@ -891,8 +890,8 @@ func TestConvertActionsToModel(t *testing.T) {
 				"subject": "Security Alert",
 				"message": "Alert details here",
 			},
-			Group: schemautil.Pointer(kbapi.SecurityDetectionsAPIRuleActionGroup("default")),
-			Uuid:  schemautil.Pointer(kbapi.SecurityDetectionsAPINonEmptyString("action-uuid-123")),
+			Group: new(kbapi.SecurityDetectionsAPIRuleActionGroup("default")),
+			Uuid:  new(kbapi.SecurityDetectionsAPINonEmptyString("action-uuid-123")),
 		},
 	}
 
@@ -1493,17 +1492,17 @@ func TestKQLQueryLanguage(t *testing.T) {
 		{
 			name:     "kuery language",
 			language: types.StringValue("kuery"),
-			expected: schemautil.Pointer(kbapi.SecurityDetectionsAPIKqlQueryLanguage("kuery")),
+			expected: new(kbapi.SecurityDetectionsAPIKqlQueryLanguage("kuery")),
 		},
 		{
 			name:     "lucene language",
 			language: types.StringValue("lucene"),
-			expected: schemautil.Pointer(kbapi.SecurityDetectionsAPIKqlQueryLanguage("lucene")),
+			expected: new(kbapi.SecurityDetectionsAPIKqlQueryLanguage("lucene")),
 		},
 		{
 			name:     "unknown language defaults to kuery",
 			language: types.StringValue("unknown"),
-			expected: schemautil.Pointer(kbapi.SecurityDetectionsAPIKqlQueryLanguage("kuery")),
+			expected: new(kbapi.SecurityDetectionsAPIKqlQueryLanguage("kuery")),
 		},
 		{
 			name:     "null language returns nil",

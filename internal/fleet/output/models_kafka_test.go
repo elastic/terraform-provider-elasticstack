@@ -22,7 +22,6 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
@@ -62,8 +61,8 @@ func Test_outputKafkaModel_toAPIHash(t *testing.T) {
 				Hash   *string `json:"hash,omitempty"`
 				Random *bool   `json:"random,omitempty"`
 			}{
-				Hash:   schemautil.Pointer("field"),
-				Random: schemautil.Pointer(true),
+				Hash:   new("field"),
+				Random: new(true),
 			},
 		},
 	}
@@ -173,7 +172,7 @@ func Test_outputKafkaModel_toAPIRandom(t *testing.T) {
 			want: &struct {
 				GroupEvents *float32 `json:"group_events,omitempty"`
 			}{
-				GroupEvents: schemautil.Pointer(float32(1)),
+				GroupEvents: new(float32(1)),
 			},
 		},
 	}
@@ -223,7 +222,7 @@ func Test_outputKafkaModel_toAPIRoundRobin(t *testing.T) {
 			want: &struct {
 				GroupEvents *float32 `json:"group_events,omitempty"`
 			}{
-				GroupEvents: schemautil.Pointer(float32(1)),
+				GroupEvents: new(float32(1)),
 			},
 		},
 	}
@@ -273,7 +272,7 @@ func Test_outputKafkaModel_toAPISasl(t *testing.T) {
 			want: &struct {
 				Mechanism *kbapi.NewOutputKafkaSaslMechanism `json:"mechanism,omitempty"`
 			}{
-				Mechanism: schemautil.Pointer(kbapi.NewOutputKafkaSaslMechanism("plain")),
+				Mechanism: new(kbapi.NewOutputKafkaSaslMechanism("plain")),
 			},
 		},
 	}
@@ -323,7 +322,7 @@ func Test_outputKafkaModel_toUpdateAPISasl(t *testing.T) {
 			want: &struct {
 				Mechanism *kbapi.UpdateOutputKafkaSaslMechanism `json:"mechanism,omitempty"`
 			}{
-				Mechanism: schemautil.Pointer(kbapi.UpdateOutputKafkaSaslMechanism("plain")),
+				Mechanism: new(kbapi.UpdateOutputKafkaSaslMechanism("plain")),
 			},
 		},
 	}
@@ -396,7 +395,7 @@ func Test_outputKafkaModel_toUpdateAuthType(t *testing.T) {
 			fields: fields{
 				AuthType: types.StringValue("user"),
 			},
-			want: schemautil.Pointer(kbapi.UpdateOutputKafkaAuthType("user")),
+			want: new(kbapi.UpdateOutputKafkaAuthType("user")),
 		},
 	}
 	for _, tt := range tests {

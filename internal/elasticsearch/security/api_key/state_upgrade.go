@@ -20,7 +20,6 @@ package apikey
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
@@ -29,7 +28,7 @@ import (
 func (r *Resource) UpgradeState(context.Context) map[int64]resource.StateUpgrader {
 	return map[int64]resource.StateUpgrader{
 		0: {
-			PriorSchema: schemautil.Pointer(r.getSchema(0)),
+			PriorSchema: new(r.getSchema(0)),
 			StateUpgrader: func(ctx context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
 				var model tfModel
 				resp.Diagnostics.Append(req.State.Get(ctx, &model)...)
@@ -45,7 +44,7 @@ func (r *Resource) UpgradeState(context.Context) map[int64]resource.StateUpgrade
 			},
 		},
 		1: {
-			PriorSchema: schemautil.Pointer(r.getSchema(1)),
+			PriorSchema: new(r.getSchema(1)),
 			StateUpgrader: func(ctx context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
 				var model tfModel
 				resp.Diagnostics.Append(req.State.Get(ctx, &model)...)

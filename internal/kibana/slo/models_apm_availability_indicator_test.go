@@ -103,7 +103,7 @@ func TestApmAvailabilityIndicator_PopulateFromAPI(t *testing.T) {
 				TransactionType: "request",
 				TransactionName: "GET /",
 				Index:           "apm-*",
-				Filter:          strPtr("service.name:foo"),
+				Filter:          new("service.name:foo"),
 			},
 		}
 

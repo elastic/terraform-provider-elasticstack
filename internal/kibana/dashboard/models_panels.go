@@ -22,7 +22,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -39,6 +38,7 @@ type panelModel struct {
 	DatatableConfig    *datatableConfigModel    `tfsdk:"datatable_config"`
 	TagcloudConfig     *tagcloudConfigModel     `tfsdk:"tagcloud_config"`
 	MetricChartConfig  *metricChartConfigModel  `tfsdk:"metric_chart_config"`
+	PieChartConfig     *pieChartConfigModel     `tfsdk:"pie_chart_config"`
 	GaugeConfig        *gaugeConfigModel        `tfsdk:"gauge_config"`
 	LegacyMetricConfig *legacyMetricConfigModel `tfsdk:"legacy_metric_config"`
 	RegionMapConfig    *regionMapConfigModel    `tfsdk:"region_map_config"`
@@ -83,6 +83,7 @@ var panelConfigConverters = []panelConfigConverter{
 	newLegacyMetricPanelConfigConverter(),
 	newGaugePanelConfigConverter(),
 	newMetricChartPanelConfigConverter(),
+	newPieChartPanelConfigConverter(),
 }
 
 func (m *dashboardModel) mapPanelsFromAPI(ctx context.Context, apiPanels *kbapi.DashboardPanels) ([]panelModel, []sectionModel, diag.Diagnostics) {
@@ -253,10 +254,10 @@ func (m *dashboardModel) panelsToAPI() (*kbapi.DashboardPanels, diag.Diagnostics
 		}
 
 		if typeutils.IsKnown(sm.Collapsed) {
-			section.Collapsed = schemautil.Pointer(sm.Collapsed.ValueBool())
+			section.Collapsed = new(sm.Collapsed.ValueBool())
 		}
 		if typeutils.IsKnown(sm.ID) {
-			section.Uid = schemautil.Pointer(sm.ID.ValueString())
+			section.Uid = new(sm.ID.ValueString())
 		}
 
 		if len(sm.Panels) > 0 {
@@ -309,7 +310,7 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 	}
 
 	if typeutils.IsKnown(pm.ID) {
-		panelItem.Uid = schemautil.Pointer(pm.ID.ValueString())
+		panelItem.Uid = new(pm.ID.ValueString())
 	}
 
 	var diags diag.Diagnostics

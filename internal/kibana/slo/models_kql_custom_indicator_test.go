@@ -116,10 +116,10 @@ func TestKqlCustomIndicator_PopulateFromAPI(t *testing.T) {
 		api := &generatedslo.IndicatorPropertiesCustomKql{
 			Params: generatedslo.IndicatorPropertiesCustomKqlParams{
 				Index:          "logs-*",
-				DataViewId:     strPtr("dv-123"),
-				Filter:         &generatedslo.KqlWithFilters{String: strPtr("service.name:foo")},
-				Good:           generatedslo.KqlWithFiltersGood{String: strPtr("status:200")},
-				Total:          generatedslo.KqlWithFiltersTotal{String: strPtr("*")},
+				DataViewId:     new("dv-123"),
+				Filter:         &generatedslo.KqlWithFilters{String: new("service.name:foo")},
+				Good:           generatedslo.KqlWithFiltersGood{String: new("status:200")},
+				Total:          generatedslo.KqlWithFiltersTotal{String: new("*")},
 				TimestampField: "@timestamp",
 			},
 		}

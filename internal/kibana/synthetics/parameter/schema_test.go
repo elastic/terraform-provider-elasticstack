@@ -48,9 +48,9 @@ func Test_roundtrip(t *testing.T) {
 			request: kboapi.SyntheticsParameterRequest{
 				Key:               "key-2",
 				Value:             "value-2",
-				Description:       schemautil.Pointer("description-2"),
-				Tags:              schemautil.Pointer([]string{"tag-1", "tag-2", "tag-3"}),
-				ShareAcrossSpaces: schemautil.Pointer(true),
+				Description:       new("description-2"),
+				Tags:              new([]string{"tag-1", "tag-2", "tag-3"}),
+				ShareAcrossSpaces: new(true),
 			},
 		},
 		{
@@ -60,7 +60,7 @@ func Test_roundtrip(t *testing.T) {
 			request: kboapi.SyntheticsParameterRequest{
 				Key:         "key-3",
 				Value:       "value-3",
-				Description: schemautil.Pointer("description-3"),
+				Description: new("description-3"),
 			},
 		},
 		{
@@ -70,7 +70,7 @@ func Test_roundtrip(t *testing.T) {
 			request: kboapi.SyntheticsParameterRequest{
 				Key:         "key-4",
 				Value:       "value-4",
-				Description: schemautil.Pointer("description-4"),
+				Description: new("description-4"),
 			},
 		},
 		{
@@ -80,7 +80,7 @@ func Test_roundtrip(t *testing.T) {
 			request: kboapi.SyntheticsParameterRequest{
 				Key:         "key-5",
 				Value:       "value-5",
-				Description: schemautil.Pointer("description-5"),
+				Description: new("description-5"),
 			},
 		},
 	}

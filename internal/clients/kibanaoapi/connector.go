@@ -28,7 +28,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	sdkdiag "github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -339,7 +338,7 @@ func connectorConfigWithDefaultsBedrock(plan string) (string, error) {
 		return "", err
 	}
 	if custom.DefaultModel == nil {
-		custom.DefaultModel = schemautil.Pointer("us.anthropic.claude-sonnet-4-5-20250929-v1:0")
+		custom.DefaultModel = new("us.anthropic.claude-sonnet-4-5-20250929-v1:0")
 	}
 	customJSON, err := json.Marshal(custom)
 	if err != nil {
@@ -378,7 +377,7 @@ func connectorConfigWithDefaultsGenAi(plan string) (string, error) {
 		}
 		// Apply verificationMode default for "Other" provider
 		if config.VerificationMode == nil {
-			config.VerificationMode = schemautil.Pointer(kbapi.GenaiOpenaiOtherConfigVerificationModeFull)
+			config.VerificationMode = new(kbapi.GenaiOpenaiOtherConfigVerificationModeFull)
 		}
 		customJSON, err := json.Marshal(config)
 		if err != nil {
@@ -396,16 +395,16 @@ func connectorConfigWithDefaultsCasesWebhook(plan string) (string, error) {
 		return "", err
 	}
 	if custom.CreateIncidentMethod == nil {
-		custom.CreateIncidentMethod = schemautil.Pointer(kbapi.CasesWebhookConfigCreateIncidentMethodPost)
+		custom.CreateIncidentMethod = new(kbapi.CasesWebhookConfigCreateIncidentMethodPost)
 	}
 	if custom.HasAuth == nil {
-		custom.HasAuth = schemautil.Pointer(true)
+		custom.HasAuth = new(true)
 	}
 	if custom.UpdateIncidentMethod == nil {
-		custom.UpdateIncidentMethod = schemautil.Pointer(kbapi.CasesWebhookConfigUpdateIncidentMethodPut)
+		custom.UpdateIncidentMethod = new(kbapi.CasesWebhookConfigUpdateIncidentMethodPut)
 	}
 	if custom.CreateCommentMethod == nil {
-		custom.CreateCommentMethod = schemautil.Pointer(kbapi.CasesWebhookConfigCreateCommentMethodPut)
+		custom.CreateCommentMethod = new(kbapi.CasesWebhookConfigCreateCommentMethodPut)
 	}
 	customJSON, err := json.Marshal(custom)
 	if err != nil {
@@ -420,10 +419,10 @@ func connectorConfigWithDefaultsEmail(plan string) (string, error) {
 		return "", err
 	}
 	if custom.HasAuth == nil {
-		custom.HasAuth = schemautil.Pointer(true)
+		custom.HasAuth = new(true)
 	}
 	if custom.Service == nil {
-		custom.Service = schemautil.Pointer(kbapi.EmailConfigService("other"))
+		custom.Service = new(kbapi.EmailConfigService("other"))
 	}
 	customJSON, err := json.Marshal(custom)
 	if err != nil {
@@ -438,7 +437,7 @@ func connectorConfigWithDefaultsIndex(plan string) (string, error) {
 		return "", err
 	}
 	if custom.Refresh == nil {
-		custom.Refresh = schemautil.Pointer(false)
+		custom.Refresh = new(false)
 	}
 	customJSON, err := json.Marshal(custom)
 	if err != nil {
@@ -461,10 +460,10 @@ func connectorConfigWithDefaultsServicenow(plan string) (string, error) {
 		return "", err
 	}
 	if planConfig.IsOAuth == nil {
-		planConfig.IsOAuth = schemautil.Pointer(false)
+		planConfig.IsOAuth = new(false)
 	}
 	if planConfig.UsesTableApi == nil {
-		planConfig.UsesTableApi = schemautil.Pointer(true)
+		planConfig.UsesTableApi = new(true)
 	}
 	customJSON, err := json.Marshal(planConfig)
 	if err != nil {
@@ -479,7 +478,7 @@ func connectorConfigWithDefaultsServicenowItom(plan string) (string, error) {
 		return "", err
 	}
 	if custom.IsOAuth == nil {
-		custom.IsOAuth = schemautil.Pointer(false)
+		custom.IsOAuth = new(false)
 	}
 	customJSON, err := json.Marshal(custom)
 	if err != nil {
@@ -556,7 +555,7 @@ func connectorConfigWithDefaultsXmatters(plan string) (string, error) {
 		return "", err
 	}
 	if custom.UsesBasic == nil {
-		custom.UsesBasic = schemautil.Pointer(true)
+		custom.UsesBasic = new(true)
 	}
 	customJSON, err := json.Marshal(custom)
 	if err != nil {

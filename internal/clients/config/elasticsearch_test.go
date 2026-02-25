@@ -29,7 +29,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 
 	providerSchema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/stretchr/testify/require"
 )
 
@@ -180,7 +179,7 @@ func Test_newElasticsearchConfigFromFramework(t *testing.T) {
 										basetypes.NewStringValue("example.com"),
 									},
 								),
-								Insecure: basetypes.NewBoolPointerValue(schemautil.Pointer(true)),
+								Insecure: basetypes.NewBoolPointerValue(new(true)),
 							},
 						},
 					},
@@ -213,7 +212,7 @@ func Test_newElasticsearchConfigFromFramework(t *testing.T) {
 										basetypes.NewStringValue("example.com"),
 									},
 								),
-								Insecure: basetypes.NewBoolPointerValue(schemautil.Pointer(true)),
+								Insecure: basetypes.NewBoolPointerValue(new(true)),
 							},
 						},
 					},

@@ -23,7 +23,6 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/stretchr/testify/assert"
@@ -48,12 +47,12 @@ func Test_metricChartConfigModel_fromAPI_toAPI_variant0(t *testing.T) {
 			name: "basic metric chart with all fields",
 			apiChart: kbapi.MetricChartSchema0{
 				Type:                kbapi.MetricChartSchema0TypeMetric,
-				Title:               schemautil.Pointer("Test Metric"),
-				Description:         schemautil.Pointer("Test Description"),
-				IgnoreGlobalFilters: schemautil.Pointer(false),
-				Sampling:            schemautil.Pointer(float32(1.0)),
+				Title:               new("Test Metric"),
+				Description:         new("Test Description"),
+				IgnoreGlobalFilters: new(false),
+				Sampling:            new(float32(1.0)),
 				Query: kbapi.FilterSimpleSchema{
-					Language: schemautil.Pointer(kbapi.FilterSimpleSchemaLanguage("kuery")),
+					Language: new(kbapi.FilterSimpleSchemaLanguage("kuery")),
 					Query:    "",
 				},
 				Metrics: []kbapi.MetricChartSchema_0_Metrics_Item{},
@@ -143,10 +142,10 @@ func Test_metricChartConfigModel_fromAPI_toAPI_variant1(t *testing.T) {
 			name: "ESQL metric chart with all fields",
 			apiChart: kbapi.MetricChartSchema1{
 				Type:                kbapi.MetricChartSchema1TypeMetric,
-				Title:               schemautil.Pointer("ESQL Metric"),
-				Description:         schemautil.Pointer("ESQL Description"),
-				IgnoreGlobalFilters: schemautil.Pointer(true),
-				Sampling:            schemautil.Pointer(float32(0.5)),
+				Title:               new("ESQL Metric"),
+				Description:         new("ESQL Description"),
+				IgnoreGlobalFilters: new(true),
+				Sampling:            new(float32(0.5)),
 				Dataset: func() kbapi.MetricChartSchema_1_Dataset {
 					var ds kbapi.MetricChartSchema_1_Dataset
 					_ = ds.FromEsqlDatasetTypeSchema(kbapi.EsqlDatasetTypeSchema{
@@ -256,7 +255,7 @@ func Test_metricChartConfigModel_withMetrics(t *testing.T) {
 
 	apiChart := kbapi.MetricChartSchema1{
 		Type:    kbapi.MetricChartSchema1TypeMetric,
-		Title:   schemautil.Pointer("Test with Metrics"),
+		Title:   new("Test with Metrics"),
 		Metrics: []kbapi.MetricChartSchema_1_Metrics_Item{metricItem},
 	}
 
@@ -389,7 +388,7 @@ func Test_metricChartConfigModel_withFilters(t *testing.T) {
 		func() kbapi.SearchFilterSchema {
 			var filter kbapi.SearchFilterSchema
 			_ = filter.FromSearchFilterSchema0(kbapi.SearchFilterSchema0{
-				Language: schemautil.Pointer(kbapi.SearchFilterSchema0Language("kuery")),
+				Language: new(kbapi.SearchFilterSchema0Language("kuery")),
 				Query: func() kbapi.SearchFilterSchema_0_Query {
 					var q kbapi.SearchFilterSchema_0_Query
 					_ = q.FromSearchFilterSchema0Query0("status:active")
@@ -445,7 +444,7 @@ func Test_metricChartConfigModel_withBreakdownBy(t *testing.T) {
 		Type:        kbapi.MetricChartSchema0TypeMetric,
 		BreakdownBy: &breakdownBy,
 		Query: kbapi.FilterSimpleSchema{
-			Language: schemautil.Pointer(kbapi.FilterSimpleSchemaLanguage("kuery")),
+			Language: new(kbapi.FilterSimpleSchemaLanguage("kuery")),
 			Query:    "status:active",
 		},
 		Metrics: []kbapi.MetricChartSchema_0_Metrics_Item{},

@@ -124,9 +124,9 @@ func (m *tfModelV0) toParameterRequest(forUpdate bool) kboapi.SyntheticsParamete
 	return kboapi.SyntheticsParameterRequest{
 		Key:         m.Key.ValueString(),
 		Value:       m.Value.ValueString(),
-		Description: schemautil.Pointer(m.Description.ValueString()),
+		Description: new(m.Description.ValueString()),
 		// We need this to marshal as an empty JSON array, not null.
-		Tags:              schemautil.Pointer(schemautil.NonNilSlice(synthetics.ValueStringSlice(m.Tags))),
+		Tags:              new(schemautil.NonNilSlice(synthetics.ValueStringSlice(m.Tags))),
 		ShareAcrossSpaces: shareAcrossSpaces,
 	}
 }
