@@ -19,6 +19,7 @@ package securitydetectionrule
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -866,6 +867,35 @@ func (d Data) filtersToAPI(ctx context.Context) (*kbapi.SecurityDetectionsAPIRul
 	}
 
 	return &filters, diags
+}
+
+// threatFiltersToAPI converts the Terraform threat_filters list (JSON strings) into the API type ([]interface{}).
+func (d Data) threatFiltersToAPI(ctx context.Context) (*kbapi.SecurityDetectionsAPIThreatFilters, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	if !typeutils.IsKnown(d.ThreatFilters) {
+		return nil, diags
+	}
+
+	filtersJSON := typeutils.ListTypeAs[string](ctx, d.ThreatFilters, path.Root("threat_filters"), &diags)
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	apiThreatFilters := make(kbapi.SecurityDetectionsAPIThreatFilters, 0, len(filtersJSON))
+	for i, filterStr := range filtersJSON {
+		var filter any
+		if err := json.Unmarshal([]byte(filterStr), &filter); err != nil {
+			diags.AddError(
+				"Invalid threat_filters JSON",
+				fmt.Sprintf("threat_filters[%d] is not valid JSON: %s", i, err.Error()),
+			)
+			continue
+		}
+		apiThreatFilters = append(apiThreatFilters, filter)
+	}
+
+	return &apiThreatFilters, diags
 }
 
 // parseDurationToAPI converts a customtypes.Duration to the API structure

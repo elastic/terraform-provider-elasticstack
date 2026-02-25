@@ -28,7 +28,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-version"
@@ -39,11 +39,11 @@ import (
 const osqueryResponseActionQuery = "SELECT * FROM processes WHERE pid IN (SELECT DISTINCT pid FROM connections WHERE remote_address NOT LIKE '10.%'" +
 	" AND remote_address NOT LIKE '192.168.%' AND remote_address NOT LIKE '127.%');"
 
-// checkResourceJSONAttr compares the JSON string value of a resource attribute
-func checkResourceJSONAttr(expectedJSON string) resource.TestCheckFunc {
+// checkResourceJSONAttrKey compares the JSON string value of a resource attribute key.
+// The attribute value is expected to be a JSON-encoded string.
+func checkResourceJSONAttrKey(key, expectedJSON string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		name := securityDetectionRuleResourceName
-		key := "filters"
 		ms := s.RootModule()
 		rs, ok := ms.Resources[name]
 		if !ok {
@@ -127,7 +127,7 @@ func TestAccResourceSecurityDetectionRule_Query(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.1", "event.action"),
 
 					// Check filters field
-					checkResourceJSONAttr(`[{"bool": {"must": [{"term": {"event.category": "authentication"}}], "must_not": [{"term": {"event.outcome": "success"}}]}}]`),
+					checkResourceJSONAttrKey("filters", `[{"bool": {"must": [{"term": {"event.category": "authentication"}}], "must_not": [{"term": {"event.outcome": "success"}}]}}]`),
 
 					// Check related integrations
 					resource.TestCheckResourceAttr(resourceName, "related_integrations.#", "1"),
@@ -205,7 +205,7 @@ func TestAccResourceSecurityDetectionRule_Query(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.2", "source.ip"),
 
 					// Check filters field (updated values)
-					checkResourceJSONAttr(`[{"range": {"@timestamp": {"gte": "now-1h", "lte": "now"}}}, {"terms": {"event.action": ["login", "logout", "access"]}}]`),
+					checkResourceJSONAttrKey("filters", `[{"range": {"@timestamp": {"gte": "now-1h", "lte": "now"}}}, {"terms": {"event.action": ["login", "logout", "access"]}}]`),
 
 					// Check related integrations (updated values)
 					resource.TestCheckResourceAttr(resourceName, "related_integrations.#", "2"),
@@ -328,7 +328,7 @@ func TestAccResourceSecurityDetectionRule_EQL(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.1", "process.executable"),
 
 					// Check filters field
-					checkResourceJSONAttr(`[{"bool": {"filter": [{"term": {"process.parent.name": "explorer.exe"}}]}}]`),
+					checkResourceJSONAttrKey("filters", `[{"bool": {"filter": [{"term": {"process.parent.name": "explorer.exe"}}]}}]`),
 
 					// Check related integrations
 					resource.TestCheckResourceAttr(resourceName, "related_integrations.#", "1"),
@@ -389,7 +389,7 @@ func TestAccResourceSecurityDetectionRule_EQL(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.2", "process.parent.name"),
 
 					// Check filters field (updated values)
-					checkResourceJSONAttr(`[{"exists": {"field": "process.code_signature.trusted"}}, {"term": {"host.os.family": "windows"}}]`),
+					checkResourceJSONAttrKey("filters", `[{"exists": {"field": "process.code_signature.trusted"}}, {"term": {"host.os.family": "windows"}}]`),
 
 					// Check related integrations
 					resource.TestCheckResourceAttr(resourceName, "related_integrations.#", "1"),
@@ -764,7 +764,7 @@ func TestAccResourceSecurityDetectionRule_NewTerms(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "new_terms_fields.0", "user.name"),
 
 					// Check filters field
-					checkResourceJSONAttr(`[{"bool": {"should": [{"wildcard": {"user.domain": "*.internal"}}, {"term": {"user.type": "service_account"}}]}}]`),
+					checkResourceJSONAttrKey("filters", `[{"bool": {"should": [{"wildcard": {"user.domain": "*.internal"}}, {"term": {"user.type": "service_account"}}]}}]`),
 
 					resource.TestCheckResourceAttr(resourceName, "history_window_start", "now-14d"),
 					resource.TestCheckResourceAttr(resourceName, "namespace", "new-terms-namespace"),
@@ -841,7 +841,7 @@ func TestAccResourceSecurityDetectionRule_NewTerms(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "new_terms_fields.1", "source.ip"),
 
 					// Check filters field (updated values)
-					checkResourceJSONAttr(`[{"geo_distance": {"distance": "1000km", "source.geo.location": {"lat": 40.12, "lon": -71.34}}}]`),
+					checkResourceJSONAttrKey("filters", `[{"geo_distance": {"distance": "1000km", "source.geo.location": {"lat": 40.12, "lon": -71.34}}}]`),
 
 					resource.TestCheckResourceAttr(resourceName, "history_window_start", "now-30d"),
 					resource.TestCheckResourceAttr(resourceName, "rule_name_override", "Updated Custom New Terms Rule Name"),
@@ -904,7 +904,7 @@ func TestAccResourceSecurityDetectionRule_SavedQuery(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "saved_id", "test-saved-query-id"),
 
 					// Check filters field
-					checkResourceJSONAttr(`[{"prefix": {"event.action": "user_"}}]`),
+					checkResourceJSONAttrKey("filters", `[{"prefix": {"event.action": "user_"}}]`),
 
 					resource.TestCheckResourceAttr(resourceName, "data_view_id", "saved-query-data-view-id"),
 					resource.TestCheckResourceAttr(resourceName, "namespace", "saved-query-namespace"),
@@ -978,7 +978,7 @@ func TestAccResourceSecurityDetectionRule_SavedQuery(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "saved_id", "test-saved-query-id-updated"),
 
 					// Check filters field (updated values)
-					checkResourceJSONAttr(`[{"script": {"script": {"source": "doc['event.severity'].value > 2"}}}]`),
+					checkResourceJSONAttrKey("filters", `[{"script": {"script": {"source": "doc['event.severity'].value > 2"}}}]`),
 
 					resource.TestCheckResourceAttr(resourceName, "data_view_id", "updated-saved-query-data-view-id"),
 					resource.TestCheckResourceAttr(resourceName, "namespace", "updated-saved-query-namespace"),
@@ -1079,7 +1079,7 @@ func TestAccResourceSecurityDetectionRule_ThreatMatch(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "threat_mapping.0.entries.0.value", "threat.indicator.ip"),
 
 					// Check filters field
-					checkResourceJSONAttr(`[{"bool": {"must_not": [{"term": {"destination.ip": "127.0.0.1"}}]}}]`),
+					checkResourceJSONAttrKey("filters", `[{"bool": {"must_not": [{"term": {"destination.ip": "127.0.0.1"}}]}}]`),
 
 					// Check investigation_fields
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.#", "2"),
@@ -1160,7 +1160,7 @@ func TestAccResourceSecurityDetectionRule_ThreatMatch(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "threat_mapping.1.entries.0.field", "source.ip"),
 
 					// Check filters field (updated values)
-					checkResourceJSONAttr(`[{"regexp": {"destination.domain": ".*\\.suspicious\\.com"}}]`),
+					checkResourceJSONAttrKey("filters", `[{"regexp": {"destination.domain": ".*\\.suspicious\\.com"}}]`),
 
 					// Check investigation_fields
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.#", "3"),
@@ -1219,6 +1219,31 @@ func TestAccResourceSecurityDetectionRule_ThreatMatch(t *testing.T) {
 	})
 }
 
+func TestAccResourceSecurityDetectionRule_ThreatMatch_ThreatFilters(t *testing.T) {
+	resourceName := securityDetectionRuleResourceName
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		CheckDestroy:             testAccCheckSecurityDetectionRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
+				Config:   testAccSecurityDetectionRuleConfigThreatMatchThreatFilters("test-threat-filters-repro"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", "test-threat-filters-repro"),
+					resource.TestCheckResourceAttr(resourceName, "type", "threat_match"),
+					resource.TestCheckResourceAttr(resourceName, "language", "kuery"),
+					resource.TestCheckResourceAttr(resourceName, "threat_filters.#", "3"),
+					checkResourceJSONAttrKey("threat_filters.0", `{"$state":{"store":"appState"},"meta":{"disabled":false,"key":"event.category","negate":false,"params":{"query":"threat"},"type":"phrase"},"query":{"match_phrase":{"event.category":"threat"}}}`),
+					checkResourceJSONAttrKey("threat_filters.1", `{"$state":{"store":"appState"},"meta":{"disabled":false,"key":"event.kind","negate":false,"params":{"query":"enrichment"},"type":"phrase"},"query":{"match_phrase":{"event.kind":"enrichment"}}}`),
+					checkResourceJSONAttrKey("threat_filters.2", `{"$state":{"store":"appState"},"meta":{"disabled":false,"key":"event.type","negate":false,"params":{"query":"indicator"},"type":"phrase"},"query":{"match_phrase":{"event.type":"indicator"}}}`),
+				),
+			},
+		},
+	})
+}
+
 func TestAccResourceSecurityDetectionRule_Threshold(t *testing.T) {
 	resourceName := securityDetectionRuleResourceName
 
@@ -1248,7 +1273,7 @@ func TestAccResourceSecurityDetectionRule_Threshold(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "threshold.field.0", "user.name"),
 
 					// Check filters field
-					checkResourceJSONAttr(`[{"bool": {"filter": [{"range": {"event.ingested": {"gte": "now-24h"}}}]}}]`),
+					checkResourceJSONAttrKey("filters", `[{"bool": {"filter": [{"range": {"event.ingested": {"gte": "now-24h"}}}]}}]`),
 
 					// Check investigation_fields
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.#", "2"),
@@ -1319,7 +1344,7 @@ func TestAccResourceSecurityDetectionRule_Threshold(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "threshold.field.1", "source.ip"),
 
 					// Check filters field (updated values)
-					checkResourceJSONAttr(`[{"bool": {"should": [{"match": {"user.roles": "admin"}}, {"term": {"event.severity": "high"}}], "minimum_should_match": 1}}]`),
+					checkResourceJSONAttrKey("filters", `[{"bool": {"should": [{"match": {"user.roles": "admin"}}, {"term": {"event.severity": "high"}}], "minimum_should_match": 1}}]`),
 
 					// Check investigation_fields
 					resource.TestCheckResourceAttr(resourceName, "investigation_fields.#", "3"),
@@ -2965,6 +2990,92 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
       }
     }
   ]
+}
+`, name)
+}
+
+func testAccSecurityDetectionRuleConfigThreatMatchThreatFilters(name string) string {
+	// Repro based on https://github.com/elastic/terraform-provider-elasticstack/issues/1751
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  kibana {}
+}
+
+resource "elasticstack_kibana_security_detection_rule" "test" {
+  name        = "%s"
+  description = "Repro for threat_filters drift (issue #1751)"
+  type        = "threat_match"
+
+  index    = ["auditbeat-*", "endgame-*", "filebeat-*", "logs-*", "packetbeat-*", "winlogbeat-*"]
+  query    = "url.full:*"
+  language = "kuery"
+
+  threat_index          = ["filebeat-*", "logs-ti_*"]
+  threat_query          = "@timestamp >= \"now-30d/d\" and event.module:(threatintel or ti_*) and threat.indicator.url.full:* and not labels.is_ioc_transform_source:\"true\""
+  threat_indicator_path = "threat.indicator"
+
+  threat_mapping = [
+    {
+      entries = [
+        {
+          field = "url.full"
+          type  = "mapping"
+          value = "threat.indicator.url.full"
+        }
+      ]
+    },
+    {
+      entries = [
+        {
+          field = "url.original"
+          type  = "mapping"
+          value = "threat.indicator.url.original"
+        }
+      ]
+    }
+  ]
+
+  threat_filters = [
+    jsonencode({
+      "$state" = { store = "appState" }
+      meta = {
+        disabled = false
+        key      = "event.category"
+        negate   = false
+        params   = { query = "threat" }
+        type     = "phrase"
+      }
+      query = { match_phrase = { "event.category" = "threat" } }
+    }),
+    jsonencode({
+      "$state" = { store = "appState" }
+      meta = {
+        disabled = false
+        key      = "event.kind"
+        negate   = false
+        params   = { query = "enrichment" }
+        type     = "phrase"
+      }
+      query = { match_phrase = { "event.kind" = "enrichment" } }
+    }),
+    jsonencode({
+      "$state" = { store = "appState" }
+      meta = {
+        disabled = false
+        key      = "event.type"
+        negate   = false
+        params   = { query = "indicator" }
+        type     = "phrase"
+      }
+      query = { match_phrase = { "event.type" = "indicator" } }
+    }),
+  ]
+
+  rule_id    = "f3e22c8b-ea47-45d1-b502-b57b6de950b3"
+  severity   = "high"
+  risk_score = 73
+  from       = "now-65m"
+  interval   = "1h"
 }
 `, name)
 }
