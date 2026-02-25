@@ -487,12 +487,12 @@ Optional:
 
 Required:
 
-- `aggregation` (String) The aggregation type for this metric. One of: sum, avg, min, max, value_count, percentile, doc_count. Determines which other fields are required:
+- `aggregation` (String) The aggregation type for this metric. One of: sum, avg, min, max, value_count, last_value, cardinality, std_deviation, percentile, doc_count. Determines which other fields are required.
 - `name` (String) The unique name for this metric. Used as a variable in the equation field.
 
 Optional:
 
-- `field` (String) Field to aggregate. Required for aggregations: sum, avg, min, max, value_count, percentile. Must NOT be set for doc_count.
+- `field` (String) Field to aggregate. Required for sum, avg, min, max, value_count, last_value, cardinality, std_deviation, percentile. Must NOT be set for doc_count.
 - `filter` (String) Optional KQL filter for this metric. Supported for all aggregations except doc_count.
 - `percentile` (Number) Percentile value (e.g., 99). Required if aggregation is 'percentile'. Must NOT be set for other aggregations.
 

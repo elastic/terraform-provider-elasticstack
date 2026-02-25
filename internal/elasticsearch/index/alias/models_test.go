@@ -1,9 +1,30 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package alias
 
 import (
+	"context"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestIndexConfig_Equals(t *testing.T) {
@@ -298,4 +319,123 @@ func TestIndexConfig_Equals(t *testing.T) {
 			assert.Equal(t, tt.expected, result, "Equals() returned unexpected result")
 		})
 	}
+}
+
+func TestTfModel_Validate(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	indexAttrTypes := getIndexAttrTypes()
+	indexObjectType := types.ObjectType{AttrTypes: indexAttrTypes}
+
+	indexModelForName := func(name types.String) indexModel {
+		return indexModel{
+			Name:          name,
+			Filter:        jsontypes.NewNormalizedNull(),
+			IndexRouting:  types.StringNull(),
+			IsHidden:      types.BoolValue(false),
+			Routing:       types.StringNull(),
+			SearchRouting: types.StringNull(),
+		}
+	}
+
+	mustIndexObject := func(t *testing.T, name types.String) types.Object {
+		t.Helper()
+		obj, diags := types.ObjectValueFrom(ctx, indexAttrTypes, indexModelForName(name))
+		require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags.Errors())
+		return obj
+	}
+
+	mustIndexSet := func(t *testing.T, names ...types.String) types.Set {
+		t.Helper()
+		indices := make([]indexModel, 0, len(names))
+		for _, name := range names {
+			indices = append(indices, indexModelForName(name))
+		}
+		setVal, diags := types.SetValueFrom(ctx, indexObjectType, indices)
+		require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags.Errors())
+		return setVal
+	}
+
+	t.Run("returns_no_error_when_write_index_is_null", func(t *testing.T) {
+		t.Parallel()
+		m := tfModel{
+			WriteIndex:  types.ObjectNull(indexAttrTypes),
+			ReadIndices: mustIndexSet(t, types.StringValue("r1")),
+		}
+		diags := m.Validate(ctx)
+		require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags.Errors())
+	})
+
+	t.Run("returns_no_error_when_write_index_is_unknown", func(t *testing.T) {
+		t.Parallel()
+		m := tfModel{
+			WriteIndex:  types.ObjectUnknown(indexAttrTypes),
+			ReadIndices: mustIndexSet(t, types.StringValue("r1")),
+		}
+		diags := m.Validate(ctx)
+		require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags.Errors())
+	})
+
+	t.Run("returns_no_error_when_read_indices_is_null", func(t *testing.T) {
+		t.Parallel()
+		m := tfModel{
+			WriteIndex:  mustIndexObject(t, types.StringValue("w1")),
+			ReadIndices: types.SetNull(indexObjectType),
+		}
+		diags := m.Validate(ctx)
+		require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags.Errors())
+	})
+
+	t.Run("returns_no_error_when_read_indices_is_unknown", func(t *testing.T) {
+		t.Parallel()
+		m := tfModel{
+			WriteIndex:  mustIndexObject(t, types.StringValue("w1")),
+			ReadIndices: types.SetUnknown(indexObjectType),
+		}
+		diags := m.Validate(ctx)
+		require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags.Errors())
+	})
+
+	t.Run("returns_error_when_write_index_name_is_in_read_indices", func(t *testing.T) {
+		t.Parallel()
+		m := tfModel{
+			WriteIndex:  mustIndexObject(t, types.StringValue("idx")),
+			ReadIndices: mustIndexSet(t, types.StringValue("idx"), types.StringValue("idx2")),
+		}
+		diags := m.Validate(ctx)
+		require.True(t, diags.HasError())
+		require.Contains(t, diags.Errors()[0].Summary(), "Invalid Configuration")
+		require.Contains(t, diags.Errors()[0].Detail(), "cannot be both a write index and a read index")
+	})
+
+	t.Run("returns_no_error_when_write_and_read_names_are_distinct", func(t *testing.T) {
+		t.Parallel()
+		m := tfModel{
+			WriteIndex:  mustIndexObject(t, types.StringValue("w1")),
+			ReadIndices: mustIndexSet(t, types.StringValue("r1"), types.StringValue("r2")),
+		}
+		diags := m.Validate(ctx)
+		require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags.Errors())
+	})
+
+	t.Run("skips_validation_when_write_index_name_is_unknown", func(t *testing.T) {
+		t.Parallel()
+		m := tfModel{
+			WriteIndex:  mustIndexObject(t, types.StringUnknown()),
+			ReadIndices: mustIndexSet(t, types.StringValue("idx")),
+		}
+		diags := m.Validate(ctx)
+		require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags.Errors())
+	})
+
+	t.Run("ignores_read_indices_with_unknown_name", func(t *testing.T) {
+		t.Parallel()
+		m := tfModel{
+			WriteIndex:  mustIndexObject(t, types.StringValue("w1")),
+			ReadIndices: mustIndexSet(t, types.StringUnknown(), types.StringValue("r1")),
+		}
+		diags := m.Validate(ctx)
+		require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags.Errors())
+	})
 }

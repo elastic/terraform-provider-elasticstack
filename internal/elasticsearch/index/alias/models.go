@@ -1,8 +1,26 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package alias
 
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"reflect"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
@@ -18,6 +36,58 @@ type tfModel struct {
 	Name        types.String `tfsdk:"name"`
 	WriteIndex  types.Object `tfsdk:"write_index"`
 	ReadIndices types.Set    `tfsdk:"read_indices"`
+}
+
+func (model *tfModel) Validate(ctx context.Context) diag.Diagnostics {
+	// Validate that write_index doesn't appear in read_indices.
+	// This can be called during plan-time validation (unknown values possible) and during apply (typically known).
+
+	if model.WriteIndex.IsNull() || model.WriteIndex.IsUnknown() {
+		return nil
+	}
+
+	if model.ReadIndices.IsNull() || model.ReadIndices.IsUnknown() {
+		return nil
+	}
+
+	// Decode write index
+	var writeIndex indexModel
+	diags := model.WriteIndex.As(ctx, &writeIndex, basetypes.ObjectAsOptions{})
+	if diags.HasError() {
+		return diags
+	}
+
+	if writeIndex.Name.IsNull() || writeIndex.Name.IsUnknown() {
+		return nil
+	}
+	writeIndexName := writeIndex.Name.ValueString()
+	if writeIndexName == "" {
+		return nil
+	}
+
+	// Decode read indices and compare
+	var readIndices []indexModel
+	diags = model.ReadIndices.ElementsAs(ctx, &readIndices, false)
+	if diags.HasError() {
+		return diags
+	}
+
+	for _, readIndex := range readIndices {
+		if readIndex.Name.IsNull() || readIndex.Name.IsUnknown() {
+			continue
+		}
+		readIndexName := readIndex.Name.ValueString()
+		if readIndexName != "" && readIndexName == writeIndexName {
+			return diag.Diagnostics{
+				diag.NewErrorDiagnostic(
+					"Invalid Configuration",
+					fmt.Sprintf("Index '%s' cannot be both a write index and a read index", writeIndexName),
+				),
+			}
+		}
+	}
+
+	return nil
 }
 
 type indexModel struct {
@@ -120,11 +190,27 @@ func (model *tfModel) toAliasConfigs(ctx context.Context) ([]IndexConfig, diag.D
 	var configs []IndexConfig
 
 	// Handle write index
+	if model.WriteIndex.IsUnknown() {
+		return nil, diag.Diagnostics{
+			diag.NewErrorDiagnostic(
+				"Invalid Configuration",
+				"Cannot build alias actions because `write_index` is unknown. Ensure `write_index` is fully known during apply.",
+			),
+		}
+	}
 	if !model.WriteIndex.IsNull() {
 		var writeIndex indexModel
 		diags := model.WriteIndex.As(ctx, &writeIndex, basetypes.ObjectAsOptions{})
 		if diags.HasError() {
 			return nil, diags
+		}
+		if writeIndex.Name.IsUnknown() || writeIndex.Name.IsNull() || writeIndex.Name.ValueString() == "" {
+			return nil, diag.Diagnostics{
+				diag.NewErrorDiagnostic(
+					"Invalid Configuration",
+					"Cannot build alias actions because `write_index.name` is unknown or empty. Ensure `write_index.name` is fully known during apply.",
+				),
+			}
 		}
 
 		config, configDiags := indexToConfig(writeIndex, true)
@@ -135,6 +221,14 @@ func (model *tfModel) toAliasConfigs(ctx context.Context) ([]IndexConfig, diag.D
 	}
 
 	// Handle read indices
+	if model.ReadIndices.IsUnknown() {
+		return nil, diag.Diagnostics{
+			diag.NewErrorDiagnostic(
+				"Invalid Configuration",
+				"Cannot build alias actions because `read_indices` is unknown. Ensure `read_indices` is fully known during apply.",
+			),
+		}
+	}
 	if !model.ReadIndices.IsNull() {
 		var readIndices []indexModel
 		diags := model.ReadIndices.ElementsAs(ctx, &readIndices, false)
@@ -143,6 +237,14 @@ func (model *tfModel) toAliasConfigs(ctx context.Context) ([]IndexConfig, diag.D
 		}
 
 		for _, readIndex := range readIndices {
+			if readIndex.Name.IsUnknown() || readIndex.Name.IsNull() || readIndex.Name.ValueString() == "" {
+				return nil, diag.Diagnostics{
+					diag.NewErrorDiagnostic(
+						"Invalid Configuration",
+						"Cannot build alias actions because one of the `read_indices` has an unknown or empty `name`. Ensure all read index names are fully known during apply.",
+					),
+				}
+			}
 			config, configDiags := indexToConfig(readIndex, false)
 			if configDiags.HasError() {
 				return nil, configDiags
