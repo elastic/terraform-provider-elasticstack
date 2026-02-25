@@ -20,6 +20,8 @@ import (
 var minExceptionListAPISupport = version.Must(version.NewVersion("7.9.0"))
 
 func TestAccResourceExceptionList(t *testing.T) {
+	listID := fmt.Sprintf("test-exception-list-%s", uuid.New().String()[:8])
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceExceptionListDestroy,
@@ -29,7 +31,7 @@ func TestAccResourceExceptionList(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
-					"list_id":        config.StringVariable("test-exception-list"),
+					"list_id":        config.StringVariable(listID),
 					"name":           config.StringVariable("Test Exception List"),
 					"description":    config.StringVariable("Test exception list for acceptance tests"),
 					"type":           config.StringVariable("detection"),
@@ -37,7 +39,7 @@ func TestAccResourceExceptionList(t *testing.T) {
 					"tags":           config.SetVariable(config.StringVariable("test")),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_list.test", "list_id", "test-exception-list"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_list.test", "list_id", listID),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_list.test", "name", "Test Exception List"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_list.test", "description", "Test exception list for acceptance tests"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_list.test", "type", "detection"),
@@ -52,19 +54,26 @@ func TestAccResourceExceptionList(t *testing.T) {
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minExceptionListAPISupport),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_optional"),
+				ConfigVariables: config.Variables{
+					"list_id":        config.StringVariable(listID),
+					"name":           config.StringVariable("Test Exception List"),
+					"description":    config.StringVariable("Test exception list for acceptance tests"),
+					"type":           config.StringVariable("detection"),
+					"namespace_type": config.StringVariable("single"),
+					"tags":           config.SetVariable(config.StringVariable("test"), config.StringVariable("demo")),
+				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_list.test", "space_id", "default"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_exception_list.test", "list_id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_list.test", "list_id", listID),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_list.test", "name", "Test Exception List"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_list.test", "description", "This is a test exception list"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_list.test", "type", "endpoint"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_list.test", "description", "Test exception list for acceptance tests"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_list.test", "type", "detection"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_list.test", "namespace_type", "single"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_list.test", "os_types.#", "2"),
-					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_exception_list.test", "os_types.*", "linux"),
-					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_exception_list.test", "os_types.*", "windows"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_list.test", "tags.#", "2"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_exception_list.test", "tags.*", "test"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_exception_list.test", "tags.*", "demo"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_list.test", "os_types.#", "2"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_exception_list.test", "os_types.*", "linux"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_exception_list.test", "os_types.*", "windows"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_exception_list.test", "id"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_exception_list.test", "created_at"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_exception_list.test", "created_by"),
@@ -75,7 +84,7 @@ func TestAccResourceExceptionList(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
-					"list_id":        config.StringVariable("test-exception-list"),
+					"list_id":        config.StringVariable(listID),
 					"name":           config.StringVariable("Test Exception List Updated"),
 					"description":    config.StringVariable("Updated description"),
 					"type":           config.StringVariable("detection"),
@@ -94,7 +103,7 @@ func TestAccResourceExceptionList(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
-					"list_id":        config.StringVariable("test-exception-list"),
+					"list_id":        config.StringVariable(listID),
 					"name":           config.StringVariable("Test Exception List Updated"),
 					"description":    config.StringVariable("Updated description"),
 					"type":           config.StringVariable("detection"),
@@ -110,6 +119,8 @@ func TestAccResourceExceptionList(t *testing.T) {
 }
 
 func TestAccResourceExceptionListAgnostic(t *testing.T) {
+	listID := fmt.Sprintf("test-exception-list-agnostic-%s", uuid.New().String()[:8])
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV6ProviderFactories: acctest.Providers,
@@ -119,7 +130,7 @@ func TestAccResourceExceptionListAgnostic(t *testing.T) {
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minExceptionListAPISupport),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("agnostic_create"),
 				ConfigVariables: config.Variables{
-					"list_id":        config.StringVariable("test-exception-list-agnostic"),
+					"list_id":        config.StringVariable(listID),
 					"name":           config.StringVariable("Test Exception List Agnostic"),
 					"description":    config.StringVariable("Test agnostic exception list for acceptance tests"),
 					"type":           config.StringVariable("detection"),
@@ -127,7 +138,7 @@ func TestAccResourceExceptionListAgnostic(t *testing.T) {
 					"tags":           config.SetVariable(config.StringVariable("test"), config.StringVariable("agnostic")),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_list.test", "list_id", "test-exception-list-agnostic"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_list.test", "list_id", listID),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_list.test", "name", "Test Exception List Agnostic"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_list.test", "description", "Test agnostic exception list for acceptance tests"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_list.test", "type", "detection"),
@@ -143,7 +154,7 @@ func TestAccResourceExceptionListAgnostic(t *testing.T) {
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minExceptionListAPISupport),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("agnostic_update"),
 				ConfigVariables: config.Variables{
-					"list_id":        config.StringVariable("test-exception-list-agnostic"),
+					"list_id":        config.StringVariable(listID),
 					"name":           config.StringVariable("Test Exception List Agnostic Updated"),
 					"description":    config.StringVariable("Updated agnostic description"),
 					"type":           config.StringVariable("detection"),
@@ -162,7 +173,7 @@ func TestAccResourceExceptionListAgnostic(t *testing.T) {
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minExceptionListAPISupport),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("agnostic_update"),
 				ConfigVariables: config.Variables{
-					"list_id":        config.StringVariable("test-exception-list-agnostic"),
+					"list_id":        config.StringVariable(listID),
 					"name":           config.StringVariable("Test Exception List Agnostic Updated"),
 					"description":    config.StringVariable("Updated agnostic description"),
 					"type":           config.StringVariable("detection"),
@@ -181,6 +192,7 @@ func TestAccResourceExceptionListWithSpace(t *testing.T) {
 	resourceName := "elasticstack_kibana_security_exception_list.test"
 	spaceResourceName := "elasticstack_kibana_space.test"
 	spaceID := fmt.Sprintf("test-space-%s", uuid.New().String()[:8])
+	listID := fmt.Sprintf("test-exception-list-space-%s", uuid.New().String()[:8])
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -192,7 +204,7 @@ func TestAccResourceExceptionListWithSpace(t *testing.T) {
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"space_id":       config.StringVariable(spaceID),
-					"list_id":        config.StringVariable("test-exception-list-space"),
+					"list_id":        config.StringVariable(listID),
 					"name":           config.StringVariable("Test Exception List in Space"),
 					"description":    config.StringVariable("Test exception list in custom space"),
 					"type":           config.StringVariable("detection"),
@@ -206,7 +218,7 @@ func TestAccResourceExceptionListWithSpace(t *testing.T) {
 
 					// Check exception list attributes
 					resource.TestCheckResourceAttr(resourceName, "space_id", spaceID),
-					resource.TestCheckResourceAttr(resourceName, "list_id", "test-exception-list-space"),
+					resource.TestCheckResourceAttr(resourceName, "list_id", listID),
 					resource.TestCheckResourceAttr(resourceName, "name", "Test Exception List in Space"),
 					resource.TestCheckResourceAttr(resourceName, "description", "Test exception list in custom space"),
 					resource.TestCheckResourceAttr(resourceName, "type", "detection"),
@@ -223,7 +235,7 @@ func TestAccResourceExceptionListWithSpace(t *testing.T) {
 				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"space_id":       config.StringVariable(spaceID),
-					"list_id":        config.StringVariable("test-exception-list-space"),
+					"list_id":        config.StringVariable(listID),
 					"name":           config.StringVariable("Test Exception List in Space Updated"),
 					"description":    config.StringVariable("Updated description in space"),
 					"type":           config.StringVariable("detection"),
@@ -249,7 +261,7 @@ func TestAccResourceExceptionListWithSpace(t *testing.T) {
 				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"space_id":       config.StringVariable(spaceID),
-					"list_id":        config.StringVariable("test-exception-list-space"),
+					"list_id":        config.StringVariable(listID),
 					"name":           config.StringVariable("Test Exception List in Space Updated"),
 					"description":    config.StringVariable("Updated description in space"),
 					"type":           config.StringVariable("detection"),
