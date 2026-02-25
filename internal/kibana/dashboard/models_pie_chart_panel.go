@@ -15,7 +15,7 @@ import (
 func newPieChartPanelConfigConverter() pieChartPanelConfigConverter {
 	return pieChartPanelConfigConverter{
 		lensPanelConfigConverter: lensPanelConfigConverter{
-			visualizationType: "pie", // This seems to be the type literal used in API, though schema implies checking union
+			visualizationType: "pie", // Visualization type literal used by the Kibana API for pie chart panels
 			hasTFPanelConfig:  func(pm panelModel) bool { return pm.PieChartConfig != nil },
 		},
 	}
@@ -244,11 +244,7 @@ func (m *pieChartConfigModel) fromAPINoESQL(ctx context.Context, apiChart kbapi.
 func (m *pieChartConfigModel) fromAPIESQL(ctx context.Context, apiChart kbapi.PieESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	// Note: Title is not in PieESQL schema in some versions, check if it's there
-	// According to generated/kbapi/kibana.gen.go (which I glimpsed), PieESQL doesn't have Title?
-	// Wait, I saw "Title *string" in PieNoESQL but didn't check PieESQL carefully for Title.
-	// Assuming it's absent or handled differently. Let's omit and check later.
-	// Wait, description is there.
+	m.Title = types.StringPointerValue(apiChart.Title)
 	m.Description = types.StringPointerValue(apiChart.Description)
 
 	if apiChart.IgnoreGlobalFilters != nil {
@@ -342,14 +338,8 @@ func (m *pieChartConfigModel) toAPI() (kbapi.PieChartSchema, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var pieChart kbapi.PieChartSchema
 
-	// Determine if it's ESQL or not based on query field?
-	// If Query is set, it's definitely PieNoESQL. If not set, it might be ESQL or NoESQL with empty query.
-	// But usually users specify which one they want.
-	// For now, let's default to PieNoESQL if Query is present, otherwise check other criteria.
-	// Actually, simpler logic: if Query is nil, assume ESQL? But wait, standard pie charts might have no query if using defaults?
-	// It's safer to check structure of Dataset if possible, or try to infer.
-	// However, mimicking MetricChart: check for existence of Query model.
-
+	// Use PieNoESQL when a non-ESQL query is configured; otherwise, use PieESQL.
+	// This matches MetricChart behavior by checking for the presence of the Query model.
 	isNoESQL := m.Query != nil
 
 	if isNoESQL {
@@ -436,9 +426,8 @@ func (m *pieChartConfigModel) toAPI() (kbapi.PieChartSchema, diag.Diagnostics) {
 	} else {
 		var chart kbapi.PieESQL
 
-		// PieESQL does not have Title?
-		// Check generated code, PieESQL struct definition in kiban.gen.go:
-		// type PieESQL struct { ... Description *string ... } NO Title.
+		// Set basic properties
+		chart.Title = m.Title.ValueStringPointer()
 		chart.Description = m.Description.ValueStringPointer()
 		chart.IgnoreGlobalFilters = m.IgnoreGlobalFilters.ValueBoolPointer()
 

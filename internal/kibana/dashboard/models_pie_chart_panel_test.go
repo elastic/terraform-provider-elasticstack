@@ -19,10 +19,7 @@ func Test_pieChartConfigModel_fromAPI_toAPI_PieNoESQL(t *testing.T) {
 
 	// Create a dummy dataset
 	dataset := kbapi.PieNoESQL_Dataset{}
-	// Since dataset is a union or complex type in API usually, check if I need to marshal/unmarshal
-	// Actually PieNoESQL_Dataset is likely a struct in generated code?
-	// Let's assume it's simple enough for test.
-	// To be safe, let's just use defaults or verify json marshalling works.
+
 
 	visible := kbapi.PieLegendVisibleShow
 	legend := kbapi.PieLegend{
@@ -74,4 +71,46 @@ func Test_pieChartConfigModel_fromAPI_toAPI_PieNoESQL(t *testing.T) {
 
 	assert.Equal(t, title, *resultNoESQL.Title)
 	assert.Equal(t, desc, *resultNoESQL.Description)
+}
+
+func Test_pieChartConfigModel_fromAPI_toAPI_PieESQL(t *testing.T) {
+	// Setup test data
+	title := "My Pie ESQL Chart"
+	desc := "An ESQL-powered pie chart"
+	query := "FROM logs | STATS count() BY response_code"
+
+	// Create a minimal ESQL chart; other fields can use zero values
+	apiChart := kbapi.PieESQL{
+		Title:       &title,
+		Description: &desc,
+		Query:       query,
+	}
+
+	// Wrap in PieChartSchema using the ESQL-specific constructor
+	var apiSchema kbapi.PieChartSchema
+	err := apiSchema.FromPieESQL(apiChart)
+	require.NoError(t, err)
+
+	// Test fromAPI
+	ctx := context.Background()
+	model := &pieChartConfigModel{}
+	diags := model.fromAPI(ctx, apiSchema)
+	require.False(t, diags.HasError(), "fromAPI (ESQL) should not have errors")
+
+	// Verify fields are populated from ESQL chart
+	assert.Equal(t, title, model.Title.ValueString())
+	assert.Equal(t, desc, model.Description.ValueString())
+
+	// Test toAPI
+	resultSchema, diags := model.toAPI()
+	require.False(t, diags.HasError(), "toAPI (ESQL) should not have errors")
+
+	// Verify we can convert back to PieESQL
+	resultESQL, err := resultSchema.AsPieESQL()
+	require.NoError(t, err)
+
+	require.NotNil(t, resultESQL.Title)
+	require.NotNil(t, resultESQL.Description)
+	assert.Equal(t, title, *resultESQL.Title)
+	assert.Equal(t, desc, *resultESQL.Description)
 }

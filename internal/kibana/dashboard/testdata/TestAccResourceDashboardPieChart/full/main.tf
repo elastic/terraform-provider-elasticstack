@@ -62,8 +62,8 @@ resource "elasticstack_kibana_dashboard" "test" {
           })
         }
       ]
-      ignore_global_filters = false // Changed to false to match default/API behavior for now
-      sampling              = 1     // Changed to 1 to match default/API behavior for now
+      ignore_global_filters = false // Default value
+      sampling              = 1     // Default value
       filters = [
         {
           query    = "response:200"
