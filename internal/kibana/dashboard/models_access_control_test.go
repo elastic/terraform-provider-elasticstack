@@ -21,7 +21,6 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 )
@@ -51,8 +50,8 @@ func TestAccessControlValue_toCreateAPI(t *testing.T) {
 		}
 		apiModel := m.toCreateAPI()
 		assert.NotNil(t, apiModel)
-		assert.Equal(t, schemautil.Pointer(kbapi.PostDashboardsJSONBodyDataAccessControlAccessMode("private")), apiModel.AccessMode)
-		assert.Equal(t, schemautil.Pointer("user123"), apiModel.Owner)
+		assert.Equal(t, new(kbapi.PostDashboardsJSONBodyDataAccessControlAccessMode("private")), apiModel.AccessMode)
+		assert.Equal(t, new("user123"), apiModel.Owner)
 	})
 
 	t.Run("partial values - access_mode", func(t *testing.T) {
@@ -62,7 +61,7 @@ func TestAccessControlValue_toCreateAPI(t *testing.T) {
 		}
 		apiModel := m.toCreateAPI()
 		assert.NotNil(t, apiModel)
-		assert.Equal(t, schemautil.Pointer(kbapi.PostDashboardsJSONBodyDataAccessControlAccessMode("private")), apiModel.AccessMode)
+		assert.Equal(t, new(kbapi.PostDashboardsJSONBodyDataAccessControlAccessMode("private")), apiModel.AccessMode)
 		assert.Nil(t, apiModel.Owner)
 	})
 
@@ -74,7 +73,7 @@ func TestAccessControlValue_toCreateAPI(t *testing.T) {
 		apiModel := m.toCreateAPI()
 		assert.NotNil(t, apiModel)
 		assert.Nil(t, apiModel.AccessMode)
-		assert.Equal(t, schemautil.Pointer("user123"), apiModel.Owner)
+		assert.Equal(t, new("user123"), apiModel.Owner)
 	})
 }
 
@@ -92,8 +91,8 @@ func TestAccessControlValue_toUpdateAPI(t *testing.T) {
 		}
 		apiModel := m.toUpdateAPI()
 		assert.NotNil(t, apiModel)
-		assert.Equal(t, schemautil.Pointer(kbapi.PutDashboardsIdJSONBodyDataAccessControlAccessMode("public")), apiModel.AccessMode)
-		assert.Equal(t, schemautil.Pointer("admin"), apiModel.Owner)
+		assert.Equal(t, new(kbapi.PutDashboardsIdJSONBodyDataAccessControlAccessMode("public")), apiModel.AccessMode)
+		assert.Equal(t, new("admin"), apiModel.Owner)
 	})
 
 	t.Run("empty values", func(t *testing.T) {

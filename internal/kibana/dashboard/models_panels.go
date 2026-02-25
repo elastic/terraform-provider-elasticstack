@@ -22,7 +22,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -251,10 +250,10 @@ func (m *dashboardModel) panelsToAPI() (*kbapi.DashboardPanels, diag.Diagnostics
 		}
 
 		if typeutils.IsKnown(sm.Collapsed) {
-			section.Collapsed = schemautil.Pointer(sm.Collapsed.ValueBool())
+			section.Collapsed = new(sm.Collapsed.ValueBool())
 		}
 		if typeutils.IsKnown(sm.ID) {
-			section.Uid = schemautil.Pointer(sm.ID.ValueString())
+			section.Uid = new(sm.ID.ValueString())
 		}
 
 		if len(sm.Panels) > 0 {
@@ -307,7 +306,7 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 	}
 
 	if typeutils.IsKnown(pm.ID) {
-		panelItem.Uid = schemautil.Pointer(pm.ID.ValueString())
+		panelItem.Uid = new(pm.ID.ValueString())
 	}
 
 	var diags diag.Diagnostics

@@ -22,7 +22,6 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -99,13 +98,13 @@ func TestMaintenanceWindowFromAPI(t *testing.T) {
 					Custom: ResponseJSONCustomSchedule{
 						Start:    "1993-01-01T05:00:00.200Z",
 						Duration: "13d",
-						Timezone: schemautil.Pointer("America/Martinique"),
+						Timezone: new("America/Martinique"),
 						Recurring: &ResponseJSONRecurring{
-							Every:      schemautil.Pointer("21d"),
-							End:        schemautil.Pointer("2029-05-17T05:05:00.000Z"),
-							OnWeekDay:  schemautil.Pointer([]string{"MO", "-2FR", "+4SA"}),
-							OnMonth:    schemautil.Pointer([]float32{6}),
-							OnMonthDay: schemautil.Pointer([]float32{1, 2, 3}),
+							Every:      new("21d"),
+							End:        new("2029-05-17T05:05:00.000Z"),
+							OnWeekDay:  new([]string{"MO", "-2FR", "+4SA"}),
+							OnMonth:    new([]float32{6}),
+							OnMonthDay: new([]float32{1, 2, 3}),
 						},
 					},
 				},
@@ -132,8 +131,8 @@ func TestMaintenanceWindowFromAPI(t *testing.T) {
 						Start:    "1993-01-01T05:00:00.200Z",
 						Duration: "13d",
 						Recurring: &ResponseJSONRecurring{
-							Every:       schemautil.Pointer("21d"),
-							Occurrences: schemautil.Pointer(float32(42)),
+							Every:       new("21d"),
+							Occurrences: new(float32(42)),
 						},
 					},
 				},
@@ -168,7 +167,7 @@ func TestMaintenanceWindowToAPICreateRequest(t *testing.T) {
 			name:  "all fields",
 			model: modelWithAllFields,
 			expectedRequest: kbapi.PostMaintenanceWindowJSONRequestBody{
-				Enabled: schemautil.Pointer(true),
+				Enabled: new(true),
 				Title:   "test response",
 				Schedule: struct {
 					Custom struct {
@@ -200,8 +199,8 @@ func TestMaintenanceWindowToAPICreateRequest(t *testing.T) {
 					}{
 						Start:    "1993-01-01T05:00:00.200Z",
 						Duration: "13d",
-						Timezone: schemautil.Pointer("America/Martinique"),
-						Recurring: schemautil.Pointer(struct {
+						Timezone: new("America/Martinique"),
+						Recurring: new(struct {
 							End         *string    `json:"end,omitempty"`
 							Every       *string    `json:"every,omitempty"`
 							Occurrences *float32   `json:"occurrences,omitempty"`
@@ -209,15 +208,15 @@ func TestMaintenanceWindowToAPICreateRequest(t *testing.T) {
 							OnMonthDay  *[]float32 `json:"onMonthDay,omitempty"`
 							OnWeekDay   *[]string  `json:"onWeekDay,omitempty"`
 						}{
-							Every:      schemautil.Pointer("21d"),
-							End:        schemautil.Pointer("2029-05-17T05:05:00.000Z"),
-							OnWeekDay:  schemautil.Pointer([]string{"MO", "-2FR", "+4SA"}),
-							OnMonth:    schemautil.Pointer([]float32{6}),
-							OnMonthDay: schemautil.Pointer([]float32{1, 2, 3}),
+							Every:      new("21d"),
+							End:        new("2029-05-17T05:05:00.000Z"),
+							OnWeekDay:  new([]string{"MO", "-2FR", "+4SA"}),
+							OnMonth:    new([]float32{6}),
+							OnMonthDay: new([]float32{1, 2, 3}),
 						}),
 					},
 				},
-				Scope: schemautil.Pointer(struct {
+				Scope: new(struct {
 					Alerting struct {
 						Query struct {
 							Kql string `json:"kql"`
@@ -243,7 +242,7 @@ func TestMaintenanceWindowToAPICreateRequest(t *testing.T) {
 			name:  "occurrences and no scope",
 			model: modelOccurrencesNoScope,
 			expectedRequest: kbapi.PostMaintenanceWindowJSONRequestBody{
-				Enabled: schemautil.Pointer(true),
+				Enabled: new(true),
 				Title:   "test response",
 				Schedule: struct {
 					Custom struct {
@@ -276,7 +275,7 @@ func TestMaintenanceWindowToAPICreateRequest(t *testing.T) {
 						Start:    "1993-01-01T05:00:00.200Z",
 						Duration: "13d",
 
-						Recurring: schemautil.Pointer(struct {
+						Recurring: new(struct {
 							End         *string    `json:"end,omitempty"`
 							Every       *string    `json:"every,omitempty"`
 							Occurrences *float32   `json:"occurrences,omitempty"`
@@ -284,8 +283,8 @@ func TestMaintenanceWindowToAPICreateRequest(t *testing.T) {
 							OnMonthDay  *[]float32 `json:"onMonthDay,omitempty"`
 							OnWeekDay   *[]string  `json:"onWeekDay,omitempty"`
 						}{
-							Every:       schemautil.Pointer("21d"),
-							Occurrences: schemautil.Pointer(float32(42)),
+							Every:       new("21d"),
+							Occurrences: new(float32(42)),
 						}),
 					},
 				},
@@ -317,9 +316,9 @@ func TestMaintenanceWindowToAPIUpdateRequest(t *testing.T) {
 			name:  "all fields",
 			model: modelWithAllFields,
 			expectedRequest: kbapi.PatchMaintenanceWindowIdJSONRequestBody{
-				Enabled: schemautil.Pointer(true),
-				Title:   schemautil.Pointer("test response"),
-				Schedule: schemautil.Pointer(struct {
+				Enabled: new(true),
+				Title:   new("test response"),
+				Schedule: new(struct {
 					Custom struct {
 						Duration  string `json:"duration"`
 						Recurring *struct {
@@ -349,8 +348,8 @@ func TestMaintenanceWindowToAPIUpdateRequest(t *testing.T) {
 					}{
 						Start:    "1993-01-01T05:00:00.200Z",
 						Duration: "13d",
-						Timezone: schemautil.Pointer("America/Martinique"),
-						Recurring: schemautil.Pointer(struct {
+						Timezone: new("America/Martinique"),
+						Recurring: new(struct {
 							End         *string    `json:"end,omitempty"`
 							Every       *string    `json:"every,omitempty"`
 							Occurrences *float32   `json:"occurrences,omitempty"`
@@ -358,15 +357,15 @@ func TestMaintenanceWindowToAPIUpdateRequest(t *testing.T) {
 							OnMonthDay  *[]float32 `json:"onMonthDay,omitempty"`
 							OnWeekDay   *[]string  `json:"onWeekDay,omitempty"`
 						}{
-							Every:      schemautil.Pointer("21d"),
-							End:        schemautil.Pointer("2029-05-17T05:05:00.000Z"),
-							OnWeekDay:  schemautil.Pointer([]string{"MO", "-2FR", "+4SA"}),
-							OnMonth:    schemautil.Pointer([]float32{6}),
-							OnMonthDay: schemautil.Pointer([]float32{1, 2, 3}),
+							Every:      new("21d"),
+							End:        new("2029-05-17T05:05:00.000Z"),
+							OnWeekDay:  new([]string{"MO", "-2FR", "+4SA"}),
+							OnMonth:    new([]float32{6}),
+							OnMonthDay: new([]float32{1, 2, 3}),
 						}),
 					},
 				}),
-				Scope: schemautil.Pointer(struct {
+				Scope: new(struct {
 					Alerting struct {
 						Query struct {
 							Kql string `json:"kql"`
@@ -400,9 +399,9 @@ func TestMaintenanceWindowToAPIUpdateRequest(t *testing.T) {
 				},
 			},
 			expectedRequest: kbapi.PatchMaintenanceWindowIdJSONRequestBody{
-				Enabled: schemautil.Pointer(true),
-				Title:   schemautil.Pointer("test response"),
-				Schedule: schemautil.Pointer(struct {
+				Enabled: new(true),
+				Title:   new("test response"),
+				Schedule: new(struct {
 					Custom struct {
 						Duration  string `json:"duration"`
 						Recurring *struct {
@@ -453,7 +452,7 @@ func TestMaintenanceWindowToAPIUpdateRequest(t *testing.T) {
 				},
 			},
 			expectedRequest: kbapi.PatchMaintenanceWindowIdJSONRequestBody{
-				Schedule: schemautil.Pointer(struct {
+				Schedule: new(struct {
 					Custom struct {
 						Duration  string `json:"duration"`
 						Recurring *struct {
@@ -486,7 +485,7 @@ func TestMaintenanceWindowToAPIUpdateRequest(t *testing.T) {
 					},
 				}),
 
-				Scope: schemautil.Pointer(struct {
+				Scope: new(struct {
 					Alerting struct {
 						Query struct {
 							Kql string `json:"kql"`

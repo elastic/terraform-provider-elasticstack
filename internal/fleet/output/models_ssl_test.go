@@ -22,7 +22,6 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
@@ -57,9 +56,9 @@ func Test_objectValueToSSL(t *testing.T) {
 				),
 			},
 			want: &kbapi.NewOutputSsl{
-				Certificate:            schemautil.Pointer("cert"),
+				Certificate:            new("cert"),
 				CertificateAuthorities: &[]string{"ca"},
-				Key:                    schemautil.Pointer("key"),
+				Key:                    new("key"),
 			},
 		},
 	}
@@ -104,9 +103,9 @@ func Test_objectValueToSSLUpdate(t *testing.T) {
 				),
 			},
 			want: &kbapi.UpdateOutputSsl{
-				Certificate:            schemautil.Pointer("cert"),
+				Certificate:            new("cert"),
 				CertificateAuthorities: &[]string{"ca"},
-				Key:                    schemautil.Pointer("key"),
+				Key:                    new("key"),
 			},
 		},
 	}
@@ -154,9 +153,9 @@ func Test_sslToObjectValue(t *testing.T) {
 			name: "returns null object when ssl has empty string pointers and empty slice",
 			args: args{
 				ssl: &kbapi.OutputSsl{
-					Certificate:            schemautil.Pointer(""),
+					Certificate:            new(""),
 					CertificateAuthorities: &[]string{},
-					Key:                    schemautil.Pointer(""),
+					Key:                    new(""),
 				},
 			},
 			want: types.ObjectNull(getSslAttrTypes()),
@@ -165,9 +164,9 @@ func Test_sslToObjectValue(t *testing.T) {
 			name: "returns an object when populated",
 			args: args{
 				ssl: &kbapi.OutputSsl{
-					Certificate:            schemautil.Pointer("cert"),
+					Certificate:            new("cert"),
 					CertificateAuthorities: &[]string{"ca"},
-					Key:                    schemautil.Pointer("key"),
+					Key:                    new("key"),
 				},
 			},
 			want: types.ObjectValueMust(

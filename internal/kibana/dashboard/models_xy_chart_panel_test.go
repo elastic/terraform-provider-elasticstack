@@ -23,7 +23,6 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
@@ -46,16 +45,16 @@ func Test_xyAxisModel_fromAPI_toAPI(t *testing.T) {
 			name: "all axes populated",
 			apiAxis: kbapi.XyAxis{
 				X: &xyAxisConfigAPIModel{
-					Grid:  schemautil.Pointer(true),
-					Ticks: schemautil.Pointer(false),
+					Grid:  new(true),
+					Ticks: new(false),
 				},
 				Left: &leftYAxisConfigAPIModel{
-					Grid:  schemautil.Pointer(true),
-					Ticks: schemautil.Pointer(true),
+					Grid:  new(true),
+					Ticks: new(true),
 				},
 				Right: &rightYAxisConfigAPIModel{
-					Grid:  schemautil.Pointer(false),
-					Ticks: schemautil.Pointer(true),
+					Grid:  new(false),
+					Ticks: new(true),
 				},
 			},
 			expected: &xyAxisModel{
@@ -90,7 +89,7 @@ func Test_xyAxisModel_fromAPI_toAPI(t *testing.T) {
 			name: "only x axis",
 			apiAxis: kbapi.XyAxis{
 				X: &xyAxisConfigAPIModel{
-					Grid: schemautil.Pointer(true),
+					Grid: new(true),
 				},
 				Left:  nil,
 				Right: nil,
@@ -162,15 +161,15 @@ func Test_xyAxisConfigModel_fromAPI_toAPI(t *testing.T) {
 		{
 			name: "all fields populated",
 			apiAxis: &xyAxisConfigAPIModel{
-				Grid:             schemautil.Pointer(true),
-				Ticks:            schemautil.Pointer(false),
+				Grid:             new(true),
+				Ticks:            new(false),
 				LabelOrientation: func() *kbapi.XyAxisXLabelOrientation { o := kbapi.XyAxisXLabelOrientation("horizontal"); return &o }(),
 				Title: &struct {
 					Value   *string `json:"value,omitempty"`
 					Visible *bool   `json:"visible,omitempty"`
 				}{
-					Value:   schemautil.Pointer("X Axis Title"),
-					Visible: schemautil.Pointer(true),
+					Value:   new("X Axis Title"),
+					Visible: new(true),
 				},
 			},
 			expected: &xyAxisConfigModel{
@@ -191,7 +190,7 @@ func Test_xyAxisConfigModel_fromAPI_toAPI(t *testing.T) {
 		{
 			name: "only required fields",
 			apiAxis: &xyAxisConfigAPIModel{
-				Grid:             schemautil.Pointer(false),
+				Grid:             new(false),
 				Ticks:            nil,
 				LabelOrientation: nil,
 				Title:            nil,
@@ -206,8 +205,8 @@ func Test_xyAxisConfigModel_fromAPI_toAPI(t *testing.T) {
 		{
 			name: "with all boolean fields",
 			apiAxis: &xyAxisConfigAPIModel{
-				Grid:  schemautil.Pointer(true),
-				Ticks: schemautil.Pointer(true),
+				Grid:  new(true),
+				Ticks: new(true),
 			},
 			expected: &xyAxisConfigModel{
 				Grid:  types.BoolValue(true),
@@ -257,16 +256,16 @@ func Test_yAxisConfigModel_fromAPILeft_toAPILeft(t *testing.T) {
 		{
 			name: "all fields populated",
 			apiAxis: &leftYAxisConfigAPIModel{
-				Grid:             schemautil.Pointer(true),
-				Ticks:            schemautil.Pointer(false),
+				Grid:             new(true),
+				Ticks:            new(false),
 				LabelOrientation: func() *kbapi.XyAxisLeftLabelOrientation { o := kbapi.XyAxisLeftLabelOrientation("vertical"); return &o }(),
 				Scale:            func() *kbapi.XyAxisLeftScale { s := kbapi.XyAxisLeftScale("linear"); return &s }(),
 				Title: &struct {
 					Value   *string `json:"value,omitempty"`
 					Visible *bool   `json:"visible,omitempty"`
 				}{
-					Value:   schemautil.Pointer("Y Axis Title"),
-					Visible: schemautil.Pointer(false),
+					Value:   new("Y Axis Title"),
+					Visible: new(false),
 				},
 			},
 			expected: &yAxisConfigModel{
@@ -288,7 +287,7 @@ func Test_yAxisConfigModel_fromAPILeft_toAPILeft(t *testing.T) {
 		{
 			name: "with scale field",
 			apiAxis: &leftYAxisConfigAPIModel{
-				Grid:  schemautil.Pointer(false),
+				Grid:  new(false),
 				Scale: func() *kbapi.XyAxisLeftScale { s := kbapi.XyAxisLeftScale("linear"); return &s }(),
 			},
 			expected: &yAxisConfigModel{
@@ -334,16 +333,16 @@ func Test_yAxisConfigModel_fromAPIRight_toAPIRight(t *testing.T) {
 		{
 			name: "all fields populated",
 			apiAxis: &rightYAxisConfigAPIModel{
-				Grid:             schemautil.Pointer(false),
-				Ticks:            schemautil.Pointer(true),
+				Grid:             new(false),
+				Ticks:            new(true),
 				LabelOrientation: func() *kbapi.XyAxisRightLabelOrientation { o := kbapi.XyAxisRightLabelOrientation("angled"); return &o }(),
 				Scale:            func() *kbapi.XyAxisRightScale { s := kbapi.XyAxisRightScale("log"); return &s }(),
 				Title: &struct {
 					Value   *string `json:"value,omitempty"`
 					Visible *bool   `json:"visible,omitempty"`
 				}{
-					Value:   schemautil.Pointer("Right Y Axis"),
-					Visible: schemautil.Pointer(true),
+					Value:   new("Right Y Axis"),
+					Visible: new(true),
 				},
 			},
 			expected: &yAxisConfigModel{
@@ -406,8 +405,8 @@ func Test_axisTitleModel_fromAPI_toAPI(t *testing.T) {
 				Value   *string `json:"value,omitempty"`
 				Visible *bool   `json:"visible,omitempty"`
 			}{
-				Value:   schemautil.Pointer("Test Title"),
-				Visible: schemautil.Pointer(true),
+				Value:   new("Test Title"),
+				Visible: new(true),
 			},
 			expected: &axisTitleModel{
 				Value:   types.StringValue("Test Title"),
@@ -425,7 +424,7 @@ func Test_axisTitleModel_fromAPI_toAPI(t *testing.T) {
 				Value   *string `json:"value,omitempty"`
 				Visible *bool   `json:"visible,omitempty"`
 			}{
-				Value:   schemautil.Pointer("Only Value"),
+				Value:   new("Only Value"),
 				Visible: nil,
 			},
 			expected: &axisTitleModel{
@@ -440,7 +439,7 @@ func Test_axisTitleModel_fromAPI_toAPI(t *testing.T) {
 				Visible *bool   `json:"visible,omitempty"`
 			}{
 				Value:   nil,
-				Visible: schemautil.Pointer(false),
+				Visible: new(false),
 			},
 			expected: &axisTitleModel{
 				Value:   types.StringNull(),
@@ -474,8 +473,8 @@ func Test_xyDecorationsModel_fromAPI_toAPI(t *testing.T) {
 		{
 			name: "all fields populated",
 			apiDecorations: kbapi.XyDecorations{
-				ShowEndZones:          schemautil.Pointer(true),
-				ShowCurrentTimeMarker: schemautil.Pointer(false),
+				ShowEndZones:          new(true),
+				ShowCurrentTimeMarker: new(false),
 				PointVisibility: func() *kbapi.XyDecorationsPointVisibility {
 					v := kbapi.XyDecorationsPointVisibilityAlways
 					return &v
@@ -484,9 +483,9 @@ func Test_xyDecorationsModel_fromAPI_toAPI(t *testing.T) {
 					i := kbapi.XyDecorationsLineInterpolation("linear")
 					return &i
 				}(),
-				MinimumBarHeight: schemautil.Pointer(float32(5)),
-				ShowValueLabels:  schemautil.Pointer(true),
-				FillOpacity:      schemautil.Pointer(float32(0.5)),
+				MinimumBarHeight: new(float32(5)),
+				ShowValueLabels:  new(true),
+				FillOpacity:      new(float32(0.5)),
 			},
 			expected: &xyDecorationsModel{
 				ShowEndZones:          types.BoolValue(true),
@@ -523,7 +522,7 @@ func Test_xyDecorationsModel_fromAPI_toAPI(t *testing.T) {
 		{
 			name: "float precision rounding",
 			apiDecorations: kbapi.XyDecorations{
-				FillOpacity: schemautil.Pointer(float32(0.123456)),
+				FillOpacity: new(float32(0.123456)),
 			},
 			expected: &xyDecorationsModel{
 				FillOpacity: types.Float64Value(0.12),
@@ -574,7 +573,7 @@ func Test_xyFittingModel_fromAPI_toAPI(t *testing.T) {
 			name: "all fields populated",
 			apiFitting: kbapi.XyFitting{
 				Type:     kbapi.XyFittingType("linear"),
-				Dotted:   schemautil.Pointer(true),
+				Dotted:   new(true),
 				EndValue: func() *kbapi.XyFittingEndValue { e := kbapi.XyFittingEndValue("zero"); return &e }(),
 			},
 			expected: &xyFittingModel{
@@ -632,8 +631,8 @@ func Test_xyLegendModel_fromAPI_toAPI_Inside(t *testing.T) {
 				legend := kbapi.XyLegendInside{
 					Inside:             true,
 					Visibility:         kbapi.XyLegendInsideVisibilityVisible,
-					TruncateAfterLines: schemautil.Pointer(float32(3)),
-					Columns:            schemautil.Pointer(float32(2)),
+					TruncateAfterLines: new(float32(3)),
+					Columns:            new(float32(2)),
 					Alignment:          func() *kbapi.XyLegendInsideAlignment { a := kbapi.XyLegendInsideAlignment("left"); return &a }(),
 					Statistics: &[]kbapi.XyLegendInsideStatistics{
 						kbapi.XyLegendInsideStatistics("mean"),
@@ -688,7 +687,7 @@ func Test_xyLegendModel_fromAPI_toAPI_Outside(t *testing.T) {
 			apiLegend: func() kbapi.XyLegend {
 				legend := kbapi.XyLegendOutside{
 					Visibility:         kbapi.XyLegendOutsideVisibilityHidden,
-					TruncateAfterLines: schemautil.Pointer(float32(5)),
+					TruncateAfterLines: new(float32(5)),
 					Position:           func() *kbapi.XyLegendOutsidePosition { p := kbapi.XyLegendOutsidePosition("right"); return &p }(),
 					Size:               func() *kbapi.XyLegendOutsideSize { s := kbapi.XyLegendOutsideSize("medium"); return &s }(),
 					Statistics: &[]kbapi.XyLegendOutsideStatistics{

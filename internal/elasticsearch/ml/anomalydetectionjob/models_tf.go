@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -161,7 +160,7 @@ func (plan *TFModel) toAPIModel(ctx context.Context) (*APIModel, diag.Diagnostic
 			ExcludeFrequent:     detector.ExcludeFrequent.ValueString(),
 		}
 		if typeutils.IsKnown(detector.UseNull) {
-			apiDetectors[i].UseNull = schemautil.Pointer(detector.UseNull.ValueBool())
+			apiDetectors[i].UseNull = new(detector.UseNull.ValueBool())
 		}
 	}
 
@@ -183,7 +182,7 @@ func (plan *TFModel) toAPIModel(ctx context.Context) (*APIModel, diag.Diagnostic
 	}
 
 	if typeutils.IsKnown(analysisConfig.MultivariateByFields) {
-		apiModel.AnalysisConfig.MultivariateByFields = schemautil.Pointer(analysisConfig.MultivariateByFields.ValueBool())
+		apiModel.AnalysisConfig.MultivariateByFields = new(analysisConfig.MultivariateByFields.ValueBool())
 	}
 
 	// Convert categorization filters
@@ -200,7 +199,7 @@ func (plan *TFModel) toAPIModel(ctx context.Context) (*APIModel, diag.Diagnostic
 			Enabled: analysisConfig.PerPartitionCategorization.Enabled.ValueBool(),
 		}
 		if typeutils.IsKnown(analysisConfig.PerPartitionCategorization.StopOnWarn) {
-			apiModel.AnalysisConfig.PerPartitionCategorization.StopOnWarn = schemautil.Pointer(analysisConfig.PerPartitionCategorization.StopOnWarn.ValueBool())
+			apiModel.AnalysisConfig.PerPartitionCategorization.StopOnWarn = new(analysisConfig.PerPartitionCategorization.StopOnWarn.ValueBool())
 		}
 	}
 
@@ -213,7 +212,7 @@ func (plan *TFModel) toAPIModel(ctx context.Context) (*APIModel, diag.Diagnostic
 			ModelMemoryLimit: analysisLimits.ModelMemoryLimit.ValueString(),
 		}
 		if typeutils.IsKnown(analysisLimits.CategorizationExamplesLimit) {
-			apiModel.AnalysisLimits.CategorizationExamplesLimit = schemautil.Pointer(analysisLimits.CategorizationExamplesLimit.ValueInt64())
+			apiModel.AnalysisLimits.CategorizationExamplesLimit = new(analysisLimits.CategorizationExamplesLimit.ValueInt64())
 		}
 	}
 
@@ -228,7 +227,7 @@ func (plan *TFModel) toAPIModel(ctx context.Context) (*APIModel, diag.Diagnostic
 
 	// Convert optional fields
 	if typeutils.IsKnown(plan.AllowLazyOpen) {
-		apiModel.AllowLazyOpen = schemautil.Pointer(plan.AllowLazyOpen.ValueBool())
+		apiModel.AllowLazyOpen = new(plan.AllowLazyOpen.ValueBool())
 	}
 
 	if typeutils.IsKnown(plan.BackgroundPersistInterval) {
@@ -245,15 +244,15 @@ func (plan *TFModel) toAPIModel(ctx context.Context) (*APIModel, diag.Diagnostic
 	}
 
 	if typeutils.IsKnown(plan.DailyModelSnapshotRetentionAfterDays) {
-		apiModel.DailyModelSnapshotRetentionAfterDays = schemautil.Pointer(plan.DailyModelSnapshotRetentionAfterDays.ValueInt64())
+		apiModel.DailyModelSnapshotRetentionAfterDays = new(plan.DailyModelSnapshotRetentionAfterDays.ValueInt64())
 	}
 
 	if typeutils.IsKnown(plan.ModelSnapshotRetentionDays) {
-		apiModel.ModelSnapshotRetentionDays = schemautil.Pointer(plan.ModelSnapshotRetentionDays.ValueInt64())
+		apiModel.ModelSnapshotRetentionDays = new(plan.ModelSnapshotRetentionDays.ValueInt64())
 	}
 
 	if typeutils.IsKnown(plan.RenormalizationWindowDays) {
-		apiModel.RenormalizationWindowDays = schemautil.Pointer(plan.RenormalizationWindowDays.ValueInt64())
+		apiModel.RenormalizationWindowDays = new(plan.RenormalizationWindowDays.ValueInt64())
 	}
 
 	if typeutils.IsKnown(plan.ResultsIndexName) {
@@ -261,7 +260,7 @@ func (plan *TFModel) toAPIModel(ctx context.Context) (*APIModel, diag.Diagnostic
 	}
 
 	if typeutils.IsKnown(plan.ResultsRetentionDays) {
-		apiModel.ResultsRetentionDays = schemautil.Pointer(plan.ResultsRetentionDays.ValueInt64())
+		apiModel.ResultsRetentionDays = new(plan.ResultsRetentionDays.ValueInt64())
 	}
 
 	// Convert model_plot_config
@@ -274,7 +273,7 @@ func (plan *TFModel) toAPIModel(ctx context.Context) (*APIModel, diag.Diagnostic
 			Terms:   modelPlotConfig.Terms.ValueString(),
 		}
 		if typeutils.IsKnown(modelPlotConfig.AnnotationsEnabled) {
-			apiModel.ModelPlotConfig.AnnotationsEnabled = schemautil.Pointer(modelPlotConfig.AnnotationsEnabled.ValueBool())
+			apiModel.ModelPlotConfig.AnnotationsEnabled = new(modelPlotConfig.AnnotationsEnabled.ValueBool())
 		}
 	}
 

@@ -26,7 +26,6 @@ import (
 
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/stretchr/testify/require"
 )
 
@@ -66,7 +65,7 @@ func Test_convertResponseToModel(t *testing.T) {
 				Consumer:   "consumer",
 				Params:     map[string]any{},
 				RuleTypeID: "rule-type-id",
-				Enabled:    schemautil.Pointer(true),
+				Enabled:    new(true),
 				Tags:       []string{"hello"},
 				Schedule:   models.AlertingRuleSchedule{Interval: "1m"},
 				Actions:    []models.AlertingRuleAction{},
@@ -147,15 +146,15 @@ func Test_convertResponseToModel(t *testing.T) {
 				Consumer:        "consumer",
 				Params:          map[string]any{},
 				RuleTypeID:      "rule-type-id",
-				Enabled:         schemautil.Pointer(true),
+				Enabled:         new(true),
 				Tags:            []string{"hello"},
-				NotifyWhen:      schemautil.Pointer("broken"),
+				NotifyWhen:      new("broken"),
 				Schedule:        models.AlertingRuleSchedule{Interval: "1m"},
-				Throttle:        schemautil.Pointer("throttle"),
-				ScheduledTaskID: schemautil.Pointer("scheduled-task-id"),
+				Throttle:        new("throttle"),
+				ScheduledTaskID: new("scheduled-task-id"),
 				ExecutionStatus: models.AlertingRuleExecutionStatus{
 					LastExecutionDate: &now,
-					Status:            schemautil.Pointer("firing"),
+					Status:            new("firing"),
 				},
 				Actions: []models.AlertingRuleAction{
 					{
@@ -165,10 +164,10 @@ func Test_convertResponseToModel(t *testing.T) {
 						Frequency: &models.ActionFrequency{
 							Summary:    true,
 							NotifyWhen: "onThrottleInterval",
-							Throttle:   schemautil.Pointer("10s"),
+							Throttle:   new("10s"),
 						},
 						AlertsFilter: &models.ActionAlertsFilter{
-							Kql: schemautil.Pointer("foobar"),
+							Kql: new("foobar"),
 							Timeframe: &models.AlertsFilterTimeframe{
 								Days:       []int32{3, 5, 7},
 								Timezone:   "UTC+1",
@@ -192,7 +191,7 @@ func Test_convertResponseToModel(t *testing.T) {
 						Params: map[string]any{},
 					},
 				},
-				AlertDelay: schemautil.Pointer(float32(4)),
+				AlertDelay: new(float32(4)),
 			},
 		},
 	}

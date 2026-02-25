@@ -19,7 +19,6 @@ package dashboard
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -49,11 +48,11 @@ func (m *AccessControlValue) toCreateAPI() *accessControlAPIPostModel {
 	apiModel := &accessControlAPIPostModel{}
 
 	if typeutils.IsKnown(m.AccessMode) {
-		apiModel.AccessMode = schemautil.Pointer(kbapi.PostDashboardsJSONBodyDataAccessControlAccessMode(m.AccessMode.ValueString()))
+		apiModel.AccessMode = new(kbapi.PostDashboardsJSONBodyDataAccessControlAccessMode(m.AccessMode.ValueString()))
 	}
 
 	if typeutils.IsKnown(m.Owner) {
-		apiModel.Owner = schemautil.Pointer(m.Owner.ValueString())
+		apiModel.Owner = new(m.Owner.ValueString())
 	}
 
 	return apiModel

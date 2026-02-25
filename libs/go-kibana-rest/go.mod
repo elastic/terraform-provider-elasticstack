@@ -1,6 +1,6 @@
 module github.com/disaster37/go-kibana-rest/v8
 
-go 1.25.1
+go 1.26.0
 
 require (
 	github.com/go-resty/resty/v2 v2.17.2

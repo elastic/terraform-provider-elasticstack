@@ -23,7 +23,6 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -48,17 +47,17 @@ func Test_tagcloudConfigModel_fromAPI_toAPI(t *testing.T) {
 			api: func() kbapi.TagcloudNoESQL {
 				api := kbapi.TagcloudNoESQL{
 					Type:                "tagcloud",
-					Title:               schemautil.Pointer("Test Tagcloud"),
-					Description:         schemautil.Pointer("A test tagcloud description"),
-					IgnoreGlobalFilters: schemautil.Pointer(true),
-					Sampling:            schemautil.Pointer(float32(0.5)),
-					Orientation:         schemautil.Pointer(kbapi.TagcloudNoESQLOrientation("horizontal")),
+					Title:               new("Test Tagcloud"),
+					Description:         new("A test tagcloud description"),
+					IgnoreGlobalFilters: new(true),
+					Sampling:            new(float32(0.5)),
+					Orientation:         new(kbapi.TagcloudNoESQLOrientation("horizontal")),
 					FontSize: &struct {
 						Max *float32 `json:"max,omitempty"`
 						Min *float32 `json:"min,omitempty"`
 					}{
-						Min: schemautil.Pointer(float32(18)),
-						Max: schemautil.Pointer(float32(72)),
+						Min: new(float32(18)),
+						Max: new(float32(72)),
 					},
 				}
 
@@ -209,8 +208,8 @@ func Test_fontSizeModel_roundTrip(t *testing.T) {
 				Max *float32 `json:"max,omitempty"`
 				Min *float32 `json:"min,omitempty"`
 			}{
-				Min: schemautil.Pointer(float32(10)),
-				Max: schemautil.Pointer(float32(100)),
+				Min: new(float32(10)),
+				Max: new(float32(100)),
 			},
 		},
 		{
@@ -219,7 +218,7 @@ func Test_fontSizeModel_roundTrip(t *testing.T) {
 				Max *float32 `json:"max,omitempty"`
 				Min *float32 `json:"min,omitempty"`
 			}{
-				Min: schemautil.Pointer(float32(15)),
+				Min: new(float32(15)),
 			},
 		},
 		{
@@ -228,7 +227,7 @@ func Test_fontSizeModel_roundTrip(t *testing.T) {
 				Max *float32 `json:"max,omitempty"`
 				Min *float32 `json:"min,omitempty"`
 			}{
-				Max: schemautil.Pointer(float32(80)),
+				Max: new(float32(80)),
 			},
 		},
 		{

@@ -24,7 +24,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -150,7 +149,7 @@ func (m *dashboardModel) toAPICreateRequest(ctx context.Context, diags *diag.Dia
 
 	// Set optional dashboard ID
 	if typeutils.IsKnown(m.DashboardID) {
-		req.Id = schemautil.Pointer(m.DashboardID.ValueString())
+		req.Id = new(m.DashboardID.ValueString())
 	}
 
 	// Set space
@@ -160,7 +159,7 @@ func (m *dashboardModel) toAPICreateRequest(ctx context.Context, diags *diag.Dia
 
 	// Set description
 	if typeutils.IsKnown(m.Description) {
-		req.Data.Description = schemautil.Pointer(m.Description.ValueString())
+		req.Data.Description = new(m.Description.ValueString())
 	}
 
 	// Set time range mode
@@ -209,7 +208,7 @@ func (m *dashboardModel) toAPIUpdateRequest(ctx context.Context, diags *diag.Dia
 
 	// Set description
 	if typeutils.IsKnown(m.Description) {
-		req.Data.Description = schemautil.Pointer(m.Description.ValueString())
+		req.Data.Description = new(m.Description.ValueString())
 	}
 
 	// Set time range mode
