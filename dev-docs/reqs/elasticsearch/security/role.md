@@ -105,3 +105,4 @@ resource "elasticstack_elasticsearch_security_role" "example" {
 - **[REQ-032] (StateUpgrade)**: During v0→v1 upgrade, for each `indices` or `remote_indices` entry, if `query` is an empty string, the resource shall remove `query` from that entry in the upgraded state.
 - **[REQ-033] (StateUpgrade)**: During v0→v1 upgrade, for each `indices` or `remote_indices` entry, if `field_security` is present as a legacy list, the resource shall convert it to a single object (first element), and if the list is empty it shall remove `field_security`.
 - **[REQ-034] (StateUpgrade)**: If the stored prior state JSON cannot be parsed during upgrade, the resource shall return a “State Upgrade Error” diagnostic and shall not produce upgraded state.
+- **[REQ-035] (Plan/State)**: When Elasticsearch returns a null `description`, the resource shall preserve the null or empty (`""`) configured `description`, to avoid state consistency errors.  
