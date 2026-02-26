@@ -1,4 +1,4 @@
-# `elasticstack_elasticsearch_security_role` — Schema and Functional Requirements (EARS)
+# `elasticstack_elasticsearch_security_role` — Schema and Functional Requirements
 
 Resource implementation: `internal/elasticsearch/security/role`
 

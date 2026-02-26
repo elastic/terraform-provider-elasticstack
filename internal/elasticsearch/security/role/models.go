@@ -274,11 +274,25 @@ func (data *Data) fromAPIModel(ctx context.Context, role *models.Role) diag.Diag
 	// - User explicitly sets empty array ([]) - should become empty set
 	originalCluster := data.Cluster
 	originalRunAs := data.RunAs
+	originalDescription := data.Description
 
 	data.Name = types.StringValue(role.Name)
 
 	// Description
-	data.Description = types.StringPointerValue(role.Description)
+	if role.Description != nil {
+		data.Description = types.StringValue(*role.Description)
+	} else {
+		// If the API omits/returns null for description, preserve a configured empty string ("")
+		// to avoid post-apply state consistency issues.
+		switch {
+		case originalDescription.IsNull():
+			data.Description = types.StringNull()
+		case typeutils.IsKnown(originalDescription) && originalDescription.ValueString() == "":
+			data.Description = originalDescription
+		default:
+			data.Description = types.StringNull()
+		}
+	}
 
 	// Applications
 	if len(role.Applications) > 0 {

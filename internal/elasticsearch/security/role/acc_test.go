@@ -37,6 +37,7 @@ func TestAccResourceSecurityRole(t *testing.T) {
 	roleName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	roleNameRemoteIndices := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	roleNameDescription := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	roleNameDescriptionEmpty := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -134,6 +135,18 @@ func TestAccResourceSecurityRole(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "name", roleNameDescription),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "description", "updated test description"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(role.MinSupportedDescriptionVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("description_empty"),
+				ConfigVariables: config.Variables{
+					"role_name": config.StringVariable(roleNameDescriptionEmpty),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "name", roleNameDescriptionEmpty),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "description", ""),
 				),
 			},
 		},
