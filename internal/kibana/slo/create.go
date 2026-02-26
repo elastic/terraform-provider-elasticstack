@@ -79,6 +79,9 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 			)
 			return
 		}
+
+		// Do not send group_by at all for stacks that don't support it.
+		apiModel.GroupBy = nil
 	}
 
 	supportsMultipleGroupBy := supportsGroupBy && serverVersion.GreaterThanOrEqual(SLOSupportsMultipleGroupByMinVersion)

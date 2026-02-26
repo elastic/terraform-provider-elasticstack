@@ -291,6 +291,11 @@ var singleElementConfig string
 
 func TestAccResourceSloGroupBy(t *testing.T) {
 	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	// The empty group_by step test exposes a bug in Kibana present in 8.11.x
+	slo8_10Constraints, err := version.NewConstraint(">=8.10.0,!=8.11.0,!=8.11.1,!=8.11.2,!=8.11.3,!=8.11.4")
+	require.NoError(t, err)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceSloDestroy,
@@ -355,6 +360,17 @@ func TestAccResourceSloGroupBy(t *testing.T) {
 					// resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "group_by.#", "2"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "group_by.0", "some.field"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "group_by.1", "some.other.field"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(slo8_10Constraints),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty_list"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(sloName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "group_by.#", "0"),
 				),
 			},
 		},
