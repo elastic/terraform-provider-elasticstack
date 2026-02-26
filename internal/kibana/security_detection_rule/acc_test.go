@@ -33,6 +33,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-testing/config"
+	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
@@ -1280,6 +1281,7 @@ func TestAccResourceSecurityDetectionRule_ThreatMatch(t *testing.T) {
 
 func TestAccResourceSecurityDetectionRule_ThreatMatch_ThreatFilters(t *testing.T) {
 	resourceName := securityDetectionRuleResourceName
+	ruleID := "threat-filters-" + sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -1290,10 +1292,12 @@ func TestAccResourceSecurityDetectionRule_ThreatMatch_ThreatFilters(t *testing.T
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("repro"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable("test-threat-filters-repro"),
+					"name":    config.StringVariable("test-threat-filters-repro"),
+					"rule_id": config.StringVariable(ruleID),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test-threat-filters-repro"),
+					resource.TestCheckResourceAttr(resourceName, "rule_id", ruleID),
 					resource.TestCheckResourceAttr(resourceName, "type", "threat_match"),
 					resource.TestCheckResourceAttr(resourceName, "language", "kuery"),
 					resource.TestCheckResourceAttr(resourceName, "threat_filters.#", "3"),

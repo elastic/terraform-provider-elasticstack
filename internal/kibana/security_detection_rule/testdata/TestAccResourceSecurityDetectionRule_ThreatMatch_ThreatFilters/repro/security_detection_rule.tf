@@ -2,6 +2,10 @@ variable "name" {
   type = string
 }
 
+variable "rule_id" {
+  type = string
+}
+
 provider "elasticstack" {
   kibana {}
 }
@@ -76,7 +80,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
     }),
   ]
 
-  rule_id    = "f3e22c8b-ea47-45d1-b502-b57b6de950b3"
+  rule_id    = var.rule_id
   severity   = "high"
   risk_score = 73
   from       = "now-65m"
