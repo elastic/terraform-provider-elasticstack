@@ -164,10 +164,17 @@ func (m *treemapConfigModel) fromAPINoESQL(api kbapi.TreemapNoESQL) diag.Diagnos
 
 	m.Title = types.StringPointerValue(api.Title)
 	m.Description = types.StringPointerValue(api.Description)
-	m.IgnoreGlobalFilters = types.BoolPointerValue(api.IgnoreGlobalFilters)
+	// Kibana may omit these optional attributes in GET responses even when they were
+	// provided on write. Preserve any already-known value (typically from the plan)
+	// to avoid "inconsistent result after apply" drift.
+	if api.IgnoreGlobalFilters != nil {
+		m.IgnoreGlobalFilters = types.BoolValue(*api.IgnoreGlobalFilters)
+	} else if !typeutils.IsKnown(m.IgnoreGlobalFilters) {
+		m.IgnoreGlobalFilters = types.BoolNull()
+	}
 	if api.Sampling != nil {
 		m.Sampling = types.Float64Value(float64(*api.Sampling))
-	} else {
+	} else if !typeutils.IsKnown(m.Sampling) {
 		m.Sampling = types.Float64Null()
 	}
 
@@ -213,7 +220,11 @@ func (m *treemapConfigModel) fromAPINoESQL(api kbapi.TreemapNoESQL) diag.Diagnos
 		m.Filters = nil
 	}
 
-	m.LabelPosition = typeutils.StringishPointerValue(api.LabelPosition)
+	if api.LabelPosition != nil {
+		m.LabelPosition = types.StringValue(string(*api.LabelPosition))
+	} else if !typeutils.IsKnown(m.LabelPosition) {
+		m.LabelPosition = types.StringNull()
+	}
 
 	m.Legend = &treemapLegendModel{}
 	m.Legend.fromAPI(api.Legend)
@@ -237,10 +248,17 @@ func (m *treemapConfigModel) fromAPIESQL(api kbapi.TreemapESQL) diag.Diagnostics
 
 	m.Title = types.StringPointerValue(api.Title)
 	m.Description = types.StringPointerValue(api.Description)
-	m.IgnoreGlobalFilters = types.BoolPointerValue(api.IgnoreGlobalFilters)
+	// Kibana may omit these optional attributes in GET responses even when they were
+	// provided on write. Preserve any already-known value (typically from the plan)
+	// to avoid "inconsistent result after apply" drift.
+	if api.IgnoreGlobalFilters != nil {
+		m.IgnoreGlobalFilters = types.BoolValue(*api.IgnoreGlobalFilters)
+	} else if !typeutils.IsKnown(m.IgnoreGlobalFilters) {
+		m.IgnoreGlobalFilters = types.BoolNull()
+	}
 	if api.Sampling != nil {
 		m.Sampling = types.Float64Value(float64(*api.Sampling))
-	} else {
+	} else if !typeutils.IsKnown(m.Sampling) {
 		m.Sampling = types.Float64Null()
 	}
 
@@ -283,7 +301,11 @@ func (m *treemapConfigModel) fromAPIESQL(api kbapi.TreemapESQL) diag.Diagnostics
 		m.Filters = nil
 	}
 
-	m.LabelPosition = typeutils.StringishPointerValue(api.LabelPosition)
+	if api.LabelPosition != nil {
+		m.LabelPosition = types.StringValue(string(*api.LabelPosition))
+	} else if !typeutils.IsKnown(m.LabelPosition) {
+		m.LabelPosition = types.StringNull()
+	}
 
 	m.Legend = &treemapLegendModel{}
 	m.Legend.fromAPI(api.Legend)
