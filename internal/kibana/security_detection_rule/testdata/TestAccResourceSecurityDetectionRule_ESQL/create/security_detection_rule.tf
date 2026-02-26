@@ -73,7 +73,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
     {
       action_type_id = ".osquery"
       params = {
-        query   = "SELECT * FROM users WHERE username LIKE '%%admin%%';"
+        query   = "SELECT * FROM users WHERE username LIKE '%admin%';"
         timeout = 400
         ecs_mapping = {
           "user.name"   = "username"
