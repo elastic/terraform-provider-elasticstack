@@ -1317,6 +1317,33 @@ func TestAccResourceSecurityDetectionRule_ThreatMatch_ThreatFilters(t *testing.T
 					),
 				),
 			},
+			{
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty"),
+				ConfigVariables: config.Variables{
+					"name":    config.StringVariable("test-threat-filters-empty"),
+					"rule_id": config.StringVariable(ruleID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", "test-threat-filters-empty"),
+					resource.TestCheckResourceAttr(resourceName, "rule_id", ruleID),
+					resource.TestCheckResourceAttr(resourceName, "type", "threat_match"),
+					resource.TestCheckResourceAttr(resourceName, "language", "kuery"),
+					resource.TestCheckResourceAttr(resourceName, "threat_filters.#", "0"),
+				),
+			},
+			{
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minResponseActionVersionSupport),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty"),
+				ConfigVariables: config.Variables{
+					"name":    config.StringVariable("test-threat-filters-empty"),
+					"rule_id": config.StringVariable(ruleID),
+				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
 		},
 	})
 }

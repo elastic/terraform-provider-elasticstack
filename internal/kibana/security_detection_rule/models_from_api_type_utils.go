@@ -626,8 +626,13 @@ func (d *Data) updateThreatFiltersFromAPI(ctx context.Context, apiThreatFilters 
 	var diags diag.Diagnostics
 	_ = ctx
 
-	if apiThreatFilters == nil || len(*apiThreatFilters) == 0 {
+	if apiThreatFilters == nil {
 		d.ThreatFilters = types.ListNull(types.StringType)
+		return diags
+	}
+
+	if len(*apiThreatFilters) == 0 {
+		d.ThreatFilters = types.ListValueMust(types.StringType, []attr.Value{})
 		return diags
 	}
 
