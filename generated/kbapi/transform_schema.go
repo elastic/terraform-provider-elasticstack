@@ -572,6 +572,7 @@ var transformers = []TransformFunc{
 	fixSecurityAPIPageSize,
 	fixSecurityExceptionListItems,
 	removeDuplicateOneOfRefs,
+	fixDashboardFlatRequestBodies,
 	fixDashboardPanelItemRefs,
 	transformRemoveExamples,
 	transformRemoveUnusedComponents,
@@ -971,19 +972,27 @@ func fixDashboardPanelItemRefs(schema *Schema) {
 	dashboardsPath := schema.MustGetPath("/api/dashboards")
 	dashboardPath := schema.MustGetPath("/api/dashboards/{id}")
 
-	dashboardsPath.Post.CreateRef(schema, "dashboard_panel_item", "requestBody.content.application/json.schema.properties.data.properties.panels.items.anyOf.0")
-	dashboardsPath.Post.CreateRef(schema, "dashboard_panel_section", "requestBody.content.application/json.schema.properties.data.properties.panels.items.anyOf.1")
-	dashboardsPath.Post.CreateRef(schema, "dashboard_panels", "requestBody.content.application/json.schema.properties.data.properties.panels")
+	dashboardsPath.Post.CreateRef(schema, "dashboard_panel_item", "requestBody.content.application/json.schema.properties.panels.items.anyOf.0")
+	dashboardsPath.Post.CreateRef(schema, "dashboard_panel_section", "requestBody.content.application/json.schema.properties.panels.items.anyOf.1")
+	dashboardsPath.Post.CreateRef(schema, "dashboard_panels", "requestBody.content.application/json.schema.properties.panels")
 
-	dashboardPath.Put.CreateRef(schema, "dashboard_panel_item", "requestBody.content.application/json.schema.properties.data.properties.panels.items.anyOf.0")
-	dashboardPath.Put.CreateRef(schema, "dashboard_panel_section", "requestBody.content.application/json.schema.properties.data.properties.panels.items.anyOf.1")
-	dashboardPath.Put.CreateRef(schema, "dashboard_panels", "requestBody.content.application/json.schema.properties.data.properties.panels")
+	dashboardPath.Put.CreateRef(schema, "dashboard_panel_item", "requestBody.content.application/json.schema.properties.panels.items.anyOf.0")
+	dashboardPath.Put.CreateRef(schema, "dashboard_panel_section", "requestBody.content.application/json.schema.properties.panels.items.anyOf.1")
+	dashboardPath.Put.CreateRef(schema, "dashboard_panels", "requestBody.content.application/json.schema.properties.panels")
 
 	dashboardPath.Get.CreateRef(schema, "dashboard_panel_item", "responses.200.content.application/json.schema.properties.data.properties.panels.items.anyOf.0")
 	dashboardPath.Get.CreateRef(schema, "dashboard_panel_section", "responses.200.content.application/json.schema.properties.data.properties.panels.items.anyOf.1")
 	dashboardPath.Get.CreateRef(schema, "dashboard_panels", "responses.200.content.application/json.schema.properties.data.properties.panels")
 
 	schema.Components.CreateRef(schema, "dashboard_panel_item", "schemas.dashboard_panel_section.properties.panels.items")
+}
+
+func fixDashboardFlatRequestBodies(schema *Schema) {
+	postEndpoint := schema.MustGetPath("/api/dashboards").MustGetEndpoint("post")
+	postEndpoint.Set("requestBody.content.application/json.schema", postEndpoint.MustGetMap("requestBody.content.application/json.schema.properties.data"))
+
+	putEndpoint := schema.MustGetPath("/api/dashboards/{id}").MustGetEndpoint("put")
+	putEndpoint.Set("requestBody.content.application/json.schema", putEndpoint.MustGetMap("requestBody.content.application/json.schema.properties.data"))
 }
 
 func fixSecurityExceptionListItems(schema *Schema) {

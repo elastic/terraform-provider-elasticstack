@@ -141,58 +141,49 @@ func (m *dashboardModel) populateFromAPI(ctx context.Context, resp *kbapi.GetDas
 // toAPICreateRequest converts the Terraform model to an API create request
 func (m *dashboardModel) toAPICreateRequest(ctx context.Context, diags *diag.Diagnostics) kbapi.PostDashboardsJSONRequestBody {
 	req := kbapi.PostDashboardsJSONRequestBody{}
-	req.Data.Title = m.Title.ValueString()
-	req.Data.RefreshInterval.Pause = m.RefreshIntervalPause.ValueBool()
-	req.Data.RefreshInterval.Value = float32(m.RefreshIntervalValue.ValueInt64())
-	req.Data.TimeRange.From = m.TimeFrom.ValueString()
-	req.Data.TimeRange.To = m.TimeTo.ValueString()
-
-	// Set optional dashboard ID
-	if typeutils.IsKnown(m.DashboardID) {
-		req.Id = new(m.DashboardID.ValueString())
-	}
-
-	// Set space
-	if typeutils.IsKnown(m.SpaceID) && m.SpaceID.ValueString() != "default" {
-		req.Spaces = &[]string{m.SpaceID.ValueString()}
-	}
+	req.Title = m.Title.ValueString()
+	req.RefreshInterval.Pause = m.RefreshIntervalPause.ValueBool()
+	req.RefreshInterval.Value = float32(m.RefreshIntervalValue.ValueInt64())
+	req.TimeRange.From = m.TimeFrom.ValueString()
+	req.TimeRange.To = m.TimeTo.ValueString()
 
 	// Set description
 	if typeutils.IsKnown(m.Description) {
-		req.Data.Description = new(m.Description.ValueString())
+		desc := m.Description.ValueString()
+		req.Description = &desc
 	}
 
 	// Set time range mode
 	if typeutils.IsKnown(m.TimeRangeMode) {
 		mode := kbapi.KbnEsQueryServerTimeRangeSchemaMode(m.TimeRangeMode.ValueString())
-		req.Data.TimeRange.Mode = &mode
+		req.TimeRange.Mode = &mode
 	}
 
 	// Set query text - Query is a union type with json.RawMessage
 	queryModel, queryDiags := m.queryToAPI()
 	diags.Append(queryDiags...)
-	req.Data.Query = queryModel
+	req.Query = queryModel
 
 	// Set tags
 	if typeutils.IsKnown(m.Tags) {
 		tags := typeutils.ListTypeToSliceString(ctx, m.Tags, path.Root("tags"), diags)
 		if tags != nil {
-			req.Data.Tags = &tags
+			req.Tags = &tags
 		}
 	}
 
 	// Set options
 	options, optionsDiags := m.optionsToAPI()
 	diags.Append(optionsDiags...)
-	req.Data.Options = options
+	req.Options = options
 
 	// Set panels
 	panels, panelsDiags := m.panelsToAPI()
 	diags.Append(panelsDiags...)
-	req.Data.Panels = panels
+	req.Panels = panels
 
 	// Set access control
-	req.Data.AccessControl = m.AccessControl.toCreateAPI()
+	req.AccessControl = m.AccessControl.toCreateAPI()
 
 	return req
 }
@@ -200,48 +191,49 @@ func (m *dashboardModel) toAPICreateRequest(ctx context.Context, diags *diag.Dia
 // toAPIUpdateRequest converts the Terraform model to an API update request
 func (m *dashboardModel) toAPIUpdateRequest(ctx context.Context, diags *diag.Diagnostics) kbapi.PutDashboardsIdJSONRequestBody {
 	req := kbapi.PutDashboardsIdJSONRequestBody{}
-	req.Data.Title = m.Title.ValueString()
-	req.Data.RefreshInterval.Pause = m.RefreshIntervalPause.ValueBool()
-	req.Data.RefreshInterval.Value = float32(m.RefreshIntervalValue.ValueInt64())
-	req.Data.TimeRange.From = m.TimeFrom.ValueString()
-	req.Data.TimeRange.To = m.TimeTo.ValueString()
+	req.Title = m.Title.ValueString()
+	req.RefreshInterval.Pause = m.RefreshIntervalPause.ValueBool()
+	req.RefreshInterval.Value = float32(m.RefreshIntervalValue.ValueInt64())
+	req.TimeRange.From = m.TimeFrom.ValueString()
+	req.TimeRange.To = m.TimeTo.ValueString()
 
 	// Set description
 	if typeutils.IsKnown(m.Description) {
-		req.Data.Description = new(m.Description.ValueString())
+		desc := m.Description.ValueString()
+		req.Description = &desc
 	}
 
 	// Set time range mode
 	if typeutils.IsKnown(m.TimeRangeMode) {
 		mode := kbapi.KbnEsQueryServerTimeRangeSchemaMode(m.TimeRangeMode.ValueString())
-		req.Data.TimeRange.Mode = &mode
+		req.TimeRange.Mode = &mode
 	}
 
 	// Set query text - Query is a union type with json.RawMessage
 	queryModel, queryDiags := m.queryToAPI()
 	diags.Append(queryDiags...)
-	req.Data.Query = queryModel
+	req.Query = queryModel
 
 	// Set tags
 	if typeutils.IsKnown(m.Tags) {
 		tags := typeutils.ListTypeToSliceString(ctx, m.Tags, path.Root("tags"), diags)
 		if tags != nil {
-			req.Data.Tags = &tags
+			req.Tags = &tags
 		}
 	}
 
 	// Set options
 	options, optionsDiags := m.optionsToAPI()
 	diags.Append(optionsDiags...)
-	req.Data.Options = options
+	req.Options = options
 
 	// Set panels
 	panels, panelsDiags := m.panelsToAPI()
 	diags.Append(panelsDiags...)
-	req.Data.Panels = panels
+	req.Panels = panels
 
 	// Set access control
-	req.Data.AccessControl = m.AccessControl.toUpdateAPI()
+	req.AccessControl = m.AccessControl.toUpdateAPI()
 
 	return req
 }

@@ -78,11 +78,21 @@ func GetDashboard(ctx context.Context, client *Client, spaceID string, dashboard
 	}
 }
 
+func appendDashboardIDRequestEditor(dashboardID string) func(ctx context.Context, req *http.Request) error {
+	return func(_ context.Context, req *http.Request) error {
+		if dashboardID != "" {
+			req.URL.Path = req.URL.Path + "/" + dashboardID
+		}
+		return nil
+	}
+}
+
 // CreateDashboard creates a new dashboard.
-func CreateDashboard(ctx context.Context, client *Client, spaceID string, req kbapi.PostDashboardsJSONRequestBody) (*kbapi.PostDashboardsResponse, diag.Diagnostics) {
+func CreateDashboard(ctx context.Context, client *Client, spaceID string, dashboardID string, req kbapi.PostDashboardsJSONRequestBody) (*kbapi.PostDashboardsResponse, diag.Diagnostics) {
 	resp, err := client.API.PostDashboardsWithResponse(
 		ctx, &kbapi.PostDashboardsParams{},
 		req,
+		appendDashboardIDRequestEditor(dashboardID),
 		spaceAwarePathRequestEditor(spaceID),
 		addAPIVersionQueryParamRequestEditor(),
 	)
