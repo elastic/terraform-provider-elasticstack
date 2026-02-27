@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
@@ -81,7 +82,7 @@ func GetDashboard(ctx context.Context, client *Client, spaceID string, dashboard
 func appendDashboardIDRequestEditor(dashboardID string) func(ctx context.Context, req *http.Request) error {
 	return func(_ context.Context, req *http.Request) error {
 		if dashboardID != "" {
-			req.URL.Path = req.URL.Path + "/" + dashboardID
+			req.URL.Path = req.URL.Path + "/" + url.PathEscape(dashboardID)
 		}
 		return nil
 	}
