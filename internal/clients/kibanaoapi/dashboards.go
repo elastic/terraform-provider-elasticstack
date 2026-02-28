@@ -20,10 +20,11 @@ package kibanaoapi
 import (
 	"context"
 	"fmt"
+	"net/http"
+
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"net/http"
 )
 
 // buildSpaceAwarePath constructs an API path with space awareness.
