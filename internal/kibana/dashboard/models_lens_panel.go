@@ -33,7 +33,7 @@ func (c lensPanelConfigConverter) handlesAPIPanelConfig(pm *panelModel, panelTyp
 		return false
 	}
 
-	cfgMap, err := cfg.AsDashboardPanelItemConfig2()
+	cfgMap, err := cfg.AsDashboardPanelItemConfig8()
 	if err != nil {
 		return false
 	}

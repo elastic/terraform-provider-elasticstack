@@ -47,7 +47,7 @@ func (c gaugePanelConfigConverter) handlesTFPanelConfig(pm panelModel) bool {
 }
 
 func (c gaugePanelConfigConverter) populateFromAPIPanel(ctx context.Context, pm *panelModel, config kbapi.DashboardPanelItem_Config) diag.Diagnostics {
-	cfgMap, err := config.AsDashboardPanelItemConfig2()
+	cfgMap, err := config.AsDashboardPanelItemConfig8()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -67,7 +67,7 @@ func (c gaugePanelConfigConverter) populateFromAPIPanel(ctx context.Context, pm 
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	var gaugeChart kbapi.GaugeChartSchema
+	var gaugeChart kbapi.GaugeChart
 	if err := json.Unmarshal(attrsJSON, &gaugeChart); err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -91,35 +91,35 @@ func (c gaugePanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *kbapi
 		return diags
 	}
 
-	var gaugeChart kbapi.GaugeChartSchema
+	var gaugeChart kbapi.GaugeChart
 	if err := gaugeChart.FromGaugeNoESQL(gaugeNoESQL); err != nil {
 		diags.AddError("Failed to convert gauge to schema", err.Error())
 		return diags
 	}
 
-	var attrs0 kbapi.DashboardPanelItemConfig10Attributes0
-	if err := attrs0.FromGaugeChartSchema(gaugeChart); err != nil {
+	var attrs0 kbapi.DashboardPanelItemConfig70Attributes0
+	if err := attrs0.FromGaugeChart(gaugeChart); err != nil {
 		diags.AddError("Failed to create gauge attributes", err.Error())
 		return diags
 	}
 
-	var configAttrs kbapi.DashboardPanelItem_Config_1_0_Attributes
-	if err := configAttrs.FromDashboardPanelItemConfig10Attributes0(attrs0); err != nil {
+	var configAttrs kbapi.DashboardPanelItem_Config_7_0_Attributes
+	if err := configAttrs.FromDashboardPanelItemConfig70Attributes0(attrs0); err != nil {
 		diags.AddError("Failed to create config attributes", err.Error())
 		return diags
 	}
 
-	config10 := kbapi.DashboardPanelItemConfig10{
+	config10 := kbapi.DashboardPanelItemConfig70{
 		Attributes: configAttrs,
 	}
 
-	var config1 kbapi.DashboardPanelItemConfig1
-	if err := config1.FromDashboardPanelItemConfig10(config10); err != nil {
+	var config1 kbapi.DashboardPanelItemConfig7
+	if err := config1.FromDashboardPanelItemConfig70(config10); err != nil {
 		diags.AddError("Failed to create config1", err.Error())
 		return diags
 	}
 
-	if err := apiConfig.FromDashboardPanelItemConfig1(config1); err != nil {
+	if err := apiConfig.FromDashboardPanelItemConfig7(config1); err != nil {
 		diags.AddError("Failed to marshal gauge config", err.Error())
 	}
 
@@ -229,7 +229,7 @@ func (m *gaugeConfigModel) toAPI() (kbapi.GaugeNoESQL, diag.Diagnostics) {
 	}
 
 	if len(m.Filters) > 0 {
-		filters := make([]kbapi.SearchFilterSchema, len(m.Filters))
+		filters := make([]kbapi.SearchFilter, len(m.Filters))
 		for i, filterModel := range m.Filters {
 			filter, filterDiags := filterModel.toAPI()
 			diags.Append(filterDiags...)

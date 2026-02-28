@@ -47,7 +47,7 @@ func (c heatmapPanelConfigConverter) handlesTFPanelConfig(pm panelModel) bool {
 }
 
 func (c heatmapPanelConfigConverter) populateFromAPIPanel(ctx context.Context, pm *panelModel, config kbapi.DashboardPanelItem_Config) diag.Diagnostics {
-	cfgMap, err := config.AsDashboardPanelItemConfig2()
+	cfgMap, err := config.AsDashboardPanelItemConfig8()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -67,7 +67,7 @@ func (c heatmapPanelConfigConverter) populateFromAPIPanel(ctx context.Context, p
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	var heatmapChart kbapi.HeatmapChartSchema
+	var heatmapChart kbapi.HeatmapChart
 	if err := json.Unmarshal(attrsJSON, &heatmapChart); err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -100,29 +100,29 @@ func (c heatmapPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *kba
 		return diags
 	}
 
-	var attrs0 kbapi.DashboardPanelItemConfig10Attributes0
-	if err := attrs0.FromHeatmapChartSchema(heatmapChart); err != nil {
+	var attrs0 kbapi.DashboardPanelItemConfig70Attributes0
+	if err := attrs0.FromHeatmapChart(heatmapChart); err != nil {
 		diags.AddError("Failed to create heatmap attributes", err.Error())
 		return diags
 	}
 
-	var configAttrs kbapi.DashboardPanelItem_Config_1_0_Attributes
-	if err := configAttrs.FromDashboardPanelItemConfig10Attributes0(attrs0); err != nil {
+	var configAttrs kbapi.DashboardPanelItem_Config_7_0_Attributes
+	if err := configAttrs.FromDashboardPanelItemConfig70Attributes0(attrs0); err != nil {
 		diags.AddError("Failed to create config attributes", err.Error())
 		return diags
 	}
 
-	config10 := kbapi.DashboardPanelItemConfig10{
+	config10 := kbapi.DashboardPanelItemConfig70{
 		Attributes: configAttrs,
 	}
 
-	var config1 kbapi.DashboardPanelItemConfig1
-	if err := config1.FromDashboardPanelItemConfig10(config10); err != nil {
+	var config1 kbapi.DashboardPanelItemConfig7
+	if err := config1.FromDashboardPanelItemConfig70(config10); err != nil {
 		diags.AddError("Failed to create config1", err.Error())
 		return diags
 	}
 
-	if err := apiConfig.FromDashboardPanelItemConfig1(config1); err != nil {
+	if err := apiConfig.FromDashboardPanelItemConfig7(config1); err != nil {
 		diags.AddError("Failed to marshal heatmap config", err.Error())
 	}
 
@@ -296,9 +296,9 @@ func (m *heatmapConfigModel) fromAPIESQL(ctx context.Context, api kbapi.HeatmapE
 	return diags
 }
 
-func (m *heatmapConfigModel) toAPI() (kbapi.HeatmapChartSchema, diag.Diagnostics) {
+func (m *heatmapConfigModel) toAPI() (kbapi.HeatmapChart, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	var heatmapChart kbapi.HeatmapChartSchema
+	var heatmapChart kbapi.HeatmapChart
 
 	if m == nil {
 		return heatmapChart, diags
@@ -422,7 +422,7 @@ func (m *heatmapConfigModel) toAPINoESQL() (kbapi.HeatmapNoESQL, diag.Diagnostic
 	api.Query = m.Query.toAPI()
 
 	if len(m.Filters) > 0 {
-		filters := make([]kbapi.SearchFilterSchema, 0, len(m.Filters))
+		filters := make([]kbapi.SearchFilter, 0, len(m.Filters))
 		for _, filter := range m.Filters {
 			apiFilter, filterDiags := filter.toAPI()
 			diags.Append(filterDiags...)
@@ -530,7 +530,7 @@ func (m *heatmapConfigModel) toAPIESQL() (kbapi.HeatmapESQL, diag.Diagnostics) {
 	api.Legend = legend
 
 	if len(m.Filters) > 0 {
-		filters := make([]kbapi.SearchFilterSchema, 0, len(m.Filters))
+		filters := make([]kbapi.SearchFilter, 0, len(m.Filters))
 		for _, filter := range m.Filters {
 			apiFilter, filterDiags := filter.toAPI()
 			diags.Append(filterDiags...)

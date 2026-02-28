@@ -20,12 +20,10 @@ package kibanaoapi
 import (
 	"context"
 	"fmt"
-	"net/http"
-	"net/url"
-
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"net/http"
 )
 
 // buildSpaceAwarePath constructs an API path with space awareness.
@@ -79,21 +77,11 @@ func GetDashboard(ctx context.Context, client *Client, spaceID string, dashboard
 	}
 }
 
-func appendDashboardIDRequestEditor(dashboardID string) func(ctx context.Context, req *http.Request) error {
-	return func(_ context.Context, req *http.Request) error {
-		if dashboardID != "" {
-			req.URL.Path = req.URL.Path + "/" + url.PathEscape(dashboardID)
-		}
-		return nil
-	}
-}
-
 // CreateDashboard creates a new dashboard.
-func CreateDashboard(ctx context.Context, client *Client, spaceID string, dashboardID string, req kbapi.PostDashboardsJSONRequestBody) (*kbapi.PostDashboardsResponse, diag.Diagnostics) {
-	resp, err := client.API.PostDashboardsWithResponse(
-		ctx, &kbapi.PostDashboardsParams{},
+func CreateDashboard(ctx context.Context, client *Client, spaceID string, dashboardID string, req kbapi.PostDashboardsIdJSONRequestBody) (*kbapi.PostDashboardsIdResponse, diag.Diagnostics) {
+	resp, err := client.API.PostDashboardsIdWithResponse(
+		ctx, dashboardID, &kbapi.PostDashboardsIdParams{},
 		req,
-		appendDashboardIDRequestEditor(dashboardID),
 		spaceAwarePathRequestEditor(spaceID),
 		addAPIVersionQueryParamRequestEditor(),
 	)

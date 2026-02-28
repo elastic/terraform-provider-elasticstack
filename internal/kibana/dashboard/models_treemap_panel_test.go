@@ -286,7 +286,7 @@ func dashboardPanelItemConfigFromAttributes(t *testing.T, attributes map[string]
 	require.NoError(t, err)
 
 	var config kbapi.DashboardPanelItem_Config
-	require.NoError(t, config.FromDashboardPanelItemConfig2(configMap))
+	require.NoError(t, config.FromDashboardPanelItemConfig8(configMap))
 	require.NoError(t, json.Unmarshal(configJSON, &config))
 	return config
 }
@@ -294,7 +294,7 @@ func dashboardPanelItemConfigFromAttributes(t *testing.T, attributes map[string]
 func dashboardPanelItemAttributes(t *testing.T, config kbapi.DashboardPanelItem_Config) map[string]any {
 	t.Helper()
 
-	cfgMap, err := config.AsDashboardPanelItemConfig2()
+	cfgMap, err := config.AsDashboardPanelItemConfig8()
 	require.NoError(t, err)
 	attrs, ok := cfgMap["attributes"].(map[string]any)
 	require.True(t, ok)
@@ -324,10 +324,10 @@ func Test_treemapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 		Description:         new("Treemap description"),
 		IgnoreGlobalFilters: new(true),
 		Sampling:            new(float32(0.5)),
-		Query: kbapi.FilterSimpleSchema{
+		Query: kbapi.FilterSimple{
 			Query: "status:200",
-			Language: func() *kbapi.FilterSimpleSchemaLanguage {
-				lang := kbapi.FilterSimpleSchemaLanguage("kuery")
+			Language: func() *kbapi.FilterSimpleLanguage {
+				lang := kbapi.FilterSimpleLanguage("kuery")
 				return &lang
 			}(),
 		},
@@ -411,7 +411,7 @@ func Test_treemapConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 	staticColor := kbapi.StaticColor{}
 	require.NoError(t, json.Unmarshal([]byte(`{"type":"static","color":"#54B399"}`), &staticColor))
 
-	format := kbapi.FormatTypeSchema{}
+	format := kbapi.FormatType{}
 	require.NoError(t, json.Unmarshal([]byte(`{"type":"number","decimals":2}`), &format))
 
 	groupBy := []struct {
@@ -431,7 +431,7 @@ func Test_treemapConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 	metrics := []struct {
 		Color     kbapi.StaticColor                 `json:"color"`
 		Column    string                            `json:"column"`
-		Format    kbapi.FormatTypeSchema            `json:"format"`
+		Format    kbapi.FormatType                  `json:"format"`
 		Label     *string                           `json:"label,omitempty"`
 		Operation kbapi.TreemapESQLMetricsOperation `json:"operation"`
 	}{

@@ -139,8 +139,8 @@ func (m *dashboardModel) populateFromAPI(ctx context.Context, resp *kbapi.GetDas
 }
 
 // toAPICreateRequest converts the Terraform model to an API create request
-func (m *dashboardModel) toAPICreateRequest(ctx context.Context, diags *diag.Diagnostics) kbapi.PostDashboardsJSONRequestBody {
-	req := kbapi.PostDashboardsJSONRequestBody{}
+func (m *dashboardModel) toAPICreateRequest(ctx context.Context, diags *diag.Diagnostics) kbapi.PostDashboardsIdJSONRequestBody {
+	req := kbapi.PostDashboardsIdJSONRequestBody{}
 	req.Title = m.Title.ValueString()
 	req.RefreshInterval.Pause = m.RefreshIntervalPause.ValueBool()
 	req.RefreshInterval.Value = float32(m.RefreshIntervalValue.ValueInt64())

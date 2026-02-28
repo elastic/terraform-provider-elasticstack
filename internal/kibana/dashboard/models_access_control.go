@@ -30,8 +30,8 @@ type AccessControlValue struct {
 }
 
 type accessControlAPIPostModel = struct {
-	AccessMode *kbapi.PostDashboardsJSONBodyAccessControlAccessMode `json:"access_mode,omitempty"`
-	Owner      *string                                              `json:"owner,omitempty"`
+	AccessMode *kbapi.PostDashboardsIdJSONBodyAccessControlAccessMode `json:"access_mode,omitempty"`
+	Owner      *string                                                `json:"owner,omitempty"`
 }
 
 type accessControlAPIPutModel = struct {
@@ -48,7 +48,7 @@ func (m *AccessControlValue) toCreateAPI() *accessControlAPIPostModel {
 	apiModel := &accessControlAPIPostModel{}
 
 	if typeutils.IsKnown(m.AccessMode) {
-		mode := kbapi.PostDashboardsJSONBodyAccessControlAccessMode(m.AccessMode.ValueString())
+		mode := kbapi.PostDashboardsIdJSONBodyAccessControlAccessMode(m.AccessMode.ValueString())
 		apiModel.AccessMode = &mode
 	}
 
