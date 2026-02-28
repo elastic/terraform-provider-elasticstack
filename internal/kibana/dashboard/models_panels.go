@@ -34,9 +34,11 @@ type panelModel struct {
 	ID                 types.String             `tfsdk:"id"`
 	MarkdownConfig     *markdownConfigModel     `tfsdk:"markdown_config"`
 	XYChartConfig      *xyChartConfigModel      `tfsdk:"xy_chart_config"`
+	TreemapConfig      *treemapConfigModel      `tfsdk:"treemap_config"`
 	DatatableConfig    *datatableConfigModel    `tfsdk:"datatable_config"`
 	TagcloudConfig     *tagcloudConfigModel     `tfsdk:"tagcloud_config"`
 	MetricChartConfig  *metricChartConfigModel  `tfsdk:"metric_chart_config"`
+	PieChartConfig     *pieChartConfigModel     `tfsdk:"pie_chart_config"`
 	GaugeConfig        *gaugeConfigModel        `tfsdk:"gauge_config"`
 	LegacyMetricConfig *legacyMetricConfigModel `tfsdk:"legacy_metric_config"`
 	RegionMapConfig    *regionMapConfigModel    `tfsdk:"region_map_config"`
@@ -73,6 +75,7 @@ type panelConfigConverter interface {
 var panelConfigConverters = []panelConfigConverter{
 	markdownPanelConfigConverter{},
 	newXYChartPanelConfigConverter(),
+	newTreemapPanelConfigConverter(),
 	newDatatablePanelConfigConverter(),
 	newTagcloudPanelConfigConverter(),
 	newHeatmapPanelConfigConverter(),
@@ -80,6 +83,7 @@ var panelConfigConverters = []panelConfigConverter{
 	newLegacyMetricPanelConfigConverter(),
 	newGaugePanelConfigConverter(),
 	newMetricChartPanelConfigConverter(),
+	newPieChartPanelConfigConverter(),
 }
 
 func (m *dashboardModel) mapPanelsFromAPI(ctx context.Context, apiPanels *kbapi.DashboardPanels) ([]panelModel, []sectionModel, diag.Diagnostics) {
@@ -166,12 +170,20 @@ func (m *dashboardModel) mapSectionFromAPI(ctx context.Context, tfSection *secti
 }
 
 func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelModel, panelItem kbapi.DashboardPanelItem) (panelModel, diag.Diagnostics) {
-	pm := panelModel{
-		Type: types.StringValue(panelItem.Type),
-		Grid: panelGridModel{
-			X: types.Int64Value(int64(panelItem.Grid.X)),
-			Y: types.Int64Value(int64(panelItem.Grid.Y)),
-		},
+	// Start from the existing TF model when available (plan or prior state).
+	//
+	// Kibana may omit optional attributes on reads even when they were provided on
+	// writes. Seeding from the existing model allows individual panel converters
+	// to preserve already-known values when the API response doesn't include them.
+	var pm panelModel
+	if tfPanel != nil {
+		pm = *tfPanel
+	}
+
+	pm.Type = types.StringValue(panelItem.Type)
+	pm.Grid = panelGridModel{
+		X: types.Int64Value(int64(panelItem.Grid.X)),
+		Y: types.Int64Value(int64(panelItem.Grid.Y)),
 	}
 	if panelItem.Grid.W != nil {
 		pm.Grid.W = types.Int64Value(int64(*panelItem.Grid.W))
@@ -328,7 +340,7 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 		var configMap map[string]any
 		diags.Append(pm.ConfigJSON.Unmarshal(&configMap)...)
 		if !diags.HasError() {
-			if err := panelItem.Config.FromDashboardPanelItemConfig2(configMap); err != nil {
+			if err := panelItem.Config.FromDashboardPanelItemConfig8(configMap); err != nil {
 				diags.AddError("Failed to marshal panel config JSON", err.Error())
 			}
 		}

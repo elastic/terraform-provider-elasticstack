@@ -43,10 +43,10 @@ func Test_heatmapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 		Description:         new("Heatmap description"),
 		IgnoreGlobalFilters: new(true),
 		Sampling:            new(float32(0.5)),
-		Query: kbapi.FilterSimpleSchema{
+		Query: kbapi.FilterSimple{
 			Query: "status:200",
-			Language: func() *kbapi.FilterSimpleSchemaLanguage {
-				lang := kbapi.FilterSimpleSchemaLanguage("kuery")
+			Language: func() *kbapi.FilterSimpleLanguage {
+				lang := kbapi.FilterSimpleLanguage("kuery")
 				return &lang
 			}(),
 		},
@@ -110,12 +110,12 @@ func Test_heatmapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 	require.NoError(t, json.Unmarshal([]byte(`{"operation":"filters","filters":[{"label":"All","filter":{"query":"*","language":"kuery"}}]}`), &yAxis))
 	heatmap.YAxis = &yAxis
 
-	filterQuery := kbapi.SearchFilterSchema_0_Query{}
-	require.NoError(t, filterQuery.FromSearchFilterSchema0Query0("status:200"))
-	filterSchema := kbapi.SearchFilterSchema0{Query: filterQuery}
-	var filterUnion kbapi.SearchFilterSchema
-	require.NoError(t, filterUnion.FromSearchFilterSchema0(filterSchema))
-	filters := []kbapi.SearchFilterSchema{filterUnion}
+	filterQuery := kbapi.SearchFilter_0_Query{}
+	require.NoError(t, filterQuery.FromSearchFilter0Query0("status:200"))
+	filterSchema := kbapi.SearchFilter0{Query: filterQuery}
+	var filterUnion kbapi.SearchFilter
+	require.NoError(t, filterUnion.FromSearchFilter0(filterSchema))
+	filters := []kbapi.SearchFilter{filterUnion}
 	heatmap.Filters = &filters
 
 	model := &heatmapConfigModel{}

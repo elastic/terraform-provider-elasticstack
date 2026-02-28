@@ -127,6 +127,7 @@ func TestAccResourceDashboardMetricChart(t *testing.T) {
 				ImportStateVerifyIgnore: []string{
 					"panels.0.metric_chart_config.dataset_json",
 					"panels.0.metric_chart_config.metrics.0.config_json",
+					"panels.0.metric_chart_config.metrics.1.config_json",
 					"panels.0.metric_chart_config.breakdown_by_json",
 				},
 			},

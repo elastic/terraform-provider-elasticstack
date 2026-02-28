@@ -33,7 +33,7 @@ import (
 func newMetricChartPanelConfigConverter() metricChartPanelConfigConverter {
 	return metricChartPanelConfigConverter{
 		lensPanelConfigConverter: lensPanelConfigConverter{
-			visualizationType: string(kbapi.MetricChartSchema0TypeMetric),
+			visualizationType: string(kbapi.MetricChart0TypeMetric),
 			hasTFPanelConfig:  func(pm panelModel) bool { return pm.MetricChartConfig != nil },
 		},
 	}
@@ -49,7 +49,7 @@ func (c metricChartPanelConfigConverter) handlesTFPanelConfig(pm panelModel) boo
 
 func (c metricChartPanelConfigConverter) populateFromAPIPanel(ctx context.Context, pm *panelModel, config kbapi.DashboardPanelItem_Config) diag.Diagnostics {
 	// Try to extract the metric chart config from the panel config
-	cfgMap, err := config.AsDashboardPanelItemConfig2()
+	cfgMap, err := config.AsDashboardPanelItemConfig8()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -65,20 +65,35 @@ func (c metricChartPanelConfigConverter) populateFromAPIPanel(ctx context.Contex
 		return nil
 	}
 
-	// Marshal and unmarshal to get the MetricChartSchema
+	// Marshal and unmarshal to get the MetricChart
 	attrsJSON, err := json.Marshal(attrsMap)
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	var metricChart kbapi.MetricChartSchema
+	var metricChart kbapi.MetricChart
 	if err := json.Unmarshal(attrsJSON, &metricChart); err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	// Populate the model
+	// Populate the model.
+	//
+	// Disambiguate variant 0 vs 1 using the presence of the `query` key. The generated union types can
+	// successfully unmarshal into both variants, so relying on decoded field contents is brittle.
 	pm.MetricChartConfig = &metricChartConfigModel{}
-	return pm.MetricChartConfig.fromAPI(ctx, metricChart)
+	if _, ok := attrsMap["query"]; ok {
+		variant0, err := metricChart.AsMetricChart0()
+		if err != nil {
+			return diagutil.FrameworkDiagFromError(err)
+		}
+		return pm.MetricChartConfig.fromAPIVariant0(ctx, variant0)
+	}
+
+	variant1, err := metricChart.AsMetricChart1()
+	if err != nil {
+		return diagutil.FrameworkDiagFromError(err)
+	}
+	return pm.MetricChartConfig.fromAPIVariant1(ctx, variant1)
 }
 
 func (c metricChartPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *kbapi.DashboardPanelItem_Config) diag.Diagnostics {
@@ -93,29 +108,29 @@ func (c metricChartPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig 
 	}
 
 	// Create the nested Config1 structure
-	var attrs0 kbapi.DashboardPanelItemConfig10Attributes0
-	if err := attrs0.FromMetricChartSchema(metricChart); err != nil {
+	var attrs0 kbapi.DashboardPanelItemConfig70Attributes0
+	if err := attrs0.FromMetricChart(metricChart); err != nil {
 		diags.AddError("Failed to create metric chart attributes", err.Error())
 		return diags
 	}
 
-	var configAttrs kbapi.DashboardPanelItem_Config_1_0_Attributes
-	if err := configAttrs.FromDashboardPanelItemConfig10Attributes0(attrs0); err != nil {
+	var configAttrs kbapi.DashboardPanelItem_Config_7_0_Attributes
+	if err := configAttrs.FromDashboardPanelItemConfig70Attributes0(attrs0); err != nil {
 		diags.AddError("Failed to create config attributes", err.Error())
 		return diags
 	}
 
-	config10 := kbapi.DashboardPanelItemConfig10{
+	config10 := kbapi.DashboardPanelItemConfig70{
 		Attributes: configAttrs,
 	}
 
-	var config1 kbapi.DashboardPanelItemConfig1
-	if err := config1.FromDashboardPanelItemConfig10(config10); err != nil {
+	var config1 kbapi.DashboardPanelItemConfig7
+	if err := config1.FromDashboardPanelItemConfig70(config10); err != nil {
 		diags.AddError("Failed to create config1", err.Error())
 		return diags
 	}
 
-	if err := apiConfig.FromDashboardPanelItemConfig1(config1); err != nil {
+	if err := apiConfig.FromDashboardPanelItemConfig7(config1); err != nil {
 		diags.AddError("Failed to marshal metric chart config", err.Error())
 		return diags
 	}
@@ -139,7 +154,7 @@ type metricItemModel struct {
 	ConfigJSON customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config_json"`
 }
 
-func (m *metricChartConfigModel) fromAPI(ctx context.Context, apiChart kbapi.MetricChartSchema) diag.Diagnostics {
+func (m *metricChartConfigModel) fromAPI(ctx context.Context, apiChart kbapi.MetricChart) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	// Try to get the metric chart variant 0 (non-ESQL) or 1 (ESQL)
@@ -147,12 +162,12 @@ func (m *metricChartConfigModel) fromAPI(ctx context.Context, apiChart kbapi.Met
 	// The key difference is that variant 0 requires a Query field, while variant 1 doesn't have one.
 	// We try variant 0 first, but if the Query field is empty (which happens when decoding variant 1 JSON),
 	// we know it's actually variant 1.
-	variant0, err := apiChart.AsMetricChartSchema0()
+	variant0, err := apiChart.AsMetricChart0()
 	if err == nil {
 		// Check if this is actually variant 1 by looking at whether the Query field is empty
 		if variant0.Query.Query == "" && variant0.Query.Language == nil {
 			// This is likely variant 1 (ESQL), try decoding as that
-			variant1, err1 := apiChart.AsMetricChartSchema1()
+			variant1, err1 := apiChart.AsMetricChart1()
 			if err1 == nil {
 				return m.fromAPIVariant1(ctx, variant1)
 			}
@@ -161,7 +176,7 @@ func (m *metricChartConfigModel) fromAPI(ctx context.Context, apiChart kbapi.Met
 		return m.fromAPIVariant0(ctx, variant0)
 	}
 
-	variant1, err := apiChart.AsMetricChartSchema1()
+	variant1, err := apiChart.AsMetricChart1()
 	if err == nil {
 		return m.fromAPIVariant1(ctx, variant1)
 	}
@@ -170,7 +185,7 @@ func (m *metricChartConfigModel) fromAPI(ctx context.Context, apiChart kbapi.Met
 	return diags
 }
 
-func (m *metricChartConfigModel) fromAPIVariant0(ctx context.Context, apiChart kbapi.MetricChartSchema0) diag.Diagnostics {
+func (m *metricChartConfigModel) fromAPIVariant0(ctx context.Context, apiChart kbapi.MetricChart0) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
 
@@ -205,7 +220,7 @@ func (m *metricChartConfigModel) fromAPIVariant0(ctx context.Context, apiChart k
 		}
 	}
 
-	// Set metrics - MetricChartSchema0 has a slice of metrics
+	// Set metrics - MetricChart0 has a slice of metrics
 	if len(apiChart.Metrics) > 0 {
 		m.Metrics = make([]metricItemModel, len(apiChart.Metrics))
 		for i, metric := range apiChart.Metrics {
@@ -214,7 +229,7 @@ func (m *metricChartConfigModel) fromAPIVariant0(ctx context.Context, apiChart k
 				diags.AddError("Failed to marshal metric", err.Error())
 				continue
 			}
-			m.Metrics[i].ConfigJSON = customtypes.NewJSONWithDefaultsValue[map[string]any](
+			m.Metrics[i].ConfigJSON = customtypes.NewJSONWithDefaultsValue(
 				string(metricJSON),
 				populateMetricChartMetricDefaults,
 			)
@@ -236,7 +251,7 @@ func (m *metricChartConfigModel) fromAPIVariant0(ctx context.Context, apiChart k
 	return diags
 }
 
-func (m *metricChartConfigModel) fromAPIVariant1(ctx context.Context, apiChart kbapi.MetricChartSchema1) diag.Diagnostics {
+func (m *metricChartConfigModel) fromAPIVariant1(ctx context.Context, apiChart kbapi.MetricChart1) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
 
@@ -270,7 +285,7 @@ func (m *metricChartConfigModel) fromAPIVariant1(ctx context.Context, apiChart k
 		}
 	}
 
-	// Set metrics - MetricChartSchema1 has a slice of metrics
+	// Set metrics - MetricChart1 has a slice of metrics
 	if len(apiChart.Metrics) > 0 {
 		m.Metrics = make([]metricItemModel, len(apiChart.Metrics))
 		for i, metric := range apiChart.Metrics {
@@ -279,7 +294,7 @@ func (m *metricChartConfigModel) fromAPIVariant1(ctx context.Context, apiChart k
 				diags.AddError("Failed to marshal metric", err.Error())
 				continue
 			}
-			m.Metrics[i].ConfigJSON = customtypes.NewJSONWithDefaultsValue[map[string]any](
+			m.Metrics[i].ConfigJSON = customtypes.NewJSONWithDefaultsValue(
 				string(metricJSON),
 				populateMetricChartMetricDefaults,
 			)
@@ -301,7 +316,7 @@ func (m *metricChartConfigModel) fromAPIVariant1(ctx context.Context, apiChart k
 	return diags
 }
 
-func (m *metricChartConfigModel) toAPI() (kbapi.MetricChartSchema, diag.Diagnostics) {
+func (m *metricChartConfigModel) toAPI() (kbapi.MetricChart, diag.Diagnostics) {
 	// Determine which variant to use based on whether we have a query
 	// Variant 0 (non-ESQL) requires a query
 	// Variant 1 (ESQL) doesn't require a query
@@ -311,12 +326,12 @@ func (m *metricChartConfigModel) toAPI() (kbapi.MetricChartSchema, diag.Diagnost
 	return m.toAPIVariant1()
 }
 
-func (m *metricChartConfigModel) toAPIVariant0() (kbapi.MetricChartSchema, diag.Diagnostics) {
+func (m *metricChartConfigModel) toAPIVariant0() (kbapi.MetricChart, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	var metricChart kbapi.MetricChartSchema
+	var metricChart kbapi.MetricChart
 
-	variant0 := kbapi.MetricChartSchema0{
-		Type: kbapi.MetricChartSchema0TypeMetric,
+	variant0 := kbapi.MetricChart0{
+		Type: kbapi.MetricChart0TypeMetric,
 	}
 
 	// Set simple fields
@@ -336,7 +351,7 @@ func (m *metricChartConfigModel) toAPIVariant0() (kbapi.MetricChartSchema, diag.
 
 	// Set dataset
 	if typeutils.IsKnown(m.DatasetJSON) {
-		var dataset kbapi.MetricChartSchema_0_Dataset
+		var dataset kbapi.MetricChart_0_Dataset
 		datasetDiags := m.DatasetJSON.Unmarshal(&dataset)
 		diags.Append(datasetDiags...)
 		if !datasetDiags.HasError() {
@@ -351,7 +366,7 @@ func (m *metricChartConfigModel) toAPIVariant0() (kbapi.MetricChartSchema, diag.
 
 	// Set filters
 	if len(m.Filters) > 0 {
-		filters := make([]kbapi.SearchFilterSchema, len(m.Filters))
+		filters := make([]kbapi.SearchFilter, len(m.Filters))
 		for i, filter := range m.Filters {
 			apiFilter, filterDiags := filter.toAPI()
 			diags.Append(filterDiags...)
@@ -362,10 +377,10 @@ func (m *metricChartConfigModel) toAPIVariant0() (kbapi.MetricChartSchema, diag.
 
 	// Set metrics
 	if len(m.Metrics) > 0 {
-		metrics := make([]kbapi.MetricChartSchema_0_Metrics_Item, len(m.Metrics))
+		metrics := make([]kbapi.MetricChart_0_Metrics_Item, len(m.Metrics))
 		for i, metric := range m.Metrics {
 			if typeutils.IsKnown(metric.ConfigJSON) {
-				var metricItem kbapi.MetricChartSchema_0_Metrics_Item
+				var metricItem kbapi.MetricChart_0_Metrics_Item
 				metricDiags := metric.ConfigJSON.Unmarshal(&metricItem)
 				diags.Append(metricDiags...)
 				if !metricDiags.HasError() {
@@ -378,7 +393,7 @@ func (m *metricChartConfigModel) toAPIVariant0() (kbapi.MetricChartSchema, diag.
 
 	// Set breakdown_by
 	if typeutils.IsKnown(m.BreakdownByJSON) {
-		var breakdownBy kbapi.MetricChartSchema_0_BreakdownBy
+		var breakdownBy kbapi.MetricChart_0_BreakdownBy
 		breakdownDiags := m.BreakdownByJSON.Unmarshal(&breakdownBy)
 		diags.Append(breakdownDiags...)
 		if !breakdownDiags.HasError() {
@@ -386,19 +401,19 @@ func (m *metricChartConfigModel) toAPIVariant0() (kbapi.MetricChartSchema, diag.
 		}
 	}
 
-	if err := metricChart.FromMetricChartSchema0(variant0); err != nil {
+	if err := metricChart.FromMetricChart0(variant0); err != nil {
 		diags.AddError("Failed to create metric chart schema variant 0", err.Error())
 	}
 
 	return metricChart, diags
 }
 
-func (m *metricChartConfigModel) toAPIVariant1() (kbapi.MetricChartSchema, diag.Diagnostics) {
+func (m *metricChartConfigModel) toAPIVariant1() (kbapi.MetricChart, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	var metricChart kbapi.MetricChartSchema
+	var metricChart kbapi.MetricChart
 
-	variant1 := kbapi.MetricChartSchema1{
-		Type: kbapi.MetricChartSchema1TypeMetric,
+	variant1 := kbapi.MetricChart1{
+		Type: kbapi.MetricChart1TypeMetric,
 	}
 
 	// Set simple fields
@@ -418,7 +433,7 @@ func (m *metricChartConfigModel) toAPIVariant1() (kbapi.MetricChartSchema, diag.
 
 	// Set dataset
 	if typeutils.IsKnown(m.DatasetJSON) {
-		var dataset kbapi.MetricChartSchema_1_Dataset
+		var dataset kbapi.MetricChart_1_Dataset
 		datasetDiags := m.DatasetJSON.Unmarshal(&dataset)
 		diags.Append(datasetDiags...)
 		if !datasetDiags.HasError() {
@@ -428,7 +443,7 @@ func (m *metricChartConfigModel) toAPIVariant1() (kbapi.MetricChartSchema, diag.
 
 	// Set filters
 	if len(m.Filters) > 0 {
-		filters := make([]kbapi.SearchFilterSchema, len(m.Filters))
+		filters := make([]kbapi.SearchFilter, len(m.Filters))
 		for i, filter := range m.Filters {
 			apiFilter, filterDiags := filter.toAPI()
 			diags.Append(filterDiags...)
@@ -439,10 +454,10 @@ func (m *metricChartConfigModel) toAPIVariant1() (kbapi.MetricChartSchema, diag.
 
 	// Set metrics
 	if len(m.Metrics) > 0 {
-		metrics := make([]kbapi.MetricChartSchema_1_Metrics_Item, len(m.Metrics))
+		metrics := make([]kbapi.MetricChart_1_Metrics_Item, len(m.Metrics))
 		for i, metric := range m.Metrics {
 			if typeutils.IsKnown(metric.ConfigJSON) {
-				var metricItem kbapi.MetricChartSchema_1_Metrics_Item
+				var metricItem kbapi.MetricChart_1_Metrics_Item
 				metricDiags := metric.ConfigJSON.Unmarshal(&metricItem)
 				diags.Append(metricDiags...)
 				if !metricDiags.HasError() {
@@ -456,10 +471,10 @@ func (m *metricChartConfigModel) toAPIVariant1() (kbapi.MetricChartSchema, diag.
 	// Set breakdown_by
 	if typeutils.IsKnown(m.BreakdownByJSON) {
 		var breakdownBy struct {
-			CollapseBy kbapi.CollapseBy                             `json:"collapse_by"`
-			Column     string                                       `json:"column"`
-			Columns    *float32                                     `json:"columns,omitempty"`
-			Operation  kbapi.MetricChartSchema1BreakdownByOperation `json:"operation"`
+			CollapseBy kbapi.CollapseBy                       `json:"collapse_by"`
+			Column     string                                 `json:"column"`
+			Columns    *float32                               `json:"columns,omitempty"`
+			Operation  kbapi.MetricChart1BreakdownByOperation `json:"operation"`
 		}
 		breakdownDiags := m.BreakdownByJSON.Unmarshal(&breakdownBy)
 		diags.Append(breakdownDiags...)
@@ -468,7 +483,7 @@ func (m *metricChartConfigModel) toAPIVariant1() (kbapi.MetricChartSchema, diag.
 		}
 	}
 
-	if err := metricChart.FromMetricChartSchema1(variant1); err != nil {
+	if err := metricChart.FromMetricChart1(variant1); err != nil {
 		diags.AddError("Failed to create metric chart schema variant 1", err.Error())
 	}
 
