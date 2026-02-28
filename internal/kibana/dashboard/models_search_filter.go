@@ -33,18 +33,18 @@ type searchFilterModel struct {
 	Language types.String         `tfsdk:"language"`
 }
 
-func (m *searchFilterModel) fromAPI(apiFilter kbapi.SearchFilterSchema) diag.Diagnostics {
+func (m *searchFilterModel) fromAPI(apiFilter kbapi.SearchFilter) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	// Try to extract from SearchFilterSchema0
-	filterSchema, err := apiFilter.AsSearchFilterSchema0()
+	// Try to extract from SearchFilter0
+	filterSchema, err := apiFilter.AsSearchFilter0()
 	if err != nil {
 		diags.AddError("Failed to extract search filter", err.Error())
 		return diags
 	}
 
 	// Extract string from union type
-	queryStr, queryErr := filterSchema.Query.AsSearchFilterSchema0Query0()
+	queryStr, queryErr := filterSchema.Query.AsSearchFilter0Query0()
 	if queryErr != nil {
 		diags.AddError("Failed to extract search filter query", queryErr.Error())
 		return diags
@@ -70,21 +70,21 @@ func (m *searchFilterModel) fromAPI(apiFilter kbapi.SearchFilterSchema) diag.Dia
 	return diags
 }
 
-func (m *searchFilterModel) toAPI() (kbapi.SearchFilterSchema, diag.Diagnostics) {
+func (m *searchFilterModel) toAPI() (kbapi.SearchFilter, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	filter := kbapi.SearchFilterSchema0{}
+	filter := kbapi.SearchFilter0{}
 	if typeutils.IsKnown(m.Query) {
 		query := m.Query.ValueString()
-		var queryUnion kbapi.SearchFilterSchema_0_Query
-		if err := queryUnion.FromSearchFilterSchema0Query0(query); err != nil {
+		var queryUnion kbapi.SearchFilter_0_Query
+		if err := queryUnion.FromSearchFilter0Query0(query); err != nil {
 			diags.AddError("Failed to create search filter query", err.Error())
-			return kbapi.SearchFilterSchema{}, diags
+			return kbapi.SearchFilter{}, diags
 		}
 		filter.Query = queryUnion
 	}
 	if typeutils.IsKnown(m.Language) {
-		lang := kbapi.SearchFilterSchema0Language(m.Language.ValueString())
+		lang := kbapi.SearchFilter0Language(m.Language.ValueString())
 		filter.Language = &lang
 	}
 	if typeutils.IsKnown(m.MetaJSON) {
@@ -95,8 +95,8 @@ func (m *searchFilterModel) toAPI() (kbapi.SearchFilterSchema, diag.Diagnostics)
 		}
 	}
 
-	var result kbapi.SearchFilterSchema
-	if err := result.FromSearchFilterSchema0(filter); err != nil {
+	var result kbapi.SearchFilter
+	if err := result.FromSearchFilter0(filter); err != nil {
 		diags.AddError("Failed to create search filter", err.Error())
 	}
 	return result, diags

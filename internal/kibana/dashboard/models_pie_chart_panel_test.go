@@ -45,9 +45,9 @@ func Test_pieChartConfigModel_fromAPI_toAPI_PieNoESQL(t *testing.T) {
 		Visible: &visible,
 	}
 
-	query := kbapi.FilterSimpleSchema{
+	query := kbapi.FilterSimple{
 		Query:    "response:200",
-		Language: new(kbapi.FilterSimpleSchemaLanguageKuery),
+		Language: new(kbapi.FilterSimpleLanguageKuery),
 	}
 
 	apiChart := kbapi.PieNoESQL{
@@ -62,8 +62,8 @@ func Test_pieChartConfigModel_fromAPI_toAPI_PieNoESQL(t *testing.T) {
 		GroupBy:       new([]kbapi.PieNoESQL_GroupBy_Item{}),
 	}
 
-	// Wrap in PieChartSchema
-	var apiSchema kbapi.PieChartSchema
+	// Wrap in PieChart
+	var apiSchema kbapi.PieChart
 	err := apiSchema.FromPieNoESQL(apiChart)
 	require.NoError(t, err)
 

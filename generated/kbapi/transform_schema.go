@@ -968,16 +968,15 @@ func fixSecurityAPIPageSize(schema *Schema) {
 }
 
 func fixDashboardPanelItemRefs(schema *Schema) {
-	dashboardsPath := schema.MustGetPath("/api/dashboards")
 	dashboardPath := schema.MustGetPath("/api/dashboards/{id}")
 
-	dashboardsPath.Post.CreateRef(schema, "dashboard_panel_item", "requestBody.content.application/json.schema.properties.data.properties.panels.items.anyOf.0")
-	dashboardsPath.Post.CreateRef(schema, "dashboard_panel_section", "requestBody.content.application/json.schema.properties.data.properties.panels.items.anyOf.1")
-	dashboardsPath.Post.CreateRef(schema, "dashboard_panels", "requestBody.content.application/json.schema.properties.data.properties.panels")
+	dashboardPath.Post.CreateRef(schema, "dashboard_panel_item", "requestBody.content.application/json.schema.properties.panels.items.anyOf.0")
+	dashboardPath.Post.CreateRef(schema, "dashboard_panel_section", "requestBody.content.application/json.schema.properties.panels.items.anyOf.1")
+	dashboardPath.Post.CreateRef(schema, "dashboard_panels", "requestBody.content.application/json.schema.properties.panels")
 
-	dashboardPath.Put.CreateRef(schema, "dashboard_panel_item", "requestBody.content.application/json.schema.properties.data.properties.panels.items.anyOf.0")
-	dashboardPath.Put.CreateRef(schema, "dashboard_panel_section", "requestBody.content.application/json.schema.properties.data.properties.panels.items.anyOf.1")
-	dashboardPath.Put.CreateRef(schema, "dashboard_panels", "requestBody.content.application/json.schema.properties.data.properties.panels")
+	dashboardPath.Put.CreateRef(schema, "dashboard_panel_item", "requestBody.content.application/json.schema.properties.panels.items.anyOf.0")
+	dashboardPath.Put.CreateRef(schema, "dashboard_panel_section", "requestBody.content.application/json.schema.properties.panels.items.anyOf.1")
+	dashboardPath.Put.CreateRef(schema, "dashboard_panels", "requestBody.content.application/json.schema.properties.panels")
 
 	dashboardPath.Get.CreateRef(schema, "dashboard_panel_item", "responses.200.content.application/json.schema.properties.data.properties.panels.items.anyOf.0")
 	dashboardPath.Get.CreateRef(schema, "dashboard_panel_section", "responses.200.content.application/json.schema.properties.data.properties.panels.items.anyOf.1")

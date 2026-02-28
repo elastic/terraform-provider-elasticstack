@@ -346,7 +346,7 @@ func Test_tagcloudPanelConfigConverter_mapPanelToAPI(t *testing.T) {
 	require.False(t, diags.HasError())
 
 	// Verify the config was created
-	configMap, err := apiConfig.AsDashboardPanelItemConfig2()
+	configMap, err := apiConfig.AsDashboardPanelItemConfig8()
 	require.NoError(t, err)
 
 	// Verify the attributes exist
