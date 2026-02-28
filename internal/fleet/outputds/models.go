@@ -31,7 +31,7 @@ import (
 type outputModel struct {
 	Name                 types.String `tfsdk:"name"`
 	SpaceID              types.String `tfsdk:"space_id"`
-	OutputID             types.String `tfsdk:"output_id"`
+	ID                   types.String `tfsdk:"id"`
 	Type                 types.String `tfsdk:"type"`
 	Hosts                types.List   `tfsdk:"hosts"` //> string
 	CaSha256             types.String `tfsdk:"ca_sha256"`
@@ -70,7 +70,7 @@ func (model *outputModel) populateFromAPI(ctx context.Context, union *kbapi.Outp
 }
 
 func (model *outputModel) fromAPIElasticsearchModel(ctx context.Context, data *kbapi.OutputElasticsearch) (diags diag.Diagnostics) {
-	model.OutputID = types.StringPointerValue(data.Id)
+	model.ID = types.StringPointerValue(data.Id)
 	model.Name = types.StringValue(data.Name)
 	model.Type = types.StringValue(string(data.Type))
 	model.Hosts = typeutils.SliceToListTypeString(ctx, data.Hosts, path.Root("hosts"), &diags)
@@ -83,7 +83,7 @@ func (model *outputModel) fromAPIElasticsearchModel(ctx context.Context, data *k
 }
 
 func (model *outputModel) fromAPIKafkaModel(ctx context.Context, data *kbapi.OutputKafka) (diags diag.Diagnostics) {
-	model.OutputID = types.StringPointerValue(data.Id)
+	model.ID = types.StringPointerValue(data.Id)
 	model.Name = types.StringValue(data.Name)
 	model.Type = types.StringValue(string(data.Type))
 	model.Hosts = typeutils.SliceToListTypeString(ctx, data.Hosts, path.Root("hosts"), &diags)
@@ -96,7 +96,7 @@ func (model *outputModel) fromAPIKafkaModel(ctx context.Context, data *kbapi.Out
 }
 
 func (model *outputModel) fromAPILogstashModel(ctx context.Context, data *kbapi.OutputLogstash) (diags diag.Diagnostics) {
-	model.OutputID = types.StringPointerValue(data.Id)
+	model.ID = types.StringPointerValue(data.Id)
 	model.Name = types.StringValue(data.Name)
 	model.Type = types.StringValue(string(data.Type))
 	model.Hosts = typeutils.SliceToListTypeString(ctx, data.Hosts, path.Root("hosts"), &diags)

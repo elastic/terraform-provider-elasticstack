@@ -37,7 +37,7 @@ func (d *outputDataSource) Schema(_ context.Context, _ datasource.SchemaRequest,
 				Description: "The Kibana space ID where this output is available.",
 				Optional:    true,
 			},
-			"output_id": schema.StringAttribute{
+			"id": schema.StringAttribute{
 				Description: "Unique identifier of the output.",
 				Computed:    true,
 			},

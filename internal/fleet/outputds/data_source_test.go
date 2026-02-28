@@ -39,7 +39,7 @@ func TestAccDataSourceOutput(t *testing.T) {
 				Config:   testAccDataSourceOutput,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_fleet_output.test", "name", "default"),
-					resource.TestCheckResourceAttrSet("data.elasticstack_fleet_output.test", "output_id"),
+					resource.TestCheckResourceAttrSet("data.elasticstack_fleet_output.test", "id"),
 				),
 			},
 			{
@@ -47,7 +47,7 @@ func TestAccDataSourceOutput(t *testing.T) {
 				Config:   testAccDataSourceOutputSpace,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_fleet_output.test", "name", "default"),
-					resource.TestCheckResourceAttrSet("data.elasticstack_fleet_output.test", "output_id"),
+					resource.TestCheckResourceAttrSet("data.elasticstack_fleet_output.test", "id"),
 				),
 			},
 			{
