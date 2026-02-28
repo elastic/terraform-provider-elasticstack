@@ -42,7 +42,13 @@ func (d *outputDataSource) Metadata(_ context.Context, req datasource.MetadataRe
 }
 
 func (d *outputDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
+	if req.ProviderData == nil {
+		return
+	}
 	client, diags := clients.ConvertProviderData(req.ProviderData)
 	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 	d.client = client
 }
