@@ -579,12 +579,12 @@ var transformers = []TransformFunc{
 	fixAlertingRuleParams,
 }
 
-//go:embed dashboards.yaml
-var dashboardsYaml string
+//go:embed dashboards.json
+var dashboardsJSON string
 
 func mergeDashboardsSchema(schema *Schema) {
 	var dashboardsSchema Schema
-	err := yaml.Unmarshal([]byte(dashboardsYaml), &dashboardsSchema)
+	err := yaml.Unmarshal([]byte(dashboardsJSON), &dashboardsSchema)
 	if err != nil {
 		log.Fatalf("failed to unmarshal schema from dashboards.yaml: %v", err)
 	}
