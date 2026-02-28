@@ -62,6 +62,9 @@ func (model *outputModel) populateFromAPI(ctx context.Context, union *kbapi.Outp
 	case kbapi.OutputKafka:
 		diags.Append(model.fromAPIKafkaModel(ctx, &output)...)
 
+	case kbapi.OutputRemoteElasticsearch:
+		diags.Append(model.fromAPIRemoteElasticsearchModel(ctx, &output)...)
+
 	default:
 		diags.AddError(fmt.Sprintf("unhandled output type: %T", output), "")
 	}
@@ -96,6 +99,19 @@ func (model *outputModel) fromAPIKafkaModel(ctx context.Context, data *kbapi.Out
 }
 
 func (model *outputModel) fromAPILogstashModel(ctx context.Context, data *kbapi.OutputLogstash) (diags diag.Diagnostics) {
+	model.ID = types.StringPointerValue(data.Id)
+	model.Name = types.StringValue(data.Name)
+	model.Type = types.StringValue(string(data.Type))
+	model.Hosts = typeutils.SliceToListTypeString(ctx, data.Hosts, path.Root("hosts"), &diags)
+	model.CaSha256 = types.StringPointerValue(data.CaSha256)
+	model.CaTrustedFingerprint = typeutils.NonEmptyStringishPointerValue(data.CaTrustedFingerprint)
+	model.DefaultIntegrations = types.BoolPointerValue(data.IsDefault)
+	model.DefaultMonitoring = types.BoolPointerValue(data.IsDefaultMonitoring)
+	model.ConfigYaml = types.StringPointerValue(data.ConfigYaml)
+	return
+}
+
+func (model *outputModel) fromAPIRemoteElasticsearchModel(ctx context.Context, data *kbapi.OutputRemoteElasticsearch) (diags diag.Diagnostics) {
 	model.ID = types.StringPointerValue(data.Id)
 	model.Name = types.StringValue(data.Name)
 	model.Type = types.StringValue(string(data.Type))
