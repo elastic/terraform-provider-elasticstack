@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package output_ds_test
+package outputds_test
 
 import (
 	"regexp"
