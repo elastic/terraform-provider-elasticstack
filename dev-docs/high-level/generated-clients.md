@@ -6,7 +6,7 @@ This repo includes generated API clients.
 
 - Location: `generated/kbapi`
 - Canonical detailed doc: [`generated/kbapi/README.md`](../../generated/kbapi/README.md)
-- Regenerate the Go client: `make all`
+- Regenerate the Go client : `make -C generated/kbapi all`
 
 When adding new Kibana endpoints, prefer using the `generated/kbapi` client (see “API Client Usage” in [`CODING_STANDARDS.md`](../../CODING_STANDARDS.md)).
 
