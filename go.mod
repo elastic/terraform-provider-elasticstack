@@ -11,14 +11,14 @@ require (
 	github.com/hashicorp/go-cty v1.5.0
 	github.com/hashicorp/go-uuid v1.0.3
 	github.com/hashicorp/go-version v1.8.0
-	github.com/hashicorp/terraform-plugin-framework v1.17.0
+	github.com/hashicorp/terraform-plugin-framework v1.18.0
 	github.com/hashicorp/terraform-plugin-framework-jsontypes v0.2.0
 	github.com/hashicorp/terraform-plugin-framework-timeouts v0.7.0
 	github.com/hashicorp/terraform-plugin-framework-timetypes v0.5.0
 	github.com/hashicorp/terraform-plugin-framework-validators v0.19.0
 	github.com/hashicorp/terraform-plugin-go v0.30.0
 	github.com/hashicorp/terraform-plugin-log v0.10.0
-	github.com/hashicorp/terraform-plugin-mux v0.21.0
+	github.com/hashicorp/terraform-plugin-mux v0.22.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.38.2
 	github.com/hashicorp/terraform-plugin-testing v1.14.0
 	github.com/mitchellh/mapstructure v1.5.1-0.20231216201459-8508981c8b6c
