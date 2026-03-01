@@ -32,6 +32,7 @@ func Test_searchFilterModel_fromAPI_toAPI(t *testing.T) {
 		apiFilter   kbapi.SearchFilter
 		expected    *searchFilterModel
 		expectError bool
+		assertToAPI func(t *testing.T, result kbapi.SearchFilter)
 	}{
 		{
 			name: "valid filter with language",
@@ -52,6 +53,13 @@ func Test_searchFilterModel_fromAPI_toAPI(t *testing.T) {
 				Language: types.StringValue("lucene"),
 			},
 			expectError: false,
+			assertToAPI: func(t *testing.T, result kbapi.SearchFilter) {
+				filter, err := result.AsSearchFilter0()
+				require.NoError(t, err)
+				queryStr, err := filter.Query.AsSearchFilter0Query0()
+				require.NoError(t, err)
+				assert.Equal(t, "field:value", queryStr)
+			},
 		},
 		{
 			name: "filter without language",
@@ -67,9 +75,16 @@ func Test_searchFilterModel_fromAPI_toAPI(t *testing.T) {
 			}(),
 			expected: &searchFilterModel{
 				Query:    types.StringValue("simple query"),
-				Language: types.StringValue("kuery"), // Defaults to kuery when API doesn't return it
+				Language: types.StringValue("kuery"),
 			},
 			expectError: false,
+			assertToAPI: func(t *testing.T, result kbapi.SearchFilter) {
+				filter, err := result.AsSearchFilter0()
+				require.NoError(t, err)
+				queryStr, err := filter.Query.AsSearchFilter0Query0()
+				require.NoError(t, err)
+				assert.Equal(t, "simple query", queryStr)
+			},
 		},
 		{
 			name: "filter with ES DSL object query (FilterQueryType fallback)",
@@ -92,12 +107,18 @@ func Test_searchFilterModel_fromAPI_toAPI(t *testing.T) {
 				Language: types.StringValue("kuery"),
 			},
 			expectError: false,
+			assertToAPI: func(t *testing.T, result kbapi.SearchFilter) {
+				filter, err := result.AsSearchFilter0()
+				require.NoError(t, err)
+				queryObj, err := filter.Query.AsFilterQueryType()
+				require.NoError(t, err)
+				assert.Equal(t, map[string]any{"field": map[string]any{"query": "value"}}, queryObj.Match)
+			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Test fromAPI
 			model := &searchFilterModel{}
 			diags := model.fromAPI(tt.apiFilter)
 
@@ -110,10 +131,11 @@ func Test_searchFilterModel_fromAPI_toAPI(t *testing.T) {
 			assert.Equal(t, tt.expected.Query, model.Query)
 			assert.Equal(t, tt.expected.Language, model.Language)
 
-			// Test toAPI
-			apiFilter, diags := model.toAPI()
+			apiResult, diags := model.toAPI()
 			require.False(t, diags.HasError())
-			assert.NotNil(t, apiFilter)
+			if tt.assertToAPI != nil {
+				tt.assertToAPI(t, apiResult)
+			}
 		})
 	}
 }
