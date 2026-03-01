@@ -71,6 +71,28 @@ func Test_searchFilterModel_fromAPI_toAPI(t *testing.T) {
 			},
 			expectError: false,
 		},
+		{
+			name: "filter with ES DSL object query (FilterQueryType fallback)",
+			apiFilter: func() kbapi.SearchFilter {
+				filter := kbapi.SearchFilter0{
+					Language: func() *kbapi.SearchFilter0Language { l := kbapi.SearchFilter0Language("kuery"); return &l }(),
+				}
+				var query kbapi.SearchFilter_0_Query
+				_ = query.FromFilterQueryType(kbapi.FilterQueryType{
+					Match: map[string]any{"field": map[string]any{"query": "value"}},
+				})
+				filter.Query = query
+
+				var result kbapi.SearchFilter
+				_ = result.FromSearchFilter0(filter)
+				return result
+			}(),
+			expected: &searchFilterModel{
+				Query:    types.StringValue(`{"bool":null,"exists":null,"match":{"field":{"query":"value"}},"match_phrase":null,"prefix":null,"range":null,"terms":null,"wildcard":null}`),
+				Language: types.StringValue("kuery"),
+			},
+			expectError: false,
+		},
 	}
 
 	for _, tt := range tests {
