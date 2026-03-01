@@ -45,37 +45,47 @@ func (c markdownPanelConfigConverter) handlesTFPanelConfig(pm panelModel) bool {
 }
 
 func (c markdownPanelConfigConverter) populateFromAPIPanel(_ context.Context, pm *panelModel, config kbapi.DashboardPanelItem_Config) diag.Diagnostics {
-	config0, err := config.AsDashboardPanelItemConfig0()
+	config4, err := config.AsDashboardPanelItemConfig4()
+	if err != nil {
+		return diagutil.FrameworkDiagFromError(err)
+	}
+
+	config40, err := config4.AsDashboardPanelItemConfig40()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
 	pm.MarkdownConfig = &markdownConfigModel{
-		Content:     types.StringValue(config0.Content),
-		Description: types.StringPointerValue(config0.Description),
-		HideTitle:   types.BoolPointerValue(config0.HideTitle),
-		Title:       types.StringPointerValue(config0.Title),
+		Content:     types.StringValue(config40.Content),
+		Description: types.StringPointerValue(config40.Description),
+		HideTitle:   types.BoolPointerValue(config40.HideTitle),
+		Title:       types.StringPointerValue(config40.Title),
 	}
 
 	return nil
 }
 
 func (c markdownPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *kbapi.DashboardPanelItem_Config) diag.Diagnostics {
-	config0 := kbapi.DashboardPanelItemConfig0{
+	config40 := kbapi.DashboardPanelItemConfig40{
 		Content: pm.MarkdownConfig.Content.ValueString(),
 	}
 	if typeutils.IsKnown(pm.MarkdownConfig.Description) {
-		config0.Description = new(pm.MarkdownConfig.Description.ValueString())
+		config40.Description = pm.MarkdownConfig.Description.ValueStringPointer()
 	}
 	if typeutils.IsKnown(pm.MarkdownConfig.HideTitle) {
-		config0.HideTitle = new(pm.MarkdownConfig.HideTitle.ValueBool())
+		config40.HideTitle = pm.MarkdownConfig.HideTitle.ValueBoolPointer()
 	}
 	if typeutils.IsKnown(pm.MarkdownConfig.Title) {
-		config0.Title = new(pm.MarkdownConfig.Title.ValueString())
+		config40.Title = pm.MarkdownConfig.Title.ValueStringPointer()
+	}
+
+	var config4 kbapi.DashboardPanelItemConfig4
+	if err := config4.FromDashboardPanelItemConfig40(config40); err != nil {
+		return diagutil.FrameworkDiagFromError(err)
 	}
 
 	var diags diag.Diagnostics
-	if err := apiConfig.FromDashboardPanelItemConfig0(config0); err != nil {
+	if err := apiConfig.FromDashboardPanelItemConfig4(config4); err != nil {
 		diags.AddError("Failed to marshal panel config", err.Error())
 	}
 

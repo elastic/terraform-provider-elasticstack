@@ -50,8 +50,7 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 		return
 	}
 
-	// Create the dashboard
-	createResp, diags := kibanaoapi.CreateDashboard(ctx, kibanaClient, spaceID, apiReq)
+	createResp, diags := kibanaoapi.CreateDashboard(ctx, kibanaClient, spaceID, planModel.DashboardID.ValueString(), apiReq)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

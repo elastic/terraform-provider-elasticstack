@@ -107,7 +107,7 @@ func Test_datatableNoESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 		IgnoreGlobalFilters: new(true),
 		Sampling:            new(float32(0.5)),
 		Density:             density,
-		Query:               kbapi.FilterSimpleSchema{},
+		Query:               kbapi.FilterSimple{},
 		Metrics:             []kbapi.DatatableNoESQL_Metrics_Item{},
 	}
 
@@ -165,7 +165,7 @@ func Test_datatableESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 	metric := kbapi.DatatableESQLMetric{
 		Column:    "system.cpu.user.pct",
 		Operation: kbapi.DatatableESQLMetricOperationValue,
-		Format:    kbapi.FormatTypeSchema{},
+		Format:    kbapi.FormatType{},
 	}
 	require.NoError(t, json.Unmarshal([]byte(`{"type":"number","decimals":2}`), &metric.Format))
 
@@ -200,7 +200,7 @@ func Test_datatableESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 		IgnoreGlobalFilters: new(false),
 		Sampling:            new(float32(1)),
 		Density:             density,
-		Metrics:             []kbapi.DatatableESQLMetric{metric},
+		Metrics:             &[]kbapi.DatatableESQLMetric{metric},
 		Rows: &[]struct {
 			Alignment    *kbapi.DatatableESQLRowsAlignment    `json:"alignment,omitempty"`
 			ApplyColorTo *kbapi.DatatableESQLRowsApplyColorTo `json:"apply_color_to,omitempty"`

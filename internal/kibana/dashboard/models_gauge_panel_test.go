@@ -65,18 +65,18 @@ func Test_gaugeConfigModel_fromAPI_toAPI(t *testing.T) {
 				require.NoError(t, err)
 				api.Shape = &shape
 
-				filter := kbapi.SearchFilterSchema0{
-					Language: func() *kbapi.SearchFilterSchema0Language { l := kbapi.SearchFilterSchema0Language("lucene"); return &l }(),
+				filter := kbapi.SearchFilter0{
+					Language: func() *kbapi.SearchFilter0Language { l := kbapi.SearchFilter0Language("lucene"); return &l }(),
 				}
-				var query kbapi.SearchFilterSchema_0_Query
-				err = query.FromSearchFilterSchema0Query0("host.name:foo")
+				var query kbapi.SearchFilter_0_Query
+				err = query.FromSearchFilter0Query0("host.name:foo")
 				require.NoError(t, err)
 				filter.Query = query
 
-				var filterUnion kbapi.SearchFilterSchema
-				err = filterUnion.FromSearchFilterSchema0(filter)
+				var filterUnion kbapi.SearchFilter
+				err = filterUnion.FromSearchFilter0(filter)
 				require.NoError(t, err)
-				filters := []kbapi.SearchFilterSchema{filterUnion}
+				filters := []kbapi.SearchFilter{filterUnion}
 				api.Filters = &filters
 
 				return api

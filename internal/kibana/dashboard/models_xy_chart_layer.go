@@ -72,7 +72,7 @@ type thresholdModel struct {
 }
 
 // fromAPI populates the layer model from API response
-func (m *xyLayerModel) fromAPI(apiLayer kbapi.XyChartSchema_Layers_Item) diag.Diagnostics {
+func (m *xyLayerModel) fromAPI(apiLayer kbapi.XyChart_Layers_Item) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	// Try to determine which layer type it is by marshaling and unmarshaling
@@ -144,9 +144,9 @@ func (m *xyLayerModel) fromAPI(apiLayer kbapi.XyChartSchema_Layers_Item) diag.Di
 }
 
 // toAPI converts the layer model to API format
-func (m *xyLayerModel) toAPI() (kbapi.XyChartSchema_Layers_Item, diag.Diagnostics) {
+func (m *xyLayerModel) toAPI() (kbapi.XyChart_Layers_Item, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	var result kbapi.XyChartSchema_Layers_Item
+	var result kbapi.XyChart_Layers_Item
 
 	if m.ReferenceLineLayer != nil {
 		// Convert reference line layer
