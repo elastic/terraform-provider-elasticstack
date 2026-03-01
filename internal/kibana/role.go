@@ -372,8 +372,11 @@ func resourceRoleRead(_ context.Context, d *schema.ResourceData, meta any) diag.
 	if err := d.Set("kibana", flattenKibanaRoleKibanaData(&role.Kibana)); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("description", role.Description); err != nil {
-		return diag.FromErr(err)
+	// Only set description if it's not empty to avoid Terraform validation errors
+	if strings.TrimSpace(role.Description) != "" {
+		if err := d.Set("description", role.Description); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 	if role.Metadata != nil {
 		metadata, err := json.Marshal(role.Metadata)
