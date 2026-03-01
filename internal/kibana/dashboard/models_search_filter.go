@@ -88,8 +88,19 @@ func (m *searchFilterModel) toAPI() (kbapi.SearchFilter, diag.Diagnostics) {
 	if typeutils.IsKnown(m.Query) {
 		query := m.Query.ValueString()
 		var queryUnion kbapi.SearchFilter_0_Query
-		if err := queryUnion.FromSearchFilter0Query0(query); err != nil {
-			diags.AddError("Failed to create search filter query", err.Error())
+		var queryErr error
+		if len(query) > 0 && query[0] == '{' {
+			var queryObj kbapi.FilterQueryType
+			if err := json.Unmarshal([]byte(query), &queryObj); err != nil {
+				diags.AddError("Failed to parse search filter query object", err.Error())
+				return kbapi.SearchFilter{}, diags
+			}
+			queryErr = queryUnion.FromFilterQueryType(queryObj)
+		} else {
+			queryErr = queryUnion.FromSearchFilter0Query0(query)
+		}
+		if queryErr != nil {
+			diags.AddError("Failed to create search filter query", queryErr.Error())
 			return kbapi.SearchFilter{}, diags
 		}
 		filter.Query = queryUnion
