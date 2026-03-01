@@ -33,7 +33,7 @@ type outputModel struct {
 	SpaceID              types.String `tfsdk:"space_id"`
 	ID                   types.String `tfsdk:"id"`
 	Type                 types.String `tfsdk:"type"`
-	Hosts                types.List   `tfsdk:"hosts"` //> string
+	Hosts                types.List   `tfsdk:"hosts"` // string
 	CaSha256             types.String `tfsdk:"ca_sha256"`
 	CaTrustedFingerprint types.String `tfsdk:"ca_trusted_fingerprint"`
 	DefaultIntegrations  types.Bool   `tfsdk:"default_integrations"`
