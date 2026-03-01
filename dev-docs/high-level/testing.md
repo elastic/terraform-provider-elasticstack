@@ -19,7 +19,7 @@ Acceptance tests require a running Elastic Stack and `TF_ACC=1`.
 
 ### Required environment variables (common)
 
-From the current automation guidance in `.github/copilot-instructions.md`, targeted test runs commonly require:
+Targeted acceptance test runs commonly require the following environment variables:
 
 - `ELASTICSEARCH_ENDPOINTS` (default: `http://localhost:9200`)
 - `ELASTICSEARCH_USERNAME` (default: `elastic`)
