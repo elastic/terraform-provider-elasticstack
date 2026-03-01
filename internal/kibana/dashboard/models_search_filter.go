@@ -19,6 +19,7 @@ package dashboard
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -43,11 +44,21 @@ func (m *searchFilterModel) fromAPI(apiFilter kbapi.SearchFilter) diag.Diagnosti
 		return diags
 	}
 
-	// Extract string from union type
+	// Extract string from union type; fall back to ES DSL object
 	queryStr, queryErr := filterSchema.Query.AsSearchFilter0Query0()
 	if queryErr != nil {
-		diags.AddError("Failed to extract search filter query", queryErr.Error())
-		return diags
+		queryObj, objErr := filterSchema.Query.AsFilterQueryType()
+		if objErr != nil {
+			diags.AddError("Failed to extract search filter query",
+				fmt.Sprintf("not a string (%v) and not an object (%v)", queryErr, objErr))
+			return diags
+		}
+		queryBytes, marshalErr := json.Marshal(queryObj)
+		if marshalErr != nil {
+			diags.AddError("Failed to marshal search filter query object", marshalErr.Error())
+			return diags
+		}
+		queryStr = string(queryBytes)
 	}
 
 	m.Query = types.StringValue(queryStr)
@@ -77,8 +88,19 @@ func (m *searchFilterModel) toAPI() (kbapi.SearchFilter, diag.Diagnostics) {
 	if typeutils.IsKnown(m.Query) {
 		query := m.Query.ValueString()
 		var queryUnion kbapi.SearchFilter_0_Query
-		if err := queryUnion.FromSearchFilter0Query0(query); err != nil {
-			diags.AddError("Failed to create search filter query", err.Error())
+		var queryErr error
+		if len(query) > 0 && query[0] == '{' {
+			var queryObj kbapi.FilterQueryType
+			if err := json.Unmarshal([]byte(query), &queryObj); err != nil {
+				diags.AddError("Failed to parse search filter query object", err.Error())
+				return kbapi.SearchFilter{}, diags
+			}
+			queryErr = queryUnion.FromFilterQueryType(queryObj)
+		} else {
+			queryErr = queryUnion.FromSearchFilter0Query0(query)
+		}
+		if queryErr != nil {
+			diags.AddError("Failed to create search filter query", queryErr.Error())
 			return kbapi.SearchFilter{}, diags
 		}
 		filter.Query = queryUnion
