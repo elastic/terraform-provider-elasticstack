@@ -105,6 +105,12 @@ func (d Data) toThreatMatchRuleCreateProps(ctx context.Context, client clients.M
 		diags.Append(threatMappingDiags...)
 	}
 
+	apiThreatFilters, threatFiltersDiags := d.threatFiltersToAPI(ctx)
+	diags.Append(threatFiltersDiags...)
+	if !threatFiltersDiags.HasError() && apiThreatFilters != nil {
+		threatMatchRule.ThreatFilters = apiThreatFilters
+	}
+
 	d.setCommonCreateProps(ctx, &CommonCreateProps{
 		Actions:                           &threatMatchRule.Actions,
 		ResponseActions:                   &threatMatchRule.ResponseActions,
@@ -226,6 +232,12 @@ func (d Data) toThreatMatchRuleUpdateProps(ctx context.Context, client clients.M
 			threatMatchRule.ThreatMapping = apiThreatMapping
 		}
 		diags.Append(threatMappingDiags...)
+	}
+
+	apiThreatFilters, threatFiltersDiags := d.threatFiltersToAPI(ctx)
+	diags.Append(threatFiltersDiags...)
+	if !threatFiltersDiags.HasError() && apiThreatFilters != nil {
+		threatMatchRule.ThreatFilters = apiThreatFilters
 	}
 
 	d.setCommonUpdateProps(ctx, &CommonUpdateProps{
@@ -380,6 +392,8 @@ func (d *Data) updateFromThreatMatchRule(ctx context.Context, rule *kbapi.Securi
 	} else {
 		d.ItemsPerSearch = types.Int64Null()
 	}
+
+	diags.Append(d.updateThreatFiltersFromAPI(ctx, rule.ThreatFilters)...)
 
 	// Optional saved query ID
 	if rule.SavedId != nil {
