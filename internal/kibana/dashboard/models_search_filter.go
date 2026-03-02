@@ -28,6 +28,25 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+func stripTopLevelNullFields(data []byte) []byte {
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return data
+	}
+
+	for key, val := range raw {
+		if string(val) == "null" {
+			delete(raw, key)
+		}
+	}
+
+	result, err := json.Marshal(raw)
+	if err != nil {
+		return data
+	}
+	return result
+}
+
 type searchFilterModel struct {
 	Query    types.String         `tfsdk:"query"`
 	MetaJSON jsontypes.Normalized `tfsdk:"meta_json"`
@@ -58,7 +77,7 @@ func (m *searchFilterModel) fromAPI(apiFilter kbapi.SearchFilter) diag.Diagnosti
 			diags.AddError("Failed to marshal search filter query object", marshalErr.Error())
 			return diags
 		}
-		queryStr = string(queryBytes)
+		queryStr = string(stripTopLevelNullFields(queryBytes))
 	}
 
 	m.Query = types.StringValue(queryStr)
