@@ -103,7 +103,7 @@ func Test_searchFilterModel_fromAPI_toAPI(t *testing.T) {
 				return result
 			}(),
 			expected: &searchFilterModel{
-				Query:    types.StringValue(`{"bool":null,"exists":null,"match":{"field":{"query":"value"}},"match_phrase":null,"prefix":null,"range":null,"terms":null,"wildcard":null}`),
+				Query:    types.StringValue(`{"match":{"field":{"query":"value"}}}`),
 				Language: types.StringValue("kuery"),
 			},
 			expectError: false,
