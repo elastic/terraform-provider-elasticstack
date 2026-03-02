@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+## [0.14.3] - 2026-03-02
+
 ### Changes
 * Add `elasticstack_elasticsearch_index_template_ilm_attachment` resource to attach ILM policies to Fleet-managed or externally-managed index templates via the `@custom` component template. ([#1641](https://github.com/elastic/terraform-provider-elasticstack/pull/1641))
 * Fix `elasticstack_kibana_slo` `timeslice_metric_indicator` to support `last_value`, `cardinality`, and `std_deviation` aggregations which are valid in the Kibana SLO API but were previously rejected by the provider. ([#1749](https://github.com/elastic/terraform-provider-elasticstack/pull/1749))
@@ -751,7 +753,8 @@ resource "elasticstack_fleet_output" "output" {
 - Initial set of docs
 - CI integration
 
-[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.14.2...HEAD
+[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.14.3...HEAD
+[0.14.2]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.14.2...v0.14.3
 [0.14.2]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.14.1...v0.14.2
 [0.14.1]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.14.0...v0.14.1
 [0.14.0]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.13.1...v0.14.0
