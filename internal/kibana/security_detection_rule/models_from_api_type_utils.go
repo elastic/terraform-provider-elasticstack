@@ -622,6 +622,34 @@ func (d *Data) updateFiltersFromAPI(ctx context.Context, apiFilters *kbapi.Secur
 	return diags
 }
 
+func (d *Data) updateThreatFiltersFromAPI(ctx context.Context, apiThreatFilters *kbapi.SecurityDetectionsAPIThreatFilters) diag.Diagnostics {
+	var diags diag.Diagnostics
+	_ = ctx
+
+	if apiThreatFilters == nil {
+		d.ThreatFilters = types.ListNull(types.StringType)
+		return diags
+	}
+
+	if len(*apiThreatFilters) == 0 {
+		d.ThreatFilters = types.ListValueMust(types.StringType, []attr.Value{})
+		return diags
+	}
+
+	filters := make([]string, 0, len(*apiThreatFilters))
+	for i, filter := range *apiThreatFilters {
+		jsonBytes, err := json.Marshal(filter)
+		if err != nil {
+			diags.AddError("Failed to marshal threat_filters item", fmt.Sprintf("threat_filters[%d]: %s", i, err.Error()))
+			continue
+		}
+		filters = append(filters, string(jsonBytes))
+	}
+
+	d.ThreatFilters = typeutils.ListValueFrom(ctx, filters, types.StringType, path.Root("threat_filters"), &diags)
+	return diags
+}
+
 // Helper function to update severity mapping from API response
 func (d *Data) updateSeverityMappingFromAPI(ctx context.Context, severityMapping *kbapi.SecurityDetectionsAPISeverityMapping) diag.Diagnostics {
 	var diags diag.Diagnostics
