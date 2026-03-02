@@ -115,3 +115,8 @@ resource "elasticstack_elasticsearch_security_api_key" "example" {
 - **[REQ-045] (Delete)**: When destroying, the resource shall invalidate the API key id parsed from `id` via the Invalidate API key API, and then remove itself from Terraform state.
 - **[REQ-046] (StateUpgrade)**: The resource shall support upgrading prior state schema version 0 to schema version 1 by converting `expiration=""` to `expiration=null`.
 - **[REQ-047] (StateUpgrade)**: The resource shall support upgrading prior state schema version 1 to schema version 2 by setting `type` to the default value `rest`. 
+- **[REQ-048] (Rotation)**: The resource shall include an example of automating key rotation in the generated documentation.
+- **[REQ-049] (Rotation)**: The rotation example shall:
+  - Use a `time_rotating` resource to trigger replacement on a consistent schedule.
+  - Use a `create_before_destroy` meta-argument to ensure a valid API key at all times during rotation.
+- **[REQ-050] (Rotation)**: The rotation example shall also be validated in an acceptance test using a 1 second rotation timeframe.
