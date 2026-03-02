@@ -6,6 +6,7 @@
 - Add `elasticstack_kibana_security_enable_rule` resource ([#1710](https://github.com/elastic/terraform-provider-elasticstack/pull/1710))
 - Fix value conversion error in `elasticstack_elasticsearch_index_alias` when indices are unknown at plan time. ([#1755](https://github.com/elastic/terraform-provider-elasticstack/pull/1755))
 - Fix state consistency error in `elasticstack_kibana_security_exception_list` when `os_types` are used in Elastic Stack 9.2 ([#1740](https://github.com/elastic/terraform-provider-elasticstack/pull/1740))
+- Fix state consistency error in `elasticstack_elasticsearch_security_role` when `description` is empty (`""`) ([#1780](https://github.com/elastic/terraform-provider-elasticstack/pull/1780))
 
 ## [0.14.2] - 2026-02-19
 
