@@ -23,7 +23,7 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -272,7 +272,20 @@ func (model integrationPolicyModel) toAPIModel(ctx context.Context, feat feature
 			}
 			return nil
 		}(),
-		Vars: schemautil.MapRef(typeutils.NormalizedTypeToMap[any](model.VarsJSON.Normalized, path.Root("vars_json"), &diags)),
+		Vars: func() *map[string]any {
+			// Use SanitizedValue to strip internal metadata like __tf_provider_context
+			// before sending to the Kibana API. This prevents HTTP 400 errors when Kibana
+			// doesn't recognize the internal __tf_provider_context variable.
+			if !typeutils.IsKnown(model.VarsJSON) {
+				return nil
+			}
+			sanitizedVars, sanitizeDiags := model.VarsJSON.SanitizedValue()
+			diags.Append(sanitizeDiags...)
+			if diags.HasError() {
+				return nil
+			}
+			return schemautil.MapRef(typeutils.NormalizedTypeToMap[any](jsontypes.NewNormalizedValue(sanitizedVars), path.Root("vars_json"), &diags))
+		}(),
 	}
 
 	if typeutils.IsKnown(model.PolicyID) {

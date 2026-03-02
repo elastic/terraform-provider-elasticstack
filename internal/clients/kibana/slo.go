@@ -224,13 +224,15 @@ func transformGroupBy(groupBy []string, supportsGroupByList bool) *slo.GroupBy {
 		return nil
 	}
 
-	if !supportsGroupByList && len(groupBy) > 0 {
-		return &slo.GroupBy{
-			String: &groupBy[0],
-		}
+	if supportsGroupByList {
+		return &slo.GroupBy{ArrayOfString: &groupBy}
 	}
 
-	return &slo.GroupBy{ArrayOfString: &groupBy}
+	if len(groupBy) == 0 {
+		return nil
+	}
+
+	return &slo.GroupBy{String: &groupBy[0]}
 }
 
 func transformGroupByFromResponse(groupBy slo.GroupBy) []string {
