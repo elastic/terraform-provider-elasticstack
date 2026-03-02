@@ -373,6 +373,18 @@ func TestAccResourceSloGroupBy(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "group_by.#", "0"),
 				),
 			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(slo8_10Constraints),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("star"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(sloName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "group_by.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "group_by.0", "*"),
+				),
+			},
 		},
 	})
 }
