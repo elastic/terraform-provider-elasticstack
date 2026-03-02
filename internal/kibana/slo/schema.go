@@ -91,7 +91,7 @@ func getSchema() schema.Schema {
 				Description: "Optional group by fields to use to generate an SLO per distinct value.",
 				Optional:    true,
 				Computed:    true,
-				ElementType: types.StringType,
+				CustomType:  NewGroupByType(),
 				Validators: []validator.List{
 					listvalidator.ValueStringsAre(stringvalidator.LengthAtLeast(1)),
 				},
