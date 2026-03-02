@@ -15,7 +15,7 @@
     }
   ],
   "postUpgradeTasks": {
-    "commands": ["make -C generated/kbapi all"],
+    "commands": ["make renovate-post-upgrade"],
     "fileFilters": [
       "generated/kbapi/kibana.gen.go", 
       "generated/kbapi/oas-filtered.yaml", 
