@@ -1,0 +1,55 @@
+variable "name" {
+  type = string
+}
+
+variable "rule_id" {
+  type = string
+}
+
+provider "elasticstack" {
+  kibana {}
+}
+
+resource "elasticstack_kibana_security_detection_rule" "test" {
+  name        = var.name
+  description = "Threat match rule with empty threat_filters"
+  type        = "threat_match"
+
+  index    = ["auditbeat-*", "endgame-*", "filebeat-*", "logs-*", "packetbeat-*", "winlogbeat-*"]
+  query    = "url.full:*"
+  language = "kuery"
+
+  threat_index          = ["filebeat-*", "logs-ti_*"]
+  threat_query          = "@timestamp >= \"now-30d/d\" and event.module:(threatintel or ti_*) and threat.indicator.url.full:* and not labels.is_ioc_transform_source:\"true\""
+  threat_indicator_path = "threat.indicator"
+
+  threat_mapping = [
+    {
+      entries = [
+        {
+          field = "url.full"
+          type  = "mapping"
+          value = "threat.indicator.url.full"
+        }
+      ]
+    },
+    {
+      entries = [
+        {
+          field = "url.original"
+          type  = "mapping"
+          value = "threat.indicator.url.original"
+        }
+      ]
+    }
+  ]
+
+  threat_filters = []
+
+  rule_id    = var.rule_id
+  severity   = "high"
+  risk_score = 73
+  from       = "now-65m"
+  interval   = "1h"
+}
+
