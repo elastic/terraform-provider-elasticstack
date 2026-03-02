@@ -19,8 +19,6 @@ package dashboard
 
 import (
 	"context"
-	"encoding/json"
-	"reflect"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
@@ -223,26 +221,8 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 		return panelModel{}, diags
 	}
 
-	apiConfigJSON := string(configBytes)
-	if tfPanel != nil && typeutils.IsKnown(tfPanel.ConfigJSON) {
-		planJSON := tfPanel.ConfigJSON.ValueString()
-		if jsonSemanticallyEqual([]byte(planJSON), configBytes) {
-			pm.ConfigJSON = tfPanel.ConfigJSON
-		} else {
-			pm.ConfigJSON = jsontypes.NewNormalizedValue(apiConfigJSON)
-		}
-	} else {
-		pm.ConfigJSON = jsontypes.NewNormalizedValue(apiConfigJSON)
-	}
+	pm.ConfigJSON = jsontypes.NewNormalizedValue(string(configBytes))
 	return pm, diags
-}
-
-func jsonSemanticallyEqual(a, b []byte) bool {
-	var va, vb any
-	if json.Unmarshal(a, &va) != nil || json.Unmarshal(b, &vb) != nil {
-		return false
-	}
-	return reflect.DeepEqual(va, vb)
 }
 
 func (m *dashboardModel) panelsToAPI() (*kbapi.DashboardPanels, diag.Diagnostics) {
