@@ -285,8 +285,6 @@ func (data *Data) fromAPIModel(ctx context.Context, role *models.Role) diag.Diag
 		// If the API omits/returns null for description, preserve a configured empty string ("")
 		// to avoid post-apply state consistency issues.
 		switch {
-		case originalDescription.IsNull():
-			data.Description = types.StringNull()
 		case typeutils.IsKnown(originalDescription) && originalDescription.ValueString() == "":
 			data.Description = originalDescription
 		default:
