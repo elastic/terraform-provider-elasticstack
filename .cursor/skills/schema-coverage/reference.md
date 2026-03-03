@@ -64,8 +64,8 @@ Record whichever apply; note that some attributes can be `Optional: true` and `C
 ### Plan modifiers / update semantics (best-effort)
 
 Framework doesn’t use `ForceNew`; instead look for plan modifiers that imply replacement or state retention. When present, record them as hints for “update coverage” focus:
-- `resource.RequiresReplace()` / `planmodifier.RequiresReplace()` (or similarly named helpers)
-- `UseStateForUnknown()` (state retention; affects update/unknown behavior)
+- `stringplanmodifier.RequiresReplace()` / `boolplanmodifier.RequiresReplace()` / etc. (or similarly named helpers)
+- `stringplanmodifier.UseStateForUnknown()` (and similar type-specific `UseStateForUnknown` modifiers; state retention, affects update/unknown behavior)
 
 Because plan modifiers can be assembled via helper functions, follow references if the schema is delegated.
 

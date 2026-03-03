@@ -46,7 +46,7 @@ Use this to find where each requirement category is implemented so you can mark 
 
 | Category        | Typical implementation location | What to check |
 |-----------------|----------------------------------|----------------|
-| **API**         | `create.go`, `update.go`, `read.go`, `delete.go`; client wrappers in `internal/clients/elasticsearch/` or `kibanaoapi/` | Correct API call (e.g. PutRole, GetRole, DeleteRole); error handling (diagnostics on non-success, 404 on read → remove from state). |
+| **API**         | `create.go`, `update.go`, `read.go`, `delete.go`; client wrappers in `internal/clients/elasticsearch/` or `internal/clients/kibanaoapi/` | Correct API call (e.g. PutRole, GetRole, DeleteRole); error handling (diagnostics on non-success, 404 on read → remove from state). |
 | **Identity**    | `create.go` / `update.go` (where id is set); `resource.go` or read (where id is computed) | How `id` is built (e.g. `clients.CompositeID`, cluster UUID + name); stored in state. |
 | **Import**      | `resource.go` — `ImportState`; possibly custom import logic that validates id | ImportStatePassthroughID or custom; validation of id format and error diagnostic. |
 | **Lifecycle**  | `schema.go` — plan modifier `RequiresReplace()` on attributes | Which attributes have RequiresReplace. |
