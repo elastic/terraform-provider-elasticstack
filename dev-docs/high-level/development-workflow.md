@@ -1,13 +1,13 @@
 # Development workflow
 
-For full contributor guidance (setup, PR expectations), see [`CONTRIBUTING.md`](../../CONTRIBUTING.md).
+For full contributor guidance (setup, PR expectations), see [`contributing.md`](./contributing.md).
 
 ## Typical change loop
 
 - Read the problem statement and identify the affected area (Elasticsearch vs Kibana vs Fleet, etc).
 - Add acceptance test cases reproducing bugs, or validating new work. 
 - For bugs, run the new acceptance tests verifying that they fail as expected, that is, they reproduce the original issue. 
-- The System User resource (see `internal/elasticsearch/security/system_user` referenced from [`CODING_STANDARDS.md`](../../CODING_STANDARDS.md)) is the canonical example for new resources. Follow it.
+- The System User resource (see `internal/elasticsearch/security/system_user` referenced from [`coding-standards.md`](./coding-standards.md)) is the canonical example for new resources. Follow it.
 - Make small, reviewable changes.
 - Keep generated artifacts up to date (docs and generated clients when applicable).
 - Run the narrowest tests that prove correctness, then broaden as appropriate.

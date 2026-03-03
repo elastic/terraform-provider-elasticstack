@@ -4,8 +4,8 @@ This repo is the Terraform provider for Elastic Stack, written in Go.
 
 ## Before making changes
 
-- Follow the project’s coding conventions in [`CODING_STANDARDS.md`](./CODING_STANDARDS.md).
-- For contributor workflow, setup, and release notes, see [`CONTRIBUTING.md`](./CONTRIBUTING.md).
+- Follow the project’s coding conventions in [`coding-standards.md`](./dev-docs/high-level/coding-standards.md).
+- For contributor workflow, setup, and release notes, see [`contributing.md`](./dev-docs/high-level/contributing.md).
 
 ## High-level dev docs
 

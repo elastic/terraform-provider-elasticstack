@@ -75,7 +75,7 @@ make docker-clean
 
 If your work involves the Kibana API, the API client can be generated directly from the Kibana OpenAPI specs:
 - For Kibana APIs, use the generated client in `generated/kbapi`.
-- To add new endpoints, see [generated/kbapi/README.md](generated/kbapi/README.md).
+- To add new endpoints, see [generated/kbapi/README.md](../../generated/kbapi/README.md).
 - Regenerate clients with:
   ```sh
   make transform generate

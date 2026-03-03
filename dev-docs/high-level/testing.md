@@ -5,7 +5,7 @@ The provider has unit tests and acceptance tests.
 ## Unit tests
 
 - Run: `make test`
-- For general contributor notes, see [`CONTRIBUTING.md`](../../CONTRIBUTING.md).
+- For general contributor notes, see [`contributing.md`](./contributing.md).
 
 ## Acceptance tests
 
@@ -40,5 +40,5 @@ go test -v -run TestAccResourceName ./path/to/package
 
 ### Acceptance test coverage expectations
 
-See “Testing” in [`CODING_STANDARDS.md`](../../CODING_STANDARDS.md).
+See “Testing” in [`coding-standards.md`](./coding-standards.md).
 

@@ -8,7 +8,7 @@ Provider docs are generated; keep them in sync with code changes.
 - Examples: `examples/`
 - Generated output: `docs/`
 
-Canonical contributor guidance: “Updating Documentation” in [`CONTRIBUTING.md`](../../CONTRIBUTING.md#updating-documentation).
+Canonical contributor guidance: “Updating Documentation” in [`contributing.md`](./contributing.md#updating-documentation).
 
 ## Regenerating docs
 

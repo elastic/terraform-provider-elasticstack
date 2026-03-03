@@ -1,6 +1,6 @@
 # Repo structure
 
-For a more complete overview, see “Project Structure” in [`CONTRIBUTING.md`](../../CONTRIBUTING.md#project-structure).
+For a more complete overview, see “Project Structure” in [`contributing.md`](./contributing.md#project-structure).
 
 ## Key directories
 

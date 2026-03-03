@@ -3,6 +3,7 @@
 These pages are the “starting point” docs for contributors and code-review automation.
 They intentionally stay high-level and link to deeper, canonical docs elsewhere in the repo.
 
+- Coding standards [`coding-standard.md](./coding-standards.md)
 - Workflow: [`development-workflow.md`](./development-workflow.md)
 - Testing: [`testing.md`](./testing.md)
 - Generated clients: [`generated-clients.md`](./generated-clients.md)

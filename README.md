@@ -78,7 +78,7 @@ provider "elasticstack" {
 
 ## Developing the Provider
 
-See [CONTRIBUTING.md](CONTRIBUTING.md)
+See [contributing.md](dev-docs/high-level/contributing.md)
 
 ## Support
 
