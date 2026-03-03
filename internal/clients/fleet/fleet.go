@@ -183,6 +183,23 @@ func DeleteAgentPolicy(ctx context.Context, client *Client, id string, spaceID s
 	}
 }
 
+// GetOutputs reads all outputs from the API.
+func GetOutputs(ctx context.Context, client *Client, spaceID string) ([]kbapi.OutputUnion, diag.Diagnostics) {
+	resp, err := client.API.GetFleetOutputsWithResponse(ctx, spaceAwarePathRequestEditor(spaceID))
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+
+	switch resp.StatusCode() {
+	case http.StatusOK:
+		return resp.JSON200.Items, nil
+	case http.StatusNotFound:
+		return nil, nil
+	default:
+		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+	}
+}
+
 // GetOutput reads a specific output from the API.
 func GetOutput(ctx context.Context, client *Client, id string, spaceID string) (*kbapi.OutputUnion, diag.Diagnostics) {
 	resp, err := client.API.GetFleetOutputsOutputidWithResponse(ctx, id, spaceAwarePathRequestEditor(spaceID))
