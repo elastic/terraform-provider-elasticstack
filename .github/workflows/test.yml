@@ -1,6 +1,8 @@
 name: Build/Lint/Test
 on:
   push:
+    tags-ignore:
+      - 'v*'
     paths-ignore:
       - 'README.md'
       - 'CHANGELOG.md'
