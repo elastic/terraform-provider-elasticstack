@@ -34,7 +34,7 @@ type outputModel struct {
 	Outputs types.List   `tfsdk:"outputs"`
 }
 
-func (model *outputModel) populateFromApi(ctx context.Context, unions []kbapi.OutputUnion) (diags diag.Diagnostics) {
+func (model *outputModel) populateFromAPI(ctx context.Context, unions []kbapi.OutputUnion) (diags diag.Diagnostics) {
 	model.ID = types.StringValue("outputs")
 	model.Outputs = typeutils.SliceToListType(ctx, unions, getOutputItemElemType(), path.Root("outputs"), &diags,
 		func(union kbapi.OutputUnion, meta typeutils.ListMeta) outputItemModel {

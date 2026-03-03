@@ -1,5 +1,9 @@
 ## [Unreleased]
 
+### Changes
+
+- Add `elasticstack_fleet_output` data source. ([#1762](https://github.com/elastic/terraform-provider-elasticstack/pull/1762))
+
 ## [0.14.3] - 2026-03-02
 
 ### Changes

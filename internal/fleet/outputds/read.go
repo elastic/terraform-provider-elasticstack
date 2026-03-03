@@ -44,7 +44,7 @@ func (d *outputDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		return
 	}
 
-	diags = model.populateFromApi(ctx, outputs)
+	diags = model.populateFromAPI(ctx, outputs)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
