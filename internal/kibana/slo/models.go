@@ -47,7 +47,7 @@ type tfModel struct {
 	Objective  []tfObjective  `tfsdk:"objective"`
 	Settings   types.Object   `tfsdk:"settings"`
 
-	GroupBy types.List     `tfsdk:"group_by"`
+	GroupBy GroupByValue   `tfsdk:"group_by"`
 	Tags    []types.String `tfsdk:"tags"`
 
 	MetricCustomIndicator    []tfMetricCustomIndicator    `tfsdk:"metric_custom_indicator"`
@@ -138,6 +138,9 @@ func (m tfModel) toAPIModel() (models.Slo, diag.Diagnostics) {
 	}
 
 	if typeutils.IsKnown(m.GroupBy) {
+		// Preserve explicit empty lists. A known-but-empty group_by must round-trip
+		// as an empty slice (not nil) so it is sent to the Kibana API.
+		apiModel.GroupBy = []string{}
 		for i, v := range m.GroupBy.Elements() {
 			g, ok := v.(types.String)
 			if !ok {
@@ -242,16 +245,16 @@ func (m *tfModel) populateFromAPI(apiModel *models.Slo) diag.Diagnostics {
 		m.Settings = types.ObjectNull(tfSettingsAttrTypes)
 	}
 
-	if len(apiModel.GroupBy) > 0 {
+	if apiModel.GroupBy != nil {
 		groupByValues := make([]attr.Value, len(apiModel.GroupBy))
 		for i, g := range apiModel.GroupBy {
 			groupByValues[i] = types.StringValue(g)
 		}
-		groupByList, listDiags := types.ListValue(types.StringType, groupByValues)
+		groupByList, listDiags := NewGroupByValue(groupByValues)
 		diags.Append(listDiags...)
 		m.GroupBy = groupByList
 	} else {
-		m.GroupBy = types.ListNull(types.StringType)
+		m.GroupBy = NewGroupByNull()
 	}
 	m.Tags = nil
 	for _, t := range apiModel.Tags {
