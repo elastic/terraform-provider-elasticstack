@@ -799,6 +799,54 @@ func TestAccResourceIntegrationPolicyGCPVertexAI(t *testing.T) {
 	})
 }
 
+func TestAccResourceIntegrationPolicy_VersionUpdate(t *testing.T) {
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIntegrationPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName+"-integration"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_name", "tcp"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_version", "1.16.0"),
+					resource.TestCheckResourceAttrSet("elasticstack_fleet_integration_policy.test_policy", "agent_policy_id"),
+					resource.TestCheckResourceAttrPair(
+						"elasticstack_fleet_integration_policy.test_policy", "agent_policy_id",
+						"elasticstack_fleet_agent_policy.test_policy", "policy_id",
+					),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName+"-integration"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_name", "tcp"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_version", "1.17.0"),
+					// Critical check: agent_policy_id must still be set after version update
+					resource.TestCheckResourceAttrSet("elasticstack_fleet_integration_policy.test_policy", "agent_policy_id"),
+					resource.TestCheckResourceAttrPair(
+						"elasticstack_fleet_integration_policy.test_policy", "agent_policy_id",
+						"elasticstack_fleet_agent_policy.test_policy", "policy_id",
+					),
+				),
+			},
+		},
+	})
+}
+
 func checkResourceIntegrationPolicyDestroy(s *terraform.State) error {
 	client, err := clients.NewAcceptanceTestingClient()
 	if err != nil {

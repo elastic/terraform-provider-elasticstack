@@ -86,6 +86,7 @@ func (r *integrationPolicyResource) Update(ctx context.Context, req resource.Upd
 
 	// Remember the input configuration from state
 	stateHadInput := typeutils.IsKnown(stateModel.Inputs) && !stateModel.Inputs.IsNull() && len(stateModel.Inputs.Elements()) > 0
+	planHadInput := typeutils.IsKnown(planModel.Inputs) && !planModel.Inputs.IsNull() && len(planModel.Inputs.Elements()) > 0
 
 	pkg, diags := getPackageInfo(ctx, client, policy.Package.Name, policy.Package.Version)
 	resp.Diagnostics.Append(diags...)
@@ -100,7 +101,7 @@ func (r *integrationPolicyResource) Update(ctx context.Context, req resource.Upd
 	}
 
 	// If state didn't have input configured, ensure we don't add it now
-	if !stateHadInput && (planModel.Inputs.IsNull() || len(planModel.Inputs.Elements()) == 0) {
+	if !stateHadInput && !planHadInput {
 		planModel.Inputs = NewInputsNull(getInputsElementType())
 	}
 

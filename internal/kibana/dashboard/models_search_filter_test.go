@@ -29,22 +29,22 @@ import (
 func Test_searchFilterModel_fromAPI_toAPI(t *testing.T) {
 	tests := []struct {
 		name        string
-		apiFilter   kbapi.SearchFilterSchema
+		apiFilter   kbapi.SearchFilter
 		expected    *searchFilterModel
 		expectError bool
 	}{
 		{
 			name: "valid filter with language",
-			apiFilter: func() kbapi.SearchFilterSchema {
-				filter := kbapi.SearchFilterSchema0{
-					Language: func() *kbapi.SearchFilterSchema0Language { l := kbapi.SearchFilterSchema0Language("lucene"); return &l }(),
+			apiFilter: func() kbapi.SearchFilter {
+				filter := kbapi.SearchFilter0{
+					Language: func() *kbapi.SearchFilter0Language { l := kbapi.SearchFilter0Language("lucene"); return &l }(),
 				}
-				var query kbapi.SearchFilterSchema_0_Query
-				_ = query.FromSearchFilterSchema0Query0("field:value")
+				var query kbapi.SearchFilter_0_Query
+				_ = query.FromSearchFilter0Query0("field:value")
 				filter.Query = query
 
-				var result kbapi.SearchFilterSchema
-				_ = result.FromSearchFilterSchema0(filter)
+				var result kbapi.SearchFilter
+				_ = result.FromSearchFilter0(filter)
 				return result
 			}(),
 			expected: &searchFilterModel{
@@ -55,14 +55,14 @@ func Test_searchFilterModel_fromAPI_toAPI(t *testing.T) {
 		},
 		{
 			name: "filter without language",
-			apiFilter: func() kbapi.SearchFilterSchema {
-				filter := kbapi.SearchFilterSchema0{}
-				var query kbapi.SearchFilterSchema_0_Query
-				_ = query.FromSearchFilterSchema0Query0("simple query")
+			apiFilter: func() kbapi.SearchFilter {
+				filter := kbapi.SearchFilter0{}
+				var query kbapi.SearchFilter_0_Query
+				_ = query.FromSearchFilter0Query0("simple query")
 				filter.Query = query
 
-				var result kbapi.SearchFilterSchema
-				_ = result.FromSearchFilterSchema0(filter)
+				var result kbapi.SearchFilter
+				_ = result.FromSearchFilter0(filter)
 				return result
 			}(),
 			expected: &searchFilterModel{

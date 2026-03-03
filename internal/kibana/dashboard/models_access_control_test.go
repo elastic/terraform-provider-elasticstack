@@ -50,8 +50,10 @@ func TestAccessControlValue_toCreateAPI(t *testing.T) {
 		}
 		apiModel := m.toCreateAPI()
 		assert.NotNil(t, apiModel)
-		assert.Equal(t, new(kbapi.PostDashboardsJSONBodyDataAccessControlAccessMode("private")), apiModel.AccessMode)
-		assert.Equal(t, new("user123"), apiModel.Owner)
+		mode := kbapi.PostDashboardsIdJSONBodyAccessControlAccessMode("private")
+		owner := "user123"
+		assert.Equal(t, &mode, apiModel.AccessMode)
+		assert.Equal(t, &owner, apiModel.Owner)
 	})
 
 	t.Run("partial values - access_mode", func(t *testing.T) {
@@ -61,7 +63,8 @@ func TestAccessControlValue_toCreateAPI(t *testing.T) {
 		}
 		apiModel := m.toCreateAPI()
 		assert.NotNil(t, apiModel)
-		assert.Equal(t, new(kbapi.PostDashboardsJSONBodyDataAccessControlAccessMode("private")), apiModel.AccessMode)
+		mode := kbapi.PostDashboardsIdJSONBodyAccessControlAccessMode("private")
+		assert.Equal(t, &mode, apiModel.AccessMode)
 		assert.Nil(t, apiModel.Owner)
 	})
 
@@ -73,7 +76,8 @@ func TestAccessControlValue_toCreateAPI(t *testing.T) {
 		apiModel := m.toCreateAPI()
 		assert.NotNil(t, apiModel)
 		assert.Nil(t, apiModel.AccessMode)
-		assert.Equal(t, new("user123"), apiModel.Owner)
+		user123 := "user123"
+		assert.Equal(t, &user123, apiModel.Owner)
 	})
 }
 
@@ -91,8 +95,10 @@ func TestAccessControlValue_toUpdateAPI(t *testing.T) {
 		}
 		apiModel := m.toUpdateAPI()
 		assert.NotNil(t, apiModel)
-		assert.Equal(t, new(kbapi.PutDashboardsIdJSONBodyDataAccessControlAccessMode("public")), apiModel.AccessMode)
-		assert.Equal(t, new("admin"), apiModel.Owner)
+		mode := kbapi.PutDashboardsIdJSONBodyAccessControlAccessMode("public")
+		admin := "admin"
+		assert.Equal(t, &mode, apiModel.AccessMode)
+		assert.Equal(t, &admin, apiModel.Owner)
 	})
 
 	t.Run("empty values", func(t *testing.T) {

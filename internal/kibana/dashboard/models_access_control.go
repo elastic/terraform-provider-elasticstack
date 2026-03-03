@@ -30,13 +30,13 @@ type AccessControlValue struct {
 }
 
 type accessControlAPIPostModel = struct {
-	AccessMode *kbapi.PostDashboardsJSONBodyDataAccessControlAccessMode `json:"access_mode,omitempty"`
-	Owner      *string                                                  `json:"owner,omitempty"`
+	AccessMode *kbapi.PostDashboardsIdJSONBodyAccessControlAccessMode `json:"access_mode,omitempty"`
+	Owner      *string                                                `json:"owner,omitempty"`
 }
 
 type accessControlAPIPutModel = struct {
-	AccessMode *kbapi.PutDashboardsIdJSONBodyDataAccessControlAccessMode `json:"access_mode,omitempty"`
-	Owner      *string                                                   `json:"owner,omitempty"`
+	AccessMode *kbapi.PutDashboardsIdJSONBodyAccessControlAccessMode `json:"access_mode,omitempty"`
+	Owner      *string                                               `json:"owner,omitempty"`
 }
 
 // ToCreateAPI converts the Terraform model to the POST API model
@@ -48,11 +48,13 @@ func (m *AccessControlValue) toCreateAPI() *accessControlAPIPostModel {
 	apiModel := &accessControlAPIPostModel{}
 
 	if typeutils.IsKnown(m.AccessMode) {
-		apiModel.AccessMode = new(kbapi.PostDashboardsJSONBodyDataAccessControlAccessMode(m.AccessMode.ValueString()))
+		mode := kbapi.PostDashboardsIdJSONBodyAccessControlAccessMode(m.AccessMode.ValueString())
+		apiModel.AccessMode = &mode
 	}
 
 	if typeutils.IsKnown(m.Owner) {
-		apiModel.Owner = new(m.Owner.ValueString())
+		owner := m.Owner.ValueString()
+		apiModel.Owner = &owner
 	}
 
 	return apiModel
@@ -66,7 +68,7 @@ func (m *AccessControlValue) toUpdateAPI() *accessControlAPIPutModel {
 	}
 
 	return &accessControlAPIPutModel{
-		AccessMode: (*kbapi.PutDashboardsIdJSONBodyDataAccessControlAccessMode)(createModel.AccessMode),
+		AccessMode: (*kbapi.PutDashboardsIdJSONBodyAccessControlAccessMode)(createModel.AccessMode),
 		Owner:      createModel.Owner,
 	}
 }

@@ -340,7 +340,7 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 		var configMap map[string]any
 		diags.Append(pm.ConfigJSON.Unmarshal(&configMap)...)
 		if !diags.HasError() {
-			if err := panelItem.Config.FromDashboardPanelItemConfig2(configMap); err != nil {
+			if err := panelItem.Config.FromDashboardPanelItemConfig8(configMap); err != nil {
 				diags.AddError("Failed to marshal panel config JSON", err.Error())
 			}
 		}

@@ -118,7 +118,7 @@ func Test_markdownPanelConfigConverter_populateFromAPIPanel(t *testing.T) {
 				hidePanelTitles := true
 				title := "My Panel Title"
 
-				config0 := kbapi.DashboardPanelItemConfig0{
+				config40 := kbapi.DashboardPanelItemConfig40{
 					Content:     content,
 					Description: &description,
 					HideTitle:   &hidePanelTitles,
@@ -126,7 +126,11 @@ func Test_markdownPanelConfigConverter_populateFromAPIPanel(t *testing.T) {
 				}
 
 				config := kbapi.DashboardPanelItem_Config{}
-				err := config.FromDashboardPanelItemConfig0(config0)
+				err := config.FromDashboardPanelItemConfig4(func() kbapi.DashboardPanelItemConfig4 {
+					var c4 kbapi.DashboardPanelItemConfig4
+					_ = c4.FromDashboardPanelItemConfig40(config40)
+					return c4
+				}())
 				if err != nil {
 					panic(err)
 				}
@@ -143,7 +147,7 @@ func Test_markdownPanelConfigConverter_populateFromAPIPanel(t *testing.T) {
 		{
 			name: "only required field (content)",
 			config: func() kbapi.DashboardPanelItem_Config {
-				config0 := kbapi.DashboardPanelItemConfig0{
+				config40 := kbapi.DashboardPanelItemConfig40{
 					Content:     "Simple content",
 					Description: nil,
 					HideTitle:   nil,
@@ -151,7 +155,11 @@ func Test_markdownPanelConfigConverter_populateFromAPIPanel(t *testing.T) {
 				}
 
 				config := kbapi.DashboardPanelItem_Config{}
-				err := config.FromDashboardPanelItemConfig0(config0)
+				err := config.FromDashboardPanelItemConfig4(func() kbapi.DashboardPanelItemConfig4 {
+					var c4 kbapi.DashboardPanelItemConfig4
+					_ = c4.FromDashboardPanelItemConfig40(config40)
+					return c4
+				}())
 				if err != nil {
 					panic(err)
 				}
@@ -168,12 +176,16 @@ func Test_markdownPanelConfigConverter_populateFromAPIPanel(t *testing.T) {
 		{
 			name: "empty content string",
 			config: func() kbapi.DashboardPanelItem_Config {
-				config0 := kbapi.DashboardPanelItemConfig0{
+				config40 := kbapi.DashboardPanelItemConfig40{
 					Content: "",
 				}
 
 				config := kbapi.DashboardPanelItem_Config{}
-				err := config.FromDashboardPanelItemConfig0(config0)
+				err := config.FromDashboardPanelItemConfig4(func() kbapi.DashboardPanelItemConfig4 {
+					var c4 kbapi.DashboardPanelItemConfig4
+					_ = c4.FromDashboardPanelItemConfig40(config40)
+					return c4
+				}())
 				if err != nil {
 					panic(err)
 				}
@@ -191,13 +203,17 @@ func Test_markdownPanelConfigConverter_populateFromAPIPanel(t *testing.T) {
 			name: "hidePanelTitles is false",
 			config: func() kbapi.DashboardPanelItem_Config {
 				hidePanelTitles := false
-				config0 := kbapi.DashboardPanelItemConfig0{
+				config40 := kbapi.DashboardPanelItemConfig40{
 					Content:   "Content",
 					HideTitle: &hidePanelTitles,
 				}
 
 				config := kbapi.DashboardPanelItem_Config{}
-				err := config.FromDashboardPanelItemConfig0(config0)
+				err := config.FromDashboardPanelItemConfig4(func() kbapi.DashboardPanelItemConfig4 {
+					var c4 kbapi.DashboardPanelItemConfig4
+					_ = c4.FromDashboardPanelItemConfig40(config40)
+					return c4
+				}())
 				if err != nil {
 					panic(err)
 				}
@@ -216,14 +232,18 @@ func Test_markdownPanelConfigConverter_populateFromAPIPanel(t *testing.T) {
 			config: func() kbapi.DashboardPanelItem_Config {
 				description := ""
 				title := ""
-				config0 := kbapi.DashboardPanelItemConfig0{
+				config40 := kbapi.DashboardPanelItemConfig40{
 					Content:     "Content",
 					Description: &description,
 					Title:       &title,
 				}
 
 				config := kbapi.DashboardPanelItem_Config{}
-				err := config.FromDashboardPanelItemConfig0(config0)
+				err := config.FromDashboardPanelItemConfig4(func() kbapi.DashboardPanelItemConfig4 {
+					var c4 kbapi.DashboardPanelItemConfig4
+					_ = c4.FromDashboardPanelItemConfig40(config40)
+					return c4
+				}())
 				if err != nil {
 					panic(err)
 				}
@@ -249,12 +269,16 @@ Some **bold** text and *italic* text.
 - List item 2
 
 [Link](https://example.com)`
-				config0 := kbapi.DashboardPanelItemConfig0{
+				config40 := kbapi.DashboardPanelItemConfig40{
 					Content: content,
 				}
 
 				config := kbapi.DashboardPanelItem_Config{}
-				err := config.FromDashboardPanelItemConfig0(config0)
+				err := config.FromDashboardPanelItemConfig4(func() kbapi.DashboardPanelItemConfig4 {
+					var c4 kbapi.DashboardPanelItemConfig4
+					_ = c4.FromDashboardPanelItemConfig40(config40)
+					return c4
+				}())
 				if err != nil {
 					panic(err)
 				}
@@ -280,12 +304,16 @@ Some **bold** text and *italic* text.
 			name: "special characters in content",
 			config: func() kbapi.DashboardPanelItem_Config {
 				content := `Content with special chars: <>&"'`
-				config0 := kbapi.DashboardPanelItemConfig0{
+				config40 := kbapi.DashboardPanelItemConfig40{
 					Content: content,
 				}
 
 				config := kbapi.DashboardPanelItem_Config{}
-				err := config.FromDashboardPanelItemConfig0(config0)
+				err := config.FromDashboardPanelItemConfig4(func() kbapi.DashboardPanelItemConfig4 {
+					var c4 kbapi.DashboardPanelItemConfig4
+					_ = c4.FromDashboardPanelItemConfig40(config40)
+					return c4
+				}())
 				if err != nil {
 					panic(err)
 				}
@@ -305,13 +333,17 @@ Some **bold** text and *italic* text.
 				// Even with extra fields, as long as required fields exist, it should work
 				content := "Content with extra fields"
 				description := "Description"
-				config0 := kbapi.DashboardPanelItemConfig0{
+				config40 := kbapi.DashboardPanelItemConfig40{
 					Content:     content,
 					Description: &description,
 				}
 
 				config := kbapi.DashboardPanelItem_Config{}
-				err := config.FromDashboardPanelItemConfig0(config0)
+				err := config.FromDashboardPanelItemConfig4(func() kbapi.DashboardPanelItemConfig4 {
+					var c4 kbapi.DashboardPanelItemConfig4
+					_ = c4.FromDashboardPanelItemConfig40(config40)
+					return c4
+				}())
 				if err != nil {
 					panic(err)
 				}
@@ -355,12 +387,16 @@ func Test_markdownPanelConfigConverter_populateFromAPIPanel_contextsAreHandled(t
 	c := markdownPanelConfigConverter{}
 	pm := &panelModel{}
 
-	config0 := kbapi.DashboardPanelItemConfig0{
+	config40 := kbapi.DashboardPanelItemConfig40{
 		Content: "Test content",
 	}
 
 	config := kbapi.DashboardPanelItem_Config{}
-	err := config.FromDashboardPanelItemConfig0(config0)
+	err := config.FromDashboardPanelItemConfig4(func() kbapi.DashboardPanelItemConfig4 {
+		var c4 kbapi.DashboardPanelItemConfig4
+		_ = c4.FromDashboardPanelItemConfig40(config40)
+		return c4
+	}())
 	require.NoError(t, err)
 
 	// Test with background context
@@ -423,7 +459,7 @@ func Test_markdownPanelConfigConverter_mapPanelToAPI(t *testing.T) {
 	tests := []struct {
 		name       string
 		pm         panelModel
-		wantConfig kbapi.DashboardPanelItemConfig0
+		wantConfig kbapi.DashboardPanelItemConfig40
 		wantDiags  bool
 	}{
 		{
@@ -436,7 +472,7 @@ func Test_markdownPanelConfigConverter_mapPanelToAPI(t *testing.T) {
 					Title:       types.StringValue("Test Title"),
 				},
 			},
-			wantConfig: kbapi.DashboardPanelItemConfig0{
+			wantConfig: kbapi.DashboardPanelItemConfig40{
 				Content:     "# Test Content",
 				Description: new("Test Description"),
 				HideTitle:   new(true),
@@ -454,7 +490,7 @@ func Test_markdownPanelConfigConverter_mapPanelToAPI(t *testing.T) {
 					Title:       types.StringNull(),
 				},
 			},
-			wantConfig: kbapi.DashboardPanelItemConfig0{
+			wantConfig: kbapi.DashboardPanelItemConfig40{
 				Content:     "# Minimal",
 				Description: nil,
 				HideTitle:   nil,
@@ -472,7 +508,7 @@ func Test_markdownPanelConfigConverter_mapPanelToAPI(t *testing.T) {
 					Title:       types.StringUnknown(),
 				},
 			},
-			wantConfig: kbapi.DashboardPanelItemConfig0{
+			wantConfig: kbapi.DashboardPanelItemConfig40{
 				Content:     "# Content",
 				Description: nil,
 				HideTitle:   nil,
@@ -490,7 +526,7 @@ func Test_markdownPanelConfigConverter_mapPanelToAPI(t *testing.T) {
 					Title:       types.StringNull(),
 				},
 			},
-			wantConfig: kbapi.DashboardPanelItemConfig0{
+			wantConfig: kbapi.DashboardPanelItemConfig40{
 				Content:     "# Content",
 				HideTitle:   new(false),
 				Description: nil,
@@ -507,7 +543,7 @@ func Test_markdownPanelConfigConverter_mapPanelToAPI(t *testing.T) {
 					Title:       types.StringValue(""),
 				},
 			},
-			wantConfig: kbapi.DashboardPanelItemConfig0{
+			wantConfig: kbapi.DashboardPanelItemConfig40{
 				Content:     "",
 				Description: new(""),
 				Title:       new(""),
@@ -532,7 +568,7 @@ Some **bold** text and *italic* text.
 					Title:       types.StringNull(),
 				},
 			},
-			wantConfig: kbapi.DashboardPanelItemConfig0{
+			wantConfig: kbapi.DashboardPanelItemConfig40{
 				Content: `# Header
 ## Subheader
 
@@ -557,7 +593,7 @@ Some **bold** text and *italic* text.
 					Title:       types.StringValue(`Title with special chars: <>&"'`),
 				},
 			},
-			wantConfig: kbapi.DashboardPanelItemConfig0{
+			wantConfig: kbapi.DashboardPanelItemConfig40{
 				Content:     `Content with special chars: <>&"'`,
 				Description: new(`Description with special chars: <>&"'`),
 				Title:       new(`Title with special chars: <>&"'`),
@@ -579,30 +615,32 @@ Some **bold** text and *italic* text.
 				assert.False(t, diags.HasError(), "expected no diagnostics errors")
 
 				// Extract the config and verify
-				config0, err := apiConfig.AsDashboardPanelItemConfig0()
-				require.NoError(t, err, "failed to extract config")
+				config4, err := apiConfig.AsDashboardPanelItemConfig4()
+				require.NoError(t, err, "failed to extract config4")
+				config40, err := config4.AsDashboardPanelItemConfig40()
+				require.NoError(t, err, "failed to extract config40")
 
-				assert.Equal(t, tt.wantConfig.Content, config0.Content)
+				assert.Equal(t, tt.wantConfig.Content, config40.Content)
 
 				if tt.wantConfig.Description == nil {
-					assert.Nil(t, config0.Description)
+					assert.Nil(t, config40.Description)
 				} else {
-					require.NotNil(t, config0.Description)
-					assert.Equal(t, *tt.wantConfig.Description, *config0.Description)
+					require.NotNil(t, config40.Description)
+					assert.Equal(t, *tt.wantConfig.Description, *config40.Description)
 				}
 
 				if tt.wantConfig.HideTitle == nil {
-					assert.Nil(t, config0.HideTitle)
+					assert.Nil(t, config40.HideTitle)
 				} else {
-					require.NotNil(t, config0.HideTitle)
-					assert.Equal(t, *tt.wantConfig.HideTitle, *config0.HideTitle)
+					require.NotNil(t, config40.HideTitle)
+					assert.Equal(t, *tt.wantConfig.HideTitle, *config40.HideTitle)
 				}
 
 				if tt.wantConfig.Title == nil {
-					assert.Nil(t, config0.Title)
+					assert.Nil(t, config40.Title)
 				} else {
-					require.NotNil(t, config0.Title)
-					assert.Equal(t, *tt.wantConfig.Title, *config0.Title)
+					require.NotNil(t, config40.Title)
+					assert.Equal(t, *tt.wantConfig.Title, *config40.Title)
 				}
 			}
 		})

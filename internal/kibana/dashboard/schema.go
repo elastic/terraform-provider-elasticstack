@@ -630,12 +630,12 @@ func getPanelSchema() schema.NestedAttributeObject {
 					"query": schema.SingleNestedAttribute{
 						MarkdownDescription: "Query configuration for filtering data.",
 						Required:            true,
-						Attributes:          getFilterSimpleSchema(),
+						Attributes:          getFilterSimple(),
 					},
 					"filters": schema.ListNestedAttribute{
 						MarkdownDescription: "Additional filters to apply to the chart data (maximum 100).",
 						Optional:            true,
-						NestedObject:        getSearchFilterSchema(),
+						NestedObject:        getSearchFilter(),
 					},
 				},
 				Validators: []validator.Object{
@@ -714,7 +714,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 			"metric_chart_config": schema.SingleNestedAttribute{
 				MarkdownDescription: panelConfigDescription("Configuration for a metric chart panel. Metric charts display key performance indicators.", "metric_chart_config", panelConfigNames),
 				Optional:            true,
-				Attributes:          getMetricChartSchema(),
+				Attributes:          getMetricChart(),
 				Validators: []validator.Object{
 					objectvalidator.ConflictsWith(
 						siblingPanelConfigPathsExcept("metric_chart_config", panelConfigNames)...,
@@ -725,7 +725,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 			"pie_chart_config": schema.SingleNestedAttribute{
 				MarkdownDescription: panelConfigDescription("Configuration for a pie chart panel. Use this for pie and donut charts.", "pie_chart_config", panelConfigNames),
 				Optional:            true,
-				Attributes:          getPieChartSchema(),
+				Attributes:          getPieChart(),
 				Validators: []validator.Object{
 					objectvalidator.ConflictsWith(
 						siblingPanelConfigPathsExcept("pie_chart_config", panelConfigNames)...,
@@ -977,8 +977,8 @@ func getXYLegendSchema() map[string]schema.Attribute {
 	}
 }
 
-// getFilterSimpleSchema returns the schema for simple filter configuration
-func getFilterSimpleSchema() map[string]schema.Attribute {
+// getFilterSimple returns the schema for simple filter configuration
+func getFilterSimple() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"language": schema.StringAttribute{
 			MarkdownDescription: "Query language (default: 'kuery').",
@@ -994,8 +994,8 @@ func getFilterSimpleSchema() map[string]schema.Attribute {
 	}
 }
 
-// getSearchFilterSchema returns the schema for search filter configuration
-func getSearchFilterSchema() schema.NestedAttributeObject {
+// getSearchFilter returns the schema for search filter configuration
+func getSearchFilter() schema.NestedAttributeObject {
 	return schema.NestedAttributeObject{
 		Attributes: map[string]schema.Attribute{
 			"query": schema.StringAttribute{
@@ -1201,12 +1201,12 @@ func getTagcloudSchema() map[string]schema.Attribute {
 		"query": schema.SingleNestedAttribute{
 			MarkdownDescription: "Query configuration for filtering data.",
 			Required:            true,
-			Attributes:          getFilterSimpleSchema(),
+			Attributes:          getFilterSimple(),
 		},
 		"filters": schema.ListNestedAttribute{
 			MarkdownDescription: "Additional filters to apply to the chart data (maximum 100).",
 			Optional:            true,
-			NestedObject:        getSearchFilterSchema(),
+			NestedObject:        getSearchFilter(),
 		},
 		"orientation": schema.StringAttribute{
 			MarkdownDescription: "Orientation of the tagcloud. Valid values: 'horizontal', 'vertical', 'angled'.",
@@ -1269,12 +1269,12 @@ func getHeatmapSchema() map[string]schema.Attribute {
 		"query": schema.SingleNestedAttribute{
 			MarkdownDescription: "Query configuration for filtering data. Required for non-ES|QL heatmaps.",
 			Optional:            true,
-			Attributes:          getFilterSimpleSchema(),
+			Attributes:          getFilterSimple(),
 		},
 		"filters": schema.ListNestedAttribute{
 			MarkdownDescription: "Additional filters to apply to the chart data (maximum 100).",
 			Optional:            true,
-			NestedObject:        getSearchFilterSchema(),
+			NestedObject:        getSearchFilter(),
 		},
 		"axes": schema.SingleNestedAttribute{
 			MarkdownDescription: "Axis configuration for X and Y axes.",
@@ -1336,12 +1336,12 @@ func getTreemapSchema() map[string]schema.Attribute {
 		"query": schema.SingleNestedAttribute{
 			MarkdownDescription: "Query configuration for filtering data. Required for non-ES|QL treemaps.",
 			Optional:            true,
-			Attributes:          getFilterSimpleSchema(),
+			Attributes:          getFilterSimple(),
 		},
 		"filters": schema.ListNestedAttribute{
 			MarkdownDescription: "Additional filters to apply to the chart data (maximum 100).",
 			Optional:            true,
-			NestedObject:        getSearchFilterSchema(),
+			NestedObject:        getSearchFilter(),
 		},
 		"group_by_json": schema.StringAttribute{
 			MarkdownDescription: "Array of breakdown dimensions as JSON (minimum 1). " +
@@ -1564,12 +1564,12 @@ func getRegionMapSchema() map[string]schema.Attribute {
 		"query": schema.SingleNestedAttribute{
 			MarkdownDescription: "Query configuration for filtering data. Required for non-ES|QL region map configurations.",
 			Optional:            true,
-			Attributes:          getFilterSimpleSchema(),
+			Attributes:          getFilterSimple(),
 		},
 		"filters": schema.ListNestedAttribute{
 			MarkdownDescription: "Additional filters to apply to the chart data (maximum 100).",
 			Optional:            true,
-			NestedObject:        getSearchFilterSchema(),
+			NestedObject:        getSearchFilter(),
 		},
 		"metric_json": schema.StringAttribute{
 			MarkdownDescription: "Metric configuration as JSON. For ES|QL, this defines the metric column and format. For standard mode, this defines the metric operation or formula.",
@@ -1608,12 +1608,12 @@ func getLegacyMetricSchema() map[string]schema.Attribute {
 		"query": schema.SingleNestedAttribute{
 			MarkdownDescription: "Query configuration for filtering data. Required for non-ES|QL datasets.",
 			Optional:            true,
-			Attributes:          getFilterSimpleSchema(),
+			Attributes:          getFilterSimple(),
 		},
 		"filters": schema.ListNestedAttribute{
 			MarkdownDescription: "Additional filters to apply to the chart data (maximum 100).",
 			Optional:            true,
-			NestedObject:        getSearchFilterSchema(),
+			NestedObject:        getSearchFilter(),
 		},
 		"sampling": schema.Float64Attribute{
 			MarkdownDescription: "Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.",
@@ -1653,12 +1653,12 @@ func getGaugeSchema() map[string]schema.Attribute {
 		"query": schema.SingleNestedAttribute{
 			MarkdownDescription: "Query configuration for filtering data.",
 			Required:            true,
-			Attributes:          getFilterSimpleSchema(),
+			Attributes:          getFilterSimple(),
 		},
 		"filters": schema.ListNestedAttribute{
 			MarkdownDescription: "Additional filters to apply to the chart data (maximum 100).",
 			Optional:            true,
-			NestedObject:        getSearchFilterSchema(),
+			NestedObject:        getSearchFilter(),
 		},
 		"metric_json": schema.StringAttribute{
 			MarkdownDescription: gaugeMetricDescription,
@@ -1673,8 +1673,8 @@ func getGaugeSchema() map[string]schema.Attribute {
 	}
 }
 
-// getMetricChartSchema returns the schema for metric chart configuration
-func getMetricChartSchema() map[string]schema.Attribute {
+// getMetricChart returns the schema for metric chart configuration
+func getMetricChart() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"title": schema.StringAttribute{
 			MarkdownDescription: "The title of the chart displayed in the panel.",
@@ -1700,12 +1700,12 @@ func getMetricChartSchema() map[string]schema.Attribute {
 		"query": schema.SingleNestedAttribute{
 			MarkdownDescription: "Query configuration for filtering data. Required for non-ES|QL datasets.",
 			Optional:            true,
-			Attributes:          getFilterSimpleSchema(),
+			Attributes:          getFilterSimple(),
 		},
 		"filters": schema.ListNestedAttribute{
 			MarkdownDescription: "Additional filters to apply to the chart data (maximum 100).",
 			Optional:            true,
-			NestedObject:        getSearchFilterSchema(),
+			NestedObject:        getSearchFilter(),
 		},
 		"metrics": schema.ListNestedAttribute{
 			MarkdownDescription: metricChartMetricsDescription,
@@ -1784,12 +1784,12 @@ func getDatatableNoESQLSchema() map[string]schema.Attribute {
 		"query": schema.SingleNestedAttribute{
 			MarkdownDescription: "Query configuration for filtering data.",
 			Required:            true,
-			Attributes:          getFilterSimpleSchema(),
+			Attributes:          getFilterSimple(),
 		},
 		"filters": schema.ListNestedAttribute{
 			MarkdownDescription: "Additional filters to apply to the datatable data (maximum 100).",
 			Optional:            true,
-			NestedObject:        getSearchFilterSchema(),
+			NestedObject:        getSearchFilter(),
 		},
 		"metrics": schema.ListNestedAttribute{
 			MarkdownDescription: "Array of metric configurations as JSON. Each entry defines a datatable metric column.",
@@ -1873,7 +1873,7 @@ func getDatatableESQLSchema() map[string]schema.Attribute {
 		"filters": schema.ListNestedAttribute{
 			MarkdownDescription: "Additional filters to apply to the datatable data (maximum 100).",
 			Optional:            true,
-			NestedObject:        getSearchFilterSchema(),
+			NestedObject:        getSearchFilter(),
 		},
 		"metrics": schema.ListNestedAttribute{
 			MarkdownDescription: "Array of metric configurations as JSON. Each entry defines a datatable metric column.",
@@ -2025,8 +2025,8 @@ func populatePieChartGroupByDefaults(model map[string]any) map[string]any {
 	return model
 }
 
-// getPieChartSchema returns the schema for pie chart configuration
-func getPieChartSchema() map[string]schema.Attribute {
+// getPieChart returns the schema for pie chart configuration
+func getPieChart() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"title": schema.StringAttribute{
 			MarkdownDescription: "The title of the chart displayed in the panel.",
@@ -2075,12 +2075,12 @@ func getPieChartSchema() map[string]schema.Attribute {
 		"query": schema.SingleNestedAttribute{
 			MarkdownDescription: "Query configuration for filtering data.",
 			Optional:            true,
-			Attributes:          getFilterSimpleSchema(),
+			Attributes:          getFilterSimple(),
 		},
 		"filters": schema.ListNestedAttribute{
 			MarkdownDescription: "Additional filters to apply to the chart data (maximum 100).",
 			Optional:            true,
-			NestedObject:        getSearchFilterSchema(),
+			NestedObject:        getSearchFilter(),
 		},
 		"metrics": schema.ListNestedAttribute{
 			MarkdownDescription: "Array of metric configurations (minimum 1).",

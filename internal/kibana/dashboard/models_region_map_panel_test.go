@@ -55,8 +55,8 @@ func Test_regionMapConfigModel_fromAPI_toAPI(t *testing.T) {
 					Sampling:            new(float32(0.75)),
 				}
 
-				lang := kbapi.FilterSimpleSchemaLanguage("kuery")
-				api.Query = kbapi.FilterSimpleSchema{
+				lang := kbapi.FilterSimpleLanguage("kuery")
+				api.Query = kbapi.FilterSimple{
 					Language: &lang,
 					Query:    "*",
 				}
@@ -65,13 +65,13 @@ func Test_regionMapConfigModel_fromAPI_toAPI(t *testing.T) {
 				_ = json.Unmarshal([]byte(`{"operation":"count"}`), &api.Metric)
 				_ = json.Unmarshal([]byte(`{"operation":"filters","filters":[{"filter":{"query":"*","language":"kuery"},"label":"All"}]}`), &api.Region)
 
-				filter := kbapi.SearchFilterSchema0{}
-				var query kbapi.SearchFilterSchema_0_Query
-				_ = query.FromSearchFilterSchema0Query0("status:active")
+				filter := kbapi.SearchFilter0{}
+				var query kbapi.SearchFilter_0_Query
+				_ = query.FromSearchFilter0Query0("status:active")
 				filter.Query = query
-				var filterSchema kbapi.SearchFilterSchema
-				_ = filterSchema.FromSearchFilterSchema0(filter)
-				api.Filters = &[]kbapi.SearchFilterSchema{filterSchema}
+				var filterSchema kbapi.SearchFilter
+				_ = filterSchema.FromSearchFilter0(filter)
+				api.Filters = &[]kbapi.SearchFilter{filterSchema}
 
 				return &api
 			}(),
@@ -95,13 +95,13 @@ func Test_regionMapConfigModel_fromAPI_toAPI(t *testing.T) {
 				_ = json.Unmarshal([]byte(`{"operation":"value","column":"value","format":{"id":"number"}}`), &api.Metric)
 				_ = json.Unmarshal([]byte(`{"operation":"value","column":"region","ems":{"boundaries":"world_countries","join":"name"}}`), &api.Region)
 
-				filter := kbapi.SearchFilterSchema0{}
-				var query kbapi.SearchFilterSchema_0_Query
-				_ = query.FromSearchFilterSchema0Query0("region:US")
+				filter := kbapi.SearchFilter0{}
+				var query kbapi.SearchFilter_0_Query
+				_ = query.FromSearchFilter0Query0("region:US")
 				filter.Query = query
-				var filterSchema kbapi.SearchFilterSchema
-				_ = filterSchema.FromSearchFilterSchema0(filter)
-				api.Filters = &[]kbapi.SearchFilterSchema{filterSchema}
+				var filterSchema kbapi.SearchFilter
+				_ = filterSchema.FromSearchFilter0(filter)
+				api.Filters = &[]kbapi.SearchFilter{filterSchema}
 
 				return &api
 			}(),

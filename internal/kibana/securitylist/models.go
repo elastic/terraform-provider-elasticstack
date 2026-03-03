@@ -37,8 +37,6 @@ type Model struct {
 	Name         types.String         `tfsdk:"name"`
 	Description  types.String         `tfsdk:"description"`
 	Type         types.String         `tfsdk:"type"`
-	Deserializer types.String         `tfsdk:"deserializer"`
-	Serializer   types.String         `tfsdk:"serializer"`
 	Meta         jsontypes.Normalized `tfsdk:"meta"`
 	Version      types.Int64          `tfsdk:"version"`
 	VersionID    types.String         `tfsdk:"version_id"`
@@ -63,16 +61,6 @@ func (m *Model) toCreateRequest() (*kbapi.CreateListJSONRequestBody, diag.Diagno
 	if typeutils.IsKnown(m.ListID) {
 		id := m.ListID.ValueString()
 		req.Id = &id
-	}
-
-	if typeutils.IsKnown(m.Deserializer) {
-		deserializer := m.Deserializer.ValueString()
-		req.Deserializer = &deserializer
-	}
-
-	if typeutils.IsKnown(m.Serializer) {
-		serializer := m.Serializer.ValueString()
-		req.Serializer = &serializer
 	}
 
 	if typeutils.IsKnown(m.Meta) {
@@ -152,10 +140,6 @@ func (m *Model) fromAPI(ctx context.Context, apiList *kbapi.SecurityListsAPIList
 
 	// Set optional _version field
 	m.VersionID = typeutils.StringishPointerValue(apiList.UnderscoreVersion)
-
-	m.Deserializer = typeutils.StringishPointerValue(apiList.Deserializer)
-
-	m.Serializer = typeutils.StringishPointerValue(apiList.Serializer)
 
 	if apiList.Meta != nil {
 		metaBytes, err := json.Marshal(apiList.Meta)

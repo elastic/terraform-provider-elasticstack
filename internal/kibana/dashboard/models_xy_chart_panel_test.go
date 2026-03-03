@@ -856,7 +856,7 @@ func Test_xyChartPanelConfigConverter_populateFromAPIPanel(t *testing.T) {
 
 				configJSON, _ := json.Marshal(configMap)
 				var config kbapi.DashboardPanelItem_Config
-				_ = config.FromDashboardPanelItemConfig2(configMap)
+				_ = config.FromDashboardPanelItemConfig8(configMap)
 				_ = json.Unmarshal(configJSON, &config)
 				return config
 			}(),

@@ -90,16 +90,6 @@ func (r *securityListResource) Schema(_ context.Context, _ resource.SchemaReques
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
-			"deserializer": schema.StringAttribute{
-				MarkdownDescription: "Determines how retrieved list item values are presented. By default, list items are presented using Handlebars expressions based on the type.",
-				Optional:            true,
-				Computed:            true,
-			},
-			"serializer": schema.StringAttribute{
-				MarkdownDescription: "Determines how uploaded list item values are parsed. By default, list items are parsed using named regex groups based on the type.",
-				Optional:            true,
-				Computed:            true,
-			},
 			"meta": schema.StringAttribute{
 				MarkdownDescription: "Placeholder for metadata about the value list as JSON string.",
 				Optional:            true,

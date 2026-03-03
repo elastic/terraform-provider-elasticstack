@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+## [0.14.3] - 2026-03-02
+
 ### Changes
 
 - Add `elasticstack_fleet_output` data source. ([#1762](https://github.com/elastic/terraform-provider-elasticstack/pull/1762))
@@ -8,6 +10,10 @@
 - Add `elasticstack_kibana_security_enable_rule` resource ([#1710](https://github.com/elastic/terraform-provider-elasticstack/pull/1710))
 - Fix value conversion error in `elasticstack_elasticsearch_index_alias` when indices are unknown at plan time. ([#1755](https://github.com/elastic/terraform-provider-elasticstack/pull/1755))
 - Fix state consistency error in `elasticstack_kibana_security_exception_list` when `os_types` are used in Elastic Stack 9.2 ([#1740](https://github.com/elastic/terraform-provider-elasticstack/pull/1740))
+- Fix state consistency error in `elasticstack_elasticsearch_security_role` when `description` is empty (`""`) ([#1780](https://github.com/elastic/terraform-provider-elasticstack/pull/1780))
+- Fix state consistency issue in `elasticstack_kibana_slo` when `group_by` is set to an empty list ([#1776](https://github.com/elastic/terraform-provider-elasticstack/pull/1776))
+- Fix state consistency error in `elasticstack_kibana_security_detection_rule` when `threat_filter` is supplied ([#1758](https://github.com/elastic/terraform-provider-elasticstack/pull/1758))
+- Fix state consistency error in `elasticstack_fleet_integration_policy` when the policy was updated outside of the Terraform workflow ([#1616](https://github.com/elastic/terraform-provider-elasticstack/pull/1616))
 
 ## [0.14.2] - 2026-02-19
 
@@ -749,7 +755,8 @@ resource "elasticstack_fleet_output" "output" {
 - Initial set of docs
 - CI integration
 
-[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.14.2...HEAD
+[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.14.3...HEAD
+[0.14.3]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.14.2...v0.14.3
 [0.14.2]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.14.1...v0.14.2
 [0.14.1]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.14.0...v0.14.1
 [0.14.0]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.13.1...v0.14.0

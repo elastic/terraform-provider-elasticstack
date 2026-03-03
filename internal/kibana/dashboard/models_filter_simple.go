@@ -28,7 +28,7 @@ type filterSimpleModel struct {
 	Query    types.String `tfsdk:"query"`
 }
 
-func (m *filterSimpleModel) fromAPI(apiQuery kbapi.FilterSimpleSchema) {
+func (m *filterSimpleModel) fromAPI(apiQuery kbapi.FilterSimple) {
 	m.Query = types.StringValue(apiQuery.Query)
 	if apiQuery.Language == nil {
 		m.Language = types.StringValue("kuery")
@@ -37,16 +37,16 @@ func (m *filterSimpleModel) fromAPI(apiQuery kbapi.FilterSimpleSchema) {
 	m.Language = typeutils.StringishPointerValue(apiQuery.Language)
 }
 
-func (m *filterSimpleModel) toAPI() kbapi.FilterSimpleSchema {
+func (m *filterSimpleModel) toAPI() kbapi.FilterSimple {
 	if m == nil {
-		return kbapi.FilterSimpleSchema{}
+		return kbapi.FilterSimple{}
 	}
 
-	query := kbapi.FilterSimpleSchema{
+	query := kbapi.FilterSimple{
 		Query: m.Query.ValueString(),
 	}
 	if typeutils.IsKnown(m.Language) {
-		lang := kbapi.FilterSimpleSchemaLanguage(m.Language.ValueString())
+		lang := kbapi.FilterSimpleLanguage(m.Language.ValueString())
 		query.Language = &lang
 	}
 	return query

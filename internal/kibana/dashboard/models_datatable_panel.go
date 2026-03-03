@@ -46,7 +46,7 @@ func (c datatablePanelConfigConverter) handlesTFPanelConfig(pm panelModel) bool 
 }
 
 func (c datatablePanelConfigConverter) populateFromAPIPanel(ctx context.Context, pm *panelModel, config kbapi.DashboardPanelItem_Config) diag.Diagnostics {
-	cfgMap, err := config.AsDashboardPanelItemConfig2()
+	cfgMap, err := config.AsDashboardPanelItemConfig8()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -66,7 +66,7 @@ func (c datatablePanelConfigConverter) populateFromAPIPanel(ctx context.Context,
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	var datatableChart kbapi.DatatableChartSchema
+	var datatableChart kbapi.DatatableChart
 	if err := json.Unmarshal(attrsJSON, &datatableChart); err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -98,7 +98,7 @@ func (c datatablePanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *k
 		return diags
 	}
 
-	var datatableChart kbapi.DatatableChartSchema
+	var datatableChart kbapi.DatatableChart
 
 	switch {
 	case pm.DatatableConfig.NoESQL != nil:
@@ -127,29 +127,29 @@ func (c datatablePanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *k
 		return diags
 	}
 
-	var attrs0 kbapi.DashboardPanelItemConfig10Attributes0
-	if err := attrs0.FromDatatableChartSchema(datatableChart); err != nil {
+	var attrs0 kbapi.DashboardPanelItemConfig70Attributes0
+	if err := attrs0.FromDatatableChart(datatableChart); err != nil {
 		diags.AddError("Failed to create datatable attributes", err.Error())
 		return diags
 	}
 
-	var configAttrs kbapi.DashboardPanelItem_Config_1_0_Attributes
-	if err := configAttrs.FromDashboardPanelItemConfig10Attributes0(attrs0); err != nil {
+	var configAttrs kbapi.DashboardPanelItem_Config_7_0_Attributes
+	if err := configAttrs.FromDashboardPanelItemConfig70Attributes0(attrs0); err != nil {
 		diags.AddError("Failed to create config attributes", err.Error())
 		return diags
 	}
 
-	config10 := kbapi.DashboardPanelItemConfig10{
+	config10 := kbapi.DashboardPanelItemConfig70{
 		Attributes: configAttrs,
 	}
 
-	var config1 kbapi.DashboardPanelItemConfig1
-	if err := config1.FromDashboardPanelItemConfig10(config10); err != nil {
+	var config1 kbapi.DashboardPanelItemConfig7
+	if err := config1.FromDashboardPanelItemConfig70(config10); err != nil {
 		diags.AddError("Failed to create config1", err.Error())
 		return diags
 	}
 
-	if err := apiConfig.FromDashboardPanelItemConfig1(config1); err != nil {
+	if err := apiConfig.FromDashboardPanelItemConfig7(config1); err != nil {
 		diags.AddError("Failed to marshal datatable config", err.Error())
 		return diags
 	}
@@ -360,7 +360,7 @@ func (m *datatableNoESQLConfigModel) toAPI() (kbapi.DatatableNoESQL, diag.Diagno
 	}
 
 	if len(m.Filters) > 0 {
-		filters := make([]kbapi.SearchFilterSchema, len(m.Filters))
+		filters := make([]kbapi.SearchFilter, len(m.Filters))
 		for i, filterModel := range m.Filters {
 			filter, filterDiags := filterModel.toAPI()
 			diags.Append(filterDiags...)
@@ -459,9 +459,9 @@ func (m *datatableESQLConfigModel) fromAPI(ctx context.Context, api kbapi.Datata
 		}
 	}
 
-	if len(api.Metrics) > 0 {
-		m.Metrics = make([]datatableMetricModel, len(api.Metrics))
-		for i, metric := range api.Metrics {
+	if api.Metrics != nil && len(*api.Metrics) > 0 {
+		m.Metrics = make([]datatableMetricModel, len(*api.Metrics))
+		for i, metric := range *api.Metrics {
 			metricBytes, err := json.Marshal(metric)
 			if err != nil {
 				diags.AddError("Failed to marshal metric", err.Error())
@@ -553,7 +553,7 @@ func (m *datatableESQLConfigModel) toAPI() (kbapi.DatatableESQL, diag.Diagnostic
 	}
 
 	if len(m.Filters) > 0 {
-		filters := make([]kbapi.SearchFilterSchema, len(m.Filters))
+		filters := make([]kbapi.SearchFilter, len(m.Filters))
 		for i, filterModel := range m.Filters {
 			filter, filterDiags := filterModel.toAPI()
 			diags.Append(filterDiags...)
@@ -572,7 +572,7 @@ func (m *datatableESQLConfigModel) toAPI() (kbapi.DatatableESQL, diag.Diagnostic
 				}
 			}
 		}
-		api.Metrics = metrics
+		api.Metrics = &metrics
 	}
 
 	if len(m.Rows) > 0 {

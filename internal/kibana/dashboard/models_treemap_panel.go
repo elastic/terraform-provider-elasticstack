@@ -48,7 +48,7 @@ func (c treemapPanelConfigConverter) handlesTFPanelConfig(pm panelModel) bool {
 }
 
 func (c treemapPanelConfigConverter) populateFromAPIPanel(_ context.Context, pm *panelModel, config kbapi.DashboardPanelItem_Config) diag.Diagnostics {
-	cfgMap, err := config.AsDashboardPanelItemConfig2()
+	cfgMap, err := config.AsDashboardPanelItemConfig8()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -68,7 +68,7 @@ func (c treemapPanelConfigConverter) populateFromAPIPanel(_ context.Context, pm 
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	var treemapChart kbapi.TreemapChartSchema
+	var treemapChart kbapi.TreemapChart
 	if err := json.Unmarshal(attrsJSON, &treemapChart); err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -103,29 +103,29 @@ func (c treemapPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *kba
 		return diags
 	}
 
-	var attrs0 kbapi.DashboardPanelItemConfig10Attributes0
-	if err := attrs0.FromTreemapChartSchema(treemapChart); err != nil {
+	var attrs0 kbapi.DashboardPanelItemConfig70Attributes0
+	if err := attrs0.FromTreemapChart(treemapChart); err != nil {
 		diags.AddError("Failed to create treemap attributes", err.Error())
 		return diags
 	}
 
-	var configAttrs kbapi.DashboardPanelItem_Config_1_0_Attributes
-	if err := configAttrs.FromDashboardPanelItemConfig10Attributes0(attrs0); err != nil {
+	var configAttrs kbapi.DashboardPanelItem_Config_7_0_Attributes
+	if err := configAttrs.FromDashboardPanelItemConfig70Attributes0(attrs0); err != nil {
 		diags.AddError("Failed to create config attributes", err.Error())
 		return diags
 	}
 
-	config10 := kbapi.DashboardPanelItemConfig10{
+	config10 := kbapi.DashboardPanelItemConfig70{
 		Attributes: configAttrs,
 	}
 
-	var config1 kbapi.DashboardPanelItemConfig1
-	if err := config1.FromDashboardPanelItemConfig10(config10); err != nil {
+	var config1 kbapi.DashboardPanelItemConfig7
+	if err := config1.FromDashboardPanelItemConfig70(config10); err != nil {
 		diags.AddError("Failed to create config1", err.Error())
 		return diags
 	}
 
-	if err := apiConfig.FromDashboardPanelItemConfig1(config1); err != nil {
+	if err := apiConfig.FromDashboardPanelItemConfig7(config1); err != nil {
 		diags.AddError("Failed to marshal treemap config", err.Error())
 	}
 
@@ -359,9 +359,9 @@ func (m *treemapValueDisplay) fromAPIESQL(api *struct {
 	}
 }
 
-func (m *treemapConfigModel) toAPI() (kbapi.TreemapChartSchema, diag.Diagnostics) {
+func (m *treemapConfigModel) toAPI() (kbapi.TreemapChart, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	var treemapChart kbapi.TreemapChartSchema
+	var treemapChart kbapi.TreemapChart
 
 	if m == nil {
 		return treemapChart, diags
@@ -383,9 +383,9 @@ func (m *treemapConfigModel) toAPI() (kbapi.TreemapChartSchema, diag.Diagnostics
 	return treemapChart, diags
 }
 
-func (m *treemapConfigModel) toAPIESQLChartSchema() (kbapi.TreemapChartSchema, diag.Diagnostics) {
+func (m *treemapConfigModel) toAPIESQLChartSchema() (kbapi.TreemapChart, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	var treemapChart kbapi.TreemapChartSchema
+	var treemapChart kbapi.TreemapChart
 
 	attrs := map[string]any{
 		"type": string(kbapi.TreemapESQLTypeTreemap),
@@ -581,7 +581,7 @@ func (m *treemapConfigModel) toAPINoESQL() (kbapi.TreemapNoESQL, diag.Diagnostic
 	api.Query = m.Query.toAPI()
 
 	if len(m.Filters) > 0 {
-		filters := make([]kbapi.SearchFilterSchema, len(m.Filters))
+		filters := make([]kbapi.SearchFilter, len(m.Filters))
 		for i, filterModel := range m.Filters {
 			filter, filterDiags := filterModel.toAPI()
 			diags.Append(filterDiags...)

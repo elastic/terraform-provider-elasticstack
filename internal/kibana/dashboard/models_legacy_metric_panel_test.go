@@ -88,7 +88,7 @@ func Test_legacyMetricConfigModel_fromAPI_toAPI_NoESQL(t *testing.T) {
 		"metric": {"operation": "count", "format": {"type": "number"}}
 	}`
 
-	var chart kbapi.LegacyMetricChartSchema
+	var chart kbapi.LegacyMetricChart
 	require.NoError(t, json.Unmarshal([]byte(apiJSON), &chart))
 
 	// Round-trip: API chart → model → API chart → model; then assert first model equals second model.
@@ -175,7 +175,7 @@ func Test_legacyMetricPanelConfigConverter_handlesAPIPanelConfig(t *testing.T) {
 	buildConfig := func(t *testing.T, configMap map[string]any) kbapi.DashboardPanelItem_Config {
 		t.Helper()
 		var cfg kbapi.DashboardPanelItem_Config
-		require.NoError(t, cfg.FromDashboardPanelItemConfig2(configMap))
+		require.NoError(t, cfg.FromDashboardPanelItemConfig8(configMap))
 		return cfg
 	}
 
@@ -271,7 +271,7 @@ func Test_legacyMetricPanelConfigConverter_roundTrip(t *testing.T) {
 	}
 	configMap := map[string]any{"attributes": attrs}
 	var apiConfig1 kbapi.DashboardPanelItem_Config
-	require.NoError(t, apiConfig1.FromDashboardPanelItemConfig2(configMap))
+	require.NoError(t, apiConfig1.FromDashboardPanelItemConfig8(configMap))
 
 	c := newLegacyMetricPanelConfigConverter()
 
@@ -299,7 +299,7 @@ func Test_legacyMetricConfigModel_fromAPI_roundTrip(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("NoESQL round-trip", func(t *testing.T) {
-		var chart kbapi.LegacyMetricChartSchema
+		var chart kbapi.LegacyMetricChart
 		require.NoError(t, json.Unmarshal([]byte(`{
 		"type": "legacy_metric",
 		"dataset": {"type": "dataView", "id": "x"},

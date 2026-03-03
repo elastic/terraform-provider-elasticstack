@@ -49,7 +49,7 @@ func (c xyChartPanelConfigConverter) handlesTFPanelConfig(pm panelModel) bool {
 
 func (c xyChartPanelConfigConverter) populateFromAPIPanel(ctx context.Context, pm *panelModel, config kbapi.DashboardPanelItem_Config) diag.Diagnostics {
 	// Try to extract the XY chart config from the panel config
-	cfgMap, err := config.AsDashboardPanelItemConfig2()
+	cfgMap, err := config.AsDashboardPanelItemConfig8()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -65,13 +65,13 @@ func (c xyChartPanelConfigConverter) populateFromAPIPanel(ctx context.Context, p
 		return nil
 	}
 
-	// Marshal and unmarshal to get the XyChartSchema
+	// Marshal and unmarshal to get the XyChart
 	attrsJSON, err := json.Marshal(attrsMap)
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	var xyChart kbapi.XyChartSchema
+	var xyChart kbapi.XyChart
 	if err := json.Unmarshal(attrsJSON, &xyChart); err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -93,29 +93,29 @@ func (c xyChartPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *kba
 	}
 
 	// Create the nested Config1 structure
-	var attrs0 kbapi.DashboardPanelItemConfig10Attributes0
-	if err := attrs0.FromXyChartSchema(xyChart); err != nil {
+	var attrs0 kbapi.DashboardPanelItemConfig70Attributes0
+	if err := attrs0.FromXyChart(xyChart); err != nil {
 		diags.AddError("Failed to create XY chart attributes", err.Error())
 		return diags
 	}
 
-	var configAttrs kbapi.DashboardPanelItem_Config_1_0_Attributes
-	if err := configAttrs.FromDashboardPanelItemConfig10Attributes0(attrs0); err != nil {
+	var configAttrs kbapi.DashboardPanelItem_Config_7_0_Attributes
+	if err := configAttrs.FromDashboardPanelItemConfig70Attributes0(attrs0); err != nil {
 		diags.AddError("Failed to create config attributes", err.Error())
 		return diags
 	}
 
-	config10 := kbapi.DashboardPanelItemConfig10{
+	config10 := kbapi.DashboardPanelItemConfig70{
 		Attributes: configAttrs,
 	}
 
-	var config1 kbapi.DashboardPanelItemConfig1
-	if err := config1.FromDashboardPanelItemConfig10(config10); err != nil {
+	var config1 kbapi.DashboardPanelItemConfig7
+	if err := config1.FromDashboardPanelItemConfig70(config10); err != nil {
 		diags.AddError("Failed to create config1", err.Error())
 		return diags
 	}
 
-	if err := apiConfig.FromDashboardPanelItemConfig1(config1); err != nil {
+	if err := apiConfig.FromDashboardPanelItemConfig7(config1); err != nil {
 		diags.AddError("Failed to marshal XY chart config", err.Error())
 	}
 
@@ -801,10 +801,10 @@ func (m *xyLegendModel) toAPI() (kbapi.XyLegend, diag.Diagnostics) {
 }
 
 // toAPI converts the XY chart config model to API schema
-func (m *xyChartConfigModel) toAPI() (kbapi.XyChartSchema, diag.Diagnostics) {
+func (m *xyChartConfigModel) toAPI() (kbapi.XyChart, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	xyChart := kbapi.XyChartSchema{
+	xyChart := kbapi.XyChart{
 		Type: kbapi.Xy,
 	}
 
@@ -835,7 +835,7 @@ func (m *xyChartConfigModel) toAPI() (kbapi.XyChartSchema, diag.Diagnostics) {
 
 	// Convert layers
 	if len(m.Layers) > 0 {
-		layers := make([]kbapi.XyChartSchema_Layers_Item, 0, len(m.Layers))
+		layers := make([]kbapi.XyChart_Layers_Item, 0, len(m.Layers))
 		for _, layer := range m.Layers {
 			apiLayer, layerDiags := layer.toAPI()
 			diags.Append(layerDiags...)
@@ -864,7 +864,7 @@ func (m *xyChartConfigModel) toAPI() (kbapi.XyChartSchema, diag.Diagnostics) {
 
 	// Convert filters
 	if len(m.Filters) > 0 {
-		filters := make([]kbapi.SearchFilterSchema, 0, len(m.Filters))
+		filters := make([]kbapi.SearchFilter, 0, len(m.Filters))
 		for _, f := range m.Filters {
 			filter, filterDiags := f.toAPI()
 			diags.Append(filterDiags...)
@@ -881,7 +881,7 @@ func (m *xyChartConfigModel) toAPI() (kbapi.XyChartSchema, diag.Diagnostics) {
 }
 
 // fromAPI populates the XY chart config model from API response
-func (m *xyChartConfigModel) fromAPI(ctx context.Context, apiChart kbapi.XyChartSchema) diag.Diagnostics {
+func (m *xyChartConfigModel) fromAPI(ctx context.Context, apiChart kbapi.XyChart) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	m.Title = types.StringPointerValue(apiChart.Title)

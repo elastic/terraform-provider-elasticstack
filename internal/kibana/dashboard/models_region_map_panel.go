@@ -47,7 +47,7 @@ func (c regionMapPanelConfigConverter) handlesTFPanelConfig(pm panelModel) bool 
 }
 
 func (c regionMapPanelConfigConverter) populateFromAPIPanel(ctx context.Context, pm *panelModel, config kbapi.DashboardPanelItem_Config) diag.Diagnostics {
-	cfgMap, err := config.AsDashboardPanelItemConfig2()
+	cfgMap, err := config.AsDashboardPanelItemConfig8()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -67,7 +67,7 @@ func (c regionMapPanelConfigConverter) populateFromAPIPanel(ctx context.Context,
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	var regionMap kbapi.RegionMapChartSchema
+	var regionMap kbapi.RegionMapChart
 	if err := json.Unmarshal(attrsJSON, &regionMap); err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -97,29 +97,29 @@ func (c regionMapPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *k
 		return diags
 	}
 
-	var attrs0 kbapi.DashboardPanelItemConfig10Attributes0
-	if err := attrs0.FromRegionMapChartSchema(regionMap); err != nil {
+	var attrs0 kbapi.DashboardPanelItemConfig70Attributes0
+	if err := attrs0.FromRegionMapChart(regionMap); err != nil {
 		diags.AddError("Failed to create region map attributes", err.Error())
 		return diags
 	}
 
-	var configAttrs kbapi.DashboardPanelItem_Config_1_0_Attributes
-	if err := configAttrs.FromDashboardPanelItemConfig10Attributes0(attrs0); err != nil {
+	var configAttrs kbapi.DashboardPanelItem_Config_7_0_Attributes
+	if err := configAttrs.FromDashboardPanelItemConfig70Attributes0(attrs0); err != nil {
 		diags.AddError("Failed to create config attributes", err.Error())
 		return diags
 	}
 
-	config10 := kbapi.DashboardPanelItemConfig10{
+	config10 := kbapi.DashboardPanelItemConfig70{
 		Attributes: configAttrs,
 	}
 
-	var config1 kbapi.DashboardPanelItemConfig1
-	if err := config1.FromDashboardPanelItemConfig10(config10); err != nil {
+	var config1 kbapi.DashboardPanelItemConfig7
+	if err := config1.FromDashboardPanelItemConfig70(config10); err != nil {
 		diags.AddError("Failed to create config1", err.Error())
 		return diags
 	}
 
-	if err := apiConfig.FromDashboardPanelItemConfig1(config1); err != nil {
+	if err := apiConfig.FromDashboardPanelItemConfig7(config1); err != nil {
 		diags.AddError("Failed to marshal region map config", err.Error())
 	}
 
@@ -239,11 +239,11 @@ func (m *regionMapConfigModel) fromAPIESQL(ctx context.Context, api kbapi.Region
 	return diags
 }
 
-func (m *regionMapConfigModel) toAPI() (kbapi.RegionMapChartSchema, diag.Diagnostics) {
+func (m *regionMapConfigModel) toAPI() (kbapi.RegionMapChart, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	if m == nil {
-		return kbapi.RegionMapChartSchema{}, diags
+		return kbapi.RegionMapChart{}, diags
 	}
 
 	if m.Query != nil && typeutils.IsKnown(m.Query.Query) {
@@ -260,7 +260,7 @@ func (m *regionMapConfigModel) toAPI() (kbapi.RegionMapChartSchema, diag.Diagnos
 		if typeutils.IsKnown(m.DatasetJSON) {
 			if err := json.Unmarshal([]byte(m.DatasetJSON.ValueString()), &api.Dataset); err != nil {
 				diags.AddError("Failed to unmarshal dataset", err.Error())
-				return kbapi.RegionMapChartSchema{}, diags
+				return kbapi.RegionMapChart{}, diags
 			}
 		}
 		if typeutils.IsKnown(m.IgnoreGlobalFilters) {
@@ -273,7 +273,7 @@ func (m *regionMapConfigModel) toAPI() (kbapi.RegionMapChartSchema, diag.Diagnos
 		api.Query = m.Query.toAPI()
 
 		if len(m.Filters) > 0 {
-			filters := make([]kbapi.SearchFilterSchema, len(m.Filters))
+			filters := make([]kbapi.SearchFilter, len(m.Filters))
 			for i, filterModel := range m.Filters {
 				filter, filterDiags := filterModel.toAPI()
 				diags.Append(filterDiags...)
@@ -285,17 +285,17 @@ func (m *regionMapConfigModel) toAPI() (kbapi.RegionMapChartSchema, diag.Diagnos
 		if typeutils.IsKnown(m.MetricJSON) {
 			if err := json.Unmarshal([]byte(m.MetricJSON.ValueString()), &api.Metric); err != nil {
 				diags.AddError("Failed to unmarshal metric", err.Error())
-				return kbapi.RegionMapChartSchema{}, diags
+				return kbapi.RegionMapChart{}, diags
 			}
 		}
 		if typeutils.IsKnown(m.RegionJSON) {
 			if err := json.Unmarshal([]byte(m.RegionJSON.ValueString()), &api.Region); err != nil {
 				diags.AddError("Failed to unmarshal region", err.Error())
-				return kbapi.RegionMapChartSchema{}, diags
+				return kbapi.RegionMapChart{}, diags
 			}
 		}
 
-		var schema kbapi.RegionMapChartSchema
+		var schema kbapi.RegionMapChart
 		if err := schema.FromRegionMapNoESQL(api); err != nil {
 			diags.AddError("Failed to create region map schema", err.Error())
 		}
@@ -315,7 +315,7 @@ func (m *regionMapConfigModel) toAPI() (kbapi.RegionMapChartSchema, diag.Diagnos
 	if typeutils.IsKnown(m.DatasetJSON) {
 		if err := json.Unmarshal([]byte(m.DatasetJSON.ValueString()), &api.Dataset); err != nil {
 			diags.AddError("Failed to unmarshal dataset", err.Error())
-			return kbapi.RegionMapChartSchema{}, diags
+			return kbapi.RegionMapChart{}, diags
 		}
 	}
 	if typeutils.IsKnown(m.IgnoreGlobalFilters) {
@@ -327,7 +327,7 @@ func (m *regionMapConfigModel) toAPI() (kbapi.RegionMapChartSchema, diag.Diagnos
 	}
 
 	if len(m.Filters) > 0 {
-		filters := make([]kbapi.SearchFilterSchema, len(m.Filters))
+		filters := make([]kbapi.SearchFilter, len(m.Filters))
 		for i, filterModel := range m.Filters {
 			filter, filterDiags := filterModel.toAPI()
 			diags.Append(filterDiags...)
@@ -339,17 +339,17 @@ func (m *regionMapConfigModel) toAPI() (kbapi.RegionMapChartSchema, diag.Diagnos
 	if typeutils.IsKnown(m.MetricJSON) {
 		if err := json.Unmarshal([]byte(m.MetricJSON.ValueString()), &api.Metric); err != nil {
 			diags.AddError("Failed to unmarshal metric", err.Error())
-			return kbapi.RegionMapChartSchema{}, diags
+			return kbapi.RegionMapChart{}, diags
 		}
 	}
 	if typeutils.IsKnown(m.RegionJSON) {
 		if err := json.Unmarshal([]byte(m.RegionJSON.ValueString()), &api.Region); err != nil {
 			diags.AddError("Failed to unmarshal region", err.Error())
-			return kbapi.RegionMapChartSchema{}, diags
+			return kbapi.RegionMapChart{}, diags
 		}
 	}
 
-	var schema kbapi.RegionMapChartSchema
+	var schema kbapi.RegionMapChart
 	if err := schema.FromRegionMapESQL(api); err != nil {
 		diags.AddError("Failed to create region map schema", err.Error())
 	}

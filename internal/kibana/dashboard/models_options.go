@@ -46,6 +46,9 @@ type optionsAPIModel = struct {
 	// AutoApplyFilters Auto apply control filters.
 	AutoApplyFilters *bool `json:"auto_apply_filters,omitempty"`
 
+	// HidePanelBorders Hide the panel borders in the dashboard.
+	HidePanelBorders *bool `json:"hide_panel_borders,omitempty"`
+
 	// HidePanelTitles Hide the panel titles in the dashboard.
 	HidePanelTitles *bool `json:"hide_panel_titles,omitempty"`
 

@@ -108,54 +108,6 @@ func TestAccResourceSecurityList_KeywordType(t *testing.T) {
 	})
 }
 
-func TestAccResourceSecurityList_SerializerDeserializer(t *testing.T) {
-	listID := "serializer-list-" + uuid.New().String()
-	spaceID := "test-space-" + uuid.New().String()[:8]
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
-		Steps: []resource.TestStep{
-			{ // Create with serializer and deserializer
-				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
-				ConfigVariables: config.Variables{
-					"space_id":     config.StringVariable(spaceID),
-					"list_id":      config.StringVariable(listID),
-					"name":         config.StringVariable("Custom Serializer List"),
-					"description":  config.StringVariable("A test list with custom serializer and deserializer"),
-					"type":         config.StringVariable("ip"),
-					"serializer":   config.StringVariable("{{ip}}"),
-					"deserializer": config.StringVariable("{{ip}}"),
-				},
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_list.test", "id"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_security_list.test", "name", "Custom Serializer List"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_security_list.test", "type", "ip"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_security_list.test", "serializer", "{{ip}}"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_security_list.test", "deserializer", "{{ip}}"),
-				),
-			},
-			{ // Update name and description (serializer/deserializer are immutable)
-				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
-				ConfigVariables: config.Variables{
-					"space_id":     config.StringVariable(spaceID),
-					"list_id":      config.StringVariable(listID),
-					"name":         config.StringVariable("Updated Serializer List"),
-					"description":  config.StringVariable("Updated test list description"),
-					"type":         config.StringVariable("ip"),
-					"serializer":   config.StringVariable("{{ip}}"),
-					"deserializer": config.StringVariable("{{ip}}"),
-				},
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_kibana_security_list.test", "name", "Updated Serializer List"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_security_list.test", "description", "Updated test list description"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_security_list.test", "serializer", "{{ip}}"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_security_list.test", "deserializer", "{{ip}}"),
-				),
-			},
-		},
-	})
-}
-
 func TestAccResourceSecurityList_WithMetadata(t *testing.T) {
 	listID := "meta-list-" + uuid.New().String()
 	spaceID := "test-space-" + uuid.New().String()[:8]
