@@ -18,7 +18,6 @@
 package outputds_test
 
 import (
-	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -29,66 +28,70 @@ import (
 
 var minVersionOutput = version.Must(version.NewVersion("8.6.0"))
 
-func TestAccDataSourceOutput(t *testing.T) {
+func TestAccDataSourceOutputDefault(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
-				Config:   testAccDataSourceOutput,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("data"),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("data.elasticstack_fleet_output.test", "name", "default"),
-					resource.TestCheckResourceAttrSet("data.elasticstack_fleet_output.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_fleet_output.test", "id", "outputs"),
+					resource.TestCheckResourceAttr("data.elasticstack_fleet_output.test", "outputs.#", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_fleet_output.test", "outputs.0.id", "fleet-default-output"),
+					resource.TestCheckResourceAttr("data.elasticstack_fleet_output.test", "outputs.0.name", "default"),
 				),
-			},
-			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
-				Config:   testAccDataSourceOutputSpace,
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("data.elasticstack_fleet_output.test", "name", "default"),
-					resource.TestCheckResourceAttrSet("data.elasticstack_fleet_output.test", "id"),
-				),
-			},
-			{
-				SkipFunc:    versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
-				Config:      testAccDataSourceOutputMissing,
-				ExpectError: regexp.MustCompile("Output not found"),
 			},
 		},
 	})
 }
 
-const testAccDataSourceOutput = `
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
+func TestAccDataSourceOutputCustomSpace(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_space.test", "name", "test"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test", "name", "test"),
+				),
+			},
+			{
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("data"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_space.test", "name", "test"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test", "name", "test"),
+					resource.TestCheckResourceAttr("data.elasticstack_fleet_output.test", "id", "outputs"),
+					resource.TestCheckResourceAttr("data.elasticstack_fleet_output.test", "outputs.#", "2"),
+					resource.TestCheckResourceAttr("data.elasticstack_fleet_output.test", "outputs.0.name", "default"),
+					resource.TestCheckResourceAttr("data.elasticstack_fleet_output.test", "outputs.1.name", "test"),
+				),
+			},
+		},
+	})
 }
 
-data "elasticstack_fleet_output" "test" {
-  name = "default"
+func TestAccDataSourceOutputMissingSpace(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("data"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_fleet_output.test", "id", "outputs"),
+					resource.TestCheckResourceAttr("data.elasticstack_fleet_output.test", "outputs.#", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_fleet_output.test", "outputs.0.id", "fleet-default-output"),
+					resource.TestCheckResourceAttr("data.elasticstack_fleet_output.test", "outputs.0.name", "default"),
+				),
+			},
+		},
+	})
 }
-`
-
-const testAccDataSourceOutputSpace = `
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-data "elasticstack_fleet_output" "test" {
-  name = "default"
-  space_id = "default"
-}
-`
-
-const testAccDataSourceOutputMissing = `
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-data "elasticstack_fleet_output" "test" {
-  name = "missing"
-}
-`

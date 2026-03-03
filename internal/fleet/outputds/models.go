@@ -29,9 +29,27 @@ import (
 )
 
 type outputModel struct {
-	Name                 types.String `tfsdk:"name"`
-	SpaceID              types.String `tfsdk:"space_id"`
+	ID      types.String `tfsdk:"id"`
+	SpaceID types.String `tfsdk:"space_id"`
+	Outputs types.List   `tfsdk:"outputs"`
+}
+
+func (model *outputModel) populateFromApi(ctx context.Context, unions []kbapi.OutputUnion) (diags diag.Diagnostics) {
+	model.ID = types.StringValue("outputs")
+	model.Outputs = typeutils.SliceToListType(ctx, unions, getOutputItemElemType(), path.Root("outputs"), &diags,
+		func(union kbapi.OutputUnion, meta typeutils.ListMeta) outputItemModel {
+			model := outputItemModel{}
+			diags := model.populateFromAPI(ctx, &union)
+			meta.Diags.Append(diags...)
+			return model
+		})
+
+	return
+}
+
+type outputItemModel struct {
 	ID                   types.String `tfsdk:"id"`
+	Name                 types.String `tfsdk:"name"`
 	Type                 types.String `tfsdk:"type"`
 	Hosts                types.List   `tfsdk:"hosts"` // string
 	CaSha256             types.String `tfsdk:"ca_sha256"`
@@ -41,7 +59,7 @@ type outputModel struct {
 	ConfigYaml           types.String `tfsdk:"config_yaml"`
 }
 
-func (model *outputModel) populateFromAPI(ctx context.Context, union *kbapi.OutputUnion) (diags diag.Diagnostics) {
+func (model *outputItemModel) populateFromAPI(ctx context.Context, union *kbapi.OutputUnion) (diags diag.Diagnostics) {
 	if union == nil {
 		return
 	}
@@ -55,16 +73,12 @@ func (model *outputModel) populateFromAPI(ctx context.Context, union *kbapi.Outp
 	switch output := output.(type) {
 	case kbapi.OutputElasticsearch:
 		diags.Append(model.fromAPIElasticsearchModel(ctx, &output)...)
-
 	case kbapi.OutputLogstash:
 		diags.Append(model.fromAPILogstashModel(ctx, &output)...)
-
 	case kbapi.OutputKafka:
 		diags.Append(model.fromAPIKafkaModel(ctx, &output)...)
-
 	case kbapi.OutputRemoteElasticsearch:
 		diags.Append(model.fromAPIRemoteElasticsearchModel(ctx, &output)...)
-
 	default:
 		diags.AddError(fmt.Sprintf("unhandled output type: %T", output), "")
 	}
@@ -72,7 +86,7 @@ func (model *outputModel) populateFromAPI(ctx context.Context, union *kbapi.Outp
 	return
 }
 
-func (model *outputModel) fromAPIElasticsearchModel(ctx context.Context, data *kbapi.OutputElasticsearch) (diags diag.Diagnostics) {
+func (model *outputItemModel) fromAPIElasticsearchModel(ctx context.Context, data *kbapi.OutputElasticsearch) (diags diag.Diagnostics) {
 	model.ID = types.StringPointerValue(data.Id)
 	model.Name = types.StringValue(data.Name)
 	model.Type = types.StringValue(string(data.Type))
@@ -85,7 +99,7 @@ func (model *outputModel) fromAPIElasticsearchModel(ctx context.Context, data *k
 	return
 }
 
-func (model *outputModel) fromAPIKafkaModel(ctx context.Context, data *kbapi.OutputKafka) (diags diag.Diagnostics) {
+func (model *outputItemModel) fromAPIKafkaModel(ctx context.Context, data *kbapi.OutputKafka) (diags diag.Diagnostics) {
 	model.ID = types.StringPointerValue(data.Id)
 	model.Name = types.StringValue(data.Name)
 	model.Type = types.StringValue(string(data.Type))
@@ -98,7 +112,7 @@ func (model *outputModel) fromAPIKafkaModel(ctx context.Context, data *kbapi.Out
 	return
 }
 
-func (model *outputModel) fromAPILogstashModel(ctx context.Context, data *kbapi.OutputLogstash) (diags diag.Diagnostics) {
+func (model *outputItemModel) fromAPILogstashModel(ctx context.Context, data *kbapi.OutputLogstash) (diags diag.Diagnostics) {
 	model.ID = types.StringPointerValue(data.Id)
 	model.Name = types.StringValue(data.Name)
 	model.Type = types.StringValue(string(data.Type))
@@ -111,7 +125,7 @@ func (model *outputModel) fromAPILogstashModel(ctx context.Context, data *kbapi.
 	return
 }
 
-func (model *outputModel) fromAPIRemoteElasticsearchModel(ctx context.Context, data *kbapi.OutputRemoteElasticsearch) (diags diag.Diagnostics) {
+func (model *outputItemModel) fromAPIRemoteElasticsearchModel(ctx context.Context, data *kbapi.OutputRemoteElasticsearch) (diags diag.Diagnostics) {
 	model.ID = types.StringPointerValue(data.Id)
 	model.Name = types.StringValue(data.Name)
 	model.Type = types.StringValue(string(data.Type))
