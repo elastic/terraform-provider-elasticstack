@@ -23,6 +23,8 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-plugin-testing/config"
+	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -48,6 +50,8 @@ func TestAccDataSourceOutputDefault(t *testing.T) {
 }
 
 func TestAccDataSourceOutputCustomSpace(t *testing.T) {
+	spaceName := "test-" + sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
@@ -55,8 +59,11 @@ func TestAccDataSourceOutputCustomSpace(t *testing.T) {
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"space_name": config.StringVariable(spaceName),
+				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_kibana_space.test", "name", "test"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_space.test", "name", spaceName),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test", "name", "test"),
 				),
 			},
@@ -64,8 +71,11 @@ func TestAccDataSourceOutputCustomSpace(t *testing.T) {
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("data"),
+				ConfigVariables: config.Variables{
+					"space_name": config.StringVariable(spaceName),
+				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_kibana_space.test", "name", "test"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_space.test", "name", spaceName),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test", "name", "test"),
 					resource.TestCheckResourceAttr("data.elasticstack_fleet_output.test", "id", "outputs"),
 					resource.TestCheckResourceAttr("data.elasticstack_fleet_output.test", "outputs.#", "2"),

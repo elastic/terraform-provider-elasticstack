@@ -8,6 +8,7 @@ BINARY = terraform-provider-${NAME}
 MARCH = "$$(go env GOOS)_$$(go env GOARCH)"
 
 ACCTEST_PARALLELISM ?= 10
+ACCTEST_PACKAGE_PARALLELISM ?= 4
 ACCTEST_TIMEOUT = 120m
 ACCTEST_COUNT = 1
 TEST ?= ./...
@@ -34,7 +35,7 @@ ifneq (,$(filter 7.17.% 8.0.% 8.1.%,$(STACK_VERSION)))
 FLEET_IMAGE := elastic/elastic-agent
 endif
 
-RERUN_FAILS ?= 3
+RERUN_FAILS ?= 5
 
 export GOBIN = $(shell pwd)/bin
 
@@ -61,7 +62,7 @@ testacc-vs-docker:
 
 .PHONY: testacc
 testacc: ## Run acceptance tests
-	TF_ACC=1 go tool gotestsum --format testname --rerun-fails=$(RERUN_FAILS) --packages="-v ./..." -- -count $(ACCTEST_COUNT) -parallel $(ACCTEST_PARALLELISM) $(TESTARGS) -timeout $(ACCTEST_TIMEOUT)
+	TF_ACC=1 go tool gotestsum --format testname --rerun-fails=$(RERUN_FAILS) --packages="-v ./..." -- -count $(ACCTEST_COUNT) -p $(ACCTEST_PACKAGE_PARALLELISM) -parallel $(ACCTEST_PARALLELISM) $(TESTARGS) -timeout $(ACCTEST_TIMEOUT)
 
 .PHONY: test
 test: ## Run unit tests

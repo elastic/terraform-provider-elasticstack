@@ -4,7 +4,7 @@ provider "elasticstack" {
 }
 
 resource "elasticstack_kibana_space" "test" {
-  name     = "test"
+  name     = var.space_name
   space_id = "test"
 }
 
