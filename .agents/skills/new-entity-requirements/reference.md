@@ -36,7 +36,7 @@
 
 ### Elastic docs MCP server (preferred)
 
-When the **Elastic docs MCP server** is configured in Cursor, use it as the primary source for Elastic documentation:
+When the **Elastic docs MCP server** is configured, use it as the primary source for Elastic documentation:
 
 - **Before fetching docs**: Check whether an MCP server exposes Elastic-docs tools (e.g. search, fetch by URL or topic). Use `call_mcp_tool` with that server and the appropriate tool to retrieve doc content.
 - **When to use**: For any Elasticsearch, Kibana, or Fleet API documentation needed in step “Examine Elastic API docs”. Prefer MCP over web fetch when the server returns relevant, up-to-date content.
