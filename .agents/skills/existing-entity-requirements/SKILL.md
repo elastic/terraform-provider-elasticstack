@@ -1,11 +1,11 @@
 ---
 name: entity-requirements
-description: Examines an existing Terraform resource or data source implementation and produces a comprehensive requirements document following dev-docs/reqs/template.md. Use when the user asks to document requirements for a Terraform entity, capture behavior from code, or write a requirements doc for a resource/data source.
+description: Examines an existing Terraform resource or data source implementation and produces a comprehensive requirements document following dev-docs/requirements/template.md. Use when the user asks to document requirements for a Terraform entity, capture behavior from code, or write a requirements doc for a resource/data source.
 ---
 
 # Entity Requirements Documentation
 
-Produce a **requirements document** for an existing Terraform resource or data source by examining its code path and capturing behavior. Output follows the repo template at `dev-docs/reqs/template.md`.
+Produce a **requirements document** for an existing Terraform resource or data source by examining its code path and capturing behavior. Output follows the repo template at `dev-docs/requirements/template.md`.
 
 ## Input
 
@@ -29,9 +29,9 @@ Produce a **requirements document** for an existing Terraform resource or data s
    - Lifecycle: replacement vs in-place update (e.g. `RequiresReplace`).
 
 3. **Write the document**
-   - **Path**: `dev-docs/reqs/<domain>/<name>.md` (e.g. `dev-docs/reqs/elasticsearch/security/role.md`). Match existing layout under `dev-docs/reqs/`.
+   - **Path**: `dev-docs/requirements/<domain>/<name>.md` (e.g. `dev-docs/requirements/elasticsearch/security/role.md`). Match existing layout under `dev-docs/requirements/`.
    - **Title and implementation**: First line and “Resource implementation” (or “Data source implementation”) per template.
-   - **Schema**: HCL-style block listing each attribute/block with `<required|optional|optional+computed|computed>`, types, and short notes (e.g. version requirements, deprecated blocks). Follow the example in the template and in `dev-docs/reqs/elasticsearch/security/role.md`.
+   - **Schema**: HCL-style block listing each attribute/block with `<required|optional|optional+computed|computed>`, types, and short notes (e.g. version requirements, deprecated blocks). Follow the example in the template and in `dev-docs/requirements/elasticsearch/security/role.md`.
    - **Requirements**: Numbered list `**[REQ-NNN] (Category)**: The resource/data source shall ...**`. Derive every requirement from the code; do not invent behavior. Use categories such as API, Identity, Import, Lifecycle, Connection, Compatibility, Create/Update, Read, Delete, Mapping, Plan/State, State, StateUpgrade. See [reference.md](reference.md) for categories and examples.
 
 4. **Quality**
@@ -41,7 +41,7 @@ Produce a **requirements document** for an existing Terraform resource or data s
 
 ## Output format
 
-Use the structure from `dev-docs/reqs/template.md`:
+Use the structure from `dev-docs/requirements/template.md`:
 
 ```markdown
 # `<RESOURCE_OR_DATA_SOURCE_NAME>` — Schema and Functional Requirements
@@ -65,6 +65,6 @@ resource "<PROVIDER_TYPE>" "example" {
 
 ## Reference
 
-- Template: `dev-docs/reqs/template.md`
-- Example: `dev-docs/reqs/elasticsearch/security/role.md`
+- Template: `dev-docs/requirements/template.md`
+- Example: `dev-docs/requirements/elasticsearch/security/role.md`
 - Full code-path checklist and requirement categories: [reference.md](reference.md)

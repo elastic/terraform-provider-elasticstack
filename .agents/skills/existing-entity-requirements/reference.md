@@ -11,7 +11,10 @@ Use this checklist when examining a Terraform resource or data source so the req
 | Resource      | `internal/<domain>/<name>/` (e.g. `internal/elasticsearch/security/role/`) with `resource.go`, `schema.go`, `create.go`, `read.go`, `update.go`, `delete.go`. Some resources use a single `resource.go` or split schema in a `schema/` package. |
 | Data source   | `internal/<domain>/<name>/` or `internal/<domain>/<name>_data_source.go` (SDK v2) or a `*_data_source.go` file in the same package as the resource. Framework data sources: `DataSource` with `Metadata`, `Schema`, `Read`. |
 
-**Type name**: In `Metadata()`: `resp.TypeName = req.ProviderTypeName + "_..."`. Use this for the document title and HCL `resource "/ data "` type.
+**Entity name**: 
+* For Plugin Framework based entities, this is defined in `Metadata()`: `resp.TypeName = req.ProviderTypeName + "_..."`. 
+* For SDK based entities, this is defined in `internal/provider/provider.go`.
+* Use this for the document title and HCL `resource "/ data "` type.
 
 **Implementation path**: The Go package or directory (e.g. `internal/elasticsearch/security/role`) for the “Resource implementation” / “Data source implementation” line.
 
@@ -151,6 +154,6 @@ Example phrases:
 
 ## File layout for requirements docs
 
-- Path: `dev-docs/reqs/<domain>/<name>.md`.
-- Match existing layout: e.g. `dev-docs/reqs/elasticsearch/security/role.md`, `dev-docs/reqs/kibana/slo/slo.md`.
+- Path: `dev-docs/requirements/<domain>/<name>.md`.
+- Match existing layout: e.g. `dev-docs/requirements/elasticsearch/security/role.md`, `dev-docs/requirements/kibana/slo/slo.md`.
 - One document per Terraform resource or data source (not per Go package if one package serves multiple entities).

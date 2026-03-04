@@ -5,7 +5,7 @@ description: Analyzes a Terraform entity requirements document for internal cons
 
 # Requirements Document Analysis
 
-Analyze a requirements document (from `dev-docs/reqs/`) and produce three outputs:
+Analyze a requirements document (from `dev-docs/requirements/`) and produce three outputs:
 
 1. **Internal consistency** — whether requirements contradict each other or the schema.
 2. **Implementation compliance** — whether the implementation meets each requirement.
@@ -13,7 +13,7 @@ Analyze a requirements document (from `dev-docs/reqs/`) and produce three output
 
 ## Input
 
-- **Requirements document**: User specifies the path (e.g. `dev-docs/reqs/elasticsearch/security/role.md`) or the entity name/implementation path. Resolve to the single `.md` file under `dev-docs/reqs/`.
+- **Requirements document**: User specifies the path (e.g. `dev-docs/requirements/elasticsearch/security/role.md`) or the entity name/implementation path. Resolve to the single `.md` file under `dev-docs/requirements/`.
 - **Implementation**: From the doc’s “Resource implementation” or “Data source implementation” line (e.g. `internal/elasticsearch/security/role`). Use that package for compliance and test analysis.
 
 ## Workflow

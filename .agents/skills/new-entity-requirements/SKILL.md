@@ -31,7 +31,7 @@ Identify: **create/update** (PUT/POST), **read** (GET), **delete** (DELETE), req
 
 ### 3. Draft initial requirements document
 
-- **Path**: `dev-docs/reqs/<domain>/<name>.md` (e.g. `dev-docs/reqs/elasticsearch/security/api_key.md`). Follow `dev-docs/reqs/template.md`.
+- **Path**: `dev-docs/requirements/<domain>/<name>.md` (e.g. `dev-docs/requirements/elasticsearch/security/api_key.md`). Follow `dev-docs/requirements/template.md`.
 - **Schema**: From API request/response and docs, draft an HCL-style schema: required/optional/computed attributes and blocks, types, and notes (e.g. “requires Elasticsearch ≥ 8.x”). Mark unknowns as “TBD” or “(to confirm)”.
 - **Requirements**: Draft **API** (which endpoints for create/update/read/delete, link to docs), **Identity** (how `id` is formed), **Import** (if resource; id format), **Connection** (provider client; resource-level override if applicable), **Compatibility** (version gates from docs/client). Add **Create/Update**, **Read**, **Delete**, **Mapping**, **State** only where clearly implied by the API; otherwise leave as open questions.
 
@@ -49,11 +49,11 @@ Identify: **create/update** (PUT/POST), **read** (GET), **delete** (DELETE), req
 
 ## Output
 
-- **Deliverable**: One requirements document at `dev-docs/reqs/<domain>/<name>.md` with Schema and Requirements sections, consistent with the template and with TBD/Open points only where the user deferred.
+- **Deliverable**: One requirements document at `dev-docs/requirements/<domain>/<name>.md` with Schema and Requirements sections, consistent with the template and with TBD/Open points only where the user deferred.
 - **Traceability**: Requirements tied to API docs (links) or user decisions; no invented behavior.
 
 ## Reference
 
-- Template: `dev-docs/reqs/template.md`
-- Example (existing entity): `dev-docs/reqs/elasticsearch/security/role.md`
+- Template: `dev-docs/requirements/template.md`
+- Example (existing entity): `dev-docs/requirements/elasticsearch/security/role.md`
 - API client locations, doc URLs, interview question bank: [reference.md](reference.md)
