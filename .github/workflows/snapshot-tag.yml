@@ -5,6 +5,10 @@ on:
     - cron: "15 2 * * *" # daily at 02:15 UTC
   workflow_dispatch: {}
 
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
 permissions:
   contents: write
 
