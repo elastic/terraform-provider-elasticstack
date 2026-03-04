@@ -462,6 +462,49 @@ func InstallPackage(ctx context.Context, client *Client, name, version string, o
 	}
 }
 
+// InstallKibanaAssets installs Kibana assets for a package into the current (space-aware) context.
+func InstallKibanaAssets(ctx context.Context, client *Client, name, version string, spaceID string, force bool) diag.Diagnostics {
+	body := kbapi.PostFleetEpmPackagesPkgnamePkgversionKibanaAssetsJSONRequestBody{
+		Force: &force,
+	}
+
+	resp, err := client.API.PostFleetEpmPackagesPkgnamePkgversionKibanaAssetsWithResponse(ctx, name, version, body, spaceAwarePathRequestEditor(spaceID))
+	if err != nil {
+		return diagutil.FrameworkDiagFromError(err)
+	}
+
+	switch resp.StatusCode() {
+	case http.StatusOK:
+		return nil
+	default:
+		return reportUnknownError(resp.StatusCode(), resp.Body)
+	}
+}
+
+// InstallKibanaAssetsInSpaces installs Kibana assets for a package into the specified spaces.
+// The request is executed using the provided space-aware path context, but assets can be installed
+// into other spaces by setting the SpaceIds body parameter.
+func InstallKibanaAssetsInSpaces(ctx context.Context, client *Client, name, version string, spaceID string, targetSpaceIDs []string, force bool) diag.Diagnostics {
+	body := kbapi.PostFleetEpmPackagesPkgnamePkgversionKibanaAssetsJSONRequestBody{
+		Force: &force,
+	}
+	if targetSpaceIDs != nil {
+		body.SpaceIds = &targetSpaceIDs
+	}
+
+	resp, err := client.API.PostFleetEpmPackagesPkgnamePkgversionKibanaAssetsWithResponse(ctx, name, version, body, spaceAwarePathRequestEditor(spaceID))
+	if err != nil {
+		return diagutil.FrameworkDiagFromError(err)
+	}
+
+	switch resp.StatusCode() {
+	case http.StatusOK:
+		return nil
+	default:
+		return reportUnknownError(resp.StatusCode(), resp.Body)
+	}
+}
+
 // Uninstall uninstalls a package.
 func Uninstall(ctx context.Context, client *Client, name, version string, spaceID string, _ bool) diag.Diagnostics {
 	resp, err := client.API.DeleteFleetEpmPackagesPkgnamePkgversionWithResponse(ctx, name, version, nil, spaceAwarePathRequestEditor(spaceID))

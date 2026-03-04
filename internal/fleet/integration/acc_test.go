@@ -81,6 +81,7 @@ func TestAccResourceIntegration(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "name", "tcp"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "version", "1.16.0"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "space_id", "default"),
 				),
 			},
 			{
@@ -90,6 +91,190 @@ func TestAccResourceIntegration(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: true,
 				ExpectError:       regexp.MustCompile("Resource Import Not Implemented"),
+			},
+		},
+	})
+}
+
+func TestAccResourceIntegrationSpaceIDRequiresReplace(t *testing.T) {
+	spaceID1 := "aa_test_space_" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	spaceID2 := "aa_test_space_" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
+				Config:   testAccResourceIntegrationInSpace(spaceID1),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_space", "name", "tcp"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_space", "version", "1.16.0"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_space", "space_id", spaceID1),
+				),
+			},
+			{
+				SkipFunc:           versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
+				Config:             testAccResourceIntegrationInSpace(spaceID2),
+				ResourceName:       "elasticstack_fleet_integration.test_integration_space",
+				ExpectNonEmptyPlan: true,
+				PlanOnly:           true,
+			},
+		},
+	})
+}
+
+func TestAccResourceIntegrationSpaceDriftRemovesState(t *testing.T) {
+	spaceID := "aa_test_space_" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
+				Config:   testAccResourceIntegrationInSpace(spaceID),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_space", "space_id", spaceID),
+				),
+			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
+				Config:   testAccResourceIntegrationInSpace(spaceID),
+				PreConfig: func() {
+					notSupported, err := versionutils.CheckIfVersionIsUnsupported(minVersionIntegration)()
+					require.NoError(t, err)
+					if notSupported {
+						return
+					}
+
+					client, err := clients.NewAcceptanceTestingClient()
+					require.NoError(t, err)
+
+					fleetClient, err := client.GetFleetClient()
+					require.NoError(t, err)
+
+					// Remove the package from the configured space and install it in the default space instead.
+					diags := fleet.Uninstall(t.Context(), fleetClient, "tcp", "1.16.0", spaceID, true)
+					require.Empty(t, diags)
+
+					diags = fleet.InstallPackage(t.Context(), fleetClient, "tcp", "1.16.0", fleet.InstallPackageOptions{
+						Force: true,
+					})
+					require.Empty(t, diags)
+
+					diags = fleet.InstallKibanaAssets(t.Context(), fleetClient, "tcp", "1.16.0", "", true)
+					require.Empty(t, diags)
+				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+		},
+	})
+}
+
+func TestAccResourceIntegrationNameRequiresReplace(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
+				Config:   testAccResourceIntegration,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "name", "tcp"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "version", "1.16.0"),
+				),
+			},
+			{
+				SkipFunc:           versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
+				Config:             testAccResourceIntegrationWithName("system"),
+				ResourceName:       "elasticstack_fleet_integration.test_integration",
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+		},
+	})
+}
+
+func TestAccResourceIntegrationIgnoreMappingUpdateErrors_UnsupportedBefore8_11(t *testing.T) {
+	constraints, err := version.NewConstraint(">= 8.6.0, < 8.11.0")
+	require.NoError(t, err)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc:    versionutils.CheckIfVersionMeetsConstraints(constraints),
+				Config:      testAccResourceIntegrationWithIgnoreMappingUpdateErrors,
+				ExpectError: regexp.MustCompile("Unsupported parameter for server version"),
+			},
+		},
+	})
+}
+
+func TestAccResourceIntegrationSkipDataStreamRollover_UnsupportedBefore8_11(t *testing.T) {
+	constraints, err := version.NewConstraint(">= 8.6.0, < 8.11.0")
+	require.NoError(t, err)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc:    versionutils.CheckIfVersionMeetsConstraints(constraints),
+				Config:      testAccResourceIntegrationWithSkipDataStreamRollover,
+				ExpectError: regexp.MustCompile("Unsupported parameter for server version"),
+			},
+		},
+	})
+}
+
+func TestAccResourceIntegrationAdditionalSpacesInstalledKeepsState(t *testing.T) {
+	spaceID := "aa_test_space_" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
+				Config:   testAccResourceIntegrationInSpace(spaceID),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_space", "space_id", spaceID),
+				),
+			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
+				Config:   testAccResourceIntegrationInSpace(spaceID),
+				PreConfig: func() {
+					notSupported, err := versionutils.CheckIfVersionIsUnsupported(minVersionIntegration)()
+					require.NoError(t, err)
+					if notSupported {
+						return
+					}
+
+					client, err := clients.NewAcceptanceTestingClient()
+					require.NoError(t, err)
+
+					fleetClient, err := client.GetFleetClient()
+					require.NoError(t, err)
+
+					// Move the package installation back to the default space, but install Kibana assets into the configured space.
+					diags := fleet.Uninstall(t.Context(), fleetClient, "tcp", "1.16.0", spaceID, true)
+					require.Empty(t, diags)
+
+					diags = fleet.InstallPackage(t.Context(), fleetClient, "tcp", "1.16.0", fleet.InstallPackageOptions{
+						Force: true,
+					})
+					require.Empty(t, diags)
+
+					diags = fleet.InstallKibanaAssetsInSpaces(t.Context(), fleetClient, "tcp", "1.16.0", "", []string{spaceID}, true)
+					require.Empty(t, diags)
+				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
 			},
 		},
 	})
@@ -247,6 +432,74 @@ resource "elasticstack_fleet_integration" "test_integration" {
   version      = "1.16.0"
   force        = true
   skip_destroy = true
+}
+`
+
+func testAccResourceIntegrationInSpace(spaceID string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_kibana_space" "test" {
+  space_id = "%s"
+  name     = "Test Space"
+}
+
+resource "elasticstack_fleet_integration" "test_integration_space" {
+  name         = "tcp"
+  version      = "1.16.0"
+  space_id     = elasticstack_kibana_space.test.space_id
+  force        = true
+  skip_destroy = true
+}
+`, spaceID)
+}
+
+func testAccResourceIntegrationWithName(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_fleet_integration" "test_integration" {
+  name         = "%s"
+  version      = "1.16.0"
+  force        = true
+  skip_destroy = true
+}
+`, name)
+}
+
+const testAccResourceIntegrationWithIgnoreMappingUpdateErrors = `
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_fleet_integration" "test_integration_unsupported_param" {
+  name                         = "tcp"
+  version                      = "1.16.0"
+  force                        = true
+  ignore_mapping_update_errors = true
+  skip_destroy                 = true
+}
+`
+
+const testAccResourceIntegrationWithSkipDataStreamRollover = `
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_fleet_integration" "test_integration_unsupported_param" {
+  name                      = "tcp"
+  version                   = "1.16.0"
+  force                     = true
+  skip_data_stream_rollover = true
+  skip_destroy              = true
 }
 `
 

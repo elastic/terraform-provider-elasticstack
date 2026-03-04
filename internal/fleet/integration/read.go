@@ -20,10 +20,34 @@ package integration
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
+
+func installedInSpace(pkg *kbapi.PackageInfo, desiredSpaceID string) bool {
+	if pkg == nil || pkg.Status == nil || *pkg.Status != "installed" {
+		return false
+	}
+
+	if pkg.InstallationInfo == nil {
+		return false
+	}
+
+	if pkg.InstallationInfo.InstalledKibanaSpaceId != nil && *pkg.InstallationInfo.InstalledKibanaSpaceId == desiredSpaceID {
+		return true
+	}
+
+	if pkg.InstallationInfo.AdditionalSpacesInstalledKibana != nil {
+		if _, ok := (*pkg.InstallationInfo.AdditionalSpacesInstalledKibana)[desiredSpaceID]; ok {
+			return true
+		}
+	}
+
+	return false
+}
 
 func (r *integrationResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var stateModel integrationModel
@@ -47,7 +71,17 @@ func (r *integrationResource) Read(ctx context.Context, req resource.ReadRequest
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	if pkg == nil || (pkg.Status != nil && *pkg.Status != "installed") {
+	if pkg == nil {
+		resp.State.RemoveResource(ctx)
+		return
+	}
+
+	desiredSpaceID := "default"
+	if typeutils.IsKnown(stateModel.SpaceID) {
+		desiredSpaceID = stateModel.SpaceID.ValueString()
+	}
+
+	if !installedInSpace(pkg, desiredSpaceID) {
 		resp.State.RemoveResource(ctx)
 		return
 	}
