@@ -10,7 +10,9 @@ Produce a **requirements document** for an existing Terraform resource or data s
 ## Input
 
 - **Entity**: User specifies the Terraform entity (e.g. `elasticstack_elasticsearch_security_role`) or the implementation path (e.g. `internal/elasticsearch/security/role`).
-- Resolve the implementation package: search for `req.ProviderTypeName + "_"` or `TypeName` in `internal/` to find the package that registers that type name, or use the given directory.
+- Resolve the implementation package: 
+* For Plugin Framework based entities, search for `req.ProviderTypeName + "_..."`. 
+* For SDK based entities, this is defined in `internal/provider/provider.go`. 
 
 ## Workflow
 

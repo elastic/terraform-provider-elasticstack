@@ -1,5 +1,5 @@
 ---
-name: requirements-analysis
+name: requirements-verification
 description: Analyzes a Terraform entity requirements document for internal consistency, implementation compliance, and test opportunities. Outputs consistency findings, a requirement-by-requirement implementation check, and suggested unit/acceptance tests. Use when reviewing requirements docs, verifying implementation against requirements, or identifying test gaps.
 ---
 
