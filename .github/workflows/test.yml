@@ -1,6 +1,8 @@
 name: Build/Lint/Test
 on:
   push:
+    branches:
+      - '**'
     tags-ignore:
       - 'v*'
     paths-ignore:
