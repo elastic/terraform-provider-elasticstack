@@ -3,5 +3,4 @@ provider "elasticstack" {
   kibana {}
 }
 
-data "elasticstack_fleet_output" "test" {
-}
+data "elasticstack_fleet_output" "test" {}

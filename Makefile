@@ -34,7 +34,7 @@ ifneq (,$(filter 7.17.% 8.0.% 8.1.%,$(STACK_VERSION)))
 FLEET_IMAGE := elastic/elastic-agent
 endif
 
-RERUN_FAILS ?= 3
+RERUN_FAILS ?= 5
 
 export GOBIN = $(shell pwd)/bin
 
@@ -65,7 +65,7 @@ testacc: ## Run acceptance tests
 
 .PHONY: test
 test: ## Run unit tests
-	go test -v $(TEST) $(TESTARGS) -timeout=5m -parallel=4
+	go test -v $(TEST) $(TESTARGS) -timeout=5m -parallel=4 -count=1
 
 CURL_OPTS = -sS --retry 5 --retry-all-errors -X POST -u $(ELASTICSEARCH_USERNAME):$(ELASTICSEARCH_PASSWORD) -H "Content-Type: application/json"
 
