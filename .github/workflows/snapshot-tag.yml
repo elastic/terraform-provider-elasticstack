@@ -29,7 +29,8 @@ jobs:
           set -euo pipefail
 
           DATE="$(date -u +%Y%m%d)"
-          TAG="v0.0.0-${DATE}"
+          SHA="$(git rev-parse --short=7 HEAD)"
+          TAG="v0.0.0-${DATE}-${SHA}"
 
           if [[ -n "$(git ls-remote --tags origin "refs/tags/${TAG}")" ]]; then
             echo "Tag already exists: ${TAG}. Skipping."

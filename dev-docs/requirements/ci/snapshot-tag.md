@@ -19,7 +19,7 @@ permissions:
 - **[REQ-001] (Trigger)**: The workflow shall run on a daily `schedule` trigger (UTC).
 - **[REQ-002] (Trigger)**: The workflow shall support manual runs via `workflow_dispatch`.
 - **[REQ-003] (Source)**: The workflow shall create snapshot tags from the current `main` branch HEAD.
-- **[REQ-004] (TagName)**: The workflow shall compute the tag name as `v0.0.0-YYYYMMDD` using the current date in UTC.
+- **[REQ-004] (TagName)**: The workflow shall compute the tag name as `v0.0.0-YYYYMMDD-<git short sha>` using the current date in UTC.
 - **[REQ-005] (Idempotency)**: If the computed tag already exists in the remote repository, the workflow shall succeed without modifying any refs (no-op).
 - **[REQ-006] (Concurrency)**: The workflow shall define GitHub Actions `concurrency` controls such that only one snapshot-tag run can execute at a time.
 - **[REQ-007] (Safety)**: The workflow shall not force-update or move an existing tag.
