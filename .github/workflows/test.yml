@@ -91,7 +91,9 @@ jobs:
           # LOGGING_ROOT_LEVEL: debug
         ports:
           - 5601:5601
-        options: --health-cmd="curl http://localhost:5601/api/status" --health-interval=10s --health-timeout=5s --health-retries=10
+        options: >-
+          --health-cmd="curl http://localhost:5601/api/status" --health-interval=10s --health-timeout=5s --health-retries=10
+          ${{ matrix.version == '9.4.0-SNAPSHOT' && format('-v {0}/kibana.yml:/usr/share/kibana/config/kibana.yml', github.workspace) || '' }}
       fleet:    
         image: ${{ matrix.fleetImage || 'docker.elastic.co/elastic-agent/elastic-agent' }}:${{ matrix.version }}
         env:
