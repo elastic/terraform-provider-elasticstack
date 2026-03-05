@@ -101,7 +101,7 @@ Issue content must include:
 - Prioritized top 5 gaps (or fewer if less exist).
 - Concrete acceptance-test additions that would close those gaps.
 
-For each issue created, you MUST call `assign_to_agent` with:
+For each issue created, you MUST call `assign-to-agent` with:
 - `name: copilot`
 - `custom_agent: acceptance-test-improver`
 - the created issue number
