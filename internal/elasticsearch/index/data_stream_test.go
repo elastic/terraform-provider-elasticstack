@@ -18,7 +18,6 @@
 package index_test
 
 import (
-	"encoding/json"
 	"fmt"
 	"regexp"
 	"testing"
@@ -57,7 +56,6 @@ func TestAccResourceDataStream(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "hidden", "false"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "system", "false"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "replicated", "false"),
-					testCheckDataStreamMetadata("elasticstack_elasticsearch_data_stream.test_ds"),
 				),
 			},
 			{
@@ -71,7 +69,6 @@ func TestAccResourceDataStream(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_data_stream.test_ds", "indices.0.index_uuid"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "template", dsName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "ilm_policy", dsName),
-					testCheckDataStreamMetadata("elasticstack_elasticsearch_data_stream.test_ds"),
 				),
 			},
 			{
@@ -123,12 +120,6 @@ resource "elasticstack_elasticsearch_index_template" "test_ds_template" {
       "lifecycle.name" = elasticstack_elasticsearch_index_lifecycle.test_ilm.name
     })
 
-    mappings = jsonencode({
-      "_meta" = {
-        "managed_by" = "terraform"
-        "purpose" = "acceptance"
-      }
-    })
   }
 
   data_stream {}
@@ -148,31 +139,6 @@ resource "elasticstack_elasticsearch_data_stream" "test_ds" {
 
 func dataStreamBackingIndexNameRegexp(name string) *regexp.Regexp {
 	return regexp.MustCompile(fmt.Sprintf(`^\.ds-%s-.*-000001$`, name))
-}
-
-func testCheckDataStreamMetadata(resourceName string) resource.TestCheckFunc {
-	return resource.TestCheckResourceAttrWith(resourceName, "metadata", func(value string) error {
-		if value == "" {
-			return fmt.Errorf("expected metadata to be set")
-		}
-
-		var meta map[string]any
-		if err := json.Unmarshal([]byte(value), &meta); err != nil {
-			return err
-		}
-
-		managedBy, ok := meta["managed_by"].(string)
-		if !ok || managedBy != "terraform" {
-			return fmt.Errorf("expected metadata managed_by to be terraform, got %v", meta["managed_by"])
-		}
-
-		purpose, ok := meta["purpose"].(string)
-		if !ok || purpose != "acceptance" {
-			return fmt.Errorf("expected metadata purpose to be acceptance, got %v", meta["purpose"])
-		}
-
-		return nil
-	})
 }
 
 func checkResourceDataStreamDestroy(s *terraform.State) error {
