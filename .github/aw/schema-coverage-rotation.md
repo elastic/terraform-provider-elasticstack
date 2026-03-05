@@ -4,17 +4,21 @@ description: Rotates schema-coverage analysis across stale provider entities and
 on:
   workflow_dispatch:
   schedule:
-    - cron: "15 4 * * *"
-engine: copilot
-imports:
-  - .github/agents/acceptance-test-improver.md
+    - cron: daily
+engine: 
+  id: copilot
+  model: "claude-opus-4.6" 
 permissions:
   contents: read
   issues: read
   pull-requests: read
   actions: read
 tools:
-  repo-memory: true
+  cache-memory:
+    - id: default
+      key: schema-coverage-rotation-memory
+      retention-days: 90
+  create-orphan: true
 safe-outputs:
   create-issue:
     title-prefix: "[schema-coverage] "
@@ -22,6 +26,7 @@ safe-outputs:
     max: 3
   assign-to-agent:
     name: copilot
+    model: "gpt-5.3" 
     custom-agent: acceptance-test-improver
     allowed: [copilot]
     target: "*"
@@ -40,7 +45,7 @@ You are responsible for running schema-coverage analysis on 3 provider entities 
   - `provider/plugin_framework.go` (`resources()` and `dataSources()` lists)
   - `provider/provider.go` (`ResourcesMap` and `DataSourcesMap` lists)
 - Bootstrap memory seed: `.github/aw/memory/schema-coverage-rotation-entities-last-analysed.json`
-- Persistent memory path: `/tmp/gh-aw/repo-memory-default/schema-coverage-rotation-entities-last-analysed.json`
+- Persistent memory path: `/tmp/gh-aw/cache-memory/default/schema-coverage-rotation-entities-last-analysed.json`
 
 ## Memory format
 
@@ -64,7 +69,7 @@ Timestamp value rules:
 ## Execution steps
 
 1. Read `.agents/skills/schema-coverage/SKILL.md` and follow it strictly when evaluating coverage.
-2. Load `/tmp/gh-aw/repo-memory-default/schema-coverage-rotation-entities-last-analysed.json`.
+2. Load `/tmp/gh-aw/cache-memory/default/schema-coverage-rotation-entities-last-analysed.json`.
    - If it does not exist, initialize it from `.github/aw/memory/schema-coverage-rotation-entities-last-analysed.json`.
 3. Build the current canonical entity list from both provider implementations:
    - Resources:
@@ -81,7 +86,7 @@ Timestamp value rules:
    - Perform schema coverage analysis using the skill rubric.
    - Determine whether there are actionable testing gaps.
    - Update the entity timestamp to the current UTC time after analysis, regardless of whether a gap exists.
-6. Persist the updated memory file to `/tmp/gh-aw/repo-memory-default/schema-coverage-rotation-entities-last-analysed.json`.
+6. Persist the updated memory file to `/tmp/gh-aw/cache-memory/default/schema-coverage-rotation-entities-last-analysed.json`.
 
 ## Issue creation rules
 
