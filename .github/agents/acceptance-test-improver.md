@@ -40,6 +40,10 @@ Prioritize in this order:
 - Keep tests deterministic and avoid flaky timing assumptions.
 - If exact values are non-deterministic, justify any set-only assertion.
 
+## Final checks
+- Ensure the project builds - `make build`
+- Ensure any new/updated acceptance tests pass (via `go test`). Check the [testing](../../dev-docs/high-level/testing.md) docs for an example of running targeted tests. Check if the Elastic stack is available using the default variables in [testing](../../dev-docs/high-level/testing.md) before trying to create new Stack services.
+
 ## Deliverables
 
 1. A brief gap analysis summary (critical -> minor).
