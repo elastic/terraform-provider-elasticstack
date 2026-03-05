@@ -40,10 +40,56 @@ func TestAccResourceComponentTemplate(t *testing.T) {
 			{
 				Config: testAccResourceComponentTemplateCreate(templateName),
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_component_template.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.test", "name", templateName),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.test", "template.0.alias.0.name", "my_template_test"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.test", "metadata", `{"env":"test"}`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.test", "version", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.test", "template.0.mappings", `{"properties":{"field1":{"type":"keyword"}}}`),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.test", "template.0.settings", `{"index":{"number_of_shards":"3"}}`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.test", "template.0.alias.#", "1"),
+					resource.TestCheckTypeSetElemNestedAttrs("elasticstack_elasticsearch_component_template.test", "template.0.alias.*", map[string]string{
+						"name":           "my_template_test",
+						"filter":         `{"term":{"user":"kimchy"}}`,
+						"index_routing":  "ir1",
+						"search_routing": "sr1",
+						"routing":        "r1",
+						"is_hidden":      "false",
+						"is_write_index": "true",
+					}),
 				),
+			},
+			{
+				Config: testAccResourceComponentTemplateUpdate(templateName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.test", "metadata", `{"env":"production"}`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.test", "version", "2"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.test", "template.0.mappings", `{"properties":{"field1":{"type":"text"}}}`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.test", "template.0.settings", `{"index":{"number_of_shards":"1"}}`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.test", "template.0.alias.#", "2"),
+					resource.TestCheckTypeSetElemNestedAttrs("elasticstack_elasticsearch_component_template.test", "template.0.alias.*", map[string]string{
+						"name":           "my_template_test",
+						"filter":         `{"term":{"user":"elastic"}}`,
+						"index_routing":  "ir2",
+						"search_routing": "sr2",
+						"routing":        "r2",
+						"is_hidden":      "true",
+						"is_write_index": "false",
+					}),
+					resource.TestCheckTypeSetElemNestedAttrs("elasticstack_elasticsearch_component_template.test", "template.0.alias.*", map[string]string{
+						"name":           "second_alias",
+						"filter":         "",
+						"index_routing":  "",
+						"search_routing": "",
+						"routing":        "",
+						"is_hidden":      "false",
+						"is_write_index": "false",
+					}),
+				),
+			},
+			{
+				ResourceName:      "elasticstack_elasticsearch_component_template.test",
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
@@ -56,15 +102,84 @@ provider "elasticstack" {
 }
 
 resource "elasticstack_elasticsearch_component_template" "test" {
-  name = "%s"
+  name     = "%s"
+  metadata = jsonencode({
+    env = "test"
+  })
+  version = 1
 
   template {
     alias {
       name = "my_template_test"
+      filter = jsonencode({
+        term = {
+          user = "kimchy"
+        }
+      })
+      index_routing  = "ir1"
+      search_routing = "sr1"
+      routing        = "r1"
+      is_hidden      = false
+      is_write_index = true
     }
+
+    mappings = jsonencode({
+      properties = {
+        field1 = {
+          type = "keyword"
+        }
+      }
+    })
 
     settings = jsonencode({
       number_of_shards = "3"
+    })
+  }
+}`, name)
+}
+
+func testAccResourceComponentTemplateUpdate(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_component_template" "test" {
+  name     = "%s"
+  metadata = jsonencode({
+    env = "production"
+  })
+  version = 2
+
+  template {
+    alias {
+      name = "my_template_test"
+      filter = jsonencode({
+        term = {
+          user = "elastic"
+        }
+      })
+      index_routing  = "ir2"
+      search_routing = "sr2"
+      routing        = "r2"
+      is_hidden      = true
+      is_write_index = false
+    }
+
+    alias {
+      name = "second_alias"
+    }
+
+    mappings = jsonencode({
+      properties = {
+        field1 = {
+          type = "text"
+        }
+      }
+    })
+
+    settings = jsonencode({
+      number_of_shards = "1"
     })
   }
 }`, name)
