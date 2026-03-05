@@ -68,8 +68,8 @@ Timestamp value rules:
 
 ## Execution steps
 
-1. Count currently open GitHub issues labeled `schema-coverage` and calculate:
-   - `open_schema_coverage_issues`
+1. Using GitHub search or API, count currently open issues (excluding pull requests) in this repository with label `schema-coverage` using a query such as `is:issue is:open label:"schema-coverage" repo:<this-repo>`, and calculate:
+   - `open_schema_coverage_issues` = the count of matching issues
    - `issue_slots_available = max(0, 3 - open_schema_coverage_issues)`
 2. If `issue_slots_available` is `0`:
    - Exit immediately.
