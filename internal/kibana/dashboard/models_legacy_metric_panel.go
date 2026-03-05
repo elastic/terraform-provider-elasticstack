@@ -411,7 +411,7 @@ type legacyMetricESQLMetricAPIModel struct {
 		Value  *kbapi.LegacyMetricESQLMetricAlignmentsValue  `json:"value,omitempty"`
 	} `json:"alignments,omitempty"`
 	ApplyColorTo *kbapi.LegacyMetricESQLMetricApplyColorTo `json:"apply_color_to,omitempty"`
-	Color        kbapi.ColorByValueAbsolute                `json:"color"`
+	Color        *kbapi.LegacyMetricESQL_Metric_Color      `json:"color,omitempty"`
 	Column       string                                    `json:"column"`
 	Format       kbapi.FormatType                          `json:"format"`
 	Label        *string                                   `json:"label,omitempty"`

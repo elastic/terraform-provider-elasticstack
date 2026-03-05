@@ -21,16 +21,9 @@ resource "elasticstack_kibana_dashboard" "test" {
       h = 10
     }
     config_json = jsonencode({
-      "syncColors" : false,
-      "syncCursor" : true,
-      "syncTooltips" : false,
-      "filters" : [],
-      "query" : {
-        "query" : "",
-        "language" : "kuery"
-      },
       "attributes" : {
-        "title" : "",
+        "title" : "Sample Metric Chart",
+        "description" : "Test metric chart visualization",
         "dataset" : {
           "type" : "dataView",
           "id" : "metrics-*"
@@ -42,12 +35,15 @@ resource "elasticstack_kibana_dashboard" "test" {
           {
             "type" : "primary",
             "operation" : "count",
-            "empty_as_null" : true,
             "alignments" : {
-              "value" : "right",
-              "labels" : "left"
+              "labels" : "center"
             },
-            "fit" : false
+            "format" : {
+              "type" : "number"
+            },
+            "icon" : {
+              "name" : "document"
+            }
           }
         ],
         "query" : {

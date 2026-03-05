@@ -80,7 +80,12 @@ func (c metricChartPanelConfigConverter) populateFromAPIPanel(ctx context.Contex
 	//
 	// Disambiguate variant 0 vs 1 using the presence of the `query` key. The generated union types can
 	// successfully unmarshal into both variants, so relying on decoded field contents is brittle.
-	pm.MetricChartConfig = &metricChartConfigModel{}
+	if pm.MetricChartConfig != nil {
+		existing := *pm.MetricChartConfig
+		pm.MetricChartConfig = &existing
+	} else {
+		pm.MetricChartConfig = &metricChartConfigModel{}
+	}
 	if _, ok := attrsMap["query"]; ok {
 		variant0, err := metricChart.AsMetricChart0()
 		if err != nil {
@@ -188,6 +193,7 @@ func (m *metricChartConfigModel) fromAPI(ctx context.Context, apiChart kbapi.Met
 func (m *metricChartConfigModel) fromAPIVariant0(ctx context.Context, apiChart kbapi.MetricChart0) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
+	existingMetrics := m.Metrics
 
 	// Set simple fields
 	m.Title = types.StringPointerValue(apiChart.Title)
@@ -224,6 +230,13 @@ func (m *metricChartConfigModel) fromAPIVariant0(ctx context.Context, apiChart k
 	if len(apiChart.Metrics) > 0 {
 		m.Metrics = make([]metricItemModel, len(apiChart.Metrics))
 		for i, metric := range apiChart.Metrics {
+			if i < len(existingMetrics) && typeutils.IsKnown(existingMetrics[i].ConfigJSON) {
+				// Preserve user-authored metric JSON when Kibana materializes defaults
+				// that are semantically equivalent but would otherwise cause drift.
+				m.Metrics[i].ConfigJSON = existingMetrics[i].ConfigJSON
+				continue
+			}
+
 			metricJSON, err := json.Marshal(metric)
 			if err != nil {
 				diags.AddError("Failed to marshal metric", err.Error())
@@ -254,6 +267,7 @@ func (m *metricChartConfigModel) fromAPIVariant0(ctx context.Context, apiChart k
 func (m *metricChartConfigModel) fromAPIVariant1(ctx context.Context, apiChart kbapi.MetricChart1) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
+	existingMetrics := m.Metrics
 
 	// Set simple fields
 	m.Title = types.StringPointerValue(apiChart.Title)
@@ -289,6 +303,13 @@ func (m *metricChartConfigModel) fromAPIVariant1(ctx context.Context, apiChart k
 	if len(apiChart.Metrics) > 0 {
 		m.Metrics = make([]metricItemModel, len(apiChart.Metrics))
 		for i, metric := range apiChart.Metrics {
+			if i < len(existingMetrics) && typeutils.IsKnown(existingMetrics[i].ConfigJSON) {
+				// Preserve user-authored metric JSON when Kibana materializes defaults
+				// that are semantically equivalent but would otherwise cause drift.
+				m.Metrics[i].ConfigJSON = existingMetrics[i].ConfigJSON
+				continue
+			}
+
 			metricJSON, err := json.Marshal(metric)
 			if err != nil {
 				diags.AddError("Failed to marshal metric", err.Error())
