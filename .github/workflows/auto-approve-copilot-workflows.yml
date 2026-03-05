@@ -14,7 +14,9 @@ jobs:
     runs-on: ubuntu-latest
     if: >-
       github.event.workflow_run.actor.login == 'copilot-swe-agent[bot]' ||
-      github.event.workflow_run.triggering_actor.login == 'copilot-swe-agent[bot]'
+      github.event.workflow_run.triggering_actor.login == 'copilot-swe-agent[bot]' ||
+      github.event.workflow_run.actor.login == 'Copilot' ||
+      github.event.workflow_run.triggering_actor.login == 'Copilot'
     steps:
       - name: Approve workflow run
         uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
