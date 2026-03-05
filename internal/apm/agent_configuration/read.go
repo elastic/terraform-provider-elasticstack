@@ -99,8 +99,18 @@ func (r *resourceAgentConfiguration) read(ctx context.Context, state *AgentConfi
 
 	state.ID = types.StringValue(idFromState)
 	state.ServiceName = types.StringPointerValue(foundConfig.Service.Name)
-	state.ServiceEnvironment = types.StringPointerValue(foundConfig.Service.Environment)
-	state.AgentName = types.StringPointerValue(foundConfig.AgentName)
+
+	// Normalize empty strings to null for optional fields - Kibana may return "" when the value was not set
+	if foundConfig.Service.Environment != nil && *foundConfig.Service.Environment != "" {
+		state.ServiceEnvironment = types.StringValue(*foundConfig.Service.Environment)
+	} else {
+		state.ServiceEnvironment = types.StringNull()
+	}
+	if foundConfig.AgentName != nil && *foundConfig.AgentName != "" {
+		state.AgentName = types.StringValue(*foundConfig.AgentName)
+	} else {
+		state.AgentName = types.StringNull()
+	}
 
 	stringSettings := make(map[string]any)
 	if foundConfig.Settings != nil {
