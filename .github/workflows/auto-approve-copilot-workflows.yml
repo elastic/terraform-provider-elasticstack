@@ -1,0 +1,36 @@
+name: Auto-approve Copilot Workflow Runs
+
+on: # zizmor: ignore[dangerous-triggers] — workflow_run is required to approve pending runs
+  workflow_run:
+    workflows: ["Build/Lint/Test"]
+    types: [requested]
+
+# This workflow uses a PAT (repo secret) rather than GITHUB_TOKEN.
+permissions: {}
+
+jobs:
+  approve:
+    name: Approve waiting run
+    runs-on: ubuntu-latest
+    if: >-
+      github.event.workflow_run.actor.login == 'copilot-swe-agent[bot]' ||
+      github.event.workflow_run.triggering_actor.login == 'copilot-swe-agent[bot]'
+    steps:
+      - name: Approve workflow run
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
+        with:
+          github-token: >-
+            ${{ (secrets.AUTO_APPROVE_WORKFLOWS_TOKEN != '' && secrets.AUTO_APPROVE_WORKFLOWS_TOKEN) || github.token }}
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const run_id = context.payload.workflow_run.id;
+
+            core.info(`Attempting approval for run_id=${run_id} in ${owner}/${repo}`);
+
+            try {
+              await github.rest.actions.approveWorkflowRun({ owner, repo, run_id });
+              core.info(`Approved run_id=${run_id}`);
+            } catch (e) {
+              core.warning(`approveWorkflowRun failed for run_id=${run_id}: ${e.message}`);
+            }
