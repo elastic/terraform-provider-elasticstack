@@ -23,7 +23,7 @@
 #
 # Rotates schema-coverage analysis across stale provider entities and opens actionable test-improvement issues.
 #
-# gh-aw-metadata: {"schema_version":"v1","frontmatter_hash":"8b0b3de61770a0011a60a842ff97606e69c23deb24f18bf89f2c058c536ca5bb","compiler_version":"v0.53.2"}
+# gh-aw-metadata: {"schema_version":"v1","frontmatter_hash":"7bf5d0377b296ccf64325cf72dea670452da1ab2f198ad9915de44661116f0a4","compiler_version":"v0.53.2"}
 
 name: "Schema Coverage Rotation"
 "on":
@@ -59,7 +59,7 @@ jobs:
         env:
           GH_AW_INFO_ENGINE_ID: "copilot"
           GH_AW_INFO_ENGINE_NAME: "GitHub Copilot CLI"
-          GH_AW_INFO_MODEL: "claude-opus-4.6"
+          GH_AW_INFO_MODEL: "gpt-5.3-codex"
           GH_AW_INFO_VERSION: ""
           GH_AW_INFO_AGENT_VERSION: "0.0.421"
           GH_AW_INFO_CLI_VERSION: "v0.53.2"
@@ -749,7 +749,7 @@ jobs:
         env:
           COPILOT_AGENT_RUNNER_TYPE: STANDALONE
           COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
-          COPILOT_MODEL: claude-opus-4.6
+          COPILOT_MODEL: gpt-5.3-codex
           GH_AW_MCP_CONFIG: /home/runner/.copilot/mcp-config.json
           GH_AW_PROMPT: /tmp/gh-aw/aw-prompts/prompt.txt
           GH_AW_SAFE_OUTPUTS: ${{ env.GH_AW_SAFE_OUTPUTS }}
@@ -981,7 +981,7 @@ jobs:
         env:
           COPILOT_AGENT_RUNNER_TYPE: STANDALONE
           COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
-          COPILOT_MODEL: claude-opus-4.6
+          COPILOT_MODEL: gpt-5.3-codex
           GH_AW_PROMPT: /tmp/gh-aw/aw-prompts/prompt.txt
           GITHUB_API_URL: ${{ github.api_url }}
           GITHUB_HEAD_REF: ${{ github.head_ref }}
@@ -1140,7 +1140,7 @@ jobs:
     env:
       GH_AW_CALLER_WORKFLOW_ID: "${{ github.repository }}/schema-coverage-rotation"
       GH_AW_ENGINE_ID: "copilot"
-      GH_AW_ENGINE_MODEL: "claude-opus-4.6"
+      GH_AW_ENGINE_MODEL: "gpt-5.3-codex"
       GH_AW_WORKFLOW_ID: "schema-coverage-rotation"
       GH_AW_WORKFLOW_NAME: "Schema Coverage Rotation"
     outputs:

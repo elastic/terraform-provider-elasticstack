@@ -7,7 +7,7 @@ on:
     - cron: daily
 engine: 
   id: copilot
-  model: "claude-opus-4.6" 
+  model: "gpt-5.3-codex" 
 permissions:
   contents: read
   issues: read
