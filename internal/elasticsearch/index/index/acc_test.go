@@ -369,12 +369,12 @@ func TestAccResourceIndexBlocks(t *testing.T) {
 	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceIndexDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIndexDestroy,
 		Steps: []resource.TestStep{
 			{
-				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"index_name":   config.StringVariable(indexName),
 					"blocks_write": config.BoolVariable(true),
@@ -388,7 +388,8 @@ func TestAccResourceIndexBlocks(t *testing.T) {
 				),
 			},
 			{
-				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"index_name":   config.StringVariable(indexName),
 					"blocks_write": config.BoolVariable(false),
@@ -409,12 +410,12 @@ func TestAccResourceIndexSlowlog(t *testing.T) {
 	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceIndexDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIndexDestroy,
 		Steps: []resource.TestStep{
 			{
-				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"index_name": config.StringVariable(indexName),
 				},
@@ -435,12 +436,12 @@ func TestAccResourceIndexPipelines(t *testing.T) {
 	indexName := sdkacctest.RandomWithPrefix("tf-acc-test")
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceIndexDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIndexDestroy,
 		Steps: []resource.TestStep{
 			{
-				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"index_name":    config.StringVariable(indexName),
 					"pipeline_name": config.StringVariable(pipelineName),
