@@ -23,7 +23,7 @@
 #
 # Rotates schema-coverage analysis across stale provider entities and opens actionable test-improvement issues.
 #
-# gh-aw-metadata: {"schema_version":"v1","frontmatter_hash":"74a4d2680c9822c3f9dff3203f7a481dd9546d16f02fd73ee506e253eb11ea75","compiler_version":"v0.53.2"}
+# gh-aw-metadata: {"schema_version":"v1","frontmatter_hash":"8b0b3de61770a0011a60a842ff97606e69c23deb24f18bf89f2c058c536ca5bb","compiler_version":"v0.53.2"}
 
 name: "Schema Coverage Rotation"
 "on":
@@ -1198,7 +1198,7 @@ jobs:
           GH_AW_AGENT_OUTPUT: ${{ env.GH_AW_AGENT_OUTPUT }}
           GH_AW_AGENT_MAX_COUNT: 3
           GH_AW_AGENT_DEFAULT: "copilot"
-          GH_AW_AGENT_DEFAULT_MODEL: "gpt-5.3"
+          GH_AW_AGENT_DEFAULT_MODEL: "claude-sonnet-4.6"
           GH_AW_AGENT_DEFAULT_CUSTOM_AGENT: "acceptance-test-improver"
           GH_AW_AGENT_TARGET: "*"
           GH_AW_AGENT_ALLOWED: "copilot"
