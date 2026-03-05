@@ -374,7 +374,11 @@ func TestAccResourceIndexBlocks(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceIndexBlocksConfig(indexName, true),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"index_name":   config.StringVariable(indexName),
+					"blocks_write": config.BoolVariable(true),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_blocks", "name", indexName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_blocks", "blocks_write", "true"),
@@ -384,7 +388,11 @@ func TestAccResourceIndexBlocks(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccResourceIndexBlocksConfig(indexName, false),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"index_name":   config.StringVariable(indexName),
+					"blocks_write": config.BoolVariable(false),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_blocks", "name", indexName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_blocks", "blocks_write", "false"),
@@ -406,7 +414,10 @@ func TestAccResourceIndexSlowlog(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceIndexSlowlogConfig(indexName),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_slowlog", "name", indexName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_slowlog", "search_slowlog_level", "info"),
@@ -429,7 +440,11 @@ func TestAccResourceIndexPipelines(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceIndexPipelinesConfig(pipelineName, indexName),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"index_name":    config.StringVariable(indexName),
+					"pipeline_name": config.StringVariable(pipelineName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_pipelines", "name", indexName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_pipelines", "default_pipeline", pipelineName),
@@ -438,66 +453,6 @@ func TestAccResourceIndexPipelines(t *testing.T) {
 			},
 		},
 	})
-}
-
-func testAccResourceIndexBlocksConfig(indexName string, blocksWrite bool) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_index" "test_blocks" {
-  name             = "%s"
-  blocks_write     = %t
-  blocks_read      = false
-  blocks_read_only = false
-  blocks_metadata  = false
-
-  deletion_protection = false
-}
-`, indexName, blocksWrite)
-}
-
-func testAccResourceIndexSlowlogConfig(indexName string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_index" "test_slowlog" {
-  name = "%s"
-
-  search_slowlog_level                  = "info"
-  search_slowlog_threshold_query_warn   = "10s"
-  indexing_slowlog_level                = "warn"
-  indexing_slowlog_threshold_index_warn = "10s"
-
-  deletion_protection = false
-}
-`, indexName)
-}
-
-func testAccResourceIndexPipelinesConfig(pipelineName, indexName string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_ingest_pipeline" "test_pipeline" {
-  name        = "%s"
-  description = "Acceptance test pipeline"
-
-  processors = []
-}
-
-resource "elasticstack_elasticsearch_index" "test_pipelines" {
-  name             = "%s"
-  default_pipeline = elasticstack_elasticsearch_ingest_pipeline.test_pipeline.name
-  final_pipeline   = elasticstack_elasticsearch_ingest_pipeline.test_pipeline.name
-
-  deletion_protection = false
-}
-`, pipelineName, indexName)
 }
 
 func checkResourceIndexDestroy(s *terraform.State) error {
