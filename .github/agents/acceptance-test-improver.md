@@ -39,6 +39,7 @@ Prioritize in this order:
 - Do not weaken existing assertions.
 - Keep tests deterministic and avoid flaky timing assumptions.
 - If exact values are non-deterministic, justify any set-only assertion.
+- *Never* adjust the actual implementation. If you beleive a new test reveals a bug within the implementation notify the user who triggered your changes.
 
 ## Final checks
 - Ensure the project builds - `make build`
