@@ -982,7 +982,7 @@ func fixDashboardPanelItemRefs(schema *Schema) {
 	dashboardPath.Get.CreateRef(schema, "dashboard_panel_section", "responses.200.content.application/json.schema.properties.data.properties.panels.items.anyOf.1")
 	dashboardPath.Get.CreateRef(schema, "dashboard_panels", "responses.200.content.application/json.schema.properties.data.properties.panels")
 
-	schema.Components.CreateRef(schema, "dashboard_panel_item", "schemas.dashboard_panel_section.properties.panels.items")
+	schema.Components.CreateRef(schema, "dashboard_section_panel_item", "schemas.dashboard_panel_section.properties.panels.items")
 }
 
 func fixSecurityExceptionListItems(schema *Schema) {
