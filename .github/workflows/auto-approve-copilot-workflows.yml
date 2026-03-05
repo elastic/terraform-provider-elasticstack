@@ -24,4 +24,4 @@ jobs:
         run: |
           branch="${{ github.event.workflow_run.head_branch }}"
           echo "Triggering test.yml on branch: $branch"
-          gh workflow run test.yml --repo "${{ github.repository }}" --ref "$branch"
+          gh workflow run test.yml --repo "${{ github.repository }}" -f ref="$branch"
