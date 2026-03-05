@@ -39,6 +39,11 @@ Prioritize in this order:
 - Do not weaken existing assertions.
 - Keep tests deterministic and avoid flaky timing assumptions.
 - If exact values are non-deterministic, justify any set-only assertion.
+- *Never* adjust the actual implementation. If you beleive a new test reveals a bug within the implementation notify the user who triggered your changes.
+
+## Final checks
+- Ensure the project builds - `make build`
+- Ensure any new/updated acceptance tests pass (via `go test`). Check the [testing](../../dev-docs/high-level/testing.md) docs for an example of running targeted tests. Check if the Elastic stack is available using the default variables in [testing](../../dev-docs/high-level/testing.md) before trying to create new Stack services.
 
 ## Deliverables
 

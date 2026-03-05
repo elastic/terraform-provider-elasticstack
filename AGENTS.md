@@ -15,3 +15,7 @@ This repo is the Terraform provider for Elastic Stack, written in Go.
 - Generated clients (Kibana `kbapi`) and regeneration: [`dev-docs/high-level/generated-clients.md`](./dev-docs/high-level/generated-clients.md)
 - Documentation generation: [`dev-docs/high-level/documentation.md`](./dev-docs/high-level/documentation.md)
 
+## After making changes
+
+- Ensure the project builds - `make build`
+- Ensure any new/updated acceptance tests pass (via `go test`). Check the [testing](./dev-docs/high-level/testing.md) docs for an example of running targeted tests. Check if the Elastic stack is available using the default variables in [testing](./dev-docs/high-level/testing.md) before trying to create new Stack services.
