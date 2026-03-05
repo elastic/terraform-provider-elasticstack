@@ -1,7 +1,7 @@
 ---
 name: acceptance-test-improver
 description: Expert in Elastic Stack and Terraform acceptance testing focused on high-impact schema coverage gaps.
-tools: ["execute", "read", "edit", "search", "agent", "web"]
+tools: ["execute", "read", "edit", "search", "web"]
 ---
 
 # Acceptance Test Improver Agent
