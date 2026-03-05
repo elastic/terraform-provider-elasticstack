@@ -36,7 +36,7 @@ safe-outputs:
 
 # Schema Coverage Rotation Worker
 
-You are responsible for running schema-coverage analysis on 3 provider entities per run, prioritizing the entities that have not been analyzed for the longest time.
+You are responsible for running schema-coverage analysis on up to 3 provider entities per run, prioritizing the entities that have not been analyzed for the longest time, while keeping the total number of open `schema-coverage` issues capped at 3.
 
 ## Required inputs and references
 
@@ -68,26 +68,33 @@ Timestamp value rules:
 
 ## Execution steps
 
-1. Read `.agents/skills/schema-coverage/SKILL.md` and follow it strictly when evaluating coverage.
-2. Load `/tmp/gh-aw/cache-memory/default/schema-coverage-rotation-entities-last-analysed.json`.
+1. Count currently open GitHub issues labeled `schema-coverage` and calculate:
+   - `open_schema_coverage_issues`
+   - `issue_slots_available = max(0, 3 - open_schema_coverage_issues)`
+2. If `issue_slots_available` is `0`:
+   - Exit immediately.
+   - Call `noop` with a short reason indicating the open-issue cap has been reached.
+3. Read `.agents/skills/schema-coverage/SKILL.md` and follow it strictly when evaluating coverage.
+4. Load `/tmp/gh-aw/cache-memory/default/schema-coverage-rotation-entities-last-analysed.json`.
    - If it does not exist, initialize it from `.github/aw/memory/schema-coverage-rotation-entities-last-analysed.json`.
-3. Build the current canonical entity list from docs only:
+5. Build the current canonical entity list from docs only:
    - Resources from `docs/resources/*.md` (exclude non-entity pages such as `index.md` if present).
    - Data sources from `docs/data-sources/*.md`.
    - Derive Terraform entity names from doc filenames (without extension), preserving entity type from directory (`resources` vs `data-sources`).
    - Merge and deduplicate names within each type.
    - Ensure discovered resources are present under `resources` with a timestamp or `null`.
    - Ensure discovered data sources are present under `data-sources` with a timestamp or `null`.
-4. Select exactly 3 entities by oldest timestamp across both types (`null` first, then oldest datetime), while preserving each selected entity's type (`resource` or `data source`).
-5. For each selected entity:
+6. Select exactly `issue_slots_available` entities by oldest timestamp across both types (`null` first, then oldest datetime), while preserving each selected entity's type (`resource` or `data source`).
+7. For each selected entity:
    - Perform schema coverage analysis using the skill rubric.
    - Determine whether there are actionable testing gaps.
    - Update the entity timestamp to the current UTC time after analysis, regardless of whether a gap exists.
-6. Persist the updated memory file to `/tmp/gh-aw/cache-memory/default/schema-coverage-rotation-entities-last-analysed.json`.
+8. Persist the updated memory file to `/tmp/gh-aw/cache-memory/default/schema-coverage-rotation-entities-last-analysed.json`.
 
 ## Issue creation rules
 
-Create one issue per analyzed entity only when actionable testing gaps exist.
+- Create one issue per analyzed entity only when actionable testing gaps exist.
+- Never create more issues than `issue_slots_available` for the current run.
 
 Issue content must include:
 - Entity name.
@@ -105,4 +112,4 @@ For each issue created, you MUST call `assign-to-agent` with:
 
 If an analyzed entity has no actionable gaps, do not create an issue for it.
 
-If none of the 3 analyzed entities has actionable gaps, you MUST call `noop` with a short reason.
+If at least one entity was analyzed but none has actionable gaps, you MUST call `noop` with a short reason.
