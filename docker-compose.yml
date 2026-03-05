@@ -83,7 +83,7 @@ services:
         condition: service_healthy
     image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
     container_name: ${FLEET_SETTINGS_CONTAINER_NAME}
-    restart: 'no'
+    restart: on-failure:5
     environment:
       CACERT: ""
       KIBANA_HOST: http://kibana:5601
