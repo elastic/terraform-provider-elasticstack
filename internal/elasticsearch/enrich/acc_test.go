@@ -135,6 +135,72 @@ func TestAccDataSourceEnrichPolicyFW(t *testing.T) {
 					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_enrich_policy.test", "enrich_fields.*", "first_name"),
 					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_enrich_policy.test", "enrich_fields.*", "last_name"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "query", "{\"match_all\":{}}"),
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_enrich_policy.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "enrich_fields.#", "2"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "indices.#", "1"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccDataSourceEnrichPolicyGeoMatch(t *testing.T) {
+	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccEnrichPolicyDataSourceGeoMatchFW(name),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_enrich_policy.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "name", name),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "policy_type", "geo_match"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "match_field", "location"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "indices.#", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "enrich_fields.#", "2"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccDataSourceEnrichPolicyRange(t *testing.T) {
+	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccEnrichPolicyDataSourceRangeFW(name),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_enrich_policy.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "name", name),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "policy_type", "range"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "match_field", "ip_range"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "indices.#", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "enrich_fields.#", "2"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccDataSourceEnrichPolicyMultiIndex(t *testing.T) {
+	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccEnrichPolicyDataSourceMultiIndexFW(name),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_enrich_policy.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "name", name),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "policy_type", "match"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "match_field", "email"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "indices.#", "2"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "enrich_fields.#", "2"),
 				),
 			},
 		},
@@ -334,6 +400,118 @@ data "elasticstack_elasticsearch_enrich_policy" "test" {
 	name = elasticstack_elasticsearch_enrich_policy.policy.name
 }
 	`, name, name)
+}
+
+func testAccEnrichPolicyDataSourceGeoMatchFW(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_index" "geo_index" {
+  name = "%s"
+
+  mappings = jsonencode({
+    properties = {
+      location    = { type = "geo_shape" }
+      name        = { type = "keyword" }
+      description = { type = "text" }
+    }
+  })
+  deletion_protection = false
+}
+
+resource "elasticstack_elasticsearch_enrich_policy" "policy" {
+  name          = "%s"
+  policy_type   = "geo_match"
+  indices       = [elasticstack_elasticsearch_index.geo_index.name]
+  match_field   = "location"
+  enrich_fields = ["name", "description"]
+}
+
+data "elasticstack_elasticsearch_enrich_policy" "test" {
+  name = elasticstack_elasticsearch_enrich_policy.policy.name
+}
+`, name, name)
+}
+
+func testAccEnrichPolicyDataSourceRangeFW(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_index" "range_index" {
+  name = "%s"
+
+  mappings = jsonencode({
+    properties = {
+      ip_range    = { type = "ip_range" }
+      department  = { type = "keyword" }
+      description = { type = "text" }
+    }
+  })
+  deletion_protection = false
+}
+
+resource "elasticstack_elasticsearch_enrich_policy" "policy" {
+  name          = "%s"
+  policy_type   = "range"
+  indices       = [elasticstack_elasticsearch_index.range_index.name]
+  match_field   = "ip_range"
+  enrich_fields = ["department", "description"]
+}
+
+data "elasticstack_elasticsearch_enrich_policy" "test" {
+  name = elasticstack_elasticsearch_enrich_policy.policy.name
+}
+`, name, name)
+}
+
+func testAccEnrichPolicyDataSourceMultiIndexFW(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_index" "index_a" {
+  name = "%s-a"
+
+  mappings = jsonencode({
+    properties = {
+      email      = { type = "keyword" }
+      first_name = { type = "text" }
+      last_name  = { type = "text" }
+    }
+  })
+  deletion_protection = false
+}
+
+resource "elasticstack_elasticsearch_index" "index_b" {
+  name = "%s-b"
+
+  mappings = jsonencode({
+    properties = {
+      email      = { type = "keyword" }
+      first_name = { type = "text" }
+      last_name  = { type = "text" }
+    }
+  })
+  deletion_protection = false
+}
+
+resource "elasticstack_elasticsearch_enrich_policy" "policy" {
+  name          = "%s"
+  policy_type   = "match"
+  indices       = [elasticstack_elasticsearch_index.index_a.name, elasticstack_elasticsearch_index.index_b.name]
+  match_field   = "email"
+  enrich_fields = ["first_name", "last_name"]
+}
+
+data "elasticstack_elasticsearch_enrich_policy" "test" {
+  name = elasticstack_elasticsearch_enrich_policy.policy.name
+}
+`, name, name, name)
 }
 
 func checkEnrichPolicyDestroyFW(name string) func(s *terraform.State) error {
