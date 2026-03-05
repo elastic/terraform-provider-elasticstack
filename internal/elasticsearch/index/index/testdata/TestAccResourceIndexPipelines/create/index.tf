@@ -16,7 +16,9 @@ resource "elasticstack_elasticsearch_ingest_pipeline" "test_pipeline" {
   name        = var.pipeline_name
   description = "Acceptance test pipeline"
 
-  processors = []
+  processors = [
+    jsonencode({ set = { field = "_pipeline_test", value = "1" } })
+  ]
 }
 
 resource "elasticstack_elasticsearch_index" "test_pipelines" {
