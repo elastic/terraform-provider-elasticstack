@@ -10,7 +10,6 @@ provider "elasticstack" {
 resource "elasticstack_elasticsearch_index" "test_slowlog" {
   name = var.index_name
 
-  search_slowlog_level                  = "info"
   search_slowlog_threshold_query_warn   = "10s"
   indexing_slowlog_threshold_index_warn = "10s"
 

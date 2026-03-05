@@ -423,7 +423,6 @@ func TestAccResourceIndexSlowlog(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_slowlog", "name", indexName),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_slowlog", "search_slowlog_level", "info"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_slowlog", "search_slowlog_threshold_query_warn", "10s"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_slowlog", "indexing_slowlog_threshold_index_warn", "10s"),
 				),
@@ -432,7 +431,7 @@ func TestAccResourceIndexSlowlog(t *testing.T) {
 	})
 }
 
-// indexing_slowlog_level is only supported in Elastic Stack 7.x.
+// search_slowlog_level and indexing_slowlog_level are only supported in Elastic Stack 7.x.
 var indexingSlowlogLevelVersionConstraint, _ = version.NewConstraint("< 8.0.0")
 
 func TestAccResourceIndexSlowlogLevel(t *testing.T) {
@@ -451,6 +450,7 @@ func TestAccResourceIndexSlowlogLevel(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_slowlog_level", "name", indexName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_slowlog_level", "search_slowlog_level", "info"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_slowlog_level", "indexing_slowlog_level", "warn"),
 				),
 			},
