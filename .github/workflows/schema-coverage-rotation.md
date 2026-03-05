@@ -26,7 +26,7 @@ safe-outputs:
     max: 3
   assign-to-agent:
     name: copilot
-    model: "gpt-5.3" 
+    model: "claude-sonnet-4.6" 
     custom-agent: acceptance-test-improver
     allowed: [copilot]
     target: "*"
@@ -42,8 +42,8 @@ You are responsible for running schema-coverage analysis on 3 provider entities 
 
 - Skill instructions: `.agents/skills/schema-coverage/SKILL.md`
 - Provider entity sources of truth:
-  - `provider/plugin_framework.go` (`resources()` and `dataSources()` lists)
-  - `provider/provider.go` (`ResourcesMap` and `DataSourcesMap` lists)
+  - `docs/resources/*.md` for resources
+  - `docs/data-sources/*.md` for data sources
 - Bootstrap memory seed: `.github/aw/memory/schema-coverage-rotation-entities-last-analysed.json`
 - Persistent memory path: `/tmp/gh-aw/cache-memory/default/schema-coverage-rotation-entities-last-analysed.json`
 
@@ -71,13 +71,10 @@ Timestamp value rules:
 1. Read `.agents/skills/schema-coverage/SKILL.md` and follow it strictly when evaluating coverage.
 2. Load `/tmp/gh-aw/cache-memory/default/schema-coverage-rotation-entities-last-analysed.json`.
    - If it does not exist, initialize it from `.github/aw/memory/schema-coverage-rotation-entities-last-analysed.json`.
-3. Build the current canonical entity list from both provider implementations:
-   - Resources:
-     - `provider/plugin_framework.go` `resources()` registrations.
-     - `provider/provider.go` `ResourcesMap` registrations.
-   - Data sources:
-     - `provider/plugin_framework.go` `dataSources()` registrations.
-     - `provider/provider.go` `DataSourcesMap` registrations.
+3. Build the current canonical entity list from docs only:
+   - Resources from `docs/resources/*.md` (exclude non-entity pages such as `index.md` if present).
+   - Data sources from `docs/data-sources/*.md`.
+   - Derive Terraform entity names from doc filenames (without extension), preserving entity type from directory (`resources` vs `data-sources`).
    - Merge and deduplicate names within each type.
    - Ensure discovered resources are present under `resources` with a timestamp or `null`.
    - Ensure discovered data sources are present under `data-sources` with a timestamp or `null`.

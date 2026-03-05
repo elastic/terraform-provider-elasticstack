@@ -1,6 +1,7 @@
 ---
 name: acceptance-test-improver
 description: Expert in Elastic Stack and Terraform acceptance testing focused on high-impact schema coverage gaps.
+tools: ["execute", "read", "edit", "search", "agent", "web"]
 ---
 
 # Acceptance Test Improver Agent
@@ -38,6 +39,10 @@ Prioritize in this order:
 - Do not weaken existing assertions.
 - Keep tests deterministic and avoid flaky timing assumptions.
 - If exact values are non-deterministic, justify any set-only assertion.
+
+## Final checks
+- Ensure the project builds - `make build`
+- Ensure any new/updated acceptance tests pass (via `go test`). Check the [testing](../../dev-docs/high-level/testing.md) docs for an example of running targeted tests. Check if the Elastic stack is available using the default variables in [testing](../../dev-docs/high-level/testing.md) before trying to create new Stack services.
 
 ## Deliverables
 
