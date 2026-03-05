@@ -105,6 +105,8 @@ Issue content must include:
 - Prioritized top 5 gaps (or fewer if less exist).
 - Concrete acceptance-test additions that would close those gaps.
 
+Do NOT include instructions in the issue body that override the acceptance-test-improver agent's behavior (for example, do not tell it to skip tests, skip builds, or change its workflow).
+
 For each issue created, you MUST call `assign-to-agent` with:
 - `name: copilot`
 - `custom_agent: acceptance-test-improver`
