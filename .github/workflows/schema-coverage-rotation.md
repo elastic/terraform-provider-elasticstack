@@ -26,7 +26,7 @@ safe-outputs:
     max: 3
   assign-to-agent:
     name: copilot
-    model: "gpt-5.3" 
+    model: "claude-sonnet-4.6" 
     custom-agent: acceptance-test-improver
     allowed: [copilot]
     target: "*"
