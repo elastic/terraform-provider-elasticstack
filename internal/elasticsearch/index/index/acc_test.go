@@ -25,6 +25,8 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -423,8 +425,33 @@ func TestAccResourceIndexSlowlog(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_slowlog", "name", indexName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_slowlog", "search_slowlog_level", "info"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_slowlog", "search_slowlog_threshold_query_warn", "10s"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_slowlog", "indexing_slowlog_level", "warn"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_slowlog", "indexing_slowlog_threshold_index_warn", "10s"),
+				),
+			},
+		},
+	})
+}
+
+// indexing_slowlog_level is only supported in Elastic Stack 7.x.
+var indexingSlowlogLevelVersionConstraint, _ = version.NewConstraint("< 8.0.0")
+
+func TestAccResourceIndexSlowlogLevel(t *testing.T) {
+	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIndexDestroy,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(indexingSlowlogLevelVersionConstraint),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_slowlog_level", "name", indexName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_slowlog_level", "indexing_slowlog_level", "warn"),
 				),
 			},
 		},

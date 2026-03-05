@@ -12,7 +12,6 @@ resource "elasticstack_elasticsearch_index" "test_slowlog" {
 
   search_slowlog_level                  = "info"
   search_slowlog_threshold_query_warn   = "10s"
-  indexing_slowlog_level                = "warn"
   indexing_slowlog_threshold_index_warn = "10s"
 
   deletion_protection = false
