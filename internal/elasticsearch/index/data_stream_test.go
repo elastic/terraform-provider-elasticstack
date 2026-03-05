@@ -19,6 +19,7 @@ package index_test
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -31,6 +32,7 @@ import (
 func TestAccResourceDataStream(t *testing.T) {
 	// generate random name
 	dsName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlpha)
+	dsNameUpdated := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlpha)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -40,13 +42,41 @@ func TestAccResourceDataStream(t *testing.T) {
 			{
 				Config: testAccResourceDataStreamCreate(dsName),
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_data_stream.test_ds", "id"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "name", dsName),
 					// check some computed fields
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "indices.#", "1"),
+					resource.TestMatchResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "indices.0.index_name", dataStreamBackingIndexNameRegexp(dsName)),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_data_stream.test_ds", "indices.0.index_uuid"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "template", dsName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "ilm_policy", dsName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "timestamp_field", "@timestamp"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "generation", "1"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_data_stream.test_ds", "status"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "hidden", "false"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "system", "false"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "replicated", "false"),
+				),
+			},
+			{
+				Config:            testAccResourceDataStreamCreate(dsName),
+				ResourceName:      "elasticstack_elasticsearch_data_stream.test_ds",
+				ImportState:       true,
+				ImportStateVerify: true,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "name", dsName),
+					resource.TestMatchResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "indices.0.index_name", dataStreamBackingIndexNameRegexp(dsName)),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_data_stream.test_ds", "indices.0.index_uuid"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "template", dsName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "ilm_policy", dsName),
+				),
+			},
+			{
+				Config: testAccResourceDataStreamCreate(dsNameUpdated),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "name", dsNameUpdated),
+					resource.TestMatchResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "id", regexp.MustCompile(fmt.Sprintf(".+/%s$", dsNameUpdated))),
+					resource.TestMatchResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "indices.0.index_name", dataStreamBackingIndexNameRegexp(dsNameUpdated)),
 				),
 			},
 		},
@@ -89,6 +119,7 @@ resource "elasticstack_elasticsearch_index_template" "test_ds_template" {
     settings = jsonencode({
       "lifecycle.name" = elasticstack_elasticsearch_index_lifecycle.test_ilm.name
     })
+
   }
 
   data_stream {}
@@ -104,6 +135,10 @@ resource "elasticstack_elasticsearch_data_stream" "test_ds" {
   ]
 }
 	`, name, name, name, name)
+}
+
+func dataStreamBackingIndexNameRegexp(name string) *regexp.Regexp {
+	return regexp.MustCompile(fmt.Sprintf(`^\.ds-%s-.*-000001$`, name))
 }
 
 func checkResourceDataStreamDestroy(s *terraform.State) error {
