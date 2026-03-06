@@ -150,7 +150,7 @@ func Test_treemapPanelConfigConverter_roundTrip_populateFromAPIPanel_mapPanelToA
 	require.False(t, pm.TreemapConfig.Filters[0].MetaJSON.IsNull())
 	assert.Equal(t, normalizeAny(t, attrs["filters"].([]any)[0].(map[string]any)["meta"]), normalizeAny(t, mustUnmarshalJSON(t, pm.TreemapConfig.Filters[0].MetaJSON.ValueString())))
 
-	var roundTripConfig json.RawMessage
+	var roundTripConfig apiPanelConfig
 	diags = converter.mapPanelToAPI(pm, &roundTripConfig)
 	require.False(t, diags.HasError())
 
@@ -264,7 +264,7 @@ func Test_treemapPanelConfigConverter_roundTrip_populateFromAPIPanel_mapPanelToA
 	require.False(t, pm.TreemapConfig.Filters[0].MetaJSON.IsNull())
 	assert.Equal(t, normalizeAny(t, attrs["filters"].([]any)[0].(map[string]any)["meta"]), normalizeAny(t, mustUnmarshalJSON(t, pm.TreemapConfig.Filters[0].MetaJSON.ValueString())))
 
-	var roundTripConfig json.RawMessage
+	var roundTripConfig apiPanelConfig
 	diags = converter.mapPanelToAPI(pm, &roundTripConfig)
 	require.False(t, diags.HasError())
 
@@ -272,19 +272,19 @@ func Test_treemapPanelConfigConverter_roundTrip_populateFromAPIPanel_mapPanelToA
 	assert.Equal(t, normalizeAny(t, attrs), normalizeAny(t, roundTripAttrs))
 }
 
-func dashboardPanelItemConfigFromAttributes(t *testing.T, attributes map[string]any) json.RawMessage {
+func dashboardPanelItemConfigFromAttributes(t *testing.T, attributes map[string]any) apiPanelConfig {
 	t.Helper()
 
 	configMap := map[string]any{
 		"attributes": attributes,
 	}
 
-	configJSON, err := json.Marshal(configMap)
+	config, err := panelConfigFromMap("lens", configMap)
 	require.NoError(t, err)
-	return configJSON
+	return config
 }
 
-func dashboardPanelItemAttributes(t *testing.T, config json.RawMessage) map[string]any {
+func dashboardPanelItemAttributes(t *testing.T, config apiPanelConfig) map[string]any {
 	t.Helper()
 
 	cfgMap, err := panelConfigMap(config)

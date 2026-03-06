@@ -90,7 +90,7 @@ func (m *dashboardModel) populateFromAPI(ctx context.Context, resp *kbapi.GetDas
 
 	// Map query
 	m.QueryLanguage = types.StringValue(data.Data.Query.Language)
-	// Query.Query is a union type with json.RawMessage - can be string or JSON object
+	// Query.Query is a union type and can be string or JSON object.
 	queryBytes, err := json.Marshal(data.Data.Query.Query)
 	if err != nil {
 		diags.AddError("Failed to marshal query", err.Error())
@@ -159,7 +159,7 @@ func (m *dashboardModel) toAPICreateRequest(ctx context.Context, diags *diag.Dia
 		req.TimeRange.Mode = &mode
 	}
 
-	// Set query text - Query is a union type with json.RawMessage
+	// Set query text - Query is a union type.
 	queryModel, queryDiags := m.queryToAPI()
 	diags.Append(queryDiags...)
 	req.Query = queryModel
@@ -209,7 +209,7 @@ func (m *dashboardModel) toAPIUpdateRequest(ctx context.Context, diags *diag.Dia
 		req.TimeRange.Mode = &mode
 	}
 
-	// Set query text - Query is a union type with json.RawMessage
+	// Set query text - Query is a union type.
 	queryModel, queryDiags := m.queryToAPI()
 	diags.Append(queryDiags...)
 	req.Query = queryModel
@@ -242,7 +242,7 @@ func (m *dashboardModel) queryToAPI() (kbapi.KbnEsQueryServerQuerySchema, diag.D
 	query := kbapi.KbnEsQueryServerQuerySchema{
 		Language: m.QueryLanguage.ValueString(),
 	}
-	// Set query text - Query is a union type with json.RawMessage
+	// Set query text - Query is a union type.
 	if typeutils.IsKnown(m.QueryText) {
 		err := query.Query.FromKbnEsQueryServerQuerySchemaQuery0(m.QueryText.ValueString())
 		if err != nil {

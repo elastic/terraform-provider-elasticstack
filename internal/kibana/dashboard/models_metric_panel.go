@@ -47,7 +47,7 @@ func (c metricChartPanelConfigConverter) handlesTFPanelConfig(pm panelModel) boo
 	return pm.MetricChartConfig != nil
 }
 
-func (c metricChartPanelConfigConverter) populateFromAPIPanel(ctx context.Context, pm *panelModel, config json.RawMessage) diag.Diagnostics {
+func (c metricChartPanelConfigConverter) populateFromAPIPanel(ctx context.Context, pm *panelModel, config apiPanelConfig) diag.Diagnostics {
 	// Try to extract the metric chart config from the panel config
 	cfgMap, err := panelConfigMap(config)
 	if err != nil {
@@ -101,7 +101,7 @@ func (c metricChartPanelConfigConverter) populateFromAPIPanel(ctx context.Contex
 	return pm.MetricChartConfig.fromAPIVariant1(ctx, variant1)
 }
 
-func (c metricChartPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *json.RawMessage) diag.Diagnostics {
+func (c metricChartPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *apiPanelConfig) diag.Diagnostics {
 	var diags diag.Diagnostics
 	configModel := *pm.MetricChartConfig
 
@@ -119,7 +119,7 @@ func (c metricChartPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig 
 		return diags
 	}
 
-	rawConfig, err := panelConfigRawFromLensAttributes(attrs0)
+	rawConfig, err := panelConfigFromLensAttributes(attrs0)
 	if err != nil {
 		diags.AddError("Failed to marshal metric chart config", err.Error())
 		return diags

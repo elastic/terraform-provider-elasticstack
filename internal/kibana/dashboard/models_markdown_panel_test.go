@@ -19,7 +19,6 @@ package dashboard
 
 import (
 	"context"
-	"encoding/json"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -31,10 +30,10 @@ import (
 func Test_markdownPanelConfigConverter_handlesAPIPanelConfig(t *testing.T) {
 	c := markdownPanelConfigConverter{}
 
-	assert.True(t, c.handlesAPIPanelConfig(&panelModel{MarkdownConfig: &markdownConfigModel{}}, "DASHBOARD_MARKDOWN", nil))
-	assert.True(t, c.handlesAPIPanelConfig(nil, "DASHBOARD_MARKDOWN", nil))
-	assert.False(t, c.handlesAPIPanelConfig(&panelModel{}, "DASHBOARD_MARKDOWN", nil))
-	assert.False(t, c.handlesAPIPanelConfig(&panelModel{MarkdownConfig: &markdownConfigModel{}}, "lens", nil))
+	assert.True(t, c.handlesAPIPanelConfig(&panelModel{MarkdownConfig: &markdownConfigModel{}}, "DASHBOARD_MARKDOWN", apiPanelConfig{}))
+	assert.True(t, c.handlesAPIPanelConfig(nil, "DASHBOARD_MARKDOWN", apiPanelConfig{}))
+	assert.False(t, c.handlesAPIPanelConfig(&panelModel{}, "DASHBOARD_MARKDOWN", apiPanelConfig{}))
+	assert.False(t, c.handlesAPIPanelConfig(&panelModel{MarkdownConfig: &markdownConfigModel{}}, "lens", apiPanelConfig{}))
 }
 
 func Test_markdownPanelConfigConverter_populateFromAPIPanel(t *testing.T) {
@@ -50,11 +49,8 @@ func Test_markdownPanelConfigConverter_populateFromAPIPanel(t *testing.T) {
 		HideTitle:   &hideTitle,
 		Title:       &title,
 	}))
-	raw, err := cfg.MarshalJSON()
-	require.NoError(t, err)
-
 	pm := &panelModel{}
-	diags := markdownPanelConfigConverter{}.populateFromAPIPanel(context.Background(), pm, raw)
+	diags := markdownPanelConfigConverter{}.populateFromAPIPanel(context.Background(), pm, apiPanelConfig{Markdown: &cfg})
 	require.False(t, diags.HasError())
 	require.NotNil(t, pm.MarkdownConfig)
 	assert.Equal(t, types.StringValue(content), pm.MarkdownConfig.Content)
@@ -73,13 +69,12 @@ func Test_markdownPanelConfigConverter_mapPanelToAPI(t *testing.T) {
 		},
 	}
 
-	var raw json.RawMessage
-	diags := markdownPanelConfigConverter{}.mapPanelToAPI(pm, &raw)
+	var out apiPanelConfig
+	diags := markdownPanelConfigConverter{}.mapPanelToAPI(pm, &out)
 	require.False(t, diags.HasError())
 
-	var cfg kbapi.KbnDashboardPanelDASHBOARDMARKDOWN_Config
-	require.NoError(t, cfg.UnmarshalJSON(raw))
-	cfg0, err := cfg.AsKbnDashboardPanelDASHBOARDMARKDOWNConfig0()
+	require.NotNil(t, out.Markdown)
+	cfg0, err := out.Markdown.AsKbnDashboardPanelDASHBOARDMARKDOWNConfig0()
 	require.NoError(t, err)
 	require.NotNil(t, cfg0.Content)
 	assert.Equal(t, "body", *cfg0.Content)

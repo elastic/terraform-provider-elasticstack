@@ -47,7 +47,7 @@ func (c treemapPanelConfigConverter) handlesTFPanelConfig(pm panelModel) bool {
 	return pm.TreemapConfig != nil
 }
 
-func (c treemapPanelConfigConverter) populateFromAPIPanel(_ context.Context, pm *panelModel, config json.RawMessage) diag.Diagnostics {
+func (c treemapPanelConfigConverter) populateFromAPIPanel(_ context.Context, pm *panelModel, config apiPanelConfig) diag.Diagnostics {
 	cfgMap, err := panelConfigMap(config)
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
@@ -93,7 +93,7 @@ func (c treemapPanelConfigConverter) populateFromAPIPanel(_ context.Context, pm 
 	return pm.TreemapConfig.fromAPIESQL(treemapESQL)
 }
 
-func (c treemapPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *json.RawMessage) diag.Diagnostics {
+func (c treemapPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *apiPanelConfig) diag.Diagnostics {
 	var diags diag.Diagnostics
 	configModel := *pm.TreemapConfig
 
@@ -109,7 +109,7 @@ func (c treemapPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *jso
 		return diags
 	}
 
-	rawConfig, err := panelConfigRawFromLensAttributes(attrs0)
+	rawConfig, err := panelConfigFromLensAttributes(attrs0)
 	if err != nil {
 		diags.AddError("Failed to marshal treemap config", err.Error())
 		return diags

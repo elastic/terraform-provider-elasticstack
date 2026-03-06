@@ -19,31 +19,73 @@ package dashboard
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 )
 
-func panelConfigMap(config json.RawMessage) (map[string]any, error) {
+type apiPanelConfig struct {
+	Lens     *kbapi.KbnDashboardPanelLens_Config
+	Markdown *kbapi.KbnDashboardPanelDASHBOARDMARKDOWN_Config
+}
+
+func (c apiPanelConfig) jsonString() (string, error) {
+	switch {
+	case c.Lens != nil:
+		b, err := c.Lens.MarshalJSON()
+		return string(b), err
+	case c.Markdown != nil:
+		b, err := c.Markdown.MarshalJSON()
+		return string(b), err
+	default:
+		return "null", nil
+	}
+}
+
+func panelConfigMap(config apiPanelConfig) (map[string]any, error) {
 	var cfgMap map[string]any
-	if len(config) == 0 || string(config) == "null" {
+	configJSON, err := config.jsonString()
+	if err != nil {
+		return nil, err
+	}
+	if configJSON == "" || configJSON == "null" {
 		return cfgMap, nil
 	}
-	err := json.Unmarshal(config, &cfgMap)
+	err = json.Unmarshal([]byte(configJSON), &cfgMap)
 	return cfgMap, err
 }
 
-func panelConfigRawFromMap(configMap map[string]any) (json.RawMessage, error) {
+func panelConfigFromMap(panelType string, configMap map[string]any) (apiPanelConfig, error) {
 	if configMap == nil {
-		return json.RawMessage("null"), nil
+		return apiPanelConfig{}, nil
 	}
 	b, err := json.Marshal(configMap)
-	return json.RawMessage(b), err
+	if err != nil {
+		return apiPanelConfig{}, err
+	}
+
+	switch panelType {
+	case "lens":
+		var cfg kbapi.KbnDashboardPanelLens_Config
+		if err := cfg.UnmarshalJSON(b); err != nil {
+			return apiPanelConfig{}, err
+		}
+		return apiPanelConfig{Lens: &cfg}, nil
+	case "DASHBOARD_MARKDOWN":
+		var cfg kbapi.KbnDashboardPanelDASHBOARDMARKDOWN_Config
+		if err := cfg.UnmarshalJSON(b); err != nil {
+			return apiPanelConfig{}, err
+		}
+		return apiPanelConfig{Markdown: &cfg}, nil
+	default:
+		return apiPanelConfig{}, fmt.Errorf("unsupported panel type %q", panelType)
+	}
 }
 
-func panelConfigRawFromLensAttributes(attrs kbapi.KbnDashboardPanelLensConfig0Attributes0) (json.RawMessage, error) {
+func panelConfigFromLensAttributes(attrs kbapi.KbnDashboardPanelLensConfig0Attributes0) (apiPanelConfig, error) {
 	var configAttrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
 	if err := configAttrs.FromKbnDashboardPanelLensConfig0Attributes0(attrs); err != nil {
-		return nil, err
+		return apiPanelConfig{}, err
 	}
 
 	config0 := kbapi.KbnDashboardPanelLensConfig0{
@@ -52,9 +94,8 @@ func panelConfigRawFromLensAttributes(attrs kbapi.KbnDashboardPanelLensConfig0At
 
 	var lensConfig kbapi.KbnDashboardPanelLens_Config
 	if err := lensConfig.FromKbnDashboardPanelLensConfig0(config0); err != nil {
-		return nil, err
+		return apiPanelConfig{}, err
 	}
 
-	b, err := lensConfig.MarshalJSON()
-	return json.RawMessage(b), err
+	return apiPanelConfig{Lens: &lensConfig}, nil
 }

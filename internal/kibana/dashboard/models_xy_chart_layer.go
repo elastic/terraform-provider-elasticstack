@@ -275,7 +275,7 @@ func (m *dataLayerModel) fromAPIESql(apiLayer kbapi.XyLayerESQL) diag.Diagnostic
 }
 
 // toAPI converts data layer to API JSON
-func (m *dataLayerModel) toAPI(layerType string) (json.RawMessage, diag.Diagnostics) {
+func (m *dataLayerModel) toAPI(layerType string) ([]byte, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	// Build a map with all the fields
@@ -424,7 +424,7 @@ func (m *referenceLineLayerModel) fromAPIESql(apiLayer kbapi.XyReferenceLineLaye
 }
 
 // toAPI converts reference line layer to API JSON
-func (m *referenceLineLayerModel) toAPI(layerType string) (json.RawMessage, diag.Diagnostics) {
+func (m *referenceLineLayerModel) toAPI(layerType string) ([]byte, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	// Build a map with all the fields

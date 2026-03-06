@@ -67,10 +67,10 @@ type sectionGridModel struct {
 }
 
 type panelConfigConverter interface {
-	handlesAPIPanelConfig(ctx *panelModel, panelType string, config json.RawMessage) bool
+	handlesAPIPanelConfig(ctx *panelModel, panelType string, config apiPanelConfig) bool
 	handlesTFPanelConfig(tfModel panelModel) bool
-	populateFromAPIPanel(ctx context.Context, tfModel *panelModel, config json.RawMessage) diag.Diagnostics
-	mapPanelToAPI(tfModel panelModel, config *json.RawMessage) diag.Diagnostics
+	populateFromAPIPanel(ctx context.Context, tfModel *panelModel, config apiPanelConfig) diag.Diagnostics
+	mapPanelToAPI(tfModel panelModel, config *apiPanelConfig) diag.Diagnostics
 }
 
 var panelConfigConverters = []panelConfigConverter{
@@ -191,7 +191,7 @@ func (m *dashboardModel) mapSectionFromAPI(ctx context.Context, tfSection *secti
 	return sm, diags
 }
 
-func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelModel, panelType string, gridX, gridY float32, gridW, gridH *float32, uid *string, config json.RawMessage) (panelModel, diag.Diagnostics) {
+func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelModel, panelType string, gridX, gridY float32, gridW, gridH *float32, uid *string, config apiPanelConfig) (panelModel, diag.Diagnostics) {
 	// Start from the existing TF model when available (plan or prior state).
 	//
 	// Kibana may omit optional attributes on reads even when they were provided on
@@ -246,11 +246,12 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 		return pm, diags
 	}
 
-	configBytes := config
-	if len(configBytes) == 0 {
-		configBytes = []byte("null")
+	configJSON, err := config.jsonString()
+	if err != nil {
+		diags = append(diags, diagutil.FrameworkDiagFromError(err)...)
+		return panelModel{}, diags
 	}
-	pm.ConfigJSON = jsontypes.NewNormalizedValue(string(configBytes))
+	pm.ConfigJSON = jsontypes.NewNormalizedValue(configJSON)
 	return pm, diags
 }
 
@@ -355,7 +356,7 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 	}
 
 	var diags diag.Diagnostics
-	var panelConfig json.RawMessage
+	var panelConfig apiPanelConfig
 	var panelConfigHandled bool
 	for _, converter := range panelConfigConverters {
 		if converter.handlesTFPanelConfig(pm) {
@@ -374,73 +375,78 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 		var configMap map[string]any
 		diags.Append(pm.ConfigJSON.Unmarshal(&configMap)...)
 		if !diags.HasError() {
-			rawConfig, err := panelConfigRawFromMap(configMap)
+			typedConfig, err := panelConfigFromMap(panelType, configMap)
 			if err != nil {
 				diags.AddError("Failed to marshal panel config JSON", err.Error())
 			} else {
-				panelConfig = rawConfig
+				panelConfig = typedConfig
 			}
 		}
 	}
 
-	configJSON := panelConfig
-	if len(configJSON) == 0 {
-		configJSON = []byte("null")
-	}
-
-	rawPanel := map[string]any{
-		"type": panelType,
-		"grid": map[string]any{
-			"x": grid.X,
-			"y": grid.Y,
-		},
-	}
-	if grid.W != nil {
-		rawPanel["grid"].(map[string]any)["w"] = *grid.W
-	}
-	if grid.H != nil {
-		rawPanel["grid"].(map[string]any)["h"] = *grid.H
-	}
-	if typeutils.IsKnown(pm.ID) {
-		rawPanel["uid"] = pm.ID.ValueString()
-	}
-	if len(configJSON) > 0 && string(configJSON) != "null" {
-		var configAny any
-		if err := json.Unmarshal(configJSON, &configAny); err != nil {
-			diags.AddError("Failed to decode panel config JSON", err.Error())
+	var panelItem kbapi.DashboardPanelItem
+	switch panelType {
+	case "lens":
+		p := kbapi.KbnDashboardPanelLens{
+			Grid: grid,
+			Type: kbapi.KbnDashboardPanelLensType("lens"),
+		}
+		if typeutils.IsKnown(pm.ID) {
+			p.Uid = new(pm.ID.ValueString())
+		}
+		if panelConfig.Lens != nil {
+			p.Config = *panelConfig.Lens
+		}
+		panelJSON, err := json.Marshal(p)
+		if err != nil {
+			diags.AddError("Failed to marshal dashboard lens panel", err.Error())
 			return kbapi.DashboardPanelItem{}, diags
 		}
-		rawPanel["config"] = configAny
-	}
-
-	rawBytes, err := json.Marshal(rawPanel)
-	if err != nil {
-		diags.AddError("Failed to marshal dashboard panel", err.Error())
-		return kbapi.DashboardPanelItem{}, diags
-	}
-
-	var panelItem kbapi.DashboardPanelItem
-	if err := panelItem.UnmarshalJSON(rawBytes); err != nil {
-		diags.AddError("Failed to create dashboard panel item", err.Error())
+		if err := panelItem.UnmarshalJSON(panelJSON); err != nil {
+			diags.AddError("Failed to create dashboard lens panel", err.Error())
+			return kbapi.DashboardPanelItem{}, diags
+		}
+	case "DASHBOARD_MARKDOWN":
+		p := kbapi.KbnDashboardPanelDASHBOARDMARKDOWN{
+			Grid: grid,
+			Type: kbapi.KbnDashboardPanelDASHBOARDMARKDOWNType("DASHBOARD_MARKDOWN"),
+		}
+		if typeutils.IsKnown(pm.ID) {
+			p.Uid = new(pm.ID.ValueString())
+		}
+		if panelConfig.Markdown != nil {
+			p.Config = panelConfig.Markdown
+		}
+		panelJSON, err := json.Marshal(p)
+		if err != nil {
+			diags.AddError("Failed to marshal dashboard markdown panel", err.Error())
+			return kbapi.DashboardPanelItem{}, diags
+		}
+		if err := panelItem.UnmarshalJSON(panelJSON); err != nil {
+			diags.AddError("Failed to create dashboard markdown panel", err.Error())
+			return kbapi.DashboardPanelItem{}, diags
+		}
+	default:
+		diags.AddError("Unsupported panel type", "Panel type "+panelType+" is not supported by this provider.")
 		return kbapi.DashboardPanelItem{}, diags
 	}
 
 	return panelItem, diags
 }
 
-func convertRawPanel(raw map[string]any) (string, float32, float32, *float32, *float32, *string, json.RawMessage, diag.Diagnostics) {
+func convertRawPanel(raw map[string]any) (string, float32, float32, *float32, *float32, *string, apiPanelConfig, diag.Diagnostics) {
 	rawType, ok := raw["type"].(string)
 	if !ok || rawType == "" {
 		var diags diag.Diagnostics
 		diags.AddError("Invalid dashboard panel", "Missing required 'type' field in dashboard panel payload.")
-		return "", 0, 0, nil, nil, nil, nil, diags
+		return "", 0, 0, nil, nil, nil, apiPanelConfig{}, diags
 	}
 
 	gridMap, ok := raw["grid"].(map[string]any)
 	if !ok {
 		var diags diag.Diagnostics
 		diags.AddError("Invalid dashboard panel", "Missing required 'grid' object in dashboard panel payload.")
-		return "", 0, 0, nil, nil, nil, nil, diags
+		return "", 0, 0, nil, nil, nil, apiPanelConfig{}, diags
 	}
 
 	gridX, xok := jsonNumberToFloat32(gridMap["x"])
@@ -448,7 +454,7 @@ func convertRawPanel(raw map[string]any) (string, float32, float32, *float32, *f
 	if !xok || !yok {
 		var diags diag.Diagnostics
 		diags.AddError("Invalid dashboard panel", "Dashboard panel grid must include numeric x and y values.")
-		return "", 0, 0, nil, nil, nil, nil, diags
+		return "", 0, 0, nil, nil, nil, apiPanelConfig{}, diags
 	}
 
 	var gridW *float32
@@ -465,13 +471,19 @@ func convertRawPanel(raw map[string]any) (string, float32, float32, *float32, *f
 		uid = &rawUID
 	}
 
-	var config json.RawMessage
+	var config apiPanelConfig
 	if rawConfig, ok := raw["config"]; ok {
-		b, err := json.Marshal(rawConfig)
-		if err != nil {
-			return "", 0, 0, nil, nil, nil, nil, diagutil.FrameworkDiagFromError(err)
+		configMap, ok := rawConfig.(map[string]any)
+		if !ok {
+			var diags diag.Diagnostics
+			diags.AddError("Invalid dashboard panel", "Panel config must be an object.")
+			return "", 0, 0, nil, nil, nil, apiPanelConfig{}, diags
 		}
-		config = json.RawMessage(b)
+		var err error
+		config, err = panelConfigFromMap(normalizePanelType(rawType), configMap)
+		if err != nil {
+			return "", 0, 0, nil, nil, nil, apiPanelConfig{}, diagutil.FrameworkDiagFromError(err)
+		}
 	}
 
 	return normalizePanelType(rawType), gridX, gridY, gridW, gridH, uid, config, nil

@@ -17,14 +17,12 @@
 
 package dashboard
 
-import "encoding/json"
-
 type lensPanelConfigConverter struct {
 	visualizationType string
 	hasTFPanelConfig  func(pm panelModel) bool
 }
 
-func (c lensPanelConfigConverter) handlesAPIPanelConfig(pm *panelModel, panelType string, cfg json.RawMessage) bool {
+func (c lensPanelConfigConverter) handlesAPIPanelConfig(pm *panelModel, panelType string, cfg apiPanelConfig) bool {
 	if c.hasTFPanelConfig != nil && pm != nil && !c.hasTFPanelConfig(*pm) {
 		return false
 	}

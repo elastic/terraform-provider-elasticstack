@@ -341,7 +341,7 @@ func Test_tagcloudPanelConfigConverter_mapPanelToAPI(t *testing.T) {
 		},
 	}
 
-	var apiConfig json.RawMessage
+	var apiConfig apiPanelConfig
 	diags := converter.mapPanelToAPI(panel, &apiConfig)
 	require.False(t, diags.HasError())
 

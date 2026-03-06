@@ -53,7 +53,7 @@ func (c legacyMetricPanelConfigConverter) handlesTFPanelConfig(pm panelModel) bo
 	return pm.LegacyMetricConfig != nil
 }
 
-func (c legacyMetricPanelConfigConverter) populateFromAPIPanel(ctx context.Context, pm *panelModel, config json.RawMessage) diag.Diagnostics {
+func (c legacyMetricPanelConfigConverter) populateFromAPIPanel(ctx context.Context, pm *panelModel, config apiPanelConfig) diag.Diagnostics {
 	cfgMap, err := panelConfigMap(config)
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
@@ -83,7 +83,7 @@ func (c legacyMetricPanelConfigConverter) populateFromAPIPanel(ctx context.Conte
 	return pm.LegacyMetricConfig.fromAPI(ctx, legacyMetricChart)
 }
 
-func (c legacyMetricPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *json.RawMessage) diag.Diagnostics {
+func (c legacyMetricPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *apiPanelConfig) diag.Diagnostics {
 	var diags diag.Diagnostics
 	configModel := *pm.LegacyMetricConfig
 
@@ -99,7 +99,7 @@ func (c legacyMetricPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig
 		return diags
 	}
 
-	rawConfig, err := panelConfigRawFromLensAttributes(attrs0)
+	rawConfig, err := panelConfigFromLensAttributes(attrs0)
 	if err != nil {
 		diags.AddError("Failed to marshal legacy metric config", err.Error())
 		return diags

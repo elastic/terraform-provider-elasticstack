@@ -46,7 +46,7 @@ func (c pieChartPanelConfigConverter) handlesTFPanelConfig(pm panelModel) bool {
 	return pm.PieChartConfig != nil
 }
 
-func (c pieChartPanelConfigConverter) populateFromAPIPanel(_ context.Context, pm *panelModel, config json.RawMessage) diag.Diagnostics {
+func (c pieChartPanelConfigConverter) populateFromAPIPanel(_ context.Context, pm *panelModel, config apiPanelConfig) diag.Diagnostics {
 	// Try to extract the pie chart config from the panel config
 	cfgMap, err := panelConfigMap(config)
 	if err != nil {
@@ -95,7 +95,7 @@ func (c pieChartPanelConfigConverter) populateFromAPIPanel(_ context.Context, pm
 	return pm.PieChartConfig.fromAPIESQL(esql)
 }
 
-func (c pieChartPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *json.RawMessage) diag.Diagnostics {
+func (c pieChartPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *apiPanelConfig) diag.Diagnostics {
 	var diags diag.Diagnostics
 	configModel := *pm.PieChartConfig
 
@@ -113,7 +113,7 @@ func (c pieChartPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *js
 		return diags
 	}
 
-	rawConfig, err := panelConfigRawFromLensAttributes(attrs0)
+	rawConfig, err := panelConfigFromLensAttributes(attrs0)
 	if err != nil {
 		diags.AddError("Failed to marshal pie chart config", err.Error())
 		return diags

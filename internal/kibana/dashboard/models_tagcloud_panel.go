@@ -47,7 +47,7 @@ func (c tagcloudPanelConfigConverter) handlesTFPanelConfig(pm panelModel) bool {
 	return pm.TagcloudConfig != nil
 }
 
-func (c tagcloudPanelConfigConverter) populateFromAPIPanel(ctx context.Context, pm *panelModel, config json.RawMessage) diag.Diagnostics {
+func (c tagcloudPanelConfigConverter) populateFromAPIPanel(ctx context.Context, pm *panelModel, config apiPanelConfig) diag.Diagnostics {
 	// Try to extract the tagcloud config from the panel config
 	cfgMap, err := panelConfigMap(config)
 	if err != nil {
@@ -87,7 +87,7 @@ func (c tagcloudPanelConfigConverter) populateFromAPIPanel(ctx context.Context, 
 	return pm.TagcloudConfig.fromAPI(ctx, tagcloudNoESQL)
 }
 
-func (c tagcloudPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *json.RawMessage) diag.Diagnostics {
+func (c tagcloudPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *apiPanelConfig) diag.Diagnostics {
 	var diags diag.Diagnostics
 	configModel := *pm.TagcloudConfig
 
@@ -112,7 +112,7 @@ func (c tagcloudPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *js
 		return diags
 	}
 
-	rawConfig, err := panelConfigRawFromLensAttributes(attrs0)
+	rawConfig, err := panelConfigFromLensAttributes(attrs0)
 	if err != nil {
 		diags.AddError("Failed to marshal tagcloud config", err.Error())
 		return diags

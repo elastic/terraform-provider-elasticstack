@@ -253,7 +253,7 @@ func Test_heatmapPanelConfigConverter_mapPanelToAPI_populateFromAPIPanel_roundTr
 		},
 	}
 
-	var apiConfig json.RawMessage
+	var apiConfig apiPanelConfig
 	diags := converter.mapPanelToAPI(panel, &apiConfig)
 	require.False(t, diags.HasError())
 

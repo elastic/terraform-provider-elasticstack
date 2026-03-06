@@ -46,7 +46,7 @@ func (c heatmapPanelConfigConverter) handlesTFPanelConfig(pm panelModel) bool {
 	return pm.HeatmapConfig != nil
 }
 
-func (c heatmapPanelConfigConverter) populateFromAPIPanel(ctx context.Context, pm *panelModel, config json.RawMessage) diag.Diagnostics {
+func (c heatmapPanelConfigConverter) populateFromAPIPanel(ctx context.Context, pm *panelModel, config apiPanelConfig) diag.Diagnostics {
 	cfgMap, err := panelConfigMap(config)
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
@@ -90,7 +90,7 @@ func (c heatmapPanelConfigConverter) populateFromAPIPanel(ctx context.Context, p
 	return pm.HeatmapConfig.fromAPIESQL(ctx, heatmapESQL)
 }
 
-func (c heatmapPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *json.RawMessage) diag.Diagnostics {
+func (c heatmapPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *apiPanelConfig) diag.Diagnostics {
 	var diags diag.Diagnostics
 	configModel := *pm.HeatmapConfig
 
@@ -106,7 +106,7 @@ func (c heatmapPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *jso
 		return diags
 	}
 
-	rawConfig, err := panelConfigRawFromLensAttributes(attrs0)
+	rawConfig, err := panelConfigFromLensAttributes(attrs0)
 	if err != nil {
 		diags.AddError("Failed to marshal heatmap config", err.Error())
 		return diags

@@ -19,7 +19,6 @@ package dashboard
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
@@ -37,7 +36,7 @@ type markdownConfigModel struct {
 
 type markdownPanelConfigConverter struct{}
 
-func (c markdownPanelConfigConverter) handlesAPIPanelConfig(pm *panelModel, panelType string, _ json.RawMessage) bool {
+func (c markdownPanelConfigConverter) handlesAPIPanelConfig(pm *panelModel, panelType string, _ apiPanelConfig) bool {
 	return (pm == nil || pm.MarkdownConfig != nil) && panelType == "DASHBOARD_MARKDOWN"
 }
 
@@ -45,15 +44,12 @@ func (c markdownPanelConfigConverter) handlesTFPanelConfig(pm panelModel) bool {
 	return pm.MarkdownConfig != nil
 }
 
-func (c markdownPanelConfigConverter) populateFromAPIPanel(_ context.Context, pm *panelModel, config json.RawMessage) diag.Diagnostics {
-	var cfg kbapi.KbnDashboardPanelDASHBOARDMARKDOWN_Config
-	if len(config) > 0 {
-		if err := cfg.UnmarshalJSON(config); err != nil {
-			return diagutil.FrameworkDiagFromError(err)
-		}
+func (c markdownPanelConfigConverter) populateFromAPIPanel(_ context.Context, pm *panelModel, config apiPanelConfig) diag.Diagnostics {
+	if config.Markdown == nil {
+		return nil
 	}
 
-	config0, err := cfg.AsKbnDashboardPanelDASHBOARDMARKDOWNConfig0()
+	config0, err := config.Markdown.AsKbnDashboardPanelDASHBOARDMARKDOWNConfig0()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -71,7 +67,7 @@ func (c markdownPanelConfigConverter) populateFromAPIPanel(_ context.Context, pm
 	return nil
 }
 
-func (c markdownPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *json.RawMessage) diag.Diagnostics {
+func (c markdownPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *apiPanelConfig) diag.Diagnostics {
 	content := pm.MarkdownConfig.Content.ValueString()
 	config0 := kbapi.KbnDashboardPanelDASHBOARDMARKDOWNConfig0{
 		Content: &content,
@@ -93,16 +89,7 @@ func (c markdownPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *js
 		return diags
 	}
 
-	raw, err := cfg.MarshalJSON()
-	if err != nil {
-		diags.AddError("Failed to marshal panel config", err.Error())
-		return diags
-	}
-
-	*apiConfig = json.RawMessage(raw)
-	if len(*apiConfig) == 0 {
-		diags.AddError("Failed to marshal panel config", "Generated markdown panel config was empty")
-	}
+	apiConfig.Markdown = &cfg
 
 	return diags
 }

@@ -46,7 +46,7 @@ func (c gaugePanelConfigConverter) handlesTFPanelConfig(pm panelModel) bool {
 	return pm.GaugeConfig != nil
 }
 
-func (c gaugePanelConfigConverter) populateFromAPIPanel(ctx context.Context, pm *panelModel, config json.RawMessage) diag.Diagnostics {
+func (c gaugePanelConfigConverter) populateFromAPIPanel(ctx context.Context, pm *panelModel, config apiPanelConfig) diag.Diagnostics {
 	cfgMap, err := panelConfigMap(config)
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
@@ -81,7 +81,7 @@ func (c gaugePanelConfigConverter) populateFromAPIPanel(ctx context.Context, pm 
 	return pm.GaugeConfig.fromAPI(ctx, gaugeNoESQL)
 }
 
-func (c gaugePanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *json.RawMessage) diag.Diagnostics {
+func (c gaugePanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *apiPanelConfig) diag.Diagnostics {
 	var diags diag.Diagnostics
 	configModel := *pm.GaugeConfig
 
@@ -103,7 +103,7 @@ func (c gaugePanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *json.
 		return diags
 	}
 
-	rawConfig, err := panelConfigRawFromLensAttributes(attrs0)
+	rawConfig, err := panelConfigFromLensAttributes(attrs0)
 	if err != nil {
 		diags.AddError("Failed to marshal gauge config", err.Error())
 		return diags

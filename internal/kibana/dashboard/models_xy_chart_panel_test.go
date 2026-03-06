@@ -19,7 +19,6 @@ package dashboard
 
 import (
 	"context"
-	"encoding/json"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -821,12 +820,12 @@ func Test_xyChartPanelConfigConverter_populateFromAPIPanel(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		config      json.RawMessage
+		config      apiPanelConfig
 		expectError bool
 	}{
 		{
 			name: "valid xy chart config",
-			config: func() json.RawMessage {
+			config: func() apiPanelConfig {
 				attributes := map[string]any{
 					"type":  "xy",
 					"title": "Test Chart",
@@ -854,8 +853,8 @@ func Test_xyChartPanelConfigConverter_populateFromAPIPanel(t *testing.T) {
 					"attributes": attributes,
 				}
 
-				configJSON, _ := json.Marshal(configMap)
-				return configJSON
+				config, _ := panelConfigFromMap("lens", configMap)
+				return config
 			}(),
 			expectError: false,
 		},

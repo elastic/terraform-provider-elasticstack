@@ -46,7 +46,7 @@ func (c regionMapPanelConfigConverter) handlesTFPanelConfig(pm panelModel) bool 
 	return pm.RegionMapConfig != nil
 }
 
-func (c regionMapPanelConfigConverter) populateFromAPIPanel(ctx context.Context, pm *panelModel, config json.RawMessage) diag.Diagnostics {
+func (c regionMapPanelConfigConverter) populateFromAPIPanel(ctx context.Context, pm *panelModel, config apiPanelConfig) diag.Diagnostics {
 	cfgMap, err := panelConfigMap(config)
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
@@ -87,7 +87,7 @@ func (c regionMapPanelConfigConverter) populateFromAPIPanel(ctx context.Context,
 	return diagutil.FrameworkDiagFromError(err)
 }
 
-func (c regionMapPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *json.RawMessage) diag.Diagnostics {
+func (c regionMapPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *apiPanelConfig) diag.Diagnostics {
 	var diags diag.Diagnostics
 	configModel := *pm.RegionMapConfig
 
@@ -103,7 +103,7 @@ func (c regionMapPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *j
 		return diags
 	}
 
-	rawConfig, err := panelConfigRawFromLensAttributes(attrs0)
+	rawConfig, err := panelConfigFromLensAttributes(attrs0)
 	if err != nil {
 		diags.AddError("Failed to marshal region map config", err.Error())
 		return diags

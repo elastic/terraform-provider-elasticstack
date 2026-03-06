@@ -88,13 +88,13 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 						"x": 10,
 						"y": 20
 					},
-					"type": "search",
+					"type": "kbn-dashboard-panel-lens",
 					"config": {"unknownField": "something"}
 				}
 			]`,
 			expectedPanels: []panelModel{
 				{
-					Type: types.StringValue("search"),
+					Type: types.StringValue("lens"),
 					Grid: panelGridModel{
 						X: types.Int64Value(10),
 						Y: types.Int64Value(20),
@@ -117,7 +117,7 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 					"uid": "section1",
 					"panels": [
 						{
-							"type": "visualization",
+							"type": "lens",
 							"grid": { "x": 0, "y": 0, "w": 4, "h": 4 },
 							"config": { "title": "Inner Panel" }
 						}
@@ -134,7 +134,7 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 					},
 					Panels: []panelModel{
 						{
-							Type: types.StringValue("visualization"),
+							Type: types.StringValue("lens"),
 							Grid: panelGridModel{
 								X: types.Int64Value(0),
 								Y: types.Int64Value(0),
@@ -154,7 +154,7 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 			apiPanelsJSON: `[
 				{
 					"grid": { "x": 0, "y": 0, "w": 6, "h": 6 },
-					"type": "visualization",
+					"type": "kbn-dashboard-panel-lens",
 					"uid": "panel1",
 					"config": { "title": "Panel 1" }
 				},
@@ -164,7 +164,7 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 					"uid": "section1",
 					"panels": [
 						{
-							"type": "visualization",
+							"type": "lens",
 							"grid": { "x": 0, "y": 0, "w": 6, "h": 6 },
 							"config": { "title": "Inner Panel" }
 						}
@@ -172,14 +172,14 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 				},
 				{
 					"grid": { "x": 6, "y": 0, "w": 6, "h": 6 },
-					"type": "lens",
+					"type": "kbn-dashboard-panel-lens",
 					"uid": "panel2",
 					"config": { "title": "Panel 2" }
 				}
 			]`,
 			expectedPanels: []panelModel{
 				{
-					Type: types.StringValue("visualization"),
+					Type: types.StringValue("lens"),
 					Grid: panelGridModel{
 						X: types.Int64Value(0),
 						Y: types.Int64Value(0),
@@ -213,7 +213,7 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 					},
 					Panels: []panelModel{
 						{
-							Type: types.StringValue("visualization"),
+							Type: types.StringValue("lens"),
 							Grid: panelGridModel{
 								X: types.Int64Value(0),
 								Y: types.Int64Value(0),
@@ -297,7 +297,7 @@ func Test_panelsToAPI(t *testing.T) {
 			model: dashboardModel{
 				Panels: []panelModel{
 					{
-						Type: types.StringValue("search"),
+						Type: types.StringValue("lens"),
 						Grid: panelGridModel{
 							X: types.Int64Value(10),
 							Y: types.Int64Value(20),
@@ -314,7 +314,7 @@ func Test_panelsToAPI(t *testing.T) {
 						"x": 10,
 						"y": 20
 					},
-					"type": "search",
+					"type": "lens",
 					"config": {
 						"unknownField": "something"
 					}
