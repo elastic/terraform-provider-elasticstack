@@ -46,11 +46,11 @@ resource "elasticstack_elasticsearch_index_template" "example" {
     alias { # optional, set(block)
       name           = <required, string>
       filter         = <optional, json string> # default ""
-      index_routing  = <optional, computed, string> # default ""
+      index_routing  = <optional, computed, string>
       is_hidden      = <optional, bool>   # default false
       is_write_index = <optional, bool>   # default false
       routing        = <optional, string> # default ""
-      search_routing = <optional, computed, string> # default ""
+      search_routing = <optional, computed, string>
     }
 
     lifecycle { # optional, set(block), max 1
