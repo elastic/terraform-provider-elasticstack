@@ -92,6 +92,9 @@ resource "elasticstack_elasticsearch_index_template" "example" {
 - **[REQ-028] (State)**: On read, when API `template` is present, it shall be flattened into `template` state, including aliases, lifecycle, mappings, and settings.
 - **[REQ-029] (State)**: On read, when API `data_stream` is present, it shall be flattened into a single `data_stream` block and include only fields present in API response.
 - **[REQ-030] (State)**: User-defined alias `routing` shall be preserved during read/refresh, because this field may be omitted by the API response and therefore shall not be overwritten from response data.
+- **[REQ-031] (State)**: Plan diffs to alias `search_routing` or `index_routing` attributes should be ignored if:
+  - The attribute is unset in the current config
+  - The state value for the attribute equals the current value of the `routing` attribute
 
 ## Acceptance criteria
 
