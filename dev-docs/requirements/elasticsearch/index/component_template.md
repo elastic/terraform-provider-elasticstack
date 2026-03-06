@@ -73,3 +73,4 @@ resource "elasticstack_elasticsearch_component_template" "example" {
 - **[REQ-022] (State)**: On read, the resource shall set `name` and `version` from the API response.
 - **[REQ-023] (State)**: On read, when API `metadata` is present, it shall be serialized into a JSON string and stored in state.
 - **[REQ-024] (State)**: On read, when API `template` is present, it shall be flattened into `template` state, including aliases, mappings, and settings.
+- **[REQ-025] (State)**: User-defined alias `routing` shall be preserved during read/refresh, because this field may be omitted by the API response and therefore shall not be overwritten from response data.
