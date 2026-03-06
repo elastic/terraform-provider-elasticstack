@@ -238,7 +238,10 @@ func resourceComponentTemplateRead(ctx context.Context, d *schema.ResourceData, 
 	}
 
 	if tpl.ComponentTemplate.Template != nil {
-		template, diags := flattenTemplateData(tpl.ComponentTemplate.Template)
+		template, diags := flattenTemplateData(
+			tpl.ComponentTemplate.Template,
+			extractAliasRoutingFromTemplateState(d.Get("template")),
+		)
 		if diags.HasError() {
 			return diags
 		}

@@ -455,7 +455,7 @@ func resourceIndexTemplateRead(ctx context.Context, d *schema.ResourceData, meta
 	}
 
 	if tpl.IndexTemplate.Template != nil {
-		template, diags := flattenTemplateDataWithPreservedAliasRouting(
+		template, diags := flattenTemplateData(
 			tpl.IndexTemplate.Template,
 			extractAliasRoutingFromTemplateState(d.Get("template")),
 		)
@@ -474,11 +474,7 @@ func resourceIndexTemplateRead(ctx context.Context, d *schema.ResourceData, meta
 	return diags
 }
 
-func flattenTemplateData(template *models.Template) ([]any, diag.Diagnostics) {
-	return flattenTemplateDataWithPreservedAliasRouting(template, nil)
-}
-
-func flattenTemplateDataWithPreservedAliasRouting(template *models.Template, preservedAliasRouting map[string]string) ([]any, diag.Diagnostics) {
+func flattenTemplateData(template *models.Template, preservedAliasRouting map[string]string) ([]any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	tmpl := make(map[string]any)
 	if template.Mappings != nil {
