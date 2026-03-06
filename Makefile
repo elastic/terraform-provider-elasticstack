@@ -92,7 +92,8 @@ docker-kibana:  ## Start Kibana node in docker container
 
 .PHONY: docker-fleet
 docker-fleet: ## Start Fleet node in docker container
-	@ docker compose -f $(COMPOSE_FILE) up --quiet-pull -d fleet
+	@ export KIBANA_CONFIG_FILE=$$(if [ "$(STACK_VERSION)" = "9.4.0-SNAPSHOT" ]; then echo "kibana-9.4.snapshot.yml"; else echo "kibana.yml"; fi); \
+	docker compose -f $(COMPOSE_FILE) up --quiet-pull -d fleet
 
 .PHONY: set-kibana-password
 set-kibana-password: ## Sets the ES KIBANA_SYSTEM_USERNAME's password to KIBANA_SYSTEM_PASSWORD. This expects Elasticsearch to be available at localhost:9200
