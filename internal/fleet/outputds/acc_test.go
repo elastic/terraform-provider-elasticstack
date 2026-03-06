@@ -150,51 +150,62 @@ func testCheckResourceHasOutput(resourceName string, expected map[string]string)
 	}
 }
 
-func testCheckResourceHasOutputAttrPair(dataResourceName, sourceResourceName string, expected map[string]string) resource.TestCheckFunc {
+func testCheckResourceHasOutputAttrPair(dataResourceName, sourceResourceName, sourceIDAttr string, expected map[string]string) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		sourceResource, ok := state.RootModule().Resources[sourceResourceName]
 		if !ok {
 			return fmt.Errorf("resource %q not found in state", sourceResourceName)
 		}
 
+		// Copy all literal expectations first.
 		matched := make(map[string]string, len(expected))
 		for key, value := range expected {
-			if key == "id" {
-				sourceValue, ok := sourceResource.Primary.Attributes[value]
-				if !ok {
-					return fmt.Errorf("resource %q attribute %q not found in state", sourceResourceName, value)
-				}
-				matched[key] = sourceValue
-				continue
-			}
 			matched[key] = value
 		}
 
+		// If a source ID attribute is specified, derive the expected "id" value from the source resource.
+		if sourceIDAttr != "" {
+			sourceValue, ok := sourceResource.Primary.Attributes[sourceIDAttr]
+			if !ok {
+				return fmt.Errorf("resource %q attribute %q not found in state", sourceResourceName, sourceIDAttr)
+			}
+			matched["id"] = sourceValue
+		}
 		return hasMatchingOutput(state, dataResourceName, matched)
 	}
 }
 
-func hasMatchingOutput(state *terraform.State, resourceName string, expected map[string]string) error {
+func getOutputsCount(state *terraform.State, resourceName string) (int, map[string]string, error) {
 	rs, ok := state.RootModule().Resources[resourceName]
 	if !ok {
-		return fmt.Errorf("resource %q not found in state", resourceName)
+		return 0, nil, fmt.Errorf("resource %q not found in state", resourceName)
 	}
 
-	rawCount, ok := rs.Primary.Attributes["outputs.#"]
+	attrs := rs.Primary.Attributes
+	rawCount, ok := attrs["outputs.#"]
 	if !ok {
-		return fmt.Errorf("resource %q has no outputs count in state", resourceName)
+		return 0, nil, fmt.Errorf("resource %q has no outputs count in state", resourceName)
 	}
 
 	count, err := strconv.Atoi(rawCount)
 	if err != nil {
-		return fmt.Errorf("resource %q has invalid outputs count %q: %w", resourceName, rawCount, err)
+		return 0, nil, fmt.Errorf("resource %q has invalid outputs count %q: %w", resourceName, rawCount, err)
 	}
 
-	for i := range count {
+	return count, attrs, nil
+}
+
+func hasMatchingOutput(state *terraform.State, resourceName string, expected map[string]string) error {
+	count, attrs, err := getOutputsCount(state, resourceName)
+	if err != nil {
+		return err
+	}
+
+	for i := 0; i < count; i++ {
 		matches := true
 		for key, value := range expected {
 			attrKey := fmt.Sprintf("outputs.%d.%s", i, key)
-			if rs.Primary.Attributes[attrKey] != value {
+			if attrs[attrKey] != value {
 				matches = false
 				break
 			}
