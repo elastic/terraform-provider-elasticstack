@@ -298,8 +298,7 @@ func TestAccResourceIndexTemplateAliasRoutingFromRoutingOnly(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config:             testAccResourceIndexTemplateWithAliasRoutingOnly(templateName),
-				ExpectNonEmptyPlan: true,
+				Config: testAccResourceIndexTemplateWithAliasRoutingOnly(templateName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "name", templateName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "template.0.alias.#", "1"),

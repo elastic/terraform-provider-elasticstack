@@ -123,6 +123,7 @@ func ResourceTemplate() *schema.Resource {
 						Description: "Alias to add.",
 						Type:        schema.TypeSet,
 						Optional:    true,
+						Set:         hashAliasByName,
 						Elem: &schema.Resource{
 							Schema: map[string]*schema.Schema{
 								"name": {
@@ -143,6 +144,7 @@ func ResourceTemplate() *schema.Resource {
 									Type:        schema.TypeString,
 									Optional:    true,
 									Computed:    true,
+									DiffSuppressFunc: suppressAliasRoutingDerivedDiff,
 								},
 								"is_hidden": {
 									Description: "If true, the alias is hidden.",
@@ -167,6 +169,7 @@ func ResourceTemplate() *schema.Resource {
 									Type:        schema.TypeString,
 									Optional:    true,
 									Computed:    true,
+									DiffSuppressFunc: suppressAliasRoutingDerivedDiff,
 								},
 							},
 						},
@@ -575,6 +578,44 @@ func preserveAliasRoutingInFlattenedAliases(rawAliases any, preservedAliasRoutin
 	}
 
 	return aliases
+}
+
+func suppressAliasRoutingDerivedDiff(k, old, new string, d *schema.ResourceData) bool {
+	// Ignore diffs for specific routing fields when they are unset in config
+	// but effectively derived from the generic alias routing value.
+	if new != "" || old == "" {
+		return false
+	}
+
+	suffixLen := len(".index_routing")
+	if strings.HasSuffix(k, ".search_routing") {
+		suffixLen = len(".search_routing")
+	}
+	if len(k) <= suffixLen {
+		return false
+	}
+
+	routingKey := k[:len(k)-suffixLen] + ".routing"
+	routingRaw, ok := d.GetOk(routingKey)
+	if !ok {
+		return false
+	}
+	routing, ok := routingRaw.(string)
+	if !ok {
+		return false
+	}
+
+	return routing != "" && routing == old
+}
+
+func hashAliasByName(v any) int {
+	aliasMap, ok := v.(map[string]any)
+	if !ok {
+		return 0
+	}
+
+	name, _ := aliasMap["name"].(string)
+	return schema.HashString(name)
 }
 
 func resourceIndexTemplateDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {

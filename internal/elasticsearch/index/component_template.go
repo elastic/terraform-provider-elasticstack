@@ -66,6 +66,7 @@ func ResourceComponentTemplate() *schema.Resource {
 						Description: "Alias to add.",
 						Type:        schema.TypeSet,
 						Optional:    true,
+						Set:         hashAliasByName,
 						Elem: &schema.Resource{
 							Schema: map[string]*schema.Schema{
 								"name": {
