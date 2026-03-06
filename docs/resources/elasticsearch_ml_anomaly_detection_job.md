@@ -3,12 +3,15 @@
 page_title: "elasticstack_elasticsearch_ml_anomaly_detection_job Resource - terraform-provider-elasticstack"
 subcategory: "Ml"
 description: |-
-  Creates and manages Machine Learning anomaly detection jobs. See the ML Job API documentation https://www.elastic.co/guide/en/elasticsearch/reference/current/ml-put-job.html for more details.
+  Creates and manages Machine Learning anomaly detection jobs.
+  See the ML Job API documentation https://www.elastic.co/guide/en/elasticsearch/reference/current/ml-put-job.html for more details.
 ---
 
 # elasticstack_elasticsearch_ml_anomaly_detection_job (Resource)
 
-Creates and manages Machine Learning anomaly detection jobs. See the [ML Job API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/ml-put-job.html) for more details.
+Creates and manages Machine Learning anomaly detection jobs.
+
+See the [ML Job API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/ml-put-job.html) for more details.
 
 ## Example Usage
 
@@ -73,7 +76,9 @@ resource "elasticstack_elasticsearch_ml_anomaly_detection_job" "example" {
 
 - `analysis_config` (Attributes) Specifies how to analyze the data. After you create a job, you cannot change the analysis configuration; all the properties are informational. (see [below for nested schema](#nestedatt--analysis_config))
 - `data_description` (Attributes) Defines the format of the input data when you send data to the job by using the post data API. (see [below for nested schema](#nestedatt--data_description))
-- `job_id` (String) The identifier for the anomaly detection job. This identifier can contain lowercase alphanumeric characters (a-z and 0-9), hyphens, and underscores. It must start and end with alphanumeric characters.
+- `job_id` (String) The identifier for the anomaly detection job.
+
+This identifier can contain lowercase alphanumeric characters (a-z and 0-9), hyphens, and underscores. It must start and end with alphanumeric characters.
 
 ### Optional
 
@@ -108,7 +113,11 @@ Required:
 
 Optional:
 
-- `bucket_span` (String) The size of the interval that the analysis is aggregated into, typically between 15m and 1h. If the anomaly detector is expecting to see data at near real-time frequency, then the bucket_span should be set to a value around 10 times the time between ingested documents. For example, if data comes every second, bucket_span should be 10s; if data comes every 5 minutes, bucket_span should be 50m. For sparse or batch data, use larger bucket_span values.
+- `bucket_span` (String) The size of the interval that the analysis is aggregated into, typically between 15m and 1h.
+
+If the anomaly detector is expecting to see data at near real-time frequency, then the `bucket_span` should be set to a value around 10 times the time between ingested documents. For example, if data comes every second, `bucket_span` should be 10s; if data comes every 5 minutes, `bucket_span` should be 50m.
+
+For sparse or batch data, use larger `bucket_span` values.
 - `categorization_field_name` (String) For categorization jobs only. The name of the field to categorize.
 - `categorization_filters` (List of String) For categorization jobs only. An array of regular expressions. A categorization message is matched against each regex in the order they are listed in the array.
 - `influencers` (List of String) A comma separated list of influencer field names. Typically these can be the by, over, or partition fields that are used in the detector configuration.
@@ -127,12 +136,16 @@ Required:
 
 Optional:
 
-- `by_field_name` (String) The field used to split the data. In particular, this property is used for analyzing the splits with respect to their own history. It is used for finding unusual values in the context of the split.
+- `by_field_name` (String) The field used to split the data.
+
+In particular, this property is used for analyzing the splits with respect to their own history. It is used for finding unusual values in the context of the split.
 - `custom_rules` (Attributes List) Custom rules enable you to customize the way detectors operate. (see [below for nested schema](#nestedatt--analysis_config--detectors--custom_rules))
 - `detector_description` (String) A description of the detector.
 - `exclude_frequent` (String) Contains one of the following values: all, none, by, or over.
 - `field_name` (String) The field that the detector function analyzes. Some functions require a field. Functions that don't require a field are count, rare, and freq_rare.
-- `over_field_name` (String) The field used to split the data. In particular, this property is used for analyzing the splits with respect to the history of all splits. It is used for finding unusual values in the population of all splits.
+- `over_field_name` (String) The field used to split the data.
+
+In particular, this property is used for analyzing the splits with respect to the history of all splits. It is used for finding unusual values in the population of all splits.
 - `partition_field_name` (String) The field used to segment the analysis. When you use this property, you have completely independent baselines for each value of this field.
 - `use_null` (Boolean) Defines whether a new series is used as the null series when there is no value for the by or partition fields.
 
@@ -161,7 +174,9 @@ Required:
 
 Optional:
 
-- `enabled` (Boolean) To enable this setting, you must also set the partition_field_name property to the same value in every detector that uses the keyword mlcategory. Otherwise, job creation fails.
+- `enabled` (Boolean) To enable this setting, you must also set the `partition_field_name` property to the same value in every detector that uses the keyword `mlcategory`.
+
+Otherwise, job creation fails.
 - `stop_on_warn` (Boolean) This setting can be set to true only if per-partition categorization is enabled.
 
 

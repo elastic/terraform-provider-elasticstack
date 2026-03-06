@@ -68,6 +68,19 @@ resource "elasticstack_elasticsearch_index" "test_settings" {
     }
   })
 
+  analysis_tokenizer = jsonencode({
+    path_tokenizer = {
+      type      = "path_hierarchy"
+      delimiter = "/"
+    }
+  })
+  analysis_normalizer = jsonencode({
+    lowercase_normalizer = {
+      type   = "custom"
+      filter = ["lowercase"]
+    }
+  })
+
   settings {
     setting {
       name  = "number_of_replicas"

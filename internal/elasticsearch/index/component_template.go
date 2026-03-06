@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package index
 
 import (
@@ -9,7 +26,8 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/tfsdkutils"
+	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -35,7 +53,7 @@ func ResourceComponentTemplate() *schema.Resource {
 			Type:             schema.TypeString,
 			Optional:         true,
 			ValidateFunc:     validation.StringIsJSON,
-			DiffSuppressFunc: utils.DiffJsonSuppress,
+			DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 		},
 		"template": {
 			Description: "Template to be applied. It may optionally include an aliases, mappings, or settings configuration.",
@@ -51,7 +69,7 @@ func ResourceComponentTemplate() *schema.Resource {
 						Elem: &schema.Resource{
 							Schema: map[string]*schema.Schema{
 								"name": {
-									Description: "The alias name. Index alias names support date math. See the [date math index names documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/date-math-index-names.html) for more details.",
+									Description: componentTemplateAliasNameDescription,
 									Type:        schema.TypeString,
 									Required:    true,
 								},
@@ -59,7 +77,7 @@ func ResourceComponentTemplate() *schema.Resource {
 									Description:      "Query used to limit documents the alias can access.",
 									Type:             schema.TypeString,
 									Optional:         true,
-									DiffSuppressFunc: utils.DiffJsonSuppress,
+									DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 									ValidateFunc:     validation.StringIsJSON,
 								},
 								"index_routing": {
@@ -93,19 +111,19 @@ func ResourceComponentTemplate() *schema.Resource {
 						},
 					},
 					"mappings": {
-						Description:      "Mapping for fields in the index. Should be specified as a JSON object of field mappings. See the documentation (https://www.elastic.co/guide/en/elasticsearch/reference/current/explicit-mapping.html) for more details",
+						Description:      indexTemplateMappingsDescription,
 						Type:             schema.TypeString,
 						Optional:         true,
-						DiffSuppressFunc: utils.DiffJsonSuppress,
+						DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 						ValidateFunc: validation.All(
 							validation.StringIsJSON, stringIsJSONObject,
 						),
 					},
 					"settings": {
-						Description:      "Configuration options for the index. See the [index modules settings documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#index-modules-settings) for more details.",
+						Description:      componentTemplateSettingsDescription,
 						Type:             schema.TypeString,
 						Optional:         true,
-						DiffSuppressFunc: utils.DiffIndexSettingSuppress,
+						DiffSuppressFunc: tfsdkutils.DiffIndexSettingSuppress,
 						ValidateFunc: validation.All(
 							validation.StringIsJSON, stringIsJSONObject,
 						),
@@ -120,10 +138,10 @@ func ResourceComponentTemplate() *schema.Resource {
 		},
 	}
 
-	utils.AddConnectionSchema(componentTemplateSchema)
+	schemautil.AddConnectionSchema(componentTemplateSchema)
 
 	return &schema.Resource{
-		Description: "Creates or updates a component template. Component templates are building blocks for constructing index templates that specify index mappings, settings, and aliases. See the [component template documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-component-template.html) for more details.",
+		Description: componentTemplateResourceDescription,
 
 		CreateContext: resourceComponentTemplatePut,
 		UpdateContext: resourceComponentTemplatePut,
@@ -138,21 +156,21 @@ func ResourceComponentTemplate() *schema.Resource {
 	}
 }
 
-func resourceComponentTemplatePut(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+func resourceComponentTemplatePut(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
-	componentId := d.Get("name").(string)
-	id, diags := client.ID(ctx, componentId)
+	componentID := d.Get("name").(string)
+	id, diags := client.ID(ctx, componentID)
 	if diags.HasError() {
 		return diags
 	}
 	var componentTemplate models.ComponentTemplate
-	componentTemplate.Name = componentId
+	componentTemplate.Name = componentID
 
 	if v, ok := d.GetOk("metadata"); ok {
-		metadata := make(map[string]interface{})
+		metadata := make(map[string]any)
 		if err := json.NewDecoder(strings.NewReader(v.(string))).Decode(&metadata); err != nil {
 			return diag.FromErr(err)
 		}
@@ -183,20 +201,20 @@ func resourceComponentTemplatePut(ctx context.Context, d *schema.ResourceData, m
 	return resourceComponentTemplateRead(ctx, d, meta)
 }
 
-func resourceComponentTemplateRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+func resourceComponentTemplateRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
-	compId, diags := clients.CompositeIdFromStr(d.Id())
+	compID, diags := clients.CompositeIDFromStr(d.Id())
 	if diags.HasError() {
 		return diags
 	}
-	templateId := compId.ResourceId
+	templateID := compID.ResourceID
 
-	tpl, diags := elasticsearch.GetComponentTemplate(ctx, client, templateId)
+	tpl, diags := elasticsearch.GetComponentTemplate(ctx, client, templateID, false)
 	if tpl == nil && diags == nil {
-		tflog.Warn(ctx, fmt.Sprintf(`Component template "%s" not found, removing from state`, compId.ResourceId))
+		tflog.Warn(ctx, fmt.Sprintf(`Component template "%s" not found, removing from state`, compID.ResourceID))
 		d.SetId("")
 		return diags
 	}
@@ -237,18 +255,18 @@ func resourceComponentTemplateRead(ctx context.Context, d *schema.ResourceData, 
 	return diags
 }
 
-func resourceComponentTemplateDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+func resourceComponentTemplateDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
 
 	id := d.Id()
-	compId, diags := clients.CompositeIdFromStr(id)
+	compID, diags := clients.CompositeIDFromStr(id)
 	if diags.HasError() {
 		return diags
 	}
-	if diags := elasticsearch.DeleteComponentTemplate(ctx, client, compId.ResourceId); diags.HasError() {
+	if diags := elasticsearch.DeleteComponentTemplate(ctx, client, compID.ResourceID); diags.HasError() {
 		return diags
 	}
 	return diags

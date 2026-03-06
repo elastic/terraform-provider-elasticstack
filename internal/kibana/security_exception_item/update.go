@@ -1,12 +1,29 @@
-package security_exception_item
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package securityexceptionitem
 
 import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
@@ -20,8 +37,8 @@ func (r *ExceptionItemResource) Update(ctx context.Context, req resource.UpdateR
 	}
 
 	// Parse composite ID to get space_id and resource_id
-	compId, compIdDiags := clients.CompositeIdFromStrFw(plan.ID.ValueString())
-	resp.Diagnostics.Append(compIdDiags...)
+	compID, compIDDiags := clients.CompositeIDFromStrFw(plan.ID.ValueString())
+	resp.Diagnostics.Append(compIDDiags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -33,14 +50,14 @@ func (r *ExceptionItemResource) Update(ctx context.Context, req resource.UpdateR
 	}
 
 	// Build the update request body using model method
-	body, diags := plan.toUpdateRequest(ctx, compId.ResourceId, r.client)
+	body, diags := plan.toUpdateRequest(ctx, compID.ResourceID, r.client)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	// Update the exception item
-	updateResp, diags := kibana_oapi.UpdateExceptionListItem(ctx, client, plan.SpaceID.ValueString(), *body)
+	updateResp, diags := kibanaoapi.UpdateExceptionListItem(ctx, client, plan.SpaceID.ValueString(), *body)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -55,16 +72,16 @@ func (r *ExceptionItemResource) Update(ctx context.Context, req resource.UpdateR
 	// We want to avoid a dirty plan immediately after an apply.
 	// Read back the updated resource to get the final state
 	readParams := &kbapi.ReadExceptionListItemParams{
-		Id: (*kbapi.SecurityExceptionsAPIExceptionListItemId)(&updateResp.Id),
+		Id: &updateResp.Id,
 	}
 
 	// Include namespace_type if specified (required for agnostic items)
-	if utils.IsKnown(plan.NamespaceType) {
+	if typeutils.IsKnown(plan.NamespaceType) {
 		nsType := kbapi.SecurityExceptionsAPIExceptionNamespaceType(plan.NamespaceType.ValueString())
 		readParams.NamespaceType = &nsType
 	}
 
-	readResp, diags := kibana_oapi.GetExceptionListItem(ctx, client, plan.SpaceID.ValueString(), readParams)
+	readResp, diags := kibanaoapi.GetExceptionListItem(ctx, client, plan.SpaceID.ValueString(), readParams)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package logstash
 
 import (
@@ -11,6 +28,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/tfsdkutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -70,7 +88,7 @@ func ResourceLogstashPipeline() *schema.Resource {
 			Description:      "Optional JSON metadata about the pipeline.",
 			Type:             schema.TypeString,
 			ValidateFunc:     validation.StringIsJSON,
-			DiffSuppressFunc: utils.DiffJsonSuppress,
+			DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 			Optional:         true,
 			Default:          "{\"type\":\"logstash_pipeline\",\"version\":1}",
 		},
@@ -164,7 +182,7 @@ func ResourceLogstashPipeline() *schema.Resource {
 		},
 	}
 
-	utils.AddConnectionSchema(logstashPipelineSchema)
+	schemautil.AddConnectionSchema(logstashPipelineSchema)
 
 	return &schema.Resource{
 		Description: "Manage Logstash Pipelines via Centralized Pipeline Management. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/logstash-apis.html",
@@ -182,8 +200,8 @@ func ResourceLogstashPipeline() *schema.Resource {
 	}
 }
 
-func resourceLogstashPipelinePut(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+func resourceLogstashPipelinePut(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
@@ -198,17 +216,17 @@ func resourceLogstashPipelinePut(ctx context.Context, d *schema.ResourceData, me
 
 	logstashPipeline.PipelineID = pipelineID
 	logstashPipeline.Description = d.Get("description").(string)
-	logstashPipeline.LastModified = utils.FormatStrictDateTime(time.Now().UTC())
+	logstashPipeline.LastModified = schemautil.FormatStrictDateTime(time.Now().UTC())
 	logstashPipeline.Pipeline = d.Get("pipeline").(string)
 
-	var pipelineMetadata map[string]interface{}
+	var pipelineMetadata map[string]any
 	if err := json.Unmarshal([]byte(d.Get("pipeline_metadata").(string)), &pipelineMetadata); err != nil {
 		return diag.FromErr(err)
 	}
 	logstashPipeline.PipelineMetadata = pipelineMetadata
 
-	logstashPipeline.PipelineSettings = map[string]interface{}{}
-	if settings := utils.ExpandIndividuallyDefinedSettings(ctx, d, allSettingsKeys); len(settings) > 0 {
+	logstashPipeline.PipelineSettings = map[string]any{}
+	if settings := schemautil.ExpandIndividuallyDefinedSettings(ctx, d, allSettingsKeys); len(settings) > 0 {
 		logstashPipeline.PipelineSettings = settings
 	}
 
@@ -222,8 +240,8 @@ func resourceLogstashPipelinePut(ctx context.Context, d *schema.ResourceData, me
 	return resourceLogstashPipelineRead(ctx, d, meta)
 }
 
-func resourceLogstashPipelineRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+func resourceLogstashPipelineRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
@@ -264,18 +282,17 @@ func resourceLogstashPipelineRead(ctx context.Context, d *schema.ResourceData, m
 	}
 
 	for key, typ := range allSettingsKeys {
-		var value interface{}
+		var value any
 		if v, ok := logstashPipeline.PipelineSettings[key]; ok {
 			value = v
 		} else {
 			tflog.Warn(ctx, fmt.Sprintf("setting '%s' is not currently managed by terraform provider and has been ignored", key))
 			continue
 		}
-		switch typ {
-		case schema.TypeInt:
+		if typ == schema.TypeInt {
 			value = int(math.Round(value.(float64)))
 		}
-		if err := d.Set(utils.ConvertSettingsKeyToTFFieldKey(key), value); err != nil {
+		if err := d.Set(schemautil.ConvertSettingsKeyToTFFieldKey(key), value); err != nil {
 			return diag.FromErr(err)
 		}
 	}
@@ -286,8 +303,8 @@ func resourceLogstashPipelineRead(ctx context.Context, d *schema.ResourceData, m
 	return nil
 }
 
-func resourceLogstashPipelineDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+func resourceLogstashPipelineDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}

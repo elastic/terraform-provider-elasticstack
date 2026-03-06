@@ -1,9 +1,25 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package kibana
 
 import (
 	"context"
-
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/tfsdkutils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -86,7 +102,7 @@ func DataSourceRole() *schema.Resource {
 						},
 					},
 					"remote_indices": {
-						Description: "A list of remote indices permissions entries. Remote indices are effective for remote clusters configured with the API key based model. They have no effect for remote clusters configured with the certificate based model.",
+						Description: remoteIndicesPermissionsDescription,
 						Type:        schema.TypeSet,
 						Optional:    true,
 						Elem: &schema.Resource{
@@ -129,7 +145,7 @@ func DataSourceRole() *schema.Resource {
 									Description:      "A search query that defines the documents the owners of the role have read access to.",
 									Type:             schema.TypeString,
 									ValidateFunc:     validation.StringIsJSON,
-									DiffSuppressFunc: utils.DiffJsonSuppress,
+									DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 									Optional:         true,
 								},
 								"names": {
@@ -215,7 +231,7 @@ func DataSourceRole() *schema.Resource {
 			Optional:         true,
 			Computed:         true,
 			ValidateFunc:     validation.StringIsJSON,
-			DiffSuppressFunc: utils.DiffJsonSuppress,
+			DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 		},
 		"description": {
 			Description: "Description for the role",
@@ -231,9 +247,9 @@ func DataSourceRole() *schema.Resource {
 	}
 }
 
-func dataSourceSecurityRoleRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	roleId := d.Get("name").(string)
-	d.SetId(roleId)
+func dataSourceSecurityRoleRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+	roleID := d.Get("name").(string)
+	d.SetId(roleID)
 
 	return resourceRoleRead(ctx, d, meta)
 }

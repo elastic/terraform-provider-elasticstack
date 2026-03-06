@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package datafeed
 
 import (
@@ -8,17 +25,17 @@ import (
 func TestGetDatafeedState_Success(t *testing.T) {
 	tests := []struct {
 		name          string
-		datafeedId    string
-		response      map[string]interface{}
+		datafeedID    string
+		response      map[string]any
 		expectedState string
 		expectError   bool
 	}{
 		{
 			name:       "running datafeed",
-			datafeedId: "test-datafeed",
-			response: map[string]interface{}{
-				"datafeeds": []interface{}{
-					map[string]interface{}{
+			datafeedID: "test-datafeed",
+			response: map[string]any{
+				"datafeeds": []any{
+					map[string]any{
 						"datafeed_id": "test-datafeed",
 						"state":       "started",
 					},
@@ -29,10 +46,10 @@ func TestGetDatafeedState_Success(t *testing.T) {
 		},
 		{
 			name:       "stopped datafeed",
-			datafeedId: "test-datafeed",
-			response: map[string]interface{}{
-				"datafeeds": []interface{}{
-					map[string]interface{}{
+			datafeedID: "test-datafeed",
+			response: map[string]any{
+				"datafeeds": []any{
+					map[string]any{
 						"datafeed_id": "test-datafeed",
 						"state":       "stopped",
 					},
@@ -43,24 +60,24 @@ func TestGetDatafeedState_Success(t *testing.T) {
 		},
 		{
 			name:        "datafeed not found",
-			datafeedId:  "test-datafeed",
+			datafeedID:  "test-datafeed",
 			response:    nil,
 			expectError: true,
 		},
 		{
 			name:       "empty datafeeds array",
-			datafeedId: "test-datafeed",
-			response: map[string]interface{}{
-				"datafeeds": []interface{}{},
+			datafeedID: "test-datafeed",
+			response: map[string]any{
+				"datafeeds": []any{},
 			},
 			expectError: true,
 		},
 		{
 			name:       "missing state field",
-			datafeedId: "test-datafeed",
-			response: map[string]interface{}{
-				"datafeeds": []interface{}{
-					map[string]interface{}{
+			datafeedID: "test-datafeed",
+			response: map[string]any{
+				"datafeeds": []any{
+					map[string]any{
 						"datafeed_id": "test-datafeed",
 					},
 				},
@@ -94,13 +111,13 @@ func TestGetDatafeedState_Success(t *testing.T) {
 }
 
 // Helper function to test the state parsing logic
-func parseDatafeedStateFromResponse(statsResponse map[string]interface{}) (string, error) {
+func parseDatafeedStateFromResponse(statsResponse map[string]any) (string, error) {
 	if statsResponse == nil {
 		return "", errors.New("datafeed not found")
 	}
 
 	// Parse the response to get the state
-	datafeeds, ok := statsResponse["datafeeds"].([]interface{})
+	datafeeds, ok := statsResponse["datafeeds"].([]any)
 	if !ok {
 		return "", errors.New("unexpected response format: missing datafeeds field")
 	}
@@ -109,7 +126,7 @@ func parseDatafeedStateFromResponse(statsResponse map[string]interface{}) (strin
 		return "", errors.New("no datafeed found in response")
 	}
 
-	datafeedMap, ok := datafeeds[0].(map[string]interface{})
+	datafeedMap, ok := datafeeds[0].(map[string]any)
 	if !ok {
 		return "", errors.New("unexpected datafeed format in response")
 	}

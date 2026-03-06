@@ -1,4 +1,21 @@
-package security_exception_item_test
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package securityexceptionitem_test
 
 import (
 	"context"
@@ -10,7 +27,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/google/uuid"
@@ -1136,15 +1153,14 @@ func checkResourceExceptionItemDestroy(s *terraform.State) error {
 			continue
 		}
 
-		compId, compDiags := clients.CompositeIdFromStr(rs.Primary.ID)
+		compID, compDiags := clients.CompositeIDFromStr(rs.Primary.ID)
 		if compDiags.HasError() {
 			return diagutil.SdkDiagsAsError(compDiags)
 		}
 
 		// Try to read the exception item
-		id := kbapi.SecurityExceptionsAPIExceptionListItemId(compId.ResourceId)
 		params := &kbapi.ReadExceptionListItemParams{
-			Id: &id,
+			Id: &compID.ResourceID,
 		}
 
 		// If namespace_type is available in the state, use it
@@ -1153,14 +1169,14 @@ func checkResourceExceptionItemDestroy(s *terraform.State) error {
 			params.NamespaceType = &nsTypeVal
 		}
 
-		item, diags := kibana_oapi.GetExceptionListItem(context.Background(), oapiClient, compId.ClusterId, params)
+		item, diags := kibanaoapi.GetExceptionListItem(context.Background(), oapiClient, compID.ClusterID, params)
 		if diags.HasError() {
 			// If we get an error, it might be that the resource doesn't exist, which is what we want
 			continue
 		}
 
 		if item != nil {
-			return fmt.Errorf("Exception item (%s) still exists in space (%s)", compId.ResourceId, compId.ClusterId)
+			return fmt.Errorf("Exception item (%s) still exists in space (%s)", compID.ResourceID, compID.ClusterID)
 		}
 	}
 	return nil

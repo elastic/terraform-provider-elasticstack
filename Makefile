@@ -1,7 +1,7 @@
 .DEFAULT_GOAL = help
 SHELL := /bin/bash
 
-VERSION ?= 0.13.1
+VERSION ?= 0.14.3
 
 NAME = elasticstack
 BINARY = terraform-provider-${NAME}
@@ -28,7 +28,13 @@ KIBANA_API_KEY_NAME ?= kibana-api-key
 FLEET_NAME ?= terraform-elasticstack-fleet
 FLEET_ENDPOINT ?= https://$(FLEET_NAME):8220
 
-RERUN_FAILS ?= 3
+# Fleet Server image repository. Some older stack versions (notably 7.17.x, 8.0.x, 8.1.x)
+# do not publish elastic-agent images to docker.elastic.co, so fall back to Docker Hub.
+ifneq (,$(filter 7.17.% 8.0.% 8.1.%,$(STACK_VERSION)))
+FLEET_IMAGE := elastic/elastic-agent
+endif
+
+RERUN_FAILS ?= 5
 
 export GOBIN = $(shell pwd)/bin
 
@@ -59,7 +65,7 @@ testacc: ## Run acceptance tests
 
 .PHONY: test
 test: ## Run unit tests
-	go test -v $(TEST) $(TESTARGS) -timeout=5m -parallel=4
+	go test -v $(TEST) $(TESTARGS) -timeout=5m -parallel=4 -count=1
 
 CURL_OPTS = -sS --retry 5 --retry-all-errors -X POST -u $(ELASTICSEARCH_USERNAME):$(ELASTICSEARCH_PASSWORD) -H "Content-Type: application/json"
 
@@ -86,7 +92,8 @@ docker-kibana:  ## Start Kibana node in docker container
 
 .PHONY: docker-fleet
 docker-fleet: ## Start Fleet node in docker container
-	@ docker compose -f $(COMPOSE_FILE) up --quiet-pull -d fleet
+	@ export KIBANA_CONFIG_FILE=$$(if [ "$(STACK_VERSION)" = "9.4.0-SNAPSHOT" ]; then echo "kibana-9.4.snapshot.yml"; else echo "kibana.yml"; fi); \
+	docker compose -f $(COMPOSE_FILE) up --quiet-pull -d fleet
 
 .PHONY: set-kibana-password
 set-kibana-password: ## Sets the ES KIBANA_SYSTEM_USERNAME's password to KIBANA_SYSTEM_PASSWORD. This expects Elasticsearch to be available at localhost:9200
@@ -122,37 +129,41 @@ copy-kibana-ca: ## Copy Kibana CA certificate to local machine
 docs-generate: tools ## Generate documentation for the provider
 	@ go tool github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate --provider-name terraform-provider-elasticstack
 
-
 .PHONY: gen
 gen: docs-generate ## Generate the code and documentation
 	@ go generate ./...
 
-
 .PHONY: clean
 clean: ## Remove built binary
 	rm -f ${BINARY}
-
 
 .PHONY: install
 install: build ## Install built provider into the local terraform cache
 	mkdir -p ~/.terraform.d/plugins/registry.terraform.io/elastic/${NAME}/${VERSION}/${MARCH}
 	mv ${BINARY} ~/.terraform.d/plugins/registry.terraform.io/elastic/${NAME}/${VERSION}/${MARCH}
 
-
 .PHONY: tools
 tools: $(GOBIN)  ## Download golangci-lint locally if necessary.
-	@[[ -f $(GOBIN)/golangci-lint ]] || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOBIN) v2.9.0
+	@[[ -f $(GOBIN)/golangci-lint ]] || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOBIN) v2.10.1
 
 .PHONY: golangci-lint
 golangci-lint:
 	@ $(GOBIN)/golangci-lint run --max-same-issues=0 $(GOLANGCIFLAGS) ./internal/...
 
-
 .PHONY: lint
+lint: GOLANGCIFLAGS += --fix
 lint: setup golangci-lint fmt docs-generate ## Run lints to check the spelling and common go patterns
 
 .PHONY: check-lint
 check-lint: setup golangci-lint check-fmt check-docs
+
+.PHONY: renovate-post-upgrade
+renovate-post-upgrade: vendor notice
+	@ make -C generated/kbapi all
+
+.PHONY: notice
+notice: vendor
+	@ go list -m -json all | go tool go.elastic.co/go-licence-detector  -noticeOut=NOTICE -noticeTemplate ./.NOTICE.tmpl -includeIndirect -rules .notice_rules.json -overrides .notice_overrides.ndjson
 
 .PHONY: fmt
 fmt: ## Format code
@@ -170,7 +181,6 @@ check-docs: docs-generate  ## Check uncommitted changes on docs
 	@if [ "`git status --porcelain docs/`" ]; then \
 	  echo "Uncommitted changes were detected in the docs folder. Please run 'make docs-generate' to autogenerate the docs, and commit the changes" && echo `git status --porcelain docs/` && exit 1; \
 	fi
-
 
 .PHONY: setup
 setup: tools vendor ## Setup the dev environment

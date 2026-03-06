@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package dashboard_test
 
 import (
@@ -43,10 +60,38 @@ func TestAccResourceDashboardHeatmap(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.heatmap_config.legend.visible", "true"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.heatmap_config.query.language", "kuery"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.heatmap_config.query.query", ""),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.heatmap_config.dataset"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.heatmap_config.metric"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.heatmap_config.x_axis"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.heatmap_config.y_axis"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.heatmap_config.dataset_json"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.heatmap_config.metric_json"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.heatmap_config.x_axis_json"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.heatmap_config.y_axis_json"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("complete"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.heatmap_config.title", "Complete Heatmap"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.heatmap_config.description", "Complete heatmap visualization"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.heatmap_config.ignore_global_filters", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.heatmap_config.sampling", "0.5"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.heatmap_config.legend.size", "small"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.heatmap_config.legend.position", "left"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.heatmap_config.legend.truncate_after_lines", "10"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.heatmap_config.axes.x.labels.orientation", "vertical"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.heatmap_config.axes.x.labels.visible", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.heatmap_config.axes.x.title.value", "Custom X Axis"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.heatmap_config.axes.x.title.visible", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.heatmap_config.axes.y.labels.visible", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.heatmap_config.axes.y.title.value", "Custom Y Axis"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.heatmap_config.axes.y.title.visible", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.heatmap_config.cells.labels.visible", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.heatmap_config.filters.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.heatmap_config.filters.0.query", "host.os.keyword: \"linux\""),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.heatmap_config.filters.0.language", "kuery"),
 				),
 			},
 			{
@@ -60,7 +105,7 @@ func TestAccResourceDashboardHeatmap(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: true,
 				ImportStateVerifyIgnore: []string{
-					"panels.0.heatmap_config.metric",
+					"panels.0.heatmap_config.metric_json",
 				},
 			},
 		},

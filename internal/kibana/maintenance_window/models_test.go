@@ -1,27 +1,43 @@
-package maintenance_window
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package maintenancewindow
 
 import (
 	"context"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/require"
 )
 
-var modelWithAllFields = MaintenanceWindowModel{
+var modelWithAllFields = Model{
 	Title:   types.StringValue("test response"),
 	Enabled: types.BoolValue(true),
 
-	CustomSchedule: MaintenanceWindowSchedule{
+	CustomSchedule: Schedule{
 		Start:    types.StringValue("1993-01-01T05:00:00.200Z"),
 		Duration: types.StringValue("13d"),
 		Timezone: types.StringValue("America/Martinique"),
 
-		Recurring: &MaintenanceWindowScheduleRecurring{
+		Recurring: &ScheduleRecurring{
 			Every:       types.StringValue("21d"),
 			End:         types.StringValue("2029-05-17T05:05:00.000Z"),
 			Occurrences: types.Int32Null(),
@@ -31,23 +47,23 @@ var modelWithAllFields = MaintenanceWindowModel{
 		},
 	},
 
-	Scope: &MaintenanceWindowScope{
-		Alerting: MaintenanceWindowAlertingScope{
+	Scope: &Scope{
+		Alerting: AlertingScope{
 			Kql: types.StringValue("_id: '1234'"),
 		},
 	},
 }
 
-var modelOccurrencesNoScope = MaintenanceWindowModel{
+var modelOccurrencesNoScope = Model{
 	Title:   types.StringValue("test response"),
 	Enabled: types.BoolValue(true),
 
-	CustomSchedule: MaintenanceWindowSchedule{
+	CustomSchedule: Schedule{
 		Start:    types.StringValue("1993-01-01T05:00:00.200Z"),
 		Duration: types.StringValue("13d"),
 		Timezone: types.StringNull(),
 
-		Recurring: &MaintenanceWindowScheduleRecurring{
+		Recurring: &ScheduleRecurring{
 			Every:       types.StringValue("21d"),
 			End:         types.StringNull(),
 			Occurrences: types.Int32Value(42),
@@ -66,35 +82,35 @@ func TestMaintenanceWindowFromAPI(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		response      ResponseJson
-		existingModel MaintenanceWindowModel
-		expectedModel MaintenanceWindowModel
+		response      ResponseJSON
+		existingModel Model
+		expectedModel Model
 	}{
 		{
 			name:          "all fields",
-			existingModel: MaintenanceWindowModel{},
-			response: ResponseJson{
-				Id:        "existing-space-id/id",
+			existingModel: Model{},
+			response: ResponseJSON{
+				ID:        "existing-space-id/id",
 				CreatedAt: "created_at",
 				Enabled:   true,
 				Title:     "test response",
-				Schedule: ResponseJsonSchedule{
-					Custom: ResponseJsonCustomSchedule{
+				Schedule: ResponseJSONSchedule{
+					Custom: ResponseJSONCustomSchedule{
 						Start:    "1993-01-01T05:00:00.200Z",
 						Duration: "13d",
-						Timezone: utils.Pointer("America/Martinique"),
-						Recurring: &ResponseJsonRecurring{
-							Every:      utils.Pointer("21d"),
-							End:        utils.Pointer("2029-05-17T05:05:00.000Z"),
-							OnWeekDay:  utils.Pointer([]string{"MO", "-2FR", "+4SA"}),
-							OnMonth:    utils.Pointer([]float32{6}),
-							OnMonthDay: utils.Pointer([]float32{1, 2, 3}),
+						Timezone: new("America/Martinique"),
+						Recurring: &ResponseJSONRecurring{
+							Every:      new("21d"),
+							End:        new("2029-05-17T05:05:00.000Z"),
+							OnWeekDay:  new([]string{"MO", "-2FR", "+4SA"}),
+							OnMonth:    new([]float32{6}),
+							OnMonthDay: new([]float32{1, 2, 3}),
 						},
 					},
 				},
-				Scope: &ResponseJsonScope{
-					Alerting: ResponseJsonAlerting{
-						Query: ResponseJsonAlertingQuery{
+				Scope: &ResponseJSONScope{
+					Alerting: ResponseJSONAlerting{
+						Query: ResponseJSONAlertingQuery{
 							Kql: "_id: '1234'",
 						},
 					},
@@ -104,19 +120,19 @@ func TestMaintenanceWindowFromAPI(t *testing.T) {
 		},
 		{
 			name:          "occurrences and no scope",
-			existingModel: MaintenanceWindowModel{},
-			response: ResponseJson{
-				Id:        "existing-space-id/id",
+			existingModel: Model{},
+			response: ResponseJSON{
+				ID:        "existing-space-id/id",
 				CreatedAt: "created_at",
 				Enabled:   true,
 				Title:     "test response",
-				Schedule: ResponseJsonSchedule{
-					Custom: ResponseJsonCustomSchedule{
+				Schedule: ResponseJSONSchedule{
+					Custom: ResponseJSONCustomSchedule{
 						Start:    "1993-01-01T05:00:00.200Z",
 						Duration: "13d",
-						Recurring: &ResponseJsonRecurring{
-							Every:       utils.Pointer("21d"),
-							Occurrences: utils.Pointer(float32(42)),
+						Recurring: &ResponseJSONRecurring{
+							Every:       new("21d"),
+							Occurrences: new(float32(42)),
 						},
 					},
 				},
@@ -144,14 +160,14 @@ func TestMaintenanceWindowToAPICreateRequest(t *testing.T) {
 
 	tests := []struct {
 		name            string
-		model           MaintenanceWindowModel
+		model           Model
 		expectedRequest kbapi.PostMaintenanceWindowJSONRequestBody
 	}{
 		{
 			name:  "all fields",
 			model: modelWithAllFields,
 			expectedRequest: kbapi.PostMaintenanceWindowJSONRequestBody{
-				Enabled: utils.Pointer(true),
+				Enabled: new(true),
 				Title:   "test response",
 				Schedule: struct {
 					Custom struct {
@@ -183,8 +199,8 @@ func TestMaintenanceWindowToAPICreateRequest(t *testing.T) {
 					}{
 						Start:    "1993-01-01T05:00:00.200Z",
 						Duration: "13d",
-						Timezone: utils.Pointer("America/Martinique"),
-						Recurring: utils.Pointer(struct {
+						Timezone: new("America/Martinique"),
+						Recurring: new(struct {
 							End         *string    `json:"end,omitempty"`
 							Every       *string    `json:"every,omitempty"`
 							Occurrences *float32   `json:"occurrences,omitempty"`
@@ -192,15 +208,15 @@ func TestMaintenanceWindowToAPICreateRequest(t *testing.T) {
 							OnMonthDay  *[]float32 `json:"onMonthDay,omitempty"`
 							OnWeekDay   *[]string  `json:"onWeekDay,omitempty"`
 						}{
-							Every:      utils.Pointer("21d"),
-							End:        utils.Pointer("2029-05-17T05:05:00.000Z"),
-							OnWeekDay:  utils.Pointer([]string{"MO", "-2FR", "+4SA"}),
-							OnMonth:    utils.Pointer([]float32{6}),
-							OnMonthDay: utils.Pointer([]float32{1, 2, 3}),
+							Every:      new("21d"),
+							End:        new("2029-05-17T05:05:00.000Z"),
+							OnWeekDay:  new([]string{"MO", "-2FR", "+4SA"}),
+							OnMonth:    new([]float32{6}),
+							OnMonthDay: new([]float32{1, 2, 3}),
 						}),
 					},
 				},
-				Scope: utils.Pointer(struct {
+				Scope: new(struct {
 					Alerting struct {
 						Query struct {
 							Kql string `json:"kql"`
@@ -226,7 +242,7 @@ func TestMaintenanceWindowToAPICreateRequest(t *testing.T) {
 			name:  "occurrences and no scope",
 			model: modelOccurrencesNoScope,
 			expectedRequest: kbapi.PostMaintenanceWindowJSONRequestBody{
-				Enabled: utils.Pointer(true),
+				Enabled: new(true),
 				Title:   "test response",
 				Schedule: struct {
 					Custom struct {
@@ -259,7 +275,7 @@ func TestMaintenanceWindowToAPICreateRequest(t *testing.T) {
 						Start:    "1993-01-01T05:00:00.200Z",
 						Duration: "13d",
 
-						Recurring: utils.Pointer(struct {
+						Recurring: new(struct {
 							End         *string    `json:"end,omitempty"`
 							Every       *string    `json:"every,omitempty"`
 							Occurrences *float32   `json:"occurrences,omitempty"`
@@ -267,8 +283,8 @@ func TestMaintenanceWindowToAPICreateRequest(t *testing.T) {
 							OnMonthDay  *[]float32 `json:"onMonthDay,omitempty"`
 							OnWeekDay   *[]string  `json:"onWeekDay,omitempty"`
 						}{
-							Every:       utils.Pointer("21d"),
-							Occurrences: utils.Pointer(float32(42)),
+							Every:       new("21d"),
+							Occurrences: new(float32(42)),
 						}),
 					},
 				},
@@ -281,7 +297,7 @@ func TestMaintenanceWindowToAPICreateRequest(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			request, diags := tt.model.toAPICreateRequest(ctx)
-			require.Equal(t, request, tt.expectedRequest)
+			require.Equal(t, tt.expectedRequest, request)
 			require.Empty(t, diags)
 		})
 	}
@@ -293,16 +309,16 @@ func TestMaintenanceWindowToAPIUpdateRequest(t *testing.T) {
 
 	tests := []struct {
 		name            string
-		model           MaintenanceWindowModel
+		model           Model
 		expectedRequest kbapi.PatchMaintenanceWindowIdJSONRequestBody
 	}{
 		{
 			name:  "all fields",
 			model: modelWithAllFields,
 			expectedRequest: kbapi.PatchMaintenanceWindowIdJSONRequestBody{
-				Enabled: utils.Pointer(true),
-				Title:   utils.Pointer("test response"),
-				Schedule: utils.Pointer(struct {
+				Enabled: new(true),
+				Title:   new("test response"),
+				Schedule: new(struct {
 					Custom struct {
 						Duration  string `json:"duration"`
 						Recurring *struct {
@@ -332,8 +348,8 @@ func TestMaintenanceWindowToAPIUpdateRequest(t *testing.T) {
 					}{
 						Start:    "1993-01-01T05:00:00.200Z",
 						Duration: "13d",
-						Timezone: utils.Pointer("America/Martinique"),
-						Recurring: utils.Pointer(struct {
+						Timezone: new("America/Martinique"),
+						Recurring: new(struct {
 							End         *string    `json:"end,omitempty"`
 							Every       *string    `json:"every,omitempty"`
 							Occurrences *float32   `json:"occurrences,omitempty"`
@@ -341,15 +357,15 @@ func TestMaintenanceWindowToAPIUpdateRequest(t *testing.T) {
 							OnMonthDay  *[]float32 `json:"onMonthDay,omitempty"`
 							OnWeekDay   *[]string  `json:"onWeekDay,omitempty"`
 						}{
-							Every:      utils.Pointer("21d"),
-							End:        utils.Pointer("2029-05-17T05:05:00.000Z"),
-							OnWeekDay:  utils.Pointer([]string{"MO", "-2FR", "+4SA"}),
-							OnMonth:    utils.Pointer([]float32{6}),
-							OnMonthDay: utils.Pointer([]float32{1, 2, 3}),
+							Every:      new("21d"),
+							End:        new("2029-05-17T05:05:00.000Z"),
+							OnWeekDay:  new([]string{"MO", "-2FR", "+4SA"}),
+							OnMonth:    new([]float32{6}),
+							OnMonthDay: new([]float32{1, 2, 3}),
 						}),
 					},
 				}),
-				Scope: utils.Pointer(struct {
+				Scope: new(struct {
 					Alerting struct {
 						Query struct {
 							Kql string `json:"kql"`
@@ -373,19 +389,19 @@ func TestMaintenanceWindowToAPIUpdateRequest(t *testing.T) {
 		},
 		{
 			name: "just title, enabled and schedule",
-			model: MaintenanceWindowModel{
+			model: Model{
 				ID:      types.StringValue("/existing-space-id/id"),
 				Title:   types.StringValue("test response"),
 				Enabled: types.BoolValue(true),
-				CustomSchedule: MaintenanceWindowSchedule{
+				CustomSchedule: Schedule{
 					Start:    types.StringValue("1993-01-01T05:00:00.200Z"),
 					Duration: types.StringValue("13d"),
 				},
 			},
 			expectedRequest: kbapi.PatchMaintenanceWindowIdJSONRequestBody{
-				Enabled: utils.Pointer(true),
-				Title:   utils.Pointer("test response"),
-				Schedule: utils.Pointer(struct {
+				Enabled: new(true),
+				Title:   new("test response"),
+				Schedule: new(struct {
 					Custom struct {
 						Duration  string `json:"duration"`
 						Recurring *struct {
@@ -421,22 +437,22 @@ func TestMaintenanceWindowToAPIUpdateRequest(t *testing.T) {
 		},
 		{
 			name: "just the scope and schedule",
-			model: MaintenanceWindowModel{
+			model: Model{
 				ID: types.StringValue("/existing-space-id/id"),
 
-				CustomSchedule: MaintenanceWindowSchedule{
+				CustomSchedule: Schedule{
 					Start:    types.StringValue("1993-01-01T05:00:00.200Z"),
 					Duration: types.StringValue("13d"),
 				},
 
-				Scope: &MaintenanceWindowScope{
-					Alerting: MaintenanceWindowAlertingScope{
+				Scope: &Scope{
+					Alerting: AlertingScope{
 						Kql: types.StringValue("_id: '1234'"),
 					},
 				},
 			},
 			expectedRequest: kbapi.PatchMaintenanceWindowIdJSONRequestBody{
-				Schedule: utils.Pointer(struct {
+				Schedule: new(struct {
 					Custom struct {
 						Duration  string `json:"duration"`
 						Recurring *struct {
@@ -469,7 +485,7 @@ func TestMaintenanceWindowToAPIUpdateRequest(t *testing.T) {
 					},
 				}),
 
-				Scope: utils.Pointer(struct {
+				Scope: new(struct {
 					Alerting struct {
 						Query struct {
 							Kql string `json:"kql"`
@@ -498,7 +514,7 @@ func TestMaintenanceWindowToAPIUpdateRequest(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			request, diags := tt.model.toAPIUpdateRequest(ctx)
-			require.Equal(t, request, tt.expectedRequest)
+			require.Equal(t, tt.expectedRequest, request)
 			require.Empty(t, diags)
 		})
 	}

@@ -53,13 +53,13 @@ resource "elasticstack_kibana_dashboard" "test" {
           data_layer = {
             ignore_global_filters = false
             sampling              = 1
-            dataset = jsonencode({
+            dataset_json = jsonencode({
               type = "dataView"
               id   = "metrics-*"
             })
             y = [
               {
-                config = jsonencode({
+                config_json = jsonencode({
                   operation     = "count"
                   empty_as_null = true
                 })

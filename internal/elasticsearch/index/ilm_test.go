@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package index_test
 
 import (
@@ -41,6 +58,7 @@ func TestAccResourceILM(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "warm.#", "0"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "cold.#", "0"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "frozen.#", "0"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index_lifecycle.test", "modified_date"),
 				),
 			},
 			{
@@ -59,8 +77,11 @@ func TestAccResourceILM(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "warm.0.readonly.#", "1"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "warm.0.allocate.#", "1"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "warm.0.allocate.0.number_of_replicas", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "warm.0.allocate.0.exclude", `{"box_type":"hot"}`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "warm.0.shrink.0.max_primary_shard_size", "50gb"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "cold.#", "0"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "frozen.#", "0"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index_lifecycle.test", "modified_date"),
 				),
 			},
 			{
@@ -404,21 +425,180 @@ func checkResourceILMDestroy(s *terraform.State) error {
 		if rs.Type != "elasticstack_elasticsearch_index_lifecycle" {
 			continue
 		}
-		compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
+		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
 		esClient, err := client.GetESClient()
 		if err != nil {
 			return err
 		}
-		req := esClient.ILM.GetLifecycle.WithPolicy(compId.ResourceId)
+		req := esClient.ILM.GetLifecycle.WithPolicy(compID.ResourceID)
 		res, err := esClient.ILM.GetLifecycle(req)
 		if err != nil {
 			return err
 		}
 
 		if res.StatusCode != 404 {
-			return fmt.Errorf("ILM policy (%s) still exists", compId.ResourceId)
+			return fmt.Errorf("ILM policy (%s) still exists", compID.ResourceID)
 		}
 	}
 	return nil
+}
+
+func TestAccResourceILMMetadata(t *testing.T) {
+	policyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceILMDestroy,
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccResourceILMWithMetadata(policyName, `{"managed_by":"terraform"}`),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_meta", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_meta", "metadata", `{"managed_by":"terraform"}`),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index_lifecycle.test_meta", "modified_date"),
+				),
+			},
+			{
+				Config: testAccResourceILMWithMetadata(policyName, `{"managed_by":"terraform","version":"2"}`),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_meta", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_meta", "metadata", `{"managed_by":"terraform","version":"2"}`),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index_lifecycle.test_meta", "modified_date"),
+				),
+			},
+		},
+	})
+}
+
+func testAccResourceILMWithMetadata(name string, metadata string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_index_lifecycle" "test_meta" {
+  name     = "%s"
+  metadata = jsonencode(%s)
+
+  hot {
+    rollover {
+      max_age = "7d"
+    }
+  }
+}
+`, name, metadata)
+}
+
+func TestAccResourceILMColdPhase(t *testing.T) {
+	policyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceILMDestroy,
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccResourceILMWithColdPhase(policyName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_cold", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_cold", "cold.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_cold", "cold.0.min_age", "30d"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_cold", "cold.0.set_priority.0.priority", "0"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_cold", "cold.0.readonly.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_cold", "cold.0.readonly.0.enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_cold", "cold.0.allocate.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_cold", "cold.0.allocate.0.number_of_replicas", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_cold", "cold.0.allocate.0.include", `{"box_type":"cold"}`),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index_lifecycle.test_cold", "modified_date"),
+				),
+			},
+		},
+	})
+}
+
+func testAccResourceILMWithColdPhase(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_index_lifecycle" "test_cold" {
+  name = "%s"
+
+  hot {
+    rollover {
+      max_age = "7d"
+    }
+  }
+
+  cold {
+    min_age = "30d"
+
+    set_priority {
+      priority = 0
+    }
+
+    readonly {}
+
+    allocate {
+      number_of_replicas = 1
+      include = jsonencode({
+        box_type = "cold"
+      })
+    }
+  }
+}
+`, name)
+}
+
+func TestAccResourceILMForcemerge(t *testing.T) {
+	policyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceILMDestroy,
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccResourceILMWithForcemerge(policyName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_forcemerge", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_forcemerge", "warm.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_forcemerge", "warm.0.forcemerge.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_forcemerge", "warm.0.forcemerge.0.max_num_segments", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_forcemerge", "warm.0.forcemerge.0.index_codec", "best_compression"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index_lifecycle.test_forcemerge", "modified_date"),
+				),
+			},
+		},
+	})
+}
+
+func testAccResourceILMWithForcemerge(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_index_lifecycle" "test_forcemerge" {
+  name = "%s"
+
+  hot {
+    rollover {
+      max_age = "7d"
+    }
+  }
+
+  warm {
+    min_age = "7d"
+
+    forcemerge {
+      max_num_segments = 1
+      index_codec      = "best_compression"
+    }
+  }
+}
+`, name)
 }

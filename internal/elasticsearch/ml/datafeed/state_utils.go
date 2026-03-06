@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package datafeed
 
 import (
@@ -21,8 +38,8 @@ const (
 )
 
 // GetDatafeedState returns the current state of a datafeed
-func GetDatafeedState(ctx context.Context, client *clients.ApiClient, datafeedId string) (*State, diag.Diagnostics) {
-	statsResponse, diags := elasticsearch.GetDatafeedStats(ctx, client, datafeedId)
+func GetDatafeedState(ctx context.Context, client *clients.APIClient, datafeedID string) (*State, diag.Diagnostics) {
+	statsResponse, diags := elasticsearch.GetDatafeedStats(ctx, client, datafeedID)
 	if diags.HasError() {
 		return nil, diags
 	}
@@ -43,15 +60,15 @@ var terminalDatafeedStates = map[State]struct{}{
 var errDatafeedInUndesiredState = errors.New("datafeed stuck in undesired state")
 
 // WaitForDatafeedState waits for a datafeed to reach the desired state
-func WaitForDatafeedState(ctx context.Context, client *clients.ApiClient, datafeedId string, desiredState State) (bool, diag.Diagnostics) {
+func WaitForDatafeedState(ctx context.Context, client *clients.APIClient, datafeedID string, desiredState State) (bool, diag.Diagnostics) {
 	stateChecker := func(ctx context.Context) (bool, error) {
-		currentState, diags := GetDatafeedState(ctx, client, datafeedId)
+		currentState, diags := GetDatafeedState(ctx, client, datafeedID)
 		if diags.HasError() {
 			return false, diagutil.FwDiagsAsError(diags)
 		}
 
 		if currentState == nil {
-			return false, fmt.Errorf("datafeed %s not found", datafeedId)
+			return false, fmt.Errorf("datafeed %s not found", datafeedID)
 		}
 
 		if *currentState == desiredState {
@@ -66,7 +83,7 @@ func WaitForDatafeedState(ctx context.Context, client *clients.ApiClient, datafe
 		return false, nil
 	}
 
-	err := asyncutils.WaitForStateTransition(ctx, "datafeed", datafeedId, stateChecker)
+	err := asyncutils.WaitForStateTransition(ctx, "datafeed", datafeedID, stateChecker)
 	if errors.Is(err, errDatafeedInUndesiredState) {
 		return false, nil
 	}

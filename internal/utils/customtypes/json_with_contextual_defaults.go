@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package customtypes
 
 import (
@@ -5,7 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/attr/xattr"
@@ -25,9 +42,16 @@ const legacyContextKey = "__tf_provider_connector_type_id"
 const contextKey = "__tf_provider_context"
 
 func DescriptionWithContextWarning(baseDescription string) string {
-	return fmt.Sprintf(`%s
-
-The provider injects the '%s' property into this JSON object. In most cases this field will be ignored when computing the difference between the current and desired state. In some cases however, this property may be shown in the Terraform plan. Any changes to the '%s' property can be safely ignored. This property is used internally by the provider, and you should not set this property within your Terraform configuration.`, baseDescription, contextKey, contextKey)
+	return fmt.Sprintf(
+		"%s\n\n"+
+			"The provider injects the '%s' property into this JSON object. In most cases this field will be ignored when computing the difference between the current and desired state. "+
+			"In some cases however, this property may be shown in the Terraform plan. "+
+			"Any changes to the '%s' property can be safely ignored. "+
+			"This property is used internally by the provider, and you should not set this property within your Terraform configuration.",
+		baseDescription,
+		contextKey,
+		contextKey,
+	)
 }
 
 type JSONWithContextualDefaultsValue struct {
@@ -53,7 +77,7 @@ func (t JSONWithContextualDefaultsType) String() string {
 }
 
 // ValueType returns the Value type.
-func (t JSONWithContextualDefaultsType) ValueType(ctx context.Context) attr.Value {
+func (t JSONWithContextualDefaultsType) ValueType(_ context.Context) attr.Value {
 	return JSONWithContextualDefaultsValue{
 		populateDefaults: t.populateDefaults,
 	}
@@ -71,10 +95,10 @@ func (t JSONWithContextualDefaultsType) Equal(o attr.Type) bool {
 }
 
 // ValueFromString returns a StringValuable type given a StringValue.
-func (t JSONWithContextualDefaultsType) ValueFromString(ctx context.Context, in basetypes.StringValue) (basetypes.StringValuable, diag.Diagnostics) {
+func (t JSONWithContextualDefaultsType) ValueFromString(_ context.Context, in basetypes.StringValue) (basetypes.StringValuable, diag.Diagnostics) {
 	var contextValue string
-	if utils.IsKnown(in) {
-		var configMap map[string]interface{}
+	if typeutils.IsKnown(in) {
+		var configMap map[string]any
 		if err := json.Unmarshal([]byte(in.ValueString()), &configMap); err != nil {
 			return nil, diag.Diagnostics{
 				diag.NewErrorDiagnostic("Failed to unmarshal config value", err.Error()),
@@ -135,12 +159,12 @@ func (v JSONWithContextualDefaultsValue) Equal(o attr.Value) bool {
 	return v.StringValue.Equal(other.StringValue)
 }
 
-func (t JSONWithContextualDefaultsValue) ValidateAttribute(ctx context.Context, req xattr.ValidateAttributeRequest, resp *xattr.ValidateAttributeResponse) {
-	if t.IsNull() || t.IsUnknown() {
+func (v JSONWithContextualDefaultsValue) ValidateAttribute(ctx context.Context, req xattr.ValidateAttributeRequest, resp *xattr.ValidateAttributeResponse) {
+	if v.IsNull() || v.IsUnknown() {
 		return
 	}
 
-	t.Normalized.ValidateAttribute(ctx, req, resp)
+	v.Normalized.ValidateAttribute(ctx, req, resp)
 }
 
 func (v JSONWithContextualDefaultsValue) SanitizedValue() (string, diag.Diagnostics) {
@@ -154,7 +178,7 @@ func (v JSONWithContextualDefaultsValue) SanitizedValue() (string, diag.Diagnost
 		return "", diags
 	}
 
-	var unsanitizedMap map[string]interface{}
+	var unsanitizedMap map[string]any
 	err := json.Unmarshal([]byte(v.ValueString()), &unsanitizedMap)
 	if err != nil {
 		diags.AddError("Failed to unmarshal config value", err.Error())
@@ -174,14 +198,14 @@ func (v JSONWithContextualDefaultsValue) SanitizedValue() (string, diag.Diagnost
 }
 
 // removeNulls recursively removes all null values from the map
-func removeNulls(m map[string]interface{}) {
+func removeNulls(m map[string]any) {
 	for key, value := range m {
 		if value == nil {
 			delete(m, key)
 			continue
 		}
 
-		if nestedMap, ok := value.(map[string]interface{}); ok {
+		if nestedMap, ok := value.(map[string]any); ok {
 			removeNulls(nestedMap)
 			continue
 		}
@@ -272,12 +296,16 @@ func NewJSONWithContextualDefaultsUnknown() JSONWithContextualDefaultsValue {
 }
 
 // NewJSONWithContextualDefaultsValue creates a JSONWithContext with a known value and a context value.
-func NewJSONWithContextualDefaultsValue(value string, contextValue string, populateDefaults func(contextValue string, value string) (string, error)) (JSONWithContextualDefaultsValue, diag.Diagnostics) {
+func NewJSONWithContextualDefaultsValue(
+	value string,
+	contextValue string,
+	populateDefaults func(contextValue string, value string) (string, error),
+) (JSONWithContextualDefaultsValue, diag.Diagnostics) {
 	if value == "" {
 		return NewJSONWithContextualDefaultsNull(), nil
 	}
 
-	var configMap map[string]interface{}
+	var configMap map[string]any
 	err := json.Unmarshal([]byte(value), &configMap)
 	if err != nil {
 		return JSONWithContextualDefaultsValue{}, diag.Diagnostics{

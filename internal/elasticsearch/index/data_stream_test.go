@@ -1,7 +1,25 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package index_test
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -14,6 +32,7 @@ import (
 func TestAccResourceDataStream(t *testing.T) {
 	// generate random name
 	dsName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlpha)
+	dsNameUpdated := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlpha)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -23,13 +42,41 @@ func TestAccResourceDataStream(t *testing.T) {
 			{
 				Config: testAccResourceDataStreamCreate(dsName),
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_data_stream.test_ds", "id"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "name", dsName),
 					// check some computed fields
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "indices.#", "1"),
+					resource.TestMatchResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "indices.0.index_name", dataStreamBackingIndexNameRegexp(dsName)),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_data_stream.test_ds", "indices.0.index_uuid"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "template", dsName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "ilm_policy", dsName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "timestamp_field", "@timestamp"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "generation", "1"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_data_stream.test_ds", "status"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "hidden", "false"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "system", "false"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "replicated", "false"),
+				),
+			},
+			{
+				Config:            testAccResourceDataStreamCreate(dsName),
+				ResourceName:      "elasticstack_elasticsearch_data_stream.test_ds",
+				ImportState:       true,
+				ImportStateVerify: true,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "name", dsName),
+					resource.TestMatchResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "indices.0.index_name", dataStreamBackingIndexNameRegexp(dsName)),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_data_stream.test_ds", "indices.0.index_uuid"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "template", dsName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "ilm_policy", dsName),
+				),
+			},
+			{
+				Config: testAccResourceDataStreamCreate(dsNameUpdated),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "name", dsNameUpdated),
+					resource.TestMatchResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "id", regexp.MustCompile(fmt.Sprintf(".+/%s$", dsNameUpdated))),
+					resource.TestMatchResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "indices.0.index_name", dataStreamBackingIndexNameRegexp(dsNameUpdated)),
 				),
 			},
 		},
@@ -72,6 +119,7 @@ resource "elasticstack_elasticsearch_index_template" "test_ds_template" {
     settings = jsonencode({
       "lifecycle.name" = elasticstack_elasticsearch_index_lifecycle.test_ilm.name
     })
+
   }
 
   data_stream {}
@@ -89,6 +137,10 @@ resource "elasticstack_elasticsearch_data_stream" "test_ds" {
 	`, name, name, name, name)
 }
 
+func dataStreamBackingIndexNameRegexp(name string) *regexp.Regexp {
+	return regexp.MustCompile(fmt.Sprintf(`^\.ds-%s-.*-000001$`, name))
+}
+
 func checkResourceDataStreamDestroy(s *terraform.State) error {
 	client, err := clients.NewAcceptanceTestingClient()
 	if err != nil {
@@ -99,20 +151,20 @@ func checkResourceDataStreamDestroy(s *terraform.State) error {
 		if rs.Type != "elasticstack_elasticsearch_data_stream" {
 			continue
 		}
-		compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
+		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
 		esClient, err := client.GetESClient()
 		if err != nil {
 			return err
 		}
-		req := esClient.Indices.GetDataStream.WithName(compId.ResourceId)
+		req := esClient.Indices.GetDataStream.WithName(compID.ResourceID)
 		res, err := esClient.Indices.GetDataStream(req)
 		if err != nil {
 			return err
 		}
 
 		if res.StatusCode != 404 {
-			return fmt.Errorf("Data Stream (%s) still exists", compId.ResourceId)
+			return fmt.Errorf("Data Stream (%s) still exists", compID.ResourceID)
 		}
 	}
 	return nil

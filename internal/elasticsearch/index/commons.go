@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package index
 
 import (
@@ -13,7 +30,7 @@ func ExpandIndexAliases(definedAliases *schema.Set) (map[string]models.IndexAlia
 	aliases := make(map[string]models.IndexAlias, definedAliases.Len())
 
 	for _, a := range definedAliases.List() {
-		alias := a.(map[string]interface{})
+		alias := a.(map[string]any)
 		ia, diags := ExpandIndexAlias(alias)
 		if diags.HasError() {
 			return nil, diags
@@ -23,14 +40,14 @@ func ExpandIndexAliases(definedAliases *schema.Set) (map[string]models.IndexAlia
 	return aliases, diags
 }
 
-func ExpandIndexAlias(alias map[string]interface{}) (*models.IndexAlias, diag.Diagnostics) {
+func ExpandIndexAlias(alias map[string]any) (*models.IndexAlias, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	ia := models.IndexAlias{}
 	ia.Name = alias["name"].(string)
 
 	if f, ok := alias["filter"]; ok {
 		if f.(string) != "" {
-			filterMap := make(map[string]interface{})
+			filterMap := make(map[string]any)
 			if err := json.Unmarshal([]byte(f.(string)), &filterMap); err != nil {
 				return nil, diag.FromErr(err)
 			}
@@ -45,10 +62,10 @@ func ExpandIndexAlias(alias map[string]interface{}) (*models.IndexAlias, diag.Di
 	return &ia, diags
 }
 
-func FlattenIndexAliases(aliases map[string]models.IndexAlias) (interface{}, diag.Diagnostics) {
+func FlattenIndexAliases(aliases map[string]models.IndexAlias) (any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	als := make([]interface{}, 0)
+	als := make([]any, 0)
 	for k, v := range aliases {
 		alias, diags := FlattenIndexAlias(k, v)
 		if diags.HasError() {
@@ -59,9 +76,9 @@ func FlattenIndexAliases(aliases map[string]models.IndexAlias) (interface{}, dia
 	return als, diags
 }
 
-func FlattenIndexAlias(name string, alias models.IndexAlias) (interface{}, diag.Diagnostics) {
+func FlattenIndexAlias(name string, alias models.IndexAlias) (any, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	a := make(map[string]interface{})
+	a := make(map[string]any)
 	a["name"] = name
 	if alias.Filter != nil {
 		f, err := json.Marshal(alias.Filter)
@@ -85,7 +102,7 @@ func ExpandLifecycle(definedLifecycle *schema.Set) *models.LifecycleSettings {
 	if definedLifecycle.Len() == 0 {
 		return nil
 	}
-	lifecycleMap := definedLifecycle.List()[0].(map[string]interface{})
+	lifecycleMap := definedLifecycle.List()[0].(map[string]any)
 	if lifecycleMap != nil {
 		lifecycle := &models.LifecycleSettings{}
 		if s, ok := lifecycleMap["data_retention"]; ok {
@@ -96,9 +113,9 @@ func ExpandLifecycle(definedLifecycle *schema.Set) *models.LifecycleSettings {
 	return nil
 }
 
-func FlattenLifecycle(lifecycle *models.LifecycleSettings) interface{} {
-	lf := make([]interface{}, 1)
-	lfSettings := make(map[string]interface{})
+func FlattenLifecycle(lifecycle *models.LifecycleSettings) any {
+	lf := make([]any, 1)
+	lfSettings := make(map[string]any)
 	lfSettings["data_retention"] = lifecycle.DataRetention
 
 	lf[0] = lfSettings

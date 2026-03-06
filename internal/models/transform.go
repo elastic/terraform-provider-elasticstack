@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package models
 
 import (
@@ -6,24 +23,24 @@ import (
 )
 
 type Transform struct {
-	Id              string                    `json:"id,omitempty"`
+	ID              string                    `json:"id,omitempty"`
 	Name            string                    `json:"-"`
 	Description     string                    `json:"description,omitempty"`
 	Source          *TransformSource          `json:"source"`
 	Destination     *TransformDestination     `json:"dest"`
-	Pivot           interface{}               `json:"pivot,omitempty"`
-	Latest          interface{}               `json:"latest,omitempty"`
+	Pivot           any                       `json:"pivot,omitempty"`
+	Latest          any                       `json:"latest,omitempty"`
 	Frequency       string                    `json:"frequency,omitempty"`
 	RetentionPolicy *TransformRetentionPolicy `json:"retention_policy,omitempty"`
 	Sync            *TransformSync            `json:"sync,omitempty"`
-	Meta            interface{}               `json:"_meta,omitempty"`
+	Meta            any                       `json:"_meta,omitempty"`
 	Settings        *TransformSettings        `json:"settings,omitempty"`
 }
 
 type TransformSource struct {
-	Indices         []string    `json:"index"`
-	Query           interface{} `json:"query,omitempty"`
-	RuntimeMappings interface{} `json:"runtime_mappings,omitempty"`
+	Indices         []string `json:"index"`
+	Query           any      `json:"query,omitempty"`
+	RuntimeMappings any      `json:"runtime_mappings,omitempty"`
 }
 
 type TransformAlias struct {
@@ -84,7 +101,7 @@ type GetTransformResponse struct {
 }
 
 type TransformStats struct {
-	Id    string `json:"id"`
+	ID    string `json:"id"`
 	State string `json:"state"`
 }
 

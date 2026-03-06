@@ -23,7 +23,7 @@ resource "elasticstack_kibana_dashboard" "test" {
     tagcloud_config = {
       title       = "Sample Tagcloud"
       description = "Test tagcloud visualization"
-      dataset = jsonencode({
+      dataset_json = jsonencode({
         type = "dataView"
         id   = "metrics-*"
       })
@@ -31,10 +31,10 @@ resource "elasticstack_kibana_dashboard" "test" {
         language = "kuery"
         query    = ""
       }
-      metric = jsonencode({
+      metric_json = jsonencode({
         operation = "count"
       })
-      tag_by = jsonencode({
+      tag_by_json = jsonencode({
         operation = "terms"
         fields    = ["host.name"]
         size      = 10

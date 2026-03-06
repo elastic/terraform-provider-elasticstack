@@ -1,0 +1,1 @@
+Helper data source which can be used to create the configuration for a gsub processor. This processor converts a string field by applying a regular expression and a replacement. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/gsub-processor.html

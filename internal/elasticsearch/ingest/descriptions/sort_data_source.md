@@ -1,0 +1,1 @@
+Helper data source which can be used to create the configuration for a sort processor. This processor sorts the elements of an array ascending or descending. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/sort-processor.html

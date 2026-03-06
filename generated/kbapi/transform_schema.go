@@ -1,5 +1,4 @@
 //go:build ignore
-// +build ignore
 
 package main
 
@@ -575,10 +574,10 @@ var transformers = []TransformFunc{
 	fixSecurityExceptionListItems,
 	removeDuplicateOneOfRefs,
 	fixDashboardPanelItemRefs,
-	fixAlertingRuleParams,
 	transformRemoveExamples,
 	transformRemoveUnusedComponents,
 	transformOmitEmptyNullable,
+	fixAlertingRuleParams,
 }
 
 //go:embed workflows.yaml
@@ -610,12 +609,12 @@ func mergeWorkflowsSchema(schema *Schema) {
 	}
 }
 
-//go:embed dashboards.yaml
-var dashboardsYaml string
+//go:embed dashboards.json
+var dashboardsJSON string
 
 func mergeDashboardsSchema(schema *Schema) {
 	var dashboardsSchema Schema
-	err := yaml.Unmarshal([]byte(dashboardsYaml), &dashboardsSchema)
+	err := yaml.Unmarshal([]byte(dashboardsJSON), &dashboardsSchema)
 	if err != nil {
 		log.Fatalf("failed to unmarshal schema from dashboards.yaml: %v", err)
 	}
@@ -999,37 +998,21 @@ func fixSecurityAPIPageSize(schema *Schema) {
 }
 
 func fixDashboardPanelItemRefs(schema *Schema) {
-	dashboardsPath := schema.MustGetPath("/api/dashboards")
 	dashboardPath := schema.MustGetPath("/api/dashboards/{id}")
 
-	dashboardsPath.Post.CreateRef(schema, "dashboard_panel_item", "requestBody.content.application/json.schema.properties.data.properties.panels.items.anyOf.0")
-	dashboardsPath.Post.CreateRef(schema, "dashboard_panel_section", "requestBody.content.application/json.schema.properties.data.properties.panels.items.anyOf.1")
-	dashboardsPath.Post.CreateRef(schema, "dashboard_panels", "requestBody.content.application/json.schema.properties.data.properties.panels")
+	dashboardPath.Post.CreateRef(schema, "dashboard_panel_item", "requestBody.content.application/json.schema.properties.panels.items.anyOf.0")
+	dashboardPath.Post.CreateRef(schema, "dashboard_panel_section", "requestBody.content.application/json.schema.properties.panels.items.anyOf.1")
+	dashboardPath.Post.CreateRef(schema, "dashboard_panels", "requestBody.content.application/json.schema.properties.panels")
 
-	dashboardPath.Put.CreateRef(schema, "dashboard_panel_item", "requestBody.content.application/json.schema.properties.data.properties.panels.items.anyOf.0")
-	dashboardPath.Put.CreateRef(schema, "dashboard_panel_section", "requestBody.content.application/json.schema.properties.data.properties.panels.items.anyOf.1")
-	dashboardPath.Put.CreateRef(schema, "dashboard_panels", "requestBody.content.application/json.schema.properties.data.properties.panels")
+	dashboardPath.Put.CreateRef(schema, "dashboard_panel_item", "requestBody.content.application/json.schema.properties.panels.items.anyOf.0")
+	dashboardPath.Put.CreateRef(schema, "dashboard_panel_section", "requestBody.content.application/json.schema.properties.panels.items.anyOf.1")
+	dashboardPath.Put.CreateRef(schema, "dashboard_panels", "requestBody.content.application/json.schema.properties.panels")
 
 	dashboardPath.Get.CreateRef(schema, "dashboard_panel_item", "responses.200.content.application/json.schema.properties.data.properties.panels.items.anyOf.0")
 	dashboardPath.Get.CreateRef(schema, "dashboard_panel_section", "responses.200.content.application/json.schema.properties.data.properties.panels.items.anyOf.1")
 	dashboardPath.Get.CreateRef(schema, "dashboard_panels", "responses.200.content.application/json.schema.properties.data.properties.panels")
 
 	schema.Components.CreateRef(schema, "dashboard_panel_item", "schemas.dashboard_panel_section.properties.panels.items")
-}
-
-// fixAlertingRuleParams simplifies the POST alerting rule params schema.
-// The upstream spec defines params with an anyOf union of specific param types,
-// which causes oapi-codegen to generate a union struct whose
-// AdditionalProperties field is tagged json:"-" (with no custom MarshalJSON).
-// This means params serialize as an empty object. Simplify it to a plain object
-// with additionalProperties (matching the PUT endpoint) so that oapi-codegen
-// generates a usable map[string]interface{} type.
-func fixAlertingRuleParams(schema *Schema) {
-	postEndpoint := schema.MustGetPath("/api/alerting/rule/{id}").MustGetEndpoint("post")
-	paramsSchema := postEndpoint.MustGetMap("requestBody.content.application/json.schema.properties.params")
-
-	paramsSchema.Delete("anyOf")
-	paramsSchema.Set("type", "object")
 }
 
 func fixSecurityExceptionListItems(schema *Schema) {
@@ -1344,4 +1327,9 @@ func transformRemoveUnusedComponents(schema *Schema) {
 			break
 		}
 	}
+}
+
+func fixAlertingRuleParams(schema *Schema) {
+	postEndpoint := schema.MustGetPath("/api/alerting/rule/{id}").MustGetEndpoint("post")
+	postEndpoint.CreateRef(schema, "Alerting_Rule_API_Params", "requestBody.content.application/json.schema.properties.params")
 }

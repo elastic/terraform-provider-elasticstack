@@ -23,7 +23,7 @@ resource "elasticstack_kibana_dashboard" "test" {
     tagcloud_config = {
       title       = "Filtered Tagcloud"
       description = "Tagcloud with filters and custom settings"
-      dataset = jsonencode({
+      dataset_json = jsonencode({
         type = "dataView"
         id   = "logs-*"
       })
@@ -36,11 +36,11 @@ resource "elasticstack_kibana_dashboard" "test" {
           query = "log.level:error OR log.level:warning"
         }
       ]
-      metric = jsonencode({
+      metric_json = jsonencode({
         operation = "sum"
         field     = "event.duration"
       })
-      tag_by = jsonencode({
+      tag_by_json = jsonencode({
         operation = "terms"
         fields    = ["service.name"]
         size      = 15

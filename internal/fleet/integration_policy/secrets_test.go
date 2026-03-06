@@ -1,4 +1,21 @@
-package integration_policy_test
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package integrationpolicy_test
 
 import (
 	"context"
@@ -6,23 +23,21 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/integration_policy"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	integrationpolicy "github.com/elastic/terraform-provider-elasticstack/internal/fleet/integration_policy"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/stretchr/testify/require"
 )
 
 type privateData map[string]string
 
-func (p *privateData) GetKey(ctx context.Context, key string) ([]byte, diag.Diagnostics) {
+func (p *privateData) GetKey(_ context.Context, key string) ([]byte, diag.Diagnostics) {
 	if val, ok := (*p)[key]; ok {
 		return []byte(val), nil
-	} else {
-		return nil, nil
 	}
+	return nil, nil
 }
 
-func (p *privateData) SetKey(ctx context.Context, key string, value []byte) diag.Diagnostics {
+func (p *privateData) SetKey(_ context.Context, key string, value []byte) diag.Diagnostics {
 	(*p)[key] = string(value)
 	return nil
 }
@@ -94,23 +109,23 @@ func TestHandleRespSecrets(t *testing.T) {
 				SecretReferences: secretRefs,
 				Inputs: map[string]kbapi.PackagePolicyInput{
 					"input1": {
-						Streams: &map[string]kbapi.PackagePolicyInputStream{"stream1": {Vars: utils.Pointer(maps.Clone(tt.input))}},
-						Vars:    utils.Pointer(maps.Clone(tt.input)),
+						Streams: &map[string]kbapi.PackagePolicyInputStream{"stream1": {Vars: new(maps.Clone(tt.input))}},
+						Vars:    new(maps.Clone(tt.input)),
 					},
 				},
-				Vars: utils.Pointer(maps.Clone(tt.input)),
+				Vars: new(maps.Clone(tt.input)),
 			}
 			wants := kbapi.PackagePolicy{
 				Inputs: map[string]kbapi.PackagePolicyInput{
 					"input1": {
-						Streams: &map[string]kbapi.PackagePolicyInputStream{"stream1": {Vars: utils.Pointer(tt.want)}},
+						Streams: &map[string]kbapi.PackagePolicyInputStream{"stream1": {Vars: new(tt.want)}},
 						Vars:    &tt.want,
 					},
 				},
 				Vars: &tt.want,
 			}
 
-			diags := integration_policy.HandleRespSecrets(ctx, &resp, &private)
+			diags := integrationpolicy.HandleRespSecrets(ctx, &resp, &private)
 			require.Empty(t, diags)
 			// Policy vars
 			got := *resp.Vars
@@ -206,26 +221,26 @@ func TestHandleReqRespSecrets(t *testing.T) {
 			req := kbapi.PackagePolicyRequest{
 				Inputs: &map[string]kbapi.PackagePolicyRequestInput{
 					"input1": {
-						Streams: &map[string]kbapi.PackagePolicyRequestInputStream{"stream1": {Vars: utils.Pointer(maps.Clone(tt.reqInput))}},
-						Vars:    utils.Pointer(maps.Clone(tt.reqInput)),
+						Streams: &map[string]kbapi.PackagePolicyRequestInputStream{"stream1": {Vars: new(maps.Clone(tt.reqInput))}},
+						Vars:    new(maps.Clone(tt.reqInput)),
 					},
 				},
-				Vars: utils.Pointer(maps.Clone(tt.reqInput)),
+				Vars: new(maps.Clone(tt.reqInput)),
 			}
 			resp := kbapi.PackagePolicy{
 				SecretReferences: secretRefs,
 				Inputs: map[string]kbapi.PackagePolicyInput{
 					"input1": {
-						Streams: &map[string]kbapi.PackagePolicyInputStream{"stream1": {Vars: utils.Pointer(maps.Clone(tt.respInput))}},
-						Vars:    utils.Pointer(maps.Clone(tt.respInput)),
+						Streams: &map[string]kbapi.PackagePolicyInputStream{"stream1": {Vars: new(maps.Clone(tt.respInput))}},
+						Vars:    new(maps.Clone(tt.respInput)),
 					},
 				},
-				Vars: utils.Pointer(maps.Clone(tt.respInput)),
+				Vars: new(maps.Clone(tt.respInput)),
 			}
 			wants := kbapi.PackagePolicy{
 				Inputs: map[string]kbapi.PackagePolicyInput{
 					"input1": {
-						Streams: &map[string]kbapi.PackagePolicyInputStream{"stream1": {Vars: utils.Pointer(tt.want)}},
+						Streams: &map[string]kbapi.PackagePolicyInputStream{"stream1": {Vars: new(tt.want)}},
 						Vars:    &tt.want,
 					},
 				},
@@ -233,7 +248,7 @@ func TestHandleReqRespSecrets(t *testing.T) {
 			}
 
 			private := privateData{}
-			diags := integration_policy.HandleReqRespSecrets(ctx, req, &resp, &private)
+			diags := integrationpolicy.HandleReqRespSecrets(ctx, req, &resp, &private)
 			require.Empty(t, diags)
 
 			// Policy vars

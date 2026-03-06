@@ -1,4 +1,21 @@
-package integration_policy
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package integrationpolicy
 
 import (
 	"context"
@@ -25,9 +42,9 @@ type VarsJSONValue struct {
 }
 
 // Type returns a VarsJSONType.
-func (v VarsJSONValue) Type(_ context.Context) attr.Type {
+func (v VarsJSONValue) Type(ctx context.Context) attr.Type {
 	return VarsJSONType{
-		JSONWithContextualDefaultsType: v.JSONWithContextualDefaultsValue.Type(context.Background()).(customtypes.JSONWithContextualDefaultsType),
+		JSONWithContextualDefaultsType: v.JSONWithContextualDefaultsValue.Type(ctx).(customtypes.JSONWithContextualDefaultsType),
 	}
 }
 
@@ -88,39 +105,39 @@ func NewVarsJSONWithIntegration(value string, name, version string) (VarsJSONVal
 	}, nil
 }
 
-func populateVarsJSONDefaults(ctxVal string, varsJson string) (string, error) {
+func populateVarsJSONDefaults(ctxVal string, varsJSON string) (string, error) {
 	if ctxVal == "" {
-		return varsJson, nil
+		return varsJSON, nil
 	}
 
 	value, ok := knownPackages.Load(ctxVal)
 	if !ok {
-		return varsJson, nil
+		return varsJSON, nil
 	}
 	pkg, ok := value.(kbapi.PackageInfo)
 	if !ok {
-		return varsJson, fmt.Errorf("unexpected package cache value type for key %q", ctxVal)
+		return varsJSON, fmt.Errorf("unexpected package cache value type for key %q", ctxVal)
 	}
 
 	pkgVars, diags := varsFromPackageInfo(&pkg)
 	if diags.HasError() {
-		return varsJson, diagutil.FwDiagsAsError(diags)
+		return varsJSON, diagutil.FwDiagsAsError(diags)
 	}
 
 	defaults, diags := pkgVars.defaults()
 	if diags.HasError() {
-		return varsJson, diagutil.FwDiagsAsError(diags)
+		return varsJSON, diagutil.FwDiagsAsError(diags)
 	}
 
-	var vars map[string]interface{}
-	if err := json.Unmarshal([]byte(varsJson), &vars); err != nil {
-		return varsJson, err
+	var vars map[string]any
+	if err := json.Unmarshal([]byte(varsJSON), &vars); err != nil {
+		return varsJSON, err
 	}
 
-	var defaultsMap map[string]interface{}
+	var defaultsMap map[string]any
 	diags = defaults.Unmarshal(&defaultsMap)
 	if diags.HasError() {
-		return varsJson, diagutil.FwDiagsAsError(diags)
+		return varsJSON, diagutil.FwDiagsAsError(diags)
 	}
 
 	for k, v := range defaultsMap {
@@ -131,7 +148,7 @@ func populateVarsJSONDefaults(ctxVal string, varsJson string) (string, error) {
 
 	varsBytes, err := json.Marshal(vars)
 	if err != nil {
-		return varsJson, err
+		return varsJSON, err
 	}
 
 	return string(varsBytes), nil

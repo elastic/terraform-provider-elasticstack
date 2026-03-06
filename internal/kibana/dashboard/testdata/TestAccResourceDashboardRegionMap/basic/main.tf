@@ -23,7 +23,7 @@ resource "elasticstack_kibana_dashboard" "test" {
     region_map_config = {
       title       = "Sample Region Map"
       description = "Test region map visualization"
-      dataset = jsonencode({
+      dataset_json = jsonencode({
         type = "dataView"
         id   = "metrics-*"
       })
@@ -31,10 +31,10 @@ resource "elasticstack_kibana_dashboard" "test" {
         language = "kuery"
         query    = ""
       }
-      metric = jsonencode({
+      metric_json = jsonencode({
         operation = "count"
       })
-      region = jsonencode({
+      region_json = jsonencode({
         operation = "filters"
         filters = [
           {

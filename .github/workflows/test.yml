@@ -1,6 +1,10 @@
 name: Build/Lint/Test
 on:
   push:
+    branches:
+      - '**'
+    tags-ignore:
+      - 'v*'
     paths-ignore:
       - 'README.md'
       - 'CHANGELOG.md'
@@ -8,6 +12,7 @@ on:
     paths-ignore:
       - 'README.md'
       - 'CHANGELOG.md'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -19,7 +24,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6
+      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6
         with:
           go-version-file: 'go.mod'
           cache: true
@@ -35,12 +40,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6
+      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6
         with:
           go-version-file: 'go.mod'
           cache: true
           cache-dependency-path: go.sum
-      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3
+      - uses: hashicorp/setup-terraform@5e8dbf3c6d9deaf4193ca7a8fb23f2ac83bb6c85 # v4.0.0
         with:
           terraform_wrapper: false
 
@@ -53,67 +58,13 @@ jobs:
     runs-on: ${{ matrix.runner == 'ubuntu-22.04' && 'ubuntu-22.04' || 'ubuntu-latest' }}
     env:
       ELASTIC_PASSWORD: password
-      KIBANA_SYSTEM_USERNAME: kibana_system
-      KIBANA_SYSTEM_PASSWORD: password
       TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL: true
-    services:
-      elasticsearch:
-        image: docker.elastic.co/elasticsearch/elasticsearch:${{ matrix.version }}
-        env:
-          discovery.type: single-node
-          xpack.security.enabled: true
-          xpack.security.authc.api_key.enabled: true
-          xpack.security.authc.token.enabled: true
-          xpack.ml.use_auto_machine_memory_percent: false
-          xpack.ml.max_machine_memory_percent: 10
-          xpack.ml.max_model_memory_limit: 2g
-          xpack.watcher.enabled: true
-          xpack.license.self_generated.type: trial
-          repositories.url.allowed_urls: https://example.com/*
-          path.repo: /tmp
-          ELASTIC_PASSWORD: ${{ env.ELASTIC_PASSWORD }}
-        ports:
-          - 9200:9200
-        options: --health-cmd="curl http://localhost:9200/_cluster/health" --health-interval=10s --health-timeout=5s --health-retries=10
-      kibana:
-        image: docker.elastic.co/kibana/kibana:${{ matrix.version }}
-        env:
-          SERVER_NAME: kibana
-          ELASTICSEARCH_HOSTS: http://elasticsearch:9200
-          ELASTICSEARCH_USERNAME: ${{ env.KIBANA_SYSTEM_USERNAME }}
-          ELASTICSEARCH_PASSWORD: ${{ env.KIBANA_SYSTEM_PASSWORD }}
-          XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY: a7a6311933d3503b89bc2dbc36572c33a6c10925682e591bffcab6911c06786d
-          # LOGGING_ROOT_LEVEL: debug
-        ports:
-          - 5601:5601
-        options: --health-cmd="curl http://localhost:5601/api/status" --health-interval=10s --health-timeout=5s --health-retries=10
-      fleet:    
-        image: ${{ matrix.fleetImage || 'docker.elastic.co/elastic-agent/elastic-agent' }}:${{ matrix.version }}
-        env:
-          SERVER_NAME: fleet
-          FLEET_ENROLL: "1"
-          FLEET_URL: https://fleet:8220
-          FLEET_INSECURE: "true"
-          FLEET_SERVER_ENABLE: "1"
-          FLEET_SERVER_POLICY_ID: fleet-server
-          FLEET_SERVER_ELASTICSEARCH_HOST: http://elasticsearch:9200
-          FLEET_SERVER_ELASTICSEARCH_INSECURE: "true"
-          FLEET_SERVER_INSECURE_HTTP: "true"
-          KIBANA_HOST: http://kibana:5601
-          KIBANA_FLEET_SETUP: "1"
-          KIBANA_FLEET_PASSWORD: ${{ env.ELASTIC_PASSWORD }}
-        ports:
-          - 8220:8220
-        options: --restart="unless-stopped"
 
-    timeout-minutes: 25
+    timeout-minutes: 35
     strategy:
       fail-fast: false
       matrix:
         version:
-          - '8.2.3'
-          - '8.3.3'
-          - '8.4.3'
           - '8.5.3'
           - '8.6.2'
           - '8.7.1'
@@ -139,8 +90,16 @@ jobs:
             fleetImage: elastic/elastic-agent
           - version: '8.0.1'
             fleetImage: elastic/elastic-agent
+            runner: 'ubuntu-22.04'
           - version: '8.1.3'
             fleetImage: elastic/elastic-agent
+            runner: 'ubuntu-22.04'
+          - version: '8.2.3'
+            runner: 'ubuntu-22.04'
+          - version: '8.3.3'
+            runner: 'ubuntu-22.04'
+          - version: '8.4.3'
+            runner: 'ubuntu-22.04'
     steps:
       - name: Free up disk space
         run: |
@@ -148,23 +107,48 @@ jobs:
           sudo rm -rf /usr/local/lib/android
 
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6
+      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6
         with:
           go-version-file: 'go.mod'
           cache: true
-      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3
+      - uses: hashicorp/setup-terraform@5e8dbf3c6d9deaf4193ca7a8fb23f2ac83bb6c85 # v4.0.0
         with:
           terraform_wrapper: false
 
       - name: Get dependencies
         run: make vendor
 
-      - name: Setup Kibana user
-        run: make set-kibana-password
+      - name: Start stack with docker compose
+        run: make docker-fleet
         env:
+          STACK_VERSION: ${{ matrix.version }}
           ELASTICSEARCH_PASSWORD: ${{ env.ELASTIC_PASSWORD }}
-          KIBANA_SYSTEM_USERNAME: ${{ env.KIBANA_SYSTEM_USERNAME }}
-          KIBANA_SYSTEM_PASSWORD: ${{ env.KIBANA_SYSTEM_PASSWORD }}
+          KIBANA_PASSWORD: ${{ env.ELASTIC_PASSWORD }}
+          FLEET_IMAGE: ${{ matrix.fleetImage || 'docker.elastic.co/elastic-agent/elastic-agent' }}
+
+      - name: Wait for stack readiness
+        run: |
+          for i in {1..60}; do
+            if curl -fsS -u "elastic:${ELASTIC_PASSWORD}" http://localhost:9200/_cluster/health > /dev/null; then
+              break
+            fi
+            if [ "$i" -eq 60 ]; then
+              echo "Elasticsearch did not become ready in time"
+              exit 1
+            fi
+            sleep 5
+          done
+
+          for i in {1..60}; do
+            if [ "$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5601)" = "302" ]; then
+              break
+            fi
+            if [ "$i" -eq 60 ]; then
+              echo "Kibana did not become ready in time"
+              exit 1
+            fi
+            sleep 5
+          done
 
       - id: get-api-key
         name: Get ES API key
@@ -189,7 +173,7 @@ jobs:
           for i in {1..5}; do curl -s -H "Authorization: ApiKey ${{ steps.get-api-key.outputs.apikey }}" --header "Content-Type: application/json" --header "kbn-xsrf: true" --request POST --data '{ "force": true }' http://localhost:5601/api/fleet/epm/packages/synthetics/1.2.2 && break || sleep 15; done
 
       - name: TF acceptance tests
-        timeout-minutes: 20
+        timeout-minutes: 30
         run: make testacc
         env:
           TF_ACC: "1"
@@ -200,3 +184,15 @@ jobs:
           KIBANA_ENDPOINT: "http://localhost:5601"
           KIBANA_USERNAME: "elastic"
           KIBANA_PASSWORD: ${{ env.ELASTIC_PASSWORD }}
+
+      - name: Docker compose logs
+        if: failure()
+        run: docker compose logs --no-color
+        env:
+          STACK_VERSION: ${{ matrix.version }}
+
+      - name: Tear down docker compose stack
+        if: always()
+        run: make docker-clean
+        env:
+          STACK_VERSION: ${{ matrix.version }}

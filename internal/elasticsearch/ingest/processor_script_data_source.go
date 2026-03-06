@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package ingest
 
 import (
@@ -6,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/tfsdkutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -43,7 +61,7 @@ func DataSourceProcessorScript() *schema.Resource {
 			Type:             schema.TypeString,
 			Optional:         true,
 			ValidateFunc:     validation.StringIsJSON,
-			DiffSuppressFunc: utils.DiffJsonSuppress,
+			DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 		},
 		"description": {
 			Description: "Description of the processor. ",
@@ -69,7 +87,7 @@ func DataSourceProcessorScript() *schema.Resource {
 			Elem: &schema.Schema{
 				Type:             schema.TypeString,
 				ValidateFunc:     validation.StringIsJSON,
-				DiffSuppressFunc: utils.DiffJsonSuppress,
+				DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 			},
 		},
 		"tag": {
@@ -85,7 +103,7 @@ func DataSourceProcessorScript() *schema.Resource {
 	}
 
 	return &schema.Resource{
-		Description: "Helper data source which can be used to create the configuration for a script processor. This processor runs an inline or stored script on incoming documents. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/script-processor.html",
+		Description: processorScriptDataSourceDescription,
 
 		ReadContext: dataSourceProcessorScriptRead,
 
@@ -93,7 +111,7 @@ func DataSourceProcessorScript() *schema.Resource {
 	}
 }
 
-func dataSourceProcessorScriptRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func dataSourceProcessorScriptRead(_ context.Context, d *schema.ResourceData, _ any) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	processor := &models.ProcessorScript{}
@@ -104,13 +122,13 @@ func dataSourceProcessorScriptRead(ctx context.Context, d *schema.ResourceData, 
 		processor.Lang = v.(string)
 	}
 	if v, ok := d.GetOk("script_id"); ok {
-		processor.ScriptId = v.(string)
+		processor.ScriptID = v.(string)
 	}
 	if v, ok := d.GetOk("source"); ok {
 		processor.Source = v.(string)
 	}
 	if v, ok := d.GetOk("params"); ok {
-		params := make(map[string]interface{})
+		params := make(map[string]any)
 		if err := json.NewDecoder(strings.NewReader(v.(string))).Decode(&params); err != nil {
 			return diag.FromErr(err)
 		}
@@ -126,9 +144,9 @@ func dataSourceProcessorScriptRead(ctx context.Context, d *schema.ResourceData, 
 		processor.Tag = v.(string)
 	}
 	if v, ok := d.GetOk("on_failure"); ok {
-		onFailure := make([]map[string]interface{}, len(v.([]interface{})))
-		for i, f := range v.([]interface{}) {
-			item := make(map[string]interface{})
+		onFailure := make([]map[string]any, len(v.([]any)))
+		for i, f := range v.([]any) {
+			item := make(map[string]any)
 			if err := json.NewDecoder(strings.NewReader(f.(string))).Decode(&item); err != nil {
 				return diag.FromErr(err)
 			}
@@ -137,15 +155,15 @@ func dataSourceProcessorScriptRead(ctx context.Context, d *schema.ResourceData, 
 		processor.OnFailure = onFailure
 	}
 
-	processorJson, err := json.MarshalIndent(map[string]*models.ProcessorScript{"script": processor}, "", " ")
+	processorJSON, err := json.MarshalIndent(map[string]*models.ProcessorScript{"script": processor}, "", " ")
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("json", string(processorJson)); err != nil {
+	if err := d.Set("json", string(processorJSON)); err != nil {
 		return diag.FromErr(err)
 	}
 
-	hash, err := utils.StringToHash(string(processorJson))
+	hash, err := schemautil.StringToHash(string(processorJSON))
 	if err != nil {
 		return diag.FromErr(err)
 	}

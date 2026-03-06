@@ -1,10 +1,27 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package connectors
 
 import (
 	"context"
 	"fmt"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/attr/xattr"
@@ -23,9 +40,9 @@ type ConfigValue struct {
 }
 
 // Type returns a ConfigType.
-func (v ConfigValue) Type(_ context.Context) attr.Type {
+func (v ConfigValue) Type(ctx context.Context) attr.Type {
 	return ConfigType{
-		JSONWithContextualDefaultsType: v.JSONWithContextualDefaultsValue.Type(context.Background()).(customtypes.JSONWithContextualDefaultsType),
+		JSONWithContextualDefaultsType: v.JSONWithContextualDefaultsValue.Type(ctx).(customtypes.JSONWithContextualDefaultsType),
 	}
 }
 
@@ -75,7 +92,7 @@ func NewConfigUnknown() ConfigValue {
 
 // NewConfigValueWithConnectorID creates a ConfigValue with a known value and a connector type ID. Access the value via ValueString method.
 func NewConfigValueWithConnectorID(value string, connectorTypeID string) (ConfigValue, diag.Diagnostics) {
-	jsonWithContext, diags := customtypes.NewJSONWithContextualDefaultsValue(value, connectorTypeID, kibana_oapi.ConnectorConfigWithDefaults)
+	jsonWithContext, diags := customtypes.NewJSONWithContextualDefaultsValue(value, connectorTypeID, kibanaoapi.ConnectorConfigWithDefaults)
 	if diags.HasError() {
 		return ConfigValue{}, diags
 	}

@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package dashboard
 
 import (
@@ -13,6 +30,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/float64default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -20,15 +39,25 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+const (
+	dashboardValueAuto    = "auto"
+	dashboardValueAverage = "average"
+	pieChartTypeNumber    = "number"
+	pieChartTypePercent   = "percent"
+	operationTerms        = "terms"
+)
+
 var panelConfigNames = []string{
 	"markdown_config",
 	"config_json",
 	"xy_chart_config",
+	"treemap_config",
 	"tagcloud_config",
 	"region_map_config",
 	"legacy_metric_config",
 	"gauge_config",
 	"metric_chart_config",
+	"pie_chart_config",
 	"datatable_config",
 	"heatmap_config",
 }
@@ -66,22 +95,27 @@ func panelConfigDescription(base, self string, names []string) string {
 	return base + " Mutually exclusive with " + strings.Join(others, ", ") + "."
 }
 
+func isFieldMetricOperation(operation string) bool {
+	switch operation {
+	case "count", "unique_count", "min", "max", dashboardValueAverage, "median", "standard_deviation", "sum", "last_value", "percentile", "percentile_rank":
+		return true
+	default:
+		return false
+	}
+}
+
 // populateTagcloudMetricDefaults populates default values for tagcloud metric configuration
 func populateTagcloudMetricDefaults(model map[string]any) map[string]any {
 	if model == nil {
 		return model
 	}
 	// Set defaults for all field metric operations
-	if operation, ok := model["operation"].(string); ok {
-		// These operations all have the same defaults
-		switch operation {
-		case "count", "unique_count", "min", "max", "average", "median", "standard_deviation", "sum", "last_value", "percentile", "percentile_rank":
-			if _, exists := model["empty_as_null"]; !exists {
-				model["empty_as_null"] = false
-			}
-			if _, exists := model["show_metric_label"]; !exists {
-				model["show_metric_label"] = true
-			}
+	if operation, ok := model["operation"].(string); ok && isFieldMetricOperation(operation) {
+		if _, exists := model["empty_as_null"]; !exists {
+			model["empty_as_null"] = false
+		}
+		if _, exists := model["show_metric_label"]; !exists {
+			model["show_metric_label"] = true
 		}
 	}
 	return model
@@ -95,12 +129,30 @@ func populateMetricChartMetricDefaults(model map[string]any) map[string]any {
 
 	// Set defaults for format
 	if format, ok := model["format"].(map[string]any); ok {
-		if format["type"] == "number" || format["type"] == "percent" {
-			if _, exists := format["compact"]; !exists {
-				format["compact"] = false
-			}
-			if _, exists := format["decimals"]; !exists {
-				format["decimals"] = float64(2)
+		// Kibana has used both `type` and `id` as discriminators for number/percent format across
+		// different visualizations/versions. Support both, and support both top-level params as well
+		// as nested `params`.
+		formatType, _ := format["type"].(string)
+		formatID, _ := format["id"].(string)
+		isNumberish := formatType == pieChartTypeNumber || formatType == pieChartTypePercent || formatID == pieChartTypeNumber || formatID == pieChartTypePercent
+
+		if isNumberish {
+			// If a nested params map exists, prefer setting defaults there.
+			if params, ok := format["params"].(map[string]any); ok {
+				if _, exists := params["compact"]; !exists {
+					params["compact"] = false
+				}
+				if _, exists := params["decimals"]; !exists {
+					params["decimals"] = float64(2)
+				}
+				format["params"] = params
+			} else {
+				if _, exists := format["compact"]; !exists {
+					format["compact"] = false
+				}
+				if _, exists := format["decimals"]; !exists {
+					format["decimals"] = float64(2)
+				}
 			}
 		}
 	}
@@ -113,10 +165,18 @@ func populateMetricChartMetricDefaults(model map[string]any) map[string]any {
 		model["fit"] = false
 	}
 
+	// Secondary metrics have label position defaults.
+	if metricType, ok := model["type"].(string); ok && metricType == "secondary" {
+		if _, exists := model["label_position"]; !exists {
+			model["label_position"] = "before"
+		}
+	}
+
 	// Set defaults for icon alignment if icon exists
 	if icon, ok := model["icon"].(map[string]any); ok {
 		if _, exists := icon["align"]; !exists {
-			icon["align"] = "left"
+			// Kibana defaults metric icon alignment to the right.
+			icon["align"] = "right"
 		}
 	}
 
@@ -136,7 +196,7 @@ func populateTagcloudTagByDefaults(model map[string]any) map[string]any {
 		return model
 	}
 	// Set defaults for terms operation
-	if operation, ok := model["operation"].(string); ok && operation == "terms" {
+	if operation, ok := model["operation"].(string); ok && operation == operationTerms {
 		if _, exists := model["rank_by"]; !exists {
 			model["rank_by"] = map[string]any{
 				"type":      "column",
@@ -148,17 +208,78 @@ func populateTagcloudTagByDefaults(model map[string]any) map[string]any {
 	return model
 }
 
+// populateTreemapGroupByDefaults populates default values for treemap group_by configurations.
+// Kibana may add default fields (e.g. rank_by, size) on read, so we normalize both sides.
+func populateTreemapGroupByDefaults(model []map[string]any) []map[string]any {
+	if model == nil {
+		return model
+	}
+
+	for _, item := range model {
+		if item == nil {
+			continue
+		}
+		operation, _ := item["operation"].(string)
+		// ES|QL treemaps may omit group_by.color on write, but Kibana may return it as null.
+		// Normalize both sides so semantic equality doesn't drift.
+		if operation == "value" {
+			if _, exists := item["color"]; !exists {
+				item["color"] = nil
+			}
+			continue
+		}
+		if operation != operationTerms {
+			continue
+		}
+		if _, exists := item["rank_by"]; !exists {
+			item["rank_by"] = map[string]any{
+				"type":      "column",
+				"metric":    float64(0),
+				"direction": "desc",
+			}
+		}
+		// Treemap defaults to a size of 5 for terms.
+		if _, exists := item["size"]; !exists {
+			item["size"] = float64(5)
+		}
+	}
+
+	return model
+}
+
+// populateTreemapMetricsDefaults populates default values for treemap metrics.
+// This mirrors the defaulting behavior used by other Lens metric operations.
+func populateTreemapMetricsDefaults(model []map[string]any) []map[string]any {
+	if model == nil {
+		return model
+	}
+
+	for i := range model {
+		model[i] = populateTagcloudMetricDefaults(model[i])
+
+		// ES|QL treemap metrics may omit format on write, but Kibana may return it as null.
+		// Normalize both sides so semantic equality doesn't drift.
+		if model[i] == nil {
+			continue
+		}
+		if operation, ok := model[i]["operation"].(string); ok && operation == "value" {
+			if _, exists := model[i]["format"]; !exists {
+				model[i]["format"] = nil
+			}
+		}
+	}
+
+	return model
+}
+
 // populateLegacyMetricMetricDefaults populates default values for legacy metric operations
 func populateLegacyMetricMetricDefaults(model map[string]any) map[string]any {
 	if model == nil {
 		return model
 	}
-	if operation, ok := model["operation"].(string); ok {
-		switch operation {
-		case "count", "unique_count", "min", "max", "average", "median", "standard_deviation", "sum", "last_value", "percentile", "percentile_rank":
-			if _, exists := model["empty_as_null"]; !exists {
-				model["empty_as_null"] = false
-			}
+	if operation, ok := model["operation"].(string); ok && isFieldMetricOperation(operation) {
+		if _, exists := model["empty_as_null"]; !exists {
+			model["empty_as_null"] = false
 		}
 	}
 
@@ -166,7 +287,7 @@ func populateLegacyMetricMetricDefaults(model map[string]any) map[string]any {
 	if ok {
 		if formatType, ok := format["type"].(string); ok {
 			switch formatType {
-			case "number", "percent":
+			case pieChartTypeNumber, pieChartTypePercent:
 				if _, exists := format["decimals"]; !exists {
 					format["decimals"] = float64(2)
 				}
@@ -198,7 +319,7 @@ func populateGaugeMetricDefaults(model map[string]any) map[string]any {
 		model["hide_title"] = false
 	}
 	if _, exists := model["ticks"]; !exists {
-		model["ticks"] = "auto"
+		model["ticks"] = dashboardValueAuto
 	}
 
 	return model
@@ -209,15 +330,12 @@ func populateRegionMapMetricDefaults(model map[string]any) map[string]any {
 	if model == nil {
 		return model
 	}
-	if operation, ok := model["operation"].(string); ok {
-		switch operation {
-		case "count", "unique_count", "min", "max", "average", "median", "standard_deviation", "sum", "last_value", "percentile", "percentile_rank":
-			if _, exists := model["empty_as_null"]; !exists {
-				model["empty_as_null"] = false
-			}
-			if _, exists := model["show_metric_label"]; !exists {
-				model["show_metric_label"] = true
-			}
+	if operation, ok := model["operation"].(string); ok && isFieldMetricOperation(operation) {
+		if _, exists := model["empty_as_null"]; !exists {
+			model["empty_as_null"] = false
+		}
+		if _, exists := model["show_metric_label"]; !exists {
+			model["show_metric_label"] = true
 		}
 	}
 	return model
@@ -512,17 +630,28 @@ func getPanelSchema() schema.NestedAttributeObject {
 					"query": schema.SingleNestedAttribute{
 						MarkdownDescription: "Query configuration for filtering data.",
 						Required:            true,
-						Attributes:          getFilterSimpleSchema(),
+						Attributes:          getFilterSimple(),
 					},
 					"filters": schema.ListNestedAttribute{
 						MarkdownDescription: "Additional filters to apply to the chart data (maximum 100).",
 						Optional:            true,
-						NestedObject:        getSearchFilterSchema(),
+						NestedObject:        getSearchFilter(),
 					},
 				},
 				Validators: []validator.Object{
 					objectvalidator.ConflictsWith(
 						siblingPanelConfigPathsExcept("xy_chart_config", panelConfigNames)...,
+					),
+					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"lens"}),
+				},
+			},
+			"treemap_config": schema.SingleNestedAttribute{
+				MarkdownDescription: panelConfigDescription("Configuration for a treemap chart panel.", "treemap_config", panelConfigNames),
+				Optional:            true,
+				Attributes:          getTreemapSchema(),
+				Validators: []validator.Object{
+					objectvalidator.ConflictsWith(
+						siblingPanelConfigPathsExcept("treemap_config", panelConfigNames)...,
 					),
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"lens"}),
 				},
@@ -585,10 +714,21 @@ func getPanelSchema() schema.NestedAttributeObject {
 			"metric_chart_config": schema.SingleNestedAttribute{
 				MarkdownDescription: panelConfigDescription("Configuration for a metric chart panel. Metric charts display key performance indicators.", "metric_chart_config", panelConfigNames),
 				Optional:            true,
-				Attributes:          getMetricChartSchema(),
+				Attributes:          getMetricChart(),
 				Validators: []validator.Object{
 					objectvalidator.ConflictsWith(
 						siblingPanelConfigPathsExcept("metric_chart_config", panelConfigNames)...,
+					),
+					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"lens"}),
+				},
+			},
+			"pie_chart_config": schema.SingleNestedAttribute{
+				MarkdownDescription: panelConfigDescription("Configuration for a pie chart panel. Use this for pie and donut charts.", "pie_chart_config", panelConfigNames),
+				Optional:            true,
+				Attributes:          getPieChart(),
+				Validators: []validator.Object{
+					objectvalidator.ConflictsWith(
+						siblingPanelConfigPathsExcept("pie_chart_config", panelConfigNames)...,
 					),
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"lens"}),
 				},
@@ -655,7 +795,7 @@ func getXYAxisSchema() map[string]schema.Attribute {
 						stringvalidator.OneOf("horizontal", "vertical", "angled"),
 					},
 				},
-				"extent": schema.StringAttribute{
+				"extent_json": schema.StringAttribute{
 					MarkdownDescription: "Axis extent configuration as JSON. Can be 'full' mode with optional integer_rounding, or 'custom' mode with start, end, and optional integer_rounding.",
 					CustomType:          jsontypes.NormalizedType{},
 					Optional:            true,
@@ -714,7 +854,7 @@ func getYAxisAttributes() map[string]schema.Attribute {
 				stringvalidator.OneOf("time", "linear", "log", "sqrt"),
 			},
 		},
-		"extent": schema.StringAttribute{
+		"extent_json": schema.StringAttribute{
 			MarkdownDescription: "Y-axis extent configuration as JSON. Can be 'full' or 'focus' mode, or 'custom' mode with start and end values.",
 			CustomType:          jsontypes.NormalizedType{},
 			Optional:            true,
@@ -737,7 +877,7 @@ func getXYDecorationsSchema() map[string]schema.Attribute {
 			MarkdownDescription: "Show data points on lines. Valid values are: auto, always, never.",
 			Optional:            true,
 			Validators: []validator.String{
-				stringvalidator.OneOf("auto", "always", "never"),
+				stringvalidator.OneOf(dashboardValueAuto, "always", "never"),
 			},
 		},
 		"line_interpolation": schema.StringAttribute{
@@ -769,7 +909,7 @@ func getXYFittingSchema() map[string]schema.Attribute {
 			MarkdownDescription: "Fitting function type for missing data.",
 			Required:            true,
 			Validators: []validator.String{
-				stringvalidator.OneOf("none", "zero", "linear", "carry", "lookahead", "average", "nearest"),
+				stringvalidator.OneOf("none", "zero", "linear", "carry", "lookahead", dashboardValueAverage, "nearest"),
 			},
 		},
 		"dotted": schema.BoolAttribute{
@@ -793,7 +933,7 @@ func getXYLegendSchema() map[string]schema.Attribute {
 			MarkdownDescription: "Legend visibility (auto, visible, hidden).",
 			Optional:            true,
 			Validators: []validator.String{
-				stringvalidator.OneOf("auto", "visible", "hidden"),
+				stringvalidator.OneOf(dashboardValueAuto, "visible", "hidden"),
 			},
 		},
 		"statistics": schema.ListAttribute{
@@ -837,8 +977,8 @@ func getXYLegendSchema() map[string]schema.Attribute {
 	}
 }
 
-// getFilterSimpleSchema returns the schema for simple filter configuration
-func getFilterSimpleSchema() map[string]schema.Attribute {
+// getFilterSimple returns the schema for simple filter configuration
+func getFilterSimple() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"language": schema.StringAttribute{
 			MarkdownDescription: "Query language (default: 'kuery').",
@@ -854,15 +994,15 @@ func getFilterSimpleSchema() map[string]schema.Attribute {
 	}
 }
 
-// getSearchFilterSchema returns the schema for search filter configuration
-func getSearchFilterSchema() schema.NestedAttributeObject {
+// getSearchFilter returns the schema for search filter configuration
+func getSearchFilter() schema.NestedAttributeObject {
 	return schema.NestedAttributeObject{
 		Attributes: map[string]schema.Attribute{
 			"query": schema.StringAttribute{
 				MarkdownDescription: "Filter query string or JSON object.",
 				Optional:            true,
 			},
-			"meta": schema.StringAttribute{
+			"meta_json": schema.StringAttribute{
 				MarkdownDescription: "Filter metadata as JSON.",
 				CustomType:          jsontypes.NormalizedType{},
 				Optional:            true,
@@ -885,7 +1025,7 @@ func getXYLayerSchema() schema.NestedAttributeObject {
 	return schema.NestedAttributeObject{
 		Attributes: map[string]schema.Attribute{
 			"type": schema.StringAttribute{
-				MarkdownDescription: "The type of layer. Valid values: 'area', 'line', 'bar', 'horizontal_bar', 'referenceLines' for NoESQL layers; 'area_chart', 'line_chart', 'bar_chart', 'horizontal_bar_chart', 'referenceLines' for ESQL layers.",
+				MarkdownDescription: xyLayerTypeDescription,
 				Required:            true,
 			},
 			"data_layer": schema.SingleNestedAttribute{
@@ -911,7 +1051,7 @@ func getXYLayerSchema() schema.NestedAttributeObject {
 // getDataLayerAttributes returns attributes for data layers (standard and ES|QL)
 func getDataLayerAttributes() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
-		"dataset": schema.StringAttribute{
+		"dataset_json": schema.StringAttribute{
 			MarkdownDescription: "Dataset configuration as JSON. For ES|QL layers, this specifies the ES|QL query. For standard layers, this specifies the data view and query.",
 			CustomType:          jsontypes.NormalizedType{},
 			Required:            true,
@@ -924,7 +1064,7 @@ func getDataLayerAttributes() map[string]schema.Attribute {
 			MarkdownDescription: "Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.",
 			Optional:            true,
 		},
-		"x": schema.StringAttribute{
+		"x_json": schema.StringAttribute{
 			MarkdownDescription: "X-axis configuration as JSON. For ES|QL: column and operation. For standard: field, operation, and optional parameters.",
 			CustomType:          jsontypes.NormalizedType{},
 			Optional:            true,
@@ -934,7 +1074,7 @@ func getDataLayerAttributes() map[string]schema.Attribute {
 			Required:            true,
 			NestedObject: schema.NestedAttributeObject{
 				Attributes: map[string]schema.Attribute{
-					"config": schema.StringAttribute{
+					"config_json": schema.StringAttribute{
 						MarkdownDescription: "Y-axis metric configuration as JSON. For ES|QL: axis, color, column, and operation. For standard: axis, color, and metric definition.",
 						CustomType:          jsontypes.NormalizedType{},
 						Required:            true,
@@ -942,8 +1082,8 @@ func getDataLayerAttributes() map[string]schema.Attribute {
 				},
 			},
 		},
-		"breakdown_by": schema.StringAttribute{
-			MarkdownDescription: "Split series configuration as JSON. For ES|QL: column and operation. For standard: field, operation, and optional parameters.",
+		"breakdown_by_json": schema.StringAttribute{
+			MarkdownDescription: "Split series configuration as JSON. For ES|QL: column, operation, optional collapse_by, and color mapping. For standard: field, operation, and optional parameters.",
 			CustomType:          jsontypes.NormalizedType{},
 			Optional:            true,
 		},
@@ -953,7 +1093,7 @@ func getDataLayerAttributes() map[string]schema.Attribute {
 // getReferenceLineLayerAttributes returns attributes for reference line layers
 func getReferenceLineLayerAttributes() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
-		"dataset": schema.StringAttribute{
+		"dataset_json": schema.StringAttribute{
 			MarkdownDescription: "Dataset configuration as JSON. For ES|QL layers, this specifies the ES|QL query. For standard layers, this specifies the data view and query.",
 			CustomType:          jsontypes.NormalizedType{},
 			Required:            true,
@@ -978,7 +1118,7 @@ func getReferenceLineLayerAttributes() map[string]schema.Attribute {
 							stringvalidator.OneOf("bottom", "left", "right"),
 						},
 					},
-					"color": schema.StringAttribute{
+					"color_json": schema.StringAttribute{
 						MarkdownDescription: "Color for the reference line. Can be a static color string or dynamic color configuration as JSON.",
 						CustomType:          jsontypes.NormalizedType{},
 						Optional:            true,
@@ -987,7 +1127,7 @@ func getReferenceLineLayerAttributes() map[string]schema.Attribute {
 						MarkdownDescription: "Column to use (for ES|QL layers).",
 						Optional:            true,
 					},
-					"value": schema.StringAttribute{
+					"value_json": schema.StringAttribute{
 						MarkdownDescription: "Metric configuration as JSON (for standard layers). Defines the calculation for the threshold value.",
 						CustomType:          jsontypes.NormalizedType{},
 						Optional:            true,
@@ -1000,10 +1140,10 @@ func getReferenceLineLayerAttributes() map[string]schema.Attribute {
 						},
 					},
 					"icon": schema.StringAttribute{
-						MarkdownDescription: "Icon to display on the reference line. Valid values: 'asterisk', 'bell', 'bolt', 'bug', 'circle', 'dot', 'empty', 'flag', 'heart', 'partial', 'square', 'star', 'tag', 'triangle'.",
+						MarkdownDescription: referenceLineIconDescription,
 						Optional:            true,
 						Validators: []validator.String{
-							stringvalidator.OneOf("asterisk", "bell", "bolt", "bug", "circle", "dot", "empty", "flag", "heart", "partial", "square", "star", "tag", "triangle"),
+							stringvalidator.OneOf("alert", "asterisk", "bell", "bolt", "bug", "circle", "editorComment", "flag", "heart", "mapMarker", "pinFilled", "starEmpty", "starFilled", "tag", "triangle"),
 						},
 					},
 					"operation": schema.StringAttribute{
@@ -1025,7 +1165,7 @@ func getReferenceLineLayerAttributes() map[string]schema.Attribute {
 						MarkdownDescription: "Text display option for the reference line. Valid values include: 'auto', 'name', 'none', 'label'.",
 						Optional:            true,
 						Validators: []validator.String{
-							stringvalidator.OneOf("auto", "name", "none", "label"),
+							stringvalidator.OneOf(dashboardValueAuto, "name", "none", "label"),
 						},
 					},
 				},
@@ -1045,7 +1185,7 @@ func getTagcloudSchema() map[string]schema.Attribute {
 			MarkdownDescription: "The description of the chart.",
 			Optional:            true,
 		},
-		"dataset": schema.StringAttribute{
+		"dataset_json": schema.StringAttribute{
 			MarkdownDescription: "Dataset configuration as JSON. For standard layers, this specifies the data view and query.",
 			CustomType:          jsontypes.NormalizedType{},
 			Required:            true,
@@ -1061,12 +1201,12 @@ func getTagcloudSchema() map[string]schema.Attribute {
 		"query": schema.SingleNestedAttribute{
 			MarkdownDescription: "Query configuration for filtering data.",
 			Required:            true,
-			Attributes:          getFilterSimpleSchema(),
+			Attributes:          getFilterSimple(),
 		},
 		"filters": schema.ListNestedAttribute{
 			MarkdownDescription: "Additional filters to apply to the chart data (maximum 100).",
 			Optional:            true,
-			NestedObject:        getSearchFilterSchema(),
+			NestedObject:        getSearchFilter(),
 		},
 		"orientation": schema.StringAttribute{
 			MarkdownDescription: "Orientation of the tagcloud. Valid values: 'horizontal', 'vertical', 'angled'.",
@@ -1089,12 +1229,12 @@ func getTagcloudSchema() map[string]schema.Attribute {
 				},
 			},
 		},
-		"metric": schema.StringAttribute{
-			MarkdownDescription: "Metric configuration as JSON. Can be a field metric operation (count, unique count, min, max, avg, median, std dev, sum, last value, percentile, percentile ranks), a pipeline operation (differences, moving average, cumulative sum, counter rate), or a formula operation.",
+		"metric_json": schema.StringAttribute{
+			MarkdownDescription: tagcloudMetricDescription,
 			CustomType:          customtypes.NewJSONWithDefaultsType(populateTagcloudMetricDefaults),
 			Required:            true,
 		},
-		"tag_by": schema.StringAttribute{
+		"tag_by_json": schema.StringAttribute{
 			MarkdownDescription: "Tag grouping configuration as JSON. Can be a date histogram, terms, histogram, range, or filters operation. This determines how tags are grouped and displayed.",
 			CustomType:          customtypes.NewJSONWithDefaultsType(populateTagcloudTagByDefaults),
 			Required:            true,
@@ -1113,7 +1253,7 @@ func getHeatmapSchema() map[string]schema.Attribute {
 			MarkdownDescription: "The description of the chart.",
 			Optional:            true,
 		},
-		"dataset": schema.StringAttribute{
+		"dataset_json": schema.StringAttribute{
 			MarkdownDescription: "Dataset configuration as JSON. For standard heatmaps, this specifies the data view or index; for ES|QL, this specifies the ES|QL query dataset.",
 			CustomType:          jsontypes.NormalizedType{},
 			Required:            true,
@@ -1129,12 +1269,12 @@ func getHeatmapSchema() map[string]schema.Attribute {
 		"query": schema.SingleNestedAttribute{
 			MarkdownDescription: "Query configuration for filtering data. Required for non-ES|QL heatmaps.",
 			Optional:            true,
-			Attributes:          getFilterSimpleSchema(),
+			Attributes:          getFilterSimple(),
 		},
 		"filters": schema.ListNestedAttribute{
 			MarkdownDescription: "Additional filters to apply to the chart data (maximum 100).",
 			Optional:            true,
-			NestedObject:        getSearchFilterSchema(),
+			NestedObject:        getSearchFilter(),
 		},
 		"axes": schema.SingleNestedAttribute{
 			MarkdownDescription: "Axis configuration for X and Y axes.",
@@ -1151,19 +1291,130 @@ func getHeatmapSchema() map[string]schema.Attribute {
 			Required:            true,
 			Attributes:          getHeatmapLegendSchema(),
 		},
-		"metric": schema.StringAttribute{
+		"metric_json": schema.StringAttribute{
 			MarkdownDescription: "Metric configuration as JSON. For non-ES|QL, this can be a field metric, pipeline metric, or formula. For ES|QL, this is the metric column/operation/color configuration.",
 			CustomType:          customtypes.NewJSONWithDefaultsType(populateTagcloudMetricDefaults),
 			Required:            true,
 		},
-		"x_axis": schema.StringAttribute{
-			MarkdownDescription: "X-axis operation configuration as JSON. For non-ES|QL, this can be date histogram, terms, histogram, range, or filters operations; for ES|QL, this is the column/operation configuration.",
+		"x_axis_json": schema.StringAttribute{
+			MarkdownDescription: heatmapXAxisDescription,
 			CustomType:          jsontypes.NormalizedType{},
 			Required:            true,
 		},
-		"y_axis": schema.StringAttribute{
-			MarkdownDescription: "Y-axis operation configuration as JSON. For non-ES|QL, this can be date histogram, terms, histogram, range, or filters operations; for ES|QL, this is the column/operation configuration.",
+		"y_axis_json": schema.StringAttribute{
+			MarkdownDescription: heatmapYAxisDescription,
 			CustomType:          jsontypes.NormalizedType{},
+			Optional:            true,
+		},
+	}
+}
+
+// getTreemapSchema returns the schema for treemap chart configuration
+func getTreemapSchema() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"title": schema.StringAttribute{
+			MarkdownDescription: "The title of the chart displayed in the panel.",
+			Optional:            true,
+		},
+		"description": schema.StringAttribute{
+			MarkdownDescription: "The description of the chart.",
+			Optional:            true,
+		},
+		"dataset_json": schema.StringAttribute{
+			MarkdownDescription: "Dataset configuration as JSON. For non-ES|QL, this specifies the data view or index; for ES|QL, this specifies the ES|QL query dataset.",
+			CustomType:          jsontypes.NormalizedType{},
+			Required:            true,
+		},
+		"ignore_global_filters": schema.BoolAttribute{
+			MarkdownDescription: "If true, ignore global filters when fetching data for this chart. Default is false.",
+			Optional:            true,
+		},
+		"sampling": schema.Float64Attribute{
+			MarkdownDescription: "Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.",
+			Optional:            true,
+		},
+		"query": schema.SingleNestedAttribute{
+			MarkdownDescription: "Query configuration for filtering data. Required for non-ES|QL treemaps.",
+			Optional:            true,
+			Attributes:          getFilterSimple(),
+		},
+		"filters": schema.ListNestedAttribute{
+			MarkdownDescription: "Additional filters to apply to the chart data (maximum 100).",
+			Optional:            true,
+			NestedObject:        getSearchFilter(),
+		},
+		"group_by_json": schema.StringAttribute{
+			MarkdownDescription: "Array of breakdown dimensions as JSON (minimum 1). " +
+				"For non-ES|QL, each item can be date histogram, terms, histogram, range, or filters operations; " +
+				"for ES|QL, each item is the column/operation/color configuration.",
+			CustomType: customtypes.NewJSONWithDefaultsType(populateTreemapGroupByDefaults),
+			Required:   true,
+		},
+		"metrics_json": schema.StringAttribute{
+			MarkdownDescription: "Array of metric configurations as JSON (minimum 1). " +
+				"For non-ES|QL, each item can be a field metric, pipeline metric, or formula; " +
+				"for ES|QL, each item is the column/operation/color/format configuration.",
+			CustomType: customtypes.NewJSONWithDefaultsType(populateTreemapMetricsDefaults),
+			Required:   true,
+		},
+		"label_position": schema.StringAttribute{
+			MarkdownDescription: "Position of the labels: hidden or visible.",
+			Optional:            true,
+			Validators: []validator.String{
+				stringvalidator.OneOf("hidden", "visible"),
+			},
+		},
+		"legend": schema.SingleNestedAttribute{
+			MarkdownDescription: "Legend configuration for the treemap chart.",
+			Required:            true,
+			Attributes:          getTreemapLegendSchema(),
+		},
+		"value_display": schema.SingleNestedAttribute{
+			MarkdownDescription: "Configuration for displaying values in chart cells.",
+			Optional:            true,
+			Attributes:          getTreemapValueDisplaySchema(),
+		},
+	}
+}
+
+func getTreemapLegendSchema() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"nested": schema.BoolAttribute{
+			MarkdownDescription: "Show nested legend with hierarchical breakdown levels.",
+			Optional:            true,
+		},
+		"size": schema.StringAttribute{
+			MarkdownDescription: "Legend size: auto, small, medium, large, or xlarge.",
+			Required:            true,
+			Validators: []validator.String{
+				stringvalidator.OneOf("auto", "small", "medium", "large", "xlarge"),
+			},
+		},
+		"truncate_after_lines": schema.Float64Attribute{
+			MarkdownDescription: "Maximum lines before truncating legend items (1-10).",
+			Optional:            true,
+		},
+		"visible": schema.StringAttribute{
+			MarkdownDescription: "Legend visibility: auto, show, or hide.",
+			Optional:            true,
+			Validators: []validator.String{
+				stringvalidator.OneOf("auto", "show", "hide"),
+			},
+		},
+	}
+}
+
+func getTreemapValueDisplaySchema() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"mode": schema.StringAttribute{
+			MarkdownDescription: "Value display mode: hidden, absolute, or percentage.",
+			Required:            true,
+			Validators: []validator.String{
+				stringvalidator.OneOf("hidden", "absolute", "percentage"),
+			},
+		},
+		"percent_decimals": schema.Float64Attribute{
+			MarkdownDescription: "Decimal places for percentage display (0-10).",
 			Optional:            true,
 		},
 	}
@@ -1276,7 +1527,7 @@ func getHeatmapLegendSchema() map[string]schema.Attribute {
 			MarkdownDescription: "Legend size: auto, small, medium, large, or xlarge.",
 			Required:            true,
 			Validators: []validator.String{
-				stringvalidator.OneOf("auto", "small", "medium", "large", "xlarge"),
+				stringvalidator.OneOf(dashboardValueAuto, "small", "medium", "large", "xlarge"),
 			},
 		},
 		"truncate_after_lines": schema.Int64Attribute{
@@ -1297,7 +1548,7 @@ func getRegionMapSchema() map[string]schema.Attribute {
 			MarkdownDescription: "The description of the chart.",
 			Optional:            true,
 		},
-		"dataset": schema.StringAttribute{
+		"dataset_json": schema.StringAttribute{
 			MarkdownDescription: "Dataset configuration as JSON. For ES|QL, this specifies the ES|QL query. For standard layers, this specifies the data view and query.",
 			CustomType:          jsontypes.NormalizedType{},
 			Required:            true,
@@ -1313,20 +1564,20 @@ func getRegionMapSchema() map[string]schema.Attribute {
 		"query": schema.SingleNestedAttribute{
 			MarkdownDescription: "Query configuration for filtering data. Required for non-ES|QL region map configurations.",
 			Optional:            true,
-			Attributes:          getFilterSimpleSchema(),
+			Attributes:          getFilterSimple(),
 		},
 		"filters": schema.ListNestedAttribute{
 			MarkdownDescription: "Additional filters to apply to the chart data (maximum 100).",
 			Optional:            true,
-			NestedObject:        getSearchFilterSchema(),
+			NestedObject:        getSearchFilter(),
 		},
-		"metric": schema.StringAttribute{
+		"metric_json": schema.StringAttribute{
 			MarkdownDescription: "Metric configuration as JSON. For ES|QL, this defines the metric column and format. For standard mode, this defines the metric operation or formula.",
 			CustomType:          customtypes.NewJSONWithDefaultsType(populateRegionMapMetricDefaults),
 			Required:            true,
 		},
-		"region": schema.StringAttribute{
-			MarkdownDescription: "Region configuration as JSON. For ES|QL, this defines the region column and EMS join. For standard mode, this defines the bucket operation (terms, histogram, range, filters) and optional EMS settings.",
+		"region_json": schema.StringAttribute{
+			MarkdownDescription: regionMapRegionDescription,
 			CustomType:          jsontypes.NormalizedType{},
 			Required:            true,
 		},
@@ -1344,12 +1595,12 @@ func getLegacyMetricSchema() map[string]schema.Attribute {
 			MarkdownDescription: "The description of the chart.",
 			Optional:            true,
 		},
-		"dataset": schema.StringAttribute{
+		"dataset_json": schema.StringAttribute{
 			MarkdownDescription: "Dataset configuration as JSON. Use `dataView` or `index` for standard data sources, and `esql` or `table` for ES|QL sources.",
 			CustomType:          jsontypes.NormalizedType{},
 			Required:            true,
 		},
-		"metric": schema.StringAttribute{
+		"metric_json": schema.StringAttribute{
 			MarkdownDescription: "Metric configuration as JSON. For standard datasets, use a metric operation or formula. For ES|QL datasets, include format, operation, column, and color configuration.",
 			CustomType:          customtypes.NewJSONWithDefaultsType(populateLegacyMetricMetricDefaults),
 			Required:            true,
@@ -1357,12 +1608,12 @@ func getLegacyMetricSchema() map[string]schema.Attribute {
 		"query": schema.SingleNestedAttribute{
 			MarkdownDescription: "Query configuration for filtering data. Required for non-ES|QL datasets.",
 			Optional:            true,
-			Attributes:          getFilterSimpleSchema(),
+			Attributes:          getFilterSimple(),
 		},
 		"filters": schema.ListNestedAttribute{
 			MarkdownDescription: "Additional filters to apply to the chart data (maximum 100).",
 			Optional:            true,
-			NestedObject:        getSearchFilterSchema(),
+			NestedObject:        getSearchFilter(),
 		},
 		"sampling": schema.Float64Attribute{
 			MarkdownDescription: "Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.",
@@ -1386,7 +1637,7 @@ func getGaugeSchema() map[string]schema.Attribute {
 			MarkdownDescription: "The description of the chart.",
 			Optional:            true,
 		},
-		"dataset": schema.StringAttribute{
+		"dataset_json": schema.StringAttribute{
 			MarkdownDescription: "Dataset configuration as JSON. For standard layers, this specifies the data view and query.",
 			CustomType:          jsontypes.NormalizedType{},
 			Required:            true,
@@ -1402,19 +1653,19 @@ func getGaugeSchema() map[string]schema.Attribute {
 		"query": schema.SingleNestedAttribute{
 			MarkdownDescription: "Query configuration for filtering data.",
 			Required:            true,
-			Attributes:          getFilterSimpleSchema(),
+			Attributes:          getFilterSimple(),
 		},
 		"filters": schema.ListNestedAttribute{
 			MarkdownDescription: "Additional filters to apply to the chart data (maximum 100).",
 			Optional:            true,
-			NestedObject:        getSearchFilterSchema(),
+			NestedObject:        getSearchFilter(),
 		},
-		"metric": schema.StringAttribute{
-			MarkdownDescription: "Metric configuration as JSON. Supports metric operations such as count, unique count, min, max, average, median, standard deviation, sum, last value, percentile, percentile ranks, or formula.",
+		"metric_json": schema.StringAttribute{
+			MarkdownDescription: gaugeMetricDescription,
 			CustomType:          customtypes.NewJSONWithDefaultsType(populateGaugeMetricDefaults),
 			Required:            true,
 		},
-		"shape": schema.StringAttribute{
+		"shape_json": schema.StringAttribute{
 			MarkdownDescription: "Gauge shape configuration as JSON. Supports bullet and circular gauges.",
 			CustomType:          jsontypes.NormalizedType{},
 			Optional:            true,
@@ -1422,8 +1673,8 @@ func getGaugeSchema() map[string]schema.Attribute {
 	}
 }
 
-// getMetricChartSchema returns the schema for metric chart configuration
-func getMetricChartSchema() map[string]schema.Attribute {
+// getMetricChart returns the schema for metric chart configuration
+func getMetricChart() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"title": schema.StringAttribute{
 			MarkdownDescription: "The title of the chart displayed in the panel.",
@@ -1433,8 +1684,8 @@ func getMetricChartSchema() map[string]schema.Attribute {
 			MarkdownDescription: "The description of the chart.",
 			Optional:            true,
 		},
-		"dataset": schema.StringAttribute{
-			MarkdownDescription: "Dataset configuration as JSON. Can be a data view dataset (`type: 'dataview'`), index dataset (`type: 'index'`), ES|QL dataset (`type: 'esql'`), or table ES|QL dataset (`type: 'tableESQLDatasetType'`).",
+		"dataset_json": schema.StringAttribute{
+			MarkdownDescription: metricChartDatasetDescription,
 			CustomType:          jsontypes.NormalizedType{},
 			Required:            true,
 		},
@@ -1449,31 +1700,31 @@ func getMetricChartSchema() map[string]schema.Attribute {
 		"query": schema.SingleNestedAttribute{
 			MarkdownDescription: "Query configuration for filtering data. Required for non-ES|QL datasets.",
 			Optional:            true,
-			Attributes:          getFilterSimpleSchema(),
+			Attributes:          getFilterSimple(),
 		},
 		"filters": schema.ListNestedAttribute{
 			MarkdownDescription: "Additional filters to apply to the chart data (maximum 100).",
 			Optional:            true,
-			NestedObject:        getSearchFilterSchema(),
+			NestedObject:        getSearchFilter(),
 		},
 		"metrics": schema.ListNestedAttribute{
-			MarkdownDescription: "Array of metrics to display (1-2 items). Each metric can be a primary metric (displays prominently) or secondary metric (displays as comparison). Metrics can use field operations (count, unique count, min, max, avg, median, std dev, sum, last value, percentile, percentile ranks), pipeline operations (differences, moving average, cumulative sum, counter rate), formula operations, or for ES|QL datasets, column-based value operations.",
+			MarkdownDescription: metricChartMetricsDescription,
 			Required:            true,
 			Validators: []validator.List{
 				listvalidator.SizeAtMost(2),
 			},
 			NestedObject: schema.NestedAttributeObject{
 				Attributes: map[string]schema.Attribute{
-					"config": schema.StringAttribute{
-						MarkdownDescription: "Metric configuration as JSON. For primary metrics: includes type ('primary'), operation, format, alignments, icon, and optional fields like sub_label, fit, color, apply_color_to, and background_chart. For secondary metrics: includes type ('secondary'), operation, format, and optional fields like label, prefix, compare, and color.",
+					"config_json": schema.StringAttribute{
+						MarkdownDescription: metricChartMetricConfigDescription,
 						CustomType:          customtypes.NewJSONWithDefaultsType(populateMetricChartMetricDefaults),
 						Required:            true,
 					},
 				},
 			},
 		},
-		"breakdown_by": schema.StringAttribute{
-			MarkdownDescription: "Breakdown configuration as JSON. Groups metrics by a dimension. Can use operations like date histogram, terms, histogram, range, filters, or for ES|QL datasets, value operations with columns. Includes optional columns count and collapse_by configuration.",
+		"breakdown_by_json": schema.StringAttribute{
+			MarkdownDescription: metricChartBreakdownByDescription,
 			CustomType:          jsontypes.NormalizedType{},
 			Optional:            true,
 		},
@@ -1512,7 +1763,7 @@ func getDatatableNoESQLSchema() map[string]schema.Attribute {
 			MarkdownDescription: "The description of the chart.",
 			Optional:            true,
 		},
-		"dataset": schema.StringAttribute{
+		"dataset_json": schema.StringAttribute{
 			MarkdownDescription: "Dataset configuration as JSON. For standard datatables, this specifies the data view and query.",
 			CustomType:          jsontypes.NormalizedType{},
 			Required:            true,
@@ -1533,19 +1784,19 @@ func getDatatableNoESQLSchema() map[string]schema.Attribute {
 		"query": schema.SingleNestedAttribute{
 			MarkdownDescription: "Query configuration for filtering data.",
 			Required:            true,
-			Attributes:          getFilterSimpleSchema(),
+			Attributes:          getFilterSimple(),
 		},
 		"filters": schema.ListNestedAttribute{
 			MarkdownDescription: "Additional filters to apply to the datatable data (maximum 100).",
 			Optional:            true,
-			NestedObject:        getSearchFilterSchema(),
+			NestedObject:        getSearchFilter(),
 		},
 		"metrics": schema.ListNestedAttribute{
 			MarkdownDescription: "Array of metric configurations as JSON. Each entry defines a datatable metric column.",
 			Required:            true,
 			NestedObject: schema.NestedAttributeObject{
 				Attributes: map[string]schema.Attribute{
-					"config": schema.StringAttribute{
+					"config_json": schema.StringAttribute{
 						MarkdownDescription: "Metric configuration as JSON.",
 						CustomType:          jsontypes.NormalizedType{},
 						Required:            true,
@@ -1558,7 +1809,7 @@ func getDatatableNoESQLSchema() map[string]schema.Attribute {
 			Optional:            true,
 			NestedObject: schema.NestedAttributeObject{
 				Attributes: map[string]schema.Attribute{
-					"config": schema.StringAttribute{
+					"config_json": schema.StringAttribute{
 						MarkdownDescription: "Row configuration as JSON.",
 						CustomType:          jsontypes.NormalizedType{},
 						Required:            true,
@@ -1571,7 +1822,7 @@ func getDatatableNoESQLSchema() map[string]schema.Attribute {
 			Optional:            true,
 			NestedObject: schema.NestedAttributeObject{
 				Attributes: map[string]schema.Attribute{
-					"config": schema.StringAttribute{
+					"config_json": schema.StringAttribute{
 						MarkdownDescription: "Split metrics configuration as JSON.",
 						CustomType:          jsontypes.NormalizedType{},
 						Required:            true,
@@ -1579,7 +1830,7 @@ func getDatatableNoESQLSchema() map[string]schema.Attribute {
 				},
 			},
 		},
-		"sort_by": schema.StringAttribute{
+		"sort_by_json": schema.StringAttribute{
 			MarkdownDescription: "Sort configuration as JSON. Only one column can be sorted at a time.",
 			CustomType:          jsontypes.NormalizedType{},
 			Optional:            true,
@@ -1601,7 +1852,7 @@ func getDatatableESQLSchema() map[string]schema.Attribute {
 			MarkdownDescription: "The description of the chart.",
 			Optional:            true,
 		},
-		"dataset": schema.StringAttribute{
+		"dataset_json": schema.StringAttribute{
 			MarkdownDescription: "Dataset configuration as JSON. For ES|QL, this specifies the ES|QL query.",
 			CustomType:          jsontypes.NormalizedType{},
 			Required:            true,
@@ -1622,14 +1873,14 @@ func getDatatableESQLSchema() map[string]schema.Attribute {
 		"filters": schema.ListNestedAttribute{
 			MarkdownDescription: "Additional filters to apply to the datatable data (maximum 100).",
 			Optional:            true,
-			NestedObject:        getSearchFilterSchema(),
+			NestedObject:        getSearchFilter(),
 		},
 		"metrics": schema.ListNestedAttribute{
 			MarkdownDescription: "Array of metric configurations as JSON. Each entry defines a datatable metric column.",
 			Required:            true,
 			NestedObject: schema.NestedAttributeObject{
 				Attributes: map[string]schema.Attribute{
-					"config": schema.StringAttribute{
+					"config_json": schema.StringAttribute{
 						MarkdownDescription: "Metric configuration as JSON.",
 						CustomType:          jsontypes.NormalizedType{},
 						Required:            true,
@@ -1642,7 +1893,7 @@ func getDatatableESQLSchema() map[string]schema.Attribute {
 			Optional:            true,
 			NestedObject: schema.NestedAttributeObject{
 				Attributes: map[string]schema.Attribute{
-					"config": schema.StringAttribute{
+					"config_json": schema.StringAttribute{
 						MarkdownDescription: "Row configuration as JSON.",
 						CustomType:          jsontypes.NormalizedType{},
 						Required:            true,
@@ -1655,7 +1906,7 @@ func getDatatableESQLSchema() map[string]schema.Attribute {
 			Optional:            true,
 			NestedObject: schema.NestedAttributeObject{
 				Attributes: map[string]schema.Attribute{
-					"config": schema.StringAttribute{
+					"config_json": schema.StringAttribute{
 						MarkdownDescription: "Split metrics configuration as JSON.",
 						CustomType:          jsontypes.NormalizedType{},
 						Required:            true,
@@ -1663,7 +1914,7 @@ func getDatatableESQLSchema() map[string]schema.Attribute {
 				},
 			},
 		},
-		"sort_by": schema.StringAttribute{
+		"sort_by_json": schema.StringAttribute{
 			MarkdownDescription: "Sort configuration as JSON. Only one column can be sorted at a time.",
 			CustomType:          jsontypes.NormalizedType{},
 			Optional:            true,
@@ -1696,7 +1947,7 @@ func getDatatableDensitySchema() map[string]schema.Attribute {
 							MarkdownDescription: "Header height type. Valid values: 'auto', 'custom'.",
 							Optional:            true,
 							Validators: []validator.String{
-								stringvalidator.OneOf("auto", "custom"),
+								stringvalidator.OneOf(dashboardValueAuto, "custom"),
 							},
 						},
 						"max_lines": schema.Float64Attribute{
@@ -1713,13 +1964,152 @@ func getDatatableDensitySchema() map[string]schema.Attribute {
 							MarkdownDescription: "Value height type. Valid values: 'auto', 'custom'.",
 							Optional:            true,
 							Validators: []validator.String{
-								stringvalidator.OneOf("auto", "custom"),
+								stringvalidator.OneOf(dashboardValueAuto, "custom"),
 							},
 						},
 						"lines": schema.Float64Attribute{
 							MarkdownDescription: "Number of lines to display per table body cell (for custom value height).",
 							Optional:            true,
 						},
+					},
+				},
+			},
+		},
+	}
+}
+
+// populatePieChartMetricDefaults populates default values for pie chart metric configuration
+func populatePieChartMetricDefaults(model map[string]any) map[string]any {
+	if model == nil {
+		return model
+	}
+
+	if _, exists := model["empty_as_null"]; !exists {
+		model["empty_as_null"] = false
+	}
+
+	// Set defaults for format
+	if format, ok := model["format"].(map[string]any); ok {
+		if format["type"] == pieChartTypeNumber {
+			if _, exists := format["compact"]; !exists {
+				format["compact"] = false
+			}
+			if _, exists := format["decimals"]; !exists {
+				format["decimals"] = float64(2)
+			}
+		}
+	}
+
+	return model
+}
+
+// populatePieChartGroupByDefaults populates default values for pie chart group by configuration
+func populatePieChartGroupByDefaults(model map[string]any) map[string]any {
+	if model == nil {
+		return model
+	}
+
+	if operation, ok := model["operation"].(string); ok && operation == operationTerms {
+		if _, exists := model["size"]; !exists {
+			model["size"] = float64(5)
+		}
+		if _, exists := model["rank_by"]; !exists {
+			model["rank_by"] = map[string]any{
+				"direction": "desc",
+				"metric":    float64(0),
+				"type":      "column",
+			}
+		}
+	}
+
+	return model
+}
+
+// getPieChart returns the schema for pie chart configuration
+func getPieChart() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"title": schema.StringAttribute{
+			MarkdownDescription: "The title of the chart displayed in the panel.",
+			Optional:            true,
+		},
+		"description": schema.StringAttribute{
+			MarkdownDescription: "The description of the chart.",
+			Optional:            true,
+		},
+		"dataset": schema.StringAttribute{
+			MarkdownDescription: "Dataset configuration as JSON. For standard layers, this specifies the data view and query.",
+			CustomType:          jsontypes.NormalizedType{},
+			Optional:            true,
+		},
+		"ignore_global_filters": schema.BoolAttribute{
+			MarkdownDescription: "If true, ignore global filters when fetching data for this layer. Default is false.",
+			Optional:            true,
+			Computed:            true,
+			Default:             booldefault.StaticBool(false),
+		},
+		"sampling": schema.Float64Attribute{
+			MarkdownDescription: "Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.",
+			Optional:            true,
+			Computed:            true,
+			Default:             float64default.StaticFloat64(1.0),
+		},
+		"donut_hole": schema.StringAttribute{
+			MarkdownDescription: "Donut hole size: none (pie), small, medium, or large.",
+			Optional:            true,
+			Validators: []validator.String{
+				stringvalidator.OneOf("none", "small", "medium", "large"),
+			},
+		},
+		"label_position": schema.StringAttribute{
+			MarkdownDescription: "Position of slice labels: hidden, inside, or outside.",
+			Optional:            true,
+			Validators: []validator.String{
+				stringvalidator.OneOf("hidden", "inside", "outside"),
+			},
+		},
+		"legend": schema.StringAttribute{
+			MarkdownDescription: "Legend configuration as JSON.",
+			CustomType:          jsontypes.NormalizedType{},
+			Optional:            true,
+		},
+		"query": schema.SingleNestedAttribute{
+			MarkdownDescription: "Query configuration for filtering data.",
+			Optional:            true,
+			Attributes:          getFilterSimple(),
+		},
+		"filters": schema.ListNestedAttribute{
+			MarkdownDescription: "Additional filters to apply to the chart data (maximum 100).",
+			Optional:            true,
+			NestedObject:        getSearchFilter(),
+		},
+		"metrics": schema.ListNestedAttribute{
+			MarkdownDescription: "Array of metric configurations (minimum 1).",
+			Required:            true,
+			NestedObject: schema.NestedAttributeObject{
+				Attributes: map[string]schema.Attribute{
+					"config": schema.StringAttribute{
+						MarkdownDescription: "Metric configuration as JSON.",
+						CustomType:          customtypes.NewJSONWithDefaultsType(populatePieChartMetricDefaults),
+						Required:            true,
+					},
+				},
+			},
+			Validators: []validator.List{
+				listvalidator.SizeAtLeast(1),
+			},
+		},
+		"group_by": schema.ListNestedAttribute{
+			MarkdownDescription: "Array of breakdown dimensions (minimum 1).",
+			Optional:            true,
+			Validators: []validator.List{
+				listvalidator.SizeAtLeast(1),
+			},
+			NestedObject: schema.NestedAttributeObject{
+				Attributes: map[string]schema.Attribute{
+					"config": schema.StringAttribute{
+						MarkdownDescription: "Group by configuration as JSON.",
+						CustomType:          customtypes.NewJSONWithDefaultsType(populatePieChartGroupByDefaults),
+						Required:            true,
 					},
 				},
 			},

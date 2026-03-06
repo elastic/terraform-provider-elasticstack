@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package config
 
 import (
@@ -17,7 +34,7 @@ import (
 func Test_newFleetConfigFromSDK(t *testing.T) {
 	type args struct {
 		kibanaCfg      kibanaOapiConfig
-		resourceData   map[string]interface{}
+		resourceData   map[string]any
 		expectedConfig fleetConfig
 		expectedDiags  sdkdiags.Diagnostics
 		env            map[string]string
@@ -38,7 +55,7 @@ func Test_newFleetConfigFromSDK(t *testing.T) {
 
 				return args{
 					kibanaCfg:      kibanaCfg,
-					resourceData:   map[string]interface{}{},
+					resourceData:   map[string]any{},
 					expectedConfig: kibanaCfg.toFleetConfig(),
 				}
 			},
@@ -55,14 +72,14 @@ func Test_newFleetConfigFromSDK(t *testing.T) {
 
 				return args{
 					kibanaCfg: kibanaCfg,
-					resourceData: map[string]interface{}{
-						"fleet": []interface{}{
-							map[string]interface{}{
+					resourceData: map[string]any{
+						"fleet": []any{
+							map[string]any{
 								"endpoint": "example.com/fleet",
 								"username": "fleet",
 								"password": "baltic",
 								"api_key":  "leviosa",
-								"ca_certs": []interface{}{"internal", "lets_decrypt"},
+								"ca_certs": []any{"internal", "lets_decrypt"},
 								"insecure": false,
 							},
 						},
@@ -90,14 +107,14 @@ func Test_newFleetConfigFromSDK(t *testing.T) {
 
 				return args{
 					kibanaCfg: kibanaCfg,
-					resourceData: map[string]interface{}{
-						"fleet": []interface{}{
-							map[string]interface{}{
+					resourceData: map[string]any{
+						"fleet": []any{
+							map[string]any{
 								"endpoint": "example.com/fleet",
 								"username": "fleet",
 								"password": "baltic",
 								"api_key":  "leviosa",
-								"ca_certs": []interface{}{"internal", "lets_decrypt"},
+								"ca_certs": []any{"internal", "lets_decrypt"},
 								"insecure": false,
 							},
 						},
@@ -137,7 +154,7 @@ func Test_newFleetConfigFromSDK(t *testing.T) {
 			}, args.resourceData)
 
 			for key, val := range args.env {
-				os.Setenv(key, val)
+				t.Setenv(key, val)
 			}
 
 			fleetConfig, diags := newFleetConfigFromSDK(rd, args.kibanaCfg)
@@ -159,9 +176,9 @@ func Test_newFleetConfigFromSDK_BearerToken(t *testing.T) {
 	kibanaCfg := kibanaOapiConfig{}
 	rd := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
 		"fleet": providerSchema.GetFleetConnectionSchema(),
-	}, map[string]interface{}{
-		"fleet": []interface{}{
-			map[string]interface{}{
+	}, map[string]any{
+		"fleet": []any{
+			map[string]any{
 				"endpoint":     "example.com/fleet",
 				"bearer_token": "my-jwt-token",
 				"insecure":     true,
@@ -185,15 +202,14 @@ func Test_newFleetConfigFromSDK_BearerTokenEnvOverride(t *testing.T) {
 	os.Unsetenv("FLEET_BEARER_TOKEN")
 	os.Unsetenv("FLEET_CA_CERTS")
 
-	os.Setenv("FLEET_BEARER_TOKEN", "env-jwt-token")
-	defer os.Unsetenv("FLEET_BEARER_TOKEN")
+	t.Setenv("FLEET_BEARER_TOKEN", "env-jwt-token")
 
 	kibanaCfg := kibanaOapiConfig{}
 	rd := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
 		"fleet": providerSchema.GetFleetConnectionSchema(),
-	}, map[string]interface{}{
-		"fleet": []interface{}{
-			map[string]interface{}{
+	}, map[string]any{
+		"fleet": []any{
+			map[string]any{
 				"endpoint":     "example.com/fleet",
 				"bearer_token": "config-jwt-token",
 			},
@@ -332,7 +348,7 @@ func Test_newFleetConfigFromFramework(t *testing.T) {
 			args := tt.args()
 
 			for key, val := range args.env {
-				os.Setenv(key, val)
+				t.Setenv(key, val)
 			}
 
 			fleetConfig, diags := newFleetConfigFromFramework(context.Background(), args.providerConfig, args.kibanaCfg)
@@ -379,8 +395,7 @@ func Test_newFleetConfigFromFramework_BearerTokenEnvOverride(t *testing.T) {
 	os.Unsetenv("FLEET_BEARER_TOKEN")
 	os.Unsetenv("FLEET_CA_CERTS")
 
-	os.Setenv("FLEET_BEARER_TOKEN", "env-jwt-token")
-	defer os.Unsetenv("FLEET_BEARER_TOKEN")
+	t.Setenv("FLEET_BEARER_TOKEN", "env-jwt-token")
 
 	kibanaCfg := kibanaOapiConfig{}
 	providerConfig := ProviderConfiguration{

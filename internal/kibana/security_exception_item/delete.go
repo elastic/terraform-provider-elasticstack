@@ -1,11 +1,28 @@
-package security_exception_item
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package securityexceptionitem
 
 import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
@@ -19,8 +36,8 @@ func (r *ExceptionItemResource) Delete(ctx context.Context, req resource.DeleteR
 	}
 
 	// Parse composite ID to get space_id and resource_id
-	compId, compIdDiags := clients.CompositeIdFromStrFw(state.ID.ValueString())
-	resp.Diagnostics.Append(compIdDiags...)
+	compID, compIDDiags := clients.CompositeIDFromStrFw(state.ID.ValueString())
+	resp.Diagnostics.Append(compIDDiags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -32,11 +49,11 @@ func (r *ExceptionItemResource) Delete(ctx context.Context, req resource.DeleteR
 	}
 
 	// Delete by ID
-	id := kbapi.SecurityExceptionsAPIExceptionListItemId(compId.ResourceId)
+	id := compID.ResourceID
 	params := &kbapi.DeleteExceptionListItemParams{
 		Id: &id,
 	}
 
-	diags = kibana_oapi.DeleteExceptionListItem(ctx, client, state.SpaceID.ValueString(), params)
+	diags = kibanaoapi.DeleteExceptionListItem(ctx, client, compID.ClusterID, params)
 	resp.Diagnostics.Append(diags...)
 }

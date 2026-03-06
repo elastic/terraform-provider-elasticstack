@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package role_test
 
 import (
@@ -20,6 +37,7 @@ func TestAccResourceSecurityRole(t *testing.T) {
 	roleName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	roleNameRemoteIndices := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	roleNameDescription := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	roleNameDescriptionEmpty := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -119,6 +137,18 @@ func TestAccResourceSecurityRole(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "description", "updated test description"),
 				),
 			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(role.MinSupportedDescriptionVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("description_empty"),
+				ConfigVariables: config.Variables{
+					"role_name": config.StringVariable(roleNameDescriptionEmpty),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "name", roleNameDescriptionEmpty),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "description", ""),
+				),
+			},
 		},
 	})
 }
@@ -212,20 +242,20 @@ func checkResourceSecurityRoleDestroy(s *terraform.State) error {
 		if rs.Type != "elasticstack_elasticsearch_security_role" {
 			continue
 		}
-		compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
+		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
 		esClient, err := client.GetESClient()
 		if err != nil {
 			return err
 		}
-		req := esClient.Security.GetRole.WithName(compId.ResourceId)
+		req := esClient.Security.GetRole.WithName(compID.ResourceID)
 		res, err := esClient.Security.GetRole(req)
 		if err != nil {
 			return err
 		}
 
 		if res.StatusCode != 404 {
-			return fmt.Errorf("role (%s) still exists", compId.ResourceId)
+			return fmt.Errorf("role (%s) still exists", compID.ResourceID)
 		}
 	}
 	return nil

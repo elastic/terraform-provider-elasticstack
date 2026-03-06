@@ -1,10 +1,28 @@
-package utils
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package schemautil
 
 import (
 	"context"
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
+	maps0 "maps"
 	"reflect"
 	"strings"
 	"time"
@@ -17,67 +35,25 @@ import (
 
 // Compares the JSON in two byte slices
 func JSONBytesEqual(a, b []byte) (bool, error) {
-	var j, j2 interface{}
+	var j, j2 any
 	if err := json.Unmarshal(a, &j); err != nil {
 		return false, err
 	}
 	if err := json.Unmarshal(b, &j2); err != nil {
 		return false, err
 	}
-	return MapsEqual(j, j2), nil
-}
-
-func MapsEqual(m1, m2 interface{}) bool {
-	return reflect.DeepEqual(m2, m1)
-}
-
-// Flattens the multilevel map, and concatenates keys together with dot "."
-// # Examples
-// map of form:
-//
-//	map := map[string]interface{}{
-//	        "index": map[string]interface{}{
-//	                "key": 1
-//	        }
-//	}
-//
-// becomes:
-//
-//	map := map[string]interface{}{
-//	        "index.key": 1
-//	}
-func FlattenMap(m map[string]interface{}) map[string]interface{} {
-	out := make(map[string]interface{})
-
-	var flattener func(string, map[string]interface{}, map[string]interface{})
-	flattener = func(k string, src, dst map[string]interface{}) {
-		if len(k) > 0 {
-			k += "."
-		}
-		for key, v := range src {
-			switch inner := v.(type) {
-			case map[string]interface{}:
-				flattener(k+key, inner, dst)
-			default:
-				dst[k+key] = v
-			}
-		}
-	}
-	flattener("", m, out)
-	return out
+	return reflect.DeepEqual(j, j2), nil
 }
 
 func MergeSchemaMaps(maps ...map[string]*schema.Schema) map[string]*schema.Schema {
 	result := make(map[string]*schema.Schema)
 	for _, m := range maps {
-		for k, v := range m {
-			result[k] = v
-		}
+		maps0.Copy(result, m)
 	}
 	return result
 }
 
-func IsEmpty(v interface{}) bool {
+func IsEmpty(v any) bool {
 	switch t := v.(type) {
 	case int, int8, int16, int32, int64, float32, float64:
 		if t == 0 {
@@ -87,11 +63,11 @@ func IsEmpty(v interface{}) bool {
 		if strings.TrimSpace(t) == "" {
 			return true
 		}
-	case []interface{}:
+	case []any:
 		if len(t) == 0 {
 			return true
 		}
-	case map[interface{}]interface{}:
+	case map[any]any:
 		if len(t) == 0 {
 			return true
 		}
@@ -125,8 +101,8 @@ func FormatStrictDateTime(t time.Time) string {
 	return strictDateTime
 }
 
-func ExpandIndividuallyDefinedSettings(ctx context.Context, d *schema.ResourceData, settingsKeys map[string]schema.ValueType) map[string]interface{} {
-	settings := make(map[string]interface{})
+func ExpandIndividuallyDefinedSettings(ctx context.Context, d *schema.ResourceData, settingsKeys map[string]schema.ValueType) map[string]any {
+	settings := make(map[string]any)
 	for key := range settingsKeys {
 		tfFieldKey := ConvertSettingsKeyToTFFieldKey(key)
 		if raw, ok := d.GetOk(tfFieldKey); ok {
@@ -146,11 +122,7 @@ func ConvertSettingsKeyToTFFieldKey(settingKey string) string {
 	return strings.ReplaceAll(settingKey, ".", "_")
 }
 
-func Pointer[T any](value T) *T {
-	return &value
-}
-
-// MapRef is similar to Pointer, in that it takes the reference of
+// MapRef is similar to new(value), in that it takes the reference of
 // the given value, however if the value is already nil then it returns
 // nil rather than a pointer to nil.
 func MapRef[T any, M ~map[string]T](value M) *M {
@@ -160,7 +132,7 @@ func MapRef[T any, M ~map[string]T](value M) *M {
 	return &value
 }
 
-// SliceRef is similar to Pointer, in that it takes the reference of
+// SliceRef is similar to new(value), in that it takes the reference of
 // the given value, however if the value is already nil then it returns
 // nil rather than a pointer to nil.
 func SliceRef[T any, S ~[]T](value S) *S {
@@ -176,9 +148,8 @@ func Deref[T any](value *T) T {
 	if value == nil {
 		var zero T
 		return zero
-	} else {
-		return *value
 	}
+	return *value
 }
 
 // Itol converts *int to *in64.
@@ -186,7 +157,7 @@ func Itol(value *int) *int64 {
 	if value == nil {
 		return nil
 	}
-	return Pointer(int64(*value))
+	return new(int64(*value))
 }
 
 // Ltoi converts *int64 to *int.
@@ -194,7 +165,7 @@ func Ltoi(value *int64) *int {
 	if value == nil {
 		return nil
 	}
-	return Pointer(int(*value))
+	return new(int(*value))
 }
 
 func FlipMap[K comparable, V comparable](m map[K]V) map[V]K {

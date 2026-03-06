@@ -1,0 +1,1 @@
+Manages the default Kibana data view. See the [Kibana Data Views API documentation](https://www.elastic.co/docs/api/doc/kibana/v8/operation/operation-setdefaultdatailviewdefault) for more information.
