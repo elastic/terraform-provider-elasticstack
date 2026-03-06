@@ -140,10 +140,10 @@ func ResourceTemplate() *schema.Resource {
 									ValidateFunc:     validation.StringIsJSON,
 								},
 								"index_routing": {
-									Description: "Value used to route indexing operations to a specific shard. If specified, this overwrites the `routing` value for indexing operations.",
-									Type:        schema.TypeString,
-									Optional:    true,
-									Computed:    true,
+									Description:      "Value used to route indexing operations to a specific shard. If specified, this overwrites the `routing` value for indexing operations.",
+									Type:             schema.TypeString,
+									Optional:         true,
+									Computed:         true,
 									DiffSuppressFunc: suppressAliasRoutingDerivedDiff,
 								},
 								"is_hidden": {
@@ -165,10 +165,10 @@ func ResourceTemplate() *schema.Resource {
 									Default:     "",
 								},
 								"search_routing": {
-									Description: "Value used to route search operations to a specific shard. If specified, this overwrites the routing value for search operations.",
-									Type:        schema.TypeString,
-									Optional:    true,
-									Computed:    true,
+									Description:      "Value used to route search operations to a specific shard. If specified, this overwrites the routing value for search operations.",
+									Type:             schema.TypeString,
+									Optional:         true,
+									Computed:         true,
 									DiffSuppressFunc: suppressAliasRoutingDerivedDiff,
 								},
 							},
@@ -580,10 +580,10 @@ func preserveAliasRoutingInFlattenedAliases(rawAliases any, preservedAliasRoutin
 	return aliases
 }
 
-func suppressAliasRoutingDerivedDiff(k, old, new string, d *schema.ResourceData) bool {
+func suppressAliasRoutingDerivedDiff(k, oldValue, newValue string, d *schema.ResourceData) bool {
 	// Ignore diffs for specific routing fields when they are unset in config
 	// but effectively derived from the generic alias routing value.
-	if new != "" || old == "" {
+	if newValue != "" || oldValue == "" {
 		return false
 	}
 
@@ -605,7 +605,7 @@ func suppressAliasRoutingDerivedDiff(k, old, new string, d *schema.ResourceData)
 		return false
 	}
 
-	return routing != "" && routing == old
+	return routing != "" && routing == oldValue
 }
 
 func hashAliasByName(v any) int {
