@@ -46,11 +46,11 @@ resource "elasticstack_elasticsearch_index_template" "example" {
     alias { # optional, set(block)
       name           = <required, string>
       filter         = <optional, json string> # default ""
-      index_routing  = <optional, string> # default ""
+      index_routing  = <optional, computed, string> # default ""
       is_hidden      = <optional, bool>   # default false
       is_write_index = <optional, bool>   # default false
       routing        = <optional, string> # default ""
-      search_routing = <optional, string> # default ""
+      search_routing = <optional, computed, string> # default ""
     }
 
     lifecycle { # optional, set(block), max 1
@@ -91,3 +91,4 @@ resource "elasticstack_elasticsearch_index_template" "example" {
 - **[REQ-027] (State)**: On read, when API `metadata` is present, it shall be serialized into a JSON string and stored in state.
 - **[REQ-028] (State)**: On read, when API `template` is present, it shall be flattened into `template` state, including aliases, lifecycle, mappings, and settings.
 - **[REQ-029] (State)**: On read, when API `data_stream` is present, it shall be flattened into a single `data_stream` block and include only fields present in API response.
+- **[REQ-030] (State)**: User-defined alias `routing` shall be preserved during read/refresh, because this field may be omitted by the API response and therefore shall not be overwritten from response data.
