@@ -19,6 +19,7 @@ package outputds_test
 
 import (
 	"fmt"
+	"maps"
 	"strconv"
 	"testing"
 
@@ -88,9 +89,8 @@ func TestAccDataSourceOutputCustomSpace(t *testing.T) {
 						"id":   "fleet-default-output",
 						"name": "default",
 					}),
-					testCheckResourceHasOutputAttrPair("data.elasticstack_fleet_output.test", "elasticstack_fleet_output.test", map[string]string{
+					testCheckResourceHasOutputAttrPair("data.elasticstack_fleet_output.test", "elasticstack_fleet_output.test", "id", map[string]string{
 						"name": "test",
-						"id":   "id",
 					}),
 				),
 			},
@@ -159,9 +159,7 @@ func testCheckResourceHasOutputAttrPair(dataResourceName, sourceResourceName, so
 
 		// Copy all literal expectations first.
 		matched := make(map[string]string, len(expected))
-		for key, value := range expected {
-			matched[key] = value
-		}
+		maps.Copy(matched, expected)
 
 		// If a source ID attribute is specified, derive the expected "id" value from the source resource.
 		if sourceIDAttr != "" {
@@ -201,7 +199,7 @@ func hasMatchingOutput(state *terraform.State, resourceName string, expected map
 		return err
 	}
 
-	for i := 0; i < count; i++ {
+	for i := range count {
 		matches := true
 		for key, value := range expected {
 			attrKey := fmt.Sprintf("outputs.%d.%s", i, key)
