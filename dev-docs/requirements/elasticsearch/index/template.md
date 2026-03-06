@@ -92,3 +92,9 @@ resource "elasticstack_elasticsearch_index_template" "example" {
 - **[REQ-028] (State)**: On read, when API `template` is present, it shall be flattened into `template` state, including aliases, lifecycle, mappings, and settings.
 - **[REQ-029] (State)**: On read, when API `data_stream` is present, it shall be flattened into a single `data_stream` block and include only fields present in API response.
 - **[REQ-030] (State)**: User-defined alias `routing` shall be preserved during read/refresh, because this field may be omitted by the API response and therefore shall not be overwritten from response data.
+
+## Acceptance criteria
+
+### Alias routing
+Given a Terraform configuration which configures only the `routing` attribute on an alias
+Expect the `search_routing`, and `index_routing` attributes to be set in state matching the `routing` attribute.
