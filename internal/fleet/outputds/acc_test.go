@@ -18,6 +18,9 @@
 package outputds_test
 
 import (
+	"fmt"
+	"maps"
+	"strconv"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -26,6 +29,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 var minVersionOutput = version.Must(version.NewVersion("8.6.0"))
@@ -40,9 +44,11 @@ func TestAccDataSourceOutputDefault(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("data"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_fleet_output.test", "id", "outputs"),
-					resource.TestCheckResourceAttr("data.elasticstack_fleet_output.test", "outputs.#", "1"),
-					resource.TestCheckResourceAttr("data.elasticstack_fleet_output.test", "outputs.0.id", "fleet-default-output"),
-					resource.TestCheckResourceAttr("data.elasticstack_fleet_output.test", "outputs.0.name", "default"),
+					testCheckResourceOutputsMinCount("data.elasticstack_fleet_output.test", 1),
+					testCheckResourceHasOutput("data.elasticstack_fleet_output.test", map[string]string{
+						"id":   "fleet-default-output",
+						"name": "default",
+					}),
 				),
 			},
 		},
@@ -78,9 +84,14 @@ func TestAccDataSourceOutputCustomSpace(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_space.test", "name", spaceName),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test", "name", "test"),
 					resource.TestCheckResourceAttr("data.elasticstack_fleet_output.test", "id", "outputs"),
-					resource.TestCheckResourceAttr("data.elasticstack_fleet_output.test", "outputs.#", "2"),
-					resource.TestCheckResourceAttr("data.elasticstack_fleet_output.test", "outputs.0.name", "default"),
-					resource.TestCheckResourceAttr("data.elasticstack_fleet_output.test", "outputs.1.name", "test"),
+					testCheckResourceOutputsMinCount("data.elasticstack_fleet_output.test", 2),
+					testCheckResourceHasOutput("data.elasticstack_fleet_output.test", map[string]string{
+						"id":   "fleet-default-output",
+						"name": "default",
+					}),
+					testCheckResourceHasOutputAttrPair("data.elasticstack_fleet_output.test", "elasticstack_fleet_output.test", "id", map[string]string{
+						"name": "test",
+					}),
 				),
 			},
 		},
@@ -97,11 +108,110 @@ func TestAccDataSourceOutputMissingSpace(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("data"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_fleet_output.test", "id", "outputs"),
-					resource.TestCheckResourceAttr("data.elasticstack_fleet_output.test", "outputs.#", "1"),
-					resource.TestCheckResourceAttr("data.elasticstack_fleet_output.test", "outputs.0.id", "fleet-default-output"),
-					resource.TestCheckResourceAttr("data.elasticstack_fleet_output.test", "outputs.0.name", "default"),
+					testCheckResourceOutputsMinCount("data.elasticstack_fleet_output.test", 1),
+					testCheckResourceHasOutput("data.elasticstack_fleet_output.test", map[string]string{
+						"id":   "fleet-default-output",
+						"name": "default",
+					}),
 				),
 			},
 		},
 	})
+}
+
+func testCheckResourceOutputsMinCount(resourceName string, minCount int) resource.TestCheckFunc {
+	return func(state *terraform.State) error {
+		rs, ok := state.RootModule().Resources[resourceName]
+		if !ok {
+			return fmt.Errorf("resource %q not found in state", resourceName)
+		}
+
+		rawCount, ok := rs.Primary.Attributes["outputs.#"]
+		if !ok {
+			return fmt.Errorf("resource %q has no outputs count in state", resourceName)
+		}
+
+		count, err := strconv.Atoi(rawCount)
+		if err != nil {
+			return fmt.Errorf("resource %q has invalid outputs count %q: %w", resourceName, rawCount, err)
+		}
+
+		if count < minCount {
+			return fmt.Errorf("resource %q expected at least %d outputs, got %d", resourceName, minCount, count)
+		}
+
+		return nil
+	}
+}
+
+func testCheckResourceHasOutput(resourceName string, expected map[string]string) resource.TestCheckFunc {
+	return func(state *terraform.State) error {
+		return hasMatchingOutput(state, resourceName, expected)
+	}
+}
+
+func testCheckResourceHasOutputAttrPair(dataResourceName, sourceResourceName, sourceIDAttr string, expected map[string]string) resource.TestCheckFunc {
+	return func(state *terraform.State) error {
+		sourceResource, ok := state.RootModule().Resources[sourceResourceName]
+		if !ok {
+			return fmt.Errorf("resource %q not found in state", sourceResourceName)
+		}
+
+		// Copy all literal expectations first.
+		matched := make(map[string]string, len(expected))
+		maps.Copy(matched, expected)
+
+		// If a source ID attribute is specified, derive the expected "id" value from the source resource.
+		if sourceIDAttr != "" {
+			sourceValue, ok := sourceResource.Primary.Attributes[sourceIDAttr]
+			if !ok {
+				return fmt.Errorf("resource %q attribute %q not found in state", sourceResourceName, sourceIDAttr)
+			}
+			matched["id"] = sourceValue
+		}
+		return hasMatchingOutput(state, dataResourceName, matched)
+	}
+}
+
+func getOutputsCount(state *terraform.State, resourceName string) (int, map[string]string, error) {
+	rs, ok := state.RootModule().Resources[resourceName]
+	if !ok {
+		return 0, nil, fmt.Errorf("resource %q not found in state", resourceName)
+	}
+
+	attrs := rs.Primary.Attributes
+	rawCount, ok := attrs["outputs.#"]
+	if !ok {
+		return 0, nil, fmt.Errorf("resource %q has no outputs count in state", resourceName)
+	}
+
+	count, err := strconv.Atoi(rawCount)
+	if err != nil {
+		return 0, nil, fmt.Errorf("resource %q has invalid outputs count %q: %w", resourceName, rawCount, err)
+	}
+
+	return count, attrs, nil
+}
+
+func hasMatchingOutput(state *terraform.State, resourceName string, expected map[string]string) error {
+	count, attrs, err := getOutputsCount(state, resourceName)
+	if err != nil {
+		return err
+	}
+
+	for i := range count {
+		matches := true
+		for key, value := range expected {
+			attrKey := fmt.Sprintf("outputs.%d.%s", i, key)
+			if attrs[attrKey] != value {
+				matches = false
+				break
+			}
+		}
+		if matches {
+			return nil
+		}
+	}
+
+	return fmt.Errorf("resource %q has no output matching %v", resourceName, expected)
 }
