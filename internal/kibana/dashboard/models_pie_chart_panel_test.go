@@ -97,9 +97,7 @@ func Test_pieChartPanelConfigConverter_roundTrip(t *testing.T) {
 		t.Helper()
 		configMap, err := panelConfigMap(cfg)
 		require.NoError(t, err)
-		var m map[string]any
-		m = configMap
-		return m
+		return configMap
 	}
 
 	t.Run("NoESQL", func(t *testing.T) {

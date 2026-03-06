@@ -29,6 +29,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+const (
+	panelTypeLens              = "lens"
+	panelTypeDashboardMarkdown = "DASHBOARD_MARKDOWN"
+)
+
 type panelModel struct {
 	Type               types.String             `tfsdk:"type"`
 	Grid               panelGridModel           `tfsdk:"grid"`
@@ -191,7 +196,15 @@ func (m *dashboardModel) mapSectionFromAPI(ctx context.Context, tfSection *secti
 	return sm, diags
 }
 
-func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelModel, panelType string, gridX, gridY float32, gridW, gridH *float32, uid *string, config apiPanelConfig) (panelModel, diag.Diagnostics) {
+func (m *dashboardModel) mapPanelFromAPI(
+	ctx context.Context,
+	tfPanel *panelModel,
+	panelType string,
+	gridX, gridY float32,
+	gridW, gridH *float32,
+	uid *string,
+	config apiPanelConfig,
+) (panelModel, diag.Diagnostics) {
 	// Start from the existing TF model when available (plan or prior state).
 	//
 	// Kibana may omit optional attributes on reads even when they were provided on
@@ -386,10 +399,10 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 
 	var panelItem kbapi.DashboardPanelItem
 	switch panelType {
-	case "lens":
+	case panelTypeLens:
 		p := kbapi.KbnDashboardPanelLens{
 			Grid: grid,
-			Type: kbapi.KbnDashboardPanelLensType("lens"),
+			Type: kbapi.KbnDashboardPanelLensType(panelTypeLens),
 		}
 		if typeutils.IsKnown(pm.ID) {
 			p.Uid = new(pm.ID.ValueString())
@@ -406,10 +419,10 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 			diags.AddError("Failed to create dashboard lens panel", err.Error())
 			return kbapi.DashboardPanelItem{}, diags
 		}
-	case "DASHBOARD_MARKDOWN":
+	case panelTypeDashboardMarkdown:
 		p := kbapi.KbnDashboardPanelDASHBOARDMARKDOWN{
 			Grid: grid,
-			Type: kbapi.KbnDashboardPanelDASHBOARDMARKDOWNType("DASHBOARD_MARKDOWN"),
+			Type: kbapi.KbnDashboardPanelDASHBOARDMARKDOWNType(panelTypeDashboardMarkdown),
 		}
 		if typeutils.IsKnown(pm.ID) {
 			p.Uid = new(pm.ID.ValueString())
@@ -514,9 +527,9 @@ func jsonNumberToFloat32(v any) (float32, bool) {
 func normalizePanelType(apiType string) string {
 	switch apiType {
 	case "kbn-dashboard-panel-lens":
-		return "lens"
+		return panelTypeLens
 	case "kbn-dashboard-panel-DASHBOARD_MARKDOWN":
-		return "DASHBOARD_MARKDOWN"
+		return panelTypeDashboardMarkdown
 	default:
 		return apiType
 	}
