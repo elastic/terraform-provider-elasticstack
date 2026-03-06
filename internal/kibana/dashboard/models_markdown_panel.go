@@ -19,6 +19,7 @@ package dashboard
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
@@ -36,7 +37,7 @@ type markdownConfigModel struct {
 
 type markdownPanelConfigConverter struct{}
 
-func (c markdownPanelConfigConverter) handlesAPIPanelConfig(pm *panelModel, panelType string, _ kbapi.DashboardPanelItem_Config) bool {
+func (c markdownPanelConfigConverter) handlesAPIPanelConfig(pm *panelModel, panelType string, _ json.RawMessage) bool {
 	return (pm == nil || pm.MarkdownConfig != nil) && panelType == "DASHBOARD_MARKDOWN"
 }
 
@@ -44,49 +45,63 @@ func (c markdownPanelConfigConverter) handlesTFPanelConfig(pm panelModel) bool {
 	return pm.MarkdownConfig != nil
 }
 
-func (c markdownPanelConfigConverter) populateFromAPIPanel(_ context.Context, pm *panelModel, config kbapi.DashboardPanelItem_Config) diag.Diagnostics {
-	config4, err := config.AsDashboardPanelItemConfig4()
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
+func (c markdownPanelConfigConverter) populateFromAPIPanel(_ context.Context, pm *panelModel, config json.RawMessage) diag.Diagnostics {
+	var cfg kbapi.KbnDashboardPanelDASHBOARDMARKDOWN_Config
+	if len(config) > 0 {
+		if err := cfg.UnmarshalJSON(config); err != nil {
+			return diagutil.FrameworkDiagFromError(err)
+		}
 	}
 
-	config40, err := config4.AsDashboardPanelItemConfig40()
+	config0, err := cfg.AsKbnDashboardPanelDASHBOARDMARKDOWNConfig0()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
 	pm.MarkdownConfig = &markdownConfigModel{
-		Content:     types.StringValue(config40.Content),
-		Description: types.StringPointerValue(config40.Description),
-		HideTitle:   types.BoolPointerValue(config40.HideTitle),
-		Title:       types.StringPointerValue(config40.Title),
+		Content:     types.StringPointerValue(config0.Content),
+		Description: types.StringPointerValue(config0.Description),
+		HideTitle:   types.BoolPointerValue(config0.HideTitle),
+		Title:       types.StringPointerValue(config0.Title),
+	}
+	if pm.MarkdownConfig.Content.IsNull() {
+		pm.MarkdownConfig.Content = types.StringValue("")
 	}
 
 	return nil
 }
 
-func (c markdownPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *kbapi.DashboardPanelItem_Config) diag.Diagnostics {
-	config40 := kbapi.DashboardPanelItemConfig40{
-		Content: pm.MarkdownConfig.Content.ValueString(),
+func (c markdownPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *json.RawMessage) diag.Diagnostics {
+	content := pm.MarkdownConfig.Content.ValueString()
+	config0 := kbapi.KbnDashboardPanelDASHBOARDMARKDOWNConfig0{
+		Content: &content,
 	}
 	if typeutils.IsKnown(pm.MarkdownConfig.Description) {
-		config40.Description = pm.MarkdownConfig.Description.ValueStringPointer()
+		config0.Description = pm.MarkdownConfig.Description.ValueStringPointer()
 	}
 	if typeutils.IsKnown(pm.MarkdownConfig.HideTitle) {
-		config40.HideTitle = pm.MarkdownConfig.HideTitle.ValueBoolPointer()
+		config0.HideTitle = pm.MarkdownConfig.HideTitle.ValueBoolPointer()
 	}
 	if typeutils.IsKnown(pm.MarkdownConfig.Title) {
-		config40.Title = pm.MarkdownConfig.Title.ValueStringPointer()
+		config0.Title = pm.MarkdownConfig.Title.ValueStringPointer()
 	}
 
-	var config4 kbapi.DashboardPanelItemConfig4
-	if err := config4.FromDashboardPanelItemConfig40(config40); err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
+	var cfg kbapi.KbnDashboardPanelDASHBOARDMARKDOWN_Config
 	var diags diag.Diagnostics
-	if err := apiConfig.FromDashboardPanelItemConfig4(config4); err != nil {
+	if err := cfg.FromKbnDashboardPanelDASHBOARDMARKDOWNConfig0(config0); err != nil {
+		diags.AddError("Failed to build markdown panel config", err.Error())
+		return diags
+	}
+
+	raw, err := cfg.MarshalJSON()
+	if err != nil {
 		diags.AddError("Failed to marshal panel config", err.Error())
+		return diags
+	}
+
+	*apiConfig = json.RawMessage(raw)
+	if len(*apiConfig) == 0 {
+		diags.AddError("Failed to marshal panel config", "Generated markdown panel config was empty")
 	}
 
 	return diags

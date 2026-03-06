@@ -93,12 +93,10 @@ func Test_pieChartConfigModel_fromAPI_toAPI_PieNoESQL(t *testing.T) {
 }
 
 func Test_pieChartPanelConfigConverter_roundTrip(t *testing.T) {
-	marshalConfig := func(t *testing.T, cfg kbapi.DashboardPanelItem_Config) map[string]any {
+	marshalConfig := func(t *testing.T, cfg json.RawMessage) map[string]any {
 		t.Helper()
-		b, err := cfg.MarshalJSON()
-		require.NoError(t, err)
 		var m map[string]any
-		require.NoError(t, json.Unmarshal(b, &m))
+		require.NoError(t, json.Unmarshal(cfg, &m))
 		return m
 	}
 
@@ -149,7 +147,7 @@ func Test_pieChartPanelConfigConverter_roundTrip(t *testing.T) {
 			PieChartConfig: configModel,
 		}
 
-		var apiConfig1 kbapi.DashboardPanelItem_Config
+		var apiConfig1 json.RawMessage
 		diags := converter.mapPanelToAPI(panel, &apiConfig1)
 		require.False(t, diags.HasError())
 
@@ -161,7 +159,7 @@ func Test_pieChartPanelConfigConverter_roundTrip(t *testing.T) {
 		assert.Equal(t, "Round Trip Pie (NoESQL)", newPanel.PieChartConfig.Title.ValueString())
 		assert.Equal(t, "response:200", newPanel.PieChartConfig.Query.Query.ValueString())
 
-		var apiConfig2 kbapi.DashboardPanelItem_Config
+		var apiConfig2 json.RawMessage
 		diags = converter.mapPanelToAPI(newPanel, &apiConfig2)
 		require.False(t, diags.HasError())
 
@@ -212,7 +210,7 @@ func Test_pieChartPanelConfigConverter_roundTrip(t *testing.T) {
 			PieChartConfig: configModel,
 		}
 
-		var apiConfig1 kbapi.DashboardPanelItem_Config
+		var apiConfig1 json.RawMessage
 		diags := converter.mapPanelToAPI(panel, &apiConfig1)
 		require.False(t, diags.HasError())
 
@@ -223,7 +221,7 @@ func Test_pieChartPanelConfigConverter_roundTrip(t *testing.T) {
 		assert.Nil(t, newPanel.PieChartConfig.Query)
 		assert.Equal(t, "Round Trip Pie (ESQL)", newPanel.PieChartConfig.Title.ValueString())
 
-		var apiConfig2 kbapi.DashboardPanelItem_Config
+		var apiConfig2 json.RawMessage
 		diags = converter.mapPanelToAPI(newPanel, &apiConfig2)
 		require.False(t, diags.HasError())
 

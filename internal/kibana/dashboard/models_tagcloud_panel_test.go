@@ -341,12 +341,12 @@ func Test_tagcloudPanelConfigConverter_mapPanelToAPI(t *testing.T) {
 		},
 	}
 
-	var apiConfig kbapi.DashboardPanelItem_Config
+	var apiConfig json.RawMessage
 	diags := converter.mapPanelToAPI(panel, &apiConfig)
 	require.False(t, diags.HasError())
 
 	// Verify the config was created
-	configMap, err := apiConfig.AsDashboardPanelItemConfig8()
+	configMap, err := panelConfigMap(apiConfig)
 	require.NoError(t, err)
 
 	// Verify the attributes exist

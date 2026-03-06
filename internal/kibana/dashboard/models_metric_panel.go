@@ -47,9 +47,9 @@ func (c metricChartPanelConfigConverter) handlesTFPanelConfig(pm panelModel) boo
 	return pm.MetricChartConfig != nil
 }
 
-func (c metricChartPanelConfigConverter) populateFromAPIPanel(ctx context.Context, pm *panelModel, config kbapi.DashboardPanelItem_Config) diag.Diagnostics {
+func (c metricChartPanelConfigConverter) populateFromAPIPanel(ctx context.Context, pm *panelModel, config json.RawMessage) diag.Diagnostics {
 	// Try to extract the metric chart config from the panel config
-	cfgMap, err := config.AsDashboardPanelItemConfig8()
+	cfgMap, err := panelConfigMap(config)
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -101,7 +101,7 @@ func (c metricChartPanelConfigConverter) populateFromAPIPanel(ctx context.Contex
 	return pm.MetricChartConfig.fromAPIVariant1(ctx, variant1)
 }
 
-func (c metricChartPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *kbapi.DashboardPanelItem_Config) diag.Diagnostics {
+func (c metricChartPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *json.RawMessage) diag.Diagnostics {
 	var diags diag.Diagnostics
 	configModel := *pm.MetricChartConfig
 
@@ -113,32 +113,18 @@ func (c metricChartPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig 
 	}
 
 	// Create the nested Config1 structure
-	var attrs0 kbapi.DashboardPanelItemConfig70Attributes0
+	var attrs0 kbapi.KbnDashboardPanelLensConfig0Attributes0
 	if err := attrs0.FromMetricChart(metricChart); err != nil {
 		diags.AddError("Failed to create metric chart attributes", err.Error())
 		return diags
 	}
 
-	var configAttrs kbapi.DashboardPanelItem_Config_7_0_Attributes
-	if err := configAttrs.FromDashboardPanelItemConfig70Attributes0(attrs0); err != nil {
-		diags.AddError("Failed to create config attributes", err.Error())
-		return diags
-	}
-
-	config10 := kbapi.DashboardPanelItemConfig70{
-		Attributes: configAttrs,
-	}
-
-	var config1 kbapi.DashboardPanelItemConfig7
-	if err := config1.FromDashboardPanelItemConfig70(config10); err != nil {
-		diags.AddError("Failed to create config1", err.Error())
-		return diags
-	}
-
-	if err := apiConfig.FromDashboardPanelItemConfig7(config1); err != nil {
+	rawConfig, err := panelConfigRawFromLensAttributes(attrs0)
+	if err != nil {
 		diags.AddError("Failed to marshal metric chart config", err.Error())
 		return diags
 	}
+	*apiConfig = rawConfig
 
 	return diags
 }

@@ -191,7 +191,7 @@ func Test_gaugePanelConfigConverter_roundTrip(t *testing.T) {
 		},
 	}
 
-	var apiConfig kbapi.DashboardPanelItem_Config
+	var apiConfig json.RawMessage
 	diags := converter.mapPanelToAPI(panel, &apiConfig)
 	require.False(t, diags.HasError())
 

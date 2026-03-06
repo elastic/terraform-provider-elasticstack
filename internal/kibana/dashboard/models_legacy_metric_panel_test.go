@@ -172,17 +172,17 @@ func Test_legacyMetricConfigModel_toAPI_requiresQueryForNoESQL(t *testing.T) {
 }
 
 func Test_legacyMetricPanelConfigConverter_handlesAPIPanelConfig(t *testing.T) {
-	buildConfig := func(t *testing.T, configMap map[string]any) kbapi.DashboardPanelItem_Config {
+	buildConfig := func(t *testing.T, configMap map[string]any) json.RawMessage {
 		t.Helper()
-		var cfg kbapi.DashboardPanelItem_Config
-		require.NoError(t, cfg.FromDashboardPanelItemConfig8(configMap))
+		cfg, err := panelConfigRawFromMap(configMap)
+		require.NoError(t, err)
 		return cfg
 	}
 
 	tests := []struct {
 		name      string
 		panelType string
-		config    kbapi.DashboardPanelItem_Config
+		config    json.RawMessage
 		want      bool
 	}{
 		{
@@ -241,7 +241,7 @@ func Test_legacyMetricPanelConfigConverter_handlesAPIPanelConfig(t *testing.T) {
 		{
 			name:      "does not handle invalid config union",
 			panelType: "lens",
-			config:    kbapi.DashboardPanelItem_Config{},
+			config:    json.RawMessage{},
 			want:      false,
 		},
 	}
@@ -270,8 +270,8 @@ func Test_legacyMetricPanelConfigConverter_roundTrip(t *testing.T) {
 		"filters":               []any{map[string]any{"query": "status:200", "language": "kuery"}},
 	}
 	configMap := map[string]any{"attributes": attrs}
-	var apiConfig1 kbapi.DashboardPanelItem_Config
-	require.NoError(t, apiConfig1.FromDashboardPanelItemConfig8(configMap))
+	apiConfig1, err := panelConfigRawFromMap(configMap)
+	require.NoError(t, err)
 
 	c := newLegacyMetricPanelConfigConverter()
 
@@ -282,7 +282,7 @@ func Test_legacyMetricPanelConfigConverter_roundTrip(t *testing.T) {
 	require.NotNil(t, pm1.LegacyMetricConfig)
 
 	// model → API (mapPanelToAPI)
-	var apiConfig2 kbapi.DashboardPanelItem_Config
+	var apiConfig2 json.RawMessage
 	diags = c.mapPanelToAPI(*pm1, &apiConfig2)
 	require.False(t, diags.HasError())
 

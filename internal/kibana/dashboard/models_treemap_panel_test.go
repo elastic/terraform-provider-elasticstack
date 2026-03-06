@@ -150,7 +150,7 @@ func Test_treemapPanelConfigConverter_roundTrip_populateFromAPIPanel_mapPanelToA
 	require.False(t, pm.TreemapConfig.Filters[0].MetaJSON.IsNull())
 	assert.Equal(t, normalizeAny(t, attrs["filters"].([]any)[0].(map[string]any)["meta"]), normalizeAny(t, mustUnmarshalJSON(t, pm.TreemapConfig.Filters[0].MetaJSON.ValueString())))
 
-	var roundTripConfig kbapi.DashboardPanelItem_Config
+	var roundTripConfig json.RawMessage
 	diags = converter.mapPanelToAPI(pm, &roundTripConfig)
 	require.False(t, diags.HasError())
 
@@ -264,7 +264,7 @@ func Test_treemapPanelConfigConverter_roundTrip_populateFromAPIPanel_mapPanelToA
 	require.False(t, pm.TreemapConfig.Filters[0].MetaJSON.IsNull())
 	assert.Equal(t, normalizeAny(t, attrs["filters"].([]any)[0].(map[string]any)["meta"]), normalizeAny(t, mustUnmarshalJSON(t, pm.TreemapConfig.Filters[0].MetaJSON.ValueString())))
 
-	var roundTripConfig kbapi.DashboardPanelItem_Config
+	var roundTripConfig json.RawMessage
 	diags = converter.mapPanelToAPI(pm, &roundTripConfig)
 	require.False(t, diags.HasError())
 
@@ -272,29 +272,22 @@ func Test_treemapPanelConfigConverter_roundTrip_populateFromAPIPanel_mapPanelToA
 	assert.Equal(t, normalizeAny(t, attrs), normalizeAny(t, roundTripAttrs))
 }
 
-func dashboardPanelItemConfigFromAttributes(t *testing.T, attributes map[string]any) kbapi.DashboardPanelItem_Config {
+func dashboardPanelItemConfigFromAttributes(t *testing.T, attributes map[string]any) json.RawMessage {
 	t.Helper()
 
 	configMap := map[string]any{
 		"attributes": attributes,
 	}
 
-	// The generated kbapi unions can be picky about the exact shape; populate the union
-	// via the From* helper then also JSON-roundtrip the map into the union for parity
-	// with the other panel converter tests in this package.
 	configJSON, err := json.Marshal(configMap)
 	require.NoError(t, err)
-
-	var config kbapi.DashboardPanelItem_Config
-	require.NoError(t, config.FromDashboardPanelItemConfig8(configMap))
-	require.NoError(t, json.Unmarshal(configJSON, &config))
-	return config
+	return configJSON
 }
 
-func dashboardPanelItemAttributes(t *testing.T, config kbapi.DashboardPanelItem_Config) map[string]any {
+func dashboardPanelItemAttributes(t *testing.T, config json.RawMessage) map[string]any {
 	t.Helper()
 
-	cfgMap, err := config.AsDashboardPanelItemConfig8()
+	cfgMap, err := panelConfigMap(config)
 	require.NoError(t, err)
 	attrs, ok := cfgMap["attributes"].(map[string]any)
 	require.True(t, ok)
