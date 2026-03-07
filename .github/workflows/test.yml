@@ -55,6 +55,9 @@ jobs:
   test:
     name: Matrix Acceptance Test
     needs: build
+    permissions:
+      contents: read
+      issues: write
     runs-on: ${{ matrix.runner == 'ubuntu-22.04' && 'ubuntu-22.04' || 'ubuntu-latest' }}
     env:
       ELASTIC_PASSWORD: password
@@ -173,7 +176,9 @@ jobs:
           for i in {1..5}; do curl -s -H "Authorization: ApiKey ${{ steps.get-api-key.outputs.apikey }}" --header "Content-Type: application/json" --header "kbn-xsrf: true" --request POST --data '{ "force": true }' http://localhost:5601/api/fleet/epm/packages/synthetics/1.2.2 && break || sleep 15; done
 
       - name: TF acceptance tests
+        id: tf-acceptance
         timeout-minutes: 30
+        continue-on-error: ${{ endsWith(matrix.version, '-SNAPSHOT') }}
         run: make testacc
         env:
           TF_ACC: "1"
@@ -185,8 +190,50 @@ jobs:
           KIBANA_USERNAME: "elastic"
           KIBANA_PASSWORD: ${{ env.ELASTIC_PASSWORD }}
 
+      - name: Warn PR for snapshot acceptance failure
+        if: steps.tf-acceptance.outcome == 'failure' && endsWith(matrix.version, '-SNAPSHOT') && github.event_name == 'pull_request'
+        continue-on-error: true
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          script: |
+            const marker = '<!-- tf-acceptance-snapshot-warning:${{ matrix.version }} -->';
+            const body = [
+              marker,
+              ':warning: Terraform acceptance tests failed for snapshot stack version `${{ matrix.version }}`.',
+              'This failure is non-blocking because snapshot builds are allowed to fail.',
+              '',
+              `Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+            ].join('\n');
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              per_page: 100,
+            });
+
+            const existingComment = comments.find((comment) =>
+              comment.user?.type === 'Bot' && comment.body?.includes(marker)
+            );
+
+            if (existingComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existingComment.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                body,
+              });
+            }
+
       - name: Docker compose logs
-        if: failure()
+        if: failure() || steps.tf-acceptance.outcome == 'failure'
         run: docker compose logs --no-color
         env:
           STACK_VERSION: ${{ matrix.version }}
