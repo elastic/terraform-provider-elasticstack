@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -155,12 +156,6 @@ func TestAccDataSourceEnrichPolicyGeoMatch(t *testing.T) {
 				Config: testAccEnrichPolicyDataSourceGeoMatchFW(name),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_enrich_policy.test", "id"),
-					resource.TestCheckResourceAttrWith("data.elasticstack_elasticsearch_enrich_policy.test", "id", func(value string) error {
-						if value == "" {
-							return fmt.Errorf("expected id to be non-empty")
-						}
-						return nil
-					}),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "name", name),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "policy_type", "geo_match"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "match_field", "location"),
@@ -185,12 +180,6 @@ func TestAccDataSourceEnrichPolicyRange(t *testing.T) {
 				Config: testAccEnrichPolicyDataSourceRangeFW(name),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_enrich_policy.test", "id"),
-					resource.TestCheckResourceAttrWith("data.elasticstack_elasticsearch_enrich_policy.test", "id", func(value string) error {
-						if value == "" {
-							return fmt.Errorf("expected id to be non-empty")
-						}
-						return nil
-					}),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "name", name),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "policy_type", "range"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "match_field", "ip_range"),
@@ -618,18 +607,29 @@ data "elasticstack_elasticsearch_enrich_policy" "test" {
 // buildESConnectionBlock returns the inner attributes for an elasticsearch_connection block
 // using environment variables available in the acceptance test environment.
 func buildESConnectionBlock() string {
-	endpoints := os.Getenv("ELASTICSEARCH_ENDPOINTS")
+	rawEndpoints := os.Getenv("ELASTICSEARCH_ENDPOINTS")
 	apiKey := os.Getenv("ELASTICSEARCH_API_KEY")
 	username := os.Getenv("ELASTICSEARCH_USERNAME")
 	password := os.Getenv("ELASTICSEARCH_PASSWORD")
 
-	if apiKey != "" {
-		return fmt.Sprintf(`endpoints = ["%s"]
-    api_key   = "%s"`, endpoints, apiKey)
+	// Split and quote each endpoint to produce a valid HCL list.
+	parts := strings.Split(rawEndpoints, ",")
+	quoted := make([]string, 0, len(parts))
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p != "" {
+			quoted = append(quoted, fmt.Sprintf("%q", p))
+		}
 	}
-	return fmt.Sprintf(`endpoints = ["%s"]
+	endpointList := strings.Join(quoted, ", ")
+
+	if apiKey != "" {
+		return fmt.Sprintf(`endpoints = [%s]
+    api_key   = "%s"`, endpointList, apiKey)
+	}
+	return fmt.Sprintf(`endpoints = [%s]
     username  = "%s"
-    password  = "%s"`, endpoints, username, password)
+    password  = "%s"`, endpointList, username, password)
 }
 
 func testAccEnrichPolicyDataSourceTermQuery(name string) string {
