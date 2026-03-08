@@ -148,9 +148,13 @@ install: build ## Install built provider into the local terraform cache
 tools: $(GOBIN)  ## Download golangci-lint locally if necessary.
 	@[[ -f $(GOBIN)/golangci-lint ]] || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOBIN) v2.11.4
 
+.PHONY: golangci-lint-custom
+golangci-lint-custom: tools
+	@ [[ -f $(GOBIN)/golangci-lint-custom ]] || $(GOBIN)/golangci-lint custom
+
 .PHONY: golangci-lint
-golangci-lint:
-	@ $(GOBIN)/golangci-lint run --max-same-issues=0 $(GOLANGCIFLAGS) ./internal/...
+golangci-lint: golangci-lint-custom
+	@ $(GOBIN)/golangci-lint-custom run --max-same-issues=0 $(GOLANGCIFLAGS) ./internal/...
 
 .PHONY: lint
 lint: GOLANGCIFLAGS += --fix
