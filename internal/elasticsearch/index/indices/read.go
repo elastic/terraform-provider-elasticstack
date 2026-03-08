@@ -20,9 +20,9 @@ package indices
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -30,16 +30,21 @@ import (
 func (d *dataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	var stateModel tfModel
 
-	// Resolve target attribute
-	var target string
-	diags := req.Config.GetAttribute(ctx, path.Root("target"), &target)
+	diags := req.Config.Get(ctx, &stateModel)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	target := stateModel.Target.ValueString()
+
+	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, stateModel.ElasticsearchConnection, &d.client)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	// Call client API
-	indexAPIModels, diags := elasticsearch.GetIndices(ctx, &d.client, target)
+	indexAPIModels, diags := elasticsearch.GetIndices(ctx, client, target)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -66,6 +71,7 @@ func (d *dataSource) Read(ctx context.Context, req datasource.ReadRequest, resp 
 	}
 
 	stateModel.ID = types.StringValue(target)
+	stateModel.Target = types.StringValue(target)
 	stateModel.Indices = indicesList
 
 	// Set state
