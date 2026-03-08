@@ -30,9 +30,10 @@ import (
 
 // tfModel represents the Terraform state model for this resource.
 type tfModel struct {
-	ID            types.String `tfsdk:"id"`
-	IndexTemplate types.String `tfsdk:"index_template"`
-	LifecycleName types.String `tfsdk:"lifecycle_name"`
+	ID                      types.String `tfsdk:"id"`
+	IndexTemplate           types.String `tfsdk:"index_template"`
+	LifecycleName           types.String `tfsdk:"lifecycle_name"`
+	ElasticsearchConnection types.List   `tfsdk:"elasticsearch_connection"`
 }
 
 // getComponentTemplateName returns the name of the @custom component template.
