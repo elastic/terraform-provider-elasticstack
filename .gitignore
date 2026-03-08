@@ -37,7 +37,7 @@ website/vendor
 # Keep windows files with windows line endings
 *.winfile eol=crlf
 
-terraform-provider-elasticstack
+./terraform-provider-elasticstack
 dist
 certs
 .ci/.gpg_*
