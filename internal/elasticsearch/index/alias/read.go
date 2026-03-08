@@ -37,9 +37,14 @@ func (r *aliasResource) Read(ctx context.Context, req resource.ReadRequest, resp
 	}
 
 	aliasName := stateModel.Name.ValueString()
+	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, stateModel.ElasticsearchConnection, r.client)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	// Read the alias and update the model
-	diags := readAliasIntoModel(ctx, r.client, aliasName, &stateModel)
+	diags = readAliasIntoModel(ctx, client, aliasName, &stateModel)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
