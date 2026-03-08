@@ -174,4 +174,3 @@ func isCoveredElasticsearchEntity(entityKind, entityName string) bool {
 	}
 	return true
 }
-

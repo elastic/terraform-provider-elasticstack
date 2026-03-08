@@ -21,12 +21,34 @@ Manages an Elasticsearch alias. See the [alias documentation](https://www.elasti
 
 ### Optional
 
+- `elasticsearch_connection` (Block List, Deprecated) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - `read_indices` (Attributes Set) Set of read indices for the alias. (see [below for nested schema](#nestedatt--read_indices))
 - `write_index` (Attributes) The write index for the alias. Only one write index is allowed per alias. (see [below for nested schema](#nestedatt--write_index))
 
 ### Read-Only
 
 - `id` (String) Generated ID of the alias resource.
+
+<a id="nestedblock--elasticsearch_connection"></a>
+### Nested Schema for `elasticsearch_connection`
+
+Optional:
+
+- `api_key` (String, Sensitive) API Key to use for authentication to Elasticsearch
+- `bearer_token` (String, Sensitive) Bearer Token to use for authentication to Elasticsearch
+- `ca_data` (String) PEM-encoded custom Certificate Authority certificate
+- `ca_file` (String) Path to a custom Certificate Authority certificate
+- `cert_data` (String) PEM encoded certificate for client auth
+- `cert_file` (String) Path to a file containing the PEM encoded certificate for client auth
+- `endpoints` (List of String, Sensitive) A list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
+- `es_client_authentication` (String, Sensitive) ES Client Authentication field to be used with the JWT token
+- `headers` (Map of String, Sensitive) A list of headers to be sent with each request to Elasticsearch.
+- `insecure` (Boolean) Disable TLS certificate validation
+- `key_data` (String, Sensitive) PEM encoded private key for client auth
+- `key_file` (String) Path to a file containing the PEM encoded private key for client auth
+- `password` (String, Sensitive) Password to use for API authentication to Elasticsearch.
+- `username` (String) Username to use for API authentication to Elasticsearch.
+
 
 <a id="nestedatt--read_indices"></a>
 ### Nested Schema for `read_indices`
