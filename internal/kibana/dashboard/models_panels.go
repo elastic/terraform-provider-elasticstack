@@ -19,6 +19,7 @@ package dashboard
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
@@ -203,15 +204,22 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 	}
 
 	var diags diag.Diagnostics
-	for _, converter := range panelConfigConverters {
-		if converter.handlesAPIPanelConfig(tfPanel, panelItem.Type, panelItem.Config) {
-			d := converter.populateFromAPIPanel(ctx, &pm, panelItem.Config)
-			diags.Append(d...)
-			if diags.HasError() {
-				return panelModel{}, diags
-			}
 
-			break
+	// Only populate typed config attributes (xy_chart_config, datatable_config, etc.)
+	// when the user did NOT use config_json. If the user used config_json, the typed
+	// attributes should remain null to avoid "inconsistent result after apply" errors.
+	usedConfigJSON := tfPanel != nil && typeutils.IsKnown(tfPanel.ConfigJSON)
+	if !usedConfigJSON {
+		for _, converter := range panelConfigConverters {
+			if converter.handlesAPIPanelConfig(tfPanel, panelItem.Type, panelItem.Config) {
+				d := converter.populateFromAPIPanel(ctx, &pm, panelItem.Config)
+				diags.Append(d...)
+				if diags.HasError() {
+					return panelModel{}, diags
+				}
+
+				break
+			}
 		}
 	}
 
@@ -219,6 +227,17 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 	if err != nil {
 		diags = append(diags, diagutil.FrameworkDiagFromError(err)...)
 		return panelModel{}, diags
+	}
+
+	// When the user provided config_json, strip any server-injected keys from
+	// the API response so that Terraform doesn't see them as inconsistencies.
+	if usedConfigJSON {
+		priorJSON := tfPanel.ConfigJSON.ValueString()
+		stripped, stripErr := stripServerInjectedKeys(priorJSON, string(configBytes))
+		if stripErr == nil {
+			configBytes = []byte(stripped)
+		}
+		// On error, fall through and use the raw API response
 	}
 
 	pm.ConfigJSON = jsontypes.NewNormalizedValue(string(configBytes))
@@ -347,4 +366,66 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 	}
 
 	return panelItem, diags
+}
+
+// stripServerInjectedKeys removes keys from the API response JSON that were
+// not present in the user's original config_json. This prevents Terraform from
+// seeing server-injected defaults (e.g. show_array_values, alignment) as
+// inconsistencies after apply.
+//
+// It recursively walks the JSON structure and keeps only keys that exist in
+// the prior config. Values from the API response are preserved (to pick up
+// any server-side normalization of existing values).
+func stripServerInjectedKeys(priorJSON, apiJSON string) (string, error) {
+	var prior, api interface{}
+	if err := json.Unmarshal([]byte(priorJSON), &prior); err != nil {
+		return "", err
+	}
+	if err := json.Unmarshal([]byte(apiJSON), &api); err != nil {
+		return "", err
+	}
+
+	result := stripKeys(prior, api)
+	out, err := json.Marshal(result)
+	if err != nil {
+		return "", err
+	}
+	return string(out), nil
+}
+
+// stripKeys recursively keeps only the keys from api that exist in prior.
+// For arrays, it processes elements pairwise.
+func stripKeys(prior, api interface{}) interface{} {
+	priorMap, priorIsMap := prior.(map[string]interface{})
+	apiMap, apiIsMap := api.(map[string]interface{})
+	if priorIsMap && apiIsMap {
+		result := make(map[string]interface{})
+		for key, priorVal := range priorMap {
+			if apiVal, ok := apiMap[key]; ok {
+				result[key] = stripKeys(priorVal, apiVal)
+			} else {
+				// Key was in prior but not in API response — keep the prior value
+				result[key] = priorVal
+			}
+		}
+		return result
+	}
+
+	priorArr, priorIsArr := prior.([]interface{})
+	apiArr, apiIsArr := api.([]interface{})
+	if priorIsArr && apiIsArr {
+		result := make([]interface{}, len(apiArr))
+		for i, apiElem := range apiArr {
+			if i < len(priorArr) {
+				result[i] = stripKeys(priorArr[i], apiElem)
+			} else {
+				// API returned more elements than prior — keep them as-is
+				result[i] = apiElem
+			}
+		}
+		return result
+	}
+
+	// For scalar values, use the API response value
+	return api
 }

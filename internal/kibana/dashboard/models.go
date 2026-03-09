@@ -69,6 +69,9 @@ func (m *dashboardModel) populateFromAPI(ctx context.Context, resp *kbapi.GetDas
 
 	if data.Data.Description != nil {
 		m.Description = types.StringValue(*data.Data.Description)
+	} else if typeutils.IsKnown(m.Description) {
+		// Kibana returns null for description but the user set it (e.g. "").
+		// Preserve the prior value to avoid inconsistent result after apply.
 	} else {
 		m.Description = types.StringNull()
 	}
