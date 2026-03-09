@@ -45,6 +45,7 @@ type panelModel struct {
 	RegionMapConfig    *regionMapConfigModel    `tfsdk:"region_map_config"`
 	HeatmapConfig      *heatmapConfigModel      `tfsdk:"heatmap_config"`
 	ConfigJSON         jsontypes.Normalized     `tfsdk:"config_json"`
+	ConfigText         types.String             `tfsdk:"config_text"`
 }
 
 type panelGridModel struct {
@@ -205,10 +206,20 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 
 	var diags diag.Diagnostics
 
+	usedConfigJSON := tfPanel != nil && typeutils.IsKnown(tfPanel.ConfigJSON)
+	usedConfigText := tfPanel != nil && typeutils.IsKnown(tfPanel.ConfigText)
+
+	// When config_text is used, preserve the user's original value exactly.
+	// Don't populate typed attrs, don't update from API response.
+	if usedConfigText {
+		pm.ConfigText = tfPanel.ConfigText
+		pm.ConfigJSON = jsontypes.NewNormalizedNull()
+		return pm, diags
+	}
+
 	// Only populate typed config attributes (xy_chart_config, datatable_config, etc.)
 	// when the user did NOT use config_json. If the user used config_json, the typed
 	// attributes should remain null to avoid "inconsistent result after apply" errors.
-	usedConfigJSON := tfPanel != nil && typeutils.IsKnown(tfPanel.ConfigJSON)
 	if !usedConfigJSON {
 		for _, converter := range panelConfigConverters {
 			if converter.handlesAPIPanelConfig(tfPanel, panelItem.Type, panelItem.Config) {
@@ -361,6 +372,18 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 		if !diags.HasError() {
 			if err := panelItem.Config.FromDashboardPanelItemConfig8(configMap); err != nil {
 				diags.AddError("Failed to marshal panel config JSON", err.Error())
+			}
+		}
+		panelConfigHandled = true
+	}
+
+	if !panelConfigHandled && typeutils.IsKnown(pm.ConfigText) {
+		var configMap map[string]any
+		if err := json.Unmarshal([]byte(pm.ConfigText.ValueString()), &configMap); err != nil {
+			diags.AddError("Failed to parse config_text as JSON", err.Error())
+		} else {
+			if err := panelItem.Config.FromDashboardPanelItemConfig8(configMap); err != nil {
+				diags.AddError("Failed to marshal panel config text", err.Error())
 			}
 		}
 	}
