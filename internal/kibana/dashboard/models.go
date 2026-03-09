@@ -67,14 +67,15 @@ func (m *dashboardModel) populateFromAPI(ctx context.Context, resp *kbapi.GetDas
 	// Map the dashboard data fields
 	m.Title = types.StringValue(data.Data.Title)
 
-	if data.Data.Description != nil {
+	switch {
+	case data.Data.Description != nil:
 		m.Description = types.StringValue(*data.Data.Description)
-	} else if typeutils.IsKnown(m.Description) {
+	case !typeutils.IsKnown(m.Description):
 		// Kibana returns null for description but the user set it (e.g. "").
 		// Preserve the prior value to avoid inconsistent result after apply.
-	} else {
 		m.Description = types.StringNull()
 	}
+	// else: typeutils.IsKnown(m.Description) is true, keep prior value
 
 	// Map time range
 	m.TimeFrom = types.StringValue(data.Data.TimeRange.From)

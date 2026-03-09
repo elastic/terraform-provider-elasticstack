@@ -746,10 +746,11 @@ func getPanelSchema() schema.NestedAttributeObject {
 				},
 			},
 			"config_json": schema.StringAttribute{
-				MarkdownDescription: panelConfigDescription("The configuration of the panel as a JSON string. Uses semantic JSON comparison (key order doesn't matter). See also `config_text` for literal string comparison.", "config_json", panelConfigNames),
-				CustomType:          jsontypes.NormalizedType{},
-				Optional:            true,
-				Computed:            true,
+				MarkdownDescription: panelConfigDescription("The configuration of the panel as a JSON string. Uses semantic "+
+					"JSON comparison (key order doesn't matter). See also `config_text` for literal string comparison.", "config_json", panelConfigNames),
+				CustomType: jsontypes.NormalizedType{},
+				Optional:   true,
+				Computed:   true,
 				Validators: []validator.String{
 					stringvalidator.ConflictsWith(
 						siblingPanelConfigPathsExcept("config_json", panelConfigNames)...,
@@ -757,8 +758,10 @@ func getPanelSchema() schema.NestedAttributeObject {
 				},
 			},
 			"config_text": schema.StringAttribute{
-				MarkdownDescription: panelConfigDescription("The configuration of the panel as a JSON string with literal string comparison. Unlike `config_json`, the value is preserved exactly as provided and never updated from the server response, avoiding drift from server-injected defaults.", "config_text", panelConfigNames),
-				Optional:            true,
+				MarkdownDescription: panelConfigDescription("The configuration of the panel as a JSON string with literal "+
+					"string comparison. Unlike `config_json`, the value is preserved exactly as provided and never updated "+
+					"from the server response, avoiding drift from server-injected defaults.", "config_text", panelConfigNames),
+				Optional: true,
 				Validators: []validator.String{
 					stringvalidator.ConflictsWith(
 						siblingPanelConfigPathsExcept("config_text", panelConfigNames)...,

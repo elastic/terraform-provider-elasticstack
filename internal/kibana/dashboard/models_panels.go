@@ -400,7 +400,7 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 // the prior config. Values from the API response are preserved (to pick up
 // any server-side normalization of existing values).
 func stripServerInjectedKeys(priorJSON, apiJSON string) (string, error) {
-	var prior, api interface{}
+	var prior, api any
 	if err := json.Unmarshal([]byte(priorJSON), &prior); err != nil {
 		return "", err
 	}
@@ -418,11 +418,11 @@ func stripServerInjectedKeys(priorJSON, apiJSON string) (string, error) {
 
 // stripKeys recursively keeps only the keys from api that exist in prior.
 // For arrays, it processes elements pairwise.
-func stripKeys(prior, api interface{}) interface{} {
-	priorMap, priorIsMap := prior.(map[string]interface{})
-	apiMap, apiIsMap := api.(map[string]interface{})
+func stripKeys(prior, api any) any {
+	priorMap, priorIsMap := prior.(map[string]any)
+	apiMap, apiIsMap := api.(map[string]any)
 	if priorIsMap && apiIsMap {
-		result := make(map[string]interface{})
+		result := make(map[string]any)
 		for key, priorVal := range priorMap {
 			if apiVal, ok := apiMap[key]; ok {
 				result[key] = stripKeys(priorVal, apiVal)
@@ -434,10 +434,10 @@ func stripKeys(prior, api interface{}) interface{} {
 		return result
 	}
 
-	priorArr, priorIsArr := prior.([]interface{})
-	apiArr, apiIsArr := api.([]interface{})
+	priorArr, priorIsArr := prior.([]any)
+	apiArr, apiIsArr := api.([]any)
 	if priorIsArr && apiIsArr {
-		result := make([]interface{}, len(apiArr))
+		result := make([]any, len(apiArr))
 		for i, apiElem := range apiArr {
 			if i < len(priorArr) {
 				result[i] = stripKeys(priorArr[i], apiElem)
