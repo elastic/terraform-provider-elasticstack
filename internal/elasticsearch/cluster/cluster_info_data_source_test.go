@@ -18,6 +18,7 @@
 package cluster_test
 
 import (
+	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -30,7 +31,7 @@ func TestAccDataSourceClusterInfo(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceSecurityUser,
+				Config: testAccDataSourceClusterInfoConfig,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test", "tagline", "You Know, for Search"),
 				),
@@ -39,7 +40,116 @@ func TestAccDataSourceClusterInfo(t *testing.T) {
 	})
 }
 
-const testAccDataSourceSecurityUser = `
+// TestAccDataSourceClusterInfo_topLevelAttributes verifies that the top-level
+// metadata attributes (cluster_uuid, cluster_name, name) are populated and
+// that the resource id is set to cluster_uuid.
+func TestAccDataSourceClusterInfo_topLevelAttributes(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccDataSourceClusterInfoConfig,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_info.test", "id"),
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_info.test", "cluster_uuid"),
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_info.test", "cluster_name"),
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_info.test", "name"),
+					// id must equal cluster_uuid
+					resource.TestCheckResourceAttrPair(
+						"data.elasticstack_elasticsearch_info.test", "id",
+						"data.elasticstack_elasticsearch_info.test", "cluster_uuid",
+					),
+				),
+			},
+		},
+	})
+}
+
+// TestAccDataSourceClusterInfo_versionBlock verifies that the version block is
+// present (exactly one element) and that all nested fields are populated.
+func TestAccDataSourceClusterInfo_versionBlock(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccDataSourceClusterInfoConfig,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test", "version.#", "1"),
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_info.test", "version.0.number"),
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_info.test", "version.0.build_date"),
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_info.test", "version.0.build_flavor"),
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_info.test", "version.0.build_hash"),
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_info.test", "version.0.build_type"),
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_info.test", "version.0.lucene_version"),
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_info.test", "version.0.minimum_index_compatibility_version"),
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_info.test", "version.0.minimum_wire_compatibility_version"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccDataSourceClusterInfo_versionFieldFormats verifies that key version
+// fields match expected formats: semantic version numbers for number and
+// compatibility fields, and a boolean string for build_snapshot.
+func TestAccDataSourceClusterInfo_versionFieldFormats(t *testing.T) {
+	semverRe := regexp.MustCompile(`^\d+\.\d+\.\d+`)
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccDataSourceClusterInfoConfig,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestMatchResourceAttr("data.elasticstack_elasticsearch_info.test", "version.0.number", semverRe),
+					resource.TestMatchResourceAttr("data.elasticstack_elasticsearch_info.test", "version.0.minimum_index_compatibility_version", semverRe),
+					resource.TestMatchResourceAttr("data.elasticstack_elasticsearch_info.test", "version.0.minimum_wire_compatibility_version", semverRe),
+					// build_snapshot is a bool; Terraform encodes it as "true" or "false"
+					resource.TestMatchResourceAttr("data.elasticstack_elasticsearch_info.test", "version.0.build_snapshot", regexp.MustCompile(`^(true|false)$`)),
+				),
+			},
+		},
+	})
+}
+
+// TestAccDataSourceClusterInfo_refreshStability verifies that a second plan
+// step (with no configuration changes) returns consistent, non-empty values
+// for the key identity and version attributes.
+func TestAccDataSourceClusterInfo_refreshStability(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccDataSourceClusterInfoConfig,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_info.test", "id"),
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_info.test", "cluster_uuid"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test", "version.#", "1"),
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_info.test", "version.0.number"),
+				),
+			},
+			// Second step with identical config: attributes must remain populated.
+			{
+				Config: testAccDataSourceClusterInfoConfig,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_info.test", "id"),
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_info.test", "cluster_uuid"),
+					resource.TestCheckResourceAttrPair(
+						"data.elasticstack_elasticsearch_info.test", "id",
+						"data.elasticstack_elasticsearch_info.test", "cluster_uuid",
+					),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test", "version.#", "1"),
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_info.test", "version.0.number"),
+				),
+			},
+		},
+	})
+}
+
+const testAccDataSourceClusterInfoConfig = `
 provider "elasticstack" {
   elasticsearch {}
 }
