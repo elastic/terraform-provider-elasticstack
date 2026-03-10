@@ -56,19 +56,22 @@ data "elasticstack_elasticsearch_indices" "security_indices" {
 }
 `
 
-// TestAccIndicesDataSource_Target_DefaultAndExplicitAll validates that the two
-// "match everything" wildcard forms — "*" and "_all" — both return a non-empty
-// result with a populated id.
-//
-// NOTE: Omitting the target attribute entirely is not tested here because the
-// provider currently fails with a "Value Conversion Error" when target is null
-// (the Read method reads the attribute as a plain string instead of types.String).
-// That is a known provider bug.
+// TestAccIndicesDataSource_Target_DefaultAndExplicitAll validates that all three
+// "match everything" forms — omitted target, "*", and "_all" — each return a
+// non-empty result with a populated id.
 func TestAccIndicesDataSource_Target_DefaultAndExplicitAll(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
+			{
+				// Omitted target — defaults to "*" (all indices).
+				Config: testAccIndicesDataSourceConfigNoTarget,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_indices.all_default", "id"),
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_indices.all_default", "indices.#"),
+				),
+			},
 			{
 				// Explicit "*" wildcard — should return all non-hidden indices.
 				Config: testAccIndicesDataSourceConfigStar,
@@ -88,6 +91,15 @@ func TestAccIndicesDataSource_Target_DefaultAndExplicitAll(t *testing.T) {
 		},
 	})
 }
+
+const testAccIndicesDataSourceConfigNoTarget = `
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+data "elasticstack_elasticsearch_indices" "all_default" {
+}
+`
 
 const testAccIndicesDataSourceConfigStar = `
 provider "elasticstack" {
@@ -288,10 +300,11 @@ data "elasticstack_elasticsearch_indices" "test" {
 // explicit mappings and a custom analysis configuration. It verifies that the data
 // source surfaces the computed mappings and settings_raw fields.
 //
-// NOTE: analysis_analyzer and analysis_filter are intentionally NOT asserted here
-// because the provider currently does not populate those fields from the API response
-// (setSettingsFromAPI only iterates over static/dynamic settings keys, not analysis
-// settings). That is a known provider bug.
+// Note: analysis_analyzer and analysis_filter are not asserted here because the data
+// source does not currently populate those fields from the Elasticsearch API response
+// (setSettingsFromAPI iterates over static/dynamic settings keys only; analysis settings
+// live under a separate index.analysis.* key namespace). The index resource still stores
+// the analysis configuration, which is visible via the settings_raw field.
 func TestAccIndicesDataSource_ReadsMappingsAnalysisAndSettingsRaw(t *testing.T) {
 	indexName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlpha)
 
