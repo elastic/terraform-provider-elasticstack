@@ -261,7 +261,7 @@ func TestAccIndicesDataSource_ReadsAliasNestedFields(t *testing.T) {
 						"data.elasticstack_elasticsearch_indices.test",
 						"indices.0.alias.*",
 						map[string]string{
-							"name":          aliasName,
+							"name":           aliasName,
 							"is_write_index": "true",
 							"index_routing":  "shard-1",
 							"search_routing": "shard-1",
