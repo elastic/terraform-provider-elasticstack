@@ -85,6 +85,7 @@ func TestAccDataSourceClusterInfo_versionBlock(t *testing.T) {
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_info.test", "version.0.lucene_version"),
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_info.test", "version.0.minimum_index_compatibility_version"),
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_info.test", "version.0.minimum_wire_compatibility_version"),
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_info.test", "version.0.build_snapshot"),
 				),
 			},
 		},
