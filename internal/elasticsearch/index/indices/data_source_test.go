@@ -253,12 +253,17 @@ func TestAccIndicesDataSource_ReadsAliasNestedFields(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.name", indexName),
 					// The alias list must have exactly one entry.
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.alias.#", "1"),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.alias.0.name", aliasName),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.alias.0.is_write_index", "true"),
-					// filter is a JSON string — assert it is populated.
-					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_indices.test", "indices.0.alias.0.filter"),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.alias.0.index_routing", "shard-1"),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.alias.0.search_routing", "shard-1"),
+					// Alias is modeled as a SetNestedAttribute, so we must not rely on a stable index.
+					resource.TestCheckTypeSetElemNestedAttrs(
+						"data.elasticstack_elasticsearch_indices.test",
+						"indices.0.alias.*",
+						map[string]string{
+							"name":          aliasName,
+							"is_write_index": "true",
+							"index_routing":  "shard-1",
+							"search_routing": "shard-1",
+						},
+					),
 				),
 			},
 		},
