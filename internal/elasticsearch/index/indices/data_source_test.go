@@ -69,7 +69,8 @@ func TestAccIndicesDataSource_Target_DefaultAndExplicitAll(t *testing.T) {
 				Config: testAccIndicesDataSourceConfigNoTarget,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_indices.all_default", "id"),
-					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_indices.all_default", "indices.#"),
+					// indices.0.name being set proves at least one index was returned.
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_indices.all_default", "indices.0.name"),
 				),
 			},
 			{
@@ -77,7 +78,8 @@ func TestAccIndicesDataSource_Target_DefaultAndExplicitAll(t *testing.T) {
 				Config: testAccIndicesDataSourceConfigStar,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_indices.all_star", "id"),
-					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_indices.all_star", "indices.#"),
+					// indices.0.name being set proves at least one index was returned.
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_indices.all_star", "indices.0.name"),
 				),
 			},
 			{
@@ -85,7 +87,8 @@ func TestAccIndicesDataSource_Target_DefaultAndExplicitAll(t *testing.T) {
 				Config: testAccIndicesDataSourceConfigExplicitAll,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_indices.all_explicit", "id"),
-					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_indices.all_explicit", "indices.#"),
+					// indices.0.name being set proves at least one index was returned.
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_indices.all_explicit", "indices.0.name"),
 				),
 			},
 		},
