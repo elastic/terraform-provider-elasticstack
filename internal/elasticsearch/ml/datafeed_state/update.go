@@ -27,7 +27,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
@@ -175,11 +174,9 @@ func (r *mlDatafeedStateResource) updateAfterMissedTransition(
 		return nil, diags
 	}
 
-	if data.Start.IsUnknown() {
-		data.Start = timetypes.NewRFC3339Null()
-	}
+	diags.Append(data.SetStartAndEndFromAPI(statsAfterUpdate)...)
 
-	return &data, nil
+	return &data, diags
 }
 
 // performStateTransition handles the ML datafeed state transition process

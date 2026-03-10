@@ -137,6 +137,45 @@ func TestAccResourceMLDatafeedState_withTimes(t *testing.T) {
 	})
 }
 
+func TestAccResourceMLDatafeedState_stoppedThenStarted(t *testing.T) {
+	jobID := fmt.Sprintf("test-job-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	datafeedID := fmt.Sprintf("test-datafeed-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	indexName := fmt.Sprintf("test-datafeed-index-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("stopped"),
+				ConfigVariables: config.Variables{
+					"job_id":      config.StringVariable(jobID),
+					"datafeed_id": config.StringVariable(datafeedID),
+					"index_name":  config.StringVariable(indexName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed_state.test", "datafeed_id", datafeedID),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed_state.test", "state", "stopped"),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_ml_datafeed_state.test", "start"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("started"),
+				ConfigVariables: config.Variables{
+					"job_id":      config.StringVariable(jobID),
+					"datafeed_id": config.StringVariable(datafeedID),
+					"index_name":  config.StringVariable(indexName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed_state.test", "datafeed_id", datafeedID),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed_state.test", "state", "started"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccResourceMLDatafeedState_multiStep(t *testing.T) {
 	jobID := fmt.Sprintf("test-job-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 	datafeedID := fmt.Sprintf("test-datafeed-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
