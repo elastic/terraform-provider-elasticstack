@@ -96,7 +96,8 @@ func TestAccDataSourceClusterInfo_versionBlock(t *testing.T) {
 // fields match expected formats: semantic version numbers for number and
 // compatibility fields, and a boolean string for build_snapshot.
 func TestAccDataSourceClusterInfo_versionFieldFormats(t *testing.T) {
-	semverRe := regexp.MustCompile(`^\d+\.\d+\.\d+`)
+	// Matches x.y.z and x.y.z-TAG (e.g. 8.14.0-SNAPSHOT), anchored at both ends.
+	semverRe := regexp.MustCompile(`^\d+\.\d+\.\d+(-[a-zA-Z0-9.]+)?$`)
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV6ProviderFactories: acctest.Providers,
