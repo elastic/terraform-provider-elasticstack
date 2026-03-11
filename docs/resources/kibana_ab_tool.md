@@ -3,12 +3,12 @@
 page_title: "elasticstack_kibana_ab_tool Resource - terraform-provider-elasticstack"
 subcategory: "Kibana"
 description: |-
-  Manages Kibana Agent Builder tools. Tools can be of type esql, index_search, or workflow. See the Agent Builder API documentation https://www.elastic.co/guide/en/kibana/current/agent-builder-api.html for more information.
+  Manages Kibana Agent Builder tools. Tools can be of type esql, index_search, or workflow. See the Agent Builder API documentation https://www.elastic.co/guide/en/kibana/current/agent-builder-api.html.
 ---
 
 # elasticstack_kibana_ab_tool (Resource)
 
-Manages Kibana Agent Builder tools. Tools can be of type `esql`, `index_search`, or `workflow`. See the [Agent Builder API documentation](https://www.elastic.co/guide/en/kibana/current/agent-builder-api.html) for more information.
+Manages Kibana Agent Builder tools. Tools can be of type `esql`, `index_search`, or `workflow`. See the [Agent Builder API documentation](https://www.elastic.co/guide/en/kibana/current/agent-builder-api.html).
 
 
 

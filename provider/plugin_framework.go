@@ -31,17 +31,17 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/output"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/outputds"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/serverhost"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/ab_agent"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/ab_tool"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/ab_workflow"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/abagent"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/abtool"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/abworkflow"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/alertingrule"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/connectors"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dataview"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/defaultdataview"
-	export_ab_agent "github.com/elastic/terraform-provider-elasticstack/internal/kibana/export_ab/agent"
-	export_ab_tool "github.com/elastic/terraform-provider-elasticstack/internal/kibana/export_ab/tool"
-	export_ab_workflow "github.com/elastic/terraform-provider-elasticstack/internal/kibana/export_ab/workflow"
+	exportabagent "github.com/elastic/terraform-provider-elasticstack/internal/kibana/exportab/agent"
+	exportabtool "github.com/elastic/terraform-provider-elasticstack/internal/kibana/exportab/tool"
+	exportabworkflow "github.com/elastic/terraform-provider-elasticstack/internal/kibana/exportab/workflow"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/exportsavedobjects"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/import_saved_objects"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/maintenance_window"
@@ -144,9 +144,9 @@ func (p *Provider) resources(ctx context.Context) []func() resource.Resource {
 		agentconfiguration.NewAgentConfigurationResource,
 		func() resource.Resource { return &importsavedobjects.Resource{} },
 		alertingrule.NewResource,
-		ab_agent.NewResource,
-		ab_tool.NewResource,
-		ab_workflow.NewResource,
+		abagent.NewResource,
+		abtool.NewResource,
+		abworkflow.NewResource,
 		dataview.NewResource,
 		defaultdataview.NewResource,
 		func() resource.Resource { return &parameter.Resource{} },
@@ -196,9 +196,9 @@ func (p *Provider) dataSources(ctx context.Context) []func() datasource.DataSour
 	return []func() datasource.DataSource{
 		indices.NewDataSource,
 		spaces.NewDataSource,
-		export_ab_agent.NewDataSource,
-		export_ab_tool.NewDataSource,
-		export_ab_workflow.NewDataSource,
+		exportabagent.NewDataSource,
+		exportabtool.NewDataSource,
+		exportabworkflow.NewDataSource,
 		exportsavedobjects.NewDataSource,
 		enrollmenttokens.NewDataSource,
 		integrationds.NewDataSource,
