@@ -2,6 +2,7 @@
 
 ### Changes
 
+- Add `elasticstack_kibana_export_ab_agent`, `elasticstack_kibana_export_ab_tool`, `elasticstack_kibana_export_ab_workflow` data sources and  `elasticstack_kibana_ab_agent`, `elasticstack_kibana_ab_tool`, `elasticstack_kibana_ab_workflow` resources. ([#1882](https://github.com/elastic/terraform-provider-elasticstack/pull/1882))
 - Add `elasticstack_fleet_output` data source. ([#1762](https://github.com/elastic/terraform-provider-elasticstack/pull/1762))
 
 ## [0.14.3] - 2026-03-02
