@@ -79,7 +79,7 @@ func (r *mlJobStateResource) update(ctx context.Context, plan tfsdk.Plan, state 
 	defer cancel()
 
 	// First, get the current job stats to check if the job exists and its current state
-	currentState, fwDiags := r.getJobState(ctx, jobID)
+	currentState, fwDiags := r.getJobState(ctx, data, jobID)
 	diags.Append(fwDiags...)
 	if diags.HasError() {
 		return diags
@@ -94,7 +94,7 @@ func (r *mlJobStateResource) update(ctx context.Context, plan tfsdk.Plan, state 
 	}
 
 	// Perform state transition if needed
-	fwDiags = r.performStateTransition(ctx, client, data, *currentState)
+	fwDiags = r.performStateTransition(ctx, data, *currentState)
 	diags.Append(fwDiags...)
 	if diags.HasError() {
 		return diags
@@ -119,10 +119,14 @@ func (r *mlJobStateResource) update(ctx context.Context, plan tfsdk.Plan, state 
 }
 
 // performStateTransition handles the ML job state transition process
-func (r *mlJobStateResource) performStateTransition(ctx context.Context, client *clients.APIClient, data MLJobStateData, currentState string) diag.Diagnostics {
+func (r *mlJobStateResource) performStateTransition(ctx context.Context, data MLJobStateData, currentState string) diag.Diagnostics {
 	jobID := data.JobID.ValueString()
 	desiredState := data.State.ValueString()
 	force := data.Force.ValueBool()
+	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, data.ElasticsearchConnection, r.client)
+	if diags.HasError() {
+		return diags
+	}
 
 	// Parse timeout duration
 	timeout, parseErrs := data.Timeout.Parse()
@@ -156,7 +160,7 @@ func (r *mlJobStateResource) performStateTransition(ctx context.Context, client 
 	}
 
 	// Wait for state transition to complete
-	diags := r.waitForJobState(ctx, jobID, desiredState)
+	diags = r.waitForJobState(ctx, data, jobID, desiredState)
 	if diags.HasError() {
 		return diags
 	}

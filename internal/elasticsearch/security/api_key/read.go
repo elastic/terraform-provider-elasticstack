@@ -34,13 +34,7 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 		return
 	}
 
-	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, stateModel.ElasticsearchConnection, r.client)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	finalModel, diags := r.read(ctx, client, stateModel)
+	finalModel, diags := r.read(ctx, stateModel)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -56,12 +50,18 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 		return
 	}
 
-	resp.Diagnostics.Append(r.saveClusterVersion(ctx, client, resp.Private)...)
+	resp.Diagnostics.Append(r.saveClusterVersion(ctx, stateModel, resp.Private)...)
 }
 
-func (r *Resource) read(ctx context.Context, client *clients.APIClient, model tfModel) (*tfModel, diag.Diagnostics) {
+func (r *Resource) read(ctx context.Context, model tfModel) (*tfModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	compID, diags := model.GetID()
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	client, connDiags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, model.ElasticsearchConnection, r.client)
+	diags.Append(connDiags...)
 	if diags.HasError() {
 		return nil, diags
 	}

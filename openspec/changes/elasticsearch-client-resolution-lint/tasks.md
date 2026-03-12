@@ -7,7 +7,7 @@
 ## 2. Lint integration
 
 - [x] 2.1 Ensure the analyzer exports and imports provenance facts needed for interprocedural helper-derivation checks.
-- [ ] 2.2 Wire the analyzer into repository lint execution so violations fail `make check-lint`.
+- [x] 2.2 Wire the analyzer into repository lint execution so violations fail `make check-lint`.
 - [x] 2.3 Verify violation diagnostics identify non-helper-derived sink usage and point developers to the approved helper sources.
 
 ## 3. Regression coverage

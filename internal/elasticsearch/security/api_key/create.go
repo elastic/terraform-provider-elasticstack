@@ -39,17 +39,11 @@ func (r Resource) Create(ctx context.Context, req resource.CreateRequest, resp *
 		return
 	}
 
-	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, planModel.ElasticsearchConnection, r.client)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	if planModel.Type.ValueString() == "cross_cluster" {
-		createDiags := r.createCrossClusterAPIKey(ctx, client, &planModel)
+		createDiags := r.createCrossClusterAPIKey(ctx, &planModel)
 		resp.Diagnostics.Append(createDiags...)
 	} else {
-		createDiags := r.createAPIKey(ctx, client, &planModel)
+		createDiags := r.createAPIKey(ctx, &planModel)
 		resp.Diagnostics.Append(createDiags...)
 	}
 
@@ -62,7 +56,7 @@ func (r Resource) Create(ctx context.Context, req resource.CreateRequest, resp *
 		return
 	}
 
-	finalModel, diags := r.read(ctx, client, planModel)
+	finalModel, diags := r.read(ctx, planModel)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -71,7 +65,7 @@ func (r Resource) Create(ctx context.Context, req resource.CreateRequest, resp *
 	resp.Diagnostics.Append(resp.State.Set(ctx, *finalModel)...)
 }
 
-func (r Resource) buildAPIModel(ctx context.Context, model tfModel, client *clients.APIClient) (models.APIKey, diag.Diagnostics) {
+func (r Resource) buildAPIModel(ctx context.Context, model tfModel) (models.APIKey, diag.Diagnostics) {
 	apiModel, diags := model.toAPIModel()
 	if diags.HasError() {
 		return models.APIKey{}, diags
@@ -87,7 +81,7 @@ func (r Resource) buildAPIModel(ctx context.Context, model tfModel, client *clie
 	}
 
 	if hasRestriction {
-		isSupported, diags := doesCurrentVersionSupportRestrictionOnAPIKey(ctx, client)
+		isSupported, diags := r.doesCurrentVersionSupportRestrictionOnAPIKey(ctx, model)
 		if diags.HasError() {
 			return models.APIKey{}, diags
 		}
@@ -105,29 +99,44 @@ func (r Resource) buildAPIModel(ctx context.Context, model tfModel, client *clie
 	return apiModel, nil
 }
 
-func doesCurrentVersionSupportRestrictionOnAPIKey(ctx context.Context, client *clients.APIClient) (bool, diag.Diagnostics) {
-	currentVersion, diags := client.ServerVersion(ctx)
+func (r Resource) doesCurrentVersionSupportRestrictionOnAPIKey(ctx context.Context, model tfModel) (bool, diag.Diagnostics) {
+	client, fwDiags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, model.ElasticsearchConnection, r.client)
+	if fwDiags.HasError() {
+		return false, fwDiags
+	}
 
-	if diags.HasError() {
-		return false, diagutil.FrameworkDiagsFromSDK(diags)
+	currentVersion, sdkDiags := client.ServerVersion(ctx)
+
+	if sdkDiags.HasError() {
+		return false, diagutil.FrameworkDiagsFromSDK(sdkDiags)
 	}
 
 	return currentVersion.GreaterThanOrEqual(MinVersionWithRestriction), nil
 }
 
-func doesCurrentVersionSupportCrossClusterAPIKey(ctx context.Context, client *clients.APIClient) (bool, diag.Diagnostics) {
-	currentVersion, diags := client.ServerVersion(ctx)
+func (r Resource) doesCurrentVersionSupportCrossClusterAPIKey(ctx context.Context, model tfModel) (bool, diag.Diagnostics) {
+	client, fwDiags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, model.ElasticsearchConnection, r.client)
+	if fwDiags.HasError() {
+		return false, fwDiags
+	}
 
-	if diags.HasError() {
-		return false, diagutil.FrameworkDiagsFromSDK(diags)
+	currentVersion, sdkDiags := client.ServerVersion(ctx)
+
+	if sdkDiags.HasError() {
+		return false, diagutil.FrameworkDiagsFromSDK(sdkDiags)
 	}
 
 	return currentVersion.GreaterThanOrEqual(MinVersionWithCrossCluster), nil
 }
 
-func (r *Resource) createCrossClusterAPIKey(ctx context.Context, client *clients.APIClient, planModel *tfModel) diag.Diagnostics {
+func (r *Resource) createCrossClusterAPIKey(ctx context.Context, planModel *tfModel) diag.Diagnostics {
+	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, planModel.ElasticsearchConnection, r.client)
+	if diags.HasError() {
+		return diags
+	}
+
 	// Check if the current version supports cross-cluster API keys
-	isSupported, diags := doesCurrentVersionSupportCrossClusterAPIKey(ctx, client)
+	isSupported, diags := r.doesCurrentVersionSupportCrossClusterAPIKey(ctx, *planModel)
 	if diags.HasError() {
 		return diags
 	}
@@ -166,9 +175,14 @@ func (r *Resource) createCrossClusterAPIKey(ctx context.Context, client *clients
 	return nil
 }
 
-func (r *Resource) createAPIKey(ctx context.Context, client *clients.APIClient, planModel *tfModel) diag.Diagnostics {
+func (r *Resource) createAPIKey(ctx context.Context, planModel *tfModel) diag.Diagnostics {
+	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, planModel.ElasticsearchConnection, r.client)
+	if diags.HasError() {
+		return diags
+	}
+
 	// Handle regular API key creation
-	apiModel, diags := r.buildAPIModel(ctx, *planModel, client)
+	apiModel, diags := r.buildAPIModel(ctx, *planModel)
 	if diags.HasError() {
 		return diags
 	}
