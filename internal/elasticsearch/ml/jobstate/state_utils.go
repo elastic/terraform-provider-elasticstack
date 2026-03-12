@@ -22,6 +22,7 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/asyncutils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -30,9 +31,14 @@ import (
 var errJobNotFound = fmt.Errorf("ML job not found")
 
 // getJobState returns the current state of a job
-func (r *mlJobStateResource) getJobState(ctx context.Context, jobID string) (*string, diag.Diagnostics) {
+func (r *mlJobStateResource) getJobState(ctx context.Context, data MLJobStateData, jobID string) (*string, diag.Diagnostics) {
+	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, data.ElasticsearchConnection, r.client)
+	if diags.HasError() {
+		return nil, diags
+	}
+
 	// Get job stats to check current state
-	currentJob, diags := elasticsearch.GetMLJobStats(ctx, r.client, jobID)
+	currentJob, diags := elasticsearch.GetMLJobStats(ctx, client, jobID)
 	if diags.HasError() {
 		return nil, diags
 	}
@@ -45,9 +51,9 @@ func (r *mlJobStateResource) getJobState(ctx context.Context, jobID string) (*st
 }
 
 // waitForJobState waits for a job to reach the desired state
-func (r *mlJobStateResource) waitForJobState(ctx context.Context, jobID, desiredState string) diag.Diagnostics {
+func (r *mlJobStateResource) waitForJobState(ctx context.Context, data MLJobStateData, jobID, desiredState string) diag.Diagnostics {
 	stateChecker := func(ctx context.Context) (bool, error) {
-		currentState, diags := r.getJobState(ctx, jobID)
+		currentState, diags := r.getJobState(ctx, data, jobID)
 		if diags.HasError() {
 			return false, diagutil.FwDiagsAsError(diags)
 		}

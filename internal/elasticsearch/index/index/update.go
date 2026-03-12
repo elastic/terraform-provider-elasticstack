@@ -71,18 +71,18 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 	}
 
 	if !planModel.Alias.Equal(stateModel.Alias) {
-		resp.Diagnostics.Append(r.updateAliases(ctx, client, name, planAPIModel.Aliases, stateAPIModel.Aliases)...)
+		resp.Diagnostics.Append(r.updateAliases(ctx, planModel, client, name, planAPIModel.Aliases, stateAPIModel.Aliases)...)
 		if resp.Diagnostics.HasError() {
 			return
 		}
 	}
 
-	resp.Diagnostics.Append(r.updateSettings(ctx, client, name, planAPIModel.Settings, stateAPIModel.Settings)...)
+	resp.Diagnostics.Append(r.updateSettings(ctx, planModel, client, name, planAPIModel.Settings, stateAPIModel.Settings)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	resp.Diagnostics.Append(r.updateMappings(ctx, client, name, planModel.Mappings, stateModel.Mappings)...)
+	resp.Diagnostics.Append(r.updateMappings(ctx, planModel, client, name, planModel.Mappings, stateModel.Mappings)...)
 
 	finalModel, diags := readIndex(ctx, planModel, client)
 	resp.Diagnostics.Append(diags...)
@@ -95,11 +95,17 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 
 func (r *Resource) updateAliases(
 	ctx context.Context,
+	planModel tfModel,
 	client *clients.APIClient,
 	indexName string,
 	planAliases map[string]models.IndexAlias,
 	stateAliases map[string]models.IndexAlias,
 ) diag.Diagnostics {
+	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, planModel.ElasticsearchConnection, client)
+	if diags.HasError() {
+		return diags
+	}
+
 	aliasesToDelete := []string{}
 	for aliasName := range stateAliases {
 		if _, ok := planAliases[aliasName]; !ok {
@@ -124,7 +130,19 @@ func (r *Resource) updateAliases(
 	return nil
 }
 
-func (r *Resource) updateSettings(ctx context.Context, client *clients.APIClient, indexName string, planSettings map[string]any, stateSettings map[string]any) diag.Diagnostics {
+func (r *Resource) updateSettings(
+	ctx context.Context,
+	planModel tfModel,
+	client *clients.APIClient,
+	indexName string,
+	planSettings map[string]any,
+	stateSettings map[string]any,
+) diag.Diagnostics {
+	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, planModel.ElasticsearchConnection, client)
+	if diags.HasError() {
+		return diags
+	}
+
 	planDynamicSettings := map[string]any{}
 	stateDynamicSettings := map[string]any{}
 
@@ -155,7 +173,19 @@ func (r *Resource) updateSettings(ctx context.Context, client *clients.APIClient
 	return nil
 }
 
-func (r *Resource) updateMappings(ctx context.Context, client *clients.APIClient, indexName string, planMappings jsontypes.Normalized, stateMappings jsontypes.Normalized) diag.Diagnostics {
+func (r *Resource) updateMappings(
+	ctx context.Context,
+	planModel tfModel,
+	client *clients.APIClient,
+	indexName string,
+	planMappings jsontypes.Normalized,
+	stateMappings jsontypes.Normalized,
+) diag.Diagnostics {
+	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, planModel.ElasticsearchConnection, client)
+	if diags.HasError() {
+		return diags
+	}
+
 	areEqual, diags := planMappings.StringSemanticEquals(ctx, stateMappings)
 	if diags.HasError() {
 		return diags
