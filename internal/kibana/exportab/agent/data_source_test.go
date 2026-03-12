@@ -41,10 +41,17 @@ var (
 func preCheckWithWorkflowsEnabled(t *testing.T) {
 	acctest.PreCheck(t)
 
-	// Enable workflows via Kibana API
 	client, err := clients.NewAcceptanceTestingClient()
 	if err != nil {
 		t.Fatalf("Failed to create API client: %v", err)
+	}
+
+	serverVersion, diags := client.ServerVersion(context.Background())
+	if diags.HasError() {
+		t.Fatalf("Failed to get server version: %v", diags)
+	}
+	if serverVersion.LessThan(minKibanaAgentBuilderAPIVersion) {
+		t.Skipf("Skipping test: server version %s is below minimum %s", serverVersion, minKibanaAgentBuilderAPIVersion)
 	}
 
 	kibanaClient, err := client.GetKibanaOapiClient()
