@@ -20,6 +20,7 @@ package cluster_test
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -131,7 +132,7 @@ func TestAccResourceClusterSettings(t *testing.T) {
 						}),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_cluster_settings.test", "persistent.0.setting.*.value_list.*", "ACCESS_DENIED"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_cluster_settings.test", "persistent.0.setting.*.value_list.*", "AUTHENTICATION_SUCCESS"),
-					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_cluster_settings.test", "transient.#"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_cluster_settings.test", "transient.#", "0"),
 				),
 			},
 			{
@@ -161,7 +162,7 @@ func TestAccResourceClusterSettings(t *testing.T) {
 						}),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_cluster_settings.test", "persistent.0.setting.*.value_list.*", "ACCESS_DENIED"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_cluster_settings.test", "persistent.0.setting.*.value_list.*", "ACCESS_GRANTED"),
-					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_cluster_settings.test", "transient.#"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_cluster_settings.test", "transient.#", "0"),
 				),
 			},
 			{
@@ -175,6 +176,10 @@ func TestAccResourceClusterSettings(t *testing.T) {
 					importedID := is[0].ID
 					if importedID == "" {
 						return fmt.Errorf("expected imported resource ID to be set")
+					}
+
+					if !strings.HasSuffix(importedID, "/cluster-settings") {
+						return fmt.Errorf("expected imported resource ID [%s] to end with /cluster-settings", importedID)
 					}
 
 					if is[0].Attributes["id"] != importedID {
@@ -204,7 +209,7 @@ func TestAccResourceClusterSettingsPersistentOnly(t *testing.T) {
 							"name":  "indices.lifecycle.poll_interval",
 							"value": "10m",
 						}),
-					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_cluster_settings.test_persistent", "transient.#"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_cluster_settings.test_persistent", "transient.#", "0"),
 				),
 			},
 		},
