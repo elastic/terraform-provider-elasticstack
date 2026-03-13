@@ -127,6 +127,52 @@ func testAccResourceAgentConfigurationUpdateSettings(serviceName string) string 
 	`, serviceName)
 }
 
+func TestAccResourceAgentConfiguration_alternateEnvironment(t *testing.T) {
+	serviceName := tf_acctest.RandStringFromCharSet(10, tf_acctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccResourceAgentConfigurationAlternateEnvironment(serviceName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_apm_agent_configuration.test_config", "id"),
+					resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "service_name", serviceName),
+					resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "service_environment", "staging"),
+					resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "agent_name", "java"),
+					resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "settings.%", "2"),
+					resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "settings.transaction_sample_rate", "0.8"),
+					resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "settings.log_level", "debug"),
+				),
+			},
+			{
+				ResourceName:      "elasticstack_apm_agent_configuration.test_config",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func testAccResourceAgentConfigurationAlternateEnvironment(serviceName string) string {
+	return fmt.Sprintf(`
+	provider "elasticstack" {
+		kibana {}
+	}
+
+	resource "elasticstack_apm_agent_configuration" "test_config" {
+		service_name        = "%s"
+		service_environment = "staging"
+		agent_name          = "java"
+		settings = {
+			"transaction_sample_rate" = "0.8"
+			"log_level"               = "debug"
+		}
+	}
+	`, serviceName)
+}
+
 func TestAccResourceAgentConfiguration_minimal(t *testing.T) {
 	serviceName := tf_acctest.RandStringFromCharSet(10, tf_acctest.CharSetAlphaNum)
 
@@ -142,6 +188,7 @@ func TestAccResourceAgentConfiguration_minimal(t *testing.T) {
 					resource.TestCheckNoResourceAttr("elasticstack_apm_agent_configuration.test_config", "service_environment"),
 					resource.TestCheckNoResourceAttr("elasticstack_apm_agent_configuration.test_config", "agent_name"),
 					resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "settings.%", "1"),
+					resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "settings.transaction_sample_rate", "0.5"),
 				),
 			},
 			{
