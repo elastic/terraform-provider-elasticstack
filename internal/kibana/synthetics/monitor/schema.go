@@ -542,7 +542,7 @@ func stringToInt64(v string) (int64, error) {
 }
 
 func scheduleFromAPI(cfg *kbapi.MonitorScheduleConfig) (float64, error) {
-	if cfg == nil {
+	if cfg == nil || cfg.Number == "" {
 		return 0, nil
 	}
 	v, err := strconv.ParseFloat(cfg.Number, 64)

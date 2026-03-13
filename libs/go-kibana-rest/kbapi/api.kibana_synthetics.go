@@ -79,6 +79,9 @@ func (m MonitorSchedule) MarshalJSON() ([]byte, error) {
 	case Every30Seconds:
 		return json.Marshal("30s")
 	default:
+		if m != MonitorSchedule(int(m)) {
+			return nil, fmt.Errorf("unsupported fractional schedule value: %v", m)
+		}
 		return json.Marshal(int(m))
 	}
 }
