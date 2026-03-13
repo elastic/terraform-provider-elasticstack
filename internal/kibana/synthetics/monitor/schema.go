@@ -31,7 +31,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
-	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/float64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -39,6 +39,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/float64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectplanmodifier"
@@ -117,7 +118,7 @@ type tfModelV0 struct {
 	Name             types.String              `tfsdk:"name"`
 	SpaceID          types.String              `tfsdk:"space_id"`
 	Namespace        types.String              `tfsdk:"namespace"`
-	Schedule         types.Int64               `tfsdk:"schedule"`
+	Schedule         types.Float64             `tfsdk:"schedule"`
 	Locations        []types.String            `tfsdk:"locations"`
 	PrivateLocations []types.String            `tfsdk:"private_locations"`
 	Enabled          types.Bool                `tfsdk:"enabled"`
@@ -177,14 +178,14 @@ func monitorConfigSchema() schema.Schema {
 					),
 				},
 			},
-			"schedule": schema.Int64Attribute{
+			"schedule": schema.Float64Attribute{
 				Optional:            true,
-				MarkdownDescription: "The monitor's schedule in minutes. Supported values are 1, 3, 5, 10, 15, 30, 60, 120 and 240.",
-				Validators: []validator.Int64{
-					int64validator.OneOf(1, 3, 5, 10, 15, 30, 60, 120, 240),
+				MarkdownDescription: "The monitor's schedule in minutes. Supported values are 0.1 (10s), 0.5 (30s), 1, 3, 5, 10, 15, 30, 60, 120 and 240.",
+				Validators: []validator.Float64{
+					float64validator.OneOf(0.1, 0.5, 1, 3, 5, 10, 15, 30, 60, 120, 240),
 				},
 				Computed:      true,
-				PlanModifiers: []planmodifier.Int64{int64planmodifier.UseStateForUnknown()},
+				PlanModifiers: []planmodifier.Float64{float64planmodifier.UseStateForUnknown()},
 			},
 			"locations": schema.ListAttribute{
 				ElementType:         types.StringType,
@@ -540,14 +541,35 @@ func stringToInt64(v string) (int64, error) {
 	return res, err
 }
 
+func scheduleFromAPI(cfg *kbapi.MonitorScheduleConfig) (float64, error) {
+	if cfg == nil {
+		return 0, nil
+	}
+	v, err := strconv.ParseFloat(cfg.Number, 64)
+	if err != nil {
+		return 0, err
+	}
+	if cfg.Unit == "s" {
+		switch v {
+		case 10:
+			return float64(kbapi.Every10Seconds), nil
+		case 30:
+			return float64(kbapi.Every30Seconds), nil
+		default:
+			return 0, fmt.Errorf("unsupported sub-minute schedule: %ss", cfg.Number)
+		}
+	}
+	return v, nil
+}
+
 func (v *tfModelV0) toModelV0(ctx context.Context, api *kbapi.SyntheticsMonitor, space string) (*tfModelV0, diag.Diagnostics) {
-	var schedule int64
+	var schedule float64
 	var err error
 	dg := diag.Diagnostics{}
 	if api.Schedule != nil {
-		schedule, err = stringToInt64(api.Schedule.Number)
+		schedule, err = scheduleFromAPI(api.Schedule)
 		if err != nil {
-			dg.AddError("Failed to convert schedule to int64", err.Error())
+			dg.AddError("Failed to convert schedule", err.Error())
 			return nil, dg
 		}
 	}
@@ -628,7 +650,7 @@ func (v *tfModelV0) toModelV0(ctx context.Context, api *kbapi.SyntheticsMonitor,
 		Name:             types.StringValue(api.Name),
 		SpaceID:          types.StringValue(space),
 		Namespace:        types.StringValue(api.Namespace),
-		Schedule:         types.Int64Value(schedule),
+		Schedule:         types.Float64Value(schedule),
 		Locations:        v.Locations,
 		PrivateLocations: synthetics.StringSliceValue(privateLocLabels),
 		Enabled:          types.BoolPointerValue(api.Enabled),
@@ -861,7 +883,7 @@ func (v *tfModelV0) toSyntheticsMonitorConfig(ctx context.Context) (*kbapi.Synth
 
 	return &kbapi.SyntheticsMonitorConfig{
 		Name:             v.Name.ValueString(),
-		Schedule:         kbapi.MonitorSchedule(v.Schedule.ValueInt64()),
+		Schedule:         kbapi.MonitorSchedule(v.Schedule.ValueFloat64()),
 		Locations:        locations,
 		PrivateLocations: synthetics.ValueStringSlice(v.PrivateLocations),
 		Enabled:          v.Enabled.ValueBoolPointer(),
