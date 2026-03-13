@@ -44,7 +44,7 @@ You are responsible for running schema-coverage analysis on up to 3 provider ent
   - `docs/resources/*.md` for resources
   - `docs/data-sources/*.md` for data sources
 - Bootstrap memory seed: `.github/aw/memory/schema-coverage.json`
-- Persistent memory path: `/tmp/gh-aw/repo-memory-schema-coverage-rotation/memory/schema-coverage-rotation/schema-coverage.json`
+- Persistent memory path: `/tmp/gh-aw/repo-memory/schema-coverage-rotation/memory/schema-coverage-rotation/schema-coverage.json`
 
 ## Memory format
 
@@ -74,7 +74,7 @@ Timestamp value rules:
    - Exit immediately.
    - Call `noop` with a short reason indicating the open-issue cap has been reached.
 3. Read `.agents/skills/schema-coverage/SKILL.md` and follow it strictly when evaluating coverage.
-4. Load `/tmp/gh-aw/repo-memory-schema-coverage-rotation/memory/schema-coverage-rotation/schema-coverage.json`.
+4. Load `/tmp/gh-aw/repo-memory/schema-coverage-rotation/memory/schema-coverage-rotation/schema-coverage.json`.
    - If it does not exist, initialize it from `.github/aw/memory/schema-coverage.json`.
 5. Build the current canonical entity list from docs only:
    - Resources from `docs/resources/*.md` (exclude non-entity pages such as `index.md` if present).
@@ -88,7 +88,7 @@ Timestamp value rules:
    - Perform schema coverage analysis using the skill rubric.
    - Determine whether there are actionable testing gaps.
    - Update the entity timestamp to the current UTC time after analysis, regardless of whether a gap exists.
-8. Persist the updated memory file to `/tmp/gh-aw/repo-memory-schema-coverage-rotation/memory/schema-coverage-rotation/schema-coverage.json`.
+8. Persist the updated memory file to `/tmp/gh-aw/repo-memory/schema-coverage-rotation/memory/schema-coverage-rotation/schema-coverage.json`.
 
 ## Issue creation rules
 
