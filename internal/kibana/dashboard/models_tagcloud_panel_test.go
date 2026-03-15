@@ -341,20 +341,15 @@ func Test_tagcloudPanelConfigConverter_mapPanelToAPI(t *testing.T) {
 		},
 	}
 
-	var apiConfig kbapi.DashboardPanelItem_Config
+	var apiConfig kbapi.KbnDashboardPanelLens_Config_0_Attributes
 	diags := converter.mapPanelToAPI(panel, &apiConfig)
 	require.False(t, diags.HasError())
 
 	// Verify the config was created
-	configMap, err := apiConfig.AsDashboardPanelItemConfig8()
+	configJSON, err := apiConfig.MarshalJSON()
 	require.NoError(t, err)
-
-	// Verify the attributes exist
-	attrs, ok := configMap["attributes"]
-	require.True(t, ok, "attributes should exist in config")
-
-	attrsMap, ok := attrs.(map[string]any)
-	require.True(t, ok, "attributes should be a map")
+	var attrsMap map[string]any
+	require.NoError(t, json.Unmarshal(configJSON, &attrsMap))
 
 	// Verify the type field exists with tagcloud
 	typeField, ok := attrsMap["type"]

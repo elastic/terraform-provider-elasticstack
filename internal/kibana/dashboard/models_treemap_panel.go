@@ -32,7 +32,7 @@ import (
 
 func newTreemapPanelConfigConverter() treemapPanelConfigConverter {
 	return treemapPanelConfigConverter{
-		lensPanelConfigConverter: lensPanelConfigConverter{
+		lensVisualizationBase: lensVisualizationBase{
 			visualizationType: string(kbapi.TreemapNoESQLTypeTreemap),
 			hasTFPanelConfig:  func(pm panelModel) bool { return pm.TreemapConfig != nil },
 		},
@@ -40,95 +40,74 @@ func newTreemapPanelConfigConverter() treemapPanelConfigConverter {
 }
 
 type treemapPanelConfigConverter struct {
-	lensPanelConfigConverter
+	lensVisualizationBase
 }
 
-func (c treemapPanelConfigConverter) handlesTFPanelConfig(pm panelModel) bool {
-	return pm.TreemapConfig != nil
-}
-
-func (c treemapPanelConfigConverter) populateFromAPIPanel(_ context.Context, pm *panelModel, config kbapi.DashboardPanelItem_Config) diag.Diagnostics {
-	cfgMap, err := config.AsDashboardPanelItemConfig8()
+func (c treemapPanelConfigConverter) populateFromAttributes(_ context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes) diag.Diagnostics {
+	treemapChart, err := attrs.AsTreemapChart()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-
-	attrs, ok := cfgMap["attributes"]
-	if !ok {
-		return nil
-	}
-
-	attrsMap, ok := attrs.(map[string]any)
-	if !ok {
-		return nil
-	}
-
-	attrsJSON, err := json.Marshal(attrsMap)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	var treemapChart kbapi.TreemapChart
-	if err := json.Unmarshal(attrsJSON, &treemapChart); err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	_, hasQuery := attrsMap["query"]
 
 	if pm.TreemapConfig == nil {
 		pm.TreemapConfig = &treemapConfigModel{}
 	}
-	if hasQuery {
-		treemapNoESQL, err := treemapChart.AsTreemapNoESQL()
+
+	datasetType := ""
+	if attrsJSON, err := attrs.MarshalJSON(); err == nil {
+		var attrsMap map[string]any
+		if err := json.Unmarshal(attrsJSON, &attrsMap); err == nil {
+			if dataset, ok := attrsMap["dataset"].(map[string]any); ok {
+				if t, ok := dataset["type"].(string); ok {
+					datasetType = t
+				}
+			}
+		}
+	}
+
+	if datasetType == "esql" {
+		treemapESQL, err := treemapChart.AsTreemapESQL()
 		if err != nil {
 			return diagutil.FrameworkDiagFromError(err)
 		}
-		return pm.TreemapConfig.fromAPINoESQL(treemapNoESQL)
+		return pm.TreemapConfig.fromAPIESQL(treemapESQL)
 	}
 
-	treemapESQL, err := treemapChart.AsTreemapESQL()
+	treemapNoESQL, err := treemapChart.AsTreemapNoESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	return pm.TreemapConfig.fromAPIESQL(treemapESQL)
+	return pm.TreemapConfig.fromAPINoESQL(treemapNoESQL)
 }
 
-func (c treemapPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *kbapi.DashboardPanelItem_Config) diag.Diagnostics {
+func (c treemapPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelLens_Config_0_Attributes, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	configModel := *pm.TreemapConfig
 
 	treemapChart, treemapDiags := configModel.toAPI()
 	diags.Append(treemapDiags...)
 	if diags.HasError() {
-		return diags
+		return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}, diags
 	}
 
-	var attrs0 kbapi.DashboardPanelItemConfig70Attributes0
-	if err := attrs0.FromTreemapChart(treemapChart); err != nil {
+	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	if err := attrs.FromTreemapChart(treemapChart); err != nil {
 		diags.AddError("Failed to create treemap attributes", err.Error())
-		return diags
+		return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}, diags
 	}
 
-	var configAttrs kbapi.DashboardPanelItem_Config_7_0_Attributes
-	if err := configAttrs.FromDashboardPanelItemConfig70Attributes0(attrs0); err != nil {
-		diags.AddError("Failed to create config attributes", err.Error())
-		return diags
-	}
+	return attrs, diags
+}
 
-	config10 := kbapi.DashboardPanelItemConfig70{
-		Attributes: configAttrs,
-	}
+func (c treemapPanelConfigConverter) populateFromAPIPanel(ctx context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes) diag.Diagnostics {
+	return c.populateFromAttributes(ctx, pm, attrs)
+}
 
-	var config1 kbapi.DashboardPanelItemConfig7
-	if err := config1.FromDashboardPanelItemConfig70(config10); err != nil {
-		diags.AddError("Failed to create config1", err.Error())
-		return diags
+func (c treemapPanelConfigConverter) mapPanelToAPI(pm panelModel, attrs *kbapi.KbnDashboardPanelLens_Config_0_Attributes) diag.Diagnostics {
+	newAttrs, diags := c.buildAttributes(pm)
+	if !diags.HasError() {
+		*attrs = newAttrs
 	}
-
-	if err := apiConfig.FromDashboardPanelItemConfig7(config1); err != nil {
-		diags.AddError("Failed to marshal treemap config", err.Error())
-	}
-
 	return diags
 }
 
@@ -164,19 +143,8 @@ func (m *treemapConfigModel) fromAPINoESQL(api kbapi.TreemapNoESQL) diag.Diagnos
 
 	m.Title = types.StringPointerValue(api.Title)
 	m.Description = types.StringPointerValue(api.Description)
-	// Kibana may omit these optional attributes in GET responses even when they were
-	// provided on write. Preserve any already-known value (typically from the plan)
-	// to avoid "inconsistent result after apply" drift.
-	if api.IgnoreGlobalFilters != nil {
-		m.IgnoreGlobalFilters = types.BoolValue(*api.IgnoreGlobalFilters)
-	} else if !typeutils.IsKnown(m.IgnoreGlobalFilters) {
-		m.IgnoreGlobalFilters = types.BoolNull()
-	}
-	if api.Sampling != nil {
-		m.Sampling = types.Float64Value(float64(*api.Sampling))
-	} else if !typeutils.IsKnown(m.Sampling) {
-		m.Sampling = types.Float64Null()
-	}
+	m.IgnoreGlobalFilters = mapOptionalBoolWithSnapshotDefault(m.IgnoreGlobalFilters, api.IgnoreGlobalFilters, false)
+	m.Sampling = mapOptionalFloatWithSnapshotDefault(m.Sampling, api.Sampling, 1)
 
 	datasetBytes, err := api.Dataset.MarshalJSON()
 	if err != nil {
@@ -248,19 +216,8 @@ func (m *treemapConfigModel) fromAPIESQL(api kbapi.TreemapESQL) diag.Diagnostics
 
 	m.Title = types.StringPointerValue(api.Title)
 	m.Description = types.StringPointerValue(api.Description)
-	// Kibana may omit these optional attributes in GET responses even when they were
-	// provided on write. Preserve any already-known value (typically from the plan)
-	// to avoid "inconsistent result after apply" drift.
-	if api.IgnoreGlobalFilters != nil {
-		m.IgnoreGlobalFilters = types.BoolValue(*api.IgnoreGlobalFilters)
-	} else if !typeutils.IsKnown(m.IgnoreGlobalFilters) {
-		m.IgnoreGlobalFilters = types.BoolNull()
-	}
-	if api.Sampling != nil {
-		m.Sampling = types.Float64Value(float64(*api.Sampling))
-	} else if !typeutils.IsKnown(m.Sampling) {
-		m.Sampling = types.Float64Null()
-	}
+	m.IgnoreGlobalFilters = mapOptionalBoolWithSnapshotDefault(m.IgnoreGlobalFilters, api.IgnoreGlobalFilters, false)
+	m.Sampling = mapOptionalFloatWithSnapshotDefault(m.Sampling, api.Sampling, 1)
 
 	datasetBytes, err := api.Dataset.MarshalJSON()
 	if err != nil {
@@ -344,6 +301,38 @@ func (m *treemapValueDisplay) fromAPINoESQL(api *struct {
 		m.PercentDecimals = types.Float64Value(float64(*api.PercentDecimals))
 	} else {
 		m.PercentDecimals = types.Float64Null()
+	}
+}
+
+func mapOptionalBoolWithSnapshotDefault(current types.Bool, apiValue *bool, snapshotDefault bool) types.Bool {
+	switch {
+	case apiValue == nil:
+		if typeutils.IsKnown(current) {
+			return current
+		}
+		return types.BoolNull()
+	case typeutils.IsKnown(current) && *apiValue == snapshotDefault && current.ValueBool() != *apiValue:
+		return current
+	case !typeutils.IsKnown(current) && *apiValue == snapshotDefault:
+		return types.BoolNull()
+	default:
+		return types.BoolValue(*apiValue)
+	}
+}
+
+func mapOptionalFloatWithSnapshotDefault(current types.Float64, apiValue *float32, snapshotDefault float64) types.Float64 {
+	switch {
+	case apiValue == nil:
+		if typeutils.IsKnown(current) {
+			return current
+		}
+		return types.Float64Null()
+	case typeutils.IsKnown(current) && float64(*apiValue) == snapshotDefault && current.ValueFloat64() != float64(*apiValue):
+		return current
+	case !typeutils.IsKnown(current) && float64(*apiValue) == snapshotDefault:
+		return types.Float64Null()
+	default:
+		return types.Float64Value(float64(*apiValue))
 	}
 }
 

@@ -32,7 +32,7 @@ import (
 
 func newXYChartPanelConfigConverter() xyChartPanelConfigConverter {
 	return xyChartPanelConfigConverter{
-		lensPanelConfigConverter: lensPanelConfigConverter{
+		lensVisualizationBase: lensVisualizationBase{
 			visualizationType: string(kbapi.Xy),
 			hasTFPanelConfig:  func(pm panelModel) bool { return pm.XYChartConfig != nil },
 		},
@@ -40,48 +40,20 @@ func newXYChartPanelConfigConverter() xyChartPanelConfigConverter {
 }
 
 type xyChartPanelConfigConverter struct {
-	lensPanelConfigConverter
+	lensVisualizationBase
 }
 
-func (c xyChartPanelConfigConverter) handlesTFPanelConfig(pm panelModel) bool {
-	return pm.XYChartConfig != nil
-}
-
-func (c xyChartPanelConfigConverter) populateFromAPIPanel(ctx context.Context, pm *panelModel, config kbapi.DashboardPanelItem_Config) diag.Diagnostics {
-	// Try to extract the XY chart config from the panel config
-	cfgMap, err := config.AsDashboardPanelItemConfig8()
+func (c xyChartPanelConfigConverter) populateFromAttributes(ctx context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes) diag.Diagnostics {
+	xyChart, err := attrs.AsXyChart()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	// Extract the attributes
-	attrs, ok := cfgMap["attributes"]
-	if !ok {
-		return nil
-	}
-
-	attrsMap, ok := attrs.(map[string]any)
-	if !ok {
-		return nil
-	}
-
-	// Marshal and unmarshal to get the XyChart
-	attrsJSON, err := json.Marshal(attrsMap)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	var xyChart kbapi.XyChart
-	if err := json.Unmarshal(attrsJSON, &xyChart); err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	// Populate the model
 	pm.XYChartConfig = &xyChartConfigModel{}
 	return pm.XYChartConfig.fromAPI(ctx, xyChart)
 }
 
-func (c xyChartPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *kbapi.DashboardPanelItem_Config) diag.Diagnostics {
+func (c xyChartPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelLens_Config_0_Attributes, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	configModel := *pm.XYChartConfig
 
@@ -89,39 +61,24 @@ func (c xyChartPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *kba
 	xyChart, xyDiags := configModel.toAPI()
 	diags.Append(xyDiags...)
 	if diags.HasError() {
-		return diags
+		return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}, diags
 	}
 
-	// Create the nested Config1 structure
-	var attrs0 kbapi.DashboardPanelItemConfig70Attributes0
-	if err := attrs0.FromXyChart(xyChart); err != nil {
+	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	if err := attrs.FromXyChart(xyChart); err != nil {
 		diags.AddError("Failed to create XY chart attributes", err.Error())
-		return diags
+		return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}, diags
 	}
 
-	var configAttrs kbapi.DashboardPanelItem_Config_7_0_Attributes
-	if err := configAttrs.FromDashboardPanelItemConfig70Attributes0(attrs0); err != nil {
-		diags.AddError("Failed to create config attributes", err.Error())
-		return diags
-	}
-
-	config10 := kbapi.DashboardPanelItemConfig70{
-		Attributes: configAttrs,
-	}
-
-	var config1 kbapi.DashboardPanelItemConfig7
-	if err := config1.FromDashboardPanelItemConfig70(config10); err != nil {
-		diags.AddError("Failed to create config1", err.Error())
-		return diags
-	}
-
-	if err := apiConfig.FromDashboardPanelItemConfig7(config1); err != nil {
-		diags.AddError("Failed to marshal XY chart config", err.Error())
-	}
-
-	return diags
+	return attrs, diags
 }
 
+// test-compat wrappers for legacy converter tests
+func (c xyChartPanelConfigConverter) populateFromAPIPanel(ctx context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes) diag.Diagnostics {
+	return c.populateFromAttributes(ctx, pm, attrs)
+}
+
+// test-compat wrappers for legacy converter tests
 type xyChartConfigModel struct {
 	Title       types.String        `tfsdk:"title"`
 	Description types.String        `tfsdk:"description"`

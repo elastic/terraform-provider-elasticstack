@@ -32,7 +32,7 @@ import (
 
 func newTagcloudPanelConfigConverter() tagcloudPanelConfigConverter {
 	return tagcloudPanelConfigConverter{
-		lensPanelConfigConverter: lensPanelConfigConverter{
+		lensVisualizationBase: lensVisualizationBase{
 			visualizationType: string(kbapi.TagcloudNoESQLTypeTagcloud),
 			hasTFPanelConfig:  func(pm panelModel) bool { return pm.TagcloudConfig != nil },
 		},
@@ -40,43 +40,15 @@ func newTagcloudPanelConfigConverter() tagcloudPanelConfigConverter {
 }
 
 type tagcloudPanelConfigConverter struct {
-	lensPanelConfigConverter
+	lensVisualizationBase
 }
 
-func (c tagcloudPanelConfigConverter) handlesTFPanelConfig(pm panelModel) bool {
-	return pm.TagcloudConfig != nil
-}
-
-func (c tagcloudPanelConfigConverter) populateFromAPIPanel(ctx context.Context, pm *panelModel, config kbapi.DashboardPanelItem_Config) diag.Diagnostics {
-	// Try to extract the tagcloud config from the panel config
-	cfgMap, err := config.AsDashboardPanelItemConfig8()
+func (c tagcloudPanelConfigConverter) populateFromAttributes(ctx context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes) diag.Diagnostics {
+	tagcloudChart, err := attrs.AsTagcloudChart()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	// Extract the attributes
-	attrs, ok := cfgMap["attributes"]
-	if !ok {
-		return nil
-	}
-
-	attrsMap, ok := attrs.(map[string]any)
-	if !ok {
-		return nil
-	}
-
-	// Marshal and unmarshal to get the TagcloudChart
-	attrsJSON, err := json.Marshal(attrsMap)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	var tagcloudChart kbapi.TagcloudChart
-	if err := json.Unmarshal(attrsJSON, &tagcloudChart); err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	// Try to extract as TagcloudNoESQL (standard non-ES|QL tagcloud)
 	tagcloudNoESQL, err := tagcloudChart.AsTagcloudNoESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
@@ -87,7 +59,7 @@ func (c tagcloudPanelConfigConverter) populateFromAPIPanel(ctx context.Context, 
 	return pm.TagcloudConfig.fromAPI(ctx, tagcloudNoESQL)
 }
 
-func (c tagcloudPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *kbapi.DashboardPanelItem_Config) diag.Diagnostics {
+func (c tagcloudPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelLens_Config_0_Attributes, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	configModel := *pm.TagcloudConfig
 
@@ -95,43 +67,30 @@ func (c tagcloudPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *kb
 	tagcloudNoESQL, tagcloudDiags := configModel.toAPI()
 	diags.Append(tagcloudDiags...)
 	if diags.HasError() {
-		return diags
+		return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}, diags
 	}
 
 	// Convert TagcloudNoESQL to TagcloudChart
 	var tagcloudChart kbapi.TagcloudChart
 	if err := tagcloudChart.FromTagcloudNoESQL(tagcloudNoESQL); err != nil {
 		diags.AddError("Failed to convert tagcloud to schema", err.Error())
-		return diags
+		return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}, diags
 	}
 
-	// Create the nested dashboard panel config structure for the tagcloud attributes
-	var attrs0 kbapi.DashboardPanelItemConfig70Attributes0
-	if err := attrs0.FromTagcloudChart(tagcloudChart); err != nil {
+	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	if err := attrs.FromTagcloudChart(tagcloudChart); err != nil {
 		diags.AddError("Failed to create tagcloud attributes", err.Error())
-		return diags
+		return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}, diags
 	}
 
-	var configAttrs kbapi.DashboardPanelItem_Config_7_0_Attributes
-	if err := configAttrs.FromDashboardPanelItemConfig70Attributes0(attrs0); err != nil {
-		diags.AddError("Failed to create config attributes", err.Error())
-		return diags
-	}
+	return attrs, diags
+}
 
-	config10 := kbapi.DashboardPanelItemConfig70{
-		Attributes: configAttrs,
+func (c tagcloudPanelConfigConverter) mapPanelToAPI(pm panelModel, attrs *kbapi.KbnDashboardPanelLens_Config_0_Attributes) diag.Diagnostics {
+	newAttrs, diags := c.buildAttributes(pm)
+	if !diags.HasError() {
+		*attrs = newAttrs
 	}
-
-	var config1 kbapi.DashboardPanelItemConfig7
-	if err := config1.FromDashboardPanelItemConfig70(config10); err != nil {
-		diags.AddError("Failed to create config1", err.Error())
-		return diags
-	}
-
-	if err := apiConfig.FromDashboardPanelItemConfig7(config1); err != nil {
-		diags.AddError("Failed to marshal tagcloud config", err.Error())
-	}
-
 	return diags
 }
 

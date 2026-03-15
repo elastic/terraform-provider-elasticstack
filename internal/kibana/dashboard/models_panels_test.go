@@ -52,7 +52,7 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 						"h": 3
 					},
 					"uid": "1",
-					"type": "DASHBOARD_MARKDOWN",
+					"type": "markdown",
 					"config": {
 						"title": "My Panel",
 						"content": "some content",
@@ -62,7 +62,7 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 			]`,
 			expectedPanels: []panelModel{
 				{
-					Type: types.StringValue("DASHBOARD_MARKDOWN"),
+					Type: types.StringValue("markdown"),
 					Grid: panelGridModel{
 						X: types.Int64Value(0),
 						Y: types.Int64Value(1),
@@ -85,29 +85,34 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 			},
 		},
 		{
-			name: "panel with unstructured config (JSON)",
+			name: "panel with markdown config_json fallback",
 			apiPanelsJSON: `[
 				{
 					"grid": {
 						"x": 10,
 						"y": 20
 					},
-					"type": "search",
+					"type": "markdown",
 					"config": {"unknownField": "something"}
 				}
 			]`,
 			expectedPanels: []panelModel{
 				{
-					Type: types.StringValue("search"),
+					Type: types.StringValue("markdown"),
 					Grid: panelGridModel{
 						X: types.Int64Value(10),
 						Y: types.Int64Value(20),
 						W: types.Int64Null(),
 						H: types.Int64Null(),
 					},
-					ID:             types.StringNull(),
-					MarkdownConfig: nil,
-					ConfigJSON:     jsontypes.NewNormalizedValue(`{"unknownField": "something"}`),
+					ID: types.StringNull(),
+					MarkdownConfig: &markdownConfigModel{
+						Title:       types.StringNull(),
+						Content:     types.StringNull(),
+						HideTitle:   types.BoolNull(),
+						Description: types.StringNull(),
+					},
+					ConfigJSON: jsontypes.NewNormalizedValue(`{"unknownField": "something"}`),
 				},
 			},
 		},
@@ -121,9 +126,9 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 					"uid": "section1",
 					"panels": [
 						{
-							"type": "visualization",
+							"type": "markdown",
 							"grid": { "x": 0, "y": 0, "w": 4, "h": 4 },
-							"config": { "title": "Inner Panel" }
+							"config": { "title": "Inner Panel", "content": "Inner content" }
 						}
 					]
 				}
@@ -138,16 +143,21 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 					},
 					Panels: []panelModel{
 						{
-							Type: types.StringValue("visualization"),
+							Type: types.StringValue("markdown"),
 							Grid: panelGridModel{
 								X: types.Int64Value(0),
 								Y: types.Int64Value(0),
 								W: types.Int64Value(4),
 								H: types.Int64Value(4),
 							},
-							ID:             types.StringNull(),
-							MarkdownConfig: nil,
-							ConfigJSON:     jsontypes.NewNormalizedValue(`{ "title": "Inner Panel" }`),
+							ID: types.StringNull(),
+							MarkdownConfig: &markdownConfigModel{
+								Title:       types.StringValue("Inner Panel"),
+								Content:     types.StringValue("Inner content"),
+								HideTitle:   types.BoolNull(),
+								Description: types.StringNull(),
+							},
+							ConfigJSON: jsontypes.NewNormalizedValue(`{ "title": "Inner Panel", "content": "Inner content" }`),
 						},
 					},
 				},
@@ -158,9 +168,9 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 			apiPanelsJSON: `[
 				{
 					"grid": { "x": 0, "y": 0, "w": 6, "h": 6 },
-					"type": "visualization",
+					"type": "markdown",
 					"uid": "panel1",
-					"config": { "title": "Panel 1" }
+					"config": { "title": "Panel 1", "content": "Panel 1 body" }
 				},
 				{
 					"title": "Section 1",
@@ -168,9 +178,9 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 					"uid": "section1",
 					"panels": [
 						{
-							"type": "visualization",
+							"type": "markdown",
 							"grid": { "x": 0, "y": 0, "w": 6, "h": 6 },
-							"config": { "title": "Inner Panel" }
+							"config": { "title": "Inner Panel", "content": "Inner panel body" }
 						}
 					]
 				},
@@ -183,16 +193,21 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 			]`,
 			expectedPanels: []panelModel{
 				{
-					Type: types.StringValue("visualization"),
+					Type: types.StringValue("markdown"),
 					Grid: panelGridModel{
 						X: types.Int64Value(0),
 						Y: types.Int64Value(0),
 						W: types.Int64Value(6),
 						H: types.Int64Value(6),
 					},
-					ID:             types.StringValue("panel1"),
-					MarkdownConfig: nil,
-					ConfigJSON:     jsontypes.NewNormalizedValue(`{ "title": "Panel 1" }`),
+					ID: types.StringValue("panel1"),
+					MarkdownConfig: &markdownConfigModel{
+						Title:       types.StringValue("Panel 1"),
+						Content:     types.StringValue("Panel 1 body"),
+						HideTitle:   types.BoolNull(),
+						Description: types.StringNull(),
+					},
+					ConfigJSON: jsontypes.NewNormalizedValue(`{ "title": "Panel 1", "content": "Panel 1 body" }`),
 				},
 				{
 					Type: types.StringValue("lens"),
@@ -217,16 +232,21 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 					},
 					Panels: []panelModel{
 						{
-							Type: types.StringValue("visualization"),
+							Type: types.StringValue("markdown"),
 							Grid: panelGridModel{
 								X: types.Int64Value(0),
 								Y: types.Int64Value(0),
 								W: types.Int64Value(6),
 								H: types.Int64Value(6),
 							},
-							ID:             types.StringNull(),
-							MarkdownConfig: nil,
-							ConfigJSON:     jsontypes.NewNormalizedValue(`{ "title": "Inner Panel" }`),
+							ID: types.StringNull(),
+							MarkdownConfig: &markdownConfigModel{
+								Title:       types.StringValue("Inner Panel"),
+								Content:     types.StringValue("Inner panel body"),
+								HideTitle:   types.BoolNull(),
+								Description: types.StringNull(),
+							},
+							ConfigJSON: jsontypes.NewNormalizedValue(`{ "title": "Inner Panel", "content": "Inner panel body" }`),
 						},
 					},
 				},
@@ -261,7 +281,7 @@ func Test_panelsToAPI(t *testing.T) {
 			model: dashboardModel{
 				Panels: []panelModel{
 					{
-						Type: types.StringValue("visualization"),
+						Type: types.StringValue("markdown"),
 						Grid: panelGridModel{
 							X: types.Int64Value(0),
 							Y: types.Int64Value(1),
@@ -287,7 +307,7 @@ func Test_panelsToAPI(t *testing.T) {
 						"y": 1
 					},
 					"uid": "1",
-					"type": "visualization",
+					"type": "markdown",
 					"config": {
 						"content": "some content",
                         "hide_title": true,
@@ -297,18 +317,18 @@ func Test_panelsToAPI(t *testing.T) {
 			]`,
 		},
 		{
-			name: "panel with unstructured config (JSON)",
+			name: "panel with markdown config_json",
 			model: dashboardModel{
 				Panels: []panelModel{
 					{
-						Type: types.StringValue("search"),
+						Type: types.StringValue("markdown"),
 						Grid: panelGridModel{
 							X: types.Int64Value(10),
 							Y: types.Int64Value(20),
 						},
 						ID:             types.StringNull(),
 						MarkdownConfig: nil,
-						ConfigJSON:     jsontypes.NewNormalizedValue(`{"unknownField":"something"}`),
+						ConfigJSON:     jsontypes.NewNormalizedValue(`{"content":"from json"}`),
 					},
 				},
 			},
@@ -318,9 +338,9 @@ func Test_panelsToAPI(t *testing.T) {
 						"x": 10,
 						"y": 20
 					},
-					"type": "search",
+					"type": "markdown",
 					"config": {
-						"unknownField": "something"
+						"content": "from json"
 					}
 				}
 			]`,
@@ -336,7 +356,7 @@ func Test_panelsToAPI(t *testing.T) {
 						Grid:      sectionGridModel{Y: types.Int64Value(50)},
 						Panels: []panelModel{
 							{
-								Type: types.StringValue("text"),
+								Type: types.StringValue("markdown"),
 								Grid: panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0), W: types.Int64Value(5), H: types.Int64Value(5)},
 								MarkdownConfig: &markdownConfigModel{
 									Title: types.StringValue("Inner Text"),
@@ -353,7 +373,7 @@ func Test_panelsToAPI(t *testing.T) {
 					"collapsed": true,
 					"grid": {"y": 50},
 					"panels": [
-						{"grid":{"h":5,"w":5,"x":0,"y":0},"type":"text","config":{"content":"","title":"Inner Text"}}
+						{"grid":{"h":5,"w":5,"x":0,"y":0},"type":"markdown","config":{"title":"Inner Text"}}
 					]
 				}
 			]`,

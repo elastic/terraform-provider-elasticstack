@@ -238,7 +238,7 @@ func TestAccResourceDashboardPanels(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "sections.0.id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.grid.y", "0"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.panels.#", "1"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.panels.0.type", "DASHBOARD_MARKDOWN"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.panels.0.type", "markdown"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.panels.0.grid.h", "10"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.panels.0.grid.w", "24"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.panels.0.grid.x", "0"),

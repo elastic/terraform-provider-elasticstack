@@ -821,12 +821,12 @@ func Test_xyChartPanelConfigConverter_populateFromAPIPanel(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		config      kbapi.DashboardPanelItem_Config
+		config      kbapi.KbnDashboardPanelLens_Config_0_Attributes
 		expectError bool
 	}{
 		{
 			name: "valid xy chart config",
-			config: func() kbapi.DashboardPanelItem_Config {
+			config: func() kbapi.KbnDashboardPanelLens_Config_0_Attributes {
 				attributes := map[string]any{
 					"type":  "xy",
 					"title": "Test Chart",
@@ -850,13 +850,8 @@ func Test_xyChartPanelConfigConverter_populateFromAPIPanel(t *testing.T) {
 					},
 				}
 
-				configMap := map[string]any{
-					"attributes": attributes,
-				}
-
-				configJSON, _ := json.Marshal(configMap)
-				var config kbapi.DashboardPanelItem_Config
-				_ = config.FromDashboardPanelItemConfig8(configMap)
+				configJSON, _ := json.Marshal(attributes)
+				var config kbapi.KbnDashboardPanelLens_Config_0_Attributes
 				_ = json.Unmarshal(configJSON, &config)
 				return config
 			}(),

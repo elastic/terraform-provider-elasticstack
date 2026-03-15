@@ -17,45 +17,58 @@
 
 package dashboard
 
-import "github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+import (
+	"context"
 
-type lensPanelConfigConverter struct {
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+)
+
+const panelTypeLens = "lens"
+
+type lensVisualizationConverter interface {
+	vizType() string
+	handlesTFConfig(pm panelModel) bool
+	populateFromAttributes(ctx context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes) diag.Diagnostics
+	buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelLens_Config_0_Attributes, diag.Diagnostics)
+}
+
+type lensVisualizationBase struct {
 	visualizationType string
 	hasTFPanelConfig  func(pm panelModel) bool
 }
 
-func (c lensPanelConfigConverter) handlesAPIPanelConfig(pm *panelModel, panelType string, cfg kbapi.DashboardPanelItem_Config) bool {
+func (c lensVisualizationBase) vizType() string {
+	return c.visualizationType
+}
+
+func (c lensVisualizationBase) handlesTFConfig(pm panelModel) bool {
+	if c.hasTFPanelConfig == nil {
+		return false
+	}
+	return c.hasTFPanelConfig(pm)
+}
+
+// test-compat wrappers for legacy converter tests
+func (c lensVisualizationBase) handlesTFPanelConfig(pm panelModel) bool {
+	return c.handlesTFConfig(pm)
+}
+
+// test-compat wrappers for legacy converter tests
+func (c lensVisualizationBase) handlesAPIPanelConfig(pm *panelModel, panelType string, attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes) bool {
 	if c.hasTFPanelConfig != nil && pm != nil && !c.hasTFPanelConfig(*pm) {
 		return false
 	}
-
-	if panelType != "lens" {
+	if panelType != panelTypeLens {
 		return false
 	}
-
-	cfgMap, err := cfg.AsDashboardPanelItemConfig8()
-	if err != nil {
-		return false
-	}
-
-	return c.hasExpectedVisualizationType(cfgMap)
+	return detectLensVizType(attrs) == c.visualizationType
 }
 
-func (c lensPanelConfigConverter) hasExpectedVisualizationType(cfgMap map[string]any) bool {
-	attrs, ok := cfgMap["attributes"]
-	if !ok {
-		return false
+func detectLensVizType(attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes) string {
+	chart, err := attrs.AsXyChart()
+	if err != nil {
+		return ""
 	}
-
-	attrsMap, ok := attrs.(map[string]any)
-	if !ok {
-		return false
-	}
-
-	vizType, ok := attrsMap["type"]
-	if !ok {
-		return false
-	}
-
-	return vizType == c.visualizationType
+	return string(chart.Type)
 }

@@ -32,57 +32,27 @@ import (
 
 func newHeatmapPanelConfigConverter() heatmapPanelConfigConverter {
 	return heatmapPanelConfigConverter{
-		lensPanelConfigConverter: lensPanelConfigConverter{
+		lensVisualizationBase: lensVisualizationBase{
 			visualizationType: string(kbapi.HeatmapNoESQLTypeHeatmap),
+			hasTFPanelConfig:  func(pm panelModel) bool { return pm.HeatmapConfig != nil },
 		},
 	}
 }
 
 type heatmapPanelConfigConverter struct {
-	lensPanelConfigConverter
+	lensVisualizationBase
 }
 
-func (c heatmapPanelConfigConverter) handlesTFPanelConfig(pm panelModel) bool {
-	return pm.HeatmapConfig != nil
-}
-
-func (c heatmapPanelConfigConverter) populateFromAPIPanel(ctx context.Context, pm *panelModel, config kbapi.DashboardPanelItem_Config) diag.Diagnostics {
-	cfgMap, err := config.AsDashboardPanelItemConfig8()
+func (c heatmapPanelConfigConverter) populateFromAttributes(ctx context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes) diag.Diagnostics {
+	heatmapChart, err := attrs.AsHeatmapChart()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-
-	attrs, ok := cfgMap["attributes"]
-	if !ok {
-		return nil
-	}
-
-	attrsMap, ok := attrs.(map[string]any)
-	if !ok {
-		return nil
-	}
-
-	attrsJSON, err := json.Marshal(attrsMap)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	var heatmapChart kbapi.HeatmapChart
-	if err := json.Unmarshal(attrsJSON, &heatmapChart); err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	_, hasQuery := attrsMap["query"]
 
 	pm.HeatmapConfig = &heatmapConfigModel{}
-	if hasQuery {
-		heatmapNoESQL, err := heatmapChart.AsHeatmapNoESQL()
-		if err != nil {
-			return diagutil.FrameworkDiagFromError(err)
-		}
+	if heatmapNoESQL, err := heatmapChart.AsHeatmapNoESQL(); err == nil && (heatmapNoESQL.Query.Query != "" || heatmapNoESQL.Query.Language != nil) {
 		return pm.HeatmapConfig.fromAPINoESQL(ctx, heatmapNoESQL)
 	}
-
 	heatmapESQL, err := heatmapChart.AsHeatmapESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
@@ -90,42 +60,34 @@ func (c heatmapPanelConfigConverter) populateFromAPIPanel(ctx context.Context, p
 	return pm.HeatmapConfig.fromAPIESQL(ctx, heatmapESQL)
 }
 
-func (c heatmapPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *kbapi.DashboardPanelItem_Config) diag.Diagnostics {
+func (c heatmapPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelLens_Config_0_Attributes, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	configModel := *pm.HeatmapConfig
 
 	heatmapChart, heatmapDiags := configModel.toAPI()
 	diags.Append(heatmapDiags...)
 	if diags.HasError() {
-		return diags
+		return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}, diags
 	}
 
-	var attrs0 kbapi.DashboardPanelItemConfig70Attributes0
-	if err := attrs0.FromHeatmapChart(heatmapChart); err != nil {
+	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	if err := attrs.FromHeatmapChart(heatmapChart); err != nil {
 		diags.AddError("Failed to create heatmap attributes", err.Error())
-		return diags
+		return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}, diags
 	}
 
-	var configAttrs kbapi.DashboardPanelItem_Config_7_0_Attributes
-	if err := configAttrs.FromDashboardPanelItemConfig70Attributes0(attrs0); err != nil {
-		diags.AddError("Failed to create config attributes", err.Error())
-		return diags
-	}
+	return attrs, diags
+}
 
-	config10 := kbapi.DashboardPanelItemConfig70{
-		Attributes: configAttrs,
-	}
+func (c heatmapPanelConfigConverter) populateFromAPIPanel(ctx context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes) diag.Diagnostics {
+	return c.populateFromAttributes(ctx, pm, attrs)
+}
 
-	var config1 kbapi.DashboardPanelItemConfig7
-	if err := config1.FromDashboardPanelItemConfig70(config10); err != nil {
-		diags.AddError("Failed to create config1", err.Error())
-		return diags
+func (c heatmapPanelConfigConverter) mapPanelToAPI(pm panelModel, attrs *kbapi.KbnDashboardPanelLens_Config_0_Attributes) diag.Diagnostics {
+	newAttrs, diags := c.buildAttributes(pm)
+	if !diags.HasError() {
+		*attrs = newAttrs
 	}
-
-	if err := apiConfig.FromDashboardPanelItemConfig7(config1); err != nil {
-		diags.AddError("Failed to marshal heatmap config", err.Error())
-	}
-
 	return diags
 }
 

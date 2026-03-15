@@ -18,7 +18,7 @@ resource "elasticstack_kibana_dashboard" "test" {
       y = 0
     }
     panels = [{
-      type = "DASHBOARD_MARKDOWN"
+      type = "markdown"
       grid = {
         x = 0
         y = 0

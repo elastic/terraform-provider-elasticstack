@@ -270,7 +270,7 @@ func Test_datatablePanelConfigConverter_roundTrip(t *testing.T) {
 		DatatableConfig: &datatableConfigModel{NoESQL: configModel},
 	}
 
-	var apiConfig kbapi.DashboardPanelItem_Config
+	var apiConfig kbapi.KbnDashboardPanelLens_Config_0_Attributes
 	diags := converter.mapPanelToAPI(panel, &apiConfig)
 	require.False(t, diags.HasError())
 
@@ -308,7 +308,7 @@ func Test_datatablePanelConfigConverter_roundTrip_ESQL(t *testing.T) {
 		DatatableConfig: &datatableConfigModel{ESQL: esqlConfigModel},
 	}
 
-	var apiConfig kbapi.DashboardPanelItem_Config
+	var apiConfig kbapi.KbnDashboardPanelLens_Config_0_Attributes
 	diags := converter.mapPanelToAPI(panel, &apiConfig)
 	require.False(t, diags.HasError())
 

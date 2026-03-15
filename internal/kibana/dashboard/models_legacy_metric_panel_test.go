@@ -172,17 +172,23 @@ func Test_legacyMetricConfigModel_toAPI_requiresQueryForNoESQL(t *testing.T) {
 }
 
 func Test_legacyMetricPanelConfigConverter_handlesAPIPanelConfig(t *testing.T) {
-	buildConfig := func(t *testing.T, configMap map[string]any) kbapi.DashboardPanelItem_Config {
+	buildConfig := func(t *testing.T, configMap map[string]any) kbapi.KbnDashboardPanelLens_Config_0_Attributes {
 		t.Helper()
-		var cfg kbapi.DashboardPanelItem_Config
-		require.NoError(t, cfg.FromDashboardPanelItemConfig8(configMap))
+		attrs, ok := configMap["attributes"].(map[string]any)
+		if !ok {
+			return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}
+		}
+		configJSON, err := json.Marshal(attrs)
+		require.NoError(t, err)
+		var cfg kbapi.KbnDashboardPanelLens_Config_0_Attributes
+		require.NoError(t, json.Unmarshal(configJSON, &cfg))
 		return cfg
 	}
 
 	tests := []struct {
 		name      string
 		panelType string
-		config    kbapi.DashboardPanelItem_Config
+		config    kbapi.KbnDashboardPanelLens_Config_0_Attributes
 		want      bool
 	}{
 		{
@@ -208,7 +214,7 @@ func Test_legacyMetricPanelConfigConverter_handlesAPIPanelConfig(t *testing.T) {
 		},
 		{
 			name:      "does not handle non-lens type",
-			panelType: "DASHBOARD_MARKDOWN",
+			panelType: "markdown",
 			config: buildConfig(t, map[string]any{
 				"attributes": map[string]any{"type": "legacy_metric"},
 			}),
@@ -241,7 +247,7 @@ func Test_legacyMetricPanelConfigConverter_handlesAPIPanelConfig(t *testing.T) {
 		{
 			name:      "does not handle invalid config union",
 			panelType: "lens",
-			config:    kbapi.DashboardPanelItem_Config{},
+			config:    kbapi.KbnDashboardPanelLens_Config_0_Attributes{},
 			want:      false,
 		},
 	}
@@ -270,8 +276,12 @@ func Test_legacyMetricPanelConfigConverter_roundTrip(t *testing.T) {
 		"filters":               []any{map[string]any{"query": "status:200", "language": "kuery"}},
 	}
 	configMap := map[string]any{"attributes": attrs}
-	var apiConfig1 kbapi.DashboardPanelItem_Config
-	require.NoError(t, apiConfig1.FromDashboardPanelItemConfig8(configMap))
+	attrsMap, ok := configMap["attributes"].(map[string]any)
+	require.True(t, ok)
+	configJSON, err := json.Marshal(attrsMap)
+	require.NoError(t, err)
+	var apiConfig1 kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	require.NoError(t, json.Unmarshal(configJSON, &apiConfig1))
 
 	c := newLegacyMetricPanelConfigConverter()
 
@@ -282,7 +292,7 @@ func Test_legacyMetricPanelConfigConverter_roundTrip(t *testing.T) {
 	require.NotNil(t, pm1.LegacyMetricConfig)
 
 	// model → API (mapPanelToAPI)
-	var apiConfig2 kbapi.DashboardPanelItem_Config
+	var apiConfig2 kbapi.KbnDashboardPanelLens_Config_0_Attributes
 	diags = c.mapPanelToAPI(*pm1, &apiConfig2)
 	require.False(t, diags.HasError())
 

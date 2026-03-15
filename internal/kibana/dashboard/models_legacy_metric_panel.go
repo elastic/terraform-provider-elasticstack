@@ -39,43 +39,20 @@ const (
 
 func newLegacyMetricPanelConfigConverter() legacyMetricPanelConfigConverter {
 	return legacyMetricPanelConfigConverter{
-		lensPanelConfigConverter: lensPanelConfigConverter{
+		lensVisualizationBase: lensVisualizationBase{
 			visualizationType: string(kbapi.LegacyMetricNoESQLTypeLegacyMetric),
+			hasTFPanelConfig:  func(pm panelModel) bool { return pm.LegacyMetricConfig != nil },
 		},
 	}
 }
 
 type legacyMetricPanelConfigConverter struct {
-	lensPanelConfigConverter
+	lensVisualizationBase
 }
 
-func (c legacyMetricPanelConfigConverter) handlesTFPanelConfig(pm panelModel) bool {
-	return pm.LegacyMetricConfig != nil
-}
-
-func (c legacyMetricPanelConfigConverter) populateFromAPIPanel(ctx context.Context, pm *panelModel, config kbapi.DashboardPanelItem_Config) diag.Diagnostics {
-	cfgMap, err := config.AsDashboardPanelItemConfig8()
+func (c legacyMetricPanelConfigConverter) populateFromAttributes(ctx context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes) diag.Diagnostics {
+	legacyMetricChart, err := attrs.AsLegacyMetricChart()
 	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	attrs, ok := cfgMap["attributes"]
-	if !ok {
-		return nil
-	}
-
-	attrsMap, ok := attrs.(map[string]any)
-	if !ok {
-		return nil
-	}
-
-	attrsJSON, err := json.Marshal(attrsMap)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	var legacyMetricChart kbapi.LegacyMetricChart
-	if err := json.Unmarshal(attrsJSON, &legacyMetricChart); err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
@@ -83,42 +60,34 @@ func (c legacyMetricPanelConfigConverter) populateFromAPIPanel(ctx context.Conte
 	return pm.LegacyMetricConfig.fromAPI(ctx, legacyMetricChart)
 }
 
-func (c legacyMetricPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *kbapi.DashboardPanelItem_Config) diag.Diagnostics {
+func (c legacyMetricPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelLens_Config_0_Attributes, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	configModel := *pm.LegacyMetricConfig
 
 	legacyMetricChart, legacyDiags := configModel.toAPI()
 	diags.Append(legacyDiags...)
 	if diags.HasError() {
-		return diags
+		return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}, diags
 	}
 
-	var attrs0 kbapi.DashboardPanelItemConfig70Attributes0
-	if err := attrs0.FromLegacyMetricChart(legacyMetricChart); err != nil {
+	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	if err := attrs.FromLegacyMetricChart(legacyMetricChart); err != nil {
 		diags.AddError("Failed to create legacy metric attributes", err.Error())
-		return diags
+		return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}, diags
 	}
 
-	var configAttrs kbapi.DashboardPanelItem_Config_7_0_Attributes
-	if err := configAttrs.FromDashboardPanelItemConfig70Attributes0(attrs0); err != nil {
-		diags.AddError("Failed to create config attributes", err.Error())
-		return diags
-	}
+	return attrs, diags
+}
 
-	config10 := kbapi.DashboardPanelItemConfig70{
-		Attributes: configAttrs,
-	}
+func (c legacyMetricPanelConfigConverter) populateFromAPIPanel(ctx context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes) diag.Diagnostics {
+	return c.populateFromAttributes(ctx, pm, attrs)
+}
 
-	var config1 kbapi.DashboardPanelItemConfig7
-	if err := config1.FromDashboardPanelItemConfig70(config10); err != nil {
-		diags.AddError("Failed to create config1", err.Error())
-		return diags
+func (c legacyMetricPanelConfigConverter) mapPanelToAPI(pm panelModel, attrs *kbapi.KbnDashboardPanelLens_Config_0_Attributes) diag.Diagnostics {
+	newAttrs, diags := c.buildAttributes(pm)
+	if !diags.HasError() {
+		*attrs = newAttrs
 	}
-
-	if err := apiConfig.FromDashboardPanelItemConfig7(config1); err != nil {
-		diags.AddError("Failed to marshal legacy metric config", err.Error())
-	}
-
 	return diags
 }
 
@@ -308,7 +277,12 @@ func (m *legacyMetricConfigModel) toAPI() (kbapi.LegacyMetricChart, diag.Diagnos
 		}
 		api.Metric.Alignments = metric.Alignments
 		api.Metric.ApplyColorTo = metric.ApplyColorTo
-		api.Metric.Color = metric.Color
+		var color kbapi.LegacyMetricESQL_Metric_Color
+		if err := color.FromColorByValueAbsolute(metric.Color); err != nil {
+			diags.AddError("Failed to encode legacy metric color", err.Error())
+			return result, diags
+		}
+		api.Metric.Color = &color
 		api.Metric.Column = metric.Column
 		api.Metric.Format = metric.Format
 		api.Metric.Label = metric.Label

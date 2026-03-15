@@ -31,7 +31,7 @@ import (
 
 func newPieChartPanelConfigConverter() pieChartPanelConfigConverter {
 	return pieChartPanelConfigConverter{
-		lensPanelConfigConverter: lensPanelConfigConverter{
+		lensVisualizationBase: lensVisualizationBase{
 			visualizationType: "pie", // Visualization type literal used by the Kibana API for pie chart panels
 			hasTFPanelConfig:  func(pm panelModel) bool { return pm.PieChartConfig != nil },
 		},
@@ -39,55 +39,22 @@ func newPieChartPanelConfigConverter() pieChartPanelConfigConverter {
 }
 
 type pieChartPanelConfigConverter struct {
-	lensPanelConfigConverter
+	lensVisualizationBase
 }
 
-func (c pieChartPanelConfigConverter) handlesTFPanelConfig(pm panelModel) bool {
-	return pm.PieChartConfig != nil
-}
-
-func (c pieChartPanelConfigConverter) populateFromAPIPanel(_ context.Context, pm *panelModel, config kbapi.DashboardPanelItem_Config) diag.Diagnostics {
-	// Try to extract the pie chart config from the panel config
-	cfgMap, err := config.AsDashboardPanelItemConfig8()
+func (c pieChartPanelConfigConverter) populateFromAttributes(_ context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes) diag.Diagnostics {
+	pieChart, err := attrs.AsPieChart()
 	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	// Extract the attributes
-	attrs, ok := cfgMap["attributes"]
-	if !ok {
-		return nil
-	}
-
-	attrsMap, ok := attrs.(map[string]any)
-	if !ok {
-		return nil
-	}
-
-	// Marshal and unmarshal to get the PieChart
-	attrsJSON, err := json.Marshal(attrsMap)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	var pieChart kbapi.PieChart
-	if err := json.Unmarshal(attrsJSON, &pieChart); err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
 	// Populate the model.
 	//
-	// Disambiguate NoESQL vs ESQL using the presence of the `query` key. The generated union
-	// types can successfully unmarshal into both variants, so we need an external discriminator.
+	// Disambiguate NoESQL vs ESQL using query presence in decoded no-esql variant.
 	pm.PieChartConfig = &pieChartConfigModel{}
-	if _, ok := attrsMap["query"]; ok {
-		noESQL, err := pieChart.AsPieNoESQL()
-		if err != nil {
-			return diagutil.FrameworkDiagFromError(err)
-		}
+	if noESQL, err := pieChart.AsPieNoESQL(); err == nil && (noESQL.Query.Query != "" || noESQL.Query.Language != nil) {
 		return pm.PieChartConfig.fromAPINoESQL(noESQL)
 	}
-
 	esql, err := pieChart.AsPieESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
@@ -95,7 +62,7 @@ func (c pieChartPanelConfigConverter) populateFromAPIPanel(_ context.Context, pm
 	return pm.PieChartConfig.fromAPIESQL(esql)
 }
 
-func (c pieChartPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *kbapi.DashboardPanelItem_Config) diag.Diagnostics {
+func (c pieChartPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelLens_Config_0_Attributes, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	configModel := *pm.PieChartConfig
 
@@ -103,37 +70,27 @@ func (c pieChartPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *kb
 	pieChart, pieDiags := configModel.toAPI()
 	diags.Append(pieDiags...)
 	if diags.HasError() {
-		return diags
+		return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}, diags
 	}
 
-	// Create the nested Config1 structure
-	var attrs0 kbapi.DashboardPanelItemConfig70Attributes0
-	if err := attrs0.FromPieChart(pieChart); err != nil {
+	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	if err := attrs.FromPieChart(pieChart); err != nil {
 		diags.AddError("Failed to create pie chart attributes", err.Error())
-		return diags
+		return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}, diags
 	}
 
-	var configAttrs kbapi.DashboardPanelItem_Config_7_0_Attributes
-	if err := configAttrs.FromDashboardPanelItemConfig70Attributes0(attrs0); err != nil {
-		diags.AddError("Failed to create config attributes", err.Error())
-		return diags
-	}
+	return attrs, diags
+}
 
-	config10 := kbapi.DashboardPanelItemConfig70{
-		Attributes: configAttrs,
-	}
+func (c pieChartPanelConfigConverter) populateFromAPIPanel(ctx context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes) diag.Diagnostics {
+	return c.populateFromAttributes(ctx, pm, attrs)
+}
 
-	var config1 kbapi.DashboardPanelItemConfig7
-	if err := config1.FromDashboardPanelItemConfig70(config10); err != nil {
-		diags.AddError("Failed to create config1", err.Error())
-		return diags
+func (c pieChartPanelConfigConverter) mapPanelToAPI(pm panelModel, attrs *kbapi.KbnDashboardPanelLens_Config_0_Attributes) diag.Diagnostics {
+	newAttrs, diags := c.buildAttributes(pm)
+	if !diags.HasError() {
+		*attrs = newAttrs
 	}
-
-	if err := apiConfig.FromDashboardPanelItemConfig7(config1); err != nil {
-		diags.AddError("Failed to marshal pie chart config", err.Error())
-		return diags
-	}
-
 	return diags
 }
 
