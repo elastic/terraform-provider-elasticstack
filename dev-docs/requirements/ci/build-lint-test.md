@@ -36,6 +36,7 @@ permissions:
 - **[REQ-016] (FailureDiagnostics)**: The workflow shall emit Docker Compose logs when the job fails or acceptance tests fail.
 - **[REQ-017] (TeardownGuarantee)**: The workflow shall always tear down the Docker Compose stack via `make docker-clean`, regardless of prior step outcomes.
 - **[REQ-018] (AutoApproveDependency)**: The `auto-approve` job shall depend on successful completion of the `test` (matrix acceptance test) job.
-- **[REQ-019] (AutoApproveDelegation)**: The `auto-approve` job shall execute `go run ./scripts/auto-approve`; approval policy and gate behavior are defined in `dev-docs/requirements/ci/pr-auto-approve.md`.
-- **[REQ-020] (AutoApprovePermissions)**: The `auto-approve` job shall request `contents: read` and `pull-requests: write` permissions.
-- **[REQ-021] (SupplyChain)**: Third-party actions in the workflow shall be pinned by commit SHA.
+- **[REQ-019] (AutoApproveScope)**: The `auto-approve` job shall only run on `pull_request` events
+- **[REQ-020] (AutoApproveDelegation)**: The `auto-approve` job shall execute `go run ./scripts/auto-approve`; approval policy and gate behavior are defined in `dev-docs/requirements/ci/pr-auto-approve.md`.
+- **[REQ-021] (AutoApprovePermissions)**: The `auto-approve` job shall request `contents: read` and `pull-requests: write` permissions.
+- **[REQ-022] (SupplyChain)**: Third-party actions in the workflow shall be pinned by commit SHA.

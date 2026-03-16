@@ -246,6 +246,7 @@ jobs:
 
   auto-approve:
     name: Evaluate and auto-approve PR
+    if: github.event_name == 'pull_request'
     needs: test
     runs-on: ubuntu-latest
     timeout-minutes: 5
