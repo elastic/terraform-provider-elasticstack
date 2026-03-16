@@ -48,7 +48,7 @@ func newTestFleetClient(t *testing.T, handler http.Handler) *fleet.Client {
 func TestGetPackageInfo_PackageNotFound(t *testing.T) {
 	knownPackages.Delete(getPackageCacheKey("tcp", "3.1.10"))
 
-	client := newTestFleetClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	client := newTestFleetClient(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 	}))
 
@@ -65,7 +65,7 @@ func TestGetPackageInfo_PackageNotFound(t *testing.T) {
 func TestGetPackageInfo_Success(t *testing.T) {
 	knownPackages.Delete(getPackageCacheKey("tcp", "3.1.11"))
 
-	client := newTestFleetClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	client := newTestFleetClient(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		resp := struct {
 			Item kbapi.PackageInfo `json:"item"`
 		}{
@@ -75,7 +75,7 @@ func TestGetPackageInfo_Success(t *testing.T) {
 			},
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		require.NoError(t, json.NewEncoder(w).Encode(resp))
 	}))
 
 	pkg, diags := getPackageInfo(context.Background(), client, "tcp", "3.1.11")
@@ -91,7 +91,7 @@ func TestGetPackageInfo_CacheHit(t *testing.T) {
 	knownPackages.Store(getPackageCacheKey("tcp", "3.1.11"), cached)
 	t.Cleanup(func() { knownPackages.Delete(getPackageCacheKey("tcp", "3.1.11")) })
 
-	client := newTestFleetClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	client := newTestFleetClient(t, http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
 		t.Fatal("HTTP request should not be made when cache is hit")
 	}))
 
