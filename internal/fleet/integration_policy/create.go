@@ -19,6 +19,7 @@ package integrationpolicy
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -83,6 +84,14 @@ func (r *integrationPolicyResource) Create(ctx context.Context, req resource.Cre
 
 	// Remember if the user configured input in the plan
 	planHadInput := typeutils.IsKnown(planModel.Inputs) && !planModel.Inputs.IsNull() && len(planModel.Inputs.Elements()) > 0
+
+	if policy.Package == nil {
+		resp.Diagnostics.AddError(
+			"Missing package information",
+			fmt.Sprintf("The integration policy '%s' does not contain package information.", policy.Id),
+		)
+		return
+	}
 
 	pkg, diags := getPackageInfo(ctx, client, policy.Package.Name, policy.Package.Version)
 	resp.Diagnostics.Append(diags...)

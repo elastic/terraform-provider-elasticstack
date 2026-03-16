@@ -19,6 +19,7 @@ package integrationpolicy
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
@@ -75,6 +76,14 @@ func (r *integrationPolicyResource) Read(ctx context.Context, req resource.ReadR
 	// Check if this is an import operation (PolicyID is the only field set)
 	isImport := stateModel.PolicyID.ValueString() != "" &&
 		(stateModel.Name.IsNull() || stateModel.Name.IsUnknown())
+
+	if policy.Package == nil {
+		resp.Diagnostics.AddError(
+			"Missing package information",
+			fmt.Sprintf("The integration policy '%s' does not contain package information.", policyID),
+		)
+		return
+	}
 
 	pkg, diags := getPackageInfo(ctx, client, policy.Package.Name, policy.Package.Version)
 	resp.Diagnostics.Append(diags...)

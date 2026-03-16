@@ -108,6 +108,15 @@ func getPackageInfo(ctx context.Context, client *fleet.Client, name string, vers
 	if diags.HasError() {
 		return nil, diags
 	}
+
+	if pkg == nil {
+		diags.AddWarning(
+			"Package not found",
+			fmt.Sprintf("Package '%s' version '%s' was not found in the registry. Input defaults may be unavailable. Consider updating integration_version to an available version.", name, version),
+		)
+		return nil, diags
+	}
+
 	knownPackages.Store(getPackageCacheKey(name, version), *pkg)
 	return pkg, diags
 }
