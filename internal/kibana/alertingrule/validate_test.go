@@ -283,6 +283,17 @@ func TestAllowedKeyOverridesAreNotInSchema(t *testing.T) {
 			}
 		}
 	}
+
+	// Also verify per-spec additionalAllowedKeys are not in the spec's own schema.
+	for ruleType, specs := range ruleTypeParamsSpecs {
+		for _, spec := range specs {
+			for _, key := range spec.additionalAllowedKeys {
+				if paramsSchemaAcceptsKey([]paramsSchemaSpec{spec}, key) {
+					t.Errorf("rule type %q spec %s has per-spec allowed key %q, but the generated schema now accepts it; remove it from additionalAllowedKeys", ruleType, spec.name, key)
+				}
+			}
+		}
+	}
 }
 
 func paramsSchemaAcceptsKey(specs []paramsSchemaSpec, key string) bool {

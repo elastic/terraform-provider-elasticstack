@@ -34,9 +34,10 @@ import (
 // paramsSchemaSpec contains precomputed key metadata and decode factory for
 // one generated params variant. This avoids reflection in runtime validation.
 type paramsSchemaSpec struct {
-	name         string
-	newTarget    func() any
-	requiredKeys map[string]struct{}
+	name                  string
+	newTarget             func() any
+	requiredKeys          map[string]struct{}
+	additionalAllowedKeys []string // keys stripped only for this variant
 }
 
 func mustNewParamsSchemaSpec(newTarget func() any) paramsSchemaSpec {
@@ -54,6 +55,12 @@ func mustNewParamsSchemaSpec(newTarget func() any) paramsSchemaSpec {
 		newTarget:    newTarget,
 		requiredKeys: requiredKeys,
 	}
+}
+
+func mustNewParamsSchemaSpecWithKeys(newTarget func() any, additionalAllowedKeys []string) paramsSchemaSpec {
+	spec := mustNewParamsSchemaSpec(newTarget)
+	spec.additionalAllowedKeys = additionalAllowedKeys
+	return spec
 }
 
 // ValidateConfig is the single validation entry point for rule params. It runs
@@ -127,7 +134,7 @@ var ruleTypeParamsSpecs = map[string][]paramsSchemaSpec{
 	},
 	".es-query": {
 		mustNewParamsSchemaSpec(func() any { return &kbapi.ParamsEsQueryDslRule{} }),
-		mustNewParamsSchemaSpec(func() any { return &kbapi.ParamsEsQueryEsqlRule{} }),
+		mustNewParamsSchemaSpecWithKeys(func() any { return &kbapi.ParamsEsQueryEsqlRule{} }, []string{"termField"}),
 		mustNewParamsSchemaSpec(func() any { return &kbapi.ParamsEsQueryKqlRule{} }),
 	},
 	"logs.alert.document.count": {
@@ -150,7 +157,7 @@ var ruleTypeAdditionalAllowedParamsKeys = map[string][]string{
 	// but the generated ESQL params struct omits it.
 	// TODO: remove when upstream Kibana schema includes this key.
 	// Tracking: https://github.com/elastic/kibana/issues/252451
-	".es-query": {"sourceFields", "termField"},
+	".es-query": {"sourceFields"},
 	// Kibana accepts this convenience field alongside filterQuery in metrics
 	// threshold rules.
 	"metrics.alert.threshold": {"filterQueryText"},
@@ -185,8 +192,15 @@ func validateRuleParams(ruleTypeID string, params map[string]any) []string {
 		return []string{fmt.Sprintf("failed to pre-process params for validation: %v", err)}
 	}
 	for _, spec := range specs {
+		specRaw := validationRaw
+		if len(spec.additionalAllowedKeys) > 0 {
+			specRaw, err = stripKeys(specRaw, spec.additionalAllowedKeys)
+			if err != nil {
+				return []string{fmt.Sprintf("failed to pre-process params for validation: %v", err)}
+			}
+		}
 		target := spec.newTarget()
-		decoder := json.NewDecoder(bytes.NewReader(validationRaw))
+		decoder := json.NewDecoder(bytes.NewReader(specRaw))
 		decoder.DisallowUnknownFields()
 		if err := decoder.Decode(target); err != nil {
 			best.consider(false, fmt.Sprintf("params did not match %s schema for rule type %q: %v", spec.name, ruleTypeID, err))
