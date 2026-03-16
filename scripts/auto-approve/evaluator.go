@@ -37,6 +37,7 @@ type EvaluationInput struct {
 }
 
 type EvaluationResult struct {
+	CategoryMatched string   `json:"category_matched,omitempty"`
 	ShouldApprove   bool     `json:"should_approve"`
 	AlreadyApproved bool     `json:"already_approved"`
 	Reasons         []string `json:"reasons"`
@@ -60,16 +61,11 @@ func Evaluate(input EvaluationInput) EvaluationResult {
 		reasons = append(reasons, "pull request is draft")
 	}
 
-	if !allCommitsByCopilot(input.Commits) {
-		reasons = append(reasons, fmt.Sprintf("not all commits are authored by allowed Copilot identities (%s)", strings.Join(sortedCopilotAuthorLogins(), ", ")))
-	}
-
-	if !filesAllowed(input.Files) {
-		reasons = append(reasons, "pull request contains files outside *_test.go and *.tf")
-	}
-
-	if !withinDiffThreshold(input.PullRequest.GetAdditions(), input.PullRequest.GetDeletions()) {
-		reasons = append(reasons, fmt.Sprintf("edited lines must be < %d", maxEditedLines))
+	category := matchedCategory(input.PullRequest)
+	if category == "" {
+		reasons = append(reasons, "pull request did not match any auto-approve category")
+	} else {
+		reasons = append(reasons, evaluateCategoryGates(category, input)...)
 	}
 
 	if !checksSuccessful(input.CombinedState, input.CheckRuns) {
@@ -78,6 +74,7 @@ func Evaluate(input EvaluationInput) EvaluationResult {
 
 	if approverAlreadyApproved(input.Reviews, input.ApproverLogin) {
 		return EvaluationResult{
+			CategoryMatched: category,
 			ShouldApprove:   false,
 			AlreadyApproved: true,
 			Reasons:         []string{"approver has already submitted an approval review"},
@@ -86,15 +83,57 @@ func Evaluate(input EvaluationInput) EvaluationResult {
 
 	if len(reasons) > 0 {
 		return EvaluationResult{
-			ShouldApprove: false,
-			Reasons:       reasons,
+			CategoryMatched: category,
+			ShouldApprove:   false,
+			Reasons:         reasons,
 		}
 	}
 
 	return EvaluationResult{
-		ShouldApprove: true,
-		Reasons:       []string{"all gates passed"},
+		CategoryMatched: category,
+		ShouldApprove:   true,
+		Reasons:         []string{"all gates passed"},
 	}
+}
+
+func matchedCategory(pr *github.PullRequest) string {
+	if pr == nil || pr.User == nil {
+		return ""
+	}
+
+	author := pr.User.GetLogin()
+	if _, ok := allowedCopilotAuthorLogins[author]; ok {
+		return "copilot"
+	}
+	if author == "dependabot[bot]" {
+		return "dependabot"
+	}
+	return ""
+}
+
+func evaluateCategoryGates(category string, input EvaluationInput) []string {
+	switch category {
+	case "copilot":
+		return evaluateCopilotCategory(input)
+	case "dependabot":
+		return nil
+	default:
+		return []string{fmt.Sprintf("unknown auto-approve category %q", category)}
+	}
+}
+
+func evaluateCopilotCategory(input EvaluationInput) []string {
+	reasons := make([]string, 0)
+	if !allCommitsByCopilot(input.Commits) {
+		reasons = append(reasons, fmt.Sprintf("not all commits are authored by allowed Copilot identities (%s)", strings.Join(sortedCopilotAuthorLogins(), ", ")))
+	}
+	if !filesAllowed(input.Files) {
+		reasons = append(reasons, "pull request contains files outside *_test.go and *.tf")
+	}
+	if !withinDiffThreshold(input.PullRequest.GetAdditions(), input.PullRequest.GetDeletions()) {
+		reasons = append(reasons, fmt.Sprintf("edited lines must be < %d", maxEditedLines))
+	}
+	return reasons
 }
 
 func allCommitsByCopilot(commits []*github.RepositoryCommit) bool {
