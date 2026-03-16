@@ -64,6 +64,7 @@ func TestGetPackageInfo_PackageNotFound(t *testing.T) {
 
 func TestGetPackageInfo_Success(t *testing.T) {
 	knownPackages.Delete(getPackageCacheKey("tcp", "3.1.11"))
+	t.Cleanup(func() { knownPackages.Delete(getPackageCacheKey("tcp", "3.1.11")) })
 
 	client := newTestFleetClient(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		resp := struct {
