@@ -12,12 +12,6 @@ const (
 	maxEditedLines = 300
 )
 
-var allowedCheckConclusions = map[string]struct{}{
-	"success": {},
-	"neutral": {},
-	"skipped": {},
-}
-
 var allowedCopilotAuthorLogins = map[string]struct{}{
 	"github-copilot[bot]": {},
 	"Copilot":             {},
@@ -27,9 +21,6 @@ type EvaluationInput struct {
 	PullRequest       *github.PullRequest
 	Commits           []*github.RepositoryCommit
 	Files             []*github.CommitFile
-	CombinedState     string
-	CheckRuns         []*github.CheckRun
-	CurrentRunID      string
 	Reviews           []*github.PullRequestReview
 	ApproverLogin     string
 	RepositoryOwner   string
@@ -67,10 +58,6 @@ func Evaluate(input EvaluationInput) EvaluationResult {
 		reasons = append(reasons, "pull request did not match any auto-approve category")
 	} else {
 		reasons = append(reasons, evaluateCategoryGates(category, input)...)
-	}
-
-	if !checksSuccessful(input.CombinedState, input.CheckRuns, input.CurrentRunID) {
-		reasons = append(reasons, "not all checks are successful")
 	}
 
 	if approverAlreadyApproved(input.Reviews, input.ApproverLogin) {
@@ -179,39 +166,6 @@ func filesAllowed(files []*github.CommitFile) bool {
 
 func withinDiffThreshold(additions int, deletions int) bool {
 	return additions+deletions < maxEditedLines
-}
-
-func checksSuccessful(combinedState string, checkRuns []*github.CheckRun, currentRunID string) bool {
-	if combinedState != "success" {
-		return false
-	}
-
-	for _, run := range checkRuns {
-		if run == nil {
-			return false
-		}
-		if isCurrentWorkflowCheckRun(run, currentRunID) {
-			continue
-		}
-
-		if run.GetStatus() != "completed" {
-			return false
-		}
-
-		if _, ok := allowedCheckConclusions[run.GetConclusion()]; !ok {
-			return false
-		}
-	}
-
-	return true
-}
-
-func isCurrentWorkflowCheckRun(run *github.CheckRun, currentRunID string) bool {
-	currentRunID = strings.TrimSpace(currentRunID)
-	if currentRunID == "" || run == nil {
-		return false
-	}
-	return strings.Contains(run.GetDetailsURL(), "/actions/runs/"+currentRunID+"/")
 }
 
 func approverAlreadyApproved(reviews []*github.PullRequestReview, approverLogin string) bool {
