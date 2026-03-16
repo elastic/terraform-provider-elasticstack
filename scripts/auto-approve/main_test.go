@@ -382,4 +382,3 @@ func forceSetEnv(t *testing.T, key string, value string) {
 		_ = os.Setenv(key, oldValue)
 	})
 }
-
