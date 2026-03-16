@@ -146,7 +146,11 @@ var ruleTypeAdditionalAllowedParamsKeys = map[string][]string{
 	// currently missing from generated `.es-query` params models.
 	// TODO: remove when upstream Kibana schema includes this key.
 	// Tracking: https://github.com/elastic/kibana/issues/252451
-	".es-query": {"sourceFields"},
+	// Kibana's runtime API accepts termField for ESQL rules (per-group alerting),
+	// but the generated ESQL params struct omits it.
+	// TODO: remove when upstream Kibana schema includes this key.
+	// Tracking: https://github.com/elastic/kibana/issues/252451
+	".es-query": {"sourceFields", "termField"},
 	// Kibana accepts this convenience field alongside filterQuery in metrics
 	// threshold rules.
 	"metrics.alert.threshold": {"filterQueryText"},
