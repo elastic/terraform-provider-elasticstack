@@ -144,19 +144,6 @@ func TestListAllPaginationHelpers(t *testing.T) {
 		}
 	})
 
-	mux.HandleFunc("/repos/o/r/commits/sha123/check-runs", func(w http.ResponseWriter, r *http.Request) {
-		page := r.URL.Query().Get("page")
-		switch page {
-		case "", "1":
-			w.Header().Set("Link", fmt.Sprintf(`<%s/repos/o/r/commits/sha123/check-runs?page=2>; rel="next"`, testServerBaseURL(r)))
-			_, _ = w.Write([]byte(`{"total_count":2,"check_runs":[{"id":1,"status":"completed","conclusion":"success"}]}`))
-		case "2":
-			_, _ = w.Write([]byte(`{"total_count":2,"check_runs":[{"id":2,"status":"completed","conclusion":"neutral"}]}`))
-		default:
-			http.Error(w, "unexpected page", http.StatusBadRequest)
-		}
-	})
-
 	mux.HandleFunc("/repos/o/r/pulls/5/reviews", func(w http.ResponseWriter, r *http.Request) {
 		page := r.URL.Query().Get("page")
 		switch page {
@@ -191,12 +178,6 @@ func TestListAllPaginationHelpers(t *testing.T) {
 	require.Len(t, files, 2)
 	assert.Equal(t, "a_test.go", files[0].GetFilename())
 	assert.Equal(t, "b.tf", files[1].GetFilename())
-
-	checkRuns, err := listAllCheckRuns(ctx, client, "o", "r", "sha123")
-	require.NoError(t, err)
-	require.Len(t, checkRuns, 2)
-	assert.Equal(t, "success", checkRuns[0].GetConclusion())
-	assert.Equal(t, "neutral", checkRuns[1].GetConclusion())
 
 	reviews, err := listAllReviews(ctx, client, "o", "r", 5)
 	require.NoError(t, err)

@@ -243,3 +243,23 @@ jobs:
         run: make docker-clean
         env:
           STACK_VERSION: ${{ matrix.version }}
+
+  auto-approve:
+    name: Evaluate and auto-approve PR
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Evaluate auto-approval gates
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: go run ./scripts/auto-approve

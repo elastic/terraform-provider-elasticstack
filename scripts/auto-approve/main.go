@@ -77,16 +77,6 @@ func run(ctx context.Context) error {
 		return fmt.Errorf("list files: %w", err)
 	}
 
-	combinedStatus, _, err := client.Repositories.GetCombinedStatus(ctx, owner, name, headSHA, nil)
-	if err != nil {
-		return fmt.Errorf("get combined status: %w", err)
-	}
-
-	checkRuns, err := listAllCheckRuns(ctx, client, owner, name, headSHA)
-	if err != nil {
-		return fmt.Errorf("list check runs: %w", err)
-	}
-
 	reviews, err := listAllReviews(ctx, client, owner, name, prNumber)
 	if err != nil {
 		return fmt.Errorf("list reviews: %w", err)
@@ -96,9 +86,6 @@ func run(ctx context.Context) error {
 		PullRequest:       pr,
 		Commits:           commits,
 		Files:             files,
-		CombinedState:     combinedStatus.GetState(),
-		CheckRuns:         checkRuns,
-		CurrentRunID:      strings.TrimSpace(os.Getenv("GITHUB_RUN_ID")),
 		Reviews:           reviews,
 		ApproverLogin:     strings.TrimSpace(os.Getenv("GITHUB_ACTOR")),
 		RepositoryOwner:   owner,
@@ -111,9 +98,6 @@ func run(ctx context.Context) error {
 		"repo":             name,
 		"pull_request":     prNumber,
 		"head_sha":         headSHA,
-		"combined_state":   combinedStatus.GetState(),
-		"check_runs_count": len(checkRuns),
-		"current_run_id":   strings.TrimSpace(os.Getenv("GITHUB_RUN_ID")),
 		"result":           result,
 	})
 
@@ -123,7 +107,7 @@ func run(ctx context.Context) error {
 
 	approvalReason := "all category and shared gates passed"
 	if result.CategoryMatched != "" {
-		approvalReason = fmt.Sprintf("category=%s with shared checks gates passing", result.CategoryMatched)
+		approvalReason = fmt.Sprintf("category=%s gates passed", result.CategoryMatched)
 	}
 	review := &github.PullRequestReviewRequest{
 		Event: github.Ptr("APPROVE"),
@@ -223,28 +207,6 @@ func listAllFiles(ctx context.Context, client *github.Client, owner, repo string
 	}
 
 	return files, nil
-}
-
-func listAllCheckRuns(ctx context.Context, client *github.Client, owner, repo, sha string) ([]*github.CheckRun, error) {
-	opts := &github.ListCheckRunsOptions{
-		Filter:      github.Ptr("latest"),
-		ListOptions: github.ListOptions{PerPage: 100},
-	}
-	runs := make([]*github.CheckRun, 0)
-
-	for {
-		pageRuns, resp, err := client.Checks.ListCheckRunsForRef(ctx, owner, repo, sha, opts)
-		if err != nil {
-			return nil, err
-		}
-		runs = append(runs, pageRuns.CheckRuns...)
-		if resp.NextPage == 0 {
-			break
-		}
-		opts.Page = resp.NextPage
-	}
-
-	return runs, nil
 }
 
 func listAllReviews(ctx context.Context, client *github.Client, owner, repo string, number int) ([]*github.PullRequestReview, error) {
