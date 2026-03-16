@@ -50,9 +50,10 @@ permissions:
 - **[REQ-018] (ChecksDefinition)**: A successful checks state means:
   - the commit status rollup state is `success`, and
   - all check runs are completed with conclusions in `{success, neutral, skipped}`.
+- **[REQ-019] (ChecksSelfExclusion)**: Checks evaluation shall exclude the currently executing `PR Auto Approve` workflow run from check-run completeness/conclusion gating to avoid self-blocking while the auto-approve job is still in progress.
 
 ### Extensibility and Tests
 
-- **[REQ-019] (CategoryExtensibility)**: Category selectors and gates shall be structured so that new auto-approve categories can be added without modifying existing category behavior.
-- **[REQ-020] (Testability)**: Category routing and gate evaluation logic shall be unit tested with table-driven tests that cover passing and failing scenarios for each category and threshold boundary, including shared checks-state gates.
+- **[REQ-020] (CategoryExtensibility)**: Category selectors and gates shall be structured so that new auto-approve categories can be added without modifying existing category behavior.
+- **[REQ-021] (Testability)**: Category routing and gate evaluation logic shall be unit tested with table-driven tests that cover passing and failing scenarios for each category and threshold boundary, including shared checks-state gates and self-exclusion behavior.
 

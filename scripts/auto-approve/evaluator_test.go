@@ -28,6 +28,13 @@ func TestEvaluate(t *testing.T) {
 			Conclusion: github.Ptr(conclusion),
 		}
 	}
+	makeCheckWithDetails := func(status string, conclusion string, detailsURL string) *github.CheckRun {
+		return &github.CheckRun{
+			Status:     github.Ptr(status),
+			Conclusion: github.Ptr(conclusion),
+			DetailsURL: github.Ptr(detailsURL),
+		}
+	}
 
 	baseInput := EvaluationInput{
 		PullRequest: &github.PullRequest{
@@ -157,6 +164,28 @@ func TestEvaluate(t *testing.T) {
 			wantReason:  "not all checks are successful",
 		},
 		{
+			name: "ignores current workflow check run while it is in progress",
+			mutate: func(in *EvaluationInput) {
+				in.CurrentRunID = "23131556215"
+				in.CheckRuns = append(in.CheckRuns,
+					makeCheckWithDetails("in_progress", "", "https://github.com/elastic/terraform-provider-elasticstack/actions/runs/23131556215/job/67186044473"),
+				)
+			},
+			wantApprove: true,
+			wantReason:  "all gates passed",
+		},
+		{
+			name: "rejects in-progress check run from another workflow run",
+			mutate: func(in *EvaluationInput) {
+				in.CurrentRunID = "23131556215"
+				in.CheckRuns = append(in.CheckRuns,
+					makeCheckWithDetails("in_progress", "", "https://github.com/elastic/terraform-provider-elasticstack/actions/runs/99999999999/job/123"),
+				)
+			},
+			wantApprove: false,
+			wantReason:  "not all checks are successful",
+		},
+		{
 			name: "rejects incomplete check run",
 			mutate: func(in *EvaluationInput) {
 				in.CheckRuns[0] = makeCheck("queued", "")
@@ -229,6 +258,7 @@ func hasReasonContaining(reasons []string, expected string) bool {
 
 func cloneInput(in EvaluationInput) EvaluationInput {
 	out := in
+	out.CurrentRunID = in.CurrentRunID
 
 	out.PullRequest = &github.PullRequest{
 		State:     github.Ptr(in.PullRequest.GetState()),
@@ -261,6 +291,7 @@ func cloneInput(in EvaluationInput) EvaluationInput {
 		out.CheckRuns = append(out.CheckRuns, &github.CheckRun{
 			Status:     github.Ptr(r.GetStatus()),
 			Conclusion: github.Ptr(r.GetConclusion()),
+			DetailsURL: github.Ptr(r.GetDetailsURL()),
 		})
 	}
 

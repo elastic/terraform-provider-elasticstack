@@ -29,6 +29,7 @@ type EvaluationInput struct {
 	Files             []*github.CommitFile
 	CombinedState     string
 	CheckRuns         []*github.CheckRun
+	CurrentRunID      string
 	Reviews           []*github.PullRequestReview
 	ApproverLogin     string
 	RepositoryOwner   string
@@ -68,7 +69,7 @@ func Evaluate(input EvaluationInput) EvaluationResult {
 		reasons = append(reasons, evaluateCategoryGates(category, input)...)
 	}
 
-	if !checksSuccessful(input.CombinedState, input.CheckRuns) {
+	if !checksSuccessful(input.CombinedState, input.CheckRuns, input.CurrentRunID) {
 		reasons = append(reasons, "not all checks are successful")
 	}
 
@@ -180,7 +181,7 @@ func withinDiffThreshold(additions int, deletions int) bool {
 	return additions+deletions < maxEditedLines
 }
 
-func checksSuccessful(combinedState string, checkRuns []*github.CheckRun) bool {
+func checksSuccessful(combinedState string, checkRuns []*github.CheckRun, currentRunID string) bool {
 	if combinedState != "success" {
 		return false
 	}
@@ -188,6 +189,9 @@ func checksSuccessful(combinedState string, checkRuns []*github.CheckRun) bool {
 	for _, run := range checkRuns {
 		if run == nil {
 			return false
+		}
+		if isCurrentWorkflowCheckRun(run, currentRunID) {
+			continue
 		}
 
 		if run.GetStatus() != "completed" {
@@ -200,6 +204,14 @@ func checksSuccessful(combinedState string, checkRuns []*github.CheckRun) bool {
 	}
 
 	return true
+}
+
+func isCurrentWorkflowCheckRun(run *github.CheckRun, currentRunID string) bool {
+	currentRunID = strings.TrimSpace(currentRunID)
+	if currentRunID == "" || run == nil {
+		return false
+	}
+	return strings.Contains(run.GetDetailsURL(), "/actions/runs/"+currentRunID+"/")
 }
 
 func approverAlreadyApproved(reviews []*github.PullRequestReview, approverLogin string) bool {

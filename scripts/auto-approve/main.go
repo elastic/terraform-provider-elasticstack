@@ -98,6 +98,7 @@ func run(ctx context.Context) error {
 		Files:             files,
 		CombinedState:     combinedStatus.GetState(),
 		CheckRuns:         checkRuns,
+		CurrentRunID:      strings.TrimSpace(os.Getenv("GITHUB_RUN_ID")),
 		Reviews:           reviews,
 		ApproverLogin:     strings.TrimSpace(os.Getenv("GITHUB_ACTOR")),
 		RepositoryOwner:   owner,
@@ -112,6 +113,7 @@ func run(ctx context.Context) error {
 		"head_sha":         headSHA,
 		"combined_state":   combinedStatus.GetState(),
 		"check_runs_count": len(checkRuns),
+		"current_run_id":   strings.TrimSpace(os.Getenv("GITHUB_RUN_ID")),
 		"result":           result,
 	})
 
