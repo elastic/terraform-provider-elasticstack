@@ -24,6 +24,12 @@ permissions:
 - **[REQ-002] (PushTrigger)**: The workflow shall run on `push` to any branch, excluding tag refs matching `v*` and excluding changes limited to `README.md` and `CHANGELOG.md`.
 - **[REQ-003] (PullRequestTrigger)**: The workflow shall run on `pull_request`, excluding changes limited to `README.md` and `CHANGELOG.md`.
 - **[REQ-006] (ManualTrigger)**: The workflow shall support manual execution via `workflow_dispatch`.
+- **[REQ-023] (PreflightGate)**: The workflow shall evaluate whether to execute CI jobs via a dedicated preflight gate job that emits a `should_run` output.
+- **[REQ-024] (PushDuplicateSuppression)**: For `push` events, the preflight gate shall set `should_run=false` when an open pull request exists for the pushed branch in the same repository.
+- **[REQ-025] (PushWithoutPROptIn)**: For `push` events where no open pull request exists for the pushed branch, the preflight gate shall set `should_run=true`.
+- **[REQ-026] (NonPushGateBehavior)**: For non-`push` events (`pull_request` and `workflow_dispatch`), the preflight gate shall set `should_run=true`.
+- **[REQ-027] (GatedExecution)**: The `build`, `lint`, and matrix acceptance `test` jobs shall only execute when the preflight gate outputs `should_run=true`.
+- **[REQ-028] (GatePermissions)**: The preflight gate job shall request the minimum permissions required to inspect pull requests (`contents: read`, `pull-requests: read`).
 - **[REQ-007] (BuildJob)**: The `build` job shall run on `ubuntu-latest`, set up Go from `go.mod`, run `make vendor`, and run `make build-ci`.
 - **[REQ-008] (LintJob)**: The `lint` job shall run on `ubuntu-latest`, set up Go from `go.mod`, set up Terraform without wrapper mode, and run `make check-lint`.
 - **[REQ-009] (AcceptanceDependency)**: The matrix acceptance test job shall depend on successful completion of the `build` job.

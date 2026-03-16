@@ -94,11 +94,11 @@ func run(ctx context.Context) error {
 	})
 
 	logJSON("evaluation", map[string]any{
-		"owner":            owner,
-		"repo":             name,
-		"pull_request":     prNumber,
-		"head_sha":         headSHA,
-		"result":           result,
+		"owner":        owner,
+		"repo":         name,
+		"pull_request": prNumber,
+		"head_sha":     headSHA,
+		"result":       result,
 	})
 
 	if !result.ShouldApprove {
