@@ -28,6 +28,13 @@ func TestEvaluate(t *testing.T) {
 			Conclusion: github.Ptr(conclusion),
 		}
 	}
+	makeCheckWithDetails := func(status string, conclusion string, detailsURL string) *github.CheckRun {
+		return &github.CheckRun{
+			Status:     github.Ptr(status),
+			Conclusion: github.Ptr(conclusion),
+			DetailsURL: github.Ptr(detailsURL),
+		}
+	}
 
 	baseInput := EvaluationInput{
 		PullRequest: &github.PullRequest{
@@ -35,6 +42,9 @@ func TestEvaluate(t *testing.T) {
 			Draft:     github.Ptr(false),
 			Additions: github.Ptr(120),
 			Deletions: github.Ptr(90),
+			User: &github.User{
+				Login: github.Ptr("github-copilot[bot]"),
+			},
 		},
 		Commits: []*github.RepositoryCommit{
 			makeCommit("github-copilot[bot]"),
@@ -81,6 +91,18 @@ func TestEvaluate(t *testing.T) {
 			wantReason:  "all gates passed",
 		},
 		{
+			name: "approves dependabot without copilot-only gates",
+			mutate: func(in *EvaluationInput) {
+				in.PullRequest.User = &github.User{Login: github.Ptr("dependabot[bot]")}
+				in.Commits = []*github.RepositoryCommit{makeCommit("octocat")}
+				in.Files = []*github.CommitFile{makeFile("README.md")}
+				in.PullRequest.Additions = github.Ptr(500)
+				in.PullRequest.Deletions = github.Ptr(500)
+			},
+			wantApprove: true,
+			wantReason:  "all gates passed",
+		},
+		{
 			name: "rejects non copilot commit author",
 			mutate: func(in *EvaluationInput) {
 				in.Commits[1] = makeCommit("octocat")
@@ -115,9 +137,50 @@ func TestEvaluate(t *testing.T) {
 			wantReason:  "edited lines must be < 300",
 		},
 		{
+			name: "rejects when no category matches",
+			mutate: func(in *EvaluationInput) {
+				in.PullRequest.User = &github.User{Login: github.Ptr("octocat")}
+			},
+			wantApprove: false,
+			wantReason:  "did not match any auto-approve category",
+		},
+		{
 			name: "rejects failing combined status",
 			mutate: func(in *EvaluationInput) {
 				in.CombinedState = "failure"
+			},
+			wantApprove: false,
+			wantReason:  "not all checks are successful",
+		},
+		{
+			name: "rejects dependabot when shared checks fail",
+			mutate: func(in *EvaluationInput) {
+				in.PullRequest.User = &github.User{Login: github.Ptr("dependabot[bot]")}
+				in.CombinedState = "failure"
+				in.Commits = []*github.RepositoryCommit{makeCommit("octocat")}
+				in.Files = []*github.CommitFile{makeFile("README.md")}
+			},
+			wantApprove: false,
+			wantReason:  "not all checks are successful",
+		},
+		{
+			name: "ignores current workflow check run while it is in progress",
+			mutate: func(in *EvaluationInput) {
+				in.CurrentRunID = "23131556215"
+				in.CheckRuns = append(in.CheckRuns,
+					makeCheckWithDetails("in_progress", "", "https://github.com/elastic/terraform-provider-elasticstack/actions/runs/23131556215/job/67186044473"),
+				)
+			},
+			wantApprove: true,
+			wantReason:  "all gates passed",
+		},
+		{
+			name: "rejects in-progress check run from another workflow run",
+			mutate: func(in *EvaluationInput) {
+				in.CurrentRunID = "23131556215"
+				in.CheckRuns = append(in.CheckRuns,
+					makeCheckWithDetails("in_progress", "", "https://github.com/elastic/terraform-provider-elasticstack/actions/runs/99999999999/job/123"),
+				)
 			},
 			wantApprove: false,
 			wantReason:  "not all checks are successful",
@@ -195,12 +258,16 @@ func hasReasonContaining(reasons []string, expected string) bool {
 
 func cloneInput(in EvaluationInput) EvaluationInput {
 	out := in
+	out.CurrentRunID = in.CurrentRunID
 
 	out.PullRequest = &github.PullRequest{
 		State:     github.Ptr(in.PullRequest.GetState()),
 		Draft:     github.Ptr(in.PullRequest.GetDraft()),
 		Additions: github.Ptr(in.PullRequest.GetAdditions()),
 		Deletions: github.Ptr(in.PullRequest.GetDeletions()),
+		User: &github.User{
+			Login: github.Ptr(in.PullRequest.GetUser().GetLogin()),
+		},
 	}
 
 	out.Commits = make([]*github.RepositoryCommit, 0, len(in.Commits))
@@ -224,6 +291,7 @@ func cloneInput(in EvaluationInput) EvaluationInput {
 		out.CheckRuns = append(out.CheckRuns, &github.CheckRun{
 			Status:     github.Ptr(r.GetStatus()),
 			Conclusion: github.Ptr(r.GetConclusion()),
+			DetailsURL: github.Ptr(r.GetDetailsURL()),
 		})
 	}
 

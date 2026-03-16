@@ -44,11 +44,10 @@ func run(ctx context.Context) error {
 		return err
 	}
 
-	// prNumber, err := readPullRequestNumber(strings.TrimSpace(os.Getenv("GITHUB_EVENT_PATH")))
-	// if err != nil {
-	// 	return err
-	// }
-	prNumber := 1905
+	prNumber, err := readPullRequestNumber(strings.TrimSpace(os.Getenv("GITHUB_EVENT_PATH")))
+	if err != nil {
+		return err
+	}
 	if prNumber == 0 {
 		logJSON("skip", map[string]any{
 			"reason": "event has no associated pull request",
@@ -99,6 +98,7 @@ func run(ctx context.Context) error {
 		Files:             files,
 		CombinedState:     combinedStatus.GetState(),
 		CheckRuns:         checkRuns,
+		CurrentRunID:      strings.TrimSpace(os.Getenv("GITHUB_RUN_ID")),
 		Reviews:           reviews,
 		ApproverLogin:     strings.TrimSpace(os.Getenv("GITHUB_ACTOR")),
 		RepositoryOwner:   owner,
@@ -113,6 +113,7 @@ func run(ctx context.Context) error {
 		"head_sha":         headSHA,
 		"combined_state":   combinedStatus.GetState(),
 		"check_runs_count": len(checkRuns),
+		"current_run_id":   strings.TrimSpace(os.Getenv("GITHUB_RUN_ID")),
 		"result":           result,
 	})
 
@@ -120,9 +121,13 @@ func run(ctx context.Context) error {
 		return nil
 	}
 
+	approvalReason := "all category and shared gates passed"
+	if result.CategoryMatched != "" {
+		approvalReason = fmt.Sprintf("category=%s with shared checks gates passing", result.CategoryMatched)
+	}
 	review := &github.PullRequestReviewRequest{
 		Event: github.Ptr("APPROVE"),
-		Body:  github.Ptr("Auto-approved by policy: Copilot-authored changes limited to Terraform and Go tests under the diff threshold with all checks passing."),
+		Body:  github.Ptr("Auto-approved by policy: " + approvalReason + "."),
 	}
 
 	if _, _, err := client.PullRequests.CreateReview(ctx, owner, name, prNumber, review); err != nil {
