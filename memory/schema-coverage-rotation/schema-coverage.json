@@ -20,7 +20,7 @@
     "elasticstack_kibana_synthetics_parameter": null,
     "elasticstack_kibana_security_detection_rule": null,
     "elasticstack_elasticsearch_enrich_policy": null,
-    "elasticstack_apm_agent_configuration": null,
+    "elasticstack_apm_agent_configuration": "2026-03-16T02:30:22Z",
     "elasticstack_kibana_security_list_item": null,
     "elasticstack_kibana_data_view": null,
     "elasticstack_elasticsearch_index_template_ilm_attachment": null,
