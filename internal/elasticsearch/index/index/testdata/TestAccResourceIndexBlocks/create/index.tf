@@ -17,7 +17,7 @@ resource "elasticstack_elasticsearch_index" "test_blocks" {
   blocks_write                  = var.blocks_write
   blocks_read                   = false
   blocks_read_only              = false
-  blocks_read_only_allow_delete = true
+  blocks_read_only_allow_delete = false
   blocks_metadata               = false
 
   deletion_protection = false
