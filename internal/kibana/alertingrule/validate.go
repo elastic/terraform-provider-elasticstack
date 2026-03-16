@@ -189,7 +189,7 @@ func validateRuleParams(ruleTypeID string, params map[string]any) []string {
 		decoder := json.NewDecoder(bytes.NewReader(validationRaw))
 		decoder.DisallowUnknownFields()
 		if err := decoder.Decode(target); err != nil {
-			best.consider(false, fmt.Sprintf("extra param detected in params field for rule type %q: %v", ruleTypeID, err))
+			best.consider(false, fmt.Sprintf("params did not match %s schema for rule type %q: %v", spec.name, ruleTypeID, err))
 			continue
 		}
 
