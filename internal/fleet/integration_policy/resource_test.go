@@ -75,7 +75,7 @@ func TestGetPackageInfo_Success(t *testing.T) {
 			},
 		}
 		w.Header().Set("Content-Type", "application/json")
-		require.NoError(t, json.NewEncoder(w).Encode(resp))
+		assert.NoError(t, json.NewEncoder(w).Encode(resp))
 	}))
 
 	pkg, diags := getPackageInfo(context.Background(), client, "tcp", "3.1.11")
