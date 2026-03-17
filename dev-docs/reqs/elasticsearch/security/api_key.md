@@ -119,4 +119,4 @@ resource "elasticstack_elasticsearch_security_api_key" "example" {
 - **[REQ-049] (Rotation)**: The rotation example shall:
   - Use a `time_rotating` resource to trigger replacement on a consistent schedule.
   - Use a `create_before_destroy` meta-argument to ensure a valid API key at all times during rotation.
-- **[REQ-050] (Rotation)**: The rotation example shall also be validated in an acceptance test using a 1 second rotation timeframe.
+- **[REQ-050] (Rotation)**: The rotation example shall also be validated in an acceptance test using a `time_rotating` resource configured with `rotation_minutes = 1` and a `triggers` map containing an `epoch` value to force key replacement on demand.
