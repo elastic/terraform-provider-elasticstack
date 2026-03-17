@@ -138,20 +138,12 @@ func DeleteDashboard(ctx context.Context, client *Client, spaceID string, dashbo
 	}
 }
 
-func dashboardsSearchRequestEditor() func(ctx context.Context, req *http.Request) error {
-	return func(ctx context.Context, req *http.Request) error {
-		req.Header.Add("x-elastic-internal-origin", "Kibana")
-		req.Header.Set("elastic-api-version", "1")
-		return nil
-	}
-}
-
 func SearchDashboards(ctx context.Context, client *Client, spaceID string, body kbapi.PostDashboardsSearchJSONRequestBody) (*kbapi.PostDashboardsSearchResponse, diag.Diagnostics) {
 	resp, err := client.API.PostDashboardsSearchWithResponse(
 		ctx,
 		body,
 		spaceAwarePathRequestEditor(spaceID),
-		dashboardsSearchRequestEditor(),
+		addAPIVersionQueryParamRequestEditor(),
 	)
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)

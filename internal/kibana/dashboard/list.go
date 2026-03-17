@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package dashboard
 
 import (
@@ -6,8 +23,8 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/list"
 	listschema "github.com/hashicorp/terraform-plugin-framework/list/schema"
@@ -26,7 +43,7 @@ func NewListResource() list.ListResource {
 }
 
 type dashboardsListResource struct {
-	client *clients.ApiClient
+	client *clients.APIClient
 }
 
 type dashboardsListConfigModelV0 struct {
@@ -37,11 +54,11 @@ type dashboardsListConfigModelV0 struct {
 	PerPage      types.Int64  `tfsdk:"per_page"`
 }
 
-func (r *dashboardsListResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+func (r *dashboardsListResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = fmt.Sprintf("%s_%s", req.ProviderTypeName, "kibana_dashboard")
 }
 
-func (r *dashboardsListResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+func (r *dashboardsListResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -54,7 +71,7 @@ func (r *dashboardsListResource) Configure(ctx context.Context, req resource.Con
 	r.client = client
 }
 
-func (r *dashboardsListResource) ListResourceConfigSchema(ctx context.Context, req list.ListResourceSchemaRequest, resp *list.ListResourceSchemaResponse) {
+func (r *dashboardsListResource) ListResourceConfigSchema(_ context.Context, _ list.ListResourceSchemaRequest, resp *list.ListResourceSchemaResponse) {
 	resp.Schema = listschema.Schema{
 		Attributes: map[string]listschema.Attribute{
 			"space_id": listschema.StringAttribute{
@@ -136,7 +153,7 @@ func (r *dashboardsListResource) List(ctx context.Context, req list.ListRequest,
 				return
 			}
 
-			searchResp, searchDiags := kibana_oapi.SearchDashboards(ctx, kibanaClient, spaceID, body)
+			searchResp, searchDiags := kibanaoapi.SearchDashboards(ctx, kibanaClient, spaceID, body)
 			if searchDiags.HasError() {
 				result := req.NewListResult(ctx)
 				result.Diagnostics.AddWarning("Dashboard search failed", "The dashboards search endpoint returned an error. Partial results may have been returned.")
@@ -162,7 +179,7 @@ func (r *dashboardsListResource) List(ctx context.Context, req list.ListRequest,
 
 				result := req.NewListResult(ctx)
 
-				compID := clients.CompositeId{ClusterId: spaceID, ResourceId: d.Id}
+				compID := clients.CompositeID{ClusterID: spaceID, ResourceID: d.Id}
 				result.DisplayName = d.Data.Title
 				result.Diagnostics.Append(result.Identity.Set(ctx, identityModelV0{
 					ID: types.StringValue(compID.String()),
@@ -195,10 +212,10 @@ func (r *dashboardsListResource) List(ctx context.Context, req list.ListRequest,
 	}
 }
 
-func (r *dashboardsListResource) fetchFullDashboard(ctx context.Context, kibanaClient *kibana_oapi.Client, spaceID string, dashboardID string) (dashboardModel, bool) {
+func (r *dashboardsListResource) fetchFullDashboard(ctx context.Context, kibanaClient *kibanaoapi.Client, spaceID string, dashboardID string) (dashboardModel, bool) {
 	var model dashboardModel
 
-	getResp, diags := kibana_oapi.GetDashboard(ctx, kibanaClient, spaceID, dashboardID)
+	getResp, diags := kibanaoapi.GetDashboard(ctx, kibanaClient, spaceID, dashboardID)
 	if diags.HasError() || getResp == nil || getResp.JSON200 == nil {
 		return model, false
 	}
@@ -225,8 +242,8 @@ func newDashboardsSearchBody(ctx context.Context, cfg dashboardsListConfigModelV
 		body.Search = &s
 	}
 
-	includedVals := utils.ListTypeToSlice_String(ctx, cfg.TagsIncluded, path.Root("tags_included"), diags)
-	excludedVals := utils.ListTypeToSlice_String(ctx, cfg.TagsExcluded, path.Root("tags_excluded"), diags)
+	includedVals := typeutils.ListTypeToSliceString(ctx, cfg.TagsIncluded, path.Root("tags_included"), diags)
+	excludedVals := typeutils.ListTypeToSliceString(ctx, cfg.TagsExcluded, path.Root("tags_excluded"), diags)
 	if diags.HasError() {
 		return body
 	}

@@ -58,7 +58,7 @@ func (r *Resource) Metadata(_ context.Context, req resource.MetadataRequest, res
 	resp.TypeName = fmt.Sprintf("%s_%s", req.ProviderTypeName, "kibana_dashboard")
 }
 
-func (r *Resource) IdentitySchema(ctx context.Context, req resource.IdentitySchemaRequest, resp *resource.IdentitySchemaResponse) {
+func (r *Resource) IdentitySchema(_ context.Context, _ resource.IdentitySchemaRequest, resp *resource.IdentitySchemaResponse) {
 	resp.IdentitySchema = identityschema.Schema{
 		Attributes: map[string]identityschema.Attribute{
 			"id": identityschema.StringAttribute{
