@@ -30,7 +30,7 @@
     "elasticstack_elasticsearch_script": null,
     "elasticstack_elasticsearch_index_alias": null,
     "elasticstack_elasticsearch_security_system_user": null,
-    "elasticstack_elasticsearch_cluster_settings": null,
+    "elasticstack_elasticsearch_cluster_settings": "2026-03-17T02:29:12Z",
     "elasticstack_elasticsearch_snapshot_repository": null,
     "elasticstack_elasticsearch_ml_anomaly_detection_job": null,
     "elasticstack_elasticsearch_security_role_mapping": null,
@@ -48,7 +48,7 @@
     "elasticstack_kibana_default_data_view": null,
     "elasticstack_elasticsearch_component_template": null,
     "elasticstack_fleet_integration_policy": null,
-    "elasticstack_elasticsearch_data_stream": null,
+    "elasticstack_elasticsearch_data_stream": "2026-03-17T02:29:12Z",
     "elasticstack_kibana_security_list": null,
     "elasticstack_fleet_server_host": null,
     "elasticstack_elasticsearch_snapshot_lifecycle": null
