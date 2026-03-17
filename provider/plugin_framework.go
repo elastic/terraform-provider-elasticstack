@@ -130,6 +130,9 @@ func (p *Provider) Resources(ctx context.Context) []func() resource.Resource {
 		resources = append(resources, p.experimentalResources(ctx)...)
 	}
 
+	// TODO: design toggle structure - read map from env variable
+	// TODO: set validate location via context.WithValue()
+
 	return resources
 }
 
@@ -143,7 +146,7 @@ func (p *Provider) resources(ctx context.Context) []func() resource.Resource {
 		func() resource.Resource { return &parameter.Resource{} },
 		func() resource.Resource { return &privatelocation.Resource{} },
 		func() resource.Resource { return &index.Resource{} },
-		monitor.NewResource,
+		monitor.NewResource, // TODO: read validateLocation from ctx
 		func() resource.Resource { return &apikey.Resource{} },
 		func() resource.Resource { return &datastreamlifecycle.Resource{} },
 		func() resource.Resource { return &connectors.Resource{} },
