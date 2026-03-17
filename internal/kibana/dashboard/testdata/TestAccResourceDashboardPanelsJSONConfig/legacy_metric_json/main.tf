@@ -10,7 +10,7 @@ resource "elasticstack_kibana_dashboard" "test" {
   dashboard_id           = var.dashboard_id
   space_id               = "default"
   title                  = var.dashboard_title
-  description            = "Test for issue 1790"
+  description            = "Test for issue #1790"
   tags                   = ["test"]
   time_from              = "now-7d"
   time_to                = "now"
