@@ -22,17 +22,19 @@ const (
 	Icmp    MonitorType = "icmp"
 	Browser MonitorType = "browser"
 
+	Every10Seconds  MonitorSchedule = 0.1
+	Every30Seconds  MonitorSchedule = 0.5
 	Every1Minute    MonitorSchedule = 1
-	Every2Minutes                   = 2
-	Every3Minutes                   = 3
-	Every5Minutes                   = 5
-	Every10Minutes                  = 10
-	Every15Minutes                  = 15
-	Every20Minutes                  = 20
-	Every30Minutes                  = 30
-	Every60Minutes                  = 60
-	Every120Minutes                 = 120
-	Every240Minutes                 = 240
+	Every2Minutes   MonitorSchedule = 2
+	Every3Minutes   MonitorSchedule = 3
+	Every5Minutes   MonitorSchedule = 5
+	Every10Minutes  MonitorSchedule = 10
+	Every15Minutes  MonitorSchedule = 15
+	Every20Minutes  MonitorSchedule = 20
+	Every30Minutes  MonitorSchedule = 30
+	Every60Minutes  MonitorSchedule = 60
+	Every120Minutes MonitorSchedule = 120
+	Every240Minutes MonitorSchedule = 240
 
 	Japan         MonitorLocation = "japan"
 	India                         = "india"
@@ -68,7 +70,21 @@ type KibanaError struct {
 type MonitorID string
 type MonitorType string
 type MonitorLocation string
-type MonitorSchedule int
+type MonitorSchedule float64
+
+func (m MonitorSchedule) MarshalJSON() ([]byte, error) {
+	switch m {
+	case Every10Seconds:
+		return json.Marshal("10s")
+	case Every30Seconds:
+		return json.Marshal("30s")
+	default:
+		if m != MonitorSchedule(int(m)) {
+			return nil, fmt.Errorf("unsupported fractional schedule value: %v", m)
+		}
+		return json.Marshal(int(m))
+	}
+}
 type HttpMonitorMode string
 type ScreenshotOption string
 
