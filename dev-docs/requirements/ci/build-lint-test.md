@@ -14,6 +14,10 @@ on:
     paths-ignore: ['README.md', 'CHANGELOG.md']
   workflow_dispatch: {}
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 ```
@@ -24,12 +28,6 @@ permissions:
 - **[REQ-002] (PushTrigger)**: The workflow shall run on `push` to any branch, excluding tag refs matching `v*` and excluding changes limited to `README.md` and `CHANGELOG.md`.
 - **[REQ-003] (PullRequestTrigger)**: The workflow shall run on `pull_request`, excluding changes limited to `README.md` and `CHANGELOG.md`.
 - **[REQ-006] (ManualTrigger)**: The workflow shall support manual execution via `workflow_dispatch`.
-- **[REQ-023] (PreflightGate)**: The workflow shall evaluate whether to execute CI jobs via a dedicated preflight gate job that emits a `should_run` output.
-- **[REQ-024] (PushDuplicateSuppression)**: For `push` events, the preflight gate shall set `should_run=false` when an open pull request exists for the pushed branch in the same repository.
-- **[REQ-025] (PushWithoutPROptIn)**: For `push` events where no open pull request exists for the pushed branch, the preflight gate shall set `should_run=true`.
-- **[REQ-026] (NonPushGateBehavior)**: For non-`push` events (`pull_request` and `workflow_dispatch`), the preflight gate shall set `should_run=true`.
-- **[REQ-027] (GatedExecution)**: The `build`, `lint`, and matrix acceptance `test` jobs shall only execute when the preflight gate outputs `should_run=true`.
-- **[REQ-028] (GatePermissions)**: The preflight gate job shall request the minimum permissions required to inspect pull requests (`contents: read`, `pull-requests: read`).
 - **[REQ-007] (BuildJob)**: The `build` job shall run on `ubuntu-latest`, set up Go from `go.mod`, run `make vendor`, and run `make build-ci`.
 - **[REQ-008] (LintJob)**: The `lint` job shall run on `ubuntu-latest`, set up Go from `go.mod`, set up Terraform without wrapper mode, and run `make check-lint`.
 - **[REQ-009] (AcceptanceDependency)**: The matrix acceptance test job shall depend on successful completion of the `build` job.
@@ -42,7 +40,8 @@ permissions:
 - **[REQ-016] (FailureDiagnostics)**: The workflow shall emit Docker Compose logs when the job fails or acceptance tests fail.
 - **[REQ-017] (TeardownGuarantee)**: The workflow shall always tear down the Docker Compose stack via `make docker-clean`, regardless of prior step outcomes.
 - **[REQ-018] (AutoApproveDependency)**: The `auto-approve` job shall depend on successful completion of the `test` (matrix acceptance test) job.
-- **[REQ-019] (AutoApproveScope)**: The `auto-approve` job shall only run on `pull_request` events
+- **[REQ-019] (AutoApproveScope)**: The `auto-approve` job shall run on both `pull_request` and `push` events.
 - **[REQ-020] (AutoApproveDelegation)**: The `auto-approve` job shall execute `go run ./scripts/auto-approve`; approval policy and gate behavior are defined in `dev-docs/requirements/ci/pr-auto-approve.md`.
 - **[REQ-021] (AutoApprovePermissions)**: The `auto-approve` job shall request `contents: read` and `pull-requests: write` permissions.
 - **[REQ-022] (SupplyChain)**: Third-party actions in the workflow shall be pinned by commit SHA.
+- **[REQ-029] (ConcurrencyCancellation)**: The workflow shall define top-level GitHub Actions `concurrency` controls with `group: ${{ github.workflow }}-${{ github.ref }}` and `cancel-in-progress: true` so duplicate runs for the same workflow and ref cancel older in-progress runs.

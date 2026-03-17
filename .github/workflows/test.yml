@@ -14,49 +14,16 @@ on:
       - 'CHANGELOG.md'
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
 jobs:
-  preflight:
-    name: Preflight execution gate
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: read
-    outputs:
-      should_run: ${{ steps.decide.outputs.should_run }}
-    steps:
-      - id: decide
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
-        with:
-          script: |
-            if (context.eventName !== 'push') {
-              core.setOutput('should_run', 'true');
-              return;
-            }
-
-            const branch = context.ref.replace('refs/heads/', '');
-            const { data: pulls } = await github.rest.pulls.list({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              state: 'open',
-              head: `${context.repo.owner}:${branch}`,
-              per_page: 1,
-            });
-
-            const shouldRun = pulls.length === 0;
-            core.info(
-              shouldRun
-                ? `No open PR found for ${branch}; running workflow for push.`
-                : `Open PR found for ${branch}; skipping duplicate push workflow execution.`
-            );
-            core.setOutput('should_run', shouldRun ? 'true' : 'false');
-
   build:
     name: Build
-    needs: preflight
-    if: needs.preflight.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -74,8 +41,6 @@ jobs:
 
   lint:
     name: Lint
-    needs: preflight
-    if: needs.preflight.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
@@ -93,10 +58,7 @@ jobs:
 
   test:
     name: Matrix Acceptance Test
-    needs:
-      - preflight
-      - build
-    if: needs.preflight.outputs.should_run == 'true'
+    needs: build
     permissions:
       contents: read
       issues: write
@@ -288,7 +250,7 @@ jobs:
 
   auto-approve:
     name: Evaluate and auto-approve PR
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' || github.event_name == 'push'
     needs: test
     runs-on: ubuntu-latest
     timeout-minutes: 5
