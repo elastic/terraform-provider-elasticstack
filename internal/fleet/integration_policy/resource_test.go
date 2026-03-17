@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -56,9 +57,11 @@ func TestGetPackageInfo_PackageNotFound(t *testing.T) {
 
 	assert.Nil(t, pkg)
 	require.False(t, diags.HasError(), "expected no errors, got: %v", diags.Errors())
-	require.Len(t, diags, 1)
-	assert.Contains(t, diags[0].Summary(), "Package not found")
-	assert.Contains(t, diags[0].Detail(), "tcp")
+	require.Len(t, diags, 2)
+	assert.Contains(t, diags[0].Summary(), "Package version not found")
+	assert.Contains(t, diags[0].Detail(), "3.1.10")
+	assert.Contains(t, diags[1].Summary(), "Package not found")
+	assert.Contains(t, diags[1].Detail(), "tcp")
 }
 
 func TestGetPackageInfo_Success(t *testing.T) {
@@ -100,4 +103,37 @@ func TestGetPackageInfo_CacheHit(t *testing.T) {
 	require.False(t, diags.HasError())
 	require.NotNil(t, pkg)
 	assert.Equal(t, "tcp", pkg.Name)
+}
+
+func TestGetPackageInfo_FallbackToInstalled(t *testing.T) {
+	knownPackages.Delete(getPackageCacheKey("tcp", "3.1.10"))
+	t.Cleanup(func() { knownPackages.Delete(getPackageCacheKey("tcp", "3.1.10")) })
+
+	// Exact version 3.1.10 returns 404; versionless call returns the installed version.
+	client := newTestFleetClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "/tcp/") {
+			resp := struct {
+				Item kbapi.PackageInfo `json:"item"`
+			}{
+				Item: kbapi.PackageInfo{
+					Name:    "tcp",
+					Version: "3.1.11",
+				},
+			}
+			w.Header().Set("Content-Type", "application/json")
+			assert.NoError(t, json.NewEncoder(w).Encode(resp))
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+
+	pkg, diags := getPackageInfo(context.Background(), client, "tcp", "3.1.10")
+
+	require.False(t, diags.HasError())
+	require.NotNil(t, pkg)
+	assert.Equal(t, "tcp", pkg.Name)
+	assert.Equal(t, "3.1.11", pkg.Version)
+	require.Len(t, diags, 1)
+	assert.Contains(t, diags[0].Summary(), "Package version not found")
+	assert.Contains(t, diags[0].Detail(), "3.1.10")
 }
