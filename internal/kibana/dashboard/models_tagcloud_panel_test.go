@@ -30,6 +30,42 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func Test_tagcloudPanelConfigConverter_populateFromAttributes_buildAttributes_roundTrip(t *testing.T) {
+	ctx := context.Background()
+
+	api := kbapi.TagcloudNoESQL{
+		Type:        "tagcloud",
+		Title:       new("Round-Trip Tagcloud"),
+		Description: new("Converter round-trip test"),
+	}
+	_ = json.Unmarshal([]byte(`{"index":"test-index"}`), &api.Dataset)
+	_ = json.Unmarshal([]byte(`{"query":"*","language":"kuery"}`), &api.Query)
+	_ = json.Unmarshal([]byte(`{"operation":{"operation_type":"count"}}`), &api.Metric)
+	_ = json.Unmarshal([]byte(`{"operation":{"operation_type":"terms"},"field":"tags.keyword"}`), &api.TagBy)
+
+	var tagcloudChart kbapi.TagcloudChart
+	require.NoError(t, tagcloudChart.FromTagcloudNoESQL(api))
+
+	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	require.NoError(t, attrs.FromTagcloudChart(tagcloudChart))
+
+	converter := newTagcloudPanelConfigConverter()
+	pm := &panelModel{}
+	diags := converter.populateFromAttributes(ctx, pm, attrs)
+	require.False(t, diags.HasError())
+	require.NotNil(t, pm.TagcloudConfig)
+
+	attrs2, diags := converter.buildAttributes(*pm)
+	require.False(t, diags.HasError())
+
+	tagcloudChart2, err := attrs2.AsTagcloudChart()
+	require.NoError(t, err)
+	tagcloudNoESQL2, err := tagcloudChart2.AsTagcloudNoESQL()
+	require.NoError(t, err)
+	assert.Equal(t, "Round-Trip Tagcloud", *tagcloudNoESQL2.Title)
+	assert.Equal(t, "Converter round-trip test", *tagcloudNoESQL2.Description)
+}
+
 func Test_newTagcloudPanelConfigConverter(t *testing.T) {
 	converter := newTagcloudPanelConfigConverter()
 	assert.NotNil(t, converter)
@@ -279,92 +315,6 @@ func Test_fontSizeModel_roundTrip(t *testing.T) {
 			}
 		})
 	}
-}
-
-func Test_tagcloudPanelConfigConverter_handlesTFPanelConfig(t *testing.T) {
-	converter := newTagcloudPanelConfigConverter()
-
-	tests := []struct {
-		name     string
-		panel    panelModel
-		expected bool
-	}{
-		{
-			name: "has tagcloud config",
-			panel: panelModel{
-				TagcloudConfig: &tagcloudConfigModel{},
-			},
-			expected: true,
-		},
-		{
-			name: "no tagcloud config",
-			panel: panelModel{
-				MarkdownConfig: &markdownConfigModel{},
-			},
-			expected: false,
-		},
-		{
-			name:     "empty panel",
-			panel:    panelModel{},
-			expected: false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := converter.handlesTFPanelConfig(tt.panel)
-			assert.Equal(t, tt.expected, result)
-		})
-	}
-}
-
-func Test_tagcloudPanelConfigConverter_mapPanelToAPI(t *testing.T) {
-	converter := newTagcloudPanelConfigConverter()
-
-	// Create a minimal tagcloud config
-	datasetJSON := `{"index":"test-index"}`
-	metricJSON := `{"operation":{"operation_type":"count"}}`
-	tagByJSON := `{"operation":{"operation_type":"terms"},"field":"tags.keyword"}`
-
-	panel := panelModel{
-		Type: types.StringValue("lens"),
-		TagcloudConfig: &tagcloudConfigModel{
-			Title:       types.StringValue("Test Tagcloud"),
-			Description: types.StringValue("Test description"),
-			DatasetJSON: jsontypes.NewNormalizedValue(datasetJSON),
-			Query: &filterSimpleModel{
-				Language: types.StringValue("kuery"),
-				Query:    types.StringValue("*"),
-			},
-			MetricJSON: customtypes.NewJSONWithDefaultsValue[map[string]any](metricJSON, populateTagcloudMetricDefaults),
-			TagByJSON:  customtypes.NewJSONWithDefaultsValue[map[string]any](tagByJSON, populateTagcloudTagByDefaults),
-		},
-	}
-
-	var apiConfig kbapi.DashboardPanelItem_Config
-	diags := converter.mapPanelToAPI(panel, &apiConfig)
-	require.False(t, diags.HasError())
-
-	// Verify the config was created
-	configMap, err := apiConfig.AsDashboardPanelItemConfig8()
-	require.NoError(t, err)
-
-	// Verify the attributes exist
-	attrs, ok := configMap["attributes"]
-	require.True(t, ok, "attributes should exist in config")
-
-	attrsMap, ok := attrs.(map[string]any)
-	require.True(t, ok, "attributes should be a map")
-
-	// Verify the type field exists with tagcloud
-	typeField, ok := attrsMap["type"]
-	require.True(t, ok, "type should exist")
-	assert.Equal(t, "tagcloud", typeField)
-
-	// Verify title exists in attributes
-	title, ok := attrsMap["title"]
-	require.True(t, ok, "title should exist in attributes")
-	assert.Equal(t, "Test Tagcloud", title)
 }
 
 func Test_tagcloudConfig_JSONFields(t *testing.T) {

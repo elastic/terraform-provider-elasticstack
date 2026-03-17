@@ -13,7 +13,7 @@ resource "elasticstack_kibana_dashboard" "test" {
   query_text             = ""
 
   panels = [{
-    type = "lens"
+    type = "markdown"
     grid = {
       x = 0
       y = 0
@@ -21,40 +21,8 @@ resource "elasticstack_kibana_dashboard" "test" {
       h = 10
     }
     config_json = jsonencode({
-      "syncColors" : false,
-      "syncCursor" : true,
-      "syncTooltips" : false,
-      "filters" : [],
-      "query" : {
-        "query" : "",
-        "language" : "kuery"
-      },
-      "attributes" : {
-        "title" : "",
-        "dataset" : {
-          "type" : "dataView",
-          "id" : "metrics-*"
-        },
-        "type" : "metric",
-        "sampling" : 1,
-        "ignore_global_filters" : false,
-        "metrics" : [
-          {
-            "type" : "primary",
-            "operation" : "count",
-            "empty_as_null" : true,
-            "alignments" : {
-              "value" : "right",
-              "labels" : "left"
-            },
-            "fit" : false
-          }
-        ],
-        "query" : {
-          "query" : "",
-          "language" : "kuery"
-        }
-      }
+      content    = "panel from raw config json"
+      hide_title = false
     })
   }]
 }

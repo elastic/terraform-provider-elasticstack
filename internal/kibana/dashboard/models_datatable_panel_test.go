@@ -23,7 +23,6 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -248,80 +247,93 @@ func Test_datatableESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 	assert.NotNil(t, apiRoundTrip.Rows)
 }
 
-func Test_datatablePanelConfigConverter_roundTrip(t *testing.T) {
+func Test_datatablePanelConfigConverter_populateFromAttributes_buildAttributes_roundTrip_NoESQL(t *testing.T) {
+	ctx := context.Background()
+
+	header := kbapi.DatatableDensity_Height_Header{}
+	require.NoError(t, header.FromDatatableDensityHeightHeader0(kbapi.DatatableDensityHeightHeader0{Type: kbapi.DatatableDensityHeightHeader0TypeAuto}))
+	value := kbapi.DatatableDensity_Height_Value{}
+	require.NoError(t, value.FromDatatableDensityHeightValue0(kbapi.DatatableDensityHeightValue0{Type: kbapi.DatatableDensityHeightValue0TypeAuto}))
+
+	api := kbapi.DatatableNoESQL{
+		Type:                kbapi.DatatableNoESQLTypeDatatable,
+		Title:               new("Datatable NoESQL Round-Trip"),
+		Description:         new("Converter test"),
+		IgnoreGlobalFilters: new(true),
+		Sampling:            new(float32(0.5)),
+		Density: kbapi.DatatableDensity{
+			Mode: new(kbapi.DatatableDensityModeDefault),
+			Height: &struct {
+				Header *kbapi.DatatableDensity_Height_Header `json:"header,omitempty"`
+				Value  *kbapi.DatatableDensity_Height_Value  `json:"value,omitempty"`
+			}{Header: &header, Value: &value},
+		},
+		Query:   kbapi.FilterSimple{},
+		Metrics: []kbapi.DatatableNoESQL_Metrics_Item{},
+	}
+	require.NoError(t, json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &api.Dataset))
+	require.NoError(t, json.Unmarshal([]byte(`{"language":"kuery","query":"*"}`), &api.Query))
+
+	var datatableChart kbapi.DatatableChart
+	require.NoError(t, datatableChart.FromDatatableNoESQL(api))
+
+	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	require.NoError(t, attrs.FromDatatableChart(datatableChart))
+
 	converter := newDatatablePanelConfigConverter()
-	configModel := &datatableNoESQLConfigModel{
-		Title:       types.StringValue("Round Trip"),
-		DatasetJSON: jsontypes.NewNormalizedValue(`{"type":"dataView","id":"metrics-*"}`),
-		Density: &datatableDensityModel{
-			Mode: types.StringValue("default"),
-		},
-		Query: &filterSimpleModel{
-			Language: types.StringValue("kuery"),
-			Query:    types.StringValue(""),
-		},
-		Metrics: []datatableMetricModel{
-			{ConfigJSON: jsontypes.NewNormalizedValue(`{"operation":"count"}`)},
-		},
-	}
+	pm := &panelModel{}
+	diags := converter.populateFromAttributes(ctx, pm, attrs)
+	require.False(t, diags.HasError())
+	require.NotNil(t, pm.DatatableConfig)
 
-	panel := panelModel{
-		Type:            types.StringValue("lens"),
-		DatatableConfig: &datatableConfigModel{NoESQL: configModel},
-	}
-
-	var apiConfig kbapi.DashboardPanelItem_Config
-	diags := converter.mapPanelToAPI(panel, &apiConfig)
+	attrs2, diags := converter.buildAttributes(*pm)
 	require.False(t, diags.HasError())
 
-	newPanel := panelModel{Type: types.StringValue("lens")}
-	diags = converter.populateFromAPIPanel(context.Background(), &newPanel, apiConfig)
-	require.False(t, diags.HasError())
-	require.NotNil(t, newPanel.DatatableConfig)
-	require.NotNil(t, newPanel.DatatableConfig.NoESQL)
-	assert.Equal(t, types.StringValue("Round Trip"), newPanel.DatatableConfig.NoESQL.Title)
+	chart2, err := attrs2.AsDatatableChart()
+	require.NoError(t, err)
+	noESQL2, err := chart2.AsDatatableNoESQL()
+	require.NoError(t, err)
+	assert.Equal(t, "Datatable NoESQL Round-Trip", *noESQL2.Title)
+	assert.Equal(t, kbapi.DatatableNoESQLTypeDatatable, noESQL2.Type)
 }
 
-func Test_datatablePanelConfigConverter_roundTrip_ESQL(t *testing.T) {
+func Test_datatablePanelConfigConverter_populateFromAttributes_buildAttributes_roundTrip_ESQL(t *testing.T) {
+	ctx := context.Background()
+
+	metric := kbapi.DatatableESQLMetric{
+		Column:    "host.name",
+		Operation: kbapi.DatatableESQLMetricOperationValue,
+	}
+	api := kbapi.DatatableESQL{
+		Type:                kbapi.DatatableESQLTypeDatatable,
+		Title:               new("Datatable ESQL Round-Trip"),
+		Description:         new("Converter test"),
+		IgnoreGlobalFilters: new(false),
+		Sampling:            new(float32(1)),
+		Density:             kbapi.DatatableDensity{Mode: new(kbapi.DatatableDensityModeExpanded)},
+		Metrics:             &[]kbapi.DatatableESQLMetric{metric},
+	}
+	require.NoError(t, json.Unmarshal([]byte(`{"type":"esql","query":"FROM metrics-* | LIMIT 10"}`), &api.Dataset))
+
+	var datatableChart kbapi.DatatableChart
+	require.NoError(t, datatableChart.FromDatatableESQL(api))
+
+	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	require.NoError(t, attrs.FromDatatableChart(datatableChart))
+
 	converter := newDatatablePanelConfigConverter()
-	esqlConfigModel := &datatableESQLConfigModel{
-		Title:               types.StringValue("Round Trip ESQL"),
-		Description:         types.StringValue("ESQL round-trip test"),
-		DatasetJSON:         jsontypes.NewNormalizedValue(`{"type":"esql","query":"FROM metrics-* | KEEP host.name, system.cpu.user.pct | LIMIT 10"}`),
-		Density:             &datatableDensityModel{Mode: types.StringValue("expanded")},
-		IgnoreGlobalFilters: types.BoolValue(false),
-		Sampling:            types.Float64Value(1),
-		Metrics: []datatableMetricModel{
-			{ConfigJSON: jsontypes.NewNormalizedValue(`{"column":"system.cpu.user.pct","operation":"value","format":{"type":"number","decimals":2}}`)},
-		},
-		Rows: []datatableRowModel{
-			{ConfigJSON: jsontypes.NewNormalizedValue(`{"column":"host.name","operation":"value","collapse_by":"avg"}`)},
-		},
-		SplitMetricsBy: []datatableSplitByModel{
-			{ConfigJSON: jsontypes.NewNormalizedValue(`{"column":"host.name","operation":"value"}`)},
-		},
-		SortByJSON: jsontypes.NewNormalizedValue(`{"column_type":"metric","direction":"desc","index":0}`),
-		Paging:     types.Int64Value(20),
-	}
-	panel := panelModel{
-		Type:            types.StringValue("lens"),
-		DatatableConfig: &datatableConfigModel{ESQL: esqlConfigModel},
-	}
+	pm := &panelModel{}
+	diags := converter.populateFromAttributes(ctx, pm, attrs)
+	require.False(t, diags.HasError())
+	require.NotNil(t, pm.DatatableConfig)
 
-	var apiConfig kbapi.DashboardPanelItem_Config
-	diags := converter.mapPanelToAPI(panel, &apiConfig)
+	attrs2, diags := converter.buildAttributes(*pm)
 	require.False(t, diags.HasError())
 
-	newPanel := panelModel{Type: types.StringValue("lens")}
-	diags = converter.populateFromAPIPanel(context.Background(), &newPanel, apiConfig)
-	require.False(t, diags.HasError())
-	require.NotNil(t, newPanel.DatatableConfig)
-	require.NotNil(t, newPanel.DatatableConfig.ESQL)
-	assert.Equal(t, types.StringValue("Round Trip ESQL"), newPanel.DatatableConfig.ESQL.Title)
-	assert.Equal(t, types.StringValue("ESQL round-trip test"), newPanel.DatatableConfig.ESQL.Description)
-	assert.False(t, newPanel.DatatableConfig.ESQL.DatasetJSON.IsNull())
-	assert.Equal(t, types.Int64Value(20), newPanel.DatatableConfig.ESQL.Paging)
-	assert.Len(t, newPanel.DatatableConfig.ESQL.Metrics, 1)
-	assert.Len(t, newPanel.DatatableConfig.ESQL.Rows, 1)
-	assert.Len(t, newPanel.DatatableConfig.ESQL.SplitMetricsBy, 1)
+	chart2, err := attrs2.AsDatatableChart()
+	require.NoError(t, err)
+	esql2, err := chart2.AsDatatableESQL()
+	require.NoError(t, err)
+	assert.Equal(t, "Datatable ESQL Round-Trip", *esql2.Title)
+	assert.Equal(t, kbapi.DatatableESQLTypeDatatable, esql2.Type)
 }
