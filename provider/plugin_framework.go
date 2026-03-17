@@ -11,6 +11,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/enrich"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/alias"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamlifecycle"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/ilm"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/indices"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/templateilmattachment"
@@ -143,6 +144,7 @@ func (p *Provider) resources(ctx context.Context) []func() resource.Resource {
 		func() resource.Resource { return &parameter.Resource{} },
 		func() resource.Resource { return &privatelocation.Resource{} },
 		func() resource.Resource { return &index.Resource{} },
+		ilm.NewResource,
 		monitor.NewResource,
 		func() resource.Resource { return &apikey.Resource{} },
 		func() resource.Resource { return &datastreamlifecycle.Resource{} },

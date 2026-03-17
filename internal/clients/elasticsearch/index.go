@@ -33,80 +33,67 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
-func PutIlm(ctx context.Context, apiClient *clients.APIClient, policy *models.Policy) diag.Diagnostics {
-	var diags diag.Diagnostics
+func PutIlm(ctx context.Context, apiClient *clients.APIClient, policy *models.Policy) fwdiags.Diagnostics {
 	policyBytes, err := json.Marshal(map[string]any{"policy": policy})
 	if err != nil {
-		return diag.FromErr(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
-		return diag.FromErr(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 	req := esClient.ILM.PutLifecycle.WithBody(bytes.NewReader(policyBytes))
 	res, err := esClient.ILM.PutLifecycle(policy.Name, req, esClient.ILM.PutLifecycle.WithContext(ctx))
 	if err != nil {
-		return diag.FromErr(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 	defer res.Body.Close()
-	if diags := diagutil.CheckError(res, "Unable to create or update the ILM policy"); diags.HasError() {
-		return diags
-	}
-	return diags
+	return diagutil.CheckErrorFromFW(res, "Unable to create or update the ILM policy")
 }
 
-func GetIlm(ctx context.Context, apiClient *clients.APIClient, policyName string) (*models.PolicyDefinition, diag.Diagnostics) {
-	var diags diag.Diagnostics
+func GetIlm(ctx context.Context, apiClient *clients.APIClient, policyName string) (*models.PolicyDefinition, fwdiags.Diagnostics) {
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
-		return nil, diag.FromErr(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 	req := esClient.ILM.GetLifecycle.WithPolicy(policyName)
 	res, err := esClient.ILM.GetLifecycle(req, esClient.ILM.GetLifecycle.WithContext(ctx))
 	if err != nil {
-		return nil, diag.FromErr(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 	defer res.Body.Close()
 	if res.StatusCode == http.StatusNotFound {
 		return nil, nil
 	}
-	if diags := diagutil.CheckError(res, "Unable to fetch ILM policy from the cluster."); diags.HasError() {
+	if diags := diagutil.CheckErrorFromFW(res, "Unable to fetch ILM policy from the cluster."); diags.HasError() {
 		return nil, diags
 	}
 
 	// our API response
 	ilm := make(map[string]models.PolicyDefinition)
 	if err := json.NewDecoder(res.Body).Decode(&ilm); err != nil {
-		return nil, diag.FromErr(err)
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	if ilm, ok := ilm[policyName]; ok {
-		return &ilm, diags
+		return &ilm, nil
 	}
-	diags = append(diags, diag.Diagnostic{
-		Severity: diag.Error,
-		Summary:  "Unable to find a ILM policy in the cluster",
-		Detail:   fmt.Sprintf(`Unable to find "%s" ILM policy in the cluster`, policyName),
-	})
+	diags := fwdiags.Diagnostics{}
+	diags.AddError("Unable to find a ILM policy in the cluster", fmt.Sprintf(`Unable to find "%s" ILM policy in the cluster`, policyName))
 	return nil, diags
 }
 
-func DeleteIlm(ctx context.Context, apiClient *clients.APIClient, policyName string) diag.Diagnostics {
-	var diags diag.Diagnostics
-
+func DeleteIlm(ctx context.Context, apiClient *clients.APIClient, policyName string) fwdiags.Diagnostics {
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
-		return diag.FromErr(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 	res, err := esClient.ILM.DeleteLifecycle(policyName, esClient.ILM.DeleteLifecycle.WithContext(ctx))
 	if err != nil {
-		return diag.FromErr(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 	defer res.Body.Close()
-	if diags := diagutil.CheckError(res, "Unable to delete ILM policy."); diags.HasError() {
-		return diags
-	}
-	return diags
+	return diagutil.CheckErrorFromFW(res, "Unable to delete ILM policy.")
 }
 
 func PutComponentTemplate(ctx context.Context, apiClient *clients.APIClient, template *models.ComponentTemplate) diag.Diagnostics {

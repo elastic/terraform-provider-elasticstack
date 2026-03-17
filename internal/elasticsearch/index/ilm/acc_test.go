@@ -15,15 +15,16 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package index_test
+package ilm_test
 
 import (
+	_ "embed"
 	"fmt"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/ilm"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-testing/config"
@@ -37,7 +38,6 @@ var downsampleNoTimeoutVersionLimit = version.Must(version.NewVersion("8.5.0"))
 var downsampleVersionLimit = version.Must(version.NewVersion("8.10.0"))
 
 func TestAccResourceILM(t *testing.T) {
-	// generate a random policy name
 	policyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
@@ -161,7 +161,6 @@ func TestAccResourceILM(t *testing.T) {
 }
 
 func TestAccResourceILMRolloverConditions(t *testing.T) {
-	// generate a random policy name
 	policyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
@@ -170,7 +169,7 @@ func TestAccResourceILMRolloverConditions(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(index.MaxPrimaryShardDocsMinSupportedVersion),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(ilm.MaxPrimaryShardDocsMinSupportedVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("max_primary_shard_docs"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -182,7 +181,7 @@ func TestAccResourceILMRolloverConditions(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(index.RolloverMinConditionsMinSupportedVersion),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(ilm.RolloverMinConditionsMinSupportedVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("rollover_conditions"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -203,35 +202,6 @@ func TestAccResourceILMRolloverConditions(t *testing.T) {
 			},
 		},
 	})
-}
-
-func checkResourceILMDestroy(s *terraform.State) error {
-	client, err := clients.NewAcceptanceTestingClient()
-	if err != nil {
-		return err
-	}
-
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "elasticstack_elasticsearch_index_lifecycle" {
-			continue
-		}
-		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
-
-		esClient, err := client.GetESClient()
-		if err != nil {
-			return err
-		}
-		req := esClient.ILM.GetLifecycle.WithPolicy(compID.ResourceID)
-		res, err := esClient.ILM.GetLifecycle(req)
-		if err != nil {
-			return err
-		}
-
-		if res.StatusCode != 404 {
-			return fmt.Errorf("ILM policy (%s) still exists", compID.ResourceID)
-		}
-	}
-	return nil
 }
 
 func TestAccResourceILMMetadata(t *testing.T) {
@@ -325,4 +295,128 @@ func TestAccResourceILMForcemerge(t *testing.T) {
 			},
 		},
 	})
+}
+
+func TestAccResourceILMImportState(t *testing.T) {
+	policyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceILMDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				ResourceName:      "elasticstack_elasticsearch_index_lifecycle.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccResourceILMMigrateRequireAndShrinkShards(t *testing.T) {
+	policyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceILMDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("migrate_require_shrink_shards"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_coverage", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_coverage", "warm.0.migrate.0.enabled", "false"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_coverage", "warm.0.allocate.0.require", `{"box_type":"warm"}`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_coverage", "warm.0.shrink.0.number_of_shards", "1"),
+				),
+			},
+		},
+	})
+}
+
+//go:embed testdata/TestAccResourceILMFromSDK/create/ilm.tf
+var sdkCreateConfig string
+
+func TestAccResourceILMFromSDK(t *testing.T) {
+	policyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceILMDestroy,
+		Steps: []resource.TestStep{
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"elasticstack": {
+						Source:            "elastic/elasticstack",
+						VersionConstraint: "0.14.3",
+					},
+				},
+				Config: sdkCreateConfig,
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "hot.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "delete.#", "1"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "hot.0.rollover.0.max_age", "1d"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "delete.0.delete.0.delete_searchable_snapshot", "true"),
+				),
+			},
+		},
+	})
+}
+
+func checkResourceILMDestroy(s *terraform.State) error {
+	client, err := clients.NewAcceptanceTestingClient()
+	if err != nil {
+		return err
+	}
+
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "elasticstack_elasticsearch_index_lifecycle" {
+			continue
+		}
+		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
+
+		esClient, err := client.GetESClient()
+		if err != nil {
+			return err
+		}
+		req := esClient.ILM.GetLifecycle.WithPolicy(compID.ResourceID)
+		res, err := esClient.ILM.GetLifecycle(req)
+		if err != nil {
+			return err
+		}
+
+		if res.StatusCode != 404 {
+			return fmt.Errorf("ILM policy (%s) still exists", compID.ResourceID)
+		}
+	}
+	return nil
 }

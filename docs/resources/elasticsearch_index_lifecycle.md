@@ -62,13 +62,13 @@ resource "elasticstack_elasticsearch_index_lifecycle" "my_ilm" {
 
 ### Optional
 
-- `cold` (Block List, Max: 1) The index is no longer being updated and is queried infrequently. The information still needs to be searchable, but it’s okay if those queries are slower. (see [below for nested schema](#nestedblock--cold))
-- `delete` (Block List, Max: 1) The index is no longer needed and can safely be removed. (see [below for nested schema](#nestedblock--delete))
-- `elasticsearch_connection` (Block List, Max: 1, Deprecated) Elasticsearch connection configuration block. This property will be removed in a future provider version. Configure the Elasticsearch connection via the provider configuration instead. (see [below for nested schema](#nestedblock--elasticsearch_connection))
-- `frozen` (Block List, Max: 1) The index is no longer being updated and is queried rarely. The information still needs to be searchable, but it’s okay if those queries are extremely slow. (see [below for nested schema](#nestedblock--frozen))
-- `hot` (Block List, Max: 1) The index is actively being updated and queried. (see [below for nested schema](#nestedblock--hot))
+- `cold` (Block List) The index is no longer being updated and is queried infrequently. The information still needs to be searchable, but it is okay if those queries are slower. (see [below for nested schema](#nestedblock--cold))
+- `delete` (Block List) The index is no longer needed and can safely be removed. (see [below for nested schema](#nestedblock--delete))
+- `elasticsearch_connection` (Block List, Deprecated) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- `frozen` (Block List) The index is no longer being updated and is queried rarely. The information still needs to be searchable, but it is okay if those queries are extremely slow. (see [below for nested schema](#nestedblock--frozen))
+- `hot` (Block List) The index is actively being updated and queried. (see [below for nested schema](#nestedblock--hot))
 - `metadata` (String) Optional user metadata about the ilm policy. Must be valid JSON document.
-- `warm` (Block List, Max: 1) The index is no longer being updated but is still being queried. (see [below for nested schema](#nestedblock--warm))
+- `warm` (Block List) The index is no longer being updated but is still being queried. (see [below for nested schema](#nestedblock--warm))
 
 ### Read-Only
 
@@ -80,15 +80,20 @@ resource "elasticstack_elasticsearch_index_lifecycle" "my_ilm" {
 
 Optional:
 
-- `allocate` (Block List, Max: 1) Updates the index settings to change which nodes are allowed to host the index shards and change the number of replicas. (see [below for nested schema](#nestedblock--cold--allocate))
-- `downsample` (Block List, Max: 1) Roll up documents within a fixed interval to a single summary document. Reduces the index footprint by storing time series data at reduced granularity. (see [below for nested schema](#nestedblock--cold--downsample))
-- `freeze` (Block List, Max: 1) Freeze the index to minimize its memory footprint. (see [below for nested schema](#nestedblock--cold--freeze))
-- `migrate` (Block List, Max: 1) Moves the index to the data tier that corresponds to the current phase by updating the "index.routing.allocation.include._tier_preference" index setting. (see [below for nested schema](#nestedblock--cold--migrate))
+- `allocate` (Block List) Updates the index settings to change which nodes are allowed to host the index shards and change the number of replicas. (see [below for nested schema](#nestedblock--cold--allocate))
+- `delete` (Block List) Permanently removes the index. (see [below for nested schema](#nestedblock--cold--delete))
+- `downsample` (Block List) Roll up documents within a fixed interval to a single summary document. Reduces the index footprint by storing time series data at reduced granularity. (see [below for nested schema](#nestedblock--cold--downsample))
+- `forcemerge` (Block List) Force merges the index into the specified maximum number of segments. This action makes the index read-only. (see [below for nested schema](#nestedblock--cold--forcemerge))
+- `freeze` (Block List) Freeze the index to minimize its memory footprint. (see [below for nested schema](#nestedblock--cold--freeze))
+- `migrate` (Block List) Moves the index to the data tier that corresponds to the current phase by updating the "index.routing.allocation.include._tier_preference" index setting. (see [below for nested schema](#nestedblock--cold--migrate))
 - `min_age` (String) ILM moves indices through the lifecycle according to their age. To control the timing of these transitions, you set a minimum age for each phase.
-- `readonly` (Block List, Max: 1) Makes the index read-only. (see [below for nested schema](#nestedblock--cold--readonly))
-- `searchable_snapshot` (Block List, Max: 1) Takes a snapshot of the managed index in the configured repository and mounts it as a searchable snapshot. (see [below for nested schema](#nestedblock--cold--searchable_snapshot))
-- `set_priority` (Block List, Max: 1) Sets the priority of the index as soon as the policy enters the hot, warm, or cold phase. Higher priority indices are recovered before indices with lower priorities following a node restart. Default priority is 1. (see [below for nested schema](#nestedblock--cold--set_priority))
-- `unfollow` (Block List, Max: 1) Convert a follower index to a regular index. Performed automatically before a rollover, shrink, or searchable snapshot action. (see [below for nested schema](#nestedblock--cold--unfollow))
+- `readonly` (Block List) Makes the index read-only. (see [below for nested schema](#nestedblock--cold--readonly))
+- `rollover` (Block List) Rolls over a target to a new index when the existing index meets one or more of the rollover conditions. (see [below for nested schema](#nestedblock--cold--rollover))
+- `searchable_snapshot` (Block List) Takes a snapshot of the managed index in the configured repository and mounts it as a searchable snapshot. (see [below for nested schema](#nestedblock--cold--searchable_snapshot))
+- `set_priority` (Block List) Sets the priority of the index as soon as the policy enters the hot, warm, or cold phase. Higher priority indices are recovered before indices with lower priorities following a node restart. Default priority is 1. (see [below for nested schema](#nestedblock--cold--set_priority))
+- `shrink` (Block List) Sets a source index to read-only and shrinks it into a new index with fewer primary shards. (see [below for nested schema](#nestedblock--cold--shrink))
+- `unfollow` (Block List) Convert a follower index to a regular index. Performed automatically before a rollover, shrink, or searchable snapshot action. (see [below for nested schema](#nestedblock--cold--unfollow))
+- `wait_for_snapshot` (Block List) Waits for the specified SLM policy to be executed before removing the index. This ensures that a snapshot of the deleted index is available. (see [below for nested schema](#nestedblock--cold--wait_for_snapshot))
 
 <a id="nestedblock--cold--allocate"></a>
 ### Nested Schema for `cold.allocate`
@@ -100,6 +105,14 @@ Optional:
 - `number_of_replicas` (Number) Number of replicas to assign to the index. Default: `0`
 - `require` (String) Assigns an index to nodes that have all of the specified custom attributes. Must be valid JSON document.
 - `total_shards_per_node` (Number) The maximum number of shards for the index on a single Elasticsearch node. Defaults to `-1` (unlimited). Supported from Elasticsearch version **7.16**
+
+
+<a id="nestedblock--cold--delete"></a>
+### Nested Schema for `cold.delete`
+
+Optional:
+
+- `delete_searchable_snapshot` (Boolean) Deletes the searchable snapshot created in a previous phase.
 
 
 <a id="nestedblock--cold--downsample"></a>
@@ -114,12 +127,24 @@ Optional:
 - `wait_timeout` (String) Downsampling interval
 
 
+<a id="nestedblock--cold--forcemerge"></a>
+### Nested Schema for `cold.forcemerge`
+
+Required:
+
+- `max_num_segments` (Number) Number of segments to merge to. To fully merge the index, set to 1.
+
+Optional:
+
+- `index_codec` (String) Codec used to compress the document store.
+
+
 <a id="nestedblock--cold--freeze"></a>
 ### Nested Schema for `cold.freeze`
 
 Optional:
 
-- `enabled` (Boolean) Controls whether ILM freezes the index.
+- `enabled` (Boolean) Controls whether ILM executes this action during the phase.
 
 
 <a id="nestedblock--cold--migrate"></a>
@@ -127,7 +152,7 @@ Optional:
 
 Optional:
 
-- `enabled` (Boolean) Controls whether ILM automatically migrates the index during this phase.
+- `enabled` (Boolean) Controls whether ILM executes this action during the phase.
 
 
 <a id="nestedblock--cold--readonly"></a>
@@ -135,7 +160,24 @@ Optional:
 
 Optional:
 
-- `enabled` (Boolean) Controls whether ILM makes the index read-only.
+- `enabled` (Boolean) Controls whether ILM executes this action during the phase.
+
+
+<a id="nestedblock--cold--rollover"></a>
+### Nested Schema for `cold.rollover`
+
+Optional:
+
+- `max_age` (String) Triggers rollover after the maximum elapsed time from index creation is reached.
+- `max_docs` (Number) Triggers rollover after the specified maximum number of documents is reached.
+- `max_primary_shard_docs` (Number) Triggers rollover when the largest primary shard in the index reaches a certain number of documents. Supported from Elasticsearch version **8.2**
+- `max_primary_shard_size` (String) Triggers rollover when the largest primary shard in the index reaches a certain size.
+- `max_size` (String) Triggers rollover when the index reaches a certain size.
+- `min_age` (String) Prevents rollover until after the minimum elapsed time from index creation is reached. Supported from Elasticsearch version **8.4**
+- `min_docs` (Number) Prevents rollover until after the specified minimum number of documents is reached. Supported from Elasticsearch version **8.4**
+- `min_primary_shard_docs` (Number) Prevents rollover until the largest primary shard in the index reaches a certain number of documents. Supported from Elasticsearch version **8.4**
+- `min_primary_shard_size` (String) Prevents rollover until the largest primary shard in the index reaches a certain size. Supported from Elasticsearch version **8.4**
+- `min_size` (String) Prevents rollover until the index reaches a certain size.
 
 
 <a id="nestedblock--cold--searchable_snapshot"></a>
@@ -158,12 +200,30 @@ Required:
 - `priority` (Number) The priority for the index. Must be 0 or greater.
 
 
+<a id="nestedblock--cold--shrink"></a>
+### Nested Schema for `cold.shrink`
+
+Optional:
+
+- `allow_write_after_shrink` (Boolean) If true, the shrunken index is made writable by removing the write block.
+- `max_primary_shard_size` (String) The max primary shard size for the target index.
+- `number_of_shards` (Number) Number of shards to shrink to.
+
+
 <a id="nestedblock--cold--unfollow"></a>
 ### Nested Schema for `cold.unfollow`
 
 Optional:
 
-- `enabled` (Boolean) Controls whether ILM makes the follower index a regular one.
+- `enabled` (Boolean) Controls whether ILM executes this action during the phase.
+
+
+<a id="nestedblock--cold--wait_for_snapshot"></a>
+### Nested Schema for `cold.wait_for_snapshot`
+
+Required:
+
+- `policy` (String) Name of the SLM policy that the delete action should wait for.
 
 
 
@@ -172,9 +232,32 @@ Optional:
 
 Optional:
 
-- `delete` (Block List, Max: 1) Permanently removes the index. (see [below for nested schema](#nestedblock--delete--delete))
+- `allocate` (Block List) Updates the index settings to change which nodes are allowed to host the index shards and change the number of replicas. (see [below for nested schema](#nestedblock--delete--allocate))
+- `delete` (Block List) Permanently removes the index. (see [below for nested schema](#nestedblock--delete--delete))
+- `downsample` (Block List) Roll up documents within a fixed interval to a single summary document. Reduces the index footprint by storing time series data at reduced granularity. (see [below for nested schema](#nestedblock--delete--downsample))
+- `forcemerge` (Block List) Force merges the index into the specified maximum number of segments. This action makes the index read-only. (see [below for nested schema](#nestedblock--delete--forcemerge))
+- `freeze` (Block List) Freeze the index to minimize its memory footprint. (see [below for nested schema](#nestedblock--delete--freeze))
+- `migrate` (Block List) Moves the index to the data tier that corresponds to the current phase by updating the "index.routing.allocation.include._tier_preference" index setting. (see [below for nested schema](#nestedblock--delete--migrate))
 - `min_age` (String) ILM moves indices through the lifecycle according to their age. To control the timing of these transitions, you set a minimum age for each phase.
-- `wait_for_snapshot` (Block List, Max: 1) Waits for the specified SLM policy to be executed before removing the index. This ensures that a snapshot of the deleted index is available. (see [below for nested schema](#nestedblock--delete--wait_for_snapshot))
+- `readonly` (Block List) Makes the index read-only. (see [below for nested schema](#nestedblock--delete--readonly))
+- `rollover` (Block List) Rolls over a target to a new index when the existing index meets one or more of the rollover conditions. (see [below for nested schema](#nestedblock--delete--rollover))
+- `searchable_snapshot` (Block List) Takes a snapshot of the managed index in the configured repository and mounts it as a searchable snapshot. (see [below for nested schema](#nestedblock--delete--searchable_snapshot))
+- `set_priority` (Block List) Sets the priority of the index as soon as the policy enters the hot, warm, or cold phase. Higher priority indices are recovered before indices with lower priorities following a node restart. Default priority is 1. (see [below for nested schema](#nestedblock--delete--set_priority))
+- `shrink` (Block List) Sets a source index to read-only and shrinks it into a new index with fewer primary shards. (see [below for nested schema](#nestedblock--delete--shrink))
+- `unfollow` (Block List) Convert a follower index to a regular index. Performed automatically before a rollover, shrink, or searchable snapshot action. (see [below for nested schema](#nestedblock--delete--unfollow))
+- `wait_for_snapshot` (Block List) Waits for the specified SLM policy to be executed before removing the index. This ensures that a snapshot of the deleted index is available. (see [below for nested schema](#nestedblock--delete--wait_for_snapshot))
+
+<a id="nestedblock--delete--allocate"></a>
+### Nested Schema for `delete.allocate`
+
+Optional:
+
+- `exclude` (String) Assigns an index to nodes that have none of the specified custom attributes. Must be valid JSON document.
+- `include` (String) Assigns an index to nodes that have at least one of the specified custom attributes. Must be valid JSON document.
+- `number_of_replicas` (Number) Number of replicas to assign to the index. Default: `0`
+- `require` (String) Assigns an index to nodes that have all of the specified custom attributes. Must be valid JSON document.
+- `total_shards_per_node` (Number) The maximum number of shards for the index on a single Elasticsearch node. Defaults to `-1` (unlimited). Supported from Elasticsearch version **7.16**
+
 
 <a id="nestedblock--delete--delete"></a>
 ### Nested Schema for `delete.delete`
@@ -182,6 +265,109 @@ Optional:
 Optional:
 
 - `delete_searchable_snapshot` (Boolean) Deletes the searchable snapshot created in a previous phase.
+
+
+<a id="nestedblock--delete--downsample"></a>
+### Nested Schema for `delete.downsample`
+
+Required:
+
+- `fixed_interval` (String) Downsampling interval
+
+Optional:
+
+- `wait_timeout` (String) Downsampling interval
+
+
+<a id="nestedblock--delete--forcemerge"></a>
+### Nested Schema for `delete.forcemerge`
+
+Required:
+
+- `max_num_segments` (Number) Number of segments to merge to. To fully merge the index, set to 1.
+
+Optional:
+
+- `index_codec` (String) Codec used to compress the document store.
+
+
+<a id="nestedblock--delete--freeze"></a>
+### Nested Schema for `delete.freeze`
+
+Optional:
+
+- `enabled` (Boolean) Controls whether ILM executes this action during the phase.
+
+
+<a id="nestedblock--delete--migrate"></a>
+### Nested Schema for `delete.migrate`
+
+Optional:
+
+- `enabled` (Boolean) Controls whether ILM executes this action during the phase.
+
+
+<a id="nestedblock--delete--readonly"></a>
+### Nested Schema for `delete.readonly`
+
+Optional:
+
+- `enabled` (Boolean) Controls whether ILM executes this action during the phase.
+
+
+<a id="nestedblock--delete--rollover"></a>
+### Nested Schema for `delete.rollover`
+
+Optional:
+
+- `max_age` (String) Triggers rollover after the maximum elapsed time from index creation is reached.
+- `max_docs` (Number) Triggers rollover after the specified maximum number of documents is reached.
+- `max_primary_shard_docs` (Number) Triggers rollover when the largest primary shard in the index reaches a certain number of documents. Supported from Elasticsearch version **8.2**
+- `max_primary_shard_size` (String) Triggers rollover when the largest primary shard in the index reaches a certain size.
+- `max_size` (String) Triggers rollover when the index reaches a certain size.
+- `min_age` (String) Prevents rollover until after the minimum elapsed time from index creation is reached. Supported from Elasticsearch version **8.4**
+- `min_docs` (Number) Prevents rollover until after the specified minimum number of documents is reached. Supported from Elasticsearch version **8.4**
+- `min_primary_shard_docs` (Number) Prevents rollover until the largest primary shard in the index reaches a certain number of documents. Supported from Elasticsearch version **8.4**
+- `min_primary_shard_size` (String) Prevents rollover until the largest primary shard in the index reaches a certain size. Supported from Elasticsearch version **8.4**
+- `min_size` (String) Prevents rollover until the index reaches a certain size.
+
+
+<a id="nestedblock--delete--searchable_snapshot"></a>
+### Nested Schema for `delete.searchable_snapshot`
+
+Required:
+
+- `snapshot_repository` (String) Repository used to store the snapshot.
+
+Optional:
+
+- `force_merge_index` (Boolean) Force merges the managed index to one segment.
+
+
+<a id="nestedblock--delete--set_priority"></a>
+### Nested Schema for `delete.set_priority`
+
+Required:
+
+- `priority` (Number) The priority for the index. Must be 0 or greater.
+
+
+<a id="nestedblock--delete--shrink"></a>
+### Nested Schema for `delete.shrink`
+
+Optional:
+
+- `allow_write_after_shrink` (Boolean) If true, the shrunken index is made writable by removing the write block.
+- `max_primary_shard_size` (String) The max primary shard size for the target index.
+- `number_of_shards` (Number) Number of shards to shrink to.
+
+
+<a id="nestedblock--delete--unfollow"></a>
+### Nested Schema for `delete.unfollow`
+
+Optional:
+
+- `enabled` (Boolean) Controls whether ILM executes this action during the phase.
 
 
 <a id="nestedblock--delete--wait_for_snapshot"></a>
@@ -219,8 +405,105 @@ Optional:
 
 Optional:
 
+- `allocate` (Block List) Updates the index settings to change which nodes are allowed to host the index shards and change the number of replicas. (see [below for nested schema](#nestedblock--frozen--allocate))
+- `delete` (Block List) Permanently removes the index. (see [below for nested schema](#nestedblock--frozen--delete))
+- `downsample` (Block List) Roll up documents within a fixed interval to a single summary document. Reduces the index footprint by storing time series data at reduced granularity. (see [below for nested schema](#nestedblock--frozen--downsample))
+- `forcemerge` (Block List) Force merges the index into the specified maximum number of segments. This action makes the index read-only. (see [below for nested schema](#nestedblock--frozen--forcemerge))
+- `freeze` (Block List) Freeze the index to minimize its memory footprint. (see [below for nested schema](#nestedblock--frozen--freeze))
+- `migrate` (Block List) Moves the index to the data tier that corresponds to the current phase by updating the "index.routing.allocation.include._tier_preference" index setting. (see [below for nested schema](#nestedblock--frozen--migrate))
 - `min_age` (String) ILM moves indices through the lifecycle according to their age. To control the timing of these transitions, you set a minimum age for each phase.
-- `searchable_snapshot` (Block List, Max: 1) Takes a snapshot of the managed index in the configured repository and mounts it as a searchable snapshot. (see [below for nested schema](#nestedblock--frozen--searchable_snapshot))
+- `readonly` (Block List) Makes the index read-only. (see [below for nested schema](#nestedblock--frozen--readonly))
+- `rollover` (Block List) Rolls over a target to a new index when the existing index meets one or more of the rollover conditions. (see [below for nested schema](#nestedblock--frozen--rollover))
+- `searchable_snapshot` (Block List) Takes a snapshot of the managed index in the configured repository and mounts it as a searchable snapshot. (see [below for nested schema](#nestedblock--frozen--searchable_snapshot))
+- `set_priority` (Block List) Sets the priority of the index as soon as the policy enters the hot, warm, or cold phase. Higher priority indices are recovered before indices with lower priorities following a node restart. Default priority is 1. (see [below for nested schema](#nestedblock--frozen--set_priority))
+- `shrink` (Block List) Sets a source index to read-only and shrinks it into a new index with fewer primary shards. (see [below for nested schema](#nestedblock--frozen--shrink))
+- `unfollow` (Block List) Convert a follower index to a regular index. Performed automatically before a rollover, shrink, or searchable snapshot action. (see [below for nested schema](#nestedblock--frozen--unfollow))
+- `wait_for_snapshot` (Block List) Waits for the specified SLM policy to be executed before removing the index. This ensures that a snapshot of the deleted index is available. (see [below for nested schema](#nestedblock--frozen--wait_for_snapshot))
+
+<a id="nestedblock--frozen--allocate"></a>
+### Nested Schema for `frozen.allocate`
+
+Optional:
+
+- `exclude` (String) Assigns an index to nodes that have none of the specified custom attributes. Must be valid JSON document.
+- `include` (String) Assigns an index to nodes that have at least one of the specified custom attributes. Must be valid JSON document.
+- `number_of_replicas` (Number) Number of replicas to assign to the index. Default: `0`
+- `require` (String) Assigns an index to nodes that have all of the specified custom attributes. Must be valid JSON document.
+- `total_shards_per_node` (Number) The maximum number of shards for the index on a single Elasticsearch node. Defaults to `-1` (unlimited). Supported from Elasticsearch version **7.16**
+
+
+<a id="nestedblock--frozen--delete"></a>
+### Nested Schema for `frozen.delete`
+
+Optional:
+
+- `delete_searchable_snapshot` (Boolean) Deletes the searchable snapshot created in a previous phase.
+
+
+<a id="nestedblock--frozen--downsample"></a>
+### Nested Schema for `frozen.downsample`
+
+Required:
+
+- `fixed_interval` (String) Downsampling interval
+
+Optional:
+
+- `wait_timeout` (String) Downsampling interval
+
+
+<a id="nestedblock--frozen--forcemerge"></a>
+### Nested Schema for `frozen.forcemerge`
+
+Required:
+
+- `max_num_segments` (Number) Number of segments to merge to. To fully merge the index, set to 1.
+
+Optional:
+
+- `index_codec` (String) Codec used to compress the document store.
+
+
+<a id="nestedblock--frozen--freeze"></a>
+### Nested Schema for `frozen.freeze`
+
+Optional:
+
+- `enabled` (Boolean) Controls whether ILM executes this action during the phase.
+
+
+<a id="nestedblock--frozen--migrate"></a>
+### Nested Schema for `frozen.migrate`
+
+Optional:
+
+- `enabled` (Boolean) Controls whether ILM executes this action during the phase.
+
+
+<a id="nestedblock--frozen--readonly"></a>
+### Nested Schema for `frozen.readonly`
+
+Optional:
+
+- `enabled` (Boolean) Controls whether ILM executes this action during the phase.
+
+
+<a id="nestedblock--frozen--rollover"></a>
+### Nested Schema for `frozen.rollover`
+
+Optional:
+
+- `max_age` (String) Triggers rollover after the maximum elapsed time from index creation is reached.
+- `max_docs` (Number) Triggers rollover after the specified maximum number of documents is reached.
+- `max_primary_shard_docs` (Number) Triggers rollover when the largest primary shard in the index reaches a certain number of documents. Supported from Elasticsearch version **8.2**
+- `max_primary_shard_size` (String) Triggers rollover when the largest primary shard in the index reaches a certain size.
+- `max_size` (String) Triggers rollover when the index reaches a certain size.
+- `min_age` (String) Prevents rollover until after the minimum elapsed time from index creation is reached. Supported from Elasticsearch version **8.4**
+- `min_docs` (Number) Prevents rollover until after the specified minimum number of documents is reached. Supported from Elasticsearch version **8.4**
+- `min_primary_shard_docs` (Number) Prevents rollover until the largest primary shard in the index reaches a certain number of documents. Supported from Elasticsearch version **8.4**
+- `min_primary_shard_size` (String) Prevents rollover until the largest primary shard in the index reaches a certain size. Supported from Elasticsearch version **8.4**
+- `min_size` (String) Prevents rollover until the index reaches a certain size.
+
 
 <a id="nestedblock--frozen--searchable_snapshot"></a>
 ### Nested Schema for `frozen.searchable_snapshot`
@@ -234,21 +517,80 @@ Optional:
 - `force_merge_index` (Boolean) Force merges the managed index to one segment.
 
 
+<a id="nestedblock--frozen--set_priority"></a>
+### Nested Schema for `frozen.set_priority`
+
+Required:
+
+- `priority` (Number) The priority for the index. Must be 0 or greater.
+
+
+<a id="nestedblock--frozen--shrink"></a>
+### Nested Schema for `frozen.shrink`
+
+Optional:
+
+- `allow_write_after_shrink` (Boolean) If true, the shrunken index is made writable by removing the write block.
+- `max_primary_shard_size` (String) The max primary shard size for the target index.
+- `number_of_shards` (Number) Number of shards to shrink to.
+
+
+<a id="nestedblock--frozen--unfollow"></a>
+### Nested Schema for `frozen.unfollow`
+
+Optional:
+
+- `enabled` (Boolean) Controls whether ILM executes this action during the phase.
+
+
+<a id="nestedblock--frozen--wait_for_snapshot"></a>
+### Nested Schema for `frozen.wait_for_snapshot`
+
+Required:
+
+- `policy` (String) Name of the SLM policy that the delete action should wait for.
+
+
 
 <a id="nestedblock--hot"></a>
 ### Nested Schema for `hot`
 
 Optional:
 
-- `downsample` (Block List, Max: 1) Roll up documents within a fixed interval to a single summary document. Reduces the index footprint by storing time series data at reduced granularity. (see [below for nested schema](#nestedblock--hot--downsample))
-- `forcemerge` (Block List, Max: 1) Force merges the index into the specified maximum number of segments. This action makes the index read-only. (see [below for nested schema](#nestedblock--hot--forcemerge))
+- `allocate` (Block List) Updates the index settings to change which nodes are allowed to host the index shards and change the number of replicas. (see [below for nested schema](#nestedblock--hot--allocate))
+- `delete` (Block List) Permanently removes the index. (see [below for nested schema](#nestedblock--hot--delete))
+- `downsample` (Block List) Roll up documents within a fixed interval to a single summary document. Reduces the index footprint by storing time series data at reduced granularity. (see [below for nested schema](#nestedblock--hot--downsample))
+- `forcemerge` (Block List) Force merges the index into the specified maximum number of segments. This action makes the index read-only. (see [below for nested schema](#nestedblock--hot--forcemerge))
+- `freeze` (Block List) Freeze the index to minimize its memory footprint. (see [below for nested schema](#nestedblock--hot--freeze))
+- `migrate` (Block List) Moves the index to the data tier that corresponds to the current phase by updating the "index.routing.allocation.include._tier_preference" index setting. (see [below for nested schema](#nestedblock--hot--migrate))
 - `min_age` (String) ILM moves indices through the lifecycle according to their age. To control the timing of these transitions, you set a minimum age for each phase.
-- `readonly` (Block List, Max: 1) Makes the index read-only. (see [below for nested schema](#nestedblock--hot--readonly))
-- `rollover` (Block List, Max: 1) Rolls over a target to a new index when the existing index meets one or more of the rollover conditions. (see [below for nested schema](#nestedblock--hot--rollover))
-- `searchable_snapshot` (Block List, Max: 1) Takes a snapshot of the managed index in the configured repository and mounts it as a searchable snapshot. (see [below for nested schema](#nestedblock--hot--searchable_snapshot))
-- `set_priority` (Block List, Max: 1) Sets the priority of the index as soon as the policy enters the hot, warm, or cold phase. Higher priority indices are recovered before indices with lower priorities following a node restart. Default priority is 1. (see [below for nested schema](#nestedblock--hot--set_priority))
-- `shrink` (Block List, Max: 1) Sets a source index to read-only and shrinks it into a new index with fewer primary shards. (see [below for nested schema](#nestedblock--hot--shrink))
-- `unfollow` (Block List, Max: 1) Convert a follower index to a regular index. Performed automatically before a rollover, shrink, or searchable snapshot action. (see [below for nested schema](#nestedblock--hot--unfollow))
+- `readonly` (Block List) Makes the index read-only. (see [below for nested schema](#nestedblock--hot--readonly))
+- `rollover` (Block List) Rolls over a target to a new index when the existing index meets one or more of the rollover conditions. (see [below for nested schema](#nestedblock--hot--rollover))
+- `searchable_snapshot` (Block List) Takes a snapshot of the managed index in the configured repository and mounts it as a searchable snapshot. (see [below for nested schema](#nestedblock--hot--searchable_snapshot))
+- `set_priority` (Block List) Sets the priority of the index as soon as the policy enters the hot, warm, or cold phase. Higher priority indices are recovered before indices with lower priorities following a node restart. Default priority is 1. (see [below for nested schema](#nestedblock--hot--set_priority))
+- `shrink` (Block List) Sets a source index to read-only and shrinks it into a new index with fewer primary shards. (see [below for nested schema](#nestedblock--hot--shrink))
+- `unfollow` (Block List) Convert a follower index to a regular index. Performed automatically before a rollover, shrink, or searchable snapshot action. (see [below for nested schema](#nestedblock--hot--unfollow))
+- `wait_for_snapshot` (Block List) Waits for the specified SLM policy to be executed before removing the index. This ensures that a snapshot of the deleted index is available. (see [below for nested schema](#nestedblock--hot--wait_for_snapshot))
+
+<a id="nestedblock--hot--allocate"></a>
+### Nested Schema for `hot.allocate`
+
+Optional:
+
+- `exclude` (String) Assigns an index to nodes that have none of the specified custom attributes. Must be valid JSON document.
+- `include` (String) Assigns an index to nodes that have at least one of the specified custom attributes. Must be valid JSON document.
+- `number_of_replicas` (Number) Number of replicas to assign to the index. Default: `0`
+- `require` (String) Assigns an index to nodes that have all of the specified custom attributes. Must be valid JSON document.
+- `total_shards_per_node` (Number) The maximum number of shards for the index on a single Elasticsearch node. Defaults to `-1` (unlimited). Supported from Elasticsearch version **7.16**
+
+
+<a id="nestedblock--hot--delete"></a>
+### Nested Schema for `hot.delete`
+
+Optional:
+
+- `delete_searchable_snapshot` (Boolean) Deletes the searchable snapshot created in a previous phase.
+
 
 <a id="nestedblock--hot--downsample"></a>
 ### Nested Schema for `hot.downsample`
@@ -274,12 +616,28 @@ Optional:
 - `index_codec` (String) Codec used to compress the document store.
 
 
+<a id="nestedblock--hot--freeze"></a>
+### Nested Schema for `hot.freeze`
+
+Optional:
+
+- `enabled` (Boolean) Controls whether ILM executes this action during the phase.
+
+
+<a id="nestedblock--hot--migrate"></a>
+### Nested Schema for `hot.migrate`
+
+Optional:
+
+- `enabled` (Boolean) Controls whether ILM executes this action during the phase.
+
+
 <a id="nestedblock--hot--readonly"></a>
 ### Nested Schema for `hot.readonly`
 
 Optional:
 
-- `enabled` (Boolean) Controls whether ILM makes the index read-only.
+- `enabled` (Boolean) Controls whether ILM executes this action during the phase.
 
 
 <a id="nestedblock--hot--rollover"></a>
@@ -334,7 +692,15 @@ Optional:
 
 Optional:
 
-- `enabled` (Boolean) Controls whether ILM makes the follower index a regular one.
+- `enabled` (Boolean) Controls whether ILM executes this action during the phase.
+
+
+<a id="nestedblock--hot--wait_for_snapshot"></a>
+### Nested Schema for `hot.wait_for_snapshot`
+
+Required:
+
+- `policy` (String) Name of the SLM policy that the delete action should wait for.
 
 
 
@@ -343,15 +709,20 @@ Optional:
 
 Optional:
 
-- `allocate` (Block List, Max: 1) Updates the index settings to change which nodes are allowed to host the index shards and change the number of replicas. (see [below for nested schema](#nestedblock--warm--allocate))
-- `downsample` (Block List, Max: 1) Roll up documents within a fixed interval to a single summary document. Reduces the index footprint by storing time series data at reduced granularity. (see [below for nested schema](#nestedblock--warm--downsample))
-- `forcemerge` (Block List, Max: 1) Force merges the index into the specified maximum number of segments. This action makes the index read-only. (see [below for nested schema](#nestedblock--warm--forcemerge))
-- `migrate` (Block List, Max: 1) Moves the index to the data tier that corresponds to the current phase by updating the "index.routing.allocation.include._tier_preference" index setting. (see [below for nested schema](#nestedblock--warm--migrate))
+- `allocate` (Block List) Updates the index settings to change which nodes are allowed to host the index shards and change the number of replicas. (see [below for nested schema](#nestedblock--warm--allocate))
+- `delete` (Block List) Permanently removes the index. (see [below for nested schema](#nestedblock--warm--delete))
+- `downsample` (Block List) Roll up documents within a fixed interval to a single summary document. Reduces the index footprint by storing time series data at reduced granularity. (see [below for nested schema](#nestedblock--warm--downsample))
+- `forcemerge` (Block List) Force merges the index into the specified maximum number of segments. This action makes the index read-only. (see [below for nested schema](#nestedblock--warm--forcemerge))
+- `freeze` (Block List) Freeze the index to minimize its memory footprint. (see [below for nested schema](#nestedblock--warm--freeze))
+- `migrate` (Block List) Moves the index to the data tier that corresponds to the current phase by updating the "index.routing.allocation.include._tier_preference" index setting. (see [below for nested schema](#nestedblock--warm--migrate))
 - `min_age` (String) ILM moves indices through the lifecycle according to their age. To control the timing of these transitions, you set a minimum age for each phase.
-- `readonly` (Block List, Max: 1) Makes the index read-only. (see [below for nested schema](#nestedblock--warm--readonly))
-- `set_priority` (Block List, Max: 1) Sets the priority of the index as soon as the policy enters the hot, warm, or cold phase. Higher priority indices are recovered before indices with lower priorities following a node restart. Default priority is 1. (see [below for nested schema](#nestedblock--warm--set_priority))
-- `shrink` (Block List, Max: 1) Sets a source index to read-only and shrinks it into a new index with fewer primary shards. (see [below for nested schema](#nestedblock--warm--shrink))
-- `unfollow` (Block List, Max: 1) Convert a follower index to a regular index. Performed automatically before a rollover, shrink, or searchable snapshot action. (see [below for nested schema](#nestedblock--warm--unfollow))
+- `readonly` (Block List) Makes the index read-only. (see [below for nested schema](#nestedblock--warm--readonly))
+- `rollover` (Block List) Rolls over a target to a new index when the existing index meets one or more of the rollover conditions. (see [below for nested schema](#nestedblock--warm--rollover))
+- `searchable_snapshot` (Block List) Takes a snapshot of the managed index in the configured repository and mounts it as a searchable snapshot. (see [below for nested schema](#nestedblock--warm--searchable_snapshot))
+- `set_priority` (Block List) Sets the priority of the index as soon as the policy enters the hot, warm, or cold phase. Higher priority indices are recovered before indices with lower priorities following a node restart. Default priority is 1. (see [below for nested schema](#nestedblock--warm--set_priority))
+- `shrink` (Block List) Sets a source index to read-only and shrinks it into a new index with fewer primary shards. (see [below for nested schema](#nestedblock--warm--shrink))
+- `unfollow` (Block List) Convert a follower index to a regular index. Performed automatically before a rollover, shrink, or searchable snapshot action. (see [below for nested schema](#nestedblock--warm--unfollow))
+- `wait_for_snapshot` (Block List) Waits for the specified SLM policy to be executed before removing the index. This ensures that a snapshot of the deleted index is available. (see [below for nested schema](#nestedblock--warm--wait_for_snapshot))
 
 <a id="nestedblock--warm--allocate"></a>
 ### Nested Schema for `warm.allocate`
@@ -363,6 +734,14 @@ Optional:
 - `number_of_replicas` (Number) Number of replicas to assign to the index. Default: `0`
 - `require` (String) Assigns an index to nodes that have all of the specified custom attributes. Must be valid JSON document.
 - `total_shards_per_node` (Number) The maximum number of shards for the index on a single Elasticsearch node. Defaults to `-1` (unlimited). Supported from Elasticsearch version **7.16**
+
+
+<a id="nestedblock--warm--delete"></a>
+### Nested Schema for `warm.delete`
+
+Optional:
+
+- `delete_searchable_snapshot` (Boolean) Deletes the searchable snapshot created in a previous phase.
 
 
 <a id="nestedblock--warm--downsample"></a>
@@ -389,12 +768,20 @@ Optional:
 - `index_codec` (String) Codec used to compress the document store.
 
 
+<a id="nestedblock--warm--freeze"></a>
+### Nested Schema for `warm.freeze`
+
+Optional:
+
+- `enabled` (Boolean) Controls whether ILM executes this action during the phase.
+
+
 <a id="nestedblock--warm--migrate"></a>
 ### Nested Schema for `warm.migrate`
 
 Optional:
 
-- `enabled` (Boolean) Controls whether ILM automatically migrates the index during this phase.
+- `enabled` (Boolean) Controls whether ILM executes this action during the phase.
 
 
 <a id="nestedblock--warm--readonly"></a>
@@ -402,7 +789,36 @@ Optional:
 
 Optional:
 
-- `enabled` (Boolean) Controls whether ILM makes the index read-only.
+- `enabled` (Boolean) Controls whether ILM executes this action during the phase.
+
+
+<a id="nestedblock--warm--rollover"></a>
+### Nested Schema for `warm.rollover`
+
+Optional:
+
+- `max_age` (String) Triggers rollover after the maximum elapsed time from index creation is reached.
+- `max_docs` (Number) Triggers rollover after the specified maximum number of documents is reached.
+- `max_primary_shard_docs` (Number) Triggers rollover when the largest primary shard in the index reaches a certain number of documents. Supported from Elasticsearch version **8.2**
+- `max_primary_shard_size` (String) Triggers rollover when the largest primary shard in the index reaches a certain size.
+- `max_size` (String) Triggers rollover when the index reaches a certain size.
+- `min_age` (String) Prevents rollover until after the minimum elapsed time from index creation is reached. Supported from Elasticsearch version **8.4**
+- `min_docs` (Number) Prevents rollover until after the specified minimum number of documents is reached. Supported from Elasticsearch version **8.4**
+- `min_primary_shard_docs` (Number) Prevents rollover until the largest primary shard in the index reaches a certain number of documents. Supported from Elasticsearch version **8.4**
+- `min_primary_shard_size` (String) Prevents rollover until the largest primary shard in the index reaches a certain size. Supported from Elasticsearch version **8.4**
+- `min_size` (String) Prevents rollover until the index reaches a certain size.
+
+
+<a id="nestedblock--warm--searchable_snapshot"></a>
+### Nested Schema for `warm.searchable_snapshot`
+
+Required:
+
+- `snapshot_repository` (String) Repository used to store the snapshot.
+
+Optional:
+
+- `force_merge_index` (Boolean) Force merges the managed index to one segment.
 
 
 <a id="nestedblock--warm--set_priority"></a>
@@ -428,7 +844,15 @@ Optional:
 
 Optional:
 
-- `enabled` (Boolean) Controls whether ILM makes the follower index a regular one.
+- `enabled` (Boolean) Controls whether ILM executes this action during the phase.
+
+
+<a id="nestedblock--warm--wait_for_snapshot"></a>
+### Nested Schema for `warm.wait_for_snapshot`
+
+Required:
+
+- `policy` (String) Name of the SLM policy that the delete action should wait for.
 
 ## Import
 
