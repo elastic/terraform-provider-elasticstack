@@ -117,6 +117,9 @@ output "cross_cluster_api_key" {
 # This example uses the hashicorp/time provider to trigger replacement on a schedule.
 terraform {
   required_providers {
+    elasticstack = {
+      source = "elastic/elasticstack"
+    }
     time = {
       source = "hashicorp/time"
     }
