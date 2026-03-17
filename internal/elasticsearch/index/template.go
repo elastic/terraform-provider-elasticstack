@@ -27,7 +27,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/tfsdkutils"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -123,6 +123,7 @@ func ResourceTemplate() *schema.Resource {
 						Description: "Alias to add.",
 						Type:        schema.TypeSet,
 						Optional:    true,
+						Set:         hashAliasByName,
 						Elem: &schema.Resource{
 							Schema: map[string]*schema.Schema{
 								"name": {
@@ -139,10 +140,11 @@ func ResourceTemplate() *schema.Resource {
 									ValidateFunc:     validation.StringIsJSON,
 								},
 								"index_routing": {
-									Description: "Value used to route indexing operations to a specific shard. If specified, this overwrites the `routing` value for indexing operations.",
-									Type:        schema.TypeString,
-									Optional:    true,
-									Default:     "",
+									Description:      "Value used to route indexing operations to a specific shard. If specified, this overwrites the `routing` value for indexing operations.",
+									Type:             schema.TypeString,
+									Optional:         true,
+									Computed:         true,
+									DiffSuppressFunc: suppressAliasRoutingDerivedDiff,
 								},
 								"is_hidden": {
 									Description: "If true, the alias is hidden.",
@@ -163,10 +165,11 @@ func ResourceTemplate() *schema.Resource {
 									Default:     "",
 								},
 								"search_routing": {
-									Description: "Value used to route search operations to a specific shard. If specified, this overwrites the routing value for search operations.",
-									Type:        schema.TypeString,
-									Optional:    true,
-									Default:     "",
+									Description:      "Value used to route search operations to a specific shard. If specified, this overwrites the routing value for search operations.",
+									Type:             schema.TypeString,
+									Optional:         true,
+									Computed:         true,
+									DiffSuppressFunc: suppressAliasRoutingDerivedDiff,
 								},
 							},
 						},
@@ -455,7 +458,10 @@ func resourceIndexTemplateRead(ctx context.Context, d *schema.ResourceData, meta
 	}
 
 	if tpl.IndexTemplate.Template != nil {
-		template, diags := flattenTemplateData(tpl.IndexTemplate.Template)
+		template, diags := flattenTemplateData(
+			tpl.IndexTemplate.Template,
+			extractAliasRoutingFromTemplateState(d.Get("template")),
+		)
 		if diags.HasError() {
 			return diags
 		}
@@ -471,7 +477,7 @@ func resourceIndexTemplateRead(ctx context.Context, d *schema.ResourceData, meta
 	return diags
 }
 
-func flattenTemplateData(template *models.Template) ([]any, diag.Diagnostics) {
+func flattenTemplateData(template *models.Template, preservedAliasRouting map[string]string) ([]any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	tmpl := make(map[string]any)
 	if template.Mappings != nil {
@@ -494,6 +500,7 @@ func flattenTemplateData(template *models.Template) ([]any, diag.Diagnostics) {
 		if diags.HasError() {
 			return nil, diags
 		}
+		aliases = preserveAliasRoutingInFlattenedAliases(aliases, preservedAliasRouting)
 		tmpl["alias"] = aliases
 	}
 
@@ -503,6 +510,112 @@ func flattenTemplateData(template *models.Template) ([]any, diag.Diagnostics) {
 	}
 
 	return []any{tmpl}, diags
+}
+
+func extractAliasRoutingFromTemplateState(rawTemplate any) map[string]string {
+	preservedRouting := make(map[string]string)
+
+	templates, ok := rawTemplate.([]any)
+	if !ok || len(templates) == 0 || templates[0] == nil {
+		return preservedRouting
+	}
+
+	tmpl, ok := templates[0].(map[string]any)
+	if !ok {
+		return preservedRouting
+	}
+
+	extractAliasRoutingFromRawAliases(tmpl["alias"], preservedRouting)
+	return preservedRouting
+}
+
+func extractAliasRoutingFromRawAliases(rawAliases any, preservedRouting map[string]string) {
+	switch aliases := rawAliases.(type) {
+	case *schema.Set:
+		for _, alias := range aliases.List() {
+			addAliasRouting(alias, preservedRouting)
+		}
+	case []any:
+		for _, alias := range aliases {
+			addAliasRouting(alias, preservedRouting)
+		}
+	}
+}
+
+func addAliasRouting(rawAlias any, preservedRouting map[string]string) {
+	aliasMap, ok := rawAlias.(map[string]any)
+	if !ok {
+		return
+	}
+
+	name, _ := aliasMap["name"].(string)
+	routing, _ := aliasMap["routing"].(string)
+	if name != "" && routing != "" {
+		preservedRouting[name] = routing
+	}
+}
+
+func preserveAliasRoutingInFlattenedAliases(rawAliases any, preservedAliasRouting map[string]string) any {
+	if len(preservedAliasRouting) == 0 {
+		return rawAliases
+	}
+
+	aliases, ok := rawAliases.([]any)
+	if !ok {
+		return rawAliases
+	}
+
+	for _, rawAlias := range aliases {
+		aliasMap, ok := rawAlias.(map[string]any)
+		if !ok {
+			continue
+		}
+
+		aliasName, _ := aliasMap["name"].(string)
+		if routing, found := preservedAliasRouting[aliasName]; found {
+			aliasMap["routing"] = routing
+		}
+	}
+
+	return aliases
+}
+
+func suppressAliasRoutingDerivedDiff(k, oldValue, newValue string, d *schema.ResourceData) bool {
+	// Ignore diffs for specific routing fields when they are unset in config
+	// but effectively derived from the generic alias routing value.
+	if newValue != "" || oldValue == "" {
+		return false
+	}
+
+	suffixLen := len(".index_routing")
+	if strings.HasSuffix(k, ".search_routing") {
+		suffixLen = len(".search_routing")
+	}
+	if len(k) <= suffixLen {
+		return false
+	}
+
+	routingKey := k[:len(k)-suffixLen] + ".routing"
+	routingRaw, ok := d.GetOk(routingKey)
+	if !ok {
+		return false
+	}
+	routing, ok := routingRaw.(string)
+	if !ok {
+		return false
+	}
+
+	return routing != "" && routing == oldValue
+}
+
+func hashAliasByName(v any) int {
+	aliasMap, ok := v.(map[string]any)
+	if !ok {
+		return 0
+	}
+
+	name, _ := aliasMap["name"].(string)
+	return schema.HashString(name)
 }
 
 func resourceIndexTemplateDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {

@@ -1483,10 +1483,10 @@ Exhibit B - “Incompatible With Secondary Licenses” Notice
 --------------------------------------------------------------------------------
 
 Dependency : github.com/hashicorp/terraform-plugin-framework
-Version: v1.18.0
+Version: v1.19.0
 Licence type (autodetected): MPL-2.0
 
-Contents of probable licence file $GOMODCACHE/github.com/hashicorp/terraform-plugin-framework@v1.18.0/LICENSE:
+Contents of probable licence file $GOMODCACHE/github.com/hashicorp/terraform-plugin-framework@v1.19.0/LICENSE:
 
 Copyright IBM Corp. 2021, 2026
 
@@ -3370,10 +3370,10 @@ Exhibit B - “Incompatible With Secondary Licenses” Notice
 --------------------------------------------------------------------------------
 
 Dependency : github.com/hashicorp/terraform-plugin-go
-Version: v0.30.0
+Version: v0.31.0
 Licence type (autodetected): MPL-2.0
 
-Contents of probable licence file $GOMODCACHE/github.com/hashicorp/terraform-plugin-go@v0.30.0/LICENSE:
+Contents of probable licence file $GOMODCACHE/github.com/hashicorp/terraform-plugin-go@v0.31.0/LICENSE:
 
 Copyright IBM Corp. 2020, 2026
 
@@ -4102,10 +4102,10 @@ Exhibit B - “Incompatible With Secondary Licenses” Notice
 --------------------------------------------------------------------------------
 
 Dependency : github.com/hashicorp/terraform-plugin-mux
-Version: v0.22.0
+Version: v0.23.0
 Licence type (autodetected): MPL-2.0
 
-Contents of probable licence file $GOMODCACHE/github.com/hashicorp/terraform-plugin-mux@v0.22.0/LICENSE:
+Contents of probable licence file $GOMODCACHE/github.com/hashicorp/terraform-plugin-mux@v0.23.0/LICENSE:
 
 Copyright IBM Corp. 2020, 2026
 
@@ -4468,10 +4468,10 @@ Exhibit B - “Incompatible With Secondary Licenses” Notice
 --------------------------------------------------------------------------------
 
 Dependency : github.com/hashicorp/terraform-plugin-sdk/v2
-Version: v2.39.0
+Version: v2.40.0
 Licence type (autodetected): MPL-2.0
 
-Contents of probable licence file $GOMODCACHE/github.com/hashicorp/terraform-plugin-sdk/v2@v2.39.0/LICENSE:
+Contents of probable licence file $GOMODCACHE/github.com/hashicorp/terraform-plugin-sdk/v2@v2.40.0/LICENSE:
 
 Copyright IBM Corp. 2019, 2026
 
@@ -4834,12 +4834,12 @@ Exhibit B - “Incompatible With Secondary Licenses” Notice
 --------------------------------------------------------------------------------
 
 Dependency : github.com/hashicorp/terraform-plugin-testing
-Version: v1.14.0
+Version: v1.15.0
 Licence type (autodetected): MPL-2.0
 
-Contents of probable licence file $GOMODCACHE/github.com/hashicorp/terraform-plugin-testing@v1.14.0/LICENSE:
+Contents of probable licence file $GOMODCACHE/github.com/hashicorp/terraform-plugin-testing@v1.15.0/LICENSE:
 
-Copyright (c) 2014 HashiCorp, Inc.
+Copyright IBM Corp. 2014, 2026
 
 Mozilla Public License Version 2.0
 ==================================
@@ -65991,10 +65991,10 @@ Contents of probable licence file $GOMODCACHE/google.golang.org/genproto/googlea
 --------------------------------------------------------------------------------
 
 Dependency : google.golang.org/grpc
-Version: v1.79.1
+Version: v1.79.2
 Licence type (autodetected): Apache-2.0
 
-Contents of probable licence file $GOMODCACHE/google.golang.org/grpc@v1.79.1/LICENSE:
+Contents of probable licence file $GOMODCACHE/google.golang.org/grpc@v1.79.2/LICENSE:
 
 
                                  Apache License

@@ -25,6 +25,8 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -33,6 +35,8 @@ import (
 
 const indexSettingsAnalysisAnalyzerExpected = `{"text_en":{"char_filter":"zero_width_spaces","filter":["lowercase","minimal_english_stemmer"],` +
 	`"tokenizer":"standard","type":"custom"}}`
+const indexAliasFilterExpected = `{"term":{"user.id":"developer"}}`
+const indexTemplateMappingsExpected = `{"dynamic_templates":[{"strings_as_ip":{"match":"ip*","match_mapping_type":"string","runtime":{"type":"ip"}}}]}`
 
 func TestAccResourceIndex(t *testing.T) {
 	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
@@ -52,10 +56,14 @@ func TestAccResourceIndex(t *testing.T) {
 					resource.TestMatchTypeSetElemNestedAttrs("elasticstack_elasticsearch_index.test", "alias.*", map[string]*regexp.Regexp{
 						"name": regexp.MustCompile("test_alias_1"),
 					}),
-					resource.TestMatchTypeSetElemNestedAttrs("elasticstack_elasticsearch_index.test", "alias.*", map[string]*regexp.Regexp{
-						"name": regexp.MustCompile("test_alias_2"),
+					resource.TestCheckTypeSetElemNestedAttrs("elasticstack_elasticsearch_index.test", "alias.*", map[string]string{
+						"name":   "test_alias_2",
+						"filter": indexAliasFilterExpected,
 					}),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "alias.#", "2"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "wait_for_active_shards", "all"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "master_timeout", "1m"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "timeout", "1m"),
 				),
 			},
 			{
@@ -283,8 +291,12 @@ func TestAccResourceIndexSettings(t *testing.T) {
 					),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "analysis_char_filter", `{"zero_width_spaces":{"mappings":["\\u200C=\u003e\\u0020"],"type":"mapping"}}`),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "analysis_filter", `{"minimal_english_stemmer":{"language":"minimal_english","type":"stemmer"}}`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "analysis_tokenizer", `{"path_tokenizer":{"delimiter":"/","type":"path_hierarchy"}}`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "analysis_normalizer", `{"lowercase_normalizer":{"filter":["lowercase"],"type":"custom"}}`),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "settings.0.setting.0.name", "number_of_replicas"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "settings.0.setting.0.value", "2"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index.test_settings", "settings_raw"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "deletion_protection", "false"),
 				),
 			},
 			{
@@ -296,6 +308,9 @@ func TestAccResourceIndexSettings(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "name", indexName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "mapping_total_fields_limit", "3000"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "load_fixed_bitset_filters_eagerly", "true"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index.test_settings", "settings_raw"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_settings", "deletion_protection", "false"),
 				),
 			},
 		},
@@ -318,7 +333,12 @@ func TestAccResourceIndexWithTemplate(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "name", indexName),
 					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_index.test", "default_pipeline"),
-					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index.test", "mappings"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "mappings", indexTemplateMappingsExpected),
+					resource.TestCheckTypeSetElemNestedAttrs("elasticstack_elasticsearch_index.test", "alias.*", map[string]string{
+						"name":           fmt.Sprintf("%s-alias", indexName),
+						"is_write_index": "true",
+					}),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "deletion_protection", "false"),
 				),
 			},
 		},
@@ -355,6 +375,138 @@ func TestAccResourceIndexRemovingField(t *testing.T) {
 					"index_name": config.StringVariable(indexName),
 				},
 				ExpectNonEmptyPlan: true,
+			},
+		},
+	})
+}
+
+func TestAccResourceIndexBlocks(t *testing.T) {
+	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIndexDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"index_name":   config.StringVariable(indexName),
+					"blocks_write": config.BoolVariable(true),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_blocks", "name", indexName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_blocks", "blocks_write", "true"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_blocks", "blocks_read", "false"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_blocks", "blocks_read_only", "false"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_blocks", "blocks_read_only_allow_delete", "false"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_blocks", "blocks_metadata", "false"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_blocks", "deletion_protection", "false"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"index_name":   config.StringVariable(indexName),
+					"blocks_write": config.BoolVariable(false),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_blocks", "name", indexName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_blocks", "blocks_write", "false"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_blocks", "blocks_read", "false"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_blocks", "blocks_read_only", "false"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_blocks", "blocks_read_only_allow_delete", "false"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_blocks", "blocks_metadata", "false"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_blocks", "deletion_protection", "false"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceIndexSlowlog(t *testing.T) {
+	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIndexDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_slowlog", "name", indexName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_slowlog", "search_slowlog_threshold_query_warn", "10s"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_slowlog", "search_slowlog_threshold_query_info", "5s"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_slowlog", "search_slowlog_threshold_query_debug", "2s"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_slowlog", "search_slowlog_threshold_query_trace", "500ms"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_slowlog", "search_slowlog_threshold_fetch_warn", "1s"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_slowlog", "search_slowlog_threshold_fetch_info", "800ms"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_slowlog", "search_slowlog_threshold_fetch_debug", "500ms"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_slowlog", "search_slowlog_threshold_fetch_trace", "200ms"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_slowlog", "indexing_slowlog_threshold_index_warn", "10s"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_slowlog", "indexing_slowlog_threshold_index_info", "20ms"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_slowlog", "indexing_slowlog_threshold_index_debug", "10ms"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_slowlog", "indexing_slowlog_threshold_index_trace", "5ms"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_slowlog", "indexing_slowlog_source", "1000"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_slowlog", "deletion_protection", "false"),
+				),
+			},
+		},
+	})
+}
+
+// search_slowlog_level and indexing_slowlog_level are only supported in Elastic Stack 7.x.
+var indexingSlowlogLevelVersionConstraint, _ = version.NewConstraint("< 8.0.0")
+
+func TestAccResourceIndexSlowlogLevel(t *testing.T) {
+	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIndexDestroy,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(indexingSlowlogLevelVersionConstraint),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_slowlog_level", "name", indexName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_slowlog_level", "search_slowlog_level", "info"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_slowlog_level", "indexing_slowlog_level", "warn"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceIndexPipelines(t *testing.T) {
+	pipelineName := sdkacctest.RandomWithPrefix("tf-acc-test")
+	indexName := sdkacctest.RandomWithPrefix("tf-acc-test")
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIndexDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"index_name":    config.StringVariable(indexName),
+					"pipeline_name": config.StringVariable(pipelineName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_pipelines", "name", indexName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_pipelines", "default_pipeline", pipelineName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_pipelines", "final_pipeline", pipelineName),
+				),
 			},
 		},
 	})

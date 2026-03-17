@@ -22,6 +22,12 @@
       "NOTICE"
     ]
   },
+  "packageRules": [
+    {
+      "groupName": "hashicorp",
+      "matchPackagePatterns": ["^github\\.com/hashicorp/"]
+    }
+  ],
   "automerge": true,
   "automergeStrategy": "squash",
   "automergeType": "branch",

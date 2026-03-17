@@ -70,6 +70,59 @@ resource "elasticstack_elasticsearch_component_template" "test" {
 }`, name)
 }
 
+func TestAccResourceComponentTemplateAliasDetails(t *testing.T) {
+	templateName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceComponentTemplateDestroy,
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccResourceComponentTemplateWithAliasDetails(templateName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.test", "name", templateName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_component_template.test", "template.0.alias.#", "1"),
+					resource.TestCheckTypeSetElemNestedAttrs(
+						"elasticstack_elasticsearch_component_template.test",
+						"template.0.alias.*",
+						map[string]string{
+							"name":           "detailed_alias",
+							"is_hidden":      "true",
+							"is_write_index": "true",
+							"routing":        "shard_1",
+							"search_routing": "shard_1",
+							"index_routing":  "shard_1",
+						},
+					),
+				),
+			},
+		},
+	})
+}
+
+func testAccResourceComponentTemplateWithAliasDetails(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_component_template" "test" {
+  name = "%s"
+
+  template {
+    alias {
+      name           = "detailed_alias"
+      is_hidden      = true
+      is_write_index = true
+      routing        = "shard_1"
+      search_routing = "shard_1"
+      index_routing  = "shard_1"
+    }
+  }
+}`, name)
+}
+
 func checkResourceComponentTemplateDestroy(s *terraform.State) error {
 	client, err := clients.NewAcceptanceTestingClient()
 	if err != nil {

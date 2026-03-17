@@ -29,6 +29,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/integration_policy"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/integrationds"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/output"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/outputds"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/serverhost"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/alertingrule"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/connectors"
@@ -191,6 +192,7 @@ func (p *Provider) dataSources(ctx context.Context) []func() datasource.DataSour
 		integrationds.NewDataSource,
 		enrich.NewEnrichPolicyDataSource,
 		rolemapping.NewRoleMappingDataSource,
+		outputds.NewDataSource,
 	}
 }
 

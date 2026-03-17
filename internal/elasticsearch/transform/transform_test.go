@@ -31,6 +31,7 @@ import (
 )
 
 var minSupportedDestAliasesVersion = version.Must(version.NewSemver("8.8.0"))
+var minSupportedAdvancedSettingsVersion = version.Must(version.NewSemver("8.5.0"))
 
 func TestAccResourceTransformWithPivot(t *testing.T) {
 
@@ -44,15 +45,18 @@ func TestAccResourceTransformWithPivot(t *testing.T) {
 				Config: testAccResourceTransformWithPivotCreate(transformNamePivot),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "name", transformNamePivot),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_transform.test_pivot", "id"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "description", "test description"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "source.0.indices.0", "source_index_for_transform"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "destination.0.index", "dest_index_for_transform"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_transform.test_pivot", "pivot"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "frequency", "5m"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "max_page_search_size", "2000"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "enabled", "false"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "sync.0.time.0.field", "order_date"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "sync.0.time.0.delay", "20s"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "defer_validation", "true"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "timeout", "1m"),
 					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "latest"),
 				),
 			},
@@ -60,18 +64,27 @@ func TestAccResourceTransformWithPivot(t *testing.T) {
 				Config: testAccResourceTransformWithPivotUpdate(transformNamePivot),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "name", transformNamePivot),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_transform.test_pivot", "id"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "description", "yet another test description"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "source.0.indices.0", "source_index_for_transform"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "source.0.indices.1", "additional_index"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "destination.0.index", "dest_index_for_transform_v2"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_transform.test_pivot", "pivot"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "frequency", "10m"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "max_page_search_size", "2000"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "enabled", "true"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "retention_policy.0.time.0.field", "order_date"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "retention_policy.0.time.0.max_age", "7d"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "defer_validation", "true"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "timeout", "1m"),
 					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_transform.test_pivot", "latest"),
 				),
+			},
+			{
+				ResourceName:            "elasticstack_elasticsearch_transform.test_pivot",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"defer_validation", "elasticsearch_connection", "timeout"},
 			},
 		},
 	})
@@ -89,12 +102,50 @@ func TestAccResourceTransformWithLatest(t *testing.T) {
 				Config: testAccResourceTransformWithLatestCreate(transformNameLatest),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_latest", "name", transformNameLatest),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_transform.test_latest", "id"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_latest", "description", "test description (latest)"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_latest", "source.0.indices.0", "source_index_for_transform"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_latest", "destination.0.index", "dest_index_for_transform"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_transform.test_latest", "latest"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_latest", "frequency", "2m"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_latest", "defer_validation", "true"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_latest", "timeout", "1m"),
 					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_transform.test_latest", "pivot"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceTransformWithAdvancedSettings(t *testing.T) {
+	transformName := sdkacctest.RandStringFromCharSet(18, sdkacctest.CharSetAlphaNum)
+	pipelineName := sdkacctest.RandStringFromCharSet(20, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceTransformDestroy,
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedAdvancedSettingsVersion),
+				Config:   testAccResourceTransformWithAdvancedSettingsCreate(transformName, pipelineName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_advanced", "name", transformName),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_transform.test_advanced", "id"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_advanced", "source.0.indices.0", "source_index_for_transform"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_advanced", "source.0.query", `{"term":{"status":"active"}}`),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_transform.test_advanced", "source.0.runtime_mappings"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_advanced", "destination.0.index", "dest_index_for_transform_advanced"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_advanced", "destination.0.pipeline", pipelineName),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_transform.test_advanced", "metadata"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_transform.test_advanced", "pivot"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_advanced", "align_checkpoints", "true"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_advanced", "dates_as_epoch_millis", "false"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_advanced", "deduce_mappings", "true"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_advanced", "docs_per_second", "100"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_advanced", "num_failure_retries", "5"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_advanced", "unattended", "false"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_transform.test_advanced", "timeout", "1m"),
 				),
 			},
 		},
@@ -348,6 +399,93 @@ resource "elasticstack_elasticsearch_transform" "test_latest" {
   timeout = "1m"
 }
   `, name)
+}
+
+func testAccResourceTransformWithAdvancedSettingsCreate(transformName, pipelineName string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_ingest_pipeline" "test" {
+  name = "%s"
+
+  processors = [
+    jsonencode({
+      set = {
+        field = "_meta"
+        value = "transformed"
+      }
+    })
+  ]
+}
+
+resource "elasticstack_elasticsearch_transform" "test_advanced" {
+  name = "%s"
+  description = "test advanced transform settings"
+
+  source {
+    indices = ["source_index_for_transform"]
+    query   = jsonencode({ term = { status = "active" } })
+    runtime_mappings = jsonencode({
+      day_of_week = {
+        type = "keyword"
+        script = {
+          source = "emit(doc['order_date'].value.dayOfWeekEnum.getDisplayName(TextStyle.FULL, Locale.ROOT))"
+        }
+      }
+    })
+  }
+
+  destination {
+    index    = "dest_index_for_transform_advanced"
+    pipeline = elasticstack_elasticsearch_ingest_pipeline.test.name
+  }
+
+  metadata = jsonencode({
+    owner = "test-team"
+    env   = "ci"
+  })
+
+  pivot = jsonencode({
+    group_by = {
+      customer_id = {
+        terms = {
+          field = "customer_id"
+        }
+      }
+    }
+    aggregations = {
+      total_sales = {
+        sum = {
+          field = "sales"
+        }
+      }
+    }
+  })
+
+  sync {
+    time {
+      field = "order_date"
+      delay = "20s"
+    }
+  }
+
+  align_checkpoints    = true
+  dates_as_epoch_millis = false
+  deduce_mappings      = true
+  docs_per_second      = 100
+  num_failure_retries  = 5
+  unattended           = false
+
+  max_page_search_size = 2000
+  frequency            = "5m"
+  enabled              = false
+
+  defer_validation = true
+  timeout          = "1m"
+}
+`, pipelineName, transformName)
 }
 
 func testAccResourceTransformNoDeferCreate(transformName, indexName string) string {

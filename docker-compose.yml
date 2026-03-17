@@ -57,7 +57,7 @@ services:
     container_name: ${KIBANA_CONTAINER_NAME}
     volumes:
       - dev-kibana:/usr/share/kibana/data
-      - ./kibana.yml:/usr/share/kibana/config/kibana.yml:ro
+      - ./${KIBANA_CONFIG_FILE:-kibana.yml}:/usr/share/kibana/config/kibana.yml:ro
     ports:
       - 127.0.0.1:${KIBANA_PORT}:5601
     environment:
@@ -83,7 +83,7 @@ services:
         condition: service_healthy
     image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
     container_name: ${FLEET_SETTINGS_CONTAINER_NAME}
-    restart: 'no'
+    restart: on-failure:5
     environment:
       CACERT: ""
       KIBANA_HOST: http://kibana:5601

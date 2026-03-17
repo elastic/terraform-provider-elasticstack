@@ -34,7 +34,7 @@ ifneq (,$(filter 7.17.% 8.0.% 8.1.%,$(STACK_VERSION)))
 FLEET_IMAGE := elastic/elastic-agent
 endif
 
-RERUN_FAILS ?= 3
+RERUN_FAILS ?= 5
 
 export GOBIN = $(shell pwd)/bin
 
@@ -65,7 +65,7 @@ testacc: ## Run acceptance tests
 
 .PHONY: test
 test: ## Run unit tests
-	go test -v $(TEST) $(TESTARGS) -timeout=5m -parallel=4
+	go test -v $(TEST) $(TESTARGS) -timeout=5m -parallel=4 -count=1
 
 CURL_OPTS = -sS --retry 5 --retry-all-errors -X POST -u $(ELASTICSEARCH_USERNAME):$(ELASTICSEARCH_PASSWORD) -H "Content-Type: application/json"
 
@@ -92,7 +92,8 @@ docker-kibana:  ## Start Kibana node in docker container
 
 .PHONY: docker-fleet
 docker-fleet: ## Start Fleet node in docker container
-	@ docker compose -f $(COMPOSE_FILE) up --quiet-pull -d fleet
+	@ export KIBANA_CONFIG_FILE=$$(if [ "$(STACK_VERSION)" = "9.4.0-SNAPSHOT" ]; then echo "kibana-9.4.snapshot.yml"; else echo "kibana.yml"; fi); \
+	docker compose -f $(COMPOSE_FILE) up --quiet-pull -d fleet
 
 .PHONY: set-kibana-password
 set-kibana-password: ## Sets the ES KIBANA_SYSTEM_USERNAME's password to KIBANA_SYSTEM_PASSWORD. This expects Elasticsearch to be available at localhost:9200
@@ -143,7 +144,7 @@ install: build ## Install built provider into the local terraform cache
 
 .PHONY: tools
 tools: $(GOBIN)  ## Download golangci-lint locally if necessary.
-	@[[ -f $(GOBIN)/golangci-lint ]] || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOBIN) v2.10.1
+	@[[ -f $(GOBIN)/golangci-lint ]] || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOBIN) v2.11.3
 
 .PHONY: golangci-lint
 golangci-lint:

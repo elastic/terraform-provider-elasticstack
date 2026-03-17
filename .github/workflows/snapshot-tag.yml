@@ -1,0 +1,44 @@
+name: Daily snapshot tag
+
+on:
+  schedule:
+    - cron: "15 2 * * *" # daily at 02:15 UTC
+  workflow_dispatch: {}
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    name: Create daily snapshot tag
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Create and push snapshot tag (if missing)
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          DATE="$(date -u +%Y%m%d)"
+          SHA="$(git rev-parse --short=7 HEAD)"
+          TAG="v0.0.0-${DATE}-${SHA}"
+
+          if [[ -n "$(git ls-remote --tags origin "refs/tags/${TAG}")" ]]; then
+            echo "Tag already exists: ${TAG}. Skipping."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git tag -a "${TAG}" -m "Daily snapshot ${TAG}"
+          git push origin "${TAG}"
