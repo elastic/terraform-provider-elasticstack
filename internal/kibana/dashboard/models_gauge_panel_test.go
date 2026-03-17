@@ -23,8 +23,6 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -172,39 +170,41 @@ func Test_gaugeConfigModel_fromAPI_toAPI(t *testing.T) {
 	}
 }
 
-func Test_gaugePanelConfigConverter_roundTrip(t *testing.T) {
-	converter := newGaugePanelConfigConverter()
+func Test_gaugePanelConfigConverter_populateFromAttributes_buildAttributes_roundTrip(t *testing.T) {
 	ctx := context.Background()
 
-	panel := panelModel{
-		Type: types.StringValue("lens"),
-		GaugeConfig: &gaugeConfigModel{
-			Title:       types.StringValue("Round Trip Gauge"),
-			Description: types.StringValue("Round-trip test"),
-			DatasetJSON: jsontypes.NewNormalizedValue(`{"type":"dataView","id":"metrics-*"}`),
-			Query: &filterSimpleModel{
-				Language: types.StringValue("kuery"),
-				Query:    types.StringValue("status:active"),
-			},
-			MetricJSON: customtypes.NewJSONWithDefaultsValue(`{"operation":"count"}`, populateGaugeMetricDefaults),
-			ShapeJSON:  jsontypes.NewNormalizedValue(`{"type":"circle"}`),
-		},
+	api := kbapi.GaugeNoESQL{
+		Type:                kbapi.GaugeNoESQLTypeGauge,
+		Title:               new("Round-Trip Gauge"),
+		Description:         new("Converter round-trip test"),
+		IgnoreGlobalFilters: new(true),
+		Sampling:            new(float32(0.5)),
 	}
+	require.NoError(t, json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &api.Dataset))
+	require.NoError(t, json.Unmarshal([]byte(`{"query":"status:active","language":"kuery"}`), &api.Query))
+	require.NoError(t, json.Unmarshal([]byte(`{"operation":"count"}`), &api.Metric))
 
-	var apiConfig kbapi.KbnDashboardPanelLens_Config_0_Attributes
-	diags := converter.mapPanelToAPI(panel, &apiConfig)
+	var gaugeChart kbapi.GaugeChart
+	require.NoError(t, gaugeChart.FromGaugeNoESQL(api))
+
+	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	require.NoError(t, attrs.FromGaugeChart(gaugeChart))
+
+	converter := newGaugePanelConfigConverter()
+	pm := &panelModel{}
+	diags := converter.populateFromAttributes(ctx, pm, attrs)
+	require.False(t, diags.HasError())
+	require.NotNil(t, pm.GaugeConfig)
+
+	attrs2, diags := converter.buildAttributes(*pm)
 	require.False(t, diags.HasError())
 
-	newPanel := panelModel{Type: types.StringValue("lens")}
-	diags = converter.populateFromAPIPanel(ctx, &newPanel, apiConfig)
-	require.False(t, diags.HasError())
-	require.NotNil(t, newPanel.GaugeConfig)
-	assert.Equal(t, types.StringValue("Round Trip Gauge"), newPanel.GaugeConfig.Title)
-	assert.Equal(t, types.StringValue("Round-trip test"), newPanel.GaugeConfig.Description)
-	assert.False(t, newPanel.GaugeConfig.DatasetJSON.IsNull())
-	assert.False(t, newPanel.GaugeConfig.MetricJSON.IsNull())
-	assert.False(t, newPanel.GaugeConfig.ShapeJSON.IsNull())
-	require.NotNil(t, newPanel.GaugeConfig.Query)
-	assert.Equal(t, types.StringValue("kuery"), newPanel.GaugeConfig.Query.Language)
-	assert.Equal(t, types.StringValue("status:active"), newPanel.GaugeConfig.Query.Query)
+	gaugeChart2, err := attrs2.AsGaugeChart()
+	require.NoError(t, err)
+	gaugeNoESQL2, err := gaugeChart2.AsGaugeNoESQL()
+	require.NoError(t, err)
+	assert.Equal(t, "Round-Trip Gauge", *gaugeNoESQL2.Title)
+	assert.Equal(t, "Converter round-trip test", *gaugeNoESQL2.Description)
+	assert.True(t, *gaugeNoESQL2.IgnoreGlobalFilters)
+	assert.InDelta(t, 0.5, *gaugeNoESQL2.Sampling, 0.001)
 }

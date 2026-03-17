@@ -19,7 +19,6 @@ package dashboard
 
 import (
 	"context"
-	"encoding/json"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -729,6 +728,51 @@ func Test_xyLegendModel_fromAPI_toAPI_Outside(t *testing.T) {
 	}
 }
 
+func Test_xyChartPanelConfigConverter_populateFromAttributes_buildAttributes_roundTrip(t *testing.T) {
+	ctx := context.Background()
+
+	model := &xyChartConfigModel{
+		Title:       types.StringValue("XY Chart Round-Trip"),
+		Description: types.StringValue("Converter test"),
+		Layers: []xyLayerModel{
+			{
+				Type: types.StringValue("area"),
+				DataLayer: &dataLayerModel{
+					DatasetJSON: jsontypes.NewNormalizedValue(`{"type":"dataView","id":"logs-*"}`),
+					Y: []yMetricModel{
+						{ConfigJSON: jsontypes.NewNormalizedValue(`{"operation":"count","color":"#68BC00","axis":"left"}`)},
+					},
+				},
+			},
+		},
+		Query: &filterSimpleModel{
+			Query:    types.StringValue("*"),
+			Language: types.StringValue("kuery"),
+		},
+	}
+
+	xyChart, diags := model.toAPI()
+	require.False(t, diags.HasError())
+
+	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	require.NoError(t, attrs.FromXyChart(xyChart))
+
+	converter := newXYChartPanelConfigConverter()
+	pm := &panelModel{}
+	diags = converter.populateFromAttributes(ctx, pm, attrs)
+	require.False(t, diags.HasError())
+	require.NotNil(t, pm.XYChartConfig)
+
+	attrs2, diags := converter.buildAttributes(*pm)
+	require.False(t, diags.HasError())
+
+	chart2, err := attrs2.AsXyChart()
+	require.NoError(t, err)
+	assert.Equal(t, kbapi.Xy, chart2.Type)
+	assert.Equal(t, "XY Chart Round-Trip", *chart2.Title)
+	assert.Len(t, chart2.Layers, 1)
+}
+
 func Test_xyChartConfigModel_toAPI_fromAPI(t *testing.T) {
 	ctx := context.Background()
 
@@ -816,66 +860,6 @@ func Test_xyChartConfigModel_toAPI_fromAPI(t *testing.T) {
 	}
 }
 
-func Test_xyChartPanelConfigConverter_populateFromAPIPanel(t *testing.T) {
-	ctx := context.Background()
-
-	tests := []struct {
-		name        string
-		config      kbapi.KbnDashboardPanelLens_Config_0_Attributes
-		expectError bool
-	}{
-		{
-			name: "valid xy chart config",
-			config: func() kbapi.KbnDashboardPanelLens_Config_0_Attributes {
-				attributes := map[string]any{
-					"type":  "xy",
-					"title": "Test Chart",
-					"axis": map[string]any{
-						"x": map[string]any{
-							"grid": true,
-						},
-					},
-					"decorations": map[string]any{
-						"show_end_zones": true,
-					},
-					"fitting": map[string]any{
-						"type": "linear",
-					},
-					"layers": []any{},
-					"legend": map[string]any{
-						"visibility": "visible",
-					},
-					"query": map[string]any{
-						"query": "*",
-					},
-				}
-
-				configJSON, _ := json.Marshal(attributes)
-				var config kbapi.KbnDashboardPanelLens_Config_0_Attributes
-				_ = json.Unmarshal(configJSON, &config)
-				return config
-			}(),
-			expectError: false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			converter := newXYChartPanelConfigConverter()
-			pm := &panelModel{}
-			diags := converter.populateFromAPIPanel(ctx, pm, tt.config)
-
-			if tt.expectError {
-				assert.True(t, diags.HasError())
-			} else {
-				// May have errors depending on config structure
-				// Just verify it doesn't panic
-				assert.NotNil(t, pm)
-			}
-		})
-	}
-}
-
 func Test_xyAxisConfigModel_toAPI_nil(t *testing.T) {
 	var model *xyAxisConfigModel
 	apiAxis, diags := model.toAPI()
@@ -934,4 +918,24 @@ func Test_xyAxisModel_toAPI_nil(t *testing.T) {
 	apiAxis, diags := model.toAPI()
 	assert.False(t, diags.HasError())
 	assert.NotNil(t, apiAxis) // Returns empty struct, not nil
+}
+
+func Test_axisTitleIsDefault(t *testing.T) {
+	tests := []struct {
+		name   string
+		title  *axisTitleModel
+		expect bool
+	}{
+		{"nil", nil, true},
+		{"value known", &axisTitleModel{Value: types.StringValue("x")}, false},
+		{"visible true", &axisTitleModel{Visible: types.BoolValue(true)}, true},
+		{"visible false", &axisTitleModel{Visible: types.BoolValue(false)}, false},
+		{"empty", &axisTitleModel{}, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := axisTitleIsDefault(tt.title)
+			assert.Equal(t, tt.expect, got)
+		})
+	}
 }

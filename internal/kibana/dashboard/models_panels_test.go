@@ -18,6 +18,7 @@
 package dashboard
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 
@@ -27,6 +28,46 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// buildLensTreemapPanelForTest creates a panel model with TreemapConfig for panelsToAPI tests.
+func buildLensTreemapPanelForTest(t *testing.T) panelModel {
+	t.Helper()
+	apiJSON := `{
+		"type": "treemap",
+		"title": "Lens Treemap",
+		"dataset": {"type":"dataView","id":"metrics-*"},
+		"query": {"language":"kuery","query":""},
+		"legend": {"size":"small"},
+		"metrics": [{"operation":"count"}],
+		"group_by": [{"operation":"terms","field":"host.name","collapse_by":"avg"}]
+	}`
+	var api kbapi.TreemapNoESQL
+	require.NoError(t, json.Unmarshal([]byte(apiJSON), &api))
+
+	var chart kbapi.TreemapChart
+	require.NoError(t, chart.FromTreemapNoESQL(api))
+
+	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	require.NoError(t, attrs.FromTreemapChart(chart))
+
+	converter := newTreemapPanelConfigConverter()
+	pm := &panelModel{}
+	diags := converter.populateFromAttributes(context.Background(), pm, attrs)
+	require.False(t, diags.HasError())
+
+	return panelModel{
+		Type:          types.StringValue("lens"),
+		ID:            types.StringValue("treemap-1"),
+		Grid:          panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0), W: types.Int64Value(6), H: types.Int64Value(6)},
+		TreemapConfig: pm.TreemapConfig,
+	}
+}
+
+func Test_lensPanelTimeRange(t *testing.T) {
+	tr := lensPanelTimeRange()
+	assert.Equal(t, "now-15m", tr.From)
+	assert.Equal(t, "now", tr.To)
+}
 
 func Test_mapPanelsFromAPI(t *testing.T) {
 	tests := []struct {
@@ -341,6 +382,33 @@ func Test_panelsToAPI(t *testing.T) {
 					"type": "markdown",
 					"config": {
 						"content": "from json"
+					}
+				}
+			]`,
+		},
+		{
+			name: "lens panel with treemap config",
+			model: dashboardModel{
+				Panels: []panelModel{
+					buildLensTreemapPanelForTest(t),
+				},
+			},
+			expected: `[
+				{
+					"grid": {"h": 6, "w": 6, "x": 0, "y": 0},
+					"uid": "treemap-1",
+					"type": "lens",
+					"config": {
+						"attributes": {
+							"type": "treemap",
+							"title": "Lens Treemap",
+							"dataset": {"type":"dataView","id":"metrics-*"},
+							"query": {"language":"kuery","query":""},
+							"legend": {"size":"small"},
+							"metrics": [{"operation":"count"}],
+							"group_by": [{"operation":"terms","field":"host.name","collapse_by":"avg"}]
+						},
+						"time_range": {"from": "now-15m", "to": "now"}
 					}
 				}
 			]`,

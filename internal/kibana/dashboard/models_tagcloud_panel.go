@@ -86,14 +86,6 @@ func (c tagcloudPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnD
 	return attrs, diags
 }
 
-func (c tagcloudPanelConfigConverter) mapPanelToAPI(pm panelModel, attrs *kbapi.KbnDashboardPanelLens_Config_0_Attributes) diag.Diagnostics {
-	newAttrs, diags := c.buildAttributes(pm)
-	if !diags.HasError() {
-		*attrs = newAttrs
-	}
-	return diags
-}
-
 type tagcloudConfigModel struct {
 	Title               types.String                                      `tfsdk:"title"`
 	Description         types.String                                      `tfsdk:"description"`

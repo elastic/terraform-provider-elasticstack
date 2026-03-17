@@ -107,18 +107,6 @@ func (c datatablePanelConfigConverter) buildAttributes(pm panelModel) (kbapi.Kbn
 	return attrs, diags
 }
 
-func (c datatablePanelConfigConverter) populateFromAPIPanel(ctx context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes) diag.Diagnostics {
-	return c.populateFromAttributes(ctx, pm, attrs)
-}
-
-func (c datatablePanelConfigConverter) mapPanelToAPI(pm panelModel, attrs *kbapi.KbnDashboardPanelLens_Config_0_Attributes) diag.Diagnostics {
-	newAttrs, diags := c.buildAttributes(pm)
-	if !diags.HasError() {
-		*attrs = newAttrs
-	}
-	return diags
-}
-
 type datatableConfigModel struct {
 	NoESQL *datatableNoESQLConfigModel `tfsdk:"no_esql"`
 	ESQL   *datatableESQLConfigModel   `tfsdk:"esql"`

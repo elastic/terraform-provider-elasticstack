@@ -74,11 +74,6 @@ func (c xyChartPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDa
 }
 
 // test-compat wrappers for legacy converter tests
-func (c xyChartPanelConfigConverter) populateFromAPIPanel(ctx context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes) diag.Diagnostics {
-	return c.populateFromAttributes(ctx, pm, attrs)
-}
-
-// test-compat wrappers for legacy converter tests
 type xyChartConfigModel struct {
 	Title       types.String        `tfsdk:"title"`
 	Description types.String        `tfsdk:"description"`

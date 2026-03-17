@@ -24,8 +24,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-const panelTypeLens = "lens"
-
 type lensVisualizationConverter interface {
 	vizType() string
 	handlesTFConfig(pm panelModel) bool
@@ -47,22 +45,6 @@ func (c lensVisualizationBase) handlesTFConfig(pm panelModel) bool {
 		return false
 	}
 	return c.hasTFPanelConfig(pm)
-}
-
-// test-compat wrappers for legacy converter tests
-func (c lensVisualizationBase) handlesTFPanelConfig(pm panelModel) bool {
-	return c.handlesTFConfig(pm)
-}
-
-// test-compat wrappers for legacy converter tests
-func (c lensVisualizationBase) handlesAPIPanelConfig(pm *panelModel, panelType string, attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes) bool {
-	if c.hasTFPanelConfig != nil && pm != nil && !c.hasTFPanelConfig(*pm) {
-		return false
-	}
-	if panelType != panelTypeLens {
-		return false
-	}
-	return detectLensVizType(attrs) == c.visualizationType
 }
 
 func detectLensVizType(attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes) string {

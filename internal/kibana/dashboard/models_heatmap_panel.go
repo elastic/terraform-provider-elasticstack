@@ -79,18 +79,6 @@ func (c heatmapPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDa
 	return attrs, diags
 }
 
-func (c heatmapPanelConfigConverter) populateFromAPIPanel(ctx context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes) diag.Diagnostics {
-	return c.populateFromAttributes(ctx, pm, attrs)
-}
-
-func (c heatmapPanelConfigConverter) mapPanelToAPI(pm panelModel, attrs *kbapi.KbnDashboardPanelLens_Config_0_Attributes) diag.Diagnostics {
-	newAttrs, diags := c.buildAttributes(pm)
-	if !diags.HasError() {
-		*attrs = newAttrs
-	}
-	return diags
-}
-
 type heatmapConfigModel struct {
 	Title               types.String                                      `tfsdk:"title"`
 	Description         types.String                                      `tfsdk:"description"`

@@ -30,6 +30,50 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func Test_pieChartPanelConfigConverter_populateFromAttributes_buildAttributes_roundTrip(t *testing.T) {
+	ctx := context.Background()
+
+	title := "Pie Round-Trip"
+	desc := "Converter test"
+	donutHole := kbapi.PieNoESQLDonutHoleSmall
+	labelPos := kbapi.PieNoESQLLabelPositionInside
+	visible := kbapi.PieLegendVisibleShow
+
+	apiChart := kbapi.PieNoESQL{
+		Title:         &title,
+		Description:   &desc,
+		DonutHole:     &donutHole,
+		LabelPosition: &labelPos,
+		Legend:        kbapi.PieLegend{Visible: &visible},
+		Dataset:       kbapi.PieNoESQL_Dataset{},
+		Query:         kbapi.FilterSimple{Query: "response:200", Language: new(kbapi.FilterSimpleLanguageKuery)},
+		Metrics:       []kbapi.PieNoESQL_Metrics_Item{},
+		GroupBy:       new([]kbapi.PieNoESQL_GroupBy_Item{}),
+	}
+
+	var pieChart kbapi.PieChart
+	require.NoError(t, pieChart.FromPieNoESQL(apiChart))
+
+	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	require.NoError(t, attrs.FromPieChart(pieChart))
+
+	converter := newPieChartPanelConfigConverter()
+	pm := &panelModel{}
+	diags := converter.populateFromAttributes(ctx, pm, attrs)
+	require.False(t, diags.HasError())
+	require.NotNil(t, pm.PieChartConfig)
+
+	attrs2, diags := converter.buildAttributes(*pm)
+	require.False(t, diags.HasError())
+
+	chart2, err := attrs2.AsPieChart()
+	require.NoError(t, err)
+	noESQL2, err := chart2.AsPieNoESQL()
+	require.NoError(t, err)
+	assert.Equal(t, "Pie Round-Trip", *noESQL2.Title)
+	assert.Equal(t, "response:200", noESQL2.Query.Query)
+}
+
 func Test_pieChartConfigModel_fromAPI_toAPI_PieNoESQL(t *testing.T) {
 	// Setup test data
 	title := "My Pie Chart"
@@ -92,141 +136,92 @@ func Test_pieChartConfigModel_fromAPI_toAPI_PieNoESQL(t *testing.T) {
 	assert.Equal(t, desc, *resultNoESQL.Description)
 }
 
-func Test_pieChartPanelConfigConverter_roundTrip(t *testing.T) {
-	marshalConfig := func(t *testing.T, cfg kbapi.KbnDashboardPanelLens_Config_0_Attributes) map[string]any {
-		t.Helper()
-		b, err := cfg.MarshalJSON()
-		require.NoError(t, err)
-		var m map[string]any
-		require.NoError(t, json.Unmarshal(b, &m))
-		return m
+func Test_pieChartConfigModel_fromAPI_toAPI_PieESQL(t *testing.T) {
+	ctx := context.Background()
+
+	apiJSON := `{
+		"type": "pie",
+		"title": "ESQL Pie Chart",
+		"description": "ESQL pie description",
+		"dataset": {"type":"esql","query":"FROM logs-* | LIMIT 10"},
+		"sampling": 0.5,
+		"ignore_global_filters": true,
+		"legend": {"visible": "show"},
+		"metrics": [{"operation":"value","column":"bytes","color":{"type":"static","color":"#54B399"},"format":{"type":"number"}}],
+		"group_by": [{"operation":"value","column":"host.name","collapse_by":"avg","color":{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"colorCode","value":"#D3DAE6"}}}]
+	}`
+	var apiESQL kbapi.PieESQL
+	require.NoError(t, json.Unmarshal([]byte(apiJSON), &apiESQL))
+
+	var pieChart kbapi.PieChart
+	require.NoError(t, pieChart.FromPieESQL(apiESQL))
+
+	model := &pieChartConfigModel{}
+	diags := model.fromAPI(ctx, pieChart)
+	require.False(t, diags.HasError())
+
+	assert.Equal(t, "ESQL Pie Chart", model.Title.ValueString())
+	assert.Equal(t, "ESQL pie description", model.Description.ValueString())
+	assert.Len(t, model.Metrics, 1)
+	assert.Len(t, model.GroupBy, 1)
+
+	resultChart, diags := model.toAPI()
+	require.False(t, diags.HasError())
+
+	esql2, err := resultChart.AsPieESQL()
+	require.NoError(t, err)
+	assert.Equal(t, "ESQL Pie Chart", *esql2.Title)
+	assert.Equal(t, kbapi.PieESQLType("pie"), esql2.Type)
+	assert.Len(t, esql2.Metrics, 1)
+	assert.Equal(t, "bytes", esql2.Metrics[0].Column)
+}
+
+func Test_pieChartConfigModel_toAPI_withMetrics(t *testing.T) {
+	model := &pieChartConfigModel{
+		Title:       types.StringValue("Pie with metrics"),
+		Description: types.StringValue("Test"),
+		Dataset:     jsontypes.NewNormalizedValue(`{"type":"dataView","id":"logs-*"}`),
+		Legend:      jsontypes.NewNormalizedValue(`{"visible":"show"}`),
+		Query:       &filterSimpleModel{Query: types.StringValue("*"), Language: types.StringValue("kuery")},
+		Metrics: []pieMetricModel{
+			{Config: customtypes.NewJSONWithDefaultsValue[map[string]any](`{"operation":"count"}`, populatePieChartMetricDefaults)},
+			{Config: customtypes.NewJSONWithDefaultsValue[map[string]any](`{"operation":"sum","field":"bytes"}`, populatePieChartMetricDefaults)},
+		},
+		GroupBy: []pieGroupByModel{
+			{Config: customtypes.NewJSONWithDefaultsValue(`{"operation":"terms","field":"host.name"}`, populatePieChartGroupByDefaults)},
+		},
 	}
 
-	t.Run("NoESQL", func(t *testing.T) {
-		converter := newPieChartPanelConfigConverter()
+	chart, diags := model.toAPI()
+	require.False(t, diags.HasError())
 
-		legendVisible := kbapi.PieLegendVisibleShow
-		legend := kbapi.PieLegend{
-			Size:    kbapi.LegendSizeAuto,
-			Visible: &legendVisible,
-		}
-		legendJSON, err := json.Marshal(legend)
-		require.NoError(t, err)
+	noESQL, err := chart.AsPieNoESQL()
+	require.NoError(t, err)
+	assert.Len(t, noESQL.Metrics, 2)
+	assert.NotNil(t, noESQL.GroupBy)
+	assert.Len(t, *noESQL.GroupBy, 1)
+}
 
-		configModel := &pieChartConfigModel{
-			Title:               types.StringValue("Round Trip Pie (NoESQL)"),
-			Description:         types.StringValue("NoESQL round-trip test"),
-			Dataset:             jsontypes.NewNormalizedValue(`{"type":"dataView","id":"metrics-*"}`),
-			Legend:              jsontypes.NewNormalizedValue(string(legendJSON)),
-			IgnoreGlobalFilters: types.BoolValue(true),
-			Sampling:            types.Float64Value(0.5),
-			DonutHole:           types.StringValue(string(kbapi.PieNoESQLDonutHoleSmall)),
-			LabelPosition:       types.StringValue(string(kbapi.PieNoESQLLabelPositionInside)),
-			Query: &filterSimpleModel{
-				Language: types.StringValue("kuery"),
-				Query:    types.StringValue("response:200"),
-			},
-			Metrics: []pieMetricModel{
-				{
-					Config: customtypes.NewJSONWithDefaultsValue[map[string]any](
-						`{"operation":"count","empty_as_null":false,"format":{"type":"number","decimals":2}}`,
-						populatePieChartMetricDefaults,
-					),
-				},
-			},
-			GroupBy: []pieGroupByModel{
-				{
-					Config: customtypes.NewJSONWithDefaultsValue[map[string]any](
-						`{"operation":"terms","field":"host.name","size":5}`,
-						populatePieChartGroupByDefaults,
-					),
-				},
-			},
-		}
+func Test_pieChartConfigModel_toAPI_withGroupBy(t *testing.T) {
+	model := &pieChartConfigModel{
+		Title:   types.StringValue("Pie with groupBy"),
+		Dataset: jsontypes.NewNormalizedValue(`{"type":"dataView","id":"logs-*"}`),
+		Legend:  jsontypes.NewNormalizedValue(`{"visible":"show"}`),
+		Query:   &filterSimpleModel{Query: types.StringValue("*"), Language: types.StringValue("kuery")},
+		Metrics: []pieMetricModel{
+			{Config: customtypes.NewJSONWithDefaultsValue[map[string]any](`{"operation":"count"}`, populatePieChartMetricDefaults)},
+		},
+		GroupBy: []pieGroupByModel{
+			{Config: customtypes.NewJSONWithDefaultsValue(`{"operation":"terms","field":"host.name","size":10}`, populatePieChartGroupByDefaults)},
+			{Config: customtypes.NewJSONWithDefaultsValue(`{"operation":"terms","field":"service.name"}`, populatePieChartGroupByDefaults)},
+		},
+	}
 
-		panel := panelModel{
-			Type:           types.StringValue("lens"),
-			PieChartConfig: configModel,
-		}
+	chart, diags := model.toAPI()
+	require.False(t, diags.HasError())
 
-		var apiConfig1 kbapi.KbnDashboardPanelLens_Config_0_Attributes
-		diags := converter.mapPanelToAPI(panel, &apiConfig1)
-		require.False(t, diags.HasError())
-
-		newPanel := panelModel{Type: types.StringValue("lens")}
-		diags = converter.populateFromAPIPanel(context.Background(), &newPanel, apiConfig1)
-		require.False(t, diags.HasError())
-		require.NotNil(t, newPanel.PieChartConfig)
-		require.NotNil(t, newPanel.PieChartConfig.Query)
-		assert.Equal(t, "Round Trip Pie (NoESQL)", newPanel.PieChartConfig.Title.ValueString())
-		assert.Equal(t, "response:200", newPanel.PieChartConfig.Query.Query.ValueString())
-
-		var apiConfig2 kbapi.KbnDashboardPanelLens_Config_0_Attributes
-		diags = converter.mapPanelToAPI(newPanel, &apiConfig2)
-		require.False(t, diags.HasError())
-
-		assert.Equal(t, marshalConfig(t, apiConfig1), marshalConfig(t, apiConfig2))
-	})
-
-	t.Run("ESQL", func(t *testing.T) {
-		converter := newPieChartPanelConfigConverter()
-
-		legendVisible := kbapi.PieLegendVisibleHide
-		legend := kbapi.PieLegend{
-			Size:    kbapi.LegendSizeSmall,
-			Visible: &legendVisible,
-		}
-		legendJSON, err := json.Marshal(legend)
-		require.NoError(t, err)
-
-		configModel := &pieChartConfigModel{
-			Title:               types.StringValue("Round Trip Pie (ESQL)"),
-			Description:         types.StringValue("ESQL round-trip test"),
-			Dataset:             jsontypes.NewNormalizedValue(`{"type":"esql","query":"FROM metrics-* | KEEP host.name, system.cpu.user.pct | LIMIT 10"}`),
-			Legend:              jsontypes.NewNormalizedValue(string(legendJSON)),
-			IgnoreGlobalFilters: types.BoolValue(false),
-			Sampling:            types.Float64Value(1.0),
-			DonutHole:           types.StringValue(string(kbapi.PieESQLDonutHoleLarge)),
-			LabelPosition:       types.StringValue(string(kbapi.PieESQLLabelPositionOutside)),
-			Query:               nil, // Disambiguates ESQL code path in toAPI()
-			Metrics: []pieMetricModel{
-				{
-					Config: customtypes.NewJSONWithDefaultsValue[map[string]any](
-						`{"color":{"type":"static","color":"#FF0000"},"column":"system.cpu.user.pct","format":{"type":"number","decimals":2},"label":"cpu","operation":"value"}`,
-						populatePieChartMetricDefaults,
-					),
-				},
-			},
-			GroupBy: []pieGroupByModel{
-				{
-					Config: customtypes.NewJSONWithDefaultsValue[map[string]any](
-						`{"collapse_by":"avg","color":{},"column":"host.name","operation":"value"}`,
-						populatePieChartGroupByDefaults,
-					),
-				},
-			},
-		}
-
-		panel := panelModel{
-			Type:           types.StringValue("lens"),
-			PieChartConfig: configModel,
-		}
-
-		var apiConfig1 kbapi.KbnDashboardPanelLens_Config_0_Attributes
-		diags := converter.mapPanelToAPI(panel, &apiConfig1)
-		require.False(t, diags.HasError())
-
-		newPanel := panelModel{Type: types.StringValue("lens")}
-		diags = converter.populateFromAPIPanel(context.Background(), &newPanel, apiConfig1)
-		require.False(t, diags.HasError())
-		require.NotNil(t, newPanel.PieChartConfig)
-		assert.Nil(t, newPanel.PieChartConfig.Query)
-		assert.Equal(t, "Round Trip Pie (ESQL)", newPanel.PieChartConfig.Title.ValueString())
-
-		var apiConfig2 kbapi.KbnDashboardPanelLens_Config_0_Attributes
-		diags = converter.mapPanelToAPI(newPanel, &apiConfig2)
-		require.False(t, diags.HasError())
-
-		assert.Equal(t, marshalConfig(t, apiConfig1), marshalConfig(t, apiConfig2))
-	})
+	noESQL, err := chart.AsPieNoESQL()
+	require.NoError(t, err)
+	require.NotNil(t, noESQL.GroupBy)
+	assert.Len(t, *noESQL.GroupBy, 2)
 }
