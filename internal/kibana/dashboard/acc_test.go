@@ -324,6 +324,7 @@ func TestAccResourceDashboardPanels(t *testing.T) {
 
 func TestAccResourceDashboardPanelsJSONConfig(t *testing.T) {
 	dashboardTitle := "Test Dashboard Panel with JSON Config " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+	dashboardID := "test-legacy-metric-json-" + sdkacctest.RandStringFromCharSet(6, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -344,6 +345,25 @@ func TestAccResourceDashboardPanelsJSONConfig(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.x", "0"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.y", "0"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.config_json"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("legacy_metric_json"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+					"dashboard_id":    config.StringVariable(dashboardID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "dashboard_id", dashboardID),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "title", dashboardTitle),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.type", "lens"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.config_json"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.legacy_metric_config.dataset_json"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.legacy_metric_config.metric_json"),
 				),
 			},
 		},
