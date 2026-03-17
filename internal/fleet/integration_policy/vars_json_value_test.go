@@ -1,4 +1,21 @@
-package integration_policy
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package integrationpolicy
 
 import (
 	"context"
@@ -166,7 +183,7 @@ func TestNewVarsJSONWithIntegration(t *testing.T) {
 	cacheKey := getPackageCacheKey(pkgName, pkgVersion)
 
 	// Setup mock package with defaults
-	vars := []map[string]interface{}{
+	vars := []map[string]any{
 		{
 			"name":    "var1",
 			"default": "default1",
@@ -248,7 +265,7 @@ func TestPopulateVarsJSONDefaults(t *testing.T) {
 	cacheKey := getPackageCacheKey(pkgName, pkgVersion)
 
 	// Setup mock package with defaults
-	vars := []map[string]interface{}{
+	vars := []map[string]any{
 		{
 			"name":    "var1",
 			"default": "default1",
@@ -275,42 +292,42 @@ func TestPopulateVarsJSONDefaults(t *testing.T) {
 	tests := []struct {
 		name           string
 		ctxVal         string
-		varsJson       string
+		varsJSON       string
 		expectedResult string
 		expectError    bool
 	}{
 		{
 			name:           "empty context value",
 			ctxVal:         "",
-			varsJson:       `{"foo": "bar"}`,
+			varsJSON:       `{"foo": "bar"}`,
 			expectedResult: `{"foo": "bar"}`,
 			expectError:    false,
 		},
 		{
 			name:           "unknown package",
 			ctxVal:         "unknown-pkg-1.0.0",
-			varsJson:       `{"foo": "bar"}`,
+			varsJSON:       `{"foo": "bar"}`,
 			expectedResult: `{"foo": "bar"}`,
 			expectError:    false,
 		},
 		{
 			name:           "apply defaults to empty json",
 			ctxVal:         cacheKey,
-			varsJson:       `{}`,
+			varsJSON:       `{}`,
 			expectedResult: `{"var1":"default1","var2":[]}`,
 			expectError:    false,
 		},
 		{
 			name:           "merge defaults with existing values",
 			ctxVal:         cacheKey,
-			varsJson:       `{"var1": "overridden", "foo": "bar"}`,
+			varsJSON:       `{"var1": "overridden", "foo": "bar"}`,
 			expectedResult: `{"var1":"overridden","foo":"bar","var2":[]}`,
 			expectError:    false,
 		},
 		{
 			name:           "invalid json input",
 			ctxVal:         cacheKey,
-			varsJson:       `{invalid`,
+			varsJSON:       `{invalid`,
 			expectedResult: `{invalid`,
 			expectError:    true,
 		},
@@ -318,7 +335,7 @@ func TestPopulateVarsJSONDefaults(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res, err := populateVarsJSONDefaults(tt.ctxVal, tt.varsJson)
+			res, err := populateVarsJSONDefaults(tt.ctxVal, tt.varsJSON)
 
 			if tt.expectError {
 				require.Error(t, err)
@@ -326,7 +343,7 @@ func TestPopulateVarsJSONDefaults(t *testing.T) {
 				require.NoError(t, err)
 
 				// Compare JSONs by unmarshalling
-				var expectedMap, resultMap map[string]interface{}
+				var expectedMap, resultMap map[string]any
 				if tt.expectedResult != "" {
 					err = json.Unmarshal([]byte(tt.expectedResult), &expectedMap)
 					require.NoError(t, err)

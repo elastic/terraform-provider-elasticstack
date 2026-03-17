@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package dashboard
 
 import (
@@ -32,7 +49,7 @@ func (c tagcloudPanelConfigConverter) handlesTFPanelConfig(pm panelModel) bool {
 
 func (c tagcloudPanelConfigConverter) populateFromAPIPanel(ctx context.Context, pm *panelModel, config kbapi.DashboardPanelItem_Config) diag.Diagnostics {
 	// Try to extract the tagcloud config from the panel config
-	cfgMap, err := config.AsDashboardPanelItemConfig2()
+	cfgMap, err := config.AsDashboardPanelItemConfig8()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -43,18 +60,18 @@ func (c tagcloudPanelConfigConverter) populateFromAPIPanel(ctx context.Context, 
 		return nil
 	}
 
-	attrsMap, ok := attrs.(map[string]interface{})
+	attrsMap, ok := attrs.(map[string]any)
 	if !ok {
 		return nil
 	}
 
-	// Marshal and unmarshal to get the TagcloudChartSchema
+	// Marshal and unmarshal to get the TagcloudChart
 	attrsJSON, err := json.Marshal(attrsMap)
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	var tagcloudChart kbapi.TagcloudChartSchema
+	var tagcloudChart kbapi.TagcloudChart
 	if err := json.Unmarshal(attrsJSON, &tagcloudChart); err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -81,37 +98,37 @@ func (c tagcloudPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *kb
 		return diags
 	}
 
-	// Convert TagcloudNoESQL to TagcloudChartSchema
-	var tagcloudChart kbapi.TagcloudChartSchema
+	// Convert TagcloudNoESQL to TagcloudChart
+	var tagcloudChart kbapi.TagcloudChart
 	if err := tagcloudChart.FromTagcloudNoESQL(tagcloudNoESQL); err != nil {
 		diags.AddError("Failed to convert tagcloud to schema", err.Error())
 		return diags
 	}
 
 	// Create the nested dashboard panel config structure for the tagcloud attributes
-	var attrs0 kbapi.DashboardPanelItemConfig10Attributes0
-	if err := attrs0.FromTagcloudChartSchema(tagcloudChart); err != nil {
+	var attrs0 kbapi.DashboardPanelItemConfig70Attributes0
+	if err := attrs0.FromTagcloudChart(tagcloudChart); err != nil {
 		diags.AddError("Failed to create tagcloud attributes", err.Error())
 		return diags
 	}
 
-	var configAttrs kbapi.DashboardPanelItem_Config_1_0_Attributes
-	if err := configAttrs.FromDashboardPanelItemConfig10Attributes0(attrs0); err != nil {
+	var configAttrs kbapi.DashboardPanelItem_Config_7_0_Attributes
+	if err := configAttrs.FromDashboardPanelItemConfig70Attributes0(attrs0); err != nil {
 		diags.AddError("Failed to create config attributes", err.Error())
 		return diags
 	}
 
-	config10 := kbapi.DashboardPanelItemConfig10{
+	config10 := kbapi.DashboardPanelItemConfig70{
 		Attributes: configAttrs,
 	}
 
-	var config1 kbapi.DashboardPanelItemConfig1
-	if err := config1.FromDashboardPanelItemConfig10(config10); err != nil {
+	var config1 kbapi.DashboardPanelItemConfig7
+	if err := config1.FromDashboardPanelItemConfig70(config10); err != nil {
 		diags.AddError("Failed to create config1", err.Error())
 		return diags
 	}
 
-	if err := apiConfig.FromDashboardPanelItemConfig1(config1); err != nil {
+	if err := apiConfig.FromDashboardPanelItemConfig7(config1); err != nil {
 		diags.AddError("Failed to marshal tagcloud config", err.Error())
 	}
 
@@ -121,15 +138,15 @@ func (c tagcloudPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *kb
 type tagcloudConfigModel struct {
 	Title               types.String                                      `tfsdk:"title"`
 	Description         types.String                                      `tfsdk:"description"`
-	Dataset             jsontypes.Normalized                              `tfsdk:"dataset"`
+	DatasetJSON         jsontypes.Normalized                              `tfsdk:"dataset_json"`
 	IgnoreGlobalFilters types.Bool                                        `tfsdk:"ignore_global_filters"`
 	Sampling            types.Float64                                     `tfsdk:"sampling"`
 	Query               *filterSimpleModel                                `tfsdk:"query"`
 	Filters             []searchFilterModel                               `tfsdk:"filters"`
 	Orientation         types.String                                      `tfsdk:"orientation"`
 	FontSize            *fontSizeModel                                    `tfsdk:"font_size"`
-	Metric              customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"metric"`
-	TagBy               customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"tag_by"`
+	MetricJSON          customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"metric_json"`
+	TagByJSON           customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"tag_by_json"`
 }
 
 type fontSizeModel struct {
@@ -139,6 +156,7 @@ type fontSizeModel struct {
 
 func (m *tagcloudConfigModel) fromAPI(ctx context.Context, api kbapi.TagcloudNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
+	_ = ctx
 
 	m.Title = types.StringPointerValue(api.Title)
 	m.Description = types.StringPointerValue(api.Description)
@@ -149,7 +167,7 @@ func (m *tagcloudConfigModel) fromAPI(ctx context.Context, api kbapi.TagcloudNoE
 		diags.AddError("Failed to marshal dataset", err.Error())
 		return diags
 	}
-	m.Dataset = jsontypes.NewNormalizedValue(string(datasetBytes))
+	m.DatasetJSON = jsontypes.NewNormalizedValue(string(datasetBytes))
 
 	m.IgnoreGlobalFilters = types.BoolPointerValue(api.IgnoreGlobalFilters)
 	if api.Sampling != nil {
@@ -195,7 +213,7 @@ func (m *tagcloudConfigModel) fromAPI(ctx context.Context, api kbapi.TagcloudNoE
 		diags.AddError("Failed to marshal metric", err.Error())
 		return diags
 	}
-	m.Metric = customtypes.NewJSONWithDefaultsValue[map[string]any](
+	m.MetricJSON = customtypes.NewJSONWithDefaultsValue[map[string]any](
 		string(metricBytes),
 		populateTagcloudMetricDefaults,
 	)
@@ -206,7 +224,7 @@ func (m *tagcloudConfigModel) fromAPI(ctx context.Context, api kbapi.TagcloudNoE
 		diags.AddError("Failed to marshal tag_by", err.Error())
 		return diags
 	}
-	m.TagBy = customtypes.NewJSONWithDefaultsValue[map[string]any](
+	m.TagByJSON = customtypes.NewJSONWithDefaultsValue[map[string]any](
 		string(tagByBytes),
 		populateTagcloudTagByDefaults,
 	)
@@ -230,8 +248,8 @@ func (m *tagcloudConfigModel) toAPI() (kbapi.TagcloudNoESQL, diag.Diagnostics) {
 	}
 
 	// Handle dataset
-	if !m.Dataset.IsNull() {
-		if err := json.Unmarshal([]byte(m.Dataset.ValueString()), &api.Dataset); err != nil {
+	if !m.DatasetJSON.IsNull() {
+		if err := json.Unmarshal([]byte(m.DatasetJSON.ValueString()), &api.Dataset); err != nil {
 			diags.AddError("Failed to unmarshal dataset", err.Error())
 			return api, diags
 		}
@@ -253,7 +271,7 @@ func (m *tagcloudConfigModel) toAPI() (kbapi.TagcloudNoESQL, diag.Diagnostics) {
 
 	// Handle filters
 	if len(m.Filters) > 0 {
-		filters := make([]kbapi.SearchFilterSchema, len(m.Filters))
+		filters := make([]kbapi.SearchFilter, len(m.Filters))
 		for i, filterModel := range m.Filters {
 			filter, filterDiags := filterModel.toAPI()
 			diags.Append(filterDiags...)
@@ -275,27 +293,27 @@ func (m *tagcloudConfigModel) toAPI() (kbapi.TagcloudNoESQL, diag.Diagnostics) {
 			Min *float32 `json:"min,omitempty"`
 		}{}
 		if !m.FontSize.Min.IsNull() {
-			min := float32(m.FontSize.Min.ValueFloat64())
-			fontSize.Min = &min
+			minValue := float32(m.FontSize.Min.ValueFloat64())
+			fontSize.Min = &minValue
 		}
 		if !m.FontSize.Max.IsNull() {
-			max := float32(m.FontSize.Max.ValueFloat64())
-			fontSize.Max = &max
+			maxValue := float32(m.FontSize.Max.ValueFloat64())
+			fontSize.Max = &maxValue
 		}
 		api.FontSize = &fontSize
 	}
 
 	// Handle metric (as JSON)
-	if !m.Metric.IsNull() {
-		if err := json.Unmarshal([]byte(m.Metric.ValueString()), &api.Metric); err != nil {
+	if !m.MetricJSON.IsNull() {
+		if err := json.Unmarshal([]byte(m.MetricJSON.ValueString()), &api.Metric); err != nil {
 			diags.AddError("Failed to unmarshal metric", err.Error())
 			return api, diags
 		}
 	}
 
 	// Handle tagBy (as JSON)
-	if !m.TagBy.IsNull() {
-		if err := json.Unmarshal([]byte(m.TagBy.ValueString()), &api.TagBy); err != nil {
+	if !m.TagByJSON.IsNull() {
+		if err := json.Unmarshal([]byte(m.TagByJSON.ValueString()), &api.TagBy); err != nil {
 			diags.AddError("Failed to unmarshal tag_by", err.Error())
 			return api, diags
 		}

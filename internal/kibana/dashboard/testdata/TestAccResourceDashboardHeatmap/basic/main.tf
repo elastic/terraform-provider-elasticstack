@@ -23,7 +23,7 @@ resource "elasticstack_kibana_dashboard" "test" {
     heatmap_config = {
       title       = "Sample Heatmap"
       description = "Test heatmap visualization"
-      dataset = jsonencode({
+      dataset_json = jsonencode({
         type = "dataView"
         id   = "metrics-*"
       })
@@ -31,10 +31,10 @@ resource "elasticstack_kibana_dashboard" "test" {
         language = "kuery"
         query    = ""
       }
-      metric = jsonencode({
+      metric_json = jsonencode({
         operation = "count"
       })
-      x_axis = jsonencode({
+      x_axis_json = jsonencode({
         operation = "filters"
         filters = [
           {
@@ -46,7 +46,7 @@ resource "elasticstack_kibana_dashboard" "test" {
           }
         ]
       })
-      y_axis = jsonencode({
+      y_axis_json = jsonencode({
         operation = "filters"
         filters = [
           {

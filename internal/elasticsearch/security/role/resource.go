@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package role
 
 import (
@@ -21,7 +38,7 @@ func NewRoleResource() resource.Resource {
 }
 
 type roleResource struct {
-	client *clients.ApiClient
+	client *clients.APIClient
 }
 
 func (r *roleResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -46,8 +63,8 @@ func (r *roleResource) UpgradeState(_ context.Context) map[int64]resource.StateU
 	}
 }
 
-func v0ToV1(ctx context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
-	var priorState map[string]interface{}
+func v0ToV1(_ context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
+	var priorState map[string]any
 	err := json.Unmarshal(req.RawState.JSON, &priorState)
 	if err != nil {
 		resp.Diagnostics.AddError("State Upgrade Error", "Could not unmarshal prior state: "+err.Error())
@@ -82,18 +99,18 @@ func v0ToV1(ctx context.Context, req resource.UpgradeStateRequest, resp *resourc
 	}
 }
 
-func convertV0Indices(indices interface{}) interface{} {
-	indicesSlice, ok := indices.([]interface{})
+func convertV0Indices(indices any) any {
+	indicesSlice, ok := indices.([]any)
 	if ok {
 		for i, index := range indicesSlice {
-			indexMap, ok := index.(map[string]interface{})
+			indexMap, ok := index.(map[string]any)
 			if ok {
 				if indexMap["query"] == "" {
 					delete(indexMap, "query")
 				}
 				// Convert field_security from a list to an object
 				if fs, ok := indexMap["field_security"]; ok {
-					fsList, ok := fs.([]interface{})
+					fsList, ok := fs.([]any)
 					if ok && len(fsList) > 0 {
 						indexMap["field_security"] = fsList[0]
 					} else {

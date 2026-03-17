@@ -1,8 +1,25 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package slo
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/slo"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -17,7 +34,7 @@ type tfKqlCustomIndicator struct {
 }
 
 func (m tfModel) kqlCustomIndicatorToAPI() (bool, slo.SloWithSummaryResponseIndicator, diag.Diagnostics) {
-	var diags diag.Diagnostics
+	diags := diag.Diagnostics{}
 	if len(m.KqlCustomIndicator) != 1 {
 		return false, slo.SloWithSummaryResponseIndicator{}, diags
 	}
@@ -25,22 +42,24 @@ func (m tfModel) kqlCustomIndicatorToAPI() (bool, slo.SloWithSummaryResponseIndi
 	ind := m.KqlCustomIndicator[0]
 
 	var filterObj *slo.KqlWithFilters
-	if utils.IsKnown(ind.Filter) {
+	if typeutils.IsKnown(ind.Filter) {
 		v := ind.Filter.ValueString()
 		filterObj = &slo.KqlWithFilters{String: &v}
 	}
 
-	good := slo.KqlWithFiltersGood{}
-	if utils.IsKnown(ind.Good) {
-		v := ind.Good.ValueString()
-		good.String = &v
+	// Default good and total to empty string if not provided, as they are required by the API
+	// and must be marshallable to valid JSON
+	goodStr := ""
+	if typeutils.IsKnown(ind.Good) {
+		goodStr = ind.Good.ValueString()
 	}
+	good := slo.KqlWithFiltersGood{String: &goodStr}
 
-	total := slo.KqlWithFiltersTotal{}
-	if utils.IsKnown(ind.Total) {
-		v := ind.Total.ValueString()
-		total.String = &v
+	totalStr := ""
+	if typeutils.IsKnown(ind.Total) {
+		totalStr = ind.Total.ValueString()
 	}
+	total := slo.KqlWithFiltersTotal{String: &totalStr}
 
 	params := slo.IndicatorPropertiesCustomKqlParams{
 		Index:          ind.Index.ValueString(),
@@ -60,7 +79,7 @@ func (m tfModel) kqlCustomIndicatorToAPI() (bool, slo.SloWithSummaryResponseIndi
 }
 
 func (m *tfModel) populateFromKqlCustomIndicator(apiIndicator *slo.IndicatorPropertiesCustomKql) diag.Diagnostics {
-	var diags diag.Diagnostics
+	diags := diag.Diagnostics{}
 	if apiIndicator == nil {
 		return diags
 	}
@@ -77,6 +96,8 @@ func (m *tfModel) populateFromKqlCustomIndicator(apiIndicator *slo.IndicatorProp
 	if p.Filter != nil && p.Filter.String != nil {
 		ind.Filter = types.StringValue(*p.Filter.String)
 	}
+	// Handle good and total fields - these are always present in the API response
+	// If they are empty strings, preserve that in the state
 	if p.Good.String != nil {
 		ind.Good = types.StringValue(*p.Good.String)
 	}

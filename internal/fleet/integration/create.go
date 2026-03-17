@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package integration
 
 import (
@@ -6,7 +23,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
@@ -41,7 +58,7 @@ func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state 
 	}
 
 	// Check if version-dependent parameters are set and validate version support
-	needsVersionCheck := utils.IsKnown(planModel.IgnoreMappingUpdateErrors) || utils.IsKnown(planModel.SkipDataStreamRollover)
+	needsVersionCheck := typeutils.IsKnown(planModel.IgnoreMappingUpdateErrors) || typeutils.IsKnown(planModel.SkipDataStreamRollover)
 	if needsVersionCheck {
 		serverVersion, versionDiags := r.client.ServerVersion(ctx)
 		respDiags.Append(diagutil.FrameworkDiagsFromSDK(versionDiags)...)
@@ -50,7 +67,7 @@ func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state 
 		}
 
 		// Validate ignore_mapping_update_errors
-		if utils.IsKnown(planModel.IgnoreMappingUpdateErrors) {
+		if typeutils.IsKnown(planModel.IgnoreMappingUpdateErrors) {
 			if serverVersion.LessThan(MinVersionIgnoreMappingUpdateErrors) {
 				respDiags.AddError(
 					"Unsupported parameter for server version",
@@ -63,7 +80,7 @@ func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state 
 		}
 
 		// Validate skip_data_stream_rollover
-		if utils.IsKnown(planModel.SkipDataStreamRollover) {
+		if typeutils.IsKnown(planModel.SkipDataStreamRollover) {
 			if serverVersion.LessThan(MinVersionSkipDataStreamRollover) {
 				respDiags.AddError(
 					"Unsupported parameter for server version",
@@ -77,7 +94,7 @@ func (r integrationResource) create(ctx context.Context, plan tfsdk.Plan, state 
 	}
 
 	// If space_id is set, use space-aware installation
-	if utils.IsKnown(planModel.SpaceID) {
+	if typeutils.IsKnown(planModel.SpaceID) {
 		installOptions.SpaceID = planModel.SpaceID.ValueString()
 	}
 

@@ -1,10 +1,27 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package kibana
 
 import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -62,8 +79,8 @@ func DataSourceConnector() *schema.Resource {
 	}
 }
 
-func datasourceConnectorRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+func datasourceConnectorRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
@@ -72,23 +89,23 @@ func datasourceConnectorRead(ctx context.Context, d *schema.ResourceData, meta i
 		return diag.FromErr(err)
 	}
 	connectorName := d.Get("name").(string)
-	spaceId := d.Get("space_id").(string)
+	spaceID := d.Get("space_id").(string)
 	connectorType := d.Get("connector_type_id").(string)
 
-	foundConnectors, diags := kibana_oapi.SearchConnectors(ctx, oapiClient, connectorName, spaceId, connectorType)
+	foundConnectors, diags := kibanaoapi.SearchConnectors(ctx, oapiClient, connectorName, spaceID, connectorType)
 	if diags.HasError() {
 		return diags
 	}
 
 	if len(foundConnectors) == 0 {
-		return diag.Errorf("error while creating elasticstack_kibana_action_connector datasource: connector with name [%s/%s] and type [%s] not found", spaceId, connectorName, connectorType)
+		return diag.Errorf("error while creating elasticstack_kibana_action_connector datasource: connector with name [%s/%s] and type [%s] not found", spaceID, connectorName, connectorType)
 	}
 
 	if len(foundConnectors) > 1 {
-		return diag.Errorf("error while creating elasticstack_kibana_action_connector datasource: multiple connectors found with name [%s/%s] and type [%s]", spaceId, connectorName, connectorType)
+		return diag.Errorf("error while creating elasticstack_kibana_action_connector datasource: multiple connectors found with name [%s/%s] and type [%s]", spaceID, connectorName, connectorType)
 	}
 
-	compositeID := &clients.CompositeId{ClusterId: spaceId, ResourceId: foundConnectors[0].ConnectorID}
+	compositeID := &clients.CompositeID{ClusterID: spaceID, ResourceID: foundConnectors[0].ConnectorID}
 	d.SetId(compositeID.String())
 
 	return flattenActionConnector(foundConnectors[0], d)

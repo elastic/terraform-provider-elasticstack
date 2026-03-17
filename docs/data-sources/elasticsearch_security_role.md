@@ -47,7 +47,9 @@ output "role" {
 - `id` (String) Internal identifier of the resource
 - `indices` (Set of Object) A list of indices permissions entries. (see [below for nested schema](#nestedatt--indices))
 - `metadata` (String) Optional meta-data.
-- `remote_indices` (Set of Object) A list of remote indices permissions entries. Remote indices are effective for remote clusters configured with the API key based model. They have no effect for remote clusters configured with the certificate based model. (see [below for nested schema](#nestedatt--remote_indices))
+- `remote_indices` (Set of Object) A list of remote indices permissions entries.
+
+Remote indices are effective for remote clusters configured with the API key based model. They have no effect for remote clusters configured with the certificate based model. (see [below for nested schema](#nestedatt--remote_indices))
 
 <a id="nestedblock--elasticsearch_connection"></a>
 ### Nested Schema for `elasticsearch_connection`

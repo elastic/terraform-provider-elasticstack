@@ -1,0 +1,1 @@
+A hash of the user's password. This must be produced using the same hashing algorithm as has been configured for password storage (see the [security settings documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-settings.html#hashing-settings)).

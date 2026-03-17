@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package index
 
 import (
@@ -9,6 +26,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/tfsdkutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -37,7 +55,7 @@ func ResourceIlm() *schema.Resource {
 			Type:             schema.TypeString,
 			Optional:         true,
 			ValidateFunc:     validation.StringIsJSON,
-			DiffSuppressFunc: utils.DiffJsonSuppress,
+			DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 		},
 		"hot": {
 			Description:  "The index is actively being updated and queried.",
@@ -96,10 +114,10 @@ func ResourceIlm() *schema.Resource {
 		},
 	}
 
-	utils.AddConnectionSchema(ilmSchema)
+	schemautil.AddConnectionSchema(ilmSchema)
 
 	return &schema.Resource{
-		Description: "Creates or updates lifecycle policy. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-put-lifecycle.html and https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-index-lifecycle.html",
+		Description: ilmResourceDescription,
 
 		CreateContext: resourceIlmPut,
 		UpdateContext: resourceIlmPut,
@@ -139,7 +157,7 @@ var supportedActions = map[string]*schema.Schema{
 					Type:             schema.TypeString,
 					Optional:         true,
 					ValidateFunc:     validation.StringIsJSON,
-					DiffSuppressFunc: utils.DiffJsonSuppress,
+					DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 					Default:          "{}",
 				},
 				"exclude": {
@@ -147,7 +165,7 @@ var supportedActions = map[string]*schema.Schema{
 					Type:             schema.TypeString,
 					Optional:         true,
 					ValidateFunc:     validation.StringIsJSON,
-					DiffSuppressFunc: utils.DiffJsonSuppress,
+					DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 					Default:          "{}",
 				},
 				"require": {
@@ -155,7 +173,7 @@ var supportedActions = map[string]*schema.Schema{
 					Type:             schema.TypeString,
 					Optional:         true,
 					ValidateFunc:     validation.StringIsJSON,
-					DiffSuppressFunc: utils.DiffJsonSuppress,
+					DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 					Default:          "{}",
 				},
 			},
@@ -328,7 +346,7 @@ var supportedActions = map[string]*schema.Schema{
 		},
 	},
 	"set_priority": {
-		Description: "Sets the priority of the index as soon as the policy enters the hot, warm, or cold phase. Higher priority indices are recovered before indices with lower priorities following a node restart. Default priority is 1.",
+		Description: ilmSetPriorityActionDescription,
 		Type:        schema.TypeList,
 		Optional:    true,
 		MaxItems:    1,
@@ -439,13 +457,13 @@ func getSchema(actions ...string) map[string]*schema.Schema {
 	return sch
 }
 
-func resourceIlmPut(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+func resourceIlmPut(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
-	ilmId := d.Get("name").(string)
-	id, diags := client.ID(ctx, ilmId)
+	ilmID := d.Get("name").(string)
+	id, diags := client.ID(ctx, ilmID)
 	if diags.HasError() {
 		return diags
 	}
@@ -459,7 +477,7 @@ func resourceIlmPut(ctx context.Context, d *schema.ResourceData, meta interface{
 	if diags.HasError() {
 		return diags
 	}
-	policy.Name = ilmId
+	policy.Name = ilmID
 
 	if diags := elasticsearch.PutIlm(ctx, client, policy); diags.HasError() {
 		return diags
@@ -477,7 +495,7 @@ func expandIlmPolicy(d *schema.ResourceData, serverVersion *version.Version) (*m
 	policy.Name = d.Get("name").(string)
 
 	if v, ok := d.GetOk("metadata"); ok {
-		metadata := make(map[string]interface{})
+		metadata := make(map[string]any)
 		if err := json.NewDecoder(strings.NewReader(v.(string))).Decode(&metadata); err != nil {
 			return nil, diag.FromErr(err)
 		}
@@ -486,7 +504,7 @@ func expandIlmPolicy(d *schema.ResourceData, serverVersion *version.Version) (*m
 
 	for _, ph := range supportedIlmPhases {
 		if v, ok := d.GetOk(ph); ok {
-			phase, diags := expandPhase(v.([]interface{})[0].(map[string]interface{}), serverVersion)
+			phase, diags := expandPhase(v.([]any)[0].(map[string]any), serverVersion)
 			if diags.HasError() {
 				return nil, diags
 			}
@@ -498,7 +516,7 @@ func expandIlmPolicy(d *schema.ResourceData, serverVersion *version.Version) (*m
 	return &policy, diags
 }
 
-func expandPhase(p map[string]interface{}, serverVersion *version.Version) (*models.Phase, diag.Diagnostics) {
+func expandPhase(p map[string]any, serverVersion *version.Version) (*models.Phase, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var phase models.Phase
 
@@ -509,7 +527,7 @@ func expandPhase(p map[string]interface{}, serverVersion *version.Version) (*mod
 
 	actions := make(map[string]models.Action)
 	for actionName, action := range p {
-		if a := action.([]interface{}); len(a) > 0 {
+		if a := action.([]any); len(a) > 0 {
 			switch actionName {
 			case "allocate":
 				actions[actionName], diags = expandAction(a, serverVersion, "number_of_replicas", "total_shards_per_node", "include", "exclude", "require")
@@ -519,7 +537,7 @@ func expandPhase(p map[string]interface{}, serverVersion *version.Version) (*mod
 				actions[actionName], diags = expandAction(a, serverVersion, "max_num_segments", "index_codec")
 			case "freeze":
 				if a[0] != nil {
-					ac := a[0].(map[string]interface{})
+					ac := a[0].(map[string]any)
 					if ac["enabled"].(bool) {
 						actions[actionName], diags = expandAction(a, serverVersion)
 					}
@@ -528,13 +546,26 @@ func expandPhase(p map[string]interface{}, serverVersion *version.Version) (*mod
 				actions[actionName], diags = expandAction(a, serverVersion, "enabled")
 			case "readonly":
 				if a[0] != nil {
-					ac := a[0].(map[string]interface{})
+					ac := a[0].(map[string]any)
 					if ac["enabled"].(bool) {
 						actions[actionName], diags = expandAction(a, serverVersion)
 					}
 				}
 			case "rollover":
-				actions[actionName], diags = expandAction(a, serverVersion, "max_age", "max_docs", "max_size", "max_primary_shard_docs", "max_primary_shard_size", "min_age", "min_docs", "min_size", "min_primary_shard_docs", "min_primary_shard_size")
+				actions[actionName], diags = expandAction(
+					a,
+					serverVersion,
+					"max_age",
+					"max_docs",
+					"max_size",
+					"max_primary_shard_docs",
+					"max_primary_shard_size",
+					"min_age",
+					"min_docs",
+					"min_size",
+					"min_primary_shard_docs",
+					"min_primary_shard_size",
+				)
 			case "searchable_snapshot":
 				actions[actionName], diags = expandAction(a, serverVersion, "snapshot_repository", "force_merge_index")
 			case "set_priority":
@@ -543,7 +574,7 @@ func expandPhase(p map[string]interface{}, serverVersion *version.Version) (*mod
 				actions[actionName], diags = expandAction(a, serverVersion, "number_of_shards", "max_primary_shard_size", "allow_write_after_shrink")
 			case "unfollow":
 				if a[0] != nil {
-					ac := a[0].(map[string]interface{})
+					ac := a[0].(map[string]any)
 					if ac["enabled"].(bool) {
 						actions[actionName], diags = expandAction(a, serverVersion)
 					}
@@ -574,7 +605,7 @@ var (
 
 var ilmActionSettingOptions = map[string]struct {
 	skipEmptyCheck bool
-	def            interface{}
+	def            any
 	minVersion     *version.Version
 }{
 	"allow_write_after_shrink": {def: false, minVersion: version.Must(version.NewVersion("8.14.0"))},
@@ -589,13 +620,13 @@ var ilmActionSettingOptions = map[string]struct {
 	"total_shards_per_node":    {skipEmptyCheck: true, def: -1, minVersion: version.Must(version.NewVersion("7.16.0"))},
 }
 
-func expandAction(a []interface{}, serverVersion *version.Version, settings ...string) (map[string]interface{}, diag.Diagnostics) {
+func expandAction(a []any, serverVersion *version.Version, settings ...string) (map[string]any, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	def := make(map[string]interface{})
+	def := make(map[string]any)
 
 	if action := a[0]; action != nil {
 		for _, setting := range settings {
-			if v, ok := action.(map[string]interface{})[setting]; ok && v != nil {
+			if v, ok := action.(map[string]any)[setting]; ok && v != nil {
 				options := ilmActionSettingOptions[setting]
 
 				if options.minVersion != nil && options.minVersion.GreaterThan(serverVersion) {
@@ -607,10 +638,10 @@ func expandAction(a []interface{}, serverVersion *version.Version, settings ...s
 					continue
 				}
 
-				if options.skipEmptyCheck || !utils.IsEmpty(v) {
+				if options.skipEmptyCheck || !schemautil.IsEmpty(v) {
 					// these 3 fields must be treated as JSON objects
 					if setting == "include" || setting == "exclude" || setting == "require" {
-						res := make(map[string]interface{})
+						res := make(map[string]any)
 						if err := json.Unmarshal([]byte(v.(string)), &res); err != nil {
 							return nil, diag.FromErr(err)
 						}
@@ -625,22 +656,22 @@ func expandAction(a []interface{}, serverVersion *version.Version, settings ...s
 	return def, diags
 }
 
-func resourceIlmRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+func resourceIlmRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
 
 	id := d.Id()
-	compId, diags := clients.CompositeIdFromStr(id)
+	compID, diags := clients.CompositeIDFromStr(id)
 	if diags.HasError() {
 		return diags
 	}
-	policyId := compId.ResourceId
+	policyID := compID.ResourceID
 
-	ilmDef, diags := elasticsearch.GetIlm(ctx, client, policyId)
+	ilmDef, diags := elasticsearch.GetIlm(ctx, client, policyID)
 	if ilmDef == nil && diags == nil {
-		tflog.Warn(ctx, fmt.Sprintf(`ILM policy "%s" not found, removing from state`, compId.ResourceId))
+		tflog.Warn(ctx, fmt.Sprintf(`ILM policy "%s" not found, removing from state`, compID.ResourceID))
 		d.SetId("")
 		return diags
 	}
@@ -660,7 +691,7 @@ func resourceIlmRead(ctx context.Context, d *schema.ResourceData, meta interface
 			return diag.FromErr(err)
 		}
 	}
-	if err := d.Set("name", policyId); err != nil {
+	if err := d.Set("name", policyID); err != nil {
 		return diag.FromErr(err)
 	}
 	for _, ph := range supportedIlmPhases {
@@ -678,21 +709,21 @@ func resourceIlmRead(ctx context.Context, d *schema.ResourceData, meta interface
 	return diags
 }
 
-func flattenPhase(phaseName string, p models.Phase, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
+func flattenPhase(phaseName string, p models.Phase, d *schema.ResourceData) (any, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	out := make([]interface{}, 1)
-	phase := make(map[string]interface{})
-	enabled := make(map[string]interface{})
-	ns := make(map[string]interface{})
+	out := make([]any, 1)
+	phase := make(map[string]any)
+	enabled := make(map[string]any)
+	ns := make(map[string]any)
 
-	_, new := d.GetChange(phaseName)
+	_, phaseConfigNew := d.GetChange(phaseName)
 
-	if new != nil && len(new.([]interface{})) > 0 {
-		ns = new.([]interface{})[0].(map[string]interface{})
+	if phaseConfigNew != nil && len(phaseConfigNew.([]any)) > 0 {
+		ns = phaseConfigNew.([]any)[0].(map[string]any)
 	}
 
-	existsAndNotEmpty := func(key string, m map[string]interface{}) bool {
-		if v, ok := m[key]; ok && len(v.([]interface{})) > 0 {
+	existsAndNotEmpty := func(key string, m map[string]any) bool {
+		if v, ok := m[key]; ok && len(v.([]any)) > 0 {
 			return true
 		}
 		return false
@@ -700,7 +731,7 @@ func flattenPhase(phaseName string, p models.Phase, d *schema.ResourceData) (int
 	for _, aCase := range []string{"readonly", "freeze", "unfollow"} {
 		if existsAndNotEmpty(aCase, ns) {
 			enabled["enabled"] = false
-			phase[aCase] = []interface{}{enabled}
+			phase[aCase] = []any{enabled}
 		}
 	}
 
@@ -711,9 +742,9 @@ func flattenPhase(phaseName string, p models.Phase, d *schema.ResourceData) (int
 		switch actionName {
 		case "readonly", "freeze", "unfollow":
 			enabled["enabled"] = true
-			phase[actionName] = []interface{}{enabled}
+			phase[actionName] = []any{enabled}
 		case "allocate":
-			allocateAction := make(map[string]interface{})
+			allocateAction := make(map[string]any)
 			if v, ok := action["number_of_replicas"]; ok {
 				allocateAction["number_of_replicas"] = v
 			}
@@ -732,28 +763,28 @@ func flattenPhase(phaseName string, p models.Phase, d *schema.ResourceData) (int
 					allocateAction[f] = string(res)
 				}
 			}
-			phase[actionName] = []interface{}{allocateAction}
+			phase[actionName] = []any{allocateAction}
 		default:
-			phase[actionName] = []interface{}{action}
+			phase[actionName] = []any{action}
 		}
 	}
 	out[0] = phase
 	return out, diags
 }
 
-func resourceIlmDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+func resourceIlmDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
 
 	id := d.Id()
-	compId, diags := clients.CompositeIdFromStr(id)
+	compID, diags := clients.CompositeIDFromStr(id)
 	if diags.HasError() {
 		return diags
 	}
 
-	if diags := elasticsearch.DeleteIlm(ctx, client, compId.ResourceId); diags.HasError() {
+	if diags := elasticsearch.DeleteIlm(ctx, client, compID.ResourceID); diags.HasError() {
 		return diags
 	}
 

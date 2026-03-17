@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package enrich
 
 import (
@@ -20,7 +37,7 @@ func NewEnrichPolicyDataSource() datasource.DataSource {
 }
 
 type enrichPolicyDataSource struct {
-	client *clients.ApiClient
+	client *clients.APIClient
 }
 
 func (d *enrichPolicyDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -39,9 +56,9 @@ func (d *enrichPolicyDataSource) Schema(_ context.Context, _ datasource.SchemaRe
 
 func GetDataSourceSchema() schema.Schema {
 	return schema.Schema{
-		MarkdownDescription: "Returns information about an enrich policy. See the [enrich policy API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/get-enrich-policy-api.html) for more details.",
+		MarkdownDescription: enrichPolicyDataSourceMarkdownDescription,
 		Blocks: map[string]schema.Block{
-			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock("elasticsearch_connection", false),
+			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(false),
 		},
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -80,14 +97,14 @@ func GetDataSourceSchema() schema.Schema {
 }
 
 func (d *enrichPolicyDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var data EnrichPolicyData
+	var data PolicyData
 	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	policyName := data.Name.ValueString()
-	client, diags := clients.MaybeNewApiClientFromFrameworkResource(ctx, data.ElasticsearchConnection, d.client)
+	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, data.ElasticsearchConnection, d.client)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -98,7 +115,7 @@ func (d *enrichPolicyDataSource) Read(ctx context.Context, req datasource.ReadRe
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	data.Id = types.StringValue(id.String())
+	data.ID = types.StringValue(id.String())
 
 	// Use the same read logic as the resource
 	policy, sdkDiags := elasticsearch.GetEnrichPolicy(ctx, client, policyName)

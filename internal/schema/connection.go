@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package schema
 
 import (
@@ -12,7 +29,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func GetEsFWConnectionBlock(keyName string, isProviderConfiguration bool) fwschema.Block {
+func GetEsFWConnectionBlock(isProviderConfiguration bool) fwschema.Block {
 	usernamePath := path.MatchRelative().AtParent().AtName("username")
 	passwordPath := path.MatchRelative().AtParent().AtName("password")
 	apiKeyPath := path.MatchRelative().AtParent().AtName("api_key")
@@ -271,10 +288,10 @@ func GetEsConnectionSchema(keyName string, isProviderConfiguration bool) *schema
 	usernameRequiredWithValidation := []string{passwordPath}
 	passwordRequiredWithValidation := []string{usernamePath}
 
-	withEnvDefault := func(key string, dv interface{}) schema.SchemaDefaultFunc { return nil }
+	withEnvDefault := func(_ string, _ any) schema.SchemaDefaultFunc { return nil }
 
 	if isProviderConfiguration {
-		withEnvDefault = func(key string, dv interface{}) schema.SchemaDefaultFunc { return schema.EnvDefaultFunc(key, dv) }
+		withEnvDefault = schema.EnvDefaultFunc
 
 		// RequireWith validation isn't compatible when used in conjunction with DefaultFunc
 		usernameRequiredWithValidation = nil
@@ -398,7 +415,7 @@ func GetEsConnectionSchema(keyName string, isProviderConfiguration bool) *schema
 }
 
 func GetKibanaConnectionSchema() *schema.Schema {
-	withEnvDefault := func(key string, dv interface{}) schema.SchemaDefaultFunc { return nil }
+	withEnvDefault := func(_ string, _ any) schema.SchemaDefaultFunc { return nil }
 	return &schema.Schema{
 		Description: "Kibana connection configuration block.",
 		Type:        schema.TypeList,

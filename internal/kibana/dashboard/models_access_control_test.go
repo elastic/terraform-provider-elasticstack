@@ -1,18 +1,34 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package dashboard
 
 import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccessControlValue_ToCreateAPI(t *testing.T) {
+func TestAccessControlValue_toCreateAPI(t *testing.T) {
 	t.Run("nil receiver", func(t *testing.T) {
 		var m *AccessControlValue
-		apiModel := m.ToCreateAPI()
+		apiModel := m.toCreateAPI()
 		assert.Nil(t, apiModel)
 	})
 
@@ -21,7 +37,7 @@ func TestAccessControlValue_ToCreateAPI(t *testing.T) {
 			AccessMode: types.StringNull(),
 			Owner:      types.StringNull(),
 		}
-		apiModel := m.ToCreateAPI()
+		apiModel := m.toCreateAPI()
 		assert.NotNil(t, apiModel)
 		assert.Nil(t, apiModel.AccessMode)
 		assert.Nil(t, apiModel.Owner)
@@ -32,10 +48,12 @@ func TestAccessControlValue_ToCreateAPI(t *testing.T) {
 			AccessMode: types.StringValue("private"),
 			Owner:      types.StringValue("user123"),
 		}
-		apiModel := m.ToCreateAPI()
+		apiModel := m.toCreateAPI()
 		assert.NotNil(t, apiModel)
-		assert.Equal(t, utils.Pointer(kbapi.PostDashboardsJSONBodyDataAccessControlAccessMode("private")), apiModel.AccessMode)
-		assert.Equal(t, utils.Pointer("user123"), apiModel.Owner)
+		mode := kbapi.PostDashboardsIdJSONBodyAccessControlAccessMode("private")
+		owner := "user123"
+		assert.Equal(t, &mode, apiModel.AccessMode)
+		assert.Equal(t, &owner, apiModel.Owner)
 	})
 
 	t.Run("partial values - access_mode", func(t *testing.T) {
@@ -43,9 +61,10 @@ func TestAccessControlValue_ToCreateAPI(t *testing.T) {
 			AccessMode: types.StringValue("private"),
 			Owner:      types.StringNull(),
 		}
-		apiModel := m.ToCreateAPI()
+		apiModel := m.toCreateAPI()
 		assert.NotNil(t, apiModel)
-		assert.Equal(t, utils.Pointer(kbapi.PostDashboardsJSONBodyDataAccessControlAccessMode("private")), apiModel.AccessMode)
+		mode := kbapi.PostDashboardsIdJSONBodyAccessControlAccessMode("private")
+		assert.Equal(t, &mode, apiModel.AccessMode)
 		assert.Nil(t, apiModel.Owner)
 	})
 
@@ -54,17 +73,18 @@ func TestAccessControlValue_ToCreateAPI(t *testing.T) {
 			AccessMode: types.StringNull(),
 			Owner:      types.StringValue("user123"),
 		}
-		apiModel := m.ToCreateAPI()
+		apiModel := m.toCreateAPI()
 		assert.NotNil(t, apiModel)
 		assert.Nil(t, apiModel.AccessMode)
-		assert.Equal(t, utils.Pointer("user123"), apiModel.Owner)
+		user123 := "user123"
+		assert.Equal(t, &user123, apiModel.Owner)
 	})
 }
 
-func TestAccessControlValue_ToUpdateAPI(t *testing.T) {
+func TestAccessControlValue_toUpdateAPI(t *testing.T) {
 	t.Run("nil receiver", func(t *testing.T) {
 		var m *AccessControlValue
-		apiModel := m.ToUpdateAPI()
+		apiModel := m.toUpdateAPI()
 		assert.Nil(t, apiModel)
 	})
 
@@ -73,10 +93,12 @@ func TestAccessControlValue_ToUpdateAPI(t *testing.T) {
 			AccessMode: types.StringValue("public"),
 			Owner:      types.StringValue("admin"),
 		}
-		apiModel := m.ToUpdateAPI()
+		apiModel := m.toUpdateAPI()
 		assert.NotNil(t, apiModel)
-		assert.Equal(t, utils.Pointer(kbapi.PutDashboardsIdJSONBodyDataAccessControlAccessMode("public")), apiModel.AccessMode)
-		assert.Equal(t, utils.Pointer("admin"), apiModel.Owner)
+		mode := kbapi.PutDashboardsIdJSONBodyAccessControlAccessMode("public")
+		admin := "admin"
+		assert.Equal(t, &mode, apiModel.AccessMode)
+		assert.Equal(t, &admin, apiModel.Owner)
 	})
 
 	t.Run("empty values", func(t *testing.T) {
@@ -84,7 +106,7 @@ func TestAccessControlValue_ToUpdateAPI(t *testing.T) {
 			AccessMode: types.StringNull(),
 			Owner:      types.StringNull(),
 		}
-		apiModel := m.ToUpdateAPI()
+		apiModel := m.toUpdateAPI()
 		assert.NotNil(t, apiModel)
 		assert.Nil(t, apiModel.AccessMode)
 		assert.Nil(t, apiModel.Owner)

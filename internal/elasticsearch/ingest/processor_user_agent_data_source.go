@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package ingest
 
 import (
@@ -61,7 +78,7 @@ func DataSourceProcessorUserAgent() *schema.Resource {
 	}
 
 	return &schema.Resource{
-		Description: "Helper data source which can be used to create the configuration for a user agent processor. This processor extracts details from the user agent string a browser sends with its web requests. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/user-agent-processor.html",
+		Description: processorUserAgentDataSourceDescription,
 
 		ReadContext: dataSourceProcessorUserAgentRead,
 
@@ -69,7 +86,7 @@ func DataSourceProcessorUserAgent() *schema.Resource {
 	}
 }
 
-func dataSourceProcessorUserAgentRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func dataSourceProcessorUserAgentRead(_ context.Context, d *schema.ResourceData, _ any) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	processor := &models.ProcessorUserAgent{}
@@ -96,15 +113,15 @@ func dataSourceProcessorUserAgentRead(ctx context.Context, d *schema.ResourceDat
 		processor.ExtractDeviceType = &dev
 	}
 
-	processorJson, err := json.MarshalIndent(map[string]*models.ProcessorUserAgent{"user_agent": processor}, "", " ")
+	processorJSON, err := json.MarshalIndent(map[string]*models.ProcessorUserAgent{"user_agent": processor}, "", " ")
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("json", string(processorJson)); err != nil {
+	if err := d.Set("json", string(processorJSON)); err != nil {
 		return diag.FromErr(err)
 	}
 
-	hash, err := utils.StringToHash(string(processorJson))
+	hash, err := schemautil.StringToHash(string(processorJSON))
 	if err != nil {
 		return diag.FromErr(err)
 	}

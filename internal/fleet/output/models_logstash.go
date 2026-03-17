@@ -1,10 +1,27 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package output
 
 import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -16,7 +33,7 @@ func (model *outputModel) fromAPILogstashModel(ctx context.Context, data *kbapi.
 	model.OutputID = types.StringPointerValue(data.Id)
 	model.Name = types.StringValue(data.Name)
 	model.Type = types.StringValue(string(data.Type))
-	model.Hosts = utils.SliceToListType_String(ctx, data.Hosts, path.Root("hosts"), &diags)
+	model.Hosts = typeutils.SliceToListTypeString(ctx, data.Hosts, path.Root("hosts"), &diags)
 	model.CaSha256 = types.StringPointerValue(data.CaSha256)
 	model.CaTrustedFingerprint = typeutils.NonEmptyStringishPointerValue(data.CaTrustedFingerprint)
 	model.DefaultIntegrations = types.BoolPointerValue(data.IsDefault)
@@ -24,11 +41,11 @@ func (model *outputModel) fromAPILogstashModel(ctx context.Context, data *kbapi.
 	model.ConfigYaml = types.StringPointerValue(data.ConfigYaml)
 	model.Ssl, diags = sslToObjectValue(ctx, data.Ssl)
 
-	// Note: SpaceIds is not returned by the API for outputs
+	// Note: SpaceIDs is not returned by the API for outputs
 	// If it's currently null/unknown, set to explicit null to satisfy Terraform's requirement
 	// If it has a value from plan, preserve it to avoid plan diffs
-	if model.SpaceIds.IsNull() || model.SpaceIds.IsUnknown() {
-		model.SpaceIds = types.SetNull(types.StringType)
+	if model.SpaceIDs.IsNull() || model.SpaceIDs.IsUnknown() {
+		model.SpaceIDs = types.SetNull(types.StringType)
 	}
 
 	return
@@ -44,7 +61,7 @@ func (model outputModel) toAPICreateLogstashModel(ctx context.Context) (kbapi.Ne
 		CaSha256:             model.CaSha256.ValueStringPointer(),
 		CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
 		ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
-		Hosts:                utils.ListTypeToSlice_String(ctx, model.Hosts, path.Root("hosts"), &diags),
+		Hosts:                typeutils.ListTypeToSliceString(ctx, model.Hosts, path.Root("hosts"), &diags),
 		Id:                   model.OutputID.ValueStringPointer(),
 		IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
 		IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
@@ -68,11 +85,11 @@ func (model outputModel) toAPIUpdateLogstashModel(ctx context.Context) (kbapi.Up
 		return kbapi.UpdateOutputUnion{}, diags
 	}
 	body := kbapi.UpdateOutputLogstash{
-		Type:                 utils.Pointer(kbapi.Logstash),
+		Type:                 new(kbapi.Logstash),
 		CaSha256:             model.CaSha256.ValueStringPointer(),
 		CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
 		ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
-		Hosts:                utils.SliceRef(utils.ListTypeToSlice_String(ctx, model.Hosts, path.Root("hosts"), &diags)),
+		Hosts:                schemautil.SliceRef(typeutils.ListTypeToSliceString(ctx, model.Hosts, path.Root("hosts"), &diags)),
 		IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
 		IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
 		Name:                 model.Name.ValueStringPointer(),

@@ -21,6 +21,7 @@ resource "elasticstack_elasticsearch_index" "test_settings" {
   number_of_routing_shards             = 2
   codec                                = "best_compression"
   routing_partition_size               = 1
+  load_fixed_bitset_filters_eagerly    = true
   shard_check_on_startup               = "false"
   sort_field                           = ["sort_key"]
   sort_order                           = ["asc"]
@@ -65,6 +66,19 @@ resource "elasticstack_elasticsearch_index" "test_settings" {
       tokenizer   = "standard"
       char_filter = "zero_width_spaces"
       filter      = ["lowercase", "minimal_english_stemmer"]
+    }
+  })
+
+  analysis_tokenizer = jsonencode({
+    path_tokenizer = {
+      type      = "path_hierarchy"
+      delimiter = "/"
+    }
+  })
+  analysis_normalizer = jsonencode({
+    lowercase_normalizer = {
+      type   = "custom"
+      filter = ["lowercase"]
     }
   })
 

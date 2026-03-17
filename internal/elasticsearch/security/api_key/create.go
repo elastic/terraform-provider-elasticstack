@@ -1,4 +1,21 @@
-package api_key
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package apikey
 
 import (
 	"context"
@@ -22,17 +39,17 @@ func (r Resource) Create(ctx context.Context, req resource.CreateRequest, resp *
 		return
 	}
 
-	client, diags := clients.MaybeNewApiClientFromFrameworkResource(ctx, planModel.ElasticsearchConnection, r.client)
+	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, planModel.ElasticsearchConnection, r.client)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	if planModel.Type.ValueString() == "cross_cluster" {
-		createDiags := r.createCrossClusterApiKey(ctx, client, &planModel)
+		createDiags := r.createCrossClusterAPIKey(ctx, client, &planModel)
 		resp.Diagnostics.Append(createDiags...)
 	} else {
-		createDiags := r.createApiKey(ctx, client, &planModel)
+		createDiags := r.createAPIKey(ctx, client, &planModel)
 		resp.Diagnostics.Append(createDiags...)
 	}
 
@@ -54,10 +71,10 @@ func (r Resource) Create(ctx context.Context, req resource.CreateRequest, resp *
 	resp.Diagnostics.Append(resp.State.Set(ctx, *finalModel)...)
 }
 
-func (r Resource) buildApiModel(ctx context.Context, model tfModel, client *clients.ApiClient) (models.ApiKey, diag.Diagnostics) {
+func (r Resource) buildAPIModel(ctx context.Context, model tfModel, client *clients.APIClient) (models.APIKey, diag.Diagnostics) {
 	apiModel, diags := model.toAPIModel()
 	if diags.HasError() {
-		return models.ApiKey{}, diags
+		return models.APIKey{}, diags
 	}
 
 	hasRestriction := false
@@ -70,9 +87,9 @@ func (r Resource) buildApiModel(ctx context.Context, model tfModel, client *clie
 	}
 
 	if hasRestriction {
-		isSupported, diags := doesCurrentVersionSupportRestrictionOnApiKey(ctx, client)
+		isSupported, diags := doesCurrentVersionSupportRestrictionOnAPIKey(ctx, client)
 		if diags.HasError() {
-			return models.ApiKey{}, diags
+			return models.APIKey{}, diags
 		}
 
 		if !isSupported {
@@ -81,14 +98,14 @@ func (r Resource) buildApiModel(ctx context.Context, model tfModel, client *clie
 				"Specifying `restriction` on an API key role description is not supported in this version of Elasticsearch",
 				fmt.Sprintf("Specifying `restriction` on an API key role description is not supported in this version of Elasticsearch. Role descriptor(s) %s", strings.Join(keysWithRestrictions, ", ")),
 			)
-			return models.ApiKey{}, diags
+			return models.APIKey{}, diags
 		}
 	}
 
 	return apiModel, nil
 }
 
-func doesCurrentVersionSupportRestrictionOnApiKey(ctx context.Context, client *clients.ApiClient) (bool, diag.Diagnostics) {
+func doesCurrentVersionSupportRestrictionOnAPIKey(ctx context.Context, client *clients.APIClient) (bool, diag.Diagnostics) {
 	currentVersion, diags := client.ServerVersion(ctx)
 
 	if diags.HasError() {
@@ -98,7 +115,7 @@ func doesCurrentVersionSupportRestrictionOnApiKey(ctx context.Context, client *c
 	return currentVersion.GreaterThanOrEqual(MinVersionWithRestriction), nil
 }
 
-func doesCurrentVersionSupportCrossClusterApiKey(ctx context.Context, client *clients.ApiClient) (bool, diag.Diagnostics) {
+func doesCurrentVersionSupportCrossClusterAPIKey(ctx context.Context, client *clients.APIClient) (bool, diag.Diagnostics) {
 	currentVersion, diags := client.ServerVersion(ctx)
 
 	if diags.HasError() {
@@ -108,9 +125,9 @@ func doesCurrentVersionSupportCrossClusterApiKey(ctx context.Context, client *cl
 	return currentVersion.GreaterThanOrEqual(MinVersionWithCrossCluster), nil
 }
 
-func (r *Resource) createCrossClusterApiKey(ctx context.Context, client *clients.ApiClient, planModel *tfModel) diag.Diagnostics {
+func (r *Resource) createCrossClusterAPIKey(ctx context.Context, client *clients.APIClient, planModel *tfModel) diag.Diagnostics {
 	// Check if the current version supports cross-cluster API keys
-	isSupported, diags := doesCurrentVersionSupportCrossClusterApiKey(ctx, client)
+	isSupported, diags := doesCurrentVersionSupportCrossClusterAPIKey(ctx, client)
 	if diags.HasError() {
 		return diags
 	}
@@ -129,9 +146,9 @@ func (r *Resource) createCrossClusterApiKey(ctx context.Context, client *clients
 		return diags
 	}
 
-	putResponse, createDiags := elasticsearch.CreateCrossClusterApiKey(client, &crossClusterModel)
+	putResponse, createDiags := elasticsearch.CreateCrossClusterAPIKey(client, &crossClusterModel)
 	if createDiags.HasError() {
-		return diag.Diagnostics(createDiags)
+		return createDiags
 	}
 	if putResponse == nil {
 		return diag.Diagnostics{
@@ -139,7 +156,7 @@ func (r *Resource) createCrossClusterApiKey(ctx context.Context, client *clients
 		}
 	}
 
-	id, sdkDiags := client.ID(ctx, putResponse.Id)
+	id, sdkDiags := client.ID(ctx, putResponse.ID)
 	if sdkDiags.HasError() {
 		return diagutil.FrameworkDiagsFromSDK(sdkDiags)
 	}
@@ -149,16 +166,16 @@ func (r *Resource) createCrossClusterApiKey(ctx context.Context, client *clients
 	return nil
 }
 
-func (r *Resource) createApiKey(ctx context.Context, client *clients.ApiClient, planModel *tfModel) diag.Diagnostics {
+func (r *Resource) createAPIKey(ctx context.Context, client *clients.APIClient, planModel *tfModel) diag.Diagnostics {
 	// Handle regular API key creation
-	apiModel, diags := r.buildApiModel(ctx, *planModel, client)
+	apiModel, diags := r.buildAPIModel(ctx, *planModel, client)
 	if diags.HasError() {
 		return diags
 	}
 
-	putResponse, createDiags := elasticsearch.CreateApiKey(client, &apiModel)
+	putResponse, createDiags := elasticsearch.CreateAPIKey(client, &apiModel)
 	if createDiags.HasError() {
-		return diag.Diagnostics(createDiags)
+		return createDiags
 	}
 	if putResponse == nil {
 		return diag.Diagnostics{
@@ -166,7 +183,7 @@ func (r *Resource) createApiKey(ctx context.Context, client *clients.ApiClient, 
 		}
 	}
 
-	id, sdkDiags := client.ID(ctx, putResponse.Id)
+	id, sdkDiags := client.ID(ctx, putResponse.ID)
 	if sdkDiags.HasError() {
 		return diagutil.FrameworkDiagsFromSDK(sdkDiags)
 	}

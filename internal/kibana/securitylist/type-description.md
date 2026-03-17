@@ -1,0 +1,1 @@
+Specifies the Elasticsearch data type of values the list contains. Valid values include: `binary`, `boolean`, `byte`, `date`, `date_nanos`, `date_range`, `double`, `double_range`, `float`, `float_range`, `geo_point`, `geo_shape`, `half_float`, `integer`, `integer_range`, `ip`, `ip_range`, `keyword`, `long`, `long_range`, `shape`, `short`, `text`.

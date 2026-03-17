@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package index
 
 import (
@@ -9,7 +26,8 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/tfsdkutils"
+	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -86,7 +104,7 @@ func ResourceTemplate() *schema.Resource {
 			Type:             schema.TypeString,
 			Optional:         true,
 			ValidateFunc:     validation.StringIsJSON,
-			DiffSuppressFunc: utils.DiffJsonSuppress,
+			DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 		},
 		"priority": {
 			Description:  "Priority to determine index template precedence when a new data stream or index is created.",
@@ -105,6 +123,7 @@ func ResourceTemplate() *schema.Resource {
 						Description: "Alias to add.",
 						Type:        schema.TypeSet,
 						Optional:    true,
+						Set:         hashAliasByName,
 						Elem: &schema.Resource{
 							Schema: map[string]*schema.Schema{
 								"name": {
@@ -117,14 +136,15 @@ func ResourceTemplate() *schema.Resource {
 									Type:             schema.TypeString,
 									Optional:         true,
 									Default:          "",
-									DiffSuppressFunc: utils.DiffJsonSuppress,
+									DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 									ValidateFunc:     validation.StringIsJSON,
 								},
 								"index_routing": {
-									Description: "Value used to route indexing operations to a specific shard. If specified, this overwrites the `routing` value for indexing operations.",
-									Type:        schema.TypeString,
-									Optional:    true,
-									Default:     "",
+									Description:      "Value used to route indexing operations to a specific shard. If specified, this overwrites the `routing` value for indexing operations.",
+									Type:             schema.TypeString,
+									Optional:         true,
+									Computed:         true,
+									DiffSuppressFunc: suppressAliasRoutingDerivedDiff,
 								},
 								"is_hidden": {
 									Description: "If true, the alias is hidden.",
@@ -145,19 +165,20 @@ func ResourceTemplate() *schema.Resource {
 									Default:     "",
 								},
 								"search_routing": {
-									Description: "Value used to route search operations to a specific shard. If specified, this overwrites the routing value for search operations.",
-									Type:        schema.TypeString,
-									Optional:    true,
-									Default:     "",
+									Description:      "Value used to route search operations to a specific shard. If specified, this overwrites the routing value for search operations.",
+									Type:             schema.TypeString,
+									Optional:         true,
+									Computed:         true,
+									DiffSuppressFunc: suppressAliasRoutingDerivedDiff,
 								},
 							},
 						},
 					},
 					"mappings": {
-						Description:      "Mapping for fields in the index. Should be specified as a JSON object of field mappings. See the documentation (https://www.elastic.co/guide/en/elasticsearch/reference/current/explicit-mapping.html) for more details",
+						Description:      indexTemplateMappingsDescription,
 						Type:             schema.TypeString,
 						Optional:         true,
-						DiffSuppressFunc: utils.DiffJsonSuppress,
+						DiffSuppressFunc: tfsdkutils.DiffJSONSuppress,
 						ValidateFunc: validation.All(
 							validation.StringIsJSON, stringIsJSONObject,
 						),
@@ -166,7 +187,7 @@ func ResourceTemplate() *schema.Resource {
 						Description:      "Configuration options for the index. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#index-modules-settings",
 						Type:             schema.TypeString,
 						Optional:         true,
-						DiffSuppressFunc: utils.DiffIndexSettingSuppress,
+						DiffSuppressFunc: tfsdkutils.DiffIndexSettingSuppress,
 						ValidateFunc: validation.All(
 							validation.StringIsJSON, stringIsJSONObject,
 						),
@@ -196,10 +217,10 @@ func ResourceTemplate() *schema.Resource {
 		},
 	}
 
-	utils.AddConnectionSchema(templateSchema)
+	schemautil.AddConnectionSchema(templateSchema)
 
 	return &schema.Resource{
-		Description: "Creates or updates an index template. Index templates define settings, mappings, and aliases that can be applied automatically to new indices. See, https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-put-template.html",
+		Description: indexTemplateResourceDescription,
 
 		CreateContext: resourceIndexTemplatePut,
 		UpdateContext: resourceIndexTemplatePut,
@@ -214,13 +235,13 @@ func ResourceTemplate() *schema.Resource {
 	}
 }
 
-func resourceIndexTemplatePut(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+func resourceIndexTemplatePut(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
-	templateId := d.Get("name").(string)
-	id, diags := client.ID(ctx, templateId)
+	templateID := d.Get("name").(string)
+	id, diags := client.ID(ctx, templateID)
 	if diags.HasError() {
 		return diags
 	}
@@ -231,11 +252,11 @@ func resourceIndexTemplatePut(ctx context.Context, d *schema.ResourceData, meta 
 	}
 
 	var indexTemplate models.IndexTemplate
-	indexTemplate.Name = templateId
+	indexTemplate.Name = templateID
 
 	compsOf := make([]string, 0)
 	if v, ok := d.GetOk("composed_of"); ok {
-		for _, c := range v.([]interface{}) {
+		for _, c := range v.([]any) {
 			compsOf = append(compsOf, c.(string))
 		}
 	}
@@ -243,7 +264,7 @@ func resourceIndexTemplatePut(ctx context.Context, d *schema.ResourceData, meta 
 
 	if v, ok := d.GetOk("ignore_missing_component_templates"); ok {
 		compsOfIgnore := make([]string, 0)
-		for _, c := range v.([]interface{}) {
+		for _, c := range v.([]any) {
 			compsOfIgnore = append(compsOfIgnore, c.(string))
 		}
 
@@ -259,9 +280,9 @@ func resourceIndexTemplatePut(ctx context.Context, d *schema.ResourceData, meta 
 		if d.HasChange("data_stream") {
 			old, _ := d.GetChange("data_stream")
 
-			if old != nil && len(old.([]interface{})) == 1 {
-				if old.([]interface{})[0] != nil {
-					setting := old.([]interface{})[0].(map[string]interface{})
+			if old != nil && len(old.([]any)) == 1 {
+				if old.([]any)[0] != nil {
+					setting := old.([]any)[0].(map[string]any)
 					if acr, ok := setting["allow_custom_routing"]; ok && acr.(bool) {
 						hasAllowCustomRouting = true
 					}
@@ -270,8 +291,8 @@ func resourceIndexTemplatePut(ctx context.Context, d *schema.ResourceData, meta 
 		}
 
 		// only one definition of stream allowed
-		if v.([]interface{})[0] != nil {
-			stream := v.([]interface{})[0].(map[string]interface{})
+		if v.([]any)[0] != nil {
+			stream := v.([]any)[0].(map[string]any)
 			dSettings := &models.DataStreamSettings{}
 			if s, ok := stream["hidden"]; ok {
 				hidden := s.(bool)
@@ -295,7 +316,7 @@ func resourceIndexTemplatePut(ctx context.Context, d *schema.ResourceData, meta 
 	}
 
 	if v, ok := d.GetOk("metadata"); ok {
-		metadata := make(map[string]interface{})
+		metadata := make(map[string]any)
 		if err := json.NewDecoder(strings.NewReader(v.(string))).Decode(&metadata); err != nil {
 			return diag.FromErr(err)
 		}
@@ -331,10 +352,10 @@ func resourceIndexTemplatePut(ctx context.Context, d *schema.ResourceData, meta 
 	return resourceIndexTemplateRead(ctx, d, meta)
 }
 
-func expandTemplate(config interface{}) (models.Template, bool, diag.Diagnostics) {
+func expandTemplate(config any) (models.Template, bool, diag.Diagnostics) {
 	templ := models.Template{}
 	// only one template block allowed to be declared
-	definedTempl, ok := config.([]interface{})[0].(map[string]interface{})
+	definedTempl, ok := config.([]any)[0].(map[string]any)
 	if !ok {
 		return templ, false, nil
 	}
@@ -354,7 +375,7 @@ func expandTemplate(config interface{}) (models.Template, bool, diag.Diagnostics
 
 	if mappings, ok := definedTempl["mappings"]; ok {
 		if mappings.(string) != "" {
-			maps := make(map[string]interface{})
+			maps := make(map[string]any)
 			if err := json.Unmarshal([]byte(mappings.(string)), &maps); err != nil {
 				return templ, false, diag.FromErr(err)
 			}
@@ -364,7 +385,7 @@ func expandTemplate(config interface{}) (models.Template, bool, diag.Diagnostics
 
 	if settings, ok := definedTempl["settings"]; ok {
 		if settings.(string) != "" {
-			sets := make(map[string]interface{})
+			sets := make(map[string]any)
 			if err := json.Unmarshal([]byte(settings.(string)), &sets); err != nil {
 				return templ, false, diag.FromErr(err)
 			}
@@ -375,20 +396,20 @@ func expandTemplate(config interface{}) (models.Template, bool, diag.Diagnostics
 	return templ, true, nil
 }
 
-func resourceIndexTemplateRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+func resourceIndexTemplateRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
-	compId, diags := clients.CompositeIdFromStr(d.Id())
+	compID, diags := clients.CompositeIDFromStr(d.Id())
 	if diags.HasError() {
 		return diags
 	}
-	templateId := compId.ResourceId
+	templateID := compID.ResourceID
 
-	tpl, diags := elasticsearch.GetIndexTemplate(ctx, client, templateId)
+	tpl, diags := elasticsearch.GetIndexTemplate(ctx, client, templateID)
 	if tpl == nil && diags == nil {
-		tflog.Warn(ctx, fmt.Sprintf(`Index template "%s" not found, removing from state`, compId.ResourceId))
+		tflog.Warn(ctx, fmt.Sprintf(`Index template "%s" not found, removing from state`, compID.ResourceID))
 		d.SetId("")
 		return diags
 	}
@@ -407,8 +428,8 @@ func resourceIndexTemplateRead(ctx context.Context, d *schema.ResourceData, meta
 		return diag.FromErr(err)
 	}
 	if stream := tpl.IndexTemplate.DataStream; stream != nil {
-		ds := make([]interface{}, 1)
-		dSettings := make(map[string]interface{})
+		ds := make([]any, 1)
+		dSettings := make(map[string]any)
 		if v := stream.Hidden; v != nil {
 			dSettings["hidden"] = *v
 		}
@@ -437,7 +458,10 @@ func resourceIndexTemplateRead(ctx context.Context, d *schema.ResourceData, meta
 	}
 
 	if tpl.IndexTemplate.Template != nil {
-		template, diags := flattenTemplateData(tpl.IndexTemplate.Template)
+		template, diags := flattenTemplateData(
+			tpl.IndexTemplate.Template,
+			extractAliasRoutingFromTemplateState(d.Get("template")),
+		)
 		if diags.HasError() {
 			return diags
 		}
@@ -453,9 +477,9 @@ func resourceIndexTemplateRead(ctx context.Context, d *schema.ResourceData, meta
 	return diags
 }
 
-func flattenTemplateData(template *models.Template) ([]interface{}, diag.Diagnostics) {
+func flattenTemplateData(template *models.Template, preservedAliasRouting map[string]string) ([]any, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	tmpl := make(map[string]interface{})
+	tmpl := make(map[string]any)
 	if template.Mappings != nil {
 		m, err := json.Marshal(template.Mappings)
 		if err != nil {
@@ -476,6 +500,7 @@ func flattenTemplateData(template *models.Template) ([]interface{}, diag.Diagnos
 		if diags.HasError() {
 			return nil, diags
 		}
+		aliases = preserveAliasRoutingInFlattenedAliases(aliases, preservedAliasRouting)
 		tmpl["alias"] = aliases
 	}
 
@@ -484,21 +509,127 @@ func flattenTemplateData(template *models.Template) ([]interface{}, diag.Diagnos
 		tmpl["lifecycle"] = lifecycle
 	}
 
-	return []interface{}{tmpl}, diags
+	return []any{tmpl}, diags
 }
 
-func resourceIndexTemplateDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+func extractAliasRoutingFromTemplateState(rawTemplate any) map[string]string {
+	preservedRouting := make(map[string]string)
+
+	templates, ok := rawTemplate.([]any)
+	if !ok || len(templates) == 0 || templates[0] == nil {
+		return preservedRouting
+	}
+
+	tmpl, ok := templates[0].(map[string]any)
+	if !ok {
+		return preservedRouting
+	}
+
+	extractAliasRoutingFromRawAliases(tmpl["alias"], preservedRouting)
+	return preservedRouting
+}
+
+func extractAliasRoutingFromRawAliases(rawAliases any, preservedRouting map[string]string) {
+	switch aliases := rawAliases.(type) {
+	case *schema.Set:
+		for _, alias := range aliases.List() {
+			addAliasRouting(alias, preservedRouting)
+		}
+	case []any:
+		for _, alias := range aliases {
+			addAliasRouting(alias, preservedRouting)
+		}
+	}
+}
+
+func addAliasRouting(rawAlias any, preservedRouting map[string]string) {
+	aliasMap, ok := rawAlias.(map[string]any)
+	if !ok {
+		return
+	}
+
+	name, _ := aliasMap["name"].(string)
+	routing, _ := aliasMap["routing"].(string)
+	if name != "" && routing != "" {
+		preservedRouting[name] = routing
+	}
+}
+
+func preserveAliasRoutingInFlattenedAliases(rawAliases any, preservedAliasRouting map[string]string) any {
+	if len(preservedAliasRouting) == 0 {
+		return rawAliases
+	}
+
+	aliases, ok := rawAliases.([]any)
+	if !ok {
+		return rawAliases
+	}
+
+	for _, rawAlias := range aliases {
+		aliasMap, ok := rawAlias.(map[string]any)
+		if !ok {
+			continue
+		}
+
+		aliasName, _ := aliasMap["name"].(string)
+		if routing, found := preservedAliasRouting[aliasName]; found {
+			aliasMap["routing"] = routing
+		}
+	}
+
+	return aliases
+}
+
+func suppressAliasRoutingDerivedDiff(k, oldValue, newValue string, d *schema.ResourceData) bool {
+	// Ignore diffs for specific routing fields when they are unset in config
+	// but effectively derived from the generic alias routing value.
+	if newValue != "" || oldValue == "" {
+		return false
+	}
+
+	suffixLen := len(".index_routing")
+	if strings.HasSuffix(k, ".search_routing") {
+		suffixLen = len(".search_routing")
+	}
+	if len(k) <= suffixLen {
+		return false
+	}
+
+	routingKey := k[:len(k)-suffixLen] + ".routing"
+	routingRaw, ok := d.GetOk(routingKey)
+	if !ok {
+		return false
+	}
+	routing, ok := routingRaw.(string)
+	if !ok {
+		return false
+	}
+
+	return routing != "" && routing == oldValue
+}
+
+func hashAliasByName(v any) int {
+	aliasMap, ok := v.(map[string]any)
+	if !ok {
+		return 0
+	}
+
+	name, _ := aliasMap["name"].(string)
+	return schema.HashString(name)
+}
+
+func resourceIndexTemplateDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
 
 	id := d.Id()
-	compId, diags := clients.CompositeIdFromStr(id)
+	compID, diags := clients.CompositeIDFromStr(id)
 	if diags.HasError() {
 		return diags
 	}
-	if diags := elasticsearch.DeleteIndexTemplate(ctx, client, compId.ResourceId); diags.HasError() {
+	if diags := elasticsearch.DeleteIndexTemplate(ctx, client, compID.ResourceID); diags.HasError() {
 		return diags
 	}
 	return diags

@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package output
 
 import (
@@ -16,15 +33,15 @@ type outputModel struct {
 	OutputID             types.String `tfsdk:"output_id"`
 	Name                 types.String `tfsdk:"name"`
 	Type                 types.String `tfsdk:"type"`
-	Hosts                types.List   `tfsdk:"hosts"` //> string
+	Hosts                types.List   `tfsdk:"hosts"` // > string
 	CaSha256             types.String `tfsdk:"ca_sha256"`
 	CaTrustedFingerprint types.String `tfsdk:"ca_trusted_fingerprint"`
 	DefaultIntegrations  types.Bool   `tfsdk:"default_integrations"`
 	DefaultMonitoring    types.Bool   `tfsdk:"default_monitoring"`
 	ConfigYaml           types.String `tfsdk:"config_yaml"`
-	SpaceIds             types.Set    `tfsdk:"space_ids"` //> string
-	Ssl                  types.Object `tfsdk:"ssl"`       //> outputSslModel
-	Kafka                types.Object `tfsdk:"kafka"`     //> outputKafkaModel
+	SpaceIDs             types.Set    `tfsdk:"space_ids"` // > string
+	Ssl                  types.Object `tfsdk:"ssl"`       // > outputSslModel
+	Kafka                types.Object `tfsdk:"kafka"`     // > outputKafkaModel
 }
 
 func (model *outputModel) populateFromAPI(ctx context.Context, union *kbapi.OutputUnion) (diags diag.Diagnostics) {
@@ -54,7 +71,7 @@ func (model *outputModel) populateFromAPI(ctx context.Context, union *kbapi.Outp
 	return
 }
 
-func (model outputModel) toAPICreateModel(ctx context.Context, client *clients.ApiClient) (kbapi.NewOutputUnion, diag.Diagnostics) {
+func (model outputModel) toAPICreateModel(ctx context.Context, client *clients.APIClient) (kbapi.NewOutputUnion, diag.Diagnostics) {
 	outputType := model.Type.ValueString()
 
 	switch outputType {
@@ -75,7 +92,7 @@ func (model outputModel) toAPICreateModel(ctx context.Context, client *clients.A
 	}
 }
 
-func (model outputModel) toAPIUpdateModel(ctx context.Context, client *clients.ApiClient) (union kbapi.UpdateOutputUnion, diags diag.Diagnostics) {
+func (model outputModel) toAPIUpdateModel(ctx context.Context, client *clients.APIClient) (union kbapi.UpdateOutputUnion, diags diag.Diagnostics) {
 	outputType := model.Type.ValueString()
 
 	switch outputType {
@@ -96,7 +113,7 @@ func (model outputModel) toAPIUpdateModel(ctx context.Context, client *clients.A
 	return
 }
 
-func assertKafkaSupport(ctx context.Context, client *clients.ApiClient) diag.Diagnostics {
+func assertKafkaSupport(ctx context.Context, client *clients.APIClient) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	// Check minimum version requirement for Kafka output type

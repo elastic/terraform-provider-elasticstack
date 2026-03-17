@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package indices
 
 import (
@@ -13,16 +30,23 @@ import (
 func (d *dataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	var stateModel tfModel
 
-	// Resolve target attribute
-	var target string
-	diags := req.Config.GetAttribute(ctx, path.Root("target"), &target)
+	// Resolve target attribute — use types.String to handle the null case
+	// (when the user omits the optional "target" attribute).
+	var targetAttr types.String
+	diags := req.Config.GetAttribute(ctx, path.Root("target"), &targetAttr)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
+	// Default to "*" (all indices) when target is null or empty.
+	target := targetAttr.ValueString()
+	if target == "" {
+		target = "*"
+	}
+
 	// Call client API
-	indexApiModels, diags := elasticsearch.GetIndices(ctx, &d.client, target)
+	indexAPIModels, diags := elasticsearch.GetIndices(ctx, &d.client, target)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -30,10 +54,10 @@ func (d *dataSource) Read(ctx context.Context, req datasource.ReadRequest, resp 
 
 	// Map response body to model
 	indices := []indexTfModel{}
-	for indexName, indexApiModel := range indexApiModels {
+	for indexName, indexAPIModel := range indexAPIModels {
 		indexStateModel := indexTfModel{}
 
-		diags := indexStateModel.populateFromAPI(ctx, indexName, indexApiModel)
+		diags := indexStateModel.populateFromAPI(ctx, indexName, indexAPIModel)
 		resp.Diagnostics.Append(diags...)
 		if resp.Diagnostics.HasError() {
 			return
@@ -49,6 +73,7 @@ func (d *dataSource) Read(ctx context.Context, req datasource.ReadRequest, resp 
 	}
 
 	stateModel.ID = types.StringValue(target)
+	stateModel.Target = targetAttr
 	stateModel.Indices = indicesList
 
 	// Set state

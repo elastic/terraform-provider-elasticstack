@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package monitor_test
 
 import (
@@ -18,6 +35,10 @@ var (
 )
 
 const (
+	httpCheckExpectedUpdated = `{"request":{"body":"name=first\u0026email=someemail@someemailprovider.com",` +
+		`"headers":{"Content-Type":"application/x-www-form-urlencoded"},"method":"POST"},` +
+		`"response":{"body":{"positive":["foo","bar"]},"status":[200,201,301]}}`
+
 	httpMonitorMinConfig = `
 
 resource "elasticstack_kibana_synthetics_monitor" "%s" {
@@ -387,13 +408,13 @@ func TestSyntheticMonitorHTTPResource(t *testing.T) {
 
 	name := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	id := "http-monitor"
-	httpMonitorId, config := testMonitorConfig(id, httpMonitorConfig, name)
+	httpMonitorID, config := testMonitorConfig(id, httpMonitorConfig, name)
 
 	bmName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
-	bmMonitorId, bmConfig := testMonitorConfig("http-monitor-min", httpMonitorMinConfig, bmName)
+	bmMonitorID, bmConfig := testMonitorConfig("http-monitor-min", httpMonitorMinConfig, bmName)
 
 	sslName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
-	sslHttpMonitorId, sslConfig := testMonitorConfig("http-monitor-ssl", httpMonitorSslConfig, sslName)
+	sslHTTPMonitorID, sslConfig := testMonitorConfig("http-monitor-ssl", httpMonitorSslConfig, sslName)
 
 	_, configUpdated := testMonitorConfig(id, httpMonitorUpdated, name)
 
@@ -406,13 +427,13 @@ func TestSyntheticMonitorHTTPResource(t *testing.T) {
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
 				Config:   bmConfig,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet(bmMonitorId, "id"),
-					resource.TestCheckResourceAttr(bmMonitorId, "name", "TestHttpMonitorResource - "+bmName),
-					resource.TestCheckResourceAttr(bmMonitorId, "space_id", ""),
-					resource.TestCheckResourceAttr(bmMonitorId, "namespace", "default"),
-					resource.TestCheckResourceAttr(bmMonitorId, "alert.status.enabled", "true"),
-					resource.TestCheckResourceAttr(bmMonitorId, "alert.tls.enabled", "true"),
-					resource.TestCheckResourceAttr(bmMonitorId, "http.url", "http://localhost:5601"),
+					resource.TestCheckResourceAttrSet(bmMonitorID, "id"),
+					resource.TestCheckResourceAttr(bmMonitorID, "name", "TestHttpMonitorResource - "+bmName),
+					resource.TestCheckResourceAttr(bmMonitorID, "space_id", ""),
+					resource.TestCheckResourceAttr(bmMonitorID, "namespace", "default"),
+					resource.TestCheckResourceAttr(bmMonitorID, "alert.status.enabled", "true"),
+					resource.TestCheckResourceAttr(bmMonitorID, "alert.tls.enabled", "true"),
+					resource.TestCheckResourceAttr(bmMonitorID, "http.url", "http://localhost:5601"),
 				),
 			},
 			// Create and Read http monitor with ssl fields, starting from ES 8.16.0
@@ -420,26 +441,26 @@ func TestSyntheticMonitorHTTPResource(t *testing.T) {
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(kibana816Version),
 				Config:   sslConfig,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet(sslHttpMonitorId, "id"),
-					resource.TestCheckResourceAttr(sslHttpMonitorId, "name", "TestHttpMonitorResource - "+sslName),
-					resource.TestCheckResourceAttr(sslHttpMonitorId, "space_id", ""),
-					resource.TestCheckResourceAttr(sslHttpMonitorId, "namespace", "default"),
-					resource.TestCheckResourceAttr(sslHttpMonitorId, "http.url", "http://localhost:5601"),
-					resource.TestCheckResourceAttr(sslHttpMonitorId, "http.ssl_verification_mode", "full"),
-					resource.TestCheckResourceAttr(sslHttpMonitorId, "http.ssl_supported_protocols.#", "1"),
-					resource.TestCheckResourceAttr(sslHttpMonitorId, "http.ssl_supported_protocols.0", "TLSv1.2"),
-					resource.TestCheckResourceAttr(sslHttpMonitorId, "http.ssl_certificate_authorities.#", "2"),
-					resource.TestCheckResourceAttr(sslHttpMonitorId, "http.ssl_certificate_authorities.0", "ca1"),
-					resource.TestCheckResourceAttr(sslHttpMonitorId, "http.ssl_certificate_authorities.1", "ca2"),
-					resource.TestCheckResourceAttr(sslHttpMonitorId, "http.ssl_certificate", "cert"),
-					resource.TestCheckResourceAttr(sslHttpMonitorId, "http.ssl_key", "key"),
-					resource.TestCheckResourceAttr(sslHttpMonitorId, "http.ssl_key_passphrase", "pass"),
+					resource.TestCheckResourceAttrSet(sslHTTPMonitorID, "id"),
+					resource.TestCheckResourceAttr(sslHTTPMonitorID, "name", "TestHttpMonitorResource - "+sslName),
+					resource.TestCheckResourceAttr(sslHTTPMonitorID, "space_id", ""),
+					resource.TestCheckResourceAttr(sslHTTPMonitorID, "namespace", "default"),
+					resource.TestCheckResourceAttr(sslHTTPMonitorID, "http.url", "http://localhost:5601"),
+					resource.TestCheckResourceAttr(sslHTTPMonitorID, "http.ssl_verification_mode", "full"),
+					resource.TestCheckResourceAttr(sslHTTPMonitorID, "http.ssl_supported_protocols.#", "1"),
+					resource.TestCheckResourceAttr(sslHTTPMonitorID, "http.ssl_supported_protocols.0", "TLSv1.2"),
+					resource.TestCheckResourceAttr(sslHTTPMonitorID, "http.ssl_certificate_authorities.#", "2"),
+					resource.TestCheckResourceAttr(sslHTTPMonitorID, "http.ssl_certificate_authorities.0", "ca1"),
+					resource.TestCheckResourceAttr(sslHTTPMonitorID, "http.ssl_certificate_authorities.1", "ca2"),
+					resource.TestCheckResourceAttr(sslHTTPMonitorID, "http.ssl_certificate", "cert"),
+					resource.TestCheckResourceAttr(sslHTTPMonitorID, "http.ssl_key", "key"),
+					resource.TestCheckResourceAttr(sslHTTPMonitorID, "http.ssl_key_passphrase", "pass"),
 				),
 			},
 			// ImportState testing ssl fields
 			{
 				SkipFunc:          versionutils.CheckIfVersionIsUnsupported(kibana816Version),
-				ResourceName:      sslHttpMonitorId,
+				ResourceName:      sslHTTPMonitorID,
 				ImportState:       true,
 				ImportStateVerify: true,
 				Config:            sslConfig,
@@ -449,38 +470,38 @@ func TestSyntheticMonitorHTTPResource(t *testing.T) {
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
 				Config:   config,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet(httpMonitorId, "id"),
-					resource.TestCheckResourceAttr(httpMonitorId, "name", "TestHttpMonitorResource - "+name),
-					resource.TestCheckResourceAttr(httpMonitorId, "space_id", "testacc"),
-					resource.TestCheckResourceAttr(httpMonitorId, "namespace", "test_namespace"),
-					resource.TestCheckResourceAttr(httpMonitorId, "schedule", "5"),
-					resource.TestCheckResourceAttr(httpMonitorId, "private_locations.#", "1"),
-					resource.TestCheckResourceAttrSet(httpMonitorId, "private_locations.0"),
-					resource.TestCheckResourceAttr(httpMonitorId, "enabled", "true"),
-					resource.TestCheckResourceAttr(httpMonitorId, "tags.#", "2"),
-					resource.TestCheckResourceAttr(httpMonitorId, "tags.0", "a"),
-					resource.TestCheckResourceAttr(httpMonitorId, "tags.1", "b"),
-					resource.TestCheckResourceAttr(httpMonitorId, "alert.status.enabled", "true"),
-					resource.TestCheckResourceAttr(httpMonitorId, "alert.tls.enabled", "true"),
-					resource.TestCheckResourceAttr(httpMonitorId, "service_name", "test apm service"),
-					resource.TestCheckResourceAttr(httpMonitorId, "timeout", "30"),
-					resource.TestCheckResourceAttr(httpMonitorId, "http.url", "http://localhost:5601"),
-					resource.TestCheckResourceAttr(httpMonitorId, "http.ssl_verification_mode", "full"),
-					resource.TestCheckResourceAttr(httpMonitorId, "http.ssl_supported_protocols.#", "3"),
-					resource.TestCheckResourceAttr(httpMonitorId, "http.ssl_supported_protocols.0", "TLSv1.1"),
-					resource.TestCheckResourceAttr(httpMonitorId, "http.ssl_supported_protocols.1", "TLSv1.2"),
-					resource.TestCheckResourceAttr(httpMonitorId, "http.ssl_supported_protocols.2", "TLSv1.3"),
-					resource.TestCheckResourceAttr(httpMonitorId, "http.max_redirects", "0"),
-					resource.TestCheckResourceAttr(httpMonitorId, "http.mode", "any"),
-					resource.TestCheckResourceAttr(httpMonitorId, "http.ipv4", "true"),
-					resource.TestCheckResourceAttr(httpMonitorId, "http.ipv6", "false"),
-					resource.TestCheckResourceAttr(httpMonitorId, "http.proxy_url", ""),
+					resource.TestCheckResourceAttrSet(httpMonitorID, "id"),
+					resource.TestCheckResourceAttr(httpMonitorID, "name", "TestHttpMonitorResource - "+name),
+					resource.TestCheckResourceAttr(httpMonitorID, "space_id", "testacc"),
+					resource.TestCheckResourceAttr(httpMonitorID, "namespace", "test_namespace"),
+					resource.TestCheckResourceAttr(httpMonitorID, "schedule", "5"),
+					resource.TestCheckResourceAttr(httpMonitorID, "private_locations.#", "1"),
+					resource.TestCheckResourceAttrSet(httpMonitorID, "private_locations.0"),
+					resource.TestCheckResourceAttr(httpMonitorID, "enabled", "true"),
+					resource.TestCheckResourceAttr(httpMonitorID, "tags.#", "2"),
+					resource.TestCheckResourceAttr(httpMonitorID, "tags.0", "a"),
+					resource.TestCheckResourceAttr(httpMonitorID, "tags.1", "b"),
+					resource.TestCheckResourceAttr(httpMonitorID, "alert.status.enabled", "true"),
+					resource.TestCheckResourceAttr(httpMonitorID, "alert.tls.enabled", "true"),
+					resource.TestCheckResourceAttr(httpMonitorID, "service_name", "test apm service"),
+					resource.TestCheckResourceAttr(httpMonitorID, "timeout", "30"),
+					resource.TestCheckResourceAttr(httpMonitorID, "http.url", "http://localhost:5601"),
+					resource.TestCheckResourceAttr(httpMonitorID, "http.ssl_verification_mode", "full"),
+					resource.TestCheckResourceAttr(httpMonitorID, "http.ssl_supported_protocols.#", "3"),
+					resource.TestCheckResourceAttr(httpMonitorID, "http.ssl_supported_protocols.0", "TLSv1.1"),
+					resource.TestCheckResourceAttr(httpMonitorID, "http.ssl_supported_protocols.1", "TLSv1.2"),
+					resource.TestCheckResourceAttr(httpMonitorID, "http.ssl_supported_protocols.2", "TLSv1.3"),
+					resource.TestCheckResourceAttr(httpMonitorID, "http.max_redirects", "0"),
+					resource.TestCheckResourceAttr(httpMonitorID, "http.mode", "any"),
+					resource.TestCheckResourceAttr(httpMonitorID, "http.ipv4", "true"),
+					resource.TestCheckResourceAttr(httpMonitorID, "http.ipv6", "false"),
+					resource.TestCheckResourceAttr(httpMonitorID, "http.proxy_url", ""),
 				),
 			},
 			// ImportState testing
 			{
 				SkipFunc:          versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
-				ResourceName:      httpMonitorId,
+				ResourceName:      httpMonitorID,
 				ImportState:       true,
 				ImportStateVerify: true,
 				Config:            config,
@@ -488,45 +509,45 @@ func TestSyntheticMonitorHTTPResource(t *testing.T) {
 			// Update and Read testing http monitor
 			{
 				SkipFunc:     versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
-				ResourceName: httpMonitorId,
+				ResourceName: httpMonitorID,
 				Config:       configUpdated,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet(httpMonitorId, "id"),
-					resource.TestCheckResourceAttr(httpMonitorId, "name", "TestHttpMonitorResource Updated - "+name),
-					resource.TestCheckResourceAttr(httpMonitorId, "space_id", "testacc"),
-					resource.TestCheckResourceAttr(httpMonitorId, "namespace", "test_namespace"),
-					resource.TestCheckResourceAttr(httpMonitorId, "schedule", "10"),
-					resource.TestCheckResourceAttr(httpMonitorId, "private_locations.#", "1"),
-					resource.TestCheckResourceAttrSet(httpMonitorId, "private_locations.0"),
-					resource.TestCheckResourceAttr(httpMonitorId, "enabled", "false"),
-					resource.TestCheckResourceAttr(httpMonitorId, "tags.#", "3"),
-					resource.TestCheckResourceAttr(httpMonitorId, "tags.0", "c"),
-					resource.TestCheckResourceAttr(httpMonitorId, "tags.1", "d"),
-					resource.TestCheckResourceAttr(httpMonitorId, "tags.2", "e"),
-					resource.TestCheckResourceAttr(httpMonitorId, "alert.status.enabled", "true"),
-					resource.TestCheckResourceAttr(httpMonitorId, "alert.tls.enabled", "false"),
-					resource.TestCheckResourceAttr(httpMonitorId, "service_name", "test apm service"),
-					resource.TestCheckResourceAttr(httpMonitorId, "timeout", "30"),
-					resource.TestCheckResourceAttr(httpMonitorId, "http.url", "http://localhost:8080"),
-					resource.TestCheckResourceAttr(httpMonitorId, "http.ssl_verification_mode", "full"),
-					resource.TestCheckResourceAttr(httpMonitorId, "http.ssl_supported_protocols.#", "1"),
-					resource.TestCheckResourceAttr(httpMonitorId, "http.ssl_supported_protocols.0", "TLSv1.2"),
-					resource.TestCheckResourceAttr(httpMonitorId, "http.max_redirects", "10"),
-					resource.TestCheckResourceAttr(httpMonitorId, "http.mode", "all"),
-					resource.TestCheckResourceAttr(httpMonitorId, "http.ipv4", "true"),
-					resource.TestCheckResourceAttr(httpMonitorId, "http.ipv6", "true"),
-					resource.TestCheckResourceAttr(httpMonitorId, "http.proxy_url", "http://localhost"),
-					resource.TestCheckNoResourceAttr(httpMonitorId, "tcp"),
-					resource.TestCheckNoResourceAttr(httpMonitorId, "browser"),
-					resource.TestCheckNoResourceAttr(httpMonitorId, "icmp"),
-					//check for merge attributes
-					resource.TestCheckResourceAttr(httpMonitorId, "http.proxy_header", `{"header-name":"header-value-updated"}`),
-					resource.TestCheckResourceAttr(httpMonitorId, "http.username", "testupdated"),
-					resource.TestCheckResourceAttr(httpMonitorId, "http.password", "testpassword-updated"),
-					resource.TestCheckResourceAttr(httpMonitorId, "http.check", `{"request":{"body":"name=first\u0026email=someemail@someemailprovider.com","headers":{"Content-Type":"application/x-www-form-urlencoded"},"method":"POST"},"response":{"body":{"positive":["foo","bar"]},"status":[200,201,301]}}`),
-					resource.TestCheckResourceAttr(httpMonitorId, "http.response", `{"include_body":"never","include_body_max_bytes":"1024"}`),
-					resource.TestCheckResourceAttr(httpMonitorId, "params", `{"param-name":"param-value-updated"}`),
-					resource.TestCheckResourceAttr(httpMonitorId, "retest_on_failure", "false"),
+					resource.TestCheckResourceAttrSet(httpMonitorID, "id"),
+					resource.TestCheckResourceAttr(httpMonitorID, "name", "TestHttpMonitorResource Updated - "+name),
+					resource.TestCheckResourceAttr(httpMonitorID, "space_id", "testacc"),
+					resource.TestCheckResourceAttr(httpMonitorID, "namespace", "test_namespace"),
+					resource.TestCheckResourceAttr(httpMonitorID, "schedule", "10"),
+					resource.TestCheckResourceAttr(httpMonitorID, "private_locations.#", "1"),
+					resource.TestCheckResourceAttrSet(httpMonitorID, "private_locations.0"),
+					resource.TestCheckResourceAttr(httpMonitorID, "enabled", "false"),
+					resource.TestCheckResourceAttr(httpMonitorID, "tags.#", "3"),
+					resource.TestCheckResourceAttr(httpMonitorID, "tags.0", "c"),
+					resource.TestCheckResourceAttr(httpMonitorID, "tags.1", "d"),
+					resource.TestCheckResourceAttr(httpMonitorID, "tags.2", "e"),
+					resource.TestCheckResourceAttr(httpMonitorID, "alert.status.enabled", "true"),
+					resource.TestCheckResourceAttr(httpMonitorID, "alert.tls.enabled", "false"),
+					resource.TestCheckResourceAttr(httpMonitorID, "service_name", "test apm service"),
+					resource.TestCheckResourceAttr(httpMonitorID, "timeout", "30"),
+					resource.TestCheckResourceAttr(httpMonitorID, "http.url", "http://localhost:8080"),
+					resource.TestCheckResourceAttr(httpMonitorID, "http.ssl_verification_mode", "full"),
+					resource.TestCheckResourceAttr(httpMonitorID, "http.ssl_supported_protocols.#", "1"),
+					resource.TestCheckResourceAttr(httpMonitorID, "http.ssl_supported_protocols.0", "TLSv1.2"),
+					resource.TestCheckResourceAttr(httpMonitorID, "http.max_redirects", "10"),
+					resource.TestCheckResourceAttr(httpMonitorID, "http.mode", "all"),
+					resource.TestCheckResourceAttr(httpMonitorID, "http.ipv4", "true"),
+					resource.TestCheckResourceAttr(httpMonitorID, "http.ipv6", "true"),
+					resource.TestCheckResourceAttr(httpMonitorID, "http.proxy_url", "http://localhost"),
+					resource.TestCheckNoResourceAttr(httpMonitorID, "tcp"),
+					resource.TestCheckNoResourceAttr(httpMonitorID, "browser"),
+					resource.TestCheckNoResourceAttr(httpMonitorID, "icmp"),
+					// check for merge attributes
+					resource.TestCheckResourceAttr(httpMonitorID, "http.proxy_header", `{"header-name":"header-value-updated"}`),
+					resource.TestCheckResourceAttr(httpMonitorID, "http.username", "testupdated"),
+					resource.TestCheckResourceAttr(httpMonitorID, "http.password", "testpassword-updated"),
+					resource.TestCheckResourceAttr(httpMonitorID, "http.check", httpCheckExpectedUpdated),
+					resource.TestCheckResourceAttr(httpMonitorID, "http.response", `{"include_body":"never","include_body_max_bytes":"1024"}`),
+					resource.TestCheckResourceAttr(httpMonitorID, "params", `{"param-name":"param-value-updated"}`),
+					resource.TestCheckResourceAttr(httpMonitorID, "retest_on_failure", "false"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase
@@ -538,14 +559,14 @@ func TestSyntheticMonitorTCPResource(t *testing.T) {
 
 	name := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	id := "tcp-monitor"
-	tcpMonitorId, config := testMonitorConfig(id, tcpMonitorConfig, name)
+	tcpMonitorID, config := testMonitorConfig(id, tcpMonitorConfig, name)
 	_, configUpdated := testMonitorConfig(id, tcpMonitorUpdated, name)
 
 	bmName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
-	bmMonitorId, bmConfig := testMonitorConfig("tcp-monitor-min", tcpMonitorMinConfig, bmName)
+	bmMonitorID, bmConfig := testMonitorConfig("tcp-monitor-min", tcpMonitorMinConfig, bmName)
 
 	sslName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
-	sslTcpMonitorId, sslConfig := testMonitorConfig("tcp-monitor-ssl", tcpMonitorSslConfig, sslName)
+	sslTCPMonitorID, sslConfig := testMonitorConfig("tcp-monitor-ssl", tcpMonitorSslConfig, sslName)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -556,13 +577,13 @@ func TestSyntheticMonitorTCPResource(t *testing.T) {
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
 				Config:   bmConfig,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet(bmMonitorId, "id"),
-					resource.TestCheckResourceAttr(bmMonitorId, "name", "TestTcpMonitorResource - "+bmName),
-					resource.TestCheckResourceAttr(bmMonitorId, "space_id", ""),
-					resource.TestCheckResourceAttr(bmMonitorId, "namespace", "default"),
-					resource.TestCheckResourceAttr(bmMonitorId, "tcp.host", "http://localhost:5601"),
-					resource.TestCheckResourceAttr(bmMonitorId, "alert.status.enabled", "true"),
-					resource.TestCheckResourceAttr(bmMonitorId, "alert.tls.enabled", "true"),
+					resource.TestCheckResourceAttrSet(bmMonitorID, "id"),
+					resource.TestCheckResourceAttr(bmMonitorID, "name", "TestTcpMonitorResource - "+bmName),
+					resource.TestCheckResourceAttr(bmMonitorID, "space_id", ""),
+					resource.TestCheckResourceAttr(bmMonitorID, "namespace", "default"),
+					resource.TestCheckResourceAttr(bmMonitorID, "tcp.host", "http://localhost:5601"),
+					resource.TestCheckResourceAttr(bmMonitorID, "alert.status.enabled", "true"),
+					resource.TestCheckResourceAttr(bmMonitorID, "alert.tls.enabled", "true"),
 				),
 			},
 			// Create and Read tcp monitor with ssl fields, starting from ES 8.16.0
@@ -571,26 +592,26 @@ func TestSyntheticMonitorTCPResource(t *testing.T) {
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(kibana816Version),
 				Config:   sslConfig,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet(sslTcpMonitorId, "id"),
-					resource.TestCheckResourceAttr(sslTcpMonitorId, "name", "TestHttpMonitorResource - "+sslName),
-					resource.TestCheckResourceAttr(sslTcpMonitorId, "space_id", ""),
-					resource.TestCheckResourceAttr(sslTcpMonitorId, "namespace", "default"),
-					resource.TestCheckResourceAttr(sslTcpMonitorId, "tcp.host", "http://localhost:5601"),
-					resource.TestCheckResourceAttr(sslTcpMonitorId, "tcp.ssl_verification_mode", "full"),
-					resource.TestCheckResourceAttr(sslTcpMonitorId, "tcp.ssl_supported_protocols.#", "1"),
-					resource.TestCheckResourceAttr(sslTcpMonitorId, "tcp.ssl_supported_protocols.0", "TLSv1.2"),
-					resource.TestCheckResourceAttr(sslTcpMonitorId, "tcp.ssl_certificate_authorities.#", "2"),
-					resource.TestCheckResourceAttr(sslTcpMonitorId, "tcp.ssl_certificate_authorities.0", "ca1"),
-					resource.TestCheckResourceAttr(sslTcpMonitorId, "tcp.ssl_certificate_authorities.1", "ca2"),
-					resource.TestCheckResourceAttr(sslTcpMonitorId, "tcp.ssl_certificate", "cert"),
-					resource.TestCheckResourceAttr(sslTcpMonitorId, "tcp.ssl_key", "key"),
-					resource.TestCheckResourceAttr(sslTcpMonitorId, "tcp.ssl_key_passphrase", "pass"),
+					resource.TestCheckResourceAttrSet(sslTCPMonitorID, "id"),
+					resource.TestCheckResourceAttr(sslTCPMonitorID, "name", "TestHttpMonitorResource - "+sslName),
+					resource.TestCheckResourceAttr(sslTCPMonitorID, "space_id", ""),
+					resource.TestCheckResourceAttr(sslTCPMonitorID, "namespace", "default"),
+					resource.TestCheckResourceAttr(sslTCPMonitorID, "tcp.host", "http://localhost:5601"),
+					resource.TestCheckResourceAttr(sslTCPMonitorID, "tcp.ssl_verification_mode", "full"),
+					resource.TestCheckResourceAttr(sslTCPMonitorID, "tcp.ssl_supported_protocols.#", "1"),
+					resource.TestCheckResourceAttr(sslTCPMonitorID, "tcp.ssl_supported_protocols.0", "TLSv1.2"),
+					resource.TestCheckResourceAttr(sslTCPMonitorID, "tcp.ssl_certificate_authorities.#", "2"),
+					resource.TestCheckResourceAttr(sslTCPMonitorID, "tcp.ssl_certificate_authorities.0", "ca1"),
+					resource.TestCheckResourceAttr(sslTCPMonitorID, "tcp.ssl_certificate_authorities.1", "ca2"),
+					resource.TestCheckResourceAttr(sslTCPMonitorID, "tcp.ssl_certificate", "cert"),
+					resource.TestCheckResourceAttr(sslTCPMonitorID, "tcp.ssl_key", "key"),
+					resource.TestCheckResourceAttr(sslTCPMonitorID, "tcp.ssl_key_passphrase", "pass"),
 				),
 			},
 			// ImportState testing ssl fields
 			{
 				SkipFunc:          versionutils.CheckIfVersionIsUnsupported(kibana816Version),
-				ResourceName:      sslTcpMonitorId,
+				ResourceName:      sslTCPMonitorID,
 				ImportState:       true,
 				ImportStateVerify: true,
 				Config:            sslConfig,
@@ -600,35 +621,35 @@ func TestSyntheticMonitorTCPResource(t *testing.T) {
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
 				Config:   config,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet(tcpMonitorId, "id"),
-					resource.TestCheckResourceAttr(tcpMonitorId, "name", "TestTcpMonitorResource - "+name),
-					resource.TestCheckResourceAttr(tcpMonitorId, "space_id", "testacc"),
-					resource.TestCheckResourceAttr(tcpMonitorId, "namespace", "testacc_test"),
-					resource.TestCheckResourceAttr(tcpMonitorId, "schedule", "5"),
-					resource.TestCheckResourceAttr(tcpMonitorId, "private_locations.#", "1"),
-					resource.TestCheckResourceAttrSet(tcpMonitorId, "private_locations.0"),
-					resource.TestCheckResourceAttr(tcpMonitorId, "enabled", "true"),
-					resource.TestCheckResourceAttr(tcpMonitorId, "tags.#", "2"),
-					resource.TestCheckResourceAttr(tcpMonitorId, "tags.0", "a"),
-					resource.TestCheckResourceAttr(tcpMonitorId, "tags.1", "b"),
-					resource.TestCheckResourceAttr(tcpMonitorId, "alert.status.enabled", "true"),
-					resource.TestCheckResourceAttr(tcpMonitorId, "alert.tls.enabled", "true"),
-					resource.TestCheckResourceAttr(tcpMonitorId, "service_name", "test apm service"),
-					resource.TestCheckResourceAttr(tcpMonitorId, "timeout", "30"),
-					resource.TestCheckResourceAttr(tcpMonitorId, "tcp.host", "http://localhost:5601"),
-					resource.TestCheckResourceAttr(tcpMonitorId, "tcp.ssl_verification_mode", "full"),
-					resource.TestCheckResourceAttr(tcpMonitorId, "tcp.ssl_supported_protocols.#", "3"),
-					resource.TestCheckResourceAttr(tcpMonitorId, "tcp.ssl_supported_protocols.0", "TLSv1.1"),
-					resource.TestCheckResourceAttr(tcpMonitorId, "tcp.ssl_supported_protocols.1", "TLSv1.2"),
-					resource.TestCheckResourceAttr(tcpMonitorId, "tcp.ssl_supported_protocols.2", "TLSv1.3"),
-					resource.TestCheckResourceAttr(tcpMonitorId, "tcp.proxy_url", ""),
-					resource.TestCheckResourceAttr(tcpMonitorId, "tcp.proxy_use_local_resolver", "true"),
+					resource.TestCheckResourceAttrSet(tcpMonitorID, "id"),
+					resource.TestCheckResourceAttr(tcpMonitorID, "name", "TestTcpMonitorResource - "+name),
+					resource.TestCheckResourceAttr(tcpMonitorID, "space_id", "testacc"),
+					resource.TestCheckResourceAttr(tcpMonitorID, "namespace", "testacc_test"),
+					resource.TestCheckResourceAttr(tcpMonitorID, "schedule", "5"),
+					resource.TestCheckResourceAttr(tcpMonitorID, "private_locations.#", "1"),
+					resource.TestCheckResourceAttrSet(tcpMonitorID, "private_locations.0"),
+					resource.TestCheckResourceAttr(tcpMonitorID, "enabled", "true"),
+					resource.TestCheckResourceAttr(tcpMonitorID, "tags.#", "2"),
+					resource.TestCheckResourceAttr(tcpMonitorID, "tags.0", "a"),
+					resource.TestCheckResourceAttr(tcpMonitorID, "tags.1", "b"),
+					resource.TestCheckResourceAttr(tcpMonitorID, "alert.status.enabled", "true"),
+					resource.TestCheckResourceAttr(tcpMonitorID, "alert.tls.enabled", "true"),
+					resource.TestCheckResourceAttr(tcpMonitorID, "service_name", "test apm service"),
+					resource.TestCheckResourceAttr(tcpMonitorID, "timeout", "30"),
+					resource.TestCheckResourceAttr(tcpMonitorID, "tcp.host", "http://localhost:5601"),
+					resource.TestCheckResourceAttr(tcpMonitorID, "tcp.ssl_verification_mode", "full"),
+					resource.TestCheckResourceAttr(tcpMonitorID, "tcp.ssl_supported_protocols.#", "3"),
+					resource.TestCheckResourceAttr(tcpMonitorID, "tcp.ssl_supported_protocols.0", "TLSv1.1"),
+					resource.TestCheckResourceAttr(tcpMonitorID, "tcp.ssl_supported_protocols.1", "TLSv1.2"),
+					resource.TestCheckResourceAttr(tcpMonitorID, "tcp.ssl_supported_protocols.2", "TLSv1.3"),
+					resource.TestCheckResourceAttr(tcpMonitorID, "tcp.proxy_url", ""),
+					resource.TestCheckResourceAttr(tcpMonitorID, "tcp.proxy_use_local_resolver", "true"),
 				),
 			},
 			// ImportState testing
 			{
 				SkipFunc:          versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
-				ResourceName:      tcpMonitorId,
+				ResourceName:      tcpMonitorID,
 				ImportState:       true,
 				ImportStateVerify: true,
 				Config:            config,
@@ -636,37 +657,37 @@ func TestSyntheticMonitorTCPResource(t *testing.T) {
 			// Update and Read tcp monitor
 			{
 				SkipFunc:     versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
-				ResourceName: tcpMonitorId,
+				ResourceName: tcpMonitorID,
 				Config:       configUpdated,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet(tcpMonitorId, "id"),
-					resource.TestCheckResourceAttr(tcpMonitorId, "name", "TestTcpMonitorResource Updated - "+name),
-					resource.TestCheckResourceAttr(tcpMonitorId, "space_id", "testacc"),
-					resource.TestCheckResourceAttr(tcpMonitorId, "namespace", "testacc_test"),
-					resource.TestCheckResourceAttr(tcpMonitorId, "schedule", "10"),
-					resource.TestCheckResourceAttr(tcpMonitorId, "private_locations.#", "1"),
-					resource.TestCheckResourceAttrSet(tcpMonitorId, "private_locations.0"),
-					resource.TestCheckResourceAttr(tcpMonitorId, "enabled", "false"),
-					resource.TestCheckResourceAttr(tcpMonitorId, "tags.#", "3"),
-					resource.TestCheckResourceAttr(tcpMonitorId, "tags.0", "c"),
-					resource.TestCheckResourceAttr(tcpMonitorId, "tags.1", "d"),
-					resource.TestCheckResourceAttr(tcpMonitorId, "tags.2", "e"),
-					resource.TestCheckResourceAttr(tcpMonitorId, "alert.status.enabled", "true"),
-					resource.TestCheckResourceAttr(tcpMonitorId, "alert.tls.enabled", "false"),
-					resource.TestCheckResourceAttr(tcpMonitorId, "service_name", "test apm service"),
-					resource.TestCheckResourceAttr(tcpMonitorId, "timeout", "30"),
-					resource.TestCheckResourceAttr(tcpMonitorId, "tcp.host", "http://localhost:8080"),
-					resource.TestCheckResourceAttr(tcpMonitorId, "tcp.ssl_verification_mode", "full"),
-					resource.TestCheckResourceAttr(tcpMonitorId, "tcp.ssl_supported_protocols.#", "1"),
-					resource.TestCheckResourceAttr(tcpMonitorId, "tcp.ssl_supported_protocols.0", "TLSv1.2"),
-					resource.TestCheckResourceAttr(tcpMonitorId, "tcp.proxy_url", "http://localhost"),
-					resource.TestCheckResourceAttr(tcpMonitorId, "tcp.proxy_use_local_resolver", "false"),
-					resource.TestCheckNoResourceAttr(tcpMonitorId, "http"),
-					resource.TestCheckNoResourceAttr(tcpMonitorId, "browser"),
-					resource.TestCheckNoResourceAttr(tcpMonitorId, "icmp"),
-					//check for merge attributes
-					resource.TestCheckResourceAttr(tcpMonitorId, "tcp.check_send", "Hello Updated"),
-					resource.TestCheckResourceAttr(tcpMonitorId, "tcp.check_receive", "World Updated"),
+					resource.TestCheckResourceAttrSet(tcpMonitorID, "id"),
+					resource.TestCheckResourceAttr(tcpMonitorID, "name", "TestTcpMonitorResource Updated - "+name),
+					resource.TestCheckResourceAttr(tcpMonitorID, "space_id", "testacc"),
+					resource.TestCheckResourceAttr(tcpMonitorID, "namespace", "testacc_test"),
+					resource.TestCheckResourceAttr(tcpMonitorID, "schedule", "10"),
+					resource.TestCheckResourceAttr(tcpMonitorID, "private_locations.#", "1"),
+					resource.TestCheckResourceAttrSet(tcpMonitorID, "private_locations.0"),
+					resource.TestCheckResourceAttr(tcpMonitorID, "enabled", "false"),
+					resource.TestCheckResourceAttr(tcpMonitorID, "tags.#", "3"),
+					resource.TestCheckResourceAttr(tcpMonitorID, "tags.0", "c"),
+					resource.TestCheckResourceAttr(tcpMonitorID, "tags.1", "d"),
+					resource.TestCheckResourceAttr(tcpMonitorID, "tags.2", "e"),
+					resource.TestCheckResourceAttr(tcpMonitorID, "alert.status.enabled", "true"),
+					resource.TestCheckResourceAttr(tcpMonitorID, "alert.tls.enabled", "false"),
+					resource.TestCheckResourceAttr(tcpMonitorID, "service_name", "test apm service"),
+					resource.TestCheckResourceAttr(tcpMonitorID, "timeout", "30"),
+					resource.TestCheckResourceAttr(tcpMonitorID, "tcp.host", "http://localhost:8080"),
+					resource.TestCheckResourceAttr(tcpMonitorID, "tcp.ssl_verification_mode", "full"),
+					resource.TestCheckResourceAttr(tcpMonitorID, "tcp.ssl_supported_protocols.#", "1"),
+					resource.TestCheckResourceAttr(tcpMonitorID, "tcp.ssl_supported_protocols.0", "TLSv1.2"),
+					resource.TestCheckResourceAttr(tcpMonitorID, "tcp.proxy_url", "http://localhost"),
+					resource.TestCheckResourceAttr(tcpMonitorID, "tcp.proxy_use_local_resolver", "false"),
+					resource.TestCheckNoResourceAttr(tcpMonitorID, "http"),
+					resource.TestCheckNoResourceAttr(tcpMonitorID, "browser"),
+					resource.TestCheckNoResourceAttr(tcpMonitorID, "icmp"),
+					// check for merge attributes
+					resource.TestCheckResourceAttr(tcpMonitorID, "tcp.check_send", "Hello Updated"),
+					resource.TestCheckResourceAttr(tcpMonitorID, "tcp.check_receive", "World Updated"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase
@@ -679,11 +700,11 @@ func TestSyntheticMonitorICMPResource(t *testing.T) {
 
 	name := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	id := "icmp-monitor"
-	icmpMonitorId, config := testMonitorConfig(id, icmpMonitorConfig, name)
+	icmpMonitorID, config := testMonitorConfig(id, icmpMonitorConfig, name)
 	_, configUpdated := testMonitorConfig(id, icmpMonitorUpdated, name)
 
 	bmName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
-	bmMonitorId, bmConfig := testMonitorConfig("icmp-monitor-min", icmpMonitorMinConfig, bmName)
+	bmMonitorID, bmConfig := testMonitorConfig("icmp-monitor-min", icmpMonitorMinConfig, bmName)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -694,13 +715,13 @@ func TestSyntheticMonitorICMPResource(t *testing.T) {
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
 				Config:   bmConfig,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet(bmMonitorId, "id"),
-					resource.TestCheckResourceAttr(bmMonitorId, "name", "TestIcmpMonitorResource - "+bmName),
-					resource.TestCheckResourceAttr(bmMonitorId, "space_id", ""),
-					resource.TestCheckResourceAttr(bmMonitorId, "namespace", "default"),
-					resource.TestCheckResourceAttr(bmMonitorId, "icmp.host", "localhost"),
-					resource.TestCheckResourceAttr(bmMonitorId, "alert.status.enabled", "true"),
-					resource.TestCheckResourceAttr(bmMonitorId, "alert.tls.enabled", "true"),
+					resource.TestCheckResourceAttrSet(bmMonitorID, "id"),
+					resource.TestCheckResourceAttr(bmMonitorID, "name", "TestIcmpMonitorResource - "+bmName),
+					resource.TestCheckResourceAttr(bmMonitorID, "space_id", ""),
+					resource.TestCheckResourceAttr(bmMonitorID, "namespace", "default"),
+					resource.TestCheckResourceAttr(bmMonitorID, "icmp.host", "localhost"),
+					resource.TestCheckResourceAttr(bmMonitorID, "alert.status.enabled", "true"),
+					resource.TestCheckResourceAttr(bmMonitorID, "alert.tls.enabled", "true"),
 				),
 			},
 
@@ -709,28 +730,28 @@ func TestSyntheticMonitorICMPResource(t *testing.T) {
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
 				Config:   config,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet(icmpMonitorId, "id"),
-					resource.TestCheckResourceAttr(icmpMonitorId, "name", "TestIcmpMonitorResource - "+name),
-					resource.TestCheckResourceAttr(icmpMonitorId, "space_id", "testacc"),
-					resource.TestCheckResourceAttr(icmpMonitorId, "namespace", "testacc_namespace"),
-					resource.TestCheckResourceAttr(icmpMonitorId, "schedule", "5"),
-					resource.TestCheckResourceAttr(icmpMonitorId, "private_locations.#", "1"),
-					resource.TestCheckResourceAttrSet(icmpMonitorId, "private_locations.0"),
-					resource.TestCheckResourceAttr(icmpMonitorId, "enabled", "true"),
-					resource.TestCheckResourceAttr(icmpMonitorId, "tags.#", "2"),
-					resource.TestCheckResourceAttr(icmpMonitorId, "tags.0", "a"),
-					resource.TestCheckResourceAttr(icmpMonitorId, "tags.1", "b"),
-					resource.TestCheckResourceAttr(icmpMonitorId, "alert.status.enabled", "true"),
-					resource.TestCheckResourceAttr(icmpMonitorId, "alert.tls.enabled", "true"),
-					resource.TestCheckResourceAttr(icmpMonitorId, "service_name", "test apm service"),
-					resource.TestCheckResourceAttr(icmpMonitorId, "timeout", "30"),
-					resource.TestCheckResourceAttr(icmpMonitorId, "icmp.host", "localhost"),
+					resource.TestCheckResourceAttrSet(icmpMonitorID, "id"),
+					resource.TestCheckResourceAttr(icmpMonitorID, "name", "TestIcmpMonitorResource - "+name),
+					resource.TestCheckResourceAttr(icmpMonitorID, "space_id", "testacc"),
+					resource.TestCheckResourceAttr(icmpMonitorID, "namespace", "testacc_namespace"),
+					resource.TestCheckResourceAttr(icmpMonitorID, "schedule", "5"),
+					resource.TestCheckResourceAttr(icmpMonitorID, "private_locations.#", "1"),
+					resource.TestCheckResourceAttrSet(icmpMonitorID, "private_locations.0"),
+					resource.TestCheckResourceAttr(icmpMonitorID, "enabled", "true"),
+					resource.TestCheckResourceAttr(icmpMonitorID, "tags.#", "2"),
+					resource.TestCheckResourceAttr(icmpMonitorID, "tags.0", "a"),
+					resource.TestCheckResourceAttr(icmpMonitorID, "tags.1", "b"),
+					resource.TestCheckResourceAttr(icmpMonitorID, "alert.status.enabled", "true"),
+					resource.TestCheckResourceAttr(icmpMonitorID, "alert.tls.enabled", "true"),
+					resource.TestCheckResourceAttr(icmpMonitorID, "service_name", "test apm service"),
+					resource.TestCheckResourceAttr(icmpMonitorID, "timeout", "30"),
+					resource.TestCheckResourceAttr(icmpMonitorID, "icmp.host", "localhost"),
 				),
 			},
 			// ImportState testing
 			{
 				SkipFunc:          versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
-				ResourceName:      icmpMonitorId,
+				ResourceName:      icmpMonitorID,
 				ImportState:       true,
 				ImportStateVerify: true,
 				Config:            config,
@@ -738,30 +759,30 @@ func TestSyntheticMonitorICMPResource(t *testing.T) {
 			// Update and Read icmp monitor
 			{
 				SkipFunc:     versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
-				ResourceName: icmpMonitorId,
+				ResourceName: icmpMonitorID,
 				Config:       configUpdated,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet(icmpMonitorId, "id"),
-					resource.TestCheckResourceAttr(icmpMonitorId, "name", "TestIcmpMonitorResource Updated - "+name),
-					resource.TestCheckResourceAttr(icmpMonitorId, "space_id", "testacc"),
-					resource.TestCheckResourceAttr(icmpMonitorId, "namespace", "testacc_namespace"),
-					resource.TestCheckResourceAttr(icmpMonitorId, "schedule", "10"),
-					resource.TestCheckResourceAttr(icmpMonitorId, "private_locations.#", "1"),
-					resource.TestCheckResourceAttrSet(icmpMonitorId, "private_locations.0"),
-					resource.TestCheckResourceAttr(icmpMonitorId, "enabled", "false"),
-					resource.TestCheckResourceAttr(icmpMonitorId, "tags.#", "3"),
-					resource.TestCheckResourceAttr(icmpMonitorId, "tags.0", "c"),
-					resource.TestCheckResourceAttr(icmpMonitorId, "tags.1", "d"),
-					resource.TestCheckResourceAttr(icmpMonitorId, "tags.2", "e"),
-					resource.TestCheckResourceAttr(icmpMonitorId, "alert.status.enabled", "true"),
-					resource.TestCheckResourceAttr(icmpMonitorId, "alert.tls.enabled", "false"),
-					resource.TestCheckResourceAttr(icmpMonitorId, "service_name", "test apm service"),
-					resource.TestCheckResourceAttr(icmpMonitorId, "timeout", "30"),
-					resource.TestCheckResourceAttr(icmpMonitorId, "icmp.host", "google.com"),
-					resource.TestCheckResourceAttr(icmpMonitorId, "icmp.wait", "10"),
-					resource.TestCheckNoResourceAttr(icmpMonitorId, "http"),
-					resource.TestCheckNoResourceAttr(icmpMonitorId, "browser"),
-					resource.TestCheckNoResourceAttr(icmpMonitorId, "tcp"),
+					resource.TestCheckResourceAttrSet(icmpMonitorID, "id"),
+					resource.TestCheckResourceAttr(icmpMonitorID, "name", "TestIcmpMonitorResource Updated - "+name),
+					resource.TestCheckResourceAttr(icmpMonitorID, "space_id", "testacc"),
+					resource.TestCheckResourceAttr(icmpMonitorID, "namespace", "testacc_namespace"),
+					resource.TestCheckResourceAttr(icmpMonitorID, "schedule", "10"),
+					resource.TestCheckResourceAttr(icmpMonitorID, "private_locations.#", "1"),
+					resource.TestCheckResourceAttrSet(icmpMonitorID, "private_locations.0"),
+					resource.TestCheckResourceAttr(icmpMonitorID, "enabled", "false"),
+					resource.TestCheckResourceAttr(icmpMonitorID, "tags.#", "3"),
+					resource.TestCheckResourceAttr(icmpMonitorID, "tags.0", "c"),
+					resource.TestCheckResourceAttr(icmpMonitorID, "tags.1", "d"),
+					resource.TestCheckResourceAttr(icmpMonitorID, "tags.2", "e"),
+					resource.TestCheckResourceAttr(icmpMonitorID, "alert.status.enabled", "true"),
+					resource.TestCheckResourceAttr(icmpMonitorID, "alert.tls.enabled", "false"),
+					resource.TestCheckResourceAttr(icmpMonitorID, "service_name", "test apm service"),
+					resource.TestCheckResourceAttr(icmpMonitorID, "timeout", "30"),
+					resource.TestCheckResourceAttr(icmpMonitorID, "icmp.host", "google.com"),
+					resource.TestCheckResourceAttr(icmpMonitorID, "icmp.wait", "10"),
+					resource.TestCheckNoResourceAttr(icmpMonitorID, "http"),
+					resource.TestCheckNoResourceAttr(icmpMonitorID, "browser"),
+					resource.TestCheckNoResourceAttr(icmpMonitorID, "tcp"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase
@@ -774,11 +795,11 @@ func TestSyntheticMonitorBrowserResource(t *testing.T) {
 
 	name := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	id := "browser-monitor"
-	browserMonitorId, config := testMonitorConfig(id, browserMonitorConfig, name)
+	browserMonitorID, config := testMonitorConfig(id, browserMonitorConfig, name)
 	_, configUpdated := testMonitorConfig(id, browserMonitorUpdated, name)
 
 	bmName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
-	bmMonitorId, bmConfig := testMonitorConfig("browser-monitor-min", browserMonitorMinConfig, bmName)
+	bmMonitorID, bmConfig := testMonitorConfig("browser-monitor-min", browserMonitorMinConfig, bmName)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -789,13 +810,13 @@ func TestSyntheticMonitorBrowserResource(t *testing.T) {
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
 				Config:   bmConfig,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet(bmMonitorId, "id"),
-					resource.TestCheckResourceAttr(bmMonitorId, "name", "TestBrowserMonitorResource - "+bmName),
-					resource.TestCheckResourceAttr(bmMonitorId, "space_id", ""),
-					resource.TestCheckResourceAttr(bmMonitorId, "namespace", "default"),
-					resource.TestCheckResourceAttr(bmMonitorId, "browser.inline_script", "step('Go to https://google.com.co', () => page.goto('https://www.google.com'))"),
-					resource.TestCheckResourceAttr(bmMonitorId, "alert.status.enabled", "true"),
-					resource.TestCheckResourceAttr(bmMonitorId, "alert.tls.enabled", "true"),
+					resource.TestCheckResourceAttrSet(bmMonitorID, "id"),
+					resource.TestCheckResourceAttr(bmMonitorID, "name", "TestBrowserMonitorResource - "+bmName),
+					resource.TestCheckResourceAttr(bmMonitorID, "space_id", ""),
+					resource.TestCheckResourceAttr(bmMonitorID, "namespace", "default"),
+					resource.TestCheckResourceAttr(bmMonitorID, "browser.inline_script", "step('Go to https://google.com.co', () => page.goto('https://www.google.com'))"),
+					resource.TestCheckResourceAttr(bmMonitorID, "alert.status.enabled", "true"),
+					resource.TestCheckResourceAttr(bmMonitorID, "alert.tls.enabled", "true"),
 				),
 			},
 			// Create and Read browser monitor
@@ -803,28 +824,28 @@ func TestSyntheticMonitorBrowserResource(t *testing.T) {
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
 				Config:   config,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet(browserMonitorId, "id"),
-					resource.TestCheckResourceAttr(browserMonitorId, "name", "TestBrowserMonitorResource - "+name),
-					resource.TestCheckResourceAttr(browserMonitorId, "space_id", "testacc"),
-					resource.TestCheckResourceAttr(browserMonitorId, "namespace", "testacc_ns"),
-					resource.TestCheckResourceAttr(browserMonitorId, "schedule", "5"),
-					resource.TestCheckResourceAttr(browserMonitorId, "private_locations.#", "1"),
-					resource.TestCheckResourceAttrSet(browserMonitorId, "private_locations.0"),
-					resource.TestCheckResourceAttr(browserMonitorId, "enabled", "true"),
-					resource.TestCheckResourceAttr(browserMonitorId, "tags.#", "2"),
-					resource.TestCheckResourceAttr(browserMonitorId, "tags.0", "a"),
-					resource.TestCheckResourceAttr(browserMonitorId, "tags.1", "b"),
-					resource.TestCheckResourceAttr(browserMonitorId, "alert.status.enabled", "true"),
-					resource.TestCheckResourceAttr(browserMonitorId, "alert.tls.enabled", "true"),
-					resource.TestCheckResourceAttr(browserMonitorId, "service_name", "test apm service"),
-					resource.TestCheckResourceAttr(browserMonitorId, "timeout", "30"),
-					resource.TestCheckResourceAttr(browserMonitorId, "browser.inline_script", "step('Go to https://google.com.co', () => page.goto('https://www.google.com'))"),
+					resource.TestCheckResourceAttrSet(browserMonitorID, "id"),
+					resource.TestCheckResourceAttr(browserMonitorID, "name", "TestBrowserMonitorResource - "+name),
+					resource.TestCheckResourceAttr(browserMonitorID, "space_id", "testacc"),
+					resource.TestCheckResourceAttr(browserMonitorID, "namespace", "testacc_ns"),
+					resource.TestCheckResourceAttr(browserMonitorID, "schedule", "5"),
+					resource.TestCheckResourceAttr(browserMonitorID, "private_locations.#", "1"),
+					resource.TestCheckResourceAttrSet(browserMonitorID, "private_locations.0"),
+					resource.TestCheckResourceAttr(browserMonitorID, "enabled", "true"),
+					resource.TestCheckResourceAttr(browserMonitorID, "tags.#", "2"),
+					resource.TestCheckResourceAttr(browserMonitorID, "tags.0", "a"),
+					resource.TestCheckResourceAttr(browserMonitorID, "tags.1", "b"),
+					resource.TestCheckResourceAttr(browserMonitorID, "alert.status.enabled", "true"),
+					resource.TestCheckResourceAttr(browserMonitorID, "alert.tls.enabled", "true"),
+					resource.TestCheckResourceAttr(browserMonitorID, "service_name", "test apm service"),
+					resource.TestCheckResourceAttr(browserMonitorID, "timeout", "30"),
+					resource.TestCheckResourceAttr(browserMonitorID, "browser.inline_script", "step('Go to https://google.com.co', () => page.goto('https://www.google.com'))"),
 				),
 			},
 			// ImportState testing
 			{
 				SkipFunc:          versionutils.CheckIfVersionIsUnsupported(kibana816Version),
-				ResourceName:      browserMonitorId,
+				ResourceName:      browserMonitorID,
 				ImportState:       true,
 				ImportStateVerify: true,
 				Config:            config,
@@ -832,35 +853,35 @@ func TestSyntheticMonitorBrowserResource(t *testing.T) {
 			// Update and Read browser monitor
 			{
 				SkipFunc:     versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
-				ResourceName: browserMonitorId,
+				ResourceName: browserMonitorID,
 				Config:       configUpdated,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet(browserMonitorId, "id"),
-					resource.TestCheckResourceAttr(browserMonitorId, "name", "TestBrowserMonitorResource Updated - "+name),
-					resource.TestCheckResourceAttr(browserMonitorId, "space_id", "testacc"),
-					resource.TestCheckResourceAttr(browserMonitorId, "namespace", "testacc_ns"),
-					resource.TestCheckResourceAttr(browserMonitorId, "schedule", "10"),
-					resource.TestCheckResourceAttr(browserMonitorId, "private_locations.#", "1"),
-					resource.TestCheckResourceAttrSet(browserMonitorId, "private_locations.0"),
-					resource.TestCheckResourceAttr(browserMonitorId, "enabled", "false"),
-					resource.TestCheckResourceAttr(browserMonitorId, "tags.#", "3"),
-					resource.TestCheckResourceAttr(browserMonitorId, "tags.0", "c"),
-					resource.TestCheckResourceAttr(browserMonitorId, "tags.1", "d"),
-					resource.TestCheckResourceAttr(browserMonitorId, "tags.2", "e"),
-					resource.TestCheckResourceAttr(browserMonitorId, "alert.status.enabled", "true"),
-					resource.TestCheckResourceAttr(browserMonitorId, "alert.tls.enabled", "false"),
-					resource.TestCheckResourceAttr(browserMonitorId, "service_name", "test apm service"),
-					resource.TestCheckResourceAttr(browserMonitorId, "timeout", "30"),
-					resource.TestCheckResourceAttr(browserMonitorId, "browser.inline_script", "step('Go to https://google.de', () => page.goto('https://www.google.de'))"),
-					resource.TestCheckResourceAttr(browserMonitorId, "browser.synthetics_args.#", "2"),
-					resource.TestCheckResourceAttr(browserMonitorId, "browser.synthetics_args.0", "--no-sandbox"),
-					resource.TestCheckResourceAttr(browserMonitorId, "browser.synthetics_args.1", "--disable-setuid-sandbox"),
-					resource.TestCheckResourceAttr(browserMonitorId, "browser.screenshots", "off"),
-					resource.TestCheckResourceAttr(browserMonitorId, "browser.ignore_https_errors", "true"),
-					resource.TestCheckResourceAttr(browserMonitorId, "browser.playwright_options", `{"httpCredentials":{"password":"test","username":"test"},"ignoreHTTPSErrors":false}`),
-					resource.TestCheckNoResourceAttr(browserMonitorId, "http"),
-					resource.TestCheckNoResourceAttr(browserMonitorId, "icmp"),
-					resource.TestCheckNoResourceAttr(browserMonitorId, "tcp"),
+					resource.TestCheckResourceAttrSet(browserMonitorID, "id"),
+					resource.TestCheckResourceAttr(browserMonitorID, "name", "TestBrowserMonitorResource Updated - "+name),
+					resource.TestCheckResourceAttr(browserMonitorID, "space_id", "testacc"),
+					resource.TestCheckResourceAttr(browserMonitorID, "namespace", "testacc_ns"),
+					resource.TestCheckResourceAttr(browserMonitorID, "schedule", "10"),
+					resource.TestCheckResourceAttr(browserMonitorID, "private_locations.#", "1"),
+					resource.TestCheckResourceAttrSet(browserMonitorID, "private_locations.0"),
+					resource.TestCheckResourceAttr(browserMonitorID, "enabled", "false"),
+					resource.TestCheckResourceAttr(browserMonitorID, "tags.#", "3"),
+					resource.TestCheckResourceAttr(browserMonitorID, "tags.0", "c"),
+					resource.TestCheckResourceAttr(browserMonitorID, "tags.1", "d"),
+					resource.TestCheckResourceAttr(browserMonitorID, "tags.2", "e"),
+					resource.TestCheckResourceAttr(browserMonitorID, "alert.status.enabled", "true"),
+					resource.TestCheckResourceAttr(browserMonitorID, "alert.tls.enabled", "false"),
+					resource.TestCheckResourceAttr(browserMonitorID, "service_name", "test apm service"),
+					resource.TestCheckResourceAttr(browserMonitorID, "timeout", "30"),
+					resource.TestCheckResourceAttr(browserMonitorID, "browser.inline_script", "step('Go to https://google.de', () => page.goto('https://www.google.de'))"),
+					resource.TestCheckResourceAttr(browserMonitorID, "browser.synthetics_args.#", "2"),
+					resource.TestCheckResourceAttr(browserMonitorID, "browser.synthetics_args.0", "--no-sandbox"),
+					resource.TestCheckResourceAttr(browserMonitorID, "browser.synthetics_args.1", "--disable-setuid-sandbox"),
+					resource.TestCheckResourceAttr(browserMonitorID, "browser.screenshots", "off"),
+					resource.TestCheckResourceAttr(browserMonitorID, "browser.ignore_https_errors", "true"),
+					resource.TestCheckResourceAttr(browserMonitorID, "browser.playwright_options", `{"httpCredentials":{"password":"test","username":"test"},"ignoreHTTPSErrors":false}`),
+					resource.TestCheckNoResourceAttr(browserMonitorID, "http"),
+					resource.TestCheckNoResourceAttr(browserMonitorID, "icmp"),
+					resource.TestCheckNoResourceAttr(browserMonitorID, "tcp"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase
@@ -872,7 +893,7 @@ func TestSyntheticMonitorBrowserResource(t *testing.T) {
 func TestSyntheticMonitorLabelsResource(t *testing.T) {
 	name := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	id := "http-monitor-labels"
-	labelsMonitorId, labelsConfig := testMonitorConfig(id, httpMonitorLabelsConfig, name)
+	labelsMonitorID, labelsConfig := testMonitorConfig(id, httpMonitorLabelsConfig, name)
 	_, labelsConfigUpdated := testMonitorConfig(id, httpMonitorLabelsUpdated, name)
 	_, labelsConfigRemoved := testMonitorConfig(id, httpMonitorLabelsRemoved, name)
 
@@ -885,19 +906,19 @@ func TestSyntheticMonitorLabelsResource(t *testing.T) {
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(monitor.MinLabelsVersion),
 				Config:   labelsConfig,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet(labelsMonitorId, "id"),
-					resource.TestCheckResourceAttr(labelsMonitorId, "name", "TestHttpMonitorLabels - "+name),
-					resource.TestCheckResourceAttr(labelsMonitorId, "labels.%", "3"),
-					resource.TestCheckResourceAttr(labelsMonitorId, "labels.environment", "production"),
-					resource.TestCheckResourceAttr(labelsMonitorId, "labels.team", "platform"),
-					resource.TestCheckResourceAttr(labelsMonitorId, "labels.service", "web-app"),
-					resource.TestCheckResourceAttr(labelsMonitorId, "http.url", "http://localhost:5601"),
+					resource.TestCheckResourceAttrSet(labelsMonitorID, "id"),
+					resource.TestCheckResourceAttr(labelsMonitorID, "name", "TestHttpMonitorLabels - "+name),
+					resource.TestCheckResourceAttr(labelsMonitorID, "labels.%", "3"),
+					resource.TestCheckResourceAttr(labelsMonitorID, "labels.environment", "production"),
+					resource.TestCheckResourceAttr(labelsMonitorID, "labels.team", "platform"),
+					resource.TestCheckResourceAttr(labelsMonitorID, "labels.service", "web-app"),
+					resource.TestCheckResourceAttr(labelsMonitorID, "http.url", "http://localhost:5601"),
 				),
 			},
 			// ImportState testing
 			{
 				SkipFunc:          versionutils.CheckIfVersionIsUnsupported(monitor.MinLabelsVersion),
-				ResourceName:      labelsMonitorId,
+				ResourceName:      labelsMonitorID,
 				ImportState:       true,
 				ImportStateVerify: true,
 				Config:            labelsConfig,
@@ -907,12 +928,12 @@ func TestSyntheticMonitorLabelsResource(t *testing.T) {
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(monitor.MinLabelsVersion),
 				Config:   labelsConfigUpdated,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet(labelsMonitorId, "id"),
-					resource.TestCheckResourceAttr(labelsMonitorId, "name", "TestHttpMonitorLabels Updated - "+name),
-					resource.TestCheckResourceAttr(labelsMonitorId, "labels.%", "3"),
-					resource.TestCheckResourceAttr(labelsMonitorId, "labels.environment", "staging"),
-					resource.TestCheckResourceAttr(labelsMonitorId, "labels.team", "platform-updated"),
-					resource.TestCheckResourceAttr(labelsMonitorId, "labels.service", "web-app-v2"),
+					resource.TestCheckResourceAttrSet(labelsMonitorID, "id"),
+					resource.TestCheckResourceAttr(labelsMonitorID, "name", "TestHttpMonitorLabels Updated - "+name),
+					resource.TestCheckResourceAttr(labelsMonitorID, "labels.%", "3"),
+					resource.TestCheckResourceAttr(labelsMonitorID, "labels.environment", "staging"),
+					resource.TestCheckResourceAttr(labelsMonitorID, "labels.team", "platform-updated"),
+					resource.TestCheckResourceAttr(labelsMonitorID, "labels.service", "web-app-v2"),
 				),
 			},
 			// Remove all labels - this tests the round-trip consistency fix
@@ -920,13 +941,13 @@ func TestSyntheticMonitorLabelsResource(t *testing.T) {
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(monitor.MinLabelsVersion),
 				Config:   labelsConfigRemoved,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet(labelsMonitorId, "id"),
-					resource.TestCheckResourceAttr(labelsMonitorId, "name", "TestHttpMonitorLabels Removed - "+name),
-					resource.TestCheckNoResourceAttr(labelsMonitorId, "labels.%"),
-					resource.TestCheckNoResourceAttr(labelsMonitorId, "labels.environment"),
-					resource.TestCheckNoResourceAttr(labelsMonitorId, "labels.team"),
-					resource.TestCheckNoResourceAttr(labelsMonitorId, "labels.service"),
-					resource.TestCheckNoResourceAttr(labelsMonitorId, "labels.version"),
+					resource.TestCheckResourceAttrSet(labelsMonitorID, "id"),
+					resource.TestCheckResourceAttr(labelsMonitorID, "name", "TestHttpMonitorLabels Removed - "+name),
+					resource.TestCheckNoResourceAttr(labelsMonitorID, "labels.%"),
+					resource.TestCheckNoResourceAttr(labelsMonitorID, "labels.environment"),
+					resource.TestCheckNoResourceAttr(labelsMonitorID, "labels.team"),
+					resource.TestCheckNoResourceAttr(labelsMonitorID, "labels.service"),
+					resource.TestCheckNoResourceAttr(labelsMonitorID, "labels.version"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase
@@ -936,9 +957,9 @@ func TestSyntheticMonitorLabelsResource(t *testing.T) {
 
 func testMonitorConfig(id, cfg, name string) (string, string) {
 
-	resourceId := "elasticstack_kibana_synthetics_monitor." + id
-	privateLocationId := "pl-" + id
-	agentPolicyId := "apl-" + id
+	resourceID := "elasticstack_kibana_synthetics_monitor." + id
+	privateLocationID := "pl-" + id
+	agentPolicyID := "apl-" + id
 
 	provider := fmt.Sprintf(`
 provider "elasticstack" {
@@ -960,9 +981,9 @@ resource "elasticstack_kibana_synthetics_private_location" "%s" {
 	label = "monitor-pll-%s"
 	agent_policy_id = elasticstack_fleet_agent_policy.%s.policy_id
 }
-`, agentPolicyId, name, privateLocationId, name, agentPolicyId)
+`, agentPolicyID, name, privateLocationID, name, agentPolicyID)
 
-	config := fmt.Sprintf(cfg, id, name, privateLocationId)
+	config := fmt.Sprintf(cfg, id, name, privateLocationID)
 
-	return resourceId, provider + config
+	return resourceID, provider + config
 }

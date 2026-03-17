@@ -1,0 +1,1 @@
+The type of layer. Valid values: 'area', 'line', 'bar', 'horizontal_bar', 'referenceLines' for NoESQL layers; 'area_chart', 'line_chart', 'bar_chart', 'horizontal_bar_chart', 'referenceLines' for ESQL layers.

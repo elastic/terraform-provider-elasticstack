@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package asyncutils
 
 import (
@@ -14,21 +31,21 @@ func TestWaitForStateTransition_Success(t *testing.T) {
 	tests := []struct {
 		name              string
 		resourceType      string
-		resourceId        string
+		resourceID        string
 		stateSequence     []bool
 		expectedCallCount int
 	}{
 		{
 			name:              "immediate success",
 			resourceType:      "test-resource",
-			resourceId:        "test-id",
+			resourceID:        "test-id",
 			stateSequence:     []bool{true},
 			expectedCallCount: 1,
 		},
 		{
 			name:              "transition after delay",
 			resourceType:      "test-resource",
-			resourceId:        "test-id",
+			resourceID:        "test-id",
 			stateSequence:     []bool{false, false, true},
 			expectedCallCount: 3,
 		},
@@ -37,7 +54,7 @@ func TestWaitForStateTransition_Success(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			callCount := 0
-			stateChecker := func(ctx context.Context) (bool, error) {
+			stateChecker := func(_ context.Context) (bool, error) {
 				if callCount >= len(tt.stateSequence) {
 					t.Errorf("unexpected call count: %d", callCount)
 					return false, errors.New("unexpected call")
@@ -50,7 +67,7 @@ func TestWaitForStateTransition_Success(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 7*time.Second)
 			defer cancel()
 
-			err := WaitForStateTransition(ctx, tt.resourceType, tt.resourceId, stateChecker)
+			err := WaitForStateTransition(ctx, tt.resourceType, tt.resourceID, stateChecker)
 			if err != nil {
 				t.Errorf("expected no error, got: %v", err)
 			}
@@ -63,7 +80,7 @@ func TestWaitForStateTransition_Success(t *testing.T) {
 }
 
 func TestWaitForStateTransition_ContextTimeout(t *testing.T) {
-	stateChecker := func(ctx context.Context) (bool, error) {
+	stateChecker := func(_ context.Context) (bool, error) {
 		return false, nil // Always return false to indicate not in desired state
 	}
 
@@ -82,7 +99,7 @@ func TestWaitForStateTransition_ContextTimeout(t *testing.T) {
 
 func TestWaitForStateTransition_CheckerError(t *testing.T) {
 	callCount := 0
-	stateChecker := func(ctx context.Context) (bool, error) {
+	stateChecker := func(_ context.Context) (bool, error) {
 		callCount++
 		return false, assert.AnError
 	}

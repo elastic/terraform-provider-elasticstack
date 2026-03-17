@@ -1,0 +1,1 @@
+Helper data source which can be used to create the configuration for a URL-decode processor. This processor URL-decodes a string. See the [URL decode processor documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/urldecode-processor.html) for more details.

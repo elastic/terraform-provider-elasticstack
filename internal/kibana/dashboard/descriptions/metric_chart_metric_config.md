@@ -1,0 +1,1 @@
+Metric configuration as JSON. For primary metrics: includes type ('primary'), operation, format, alignments, icon, and optional fields like sub_label, fit, color, apply_color_to, and background_chart. For secondary metrics: includes type ('secondary'), operation, format, and optional fields like label, prefix, compare, and color.

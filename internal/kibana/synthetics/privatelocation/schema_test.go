@@ -1,0 +1,96 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package privatelocation
+
+import (
+	"testing"
+
+	"github.com/disaster37/go-kibana-rest/v8/kbapi"
+	"github.com/stretchr/testify/assert"
+)
+
+func Test_roundtrip(t *testing.T) {
+	tests := []struct {
+		name string
+		id   string
+		ns   string
+		plc  kbapi.PrivateLocationConfig
+	}{
+		{
+			name: "only required fields",
+			id:   "id-1",
+			ns:   "ns-1",
+			plc: kbapi.PrivateLocationConfig{
+				Label:         "label-1",
+				AgentPolicyId: "agent-policy-id-1",
+			},
+		},
+		{
+			name: "all fields",
+			id:   "id-2",
+			ns:   "ns-2",
+			plc: kbapi.PrivateLocationConfig{
+				Label:         "label-2",
+				AgentPolicyId: "agent-policy-id-2",
+				Tags:          []string{"tag-1", "tag-2", "tag-3"},
+				Geo: &kbapi.SyntheticGeoConfig{
+					Lat: 43.2,
+					Lon: 23.1,
+				},
+			},
+		},
+		{
+			name: "only tags",
+			id:   "id-3",
+			ns:   "ns-3",
+			plc: kbapi.PrivateLocationConfig{
+				Label:         "label-3",
+				AgentPolicyId: "agent-policy-id-3",
+				Tags:          []string{"tag-1", "tag-2", "tag-3"},
+				Geo:           nil,
+			},
+		},
+		{
+			name: "only geo",
+			id:   "id-4",
+			ns:   "ns-4",
+			plc: kbapi.PrivateLocationConfig{
+				Label:         "label-4",
+				AgentPolicyId: "agent-policy-id-4",
+				Geo: &kbapi.SyntheticGeoConfig{
+					Lat: 43.2,
+					Lon: 23.1,
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			plc := tt.plc
+			input := kbapi.PrivateLocation{
+				Id:                    tt.id,
+				Namespace:             tt.ns,
+				PrivateLocationConfig: plc,
+			}
+			modelV0 := toModelV0(input)
+
+			actual := modelV0.toPrivateLocationConfig()
+			assert.Equal(t, plc, actual)
+		})
+	}
+}

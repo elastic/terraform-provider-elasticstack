@@ -1,4 +1,21 @@
-package security_detection_rule
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package securitydetectionrule
 
 import (
 	"context"
@@ -7,8 +24,8 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -21,38 +38,38 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type mockApiClient struct {
+type mockAPIClient struct {
 	serverVersion *version.Version
 	serverFlavor  string
 	enforceResult bool
 }
 
-func (m mockApiClient) EnforceMinVersion(ctx context.Context, minVersion *version.Version) (bool, v2Diag.Diagnostics) {
+func (m mockAPIClient) EnforceMinVersion(_ context.Context, minVersion *version.Version) (bool, v2Diag.Diagnostics) {
 	supported := m.serverVersion.GreaterThanOrEqual(minVersion)
 	return supported, nil
 }
 
-// NewMockApiClient creates a new mock API client with default values that support response actions
+// NewMockAPIClient creates a new mock API client with default values that support response actions
 // This can be used in tests where you need to pass a client to functions like toUpdateProps
-func NewMockApiClient() clients.MinVersionEnforceable {
+func NewMockAPIClient() clients.MinVersionEnforceable {
 	// Use version 8.16.0 by default to support response actions
 	v, _ := version.NewVersion("8.16.0")
 
-	return mockApiClient{
+	return mockAPIClient{
 		serverVersion: v,
 		serverFlavor:  "default",
 		enforceResult: true,
 	}
 }
 
-// NewMockApiClientWithVersion creates a mock API client with a specific version
+// NewMockAPIClientWithVersion creates a mock API client with a specific version
 // Use this when you need to test specific version behavior
-func NewMockApiClientWithVersion(versionStr string) *mockApiClient {
+func NewMockAPIClientWithVersion(versionStr string) *mockAPIClient {
 	v, err := version.NewVersion(versionStr)
 	if err != nil {
 		panic(fmt.Sprintf("Invalid version in test: %s", versionStr))
 	}
-	return &mockApiClient{
+	return &mockAPIClient{
 		serverVersion: v,
 		serverFlavor:  "default",
 		enforceResult: true,
@@ -65,8 +82,8 @@ func TestUpdateFromQueryRule(t *testing.T) {
 	tests := []struct {
 		name     string
 		rule     kbapi.SecurityDetectionsAPIQueryRule
-		spaceId  string
-		expected SecurityDetectionRuleData
+		spaceId  string //nolint:revive // struct field name matches API
+		expected Data
 	}{
 		{
 			name:    "complete query rule",
@@ -89,20 +106,20 @@ func TestUpdateFromQueryRule(t *testing.T) {
 				Version:        1,
 				Author:         []string{"Test Author"},
 				Tags:           []string{"test", "detection"},
-				Index:          utils.Pointer([]string{"logs-*", "metrics-*"}),
+				Index:          new([]string{"logs-*", "metrics-*"}),
 				CreatedBy:      "test-user",
 				UpdatedBy:      "test-user",
 				Revision:       1,
 				FalsePositives: []string{"Known false positive"},
 				References:     []string{"https://example.com/test"},
-				License:        utils.Pointer(kbapi.SecurityDetectionsAPIRuleLicense("MIT")),
-				Note:           utils.Pointer(kbapi.SecurityDetectionsAPIInvestigationGuide("Investigation note")),
+				License:        new(kbapi.SecurityDetectionsAPIRuleLicense("MIT")),
+				Note:           new(kbapi.SecurityDetectionsAPIInvestigationGuide("Investigation note")),
 				Setup:          "Setup instructions",
 			},
-			expected: SecurityDetectionRuleData{
-				Id:             types.StringValue("test-space/12345678-1234-1234-1234-123456789012"),
-				SpaceId:        types.StringValue("test-space"),
-				RuleId:         types.StringValue("test-rule-id"),
+			expected: Data{
+				ID:             types.StringValue("test-space/12345678-1234-1234-1234-123456789012"),
+				SpaceID:        types.StringValue("test-space"),
+				RuleID:         types.StringValue("test-rule-id"),
 				Name:           types.StringValue("Test Query Rule"),
 				Type:           types.StringValue("query"),
 				Query:          types.StringValue("user.name:test"),
@@ -116,14 +133,14 @@ func TestUpdateFromQueryRule(t *testing.T) {
 				Severity:       types.StringValue("medium"),
 				MaxSignals:     types.Int64Value(100),
 				Version:        types.Int64Value(1),
-				Author:         utils.ListValueFrom(ctx, []string{"Test Author"}, types.StringType, path.Root("author"), &diags),
-				Tags:           utils.ListValueFrom(ctx, []string{"test", "detection"}, types.StringType, path.Root("tags"), &diags),
-				Index:          utils.ListValueFrom(ctx, []string{"logs-*", "metrics-*"}, types.StringType, path.Root("index"), &diags),
+				Author:         typeutils.ListValueFrom(ctx, []string{"Test Author"}, types.StringType, path.Root("author"), &diags),
+				Tags:           typeutils.ListValueFrom(ctx, []string{"test", "detection"}, types.StringType, path.Root("tags"), &diags),
+				Index:          typeutils.ListValueFrom(ctx, []string{"logs-*", "metrics-*"}, types.StringType, path.Root("index"), &diags),
 				CreatedBy:      types.StringValue("test-user"),
 				UpdatedBy:      types.StringValue("test-user"),
 				Revision:       types.Int64Value(1),
-				FalsePositives: utils.ListValueFrom(ctx, []string{"Known false positive"}, types.StringType, path.Root("false_positives"), &diags),
-				References:     utils.ListValueFrom(ctx, []string{"https://example.com/test"}, types.StringType, path.Root("references"), &diags),
+				FalsePositives: typeutils.ListValueFrom(ctx, []string{"Known false positive"}, types.StringType, path.Root("false_positives"), &diags),
+				References:     typeutils.ListValueFrom(ctx, []string{"https://example.com/test"}, types.StringType, path.Root("references"), &diags),
 				License:        types.StringValue("MIT"),
 				Note:           types.StringValue("Investigation note"),
 				Setup:          types.StringValue("Setup instructions"),
@@ -152,10 +169,10 @@ func TestUpdateFromQueryRule(t *testing.T) {
 				UpdatedBy:   "system",
 				Revision:    1,
 			},
-			expected: SecurityDetectionRuleData{
-				Id:          types.StringValue("default/87654321-4321-4321-4321-210987654321"),
-				SpaceId:     types.StringValue("default"),
-				RuleId:      types.StringValue("minimal-rule"),
+			expected: Data{
+				ID:          types.StringValue("default/87654321-4321-4321-4321-210987654321"),
+				SpaceID:     types.StringValue("default"),
+				RuleID:      types.StringValue("minimal-rule"),
 				Name:        types.StringValue("Minimal Rule"),
 				Type:        types.StringValue("query"),
 				Query:       types.StringValue("*"),
@@ -183,16 +200,16 @@ func TestUpdateFromQueryRule(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			data := SecurityDetectionRuleData{
-				SpaceId: types.StringValue(tt.spaceId),
+			data := Data{
+				SpaceID: types.StringValue(tt.spaceId),
 			}
 
 			diags := updateFromQueryRule(ctx, &tt.rule, &data)
 			require.Empty(t, diags)
 
 			// Compare key fields
-			require.Equal(t, tt.expected.Id, data.Id)
-			require.Equal(t, tt.expected.RuleId, data.RuleId)
+			require.Equal(t, tt.expected.ID, data.ID)
+			require.Equal(t, tt.expected.RuleID, data.RuleID)
 			require.Equal(t, tt.expected.Name, data.Name)
 			require.Equal(t, tt.expected.Type, data.Type)
 			require.Equal(t, tt.expected.Query, data.Query)
@@ -202,9 +219,9 @@ func TestUpdateFromQueryRule(t *testing.T) {
 			require.Equal(t, tt.expected.Severity, data.Severity)
 
 			// Verify list fields have correct length
-			require.Equal(t, len(tt.expected.Author.Elements()), len(data.Author.Elements()))
-			require.Equal(t, len(tt.expected.Tags.Elements()), len(data.Tags.Elements()))
-			require.Equal(t, len(tt.expected.Index.Elements()), len(data.Index.Elements()))
+			require.Len(t, data.Author.Elements(), len(tt.expected.Author.Elements()))
+			require.Len(t, data.Tags.Elements(), len(tt.expected.Tags.Elements()))
+			require.Len(t, data.Index.Elements(), len(tt.expected.Index.Elements()))
 		})
 	}
 }
@@ -215,7 +232,7 @@ func TestToQueryRuleCreateProps(t *testing.T) {
 
 	tests := []struct {
 		name               string
-		data               SecurityDetectionRuleData
+		data               Data
 		expectedName       string
 		expectedType       string
 		expectedQuery      string
@@ -224,12 +241,12 @@ func TestToQueryRuleCreateProps(t *testing.T) {
 		shouldHaveLanguage bool
 		shouldHaveIndex    bool
 		shouldHaveActions  bool
-		shouldHaveRuleId   bool
+		shouldHaveRuleID   bool
 		shouldError        bool
 	}{
 		{
 			name: "complete query rule create",
-			data: SecurityDetectionRuleData{
+			data: Data{
 				Name:        types.StringValue("Test Create Rule"),
 				Type:        types.StringValue("query"),
 				Query:       types.StringValue("process.name:malicious"),
@@ -237,10 +254,10 @@ func TestToQueryRuleCreateProps(t *testing.T) {
 				RiskScore:   types.Int64Value(85),
 				Severity:    types.StringValue("high"),
 				Description: types.StringValue("Test rule description"),
-				Index:       utils.ListValueFrom(ctx, []string{"winlogbeat-*"}, types.StringType, path.Root("index"), &diags),
-				Author:      utils.ListValueFrom(ctx, []string{"Security Team"}, types.StringType, path.Root("author"), &diags),
+				Index:       typeutils.ListValueFrom(ctx, []string{"winlogbeat-*"}, types.StringType, path.Root("index"), &diags),
+				Author:      typeutils.ListValueFrom(ctx, []string{"Security Team"}, types.StringType, path.Root("author"), &diags),
 				Enabled:     types.BoolValue(true),
-				RuleId:      types.StringValue("custom-rule-id"),
+				RuleID:      types.StringValue("custom-rule-id"),
 			},
 			expectedName:       "Test Create Rule",
 			expectedType:       "query",
@@ -249,11 +266,11 @@ func TestToQueryRuleCreateProps(t *testing.T) {
 			expectedSeverity:   "high",
 			shouldHaveLanguage: true,
 			shouldHaveIndex:    true,
-			shouldHaveRuleId:   true,
+			shouldHaveRuleID:   true,
 		},
 		{
 			name: "minimal query rule create",
-			data: SecurityDetectionRuleData{
+			data: Data{
 				Name:        types.StringValue("Minimal Rule"),
 				Type:        types.StringValue("query"),
 				Query:       types.StringValue("*"),
@@ -273,7 +290,7 @@ func TestToQueryRuleCreateProps(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			createProps, createDiags := toQueryRuleCreateProps(ctx, NewMockApiClient(), tt.data)
+			createProps, createDiags := toQueryRuleCreateProps(ctx, NewMockAPIClient(), tt.data)
 
 			if tt.shouldError {
 				require.NotEmpty(t, createDiags)
@@ -286,10 +303,10 @@ func TestToQueryRuleCreateProps(t *testing.T) {
 			queryRule, err := createProps.AsSecurityDetectionsAPIQueryRuleCreateProps()
 			require.NoError(t, err)
 
-			require.Equal(t, tt.expectedName, string(queryRule.Name))
+			require.Equal(t, tt.expectedName, queryRule.Name)
 			require.Equal(t, tt.expectedType, string(queryRule.Type))
 			require.NotNil(t, queryRule.Query)
-			require.Equal(t, tt.expectedQuery, string(*queryRule.Query))
+			require.Equal(t, tt.expectedQuery, *queryRule.Query)
 			require.Equal(t, tt.expectedRiskScore, int64(queryRule.RiskScore))
 			require.Equal(t, tt.expectedSeverity, string(queryRule.Severity))
 
@@ -302,9 +319,9 @@ func TestToQueryRuleCreateProps(t *testing.T) {
 				require.NotEmpty(t, *queryRule.Index)
 			}
 
-			if tt.shouldHaveRuleId {
+			if tt.shouldHaveRuleID {
 				require.NotNil(t, queryRule.RuleId)
-				require.Equal(t, "custom-rule-id", string(*queryRule.RuleId))
+				require.Equal(t, "custom-rule-id", *queryRule.RuleId)
 			}
 		})
 	}
@@ -314,7 +331,7 @@ func TestToEqlRuleCreateProps(t *testing.T) {
 	ctx := context.Background()
 	var diags diag.Diagnostics
 
-	data := SecurityDetectionRuleData{
+	data := Data{
 		Name:            types.StringValue("EQL Test Rule"),
 		Type:            types.StringValue("eql"),
 		Query:           types.StringValue("process where process.name == \"cmd.exe\""),
@@ -324,21 +341,21 @@ func TestToEqlRuleCreateProps(t *testing.T) {
 		TiebreakerField: types.StringValue("@timestamp"),
 	}
 
-	createProps, createDiags := toEqlRuleCreateProps(ctx, NewMockApiClient(), data)
+	createProps, createDiags := toEqlRuleCreateProps(ctx, NewMockAPIClient(), data)
 	require.Empty(t, createDiags)
 
 	eqlRule, err := createProps.AsSecurityDetectionsAPIEqlRuleCreateProps()
 	require.NoError(t, err)
 
-	require.Equal(t, "EQL Test Rule", string(eqlRule.Name))
+	require.Equal(t, "EQL Test Rule", eqlRule.Name)
 	require.Equal(t, "eql", string(eqlRule.Type))
-	require.Equal(t, "process where process.name == \"cmd.exe\"", string(eqlRule.Query))
+	require.Equal(t, "process where process.name == \"cmd.exe\"", eqlRule.Query)
 	require.Equal(t, "eql", string(eqlRule.Language))
 	require.Equal(t, int64(60), int64(eqlRule.RiskScore))
 	require.Equal(t, "medium", string(eqlRule.Severity))
 
 	require.NotNil(t, eqlRule.TiebreakerField)
-	require.Equal(t, "@timestamp", string(*eqlRule.TiebreakerField))
+	require.Equal(t, "@timestamp", *eqlRule.TiebreakerField)
 
 	require.Empty(t, diags)
 }
@@ -349,35 +366,35 @@ func TestToMachineLearningRuleCreateProps(t *testing.T) {
 
 	tests := []struct {
 		name               string
-		data               SecurityDetectionRuleData
+		data               Data
 		expectedJobCount   int
 		shouldHaveSingle   bool
 		shouldHaveMultiple bool
 	}{
 		{
 			name: "single ML job",
-			data: SecurityDetectionRuleData{
+			data: Data{
 				Name:                 types.StringValue("ML Test Rule"),
 				Type:                 types.StringValue("machine_learning"),
 				RiskScore:            types.Int64Value(70),
 				Severity:             types.StringValue("high"),
 				Description:          types.StringValue("ML rule description"),
 				AnomalyThreshold:     types.Int64Value(50),
-				MachineLearningJobId: utils.ListValueFrom(ctx, []string{"suspicious_activity"}, types.StringType, path.Root("machine_learning_job_id"), &diags),
+				MachineLearningJobID: typeutils.ListValueFrom(ctx, []string{"suspicious_activity"}, types.StringType, path.Root("machine_learning_job_id"), &diags),
 			},
 			expectedJobCount:   1,
 			shouldHaveMultiple: true,
 		},
 		{
 			name: "multiple ML jobs",
-			data: SecurityDetectionRuleData{
+			data: Data{
 				Name:                 types.StringValue("ML Multi Job Rule"),
 				Type:                 types.StringValue("machine_learning"),
 				RiskScore:            types.Int64Value(80),
 				Severity:             types.StringValue("critical"),
 				Description:          types.StringValue("ML multi job rule"),
 				AnomalyThreshold:     types.Int64Value(75),
-				MachineLearningJobId: utils.ListValueFrom(ctx, []string{"job1", "job2", "job3"}, types.StringType, path.Root("machine_learning_job_id"), &diags),
+				MachineLearningJobID: typeutils.ListValueFrom(ctx, []string{"job1", "job2", "job3"}, types.StringType, path.Root("machine_learning_job_id"), &diags),
 			},
 			expectedJobCount:   3,
 			shouldHaveMultiple: true,
@@ -388,26 +405,26 @@ func TestToMachineLearningRuleCreateProps(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			createProps, createDiags := tt.data.toMachineLearningRuleCreateProps(ctx, NewMockApiClient())
+			createProps, createDiags := tt.data.toMachineLearningRuleCreateProps(ctx, NewMockAPIClient())
 			require.Empty(t, createDiags)
 
 			mlRule, err := createProps.AsSecurityDetectionsAPIMachineLearningRuleCreateProps()
 			require.NoError(t, err)
 
-			require.Equal(t, tt.data.Name.ValueString(), string(mlRule.Name))
+			require.Equal(t, tt.data.Name.ValueString(), mlRule.Name)
 			require.Equal(t, "machine_learning", string(mlRule.Type))
 			require.Equal(t, tt.data.AnomalyThreshold.ValueInt64(), int64(mlRule.AnomalyThreshold))
 
 			if tt.shouldHaveSingle {
-				ingleJobId, err := mlRule.MachineLearningJobId.AsSecurityDetectionsAPIMachineLearningJobId0()
+				singleJobID, err := mlRule.MachineLearningJobId.AsSecurityDetectionsAPIMachineLearningJobId0()
 				require.NoError(t, err)
-				require.Equal(t, "suspicious_activity", string(ingleJobId))
+				require.Equal(t, "suspicious_activity", singleJobID)
 			}
 
 			if tt.shouldHaveMultiple {
-				multipleJobIds, err := mlRule.MachineLearningJobId.AsSecurityDetectionsAPIMachineLearningJobId1()
+				multipleJobIDs, err := mlRule.MachineLearningJobId.AsSecurityDetectionsAPIMachineLearningJobId1()
 				require.NoError(t, err)
-				require.Len(t, multipleJobIds, tt.expectedJobCount)
+				require.Len(t, multipleJobIDs, tt.expectedJobCount)
 			}
 		})
 	}
@@ -417,7 +434,7 @@ func TestToEsqlRuleCreateProps(t *testing.T) {
 	ctx := context.Background()
 	var diags diag.Diagnostics
 
-	data := SecurityDetectionRuleData{
+	data := Data{
 		Type:        types.StringValue("esql"),
 		Name:        types.StringValue("Test ESQL Rule"),
 		Description: types.StringValue("Test ESQL rule description"),
@@ -428,22 +445,22 @@ func TestToEsqlRuleCreateProps(t *testing.T) {
 		From:        types.StringValue("now-1h"),
 		To:          types.StringValue("now"),
 		Interval:    types.StringValue("10m"),
-		Author:      utils.ListValueFrom(ctx, []string{"Security Team"}, types.StringType, path.Root("author"), &diags),
-		Tags:        utils.ListValueFrom(ctx, []string{"esql", "test"}, types.StringType, path.Root("tags"), &diags),
+		Author:      typeutils.ListValueFrom(ctx, []string{"Security Team"}, types.StringType, path.Root("author"), &diags),
+		Tags:        typeutils.ListValueFrom(ctx, []string{"esql", "test"}, types.StringType, path.Root("tags"), &diags),
 	}
 
 	require.Empty(t, diags)
 
-	createProps, createDiags := data.toEsqlRuleCreateProps(ctx, NewMockApiClient())
+	createProps, createDiags := data.toEsqlRuleCreateProps(ctx, NewMockAPIClient())
 	require.Empty(t, createDiags)
 
 	esqlRule, err := createProps.AsSecurityDetectionsAPIEsqlRuleCreateProps()
 	require.NoError(t, err)
 
-	require.Equal(t, "Test ESQL Rule", string(esqlRule.Name))
-	require.Equal(t, "Test ESQL rule description", string(esqlRule.Description))
+	require.Equal(t, "Test ESQL Rule", esqlRule.Name)
+	require.Equal(t, "Test ESQL rule description", esqlRule.Description)
 	require.Equal(t, "esql", string(esqlRule.Type))
-	require.Equal(t, "FROM logs | WHERE user.name == \"suspicious_user\"", string(esqlRule.Query))
+	require.Equal(t, "FROM logs | WHERE user.name == \"suspicious_user\"", esqlRule.Query)
 	require.Equal(t, "esql", string(esqlRule.Language))
 	require.Equal(t, int64(85), int64(esqlRule.RiskScore))
 	require.Equal(t, "high", string(esqlRule.Severity))
@@ -453,13 +470,13 @@ func TestToNewTermsRuleCreateProps(t *testing.T) {
 	ctx := context.Background()
 	var diags diag.Diagnostics
 
-	data := SecurityDetectionRuleData{
+	data := Data{
 		Type:               types.StringValue("new_terms"),
 		Name:               types.StringValue("Test New Terms Rule"),
 		Description:        types.StringValue("Test new terms rule description"),
 		Query:              types.StringValue("user.name:*"),
 		Language:           types.StringValue("kuery"),
-		NewTermsFields:     utils.ListValueFrom(ctx, []string{"user.name", "host.name"}, types.StringType, path.Root("new_terms_fields"), &diags),
+		NewTermsFields:     typeutils.ListValueFrom(ctx, []string{"user.name", "host.name"}, types.StringType, path.Root("new_terms_fields"), &diags),
 		HistoryWindowStart: types.StringValue("now-7d"),
 		RiskScore:          types.Int64Value(60),
 		Severity:           types.StringValue("medium"),
@@ -467,22 +484,22 @@ func TestToNewTermsRuleCreateProps(t *testing.T) {
 		From:               types.StringValue("now-6m"),
 		To:                 types.StringValue("now"),
 		Interval:           types.StringValue("5m"),
-		Index:              utils.ListValueFrom(ctx, []string{"logs-*"}, types.StringType, path.Root("index"), &diags),
+		Index:              typeutils.ListValueFrom(ctx, []string{"logs-*"}, types.StringType, path.Root("index"), &diags),
 	}
 
 	require.Empty(t, diags)
 
-	createProps, createDiags := data.toNewTermsRuleCreateProps(ctx, NewMockApiClient())
+	createProps, createDiags := data.toNewTermsRuleCreateProps(ctx, NewMockAPIClient())
 	require.Empty(t, createDiags)
 
 	newTermsRule, err := createProps.AsSecurityDetectionsAPINewTermsRuleCreateProps()
 	require.NoError(t, err)
 
-	require.Equal(t, "Test New Terms Rule", string(newTermsRule.Name))
-	require.Equal(t, "Test new terms rule description", string(newTermsRule.Description))
+	require.Equal(t, "Test New Terms Rule", newTermsRule.Name)
+	require.Equal(t, "Test new terms rule description", newTermsRule.Description)
 	require.Equal(t, "new_terms", string(newTermsRule.Type))
-	require.Equal(t, "user.name:*", string(newTermsRule.Query))
-	require.Equal(t, "now-7d", string(newTermsRule.HistoryWindowStart))
+	require.Equal(t, "user.name:*", newTermsRule.Query)
+	require.Equal(t, "now-7d", newTermsRule.HistoryWindowStart)
 	require.Equal(t, int64(60), int64(newTermsRule.RiskScore))
 	require.Equal(t, "medium", string(newTermsRule.Severity))
 	require.Len(t, newTermsRule.NewTermsFields, 2)
@@ -494,34 +511,34 @@ func TestToSavedQueryRuleCreateProps(t *testing.T) {
 	ctx := context.Background()
 	var diags diag.Diagnostics
 
-	data := SecurityDetectionRuleData{
+	data := Data{
 		Type:        types.StringValue("saved_query"),
 		Name:        types.StringValue("Test Saved Query Rule"),
 		Description: types.StringValue("Test saved query rule description"),
-		SavedId:     types.StringValue("my-saved-query-id"),
+		SavedID:     types.StringValue("my-saved-query-id"),
 		RiskScore:   types.Int64Value(70),
 		Severity:    types.StringValue("high"),
 		Enabled:     types.BoolValue(true),
 		From:        types.StringValue("now-30m"),
 		To:          types.StringValue("now"),
 		Interval:    types.StringValue("15m"),
-		Index:       utils.ListValueFrom(ctx, []string{"auditbeat-*", "filebeat-*"}, types.StringType, path.Root("index"), &diags),
-		Author:      utils.ListValueFrom(ctx, []string{"Security Team"}, types.StringType, path.Root("author"), &diags),
-		Tags:        utils.ListValueFrom(ctx, []string{"saved-query", "detection"}, types.StringType, path.Root("tags"), &diags),
+		Index:       typeutils.ListValueFrom(ctx, []string{"auditbeat-*", "filebeat-*"}, types.StringType, path.Root("index"), &diags),
+		Author:      typeutils.ListValueFrom(ctx, []string{"Security Team"}, types.StringType, path.Root("author"), &diags),
+		Tags:        typeutils.ListValueFrom(ctx, []string{"saved-query", "detection"}, types.StringType, path.Root("tags"), &diags),
 	}
 
 	require.Empty(t, diags)
 
-	createProps, createDiags := data.toSavedQueryRuleCreateProps(ctx, NewMockApiClient())
+	createProps, createDiags := data.toSavedQueryRuleCreateProps(ctx, NewMockAPIClient())
 	require.Empty(t, createDiags)
 
 	savedQueryRule, err := createProps.AsSecurityDetectionsAPISavedQueryRuleCreateProps()
 	require.NoError(t, err)
 
-	require.Equal(t, "Test Saved Query Rule", string(savedQueryRule.Name))
-	require.Equal(t, "Test saved query rule description", string(savedQueryRule.Description))
+	require.Equal(t, "Test Saved Query Rule", savedQueryRule.Name)
+	require.Equal(t, "Test saved query rule description", savedQueryRule.Description)
 	require.Equal(t, "saved_query", string(savedQueryRule.Type))
-	require.Equal(t, "my-saved-query-id", string(savedQueryRule.SavedId))
+	require.Equal(t, "my-saved-query-id", savedQueryRule.SavedId)
 	require.Equal(t, int64(70), int64(savedQueryRule.RiskScore))
 	require.Equal(t, "high", string(savedQueryRule.Severity))
 }
@@ -530,16 +547,16 @@ func TestToThreatMatchRuleCreateProps(t *testing.T) {
 	ctx := context.Background()
 	var diags diag.Diagnostics
 
-	data := SecurityDetectionRuleData{
+	data := Data{
 		Type:        types.StringValue("threat_match"),
 		Name:        types.StringValue("Test Threat Match Rule"),
 		Description: types.StringValue("Test threat match rule description"),
 		Query:       types.StringValue("source.ip:*"),
 		Language:    types.StringValue("kuery"),
-		ThreatIndex: utils.ListValueFrom(ctx, []string{"threat-intel-*"}, types.StringType, path.Root("threat_index"), &diags),
-		ThreatMapping: utils.ListValueFrom(ctx, []SecurityDetectionRuleTfDataItem{
+		ThreatIndex: typeutils.ListValueFrom(ctx, []string{"threat-intel-*"}, types.StringType, path.Root("threat_index"), &diags),
+		ThreatMapping: typeutils.ListValueFrom(ctx, []TfDataItem{
 			{
-				Entries: utils.ListValueFrom(ctx, []SecurityDetectionRuleTfDataItemEntry{
+				Entries: typeutils.ListValueFrom(ctx, []TfDataItemEntry{
 					{
 						Field: types.StringValue("source.ip"),
 						Type:  types.StringValue("mapping"),
@@ -554,21 +571,21 @@ func TestToThreatMatchRuleCreateProps(t *testing.T) {
 		From:      types.StringValue("now-1h"),
 		To:        types.StringValue("now"),
 		Interval:  types.StringValue("5m"),
-		Index:     utils.ListValueFrom(ctx, []string{"logs-*"}, types.StringType, path.Root("index"), &diags),
+		Index:     typeutils.ListValueFrom(ctx, []string{"logs-*"}, types.StringType, path.Root("index"), &diags),
 	}
 
 	require.Empty(t, diags)
 
-	createProps, createDiags := data.toThreatMatchRuleCreateProps(ctx, NewMockApiClient())
+	createProps, createDiags := data.toThreatMatchRuleCreateProps(ctx, NewMockAPIClient())
 	require.Empty(t, createDiags)
 
 	threatMatchRule, err := createProps.AsSecurityDetectionsAPIThreatMatchRuleCreateProps()
 	require.NoError(t, err)
 
-	require.Equal(t, "Test Threat Match Rule", string(threatMatchRule.Name))
-	require.Equal(t, "Test threat match rule description", string(threatMatchRule.Description))
+	require.Equal(t, "Test Threat Match Rule", threatMatchRule.Name)
+	require.Equal(t, "Test threat match rule description", threatMatchRule.Description)
 	require.Equal(t, "threat_match", string(threatMatchRule.Type))
-	require.Equal(t, "source.ip:*", string(threatMatchRule.Query))
+	require.Equal(t, "source.ip:*", threatMatchRule.Query)
 	require.Equal(t, int64(90), int64(threatMatchRule.RiskScore))
 	require.Equal(t, "critical", string(threatMatchRule.Severity))
 	require.Len(t, threatMatchRule.ThreatIndex, 1)
@@ -580,14 +597,14 @@ func TestToThresholdRuleCreateProps(t *testing.T) {
 	ctx := context.Background()
 	var diags diag.Diagnostics
 
-	data := SecurityDetectionRuleData{
+	data := Data{
 		Type:        types.StringValue("threshold"),
 		Name:        types.StringValue("Test Threshold Rule"),
 		Description: types.StringValue("Test threshold rule description"),
 		Query:       types.StringValue("event.action:login"),
 		Language:    types.StringValue("kuery"),
-		Threshold: utils.ObjectValueFrom(ctx, &ThresholdModel{
-			Field:       utils.ListValueFrom(ctx, []string{"user.name"}, types.StringType, path.Root("threshold").AtName("field"), &diags),
+		Threshold: typeutils.ObjectValueFrom(ctx, &ThresholdModel{
+			Field:       typeutils.ListValueFrom(ctx, []string{"user.name"}, types.StringType, path.Root("threshold").AtName("field"), &diags),
 			Value:       types.Int64Value(5),
 			Cardinality: types.ListNull(getCardinalityType()),
 		}, getThresholdType(), path.Root("threshold"), &diags),
@@ -597,21 +614,21 @@ func TestToThresholdRuleCreateProps(t *testing.T) {
 		From:      types.StringValue("now-1h"),
 		To:        types.StringValue("now"),
 		Interval:  types.StringValue("5m"),
-		Index:     utils.ListValueFrom(ctx, []string{"auditbeat-*"}, types.StringType, path.Root("index"), &diags),
+		Index:     typeutils.ListValueFrom(ctx, []string{"auditbeat-*"}, types.StringType, path.Root("index"), &diags),
 	}
 
 	require.Empty(t, diags)
 
-	createProps, createDiags := data.toThresholdRuleCreateProps(ctx, NewMockApiClient())
+	createProps, createDiags := data.toThresholdRuleCreateProps(ctx, NewMockAPIClient())
 	require.Empty(t, createDiags)
 
 	thresholdRule, err := createProps.AsSecurityDetectionsAPIThresholdRuleCreateProps()
 	require.NoError(t, err)
 
-	require.Equal(t, "Test Threshold Rule", string(thresholdRule.Name))
-	require.Equal(t, "Test threshold rule description", string(thresholdRule.Description))
+	require.Equal(t, "Test Threshold Rule", thresholdRule.Name)
+	require.Equal(t, "Test threshold rule description", thresholdRule.Description)
 	require.Equal(t, "threshold", string(thresholdRule.Type))
-	require.Equal(t, "event.action:login", string(thresholdRule.Query))
+	require.Equal(t, "event.action:login", thresholdRule.Query)
 	require.Equal(t, int64(80), int64(thresholdRule.RiskScore))
 	require.Equal(t, "high", string(thresholdRule.Severity))
 
@@ -622,25 +639,25 @@ func TestToThresholdRuleCreateProps(t *testing.T) {
 	// Check single field
 	singleField, err := thresholdRule.Threshold.Field.AsSecurityDetectionsAPIThresholdField0()
 	require.NoError(t, err)
-	require.Equal(t, "user.name", string(singleField))
+	require.Equal(t, "user.name", singleField)
 }
 
-func TestThresholdToApi(t *testing.T) {
+func TestThresholdToAPI(t *testing.T) {
 	ctx := context.Background()
 	var diags diag.Diagnostics
 
 	tests := []struct {
 		name               string
-		data               SecurityDetectionRuleData
+		data               Data
 		expectedValue      int64
 		expectedFieldCount int
 		hasCardinality     bool
 	}{
 		{
 			name: "threshold with single field",
-			data: SecurityDetectionRuleData{
-				Threshold: utils.ObjectValueFrom(ctx, &ThresholdModel{
-					Field:       utils.ListValueFrom(ctx, []string{"user.name"}, types.StringType, path.Root("threshold").AtName("field"), &diags),
+			data: Data{
+				Threshold: typeutils.ObjectValueFrom(ctx, &ThresholdModel{
+					Field:       typeutils.ListValueFrom(ctx, []string{"user.name"}, types.StringType, path.Root("threshold").AtName("field"), &diags),
 					Value:       types.Int64Value(10),
 					Cardinality: types.ListNull(getCardinalityType()),
 				}, getThresholdType(), path.Root("threshold"), &diags),
@@ -650,11 +667,11 @@ func TestThresholdToApi(t *testing.T) {
 		},
 		{
 			name: "threshold with multiple fields and cardinality",
-			data: SecurityDetectionRuleData{
-				Threshold: utils.ObjectValueFrom(ctx, &ThresholdModel{
-					Field: utils.ListValueFrom(ctx, []string{"user.name", "source.ip"}, types.StringType, path.Root("threshold").AtName("field"), &diags),
+			data: Data{
+				Threshold: typeutils.ObjectValueFrom(ctx, &ThresholdModel{
+					Field: typeutils.ListValueFrom(ctx, []string{"user.name", "source.ip"}, types.StringType, path.Root("threshold").AtName("field"), &diags),
 					Value: types.Int64Value(5),
-					Cardinality: utils.ListValueFrom(ctx, []CardinalityModel{
+					Cardinality: typeutils.ListValueFrom(ctx, []CardinalityModel{
 						{
 							Field: types.StringValue("destination.ip"),
 							Value: types.Int64Value(2),
@@ -672,7 +689,7 @@ func TestThresholdToApi(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			threshold := tt.data.thresholdToApi(ctx, &diags)
+			threshold := tt.data.thresholdToAPI(ctx, &diags)
 			require.Empty(t, diags)
 			require.NotNil(t, threshold)
 
@@ -681,9 +698,9 @@ func TestThresholdToApi(t *testing.T) {
 			// Check field count
 			if singleField, err := threshold.Field.AsSecurityDetectionsAPIThresholdField0(); err == nil {
 				require.Equal(t, 1, tt.expectedFieldCount)
-				require.NotEmpty(t, string(singleField))
+				require.NotEmpty(t, singleField)
 			} else if multipleFields, err := threshold.Field.AsSecurityDetectionsAPIThresholdField1(); err == nil {
-				require.Equal(t, tt.expectedFieldCount, len(multipleFields))
+				require.Len(t, multipleFields, tt.expectedFieldCount)
 			}
 
 			if tt.hasCardinality {
@@ -694,22 +711,22 @@ func TestThresholdToApi(t *testing.T) {
 	}
 }
 
-func TestAlertSuppressionToApi(t *testing.T) {
+func TestAlertSuppressionToAPI(t *testing.T) {
 	ctx := context.Background()
 	var diags diag.Diagnostics
 
 	tests := []struct {
 		name                     string
-		data                     SecurityDetectionRuleData
+		data                     Data
 		expectedGroupByCount     int
 		hasDuration              bool
 		hasMissingFieldsStrategy bool
 	}{
 		{
 			name: "alert suppression with all fields",
-			data: SecurityDetectionRuleData{
-				AlertSuppression: utils.ObjectValueFrom(ctx, &AlertSuppressionModel{
-					GroupBy:               utils.ListValueFrom(ctx, []string{"user.name", "source.ip"}, types.StringType, path.Root("alert_suppression").AtName("group_by"), &diags),
+			data: Data{
+				AlertSuppression: typeutils.ObjectValueFrom(ctx, &AlertSuppressionModel{
+					GroupBy:               typeutils.ListValueFrom(ctx, []string{"user.name", "source.ip"}, types.StringType, path.Root("alert_suppression").AtName("group_by"), &diags),
 					Duration:              customtypes.NewDurationValue("10m"),
 					MissingFieldsStrategy: types.StringValue("suppress"),
 				}, getAlertSuppressionType(), path.Root("alert_suppression"), &diags),
@@ -720,9 +737,9 @@ func TestAlertSuppressionToApi(t *testing.T) {
 		},
 		{
 			name: "alert suppression minimal",
-			data: SecurityDetectionRuleData{
-				AlertSuppression: utils.ObjectValueFrom(ctx, &AlertSuppressionModel{
-					GroupBy:               utils.ListValueFrom(ctx, []string{"user.name"}, types.StringType, path.Root("alert_suppression").AtName("group_by"), &diags),
+			data: Data{
+				AlertSuppression: typeutils.ObjectValueFrom(ctx, &AlertSuppressionModel{
+					GroupBy:               typeutils.ListValueFrom(ctx, []string{"user.name"}, types.StringType, path.Root("alert_suppression").AtName("group_by"), &diags),
 					Duration:              customtypes.NewDurationNull(),
 					MissingFieldsStrategy: types.StringNull(),
 				}, getAlertSuppressionType(), path.Root("alert_suppression"), &diags),
@@ -735,11 +752,11 @@ func TestAlertSuppressionToApi(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			alertSuppression := tt.data.alertSuppressionToApi(ctx, &diags)
+			alertSuppression := tt.data.alertSuppressionToAPI(ctx, &diags)
 			require.Empty(t, diags)
 			require.NotNil(t, alertSuppression)
 
-			require.Equal(t, tt.expectedGroupByCount, len(alertSuppression.GroupBy))
+			require.Len(t, alertSuppression.GroupBy, tt.expectedGroupByCount)
 
 			if tt.hasDuration {
 				require.NotNil(t, alertSuppression.Duration)
@@ -755,14 +772,14 @@ func TestAlertSuppressionToApi(t *testing.T) {
 	}
 }
 
-func TestThreatMappingToApi(t *testing.T) {
+func TestThreatMappingToAPI(t *testing.T) {
 	ctx := context.Background()
 	var diags diag.Diagnostics
 
-	data := SecurityDetectionRuleData{
-		ThreatMapping: utils.ListValueFrom(ctx, []SecurityDetectionRuleTfDataItem{
+	data := Data{
+		ThreatMapping: typeutils.ListValueFrom(ctx, []TfDataItem{
 			{
-				Entries: utils.ListValueFrom(ctx, []SecurityDetectionRuleTfDataItemEntry{
+				Entries: typeutils.ListValueFrom(ctx, []TfDataItemEntry{
 					{
 						Field: types.StringValue("source.ip"),
 						Type:  types.StringValue("mapping"),
@@ -780,7 +797,7 @@ func TestThreatMappingToApi(t *testing.T) {
 
 	require.Empty(t, diags)
 
-	threatMapping, threatMappingDiags := data.threatMappingToApi(ctx)
+	threatMapping, threatMappingDiags := data.threatMappingToAPI(ctx)
 	require.Empty(t, threatMappingDiags)
 	require.NotNil(t, threatMapping)
 	require.Len(t, threatMapping, 1)
@@ -788,35 +805,35 @@ func TestThreatMappingToApi(t *testing.T) {
 	mapping := threatMapping[0]
 	require.Len(t, mapping.Entries, 2)
 
-	require.Equal(t, "source.ip", string(mapping.Entries[0].Field))
+	require.Equal(t, "source.ip", mapping.Entries[0].Field)
 	require.Equal(t, "mapping", string(mapping.Entries[0].Type))
-	require.Equal(t, "threat.indicator.ip", string(mapping.Entries[0].Value))
+	require.Equal(t, "threat.indicator.ip", mapping.Entries[0].Value)
 
-	require.Equal(t, "user.name", string(mapping.Entries[1].Field))
+	require.Equal(t, "user.name", mapping.Entries[1].Field)
 	require.Equal(t, "mapping", string(mapping.Entries[1].Type))
-	require.Equal(t, "threat.indicator.user.name", string(mapping.Entries[1].Value))
+	require.Equal(t, "threat.indicator.user.name", mapping.Entries[1].Value)
 }
 
-func TestActionsToApi(t *testing.T) {
+func TestActionsToAPI(t *testing.T) {
 	ctx := context.Background()
 	var diags diag.Diagnostics
 
-	data := SecurityDetectionRuleData{
-		Actions: utils.ListValueFrom(ctx, []ActionModel{
+	data := Data{
+		Actions: typeutils.ListValueFrom(ctx, []ActionModel{
 			{
-				ActionTypeId: types.StringValue(".slack"),
-				Id:           types.StringValue("slack-action-1"),
-				Params: utils.MapValueFrom(ctx, map[string]attr.Value{
+				ActionTypeID: types.StringValue(".slack"),
+				ID:           types.StringValue("slack-action-1"),
+				Params: typeutils.MapValueFrom(ctx, map[string]attr.Value{
 					"message": types.StringValue("Alert triggered"),
 					"channel": types.StringValue("#security"),
 				}, types.StringType, path.Root("actions").AtListIndex(0).AtName("params"), &diags),
 				Group: types.StringValue("default"),
-				Uuid:  types.StringNull(),
-				AlertsFilter: utils.MapValueFrom(ctx, map[string]attr.Value{
+				UUID:  types.StringNull(),
+				AlertsFilter: typeutils.MapValueFrom(ctx, map[string]attr.Value{
 					"status":   types.StringValue("open"),
 					"severity": types.StringValue("high"),
 				}, types.StringType, path.Root("actions").AtListIndex(0).AtName("alerts_filter"), &diags),
-				Frequency: utils.ObjectValueFrom(ctx, &ActionFrequencyModel{
+				Frequency: typeutils.ObjectValueFrom(ctx, &ActionFrequencyModel{
 					NotifyWhen: types.StringValue("onActionGroupChange"),
 					Summary:    types.BoolValue(false),
 					Throttle:   types.StringValue("1h"),
@@ -827,33 +844,33 @@ func TestActionsToApi(t *testing.T) {
 
 	require.Empty(t, diags)
 
-	actions, actionsDiags := data.actionsToApi(ctx)
+	actions, actionsDiags := data.actionsToAPI(ctx)
 	require.Empty(t, actionsDiags)
 	require.Len(t, actions, 1)
 
 	action := actions[0]
 	require.Equal(t, ".slack", action.ActionTypeId)
-	require.Equal(t, "slack-action-1", string(action.Id))
+	require.Equal(t, "slack-action-1", action.Id)
 	require.NotNil(t, action.Params)
 	require.Contains(t, action.Params, "message")
 	require.Equal(t, "Alert triggered", action.Params["message"])
 	require.NotNil(t, action.Group)
-	require.Equal(t, "default", string(*action.Group))
+	require.Equal(t, "default", *action.Group)
 	require.NotNil(t, action.Frequency)
 }
 
-func TestFiltersToApi(t *testing.T) {
+func TestFiltersToAPI(t *testing.T) {
 	ctx := context.Background()
 	var diags diag.Diagnostics
 
 	filtersJSON := `[{"query": {"match": {"field": "value"}}}, {"range": {"timestamp": {"gte": "now-1h"}}}]`
 
-	data := SecurityDetectionRuleData{
+	data := Data{
 		Filters: jsontypes.NewNormalizedValue(filtersJSON),
 	}
 
 	// Test filters conversion
-	filters, filtersDiags := data.filtersToApi(ctx)
+	filters, filtersDiags := data.filtersToAPI(ctx)
 	require.Empty(t, filtersDiags)
 	require.NotNil(t, filters)
 	require.Len(t, *filters, 2)
@@ -873,8 +890,8 @@ func TestConvertActionsToModel(t *testing.T) {
 				"subject": "Security Alert",
 				"message": "Alert details here",
 			},
-			Group: utils.Pointer(kbapi.SecurityDetectionsAPIRuleActionGroup("default")),
-			Uuid:  utils.Pointer(kbapi.SecurityDetectionsAPINonEmptyString("action-uuid-123")),
+			Group: new(kbapi.SecurityDetectionsAPIRuleActionGroup("default")),
+			Uuid:  new(kbapi.SecurityDetectionsAPINonEmptyString("action-uuid-123")),
 		},
 	}
 
@@ -888,15 +905,15 @@ func TestConvertActionsToModel(t *testing.T) {
 	require.Len(t, actions, 1)
 
 	action := actions[0]
-	require.Equal(t, ".email", action.ActionTypeId.ValueString())
-	require.Equal(t, "email-action-1", action.Id.ValueString())
+	require.Equal(t, ".email", action.ActionTypeID.ValueString())
+	require.Equal(t, "email-action-1", action.ID.ValueString())
 	require.Equal(t, "default", action.Group.ValueString())
-	require.Equal(t, "action-uuid-123", action.Uuid.ValueString())
+	require.Equal(t, "action-uuid-123", action.UUID.ValueString())
 }
 
 func TestUpdateFromRule_UnsupportedType(t *testing.T) {
 	ctx := context.Background()
-	data := &SecurityDetectionRuleData{}
+	data := &Data{}
 
 	// Create a mock response that will fail to determine discriminator
 	response := &kbapi.SecurityDetectionsAPIRuleResponse{}
@@ -909,14 +926,14 @@ func TestUpdateFromRule_UnsupportedType(t *testing.T) {
 func TestUpdateFromRule(t *testing.T) {
 	ctx := context.Background()
 	testUUID := uuid.MustParse("12345678-1234-1234-1234-123456789012")
-	spaceId := "test-space"
+	spaceID := "test-space"
 
 	tests := []struct {
 		name         string
 		setupRule    func() *kbapi.SecurityDetectionsAPIRuleResponse
 		expectError  bool
 		errorMessage string
-		validateData func(t *testing.T, data *SecurityDetectionRuleData)
+		validateData func(t *testing.T, data *Data)
 	}{
 		{
 			name: "query rule type",
@@ -945,14 +962,14 @@ func TestUpdateFromRule(t *testing.T) {
 				require.NoError(t, err)
 				return response
 			},
-			validateData: func(t *testing.T, data *SecurityDetectionRuleData) {
-				require.Equal(t, fmt.Sprintf("%s/%s", spaceId, testUUID.String()), data.Id.ValueString())
-				require.Equal(t, "test-query-rule", data.RuleId.ValueString())
+			validateData: func(t *testing.T, data *Data) {
+				require.Equal(t, fmt.Sprintf("%s/%s", spaceID, testUUID.String()), data.ID.ValueString())
+				require.Equal(t, "test-query-rule", data.RuleID.ValueString())
 				require.Equal(t, "Test Query Rule", data.Name.ValueString())
 				require.Equal(t, "query", data.Type.ValueString())
 				require.Equal(t, "user.name:test", data.Query.ValueString())
 				require.Equal(t, "kuery", data.Language.ValueString())
-				require.Equal(t, true, data.Enabled.ValueBool())
+				require.True(t, data.Enabled.ValueBool())
 				require.Equal(t, int64(75), data.RiskScore.ValueInt64())
 				require.Equal(t, "medium", data.Severity.ValueString())
 			},
@@ -984,9 +1001,9 @@ func TestUpdateFromRule(t *testing.T) {
 				require.NoError(t, err)
 				return response
 			},
-			validateData: func(t *testing.T, data *SecurityDetectionRuleData) {
-				require.Equal(t, fmt.Sprintf("%s/%s", spaceId, testUUID.String()), data.Id.ValueString())
-				require.Equal(t, "test-eql-rule", data.RuleId.ValueString())
+			validateData: func(t *testing.T, data *Data) {
+				require.Equal(t, fmt.Sprintf("%s/%s", spaceID, testUUID.String()), data.ID.ValueString())
+				require.Equal(t, "test-eql-rule", data.RuleID.ValueString())
 				require.Equal(t, "Test EQL Rule", data.Name.ValueString())
 				require.Equal(t, "eql", data.Type.ValueString())
 				require.Equal(t, "process where process.name == \"cmd.exe\"", data.Query.ValueString())
@@ -1022,9 +1039,9 @@ func TestUpdateFromRule(t *testing.T) {
 				require.NoError(t, err)
 				return response
 			},
-			validateData: func(t *testing.T, data *SecurityDetectionRuleData) {
-				require.Equal(t, fmt.Sprintf("%s/%s", spaceId, testUUID.String()), data.Id.ValueString())
-				require.Equal(t, "test-esql-rule", data.RuleId.ValueString())
+			validateData: func(t *testing.T, data *Data) {
+				require.Equal(t, fmt.Sprintf("%s/%s", spaceID, testUUID.String()), data.ID.ValueString())
+				require.Equal(t, "test-esql-rule", data.RuleID.ValueString())
 				require.Equal(t, "Test ESQL Rule", data.Name.ValueString())
 				require.Equal(t, "esql", data.Type.ValueString())
 				require.Equal(t, "FROM logs | WHERE user.name == \"suspicious_user\"", data.Query.ValueString())
@@ -1036,8 +1053,8 @@ func TestUpdateFromRule(t *testing.T) {
 		{
 			name: "machine_learning rule type",
 			setupRule: func() *kbapi.SecurityDetectionsAPIRuleResponse {
-				mlJobId := kbapi.SecurityDetectionsAPIMachineLearningJobId{}
-				err := mlJobId.FromSecurityDetectionsAPIMachineLearningJobId0("suspicious_activity")
+				mlJobID := kbapi.SecurityDetectionsAPIMachineLearningJobId{}
+				err := mlJobID.FromSecurityDetectionsAPIMachineLearningJobId0("suspicious_activity")
 				require.NoError(t, err)
 
 				rule := kbapi.SecurityDetectionsAPIMachineLearningRule{
@@ -1045,7 +1062,7 @@ func TestUpdateFromRule(t *testing.T) {
 					RuleId:               "test-ml-rule",
 					Name:                 "Test ML Rule",
 					Type:                 "machine_learning",
-					MachineLearningJobId: mlJobId,
+					MachineLearningJobId: mlJobID,
 					AnomalyThreshold:     50,
 					Enabled:              true,
 					RiskScore:            70,
@@ -1064,15 +1081,15 @@ func TestUpdateFromRule(t *testing.T) {
 				require.NoError(t, err)
 				return response
 			},
-			validateData: func(t *testing.T, data *SecurityDetectionRuleData) {
-				require.Equal(t, fmt.Sprintf("%s/%s", spaceId, testUUID.String()), data.Id.ValueString())
-				require.Equal(t, "test-ml-rule", data.RuleId.ValueString())
+			validateData: func(t *testing.T, data *Data) {
+				require.Equal(t, fmt.Sprintf("%s/%s", spaceID, testUUID.String()), data.ID.ValueString())
+				require.Equal(t, "test-ml-rule", data.RuleID.ValueString())
 				require.Equal(t, "Test ML Rule", data.Name.ValueString())
 				require.Equal(t, "machine_learning", data.Type.ValueString())
 				require.Equal(t, int64(50), data.AnomalyThreshold.ValueInt64())
 				require.Equal(t, int64(70), data.RiskScore.ValueInt64())
 				require.Equal(t, "medium", data.Severity.ValueString())
-				require.Len(t, data.MachineLearningJobId.Elements(), 1)
+				require.Len(t, data.MachineLearningJobID.Elements(), 1)
 			},
 		},
 		{
@@ -1104,9 +1121,9 @@ func TestUpdateFromRule(t *testing.T) {
 				require.NoError(t, err)
 				return response
 			},
-			validateData: func(t *testing.T, data *SecurityDetectionRuleData) {
-				require.Equal(t, fmt.Sprintf("%s/%s", spaceId, testUUID.String()), data.Id.ValueString())
-				require.Equal(t, "test-new-terms-rule", data.RuleId.ValueString())
+			validateData: func(t *testing.T, data *Data) {
+				require.Equal(t, fmt.Sprintf("%s/%s", spaceID, testUUID.String()), data.ID.ValueString())
+				require.Equal(t, "test-new-terms-rule", data.RuleID.ValueString())
 				require.Equal(t, "Test New Terms Rule", data.Name.ValueString())
 				require.Equal(t, "new_terms", data.Type.ValueString())
 				require.Equal(t, "user.name:*", data.Query.ValueString())
@@ -1142,12 +1159,12 @@ func TestUpdateFromRule(t *testing.T) {
 				require.NoError(t, err)
 				return response
 			},
-			validateData: func(t *testing.T, data *SecurityDetectionRuleData) {
-				require.Equal(t, fmt.Sprintf("%s/%s", spaceId, testUUID.String()), data.Id.ValueString())
-				require.Equal(t, "test-saved-query-rule", data.RuleId.ValueString())
+			validateData: func(t *testing.T, data *Data) {
+				require.Equal(t, fmt.Sprintf("%s/%s", spaceID, testUUID.String()), data.ID.ValueString())
+				require.Equal(t, "test-saved-query-rule", data.RuleID.ValueString())
 				require.Equal(t, "Test Saved Query Rule", data.Name.ValueString())
 				require.Equal(t, "saved_query", data.Type.ValueString())
-				require.Equal(t, "my-saved-query-id", data.SavedId.ValueString())
+				require.Equal(t, "my-saved-query-id", data.SavedID.ValueString())
 				require.Equal(t, int64(65), data.RiskScore.ValueInt64())
 				require.Equal(t, "medium", data.Severity.ValueString())
 			},
@@ -1191,9 +1208,9 @@ func TestUpdateFromRule(t *testing.T) {
 				require.NoError(t, err)
 				return response
 			},
-			validateData: func(t *testing.T, data *SecurityDetectionRuleData) {
-				require.Equal(t, fmt.Sprintf("%s/%s", spaceId, testUUID.String()), data.Id.ValueString())
-				require.Equal(t, "test-threat-match-rule", data.RuleId.ValueString())
+			validateData: func(t *testing.T, data *Data) {
+				require.Equal(t, fmt.Sprintf("%s/%s", spaceID, testUUID.String()), data.ID.ValueString())
+				require.Equal(t, "test-threat-match-rule", data.RuleID.ValueString())
 				require.Equal(t, "Test Threat Match Rule", data.Name.ValueString())
 				require.Equal(t, "threat_match", data.Type.ValueString())
 				require.Equal(t, "source.ip:*", data.Query.ValueString())
@@ -1238,9 +1255,9 @@ func TestUpdateFromRule(t *testing.T) {
 				require.NoError(t, err)
 				return response
 			},
-			validateData: func(t *testing.T, data *SecurityDetectionRuleData) {
-				require.Equal(t, fmt.Sprintf("%s/%s", spaceId, testUUID.String()), data.Id.ValueString())
-				require.Equal(t, "test-threshold-rule", data.RuleId.ValueString())
+			validateData: func(t *testing.T, data *Data) {
+				require.Equal(t, fmt.Sprintf("%s/%s", spaceID, testUUID.String()), data.ID.ValueString())
+				require.Equal(t, "test-threshold-rule", data.RuleID.ValueString())
 				require.Equal(t, "Test Threshold Rule", data.Name.ValueString())
 				require.Equal(t, "threshold", data.Type.ValueString())
 				require.Equal(t, "event.action:login", data.Query.ValueString())
@@ -1257,7 +1274,7 @@ func TestUpdateFromRule(t *testing.T) {
 			},
 			expectError:  true,
 			errorMessage: "Error determining rule processor",
-			validateData: func(t *testing.T, data *SecurityDetectionRuleData) {
+			validateData: func(_ *testing.T, _ *Data) {
 				// No validation needed for error case
 			},
 		},
@@ -1265,8 +1282,8 @@ func TestUpdateFromRule(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			data := &SecurityDetectionRuleData{
-				SpaceId: types.StringValue(spaceId),
+			data := &Data{
+				SpaceID: types.StringValue(spaceID),
 			}
 
 			response := tt.setupRule()
@@ -1283,34 +1300,34 @@ func TestUpdateFromRule(t *testing.T) {
 	}
 }
 
-func TestCompositeIdOperations(t *testing.T) {
+func TestCompositeIDOperations(t *testing.T) {
 	tests := []struct {
 		name               string
-		inputId            string
-		expectedSpaceId    string
-		expectedResourceId string
+		inputID            string
+		expectedSpaceID    string
+		expectedResourceID string
 		shouldError        bool
 	}{
 		{
 			name:               "valid composite id",
-			inputId:            "my-space/12345678-1234-1234-1234-123456789012",
-			expectedSpaceId:    "my-space",
-			expectedResourceId: "12345678-1234-1234-1234-123456789012",
+			inputID:            "my-space/12345678-1234-1234-1234-123456789012",
+			expectedSpaceID:    "my-space",
+			expectedResourceID: "12345678-1234-1234-1234-123456789012",
 		},
 		{
 			name:        "invalid composite id format",
-			inputId:     "invalid-format",
+			inputID:     "invalid-format",
 			shouldError: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			data := SecurityDetectionRuleData{
-				Id: types.StringValue(tt.inputId),
+			data := Data{
+				ID: types.StringValue(tt.inputID),
 			}
 
-			compId, diags := clients.CompositeIdFromStrFw(data.Id.ValueString())
+			compID, diags := clients.CompositeIDFromStrFw(data.ID.ValueString())
 
 			if tt.shouldError {
 				require.NotEmpty(t, diags)
@@ -1318,35 +1335,35 @@ func TestCompositeIdOperations(t *testing.T) {
 			}
 
 			require.Empty(t, diags)
-			require.Equal(t, tt.expectedSpaceId, compId.ClusterId)
-			require.Equal(t, tt.expectedResourceId, compId.ResourceId)
+			require.Equal(t, tt.expectedSpaceID, compID.ClusterID)
+			require.Equal(t, tt.expectedResourceID, compID.ResourceID)
 		})
 	}
 }
 
-func TestResponseActionsToApi(t *testing.T) {
+func TestResponseActionsToAPI(t *testing.T) {
 	ctx := context.Background()
 	var diags diag.Diagnostics
 
 	tests := []struct {
 		name        string
-		data        SecurityDetectionRuleData
+		data        Data
 		actionType  string
 		shouldError bool
 	}{
 		{
 			name: "osquery response action",
-			data: SecurityDetectionRuleData{
-				ResponseActions: utils.ListValueFrom(ctx, []ResponseActionModel{
+			data: Data{
+				ResponseActions: typeutils.ListValueFrom(ctx, []ResponseActionModel{
 					{
-						ActionTypeId: types.StringValue(".osquery"),
-						Params: utils.ObjectValueFrom(ctx, &ResponseActionParamsModel{
+						ActionTypeID: types.StringValue(".osquery"),
+						Params: typeutils.ObjectValueFrom(ctx, &ResponseActionParamsModel{
 							Query:        types.StringValue("SELECT * FROM processes"),
 							Timeout:      types.Int64Value(300),
 							EcsMapping:   types.MapNull(types.StringType),
 							Queries:      types.ListNull(getOsqueryQueryElementType()),
-							PackId:       types.StringNull(),
-							SavedQueryId: types.StringNull(),
+							PackID:       types.StringNull(),
+							SavedQueryID: types.StringNull(),
 							Command:      types.StringNull(),
 							Comment:      types.StringNull(),
 							Config:       types.ObjectNull(getEndpointProcessConfigType()),
@@ -1358,17 +1375,17 @@ func TestResponseActionsToApi(t *testing.T) {
 		},
 		{
 			name: "endpoint response action - isolate",
-			data: SecurityDetectionRuleData{
-				ResponseActions: utils.ListValueFrom(ctx, []ResponseActionModel{
+			data: Data{
+				ResponseActions: typeutils.ListValueFrom(ctx, []ResponseActionModel{
 					{
-						ActionTypeId: types.StringValue(".endpoint"),
-						Params: utils.ObjectValueFrom(ctx, &ResponseActionParamsModel{
+						ActionTypeID: types.StringValue(".endpoint"),
+						Params: typeutils.ObjectValueFrom(ctx, &ResponseActionParamsModel{
 							Command:      types.StringValue("isolate"),
 							Comment:      types.StringValue("Isolating suspicious host"),
 							Config:       types.ObjectNull(getEndpointProcessConfigType()),
 							Query:        types.StringNull(),
-							PackId:       types.StringNull(),
-							SavedQueryId: types.StringNull(),
+							PackID:       types.StringNull(),
+							SavedQueryID: types.StringNull(),
 							Timeout:      types.Int64Null(),
 							EcsMapping:   types.MapNull(types.StringType),
 							Queries:      types.ListNull(getOsqueryQueryElementType()),
@@ -1380,14 +1397,14 @@ func TestResponseActionsToApi(t *testing.T) {
 		},
 		{
 			name: "unsupported response action type",
-			data: SecurityDetectionRuleData{
-				ResponseActions: utils.ListValueFrom(ctx, []ResponseActionModel{
+			data: Data{
+				ResponseActions: typeutils.ListValueFrom(ctx, []ResponseActionModel{
 					{
-						ActionTypeId: types.StringValue(".unsupported"),
-						Params: utils.ObjectValueFrom(ctx, &ResponseActionParamsModel{
+						ActionTypeID: types.StringValue(".unsupported"),
+						Params: typeutils.ObjectValueFrom(ctx, &ResponseActionParamsModel{
 							Query:        types.StringNull(),
-							PackId:       types.StringNull(),
-							SavedQueryId: types.StringNull(),
+							PackID:       types.StringNull(),
+							SavedQueryID: types.StringNull(),
 							Timeout:      types.Int64Null(),
 							EcsMapping:   types.MapNull(types.StringType),
 							Queries:      types.ListNull(getOsqueryQueryElementType()),
@@ -1407,7 +1424,7 @@ func TestResponseActionsToApi(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			responseActions, responseActionsDiags := tt.data.responseActionsToApi(ctx, NewMockApiClient())
+			responseActions, responseActionsDiags := tt.data.responseActionsToAPI(ctx, NewMockAPIClient())
 
 			if tt.shouldError {
 				require.NotEmpty(t, responseActionsDiags)
@@ -1424,22 +1441,22 @@ func TestResponseActionsToApi(t *testing.T) {
 	}
 }
 
-func TestResponseActionsToApiVersionCheck(t *testing.T) {
+func TestResponseActionsToAPIVersionCheck(t *testing.T) {
 	ctx := context.Background()
 	var diags diag.Diagnostics
 
 	// Test data with response actions
-	data := SecurityDetectionRuleData{
-		ResponseActions: utils.ListValueFrom(ctx, []ResponseActionModel{
+	data := Data{
+		ResponseActions: typeutils.ListValueFrom(ctx, []ResponseActionModel{
 			{
-				ActionTypeId: types.StringValue(".osquery"),
-				Params: utils.ObjectValueFrom(ctx, &ResponseActionParamsModel{
+				ActionTypeID: types.StringValue(".osquery"),
+				Params: typeutils.ObjectValueFrom(ctx, &ResponseActionParamsModel{
 					Query:        types.StringValue("SELECT * FROM processes"),
 					Timeout:      types.Int64Value(300),
 					EcsMapping:   types.MapNull(types.StringType),
 					Queries:      types.ListNull(getOsqueryQueryElementType()),
-					PackId:       types.StringNull(),
-					SavedQueryId: types.StringNull(),
+					PackID:       types.StringNull(),
+					SavedQueryID: types.StringNull(),
 					Command:      types.StringNull(),
 					Comment:      types.StringNull(),
 					Config:       types.ObjectNull(getEndpointProcessConfigType()),
@@ -1450,7 +1467,7 @@ func TestResponseActionsToApiVersionCheck(t *testing.T) {
 
 	require.Empty(t, diags)
 
-	responseActions, responseActionsDiags := data.responseActionsToApi(ctx, NewMockApiClient())
+	responseActions, responseActionsDiags := data.responseActionsToAPI(ctx, NewMockAPIClient())
 
 	// Should work with the test client and return response actions
 	require.Empty(t, responseActionsDiags)
@@ -1475,17 +1492,17 @@ func TestKQLQueryLanguage(t *testing.T) {
 		{
 			name:     "kuery language",
 			language: types.StringValue("kuery"),
-			expected: utils.Pointer(kbapi.SecurityDetectionsAPIKqlQueryLanguage("kuery")),
+			expected: new(kbapi.SecurityDetectionsAPIKqlQueryLanguage("kuery")),
 		},
 		{
 			name:     "lucene language",
 			language: types.StringValue("lucene"),
-			expected: utils.Pointer(kbapi.SecurityDetectionsAPIKqlQueryLanguage("lucene")),
+			expected: new(kbapi.SecurityDetectionsAPIKqlQueryLanguage("lucene")),
 		},
 		{
 			name:     "unknown language defaults to kuery",
 			language: types.StringValue("unknown"),
-			expected: utils.Pointer(kbapi.SecurityDetectionsAPIKqlQueryLanguage("kuery")),
+			expected: new(kbapi.SecurityDetectionsAPIKqlQueryLanguage("kuery")),
 		},
 		{
 			name:     "null language returns nil",
@@ -1496,7 +1513,7 @@ func TestKQLQueryLanguage(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			data := SecurityDetectionRuleData{
+			data := Data{
 				Language: tt.language,
 			}
 
@@ -1512,21 +1529,21 @@ func TestKQLQueryLanguage(t *testing.T) {
 	}
 }
 
-func TestExceptionsListToApi(t *testing.T) {
+func TestExceptionsListToAPI(t *testing.T) {
 	ctx := context.Background()
 	var diags diag.Diagnostics
 
-	data := SecurityDetectionRuleData{
-		ExceptionsList: utils.ListValueFrom(ctx, []ExceptionsListModel{
+	data := Data{
+		ExceptionsList: typeutils.ListValueFrom(ctx, []ExceptionsListModel{
 			{
-				Id:            types.StringValue("exception-1"),
-				ListId:        types.StringValue("trusted-processes"),
+				ID:            types.StringValue("exception-1"),
+				ListID:        types.StringValue("trusted-processes"),
 				NamespaceType: types.StringValue("single"),
 				Type:          types.StringValue("detection"),
 			},
 			{
-				Id:            types.StringValue("exception-2"),
-				ListId:        types.StringValue("allow-list"),
+				ID:            types.StringValue("exception-2"),
+				ListID:        types.StringValue("allow-list"),
 				NamespaceType: types.StringValue("agnostic"),
 				Type:          types.StringValue("endpoint"),
 			},
@@ -1535,7 +1552,7 @@ func TestExceptionsListToApi(t *testing.T) {
 
 	require.Empty(t, diags)
 
-	exceptionsList, exceptionsListDiags := data.exceptionsListToApi(ctx)
+	exceptionsList, exceptionsListDiags := data.exceptionsListToAPI(ctx)
 	require.Empty(t, exceptionsListDiags)
 	require.Len(t, exceptionsList, 2)
 
@@ -1603,7 +1620,7 @@ func TestConvertThresholdToModel(t *testing.T) {
 			require.Empty(t, objDiags)
 
 			require.Equal(t, tt.expectedValue, thresholdModel.Value.ValueInt64())
-			require.Equal(t, tt.expectedFieldCount, len(thresholdModel.Field.Elements()))
+			require.Len(t, thresholdModel.Field.Elements(), tt.expectedFieldCount)
 
 			if tt.hasCardinality {
 				require.False(t, thresholdModel.Cardinality.IsNull())
@@ -1622,13 +1639,13 @@ func TestToCreateProps(t *testing.T) {
 		ruleType    string
 		shouldError bool
 		errorMsg    string
-		setupData   func() SecurityDetectionRuleData
+		setupData   func() Data
 	}{
 		{
 			name:     "query rule type",
 			ruleType: "query",
-			setupData: func() SecurityDetectionRuleData {
-				return SecurityDetectionRuleData{
+			setupData: func() Data {
+				return Data{
 					Type:        types.StringValue("query"),
 					Name:        types.StringValue("Test Query Rule"),
 					Description: types.StringValue("Test description"),
@@ -1642,8 +1659,8 @@ func TestToCreateProps(t *testing.T) {
 		{
 			name:     "eql rule type",
 			ruleType: "eql",
-			setupData: func() SecurityDetectionRuleData {
-				return SecurityDetectionRuleData{
+			setupData: func() Data {
+				return Data{
 					Type:        types.StringValue("eql"),
 					Name:        types.StringValue("Test EQL Rule"),
 					Description: types.StringValue("Test description"),
@@ -1656,8 +1673,8 @@ func TestToCreateProps(t *testing.T) {
 		{
 			name:     "esql rule type",
 			ruleType: "esql",
-			setupData: func() SecurityDetectionRuleData {
-				return SecurityDetectionRuleData{
+			setupData: func() Data {
+				return Data{
 					Type:        types.StringValue("esql"),
 					Name:        types.StringValue("Test ESQL Rule"),
 					Description: types.StringValue("Test description"),
@@ -1670,13 +1687,13 @@ func TestToCreateProps(t *testing.T) {
 		{
 			name:     "machine_learning rule type",
 			ruleType: "machine_learning",
-			setupData: func() SecurityDetectionRuleData {
-				return SecurityDetectionRuleData{
+			setupData: func() Data {
+				return Data{
 					Type:                 types.StringValue("machine_learning"),
 					Name:                 types.StringValue("Test ML Rule"),
 					Description:          types.StringValue("Test description"),
 					AnomalyThreshold:     types.Int64Value(50),
-					MachineLearningJobId: utils.ListValueFrom(ctx, []string{"suspicious_activity"}, types.StringType, path.Root("machine_learning_job_id"), &diags),
+					MachineLearningJobID: typeutils.ListValueFrom(ctx, []string{"suspicious_activity"}, types.StringType, path.Root("machine_learning_job_id"), &diags),
 					RiskScore:            types.Int64Value(75),
 					Severity:             types.StringValue("medium"),
 				}
@@ -1685,13 +1702,13 @@ func TestToCreateProps(t *testing.T) {
 		{
 			name:     "new_terms rule type",
 			ruleType: "new_terms",
-			setupData: func() SecurityDetectionRuleData {
-				return SecurityDetectionRuleData{
+			setupData: func() Data {
+				return Data{
 					Type:               types.StringValue("new_terms"),
 					Name:               types.StringValue("Test New Terms Rule"),
 					Description:        types.StringValue("Test description"),
 					Query:              types.StringValue("user.name:*"),
-					NewTermsFields:     utils.ListValueFrom(ctx, []string{"user.name"}, types.StringType, path.Root("new_terms_fields"), &diags),
+					NewTermsFields:     typeutils.ListValueFrom(ctx, []string{"user.name"}, types.StringType, path.Root("new_terms_fields"), &diags),
 					HistoryWindowStart: types.StringValue("now-7d"),
 					RiskScore:          types.Int64Value(75),
 					Severity:           types.StringValue("medium"),
@@ -1701,12 +1718,12 @@ func TestToCreateProps(t *testing.T) {
 		{
 			name:     "saved_query rule type",
 			ruleType: "saved_query",
-			setupData: func() SecurityDetectionRuleData {
-				return SecurityDetectionRuleData{
+			setupData: func() Data {
+				return Data{
 					Type:        types.StringValue("saved_query"),
 					Name:        types.StringValue("Test Saved Query Rule"),
 					Description: types.StringValue("Test description"),
-					SavedId:     types.StringValue("my-saved-query"),
+					SavedID:     types.StringValue("my-saved-query"),
 					RiskScore:   types.Int64Value(75),
 					Severity:    types.StringValue("medium"),
 				}
@@ -1715,16 +1732,16 @@ func TestToCreateProps(t *testing.T) {
 		{
 			name:     "threat_match rule type",
 			ruleType: "threat_match",
-			setupData: func() SecurityDetectionRuleData {
-				return SecurityDetectionRuleData{
+			setupData: func() Data {
+				return Data{
 					Type:        types.StringValue("threat_match"),
 					Name:        types.StringValue("Test Threat Match Rule"),
 					Description: types.StringValue("Test description"),
 					Query:       types.StringValue("source.ip:*"),
-					ThreatIndex: utils.ListValueFrom(ctx, []string{"threat-intel-*"}, types.StringType, path.Root("threat_index"), &diags),
-					ThreatMapping: utils.ListValueFrom(ctx, []SecurityDetectionRuleTfDataItem{
+					ThreatIndex: typeutils.ListValueFrom(ctx, []string{"threat-intel-*"}, types.StringType, path.Root("threat_index"), &diags),
+					ThreatMapping: typeutils.ListValueFrom(ctx, []TfDataItem{
 						{
-							Entries: utils.ListValueFrom(ctx, []SecurityDetectionRuleTfDataItemEntry{
+							Entries: typeutils.ListValueFrom(ctx, []TfDataItemEntry{
 								{
 									Field: types.StringValue("source.ip"),
 									Type:  types.StringValue("mapping"),
@@ -1741,14 +1758,14 @@ func TestToCreateProps(t *testing.T) {
 		{
 			name:     "threshold rule type",
 			ruleType: "threshold",
-			setupData: func() SecurityDetectionRuleData {
-				return SecurityDetectionRuleData{
+			setupData: func() Data {
+				return Data{
 					Type:        types.StringValue("threshold"),
 					Name:        types.StringValue("Test Threshold Rule"),
 					Description: types.StringValue("Test description"),
 					Query:       types.StringValue("event.action:login"),
-					Threshold: utils.ObjectValueFrom(ctx, &ThresholdModel{
-						Field:       utils.ListValueFrom(ctx, []string{"user.name"}, types.StringType, path.Root("threshold").AtName("field"), &diags),
+					Threshold: typeutils.ObjectValueFrom(ctx, &ThresholdModel{
+						Field:       typeutils.ListValueFrom(ctx, []string{"user.name"}, types.StringType, path.Root("threshold").AtName("field"), &diags),
 						Value:       types.Int64Value(5),
 						Cardinality: types.ListNull(getCardinalityType()),
 					}, getThresholdType(), path.Root("threshold"), &diags),
@@ -1762,8 +1779,8 @@ func TestToCreateProps(t *testing.T) {
 			ruleType:    "unsupported_type",
 			shouldError: true,
 			errorMsg:    "Rule type 'unsupported_type' is not supported",
-			setupData: func() SecurityDetectionRuleData {
-				return SecurityDetectionRuleData{
+			setupData: func() Data {
+				return Data{
 					Type:        types.StringValue("unsupported_type"),
 					Name:        types.StringValue("Test Unsupported Rule"),
 					Description: types.StringValue("Test description"),
@@ -1776,11 +1793,22 @@ func TestToCreateProps(t *testing.T) {
 
 	require.Empty(t, diags) // Check for any setup errors
 
+	const (
+		ruleTypeQuery           = "query"
+		ruleTypeEQL             = "eql"
+		ruleTypeESQL            = "esql"
+		ruleTypeMachineLearning = "machine_learning"
+		ruleTypeNewTerms        = "new_terms"
+		ruleTypeSavedQuery      = "saved_query"
+		ruleTypeThreatMatch     = "threat_match"
+		ruleTypeThreshold       = "threshold"
+	)
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			data := tt.setupData()
 
-			createProps, createDiags := data.toCreateProps(ctx, NewMockApiClient())
+			createProps, createDiags := data.toCreateProps(ctx, NewMockAPIClient())
 
 			if tt.shouldError {
 				require.True(t, createDiags.HasError())
@@ -1793,89 +1821,89 @@ func TestToCreateProps(t *testing.T) {
 
 			// Verify that the create props can be converted to the expected rule type and check values
 			switch tt.ruleType {
-			case "query":
+			case ruleTypeQuery:
 				queryRule, err := createProps.AsSecurityDetectionsAPIQueryRuleCreateProps()
 				require.NoError(t, err)
-				require.Equal(t, "Test Query Rule", string(queryRule.Name))
-				require.Equal(t, "Test description", string(queryRule.Description))
-				require.Equal(t, "query", string(queryRule.Type))
-				require.Equal(t, "user.name:test", string(*queryRule.Query))
+				require.Equal(t, "Test Query Rule", queryRule.Name)
+				require.Equal(t, "Test description", queryRule.Description)
+				require.Equal(t, ruleTypeQuery, string(queryRule.Type))
+				require.Equal(t, "user.name:test", *queryRule.Query)
 				require.Equal(t, "kuery", string(*queryRule.Language))
 				require.Equal(t, int64(75), int64(queryRule.RiskScore))
 				require.Equal(t, "medium", string(queryRule.Severity))
-			case "eql":
+			case ruleTypeEQL:
 				eqlRule, err := createProps.AsSecurityDetectionsAPIEqlRuleCreateProps()
 				require.NoError(t, err)
-				require.Equal(t, "Test EQL Rule", string(eqlRule.Name))
-				require.Equal(t, "Test description", string(eqlRule.Description))
-				require.Equal(t, "eql", string(eqlRule.Type))
-				require.Equal(t, "process where process.name == \"cmd.exe\"", string(eqlRule.Query))
+				require.Equal(t, "Test EQL Rule", eqlRule.Name)
+				require.Equal(t, "Test description", eqlRule.Description)
+				require.Equal(t, ruleTypeEQL, string(eqlRule.Type))
+				require.Equal(t, "process where process.name == \"cmd.exe\"", eqlRule.Query)
 				require.Equal(t, "eql", string(eqlRule.Language))
 				require.Equal(t, int64(75), int64(eqlRule.RiskScore))
 				require.Equal(t, "medium", string(eqlRule.Severity))
-			case "esql":
+			case ruleTypeESQL:
 				esqlRule, err := createProps.AsSecurityDetectionsAPIEsqlRuleCreateProps()
 				require.NoError(t, err)
-				require.Equal(t, "Test ESQL Rule", string(esqlRule.Name))
-				require.Equal(t, "Test description", string(esqlRule.Description))
-				require.Equal(t, "esql", string(esqlRule.Type))
-				require.Equal(t, "FROM logs | WHERE user.name == \"suspicious_user\"", string(esqlRule.Query))
+				require.Equal(t, "Test ESQL Rule", esqlRule.Name)
+				require.Equal(t, "Test description", esqlRule.Description)
+				require.Equal(t, ruleTypeESQL, string(esqlRule.Type))
+				require.Equal(t, "FROM logs | WHERE user.name == \"suspicious_user\"", esqlRule.Query)
 				require.Equal(t, "esql", string(esqlRule.Language))
 				require.Equal(t, int64(75), int64(esqlRule.RiskScore))
 				require.Equal(t, "medium", string(esqlRule.Severity))
-			case "machine_learning":
+			case ruleTypeMachineLearning:
 				mlRule, err := createProps.AsSecurityDetectionsAPIMachineLearningRuleCreateProps()
 				require.NoError(t, err)
-				require.Equal(t, "Test ML Rule", string(mlRule.Name))
-				require.Equal(t, "Test description", string(mlRule.Description))
-				require.Equal(t, "machine_learning", string(mlRule.Type))
+				require.Equal(t, "Test ML Rule", mlRule.Name)
+				require.Equal(t, "Test description", mlRule.Description)
+				require.Equal(t, ruleTypeMachineLearning, string(mlRule.Type))
 				require.Equal(t, int64(50), int64(mlRule.AnomalyThreshold))
 				require.Equal(t, int64(75), int64(mlRule.RiskScore))
 				require.Equal(t, "medium", string(mlRule.Severity))
 				// Verify ML job ID is set correctly
-				jobId, err := mlRule.MachineLearningJobId.AsSecurityDetectionsAPIMachineLearningJobId1()
+				jobID, err := mlRule.MachineLearningJobId.AsSecurityDetectionsAPIMachineLearningJobId1()
 				require.NoError(t, err)
-				require.Equal(t, []string{"suspicious_activity"}, jobId)
-			case "new_terms":
+				require.Equal(t, []string{"suspicious_activity"}, jobID)
+			case ruleTypeNewTerms:
 				newTermsRule, err := createProps.AsSecurityDetectionsAPINewTermsRuleCreateProps()
 				require.NoError(t, err)
-				require.Equal(t, "Test New Terms Rule", string(newTermsRule.Name))
-				require.Equal(t, "Test description", string(newTermsRule.Description))
-				require.Equal(t, "new_terms", string(newTermsRule.Type))
-				require.Equal(t, "user.name:*", string(newTermsRule.Query))
-				require.Equal(t, "now-7d", string(newTermsRule.HistoryWindowStart))
+				require.Equal(t, "Test New Terms Rule", newTermsRule.Name)
+				require.Equal(t, "Test description", newTermsRule.Description)
+				require.Equal(t, ruleTypeNewTerms, string(newTermsRule.Type))
+				require.Equal(t, "user.name:*", newTermsRule.Query)
+				require.Equal(t, "now-7d", newTermsRule.HistoryWindowStart)
 				require.Equal(t, int64(75), int64(newTermsRule.RiskScore))
 				require.Equal(t, "medium", string(newTermsRule.Severity))
 				require.Len(t, newTermsRule.NewTermsFields, 1)
 				require.Equal(t, "user.name", newTermsRule.NewTermsFields[0])
-			case "saved_query":
+			case ruleTypeSavedQuery:
 				savedQueryRule, err := createProps.AsSecurityDetectionsAPISavedQueryRuleCreateProps()
 				require.NoError(t, err)
-				require.Equal(t, "Test Saved Query Rule", string(savedQueryRule.Name))
-				require.Equal(t, "Test description", string(savedQueryRule.Description))
-				require.Equal(t, "saved_query", string(savedQueryRule.Type))
-				require.Equal(t, "my-saved-query", string(savedQueryRule.SavedId))
+				require.Equal(t, "Test Saved Query Rule", savedQueryRule.Name)
+				require.Equal(t, "Test description", savedQueryRule.Description)
+				require.Equal(t, ruleTypeSavedQuery, string(savedQueryRule.Type))
+				require.Equal(t, "my-saved-query", savedQueryRule.SavedId)
 				require.Equal(t, int64(75), int64(savedQueryRule.RiskScore))
 				require.Equal(t, "medium", string(savedQueryRule.Severity))
-			case "threat_match":
+			case ruleTypeThreatMatch:
 				threatMatchRule, err := createProps.AsSecurityDetectionsAPIThreatMatchRuleCreateProps()
 				require.NoError(t, err)
-				require.Equal(t, "Test Threat Match Rule", string(threatMatchRule.Name))
-				require.Equal(t, "Test description", string(threatMatchRule.Description))
-				require.Equal(t, "threat_match", string(threatMatchRule.Type))
-				require.Equal(t, "source.ip:*", string(threatMatchRule.Query))
+				require.Equal(t, "Test Threat Match Rule", threatMatchRule.Name)
+				require.Equal(t, "Test description", threatMatchRule.Description)
+				require.Equal(t, ruleTypeThreatMatch, string(threatMatchRule.Type))
+				require.Equal(t, "source.ip:*", threatMatchRule.Query)
 				require.Equal(t, int64(75), int64(threatMatchRule.RiskScore))
 				require.Equal(t, "medium", string(threatMatchRule.Severity))
 				require.Len(t, threatMatchRule.ThreatIndex, 1)
 				require.Equal(t, "threat-intel-*", threatMatchRule.ThreatIndex[0])
 				require.Len(t, threatMatchRule.ThreatMapping, 1)
-			case "threshold":
+			case ruleTypeThreshold:
 				thresholdRule, err := createProps.AsSecurityDetectionsAPIThresholdRuleCreateProps()
 				require.NoError(t, err)
-				require.Equal(t, "Test Threshold Rule", string(thresholdRule.Name))
-				require.Equal(t, "Test description", string(thresholdRule.Description))
-				require.Equal(t, "threshold", string(thresholdRule.Type))
-				require.Equal(t, "event.action:login", string(thresholdRule.Query))
+				require.Equal(t, "Test Threshold Rule", thresholdRule.Name)
+				require.Equal(t, "Test description", thresholdRule.Description)
+				require.Equal(t, ruleTypeThreshold, string(thresholdRule.Type))
+				require.Equal(t, "event.action:login", thresholdRule.Query)
 				require.Equal(t, int64(75), int64(thresholdRule.RiskScore))
 				require.Equal(t, "medium", string(thresholdRule.Severity))
 				require.NotNil(t, thresholdRule.Threshold)
@@ -1883,7 +1911,7 @@ func TestToCreateProps(t *testing.T) {
 				// Check single field
 				singleField, err := thresholdRule.Threshold.Field.AsSecurityDetectionsAPIThresholdField0()
 				require.NoError(t, err)
-				require.Equal(t, "user.name", string(singleField))
+				require.Equal(t, "user.name", singleField)
 			}
 		})
 	}
@@ -1895,22 +1923,22 @@ func TestToUpdateProps(t *testing.T) {
 
 	// Create a valid composite ID for testing
 	testUUID := uuid.New()
-	testSpaceId := "test-space"
-	validCompositeId := fmt.Sprintf("%s/%s", testSpaceId, testUUID.String())
+	testSpaceID := "test-space"
+	validCompositeID := fmt.Sprintf("%s/%s", testSpaceID, testUUID.String())
 
 	tests := []struct {
 		name        string
 		ruleType    string
 		shouldError bool
 		errorMsg    string
-		setupData   func() SecurityDetectionRuleData
+		setupData   func() Data
 	}{
 		{
 			name:     "query rule type",
 			ruleType: "query",
-			setupData: func() SecurityDetectionRuleData {
-				return SecurityDetectionRuleData{
-					Id:          types.StringValue(validCompositeId),
+			setupData: func() Data {
+				return Data{
+					ID:          types.StringValue(validCompositeID),
 					Type:        types.StringValue("query"),
 					Name:        types.StringValue("Test Query Rule"),
 					Description: types.StringValue("Test description"),
@@ -1924,9 +1952,9 @@ func TestToUpdateProps(t *testing.T) {
 		{
 			name:     "eql rule type",
 			ruleType: "eql",
-			setupData: func() SecurityDetectionRuleData {
-				return SecurityDetectionRuleData{
-					Id:          types.StringValue(validCompositeId),
+			setupData: func() Data {
+				return Data{
+					ID:          types.StringValue(validCompositeID),
 					Type:        types.StringValue("eql"),
 					Name:        types.StringValue("Test EQL Rule"),
 					Description: types.StringValue("Test description"),
@@ -1939,9 +1967,9 @@ func TestToUpdateProps(t *testing.T) {
 		{
 			name:     "esql rule type",
 			ruleType: "esql",
-			setupData: func() SecurityDetectionRuleData {
-				return SecurityDetectionRuleData{
-					Id:          types.StringValue(validCompositeId),
+			setupData: func() Data {
+				return Data{
+					ID:          types.StringValue(validCompositeID),
 					Type:        types.StringValue("esql"),
 					Name:        types.StringValue("Test ESQL Rule"),
 					Description: types.StringValue("Test description"),
@@ -1954,14 +1982,14 @@ func TestToUpdateProps(t *testing.T) {
 		{
 			name:     "machine_learning rule type",
 			ruleType: "machine_learning",
-			setupData: func() SecurityDetectionRuleData {
-				return SecurityDetectionRuleData{
-					Id:                   types.StringValue(validCompositeId),
+			setupData: func() Data {
+				return Data{
+					ID:                   types.StringValue(validCompositeID),
 					Type:                 types.StringValue("machine_learning"),
 					Name:                 types.StringValue("Test ML Rule"),
 					Description:          types.StringValue("Test description"),
 					AnomalyThreshold:     types.Int64Value(50),
-					MachineLearningJobId: utils.ListValueFrom(ctx, []string{"suspicious_activity"}, types.StringType, path.Root("machine_learning_job_id"), &diags),
+					MachineLearningJobID: typeutils.ListValueFrom(ctx, []string{"suspicious_activity"}, types.StringType, path.Root("machine_learning_job_id"), &diags),
 					RiskScore:            types.Int64Value(75),
 					Severity:             types.StringValue("medium"),
 				}
@@ -1970,14 +1998,14 @@ func TestToUpdateProps(t *testing.T) {
 		{
 			name:     "new_terms rule type",
 			ruleType: "new_terms",
-			setupData: func() SecurityDetectionRuleData {
-				return SecurityDetectionRuleData{
-					Id:                 types.StringValue(validCompositeId),
+			setupData: func() Data {
+				return Data{
+					ID:                 types.StringValue(validCompositeID),
 					Type:               types.StringValue("new_terms"),
 					Name:               types.StringValue("Test New Terms Rule"),
 					Description:        types.StringValue("Test description"),
 					Query:              types.StringValue("user.name:*"),
-					NewTermsFields:     utils.ListValueFrom(ctx, []string{"user.name"}, types.StringType, path.Root("new_terms_fields"), &diags),
+					NewTermsFields:     typeutils.ListValueFrom(ctx, []string{"user.name"}, types.StringType, path.Root("new_terms_fields"), &diags),
 					HistoryWindowStart: types.StringValue("now-7d"),
 					RiskScore:          types.Int64Value(75),
 					Severity:           types.StringValue("medium"),
@@ -1987,13 +2015,13 @@ func TestToUpdateProps(t *testing.T) {
 		{
 			name:     "saved_query rule type",
 			ruleType: "saved_query",
-			setupData: func() SecurityDetectionRuleData {
-				return SecurityDetectionRuleData{
-					Id:          types.StringValue(validCompositeId),
+			setupData: func() Data {
+				return Data{
+					ID:          types.StringValue(validCompositeID),
 					Type:        types.StringValue("saved_query"),
 					Name:        types.StringValue("Test Saved Query Rule"),
 					Description: types.StringValue("Test description"),
-					SavedId:     types.StringValue("my-saved-query"),
+					SavedID:     types.StringValue("my-saved-query"),
 					RiskScore:   types.Int64Value(75),
 					Severity:    types.StringValue("medium"),
 				}
@@ -2002,17 +2030,17 @@ func TestToUpdateProps(t *testing.T) {
 		{
 			name:     "threat_match rule type",
 			ruleType: "threat_match",
-			setupData: func() SecurityDetectionRuleData {
-				return SecurityDetectionRuleData{
-					Id:          types.StringValue(validCompositeId),
+			setupData: func() Data {
+				return Data{
+					ID:          types.StringValue(validCompositeID),
 					Type:        types.StringValue("threat_match"),
 					Name:        types.StringValue("Test Threat Match Rule"),
 					Description: types.StringValue("Test description"),
 					Query:       types.StringValue("source.ip:*"),
-					ThreatIndex: utils.ListValueFrom(ctx, []string{"threat-intel-*"}, types.StringType, path.Root("threat_index"), &diags),
-					ThreatMapping: utils.ListValueFrom(ctx, []SecurityDetectionRuleTfDataItem{
+					ThreatIndex: typeutils.ListValueFrom(ctx, []string{"threat-intel-*"}, types.StringType, path.Root("threat_index"), &diags),
+					ThreatMapping: typeutils.ListValueFrom(ctx, []TfDataItem{
 						{
-							Entries: utils.ListValueFrom(ctx, []SecurityDetectionRuleTfDataItemEntry{
+							Entries: typeutils.ListValueFrom(ctx, []TfDataItemEntry{
 								{
 									Field: types.StringValue("source.ip"),
 									Type:  types.StringValue("mapping"),
@@ -2029,15 +2057,15 @@ func TestToUpdateProps(t *testing.T) {
 		{
 			name:     "threshold rule type",
 			ruleType: "threshold",
-			setupData: func() SecurityDetectionRuleData {
-				return SecurityDetectionRuleData{
-					Id:          types.StringValue(validCompositeId),
+			setupData: func() Data {
+				return Data{
+					ID:          types.StringValue(validCompositeID),
 					Type:        types.StringValue("threshold"),
 					Name:        types.StringValue("Test Threshold Rule"),
 					Description: types.StringValue("Test description"),
 					Query:       types.StringValue("event.action:login"),
-					Threshold: utils.ObjectValueFrom(ctx, &ThresholdModel{
-						Field:       utils.ListValueFrom(ctx, []string{"user.name"}, types.StringType, path.Root("threshold").AtName("field"), &diags),
+					Threshold: typeutils.ObjectValueFrom(ctx, &ThresholdModel{
+						Field:       typeutils.ListValueFrom(ctx, []string{"user.name"}, types.StringType, path.Root("threshold").AtName("field"), &diags),
 						Value:       types.Int64Value(5),
 						Cardinality: types.ListNull(getCardinalityType()),
 					}, getThresholdType(), path.Root("threshold"), &diags),
@@ -2051,9 +2079,9 @@ func TestToUpdateProps(t *testing.T) {
 			ruleType:    "unsupported_type",
 			shouldError: true,
 			errorMsg:    "Rule type 'unsupported_type' is not supported",
-			setupData: func() SecurityDetectionRuleData {
-				return SecurityDetectionRuleData{
-					Id:          types.StringValue(validCompositeId),
+			setupData: func() Data {
+				return Data{
+					ID:          types.StringValue(validCompositeID),
 					Type:        types.StringValue("unsupported_type"),
 					Name:        types.StringValue("Test Unsupported Rule"),
 					Description: types.StringValue("Test description"),
@@ -2070,7 +2098,7 @@ func TestToUpdateProps(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			data := tt.setupData()
 
-			updateProps, updateDiags := data.toUpdateProps(ctx, NewMockApiClient())
+			updateProps, updateDiags := data.toUpdateProps(ctx, NewMockAPIClient())
 
 			if tt.shouldError {
 				require.True(t, updateDiags.HasError())
@@ -2086,47 +2114,47 @@ func TestToUpdateProps(t *testing.T) {
 			case "query":
 				queryRule, err := updateProps.AsSecurityDetectionsAPIQueryRuleUpdateProps()
 				require.NoError(t, err)
-				require.Equal(t, "Test Query Rule", string(queryRule.Name))
-				require.Equal(t, "Test description", string(queryRule.Description))
-				require.Equal(t, "user.name:test", string(*queryRule.Query))
+				require.Equal(t, "Test Query Rule", queryRule.Name)
+				require.Equal(t, "Test description", queryRule.Description)
+				require.Equal(t, "user.name:test", *queryRule.Query)
 				require.Equal(t, "kuery", string(*queryRule.Language))
 				require.Equal(t, int64(75), int64(queryRule.RiskScore))
 				require.Equal(t, "medium", string(queryRule.Severity))
 			case "eql":
 				eqlRule, err := updateProps.AsSecurityDetectionsAPIEqlRuleUpdateProps()
 				require.NoError(t, err)
-				require.Equal(t, "Test EQL Rule", string(eqlRule.Name))
-				require.Equal(t, "Test description", string(eqlRule.Description))
-				require.Equal(t, "process where process.name == \"cmd.exe\"", string(eqlRule.Query))
+				require.Equal(t, "Test EQL Rule", eqlRule.Name)
+				require.Equal(t, "Test description", eqlRule.Description)
+				require.Equal(t, "process where process.name == \"cmd.exe\"", eqlRule.Query)
 				require.Equal(t, int64(75), int64(eqlRule.RiskScore))
 				require.Equal(t, "medium", string(eqlRule.Severity))
 			case "esql":
 				esqlRule, err := updateProps.AsSecurityDetectionsAPIEsqlRuleUpdateProps()
 				require.NoError(t, err)
-				require.Equal(t, "Test ESQL Rule", string(esqlRule.Name))
-				require.Equal(t, "Test description", string(esqlRule.Description))
-				require.Equal(t, "FROM logs | WHERE user.name == \"suspicious_user\"", string(esqlRule.Query))
+				require.Equal(t, "Test ESQL Rule", esqlRule.Name)
+				require.Equal(t, "Test description", esqlRule.Description)
+				require.Equal(t, "FROM logs | WHERE user.name == \"suspicious_user\"", esqlRule.Query)
 				require.Equal(t, int64(75), int64(esqlRule.RiskScore))
 				require.Equal(t, "medium", string(esqlRule.Severity))
 			case "machine_learning":
 				mlRule, err := updateProps.AsSecurityDetectionsAPIMachineLearningRuleUpdateProps()
 				require.NoError(t, err)
-				require.Equal(t, "Test ML Rule", string(mlRule.Name))
-				require.Equal(t, "Test description", string(mlRule.Description))
+				require.Equal(t, "Test ML Rule", mlRule.Name)
+				require.Equal(t, "Test description", mlRule.Description)
 				require.Equal(t, int64(50), int64(mlRule.AnomalyThreshold))
 				require.Equal(t, int64(75), int64(mlRule.RiskScore))
 				require.Equal(t, "medium", string(mlRule.Severity))
 				// Verify ML job ID is set correctly
-				jobId, err := mlRule.MachineLearningJobId.AsSecurityDetectionsAPIMachineLearningJobId1()
+				jobID, err := mlRule.MachineLearningJobId.AsSecurityDetectionsAPIMachineLearningJobId1()
 				require.NoError(t, err)
-				require.Equal(t, []string{"suspicious_activity"}, jobId)
+				require.Equal(t, []string{"suspicious_activity"}, jobID)
 			case "new_terms":
 				newTermsRule, err := updateProps.AsSecurityDetectionsAPINewTermsRuleUpdateProps()
 				require.NoError(t, err)
-				require.Equal(t, "Test New Terms Rule", string(newTermsRule.Name))
-				require.Equal(t, "Test description", string(newTermsRule.Description))
-				require.Equal(t, "user.name:*", string(newTermsRule.Query))
-				require.Equal(t, "now-7d", string(newTermsRule.HistoryWindowStart))
+				require.Equal(t, "Test New Terms Rule", newTermsRule.Name)
+				require.Equal(t, "Test description", newTermsRule.Description)
+				require.Equal(t, "user.name:*", newTermsRule.Query)
+				require.Equal(t, "now-7d", newTermsRule.HistoryWindowStart)
 				require.Equal(t, int64(75), int64(newTermsRule.RiskScore))
 				require.Equal(t, "medium", string(newTermsRule.Severity))
 				require.Len(t, newTermsRule.NewTermsFields, 1)
@@ -2134,17 +2162,17 @@ func TestToUpdateProps(t *testing.T) {
 			case "saved_query":
 				savedQueryRule, err := updateProps.AsSecurityDetectionsAPISavedQueryRuleUpdateProps()
 				require.NoError(t, err)
-				require.Equal(t, "Test Saved Query Rule", string(savedQueryRule.Name))
-				require.Equal(t, "Test description", string(savedQueryRule.Description))
-				require.Equal(t, "my-saved-query", string(savedQueryRule.SavedId))
+				require.Equal(t, "Test Saved Query Rule", savedQueryRule.Name)
+				require.Equal(t, "Test description", savedQueryRule.Description)
+				require.Equal(t, "my-saved-query", savedQueryRule.SavedId)
 				require.Equal(t, int64(75), int64(savedQueryRule.RiskScore))
 				require.Equal(t, "medium", string(savedQueryRule.Severity))
 			case "threat_match":
 				threatMatchRule, err := updateProps.AsSecurityDetectionsAPIThreatMatchRuleUpdateProps()
 				require.NoError(t, err)
-				require.Equal(t, "Test Threat Match Rule", string(threatMatchRule.Name))
-				require.Equal(t, "Test description", string(threatMatchRule.Description))
-				require.Equal(t, "source.ip:*", string(threatMatchRule.Query))
+				require.Equal(t, "Test Threat Match Rule", threatMatchRule.Name)
+				require.Equal(t, "Test description", threatMatchRule.Description)
+				require.Equal(t, "source.ip:*", threatMatchRule.Query)
 				require.Equal(t, int64(75), int64(threatMatchRule.RiskScore))
 				require.Equal(t, "medium", string(threatMatchRule.Severity))
 				require.Len(t, threatMatchRule.ThreatIndex, 1)
@@ -2153,9 +2181,9 @@ func TestToUpdateProps(t *testing.T) {
 			case "threshold":
 				thresholdRule, err := updateProps.AsSecurityDetectionsAPIThresholdRuleUpdateProps()
 				require.NoError(t, err)
-				require.Equal(t, "Test Threshold Rule", string(thresholdRule.Name))
-				require.Equal(t, "Test description", string(thresholdRule.Description))
-				require.Equal(t, "event.action:login", string(thresholdRule.Query))
+				require.Equal(t, "Test Threshold Rule", thresholdRule.Name)
+				require.Equal(t, "Test description", thresholdRule.Description)
+				require.Equal(t, "event.action:login", thresholdRule.Query)
 				require.Equal(t, int64(75), int64(thresholdRule.RiskScore))
 				require.Equal(t, "medium", string(thresholdRule.Severity))
 				require.NotNil(t, thresholdRule.Threshold)
@@ -2163,13 +2191,13 @@ func TestToUpdateProps(t *testing.T) {
 				// Check single field
 				singleField, err := thresholdRule.Threshold.Field.AsSecurityDetectionsAPIThresholdField0()
 				require.NoError(t, err)
-				require.Equal(t, "user.name", string(singleField))
+				require.Equal(t, "user.name", singleField)
 			}
 		})
 	}
 }
 
-func TestParseDurationToApi(t *testing.T) {
+func TestParseDurationToAPI(t *testing.T) {
 	tests := []struct {
 		name         string
 		duration     customtypes.Duration
@@ -2246,7 +2274,7 @@ func TestParseDurationToApi(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, diags := parseDurationToApi(tt.duration)
+			result, diags := parseDurationToAPI(tt.duration)
 
 			if tt.expectError {
 				require.True(t, diags.HasError(), "Expected error but got none")

@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package elasticsearch
 
 import (
@@ -12,7 +29,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
-func PutWatch(ctx context.Context, apiClient *clients.ApiClient, watch *models.PutWatch) diag.Diagnostics {
+func PutWatch(ctx context.Context, apiClient *clients.APIClient, watch *models.PutWatch) diag.Diagnostics {
 	var diags diag.Diagnostics
 	watchBodyBytes, err := json.Marshal(watch.Body)
 	if err != nil {
@@ -36,7 +53,7 @@ func PutWatch(ctx context.Context, apiClient *clients.ApiClient, watch *models.P
 	return diags
 }
 
-func GetWatch(ctx context.Context, apiClient *clients.ApiClient, watchID string) (*models.Watch, diag.Diagnostics) {
+func GetWatch(ctx context.Context, apiClient *clients.APIClient, watchID string) (*models.Watch, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	esClient, err := apiClient.GetESClient()
@@ -65,7 +82,7 @@ func GetWatch(ctx context.Context, apiClient *clients.ApiClient, watchID string)
 	return &watch, diags
 }
 
-func DeleteWatch(ctx context.Context, apiClient *clients.ApiClient, watchID string) diag.Diagnostics {
+func DeleteWatch(ctx context.Context, apiClient *clients.APIClient, watchID string) diag.Diagnostics {
 	var diags diag.Diagnostics
 	esClient, err := apiClient.GetESClient()
 	if err != nil {

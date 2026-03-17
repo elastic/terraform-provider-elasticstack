@@ -1,4 +1,21 @@
-package integration_policy
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package integrationpolicy
 
 import (
 	"context"
@@ -37,7 +54,7 @@ func TestUpdateStreamsV1ToV2(t *testing.T) {
 
 	t.Run("single stream with enabled and vars", func(t *testing.T) {
 		enabled := true
-		vars := map[string]interface{}{
+		vars := map[string]any{
 			"key1": "value1",
 			"key2": 42,
 		}
@@ -70,8 +87,8 @@ func TestUpdateStreamsV1ToV2(t *testing.T) {
 	t.Run("multiple streams with different configurations", func(t *testing.T) {
 		enabled1 := true
 		enabled2 := false
-		vars1 := map[string]interface{}{"key1": "value1"}
-		vars2 := map[string]interface{}{"key2": "value2"}
+		vars1 := map[string]any{"key1": "value1"}
+		vars2 := map[string]any{"key2": "value2"}
 
 		apiStreams := map[string]kbapi.PackagePolicyInputStream{
 			"stream-1": {
@@ -101,7 +118,7 @@ func TestUpdateStreamsV1ToV2(t *testing.T) {
 	})
 
 	t.Run("stream with nil enabled", func(t *testing.T) {
-		vars := map[string]interface{}{"key": "value"}
+		vars := map[string]any{"key": "value"}
 		apiStreams := map[string]kbapi.PackagePolicyInputStream{
 			"stream-1": {
 				Enabled: nil,
@@ -173,7 +190,7 @@ func TestIntegrationPolicyModelV1ToV2(t *testing.T) {
 			Force:              types.BoolValue(false),
 			IntegrationName:    types.StringValue("test-integration"),
 			IntegrationVersion: types.StringValue("1.0.0"),
-			VarsJson:           jsontypes.NewNormalizedValue(`{"var1":"value1"}`),
+			VarsJSON:           jsontypes.NewNormalizedValue(`{"var1":"value1"}`),
 			Input:              types.ListNull(getInputTypeV1()),
 		}
 
@@ -191,8 +208,8 @@ func TestIntegrationPolicyModelV1ToV2(t *testing.T) {
 		assert.Equal(t, v1Model.IntegrationName, v2Model.IntegrationName)
 		assert.Equal(t, v1Model.IntegrationVersion, v2Model.IntegrationVersion)
 
-		expectedVarsJson, _ := NewVarsJSONWithIntegration(`{"var1":"value1"}`, "test-integration", "1.0.0")
-		assert.True(t, expectedVarsJson.Equal(v2Model.VarsJson))
+		expectedVarsJSON, _ := NewVarsJSONWithIntegration(`{"var1":"value1"}`, "test-integration", "1.0.0")
+		assert.True(t, expectedVarsJSON.Equal(v2Model.VarsJSON))
 	})
 
 	t.Run("conversion with agent_policy_ids", func(t *testing.T) {
@@ -226,14 +243,14 @@ func TestIntegrationPolicyModelV1ToV2(t *testing.T) {
 			AgentPolicyID:      types.StringValue("agent-policy-1"),
 			IntegrationName:    types.StringValue("test-integration"),
 			IntegrationVersion: types.StringValue("1.0.0"),
-			SpaceIds:           spaceIDs,
+			SpaceIDs:           spaceIDs,
 			Input:              types.ListNull(getInputTypeV1()),
 		}
 
 		v2Model, diags := v1Model.toV2(ctx)
 		require.Empty(t, diags)
 
-		assert.Equal(t, v1Model.SpaceIds, v2Model.SpaceIds)
+		assert.Equal(t, v1Model.SpaceIDs, v2Model.SpaceIDs)
 	})
 
 	t.Run("conversion with empty inputs", func(t *testing.T) {
@@ -258,8 +275,8 @@ func TestIntegrationPolicyModelV1ToV2(t *testing.T) {
 			{
 				InputID:     types.StringValue("input-1"),
 				Enabled:     types.BoolValue(true),
-				VarsJson:    jsontypes.NewNormalizedValue(`{"input_var":"value"}`),
-				StreamsJson: jsontypes.NewNormalizedNull(),
+				VarsJSON:    jsontypes.NewNormalizedValue(`{"input_var":"value"}`),
+				StreamsJSON: jsontypes.NewNormalizedNull(),
 			},
 		}
 		inputList, diags := types.ListValueFrom(ctx, getInputTypeV1(), inputsV1)
@@ -293,7 +310,7 @@ func TestIntegrationPolicyModelV1ToV2(t *testing.T) {
 
 	t.Run("conversion with input and streams", func(t *testing.T) {
 		enabled := true
-		vars := map[string]interface{}{"stream_var": "value"}
+		vars := map[string]any{"stream_var": "value"}
 		apiStreams := map[string]kbapi.PackagePolicyInputStream{
 			"stream-1": {
 				Enabled: &enabled,
@@ -307,8 +324,8 @@ func TestIntegrationPolicyModelV1ToV2(t *testing.T) {
 			{
 				InputID:     types.StringValue("input-1"),
 				Enabled:     types.BoolValue(true),
-				VarsJson:    jsontypes.NewNormalizedValue(`{"input_var":"value"}`),
-				StreamsJson: jsontypes.NewNormalizedValue(string(streamsJSON)),
+				VarsJSON:    jsontypes.NewNormalizedValue(`{"input_var":"value"}`),
+				StreamsJSON: jsontypes.NewNormalizedValue(string(streamsJSON)),
 			},
 		}
 		inputList, diags := types.ListValueFrom(ctx, getInputTypeV1(), inputsV1)
@@ -352,8 +369,8 @@ func TestIntegrationPolicyModelV1ToV2(t *testing.T) {
 	t.Run("conversion with multiple inputs and streams", func(t *testing.T) {
 		enabled1 := true
 		enabled2 := false
-		vars1 := map[string]interface{}{"stream1_var": "value1"}
-		vars2 := map[string]interface{}{"stream2_var": "value2"}
+		vars1 := map[string]any{"stream1_var": "value1"}
+		vars2 := map[string]any{"stream2_var": "value2"}
 
 		apiStreams1 := map[string]kbapi.PackagePolicyInputStream{
 			"stream-1": {Enabled: &enabled1, Vars: &vars1},
@@ -371,14 +388,14 @@ func TestIntegrationPolicyModelV1ToV2(t *testing.T) {
 			{
 				InputID:     types.StringValue("input-1"),
 				Enabled:     types.BoolValue(true),
-				VarsJson:    jsontypes.NewNormalizedValue(`{"input1_var":"value1"}`),
-				StreamsJson: jsontypes.NewNormalizedValue(string(streamsJSON1)),
+				VarsJSON:    jsontypes.NewNormalizedValue(`{"input1_var":"value1"}`),
+				StreamsJSON: jsontypes.NewNormalizedValue(string(streamsJSON1)),
 			},
 			{
 				InputID:     types.StringValue("input-2"),
 				Enabled:     types.BoolValue(false),
-				VarsJson:    jsontypes.NewNormalizedValue(`{"input2_var":"value2"}`),
-				StreamsJson: jsontypes.NewNormalizedValue(string(streamsJSON2)),
+				VarsJSON:    jsontypes.NewNormalizedValue(`{"input2_var":"value2"}`),
+				StreamsJSON: jsontypes.NewNormalizedValue(string(streamsJSON2)),
 			},
 		}
 		inputList, diags := types.ListValueFrom(ctx, getInputTypeV1(), inputsV1)
@@ -426,8 +443,8 @@ func TestIntegrationPolicyModelV1ToV2(t *testing.T) {
 			{
 				InputID:     types.StringValue("input-1"),
 				Enabled:     types.BoolValue(true),
-				VarsJson:    jsontypes.NewNormalizedValue(`{"input_var":"value"}`),
-				StreamsJson: jsontypes.NewNormalizedValue(`["array", "instead", "of", "map"]`),
+				VarsJSON:    jsontypes.NewNormalizedValue(`{"input_var":"value"}`),
+				StreamsJSON: jsontypes.NewNormalizedValue(`["array", "instead", "of", "map"]`),
 			},
 		}
 		inputList, diags := types.ListValueFrom(ctx, getInputTypeV1(), inputsV1)
@@ -457,8 +474,8 @@ func TestIntegrationPolicyModelV1ToV2(t *testing.T) {
 			IntegrationName:    types.StringValue("test-integration"),
 			IntegrationVersion: types.StringValue("1.0.0"),
 			Description:        types.StringNull(),
-			VarsJson:           jsontypes.NewNormalizedNull(),
-			SpaceIds:           types.SetNull(types.StringType),
+			VarsJSON:           jsontypes.NewNormalizedNull(),
+			SpaceIDs:           types.SetNull(types.StringType),
 			Input:              types.ListNull(getInputTypeV1()),
 		}
 
@@ -466,8 +483,8 @@ func TestIntegrationPolicyModelV1ToV2(t *testing.T) {
 		require.Empty(t, diags)
 
 		assert.True(t, v2Model.Description.IsNull())
-		assert.True(t, v2Model.VarsJson.IsNull())
-		assert.True(t, v2Model.SpaceIds.IsNull())
+		assert.True(t, v2Model.VarsJSON.IsNull())
+		assert.True(t, v2Model.SpaceIDs.IsNull())
 	})
 }
 

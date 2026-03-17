@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package dashboard
 
 import (
@@ -5,7 +22,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -28,37 +45,47 @@ func (c markdownPanelConfigConverter) handlesTFPanelConfig(pm panelModel) bool {
 }
 
 func (c markdownPanelConfigConverter) populateFromAPIPanel(_ context.Context, pm *panelModel, config kbapi.DashboardPanelItem_Config) diag.Diagnostics {
-	config0, err := config.AsDashboardPanelItemConfig0()
+	config4, err := config.AsDashboardPanelItemConfig4()
+	if err != nil {
+		return diagutil.FrameworkDiagFromError(err)
+	}
+
+	config40, err := config4.AsDashboardPanelItemConfig40()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
 	pm.MarkdownConfig = &markdownConfigModel{
-		Content:     types.StringValue(config0.Content),
-		Description: types.StringPointerValue(config0.Description),
-		HideTitle:   types.BoolPointerValue(config0.HideTitle),
-		Title:       types.StringPointerValue(config0.Title),
+		Content:     types.StringValue(config40.Content),
+		Description: types.StringPointerValue(config40.Description),
+		HideTitle:   types.BoolPointerValue(config40.HideTitle),
+		Title:       types.StringPointerValue(config40.Title),
 	}
 
 	return nil
 }
 
 func (c markdownPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *kbapi.DashboardPanelItem_Config) diag.Diagnostics {
-	config0 := kbapi.DashboardPanelItemConfig0{
+	config40 := kbapi.DashboardPanelItemConfig40{
 		Content: pm.MarkdownConfig.Content.ValueString(),
 	}
-	if utils.IsKnown(pm.MarkdownConfig.Description) {
-		config0.Description = utils.Pointer(pm.MarkdownConfig.Description.ValueString())
+	if typeutils.IsKnown(pm.MarkdownConfig.Description) {
+		config40.Description = pm.MarkdownConfig.Description.ValueStringPointer()
 	}
-	if utils.IsKnown(pm.MarkdownConfig.HideTitle) {
-		config0.HideTitle = utils.Pointer(pm.MarkdownConfig.HideTitle.ValueBool())
+	if typeutils.IsKnown(pm.MarkdownConfig.HideTitle) {
+		config40.HideTitle = pm.MarkdownConfig.HideTitle.ValueBoolPointer()
 	}
-	if utils.IsKnown(pm.MarkdownConfig.Title) {
-		config0.Title = utils.Pointer(pm.MarkdownConfig.Title.ValueString())
+	if typeutils.IsKnown(pm.MarkdownConfig.Title) {
+		config40.Title = pm.MarkdownConfig.Title.ValueStringPointer()
+	}
+
+	var config4 kbapi.DashboardPanelItemConfig4
+	if err := config4.FromDashboardPanelItemConfig40(config40); err != nil {
+		return diagutil.FrameworkDiagFromError(err)
 	}
 
 	var diags diag.Diagnostics
-	if err := apiConfig.FromDashboardPanelItemConfig0(config0); err != nil {
+	if err := apiConfig.FromDashboardPanelItemConfig4(config4); err != nil {
 		diags.AddError("Failed to marshal panel config", err.Error())
 	}
 

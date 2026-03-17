@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package elasticsearch
 
 import (
@@ -14,7 +31,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
-func PutUser(ctx context.Context, apiClient *clients.ApiClient, user *models.User) fwdiag.Diagnostics {
+func PutUser(ctx context.Context, apiClient *clients.APIClient, user *models.User) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 	userBytes, err := json.Marshal(user)
 	if err != nil {
@@ -38,7 +55,7 @@ func PutUser(ctx context.Context, apiClient *clients.ApiClient, user *models.Use
 	return diags
 }
 
-func GetUser(ctx context.Context, apiClient *clients.ApiClient, username string) (*models.User, diag.Diagnostics) {
+func GetUser(ctx context.Context, apiClient *clients.APIClient, username string) (*models.User, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
@@ -75,7 +92,7 @@ func GetUser(ctx context.Context, apiClient *clients.ApiClient, username string)
 	return nil, diags
 }
 
-func DeleteUser(ctx context.Context, apiClient *clients.ApiClient, username string) fwdiag.Diagnostics {
+func DeleteUser(ctx context.Context, apiClient *clients.APIClient, username string) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
@@ -94,7 +111,7 @@ func DeleteUser(ctx context.Context, apiClient *clients.ApiClient, username stri
 	return diags
 }
 
-func EnableUser(ctx context.Context, apiClient *clients.ApiClient, username string) fwdiag.Diagnostics {
+func EnableUser(ctx context.Context, apiClient *clients.APIClient, username string) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
@@ -119,7 +136,7 @@ func EnableUser(ctx context.Context, apiClient *clients.ApiClient, username stri
 	return diags
 }
 
-func DisableUser(ctx context.Context, apiClient *clients.ApiClient, username string) fwdiag.Diagnostics {
+func DisableUser(ctx context.Context, apiClient *clients.APIClient, username string) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
@@ -144,7 +161,7 @@ func DisableUser(ctx context.Context, apiClient *clients.ApiClient, username str
 	return diags
 }
 
-func ChangeUserPassword(ctx context.Context, apiClient *clients.ApiClient, username string, userPassword *models.UserPassword) fwdiag.Diagnostics {
+func ChangeUserPassword(ctx context.Context, apiClient *clients.APIClient, username string, userPassword *models.UserPassword) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 	userPasswordBytes, err := json.Marshal(userPassword)
 	if err != nil {
@@ -181,7 +198,7 @@ func ChangeUserPassword(ctx context.Context, apiClient *clients.ApiClient, usern
 	return diags
 }
 
-func PutRole(ctx context.Context, apiClient *clients.ApiClient, role *models.Role) diag.Diagnostics {
+func PutRole(ctx context.Context, apiClient *clients.APIClient, role *models.Role) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	roleBytes, err := json.Marshal(role)
@@ -204,7 +221,7 @@ func PutRole(ctx context.Context, apiClient *clients.ApiClient, role *models.Rol
 	return diags
 }
 
-func GetRole(ctx context.Context, apiClient *clients.ApiClient, rolename string) (*models.Role, diag.Diagnostics) {
+func GetRole(ctx context.Context, apiClient *clients.APIClient, rolename string) (*models.Role, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	esClient, err := apiClient.GetESClient()
@@ -239,7 +256,7 @@ func GetRole(ctx context.Context, apiClient *clients.ApiClient, rolename string)
 	return nil, diags
 }
 
-func DeleteRole(ctx context.Context, apiClient *clients.ApiClient, rolename string) diag.Diagnostics {
+func DeleteRole(ctx context.Context, apiClient *clients.APIClient, rolename string) diag.Diagnostics {
 	var diags diag.Diagnostics
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
@@ -257,7 +274,7 @@ func DeleteRole(ctx context.Context, apiClient *clients.ApiClient, rolename stri
 	return diags
 }
 
-func PutRoleMapping(ctx context.Context, apiClient *clients.ApiClient, roleMapping *models.RoleMapping) fwdiag.Diagnostics {
+func PutRoleMapping(ctx context.Context, apiClient *clients.APIClient, roleMapping *models.RoleMapping) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 	roleMappingBytes, err := json.Marshal(roleMapping)
 	if err != nil {
@@ -278,7 +295,7 @@ func PutRoleMapping(ctx context.Context, apiClient *clients.ApiClient, roleMappi
 	return diagutil.CheckErrorFromFW(res, "Unable to put role mapping")
 }
 
-func GetRoleMapping(ctx context.Context, apiClient *clients.ApiClient, roleMappingName string) (*models.RoleMapping, fwdiag.Diagnostics) {
+func GetRoleMapping(ctx context.Context, apiClient *clients.APIClient, roleMappingName string) (*models.RoleMapping, fwdiag.Diagnostics) {
 	var diags fwdiag.Diagnostics
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
@@ -314,7 +331,7 @@ func GetRoleMapping(ctx context.Context, apiClient *clients.ApiClient, roleMappi
 	return nil, diags
 }
 
-func DeleteRoleMapping(ctx context.Context, apiClient *clients.ApiClient, roleMappingName string) fwdiag.Diagnostics {
+func DeleteRoleMapping(ctx context.Context, apiClient *clients.APIClient, roleMappingName string) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
@@ -330,7 +347,7 @@ func DeleteRoleMapping(ctx context.Context, apiClient *clients.ApiClient, roleMa
 	return diagutil.CheckErrorFromFW(res, "Unable to delete role mapping")
 }
 
-func CreateApiKey(apiClient *clients.ApiClient, apikey *models.ApiKey) (*models.ApiKeyCreateResponse, fwdiag.Diagnostics) {
+func CreateAPIKey(apiClient *clients.APIClient, apikey *models.APIKey) (*models.APIKeyCreateResponse, fwdiag.Diagnostics) {
 	apikeyBytes, err := json.Marshal(apikey)
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
@@ -349,7 +366,7 @@ func CreateApiKey(apiClient *clients.ApiClient, apikey *models.ApiKey) (*models.
 		return nil, diagutil.FrameworkDiagsFromSDK(diags)
 	}
 
-	var apiKey models.ApiKeyCreateResponse
+	var apiKey models.APIKeyCreateResponse
 
 	if err := json.NewDecoder(res.Body).Decode(&apiKey); err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
@@ -358,7 +375,7 @@ func CreateApiKey(apiClient *clients.ApiClient, apikey *models.ApiKey) (*models.
 	return &apiKey, nil
 }
 
-func UpdateApiKey(apiClient *clients.ApiClient, apikey models.ApiKey) fwdiag.Diagnostics {
+func UpdateAPIKey(apiClient *clients.APIClient, apikey models.APIKey) fwdiag.Diagnostics {
 	id := apikey.ID
 
 	apikey.Expiration = ""
@@ -385,7 +402,7 @@ func UpdateApiKey(apiClient *clients.ApiClient, apikey models.ApiKey) fwdiag.Dia
 	return nil
 }
 
-func GetApiKey(apiClient *clients.ApiClient, id string) (*models.ApiKeyResponse, fwdiag.Diagnostics) {
+func GetAPIKey(apiClient *clients.APIClient, id string) (*models.APIKeyResponse, fwdiag.Diagnostics) {
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
@@ -405,13 +422,13 @@ func GetApiKey(apiClient *clients.ApiClient, id string) (*models.ApiKeyResponse,
 
 	// unmarshal our response to proper type
 	var apiKeys struct {
-		ApiKeys []models.ApiKeyResponse `json:"api_keys"`
+		APIKeys []models.APIKeyResponse `json:"api_keys"`
 	}
 	if err := json.NewDecoder(res.Body).Decode(&apiKeys); err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	if len(apiKeys.ApiKeys) != 1 {
+	if len(apiKeys.APIKeys) != 1 {
 		return nil, fwdiag.Diagnostics{
 			fwdiag.NewErrorDiagnostic(
 				"Unable to find an apikey in the cluster",
@@ -420,13 +437,13 @@ func GetApiKey(apiClient *clients.ApiClient, id string) (*models.ApiKeyResponse,
 		}
 	}
 
-	apiKey := apiKeys.ApiKeys[0]
+	apiKey := apiKeys.APIKeys[0]
 	return &apiKey, nil
 }
 
-func DeleteApiKey(apiClient *clients.ApiClient, id string) fwdiag.Diagnostics {
+func DeleteAPIKey(apiClient *clients.APIClient, id string) fwdiag.Diagnostics {
 	apiKeys := struct {
-		Ids []string `json:"ids"`
+		IDs []string `json:"ids"`
 	}{
 		[]string{id},
 	}
@@ -450,7 +467,7 @@ func DeleteApiKey(apiClient *clients.ApiClient, id string) fwdiag.Diagnostics {
 	return nil
 }
 
-func CreateCrossClusterApiKey(apiClient *clients.ApiClient, apikey *models.CrossClusterApiKey) (*models.CrossClusterApiKeyCreateResponse, fwdiag.Diagnostics) {
+func CreateCrossClusterAPIKey(apiClient *clients.APIClient, apikey *models.CrossClusterAPIKey) (*models.CrossClusterAPIKeyCreateResponse, fwdiag.Diagnostics) {
 	apikeyBytes, err := json.Marshal(apikey)
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
@@ -469,7 +486,7 @@ func CreateCrossClusterApiKey(apiClient *clients.ApiClient, apikey *models.Cross
 		return nil, diags
 	}
 
-	var apiKey models.CrossClusterApiKeyCreateResponse
+	var apiKey models.CrossClusterAPIKeyCreateResponse
 
 	if err := json.NewDecoder(res.Body).Decode(&apiKey); err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
@@ -478,7 +495,7 @@ func CreateCrossClusterApiKey(apiClient *clients.ApiClient, apikey *models.Cross
 	return &apiKey, nil
 }
 
-func UpdateCrossClusterApiKey(apiClient *clients.ApiClient, apikey models.CrossClusterApiKey) fwdiag.Diagnostics {
+func UpdateCrossClusterAPIKey(apiClient *clients.APIClient, apikey models.CrossClusterAPIKey) fwdiag.Diagnostics {
 	id := apikey.ID
 
 	apikey.Expiration = ""
