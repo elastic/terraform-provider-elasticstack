@@ -2,6 +2,7 @@
 
 ### Changes
 
+- Add `elasticstack_kibana_agentbuilder_workflow` resource and `elasticstack_kibana_export_agentbuilder_workflow` data source ([#1923](https://github.com/elastic/terraform-provider-elasticstack/pull/1923))
 - Add `elasticstack_fleet_output` data source. ([#1762](https://github.com/elastic/terraform-provider-elasticstack/pull/1762))
 - Fix perpetual diff in `elasticstack_elasticsearch_index_template` if `search_routing` or `index_routing` was unset but `routing` was set ([#1841](https://github.com/elastic/terraform-provider-elasticstack/pull/1841))
 
