@@ -63,6 +63,7 @@ func TestReadPullRequestNumber(t *testing.T) {
 		{name: "pull_request payload", content: `{"pull_request":{"number":42}}`, wantPR: 42},
 		{name: "check_suite payload", content: `{"check_suite":{"pull_requests":[{"number":19}]}}`, wantPR: 19},
 		{name: "empty pull request list", content: `{"check_suite":{"pull_requests":[]}}`, wantPR: 0},
+		{name: "push payload has no PR", content: `{"ref":"refs/heads/feature","head_commit":{"id":"abc123"}}`, wantPR: 0},
 		{name: "invalid json", content: `{"pull_request":`, wantErr: true},
 	}
 
@@ -90,6 +91,70 @@ func TestReadPullRequestNumberMissingPath(t *testing.T) {
 	_, err := readPullRequestNumber("")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "missing GITHUB_EVENT_PATH")
+}
+
+func TestResolvePRFromPush(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		apiResp string
+		wantPR  int
+		wantErr bool
+	}{
+		{
+			name:    "returns first open non-draft PR",
+			apiResp: `[{"number":7,"state":"open","draft":false},{"number":8,"state":"open","draft":false}]`,
+			wantPR:  7,
+		},
+		{
+			name:    "skips draft PR",
+			apiResp: `[{"number":9,"state":"open","draft":true},{"number":10,"state":"open","draft":false}]`,
+			wantPR:  10,
+		},
+		{
+			name:    "skips closed PR",
+			apiResp: `[{"number":11,"state":"closed","draft":false},{"number":12,"state":"open","draft":false}]`,
+			wantPR:  12,
+		},
+		{
+			name:    "no open non-draft PR",
+			apiResp: `[{"number":13,"state":"open","draft":true}]`,
+			wantPR:  0,
+		},
+		{
+			name:    "empty list",
+			apiResp: `[]`,
+			wantPR:  0,
+		},
+	}
+
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			mux := http.NewServeMux()
+			mux.HandleFunc("/repos/o/r/commits/sha123/pulls", func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write([]byte(tc.apiResp))
+			})
+			server := httptest.NewServer(mux)
+			t.Cleanup(server.Close)
+
+			client := github.NewClient(server.Client())
+			baseURL, err := url.Parse(server.URL + "/")
+			require.NoError(t, err)
+			client.BaseURL = baseURL
+
+			got, err := resolvePRFromPush(context.Background(), client, "o", "r", "sha123")
+			if tc.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tc.wantPR, got)
+		})
+	}
 }
 
 func TestLogJSON(t *testing.T) {

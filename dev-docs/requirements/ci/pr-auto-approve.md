@@ -4,6 +4,10 @@ Script implementation: `scripts/auto-approve/`
 
 ## Requirements
 
+### Event Context
+
+- **[REQ-000] (EventContext)**: The script shall support both `pull_request` and `push` GitHub Actions event contexts. In `pull_request` context, the PR number is read from the event payload. In `push` context, the script shall determine whether the pushed commit (`GITHUB_SHA`) is part of an open, non-draft PR via the GitHub API; if not, it shall exit successfully without approving. If the commit is part of a PR, the script shall continue evaluation in the context of that PR.
+
 ### Shared Script Behavior
 
 - **[REQ-001] (Scope)**: The script shall evaluate only open, non-draft pull requests in the same repository.

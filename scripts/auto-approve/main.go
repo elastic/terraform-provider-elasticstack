@@ -44,18 +44,37 @@ func run(ctx context.Context) error {
 		return err
 	}
 
-	prNumber, err := readPullRequestNumber(strings.TrimSpace(os.Getenv("GITHUB_EVENT_PATH")))
+	eventPath := strings.TrimSpace(os.Getenv("GITHUB_EVENT_PATH"))
+	eventName := strings.TrimSpace(os.Getenv("GITHUB_EVENT_NAME"))
+
+	client := newGitHubClient(ctx, token)
+
+	prNumber, err := readPullRequestNumber(eventPath)
 	if err != nil {
 		return err
 	}
+
+	// In push context, the event payload has no pull_request; resolve PR from commit SHA.
+	if prNumber == 0 && eventName == "push" {
+		sha := strings.TrimSpace(os.Getenv("GITHUB_SHA"))
+		if sha == "" {
+			logJSON("skip", map[string]any{
+				"reason": "push event has no GITHUB_SHA",
+			})
+			return nil
+		}
+		prNumber, err = resolvePRFromPush(ctx, client, owner, name, sha)
+		if err != nil {
+			return fmt.Errorf("resolve PR from push: %w", err)
+		}
+	}
+
 	if prNumber == 0 {
 		logJSON("skip", map[string]any{
 			"reason": "event has no associated pull request",
 		})
 		return nil
 	}
-
-	client := newGitHubClient(ctx, token)
 
 	pr, _, err := client.PullRequests.Get(ctx, owner, name, prNumber)
 	if err != nil {
@@ -139,6 +158,22 @@ func parseRepository(repo string) (string, string, error) {
 		return "", "", fmt.Errorf("invalid GITHUB_REPOSITORY: %q", repo)
 	}
 	return parts[0], parts[1], nil
+}
+
+// resolvePRFromPush returns the number of an open, non-draft PR that contains the given commit.
+// It returns 0 if no such PR exists (e.g. push to a branch with no PR).
+func resolvePRFromPush(ctx context.Context, client *github.Client, owner, repo, sha string) (int, error) {
+	opts := &github.ListOptions{PerPage: 100}
+	pulls, _, err := client.PullRequests.ListPullRequestsWithCommit(ctx, owner, repo, sha, opts)
+	if err != nil {
+		return 0, err
+	}
+	for _, pr := range pulls {
+		if pr.GetState() == "open" && !pr.GetDraft() && pr.GetNumber() > 0 {
+			return pr.GetNumber(), nil
+		}
+	}
+	return 0, nil
 }
 
 func readPullRequestNumber(eventPath string) (int, error) {
