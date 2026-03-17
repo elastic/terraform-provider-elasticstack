@@ -59,7 +59,6 @@ func TestGetPackageInfo_PackageNotFound(t *testing.T) {
 	require.Len(t, diags, 1)
 	assert.Contains(t, diags[0].Summary(), "Package not found")
 	assert.Contains(t, diags[0].Detail(), "tcp")
-	assert.Contains(t, diags[0].Detail(), "3.1.10")
 }
 
 func TestGetPackageInfo_Success(t *testing.T) {

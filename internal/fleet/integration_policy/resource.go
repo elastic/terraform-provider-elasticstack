@@ -104,19 +104,18 @@ func getPackageInfo(ctx context.Context, client *fleet.Client, name string, vers
 		return &pkg, diags
 	}
 
-	pkg, diags := fleet.GetPackage(ctx, client, name, version)
+	// Call without version to get currently installed package info; more reliable when a version was removed from the registry.
+	pkg, diags := fleet.GetPackage(ctx, client, name, "")
 	if diags.HasError() {
 		return nil, diags
 	}
-
 	if pkg == nil {
 		diags.AddWarning(
 			"Package not found",
-			fmt.Sprintf("Package '%s' version '%s' was not found in the registry. Input defaults may be unavailable. Consider updating integration_version to an available version.", name, version),
+			fmt.Sprintf("Package '%s' was not found in the registry. Input defaults may be unavailable. Consider updating integration_version to an available version.", name),
 		)
 		return nil, diags
 	}
-
 	knownPackages.Store(getPackageCacheKey(name, version), *pkg)
 	return pkg, diags
 }
