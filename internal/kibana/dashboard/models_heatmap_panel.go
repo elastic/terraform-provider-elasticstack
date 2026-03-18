@@ -33,7 +33,7 @@ import (
 func newHeatmapPanelConfigConverter() heatmapPanelConfigConverter {
 	return heatmapPanelConfigConverter{
 		lensVisualizationBase: lensVisualizationBase{
-			visualizationType: string(kbapi.HeatmapNoESQLTypeHeatmap),
+			visualizationType: string(kbapi.HeatmapNoESQLTypeHeatMap),
 			hasTFPanelConfig:  func(pm panelModel) bool { return pm.HeatmapConfig != nil },
 		},
 	}
@@ -291,7 +291,7 @@ func (m *heatmapConfigModel) usesESQL() bool {
 func (m *heatmapConfigModel) toAPINoESQL() (kbapi.HeatmapNoESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	api := kbapi.HeatmapNoESQL{
-		Type: kbapi.HeatmapNoESQLTypeHeatmap,
+		Type: kbapi.HeatmapNoESQLTypeHeatMap,
 	}
 
 	if typeutils.IsKnown(m.Title) {
@@ -391,7 +391,7 @@ func (m *heatmapConfigModel) toAPINoESQL() (kbapi.HeatmapNoESQL, diag.Diagnostic
 func (m *heatmapConfigModel) toAPIESQL() (kbapi.HeatmapESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	api := kbapi.HeatmapESQL{
-		Type: kbapi.HeatmapESQLTypeHeatmap,
+		Type: kbapi.HeatmapESQLTypeHeatMap,
 	}
 
 	if typeutils.IsKnown(m.Title) {

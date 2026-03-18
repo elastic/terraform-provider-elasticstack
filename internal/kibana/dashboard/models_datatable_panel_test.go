@@ -31,7 +31,7 @@ import (
 func Test_newDatatablePanelConfigConverter(t *testing.T) {
 	converter := newDatatablePanelConfigConverter()
 	assert.NotNil(t, converter)
-	assert.Equal(t, "datatable", converter.visualizationType)
+	assert.Equal(t, "data_table", converter.visualizationType)
 }
 
 func Test_datatableDensityModel_fromAPI_toAPI(t *testing.T) {
@@ -100,7 +100,7 @@ func Test_datatableNoESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 	}
 
 	api := kbapi.DatatableNoESQL{
-		Type:                kbapi.DatatableNoESQLTypeDatatable,
+		Type:                kbapi.DatatableNoESQLTypeDataTable,
 		Title:               new("Datatable NoESQL"),
 		Description:         new("NoESQL description"),
 		IgnoreGlobalFilters: new(true),
@@ -152,7 +152,7 @@ func Test_datatableNoESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 
 	apiRoundTrip, diags := model.toAPI()
 	require.False(t, diags.HasError())
-	assert.Equal(t, kbapi.DatatableNoESQLTypeDatatable, apiRoundTrip.Type)
+	assert.Equal(t, kbapi.DatatableNoESQLTypeDataTable, apiRoundTrip.Type)
 	assert.NotNil(t, apiRoundTrip.Paging)
 }
 
@@ -193,7 +193,7 @@ func Test_datatableESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 	}
 
 	api := kbapi.DatatableESQL{
-		Type:                kbapi.DatatableESQLTypeDatatable,
+		Type:                kbapi.DatatableESQLTypeDataTable,
 		Title:               new("Datatable ESQL"),
 		Description:         new("ESQL description"),
 		IgnoreGlobalFilters: new(false),
@@ -242,7 +242,7 @@ func Test_datatableESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 
 	apiRoundTrip, diags := model.toAPI()
 	require.False(t, diags.HasError())
-	assert.Equal(t, kbapi.DatatableESQLTypeDatatable, apiRoundTrip.Type)
+	assert.Equal(t, kbapi.DatatableESQLTypeDataTable, apiRoundTrip.Type)
 	assert.NotNil(t, apiRoundTrip.Paging)
 	assert.NotNil(t, apiRoundTrip.Rows)
 }
@@ -256,7 +256,7 @@ func Test_datatablePanelConfigConverter_populateFromAttributes_buildAttributes_r
 	require.NoError(t, value.FromDatatableDensityHeightValue0(kbapi.DatatableDensityHeightValue0{Type: kbapi.DatatableDensityHeightValue0TypeAuto}))
 
 	api := kbapi.DatatableNoESQL{
-		Type:                kbapi.DatatableNoESQLTypeDatatable,
+		Type:                kbapi.DatatableNoESQLTypeDataTable,
 		Title:               new("Datatable NoESQL Round-Trip"),
 		Description:         new("Converter test"),
 		IgnoreGlobalFilters: new(true),
@@ -294,7 +294,7 @@ func Test_datatablePanelConfigConverter_populateFromAttributes_buildAttributes_r
 	noESQL2, err := chart2.AsDatatableNoESQL()
 	require.NoError(t, err)
 	assert.Equal(t, "Datatable NoESQL Round-Trip", *noESQL2.Title)
-	assert.Equal(t, kbapi.DatatableNoESQLTypeDatatable, noESQL2.Type)
+	assert.Equal(t, kbapi.DatatableNoESQLTypeDataTable, noESQL2.Type)
 }
 
 func Test_datatablePanelConfigConverter_populateFromAttributes_buildAttributes_roundTrip_ESQL(t *testing.T) {
@@ -305,7 +305,7 @@ func Test_datatablePanelConfigConverter_populateFromAttributes_buildAttributes_r
 		Operation: kbapi.DatatableESQLMetricOperationValue,
 	}
 	api := kbapi.DatatableESQL{
-		Type:                kbapi.DatatableESQLTypeDatatable,
+		Type:                kbapi.DatatableESQLTypeDataTable,
 		Title:               new("Datatable ESQL Round-Trip"),
 		Description:         new("Converter test"),
 		IgnoreGlobalFilters: new(false),
@@ -335,5 +335,5 @@ func Test_datatablePanelConfigConverter_populateFromAttributes_buildAttributes_r
 	esql2, err := chart2.AsDatatableESQL()
 	require.NoError(t, err)
 	assert.Equal(t, "Datatable ESQL Round-Trip", *esql2.Title)
-	assert.Equal(t, kbapi.DatatableESQLTypeDatatable, esql2.Type)
+	assert.Equal(t, kbapi.DatatableESQLTypeDataTable, esql2.Type)
 }
