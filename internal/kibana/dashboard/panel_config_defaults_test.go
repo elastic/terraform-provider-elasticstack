@@ -117,50 +117,174 @@ func Test_populatePanelConfigJSONDefaults_unknownLensType(t *testing.T) {
 }
 
 func Test_populatePanelConfigJSONDefaults_xy(t *testing.T) {
-	input := `{
-		"attributes": {
-			"type": "xy",
-			"layers": [
-				{
-					"type": "line",
-					"y": [{"operation": "count", "axis": "left"}]
+	tests := []struct {
+		name     string
+		input    string
+		check    func(t *testing.T, attrs map[string]any)
+	}{
+		{
+			name: "adds filters and y metric defaults",
+			input: `{
+				"attributes": {
+					"type": "xy",
+					"layers": [
+						{
+							"type": "line",
+							"y": [{"operation": "count", "axis": "left"}]
+						}
+					]
 				}
-			]
-		}
-	}`
-	var config map[string]any
-	require.NoError(t, json.Unmarshal([]byte(input), &config))
-
-	result := populatePanelConfigJSONDefaults(config)
-
-	attrs := result["attributes"].(map[string]any)
-	layers := attrs["layers"].([]any)
-	layer0 := layers[0].(map[string]any)
-	yArr := layer0["y"].([]any)
-	y0 := yArr[0].(map[string]any)
-	assert.Equal(t, false, y0["empty_as_null"])
-	assert.Equal(t, false, y0["fit"])
-	assert.Contains(t, attrs, "filters")
+			}`,
+			check: func(t *testing.T, attrs map[string]any) {
+				assert.Equal(t, []any{}, attrs["filters"])
+				layers := attrs["layers"].([]any)
+				layer0 := layers[0].(map[string]any)
+				yArr := layer0["y"].([]any)
+				y0 := yArr[0].(map[string]any)
+				assert.Equal(t, false, y0["empty_as_null"])
+				assert.Equal(t, false, y0["fit"])
+			},
+		},
+		{
+			name: "multiple layers and y metrics",
+			input: `{
+				"attributes": {
+					"type": "xy",
+					"layers": [
+						{
+							"type": "line",
+							"y": [
+								{"operation": "count"},
+								{"operation": "sum", "field": "bytes"}
+							]
+						},
+						{
+							"type": "bar",
+							"y": [{"operation": "avg", "field": "cpu"}]
+						}
+					]
+				}
+			}`,
+			check: func(t *testing.T, attrs map[string]any) {
+				layers := attrs["layers"].([]any)
+				require.Len(t, layers, 2)
+				// First layer: two y metrics
+				y0 := layers[0].(map[string]any)["y"].([]any)
+				require.Len(t, y0, 2)
+				assert.Equal(t, false, y0[0].(map[string]any)["empty_as_null"])
+				assert.Equal(t, false, y0[1].(map[string]any)["empty_as_null"])
+				// Second layer: one y metric
+				y1 := layers[1].(map[string]any)["y"].([]any)
+				require.Len(t, y1, 1)
+				assert.Equal(t, false, y1[0].(map[string]any)["fit"])
+			},
+		},
+		{
+			name: "layer without y (reference line) is skipped",
+			input: `{
+				"attributes": {
+					"type": "xy",
+					"layers": [
+						{
+							"type": "referenceLine",
+							"thresholds": [{"value": 100}]
+						}
+					]
+				}
+			}`,
+			check: func(t *testing.T, attrs map[string]any) {
+				assert.Equal(t, []any{}, attrs["filters"])
+				layers := attrs["layers"].([]any)
+				require.Len(t, layers, 1)
+				layer0 := layers[0].(map[string]any)
+				assert.NotContains(t, layer0, "y")
+				thresholds := layer0["thresholds"].([]any)
+				require.Len(t, thresholds, 1)
+				assert.Equal(t, float64(100), thresholds[0].(map[string]any)["value"])
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var config map[string]any
+			require.NoError(t, json.Unmarshal([]byte(tt.input), &config))
+			result := populatePanelConfigJSONDefaults(config)
+			attrs := result["attributes"].(map[string]any)
+			tt.check(t, attrs)
+		})
+	}
 }
 
 func Test_populatePanelConfigJSONDefaults_datatable(t *testing.T) {
-	input := `{
-		"attributes": {
-			"type": "datatable",
-			"metrics": [
-				{"operation": "count"}
-			]
-		}
-	}`
-	var config map[string]any
-	require.NoError(t, json.Unmarshal([]byte(input), &config))
-
-	result := populatePanelConfigJSONDefaults(config)
-
-	attrs := result["attributes"].(map[string]any)
-	metrics := attrs["metrics"].([]any)
-	m0 := metrics[0].(map[string]any)
-	assert.Equal(t, false, m0["empty_as_null"])
-	assert.Equal(t, false, m0["fit"])
-	assert.Contains(t, attrs, "filters")
+	tests := []struct {
+		name     string
+		input    string
+		check    func(t *testing.T, attrs map[string]any)
+	}{
+		{
+			name: "adds filters and metric defaults",
+			input: `{
+				"attributes": {
+					"type": "datatable",
+					"metrics": [{"operation": "count"}]
+				}
+			}`,
+			check: func(t *testing.T, attrs map[string]any) {
+				assert.Equal(t, []any{}, attrs["filters"])
+				metrics := attrs["metrics"].([]any)
+				m0 := metrics[0].(map[string]any)
+				assert.Equal(t, false, m0["empty_as_null"])
+				assert.Equal(t, false, m0["fit"])
+			},
+		},
+		{
+			name: "rows with terms get group_by defaults",
+			input: `{
+				"attributes": {
+					"type": "datatable",
+					"metrics": [{"operation": "count"}],
+					"rows": [
+						{"operation": "terms", "field": "host.name"}
+					]
+				}
+			}`,
+			check: func(t *testing.T, attrs map[string]any) {
+				rows := attrs["rows"].([]any)
+				require.Len(t, rows, 1)
+				row0 := rows[0].(map[string]any)
+				assert.Equal(t, float64(5), row0["size"])
+				assert.Contains(t, row0, "rank_by")
+				rankBy := row0["rank_by"].(map[string]any)
+				assert.Equal(t, "desc", rankBy["direction"])
+			},
+		},
+		{
+			name: "split_metrics_by gets group_by defaults",
+			input: `{
+				"attributes": {
+					"type": "datatable",
+					"metrics": [{"operation": "count"}],
+					"split_metrics_by": [
+						{"operation": "terms", "field": "service.name"}
+					]
+				}
+			}`,
+			check: func(t *testing.T, attrs map[string]any) {
+				splitBy := attrs["split_metrics_by"].([]any)
+				require.Len(t, splitBy, 1)
+				s0 := splitBy[0].(map[string]any)
+				assert.Equal(t, float64(5), s0["size"])
+				assert.Contains(t, s0, "rank_by")
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var config map[string]any
+			require.NoError(t, json.Unmarshal([]byte(tt.input), &config))
+			result := populatePanelConfigJSONDefaults(config)
+			attrs := result["attributes"].(map[string]any)
+			tt.check(t, attrs)
+		})
+	}
 }
