@@ -23,7 +23,24 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
 )
+
+// assertPanelConfigEquals asserts that result matches expected using semantic JSON equality.
+// Use this for full-output tests to catch unintended changes to the normalized config.
+func assertPanelConfigEquals(t *testing.T, expectedJSON string, result map[string]any) {
+	t.Helper()
+	var expected map[string]any
+	require.NoError(t, json.Unmarshal([]byte(expectedJSON), &expected))
+	resultBytes, err := json.Marshal(result)
+	require.NoError(t, err)
+	expectedBytes, err := json.Marshal(expected)
+	require.NoError(t, err)
+	eq, err := schemautil.JSONBytesEqual(resultBytes, expectedBytes)
+	require.NoError(t, err)
+	assert.True(t, eq, "result %s != expected %s", string(resultBytes), string(expectedBytes))
+}
 
 func Test_populatePanelConfigJSONDefaults_legacyMetric(t *testing.T) {
 	tests := []struct {
@@ -74,22 +91,7 @@ func Test_populatePanelConfigJSONDefaults_legacyMetric(t *testing.T) {
 
 			result := populatePanelConfigJSONDefaults(input)
 
-			var expected map[string]any
-			require.NoError(t, json.Unmarshal([]byte(tt.expected), &expected))
-
-			// Compare attributes.metric and attributes.filters
-			attrs, ok := result["attributes"].(map[string]any)
-			require.True(t, ok)
-			expAttrs := expected["attributes"].(map[string]any)
-
-			if filters, ok := attrs["filters"]; ok {
-				assert.Equal(t, expAttrs["filters"], filters)
-			}
-			if metric, ok := attrs["metric"].(map[string]any); ok {
-				expMetric := expAttrs["metric"].(map[string]any)
-				assert.Equal(t, expMetric["show_array_values"], metric["show_array_values"])
-				assert.Equal(t, expMetric["empty_as_null"], metric["empty_as_null"])
-			}
+			assertPanelConfigEquals(t, tt.expected, result)
 		})
 	}
 }
@@ -120,6 +122,7 @@ func Test_populatePanelConfigJSONDefaults_xy(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    string
+		expected string // if set, use full semantic equality; else check is used
 		check    func(t *testing.T, attrs map[string]any)
 	}{
 		{
@@ -135,15 +138,18 @@ func Test_populatePanelConfigJSONDefaults_xy(t *testing.T) {
 					]
 				}
 			}`,
-			check: func(t *testing.T, attrs map[string]any) {
-				assert.Equal(t, []any{}, attrs["filters"])
-				layers := attrs["layers"].([]any)
-				layer0 := layers[0].(map[string]any)
-				yArr := layer0["y"].([]any)
-				y0 := yArr[0].(map[string]any)
-				assert.Equal(t, false, y0["empty_as_null"])
-				assert.Equal(t, false, y0["fit"])
-			},
+			expected: `{
+				"attributes": {
+					"type": "xy",
+					"filters": [],
+					"layers": [
+						{
+							"type": "line",
+							"y": [{"operation": "count", "axis": "left", "empty_as_null": false, "fit": false}]
+						}
+					]
+				}
+			}`,
 		},
 		{
 			name: "multiple layers and y metrics",
@@ -209,8 +215,12 @@ func Test_populatePanelConfigJSONDefaults_xy(t *testing.T) {
 			var config map[string]any
 			require.NoError(t, json.Unmarshal([]byte(tt.input), &config))
 			result := populatePanelConfigJSONDefaults(config)
-			attrs := result["attributes"].(map[string]any)
-			tt.check(t, attrs)
+			if tt.expected != "" {
+				assertPanelConfigEquals(t, tt.expected, result)
+			} else if tt.check != nil {
+				attrs := result["attributes"].(map[string]any)
+				tt.check(t, attrs)
+			}
 		})
 	}
 }
@@ -219,6 +229,7 @@ func Test_populatePanelConfigJSONDefaults_datatable(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    string
+		expected string // if set, use full semantic equality; else check is used
 		check    func(t *testing.T, attrs map[string]any)
 	}{
 		{
@@ -229,13 +240,13 @@ func Test_populatePanelConfigJSONDefaults_datatable(t *testing.T) {
 					"metrics": [{"operation": "count"}]
 				}
 			}`,
-			check: func(t *testing.T, attrs map[string]any) {
-				assert.Equal(t, []any{}, attrs["filters"])
-				metrics := attrs["metrics"].([]any)
-				m0 := metrics[0].(map[string]any)
-				assert.Equal(t, false, m0["empty_as_null"])
-				assert.Equal(t, false, m0["fit"])
-			},
+			expected: `{
+				"attributes": {
+					"type": "datatable",
+					"filters": [],
+					"metrics": [{"operation": "count", "empty_as_null": false, "fit": false}]
+				}
+			}`,
 		},
 		{
 			name: "rows with terms get group_by defaults",
@@ -283,8 +294,12 @@ func Test_populatePanelConfigJSONDefaults_datatable(t *testing.T) {
 			var config map[string]any
 			require.NoError(t, json.Unmarshal([]byte(tt.input), &config))
 			result := populatePanelConfigJSONDefaults(config)
-			attrs := result["attributes"].(map[string]any)
-			tt.check(t, attrs)
+			if tt.expected != "" {
+				assertPanelConfigEquals(t, tt.expected, result)
+			} else if tt.check != nil {
+				attrs := result["attributes"].(map[string]any)
+				tt.check(t, attrs)
+			}
 		})
 	}
 }
