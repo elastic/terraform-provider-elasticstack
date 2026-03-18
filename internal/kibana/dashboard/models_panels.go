@@ -22,28 +22,28 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 type panelModel struct {
-	Type               types.String             `tfsdk:"type"`
-	Grid               panelGridModel           `tfsdk:"grid"`
-	ID                 types.String             `tfsdk:"id"`
-	MarkdownConfig     *markdownConfigModel     `tfsdk:"markdown_config"`
-	XYChartConfig      *xyChartConfigModel      `tfsdk:"xy_chart_config"`
-	TreemapConfig      *treemapConfigModel      `tfsdk:"treemap_config"`
-	DatatableConfig    *datatableConfigModel    `tfsdk:"datatable_config"`
-	TagcloudConfig     *tagcloudConfigModel     `tfsdk:"tagcloud_config"`
-	MetricChartConfig  *metricChartConfigModel  `tfsdk:"metric_chart_config"`
-	PieChartConfig     *pieChartConfigModel     `tfsdk:"pie_chart_config"`
-	GaugeConfig        *gaugeConfigModel        `tfsdk:"gauge_config"`
-	LegacyMetricConfig *legacyMetricConfigModel `tfsdk:"legacy_metric_config"`
-	RegionMapConfig    *regionMapConfigModel    `tfsdk:"region_map_config"`
-	HeatmapConfig      *heatmapConfigModel      `tfsdk:"heatmap_config"`
-	ConfigJSON         jsontypes.Normalized     `tfsdk:"config_json"`
+	Type               types.String                                      `tfsdk:"type"`
+	Grid               panelGridModel                                    `tfsdk:"grid"`
+	ID                 types.String                                      `tfsdk:"id"`
+	MarkdownConfig     *markdownConfigModel                              `tfsdk:"markdown_config"`
+	XYChartConfig      *xyChartConfigModel                               `tfsdk:"xy_chart_config"`
+	TreemapConfig      *treemapConfigModel                               `tfsdk:"treemap_config"`
+	DatatableConfig    *datatableConfigModel                             `tfsdk:"datatable_config"`
+	TagcloudConfig     *tagcloudConfigModel                              `tfsdk:"tagcloud_config"`
+	MetricChartConfig  *metricChartConfigModel                           `tfsdk:"metric_chart_config"`
+	PieChartConfig     *pieChartConfigModel                              `tfsdk:"pie_chart_config"`
+	GaugeConfig        *gaugeConfigModel                                 `tfsdk:"gauge_config"`
+	LegacyMetricConfig *legacyMetricConfigModel                          `tfsdk:"legacy_metric_config"`
+	RegionMapConfig    *regionMapConfigModel                             `tfsdk:"region_map_config"`
+	HeatmapConfig      *heatmapConfigModel                               `tfsdk:"heatmap_config"`
+	ConfigJSON         customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config_json"`
 }
 
 type panelGridModel struct {
@@ -234,7 +234,7 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 			}
 			configBytes, err := markdownPanel.Config.MarshalJSON()
 			if err == nil {
-				pm.ConfigJSON = jsontypes.NewNormalizedValue(string(configBytes))
+				pm.ConfigJSON = customtypes.NewJSONWithDefaultsValue(string(configBytes), populatePanelConfigJSONDefaults)
 			}
 		}
 	case "lens":
@@ -247,7 +247,7 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 
 		configBytes, err := lensPanel.Config.MarshalJSON()
 		if err == nil {
-			pm.ConfigJSON = jsontypes.NewNormalizedValue(string(configBytes))
+			pm.ConfigJSON = customtypes.NewJSONWithDefaultsValue(string(configBytes), populatePanelConfigJSONDefaults)
 		}
 
 		config0, err := lensPanel.Config.AsKbnDashboardPanelLensConfig0()
