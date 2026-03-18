@@ -19,15 +19,19 @@ package datafeedstate
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 // SetUnknownIfStateHasChanges returns a plan modifier that sets the current attribute to unknown
-// if the state attribute has changed between state and config.
+// if the state attribute has changed between state and config. During creation (no prior state),
+// it sets the attribute to null when the desired state is "stopped" since a stopped datafeed has
+// no start/end times.
 func SetUnknownIfStateHasChanges() planmodifier.String {
 	return setUnknownIfStateHasChanges{}
 }
@@ -35,7 +39,7 @@ func SetUnknownIfStateHasChanges() planmodifier.String {
 type setUnknownIfStateHasChanges struct{}
 
 func (s setUnknownIfStateHasChanges) Description(_ context.Context) string {
-	return "Sets the attribute value to unknown if the state attribute has changed"
+	return "Sets the attribute value to unknown if the state attribute has changed, or null during creation with stopped state"
 }
 
 func (s setUnknownIfStateHasChanges) MarkdownDescription(ctx context.Context) string {
@@ -43,13 +47,30 @@ func (s setUnknownIfStateHasChanges) MarkdownDescription(ctx context.Context) st
 }
 
 func (s setUnknownIfStateHasChanges) PlanModifyString(ctx context.Context, req planmodifier.StringRequest, resp *planmodifier.StringResponse) {
-	// Only apply this modifier if we have both state and config
-	if req.State.Raw.IsNull() || req.Config.Raw.IsNull() {
+	// Continue using the config value if it's explicitly set
+	if typeutils.IsKnown(req.ConfigValue) {
 		return
 	}
 
-	// Continue using the config value if it's explicitly set
-	if typeutils.IsKnown(req.ConfigValue) {
+	// During Create (no prior state), if the desired state is "stopped", the
+	// attribute should be null rather than unknown — a stopped datafeed has no
+	// start or end time. This prevents Terraform from expecting a computed
+	// value that the provider cannot produce.
+	if req.State.Raw.IsNull() {
+		var configState types.String
+		resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("state"), &configState)...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+
+		if configState.ValueString() == "stopped" {
+			tflog.Debug(ctx, fmt.Sprintf("Plan modifier: setting %s to null during create with stopped state", req.Path))
+			resp.PlanValue = types.StringNull()
+		}
+		return
+	}
+
+	if req.Config.Raw.IsNull() {
 		return
 	}
 
@@ -63,6 +84,7 @@ func (s setUnknownIfStateHasChanges) PlanModifyString(ctx context.Context, req p
 
 	// If the state attribute has changed between state and config, set the current attribute to Unknown
 	if !stateValue.Equal(configValue) {
+		tflog.Debug(ctx, fmt.Sprintf("Plan modifier: setting %s to unknown because state changed from %s to %s", req.Path, stateValue.ValueString(), configValue.ValueString()))
 		resp.PlanValue = types.StringUnknown()
 	}
 }

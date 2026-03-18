@@ -66,6 +66,7 @@ func (d *MLDatafeedStateData) SetStartAndEndFromAPI(datafeedStats *models.Datafe
 				"Running state was empty for a started datafeed",
 				"The Elasticsearch API returned an empty running state for a Datafeed which was successfully started. Ignoring start and end response values.",
 			)
+			d.resolveUnknowns()
 			return diags
 		}
 
@@ -89,15 +90,30 @@ func (d *MLDatafeedStateData) SetStartAndEndFromAPI(datafeedStats *models.Datafe
 		if datafeedStats.RunningState.RealTimeConfigured {
 			d.End = timetypes.NewRFC3339Null()
 		}
+
+		d.resolveUnknowns()
+		return diags
 	}
 
-	if d.Start.IsUnknown() {
+	// Datafeed is not started (stopped/stopping) — start and end have no
+	// meaning and must be null unless the user explicitly configured them.
+	if !typeutils.IsKnown(d.Start) {
 		d.Start = timetypes.NewRFC3339Null()
 	}
-
-	if d.End.IsUnknown() {
+	if !typeutils.IsKnown(d.End) {
 		d.End = timetypes.NewRFC3339Null()
 	}
 
 	return diags
+}
+
+// resolveUnknowns ensures no unknown values remain — Terraform requires all
+// computed attributes to be known after apply.
+func (d *MLDatafeedStateData) resolveUnknowns() {
+	if d.Start.IsUnknown() {
+		d.Start = timetypes.NewRFC3339Null()
+	}
+	if d.End.IsUnknown() {
+		d.End = timetypes.NewRFC3339Null()
+	}
 }
