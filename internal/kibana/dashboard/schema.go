@@ -19,6 +19,7 @@ package dashboard
 
 import (
 	"context"
+	"maps"
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
@@ -52,6 +53,7 @@ var panelConfigNames = []string{
 	"config_json",
 	"xy_chart_config",
 	"treemap_config",
+	"mosaic_config",
 	"tagcloud_config",
 	"region_map_config",
 	"legacy_metric_config",
@@ -208,9 +210,9 @@ func populateTagcloudTagByDefaults(model map[string]any) map[string]any {
 	return model
 }
 
-// populateTreemapGroupByDefaults populates default values for treemap group_by configurations.
-// Kibana may add default fields (e.g. rank_by, size) on read, so we normalize both sides.
-func populateTreemapGroupByDefaults(model []map[string]any) []map[string]any {
+// populatePartitionGroupByDefaults populates default values for partition chart group_by/group_breakdown_by configurations.
+// Used by treemap and mosaic. Kibana may add default fields (e.g. rank_by, size) on read, so we normalize both sides.
+func populatePartitionGroupByDefaults(model []map[string]any) []map[string]any {
 	if model == nil {
 		return model
 	}
@@ -231,6 +233,16 @@ func populateTreemapGroupByDefaults(model []map[string]any) []map[string]any {
 		if operation != operationTerms {
 			continue
 		}
+		// termsOperation requires collapse_by and format per API schema.
+		if _, exists := item["collapse_by"]; !exists {
+			item["collapse_by"] = "avg"
+		}
+		if _, exists := item["format"]; !exists {
+			item["format"] = map[string]any{
+				"type":     "number",
+				"decimals": float64(2),
+			}
+		}
 		if _, exists := item["rank_by"]; !exists {
 			item["rank_by"] = map[string]any{
 				"type":      "column",
@@ -247,9 +259,9 @@ func populateTreemapGroupByDefaults(model []map[string]any) []map[string]any {
 	return model
 }
 
-// populateTreemapMetricsDefaults populates default values for treemap metrics.
-// This mirrors the defaulting behavior used by other Lens metric operations.
-func populateTreemapMetricsDefaults(model []map[string]any) []map[string]any {
+// populatePartitionMetricsDefaults populates default values for partition chart metrics.
+// Used by treemap and mosaic. Mirrors the defaulting behavior used by other Lens metric operations.
+func populatePartitionMetricsDefaults(model []map[string]any) []map[string]any {
 	if model == nil {
 		return model
 	}
@@ -652,6 +664,20 @@ func getPanelSchema() schema.NestedAttributeObject {
 				Validators: []validator.Object{
 					objectvalidator.ConflictsWith(
 						siblingPanelConfigPathsExcept("treemap_config", panelConfigNames)...,
+					),
+					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"lens"}),
+				},
+			},
+			"mosaic_config": schema.SingleNestedAttribute{
+				MarkdownDescription: panelConfigDescription(
+					"Configuration for a mosaic chart panel. Mosaic charts require two slicing dimensions "+
+						"(group_by and group_breakdown_by).",
+					"mosaic_config", panelConfigNames),
+				Optional:   true,
+				Attributes: getMosaicSchema(),
+				Validators: []validator.Object{
+					objectvalidator.ConflictsWith(
+						siblingPanelConfigPathsExcept("mosaic_config", panelConfigNames)...,
 					),
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"lens"}),
 				},
@@ -1309,8 +1335,8 @@ func getHeatmapSchema() map[string]schema.Attribute {
 	}
 }
 
-// getTreemapSchema returns the schema for treemap chart configuration
-func getTreemapSchema() map[string]schema.Attribute {
+// getPartitionChartBaseSchema returns base attributes shared by partition charts (treemap, mosaic).
+func getPartitionChartBaseSchema() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"title": schema.StringAttribute{
 			MarkdownDescription: "The title of the chart displayed in the panel.",
@@ -1334,7 +1360,7 @@ func getTreemapSchema() map[string]schema.Attribute {
 			Optional:            true,
 		},
 		"query": schema.SingleNestedAttribute{
-			MarkdownDescription: "Query configuration for filtering data. Required for non-ES|QL treemaps.",
+			MarkdownDescription: "Query configuration for filtering data. Required for non-ES|QL partition charts.",
 			Optional:            true,
 			Attributes:          getFilterSimple(),
 		},
@@ -1343,18 +1369,25 @@ func getTreemapSchema() map[string]schema.Attribute {
 			Optional:            true,
 			NestedObject:        getSearchFilter(),
 		},
+	}
+}
+
+// getTreemapSchema returns the schema for treemap chart configuration
+func getTreemapSchema() map[string]schema.Attribute {
+	base := getPartitionChartBaseSchema()
+	treemapSpecific := map[string]schema.Attribute{
 		"group_by_json": schema.StringAttribute{
 			MarkdownDescription: "Array of breakdown dimensions as JSON (minimum 1). " +
 				"For non-ES|QL, each item can be date histogram, terms, histogram, range, or filters operations; " +
 				"for ES|QL, each item is the column/operation/color configuration.",
-			CustomType: customtypes.NewJSONWithDefaultsType(populateTreemapGroupByDefaults),
+			CustomType: customtypes.NewJSONWithDefaultsType(populatePartitionGroupByDefaults),
 			Required:   true,
 		},
 		"metrics_json": schema.StringAttribute{
 			MarkdownDescription: "Array of metric configurations as JSON (minimum 1). " +
 				"For non-ES|QL, each item can be a field metric, pipeline metric, or formula; " +
 				"for ES|QL, each item is the column/operation/color/format configuration.",
-			CustomType: customtypes.NewJSONWithDefaultsType(populateTreemapMetricsDefaults),
+			CustomType: customtypes.NewJSONWithDefaultsType(populatePartitionMetricsDefaults),
 			Required:   true,
 		},
 		"label_position": schema.StringAttribute{
@@ -1367,17 +1400,60 @@ func getTreemapSchema() map[string]schema.Attribute {
 		"legend": schema.SingleNestedAttribute{
 			MarkdownDescription: "Legend configuration for the treemap chart.",
 			Required:            true,
-			Attributes:          getTreemapLegendSchema(),
+			Attributes:          getPartitionLegendSchema(),
 		},
 		"value_display": schema.SingleNestedAttribute{
 			MarkdownDescription: "Configuration for displaying values in chart cells.",
 			Optional:            true,
-			Attributes:          getTreemapValueDisplaySchema(),
+			Attributes:          getPartitionValueDisplaySchema(),
 		},
 	}
+	maps.Copy(base, treemapSpecific)
+	return base
 }
 
-func getTreemapLegendSchema() map[string]schema.Attribute {
+// getMosaicSchema returns the schema for mosaic chart configuration
+func getMosaicSchema() map[string]schema.Attribute {
+	base := getPartitionChartBaseSchema()
+	mosaicSpecific := map[string]schema.Attribute{
+		"group_by_json": schema.StringAttribute{
+			MarkdownDescription: "Array of primary breakdown dimensions as JSON (minimum 1). " +
+				"For non-ES|QL, each item can be date histogram, terms, histogram, range, or filters operations; " +
+				"for ES|QL, each item is the column/operation/color configuration.",
+			CustomType: customtypes.NewJSONWithDefaultsType(populatePartitionGroupByDefaults),
+			Required:   true,
+		},
+		"group_breakdown_by_json": schema.StringAttribute{
+			MarkdownDescription: "Array of secondary breakdown dimensions as JSON (minimum 1). " +
+				"Mosaic charts require both group_by and group_breakdown_by. " +
+				"For non-ES|QL, each item can be date histogram, terms, histogram, range, or filters operations; " +
+				"for ES|QL, each item is the column/operation/color configuration.",
+			CustomType: customtypes.NewJSONWithDefaultsType(populatePartitionGroupByDefaults),
+			Required:   true,
+		},
+		"metrics_json": schema.StringAttribute{
+			MarkdownDescription: "Array of metric configurations as JSON (exactly 1 required). " +
+				"For non-ES|QL, each item can be a field metric, pipeline metric, or formula; " +
+				"for ES|QL, each item is the column/operation/color/format configuration.",
+			CustomType: customtypes.NewJSONWithDefaultsType(populatePartitionMetricsDefaults),
+			Required:   true,
+		},
+		"legend": schema.SingleNestedAttribute{
+			MarkdownDescription: "Legend configuration for the mosaic chart.",
+			Required:            true,
+			Attributes:          getPartitionLegendSchema(),
+		},
+		"value_display": schema.SingleNestedAttribute{
+			MarkdownDescription: "Configuration for displaying values in chart cells.",
+			Optional:            true,
+			Attributes:          getPartitionValueDisplaySchema(),
+		},
+	}
+	maps.Copy(base, mosaicSpecific)
+	return base
+}
+
+func getPartitionLegendSchema() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"nested": schema.BoolAttribute{
 			MarkdownDescription: "Show nested legend with hierarchical breakdown levels.",
@@ -1404,7 +1480,7 @@ func getTreemapLegendSchema() map[string]schema.Attribute {
 	}
 }
 
-func getTreemapValueDisplaySchema() map[string]schema.Attribute {
+func getPartitionValueDisplaySchema() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"mode": schema.StringAttribute{
 			MarkdownDescription: "Value display mode: hidden, absolute, or percentage.",
