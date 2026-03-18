@@ -206,7 +206,7 @@ func Test_populatePanelConfigJSONDefaults_xy(t *testing.T) {
 				assert.NotContains(t, layer0, "y")
 				thresholds := layer0["thresholds"].([]any)
 				require.Len(t, thresholds, 1)
-				assert.Equal(t, float64(100), thresholds[0].(map[string]any)["value"])
+				assert.InDelta(t, float64(100), thresholds[0].(map[string]any)["value"], 1e-9)
 			},
 		},
 	}
@@ -263,7 +263,7 @@ func Test_populatePanelConfigJSONDefaults_datatable(t *testing.T) {
 				rows := attrs["rows"].([]any)
 				require.Len(t, rows, 1)
 				row0 := rows[0].(map[string]any)
-				assert.Equal(t, float64(5), row0["size"])
+				assert.InDelta(t, float64(5), row0["size"], 1e-9)
 				assert.Contains(t, row0, "rank_by")
 				rankBy := row0["rank_by"].(map[string]any)
 				assert.Equal(t, "desc", rankBy["direction"])
@@ -284,7 +284,7 @@ func Test_populatePanelConfigJSONDefaults_datatable(t *testing.T) {
 				splitBy := attrs["split_metrics_by"].([]any)
 				require.Len(t, splitBy, 1)
 				s0 := splitBy[0].(map[string]any)
-				assert.Equal(t, float64(5), s0["size"])
+				assert.InDelta(t, float64(5), s0["size"], 1e-9)
 				assert.Contains(t, s0, "rank_by")
 			},
 		},
