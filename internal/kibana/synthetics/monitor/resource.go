@@ -30,9 +30,9 @@ import (
 const resourceName = synthetics.MetadataPrefix + "monitor"
 
 // NewResource creates a new synthetics monitor resource
-func NewResource() resource.Resource {
+func NewResource(validateLocation bool) resource.Resource {
 	return &Resource{
-		validateLocation: true,
+		validateLocation: validateLocation,
 	}
 }
 
