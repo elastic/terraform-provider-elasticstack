@@ -9,6 +9,7 @@ on:
       - 'README.md'
       - 'CHANGELOG.md'
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     paths-ignore:
       - 'README.md'
       - 'CHANGELOG.md'
@@ -31,6 +32,10 @@ jobs:
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
           script: |
+            if (context.eventName === 'pull_request' && context.payload.action === 'ready_for_review') {
+              core.setOutput('should_run', 'false');
+              return;
+            }
             if (context.eventName !== 'push') {
               core.setOutput('should_run', 'true');
               return;
@@ -289,8 +294,8 @@ jobs:
 
   auto-approve:
     name: Evaluate and auto-approve PR
-    if: github.event_name == 'pull_request'
-    needs: test
+    if: always() && github.event_name == 'pull_request' && (github.event.action == 'ready_for_review' || needs.test.result == 'success')
+    needs: [preflight, test]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:

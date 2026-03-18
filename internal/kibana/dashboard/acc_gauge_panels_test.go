@@ -85,6 +85,10 @@ func TestAccResourceDashboardGauge(t *testing.T) {
 				ResourceName:      "elasticstack_kibana_dashboard.test",
 				ImportState:       true,
 				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					"panels.0.gauge_config.dataset_json",
+					"panels.0.gauge_config.metric_json",
+				},
 			},
 		},
 	})

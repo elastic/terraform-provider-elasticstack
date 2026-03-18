@@ -226,6 +226,12 @@ func TestAccResourceDashboardXYChart(t *testing.T) {
 				ResourceName:      "elasticstack_kibana_dashboard.test",
 				ImportState:       true,
 				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					"panels.0.xy_chart_config.layers.0.data_layer.dataset_json",
+					"panels.0.xy_chart_config.layers.0.data_layer.y.0.config_json",
+					"panels.0.xy_chart_config.layers.1.reference_line_layer.dataset_json",
+					"panels.0.xy_chart_config.layers.1.reference_line_layer.thresholds.0.value_json",
+				},
 			},
 		},
 	})

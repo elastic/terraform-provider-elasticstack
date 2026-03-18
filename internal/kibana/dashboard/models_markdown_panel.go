@@ -18,12 +18,8 @@
 package dashboard
 
 import (
-	"context"
-
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -34,60 +30,28 @@ type markdownConfigModel struct {
 	Title       types.String `tfsdk:"title"`
 }
 
-type markdownPanelConfigConverter struct{}
-
-func (c markdownPanelConfigConverter) handlesAPIPanelConfig(pm *panelModel, panelType string, _ kbapi.DashboardPanelItem_Config) bool {
-	return (pm == nil || pm.MarkdownConfig != nil) && panelType == "DASHBOARD_MARKDOWN"
-}
-
-func (c markdownPanelConfigConverter) handlesTFPanelConfig(pm panelModel) bool {
-	return pm.MarkdownConfig != nil
-}
-
-func (c markdownPanelConfigConverter) populateFromAPIPanel(_ context.Context, pm *panelModel, config kbapi.DashboardPanelItem_Config) diag.Diagnostics {
-	config4, err := config.AsDashboardPanelItemConfig4()
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	config40, err := config4.AsDashboardPanelItemConfig40()
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
+func populateMarkdownFromAPI(pm *panelModel, config kbapi.KbnDashboardPanelMarkdownConfig0) {
 	pm.MarkdownConfig = &markdownConfigModel{
-		Content:     types.StringValue(config40.Content),
-		Description: types.StringPointerValue(config40.Description),
-		HideTitle:   types.BoolPointerValue(config40.HideTitle),
-		Title:       types.StringPointerValue(config40.Title),
+		Content:     types.StringPointerValue(config.Content),
+		Description: types.StringPointerValue(config.Description),
+		HideTitle:   types.BoolPointerValue(config.HideTitle),
+		Title:       types.StringPointerValue(config.Title),
 	}
-
-	return nil
 }
 
-func (c markdownPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *kbapi.DashboardPanelItem_Config) diag.Diagnostics {
-	config40 := kbapi.DashboardPanelItemConfig40{
-		Content: pm.MarkdownConfig.Content.ValueString(),
+func buildMarkdownConfig(pm panelModel) kbapi.KbnDashboardPanelMarkdownConfig0 {
+	config := kbapi.KbnDashboardPanelMarkdownConfig0{
+		Content: pm.MarkdownConfig.Content.ValueStringPointer(),
 	}
 	if typeutils.IsKnown(pm.MarkdownConfig.Description) {
-		config40.Description = pm.MarkdownConfig.Description.ValueStringPointer()
+		config.Description = pm.MarkdownConfig.Description.ValueStringPointer()
 	}
 	if typeutils.IsKnown(pm.MarkdownConfig.HideTitle) {
-		config40.HideTitle = pm.MarkdownConfig.HideTitle.ValueBoolPointer()
+		config.HideTitle = pm.MarkdownConfig.HideTitle.ValueBoolPointer()
 	}
 	if typeutils.IsKnown(pm.MarkdownConfig.Title) {
-		config40.Title = pm.MarkdownConfig.Title.ValueStringPointer()
+		config.Title = pm.MarkdownConfig.Title.ValueStringPointer()
 	}
 
-	var config4 kbapi.DashboardPanelItemConfig4
-	if err := config4.FromDashboardPanelItemConfig40(config40); err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	var diags diag.Diagnostics
-	if err := apiConfig.FromDashboardPanelItemConfig4(config4); err != nil {
-		diags.AddError("Failed to marshal panel config", err.Error())
-	}
-
-	return diags
+	return config
 }

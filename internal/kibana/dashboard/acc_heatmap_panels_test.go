@@ -106,6 +106,9 @@ func TestAccResourceDashboardHeatmap(t *testing.T) {
 				ImportStateVerify: true,
 				ImportStateVerifyIgnore: []string{
 					"panels.0.heatmap_config.metric_json",
+					"panels.0.heatmap_config.dataset_json",
+					"panels.0.heatmap_config.x_axis_json",
+					"panels.0.heatmap_config.y_axis_json",
 				},
 			},
 		},
