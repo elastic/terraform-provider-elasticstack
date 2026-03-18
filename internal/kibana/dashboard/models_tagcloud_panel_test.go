@@ -69,7 +69,7 @@ func Test_tagcloudPanelConfigConverter_populateFromAttributes_buildAttributes_ro
 func Test_newTagcloudPanelConfigConverter(t *testing.T) {
 	converter := newTagcloudPanelConfigConverter()
 	assert.NotNil(t, converter)
-	assert.Equal(t, "tagcloud", converter.visualizationType)
+	assert.Equal(t, "tag_cloud", converter.visualizationType)
 }
 
 func Test_tagcloudConfigModel_fromAPI_toAPI(t *testing.T) {

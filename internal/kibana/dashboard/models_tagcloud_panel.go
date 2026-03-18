@@ -33,7 +33,7 @@ import (
 func newTagcloudPanelConfigConverter() tagcloudPanelConfigConverter {
 	return tagcloudPanelConfigConverter{
 		lensVisualizationBase: lensVisualizationBase{
-			visualizationType: string(kbapi.TagcloudNoESQLTypeTagcloud),
+			visualizationType: string(kbapi.TagcloudNoESQLTypeTagCloud),
 			hasTFPanelConfig:  func(pm panelModel) bool { return pm.TagcloudConfig != nil },
 		},
 	}
@@ -188,7 +188,7 @@ func (m *tagcloudConfigModel) toAPI() (kbapi.TagcloudNoESQL, diag.Diagnostics) {
 	var api kbapi.TagcloudNoESQL
 
 	// Set type to "tagcloud"
-	api.Type = kbapi.TagcloudNoESQLTypeTagcloud
+	api.Type = kbapi.TagcloudNoESQLTypeTagCloud
 
 	if !m.Title.IsNull() {
 		api.Title = m.Title.ValueStringPointer()

@@ -26,6 +26,7 @@
                   "pinned_panels": {
                     "type": "array",
                     "description": "An array of control panels and their state in the control group.",
+                    "default": [],
                     "maxItems": 100,
                     "items": {
                       "anyOf": [
@@ -427,40 +428,57 @@
                   },
                   "options": {
                     "type": "object",
+                    "default": {
+                      "hide_panel_titles": false,
+                      "hide_panel_borders": false,
+                      "use_margins": true,
+                      "auto_apply_filters": true,
+                      "sync_colors": false,
+                      "sync_cursor": true,
+                      "sync_tooltips": false
+                    },
                     "properties": {
                       "auto_apply_filters": {
                         "type": "boolean",
-                        "description": "Auto apply control filters."
+                        "description": "Auto apply control filters.",
+                        "default": true
                       },
                       "hide_panel_titles": {
                         "type": "boolean",
-                        "description": "Hide the panel titles in the dashboard."
+                        "description": "Hide the panel titles in the dashboard.",
+                        "default": false
                       },
                       "hide_panel_borders": {
                         "type": "boolean",
-                        "description": "Hide the panel borders in the dashboard."
+                        "description": "Hide the panel borders in the dashboard.",
+                        "default": false
                       },
                       "use_margins": {
                         "type": "boolean",
-                        "description": "Show margins between panels in the dashboard layout."
+                        "description": "Show margins between panels in the dashboard layout.",
+                        "default": true
                       },
                       "sync_colors": {
                         "type": "boolean",
-                        "description": "Synchronize colors between related panels in the dashboard."
+                        "description": "Synchronize colors between related panels in the dashboard.",
+                        "default": false
                       },
                       "sync_tooltips": {
                         "type": "boolean",
-                        "description": "Synchronize tooltips between related panels in the dashboard."
+                        "description": "Synchronize tooltips between related panels in the dashboard.",
+                        "default": false
                       },
                       "sync_cursor": {
                         "type": "boolean",
-                        "description": "Synchronize cursor position between related panels in the dashboard."
+                        "description": "Synchronize cursor position between related panels in the dashboard.",
+                        "default": true
                       }
                     },
                     "additionalProperties": false
                   },
                   "panels": {
                     "type": "array",
+                    "default": [],
                     "maxItems": 100,
                     "items": {
                       "anyOf": [
@@ -469,6 +487,9 @@
                             "propertyName": "type"
                           },
                           "oneOf": [
+                            {
+                              "$ref": "#/components/schemas/kbn-dashboard-panel-image"
+                            },
                             {
                               "$ref": "#/components/schemas/kbn-dashboard-panel-esql_control"
                             },
@@ -516,7 +537,8 @@
                             },
                             "collapsed": {
                               "type": "boolean",
-                              "description": "The collapsed state of the section."
+                              "description": "The collapsed state of the section.",
+                              "default": false
                             },
                             "grid": {
                               "type": "object",
@@ -538,6 +560,9 @@
                               "maxItems": 100,
                               "items": {
                                 "anyOf": [
+                                  {
+                                    "$ref": "#/components/schemas/kbn-dashboard-panel-image"
+                                  },
                                   {
                                     "$ref": "#/components/schemas/kbn-dashboard-panel-esql_control"
                                   },
@@ -659,6 +684,7 @@
                         "pinned_panels": {
                           "type": "array",
                           "description": "An array of control panels and their state in the control group.",
+                          "default": [],
                           "maxItems": 100,
                           "items": {
                             "anyOf": [
@@ -1060,40 +1086,57 @@
                         },
                         "options": {
                           "type": "object",
+                          "default": {
+                            "hide_panel_titles": false,
+                            "hide_panel_borders": false,
+                            "use_margins": true,
+                            "auto_apply_filters": true,
+                            "sync_colors": false,
+                            "sync_cursor": true,
+                            "sync_tooltips": false
+                          },
                           "properties": {
                             "auto_apply_filters": {
                               "type": "boolean",
-                              "description": "Auto apply control filters."
+                              "description": "Auto apply control filters.",
+                              "default": true
                             },
                             "hide_panel_titles": {
                               "type": "boolean",
-                              "description": "Hide the panel titles in the dashboard."
+                              "description": "Hide the panel titles in the dashboard.",
+                              "default": false
                             },
                             "hide_panel_borders": {
                               "type": "boolean",
-                              "description": "Hide the panel borders in the dashboard."
+                              "description": "Hide the panel borders in the dashboard.",
+                              "default": false
                             },
                             "use_margins": {
                               "type": "boolean",
-                              "description": "Show margins between panels in the dashboard layout."
+                              "description": "Show margins between panels in the dashboard layout.",
+                              "default": true
                             },
                             "sync_colors": {
                               "type": "boolean",
-                              "description": "Synchronize colors between related panels in the dashboard."
+                              "description": "Synchronize colors between related panels in the dashboard.",
+                              "default": false
                             },
                             "sync_tooltips": {
                               "type": "boolean",
-                              "description": "Synchronize tooltips between related panels in the dashboard."
+                              "description": "Synchronize tooltips between related panels in the dashboard.",
+                              "default": false
                             },
                             "sync_cursor": {
                               "type": "boolean",
-                              "description": "Synchronize cursor position between related panels in the dashboard."
+                              "description": "Synchronize cursor position between related panels in the dashboard.",
+                              "default": true
                             }
                           },
                           "additionalProperties": false
                         },
                         "panels": {
                           "type": "array",
+                          "default": [],
                           "maxItems": 100,
                           "items": {
                             "anyOf": [
@@ -1102,6 +1145,9 @@
                                   "propertyName": "type"
                                 },
                                 "oneOf": [
+                                  {
+                                    "$ref": "#/components/schemas/kbn-dashboard-panel-image"
+                                  },
                                   {
                                     "$ref": "#/components/schemas/kbn-dashboard-panel-esql_control"
                                   },
@@ -1149,7 +1195,8 @@
                                   },
                                   "collapsed": {
                                     "type": "boolean",
-                                    "description": "The collapsed state of the section."
+                                    "description": "The collapsed state of the section.",
+                                    "default": false
                                   },
                                   "grid": {
                                     "type": "object",
@@ -1171,6 +1218,9 @@
                                     "maxItems": 100,
                                     "items": {
                                       "anyOf": [
+                                        {
+                                          "$ref": "#/components/schemas/kbn-dashboard-panel-image"
+                                        },
                                         {
                                           "$ref": "#/components/schemas/kbn-dashboard-panel-esql_control"
                                         },
@@ -1321,12 +1371,6 @@
                         }
                       },
                       "additionalProperties": false
-                    },
-                    "spaces": {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      }
                     }
                   },
                   "additionalProperties": false,
@@ -1398,6 +1442,7 @@
                         "pinned_panels": {
                           "type": "array",
                           "description": "An array of control panels and their state in the control group.",
+                          "default": [],
                           "maxItems": 100,
                           "items": {
                             "anyOf": [
@@ -1799,40 +1844,57 @@
                         },
                         "options": {
                           "type": "object",
+                          "default": {
+                            "hide_panel_titles": false,
+                            "hide_panel_borders": false,
+                            "use_margins": true,
+                            "auto_apply_filters": true,
+                            "sync_colors": false,
+                            "sync_cursor": true,
+                            "sync_tooltips": false
+                          },
                           "properties": {
                             "auto_apply_filters": {
                               "type": "boolean",
-                              "description": "Auto apply control filters."
+                              "description": "Auto apply control filters.",
+                              "default": true
                             },
                             "hide_panel_titles": {
                               "type": "boolean",
-                              "description": "Hide the panel titles in the dashboard."
+                              "description": "Hide the panel titles in the dashboard.",
+                              "default": false
                             },
                             "hide_panel_borders": {
                               "type": "boolean",
-                              "description": "Hide the panel borders in the dashboard."
+                              "description": "Hide the panel borders in the dashboard.",
+                              "default": false
                             },
                             "use_margins": {
                               "type": "boolean",
-                              "description": "Show margins between panels in the dashboard layout."
+                              "description": "Show margins between panels in the dashboard layout.",
+                              "default": true
                             },
                             "sync_colors": {
                               "type": "boolean",
-                              "description": "Synchronize colors between related panels in the dashboard."
+                              "description": "Synchronize colors between related panels in the dashboard.",
+                              "default": false
                             },
                             "sync_tooltips": {
                               "type": "boolean",
-                              "description": "Synchronize tooltips between related panels in the dashboard."
+                              "description": "Synchronize tooltips between related panels in the dashboard.",
+                              "default": false
                             },
                             "sync_cursor": {
                               "type": "boolean",
-                              "description": "Synchronize cursor position between related panels in the dashboard."
+                              "description": "Synchronize cursor position between related panels in the dashboard.",
+                              "default": true
                             }
                           },
                           "additionalProperties": false
                         },
                         "panels": {
                           "type": "array",
+                          "default": [],
                           "maxItems": 100,
                           "items": {
                             "anyOf": [
@@ -1841,6 +1903,9 @@
                                   "propertyName": "type"
                                 },
                                 "oneOf": [
+                                  {
+                                    "$ref": "#/components/schemas/kbn-dashboard-panel-image"
+                                  },
                                   {
                                     "$ref": "#/components/schemas/kbn-dashboard-panel-esql_control"
                                   },
@@ -1888,7 +1953,8 @@
                                   },
                                   "collapsed": {
                                     "type": "boolean",
-                                    "description": "The collapsed state of the section."
+                                    "description": "The collapsed state of the section.",
+                                    "default": false
                                   },
                                   "grid": {
                                     "type": "object",
@@ -1910,6 +1976,9 @@
                                     "maxItems": 100,
                                     "items": {
                                       "anyOf": [
+                                        {
+                                          "$ref": "#/components/schemas/kbn-dashboard-panel-image"
+                                        },
                                         {
                                           "$ref": "#/components/schemas/kbn-dashboard-panel-esql_control"
                                         },
@@ -2082,12 +2151,6 @@
                         "outcome"
                       ]
                     },
-                    "spaces": {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      }
-                    },
                     "warnings": {
                       "type": "array",
                       "items": {
@@ -2147,6 +2210,7 @@
                   "pinned_panels": {
                     "type": "array",
                     "description": "An array of control panels and their state in the control group.",
+                    "default": [],
                     "maxItems": 100,
                     "items": {
                       "anyOf": [
@@ -2548,40 +2612,57 @@
                   },
                   "options": {
                     "type": "object",
+                    "default": {
+                      "hide_panel_titles": false,
+                      "hide_panel_borders": false,
+                      "use_margins": true,
+                      "auto_apply_filters": true,
+                      "sync_colors": false,
+                      "sync_cursor": true,
+                      "sync_tooltips": false
+                    },
                     "properties": {
                       "auto_apply_filters": {
                         "type": "boolean",
-                        "description": "Auto apply control filters."
+                        "description": "Auto apply control filters.",
+                        "default": true
                       },
                       "hide_panel_titles": {
                         "type": "boolean",
-                        "description": "Hide the panel titles in the dashboard."
+                        "description": "Hide the panel titles in the dashboard.",
+                        "default": false
                       },
                       "hide_panel_borders": {
                         "type": "boolean",
-                        "description": "Hide the panel borders in the dashboard."
+                        "description": "Hide the panel borders in the dashboard.",
+                        "default": false
                       },
                       "use_margins": {
                         "type": "boolean",
-                        "description": "Show margins between panels in the dashboard layout."
+                        "description": "Show margins between panels in the dashboard layout.",
+                        "default": true
                       },
                       "sync_colors": {
                         "type": "boolean",
-                        "description": "Synchronize colors between related panels in the dashboard."
+                        "description": "Synchronize colors between related panels in the dashboard.",
+                        "default": false
                       },
                       "sync_tooltips": {
                         "type": "boolean",
-                        "description": "Synchronize tooltips between related panels in the dashboard."
+                        "description": "Synchronize tooltips between related panels in the dashboard.",
+                        "default": false
                       },
                       "sync_cursor": {
                         "type": "boolean",
-                        "description": "Synchronize cursor position between related panels in the dashboard."
+                        "description": "Synchronize cursor position between related panels in the dashboard.",
+                        "default": true
                       }
                     },
                     "additionalProperties": false
                   },
                   "panels": {
                     "type": "array",
+                    "default": [],
                     "maxItems": 100,
                     "items": {
                       "anyOf": [
@@ -2590,6 +2671,9 @@
                             "propertyName": "type"
                           },
                           "oneOf": [
+                            {
+                              "$ref": "#/components/schemas/kbn-dashboard-panel-image"
+                            },
                             {
                               "$ref": "#/components/schemas/kbn-dashboard-panel-esql_control"
                             },
@@ -2637,7 +2721,8 @@
                             },
                             "collapsed": {
                               "type": "boolean",
-                              "description": "The collapsed state of the section."
+                              "description": "The collapsed state of the section.",
+                              "default": false
                             },
                             "grid": {
                               "type": "object",
@@ -2659,6 +2744,9 @@
                               "maxItems": 100,
                               "items": {
                                 "anyOf": [
+                                  {
+                                    "$ref": "#/components/schemas/kbn-dashboard-panel-image"
+                                  },
                                   {
                                     "$ref": "#/components/schemas/kbn-dashboard-panel-esql_control"
                                   },
@@ -2780,6 +2868,7 @@
                         "pinned_panels": {
                           "type": "array",
                           "description": "An array of control panels and their state in the control group.",
+                          "default": [],
                           "maxItems": 100,
                           "items": {
                             "anyOf": [
@@ -3181,40 +3270,57 @@
                         },
                         "options": {
                           "type": "object",
+                          "default": {
+                            "hide_panel_titles": false,
+                            "hide_panel_borders": false,
+                            "use_margins": true,
+                            "auto_apply_filters": true,
+                            "sync_colors": false,
+                            "sync_cursor": true,
+                            "sync_tooltips": false
+                          },
                           "properties": {
                             "auto_apply_filters": {
                               "type": "boolean",
-                              "description": "Auto apply control filters."
+                              "description": "Auto apply control filters.",
+                              "default": true
                             },
                             "hide_panel_titles": {
                               "type": "boolean",
-                              "description": "Hide the panel titles in the dashboard."
+                              "description": "Hide the panel titles in the dashboard.",
+                              "default": false
                             },
                             "hide_panel_borders": {
                               "type": "boolean",
-                              "description": "Hide the panel borders in the dashboard."
+                              "description": "Hide the panel borders in the dashboard.",
+                              "default": false
                             },
                             "use_margins": {
                               "type": "boolean",
-                              "description": "Show margins between panels in the dashboard layout."
+                              "description": "Show margins between panels in the dashboard layout.",
+                              "default": true
                             },
                             "sync_colors": {
                               "type": "boolean",
-                              "description": "Synchronize colors between related panels in the dashboard."
+                              "description": "Synchronize colors between related panels in the dashboard.",
+                              "default": false
                             },
                             "sync_tooltips": {
                               "type": "boolean",
-                              "description": "Synchronize tooltips between related panels in the dashboard."
+                              "description": "Synchronize tooltips between related panels in the dashboard.",
+                              "default": false
                             },
                             "sync_cursor": {
                               "type": "boolean",
-                              "description": "Synchronize cursor position between related panels in the dashboard."
+                              "description": "Synchronize cursor position between related panels in the dashboard.",
+                              "default": true
                             }
                           },
                           "additionalProperties": false
                         },
                         "panels": {
                           "type": "array",
+                          "default": [],
                           "maxItems": 100,
                           "items": {
                             "anyOf": [
@@ -3223,6 +3329,9 @@
                                   "propertyName": "type"
                                 },
                                 "oneOf": [
+                                  {
+                                    "$ref": "#/components/schemas/kbn-dashboard-panel-image"
+                                  },
                                   {
                                     "$ref": "#/components/schemas/kbn-dashboard-panel-esql_control"
                                   },
@@ -3270,7 +3379,8 @@
                                   },
                                   "collapsed": {
                                     "type": "boolean",
-                                    "description": "The collapsed state of the section."
+                                    "description": "The collapsed state of the section.",
+                                    "default": false
                                   },
                                   "grid": {
                                     "type": "object",
@@ -3292,6 +3402,9 @@
                                     "maxItems": 100,
                                     "items": {
                                       "anyOf": [
+                                        {
+                                          "$ref": "#/components/schemas/kbn-dashboard-panel-image"
+                                        },
                                         {
                                           "$ref": "#/components/schemas/kbn-dashboard-panel-esql_control"
                                         },
@@ -3436,12 +3549,6 @@
                         }
                       },
                       "additionalProperties": false
-                    },
-                    "spaces": {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      }
                     }
                   },
                   "additionalProperties": false,
@@ -4209,6 +4316,244 @@
         "required": [
           "type",
           "dsl"
+        ]
+      },
+      "kbn-dashboard-panel-image": {
+        "type": "object",
+        "properties": {
+          "grid": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number",
+                "description": "The x coordinate of the panel in grid units"
+              },
+              "y": {
+                "type": "number",
+                "description": "The y coordinate of the panel in grid units"
+              },
+              "w": {
+                "type": "number",
+                "description": "The width of the panel in grid units",
+                "default": 24,
+                "minimum": 1,
+                "maximum": 48
+              },
+              "h": {
+                "type": "number",
+                "description": "The height of the panel in grid units",
+                "default": 15,
+                "minimum": 1
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "x",
+              "y"
+            ]
+          },
+          "uid": {
+            "type": "string",
+            "description": "The unique ID of the panel."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "image"
+            ]
+          },
+          "config": {
+            "type": "object",
+            "description": "Image embeddable schema",
+            "properties": {
+              "drilldowns": {
+                "type": "array",
+                "maxItems": 100,
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "encode_url": {
+                          "type": "boolean",
+                          "description": "When true, URL is escaped using percent encoding",
+                          "default": true
+                        },
+                        "open_in_new_tab": {
+                          "type": "boolean",
+                          "default": true
+                        },
+                        "url": {
+                          "type": "string",
+                          "description": "Templated Url. Variables documented at https://www.elastic.co/docs/explore-analyze/dashboards/drilldowns#url-template-variable"
+                        },
+                        "label": {
+                          "type": "string"
+                        },
+                        "trigger": {
+                          "type": "string",
+                          "enum": [
+                            "on_click_image"
+                          ]
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "url_drilldown"
+                          ]
+                        }
+                      },
+                      "additionalProperties": false,
+                      "required": [
+                        "url",
+                        "label",
+                        "trigger",
+                        "type"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "use_filters": {
+                          "type": "boolean",
+                          "description": "When enabled, filters are passed to the opening dashboard.",
+                          "default": true
+                        },
+                        "use_time_range": {
+                          "type": "boolean",
+                          "description": "When enabled, time range is passed to the opening dashboard.",
+                          "default": true
+                        },
+                        "open_in_new_tab": {
+                          "type": "boolean",
+                          "description": "When enabled, the dashboard opens in a new browser tab.",
+                          "default": false
+                        },
+                        "dashboard_id": {
+                          "type": "string"
+                        },
+                        "label": {
+                          "type": "string"
+                        },
+                        "trigger": {
+                          "type": "string",
+                          "enum": [
+                            "on_click_image"
+                          ]
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "dashboard_drilldown"
+                          ]
+                        }
+                      },
+                      "additionalProperties": false,
+                      "required": [
+                        "dashboard_id",
+                        "label",
+                        "trigger",
+                        "type"
+                      ]
+                    }
+                  ]
+                }
+              },
+              "image_config": {
+                "type": "object",
+                "properties": {
+                  "src": {
+                    "description": "Image source (file or URL)",
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "file"
+                            ]
+                          },
+                          "file_id": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": false,
+                        "required": [
+                          "type",
+                          "file_id"
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "url"
+                            ]
+                          },
+                          "url": {
+                            "type": "string",
+                            "description": "URL of the image"
+                          }
+                        },
+                        "additionalProperties": false,
+                        "required": [
+                          "type",
+                          "url"
+                        ]
+                      }
+                    ]
+                  },
+                  "alt_text": {
+                    "type": "string"
+                  },
+                  "object_fit": {
+                    "description": "How the image should be sized within its container",
+                    "default": "contain",
+                    "type": "string",
+                    "enum": [
+                      "fill",
+                      "contain",
+                      "cover",
+                      "none"
+                    ]
+                  },
+                  "background_color": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "src"
+                ]
+              },
+              "description": {
+                "type": "string"
+              },
+              "hide_title": {
+                "type": "boolean"
+              },
+              "title": {
+                "type": "string"
+              },
+              "hide_border": {
+                "type": "boolean"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "image_config"
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "title": "kbn-dashboard-panel-image",
+        "required": [
+          "grid",
+          "type",
+          "config"
         ]
       },
       "kbn-dashboard-panel-esql_control": {
@@ -6242,7 +6587,7 @@
           "type": {
             "type": "string",
             "enum": [
-              "legacy-dynamic"
+              "legacy_dynamic"
             ]
           },
           "range": {
@@ -8106,7 +8451,7 @@
           "type": {
             "type": "string",
             "enum": [
-              "legacy-dynamic"
+              "legacy_dynamic"
             ]
           },
           "range": {
@@ -8461,6 +8806,12 @@
             "type": "boolean",
             "enum": [
               false
+            ]
+          },
+          "layout": {
+            "type": "string",
+            "enum": [
+              "list"
             ]
           },
           "position": {
@@ -9001,13 +9352,13 @@
         "title": "xyDecorations",
         "x-oas-optional": true
       },
-      "rangeKey": {
+      "range_key": {
         "type": "object",
         "properties": {
           "type": {
             "type": "string",
             "enum": [
-              "RangeKey"
+              "range_key"
             ]
           },
           "from": {
@@ -9078,13 +9429,13 @@
           "ranges"
         ]
       },
-      "multiFieldKey": {
+      "multi_field_key": {
         "type": "object",
         "properties": {
           "type": {
             "type": "string",
             "enum": [
-              "multiFieldKey"
+              "multi_field_key"
             ]
           },
           "keys": {
@@ -9127,13 +9478,13 @@
           "index"
         ]
       },
-      "colorCode": {
+      "color_code": {
         "type": "object",
         "properties": {
           "type": {
             "type": "string",
             "enum": [
-              "colorCode"
+              "color_code"
             ]
           },
           "value": {
@@ -9179,10 +9530,10 @@
                         "type": "number"
                       },
                       {
-                        "$ref": "#/components/schemas/rangeKey"
+                        "$ref": "#/components/schemas/range_key"
                       },
                       {
-                        "$ref": "#/components/schemas/multiFieldKey"
+                        "$ref": "#/components/schemas/multi_field_key"
                       }
                     ]
                   }
@@ -9193,7 +9544,7 @@
                       "$ref": "#/components/schemas/colorFromPalette"
                     },
                     {
-                      "$ref": "#/components/schemas/colorCode"
+                      "$ref": "#/components/schemas/color_code"
                     }
                   ]
                 }
@@ -9211,7 +9562,7 @@
                 "$ref": "#/components/schemas/colorFromPalette"
               },
               {
-                "$ref": "#/components/schemas/colorCode"
+                "$ref": "#/components/schemas/color_code"
               }
             ]
           }
@@ -9263,10 +9614,10 @@
                         "type": "number"
                       },
                       {
-                        "$ref": "#/components/schemas/rangeKey"
+                        "$ref": "#/components/schemas/range_key"
                       },
                       {
-                        "$ref": "#/components/schemas/multiFieldKey"
+                        "$ref": "#/components/schemas/multi_field_key"
                       }
                     ]
                   }
@@ -9287,7 +9638,7 @@
                   "$ref": "#/components/schemas/colorFromPalette"
                 },
                 {
-                  "$ref": "#/components/schemas/colorCode"
+                  "$ref": "#/components/schemas/color_code"
                 }
               ]
             }
@@ -9298,7 +9649,7 @@
                 "$ref": "#/components/schemas/colorFromPalette"
               },
               {
-                "$ref": "#/components/schemas/colorCode"
+                "$ref": "#/components/schemas/color_code"
               }
             ]
           }
@@ -10360,7 +10711,7 @@
             "type": "string",
             "enum": [
               "circle",
-              "semiCircle",
+              "semi_circle",
               "arc"
             ]
           }
@@ -10844,7 +11195,7 @@
           "type": {
             "type": "string",
             "enum": [
-              "heatmap"
+              "heat_map"
             ]
           },
           "legend": {
@@ -11060,7 +11411,7 @@
           "type": {
             "type": "string",
             "enum": [
-              "heatmap"
+              "heat_map"
             ]
           },
           "legend": {
@@ -11203,7 +11554,7 @@
           "type": {
             "type": "string",
             "enum": [
-              "tagcloud"
+              "tag_cloud"
             ]
           },
           "title": {
@@ -11391,7 +11742,7 @@
           "type": {
             "type": "string",
             "enum": [
-              "tagcloud"
+              "tag_cloud"
             ]
           },
           "title": {
@@ -11918,7 +12269,7 @@
           "type": {
             "type": "string",
             "enum": [
-              "datatable"
+              "data_table"
             ]
           },
           "title": {
@@ -12365,7 +12716,7 @@
           "type": {
             "type": "string",
             "enum": [
-              "datatable"
+              "data_table"
             ]
           },
           "title": {

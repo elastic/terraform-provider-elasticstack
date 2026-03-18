@@ -31,12 +31,12 @@ import (
 func Test_newHeatmapPanelConfigConverter(t *testing.T) {
 	converter := newHeatmapPanelConfigConverter()
 	assert.NotNil(t, converter)
-	assert.Equal(t, "heatmap", converter.visualizationType)
+	assert.Equal(t, "heat_map", converter.visualizationType)
 }
 
 func Test_heatmapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 	heatmap := kbapi.HeatmapNoESQL{
-		Type:                kbapi.HeatmapNoESQLTypeHeatmap,
+		Type:                kbapi.HeatmapNoESQLTypeHeatMap,
 		Title:               new("Test Heatmap"),
 		Description:         new("Heatmap description"),
 		IgnoreGlobalFilters: new(true),
@@ -140,7 +140,7 @@ func Test_heatmapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 
 	heatmapRoundTrip, err := chart.AsHeatmapNoESQL()
 	require.NoError(t, err)
-	assert.Equal(t, kbapi.HeatmapNoESQLTypeHeatmap, heatmapRoundTrip.Type)
+	assert.Equal(t, kbapi.HeatmapNoESQLTypeHeatMap, heatmapRoundTrip.Type)
 	require.NotNil(t, heatmapRoundTrip.Title)
 	assert.Equal(t, "Test Heatmap", *heatmapRoundTrip.Title)
 	assert.Equal(t, kbapi.LegendSizeMedium, heatmapRoundTrip.Legend.Size)
@@ -149,7 +149,7 @@ func Test_heatmapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 
 func Test_heatmapConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 	heatmap := kbapi.HeatmapESQL{
-		Type:                kbapi.HeatmapESQLTypeHeatmap,
+		Type:                kbapi.HeatmapESQLTypeHeatMap,
 		Title:               new("ESQL Heatmap"),
 		Description:         new("ESQL heatmap description"),
 		IgnoreGlobalFilters: new(false),
@@ -225,7 +225,7 @@ func Test_heatmapConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 
 	heatmapRoundTrip, err := chart.AsHeatmapESQL()
 	require.NoError(t, err)
-	assert.Equal(t, kbapi.HeatmapESQLTypeHeatmap, heatmapRoundTrip.Type)
+	assert.Equal(t, kbapi.HeatmapESQLTypeHeatMap, heatmapRoundTrip.Type)
 	assert.Equal(t, "bytes", heatmapRoundTrip.Metric.Column)
 	assert.Equal(t, kbapi.HeatmapESQLMetricOperationValue, heatmapRoundTrip.Metric.Operation)
 }
@@ -234,7 +234,7 @@ func Test_heatmapPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 	ctx := context.Background()
 
 	heatmap := kbapi.HeatmapNoESQL{
-		Type:                kbapi.HeatmapNoESQLTypeHeatmap,
+		Type:                kbapi.HeatmapNoESQLTypeHeatMap,
 		Title:               new("Heatmap NoESQL Round-Trip"),
 		Description:         new("Converter test"),
 		IgnoreGlobalFilters: new(true),
@@ -268,14 +268,14 @@ func Test_heatmapPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 	noESQL2, err := chart2.AsHeatmapNoESQL()
 	require.NoError(t, err)
 	assert.Equal(t, "Heatmap NoESQL Round-Trip", *noESQL2.Title)
-	assert.Equal(t, kbapi.HeatmapNoESQLTypeHeatmap, noESQL2.Type)
+	assert.Equal(t, kbapi.HeatmapNoESQLTypeHeatMap, noESQL2.Type)
 }
 
 func Test_heatmapPanelConfigConverter_populateFromAttributes_buildAttributes_roundTrip_ESQL(t *testing.T) {
 	ctx := context.Background()
 
 	heatmap := kbapi.HeatmapESQL{
-		Type:                kbapi.HeatmapESQLTypeHeatmap,
+		Type:                kbapi.HeatmapESQLTypeHeatMap,
 		Title:               new("Heatmap ESQL Round-Trip"),
 		Description:         new("Converter test"),
 		IgnoreGlobalFilters: new(false),
@@ -326,6 +326,6 @@ func Test_heatmapPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 	esql2, err := chart2.AsHeatmapESQL()
 	require.NoError(t, err)
 	assert.Equal(t, "Heatmap ESQL Round-Trip", *esql2.Title)
-	assert.Equal(t, kbapi.HeatmapESQLTypeHeatmap, esql2.Type)
+	assert.Equal(t, kbapi.HeatmapESQLTypeHeatMap, esql2.Type)
 	assert.Equal(t, "host", esql2.XAxis.Column)
 }

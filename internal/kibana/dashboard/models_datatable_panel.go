@@ -32,7 +32,7 @@ import (
 func newDatatablePanelConfigConverter() datatablePanelConfigConverter {
 	return datatablePanelConfigConverter{
 		lensVisualizationBase: lensVisualizationBase{
-			visualizationType: string(kbapi.DatatableNoESQLTypeDatatable),
+			visualizationType: string(kbapi.DatatableNoESQLTypeDataTable),
 			hasTFPanelConfig:  func(pm panelModel) bool { return pm.DatatableConfig != nil },
 		},
 	}
@@ -270,7 +270,7 @@ func (m *datatableNoESQLConfigModel) fromAPI(ctx context.Context, api kbapi.Data
 
 func (m *datatableNoESQLConfigModel) toAPI() (kbapi.DatatableNoESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	api := kbapi.DatatableNoESQL{Type: kbapi.DatatableNoESQLTypeDatatable}
+	api := kbapi.DatatableNoESQL{Type: kbapi.DatatableNoESQLTypeDataTable}
 
 	if typeutils.IsKnown(m.Title) {
 		api.Title = m.Title.ValueStringPointer()
@@ -467,7 +467,7 @@ func (m *datatableESQLConfigModel) fromAPI(ctx context.Context, api kbapi.Datata
 
 func (m *datatableESQLConfigModel) toAPI() (kbapi.DatatableESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	api := kbapi.DatatableESQL{Type: kbapi.DatatableESQLTypeDatatable}
+	api := kbapi.DatatableESQL{Type: kbapi.DatatableESQLTypeDataTable}
 
 	if typeutils.IsKnown(m.Title) {
 		api.Title = m.Title.ValueStringPointer()
