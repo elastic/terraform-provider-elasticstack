@@ -22,8 +22,8 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/exportagentbuilder"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -39,13 +39,13 @@ func (d *DataSource) Read(ctx context.Context, req datasource.ReadRequest, resp 
 		return
 	}
 
-	serverVersion, sdkDiags := d.client.ServerVersion(ctx)
+	supported, sdkDiags := d.client.EnforceMinVersion(ctx, minKibanaAgentBuilderAPIVersion)
 	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	if serverVersion.LessThan(minKibanaAgentBuilderAPIVersion) {
+	if !supported {
 		resp.Diagnostics.AddError("Unsupported server version",
 			fmt.Sprintf("Agent Builder workflows require Elastic Stack v%s or later.", minKibanaAgentBuilderAPIVersion))
 		return
@@ -64,7 +64,7 @@ func (d *DataSource) Read(ctx context.Context, req datasource.ReadRequest, resp 
 
 	workflowID := config.ID.ValueString()
 
-	workflow := exportagentbuilder.FetchWorkflow(ctx, oapiClient.API, workflowID, &resp.Diagnostics)
+	workflow := kibanaoapi.FetchWorkflow(ctx, oapiClient.API, workflowID, &resp.Diagnostics)
 	if workflow == nil {
 		resp.Diagnostics.AddError("Workflow not found", fmt.Sprintf("Unable to fetch workflow with ID %s", workflowID))
 		return

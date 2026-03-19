@@ -23,6 +23,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 )
 
@@ -36,14 +37,31 @@ func getSchema() schema.Schema {
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,
+				MarkdownDescription: "The composite ID of the workflow: `<workflow_id>/<space_id>`.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"workflow_id": schema.StringAttribute{
+				Computed:            true,
 				Optional:            true,
-				MarkdownDescription: "The workflow ID. If not provided, it will be auto-generated. IDs are `workflow-<UUIDv4>`",
+				MarkdownDescription: "The workflow ID. If not provided, it will be auto-generated. IDs are `workflow-<UUIDv4>`.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"configuration": schema.StringAttribute{
+			"space_id": schema.StringAttribute{
+				Computed:            true,
+				Optional:            true,
+				Default:             stringdefault.StaticString("default"),
+				MarkdownDescription: "An identifier for the Kibana space. If not provided, the default space is used.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+					stringplanmodifier.RequiresReplace(),
+				},
+			},
+			"configuration_yaml": schema.StringAttribute{
 				Required:            true,
 				MarkdownDescription: "The YAML configuration for the workflow.",
 			},

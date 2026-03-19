@@ -44,7 +44,7 @@ type DataSource struct {
 
 // Metadata returns the data source type name.
 func (d *DataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_kibana_export_agentbuilder_workflow"
+	resp.TypeName = req.ProviderTypeName + "_kibana_agentbuilder_export_workflow"
 }
 
 // Configure adds the provider configured client to the data source.

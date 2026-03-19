@@ -19,17 +19,20 @@ package agentbuilderworkflow
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 type workflowModel struct {
-	ID            types.String `tfsdk:"id"`
-	Configuration types.String `tfsdk:"configuration"`
-	Name          types.String `tfsdk:"name"`
-	Description   types.String `tfsdk:"description"`
-	Enabled       types.Bool   `tfsdk:"enabled"`
-	Valid         types.Bool   `tfsdk:"valid"`
+	ID                types.String `tfsdk:"id"`
+	WorkflowID        types.String `tfsdk:"workflow_id"`
+	SpaceID           types.String `tfsdk:"space_id"`
+	ConfigurationYaml types.String `tfsdk:"configuration_yaml"`
+	Name              types.String `tfsdk:"name"`
+	Description       types.String `tfsdk:"description"`
+	Enabled           types.Bool   `tfsdk:"enabled"`
+	Valid             types.Bool   `tfsdk:"valid"`
 }
 
 func (model *workflowModel) populateFromAPI(data *kbapi.WorkflowDetailDto) {
@@ -37,8 +40,15 @@ func (model *workflowModel) populateFromAPI(data *kbapi.WorkflowDetailDto) {
 		return
 	}
 
-	model.ID = types.StringValue(data.Id)
-	model.Configuration = types.StringValue(data.Yaml)
+	spaceID := model.SpaceID.ValueString()
+	if spaceID == "" {
+		spaceID = "default"
+	}
+
+	model.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: data.Id}).String())
+	model.WorkflowID = types.StringValue(data.Id)
+	model.SpaceID = types.StringValue(spaceID)
+	model.ConfigurationYaml = types.StringValue(data.Yaml)
 	model.Name = types.StringValue(data.Name)
 
 	if data.Description != nil && *data.Description != "" {
@@ -53,11 +63,11 @@ func (model *workflowModel) populateFromAPI(data *kbapi.WorkflowDetailDto) {
 
 func (model workflowModel) toAPICreateModel() kbapi.CreateWorkflowCommand {
 	body := kbapi.CreateWorkflowCommand{
-		Yaml: model.Configuration.ValueString(),
+		Yaml: model.ConfigurationYaml.ValueString(),
 	}
 
-	if typeutils.IsKnown(model.ID) {
-		id := model.ID.ValueString()
+	if typeutils.IsKnown(model.WorkflowID) {
+		id := model.WorkflowID.ValueString()
 		body.Id = &id
 	}
 
@@ -65,10 +75,8 @@ func (model workflowModel) toAPICreateModel() kbapi.CreateWorkflowCommand {
 }
 
 func (model workflowModel) toAPIUpdateModel() kbapi.UpdateWorkflowCommand {
-	yaml := model.Configuration.ValueString()
-	body := kbapi.UpdateWorkflowCommand{
+	yaml := model.ConfigurationYaml.ValueString()
+	return kbapi.UpdateWorkflowCommand{
 		Yaml: &yaml,
 	}
-
-	return body
 }

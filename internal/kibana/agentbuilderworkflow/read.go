@@ -21,9 +21,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func (r *WorkflowResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -35,17 +37,26 @@ func (r *WorkflowResource) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
-	serverVersion, sdkDiags := r.client.ServerVersion(ctx)
+	supported, sdkDiags := r.client.EnforceMinVersion(ctx, minKibanaAgentBuilderAPIVersion)
 	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	if serverVersion.LessThan(minKibanaAgentBuilderAPIVersion) {
+	if !supported {
 		resp.Diagnostics.AddError("Unsupported server version",
 			fmt.Sprintf("Agent Builder workflows require Elastic Stack v%s or later.", minKibanaAgentBuilderAPIVersion))
 		return
 	}
+
+	compID, idDiags := clients.CompositeIDFromStrFw(stateModel.ID.ValueString())
+	resp.Diagnostics.Append(idDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Restore space_id from the composite ID so populateFromAPI can use it.
+	stateModel.SpaceID = types.StringValue(compID.ClusterID)
 
 	client, err := r.client.GetKibanaOapiClient()
 	if err != nil {
@@ -53,8 +64,7 @@ func (r *WorkflowResource) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
-	workflowID := stateModel.ID.ValueString()
-	workflow, diags := kibanaoapi.GetWorkflow(ctx, client, workflowID)
+	workflow, diags := kibanaoapi.GetWorkflow(ctx, client, compID.ResourceID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

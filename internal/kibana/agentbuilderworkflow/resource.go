@@ -23,8 +23,8 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 var (
@@ -54,10 +54,5 @@ func (r *WorkflowResource) Metadata(_ context.Context, req resource.MetadataRequ
 }
 
 func (r *WorkflowResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	stateModel := workflowModel{
-		ID: types.StringValue(req.ID),
-	}
-
-	diags := resp.State.Set(ctx, stateModel)
-	resp.Diagnostics.Append(diags...)
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
