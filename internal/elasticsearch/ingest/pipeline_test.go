@@ -19,6 +19,7 @@ package ingest_test
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -41,7 +42,7 @@ func TestAccResourceIngestPipeline(t *testing.T) {
 				Config: testAccResourceIngestPipelineCreate(pipelineName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", pipelineName),
-					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestMatchResourceAttr(resourceName, "id", regexp.MustCompile(`^[^/]+/[^/]+$`)),
 					resource.TestCheckResourceAttr(resourceName, "description", "Test Pipeline"),
 					resource.TestCheckResourceAttr(resourceName, "processors.#", "2"),
 					CheckResourceJSON(resourceName, "processors.0", `{"set":{"description":"My set processor description","field":"_meta","value":"indexed"}}`),
@@ -60,6 +61,17 @@ func TestAccResourceIngestPipeline(t *testing.T) {
 					CheckResourceJSON(resourceName, "processors.0", `{"set":{"description":"Updated set processor","field":"_meta","value":"reindexed"}}`),
 					CheckResourceJSON(resourceName, "metadata", `{"owner":"updated"}`),
 					resource.TestCheckNoResourceAttr(resourceName, "on_failure.#"),
+				),
+			},
+			{
+				Config: testAccResourceIngestPipelineMinimal(pipelineName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", pipelineName),
+					resource.TestCheckNoResourceAttr(resourceName, "description"),
+					resource.TestCheckNoResourceAttr(resourceName, "metadata"),
+					resource.TestCheckNoResourceAttr(resourceName, "on_failure.#"),
+					resource.TestCheckResourceAttr(resourceName, "processors.#", "1"),
+					CheckResourceJSON(resourceName, "processors.0", `{"set":{"field":"_meta","value":"minimal"}}`),
 				),
 			},
 			{
@@ -129,6 +141,27 @@ resource "elasticstack_elasticsearch_ingest_pipeline" "test_pipeline" {
         description = "Updated set processor"
         field       = "_meta"
         value       = "reindexed"
+      }
+    })
+  ]
+}
+	`, name)
+}
+
+func testAccResourceIngestPipelineMinimal(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_ingest_pipeline" "test_pipeline" {
+  name = "%s"
+
+  processors = [
+    jsonencode({
+      set = {
+        field = "_meta"
+        value = "minimal"
       }
     })
   ]
