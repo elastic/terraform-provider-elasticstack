@@ -7,10 +7,25 @@ resource "elasticstack_elasticsearch_security_role" "test" {
 
   cluster = ["all"]
 
+  global = jsonencode({
+    application = {}
+    profile = {
+      write = {
+        applications = ["*"]
+      }
+    }
+    role = {}
+  })
+
   indices {
     names                    = ["index1", "index2"]
     privileges               = ["all"]
     allow_restricted_indices = true
+    query = jsonencode({
+      term = {
+        status = "active"
+      }
+    })
   }
 
   applications {
