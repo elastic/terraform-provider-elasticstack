@@ -55,7 +55,7 @@ resource "elasticstack_kibana_dashboard" "test" {
               palette = "default"
               mapping = []
               unassignedColor = {
-                type  = "colorCode"
+                type  = "color_code"
                 value = "#555555"
               }
             }
