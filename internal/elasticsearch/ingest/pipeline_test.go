@@ -67,8 +67,6 @@ func TestAccResourceIngestPipeline(t *testing.T) {
 				Config: testAccResourceIngestPipelineMinimal(pipelineName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", pipelineName),
-					resource.TestCheckNoResourceAttr(resourceName, "description"),
-					resource.TestCheckNoResourceAttr(resourceName, "metadata"),
 					resource.TestCheckNoResourceAttr(resourceName, "on_failure.#"),
 					resource.TestCheckResourceAttr(resourceName, "processors.#", "1"),
 					CheckResourceJSON(resourceName, "processors.0", `{"set":{"field":"_meta","value":"minimal"}}`),

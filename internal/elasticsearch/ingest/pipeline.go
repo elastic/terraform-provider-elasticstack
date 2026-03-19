@@ -28,6 +28,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/tfsdkutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -113,8 +114,8 @@ func resourceIngestPipelineTemplatePut(ctx context.Context, d *schema.ResourceDa
 	}
 	var pipeline models.IngestPipeline
 	pipeline.Name = pipelineID
-	if v, ok := d.GetOk("description"); ok {
-		r := v.(string)
+	if description, ok := getConfiguredOptionalString(d, "description"); ok {
+		r := description
 		pipeline.Description = &r
 	}
 	if v, ok := d.GetOk("on_failure"); ok {
@@ -139,9 +140,9 @@ func resourceIngestPipelineTemplatePut(ctx context.Context, d *schema.ResourceDa
 		}
 		pipeline.Processors = procs
 	}
-	if v, ok := d.GetOk("metadata"); ok {
+	if metadataValue, ok := getConfiguredOptionalString(d, "metadata"); ok {
 		metadata := make(map[string]any)
-		if err := json.NewDecoder(strings.NewReader(v.(string))).Decode(&metadata); err != nil {
+		if err := json.NewDecoder(strings.NewReader(metadataValue)).Decode(&metadata); err != nil {
 			return diag.FromErr(err)
 		}
 		pipeline.Metadata = metadata
@@ -182,6 +183,10 @@ func resourceIngestPipelineTemplateRead(ctx context.Context, d *schema.ResourceD
 		if err := d.Set("description", desc); err != nil {
 			return diag.FromErr(err)
 		}
+	} else {
+		if err := d.Set("description", nil); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 	if onFailure := pipeline.OnFailure; onFailure != nil {
 		fProcs := make([]string, len(onFailure))
@@ -218,9 +223,22 @@ func resourceIngestPipelineTemplateRead(ctx context.Context, d *schema.ResourceD
 		if err := d.Set("metadata", string(meta)); err != nil {
 			return diag.FromErr(err)
 		}
+	} else {
+		if err := d.Set("metadata", nil); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	return diags
+}
+
+func getConfiguredOptionalString(d *schema.ResourceData, key string) (string, bool) {
+	rawValue, rawValueDiags := d.GetRawConfigAt(cty.GetAttrPath(key))
+	if rawValueDiags.HasError() || !rawValue.IsKnown() || rawValue.IsNull() {
+		return "", false
+	}
+
+	return rawValue.AsString(), true
 }
 
 func resourceIngestPipelineTemplateDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
