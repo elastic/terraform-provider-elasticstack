@@ -36,6 +36,7 @@ func (d *DataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp 
 			"space_id": schema.StringAttribute{
 				Description: "An identifier for the space. If space_id is not provided, the default space is used.",
 				Optional:    true,
+				Computed:    true,
 			},
 			"workflow_id": schema.StringAttribute{
 				Description: "The ID of the exported workflow.",
