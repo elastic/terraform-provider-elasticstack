@@ -63,6 +63,12 @@ func (d *DataSource) Read(ctx context.Context, req datasource.ReadRequest, resp 
 	}
 
 	workflowID := config.ID.ValueString()
+	if compID, diags := clients.CompositeIDFromStrFw(workflowID); !diags.HasError() {
+		workflowID = compID.ResourceID
+		if !typeutils.IsKnown(config.SpaceID) {
+			spaceID = compID.ClusterID
+		}
+	}
 
 	workflow := kibanaoapi.FetchWorkflow(ctx, oapiClient.API, workflowID, &resp.Diagnostics)
 	if workflow == nil {
