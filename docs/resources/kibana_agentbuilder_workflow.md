@@ -42,15 +42,17 @@ EOT
 
 ### Required
 
-- `configuration` (String) The YAML configuration for the workflow.
+- `configuration_yaml` (String) The YAML configuration for the workflow.
 
 ### Optional
 
-- `id` (String) The workflow ID. If not provided, it will be auto-generated. IDs are `workflow-<UUIDv4>`
+- `space_id` (String) An identifier for the Kibana space. If not provided, the default space is used.
+- `workflow_id` (String) The workflow ID. If not provided, it will be auto-generated. IDs are `workflow-<UUIDv4>`.
 
 ### Read-Only
 
 - `description` (String) The workflow description (extracted from YAML configuration).
 - `enabled` (Boolean) Whether the workflow is enabled (extracted from YAML configuration).
+- `id` (String) The composite ID of the workflow: `<workflow_id>/<space_id>`.
 - `name` (String) The workflow name (extracted from YAML configuration).
 - `valid` (Boolean) Whether the workflow configuration is valid.
