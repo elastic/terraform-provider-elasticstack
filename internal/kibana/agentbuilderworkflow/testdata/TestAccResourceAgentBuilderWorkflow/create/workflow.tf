@@ -8,7 +8,7 @@ provider "elasticstack" {
 }
 
 resource "elasticstack_kibana_agentbuilder_workflow" "test" {
-  workflow_id = var.workflow_id
+  workflow_id        = var.workflow_id
   configuration_yaml = <<-EOT
 name: Test Workflow
 description: A test workflow for acceptance testing
