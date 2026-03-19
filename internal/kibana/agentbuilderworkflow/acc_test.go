@@ -31,15 +31,9 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
-)
-
-const (
-	providerConfig = `
-provider "elasticstack" {
-	kibana {}
-}
-`
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 var (
@@ -104,72 +98,75 @@ func TestAccResourceAgentBuilderWorkflow(t *testing.T) {
 	resourceID := "elasticstack_kibana_agentbuilder_workflow.test"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { preCheckWithWorkflowsEnabled(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { preCheckWithWorkflowsEnabled(t) },
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderAPIVersion),
-				Config: providerConfig + `
-resource "elasticstack_kibana_agentbuilder_workflow" "test" {
-	id = "` + workflowID + `"
-	configuration = <<-EOT
-name: Test Workflow
-description: A test workflow for acceptance testing
-enabled: true
-triggers:
-  - type: manual
-inputs:
-  - name: message
-    type: string
-    default: "hello world"
-steps:
-  - name: hello_world_step
-    type: console
-    with:
-      message: "{{ inputs.message }}"
-EOT
-}
-`,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderAPIVersion),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"workflow_id": config.StringVariable(workflowID),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceID, "id", workflowID),
+					resource.TestCheckResourceAttr(resourceID, "workflow_id", workflowID),
+					resource.TestCheckResourceAttr(resourceID, "space_id", "default"),
 					resource.TestCheckResourceAttr(resourceID, "name", "Test Workflow"),
 					resource.TestCheckResourceAttr(resourceID, "description", "A test workflow for acceptance testing"),
 					resource.TestCheckResourceAttr(resourceID, "enabled", "true"),
 					resource.TestCheckResourceAttr(resourceID, "valid", "true"),
-					resource.TestCheckResourceAttrSet(resourceID, "configuration"),
+					resource.TestCheckResourceAttrSet(resourceID, "configuration_yaml"),
 				),
 			},
 			{
-				SkipFunc:          versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderAPIVersion),
-				ResourceName:      resourceID,
-				ImportState:       true,
+				// Verify whitespace/indentation/blank-line changes are detected as updates.
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderAPIVersion),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_whitespace"),
+				ConfigVariables: config.Variables{
+					"workflow_id": config.StringVariable(workflowID),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceID, "workflow_id", workflowID),
+					resource.TestCheckResourceAttr(resourceID, "name", "Test Workflow"),
+				),
+			},
+			{
+				// Verify map key reordering is detected as an update.
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderAPIVersion),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_reordered"),
+				ConfigVariables: config.Variables{
+					"workflow_id": config.StringVariable(workflowID),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceID, "workflow_id", workflowID),
+					resource.TestCheckResourceAttr(resourceID, "name", "Test Workflow"),
+				),
+			},
+			{
+				// Import by composite id: <workflow_id>/<space_id>
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderAPIVersion),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"workflow_id": config.StringVariable(workflowID),
+				},
+				ResourceName: resourceID,
+				ImportState:  true,
+				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+					return s.RootModule().Resources[resourceID].Primary.ID, nil
+				},
 				ImportStateVerify: true,
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderAPIVersion),
-				Config: providerConfig + `
-resource "elasticstack_kibana_agentbuilder_workflow" "test" {
-	id = "` + workflowID + `"
-	configuration = <<-EOT
-name: Updated Test Workflow
-description: An updated test workflow
-enabled: false
-triggers:
-  - type: manual
-inputs:
-  - name: message
-    type: string
-    default: "hello world, updated"
-steps:
-  - name: updated_step
-    type: console
-    with:
-      message: "{{ inputs.message }}"
-EOT
-}
-`,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderAPIVersion),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"workflow_id": config.StringVariable(workflowID),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceID, "id", workflowID),
+					resource.TestCheckResourceAttr(resourceID, "workflow_id", workflowID),
 					resource.TestCheckResourceAttr(resourceID, "name", "Updated Test Workflow"),
 					resource.TestCheckResourceAttr(resourceID, "description", "An updated test workflow"),
 					resource.TestCheckResourceAttr(resourceID, "enabled", "false"),
@@ -184,33 +181,14 @@ func TestAccResourceAgentBuilderWorkflowAutoGeneratedID(t *testing.T) {
 	resourceID := "elasticstack_kibana_agentbuilder_workflow.test_auto"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { preCheckWithWorkflowsEnabled(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { preCheckWithWorkflowsEnabled(t) },
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderAPIVersion),
-				Config: providerConfig + `
-resource "elasticstack_kibana_agentbuilder_workflow" "test_auto" {
-	configuration = <<-EOT
-name: Auto ID Workflow
-enabled: true
-description: This is a new workflow
-triggers:
-  - type: manual
-inputs:
-  - name: message
-    type: string
-    default: "hello world"
-steps:
-  - name: hello_world_step
-    type: console
-    with:
-      message: "{{ inputs.message }}"
-EOT
-}
-`,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderAPIVersion),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet(resourceID, "id"),
+					resource.TestCheckResourceAttrSet(resourceID, "workflow_id"),
 					resource.TestCheckResourceAttr(resourceID, "name", "Auto ID Workflow"),
 					resource.TestCheckResourceAttr(resourceID, "enabled", "true"),
 				),

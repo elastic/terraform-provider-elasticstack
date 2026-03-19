@@ -88,46 +88,18 @@ func preCheckWithWorkflowsEnabled(t *testing.T) {
 	}
 }
 
-// TestAccDataSourceKibanaExportABWorkflow tests the export_agentbuilder_workflow data source
 func TestAccDataSourceKibanaExportAgentBuilderWorkflow(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { preCheckWithWorkflowsEnabled(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { preCheckWithWorkflowsEnabled(t) },
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderAPIVersion),
-				Config: `
-provider "elasticstack" {
-	kibana {}
-}
-
-resource "elasticstack_kibana_agentbuilder_workflow" "test" {
-	configuration = <<-EOT
-name: Test Workflow
-description: A test workflow for export
-enabled: true
-triggers:
-  - type: manual
-inputs:
-  - name: message
-    type: string
-    default: "test message"
-steps:
-  - name: test_step
-    type: console
-    with:
-      message: "{{ inputs.message }}"
-EOT
-}
-
-data "elasticstack_kibana_export_agentbuilder_workflow" "test" {
-	id = elasticstack_kibana_agentbuilder_workflow.test.id
-}
-`,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderAPIVersion),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_export_agentbuilder_workflow.test", "id"),
-					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_export_agentbuilder_workflow.test", "workflow_id"),
-					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_export_agentbuilder_workflow.test", "yaml"),
+					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_agentbuilder_export_workflow.test", "id"),
+					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_agentbuilder_export_workflow.test", "workflow_id"),
+					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_agentbuilder_export_workflow.test", "yaml"),
 				),
 			},
 		},
