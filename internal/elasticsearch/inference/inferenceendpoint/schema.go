@@ -27,9 +27,15 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 )
 
+const taskTypeDescription = "The task type of the inference endpoint. One of `sparse_embedding`, `text_embedding`, " +
+	"`rerank`, `completion`, `chat_completion`. When omitted, the task type is inferred from the service."
+
+const inferenceEndpointDescription = "Creates or updates an inference endpoint." +
+	"See the [inference endpoint API documentation](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-inference-put-1) for more details."
+
 func (r *inferenceEndpointResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Creates or updates an inference endpoint. See the [inference endpoint API documentation](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-inference-put-1) for more details.",
+		MarkdownDescription: inferenceEndpointDescription,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Internal identifier of the resource.",
@@ -46,7 +52,7 @@ func (r *inferenceEndpointResource) Schema(_ context.Context, _ resource.SchemaR
 				},
 			},
 			"task_type": schema.StringAttribute{
-				MarkdownDescription: "The task type of the inference endpoint. One of `sparse_embedding`, `text_embedding`, `rerank`, `completion`, `chat_completion`. When omitted, the task type is inferred from the service.",
+				MarkdownDescription: taskTypeDescription,
 				Optional:            true,
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
