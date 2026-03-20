@@ -591,6 +591,49 @@ func TestAccResourceAlertingRuleAlertDelay(t *testing.T) {
 	})
 }
 
+// TestAccResourceAlertingRuleEsqlTermField verifies that the termField parameter
+// is accepted for ESQL (.es-query with searchType=esqlQuery) alert rules and
+// roundtrips cleanly without producing inconsistent state on re-apply.
+func TestAccResourceAlertingRuleEsqlTermField(t *testing.T) {
+	minSupportedVersion := version.Must(version.NewSemver("8.13.0"))
+
+	t.Setenv("KIBANA_API_KEY", "")
+
+	ruleName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceAlertingRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(ruleName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.esql_term_field", "name", ruleName),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.esql_term_field", "rule_type_id", ".es-query"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.esql_term_field", "consumer", "alerts"),
+					testCheckAlertingRuleAPIParamStringEquals("elasticstack_kibana_alerting_rule.esql_term_field", "termField", "rule.id"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(ruleName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.esql_term_field", "name", ruleName),
+				),
+			},
+		},
+	})
+}
+
 func checkResourceAlertingRuleDestroy(s *terraform.State) error {
 	client, err := clients.NewAcceptanceTestingClient()
 	if err != nil {
