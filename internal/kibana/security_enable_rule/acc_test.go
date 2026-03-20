@@ -58,6 +58,35 @@ func TestAccResourceEnableRule(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "space_id", defaultSpaceID),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "key", "test_tag"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "value", "terraform_test"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "disable_on_destroy", "true"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_enable_rule.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "all_rules_enabled", "true"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceEnableRuleDefaultSpaceID(t *testing.T) {
+	// Skip entire test if version is below 8.11.0
+	skipFunc := versionutils.CheckIfVersionIsUnsupported(minVersionEnableRule)
+	if skip, err := skipFunc(); err != nil {
+		t.Fatalf("failed to check version: %v", err)
+	} else if skip {
+		t.Skip("Test requires version 8.11.0 or higher")
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccResourceEnableRuleDefaultSpaceID(),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "space_id", defaultSpaceID),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "key", "test_tag"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "value", "terraform_test_default_space"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "disable_on_destroy", "true"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_enable_rule.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "all_rules_enabled", "true"),
 				),
@@ -98,6 +127,12 @@ func TestAccResourceEnableRuleWithManualDisable(t *testing.T) {
 				PreConfig: func() {
 					disableOneRule(t, spaceID, tagKey, tagValue)
 				},
+				RefreshState: true,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "all_rules_enabled", "false"),
+				),
+			},
+			{
 				Config: testAccResourceEnableRuleWithRules(tagKey, tagValue),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "all_rules_enabled", "true"),
@@ -126,7 +161,29 @@ func TestAccResourceEnableRuleDisableOnDestroyFalse(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceEnableRuleDisableOnDestroyFalse(tagKey, tagValue),
+				Config: testAccResourceEnableRuleDisableOnDestroy(tagKey, tagValue, false),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "space_id", spaceID),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "key", tagKey),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "value", tagValue),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "disable_on_destroy", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "all_rules_enabled", "true"),
+					checkRulesEnabled(spaceID, tagKey, tagValue),
+				),
+			},
+			{
+				Config: testAccResourceEnableRuleDisableOnDestroy(tagKey, tagValue, true),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "space_id", spaceID),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "key", tagKey),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "value", tagValue),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "disable_on_destroy", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "all_rules_enabled", "true"),
+					checkRulesEnabled(spaceID, tagKey, tagValue),
+				),
+			},
+			{
+				Config: testAccResourceEnableRuleDisableOnDestroy(tagKey, tagValue, false),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "space_id", spaceID),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "key", tagKey),
@@ -199,6 +256,19 @@ resource "elasticstack_kibana_security_enable_rule" "test" {
 `
 }
 
+func testAccResourceEnableRuleDefaultSpaceID() string {
+	return `
+provider "elasticstack" {
+  kibana {}
+}
+
+resource "elasticstack_kibana_security_enable_rule" "test" {
+  key   = "test_tag"
+  value = "terraform_test_default_space"
+}
+`
+}
+
 func testAccResourceEnableRuleWithRules(tagKey, tagValue string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
@@ -220,7 +290,7 @@ resource "elasticstack_kibana_security_enable_rule" "test" {
 `, testAccCreateDetectionRules(tagKey, tagValue), tagKey, tagValue)
 }
 
-func testAccResourceEnableRuleDisableOnDestroyFalse(tagKey, tagValue string) string {
+func testAccResourceEnableRuleDisableOnDestroy(tagKey, tagValue string, disableOnDestroy bool) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   kibana {}
@@ -232,14 +302,14 @@ resource "elasticstack_kibana_security_enable_rule" "test" {
   space_id          = "default"
   key               = "%s"
   value             = "%s"
-  disable_on_destroy = false
-  
+  disable_on_destroy = %t
+   
   depends_on = [
     elasticstack_kibana_security_detection_rule.test_rule_1,
     elasticstack_kibana_security_detection_rule.test_rule_2
   ]
 }
-`, testAccCreateDetectionRules(tagKey, tagValue), tagKey, tagValue)
+`, testAccCreateDetectionRules(tagKey, tagValue), tagKey, tagValue, disableOnDestroy)
 }
 
 func testAccResourceEnableRuleDisableOnDestroyFalseRulesOnly(tagKey, tagValue string) string {
