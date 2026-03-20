@@ -338,9 +338,29 @@ func (m Map) MustDelete(key string) {
 }
 
 func (m Map) CreateRef(schema *Schema, name string, key string) Map {
-	refTarget := m.MustGet(key) // Check the full path
 	refPath := fmt.Sprintf("schemas.%s", name)
 	refValue := Map{"$ref": fmt.Sprintf("#/components/schemas/%s", name)}
+
+	// If the target path doesn't exist, the Kibana componentizer likely already
+	// extracted it to a $ref. Skip gracefully — the rename transform will
+	// align component names later if needed.
+	refTarget, ok := m.Get(key)
+	if !ok {
+		log.Printf("CreateRef: skipping %q — path not found (likely already componentized)", key)
+		return refValue
+	}
+
+	// If the target is already a $ref, skip.
+	if targetMap, isMap := refTarget.(Map); isMap {
+		if _, hasRef := targetMap["$ref"]; hasRef {
+			return refValue
+		}
+	}
+	if targetMap, isMap := refTarget.(map[string]any); isMap {
+		if _, hasRef := targetMap["$ref"]; hasRef {
+			return refValue
+		}
+	}
 
 	// If the component schema already exists and is not the same, panic
 	writeComponent := true
