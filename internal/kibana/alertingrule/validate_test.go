@@ -457,6 +457,27 @@ func TestValidateRuleParamsFixturesFromSreO11yModules(t *testing.T) {
 			expectErr: "json: unknown field \"hi\"",
 		},
 		{
+			name:     "es-query esql with unknown key shows variant-specific error",
+			ruleType: ".es-query",
+			params: map[string]any{
+				"searchType":          "esqlQuery",
+				"timeWindowSize":      5.0,
+				"timeWindowUnit":      "m",
+				"threshold":           []any{0.0},
+				"thresholdComparator": ">",
+				"size":                100.0,
+				"esqlQuery": map[string]any{
+					"esql": "FROM logs-* | STATS count = COUNT(*)",
+				},
+				"aggType":      "count",
+				"groupBy":      "all",
+				"timeField":    "@timestamp",
+				"sourceFields": []any{},
+				"bogusKey":     "should-fail",
+			},
+			expectErr: "bogusKey",
+		},
+		{
 			name:     "slo burn rate valid fixture with dependencies",
 			ruleType: "slo.rules.burnRate",
 			params: map[string]any{
@@ -523,6 +544,9 @@ func TestValidateRuleParamsFixturesFromSreO11yModules(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			errs := validateRuleParams(tc.ruleType, tc.params)
+			if len(errs) > 0 {
+				t.Logf("validation errors: %v", errs)
+			}
 			if tc.expectErr == "" {
 				if len(errs) > 0 {
 					t.Fatalf("expected no validation errors, got: %v", errs)
