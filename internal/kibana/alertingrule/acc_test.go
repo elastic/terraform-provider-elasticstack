@@ -698,7 +698,6 @@ func testCheckAlertingRuleAPIParams(resourceName string, check func(params map[s
 	}
 }
 
-//nolint:unparam
 func testCheckAlertingRuleAPIParamStringEquals(resourceName, key, expected string) resource.TestCheckFunc {
 	return testCheckAlertingRuleAPIParams(resourceName, func(params map[string]any) error {
 		v, ok := params[key]
