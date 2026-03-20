@@ -63,6 +63,39 @@ func buildLensTreemapPanelForTest(t *testing.T) panelModel {
 	}
 }
 
+// buildLensWafflePanelForTest creates a panel model with WaffleConfig for panelsToAPI tests.
+func buildLensWafflePanelForTest(t *testing.T) panelModel {
+	t.Helper()
+	apiJSON := `{
+		"type": "waffle",
+		"title": "Lens Waffle",
+		"dataset": {"type":"dataView","id":"metrics-*"},
+		"query": {"language":"kuery","query":""},
+		"legend": {"size":"small"},
+		"metrics": [{"operation":"count"}]
+	}`
+	var api kbapi.WaffleNoESQL
+	require.NoError(t, json.Unmarshal([]byte(apiJSON), &api))
+
+	var chart kbapi.WaffleChart
+	require.NoError(t, chart.FromWaffleNoESQL(api))
+
+	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	require.NoError(t, attrs.FromWaffleChart(chart))
+
+	converter := newWafflePanelConfigConverter()
+	pm := &panelModel{}
+	diags := converter.populateFromAttributes(context.Background(), pm, attrs)
+	require.False(t, diags.HasError())
+
+	return panelModel{
+		Type:         types.StringValue("lens"),
+		ID:           types.StringValue("waffle-1"),
+		Grid:         panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0), W: types.Int64Value(8), H: types.Int64Value(10)},
+		WaffleConfig: pm.WaffleConfig,
+	}
+}
+
 func Test_lensPanelTimeRange(t *testing.T) {
 	tr := lensPanelTimeRange()
 	assert.Equal(t, "now-15m", tr.From)
@@ -407,6 +440,32 @@ func Test_panelsToAPI(t *testing.T) {
 							"legend": {"size":"small"},
 							"metrics": [{"operation":"count"}],
 							"group_by": [{"operation":"terms","field":"host.name","collapse_by":"avg"}]
+						},
+						"time_range": {"from": "now-15m", "to": "now"}
+					}
+				}
+			]`,
+		},
+		{
+			name: "lens panel with waffle config",
+			model: dashboardModel{
+				Panels: []panelModel{
+					buildLensWafflePanelForTest(t),
+				},
+			},
+			expected: `[
+				{
+					"grid": {"h": 10, "w": 8, "x": 0, "y": 0},
+					"uid": "waffle-1",
+					"type": "lens",
+					"config": {
+						"attributes": {
+							"type": "waffle",
+							"title": "Lens Waffle",
+							"dataset": {"type":"dataView","id":"metrics-*"},
+							"query": {"language":"kuery","query":""},
+							"legend": {"size":"small"},
+							"metrics": [{"operation":"count"}]
 						},
 						"time_range": {"from": "now-15m", "to": "now"}
 					}
