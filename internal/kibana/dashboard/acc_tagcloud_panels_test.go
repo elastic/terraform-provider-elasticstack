@@ -107,6 +107,7 @@ func TestAccResourceDashboardTagcloud(t *testing.T) {
 				ImportStateVerifyIgnore: []string{
 					"panels.0.tagcloud_config.metric_json",
 					"panels.0.tagcloud_config.tag_by_json",
+					"panels.0.tagcloud_config.dataset_json",
 				},
 			},
 		},

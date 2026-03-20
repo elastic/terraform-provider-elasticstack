@@ -526,7 +526,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 		},
 		Attributes: map[string]schema.Attribute{
 			"type": schema.StringAttribute{
-				MarkdownDescription: "The type of the panel (e.g. 'DASHBOARD_MARKDOWN', 'lens').",
+				MarkdownDescription: "The type of the panel (e.g. 'markdown', 'lens').",
 				Required:            true,
 			},
 			"grid": schema.SingleNestedAttribute{
@@ -584,7 +584,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 					objectvalidator.ConflictsWith(
 						siblingPanelConfigPathsExcept("markdown_config", panelConfigNames)...,
 					),
-					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"DASHBOARD_MARKDOWN"}),
+					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"markdown"}),
 				},
 			},
 			"xy_chart_config": schema.SingleNestedAttribute{

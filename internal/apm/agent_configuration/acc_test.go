@@ -18,10 +18,10 @@
 package agentconfiguration_test
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	tf_acctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
@@ -30,11 +30,14 @@ func TestAccResourceAgentConfiguration(t *testing.T) {
 	serviceName := tf_acctest.RandStringFromCharSet(10, tf_acctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceAgentConfigurationCreate(serviceName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"service_name": config.StringVariable(serviceName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_apm_agent_configuration.test_config", "id"),
 					resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "service_name", serviceName),
@@ -46,7 +49,11 @@ func TestAccResourceAgentConfiguration(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccResourceAgentConfigurationUpdate(serviceName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"service_name": config.StringVariable(serviceName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_apm_agent_configuration.test_config", "id"),
 					resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "service_name", serviceName),
@@ -58,7 +65,11 @@ func TestAccResourceAgentConfiguration(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccResourceAgentConfigurationUpdateSettings(serviceName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_settings"),
+				ConfigVariables: config.Variables{
+					"service_name": config.StringVariable(serviceName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_apm_agent_configuration.test_config", "id"),
 					resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "service_name", serviceName),
@@ -73,69 +84,18 @@ func TestAccResourceAgentConfiguration(t *testing.T) {
 	})
 }
 
-func testAccResourceAgentConfigurationCreate(serviceName string) string {
-	return fmt.Sprintf(`
-	provider "elasticstack" {
-		kibana {}
-	}
-
-	resource "elasticstack_apm_agent_configuration" "test_config" {
-		service_name        = "%s"
-		service_environment = "production"
-		agent_name          = "go"
-		settings = {
-			"transaction_sample_rate" = "0.5"
-			"capture_body"            = "all"
-		}
-	}
-	`, serviceName)
-}
-
-func testAccResourceAgentConfigurationUpdate(serviceName string) string {
-	return fmt.Sprintf(`
-	provider "elasticstack" {
-		kibana {}
-	}
-
-	resource "elasticstack_apm_agent_configuration" "test_config" {
-		service_name        = "%s"
-		service_environment = "production"
-		agent_name          = "java"
-		settings = {
-			"transaction_sample_rate" = "0.8"
-			"capture_body"            = "off"
-		}
-	}
-	`, serviceName)
-}
-
-func testAccResourceAgentConfigurationUpdateSettings(serviceName string) string {
-	return fmt.Sprintf(`
-	provider "elasticstack" {
-		kibana {}
-	}
-
-	resource "elasticstack_apm_agent_configuration" "test_config" {
-		service_name        = "%s"
-		service_environment = "production"
-		agent_name          = "java"
-		settings = {
-			"transaction_sample_rate" = "0.8"
-			"log_level"               = "debug"
-		}
-	}
-	`, serviceName)
-}
-
 func TestAccResourceAgentConfiguration_alternateEnvironment(t *testing.T) {
 	serviceName := tf_acctest.RandStringFromCharSet(10, tf_acctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceAgentConfigurationAlternateEnvironment(serviceName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory(""),
+				ConfigVariables: config.Variables{
+					"service_name": config.StringVariable(serviceName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_apm_agent_configuration.test_config", "id"),
 					resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "service_name", serviceName),
@@ -147,6 +107,11 @@ func TestAccResourceAgentConfiguration_alternateEnvironment(t *testing.T) {
 				),
 			},
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory(""),
+				ConfigVariables: config.Variables{
+					"service_name": config.StringVariable(serviceName),
+				},
 				ResourceName:      "elasticstack_apm_agent_configuration.test_config",
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -155,33 +120,18 @@ func TestAccResourceAgentConfiguration_alternateEnvironment(t *testing.T) {
 	})
 }
 
-func testAccResourceAgentConfigurationAlternateEnvironment(serviceName string) string {
-	return fmt.Sprintf(`
-	provider "elasticstack" {
-		kibana {}
-	}
-
-	resource "elasticstack_apm_agent_configuration" "test_config" {
-		service_name        = "%s"
-		service_environment = "staging"
-		agent_name          = "java"
-		settings = {
-			"transaction_sample_rate" = "0.8"
-			"log_level"               = "debug"
-		}
-	}
-	`, serviceName)
-}
-
 func TestAccResourceAgentConfiguration_minimal(t *testing.T) {
 	serviceName := tf_acctest.RandStringFromCharSet(10, tf_acctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceAgentConfigurationMinimal(serviceName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory(""),
+				ConfigVariables: config.Variables{
+					"service_name": config.StringVariable(serviceName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_apm_agent_configuration.test_config", "id"),
 					resource.TestCheckResourceAttr("elasticstack_apm_agent_configuration.test_config", "service_name", serviceName),
@@ -192,25 +142,15 @@ func TestAccResourceAgentConfiguration_minimal(t *testing.T) {
 				),
 			},
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory(""),
+				ConfigVariables: config.Variables{
+					"service_name": config.StringVariable(serviceName),
+				},
 				ResourceName:      "elasticstack_apm_agent_configuration.test_config",
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
 		},
 	})
-}
-
-func testAccResourceAgentConfigurationMinimal(serviceName string) string {
-	return fmt.Sprintf(`
-	provider "elasticstack" {
-		kibana {}
-	}
-
-	resource "elasticstack_apm_agent_configuration" "test_config" {
-		service_name = "%s"
-		settings = {
-			"transaction_sample_rate" = "0.5"
-		}
-	}
-	`, serviceName)
 }

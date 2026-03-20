@@ -557,6 +557,7 @@ type TransformFunc func(schema *Schema)
 
 var transformers = []TransformFunc{
 	mergeDashboardsSchema,
+	mergeWorkflowsSchema,
 	transformRemoveKbnXsrf,
 	transformRemoveApiVersionParam,
 	transformSimplifyContentType,
@@ -577,6 +578,35 @@ var transformers = []TransformFunc{
 	transformRemoveUnusedComponents,
 	transformOmitEmptyNullable,
 	fixAlertingRuleParams,
+}
+
+//go:embed workflows.yaml
+var workflowsYaml string
+
+func mergeWorkflowsSchema(schema *Schema) {
+	var workflowsSchema Schema
+	err := yaml.Unmarshal([]byte(workflowsYaml), &workflowsSchema)
+	if err != nil {
+		log.Fatalf("failed to unmarshal schema from dashboards.yaml: %v", err)
+	}
+
+	// Merge paths
+	for path, pathInfo := range workflowsSchema.Paths {
+		// Only add the path if it doesn't already exist
+		if _, ok := schema.Paths[path]; !ok {
+			schema.Paths[path] = pathInfo
+		}
+	}
+
+	// Merge component schemas
+	dashboardSchemas := workflowsSchema.Components.MustGetMap("schemas")
+	schemaSchemas := schema.Components.MustGetMap("schemas")
+	for key, schemaInfo := range dashboardSchemas {
+		// Only add the schema if it doesn't already exist
+		if _, ok := schemaSchemas[key]; !ok {
+			schemaSchemas[key] = schemaInfo
+		}
+	}
 }
 
 //go:embed dashboards.json
@@ -982,7 +1012,30 @@ func fixDashboardPanelItemRefs(schema *Schema) {
 	dashboardPath.Get.CreateRef(schema, "dashboard_panel_section", "responses.200.content.application/json.schema.properties.data.properties.panels.items.anyOf.1")
 	dashboardPath.Get.CreateRef(schema, "dashboard_panels", "responses.200.content.application/json.schema.properties.data.properties.panels")
 
+	schema.Components.Move("schemas.dashboard_panel_section.properties.panels.items.anyOf", "schemas.dashboard_panel_section.properties.panels.items.oneOf")
+	schema.Components.Set("schemas.dashboard_panel_section.properties.panels.items.discriminator", Map{"propertyName": "type"})
 	schema.Components.CreateRef(schema, "dashboard_panel_item", "schemas.dashboard_panel_section.properties.panels.items")
+
+	const panelTypePrefix = "kbn-dashboard-panel-"
+	panelOneOf := schema.Components.MustGetSlice("schemas.dashboard_panel_item.oneOf")
+	panelTypeMapping := Map{}
+	for _, entry := range panelOneOf {
+		entryMap, ok := entry.(Map)
+		if !ok {
+			continue
+		}
+		ref, ok := entryMap["$ref"].(string)
+		if !ok {
+			continue
+		}
+		schemaName := strings.TrimPrefix(ref, "#/components/schemas/")
+		typeKey := strings.TrimPrefix(schemaName, panelTypePrefix)
+		panelTypeMapping[typeKey] = ref
+	}
+	schema.Components.Set("schemas.dashboard_panel_item.discriminator", Map{
+		"propertyName": "type",
+		"mapping":      panelTypeMapping,
+	})
 }
 
 func fixSecurityExceptionListItems(schema *Schema) {

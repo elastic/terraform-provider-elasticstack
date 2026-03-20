@@ -32,43 +32,20 @@ import (
 
 func newGaugePanelConfigConverter() gaugePanelConfigConverter {
 	return gaugePanelConfigConverter{
-		lensPanelConfigConverter: lensPanelConfigConverter{
+		lensVisualizationBase: lensVisualizationBase{
 			visualizationType: string(kbapi.GaugeNoESQLTypeGauge),
+			hasTFPanelConfig:  func(pm panelModel) bool { return pm.GaugeConfig != nil },
 		},
 	}
 }
 
 type gaugePanelConfigConverter struct {
-	lensPanelConfigConverter
+	lensVisualizationBase
 }
 
-func (c gaugePanelConfigConverter) handlesTFPanelConfig(pm panelModel) bool {
-	return pm.GaugeConfig != nil
-}
-
-func (c gaugePanelConfigConverter) populateFromAPIPanel(ctx context.Context, pm *panelModel, config kbapi.DashboardPanelItem_Config) diag.Diagnostics {
-	cfgMap, err := config.AsDashboardPanelItemConfig8()
+func (c gaugePanelConfigConverter) populateFromAttributes(ctx context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes) diag.Diagnostics {
+	gaugeChart, err := attrs.AsGaugeChart()
 	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	attrs, ok := cfgMap["attributes"]
-	if !ok {
-		return nil
-	}
-
-	attrsMap, ok := attrs.(map[string]any)
-	if !ok {
-		return nil
-	}
-
-	attrsJSON, err := json.Marshal(attrsMap)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	var gaugeChart kbapi.GaugeChart
-	if err := json.Unmarshal(attrsJSON, &gaugeChart); err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
@@ -81,49 +58,29 @@ func (c gaugePanelConfigConverter) populateFromAPIPanel(ctx context.Context, pm 
 	return pm.GaugeConfig.fromAPI(ctx, gaugeNoESQL)
 }
 
-func (c gaugePanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *kbapi.DashboardPanelItem_Config) diag.Diagnostics {
+func (c gaugePanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelLens_Config_0_Attributes, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	configModel := *pm.GaugeConfig
 
 	gaugeNoESQL, gaugeDiags := configModel.toAPI()
 	diags.Append(gaugeDiags...)
 	if diags.HasError() {
-		return diags
+		return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}, diags
 	}
 
 	var gaugeChart kbapi.GaugeChart
 	if err := gaugeChart.FromGaugeNoESQL(gaugeNoESQL); err != nil {
 		diags.AddError("Failed to convert gauge to schema", err.Error())
-		return diags
+		return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}, diags
 	}
 
-	var attrs0 kbapi.DashboardPanelItemConfig70Attributes0
-	if err := attrs0.FromGaugeChart(gaugeChart); err != nil {
+	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	if err := attrs.FromGaugeChart(gaugeChart); err != nil {
 		diags.AddError("Failed to create gauge attributes", err.Error())
-		return diags
+		return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}, diags
 	}
 
-	var configAttrs kbapi.DashboardPanelItem_Config_7_0_Attributes
-	if err := configAttrs.FromDashboardPanelItemConfig70Attributes0(attrs0); err != nil {
-		diags.AddError("Failed to create config attributes", err.Error())
-		return diags
-	}
-
-	config10 := kbapi.DashboardPanelItemConfig70{
-		Attributes: configAttrs,
-	}
-
-	var config1 kbapi.DashboardPanelItemConfig7
-	if err := config1.FromDashboardPanelItemConfig70(config10); err != nil {
-		diags.AddError("Failed to create config1", err.Error())
-		return diags
-	}
-
-	if err := apiConfig.FromDashboardPanelItemConfig7(config1); err != nil {
-		diags.AddError("Failed to marshal gauge config", err.Error())
-	}
-
-	return diags
+	return attrs, diags
 }
 
 type gaugeConfigModel struct {

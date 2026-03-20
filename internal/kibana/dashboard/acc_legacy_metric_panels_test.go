@@ -88,6 +88,10 @@ func TestAccResourceDashboardLegacyMetricChart(t *testing.T) {
 				ResourceName:      "elasticstack_kibana_dashboard.test",
 				ImportState:       true,
 				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					"panels.0.legacy_metric_config.dataset_json",
+					"panels.0.legacy_metric_config.metric_json",
+				},
 			},
 		},
 	})

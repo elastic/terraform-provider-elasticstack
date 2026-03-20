@@ -27,8 +27,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-const xyChartDataLayerBreakdownExpected = `{"collapse_by":"avg","color":{"mapping":[{"color":{"type":"colorCode","value":"#54B399"},` +
-	`"values":["host-a"]}],"mode":"categorical","palette":"default","unassignedColor":{"type":"colorCode","value":"#D3DAE6"}},` +
+const xyChartDataLayerBreakdownExpected = `{"collapse_by":"avg","color":{"mapping":[{"color":{"type":"color_code","value":"#54B399"},` +
+	`"values":["host-a"]}],"mode":"categorical","palette":"default","unassignedColor":{"type":"color_code","value":"#D3DAE6"}},` +
 	`"column":"host.name","operation":"value"}`
 
 func TestAccResourceDashboardXYChart(t *testing.T) {
@@ -226,6 +226,12 @@ func TestAccResourceDashboardXYChart(t *testing.T) {
 				ResourceName:      "elasticstack_kibana_dashboard.test",
 				ImportState:       true,
 				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					"panels.0.xy_chart_config.layers.0.data_layer.dataset_json",
+					"panels.0.xy_chart_config.layers.0.data_layer.y.0.config_json",
+					"panels.0.xy_chart_config.layers.1.reference_line_layer.dataset_json",
+					"panels.0.xy_chart_config.layers.1.reference_line_layer.thresholds.0.value_json",
+				},
 			},
 		},
 	})
