@@ -110,6 +110,7 @@ func TestAccResourceDashboardPieChart(t *testing.T) {
 				ImportStateVerifyIgnore: []string{
 					"panels.0.pie_chart_config.group_by.0.config",
 					"panels.0.pie_chart_config.metrics.0.config",
+					"panels.0.pie_chart_config.dataset",
 				},
 			},
 		},

@@ -44,6 +44,7 @@ func TestAccResourceDataStream(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_data_stream.test_ds", "id"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "name", dsName),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "metadata"),
 					// check some computed fields
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "indices.#", "1"),
 					resource.TestMatchResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "indices.0.index_name", dataStreamBackingIndexNameRegexp(dsName)),
@@ -52,7 +53,7 @@ func TestAccResourceDataStream(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "ilm_policy", dsName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "timestamp_field", "@timestamp"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "generation", "1"),
-					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_data_stream.test_ds", "status"),
+					resource.TestMatchResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "status", regexp.MustCompile(`^(?i)(green|yellow|red)$`)),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "hidden", "false"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "system", "false"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "replicated", "false"),
@@ -65,10 +66,16 @@ func TestAccResourceDataStream(t *testing.T) {
 				ImportStateVerify: true,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "name", dsName),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "metadata"),
 					resource.TestMatchResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "indices.0.index_name", dataStreamBackingIndexNameRegexp(dsName)),
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_data_stream.test_ds", "indices.0.index_uuid"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "template", dsName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "ilm_policy", dsName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "timestamp_field", "@timestamp"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "generation", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "hidden", "false"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "system", "false"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "replicated", "false"),
 				),
 			},
 			{
@@ -76,8 +83,70 @@ func TestAccResourceDataStream(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "name", dsNameUpdated),
 					resource.TestMatchResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "id", regexp.MustCompile(fmt.Sprintf(".+/%s$", dsNameUpdated))),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "metadata"),
 					resource.TestMatchResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "indices.0.index_name", dataStreamBackingIndexNameRegexp(dsNameUpdated)),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "template", dsNameUpdated),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "ilm_policy", dsNameUpdated),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "timestamp_field", "@timestamp"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "generation", "1"),
+					resource.TestMatchResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "status", regexp.MustCompile(`^(?i)(green|yellow|red)$`)),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "hidden", "false"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "system", "false"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "replicated", "false"),
 				),
+			},
+		},
+	})
+}
+
+func TestAccResourceDataStreamWithMetadata(t *testing.T) {
+	dsName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlpha)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceDataStreamDestroy,
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccResourceDataStreamWithMetadata(dsName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "name", dsName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "metadata", `{"env":"test","version":1}`),
+				),
+			},
+			{
+				Config:            testAccResourceDataStreamWithMetadata(dsName),
+				ResourceName:      "elasticstack_elasticsearch_data_stream.test_ds",
+				ImportState:       true,
+				ImportStateVerify: true,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "name", dsName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "metadata", `{"env":"test","version":1}`),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceDataStreamNameValidation(t *testing.T) {
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				Config:      testAccResourceDataStreamInvalidName("-leading-hyphen"),
+				ExpectError: regexp.MustCompile(`cannot start with -, _, \+`),
+			},
+			{
+				Config:      testAccResourceDataStreamInvalidName("_leading-underscore"),
+				ExpectError: regexp.MustCompile(`cannot start with -, _, \+`),
+			},
+			{
+				Config:      testAccResourceDataStreamInvalidName("+leading-plus"),
+				ExpectError: regexp.MustCompile(`cannot start with -, _, \+`),
+			},
+			{
+				Config:      testAccResourceDataStreamInvalidName("UpperCaseName"),
+				ExpectError: regexp.MustCompile(`must contain lower case alphanumeric characters`),
 			},
 		},
 	})
@@ -135,6 +204,73 @@ resource "elasticstack_elasticsearch_data_stream" "test_ds" {
   ]
 }
 	`, name, name, name, name)
+}
+
+func testAccResourceDataStreamWithMetadata(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_index_lifecycle" "test_ilm" {
+  name = "%s"
+
+  hot {
+    min_age = "1h"
+    set_priority {
+      priority = 10
+    }
+    rollover {
+      max_age = "1d"
+    }
+    readonly {}
+  }
+
+  delete {
+    min_age = "2d"
+    delete {}
+  }
+}
+
+resource "elasticstack_elasticsearch_index_template" "test_ds_template" {
+  name = "%s"
+
+  index_patterns = ["%s*"]
+
+  metadata = jsonencode({
+    env     = "test"
+    version = 1
+  })
+
+  template {
+    settings = jsonencode({
+      "lifecycle.name" = elasticstack_elasticsearch_index_lifecycle.test_ilm.name
+    })
+  }
+
+  data_stream {}
+}
+
+resource "elasticstack_elasticsearch_data_stream" "test_ds" {
+  name = "%s"
+
+  depends_on = [
+    elasticstack_elasticsearch_index_template.test_ds_template
+  ]
+}
+	`, name, name, name, name)
+}
+
+func testAccResourceDataStreamInvalidName(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_data_stream" "test_ds" {
+  name = "%s"
+}
+	`, name)
 }
 
 func dataStreamBackingIndexNameRegexp(name string) *regexp.Regexp {

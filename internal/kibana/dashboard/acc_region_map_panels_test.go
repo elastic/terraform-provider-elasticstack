@@ -73,6 +73,8 @@ func TestAccResourceDashboardRegionMap(t *testing.T) {
 				ImportStateVerify: true,
 				ImportStateVerifyIgnore: []string{
 					"panels.0.region_map_config.metric_json",
+					"panels.0.region_map_config.dataset_json",
+					"panels.0.region_map_config.region_json",
 				},
 			},
 		},

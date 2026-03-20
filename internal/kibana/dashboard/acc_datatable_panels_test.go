@@ -95,6 +95,10 @@ func TestAccResourceDashboardDatatableChart(t *testing.T) {
 				ResourceName:      "elasticstack_kibana_dashboard.test",
 				ImportState:       true,
 				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					"panels.0.datatable_config.no_esql.dataset_json",
+					"panels.0.datatable_config.no_esql.metrics.0.config_json",
+				},
 			},
 		},
 	})

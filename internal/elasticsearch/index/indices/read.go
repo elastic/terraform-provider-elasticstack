@@ -30,17 +30,25 @@ import (
 func (d *dataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	var stateModel tfModel
 
-	diags := req.Config.Get(ctx, &stateModel)
+	// Resolve target attribute — use types.String to handle the null case
+	// (when the user omits the optional "target" attribute).
+	var targetAttr types.String
+	diags := req.Config.GetAttribute(ctx, path.Root("target"), &targetAttr)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	target := stateModel.Target.ValueString()
-
+  
 	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, stateModel.ElasticsearchConnection, &d.client)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
+	}
+
+	// Default to "*" (all indices) when target is null or empty.
+	target := targetAttr.ValueString()
+	if target == "" {
+		target = "*"
 	}
 
 	// Call client API
@@ -71,7 +79,7 @@ func (d *dataSource) Read(ctx context.Context, req datasource.ReadRequest, resp 
 	}
 
 	stateModel.ID = types.StringValue(target)
-	stateModel.Target = types.StringValue(target)
+	stateModel.Target = targetAttr
 	stateModel.Indices = indicesList
 
 	// Set state

@@ -235,6 +235,108 @@ resource "elasticstack_elasticsearch_index_template" "test" {
 }`, name, name, ver, metadata, mappings)
 }
 
+func TestAccResourceIndexTemplateAliasDetails(t *testing.T) {
+	templateName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceIndexTemplateDestroy,
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccResourceIndexTemplateWithAliasDetails(templateName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "name", templateName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "template.0.alias.#", "1"),
+					resource.TestCheckTypeSetElemNestedAttrs(
+						"elasticstack_elasticsearch_index_template.test",
+						"template.0.alias.*",
+						map[string]string{
+							"name":           "detailed_alias",
+							"is_hidden":      "true",
+							"is_write_index": "true",
+							"routing":        "shard_1",
+							"search_routing": "shard_1",
+							"index_routing":  "shard_1",
+						},
+					),
+				),
+			},
+		},
+	})
+}
+
+func testAccResourceIndexTemplateWithAliasDetails(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_index_template" "test" {
+  name           = "%s"
+  index_patterns = ["%s-*"]
+
+  template {
+    alias {
+      name           = "detailed_alias"
+      is_hidden      = true
+      is_write_index = true
+      routing        = "shard_1"
+      search_routing = "shard_1"
+      index_routing  = "shard_1"
+    }
+  }
+}`, name, name)
+}
+
+func TestAccResourceIndexTemplateAliasRoutingFromRoutingOnly(t *testing.T) {
+	templateName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceIndexTemplateDestroy,
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccResourceIndexTemplateWithAliasRoutingOnly(templateName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "name", templateName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "template.0.alias.#", "1"),
+					resource.TestCheckTypeSetElemNestedAttrs(
+						"elasticstack_elasticsearch_index_template.test",
+						"template.0.alias.*",
+						map[string]string{
+							"name":           "routing_only_alias",
+							"routing":        "shard_1",
+							"search_routing": "shard_1",
+							"index_routing":  "shard_1",
+						},
+					),
+				),
+			},
+		},
+	})
+}
+
+func testAccResourceIndexTemplateWithAliasRoutingOnly(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_index_template" "test" {
+  name           = "%s"
+  index_patterns = ["%s-*"]
+
+  template {
+    alias {
+      name    = "routing_only_alias"
+      routing = "shard_1"
+    }
+  }
+}`, name, name)
+}
+
 func TestAccResourceIndexTemplateDataStreamCustomRouting(t *testing.T) {
 	templateName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
