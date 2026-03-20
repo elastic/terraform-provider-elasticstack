@@ -2,7 +2,7 @@
   "resources": {
     "elasticstack_elasticsearch_transform": "2026-03-16T01:21:09Z",
     "elasticstack_elasticsearch_index": "2026-03-16T01:21:09Z",
-    "elasticstack_kibana_security_enable_rule": null,
+    "elasticstack_kibana_security_enable_rule": "2026-03-20T02:29:06Z",
     "elasticstack_kibana_slo": null,
     "elasticstack_kibana_install_prebuilt_rules": null,
     "elasticstack_kibana_import_saved_objects": null,
