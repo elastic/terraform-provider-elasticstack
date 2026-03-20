@@ -18,12 +18,14 @@
 package inferenceendpoint_test
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	esclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/inference/inferenceendpoint"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -33,9 +35,34 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-func TestAccResourceInferenceEndpoint(t *testing.T) {
-	t.Skip("TODO: requires a reachable inference service for the validation probe — see team discussion")
+// skipValidateAndStart sets xpack.inference.skip_validate_and_start=true so
+// inference endpoint tests can run without a reachable upstream service, and
+// resets it at the end of the test via t.Cleanup.
+func skipValidateAndStart(t *testing.T) {
+	t.Helper()
 
+	apiClient, err := clients.NewAcceptanceTestingClient()
+	if err != nil {
+		t.Fatalf("failed to create acceptance testing client: %v", err)
+	}
+
+	ctx := context.Background()
+	if diags := esclient.PutSettings(ctx, apiClient, map[string]any{
+		"persistent": map[string]any{"xpack.inference.skip_validate_and_start": true},
+	}); diags.HasError() {
+		t.Fatalf("failed to set xpack.inference.skip_validate_and_start: %v", diags)
+	}
+
+	t.Cleanup(func() {
+		if diags := esclient.PutSettings(ctx, apiClient, map[string]any{
+			"persistent": map[string]any{"xpack.inference.skip_validate_and_start": nil},
+		}); diags.HasError() {
+			t.Errorf("failed to reset xpack.inference.skip_validate_and_start: %v", diags)
+		}
+	})
+}
+
+func TestAccResourceInferenceEndpoint(t *testing.T) {
 	skipFunc := versionutils.CheckIfVersionIsUnsupported(inferenceendpoint.MinSupportedVersion)
 	if skip, err := skipFunc(); err != nil {
 		t.Fatalf("failed to check version: %v", err)
@@ -46,7 +73,7 @@ func TestAccResourceInferenceEndpoint(t *testing.T) {
 	inferenceID := fmt.Sprintf("test-inference-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { acctest.PreCheck(t) },
+		PreCheck:     func() { acctest.PreCheck(t); skipValidateAndStart(t) },
 		CheckDestroy: checkInferenceEndpointDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -57,8 +84,8 @@ func TestAccResourceInferenceEndpoint(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_inference_endpoint.test", "inference_id", inferenceID),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_inference_endpoint.test", "task_type", "text_embedding"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_inference_endpoint.test", "service", "hugging_face"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_inference_endpoint.test", "task_type", "completion"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_inference_endpoint.test", "service", "openai"),
 				),
 			},
 			{
@@ -69,8 +96,8 @@ func TestAccResourceInferenceEndpoint(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_inference_endpoint.test", "inference_id", inferenceID),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_inference_endpoint.test", "task_type", "text_embedding"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_inference_endpoint.test", "service", "hugging_face"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_inference_endpoint.test", "task_type", "completion"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_inference_endpoint.test", "service", "openai"),
 				),
 			},
 			// Re-apply with no change should produce no diff.
@@ -82,13 +109,22 @@ func TestAccResourceInferenceEndpoint(t *testing.T) {
 				},
 				PlanOnly: true,
 			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"inference_id": config.StringVariable(inferenceID),
+				},
+				ResourceName:            "elasticstack_elasticsearch_inference_endpoint.test",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"service_settings"},
+			},
 		},
 	})
 }
 
 func TestAccResourceInferenceEndpointRequiresReplace(t *testing.T) {
-	t.Skip("TODO: requires a reachable inference service for the validation probe — see team discussion")
-
 	skipFunc := versionutils.CheckIfVersionIsUnsupported(inferenceendpoint.MinSupportedVersion)
 	if skip, err := skipFunc(); err != nil {
 		t.Fatalf("failed to check version: %v", err)
@@ -99,7 +135,7 @@ func TestAccResourceInferenceEndpointRequiresReplace(t *testing.T) {
 	inferenceID := fmt.Sprintf("test-inference-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { acctest.PreCheck(t) },
+		PreCheck:     func() { acctest.PreCheck(t); skipValidateAndStart(t) },
 		CheckDestroy: checkInferenceEndpointDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -110,8 +146,8 @@ func TestAccResourceInferenceEndpointRequiresReplace(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_inference_endpoint.test", "inference_id", inferenceID),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_inference_endpoint.test", "task_type", "text_embedding"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_inference_endpoint.test", "service", "hugging_face"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_inference_endpoint.test", "task_type", "completion"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_inference_endpoint.test", "service", "openai"),
 				),
 			},
 			// Changing task_type must trigger a replacement, not an in-place update.
@@ -131,8 +167,8 @@ func TestAccResourceInferenceEndpointRequiresReplace(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_inference_endpoint.test", "inference_id", inferenceID),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_inference_endpoint.test", "task_type", "sparse_embedding"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_inference_endpoint.test", "service", "hugging_face"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_inference_endpoint.test", "task_type", "chat_completion"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_inference_endpoint.test", "service", "openai"),
 				),
 			},
 		},

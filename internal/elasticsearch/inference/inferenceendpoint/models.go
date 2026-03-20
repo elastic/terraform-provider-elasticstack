@@ -126,26 +126,33 @@ func (data *Data) fromAPIModel(_ context.Context, endpoint *elasticsearch.Infere
 		}
 	}
 
-	if endpoint.TaskSettings != nil {
-		b, err := json.Marshal(endpoint.TaskSettings)
-		if err != nil {
-			diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling task_settings: %s", err))
-			return diags
+	// task_settings and chunking_settings: only populate from the API if the
+	// user explicitly configured them. ES returns defaults for these fields
+	// even when not set by the user, which would cause a persistent diff.
+	if !data.TaskSettings.IsNull() && !data.TaskSettings.IsUnknown() {
+		if endpoint.TaskSettings != nil {
+			b, err := json.Marshal(endpoint.TaskSettings)
+			if err != nil {
+				diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling task_settings: %s", err))
+				return diags
+			}
+			data.TaskSettings = jsontypes.NewNormalizedValue(string(b))
+		} else {
+			data.TaskSettings = jsontypes.NewNormalizedNull()
 		}
-		data.TaskSettings = jsontypes.NewNormalizedValue(string(b))
-	} else {
-		data.TaskSettings = jsontypes.NewNormalizedNull()
 	}
 
-	if endpoint.ChunkingSettings != nil {
-		b, err := json.Marshal(endpoint.ChunkingSettings)
-		if err != nil {
-			diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling chunking_settings: %s", err))
-			return diags
+	if !data.ChunkingSettings.IsNull() && !data.ChunkingSettings.IsUnknown() {
+		if endpoint.ChunkingSettings != nil {
+			b, err := json.Marshal(endpoint.ChunkingSettings)
+			if err != nil {
+				diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling chunking_settings: %s", err))
+				return diags
+			}
+			data.ChunkingSettings = jsontypes.NewNormalizedValue(string(b))
+		} else {
+			data.ChunkingSettings = jsontypes.NewNormalizedNull()
 		}
-		data.ChunkingSettings = jsontypes.NewNormalizedValue(string(b))
-	} else {
-		data.ChunkingSettings = jsontypes.NewNormalizedNull()
 	}
 
 	return diags

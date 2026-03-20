@@ -3,21 +3,16 @@ variable "inference_id" {
   type        = string
 }
 
-variable "url" {
-  description = "The Hugging Face inference URL"
-  type        = string
-}
-
 provider "elasticstack" {
   elasticsearch {}
 }
 
 resource "elasticstack_elasticsearch_inference_endpoint" "test" {
   inference_id = var.inference_id
-  task_type    = "text_embedding"
-  service      = "hugging_face"
+  task_type    = "completion"
+  service      = "openai"
   service_settings = jsonencode({
-    api_key = "test-hf-api-key-updated"
-    url     = var.url
+    api_key  = "test-openai-api-key-updated"
+    model_id = "gpt-4o-mini"
   })
 }
