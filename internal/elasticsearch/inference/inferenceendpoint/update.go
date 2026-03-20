@@ -30,7 +30,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-var MinSupportedVersion = version.Must(version.NewVersion("8.17.0"))
+var MinSupportedVersion = version.Must(version.NewVersion("8.18.0"))
 
 func (r *inferenceEndpointResource) upsert(ctx context.Context, plan tfsdk.Plan, state *tfsdk.State) diag.Diagnostics {
 	var data Data

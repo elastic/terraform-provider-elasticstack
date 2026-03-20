@@ -9,7 +9,7 @@ provider "elasticstack" {
 
 resource "elasticstack_elasticsearch_inference_endpoint" "test" {
   inference_id = var.inference_id
-  task_type    = "text_embedding"
+  task_type    = "chat_completion"
   service      = "openai"
   service_settings = jsonencode({
     api_key  = "test-openai-api-key"
