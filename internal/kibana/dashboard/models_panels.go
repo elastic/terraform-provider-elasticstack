@@ -35,6 +35,7 @@ type panelModel struct {
 	MarkdownConfig     *markdownConfigModel     `tfsdk:"markdown_config"`
 	XYChartConfig      *xyChartConfigModel      `tfsdk:"xy_chart_config"`
 	TreemapConfig      *treemapConfigModel      `tfsdk:"treemap_config"`
+	MosaicConfig       *mosaicConfigModel       `tfsdk:"mosaic_config"`
 	DatatableConfig    *datatableConfigModel    `tfsdk:"datatable_config"`
 	TagcloudConfig     *tagcloudConfigModel     `tfsdk:"tagcloud_config"`
 	MetricChartConfig  *metricChartConfigModel  `tfsdk:"metric_chart_config"`
@@ -68,6 +69,7 @@ type sectionGridModel struct {
 var lensVizConverters = []lensVisualizationConverter{
 	newXYChartPanelConfigConverter(),
 	newTreemapPanelConfigConverter(),
+	newMosaicPanelConfigConverter(),
 	newDatatablePanelConfigConverter(),
 	newTagcloudPanelConfigConverter(),
 	newHeatmapPanelConfigConverter(),
