@@ -52,6 +52,7 @@ func New(version string) *schema.Provider {
 			"elasticstack_elasticsearch_ingest_processor_grok":              ingest.DataSourceProcessorGrok(),
 			"elasticstack_elasticsearch_ingest_processor_gsub":              ingest.DataSourceProcessorGsub(),
 			"elasticstack_elasticsearch_ingest_processor_html_strip":        ingest.DataSourceProcessorHTMLStrip(),
+			"elasticstack_elasticsearch_ingest_processor_inference":         ingest.DataSourceProcessorInference(),
 			"elasticstack_elasticsearch_ingest_processor_join":              ingest.DataSourceProcessorJoin(),
 			"elasticstack_elasticsearch_ingest_processor_json":              ingest.DataSourceProcessorJSON(),
 			"elasticstack_elasticsearch_ingest_processor_kv":                ingest.DataSourceProcessorKV(),
