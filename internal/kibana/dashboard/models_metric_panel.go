@@ -177,7 +177,7 @@ func (m *metricChartConfigModel) fromAPIVariant0(ctx context.Context, apiChart k
 			}
 			m.Metrics[i].ConfigJSON = customtypes.NewJSONWithDefaultsValue(
 				string(metricJSON),
-				populateMetricChartMetricDefaults,
+				populateLensMetricDefaults,
 			)
 		}
 	}
@@ -242,7 +242,7 @@ func (m *metricChartConfigModel) fromAPIVariant1(ctx context.Context, apiChart k
 			}
 			m.Metrics[i].ConfigJSON = customtypes.NewJSONWithDefaultsValue(
 				string(metricJSON),
-				populateMetricChartMetricDefaults,
+				populateLensMetricDefaults,
 			)
 		}
 	}
