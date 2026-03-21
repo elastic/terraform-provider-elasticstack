@@ -146,12 +146,12 @@ func TestEvaluate(t *testing.T) {
 			wantReason:  "pull request is not open",
 		},
 		{
-			name: "rejects draft pull request",
+			name: "approves draft pull request when all gates pass",
 			mutate: func(in *EvaluationInput) {
 				in.PullRequest.Draft = github.Ptr(true)
 			},
-			wantApprove: false,
-			wantReason:  "pull request is draft",
+			wantApprove: true,
+			wantReason:  "all gates passed",
 		},
 	}
 
