@@ -160,9 +160,12 @@ lint: setup golangci-lint fmt docs-generate ## Run lints to check the spelling a
 check-lint: setup check-openspec golangci-lint check-fmt check-docs
 
 .PHONY: setup-openspec
-setup-openspec: ## Install Node dependencies (OpenSpec CLI via npm ci)
+setup-openspec: node_modules/.openspec-stamp ## Install Node dependencies (OpenSpec CLI via npm ci)
+
+node_modules/.openspec-stamp: package-lock.json package.json
 	@ command -v npm >/dev/null 2>&1 || { echo "npm not found; install Node.js 24.x for OpenSpec" >&2; exit 1; }
 	npm ci
+	@ touch $@
 
 .PHONY: check-openspec
 check-openspec: ## Validate OpenSpec specs (structural); requires `make setup` or `make setup-openspec`
