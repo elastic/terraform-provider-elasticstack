@@ -10,7 +10,10 @@ This guide explains how to set up your environment, make changes, and submit a P
 Requirements:
 * [Terraform](https://www.terraform.io/downloads.html) >= 1.0.0
 * [Go](https://golang.org/doc/install) >= 1.25
+* [Node.js](https://nodejs.org/) >= 20.19 (for OpenSpec; installed via `make setup` / `npm ci`)
 * Docker (for acceptance tests)
+
+OpenSpec requirements specs live under `openspec/specs/`; see [`openspec-requirements.md`](./openspec-requirements.md).
 
 ## Development Workflow
 

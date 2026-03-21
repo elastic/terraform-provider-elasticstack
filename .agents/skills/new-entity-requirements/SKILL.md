@@ -29,11 +29,11 @@ Identify: **create/update** (PUT/POST), **read** (GET), **delete** (DELETE), req
 - **Extract**: Endpoint names, required vs optional fields, validation rules, version requirements, error semantics (e.g. 404 = not found), and whether create/update are the same or separate.
 - If the user provided a doc URL, use it (via MCP if the server supports fetch-by-URL, or via web fetch); otherwise search by API name (e.g. “Elasticsearch security API create API key”, “Kibana SLO API”).
 
-### 3. Draft initial requirements document
+### 3. Draft initial OpenSpec spec
 
-- **Path**: `dev-docs/requirements/<domain>/<name>.md` (e.g. `dev-docs/requirements/elasticsearch/security/api_key.md`). Follow `dev-docs/requirements/template.md`.
+- **Path**: `openspec/specs/<capability>/spec.md` (e.g. `openspec/specs/elasticsearch-security-api-key/spec.md`). Follow [`dev-docs/high-level/openspec-requirements.md`](../../../dev-docs/high-level/openspec-requirements.md): `## Purpose`, optional `## Schema`, `## Requirements` with `### Requirement:` / `#### Scenario:`; requirement bodies MUST include **SHALL** or **MUST** (for `openspec validate`).
 - **Schema**: From API request/response and docs, draft an HCL-style schema: required/optional/computed attributes and blocks, types, and notes (e.g. “requires Elasticsearch ≥ 8.x”). Mark unknowns as “TBD” or “(to confirm)”.
-- **Requirements**: Draft **API** (which endpoints for create/update/read/delete, link to docs), **Identity** (how `id` is formed), **Import** (if resource; id format), **Connection** (provider client; resource-level override if applicable), **Compatibility** (version gates from docs/client). Add **Create/Update**, **Read**, **Delete**, **Mapping**, **State** only where clearly implied by the API; otherwise leave as open questions.
+- **Requirements**: Draft **API** (which endpoints for create/update/read/delete, link to docs), **Identity** (how `id` is formed), **Import** (if resource; id format), **Connection** (provider client; resource-level override if applicable), **Compatibility** (version gates from docs/client). Add **Create/Update**, **Read**, **Delete**, **Mapping**, **State** only where clearly implied by the API; otherwise leave as open questions. For larger features, optionally start under `openspec/changes/<change-id>/` with proposal/design/tasks per OpenSpec’s change workflow.
 
 ### 4. Interview the user
 
@@ -49,11 +49,11 @@ Identify: **create/update** (PUT/POST), **read** (GET), **delete** (DELETE), req
 
 ## Output
 
-- **Deliverable**: One requirements document at `dev-docs/requirements/<domain>/<name>.md` with Schema and Requirements sections, consistent with the template and with TBD/Open points only where the user deferred.
+- **Deliverable**: One OpenSpec spec at `openspec/specs/<capability>/spec.md` with Purpose, Schema (if useful), and Requirements/Scenarios, with TBD/Open points only where the user deferred.
 - **Traceability**: Requirements tied to API docs (links) or user decisions; no invented behavior.
 
 ## Reference
 
-- Template: `dev-docs/requirements/template.md`
-- Example (existing entity): `dev-docs/requirements/elasticsearch/security/role.md`
+- Authoring: `dev-docs/high-level/openspec-requirements.md`
+- Example (existing entity): `openspec/specs/elasticsearch-security-role/spec.md`
 - API client locations, doc URLs, interview question bank: [reference.md](reference.md)
