@@ -236,6 +236,11 @@ func ConvertResponseToModel(spaceID string, resp any) (*models.AlertingRule, dia
 		AlertDelay *struct {
 			Active float32 `json:"active"`
 		} `json:"alert_delay"`
+		Flapping *struct {
+			Enabled               *bool   `json:"enabled,omitempty"`
+			LookBackWindow        float64 `json:"look_back_window"`
+			StatusChangeThreshold float64 `json:"status_change_threshold"`
+		} `json:"flapping"`
 		Actions []struct {
 			Group     *string        `json:"group"`
 			ID        string         `json:"id"`
@@ -317,6 +322,15 @@ func ConvertResponseToModel(spaceID string, resp any) (*models.AlertingRule, dia
 		alertDelay = &intermediate.AlertDelay.Active
 	}
 
+	var flapping *models.AlertingRuleFlapping
+	if intermediate.Flapping != nil {
+		flapping = &models.AlertingRuleFlapping{
+			LookBackWindow:        int64(intermediate.Flapping.LookBackWindow),
+			StatusChangeThreshold: int64(intermediate.Flapping.StatusChangeThreshold),
+			Enabled:               intermediate.Flapping.Enabled,
+		}
+	}
+
 	var lastExecutionDate *time.Time
 	if intermediate.ExecutionStatus.LastExecutionDate != "" {
 		if parsed, err := time.Parse(time.RFC3339, intermediate.ExecutionStatus.LastExecutionDate); err == nil {
@@ -350,6 +364,7 @@ func ConvertResponseToModel(spaceID string, resp any) (*models.AlertingRule, dia
 		},
 		Actions:    actions,
 		AlertDelay: alertDelay,
+		Flapping:   flapping,
 	}, nil
 }
 
@@ -395,6 +410,18 @@ func buildCreateRequestBody(rule models.AlertingRule) kbapi.PostAlertingRuleIdJS
 			Active float32 `json:"active"`
 		}{
 			Active: *rule.AlertDelay,
+		}
+	}
+
+	if rule.Flapping != nil {
+		body.Flapping = &struct {
+			Enabled               *bool   `json:"enabled,omitempty"`
+			LookBackWindow        float32 `json:"look_back_window"`
+			StatusChangeThreshold float32 `json:"status_change_threshold"`
+		}{
+			LookBackWindow:        float32(rule.Flapping.LookBackWindow),
+			StatusChangeThreshold: float32(rule.Flapping.StatusChangeThreshold),
+			Enabled:               rule.Flapping.Enabled,
 		}
 	}
 
@@ -570,6 +597,18 @@ func buildUpdateRequestBody(rule models.AlertingRule) kbapi.PutAlertingRuleIdJSO
 			Active float32 `json:"active"`
 		}{
 			Active: *rule.AlertDelay,
+		}
+	}
+
+	if rule.Flapping != nil {
+		body.Flapping = &struct {
+			Enabled               *bool   `json:"enabled,omitempty"`
+			LookBackWindow        float32 `json:"look_back_window"`
+			StatusChangeThreshold float32 `json:"status_change_threshold"`
+		}{
+			LookBackWindow:        float32(rule.Flapping.LookBackWindow),
+			StatusChangeThreshold: float32(rule.Flapping.StatusChangeThreshold),
+			Enabled:               rule.Flapping.Enabled,
 		}
 	}
 

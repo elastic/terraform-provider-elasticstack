@@ -44,23 +44,7 @@ When the practitioner does **not** configure `flapping`, the provider SHALL **om
 - WHEN update runs
 - THEN the update request body SHALL NOT include a `flapping` property
 
-### Requirement: Read path and state — `flapping` (REQ-039)
-
-When the API returns `flapping`, the provider SHALL map `look_back_window`, `status_change_threshold`, and `enabled` (when present) into the `flapping` block in Terraform state. If the API omits `flapping` and the prior state value was unknown, the provider SHALL set the block to null/absent as appropriate; if the API omits `flapping` and the prior state had known `flapping` values, the provider SHALL preserve the prior known values so a partial response does not erase them.
-
-#### Scenario: Map flapping from API
-
-- GIVEN a get-rule response that includes `flapping` with known numeric fields
-- WHEN the provider maps the response to state
-- THEN state SHALL reflect the same integers (and `enabled` when returned)
-
-#### Scenario: Preserve known flapping when API omits field
-
-- GIVEN prior state has known non-null `flapping` values and the API response omits `flapping`
-- WHEN the provider maps the response to state
-- THEN `flapping` in state SHALL retain the prior known values
-
-### Requirement: Acceptance tests — `flapping` (REQ-040)
+### Requirement: Acceptance tests — `flapping` (REQ-039)
 
 The acceptance test suite for `elasticstack_kibana_alerting_rule` SHALL include at least one test case that configures `flapping`, skipped when the target stack version is strictly below **8.16.0**, that asserts create and update succeed and that Terraform state matches the configured `look_back_window` and `status_change_threshold` (and `enabled` when used).
 

@@ -29,7 +29,7 @@ When the `flapping` block is **absent**, the provider does not send `flapping` o
 
 ### Modified Capabilities
 
-- `kibana-alerting-rule`: Add rule-level flapping detection configuration and behavior requirements (REQ-036–REQ-040).
+- `kibana-alerting-rule`: Add rule-level flapping detection configuration and behavior requirements (REQ-036–REQ-039).
 
 ## Impact
 

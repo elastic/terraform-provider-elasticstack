@@ -591,6 +591,50 @@ func TestAccResourceAlertingRuleAlertDelay(t *testing.T) {
 	})
 }
 
+func TestAccResourceAlertingRuleFlapping(t *testing.T) {
+	minSupportedFlappingVersion := version.Must(version.NewSemver("8.16.0"))
+
+	t.Setenv("KIBANA_API_KEY", "")
+
+	ruleName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceAlertingRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedFlappingVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(ruleName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "name", ruleName),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_type_id", ".index-threshold"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "flapping.look_back_window", "10"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "flapping.status_change_threshold", "3"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "flapping.enabled", "true"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedFlappingVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(ruleName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "name", ruleName),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "flapping.look_back_window", "20"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "flapping.status_change_threshold", "5"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "flapping.enabled", "false"),
+				),
+			},
+		},
+	})
+}
+
 // TestAccResourceAlertingRuleEsqlTermField verifies that the termField parameter
 // is accepted for ESQL (.es-query with searchType=esqlQuery) alert rules and
 // roundtrips cleanly without producing inconsistent state on re-apply.

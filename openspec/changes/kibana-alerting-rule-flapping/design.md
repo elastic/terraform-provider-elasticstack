@@ -24,7 +24,6 @@ Rule-level `flapping` is a JSON object on Kibana alerting rule create/update bod
 | `enabled` | Optional; may be set together with the two required integers. |
 | Update when block absent | **Omit** `flapping` key from PUT body entirely. |
 | Read | Unmarshal `flapping` from GET responses into state when present. |
-| Partial GET responses | Follow the same persistence pattern as **`alert_delay`** / **`scheduled_task_id`**: preserve prior known values when the API omits `flapping` on a re-read (see canonical REQ-026 style). |
 
 ## Risks / Trade-offs
 
