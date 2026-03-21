@@ -79,6 +79,9 @@ func TestAccResourceSecurityRole(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "name", roleName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "global", `{"application":{},"profile":{"write":{"applications":["*"]}},"role":{}}`),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_role.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "metadata", `{"version":1}`),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_role.test", "indices.0.query"),
 				),
 			},
 			{
