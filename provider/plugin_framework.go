@@ -34,6 +34,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/alertingrule"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/connectors"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/streams"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dataview"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/defaultdataview"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/exportsavedobjects"
@@ -182,6 +183,7 @@ func (p *Provider) resources(_ context.Context, validateLocation bool) []func() 
 func (p *Provider) experimentalResources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		dashboard.NewResource,
+		streams.NewResource,
 	}
 }
 
