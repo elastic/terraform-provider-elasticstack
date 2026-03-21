@@ -26,11 +26,15 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/role"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
+
+var minSupportedRoleGlobalRoleVersion = version.Must(version.NewVersion("8.16.0"))
+var roleGlobalWithoutRoleConstraint, _ = version.NewConstraint("< 8.16.0")
 
 func TestAccResourceSecurityRole(t *testing.T) {
 	// generate a random username
@@ -45,14 +49,16 @@ func TestAccResourceSecurityRole(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(roleGlobalWithoutRoleConstraint),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
-					"role_name": config.StringVariable(roleName),
+					"role_name":           config.StringVariable(roleName),
+					"include_global_role": config.BoolVariable(false),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_role.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "name", roleName),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "global", `{"application":{},"profile":{"write":{"applications":["*"]}},"role":{}}`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "global", `{"application":{},"profile":{"write":{"applications":["*"]}}}`),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "indices.0.allow_restricted_indices", "true"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "indices.0.query", `{"term":{"status":"active"}}`),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "indices.*.names.*", "index1"),
@@ -60,6 +66,19 @@ func TestAccResourceSecurityRole(t *testing.T) {
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "cluster.*", "all"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_role.test", "run_as.*", "other_user"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "metadata", `{"version":1}`),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedRoleGlobalRoleVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"role_name":           config.StringVariable(roleName),
+					"include_global_role": config.BoolVariable(true),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "name", roleName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_role.test", "global", `{"application":{},"profile":{"write":{"applications":["*"]}},"role":{}}`),
 				),
 			},
 			{

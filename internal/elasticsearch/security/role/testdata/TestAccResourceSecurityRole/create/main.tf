@@ -7,7 +7,7 @@ resource "elasticstack_elasticsearch_security_role" "test" {
 
   cluster = ["all"]
 
-  global = jsonencode({
+  global = jsonencode(var.include_global_role ? {
     application = {}
     profile = {
       write = {
@@ -15,6 +15,13 @@ resource "elasticstack_elasticsearch_security_role" "test" {
       }
     }
     role = {}
+    } : {
+    application = {}
+    profile = {
+      write = {
+        applications = ["*"]
+      }
+    }
   })
 
   indices {
