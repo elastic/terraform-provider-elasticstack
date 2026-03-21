@@ -8,17 +8,7 @@ Define behavior for the pull request auto-approve script: category routing, appr
 
 ## Requirements
 
-### Requirement: Evaluation scope (REQ-001)
-
-The script SHALL evaluate only open, non-draft pull requests in the same repository.
-
-#### Scenario: Draft PR ignored
-
-- GIVEN a draft pull request
-- WHEN the script runs
-- THEN it SHALL NOT treat that PR as eligible for auto-approval based on scope alone
-
-### Requirement: Category routing (REQ-002)
+### Requirement: Category routing (REQ-001)
 
 The script SHALL evaluate pull requests against named auto-approve categories; a pull request is eligible only when it matches at least one category selector.
 
@@ -28,7 +18,7 @@ The script SHALL evaluate pull requests against named auto-approve categories; a
 - WHEN gates are evaluated
 - THEN the PR SHALL NOT be approved via category routing
 
-### Requirement: Approval action (REQ-003)
+### Requirement: Approval action (REQ-002)
 
 When a pull request satisfies all applicable category and global gates, the script SHALL submit an approving review (`APPROVE`).
 
@@ -38,7 +28,7 @@ When a pull request satisfies all applicable category and global gates, the scri
 - WHEN the script completes evaluation
 - THEN it SHALL submit an `APPROVE` review
 
-### Requirement: Approval idempotency (REQ-004)
+### Requirement: Approval idempotency (REQ-003)
 
 If the acting account has already submitted an approval review, the script SHALL not create another approval review.
 
@@ -48,7 +38,7 @@ If the acting account has already submitted an approval review, the script SHALL
 - WHEN the script runs again
 - THEN it SHALL NOT submit a duplicate approval
 
-### Requirement: No approval on failure (REQ-005)
+### Requirement: No approval on failure (REQ-004)
 
 If no category matches or any gate fails, the script SHALL not approve and SHALL exit successfully.
 
@@ -58,7 +48,7 @@ If no category matches or any gate fails, the script SHALL not approve and SHALL
 - WHEN the script exits
 - THEN it SHALL NOT approve and SHALL exit successfully
 
-### Requirement: Observability (REQ-006)
+### Requirement: Observability (REQ-005)
 
 The script SHALL emit clear, machine-readable category selection results, gate outcomes, and failure reasons.
 
@@ -68,7 +58,7 @@ The script SHALL emit clear, machine-readable category selection results, gate o
 - WHEN output is produced
 - THEN category selection, gate results, and failures SHALL be machine-readable
 
-### Requirement: Copilot category selector (REQ-007)
+### Requirement: Copilot category selector (REQ-006)
 
 The `copilot` category selector SHALL match pull requests opened by Copilot identities (`github-copilot[bot]` or `Copilot`).
 
@@ -78,7 +68,7 @@ The `copilot` category selector SHALL match pull requests opened by Copilot iden
 - WHEN category matching runs
 - THEN the `copilot` selector MAY match
 
-### Requirement: Copilot commit authors (REQ-008)
+### Requirement: Copilot commit authors (REQ-007)
 
 Every commit in a `copilot` category pull request SHALL be authored by an allowed Copilot identity (`github-copilot[bot]` or `Copilot`).
 
@@ -88,7 +78,7 @@ Every commit in a `copilot` category pull request SHALL be authored by an allowe
 - WHEN gates run
 - THEN the PR SHALL NOT be approved via that category
 
-### Requirement: Copilot file allowlist (REQ-009)
+### Requirement: Copilot file allowlist (REQ-008)
 
 Every changed file path in a `copilot` category pull request SHALL match one of: `*_test.go` or `*.tf`.
 
@@ -98,7 +88,7 @@ Every changed file path in a `copilot` category pull request SHALL match one of:
 - WHEN gates run
 - THEN approval SHALL NOT proceed for that category path
 
-### Requirement: Copilot diff threshold (REQ-010)
+### Requirement: Copilot diff threshold (REQ-009)
 
 The total pull request line edits (`additions + deletions`) for a `copilot` category pull request SHALL be strictly less than `300`.
 
@@ -108,7 +98,7 @@ The total pull request line edits (`additions + deletions`) for a `copilot` cate
 - WHEN the Copilot category is considered
 - THEN the threshold gate SHALL fail
 
-### Requirement: Dependabot selector (REQ-011)
+### Requirement: Dependabot selector (REQ-010)
 
 The `dependabot` category selector SHALL match pull requests opened by `dependabot[bot]`.
 
@@ -118,7 +108,7 @@ The `dependabot` category selector SHALL match pull requests opened by `dependab
 - WHEN categories are evaluated
 - THEN the `dependabot` selector SHALL match
 
-### Requirement: Dependabot approval policy (REQ-012)
+### Requirement: Dependabot approval policy (REQ-011)
 
 A pull request that matches the `dependabot` category SHALL be auto-approved when global approval gates pass.
 
@@ -128,7 +118,7 @@ A pull request that matches the `dependabot` category SHALL be auto-approved whe
 - WHEN global gates pass
 - THEN the script SHALL approve
 
-### Requirement: Category extensibility (REQ-013)
+### Requirement: Category extensibility (REQ-012)
 
 Category selectors and category-specific gates SHALL be structured so that new categories can be added without modifying existing category behavior.
 
@@ -138,7 +128,7 @@ Category selectors and category-specific gates SHALL be structured so that new c
 - WHEN existing category logic runs
 - THEN behavior of existing categories SHALL remain unchanged
 
-### Requirement: Testability (REQ-014)
+### Requirement: Testability (REQ-013)
 
 Category routing and gate evaluation logic SHALL be unit tested with table-driven tests that cover passing and failing scenarios for each category and threshold boundary, including shared checks-state gates and self-exclusion behavior.
 

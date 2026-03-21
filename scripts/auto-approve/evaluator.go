@@ -49,10 +49,6 @@ func Evaluate(input EvaluationInput) EvaluationResult {
 		reasons = append(reasons, "pull request is not open")
 	}
 
-	if input.PullRequest.GetDraft() {
-		reasons = append(reasons, "pull request is draft")
-	}
-
 	category := matchedCategory(input.PullRequest)
 	if category == "" {
 		reasons = append(reasons, "pull request did not match any auto-approve category")
