@@ -8,7 +8,7 @@ provider "elasticstack" {
 }
 
 resource "elasticstack_kibana_action_connector" "index_example" {
-  name              = "my_index_connector"
+  name              = "my_index_connector_flapping_enabled"
   connector_type_id = ".index"
   config = jsonencode({
     index              = "my-index"
@@ -18,7 +18,7 @@ resource "elasticstack_kibana_action_connector" "index_example" {
 
 resource "elasticstack_kibana_alerting_rule" "test_rule" {
   name     = var.name
-  rule_id  = "cf33ce2d-9fc4-5131-a350-b5bd6482736c"
+  rule_id  = "e133ce2d-9fc4-5131-a350-b5bd6482736c"
   consumer = "alerts"
   params = jsonencode({
     aggType             = "avg"
@@ -56,7 +56,8 @@ resource "elasticstack_kibana_alerting_rule" "test_rule" {
   }
 
   flapping {
-    look_back_window        = 20
-    status_change_threshold = 5
+    look_back_window        = 10
+    status_change_threshold = 3
+    enabled                 = true
   }
 }

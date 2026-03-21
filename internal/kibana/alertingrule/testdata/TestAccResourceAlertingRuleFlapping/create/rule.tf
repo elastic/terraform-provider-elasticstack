@@ -58,6 +58,5 @@ resource "elasticstack_kibana_alerting_rule" "test_rule" {
   flapping {
     look_back_window        = 10
     status_change_threshold = 3
-    enabled                 = true
   }
 }

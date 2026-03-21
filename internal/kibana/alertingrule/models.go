@@ -321,10 +321,11 @@ func removeInjectedDefaultsRecursive(api any, prior any) any {
 
 // Version thresholds for feature support
 var (
-	frequencyMinSupportedVersion    = version.Must(version.NewVersion("8.6.0"))
-	alertsFilterMinSupportedVersion = version.Must(version.NewVersion("8.9.0"))
-	alertDelayMinSupportedVersion   = version.Must(version.NewVersion("8.13.0"))
-	flappingMinSupportedVersion     = version.Must(version.NewVersion("8.16.0"))
+	frequencyMinSupportedVersion       = version.Must(version.NewVersion("8.6.0"))
+	alertsFilterMinSupportedVersion    = version.Must(version.NewVersion("8.9.0"))
+	alertDelayMinSupportedVersion      = version.Must(version.NewVersion("8.13.0"))
+	flappingMinSupportedVersion        = version.Must(version.NewVersion("8.16.0"))
+	flappingEnabledMinSupportedVersion = version.Must(version.NewVersion("9.3.0"))
 )
 
 // toAPIModel converts the Terraform model to the API model.
@@ -364,6 +365,22 @@ func (m alertingRuleModel) toAPIModel(ctx context.Context, serverVersion *versio
 					"flapping is only supported for Kibana v8.16 or higher",
 				)
 				return models.AlertingRule{}, diags
+			}
+
+			var fm flappingModel
+			diags.Append(m.Flapping.As(ctx, &fm, basetypes.ObjectAsOptions{})...)
+			if diags.HasError() {
+				return models.AlertingRule{}, diags
+			}
+			// flapping.enabled is only supported from Elastic Stack 9.3+
+			if typeutils.IsKnown(fm.Enabled) && !fm.Enabled.IsNull() {
+				if serverVersion.LessThan(flappingEnabledMinSupportedVersion) {
+					diags.AddError(
+						"flapping.enabled is only supported for Elastic Stack 9.3 or higher",
+						"flapping.enabled is only supported for Elastic Stack 9.3 or higher",
+					)
+					return models.AlertingRule{}, diags
+				}
 			}
 		}
 

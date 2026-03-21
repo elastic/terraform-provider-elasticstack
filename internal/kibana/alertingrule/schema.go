@@ -178,7 +178,7 @@ func getSchema() schema.Schema {
 				},
 				Attributes: map[string]schema.Attribute{
 					"enabled": schema.BoolAttribute{
-						Description: "Whether the rule may enter the flapping state. When unset, the Kibana default applies.",
+						Description: "Whether the rule may enter the flapping state. When unset, the Kibana default applies. Supported only from Elastic Stack 9.3 onward.",
 						Optional:    true,
 					},
 					"look_back_window": schema.Int64Attribute{
