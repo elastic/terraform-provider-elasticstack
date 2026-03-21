@@ -51,7 +51,7 @@ jobs:
       secret_verification_result: ${{ steps.validate-secret.outputs.verification_result }}
     steps:
       - name: Setup Scripts
-        uses: github/gh-aw/actions/setup@08a903b1fb2e493a84a57577778fe5dd711f9468 # v0.58.3
+        uses: github/gh-aw/actions/setup@48d8fdfddc8cad854ac0c70ceb573f09fb8f9c9b # v0.62.5
         with:
           destination: /opt/gh-aw/actions
       - name: Generate agentic run info
@@ -260,7 +260,7 @@ jobs:
       output_types: ${{ steps.collect_output.outputs.output_types }}
     steps:
       - name: Setup Scripts
-        uses: github/gh-aw/actions/setup@08a903b1fb2e493a84a57577778fe5dd711f9468 # v0.58.3
+        uses: github/gh-aw/actions/setup@48d8fdfddc8cad854ac0c70ceb573f09fb8f9c9b # v0.62.5
         with:
           destination: /opt/gh-aw/actions
       - name: Checkout repository
@@ -1045,7 +1045,7 @@ jobs:
       total_count: ${{ steps.missing_tool.outputs.total_count }}
     steps:
       - name: Setup Scripts
-        uses: github/gh-aw/actions/setup@08a903b1fb2e493a84a57577778fe5dd711f9468 # v0.58.3
+        uses: github/gh-aw/actions/setup@48d8fdfddc8cad854ac0c70ceb573f09fb8f9c9b # v0.62.5
         with:
           destination: /opt/gh-aw/actions
       - name: Download agent output artifact
@@ -1145,7 +1145,7 @@ jobs:
       validation_failed_schema-coverage-rotation: ${{ steps.push_repo_memory_schema-coverage-rotation.outputs.validation_failed }}
     steps:
       - name: Setup Scripts
-        uses: github/gh-aw/actions/setup@08a903b1fb2e493a84a57577778fe5dd711f9468 # v0.58.3
+        uses: github/gh-aw/actions/setup@48d8fdfddc8cad854ac0c70ceb573f09fb8f9c9b # v0.62.5
         with:
           destination: /opt/gh-aw/actions
       - name: Checkout repository
@@ -1223,7 +1223,7 @@ jobs:
       process_safe_outputs_temporary_id_map: ${{ steps.process_safe_outputs.outputs.temporary_id_map }}
     steps:
       - name: Setup Scripts
-        uses: github/gh-aw/actions/setup@08a903b1fb2e493a84a57577778fe5dd711f9468 # v0.58.3
+        uses: github/gh-aw/actions/setup@48d8fdfddc8cad854ac0c70ceb573f09fb8f9c9b # v0.62.5
         with:
           destination: /opt/gh-aw/actions
           safe-output-custom-tokens: 'true'
