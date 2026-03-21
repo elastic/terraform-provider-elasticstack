@@ -161,7 +161,7 @@ check-lint: setup check-openspec golangci-lint check-fmt check-docs
 
 .PHONY: setup-openspec
 setup-openspec: ## Install Node dependencies (OpenSpec CLI via npm ci)
-	@ command -v npm >/dev/null 2>&1 || { echo "npm not found; install Node.js >= 20.19 for OpenSpec" >&2; exit 1; }
+	@ command -v npm >/dev/null 2>&1 || { echo "npm not found; install Node.js 24.x for OpenSpec" >&2; exit 1; }
 	npm ci
 
 .PHONY: check-openspec
