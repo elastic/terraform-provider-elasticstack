@@ -23,6 +23,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -38,7 +39,7 @@ func (d *dataSource) Read(ctx context.Context, req datasource.ReadRequest, resp 
 	if resp.Diagnostics.HasError() {
 		return
 	}
-  
+
 	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, stateModel.ElasticsearchConnection, &d.client)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
