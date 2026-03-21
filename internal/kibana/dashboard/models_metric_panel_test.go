@@ -486,7 +486,7 @@ func Test_metricItemModel_jsonRoundTrip(t *testing.T) {
 			item := metricItemModel{
 				ConfigJSON: customtypes.NewJSONWithDefaultsValue[map[string]any](
 					configJSON,
-					populateMetricChartMetricDefaults,
+					populateLensMetricDefaults,
 				),
 			}
 
