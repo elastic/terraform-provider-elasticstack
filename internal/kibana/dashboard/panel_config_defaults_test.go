@@ -118,6 +118,244 @@ func Test_populatePanelConfigJSONDefaults_unknownLensType(t *testing.T) {
 	assert.Equal(t, input, result)
 }
 
+func Test_populatePanelConfigJSONDefaults_tagcloud(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name: "adds filters and tagcloud metric and tag_by defaults",
+			input: `{
+				"attributes": {
+					"type": "tagcloud",
+					"metric": {"field": "bytes", "operation": "sum"},
+					"tag_by": {"operation": "terms", "field": "host.name"}
+				}
+			}`,
+			expected: `{
+				"attributes": {
+					"type": "tagcloud",
+					"filters": [],
+					"metric": {"field": "bytes", "operation": "sum", "empty_as_null": false, "show_metric_label": true},
+					"tag_by": {
+						"operation": "terms",
+						"field": "host.name",
+						"rank_by": {"type": "column", "metric": 0, "direction": "desc"}
+					}
+				}
+			}`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var input map[string]any
+			require.NoError(t, json.Unmarshal([]byte(tt.input), &input))
+			result := populatePanelConfigJSONDefaults(input)
+			assertPanelConfigEquals(t, tt.expected, result)
+		})
+	}
+}
+
+func Test_populatePanelConfigJSONDefaults_gauge(t *testing.T) {
+	input := `{
+		"attributes": {
+			"type": "gauge",
+			"metric": {"operation": "median", "field": "latency"}
+		}
+	}`
+	expected := `{
+		"attributes": {
+			"type": "gauge",
+			"filters": [],
+			"metric": {
+				"operation": "median",
+				"field": "latency",
+				"empty_as_null": false,
+				"hide_title": false,
+				"ticks": "auto"
+			}
+		}
+	}`
+	var config map[string]any
+	require.NoError(t, json.Unmarshal([]byte(input), &config))
+	result := populatePanelConfigJSONDefaults(config)
+	assertPanelConfigEquals(t, expected, result)
+}
+
+func Test_populatePanelConfigJSONDefaults_metric(t *testing.T) {
+	input := `{
+		"attributes": {
+			"type": "metric",
+			"metrics": [{"operation": "count"}, {"operation": "sum", "field": "bytes"}]
+		}
+	}`
+	expected := `{
+		"attributes": {
+			"type": "metric",
+			"filters": [],
+			"metrics": [
+				{"operation": "count", "empty_as_null": false, "fit": false},
+				{"operation": "sum", "field": "bytes", "empty_as_null": false, "fit": false}
+			]
+		}
+	}`
+	var config map[string]any
+	require.NoError(t, json.Unmarshal([]byte(input), &config))
+	result := populatePanelConfigJSONDefaults(config)
+	assertPanelConfigEquals(t, expected, result)
+}
+
+func Test_populatePanelConfigJSONDefaults_pie(t *testing.T) {
+	input := `{
+		"attributes": {
+			"type": "pie",
+			"metrics": [{"operation": "count"}],
+			"group_by": [{"operation": "terms", "field": "status"}]
+		}
+	}`
+	expected := `{
+		"attributes": {
+			"type": "pie",
+			"filters": [],
+			"metrics": [{"operation": "count", "empty_as_null": false}],
+			"group_by": [
+				{
+					"operation": "terms",
+					"field": "status",
+					"size": 5,
+					"rank_by": {"type": "column", "metric": 0, "direction": "desc"}
+				}
+			]
+		}
+	}`
+	var config map[string]any
+	require.NoError(t, json.Unmarshal([]byte(input), &config))
+	result := populatePanelConfigJSONDefaults(config)
+	assertPanelConfigEquals(t, expected, result)
+}
+
+func Test_populatePanelConfigJSONDefaults_region_map(t *testing.T) {
+	input := `{
+		"attributes": {
+			"type": "region_map",
+			"metric": {"operation": "sum", "field": "count"}
+		}
+	}`
+	expected := `{
+		"attributes": {
+			"type": "region_map",
+			"filters": [],
+			"metric": {
+				"operation": "sum",
+				"field": "count",
+				"empty_as_null": false,
+				"show_metric_label": true
+			}
+		}
+	}`
+	var config map[string]any
+	require.NoError(t, json.Unmarshal([]byte(input), &config))
+	result := populatePanelConfigJSONDefaults(config)
+	assertPanelConfigEquals(t, expected, result)
+}
+
+func Test_populatePanelConfigJSONDefaults_heatmap(t *testing.T) {
+	input := `{
+		"attributes": {
+			"type": "heatmap",
+			"metric": {"operation": "max", "field": "cpu"}
+		}
+	}`
+	expected := `{
+		"attributes": {
+			"type": "heatmap",
+			"filters": [],
+			"metric": {
+				"operation": "max",
+				"field": "cpu",
+				"empty_as_null": false,
+				"show_metric_label": true
+			}
+		}
+	}`
+	var config map[string]any
+	require.NoError(t, json.Unmarshal([]byte(input), &config))
+	result := populatePanelConfigJSONDefaults(config)
+	assertPanelConfigEquals(t, expected, result)
+}
+
+func Test_populatePanelConfigJSONDefaults_treemap(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+		check    func(t *testing.T, attrs map[string]any)
+	}{
+		{
+			name: "terms group_by and field metrics get defaults",
+			input: `{
+				"attributes": {
+					"type": "treemap",
+					"group_by": [{"operation": "terms", "field": "org"}],
+					"metrics": [{"operation": "count"}]
+				}
+			}`,
+			expected: `{
+				"attributes": {
+					"type": "treemap",
+					"filters": [],
+					"group_by": [
+						{
+							"operation": "terms",
+							"field": "org",
+							"size": 5,
+							"rank_by": {"type": "column", "metric": 0, "direction": "desc"}
+						}
+					],
+					"metrics": [{"operation": "count", "empty_as_null": false, "show_metric_label": true}]
+				}
+			}`,
+		},
+		{
+			name: "value group_by gets color null and value metric gets format null",
+			input: `{
+				"attributes": {
+					"type": "treemap",
+					"group_by": [{"operation": "value"}],
+					"metrics": [{"operation": "value"}]
+				}
+			}`,
+			check: func(t *testing.T, attrs map[string]any) {
+				assert.Equal(t, []any{}, attrs["filters"])
+				gb := attrs["group_by"].([]any)
+				require.Len(t, gb, 1)
+				g0 := gb[0].(map[string]any)
+				assert.Equal(t, "value", g0["operation"])
+				assert.Nil(t, g0["color"])
+				metrics := attrs["metrics"].([]any)
+				require.Len(t, metrics, 1)
+				m0 := metrics[0].(map[string]any)
+				assert.Equal(t, "value", m0["operation"])
+				assert.Nil(t, m0["format"])
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var config map[string]any
+			require.NoError(t, json.Unmarshal([]byte(tt.input), &config))
+			result := populatePanelConfigJSONDefaults(config)
+			if tt.expected != "" {
+				assertPanelConfigEquals(t, tt.expected, result)
+			} else if tt.check != nil {
+				attrs := result["attributes"].(map[string]any)
+				tt.check(t, attrs)
+			}
+		})
+	}
+}
+
 func Test_populatePanelConfigJSONDefaults_xy(t *testing.T) {
 	tests := []struct {
 		name     string
