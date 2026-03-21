@@ -10,16 +10,27 @@ This repository uses [OpenSpec](https://openspec.dev/) for **living functional r
   - **`## Requirements`** — `### Requirement: …` blocks using **SHALL** / **MUST** (RFC 2119).
   - **`#### Scenario: …`** — Given / When / Then checks reviewers and agents can trace.
 
-- **`openspec/changes/`** — Proposed deltas (proposal, design, tasks, delta specs). Use OpenSpec’s change workflow when a feature spans multiple specs or needs review before implementation.
+- **`openspec/changes/<name>/`** — OpenSpec **change** directories: **proposal**, **design**, **tasks**, and **delta specs** (the proposed deltas until they land in `openspec/specs/`). **Use this workflow for all changes** that add or update requirements—features, fixes, new Terraform resources or data sources, CI behavior, documentation of behavior, and so on. Create a change with **`openspec new change`**, implement from it, then **sync** delta specs into `openspec/specs/` or **archive** the change when done (**openspec-propose**, **openspec-sync-specs**, **openspec-archive-change** skills).
 
 - **`openspec/config.yaml`** — Project OpenSpec configuration.
 
-## Authoring a new Terraform entity spec
+## Authoring requirements (changes)
 
-1. Pick a stable capability id: `elasticsearch-<area>-<resource>` or `kibana-…` as appropriate.
-2. Create `openspec/specs/<capability>/spec.md` with Purpose, Schema (if useful), and Requirements with scenarios.
-3. Run **`make check-openspec`** or **`openspec validate --specs`** after **`make setup`** (installs the CLI via `npm ci`).
-4. Use the **existing-entity-requirements** or **new-entity-requirements** agent skill for structure and completeness.
+**Default path** — Same as above: **`openspec new change "<name>"`**, then fill **proposal**, **design**, **tasks**, and **delta specs** (see **openspec-propose**). After **`make setup`**, validate with **`openspec validate --all`** (canonical specs plus active changes under `openspec/changes/`); **`make check-openspec`** runs **`openspec validate --specs`** and is what CI uses once deltas are synced into `openspec/specs/`.
+
+### New Terraform resource or data source
+
+1. Pick a stable capability id: `elasticsearch-<area>-<resource>` or `kibana-…` as appropriate (this names the delta spec directory under the change).
+2. Use the **new-entity-requirements** skill for research (API clients, Elastic docs, user interview) and what belongs in each artifact.
+3. After implementation, **sync** or **archive** (**openspec-sync-specs**, **openspec-archive-change**).
+
+### Documenting an existing entity from code
+
+Use the **existing-entity-requirements** skill for structure and completeness when capturing behavior in delta specs (still via a change).
+
+### Editing `openspec/specs/` directly
+
+Avoid for new work; prefer a change and sync. Direct edits are only for **tiny** follow-ups (e.g. typo, link) or when the canonical tree already reflects merged work and you are not starting a new change.
 
 ## CI
 
