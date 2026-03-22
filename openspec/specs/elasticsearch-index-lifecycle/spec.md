@@ -1,6 +1,6 @@
 # `elasticstack_elasticsearch_index_lifecycle` — Schema and Functional Requirements
 
-Resource implementation: `internal/elasticsearch/index/ilm.go`
+Resource implementation: `internal/elasticsearch/index/ilm/`
 
 ## Purpose
 
