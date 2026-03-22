@@ -15,21 +15,22 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package index
+package ilm
 
-import _ "embed"
+import "github.com/hashicorp/go-version"
 
-//go:embed descriptions/component_template_resource.md
-var componentTemplateResourceDescription string
+const (
+	ilmPhaseHot    = "hot"
+	ilmPhaseWarm   = "warm"
+	ilmPhaseCold   = "cold"
+	ilmPhaseFrozen = "frozen"
+	ilmPhaseDelete = "delete"
+)
 
-//go:embed descriptions/component_template_alias_name.md
-var componentTemplateAliasNameDescription string
+// RolloverMinConditionsMinSupportedVersion is the minimum Elasticsearch version for rollover min_* conditions.
+var RolloverMinConditionsMinSupportedVersion = version.Must(version.NewVersion("8.4.0"))
 
-//go:embed descriptions/index_template_mappings.md
-var indexTemplateMappingsDescription string
+// MaxPrimaryShardDocsMinSupportedVersion is the minimum Elasticsearch version for max_primary_shard_docs.
+var MaxPrimaryShardDocsMinSupportedVersion = version.Must(version.NewVersion("8.2.0"))
 
-//go:embed descriptions/component_template_settings.md
-var componentTemplateSettingsDescription string
-
-//go:embed descriptions/index_template_resource.md
-var indexTemplateResourceDescription string
+var supportedIlmPhases = [...]string{ilmPhaseHot, ilmPhaseWarm, ilmPhaseCold, ilmPhaseFrozen, ilmPhaseDelete}
