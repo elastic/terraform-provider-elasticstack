@@ -29,6 +29,11 @@ resource "elasticstack_kibana_alerting_rule" "example" {
 
   # Version-gated / API-populated
   alert_delay = <optional, computed, int64> # UseStateForUnknown; server support validated vs stack version
+  flapping {                                # available in Kibana >= 8.16.0 / 9.3.0; server support validated vs stack version
+    enabled                = <optional, computed, bool>
+    look_back_window       = <optional, computed, int64>
+    status_change_threshold = <optional, computed, int64>
+  }
 
   # Read-only from API
   scheduled_task_id     = <computed, string> # UseStateForUnknown; preserved when API omits on re-read
