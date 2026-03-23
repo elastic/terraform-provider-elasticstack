@@ -20,9 +20,9 @@ package indices
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -30,23 +30,26 @@ import (
 func (d *dataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	var stateModel tfModel
 
-	// Resolve target attribute — use types.String to handle the null case
-	// (when the user omits the optional "target" attribute).
-	var targetAttr types.String
-	diags := req.Config.GetAttribute(ctx, path.Root("target"), &targetAttr)
+	diags := req.Config.Get(ctx, &stateModel)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, stateModel.ElasticsearchConnection, &d.client)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	// Default to "*" (all indices) when target is null or empty.
-	target := targetAttr.ValueString()
+	target := stateModel.Target.ValueString()
 	if target == "" {
 		target = "*"
 	}
 
 	// Call client API
-	indexAPIModels, diags := elasticsearch.GetIndices(ctx, &d.client, target)
+	indexAPIModels, diags := elasticsearch.GetIndices(ctx, client, target)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -73,7 +76,6 @@ func (d *dataSource) Read(ctx context.Context, req datasource.ReadRequest, resp 
 	}
 
 	stateModel.ID = types.StringValue(target)
-	stateModel.Target = targetAttr
 	stateModel.Indices = indicesList
 
 	// Set state

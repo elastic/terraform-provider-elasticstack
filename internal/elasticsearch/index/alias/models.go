@@ -32,10 +32,11 @@ import (
 )
 
 type tfModel struct {
-	ID          types.String `tfsdk:"id"`
-	Name        types.String `tfsdk:"name"`
-	WriteIndex  types.Object `tfsdk:"write_index"`
-	ReadIndices types.Set    `tfsdk:"read_indices"`
+	ID                      types.String `tfsdk:"id"`
+	Name                    types.String `tfsdk:"name"`
+	ElasticsearchConnection types.List   `tfsdk:"elasticsearch_connection"`
+	WriteIndex              types.Object `tfsdk:"write_index"`
+	ReadIndices             types.Set    `tfsdk:"read_indices"`
 }
 
 func (model *tfModel) Validate(ctx context.Context) diag.Diagnostics {

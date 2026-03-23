@@ -235,6 +235,35 @@ func Test_populatePanelConfigJSONDefaults_pie(t *testing.T) {
 	assertPanelConfigEquals(t, expected, result)
 }
 
+func Test_populatePanelConfigJSONDefaults_waffle(t *testing.T) {
+	input := `{
+		"attributes": {
+			"type": "waffle",
+			"metrics": [{"operation": "count"}],
+			"group_by": [{"operation": "terms", "field": "status"}]
+		}
+	}`
+	expected := `{
+		"attributes": {
+			"type": "waffle",
+			"filters": [],
+			"metrics": [{"operation": "count", "empty_as_null": false}],
+			"group_by": [
+				{
+					"operation": "terms",
+					"field": "status",
+					"size": 5,
+					"rank_by": {"type": "column", "metric": 0, "direction": "desc"}
+				}
+			]
+		}
+	}`
+	var config map[string]any
+	require.NoError(t, json.Unmarshal([]byte(input), &config))
+	result := populatePanelConfigJSONDefaults(config)
+	assertPanelConfigEquals(t, expected, result)
+}
+
 func Test_populatePanelConfigJSONDefaults_region_map(t *testing.T) {
 	input := `{
 		"attributes": {
@@ -293,7 +322,7 @@ func Test_populatePanelConfigJSONDefaults_treemap(t *testing.T) {
 		check    func(t *testing.T, attrs map[string]any)
 	}{
 		{
-			name: "terms group_by and field metrics get defaults",
+			name: "terms group_by gets partition defaults and metrics get tagcloud metric defaults",
 			input: `{
 				"attributes": {
 					"type": "treemap",
@@ -309,6 +338,8 @@ func Test_populatePanelConfigJSONDefaults_treemap(t *testing.T) {
 						{
 							"operation": "terms",
 							"field": "org",
+							"collapse_by": "avg",
+							"format": {"type": "number", "decimals": 2},
 							"size": 5,
 							"rank_by": {"type": "column", "metric": 0, "direction": "desc"}
 						}
