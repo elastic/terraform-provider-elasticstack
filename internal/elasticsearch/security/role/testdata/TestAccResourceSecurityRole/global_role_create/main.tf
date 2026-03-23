@@ -14,6 +14,7 @@ resource "elasticstack_elasticsearch_security_role" "test" {
         applications = ["*"]
       }
     }
+    role = {}
   })
 
   indices {

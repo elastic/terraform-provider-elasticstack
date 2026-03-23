@@ -7,15 +7,6 @@ resource "elasticstack_elasticsearch_security_role" "test" {
 
   cluster = ["all"]
 
-  global = jsonencode({
-    application = {}
-    profile = {
-      write = {
-        applications = ["*"]
-      }
-    }
-  })
-
   indices {
     names                    = ["index1", "index2"]
     privileges               = ["all"]
