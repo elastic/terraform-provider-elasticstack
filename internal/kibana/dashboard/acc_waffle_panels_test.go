@@ -86,8 +86,7 @@ func TestAccResourceDashboardWaffle(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.waffle_config.value_display.percent_decimals", "1"),
 					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.waffle_config.metrics.0.config", regexp.MustCompile(`"operation"\s*:\s*"count"`)),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.waffle_config.filters.#", "1"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.waffle_config.filters.0.query", "host.os.keyword: \"linux\""),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.waffle_config.filters.0.language", "kuery"),
+					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.waffle_config.filters.0.filter_json", regexp.MustCompile(`"field":"host.os.keyword"`)),
 				),
 			},
 			{

@@ -91,7 +91,7 @@ func CreateDashboard(ctx context.Context, client *Client, spaceID string, dashbo
 	}
 
 	switch resp.StatusCode() {
-	case http.StatusOK:
+	case http.StatusCreated:
 		return resp, nil
 	default:
 		return nil, reportUnknownError(resp.StatusCode(), resp.Body)

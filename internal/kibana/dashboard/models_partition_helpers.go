@@ -18,8 +18,12 @@
 package dashboard
 
 import (
+	"encoding/json"
+
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -139,13 +143,7 @@ type partitionValueDisplay struct {
 	PercentDecimals types.Float64 `tfsdk:"percent_decimals"`
 }
 
-func (m *partitionValueDisplay) fromTreemapNoESQL(api *struct {
-	Mode            kbapi.TreemapNoESQLValueDisplayMode `json:"mode"`
-	PercentDecimals *float32                            `json:"percent_decimals,omitempty"`
-}) {
-	if api == nil {
-		return
-	}
+func (m *partitionValueDisplay) fromValueDisplay(api kbapi.ValueDisplay) {
 	m.Mode = types.StringValue(string(api.Mode))
 	if api.PercentDecimals != nil {
 		m.PercentDecimals = types.Float64Value(float64(*api.PercentDecimals))
@@ -154,111 +152,50 @@ func (m *partitionValueDisplay) fromTreemapNoESQL(api *struct {
 	}
 }
 
-func (m *partitionValueDisplay) fromTreemapESQL(api *struct {
-	Mode            kbapi.TreemapESQLValueDisplayMode `json:"mode"`
-	PercentDecimals *float32                          `json:"percent_decimals,omitempty"`
-}) {
-	if api == nil {
+func (m *partitionValueDisplay) toValueDisplay() kbapi.ValueDisplay {
+	vd := kbapi.ValueDisplay{
+		Mode: kbapi.ValueDisplayMode(m.Mode.ValueString()),
+	}
+	if typeutils.IsKnown(m.PercentDecimals) {
+		vd.PercentDecimals = new(float32(m.PercentDecimals.ValueFloat64()))
+	}
+	return vd
+}
+
+// stripTopLevelNullMapKeys removes keys whose value is nil so JSON state matches compact user configs.
+func stripTopLevelNullMapKeys(m map[string]any) {
+	if m == nil {
 		return
 	}
-	m.Mode = types.StringValue(string(api.Mode))
-	if api.PercentDecimals != nil {
-		m.PercentDecimals = types.Float64Value(float64(*api.PercentDecimals))
-	} else {
-		m.PercentDecimals = types.Float64Null()
+	for k, v := range m {
+		if v == nil {
+			delete(m, k)
+		}
 	}
 }
 
-func (m *partitionValueDisplay) fromMosaicNoESQL(api *struct {
-	Mode            kbapi.MosaicNoESQLValueDisplayMode `json:"mode"`
-	PercentDecimals *float32                           `json:"percent_decimals,omitempty"`
-}) {
-	if api == nil {
-		return
+// newPartitionGroupByJSONFromAPI builds group_by / group_breakdown_by JSON for Terraform state from the API payload.
+// Kibana may add explicit null fields on read; dropping them avoids "inconsistent result after apply" for ES|QL treemaps/mosaics.
+// Terms defaults are not merged here (that would change round-trip panelsToAPI); JSONWithDefaultsValue still applies populatePartitionGroupByDefaults for semantic equality.
+func newPartitionGroupByJSONFromAPI(apiPayload any) (customtypes.JSONWithDefaultsValue[[]map[string]any], diag.Diagnostics) {
+	var diags diag.Diagnostics
+	raw, err := json.Marshal(apiPayload)
+	if err != nil {
+		diags.AddError("Failed to marshal group_by from API", err.Error())
+		return customtypes.JSONWithDefaultsValue[[]map[string]any]{}, diags
 	}
-	m.Mode = types.StringValue(string(api.Mode))
-	if api.PercentDecimals != nil {
-		m.PercentDecimals = types.Float64Value(float64(*api.PercentDecimals))
-	} else {
-		m.PercentDecimals = types.Float64Null()
+	var items []map[string]any
+	if err := json.Unmarshal(raw, &items); err != nil {
+		diags.AddError("Failed to unmarshal group_by from API", err.Error())
+		return customtypes.JSONWithDefaultsValue[[]map[string]any]{}, diags
 	}
-}
-
-func (m *partitionValueDisplay) fromMosaicESQL(api *struct {
-	Mode            kbapi.MosaicESQLValueDisplayMode `json:"mode"`
-	PercentDecimals *float32                         `json:"percent_decimals,omitempty"`
-}) {
-	if api == nil {
-		return
+	for i := range items {
+		stripTopLevelNullMapKeys(items[i])
 	}
-	m.Mode = types.StringValue(string(api.Mode))
-	if api.PercentDecimals != nil {
-		m.PercentDecimals = types.Float64Value(float64(*api.PercentDecimals))
-	} else {
-		m.PercentDecimals = types.Float64Null()
+	out, err := json.Marshal(items)
+	if err != nil {
+		diags.AddError("Failed to marshal normalized group_by", err.Error())
+		return customtypes.JSONWithDefaultsValue[[]map[string]any]{}, diags
 	}
-}
-
-func (m *partitionValueDisplay) toTreemapNoESQL() struct {
-	Mode            kbapi.TreemapNoESQLValueDisplayMode `json:"mode"`
-	PercentDecimals *float32                            `json:"percent_decimals,omitempty"`
-} {
-	vd := struct {
-		Mode            kbapi.TreemapNoESQLValueDisplayMode `json:"mode"`
-		PercentDecimals *float32                            `json:"percent_decimals,omitempty"`
-	}{
-		Mode: kbapi.TreemapNoESQLValueDisplayMode(m.Mode.ValueString()),
-	}
-	if typeutils.IsKnown(m.PercentDecimals) {
-		vd.PercentDecimals = new(float32(m.PercentDecimals.ValueFloat64()))
-	}
-	return vd
-}
-
-func (m *partitionValueDisplay) toTreemapESQL() struct {
-	Mode            kbapi.TreemapESQLValueDisplayMode `json:"mode"`
-	PercentDecimals *float32                          `json:"percent_decimals,omitempty"`
-} {
-	vd := struct {
-		Mode            kbapi.TreemapESQLValueDisplayMode `json:"mode"`
-		PercentDecimals *float32                          `json:"percent_decimals,omitempty"`
-	}{
-		Mode: kbapi.TreemapESQLValueDisplayMode(m.Mode.ValueString()),
-	}
-	if typeutils.IsKnown(m.PercentDecimals) {
-		vd.PercentDecimals = new(float32(m.PercentDecimals.ValueFloat64()))
-	}
-	return vd
-}
-
-func (m *partitionValueDisplay) toMosaicNoESQL() struct {
-	Mode            kbapi.MosaicNoESQLValueDisplayMode `json:"mode"`
-	PercentDecimals *float32                           `json:"percent_decimals,omitempty"`
-} {
-	vd := struct {
-		Mode            kbapi.MosaicNoESQLValueDisplayMode `json:"mode"`
-		PercentDecimals *float32                           `json:"percent_decimals,omitempty"`
-	}{
-		Mode: kbapi.MosaicNoESQLValueDisplayMode(m.Mode.ValueString()),
-	}
-	if typeutils.IsKnown(m.PercentDecimals) {
-		vd.PercentDecimals = new(float32(m.PercentDecimals.ValueFloat64()))
-	}
-	return vd
-}
-
-func (m *partitionValueDisplay) toMosaicESQL() struct {
-	Mode            kbapi.MosaicESQLValueDisplayMode `json:"mode"`
-	PercentDecimals *float32                         `json:"percent_decimals,omitempty"`
-} {
-	vd := struct {
-		Mode            kbapi.MosaicESQLValueDisplayMode `json:"mode"`
-		PercentDecimals *float32                         `json:"percent_decimals,omitempty"`
-	}{
-		Mode: kbapi.MosaicESQLValueDisplayMode(m.Mode.ValueString()),
-	}
-	if typeutils.IsKnown(m.PercentDecimals) {
-		vd.PercentDecimals = new(float32(m.PercentDecimals.ValueFloat64()))
-	}
-	return vd
+	return customtypes.NewJSONWithDefaultsValue(string(out), populatePartitionGroupByDefaults), diags
 }

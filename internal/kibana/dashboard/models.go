@@ -31,6 +31,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+// jsonNullString is the JSON encoding of null; json.Marshal uses it for unset union/API fields.
+const jsonNullString = "null"
+
 // dashboardModel is the top-level Terraform model
 type dashboardModel struct {
 	ID                   types.String         `tfsdk:"id"`

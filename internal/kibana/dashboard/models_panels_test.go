@@ -42,7 +42,7 @@ func buildLensMosaicPanelForTest(t *testing.T) panelModel {
 		"dataset": {"type":"dataView","id":"metrics-*"},
 		"query": {"language":"kuery","query":""},
 		"legend": {"size":"small"},
-		"metrics": [{"operation":"count"}],
+		"metric": {"operation":"count"},
 		"group_by": ` + groupBy + `,
 		"group_breakdown_by": ` + groupBreakdownBy + `
 	}`
@@ -522,7 +522,8 @@ func Test_panelsToAPI(t *testing.T) {
 							"query": {"language":"kuery","query":""},
 							"legend": {"size":"small"},
 							"metrics": [{"operation":"count"}],
-							"group_by": [{"operation":"terms","field":"host.name","collapse_by":"avg"}]
+							"group_by": [{"operation":"terms","field":"host.name","collapse_by":"avg"}],
+							"value_display": {"mode": ""}
 						},
 						"time_range": {"from": "now-15m", "to": "now"}
 					}
@@ -548,13 +549,14 @@ func Test_panelsToAPI(t *testing.T) {
 							"dataset": {"type":"dataView","id":"metrics-*"},
 							"query": {"language":"kuery","query":""},
 							"legend": {"size":"small"},
-							"metrics": [{"operation":"count"}],
+							"metric": {"operation":"count"},
 							"group_by": [{"operation":"terms","collapse_by":"avg","fields":["host.name"],
 								"color":{"mode":"categorical","palette":"default","mapping":[],
 								"unassignedColor":{"type":"color_code","value":"#D3DAE6"}}}],
 							"group_breakdown_by": [{"operation":"terms","collapse_by":"avg","fields":["service.name"],
 								"color":{"mode":"categorical","palette":"default","mapping":[],
-								"unassignedColor":{"type":"color_code","value":"#D3DAE6"}}}]
+								"unassignedColor":{"type":"color_code","value":"#D3DAE6"}}}],
+							"value_display": {"mode": ""}
 						},
 						"time_range": {"from": "now-15m", "to": "now"}
 					}
@@ -580,7 +582,8 @@ func Test_panelsToAPI(t *testing.T) {
 							"dataset": {"type":"dataView","id":"metrics-*"},
 							"query": {"language":"kuery","query":""},
 							"legend": {"size":"small"},
-							"metrics": [{"operation":"count"}]
+							"metrics": [{"operation":"count"}],
+							"value_display": {"mode": "percentage"}
 						},
 						"time_range": {"from": "now-15m", "to": "now"}
 					}
