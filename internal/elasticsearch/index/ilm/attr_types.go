@@ -149,14 +149,14 @@ func hotPhaseObjectType() types.ObjectType {
 	return types.ObjectType{
 		AttrTypes: map[string]attr.Type{
 			"min_age":             types.StringType,
-			"set_priority":        types.ListType{ElemType: setPriorityObjectType()},
-			"unfollow":            types.ListType{ElemType: unfollowObjectType()},
-			"rollover":            types.ListType{ElemType: rolloverObjectType()},
-			"readonly":            types.ListType{ElemType: readonlyObjectType()},
-			"shrink":              types.ListType{ElemType: shrinkObjectType()},
-			"forcemerge":          types.ListType{ElemType: forcemergeObjectType()},
-			"searchable_snapshot": types.ListType{ElemType: searchableSnapshotObjectType()},
-			"downsample":          types.ListType{ElemType: downsampleObjectType()},
+			"set_priority":        setPriorityObjectType(),
+			"unfollow":            unfollowObjectType(),
+			"rollover":            rolloverObjectType(),
+			"readonly":            readonlyObjectType(),
+			"shrink":              shrinkObjectType(),
+			"forcemerge":          forcemergeObjectType(),
+			"searchable_snapshot": searchableSnapshotObjectType(),
+			"downsample":          downsampleObjectType(),
 		},
 	}
 }
@@ -165,14 +165,14 @@ func warmPhaseObjectType() types.ObjectType {
 	return types.ObjectType{
 		AttrTypes: map[string]attr.Type{
 			"min_age":      types.StringType,
-			"set_priority": types.ListType{ElemType: setPriorityObjectType()},
-			"unfollow":     types.ListType{ElemType: unfollowObjectType()},
-			"readonly":     types.ListType{ElemType: readonlyObjectType()},
-			"allocate":     types.ListType{ElemType: allocateObjectType()},
-			"migrate":      types.ListType{ElemType: migrateObjectType()},
-			"shrink":       types.ListType{ElemType: shrinkObjectType()},
-			"forcemerge":   types.ListType{ElemType: forcemergeObjectType()},
-			"downsample":   types.ListType{ElemType: downsampleObjectType()},
+			"set_priority": setPriorityObjectType(),
+			"unfollow":     unfollowObjectType(),
+			"readonly":     readonlyObjectType(),
+			"allocate":     allocateObjectType(),
+			"migrate":      migrateObjectType(),
+			"shrink":       shrinkObjectType(),
+			"forcemerge":   forcemergeObjectType(),
+			"downsample":   downsampleObjectType(),
 		},
 	}
 }
@@ -181,14 +181,14 @@ func coldPhaseObjectType() types.ObjectType {
 	return types.ObjectType{
 		AttrTypes: map[string]attr.Type{
 			"min_age":             types.StringType,
-			"set_priority":        types.ListType{ElemType: setPriorityObjectType()},
-			"unfollow":            types.ListType{ElemType: unfollowObjectType()},
-			"readonly":            types.ListType{ElemType: readonlyObjectType()},
-			"searchable_snapshot": types.ListType{ElemType: searchableSnapshotObjectType()},
-			"allocate":            types.ListType{ElemType: allocateObjectType()},
-			"migrate":             types.ListType{ElemType: migrateObjectType()},
-			"freeze":              types.ListType{ElemType: freezeObjectType()},
-			"downsample":          types.ListType{ElemType: downsampleObjectType()},
+			"set_priority":        setPriorityObjectType(),
+			"unfollow":            unfollowObjectType(),
+			"readonly":            readonlyObjectType(),
+			"searchable_snapshot": searchableSnapshotObjectType(),
+			"allocate":            allocateObjectType(),
+			"migrate":             migrateObjectType(),
+			"freeze":              freezeObjectType(),
+			"downsample":          downsampleObjectType(),
 		},
 	}
 }
@@ -197,7 +197,7 @@ func frozenPhaseObjectType() types.ObjectType {
 	return types.ObjectType{
 		AttrTypes: map[string]attr.Type{
 			"min_age":             types.StringType,
-			"searchable_snapshot": types.ListType{ElemType: searchableSnapshotObjectType()},
+			"searchable_snapshot": searchableSnapshotObjectType(),
 		},
 	}
 }
@@ -206,8 +206,8 @@ func deletePhaseObjectType() types.ObjectType {
 	return types.ObjectType{
 		AttrTypes: map[string]attr.Type{
 			"min_age":           types.StringType,
-			"wait_for_snapshot": types.ListType{ElemType: waitForSnapshotObjectType()},
-			ilmPhaseDelete:      types.ListType{ElemType: deleteActionObjectType()},
+			"wait_for_snapshot": waitForSnapshotObjectType(),
+			ilmPhaseDelete:      deleteActionObjectType(),
 		},
 	}
 }
@@ -229,6 +229,7 @@ func phaseObjectType(phaseName string) types.ObjectType {
 	}
 }
 
-func phaseListType(phaseName string) types.ListType {
-	return types.ListType{ElemType: phaseObjectType(phaseName)}
+func phaseObjectNull(phaseName string) types.Object {
+	ot := phaseObjectType(phaseName)
+	return types.ObjectNull(ot.AttrTypes)
 }

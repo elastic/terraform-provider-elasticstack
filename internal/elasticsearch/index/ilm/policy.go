@@ -41,8 +41,8 @@ func policyFromModel(ctx context.Context, m *tfModel, serverVersion *version.Ver
 	}
 	phases := make(map[string]map[string]any)
 	for _, ph := range supportedIlmPhases {
-		pl := m.phaseList(ph)
-		pm, d := phaseListToExpandMap(ctx, pl)
+		po := m.phaseObject(ph)
+		pm, d := phaseObjectToExpandMap(ctx, po)
 		diags.Append(d...)
 		if diags.HasError() {
 			return nil, diags
@@ -76,36 +76,36 @@ func readPolicyIntoModel(ctx context.Context, ilmDef *models.PolicyDefinition, p
 
 	for _, ph := range supportedIlmPhases {
 		if v, ok := ilmDef.Policy.Phases[ph]; ok {
-			list, d := flattenPhase(ctx, ph, v, prior.phaseList(ph))
+			obj, d := flattenPhase(ctx, ph, v, prior.phaseObject(ph))
 			diags.Append(d...)
 			if diags.HasError() {
 				return nil, diags
 			}
 			switch ph {
 			case ilmPhaseHot:
-				out.Hot = list
+				out.Hot = obj
 			case ilmPhaseWarm:
-				out.Warm = list
+				out.Warm = obj
 			case ilmPhaseCold:
-				out.Cold = list
+				out.Cold = obj
 			case ilmPhaseFrozen:
-				out.Frozen = list
+				out.Frozen = obj
 			case ilmPhaseDelete:
-				out.Delete = list
+				out.Delete = obj
 			}
 		} else {
-			elem := phaseListType(ph).ElemType
+			nullObj := phaseObjectNull(ph)
 			switch ph {
 			case ilmPhaseHot:
-				out.Hot = types.ListNull(elem)
+				out.Hot = nullObj
 			case ilmPhaseWarm:
-				out.Warm = types.ListNull(elem)
+				out.Warm = nullObj
 			case ilmPhaseCold:
-				out.Cold = types.ListNull(elem)
+				out.Cold = nullObj
 			case ilmPhaseFrozen:
-				out.Frozen = types.ListNull(elem)
+				out.Frozen = nullObj
 			case ilmPhaseDelete:
-				out.Delete = types.ListNull(elem)
+				out.Delete = nullObj
 			}
 		}
 	}

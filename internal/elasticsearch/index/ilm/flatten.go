@@ -27,30 +27,23 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func priorHasDeclaredToggle(ctx context.Context, prior types.List, toggle string) bool {
+func priorHasDeclaredToggle(_ context.Context, prior types.Object, toggle string) bool {
 	if prior.IsNull() || prior.IsUnknown() {
 		return false
 	}
-	var elems []types.Object
-	if diags := prior.ElementsAs(ctx, &elems, false); diags.HasError() {
-		return false
-	}
-	if len(elems) != 1 {
-		return false
-	}
-	attrVals := elems[0].Attributes()
+	attrVals := prior.Attributes()
 	v, ok := attrVals[toggle]
 	if !ok || v.IsNull() || v.IsUnknown() {
 		return false
 	}
-	listV, ok := v.(types.List)
+	objV, ok := v.(types.Object)
 	if !ok {
 		return false
 	}
-	return len(listV.Elements()) > 0
+	return !objV.IsNull() && !objV.IsUnknown()
 }
 
-func flattenPhase(ctx context.Context, phaseName string, p models.Phase, prior types.List) (types.List, diag.Diagnostics) {
+func flattenPhase(ctx context.Context, phaseName string, p models.Phase, prior types.Object) (types.Object, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	phase := make(map[string]any)
 	// Single map shared across readonly/freeze/unfollow, matching SDK flatten behavior.
@@ -86,7 +79,7 @@ func flattenPhase(ctx context.Context, phaseName string, p models.Phase, prior t
 					res, err := json.Marshal(v)
 					if err != nil {
 						diags.AddError("Failed to marshal allocate filter", err.Error())
-						return types.ListUnknown(phaseObjectType(phaseName)), diags
+						return types.ObjectUnknown(phaseObjectType(phaseName).AttrTypes), diags
 					}
 					s := string(res)
 					// Omit empty objects so unset optional JSON attrs stay null (matches config).
@@ -109,5 +102,5 @@ func flattenPhase(ctx context.Context, phaseName string, p models.Phase, prior t
 		}
 	}
 
-	return phaseMapToListValue(ctx, phaseName, phase)
+	return phaseMapToObjectValue(ctx, phaseName, phase)
 }

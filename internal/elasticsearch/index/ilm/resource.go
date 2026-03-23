@@ -30,6 +30,7 @@ var (
 	_ resource.ResourceWithConfigure      = &Resource{}
 	_ resource.ResourceWithImportState    = &Resource{}
 	_ resource.ResourceWithValidateConfig = &Resource{}
+	_ resource.ResourceWithUpgradeState   = &Resource{}
 )
 
 func NewResource() resource.Resource {
@@ -52,4 +53,12 @@ func (r *Resource) Metadata(_ context.Context, req resource.MetadataRequest, res
 
 func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
+
+func (r *Resource) UpgradeState(context.Context) map[int64]resource.StateUpgrader {
+	return map[int64]resource.StateUpgrader{
+		0: {
+			StateUpgrader: migrateILMStateV0ToV1,
+		},
+	}
 }

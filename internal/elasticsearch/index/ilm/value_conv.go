@@ -28,22 +28,17 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func phaseMapToListValue(ctx context.Context, phaseName string, data map[string]any) (types.List, diag.Diagnostics) {
+func phaseMapToObjectValue(ctx context.Context, phaseName string, data map[string]any) (types.Object, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	ot := phaseObjectType(phaseName)
 	attrs, d := phaseDataToObjectAttrs(ctx, ot, data)
 	diags.Append(d...)
 	if diags.HasError() {
-		return types.ListUnknown(ot), diags
+		return types.ObjectUnknown(ot.AttrTypes), diags
 	}
 	obj, d := types.ObjectValue(ot.AttrTypes, attrs)
 	diags.Append(d...)
-	if diags.HasError() {
-		return types.ListUnknown(ot), diags
-	}
-	listVal, d := types.ListValueFrom(ctx, ot, []attr.Value{obj})
-	diags.Append(d...)
-	return listVal, diags
+	return obj, diags
 }
 
 func phaseDataToObjectAttrs(ctx context.Context, ot types.ObjectType, data map[string]any) (map[string]attr.Value, diag.Diagnostics) {
@@ -151,6 +146,17 @@ func anyToAttr(ctx context.Context, t attr.Type, raw any) (attr.Value, diag.Diag
 		return jsontypes.NewNormalizedValue(s), diags
 	}
 	if ty, ok := t.(types.ObjectType); ok {
+		if slice, ok := raw.([]any); ok {
+			if len(slice) == 0 {
+				return types.ObjectNull(ty.AttrTypes), diags
+			}
+			var ok2 bool
+			raw, ok2 = slice[0].(map[string]any)
+			if !ok2 {
+				diags.AddError("Type mismatch", fmt.Sprintf("expected object map inside list, got %T", slice[0]))
+				return types.ObjectUnknown(ty.AttrTypes), diags
+			}
+		}
 		m, ok := raw.(map[string]any)
 		if !ok {
 			diags.AddError("Type mismatch", fmt.Sprintf("expected map, got %T", raw))

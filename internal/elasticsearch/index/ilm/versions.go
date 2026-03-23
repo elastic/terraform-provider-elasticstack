@@ -19,6 +19,9 @@ package ilm
 
 import "github.com/hashicorp/go-version"
 
+// currentSchemaVersion is the Terraform resource schema version (state upgrades run from prior versions).
+const currentSchemaVersion int64 = 1
+
 const (
 	ilmPhaseHot    = "hot"
 	ilmPhaseWarm   = "warm"

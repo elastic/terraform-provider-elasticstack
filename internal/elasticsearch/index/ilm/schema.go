@@ -24,7 +24,6 @@ import (
 	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
-	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -38,6 +37,7 @@ var resourceMarkdownDescription string
 
 func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Version:             currentSchemaVersion,
 		MarkdownDescription: resourceMarkdownDescription,
 		Blocks: map[string]schema.Block{
 			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(false),
@@ -88,109 +88,84 @@ func minAgeAttribute() schema.StringAttribute {
 	}
 }
 
-func phaseHotBlock() schema.ListNestedBlock {
-	return schema.ListNestedBlock{
+func phaseHotBlock() schema.SingleNestedBlock {
+	return schema.SingleNestedBlock{
 		MarkdownDescription: "The index is actively being updated and queried.",
-		Validators: []validator.List{
-			listvalidator.SizeBetween(0, 1),
+		Attributes: map[string]schema.Attribute{
+			"min_age": minAgeAttribute(),
 		},
-		NestedObject: schema.NestedBlockObject{
-			Attributes: map[string]schema.Attribute{
-				"min_age": minAgeAttribute(),
-			},
-			Blocks: map[string]schema.Block{
-				"set_priority":        blockSetPriority(),
-				"unfollow":            blockUnfollow(),
-				"rollover":            blockRollover(),
-				"readonly":            blockReadonly(),
-				"shrink":              blockShrink(),
-				"forcemerge":          blockForcemerge(),
-				"searchable_snapshot": blockSearchableSnapshot(),
-				"downsample":          blockDownsample(),
-			},
+		Blocks: map[string]schema.Block{
+			"set_priority":        blockSetPriority(),
+			"unfollow":            blockUnfollow(),
+			"rollover":            blockRollover(),
+			"readonly":            blockReadonly(),
+			"shrink":              blockShrink(),
+			"forcemerge":          blockForcemerge(),
+			"searchable_snapshot": blockSearchableSnapshot(),
+			"downsample":          blockDownsample(),
 		},
 	}
 }
 
-func phaseWarmBlock() schema.ListNestedBlock {
-	return schema.ListNestedBlock{
+func phaseWarmBlock() schema.SingleNestedBlock {
+	return schema.SingleNestedBlock{
 		MarkdownDescription: "The index is no longer being updated but is still being queried.",
-		Validators: []validator.List{
-			listvalidator.SizeBetween(0, 1),
+		Attributes: map[string]schema.Attribute{
+			"min_age": minAgeAttribute(),
 		},
-		NestedObject: schema.NestedBlockObject{
-			Attributes: map[string]schema.Attribute{
-				"min_age": minAgeAttribute(),
-			},
-			Blocks: map[string]schema.Block{
-				"set_priority": blockSetPriority(),
-				"unfollow":     blockUnfollow(),
-				"readonly":     blockReadonly(),
-				"allocate":     blockAllocate(),
-				"migrate":      blockMigrate(),
-				"shrink":       blockShrink(),
-				"forcemerge":   blockForcemerge(),
-				"downsample":   blockDownsample(),
-			},
+		Blocks: map[string]schema.Block{
+			"set_priority": blockSetPriority(),
+			"unfollow":     blockUnfollow(),
+			"readonly":     blockReadonly(),
+			"allocate":     blockAllocate(),
+			"migrate":      blockMigrate(),
+			"shrink":       blockShrink(),
+			"forcemerge":   blockForcemerge(),
+			"downsample":   blockDownsample(),
 		},
 	}
 }
 
-func phaseColdBlock() schema.ListNestedBlock {
-	return schema.ListNestedBlock{
+func phaseColdBlock() schema.SingleNestedBlock {
+	return schema.SingleNestedBlock{
 		MarkdownDescription: "The index is no longer being updated and is queried infrequently. The information still needs to be searchable, but it's okay if those queries are slower.",
-		Validators: []validator.List{
-			listvalidator.SizeBetween(0, 1),
+		Attributes: map[string]schema.Attribute{
+			"min_age": minAgeAttribute(),
 		},
-		NestedObject: schema.NestedBlockObject{
-			Attributes: map[string]schema.Attribute{
-				"min_age": minAgeAttribute(),
-			},
-			Blocks: map[string]schema.Block{
-				"set_priority":        blockSetPriority(),
-				"unfollow":            blockUnfollow(),
-				"readonly":            blockReadonly(),
-				"searchable_snapshot": blockSearchableSnapshot(),
-				"allocate":            blockAllocate(),
-				"migrate":             blockMigrate(),
-				"freeze":              blockFreeze(),
-				"downsample":          blockDownsample(),
-			},
+		Blocks: map[string]schema.Block{
+			"set_priority":        blockSetPriority(),
+			"unfollow":            blockUnfollow(),
+			"readonly":            blockReadonly(),
+			"searchable_snapshot": blockSearchableSnapshot(),
+			"allocate":            blockAllocate(),
+			"migrate":             blockMigrate(),
+			"freeze":              blockFreeze(),
+			"downsample":          blockDownsample(),
 		},
 	}
 }
 
-func phaseFrozenBlock() schema.ListNestedBlock {
-	return schema.ListNestedBlock{
+func phaseFrozenBlock() schema.SingleNestedBlock {
+	return schema.SingleNestedBlock{
 		MarkdownDescription: "The index is no longer being updated and is queried rarely. The information still needs to be searchable, but it's okay if those queries are extremely slow.",
-		Validators: []validator.List{
-			listvalidator.SizeBetween(0, 1),
+		Attributes: map[string]schema.Attribute{
+			"min_age": minAgeAttribute(),
 		},
-		NestedObject: schema.NestedBlockObject{
-			Attributes: map[string]schema.Attribute{
-				"min_age": minAgeAttribute(),
-			},
-			Blocks: map[string]schema.Block{
-				"searchable_snapshot": blockSearchableSnapshot(),
-			},
+		Blocks: map[string]schema.Block{
+			"searchable_snapshot": blockSearchableSnapshot(),
 		},
 	}
 }
 
-func phaseDeleteBlock() schema.ListNestedBlock {
-	return schema.ListNestedBlock{
+func phaseDeleteBlock() schema.SingleNestedBlock {
+	return schema.SingleNestedBlock{
 		MarkdownDescription: "The index is no longer needed and can safely be removed.",
-		Validators: []validator.List{
-			listvalidator.SizeBetween(0, 1),
+		Attributes: map[string]schema.Attribute{
+			"min_age": minAgeAttribute(),
 		},
-		NestedObject: schema.NestedBlockObject{
-			Attributes: map[string]schema.Attribute{
-				"min_age": minAgeAttribute(),
-			},
-			Blocks: map[string]schema.Block{
-				"wait_for_snapshot": blockWaitForSnapshot(),
-				ilmPhaseDelete:      blockDeleteAction(),
-			},
+		Blocks: map[string]schema.Block{
+			"wait_for_snapshot": blockWaitForSnapshot(),
+			ilmPhaseDelete:      blockDeleteAction(),
 		},
 	}
 }

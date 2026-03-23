@@ -26,17 +26,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func phaseListToExpandMap(ctx context.Context, phaseList types.List) (map[string]any, diag.Diagnostics) {
+func phaseObjectToExpandMap(ctx context.Context, phaseObj types.Object) (map[string]any, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	if phaseList.IsNull() || phaseList.IsUnknown() || len(phaseList.Elements()) == 0 {
+	if phaseObj.IsNull() || phaseObj.IsUnknown() {
 		return nil, diags
 	}
-	var objs []types.Object
-	diags.Append(phaseList.ElementsAs(ctx, &objs, false)...)
-	if diags.HasError() || len(objs) == 0 {
-		return nil, diags
-	}
-	m, d := objectToExpandMap(ctx, objs[0])
+	m, d := objectToExpandMap(ctx, phaseObj)
 	diags.Append(d...)
 	if diags.HasError() {
 		return nil, diags
@@ -99,6 +94,16 @@ func attrValueToExpandRaw(ctx context.Context, v attr.Value) (any, diag.Diagnost
 			return nil, diags
 		}
 		return tv.ValueString(), diags
+	case types.Object:
+		if tv.IsNull() || tv.IsUnknown() {
+			return nil, diags
+		}
+		m, d := objectToExpandMap(ctx, tv)
+		diags.Append(d...)
+		if diags.HasError() {
+			return nil, diags
+		}
+		return []any{m}, diags
 	case types.List:
 		if len(tv.Elements()) == 0 {
 			return nil, diags

@@ -27,15 +27,15 @@ type tfModel struct {
 	ElasticsearchConnection types.List           `tfsdk:"elasticsearch_connection"`
 	Name                    types.String         `tfsdk:"name"`
 	Metadata                jsontypes.Normalized `tfsdk:"metadata"`
-	Hot                     types.List           `tfsdk:"hot"`
-	Warm                    types.List           `tfsdk:"warm"`
-	Cold                    types.List           `tfsdk:"cold"`
-	Frozen                  types.List           `tfsdk:"frozen"`
-	Delete                  types.List           `tfsdk:"delete"`
+	Hot                     types.Object         `tfsdk:"hot"`
+	Warm                    types.Object         `tfsdk:"warm"`
+	Cold                    types.Object         `tfsdk:"cold"`
+	Frozen                  types.Object         `tfsdk:"frozen"`
+	Delete                  types.Object         `tfsdk:"delete"`
 	ModifiedDate            types.String         `tfsdk:"modified_date"`
 }
 
-func (m *tfModel) phaseList(name string) types.List {
+func (m *tfModel) phaseObject(name string) types.Object {
 	switch name {
 	case ilmPhaseHot:
 		return m.Hot
@@ -48,6 +48,6 @@ func (m *tfModel) phaseList(name string) types.List {
 	case ilmPhaseDelete:
 		return m.Delete
 	default:
-		return types.ListNull(hotPhaseObjectType())
+		return phaseObjectNull(ilmPhaseHot)
 	}
 }

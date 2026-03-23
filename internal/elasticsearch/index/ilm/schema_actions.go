@@ -23,7 +23,8 @@ import (
 	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
-	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
@@ -33,18 +34,20 @@ import (
 //go:embed descriptions/ilm_set_priority_action.md
 var setPriorityActionDescription string
 
-func listBlockSingle(desc string, nested schema.NestedBlockObject) schema.ListNestedBlock {
-	return schema.ListNestedBlock{
+func singleNestedBlock(desc string, nested schema.NestedBlockObject, validators ...validator.Object) schema.SingleNestedBlock {
+	b := schema.SingleNestedBlock{
 		MarkdownDescription: desc,
-		Validators: []validator.List{
-			listvalidator.SizeBetween(0, 1),
-		},
-		NestedObject: nested,
+		Attributes:          nested.Attributes,
+		Blocks:              nested.Blocks,
 	}
+	if len(validators) > 0 {
+		b.Validators = validators
+	}
+	return b
 }
 
-func blockAllocate() schema.ListNestedBlock {
-	return listBlockSingle("Updates the index settings to change which nodes are allowed to host the index shards and change the number of replicas.", schema.NestedBlockObject{
+func blockAllocate() schema.SingleNestedBlock {
+	return singleNestedBlock("Updates the index settings to change which nodes are allowed to host the index shards and change the number of replicas.", schema.NestedBlockObject{
 		Attributes: map[string]schema.Attribute{
 			"number_of_replicas": schema.Int64Attribute{
 				Description: "Number of replicas to assign to the index. Default: `0`",
@@ -80,8 +83,8 @@ func blockAllocate() schema.ListNestedBlock {
 	})
 }
 
-func blockDeleteAction() schema.ListNestedBlock {
-	return listBlockSingle("Permanently removes the index.", schema.NestedBlockObject{
+func blockDeleteAction() schema.SingleNestedBlock {
+	return singleNestedBlock("Permanently removes the index.", schema.NestedBlockObject{
 		Attributes: map[string]schema.Attribute{
 			"delete_searchable_snapshot": schema.BoolAttribute{
 				Description: "Deletes the searchable snapshot created in a previous phase.",
@@ -93,12 +96,12 @@ func blockDeleteAction() schema.ListNestedBlock {
 	})
 }
 
-func blockForcemerge() schema.ListNestedBlock {
-	return listBlockSingle("Force merges the index into the specified maximum number of segments. This action makes the index read-only.", schema.NestedBlockObject{
+func blockForcemerge() schema.SingleNestedBlock {
+	return singleNestedBlock("Force merges the index into the specified maximum number of segments. This action makes the index read-only.", schema.NestedBlockObject{
 		Attributes: map[string]schema.Attribute{
 			"max_num_segments": schema.Int64Attribute{
-				Description: "Number of segments to merge to. To fully merge the index, set to 1.",
-				Required:    true,
+				Description: "Number of segments to merge to. To fully merge the index, set to 1. Required when the `forcemerge` action is configured.",
+				Optional:    true,
 				Validators:  []validator.Int64{int64validator.AtLeast(1)},
 			},
 			"index_codec": schema.StringAttribute{
@@ -106,11 +109,11 @@ func blockForcemerge() schema.ListNestedBlock {
 				Optional:    true,
 			},
 		},
-	})
+	}, objectvalidator.AlsoRequires(path.MatchRelative().AtName("max_num_segments")))
 }
 
-func blockFreeze() schema.ListNestedBlock {
-	return listBlockSingle("Freeze the index to minimize its memory footprint.", schema.NestedBlockObject{
+func blockFreeze() schema.SingleNestedBlock {
+	return singleNestedBlock("Freeze the index to minimize its memory footprint.", schema.NestedBlockObject{
 		Attributes: map[string]schema.Attribute{
 			"enabled": schema.BoolAttribute{
 				Description: "Controls whether ILM freezes the index.",
@@ -122,8 +125,8 @@ func blockFreeze() schema.ListNestedBlock {
 	})
 }
 
-func blockMigrate() schema.ListNestedBlock {
-	return listBlockSingle(
+func blockMigrate() schema.SingleNestedBlock {
+	return singleNestedBlock(
 		`Moves the index to the data tier that corresponds to the current phase by updating `+
 			`the "index.routing.allocation.include._tier_preference" index setting.`,
 		schema.NestedBlockObject{
@@ -139,8 +142,8 @@ func blockMigrate() schema.ListNestedBlock {
 	)
 }
 
-func blockReadonly() schema.ListNestedBlock {
-	return listBlockSingle("Makes the index read-only.", schema.NestedBlockObject{
+func blockReadonly() schema.SingleNestedBlock {
+	return singleNestedBlock("Makes the index read-only.", schema.NestedBlockObject{
 		Attributes: map[string]schema.Attribute{
 			"enabled": schema.BoolAttribute{
 				Description: "Controls whether ILM makes the index read-only.",
@@ -152,8 +155,8 @@ func blockReadonly() schema.ListNestedBlock {
 	})
 }
 
-func blockRollover() schema.ListNestedBlock {
-	return listBlockSingle("Rolls over a target to a new index when the existing index meets one or more of the rollover conditions.", schema.NestedBlockObject{
+func blockRollover() schema.SingleNestedBlock {
+	return singleNestedBlock("Rolls over a target to a new index when the existing index meets one or more of the rollover conditions.", schema.NestedBlockObject{
 		Attributes: map[string]schema.Attribute{
 			"max_age": schema.StringAttribute{
 				Description: "Triggers rollover after the maximum elapsed time from index creation is reached.",
@@ -199,12 +202,12 @@ func blockRollover() schema.ListNestedBlock {
 	})
 }
 
-func blockSearchableSnapshot() schema.ListNestedBlock {
-	return listBlockSingle("Takes a snapshot of the managed index in the configured repository and mounts it as a searchable snapshot.", schema.NestedBlockObject{
+func blockSearchableSnapshot() schema.SingleNestedBlock {
+	return singleNestedBlock("Takes a snapshot of the managed index in the configured repository and mounts it as a searchable snapshot.", schema.NestedBlockObject{
 		Attributes: map[string]schema.Attribute{
 			"snapshot_repository": schema.StringAttribute{
-				Description: "Repository used to store the snapshot.",
-				Required:    true,
+				Description: "Repository used to store the snapshot. Required when the `searchable_snapshot` action is configured.",
+				Optional:    true,
 			},
 			"force_merge_index": schema.BoolAttribute{
 				Description: "Force merges the managed index to one segment.",
@@ -213,23 +216,23 @@ func blockSearchableSnapshot() schema.ListNestedBlock {
 				Default:     booldefault.StaticBool(true),
 			},
 		},
-	})
+	}, objectvalidator.AlsoRequires(path.MatchRelative().AtName("snapshot_repository")))
 }
 
-func blockSetPriority() schema.ListNestedBlock {
-	return listBlockSingle(setPriorityActionDescription, schema.NestedBlockObject{
+func blockSetPriority() schema.SingleNestedBlock {
+	return singleNestedBlock(setPriorityActionDescription, schema.NestedBlockObject{
 		Attributes: map[string]schema.Attribute{
 			"priority": schema.Int64Attribute{
-				Description: "The priority for the index. Must be 0 or greater.",
-				Required:    true,
+				Description: "The priority for the index. Must be 0 or greater. Required when the `set_priority` action is configured.",
+				Optional:    true,
 				Validators:  []validator.Int64{int64validator.AtLeast(0)},
 			},
 		},
-	})
+	}, objectvalidator.AlsoRequires(path.MatchRelative().AtName("priority")))
 }
 
-func blockShrink() schema.ListNestedBlock {
-	return listBlockSingle("Sets a source index to read-only and shrinks it into a new index with fewer primary shards.", schema.NestedBlockObject{
+func blockShrink() schema.SingleNestedBlock {
+	return singleNestedBlock("Sets a source index to read-only and shrinks it into a new index with fewer primary shards.", schema.NestedBlockObject{
 		Attributes: map[string]schema.Attribute{
 			"number_of_shards": schema.Int64Attribute{
 				Description: "Number of shards to shrink to.",
@@ -249,8 +252,8 @@ func blockShrink() schema.ListNestedBlock {
 	})
 }
 
-func blockUnfollow() schema.ListNestedBlock {
-	return listBlockSingle("Convert a follower index to a regular index. Performed automatically before a rollover, shrink, or searchable snapshot action.", schema.NestedBlockObject{
+func blockUnfollow() schema.SingleNestedBlock {
+	return singleNestedBlock("Convert a follower index to a regular index. Performed automatically before a rollover, shrink, or searchable snapshot action.", schema.NestedBlockObject{
 		Attributes: map[string]schema.Attribute{
 			"enabled": schema.BoolAttribute{
 				Description: "Controls whether ILM makes the follower index a regular one.",
@@ -262,26 +265,26 @@ func blockUnfollow() schema.ListNestedBlock {
 	})
 }
 
-func blockWaitForSnapshot() schema.ListNestedBlock {
-	return listBlockSingle("Waits for the specified SLM policy to be executed before removing the index. This ensures that a snapshot of the deleted index is available.", schema.NestedBlockObject{
+func blockWaitForSnapshot() schema.SingleNestedBlock {
+	return singleNestedBlock("Waits for the specified SLM policy to be executed before removing the index. This ensures that a snapshot of the deleted index is available.", schema.NestedBlockObject{
 		Attributes: map[string]schema.Attribute{
 			"policy": schema.StringAttribute{
-				Description: "Name of the SLM policy that the delete action should wait for.",
-				Required:    true,
+				Description: "Name of the SLM policy that the delete action should wait for. Required when the `wait_for_snapshot` action is configured.",
+				Optional:    true,
 			},
 		},
-	})
+	}, objectvalidator.AlsoRequires(path.MatchRelative().AtName("policy")))
 }
 
-func blockDownsample() schema.ListNestedBlock {
-	return listBlockSingle(
+func blockDownsample() schema.SingleNestedBlock {
+	return singleNestedBlock(
 		"Roll up documents within a fixed interval to a single summary document. "+
 			"Reduces the index footprint by storing time series data at reduced granularity.",
 		schema.NestedBlockObject{
 			Attributes: map[string]schema.Attribute{
 				"fixed_interval": schema.StringAttribute{
-					Description: "Downsampling interval",
-					Required:    true,
+					Description: "Downsampling interval. Required when the `downsample` action is configured.",
+					Optional:    true,
 				},
 				"wait_timeout": schema.StringAttribute{
 					Description: "Downsampling interval",
@@ -290,5 +293,6 @@ func blockDownsample() schema.ListNestedBlock {
 				},
 			},
 		},
+		objectvalidator.AlsoRequires(path.MatchRelative().AtName("fixed_interval")),
 	)
 }

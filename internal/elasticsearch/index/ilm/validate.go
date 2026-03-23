@@ -33,8 +33,8 @@ func (r *Resource) ValidateConfig(ctx context.Context, req resource.ValidateConf
 	if c.Hot.IsUnknown() || c.Warm.IsUnknown() || c.Cold.IsUnknown() || c.Frozen.IsUnknown() || c.Delete.IsUnknown() {
 		return
 	}
-	hasPhase := phaseBlockNonEmpty(c.Hot) || phaseBlockNonEmpty(c.Warm) || phaseBlockNonEmpty(c.Cold) ||
-		phaseBlockNonEmpty(c.Frozen) || phaseBlockNonEmpty(c.Delete)
+	hasPhase := phaseObjectNonEmpty(c.Hot) || phaseObjectNonEmpty(c.Warm) || phaseObjectNonEmpty(c.Cold) ||
+		phaseObjectNonEmpty(c.Frozen) || phaseObjectNonEmpty(c.Delete)
 	if !hasPhase {
 		resp.Diagnostics.AddError(
 			"Missing phase configuration",
@@ -43,6 +43,6 @@ func (r *Resource) ValidateConfig(ctx context.Context, req resource.ValidateConf
 	}
 }
 
-func phaseBlockNonEmpty(l types.List) bool {
-	return !l.IsNull() && !l.IsUnknown() && len(l.Elements()) > 0
+func phaseObjectNonEmpty(o types.Object) bool {
+	return !o.IsNull() && !o.IsUnknown()
 }
