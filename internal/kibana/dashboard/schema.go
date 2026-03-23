@@ -63,6 +63,7 @@ var panelConfigNames = []string{
 	"datatable_config",
 	"heatmap_config",
 	"waffle_config",
+	"esql_control_config",
 }
 
 func panelConfigPaths(names []string) []path.Expression {
@@ -596,6 +597,84 @@ func getPanelSchema() schema.NestedAttributeObject {
 						siblingPanelConfigPathsExcept("markdown_config", panelConfigNames)...,
 					),
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"markdown"}),
+				},
+			},
+			"esql_control_config": schema.SingleNestedAttribute{
+				MarkdownDescription: panelConfigDescription("Configuration for an ES|QL control panel.", "esql_control_config", panelConfigNames),
+				Optional:            true,
+				Attributes: map[string]schema.Attribute{
+					"title": schema.StringAttribute{
+						MarkdownDescription: "A human-readable title for the control.",
+						Optional:            true,
+					},
+					"display_settings": schema.SingleNestedAttribute{
+						MarkdownDescription: "Display options for the control.",
+						Optional:            true,
+						Attributes: map[string]schema.Attribute{
+							"placeholder": schema.StringAttribute{
+								MarkdownDescription: "Placeholder text shown when no value is selected.",
+								Optional:            true,
+							},
+							"hide_action_bar": schema.BoolAttribute{
+								MarkdownDescription: "Hide the action bar on the control.",
+								Optional:            true,
+							},
+							"hide_exclude": schema.BoolAttribute{
+								MarkdownDescription: "Hide the exclude action.",
+								Optional:            true,
+							},
+							"hide_exists": schema.BoolAttribute{
+								MarkdownDescription: "Hide the exists action.",
+								Optional:            true,
+							},
+							"hide_sort": schema.BoolAttribute{
+								MarkdownDescription: "Hide sort options.",
+								Optional:            true,
+							},
+						},
+					},
+					"single_select": schema.BoolAttribute{
+						MarkdownDescription: "When true, only one option may be selected.",
+						Optional:            true,
+					},
+					"selected_options": schema.ListAttribute{
+						MarkdownDescription: "Currently selected option values.",
+						ElementType:         types.StringType,
+						Required:            true,
+					},
+					"variable_name": schema.StringAttribute{
+						MarkdownDescription: "The ES|QL variable name this control binds to.",
+						Required:            true,
+					},
+					"variable_type": schema.StringAttribute{
+						MarkdownDescription: "The kind of variable (fields, values, functions, time_literal, or multi_values).",
+						Required:            true,
+						Validators: []validator.String{
+							stringvalidator.OneOf("fields", "values", "functions", "time_literal", "multi_values"),
+						},
+					},
+					"esql_query": schema.StringAttribute{
+						MarkdownDescription: "The ES|QL query that defines or constrains the control.",
+						Required:            true,
+					},
+					"control_type": schema.StringAttribute{
+						MarkdownDescription: "STATIC_VALUES for a fixed list, or VALUES_FROM_QUERY when options come from the query.",
+						Required:            true,
+						Validators: []validator.String{
+							stringvalidator.OneOf("STATIC_VALUES", "VALUES_FROM_QUERY"),
+						},
+					},
+					"available_options": schema.ListAttribute{
+						MarkdownDescription: "Options shown for STATIC_VALUES controls.",
+						ElementType:         types.StringType,
+						Optional:            true,
+					},
+				},
+				Validators: []validator.Object{
+					objectvalidator.ConflictsWith(
+						siblingPanelConfigPathsExcept("esql_control_config", panelConfigNames)...,
+					),
+					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"esql_control"}),
 				},
 			},
 			"xy_chart_config": schema.SingleNestedAttribute{

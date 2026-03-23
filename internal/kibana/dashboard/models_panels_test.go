@@ -407,6 +407,7 @@ func assertPanelsEqual(t *testing.T, expected, actual panelModel) {
 	assert.Equal(t, expected.LegacyMetricConfig, actual.LegacyMetricConfig)
 	assert.Equal(t, expected.RegionMapConfig, actual.RegionMapConfig)
 	assert.Equal(t, expected.HeatmapConfig, actual.HeatmapConfig)
+	assert.Equal(t, expected.EsqlControlConfig, actual.EsqlControlConfig)
 	// ConfigJSON: use semantic equality (handles formatting differences)
 	ctx := context.Background()
 	eq, diags := expected.ConfigJSON.StringSemanticEquals(ctx, actual.ConfigJSON)
@@ -591,6 +592,51 @@ func Test_panelsToAPI(t *testing.T) {
 			]`,
 		},
 		{
+			name: "esql_control panel",
+			model: dashboardModel{
+				Panels: []panelModel{
+					{
+						Type: types.StringValue("esql_control"),
+						Grid: panelGridModel{
+							X: types.Int64Value(0),
+							Y: types.Int64Value(0),
+							W: types.Int64Value(24),
+							H: types.Int64Value(10),
+						},
+						ID: types.StringValue("esql-1"),
+						EsqlControlConfig: &esqlControlConfigModel{
+							Title:            types.StringValue("Pick"),
+							VariableName:     types.StringValue("v"),
+							VariableType:     types.StringValue("values"),
+							EsqlQuery:        types.StringValue(`ROW x = 1`),
+							ControlType:      types.StringValue("STATIC_VALUES"),
+							SelectedOptions:  esqlTestStringList(t, "a"),
+							AvailableOptions: esqlTestStringList(t, "a", "b"),
+							SingleSelect:     types.BoolValue(true),
+						},
+						ConfigJSON: customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults),
+					},
+				},
+			},
+			expected: `[
+				{
+					"grid": {"h": 10, "w": 24, "x": 0, "y": 0},
+					"uid": "esql-1",
+					"type": "esql_control",
+					"config": {
+						"control_type": "STATIC_VALUES",
+						"esql_query": "ROW x = 1",
+						"selected_options": ["a"],
+						"variable_name": "v",
+						"variable_type": "values",
+						"title": "Pick",
+						"single_select": true,
+						"available_options": ["a", "b"]
+					}
+				}
+			]`,
+		},
+		{
 			name: "section with panel",
 			model: dashboardModel{
 				Sections: []sectionModel{
@@ -627,7 +673,7 @@ func Test_panelsToAPI(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, diags := tt.model.panelsToAPI()
+			result, diags := tt.model.panelsToAPI(t.Context())
 			require.False(t, diags.HasError())
 
 			jsonBytes, err := json.Marshal(result)

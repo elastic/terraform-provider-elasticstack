@@ -45,6 +45,7 @@ type panelModel struct {
 	RegionMapConfig    *regionMapConfigModel                             `tfsdk:"region_map_config"`
 	HeatmapConfig      *heatmapConfigModel                               `tfsdk:"heatmap_config"`
 	WaffleConfig       *waffleConfigModel                                `tfsdk:"waffle_config"`
+	EsqlControlConfig  *esqlControlConfigModel                           `tfsdk:"esql_control_config"`
 	ConfigJSON         customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config_json"`
 }
 
@@ -201,7 +202,8 @@ func panelUsesConfigJSONOnly(pm *panelModel) bool {
 		pm.LegacyMetricConfig == nil &&
 		pm.RegionMapConfig == nil &&
 		pm.HeatmapConfig == nil &&
-		pm.WaffleConfig == nil
+		pm.WaffleConfig == nil &&
+		pm.EsqlControlConfig == nil
 }
 
 func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelModel, panelItem kbapi.DashboardPanelItem) (panelModel, diag.Diagnostics) {
@@ -271,6 +273,25 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 				break
 			}
 		}
+	case "esql_control":
+		esqlPanel, err := panelItem.AsKbnDashboardPanelEsqlControl()
+		if err != nil {
+			return panelModel{}, diagutil.FrameworkDiagFromError(err)
+		}
+		setPanelGridFromAPI(&pm, esqlPanel.Grid.X, esqlPanel.Grid.Y, esqlPanel.Grid.W, esqlPanel.Grid.H)
+		pm.ID = types.StringPointerValue(esqlPanel.Uid)
+		if !panelUsesConfigJSONOnly(tfPanel) {
+			pm.EsqlControlConfig = &esqlControlConfigModel{}
+			d := pm.EsqlControlConfig.fromAPI(ctx, esqlPanel.Config)
+			diags.Append(d...)
+			if tfPanel != nil && tfPanel.EsqlControlConfig != nil {
+				pm.EsqlControlConfig.mergeOptionalEsqlControlFromPrior(tfPanel.EsqlControlConfig)
+			}
+		}
+		configBytes, err := esqlPanel.Config.MarshalJSON()
+		if err == nil {
+			pm.ConfigJSON = customtypes.NewJSONWithDefaultsValue(string(configBytes), populatePanelConfigJSONDefaults)
+		}
 	default:
 		// No typed mapping yet; keep only the panel type.
 		pm.ID = types.StringNull()
@@ -292,7 +313,7 @@ func lensPanelTimeRange() kbapi.KbnEsQueryServerTimeRangeSchema {
 	}
 }
 
-func (m *dashboardModel) panelsToAPI() (*kbapi.DashboardPanels, diag.Diagnostics) {
+func (m *dashboardModel) panelsToAPI(ctx context.Context) (*kbapi.DashboardPanels, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if m.Panels == nil && m.Sections == nil {
 		return nil, diags
@@ -302,7 +323,7 @@ func (m *dashboardModel) panelsToAPI() (*kbapi.DashboardPanels, diag.Diagnostics
 
 	// Process panels
 	for _, pm := range m.Panels {
-		panelItem, d := pm.toAPI()
+		panelItem, d := pm.toAPI(ctx)
 		diags.Append(d...)
 		if diags.HasError() {
 			return nil, diags
@@ -339,7 +360,7 @@ func (m *dashboardModel) panelsToAPI() (*kbapi.DashboardPanels, diag.Diagnostics
 			innerPanels := make([]kbapi.DashboardPanelItem, 0, len(sm.Panels))
 
 			for _, pm := range sm.Panels {
-				item, d := pm.toAPI()
+				item, d := pm.toAPI(ctx)
 				diags.Append(d...)
 				if diags.HasError() {
 					return nil, diags
@@ -361,7 +382,7 @@ func (m *dashboardModel) panelsToAPI() (*kbapi.DashboardPanels, diag.Diagnostics
 	return &apiPanels, diags
 }
 
-func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
+func (pm panelModel) toAPI(ctx context.Context) (kbapi.DashboardPanelItem, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	grid := struct {
@@ -401,6 +422,23 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 		}
 		if err := panelItem.FromKbnDashboardPanelMarkdown(markdownPanel); err != nil {
 			diags.AddError("Failed to create markdown panel", err.Error())
+		}
+		return panelItem, diags
+	}
+
+	if pm.EsqlControlConfig != nil {
+		cfg, d := pm.EsqlControlConfig.toAPI(ctx)
+		diags.Append(d...)
+		if diags.HasError() {
+			return kbapi.DashboardPanelItem{}, diags
+		}
+		esqlPanel := kbapi.KbnDashboardPanelEsqlControl{
+			Config: cfg,
+			Grid:   grid,
+			Uid:    uid,
+		}
+		if err := panelItem.FromKbnDashboardPanelEsqlControl(esqlPanel); err != nil {
+			diags.AddError("Failed to create ES|QL control panel", err.Error())
 		}
 		return panelItem, diags
 	}
@@ -470,10 +508,25 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 				diags.AddError("Failed to create lens panel", err.Error())
 			}
 			return panelItem, diags
+		case "esql_control":
+			var cfg kbapi.KbnDashboardPanelEsqlControl_Config
+			if err := cfg.UnmarshalJSON(configJSON); err != nil {
+				diags.AddError("Failed to unmarshal ES|QL control panel config", err.Error())
+				return kbapi.DashboardPanelItem{}, diags
+			}
+			esqlPanel := kbapi.KbnDashboardPanelEsqlControl{
+				Config: cfg,
+				Grid:   grid,
+				Uid:    uid,
+			}
+			if err := panelItem.FromKbnDashboardPanelEsqlControl(esqlPanel); err != nil {
+				diags.AddError("Failed to create ES|QL control panel", err.Error())
+			}
+			return panelItem, diags
 		default:
 			diags.AddError(
 				"Unsupported panel type for config_json",
-				"Only markdown and lens panel types are currently supported with config_json.",
+				"Only markdown, lens, and esql_control panel types are currently supported with config_json.",
 			)
 			return kbapi.DashboardPanelItem{}, diags
 		}
