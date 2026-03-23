@@ -158,11 +158,11 @@ func TestCalendarEventTFModel_fromAPIModel_invalidTypes(t *testing.T) {
 
 func TestParseCompositeID(t *testing.T) {
 	tests := []struct {
-		name           string
-		id             string
-		expectedCalID  string
-		expectedEvtID  string
-		expectError    bool
+		name          string
+		id            string
+		expectedCalID string
+		expectedEvtID string
+		expectError   bool
 	}{
 		{
 			name:          "valid composite ID",
