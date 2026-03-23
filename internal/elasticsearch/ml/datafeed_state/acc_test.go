@@ -140,6 +140,21 @@ func TestAccResourceMLDatafeedState_withTimes(t *testing.T) {
 	})
 }
 
+// TestAccResourceMLDatafeedState_stoppedThenStarted verifies the plan modifier
+// produces correct plan values for `start` during create and state transitions.
+//
+// The Terraform CLI errors reported in #1866 and #1867 ("Provider returned
+// invalid result object" / "Provider produced inconsistent result") do not
+// reproduce in the test framework because it handles unknown→null resolution
+// more leniently than the CLI. Plan checks are used to verify the root cause
+// directly: incorrect plan values for the `start` attribute.
+//
+// Without the fix to SetUnknownIfStateHasChanges:
+//   - Step 1 fails: `start` is unknown in the plan (should be null for a
+//     stopped datafeed). This is the root cause of #1866.
+//   - Step 2 would fail: `start` is null in the plan (should be unknown when
+//     transitioning to started, so the API-computed timestamp is accepted).
+//     This is the root cause of #1867.
 func TestAccResourceMLDatafeedState_stoppedThenStarted(t *testing.T) {
 	jobID := fmt.Sprintf("test-job-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 	datafeedID := fmt.Sprintf("test-datafeed-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
@@ -151,10 +166,6 @@ func TestAccResourceMLDatafeedState_stoppedThenStarted(t *testing.T) {
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				// Bug #1866: Creating with state="stopped" must produce a plan where
-				// `start` is known-null, not unknown. Without the fix, the plan modifier
-				// early-returns on Create, leaving `start` as unknown. The apply then
-				// fails with "Provider returned invalid result object after apply".
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("stopped"),
 				ConfigVariables: config.Variables{
@@ -175,11 +186,6 @@ func TestAccResourceMLDatafeedState_stoppedThenStarted(t *testing.T) {
 				),
 			},
 			{
-				// Bug #1867: Transitioning from stopped to started must produce a plan
-				// where `start` is unknown (to be computed by the API). Without the fix,
-				// `start` remains null (copied from stopped state by UseStateForUnknown),
-				// and the apply fails with "Provider produced inconsistent result after
-				// apply" when the API returns a concrete timestamp.
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("started"),
 				ConfigVariables: config.Variables{
