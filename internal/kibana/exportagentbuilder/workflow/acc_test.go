@@ -108,7 +108,6 @@ func TestAccDataSourceKibanaExportAgentBuilderWorkflowSpace(t *testing.T) {
 					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_agentbuilder_export_workflow.test", "workflow_id"),
 					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_agentbuilder_export_workflow.test", "configuration_yaml"),
 					resource.TestCheckResourceAttr("data.elasticstack_kibana_agentbuilder_export_workflow.test", "space_id", spaceID),
-
 				),
 			},
 		},

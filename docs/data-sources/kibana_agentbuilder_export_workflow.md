@@ -35,5 +35,5 @@ data "elasticstack_kibana_agentbuilder_export_workflow" "test" {
 
 ### Read-Only
 
+- `configuration_yaml` (String) The exported workflow definition in YAML format.
 - `workflow_id` (String) The ID of the exported workflow.
-- `yaml` (String) The exported workflow definition in YAML format.

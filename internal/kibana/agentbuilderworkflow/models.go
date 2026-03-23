@@ -26,14 +26,14 @@ import (
 )
 
 type workflowModel struct {
-	ID                types.String `tfsdk:"id"`
-	WorkflowID        types.String `tfsdk:"workflow_id"`
-	SpaceID           types.String `tfsdk:"space_id"`
+	ID                types.String                    `tfsdk:"id"`
+	WorkflowID        types.String                    `tfsdk:"workflow_id"`
+	SpaceID           types.String                    `tfsdk:"space_id"`
 	ConfigurationYaml customtypes.NormalizedYamlValue `tfsdk:"configuration_yaml"`
-	Name              types.String `tfsdk:"name"`
-	Description       types.String `tfsdk:"description"`
-	Enabled           types.Bool   `tfsdk:"enabled"`
-	Valid             types.Bool   `tfsdk:"valid"`
+	Name              types.String                    `tfsdk:"name"`
+	Description       types.String                    `tfsdk:"description"`
+	Enabled           types.Bool                      `tfsdk:"enabled"`
+	Valid             types.Bool                      `tfsdk:"valid"`
 }
 
 func (model *workflowModel) populateFromAPI(data *kbapi.WorkflowDetailDto) {

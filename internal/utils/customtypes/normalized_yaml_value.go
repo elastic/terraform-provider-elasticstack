@@ -104,12 +104,12 @@ func (v NormalizedYamlValue) StringSemanticEquals(_ context.Context, newValuable
 	thisJSON, err := yamlToCanonicalJSON(v.ValueString())
 	if err != nil {
 		// Not valid YAML — fall back to string equality; ValidateAttribute will surface the error
-		return v.StringValue.Equal(newValue.StringValue), diags
+		return v.Equal(newValue.StringValue), diags
 	}
 
 	thatJSON, err := yamlToCanonicalJSON(newValue.ValueString())
 	if err != nil {
-		return v.StringValue.Equal(newValue.StringValue), diags
+		return v.Equal(newValue.StringValue), diags
 	}
 
 	return thisJSON == thatJSON, diags

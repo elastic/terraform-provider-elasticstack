@@ -95,4 +95,3 @@ func DeleteWorkflow(ctx context.Context, client *Client, spaceID string, workflo
 		return reportUnknownError(resp.StatusCode(), resp.Body)
 	}
 }
-
