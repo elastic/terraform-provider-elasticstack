@@ -12,6 +12,8 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/indices"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/anomaly_detection_job"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/calendar"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/calendar_event"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/job_state"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/api_key"
@@ -126,6 +128,8 @@ func (p *Provider) Resources(ctx context.Context) []func() resource.Resource {
 		role_mapping.NewRoleMappingResource,
 		datafeed.NewDatafeedResource,
 		anomaly_detection_job.NewAnomalyDetectionJobResource,
+		calendar.NewCalendarResource,
+		calendar_event.NewCalendarEventResource,
 		security_detection_rule.NewSecurityDetectionRuleResource,
 		job_state.NewMLJobStateResource,
 	}
