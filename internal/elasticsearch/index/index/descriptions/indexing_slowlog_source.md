@@ -1,0 +1,1 @@
+Set the number of characters of the `_source` to include in the slowlog lines. `false` or `0` skips logging the source entirely; `true` logs the entire source regardless of size. The original `_source` is reformatted by default to make sure that it fits on a single log line.

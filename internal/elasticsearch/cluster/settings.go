@@ -1,12 +1,30 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package cluster
 
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -67,10 +85,10 @@ func ResourceSettings() *schema.Resource {
 		},
 	}
 
-	utils.AddConnectionSchema(settingsSchema)
+	schemautil.AddConnectionSchema(settingsSchema)
 
 	return &schema.Resource{
-		Description: "Updates cluster-wide settings. If the Elasticsearch security features are enabled, you must have the manage cluster privilege to use this API. See the [cluster settings documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/cluster-update-settings.html) for more details.",
+		Description: settingsResourceDescription,
 
 		CreateContext: resourceClusterSettingsPut,
 		UpdateContext: resourceClusterSettingsPut,
@@ -85,8 +103,8 @@ func ResourceSettings() *schema.Resource {
 	}
 }
 
-func resourceClusterSettingsPut(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+func resourceClusterSettingsPut(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
@@ -101,8 +119,8 @@ func resourceClusterSettingsPut(ctx context.Context, d *schema.ResourceData, met
 	}
 	for _, v := range []string{"persistent", "transient"} {
 		if d.HasChange(v) {
-			old, new := d.GetChange(v)
-			diags = updateRemovedSettings(v, old, new, settings)
+			oldValue, newValue := d.GetChange(v)
+			diags = updateRemovedSettings(v, oldValue, newValue, settings)
 			if diags.HasError() {
 				return diags
 			}
@@ -116,29 +134,29 @@ func resourceClusterSettingsPut(ctx context.Context, d *schema.ResourceData, met
 }
 
 // Updates the map of settings in place if there is a difference between old and new list of settings
-func updateRemovedSettings(name string, old, new interface{}, settings map[string]interface{}) diag.Diagnostics {
+func updateRemovedSettings(name string, oldValue, newValue any, settings map[string]any) diag.Diagnostics {
 	var diags diag.Diagnostics
-	if old != nil && new != nil {
-		oldSettings := make(map[string]interface{})
-		if len(old.([]interface{})) > 0 {
-			oldSettings, _ = expandSettings(old)
+	if oldValue != nil && newValue != nil {
+		oldSettings := make(map[string]any)
+		if len(oldValue.([]any)) > 0 {
+			oldSettings, _ = expandSettings(oldValue)
 		}
-		newSettings := make(map[string]interface{})
-		if len(new.([]interface{})) > 0 {
-			newSettings, diags = expandSettings(new)
+		newSettings := make(map[string]any)
+		if len(newValue.([]any)) > 0 {
+			newSettings, diags = expandSettings(newValue)
 			if diags.HasError() {
 				return diags
 			}
 		}
 
-		if !utils.MapsEqual(oldSettings, newSettings) {
+		if !reflect.DeepEqual(oldSettings, newSettings) {
 			for s := range oldSettings {
 				if _, ok := newSettings[s]; !ok {
 					if settings[name] == nil {
-						settings[name] = make(map[string]interface{})
+						settings[name] = make(map[string]any)
 					}
 					// make sure to remove the setting from the ES as well
-					settings[name].(map[string]interface{})[s] = nil
+					settings[name].(map[string]any)[s] = nil
 				}
 			}
 		}
@@ -146,9 +164,9 @@ func updateRemovedSettings(name string, old, new interface{}, settings map[strin
 	return diags
 }
 
-func getConfiguredSettings(d *schema.ResourceData) (map[string]interface{}, diag.Diagnostics) {
+func getConfiguredSettings(d *schema.ResourceData) (map[string]any, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	settings := make(map[string]interface{})
+	settings := make(map[string]any)
 	if v, ok := d.GetOk("persistent"); ok {
 		var ds diag.Diagnostics
 		settings["persistent"], ds = expandSettings(v)
@@ -162,12 +180,12 @@ func getConfiguredSettings(d *schema.ResourceData) (map[string]interface{}, diag
 	return settings, diags
 }
 
-func expandSettings(s interface{}) (map[string]interface{}, diag.Diagnostics) {
+func expandSettings(s any) (map[string]any, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	settings := s.([]interface{})[0].(map[string]interface{})["setting"].(*schema.Set)
-	result := make(map[string]interface{}, settings.Len())
+	settings := s.([]any)[0].(map[string]any)["setting"].(*schema.Set)
+	result := make(map[string]any, settings.Len())
 	for _, v := range settings.List() {
-		setting := v.(map[string]interface{})
+		setting := v.(map[string]any)
 		settingName := setting["name"].(string)
 		if _, ok := result[settingName]; ok {
 			diags = append(diags, diag.Diagnostic{
@@ -178,14 +196,14 @@ func expandSettings(s interface{}) (map[string]interface{}, diag.Diagnostics) {
 		}
 
 		// check if the setting has value or value_list and act accordingly
-		if setting["value"].(string) != "" && len(setting["value_list"].([]interface{})) > 0 {
+		if setting["value"].(string) != "" && len(setting["value_list"].([]any)) > 0 {
 			diags = append(diags, diag.Diagnostic{
 				Severity: diag.Error,
 				Summary:  `Only one of "value" or "value_list" can be set.`,
 				Detail:   `Only one of "value" or "value_list" can be set.`,
 			})
 			return nil, diags
-		} else if setting["value"].(string) == "" && len(setting["value_list"].([]interface{})) == 0 {
+		} else if setting["value"].(string) == "" && len(setting["value_list"].([]any)) == 0 {
 			diags = append(diags, diag.Diagnostic{
 				Severity: diag.Error,
 				Summary:  `At least one of "value" or "value_list" must be set to not empty value.`,
@@ -203,8 +221,8 @@ func expandSettings(s interface{}) (map[string]interface{}, diag.Diagnostics) {
 	return result, diags
 }
 
-func resourceClusterSettingsRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+func resourceClusterSettingsRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
@@ -225,23 +243,23 @@ func resourceClusterSettingsRead(ctx context.Context, d *schema.ResourceData, me
 	return diags
 }
 
-func flattenSettings(name string, old, new map[string]interface{}) []interface{} {
-	setting := make(map[string]interface{})
-	settings := make([]interface{}, 0)
-	result := make([]interface{}, 0)
+func flattenSettings(name string, oldSettings, newSettings map[string]any) []any {
+	setting := make(map[string]any)
+	settings := make([]any, 0)
+	result := make([]any, 0)
 
-	if old[name] != nil {
-		for k := range old[name].(map[string]interface{}) {
-			if new[name] != nil {
-				if v, ok := new[name].(map[string]interface{})[k]; ok {
-					s := make(map[string]interface{})
+	if oldSettings[name] != nil {
+		for k := range oldSettings[name].(map[string]any) {
+			if newSettings[name] != nil {
+				if v, ok := newSettings[name].(map[string]any)[k]; ok {
+					s := make(map[string]any)
 					s["name"] = k
 
 					// decide which value to set
 					switch t := v.(type) {
 					case string:
 						s["value"] = t
-					case []interface{}:
+					case []any:
 						s["value_list"] = t
 					}
 					settings = append(settings, s)
@@ -257,27 +275,27 @@ func flattenSettings(name string, old, new map[string]interface{}) []interface{}
 	return result
 }
 
-func resourceClusterSettingsDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+func resourceClusterSettingsDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
 
 	configuredSettings, _ := getConfiguredSettings(d)
-	pSettings := make(map[string]interface{})
+	pSettings := make(map[string]any)
 	if v := configuredSettings["persistent"]; v != nil {
-		for k := range v.(map[string]interface{}) {
+		for k := range v.(map[string]any) {
 			pSettings[k] = nil
 		}
 	}
-	tSettings := make(map[string]interface{})
+	tSettings := make(map[string]any)
 	if v := configuredSettings["transient"]; v != nil {
-		for k := range v.(map[string]interface{}) {
+		for k := range v.(map[string]any) {
 			tSettings[k] = nil
 		}
 	}
 
-	settings := map[string]interface{}{
+	settings := map[string]any{
 		"persistent": pSettings,
 		"transient":  tSettings,
 	}

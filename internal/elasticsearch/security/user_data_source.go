@@ -1,9 +1,28 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package security
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -51,10 +70,10 @@ func DataSourceUser() *schema.Resource {
 		},
 	}
 
-	utils.AddConnectionSchema(userSchema)
+	schemautil.AddConnectionSchema(userSchema)
 
 	return &schema.Resource{
-		Description: "Get the information about the user in the ES cluster. See the [security API get user documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-get-user.html) for more details.",
+		Description: userDataSourceDescription,
 
 		ReadContext: dataSourceSecurityUserRead,
 
@@ -62,17 +81,51 @@ func DataSourceUser() *schema.Resource {
 	}
 }
 
-func dataSourceSecurityUserRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+func dataSourceSecurityUserRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
-	usernameId := d.Get("username").(string)
-	id, diags := client.ID(ctx, usernameId)
+	usernameID := d.Get("username").(string)
+	id, diags := client.ID(ctx, usernameID)
 	if diags.HasError() {
 		return diags
 	}
 	d.SetId(id.String())
 
-	return resourceSecurityUserRead(ctx, d, meta)
+	user, diags := elasticsearch.GetUser(ctx, client, usernameID)
+	if user == nil && diags == nil {
+		d.SetId("")
+		return diags
+	}
+	if diags.HasError() {
+		return diags
+	}
+
+	metadata, err := json.Marshal(user.Metadata)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	// set the fields
+	if err := d.Set("username", usernameID); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("email", user.Email); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("full_name", user.FullName); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("roles", user.Roles); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("metadata", string(metadata)); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("enabled", user.Enabled); err != nil {
+		return diag.FromErr(err)
+	}
+
+	return diags
 }

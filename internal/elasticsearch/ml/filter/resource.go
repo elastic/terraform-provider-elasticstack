@@ -35,7 +35,7 @@ func NewFilterResource() resource.Resource {
 }
 
 type filterResource struct {
-	client *clients.ApiClient
+	client *clients.APIClient
 }
 
 func (r *filterResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {

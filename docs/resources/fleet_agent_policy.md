@@ -18,13 +18,14 @@ provider "elasticstack" {
 }
 
 resource "elasticstack_fleet_agent_policy" "test_policy" {
-  name            = "Test Policy"
-  namespace       = "default"
-  description     = "Test Agent Policy"
-  sys_monitoring  = true
-  monitor_logs    = true
-  monitor_metrics = true
-  space_ids       = ["default"]
+  name             = "Test Policy"
+  namespace        = "default"
+  description      = "Test Agent Policy"
+  sys_monitoring   = true
+  monitor_logs     = true
+  monitor_metrics  = true
+  space_ids        = ["default"]
+  host_name_format = "hostname" # or "fqdn" for fully qualified domain names
 
   global_data_tags = {
     first_tag = {
@@ -32,6 +33,31 @@ resource "elasticstack_fleet_agent_policy" "test_policy" {
     },
     second_tag = {
       number_value = 1.2
+    }
+  }
+
+  # Advanced monitoring options (requires Elastic Stack 8.16.0+)
+  advanced_monitoring_options = {
+    # HTTP monitoring endpoint for liveness probes / health checks
+    http_monitoring_endpoint = {
+      enabled        = true
+      host           = "localhost"
+      port           = 6791
+      buffer_enabled = false
+      pprof_enabled  = false # Enable for /debug/pprof/* profiling endpoints
+    }
+
+    # Diagnostic settings (optional - defaults: interval=1m, burst=1, init_duration=1s, backoff_duration=1m, max_retries=10)
+    diagnostics = {
+      rate_limits = {
+        interval = "5m"
+        burst    = 3
+      }
+      file_uploader = {
+        init_duration    = "2s"
+        backoff_duration = "2m"
+        max_retries      = 5
+      }
     }
   }
 }
@@ -47,16 +73,20 @@ resource "elasticstack_fleet_agent_policy" "test_policy" {
 
 ### Optional
 
+- `advanced_monitoring_options` (Attributes) Advanced monitoring options for the agent policy. Includes HTTP monitoring endpoint configuration and diagnostic settings. (see [below for nested schema](#nestedatt--advanced_monitoring_options))
+- `advanced_settings` (Attributes) Advanced agent settings for logging, resource limits, and downloads. These settings configure the behavior of Elastic Agents enrolled in this policy. (see [below for nested schema](#nestedatt--advanced_settings))
 - `data_output_id` (String) The identifier for the data output.
 - `description` (String) The description of the agent policy.
 - `download_source_id` (String) The identifier for the Elastic Agent binary download server.
 - `fleet_server_host_id` (String) The identifier for the Fleet server host.
 - `global_data_tags` (Attributes Map) User-defined data tags to apply to all inputs. Values can be strings (string_value) or numbers (number_value) but not both. Example -- key1 = {string_value = value1}, key2 = {number_value = 42} (see [below for nested schema](#nestedatt--global_data_tags))
+- `host_name_format` (String) Determines the format of the host.name field in events. Can be 'hostname' (short hostname, e.g., 'myhost') or 'fqdn' (fully qualified domain name, e.g., 'myhost.example.com'). Defaults to 'hostname'.
 - `inactivity_timeout` (String) The inactivity timeout for the agent policy. If an agent does not report within this time period, it will be considered inactive. Supports duration strings (e.g., '30s', '2m', '1h').
 - `monitor_logs` (Boolean) Enable collection of agent logs.
 - `monitor_metrics` (Boolean) Enable collection of agent metrics.
 - `monitoring_output_id` (String) The identifier for monitoring output.
 - `policy_id` (String) Unique identifier of the agent policy.
+- `required_versions` (Map of Number) Map of agent versions to target percentages for automatic upgrade. The key is the target version and the value is the percentage of agents to upgrade to that version.
 - `skip_destroy` (Boolean) Set to true if you do not wish the agent policy to be deleted at destroy time, and instead just remove the agent policy from the Terraform state.
 - `space_ids` (Set of String) The Kibana space IDs that this agent policy should be available in. When not specified, defaults to ["default"]. Note: The order of space IDs does not matter as this is a set.
 - `supports_agentless` (Boolean) Set to true to enable agentless data collection.
@@ -66,6 +96,72 @@ resource "elasticstack_fleet_agent_policy" "test_policy" {
 ### Read-Only
 
 - `id` (String) The ID of this resource.
+
+<a id="nestedatt--advanced_monitoring_options"></a>
+### Nested Schema for `advanced_monitoring_options`
+
+Optional:
+
+- `diagnostics` (Attributes) Diagnostic settings for rate limiting and file upload behavior. (see [below for nested schema](#nestedatt--advanced_monitoring_options--diagnostics))
+- `http_monitoring_endpoint` (Attributes) HTTP monitoring endpoint configuration for agent health checks and liveness probes. (see [below for nested schema](#nestedatt--advanced_monitoring_options--http_monitoring_endpoint))
+
+<a id="nestedatt--advanced_monitoring_options--diagnostics"></a>
+### Nested Schema for `advanced_monitoring_options.diagnostics`
+
+Optional:
+
+- `file_uploader` (Attributes) Diagnostic file upload retry configuration. (see [below for nested schema](#nestedatt--advanced_monitoring_options--diagnostics--file_uploader))
+- `rate_limits` (Attributes) Rate limiting configuration for diagnostics requests from Fleet. (see [below for nested schema](#nestedatt--advanced_monitoring_options--diagnostics--rate_limits))
+
+<a id="nestedatt--advanced_monitoring_options--diagnostics--file_uploader"></a>
+### Nested Schema for `advanced_monitoring_options.diagnostics.file_uploader`
+
+Optional:
+
+- `backoff_duration` (String) Maximum backoff duration between retry attempts (e.g., '1m', '30s').
+- `init_duration` (String) Initial duration before the first retry attempt (e.g., '1s', '500ms').
+- `max_retries` (Number) Maximum number of retry attempts for file uploads.
+
+
+<a id="nestedatt--advanced_monitoring_options--diagnostics--rate_limits"></a>
+### Nested Schema for `advanced_monitoring_options.diagnostics.rate_limits`
+
+Optional:
+
+- `burst` (Number) Rate limiting burst count for diagnostics requests.
+- `interval` (String) Rate limiting interval for diagnostics requests (e.g., '1m', '30s').
+
+
+
+<a id="nestedatt--advanced_monitoring_options--http_monitoring_endpoint"></a>
+### Nested Schema for `advanced_monitoring_options.http_monitoring_endpoint`
+
+Optional:
+
+- `buffer_enabled` (Boolean) Enable monitoring buffer for the HTTP endpoint.
+- `enabled` (Boolean) Enable the HTTP monitoring endpoint. When enabled, exposes a /liveness endpoint for health checks.
+- `host` (String) Host for the HTTP monitoring endpoint.
+- `port` (Number) Port for the HTTP monitoring endpoint.
+- `pprof_enabled` (Boolean) Enable /debug/pprof/* profiling endpoints. Warning: enabling this may pose a security risk if the monitoring endpoint is accessible over a network.
+
+
+
+<a id="nestedatt--advanced_settings"></a>
+### Nested Schema for `advanced_settings`
+
+Optional:
+
+- `download_target_directory` (String) Target directory for downloading agent updates.
+- `download_timeout` (String) Timeout for downloading agent updates (e.g., '2h', '30m').
+- `go_max_procs` (Number) Maximum number of CPUs that the agent can use (GOMAXPROCS). Set to 0 to use all available CPUs.
+- `logging_files_interval` (String) Interval for log file rotation (e.g., '30s', '1m', '1h').
+- `logging_files_keepfiles` (Number) Number of rotated log files to keep.
+- `logging_files_rotateeverybytes` (Number) Rotate log files when they reach this size in bytes.
+- `logging_level` (String) Logging level for the agent. Valid values: debug, info, warning, error.
+- `logging_metrics_period` (String) Period for logging agent metrics (e.g., '30s', '1m').
+- `logging_to_files` (Boolean) Enable logging to files.
+- `monitoring_runtime_experimental` (String) Experimental runtime monitoring mode. Valid values: '' (empty string to disable), 'process', 'otel'.
+
 
 <a id="nestedatt--global_data_tags"></a>
 ### Nested Schema for `global_data_tags`
@@ -82,5 +178,5 @@ Import is supported using the following syntax:
 The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
 
 ```shell
-terraform import elasticstack_fleet_agent_policy.my_policy <fleet_agent_policy_id>
+terraform import elasticstack_fleet_agent_policy.my_policy <space_id>/<fleet_agent_policy_id>
 ```

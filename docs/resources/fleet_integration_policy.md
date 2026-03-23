@@ -4,9 +4,6 @@ page_title: "elasticstack_fleet_integration_policy Resource - terraform-provider
 subcategory: "Fleet"
 description: |-
   Creates or updates a Fleet Integration Policy.
-  It is highly recommended that all inputs and streams are provided in the
-  Terraform plan, even if some are disabled. Otherwise, differences may appear
-  between what is in the plan versus what is returned by the Fleet API.
   The Kibana Fleet UI https://www.elastic.co/guide/en/fleet/current/add-integration-to-policy.html
   can be used as a reference for what data needs to be provided. Instead of saving
   a new integration configuration, the API request can be previewed, showing what
@@ -16,10 +13,6 @@ description: |-
 # elasticstack_fleet_integration_policy (Resource)
 
 Creates or updates a Fleet Integration Policy.
-
-It is highly recommended that all inputs and streams are provided in the
-Terraform plan, even if some are disabled. Otherwise, differences may appear
-between what is in the plan versus what is returned by the Fleet API.
 
 The [Kibana Fleet UI](https://www.elastic.co/guide/en/fleet/current/add-integration-to-policy.html)
 can be used as a reference for what data needs to be provided. Instead of saving
@@ -63,23 +56,27 @@ resource "elasticstack_fleet_integration_policy" "sample" {
   agent_policy_id     = elasticstack_fleet_agent_policy.sample.policy_id
   integration_name    = elasticstack_fleet_integration.sample.name
   integration_version = elasticstack_fleet_integration.sample.version
+  // Optional: specify a custom output to send data to
+  // output_id           = "my-custom-output-id"
 
-  input {
-    input_id = "tcp-tcp"
-    streams_json = jsonencode({
-      "tcp.generic" : {
-        "enabled" : true,
-        "vars" : {
-          "listen_address" : "localhost",
-          "listen_port" : 8080,
-          "data_stream.dataset" : "tcp.generic",
-          "tags" : [],
-          "syslog_options" : "field: message\n#format: auto\n#timezone: Local\n",
-          "ssl" : "#certificate: |\n#    -----BEGIN CERTIFICATE-----\n#    ...\n#    -----END CERTIFICATE-----\n#key: |\n#    -----BEGIN PRIVATE KEY-----\n#    ...\n#    -----END PRIVATE KEY-----\n",
-          "custom" : ""
+  inputs = {
+    "tcp-tcp" = {
+      enabled = true
+      streams = {
+        "tcp.generic" = {
+          enabled = true,
+          vars = jsonencode({
+            "listen_address" : "localhost",
+            "listen_port" : 8080,
+            "data_stream.dataset" : "tcp.generic",
+            "tags" : [],
+            "syslog_options" : "field: message\n#format: auto\n#timezone: Local\n",
+            "ssl" : "#certificate: |\n#    -----BEGIN CERTIFICATE-----\n#    ...\n#    -----END CERTIFICATE-----\n#key: |\n#    -----BEGIN PRIVATE KEY-----\n#    ...\n#    -----END PRIVATE KEY-----\n",
+            "custom" : ""
+          })
         }
       }
-    })
+    }
   }
 }
 ```
@@ -101,27 +98,55 @@ resource "elasticstack_fleet_integration_policy" "sample" {
 - `description` (String) The description of the integration policy.
 - `enabled` (Boolean) Enable the integration policy.
 - `force` (Boolean) Force operations, such as creation and deletion, to occur.
-- `input` (Block List) Integration inputs. (see [below for nested schema](#nestedblock--input))
+- `inputs` (Attributes Map) Integration inputs mapped by input ID. (see [below for nested schema](#nestedatt--inputs))
+- `output_id` (String) The ID of the output to send data to. When not specified, the default output of the agent policy will be used.
 - `policy_id` (String) Unique identifier of the integration policy.
 - `space_ids` (Set of String) The Kibana space IDs where this integration policy is available. When set, must match the space_ids of the referenced agent policy. If not set, will be inherited from the agent policy. Note: The order of space IDs does not matter as this is a set.
-- `vars_json` (String, Sensitive) Integration-level variables as JSON.
+- `vars_json` (String, Sensitive) Integration-level variables as JSON. Variables vary depending on the integration package.
+
+The provider injects the '__tf_provider_context' property into this JSON object. In most cases this field will be ignored when computing the difference between the current and desired state. In some cases however, this property may be shown in the Terraform plan. Any changes to the '__tf_provider_context' property can be safely ignored. This property is used internally by the provider, and you should not set this property within your Terraform configuration.
 
 ### Read-Only
 
 - `id` (String) The ID of this resource.
 
-<a id="nestedblock--input"></a>
-### Nested Schema for `input`
-
-Required:
-
-- `input_id` (String) The identifier of the input.
+<a id="nestedatt--inputs"></a>
+### Nested Schema for `inputs`
 
 Optional:
 
 - `enabled` (Boolean) Enable the input.
-- `streams_json` (String, Sensitive) Input streams as JSON.
-- `vars_json` (String, Sensitive) Input variables as JSON.
+- `streams` (Attributes Map) Input streams mapped by stream ID. (see [below for nested schema](#nestedatt--inputs--streams))
+- `vars` (String, Sensitive) Input-level variables as JSON.
+
+Read-Only:
+
+- `defaults` (Attributes) Input defaults. (see [below for nested schema](#nestedatt--inputs--defaults))
+
+<a id="nestedatt--inputs--streams"></a>
+### Nested Schema for `inputs.streams`
+
+Optional:
+
+- `enabled` (Boolean) Enable the stream.
+- `vars` (String, Sensitive) Stream-level variables as JSON.
+
+
+<a id="nestedatt--inputs--defaults"></a>
+### Nested Schema for `inputs.defaults`
+
+Read-Only:
+
+- `streams` (Attributes Map) Stream-level defaults mapped by stream ID. (see [below for nested schema](#nestedatt--inputs--defaults--streams))
+- `vars` (String) Input-level variable defaults as JSON.
+
+<a id="nestedatt--inputs--defaults--streams"></a>
+### Nested Schema for `inputs.defaults.streams`
+
+Read-Only:
+
+- `enabled` (Boolean) Default enabled state for the stream.
+- `vars` (String) Stream-level variable defaults as JSON.
 
 ## Import
 

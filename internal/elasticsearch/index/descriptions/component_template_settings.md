@@ -1,0 +1,1 @@
+Configuration options for the index. See the [index modules settings documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#index-modules-settings) for more details.

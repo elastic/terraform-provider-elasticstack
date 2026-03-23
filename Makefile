@@ -1,7 +1,7 @@
 .DEFAULT_GOAL = help
 SHELL := /bin/bash
 
-VERSION ?= 0.12.1
+VERSION ?= 0.14.3
 
 NAME = elasticstack
 BINARY = terraform-provider-${NAME}
@@ -11,7 +11,6 @@ ACCTEST_PARALLELISM ?= 10
 ACCTEST_TIMEOUT = 120m
 ACCTEST_COUNT = 1
 TEST ?= ./...
-SWAGGER_VERSION ?= 8.7
 
 USE_TLS ?= 0
 COMPOSE_FILE := docker-compose.yml
@@ -29,8 +28,18 @@ KIBANA_API_KEY_NAME ?= kibana-api-key
 FLEET_NAME ?= terraform-elasticstack-fleet
 FLEET_ENDPOINT ?= https://$(FLEET_NAME):8220
 
+# Fleet Server image repository. Some older stack versions (notably 7.17.x, 8.0.x, 8.1.x)
+# do not publish elastic-agent images to docker.elastic.co, so fall back to Docker Hub.
+ifneq (,$(filter 7.17.% 8.0.% 8.1.%,$(STACK_VERSION)))
+FLEET_IMAGE := elastic/elastic-agent
+endif
+
+RERUN_FAILS ?= 5
+
 export GOBIN = $(shell pwd)/bin
 
+# OpenSpec CLI (see package.json); installed via `make setup-openspec`
+OPENSPEC_BIN := $(CURDIR)/node_modules/.bin/openspec
 
 $(GOBIN): ## create bin/ in the current directory
 	mkdir -p $(GOBIN)
@@ -46,13 +55,19 @@ build-ci: ## build the terraform provider
 .PHONY: build
 build: lint build-ci ## build the terraform provider
 
+# run acceptance tests against the docker container that has been started with `make docker-kibana` (or `make docker-elasticsearch`)
+# To run specific test (e.g. TestAccResourceActionConnector) execute `make testacc-vs-docker TESTARGS='-run ^TestAccResourceKibanaConnectorBedrock$$'`
+.PHONY: testacc-vs-docker
+testacc-vs-docker:
+	@ ELASTICSEARCH_ENDPOINTS=http://localhost:9200 KIBANA_ENDPOINT=http://localhost:5601 ELASTICSEARCH_USERNAME=$(ELASTICSEARCH_USERNAME) ELASTICSEARCH_PASSWORD=$(ELASTICSEARCH_PASSWORD) make testacc
+
 .PHONY: testacc
 testacc: ## Run acceptance tests
-	TF_ACC=1 go tool gotestsum --format testname --rerun-fails=3 --packages="-v ./..." -- -count $(ACCTEST_COUNT) -parallel $(ACCTEST_PARALLELISM) $(TESTARGS) -timeout $(ACCTEST_TIMEOUT)
+	TF_ACC=1 go tool gotestsum --format testname --rerun-fails=$(RERUN_FAILS) --packages="-v ./..." -- -count $(ACCTEST_COUNT) -parallel $(ACCTEST_PARALLELISM) $(TESTARGS) -timeout $(ACCTEST_TIMEOUT)
 
 .PHONY: test
 test: ## Run unit tests
-	go test -v $(TEST) $(TESTARGS) -timeout=5m -parallel=4
+	go test -v $(TEST) $(TESTARGS) -timeout=5m -parallel=4 -count=1
 
 CURL_OPTS = -sS --retry 5 --retry-all-errors -X POST -u $(ELASTICSEARCH_USERNAME):$(ELASTICSEARCH_PASSWORD) -H "Content-Type: application/json"
 
@@ -79,11 +94,16 @@ docker-kibana:  ## Start Kibana node in docker container
 
 .PHONY: docker-fleet
 docker-fleet: ## Start Fleet node in docker container
-	@ docker compose -f $(COMPOSE_FILE) up --quiet-pull -d fleet
+	@ export KIBANA_CONFIG_FILE=$$(if [ "$(STACK_VERSION)" = "9.4.0-SNAPSHOT" ]; then echo "kibana-9.4.snapshot.yml"; else echo "kibana.yml"; fi); \
+	docker compose -f $(COMPOSE_FILE) up --quiet-pull -d fleet
 
 .PHONY: set-kibana-password
 set-kibana-password: ## Sets the ES KIBANA_SYSTEM_USERNAME's password to KIBANA_SYSTEM_PASSWORD. This expects Elasticsearch to be available at localhost:9200
 	@ curl $(CURL_OPTS) http://localhost:9200/_security/user/$(KIBANA_SYSTEM_USERNAME)/_password -d '{"password":"$(KIBANA_SYSTEM_PASSWORD)"}'
+
+.PHONY: setup-synthetics
+setup-synthetics: ## Creates the synthetics policy required to run Synthetics. This expects Kibana to be available at localhost:5601
+	@ curl $(CURL_OPTS) -H "kbn-xsrf: true" http://localhost:5601/api/fleet/epm/packages/synthetics/1.2.2 -d '{"force": true}'
 
 .PHONY: create-es-api-key
 create-es-api-key: ## Creates and outputs a new API Key. This expects Elasticsearch to be available at localhost:9200
@@ -101,7 +121,7 @@ setup-kibana-fleet: ## Creates the agent and integration policies required to ru
 
 .PHONY: docker-clean
 docker-clean: ## Try to remove provisioned nodes and assigned network
-	@ docker compose -f $(COMPOSE_FILE) down 
+	@ docker compose -f $(COMPOSE_FILE) --profile acceptance-tests down --volumes
 
 .PHONY: copy-kibana-ca
 copy-kibana-ca: ## Copy Kibana CA certificate to local machine
@@ -111,37 +131,54 @@ copy-kibana-ca: ## Copy Kibana CA certificate to local machine
 docs-generate: tools ## Generate documentation for the provider
 	@ go tool github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate --provider-name terraform-provider-elasticstack
 
-
 .PHONY: gen
 gen: docs-generate ## Generate the code and documentation
 	@ go generate ./...
 
-
 .PHONY: clean
 clean: ## Remove built binary
 	rm -f ${BINARY}
-
 
 .PHONY: install
 install: build ## Install built provider into the local terraform cache
 	mkdir -p ~/.terraform.d/plugins/registry.terraform.io/elastic/${NAME}/${VERSION}/${MARCH}
 	mv ${BINARY} ~/.terraform.d/plugins/registry.terraform.io/elastic/${NAME}/${VERSION}/${MARCH}
 
-
 .PHONY: tools
 tools: $(GOBIN)  ## Download golangci-lint locally if necessary.
-	@[[ -f $(GOBIN)/golangci-lint ]] || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOBIN) v2.6.1
+	@[[ -f $(GOBIN)/golangci-lint ]] || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOBIN) v2.11.3
 
 .PHONY: golangci-lint
 golangci-lint:
 	@ $(GOBIN)/golangci-lint run --max-same-issues=0 $(GOLANGCIFLAGS) ./internal/...
 
-
 .PHONY: lint
+lint: GOLANGCIFLAGS += --fix
 lint: setup golangci-lint fmt docs-generate ## Run lints to check the spelling and common go patterns
 
 .PHONY: check-lint
-check-lint: setup golangci-lint check-fmt check-docs
+check-lint: setup check-openspec golangci-lint check-fmt check-docs
+
+.PHONY: setup-openspec
+setup-openspec: node_modules/.openspec-stamp ## Install Node dependencies (OpenSpec CLI via npm ci)
+
+node_modules/.openspec-stamp: package-lock.json package.json
+	@ command -v npm >/dev/null 2>&1 || { echo "npm not found; install Node.js 24.x for OpenSpec" >&2; exit 1; }
+	npm ci
+	@ touch $@
+
+.PHONY: check-openspec
+check-openspec: ## Validate OpenSpec specs (structural); requires `make setup` or `make setup-openspec`
+	@ test -x $(OPENSPEC_BIN) || { echo "OpenSpec CLI missing; run 'make setup' or 'make setup-openspec'" >&2; exit 1; }
+	@ OPENSPEC_TELEMETRY=0 $(OPENSPEC_BIN) validate --specs
+
+.PHONY: renovate-post-upgrade
+renovate-post-upgrade: vendor notice
+	@ make -C generated/kbapi all
+
+.PHONY: notice
+notice: vendor
+	@ go list -m -json all | go tool go.elastic.co/go-licence-detector  -noticeOut=NOTICE -noticeTemplate ./.NOTICE.tmpl -includeIndirect -rules .notice_rules.json -overrides .notice_overrides.ndjson
 
 .PHONY: fmt
 fmt: ## Format code
@@ -160,9 +197,8 @@ check-docs: docs-generate  ## Check uncommitted changes on docs
 	  echo "Uncommitted changes were detected in the docs folder. Please run 'make docs-generate' to autogenerate the docs, and commit the changes" && echo `git status --porcelain docs/` && exit 1; \
 	fi
 
-
 .PHONY: setup
-setup: tools vendor ## Setup the dev environment
+setup: tools vendor setup-openspec ## Setup the dev environment
 
 .PHONY: release-snapshot
 release-snapshot: tools ## Make local-only test release to see if it works using "release" command
@@ -202,21 +238,6 @@ release-notes: ## greps UNRELEASED notes from the CHANGELOG
 help: ## this help
 	@ awk 'BEGIN {FS = ":.*##"; printf "Usage: make \033[36m<target>\033[0m\n\nTargets:\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-10s\033[0m\t%s\n", $$1, $$2 }' $(MAKEFILE_LIST) | column -s$$'\t' -t
 
-.PHONY: generate-alerting-client
-generate-alerting-client: ## generate Kibana alerting client
-	@ docker run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli:v7.0.1 generate \
-		-i /local/generated/alerting/bundled.yaml \
-		--skip-validate-spec \
-		--git-repo-id terraform-provider-elasticstack \
-		--git-user-id elastic \
-		-p isGoSubmodule=true \
-		-p packageName=alerting \
-		-p generateInterfaces=true \
-		-g go \
-		-o /local/generated/alerting
-	@ rm -rf generated/alerting/go.mod generated/alerting/go.sum generated/alerting/test
-	@ go fmt ./generated/alerting/...
-
 .PHONY: generate-slo-client
 generate-slo-client: tools ## generate Kibana slo client
 	@ rm -rf generated/slo
@@ -235,4 +256,4 @@ generate-slo-client: tools ## generate Kibana slo client
 	@ go fmt ./generated/slo/...
 
 .PHONY: generate-clients
-generate-clients: generate-alerting-client generate-slo-client ## generate all clients
+generate-clients: generate-slo-client gen ## generate all clients

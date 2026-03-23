@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package cluster_test
 
 import (
@@ -75,7 +92,7 @@ data "elasticstack_elasticsearch_snapshot_repository" "test_fs_repo" {
 	`, name)
 }
 
-func TestAccDataSourceSnapRepoUrl(t *testing.T) {
+func TestAccDataSourceSnapRepoURL(t *testing.T) {
 	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
@@ -83,7 +100,7 @@ func TestAccDataSourceSnapRepoUrl(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceSnapRepoUrl(name),
+				Config: testAccDataSourceSnapRepoURL(name),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_url_repo", "name", name),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_url_repo", "s3.#", "0"),
@@ -96,7 +113,7 @@ func TestAccDataSourceSnapRepoUrl(t *testing.T) {
 	})
 }
 
-func testAccDataSourceSnapRepoUrl(name string) string {
+func testAccDataSourceSnapRepoURL(name string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   elasticsearch {}

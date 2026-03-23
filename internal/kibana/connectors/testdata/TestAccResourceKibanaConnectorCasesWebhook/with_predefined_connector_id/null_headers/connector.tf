@@ -1,0 +1,30 @@
+variable "connector_name" {
+  description = "The connector name"
+  type        = string
+}
+
+variable "connector_id" {
+  description = "Connector ID"
+  type        = string
+}
+
+resource "elasticstack_kibana_action_connector" "test" {
+  name         = var.connector_name
+  connector_id = var.connector_id
+  config = jsonencode({
+    createIncidentJson                  = "{}"
+    createIncidentResponseKey           = "key"
+    createIncidentUrl                   = "https://www.elastic.co/"
+    getIncidentResponseExternalTitleKey = "title"
+    getIncidentUrl                      = "https://www.elastic.co/"
+    headers                             = null
+    updateIncidentJson                  = "{}"
+    updateIncidentUrl                   = "https://www.elastic.co/"
+    viewIncidentUrl                     = "https://www.elastic.co/"
+  })
+  secrets = jsonencode({
+    user     = "user1"
+    password = "password1"
+  })
+  connector_type_id = ".cases-webhook"
+}

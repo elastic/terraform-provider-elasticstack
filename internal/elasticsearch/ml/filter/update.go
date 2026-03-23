@@ -59,14 +59,14 @@ func (r *filterResource) update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
-	compID, sdkDiags := clients.CompositeIdFromStr(state.ID.ValueString())
+	compID, sdkDiags := clients.CompositeIDFromStr(state.ID.ValueString())
 	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	// Read current filter to get current items for diffing.
-	res, err := esClient.ML.GetFilters(esClient.ML.GetFilters.WithFilterID(compID.ResourceId), esClient.ML.GetFilters.WithContext(ctx))
+	res, err := esClient.ML.GetFilters(esClient.ML.GetFilters.WithFilterID(compID.ResourceID), esClient.ML.GetFilters.WithContext(ctx))
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get current ML filter", err.Error())
 		return

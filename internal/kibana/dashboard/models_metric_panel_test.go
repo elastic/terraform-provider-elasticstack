@@ -1,0 +1,504 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package dashboard
+
+import (
+	"context"
+	"encoding/json"
+	"testing"
+
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func Test_metricChartPanelConfigConverter_populateFromAttributes_buildAttributes_roundTrip(t *testing.T) {
+	ctx := context.Background()
+
+	apiChart := kbapi.MetricChart0{
+		Type:                kbapi.MetricChart0TypeMetric,
+		Title:               new("Metric Round-Trip"),
+		Description:         new("Converter test"),
+		IgnoreGlobalFilters: new(false),
+		Sampling:            new(float32(1.0)),
+		Query: kbapi.FilterSimple{
+			Language: new(kbapi.FilterSimpleLanguage("kuery")),
+			Query:    "*",
+		},
+		Metrics: []kbapi.MetricChart_0_Metrics_Item{},
+	}
+
+	var apiSchema kbapi.MetricChart
+	require.NoError(t, apiSchema.FromMetricChart0(apiChart))
+
+	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	require.NoError(t, attrs.FromMetricChart(apiSchema))
+
+	converter := newMetricChartPanelConfigConverter()
+	pm := &panelModel{}
+	diags := converter.populateFromAttributes(ctx, pm, attrs)
+	require.False(t, diags.HasError())
+	require.NotNil(t, pm.MetricChartConfig)
+
+	attrs2, diags := converter.buildAttributes(*pm)
+	require.False(t, diags.HasError())
+
+	chart2, err := attrs2.AsMetricChart()
+	require.NoError(t, err)
+	variant0, err := chart2.AsMetricChart0()
+	require.NoError(t, err)
+	assert.Equal(t, "Metric Round-Trip", *variant0.Title)
+	assert.Equal(t, kbapi.MetricChart0TypeMetric, variant0.Type)
+}
+
+func Test_newMetricChartPanelConfigConverter(t *testing.T) {
+	converter := newMetricChartPanelConfigConverter()
+	assert.NotNil(t, converter)
+	assert.Equal(t, string(kbapi.MetricChart0TypeMetric), converter.visualizationType)
+}
+
+func Test_metricChartConfigModel_fromAPI_toAPI_variant0(t *testing.T) {
+	tests := []struct {
+		name             string
+		apiChart         kbapi.MetricChart0
+		expectedTitle    string
+		expectedDesc     string
+		expectedSampling float64
+	}{
+		{
+			name: "basic metric chart with all fields",
+			apiChart: kbapi.MetricChart0{
+				Type:                kbapi.MetricChart0TypeMetric,
+				Title:               new("Test Metric"),
+				Description:         new("Test Description"),
+				IgnoreGlobalFilters: new(false),
+				Sampling:            new(float32(1.0)),
+				Query: kbapi.FilterSimple{
+					Language: new(kbapi.FilterSimpleLanguage("kuery")),
+					Query:    "",
+				},
+				Metrics: []kbapi.MetricChart_0_Metrics_Item{},
+			},
+			expectedTitle:    "Test Metric",
+			expectedDesc:     "Test Description",
+			expectedSampling: 1.0,
+		},
+		{
+			name: "minimal metric chart",
+			apiChart: kbapi.MetricChart0{
+				Type: kbapi.MetricChart0TypeMetric,
+				Query: kbapi.FilterSimple{
+					Query: "",
+				},
+				Metrics: []kbapi.MetricChart_0_Metrics_Item{},
+			},
+			expectedTitle:    "",
+			expectedDesc:     "",
+			expectedSampling: 0.0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
+
+			// Convert API to metric chart schema
+			var apiSchema kbapi.MetricChart
+			err := apiSchema.FromMetricChart0(tt.apiChart)
+			require.NoError(t, err)
+
+			// Test fromAPI
+			model := &metricChartConfigModel{}
+			diags := model.fromAPI(ctx, apiSchema)
+			require.False(t, diags.HasError(), "fromAPI should not have errors")
+
+			// Verify the fields
+			if tt.expectedTitle != "" {
+				assert.Equal(t, tt.expectedTitle, model.Title.ValueString())
+			} else {
+				assert.True(t, model.Title.IsNull())
+			}
+
+			if tt.expectedDesc != "" {
+				assert.Equal(t, tt.expectedDesc, model.Description.ValueString())
+			} else {
+				assert.True(t, model.Description.IsNull())
+			}
+
+			if tt.expectedSampling > 0 {
+				assert.InDelta(t, tt.expectedSampling, model.Sampling.ValueFloat64(), 1e-9)
+			} else {
+				assert.True(t, model.Sampling.IsNull())
+			}
+
+			// Test toAPI round-trip
+			resultSchema, diags := model.toAPI()
+			require.False(t, diags.HasError(), "toAPI should not have errors")
+
+			// Verify we can convert back to variant 0
+			resultVariant0, err := resultSchema.AsMetricChart0()
+			require.NoError(t, err)
+
+			assert.Equal(t, tt.apiChart.Type, resultVariant0.Type)
+			if tt.apiChart.Title != nil {
+				require.NotNil(t, resultVariant0.Title)
+				assert.Equal(t, *tt.apiChart.Title, *resultVariant0.Title)
+			}
+			if tt.apiChart.Description != nil {
+				require.NotNil(t, resultVariant0.Description)
+				assert.Equal(t, *tt.apiChart.Description, *resultVariant0.Description)
+			}
+		})
+	}
+}
+
+func Test_metricChartConfigModel_fromAPI_toAPI_variant1(t *testing.T) {
+	tests := []struct {
+		name             string
+		apiChart         kbapi.MetricChart1
+		expectedTitle    string
+		expectedDesc     string
+		expectedSampling float64
+	}{
+		{
+			name: "ESQL metric chart with all fields",
+			apiChart: kbapi.MetricChart1{
+				Type:                kbapi.MetricChart1TypeMetric,
+				Title:               new("ESQL Metric"),
+				Description:         new("ESQL Description"),
+				IgnoreGlobalFilters: new(true),
+				Sampling:            new(float32(0.5)),
+				Dataset: func() kbapi.MetricChart_1_Dataset {
+					var ds kbapi.MetricChart_1_Dataset
+					_ = ds.FromEsqlDataset(kbapi.EsqlDataset{
+						Type:  kbapi.EsqlDatasetTypeEsql,
+						Query: "FROM logs-*",
+					})
+					return ds
+				}(),
+				Metrics: []kbapi.MetricChart_1_Metrics_Item{},
+			},
+			expectedTitle:    "ESQL Metric",
+			expectedDesc:     "ESQL Description",
+			expectedSampling: 0.5,
+		},
+		{
+			name: "minimal ESQL metric chart",
+			apiChart: kbapi.MetricChart1{
+				Type: kbapi.MetricChart1TypeMetric,
+				Dataset: func() kbapi.MetricChart_1_Dataset {
+					var ds kbapi.MetricChart_1_Dataset
+					_ = ds.FromEsqlDataset(kbapi.EsqlDataset{
+						Type:  kbapi.EsqlDatasetTypeEsql,
+						Query: "FROM *",
+					})
+					return ds
+				}(),
+				Metrics: []kbapi.MetricChart_1_Metrics_Item{},
+			},
+			expectedTitle:    "",
+			expectedDesc:     "",
+			expectedSampling: 0.0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
+
+			// Convert API to metric chart schema
+			var apiSchema kbapi.MetricChart
+			err := apiSchema.FromMetricChart1(tt.apiChart)
+			require.NoError(t, err)
+
+			// Test fromAPI
+			model := &metricChartConfigModel{}
+			diags := model.fromAPI(ctx, apiSchema)
+			require.False(t, diags.HasError(), "fromAPI should not have errors")
+
+			// Verify the fields
+			if tt.expectedTitle != "" {
+				assert.Equal(t, tt.expectedTitle, model.Title.ValueString())
+			} else {
+				assert.True(t, model.Title.IsNull())
+			}
+
+			if tt.expectedDesc != "" {
+				assert.Equal(t, tt.expectedDesc, model.Description.ValueString())
+			} else {
+				assert.True(t, model.Description.IsNull())
+			}
+
+			if tt.expectedSampling > 0 {
+				assert.InDelta(t, tt.expectedSampling, model.Sampling.ValueFloat64(), 1e-9)
+			} else {
+				assert.True(t, model.Sampling.IsNull())
+			}
+
+			// Verify query is nil for variant 1
+			assert.Nil(t, model.Query)
+
+			// Test toAPI round-trip
+			resultSchema, diags := model.toAPI()
+			require.False(t, diags.HasError(), "toAPI should not have errors")
+
+			// Verify we can convert back to variant 1
+			resultVariant1, err := resultSchema.AsMetricChart1()
+			require.NoError(t, err)
+
+			assert.Equal(t, tt.apiChart.Type, resultVariant1.Type)
+			if tt.apiChart.Title != nil {
+				require.NotNil(t, resultVariant1.Title)
+				assert.Equal(t, *tt.apiChart.Title, *resultVariant1.Title)
+			}
+			if tt.apiChart.Description != nil {
+				require.NotNil(t, resultVariant1.Description)
+				assert.Equal(t, *tt.apiChart.Description, *resultVariant1.Description)
+			}
+		})
+	}
+}
+
+func Test_metricChartConfigModel_withMetrics(t *testing.T) {
+	ctx := context.Background()
+
+	// Create a metric with primary metric configuration
+	metricJSON := `{
+		"type": "primary",
+		"operation": "count",
+		"format": {"id": "number"},
+		"alignments": {"value": "center"},
+		"icon": {"name": "empty"}
+	}`
+
+	var metricItem kbapi.MetricChart_1_Metrics_Item
+	err := json.Unmarshal([]byte(metricJSON), &metricItem)
+	require.NoError(t, err)
+
+	apiChart := kbapi.MetricChart1{
+		Type:    kbapi.MetricChart1TypeMetric,
+		Title:   new("Test with Metrics"),
+		Metrics: []kbapi.MetricChart_1_Metrics_Item{metricItem},
+	}
+
+	var apiSchema kbapi.MetricChart
+	err = apiSchema.FromMetricChart1(apiChart)
+	require.NoError(t, err)
+
+	// Test fromAPI
+	model := &metricChartConfigModel{}
+	diags := model.fromAPI(ctx, apiSchema)
+	require.False(t, diags.HasError())
+
+	// Verify metrics were populated
+	assert.Len(t, model.Metrics, 1)
+	assert.True(t, typeutils.IsKnown(model.Metrics[0].ConfigJSON))
+
+	// Verify the metric config contains expected data
+	var parsedMetric map[string]any
+	diags = model.Metrics[0].ConfigJSON.Unmarshal(&parsedMetric)
+	require.False(t, diags.HasError())
+	assert.Equal(t, "primary", parsedMetric["type"])
+	assert.Equal(t, "count", parsedMetric["operation"])
+
+	// Test toAPI round-trip
+	resultSchema, diags := model.toAPI()
+	require.False(t, diags.HasError())
+
+	resultVariant1, err := resultSchema.AsMetricChart1()
+	require.NoError(t, err)
+	assert.Len(t, resultVariant1.Metrics, 1)
+}
+
+func Test_metricChartConfigModel_withDataset(t *testing.T) {
+	ctx := context.Background()
+
+	// Create a dataset
+	datasetJSON := `{"type": "dataview", "id": "test-dataview"}`
+	var dataset kbapi.MetricChart_0_Dataset
+	err := json.Unmarshal([]byte(datasetJSON), &dataset)
+	require.NoError(t, err)
+
+	apiChart := kbapi.MetricChart0{
+		Type:    kbapi.MetricChart0TypeMetric,
+		Dataset: dataset,
+		Query: kbapi.FilterSimple{
+			Query: "",
+		},
+		Metrics: []kbapi.MetricChart_0_Metrics_Item{},
+	}
+
+	var apiSchema kbapi.MetricChart
+	err = apiSchema.FromMetricChart0(apiChart)
+	require.NoError(t, err)
+
+	// Test fromAPI
+	model := &metricChartConfigModel{}
+	diags := model.fromAPI(ctx, apiSchema)
+	require.False(t, diags.HasError())
+
+	// Verify dataset was populated
+	assert.True(t, typeutils.IsKnown(model.DatasetJSON))
+
+	var parsedDataset map[string]any
+	diags = model.DatasetJSON.Unmarshal(&parsedDataset)
+	require.False(t, diags.HasError())
+	assert.Equal(t, "dataview", parsedDataset["type"])
+	assert.Equal(t, "test-dataview", parsedDataset["id"])
+
+	// Round-trip: toAPI should preserve dataset
+	resultSchema, diags := model.toAPI()
+	require.False(t, diags.HasError())
+	resultVariant0, err := resultSchema.AsMetricChart0()
+	require.NoError(t, err)
+	resultDatasetJSON, err := json.Marshal(resultVariant0.Dataset)
+	require.NoError(t, err)
+	var resultDataset map[string]any
+	require.NoError(t, json.Unmarshal(resultDatasetJSON, &resultDataset))
+	assert.Equal(t, "dataview", resultDataset["type"])
+	assert.Equal(t, "test-dataview", resultDataset["id"])
+}
+
+func Test_metricChartConfigModel_withFilters(t *testing.T) {
+	ctx := context.Background()
+
+	filters := []kbapi.SearchFilter{
+		func() kbapi.SearchFilter {
+			var filter kbapi.SearchFilter
+			_ = filter.FromSearchFilter0(kbapi.SearchFilter0{
+				Language: new(kbapi.SearchFilter0Language("kuery")),
+				Query: func() kbapi.SearchFilter_0_Query {
+					var q kbapi.SearchFilter_0_Query
+					_ = q.FromSearchFilter0Query0("status:active")
+					return q
+				}(),
+			})
+			return filter
+		}(),
+	}
+
+	apiChart := kbapi.MetricChart0{
+		Type:    kbapi.MetricChart0TypeMetric,
+		Filters: &filters,
+		Query: kbapi.FilterSimple{
+			Query: "",
+		},
+		Metrics: []kbapi.MetricChart_0_Metrics_Item{},
+	}
+
+	var apiSchema kbapi.MetricChart
+	err := apiSchema.FromMetricChart0(apiChart)
+	require.NoError(t, err)
+
+	// Test fromAPI
+	model := &metricChartConfigModel{}
+	diags := model.fromAPI(ctx, apiSchema)
+	require.False(t, diags.HasError())
+
+	// Verify filters were populated
+	assert.Len(t, model.Filters, 1)
+	assert.Equal(t, "status:active", model.Filters[0].Query.ValueString())
+	assert.Equal(t, "kuery", model.Filters[0].Language.ValueString())
+
+	// Test toAPI round-trip
+	resultSchema, diags := model.toAPI()
+	require.False(t, diags.HasError())
+
+	resultVariant0, err := resultSchema.AsMetricChart0()
+	require.NoError(t, err)
+	require.NotNil(t, resultVariant0.Filters)
+	assert.Len(t, *resultVariant0.Filters, 1)
+}
+
+func Test_metricChartConfigModel_withBreakdownBy(t *testing.T) {
+	ctx := context.Background()
+
+	breakdownByJSON := `{"operation": "terms", "field": "category", "columns": 3}`
+	var breakdownBy kbapi.MetricChart_0_BreakdownBy
+	err := json.Unmarshal([]byte(breakdownByJSON), &breakdownBy)
+	require.NoError(t, err)
+
+	apiChart := kbapi.MetricChart0{
+		Type:        kbapi.MetricChart0TypeMetric,
+		BreakdownBy: &breakdownBy,
+		Query: kbapi.FilterSimple{
+			Language: new(kbapi.FilterSimpleLanguage("kuery")),
+			Query:    "status:active",
+		},
+		Metrics: []kbapi.MetricChart_0_Metrics_Item{},
+	}
+
+	var apiSchema kbapi.MetricChart
+	err = apiSchema.FromMetricChart0(apiChart)
+	require.NoError(t, err)
+
+	// Test fromAPI
+	model := &metricChartConfigModel{}
+	diags := model.fromAPI(ctx, apiSchema)
+	require.False(t, diags.HasError())
+
+	// Verify breakdown_by was populated
+	assert.True(t, typeutils.IsKnown(model.BreakdownByJSON))
+
+	var parsedBreakdown map[string]any
+	diags = model.BreakdownByJSON.Unmarshal(&parsedBreakdown)
+	require.False(t, diags.HasError())
+	assert.Equal(t, "terms", parsedBreakdown["operation"])
+	assert.Equal(t, "category", parsedBreakdown["field"])
+
+	// Test toAPI round-trip
+	resultSchema, diags := model.toAPI()
+	require.False(t, diags.HasError())
+
+	resultVariant0, err := resultSchema.AsMetricChart0()
+	require.NoError(t, err)
+	assert.NotNil(t, resultVariant0.BreakdownBy)
+}
+
+func Test_metricItemModel_jsonRoundTrip(t *testing.T) {
+	// Test that we can round-trip complex metric configurations
+	metricConfigs := []string{
+		`{"type": "primary", "operation": "count", "format": {"id": "number"}, "alignments": {"value": "center"}, "icon": {"name": "empty"}}`,
+		`{"type": "secondary", "operation": "average", "column": "price", "format": {"id": "currency"}, "prefix": "$"}`,
+		`{"type": "primary", "operation": "value", "column": "total", "format": {"id": "number"}, "alignments": {"value": "left"}, "icon": {"name": "star"}, "fit": true}`,
+	}
+
+	for i, configJSON := range metricConfigs {
+		t.Run(string(rune('A'+i)), func(t *testing.T) {
+			// Create a metric item with the config
+			item := metricItemModel{
+				ConfigJSON: customtypes.NewJSONWithDefaultsValue[map[string]any](
+					configJSON,
+					populateLensMetricDefaults,
+				),
+			}
+
+			// Unmarshal and re-marshal to verify it's valid
+			var parsed map[string]any
+			diags := item.ConfigJSON.Unmarshal(&parsed)
+			require.False(t, diags.HasError())
+
+			// Verify we can marshal it back
+			remarshaled, err := json.Marshal(parsed)
+			require.NoError(t, err)
+			assert.NotEmpty(t, remarshaled)
+		})
+	}
+}

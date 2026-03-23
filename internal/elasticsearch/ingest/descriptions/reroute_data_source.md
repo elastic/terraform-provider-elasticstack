@@ -1,0 +1,1 @@
+Helper data source which can be used to create the configuration for a reroute processor. This processor reroutes a document to a different data stream, index, or index alias. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/reroute-processor.html

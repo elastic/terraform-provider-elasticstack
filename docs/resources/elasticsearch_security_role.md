@@ -3,12 +3,12 @@
 page_title: "elasticstack_elasticsearch_security_role Resource - terraform-provider-elasticstack"
 subcategory: "Security"
 description: |-
-  Adds and updates roles in the native realm. See the security API put role documentation https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-put-role.html for more details.
+  Adds and updates roles in the native realm. See the role API documentation https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-put-role.html for more details.
 ---
 
 # elasticstack_elasticsearch_security_role (Resource)
 
-Adds and updates roles in the native realm. See the [security API put role documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-put-role.html) for more details.
+Adds and updates roles in the native realm. See the [role API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-put-role.html) for more details.
 
 ## Example Usage
 
@@ -57,7 +57,7 @@ output "role" {
 - `applications` (Block Set) A list of application privilege entries. (see [below for nested schema](#nestedblock--applications))
 - `cluster` (Set of String) A list of cluster privileges. These privileges define the cluster level actions that users with this role are able to execute.
 - `description` (String) The description of the role.
-- `elasticsearch_connection` (Block List, Max: 1, Deprecated) Elasticsearch connection configuration block. This property will be removed in a future provider version. Configure the Elasticsearch connection via the provider configuration instead. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- `elasticsearch_connection` (Block List, Deprecated) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - `global` (String) An object defining global privileges.
 - `indices` (Block Set) A list of indices permissions entries. (see [below for nested schema](#nestedblock--indices))
 - `metadata` (String) Optional meta-data.
@@ -110,7 +110,7 @@ Required:
 Optional:
 
 - `allow_restricted_indices` (Boolean) Include matching restricted indices in names parameter. Usage is strongly discouraged as it can grant unrestricted operations on critical data, make the entire system unstable or leak sensitive information.
-- `field_security` (Block List, Max: 1) The document fields that the owners of the role have read access to. (see [below for nested schema](#nestedblock--indices--field_security))
+- `field_security` (Block, Optional) The document fields that the owners of the role have read access to. (see [below for nested schema](#nestedblock--indices--field_security))
 - `query` (String) A search query that defines the documents the owners of the role have read access to.
 
 <a id="nestedblock--indices--field_security"></a>
@@ -134,7 +134,7 @@ Required:
 
 Optional:
 
-- `field_security` (Block List, Max: 1) The document fields that the owners of the role have read access to. (see [below for nested schema](#nestedblock--remote_indices--field_security))
+- `field_security` (Block, Optional) The document fields that the owners of the role have read access to. (see [below for nested schema](#nestedblock--remote_indices--field_security))
 - `query` (String) A search query that defines the documents the owners of the role have read access to.
 
 <a id="nestedblock--remote_indices--field_security"></a>

@@ -1,18 +1,35 @@
-package maintenance_window
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package maintenancewindow
 
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *MaintenanceWindowResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	// Retrieve values from plan
-	var planMaintenanceWindow MaintenanceWindowModel
+	var planMaintenanceWindow Model
 
 	diags := req.Plan.Get(ctx, &planMaintenanceWindow)
 	resp.Diagnostics.Append(diags...)
@@ -46,7 +63,7 @@ func (r *MaintenanceWindowResource) Create(ctx context.Context, req resource.Cre
 	}
 
 	spaceID := planMaintenanceWindow.SpaceID.ValueString()
-	createMaintenanceWindowResponse, diags := kibana_oapi.CreateMaintenanceWindow(ctx, client, spaceID, body)
+	createMaintenanceWindowResponse, diags := kibanaoapi.CreateMaintenanceWindow(ctx, client, spaceID, body)
 
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -58,7 +75,7 @@ func (r *MaintenanceWindowResource) Create(ctx context.Context, req resource.Cre
 	* We want to avoid a dirty plan immediately after an apply.
 	 */
 	maintenanceWindowID := createMaintenanceWindowResponse.JSON200.Id
-	readMaintenanceWindowResponse, diags := kibana_oapi.GetMaintenanceWindow(ctx, client, spaceID, maintenanceWindowID)
+	readMaintenanceWindowResponse, diags := kibanaoapi.GetMaintenanceWindow(ctx, client, spaceID, maintenanceWindowID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

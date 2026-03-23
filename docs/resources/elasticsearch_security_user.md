@@ -3,12 +3,12 @@
 page_title: "elasticstack_elasticsearch_security_user Resource - terraform-provider-elasticstack"
 subcategory: "Security"
 description: |-
-  Adds and updates users in the native realm. These users are commonly referred to as native users. See the security user API documentation https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-put-user.html for more details.
+  Adds and updates users in the native realm. These users are commonly referred to as native users. See the Elasticsearch security user API documentation https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-put-user.html for more details.
 ---
 
 # elasticstack_elasticsearch_security_user (Resource)
 
-Adds and updates users in the native realm. These users are commonly referred to as native users. See the [security user API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-put-user.html) for more details.
+Adds and updates users in the native realm. These users are commonly referred to as native users. See the [Elasticsearch security user API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-put-user.html) for more details.
 
 ## Example Usage
 
@@ -58,18 +58,22 @@ resource "elasticstack_elasticsearch_security_user" "dev" {
 
 ### Required
 
-- `roles` (Set of String) A set of roles the user has. The roles determine the user’s access permissions. Default is [].
-- `username` (String) An identifier for the user see the [security API put user documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-put-user.html#security-api-put-user-path-params) for more details.
+- `roles` (Set of String) A set of roles the user has. The roles determine the user's access permissions.
+- `username` (String) An identifier for the user (see the [security API put user documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-put-user.html#security-api-put-user-path-params) for more details).
 
 ### Optional
 
-- `elasticsearch_connection` (Block List, Max: 1, Deprecated) Elasticsearch connection configuration block. This property will be removed in a future provider version. Configure the Elasticsearch connection via the provider configuration instead. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+> **NOTE**: [Write-only arguments](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments) are supported in Terraform 1.11 and later.
+
+- `elasticsearch_connection` (Block List, Deprecated) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - `email` (String) The email of the user.
 - `enabled` (Boolean) Specifies whether the user is enabled. The default value is true.
 - `full_name` (String) The full name of the user.
 - `metadata` (String) Arbitrary metadata that you want to associate with the user.
-- `password` (String, Sensitive) The user’s password. Passwords must be at least 6 characters long.
-- `password_hash` (String, Sensitive) A hash of the user’s password. This must be produced using the same hashing algorithm as has been configured for password storage (see https://www.elastic.co/guide/en/elasticsearch/reference/current/security-settings.html#hashing-settings).
+- `password` (String, Sensitive) The user's password. Passwords must be at least 6 characters long. Note: Consider using `password_wo` for better security with ephemeral resources.
+- `password_hash` (String, Sensitive) A hash of the user's password. This must be produced using the same hashing algorithm as has been configured for password storage (see the [security settings documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-settings.html#hashing-settings)).
+- `password_wo` (String, Sensitive, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) Write-only password attribute for use with ephemeral resources. Passwords must be at least 6 characters long. This attribute is designed for use with ephemeral resources like `vault_kv_secret_v2` to prevent secrets from being stored in the Terraform state. Must be used with `password_wo_version`.
+- `password_wo_version` (String) Version identifier for the write-only password. This field is used to trigger updates when the password changes. Required when `password_wo` is set. Typically, you would use a hash of the password or a version identifier from your secret management system.
 
 ### Read-Only
 

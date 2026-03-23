@@ -1,0 +1,1 @@
+Retrieves Elasticsearch API keys used to enroll Elastic Agents in Fleet. See the [Fleet enrollment tokens documentation](https://www.elastic.co/guide/en/fleet/current/fleet-enrollment-tokens.html) for more details.

@@ -36,12 +36,12 @@ func (r *filterResource) read(ctx context.Context, model *FilterTFModel) (bool, 
 		return false, diags
 	}
 
-	compID, sdkDiags := clients.CompositeIdFromStr(model.ID.ValueString())
+	compID, sdkDiags := clients.CompositeIDFromStr(model.ID.ValueString())
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
 		return false, diags
 	}
-	filterID := compID.ResourceId
+	filterID := compID.ResourceID
 
 	tflog.Debug(ctx, fmt.Sprintf("Reading ML filter: %s", filterID))
 

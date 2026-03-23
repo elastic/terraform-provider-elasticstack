@@ -38,6 +38,7 @@ services:
       service: kibana
     volumes:
       - dev-kibana:/usr/share/kibana/data
+      - ./${KIBANA_CONFIG_FILE:-kibana.yml}:/usr/share/kibana/config/kibana.yml:ro
       - kibana-certs:/certs:ro
     environment:
       SERVER_SSL_CERTIFICATE: /certs/kibana.crt

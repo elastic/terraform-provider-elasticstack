@@ -1,0 +1,29 @@
+{{- define "depInfo" -}}
+{{- range $i, $dep := . }}
+Dependency : {{ $dep.Name }}
+Version: {{ $dep.Version }}
+Licence type (autodetected): {{ $dep.LicenceType }}
+
+{{ $dep | licenceText }}
+
+{{ "-" | line }}
+{{ end }}
+{{- end -}}
+
+terraform-provider-elasticstack
+Copyright 2022-{{ currentYear }} Elasticsearch B.V.
+
+This product includes software developed at Elasticsearch B.V. and
+third-party software developed by the licenses listed below.
+
+{{ "=" | line }}
+Third party libraries used by the Elastic terraform-provider-elasticstack project:
+{{ "=" | line }}
+{{ template "depInfo" .Direct }}
+
+{{ if .Indirect }}
+{{ "=" | line }}
+Indirect dependencies
+{{ "=" | line }}
+{{ template "depInfo" .Indirect -}}
+{{- end}}

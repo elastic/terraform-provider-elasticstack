@@ -1,0 +1,1 @@
+Helper data source which can be used to create the configuration for a trim processor. This processor trims whitespace from field. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/trim-processor.html
