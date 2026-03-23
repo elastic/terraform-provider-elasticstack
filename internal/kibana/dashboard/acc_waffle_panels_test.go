@@ -18,6 +18,7 @@
 package dashboard_test
 
 import (
+	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -54,10 +55,14 @@ func TestAccResourceDashboardWaffle(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.waffle_config.query.language", "kuery"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.waffle_config.query.query", ""),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.waffle_config.legend.size", "medium"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.waffle_config.legend.values.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.waffle_config.legend.values.0", "absolute"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.waffle_config.ignore_global_filters", "false"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.waffle_config.sampling", "1"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.waffle_config.dataset_json"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.waffle_config.metrics.0.config"),
+					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.waffle_config.metrics.0.config", regexp.MustCompile(`"operation"\s*:\s*"count"`)),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.waffle_config.value_display.mode"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.waffle_config.value_display.percent_decimals"),
 				),
 			},
 			{
@@ -73,13 +78,43 @@ func TestAccResourceDashboardWaffle(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.waffle_config.ignore_global_filters", "true"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.waffle_config.sampling", "0.5"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.waffle_config.legend.size", "small"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.waffle_config.legend.values.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.waffle_config.legend.values.0", "absolute"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.waffle_config.legend.visible", "show"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.waffle_config.legend.truncate_after_lines", "8"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.waffle_config.value_display.mode", "percentage"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.waffle_config.value_display.percent_decimals", "1"),
+					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.waffle_config.metrics.0.config", regexp.MustCompile(`"operation"\s*:\s*"count"`)),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.waffle_config.filters.#", "1"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.waffle_config.filters.0.query", "host.os.keyword: \"linux\""),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.waffle_config.filters.0.language", "kuery"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("esql"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.waffle_config.title", "ESQL Waffle"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.waffle_config.description", "Waffle visualization using ES|QL"),
+					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.waffle_config.dataset_json", regexp.MustCompile(`"type"\s*:\s*"esql"`)),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.waffle_config.query.language"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.waffle_config.query.query"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.waffle_config.metrics.#", "0"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.waffle_config.esql_metrics.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.waffle_config.esql_metrics.0.column", "c"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.waffle_config.esql_metrics.0.operation", "value"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.waffle_config.esql_metrics.0.label"),
+					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.waffle_config.esql_metrics.0.format_json", regexp.MustCompile(`"type"\s*:\s*"number"`)),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.waffle_config.esql_metrics.0.color.type", "static"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.waffle_config.esql_metrics.0.color.color", "#006BB4"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.waffle_config.esql_group_by.#", "0"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.waffle_config.legend.size", "medium"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.waffle_config.ignore_global_filters", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.waffle_config.sampling", "1"),
 				),
 			},
 			{
@@ -98,9 +133,10 @@ func TestAccResourceDashboardWaffle(t *testing.T) {
 					"panels.0.waffle_config.dataset_json",
 					"panels.0.waffle_config.ignore_global_filters",
 					"panels.0.waffle_config.sampling",
-					"panels.0.waffle_config.legend.values",
-					"panels.0.waffle_config.legend.values.#",
-					"panels.0.waffle_config.legend.values.0",
+					// Kibana may retain legend/value_display through panel updates; import read can
+					// diverge from apply state after exercising multiple waffle_config shapes.
+					"panels.0.waffle_config.legend.visible",
+					"panels.0.waffle_config.value_display",
 				},
 			},
 		},

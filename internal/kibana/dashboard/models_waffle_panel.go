@@ -327,6 +327,10 @@ func (m *waffleConfigModel) fromAPIESQL(ctx context.Context, api kbapi.WaffleESQ
 					if err != nil {
 						return jsontypes.NewNormalizedNull()
 					}
+					// Kibana may omit format on saved-object round-trip, leaving Format as an empty union.
+					if string(b) == "null" || len(b) == 0 {
+						b = []byte(`{"type":"number"}`)
+					}
 					return jsontypes.NewNormalizedValue(string(b))
 				}(),
 				Color: &waffleStaticColor{
