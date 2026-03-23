@@ -78,42 +78,19 @@ func (data *Data) toAPIModel(_ context.Context) (*elasticsearch.InferenceEndpoin
 	return endpoint, diags
 }
 
-func (data *Data) toUpdateModel(_ context.Context) (*elasticsearch.InferenceEndpointUpdate, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	update := &elasticsearch.InferenceEndpointUpdate{
-		InferenceID: data.InferenceID.ValueString(),
-		TaskType:    data.TaskType.ValueString(),
+func (data *Data) toUpdateModel(ctx context.Context) (*elasticsearch.InferenceEndpointUpdate, diag.Diagnostics) {
+	endpoint, diags := data.toAPIModel(ctx)
+	if diags.HasError() {
+		return nil, diags
 	}
 
-	if !data.ServiceSettings.IsNull() && !data.ServiceSettings.IsUnknown() {
-		var ss map[string]any
-		if err := json.Unmarshal([]byte(data.ServiceSettings.ValueString()), &ss); err != nil {
-			diags.AddError("Invalid service_settings JSON", fmt.Sprintf("Error parsing service_settings: %s", err))
-			return nil, diags
-		}
-		update.ServiceSettings = ss
-	}
-
-	if !data.TaskSettings.IsNull() && !data.TaskSettings.IsUnknown() {
-		var ts map[string]any
-		if err := json.Unmarshal([]byte(data.TaskSettings.ValueString()), &ts); err != nil {
-			diags.AddError("Invalid task_settings JSON", fmt.Sprintf("Error parsing task_settings: %s", err))
-			return nil, diags
-		}
-		update.TaskSettings = ts
-	}
-
-	if !data.ChunkingSettings.IsNull() && !data.ChunkingSettings.IsUnknown() {
-		var cs map[string]any
-		if err := json.Unmarshal([]byte(data.ChunkingSettings.ValueString()), &cs); err != nil {
-			diags.AddError("Invalid chunking_settings JSON", fmt.Sprintf("Error parsing chunking_settings: %s", err))
-			return nil, diags
-		}
-		update.ChunkingSettings = cs
-	}
-
-	return update, diags
+	return &elasticsearch.InferenceEndpointUpdate{
+		InferenceID:      endpoint.InferenceID,
+		TaskType:         endpoint.TaskType,
+		ServiceSettings:  endpoint.ServiceSettings,
+		TaskSettings:     endpoint.TaskSettings,
+		ChunkingSettings: endpoint.ChunkingSettings,
+	}, diags
 }
 
 func (data *Data) fromAPIModel(_ context.Context, endpoint *elasticsearch.InferenceEndpoint) diag.Diagnostics {
