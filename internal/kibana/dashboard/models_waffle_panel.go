@@ -52,18 +52,55 @@ func (c wafflePanelConfigConverter) populateFromAttributes(ctx context.Context, 
 	}
 
 	pm.WaffleConfig = &waffleConfigModel{}
+	raw, err := json.Marshal(waffleChart)
+	if err != nil {
+		return diagutil.FrameworkDiagFromError(err)
+	}
+	esql, err := waffleChartJSONUsesESQLDataset(raw)
+	if err != nil {
+		return diagutil.FrameworkDiagFromError(err)
+	}
+
 	var diags diag.Diagnostics
-	if noESQL, err := waffleChart.AsWaffleNoESQL(); err == nil && (noESQL.Query.Query != "" || noESQL.Query.Language != nil) {
-		diags = pm.WaffleConfig.fromAPINoESQL(ctx, noESQL)
-	} else {
-		esql, err2 := waffleChart.AsWaffleESQL()
-		if err2 != nil {
-			return diagutil.FrameworkDiagFromError(err2)
+	if esql {
+		wESQL, err := waffleChart.AsWaffleESQL()
+		if err != nil {
+			return diagutil.FrameworkDiagFromError(err)
 		}
-		diags = pm.WaffleConfig.fromAPIESQL(ctx, esql)
+		diags = pm.WaffleConfig.fromAPIESQL(ctx, wESQL)
+	} else {
+		wNoESQL, err := waffleChart.AsWaffleNoESQL()
+		if err != nil {
+			return diagutil.FrameworkDiagFromError(err)
+		}
+		diags = pm.WaffleConfig.fromAPINoESQL(ctx, wNoESQL)
 	}
 	mergeWaffleConfigFromPlanSeed(pm.WaffleConfig, seed)
 	return diags
+}
+
+// waffleChartJSONUsesESQLDataset reports whether waffle chart JSON is the ES|QL variant by reading
+// dataset.type. kbapi.WaffleChart AsWaffleNoESQL / AsWaffleESQL both json.Unmarshal the same blob
+// into different structs and do not indicate the variant via their error return value.
+func waffleChartJSONUsesESQLDataset(waffleChartJSON []byte) (bool, error) {
+	var top struct {
+		Dataset json.RawMessage `json:"dataset"`
+	}
+	if err := json.Unmarshal(waffleChartJSON, &top); err != nil {
+		return false, err
+	}
+	var ds struct {
+		Type string `json:"type"`
+	}
+	if err := json.Unmarshal(top.Dataset, &ds); err != nil {
+		return false, err
+	}
+	switch ds.Type {
+	case string(kbapi.EsqlDatasetTypeEsql), string(kbapi.Table):
+		return true, nil
+	default:
+		return false, nil
+	}
 }
 
 func (c wafflePanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelLens_Config_0_Attributes, diag.Diagnostics) {

@@ -29,6 +29,50 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func Test_waffleChartJSONUsesESQLDataset(t *testing.T) {
+	t.Parallel()
+	esql, err := waffleChartJSONUsesESQLDataset([]byte(`{"dataset":{"type":"esql","query":"FROM x"}}`))
+	require.NoError(t, err)
+	assert.True(t, esql)
+
+	esqlTable, err := waffleChartJSONUsesESQLDataset([]byte(`{"dataset":{"type":"table","table":{}}}`))
+	require.NoError(t, err)
+	assert.True(t, esqlTable)
+
+	no, err := waffleChartJSONUsesESQLDataset([]byte(`{"dataset":{"type":"dataView","id":"x"},"query":{"query":""}}`))
+	require.NoError(t, err)
+	assert.False(t, no)
+}
+
+func Test_wafflePanelConfigConverter_populateFromAttributes_NoESQL_emptyQueryNoLanguage(t *testing.T) {
+	ctx := context.Background()
+	// NoESQL with an empty lens query and no language: the old heuristic treated this as ES|QL.
+	apiJSON := `{
+		"type": "waffle",
+		"dataset": {"type":"dataView","id":"metrics-*"},
+		"query": {"query":""},
+		"legend": {"size":"medium","visible":"auto"},
+		"metrics": [{"operation":"count"}]
+	}`
+	var waffle kbapi.WaffleNoESQL
+	require.NoError(t, json.Unmarshal([]byte(apiJSON), &waffle))
+
+	var waffleChart kbapi.WaffleChart
+	require.NoError(t, waffleChart.FromWaffleNoESQL(waffle))
+
+	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	require.NoError(t, attrs.FromWaffleChart(waffleChart))
+
+	converter := newWafflePanelConfigConverter()
+	pm := &panelModel{}
+	diags := converter.populateFromAttributes(ctx, pm, attrs)
+	require.False(t, diags.HasError(), "%s", diags)
+	require.NotNil(t, pm.WaffleConfig)
+	assert.False(t, pm.WaffleConfig.usesESQL())
+	require.NotNil(t, pm.WaffleConfig.Query)
+	assert.True(t, pm.WaffleConfig.Query.Query.IsNull() || pm.WaffleConfig.Query.Query.ValueString() == "")
+}
+
 func Test_wafflePanelConfigConverter_populateFromAttributes_buildAttributes_roundTrip_NoESQL(t *testing.T) {
 	ctx := context.Background()
 
