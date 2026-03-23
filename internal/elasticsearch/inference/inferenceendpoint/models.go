@@ -23,19 +23,20 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 type Data struct {
-	ID               types.String         `tfsdk:"id"`
-	InferenceID      types.String         `tfsdk:"inference_id"`
-	TaskType         types.String         `tfsdk:"task_type"`
-	Service          types.String         `tfsdk:"service"`
-	ServiceSettings  jsontypes.Normalized `tfsdk:"service_settings"`
-	TaskSettings     jsontypes.Normalized `tfsdk:"task_settings"`
-	ChunkingSettings jsontypes.Normalized `tfsdk:"chunking_settings"`
+	ID               types.String                                      `tfsdk:"id"`
+	InferenceID      types.String                                      `tfsdk:"inference_id"`
+	TaskType         types.String                                      `tfsdk:"task_type"`
+	Service          types.String                                      `tfsdk:"service"`
+	ServiceSettings  jsontypes.Normalized                              `tfsdk:"service_settings"`
+	TaskSettings     jsontypes.Normalized                              `tfsdk:"task_settings"`
+	ChunkingSettings customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"chunking_settings"`
 }
 
 func (data *Data) toAPIModel(_ context.Context) (*elasticsearch.InferenceEndpoint, diag.Diagnostics) {
@@ -103,6 +104,15 @@ func (data *Data) toUpdateModel(_ context.Context) (*elasticsearch.InferenceEndp
 		update.TaskSettings = ts
 	}
 
+	if !data.ChunkingSettings.IsNull() && !data.ChunkingSettings.IsUnknown() {
+		var cs map[string]any
+		if err := json.Unmarshal([]byte(data.ChunkingSettings.ValueString()), &cs); err != nil {
+			diags.AddError("Invalid chunking_settings JSON", fmt.Sprintf("Error parsing chunking_settings: %s", err))
+			return nil, diags
+		}
+		update.ChunkingSettings = cs
+	}
+
 	return update, diags
 }
 
@@ -126,19 +136,25 @@ func (data *Data) fromAPIModel(_ context.Context, endpoint *elasticsearch.Infere
 		}
 	}
 
-	// task_settings and chunking_settings: only populate from the API if the
-	// user explicitly configured them. ES returns defaults for these fields
-	// even when not set by the user, which would cause a persistent diff.
+	// task_settings: only keep keys the user explicitly configured. API-returned keys that
+	// the user never set are dropped — those are server-applied defaults and should not
+	// cause drift. If a key the user set disagrees with what the API returns, that is a
+	// real drift and will surface on the next plan.
 	if !data.TaskSettings.IsNull() && !data.TaskSettings.IsUnknown() {
+		var stateTS map[string]any
+		if err := json.Unmarshal([]byte(data.TaskSettings.ValueString()), &stateTS); err != nil {
+			diags.AddError("Invalid task_settings JSON", fmt.Sprintf("Error parsing task_settings: %s", err))
+			return diags
+		}
+
 		if endpoint.TaskSettings != nil {
-			b, err := json.Marshal(endpoint.TaskSettings)
+			filtered := intersectKeys(endpoint.TaskSettings, stateTS)
+			b, err := json.Marshal(filtered)
 			if err != nil {
 				diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling task_settings: %s", err))
 				return diags
 			}
 			data.TaskSettings = jsontypes.NewNormalizedValue(string(b))
-		} else {
-			data.TaskSettings = jsontypes.NewNormalizedNull()
 		}
 	}
 
@@ -149,11 +165,22 @@ func (data *Data) fromAPIModel(_ context.Context, endpoint *elasticsearch.Infere
 				diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling chunking_settings: %s", err))
 				return diags
 			}
-			data.ChunkingSettings = jsontypes.NewNormalizedValue(string(b))
+			data.ChunkingSettings = customtypes.NewJSONWithDefaultsValue(string(b), populateChunkingSettingsDefaults)
 		} else {
-			data.ChunkingSettings = jsontypes.NewNormalizedNull()
+			data.ChunkingSettings = customtypes.NewJSONWithDefaultsNull(populateChunkingSettingsDefaults)
 		}
 	}
 
 	return diags
+}
+
+// intersectKeys returns a copy of src containing only keys that exist in keys.
+func intersectKeys(src, keys map[string]any) map[string]any {
+	out := make(map[string]any, len(keys))
+	for k := range keys {
+		if v, ok := src[k]; ok {
+			out[k] = v
+		}
+	}
+	return out
 }

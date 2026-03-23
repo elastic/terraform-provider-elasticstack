@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -88,14 +89,15 @@ func (r *inferenceEndpointResource) Schema(_ context.Context, _ resource.SchemaR
 				Sensitive:           true,
 			},
 			"task_settings": schema.StringAttribute{
-				MarkdownDescription: "Task-specific settings, as a JSON object. Optional and service-dependent.",
-				Optional:            true,
-				CustomType:          jsontypes.NormalizedType{},
+				MarkdownDescription: "Task-specific settings, as a JSON object. Optional and service-dependent. " +
+					"Only keys explicitly set here are tracked; server-applied defaults returned by the API are ignored to avoid perpetual drift.",
+				Optional:   true,
+				CustomType: jsontypes.NormalizedType{},
 			},
 			"chunking_settings": schema.StringAttribute{
 				MarkdownDescription: "Configuration for chunking input text, as a JSON object. Applicable only for embedding task types.",
 				Optional:            true,
-				CustomType:          jsontypes.NormalizedType{},
+				CustomType:          customtypes.NewJSONWithDefaultsType(populateChunkingSettingsDefaults),
 			},
 		},
 	}

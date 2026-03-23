@@ -42,7 +42,7 @@ resource "elasticstack_elasticsearch_inference_endpoint" "example" {
 ### Optional
 
 - `chunking_settings` (String) Configuration for chunking input text, as a JSON object. Applicable only for embedding task types.
-- `task_settings` (String) Task-specific settings, as a JSON object. Optional and service-dependent.
+- `task_settings` (String) Task-specific settings, as a JSON object. Optional and service-dependent. Only keys explicitly set here are tracked; server-applied defaults returned by the API are ignored to avoid perpetual drift.
 - `task_type` (String) The task type of the inference endpoint. One of `sparse_embedding`, `text_embedding`, `rerank`, `completion`, `chat_completion`. When omitted, the task type is inferred from the service.
 
 ### Read-Only

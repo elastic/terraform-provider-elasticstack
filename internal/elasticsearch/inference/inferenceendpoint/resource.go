@@ -25,9 +25,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
-var _ resource.Resource = &inferenceEndpointResource{}
-var _ resource.ResourceWithConfigure = &inferenceEndpointResource{}
-var _ resource.ResourceWithImportState = &inferenceEndpointResource{}
+var (
+	_ resource.Resource                = &inferenceEndpointResource{}
+	_ resource.ResourceWithConfigure   = &inferenceEndpointResource{}
+	_ resource.ResourceWithImportState = &inferenceEndpointResource{}
+)
 
 func NewInferenceEndpointResource() resource.Resource {
 	return &inferenceEndpointResource{}

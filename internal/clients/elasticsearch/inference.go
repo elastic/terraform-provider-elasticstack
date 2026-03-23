@@ -47,21 +47,22 @@ type inferenceEndpointCreateRequest struct {
 	ChunkingSettings map[string]any `json:"chunking_settings,omitempty"`
 }
 
-// InferenceEndpointUpdate holds only the fields the update API accepts.
-// The update API only supports mutating task_settings, secrets within service_settings,
-// and num_allocations — it does not accept service, chunking_settings, or non-secret
-// service_settings fields.
+// InferenceEndpointUpdate holds the fields we send to the update API
+// (PUT /_inference/{task_type}/{inference_id}/_update).
+// See https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-inference-update
 type InferenceEndpointUpdate struct {
-	InferenceID     string         `json:"inference_id"`
-	TaskType        string         `json:"task_type"`
-	ServiceSettings map[string]any `json:"service_settings,omitempty"`
-	TaskSettings    map[string]any `json:"task_settings,omitempty"`
+	InferenceID      string         `json:"inference_id"`
+	TaskType         string         `json:"task_type"`
+	ServiceSettings  map[string]any `json:"service_settings,omitempty"`
+	TaskSettings     map[string]any `json:"task_settings,omitempty"`
+	ChunkingSettings map[string]any `json:"chunking_settings,omitempty"`
 }
 
 // inferenceEndpointUpdateRequest is the JSON body for the update API.
 type inferenceEndpointUpdateRequest struct {
-	ServiceSettings map[string]any `json:"service_settings,omitempty"`
-	TaskSettings    map[string]any `json:"task_settings,omitempty"`
+	ServiceSettings  map[string]any `json:"service_settings,omitempty"`
+	TaskSettings     map[string]any `json:"task_settings,omitempty"`
+	ChunkingSettings map[string]any `json:"chunking_settings,omitempty"`
 }
 
 // inferenceGetResponse is the top-level GET response body.
@@ -153,8 +154,9 @@ func UpdateInferenceEndpoint(ctx context.Context, apiClient *clients.APIClient, 
 	var diags fwdiag.Diagnostics
 
 	reqBody := inferenceEndpointUpdateRequest{
-		ServiceSettings: update.ServiceSettings,
-		TaskSettings:    update.TaskSettings,
+		ServiceSettings:  update.ServiceSettings,
+		TaskSettings:     update.TaskSettings,
+		ChunkingSettings: update.ChunkingSettings,
 	}
 
 	bodyBytes, err := json.Marshal(reqBody)

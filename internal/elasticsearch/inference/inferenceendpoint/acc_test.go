@@ -19,6 +19,7 @@ package inferenceendpoint_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"testing"
@@ -170,6 +171,149 @@ func TestAccResourceInferenceEndpointRequiresReplace(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_inference_endpoint.test", "task_type", "chat_completion"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_inference_endpoint.test", "service", "openai"),
 				),
+			},
+		},
+	})
+}
+
+// TestAccResourceInferenceEndpointTaskSettingsNoDrift verifies that server-applied
+// defaults returned in task_settings do not cause perpetual plan drift.
+func TestAccResourceInferenceEndpointTaskSettingsNoDrift(t *testing.T) {
+	skipFunc := versionutils.CheckIfVersionIsUnsupported(inferenceendpoint.MinSupportedVersion)
+	if skip, err := skipFunc(); err != nil {
+		t.Fatalf("failed to check version: %v", err)
+	} else if skip {
+		t.Skipf("Test requires Elasticsearch v%s or higher", inferenceendpoint.MinSupportedVersion)
+	}
+
+	inferenceID := fmt.Sprintf("test-inference-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t); skipValidateAndStart(t) },
+		CheckDestroy: checkInferenceEndpointDestroy,
+		Steps: []resource.TestStep{
+			// Create with task_settings containing a subset of keys.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_task_settings"),
+				ConfigVariables: config.Variables{
+					"inference_id": config.StringVariable(inferenceID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_inference_endpoint.test", "inference_id", inferenceID),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_inference_endpoint.test", "task_type", "completion"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_inference_endpoint.test", "service", "openai"),
+				),
+			},
+			// Re-plan with the same config must produce no diff — server-applied defaults
+			// in the API response must not leak into state and cause perpetual drift.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_task_settings"),
+				ConfigVariables: config.Variables{
+					"inference_id": config.StringVariable(inferenceID),
+				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+			// Update to remove task_settings entirely — must not drift either.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("without_task_settings"),
+				ConfigVariables: config.Variables{
+					"inference_id": config.StringVariable(inferenceID),
+				},
+				Check: resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_inference_endpoint.test", "task_settings"),
+			},
+			// Re-plan after removing task_settings — still no drift.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("without_task_settings"),
+				ConfigVariables: config.Variables{
+					"inference_id": config.StringVariable(inferenceID),
+				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+		},
+	})
+}
+
+// TestAccResourceInferenceEndpointTaskSettingsDrift verifies two complementary behaviours:
+//  1. When task_settings is omitted, server-applied defaults in the API response do not cause drift.
+//  2. When task_settings is explicitly set to a value that differs from the server default,
+//     Terraform correctly surfaces that as a real change.
+func TestAccResourceInferenceEndpointTaskSettingsDrift(t *testing.T) {
+	skipFunc := versionutils.CheckIfVersionIsUnsupported(inferenceendpoint.MinSupportedVersion)
+	if skip, err := skipFunc(); err != nil {
+		t.Fatalf("failed to check version: %v", err)
+	} else if skip {
+		t.Skipf("Test requires Elasticsearch v%s or higher", inferenceendpoint.MinSupportedVersion)
+	}
+
+	inferenceID := fmt.Sprintf("test-inference-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t); skipValidateAndStart(t) },
+		CheckDestroy: checkInferenceEndpointDestroy,
+		Steps: []resource.TestStep{
+			// Create without task_settings. The azureaistudio service returns
+			// {max_new_tokens: 64} by default — that must not cause drift.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("no_task_settings"),
+				ConfigVariables: config.Variables{
+					"inference_id": config.StringVariable(inferenceID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_inference_endpoint.test", "service", "azureaistudio"),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_inference_endpoint.test", "task_settings"),
+				),
+			},
+			// Re-plan with no task_settings — must be empty (server default not leaked into state).
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("no_task_settings"),
+				ConfigVariables: config.Variables{
+					"inference_id": config.StringVariable(inferenceID),
+				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+			// Now explicitly set max_new_tokens to a non-default value.
+			// This is a real user-driven change and must be applied.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_task_settings"),
+				ConfigVariables: config.Variables{
+					"inference_id": config.StringVariable(inferenceID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrWith(
+						"elasticstack_elasticsearch_inference_endpoint.test",
+						"task_settings",
+						func(value string) error {
+							var ts map[string]any
+							if err := json.Unmarshal([]byte(value), &ts); err != nil {
+								return err
+							}
+							if ts["max_new_tokens"] != float64(32) {
+								return fmt.Errorf("expected max_new_tokens=32, got %v", ts["max_new_tokens"])
+							}
+							return nil
+						},
+					),
+				),
+			},
+			// Re-plan after applying explicit task_settings — no drift.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_task_settings"),
+				ConfigVariables: config.Variables{
+					"inference_id": config.StringVariable(inferenceID),
+				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
 			},
 		},
 	})
