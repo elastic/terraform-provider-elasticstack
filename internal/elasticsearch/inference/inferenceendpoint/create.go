@@ -20,9 +20,69 @@ package inferenceendpoint
 import (
 	"context"
 
+	"fmt"
+
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+func (r *inferenceEndpointResource) upsert(ctx context.Context, plan tfsdk.Plan, state *tfsdk.State) diag.Diagnostics {
+	var data Data
+	var diags diag.Diagnostics
+	diags.Append(plan.Get(ctx, &data)...)
+	if diags.HasError() {
+		return diags
+	}
+
+	inferenceID := data.InferenceID.ValueString()
+	id, sdkDiags := r.client.ID(ctx, inferenceID)
+	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	if diags.HasError() {
+		return diags
+	}
+
+	supported, sdkDiags := r.client.EnforceMinVersion(ctx, MinSupportedVersion)
+	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	if diags.HasError() {
+		return diags
+	}
+	if !supported {
+		diags.AddError("Unsupported Feature", fmt.Sprintf("inference endpoints require Elasticsearch v%s or above", MinSupportedVersion.String()))
+		return diags
+	}
+
+	endpoint, modelDiags := data.toAPIModel(ctx)
+	diags.Append(modelDiags...)
+	if diags.HasError() {
+		return diags
+	}
+
+	putDiags := elasticsearch.PutInferenceEndpoint(ctx, r.client, endpoint)
+	diags.Append(putDiags...)
+	if diags.HasError() {
+		return diags
+	}
+
+	data.ID = types.StringValue(id.String())
+
+	readData, readDiags := r.read(ctx, data)
+	diags.Append(readDiags...)
+	if diags.HasError() {
+		return diags
+	}
+
+	if readData == nil {
+		diags.AddError("Not Found", fmt.Sprintf("Inference endpoint %q was not found after create/update", inferenceID))
+		return diags
+	}
+
+	diags.Append(state.Set(ctx, readData)...)
+	return diags
+}
 func (r *inferenceEndpointResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	diags := r.upsert(ctx, req.Plan, &resp.State)
 	resp.Diagnostics.Append(diags...)
