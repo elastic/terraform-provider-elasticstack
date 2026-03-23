@@ -43,6 +43,7 @@ type panelModel struct {
 	LegacyMetricConfig *legacyMetricConfigModel                          `tfsdk:"legacy_metric_config"`
 	RegionMapConfig    *regionMapConfigModel                             `tfsdk:"region_map_config"`
 	HeatmapConfig      *heatmapConfigModel                               `tfsdk:"heatmap_config"`
+	WaffleConfig       *waffleConfigModel                                `tfsdk:"waffle_config"`
 	ConfigJSON         customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config_json"`
 }
 
@@ -76,6 +77,7 @@ var lensVizConverters = []lensVisualizationConverter{
 	newGaugePanelConfigConverter(),
 	newMetricChartPanelConfigConverter(),
 	newPieChartPanelConfigConverter(),
+	newWafflePanelConfigConverter(),
 }
 
 func (m *dashboardModel) mapPanelsFromAPI(ctx context.Context, apiPanels *kbapi.DashboardPanels) ([]panelModel, []sectionModel, diag.Diagnostics) {
@@ -196,7 +198,8 @@ func panelUsesConfigJSONOnly(pm *panelModel) bool {
 		pm.GaugeConfig == nil &&
 		pm.LegacyMetricConfig == nil &&
 		pm.RegionMapConfig == nil &&
-		pm.HeatmapConfig == nil
+		pm.HeatmapConfig == nil &&
+		pm.WaffleConfig == nil
 }
 
 func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelModel, panelItem kbapi.DashboardPanelItem) (panelModel, diag.Diagnostics) {
