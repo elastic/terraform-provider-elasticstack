@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package integration_test
 
 import (
@@ -9,6 +26,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/integration"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -147,6 +165,77 @@ func TestAccResourceIntegrationDeleted(t *testing.T) {
 	})
 }
 
+func TestAccResourceIntegration_ExternalChange(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
+				Config:   testAccResourceIntegration,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "name", "tcp"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "version", "1.16.0"),
+				),
+			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
+				Config:   testAccResourceIntegration,
+				PreConfig: func() {
+					notSupported, err := versionutils.CheckIfVersionIsUnsupported(minVersionIntegration)()
+					require.NoError(t, err)
+
+					// Skip the pre-config if the version is not supported
+					if notSupported {
+						return
+					}
+
+					client, err := clients.NewAcceptanceTestingClient()
+					require.NoError(t, err)
+
+					fleetClient, err := client.GetFleetClient()
+					require.NoError(t, err)
+
+					diags := fleet.InstallPackage(t.Context(), fleetClient, "tcp", "1.17.0", fleet.InstallPackageOptions{
+						Force: true,
+					})
+					require.Empty(t, diags)
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "name", "tcp"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "version", "1.16.0"),
+				),
+			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
+				Config:   testAccResourceIntegration,
+				PreConfig: func() {
+					notSupported, err := versionutils.CheckIfVersionIsUnsupported(minVersionIntegration)()
+					require.NoError(t, err)
+
+					// Skip the pre-config if the version is not supported
+					if notSupported {
+						return
+					}
+
+					client, err := clients.NewAcceptanceTestingClient()
+					require.NoError(t, err)
+
+					fleetClient, err := client.GetFleetClient()
+					require.NoError(t, err)
+
+					diags := fleet.Uninstall(t.Context(), fleetClient, "tcp", "1.16.0", "", true)
+					require.Empty(t, diags)
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "name", "tcp"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "version", "1.16.0"),
+				),
+			},
+		},
+	})
+}
+
 const testAccResourceIntegration = `
 provider "elasticstack" {
   elasticsearch {}
@@ -199,22 +288,23 @@ resource "elasticstack_fleet_integration_policy" "sample" {
   integration_name    = elasticstack_fleet_integration.test_integration.name
   integration_version = elasticstack_fleet_integration.test_integration.version
 
-  input {
-    input_id = "tcp-tcp"
-    streams_json = jsonencode({
-      "tcp.generic" : {
-        "enabled" : true,
-        "vars" : {
-          "listen_address" : "localhost",
-          "listen_port" : 8080,
-          "data_stream.dataset" : "tcp.generic",
-          "tags" : [],
-          "syslog_options" : "field: message\n#format: auto\n#timezone: Local\n",
-          "ssl" : "#certificate: |\n#    -----BEGIN CERTIFICATE-----\n#    ...\n#    -----END CERTIFICATE-----\n#key: |\n#    -----BEGIN PRIVATE KEY-----\n#    ...\n#    -----END PRIVATE KEY-----\n",
-          "custom" : ""
-        }
+  inputs = {
+    "tcp-tcp" = {
+	  streams = {
+	    "tcp.generic" = {
+	      enabled = true,
+		  vars = jsonencode({ 
+		    "listen_address" : "localhost",
+			"listen_port" : 8080,
+		  	"data_stream.dataset" : "tcp.generic",
+			"tags" : [],
+			"syslog_options" : "field: message\n#format: auto\n#timezone: Local\n",
+			"ssl" : "#certificate: |\n#    -----BEGIN CERTIFICATE-----\n#    ...\n#    -----END CERTIFICATE-----\n#key: |\n#    -----BEGIN PRIVATE KEY-----\n#    ...\n#    -----END PRIVATE KEY-----\n",
+			"custom" : ""
+		  })
+		}
       }
-    })
+    }
   }
 }
 `, version, policyName, policyName)
@@ -233,3 +323,178 @@ resource "elasticstack_fleet_integration" "test_integration" {
   skip_destroy = false
 }
 `
+
+func TestAccResourceIntegrationWithPrerelease(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
+				Config:   testAccResourceIntegrationWithPrerelease,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_prerelease", "name", "tcp"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_prerelease", "prerelease", "true"),
+					resource.TestCheckResourceAttrSet("elasticstack_fleet_integration.test_integration_prerelease", "version"),
+				),
+			},
+		},
+	})
+}
+
+const testAccResourceIntegrationWithPrerelease = `
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_fleet_integration" "test_integration_prerelease" {
+  name         = "tcp"
+  version      = "1.16.0"
+  prerelease   = true
+  force        = true
+  skip_destroy = true
+}
+`
+
+func TestAccResourceIntegrationWithAllParameters(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
+				Config:   testAccResourceIntegrationWithAllParametersStep1,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "name", "tcp"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "prerelease", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "ignore_constraints", "true"),
+					resource.TestCheckResourceAttrSet("elasticstack_fleet_integration.test_integration_all_params", "version"),
+				),
+			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(integration.MinVersionIgnoreMappingUpdateErrors),
+				Config:   testAccResourceIntegrationWithAllParametersStep2,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "name", "tcp"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "prerelease", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "ignore_mapping_update_errors", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "skip_data_stream_rollover", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "ignore_constraints", "true"),
+					resource.TestCheckResourceAttrSet("elasticstack_fleet_integration.test_integration_all_params", "version"),
+				),
+			},
+		},
+	})
+}
+
+const testAccResourceIntegrationWithAllParametersStep1 = `
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_fleet_integration" "test_integration_all_params" {
+  name                          = "tcp"
+  version                       = "1.16.0"
+  prerelease                    = true
+  force                         = true
+  ignore_constraints            = true
+  skip_destroy                  = true
+}
+`
+
+const testAccResourceIntegrationWithAllParametersStep2 = `
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_fleet_integration" "test_integration_all_params" {
+  name                          = "tcp"
+  version                       = "1.16.0"
+  prerelease                    = true
+  force                         = true
+  ignore_mapping_update_errors  = true
+  skip_data_stream_rollover     = true
+  ignore_constraints            = true
+  skip_destroy                  = true
+}
+`
+
+func TestAccResourceIntegrationFrom0_13_1(t *testing.T) {
+	spaceID := "aa_test_space_" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"elasticstack": {
+						Source:            "elastic/elasticstack",
+						VersionConstraint: "0.13.1",
+					},
+				},
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
+				Config:   testAccResourceIntegrationV0(spaceID),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_upgrade", "name", "tcp"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_upgrade", "version", "1.16.0"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
+				Config:                   testAccResourceIntegrationV1(spaceID),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_upgrade", "name", "tcp"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_upgrade", "version", "1.16.0"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_upgrade", "space_id", spaceID),
+				),
+			},
+		},
+	})
+}
+
+func testAccResourceIntegrationV0(spaceID string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_kibana_space" "test" {
+  space_id = "%s"
+  name     = "Test Space"
+}
+
+resource "elasticstack_fleet_integration" "test_integration_upgrade" {
+  name         = "tcp"
+  version      = "1.16.0"
+  space_ids    = [elasticstack_kibana_space.test.space_id, "default"]
+  force        = true
+  skip_destroy = true
+}
+`, spaceID)
+}
+
+func testAccResourceIntegrationV1(spaceID string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_kibana_space" "test" {
+  space_id = "%s"
+  name     = "Test Space"
+}
+
+resource "elasticstack_fleet_integration" "test_integration_upgrade" {
+  name         = "tcp"
+  version      = "1.16.0"
+  space_id     = elasticstack_kibana_space.test.space_id
+  force        = true
+  skip_destroy = true
+}
+`, spaceID)
+}

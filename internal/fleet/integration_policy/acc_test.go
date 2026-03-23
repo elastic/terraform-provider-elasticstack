@@ -1,7 +1,25 @@
-package integration_policy_test
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package integrationpolicy_test
 
 import (
 	"context"
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"regexp"
@@ -14,6 +32,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -22,8 +41,61 @@ import (
 
 var (
 	minVersionIntegrationPolicy    = version.Must(version.NewVersion("8.10.0"))
-	minVersionIntegrationPolicyIds = version.Must(version.NewVersion("8.15.0"))
-	minVersionSqlIntegration       = version.Must(version.NewVersion("9.1.0"))
+	minVersionIntegrationPolicyIDs = version.Must(version.NewVersion("8.15.0"))
+	minVersionOutputID             = version.Must(version.NewVersion("8.16.0"))
+	minVersionSQLIntegration       = version.Must(version.NewVersion("9.1.0"))
+	minVersionGCPVertexAI          = version.Must(version.NewVersion("8.17.0"))
+)
+
+const (
+	tcpGenericVarsExpected8080 = `{"custom":"","data_stream.dataset":"tcp.generic","listen_address":"localhost","listen_port":8080,` +
+		`"ssl":"","syslog_options":"field: message","tags":[]}`
+	tcpGenericVarsExpected8085 = `{"custom":"","data_stream.dataset":"tcp.generic","listen_address":"localhost","listen_port":8085,` +
+		`"ssl":"","syslog_options":"field: message","tags":[]}`
+
+	sqlSQLVarsExpected = `{"data_stream.dataset":"sql","driver":"mysql",` +
+		`"hosts":["root:test@tcp(127.0.0.1:3306)/"],"merge_results":false,"period":"1m","processors":"",` +
+		`"sql_queries":"- query: SHOW GLOBAL STATUS LIKE 'Innodb_system%'\n  response_format: variables\n        \n","ssl":""}`
+	sqlHostsSecretRefRegex = `"hosts":{"ids":["\S+"],"isSecretRef":true}`
+
+	azureMetricsVarsJSONExpected = `{"client_id":"test-client-id","client_secret":"test-client-secret",` +
+		`"subscription_id":"test-subscription-id","tenant_id":"test-tenant-id"}`
+	azureMonitorVarsExpected = `{"period":"300s",` +
+		`"resources":"- resource_query: \"resourceType eq 'Microsoft.Search/searchServices'\"\n  metrics:\n  - name: [` +
+		`\"DocumentsProcessedCount\", \"SearchLatency\", \"SearchQueriesPerSecond\", \"ThrottledSearchQueriesPercentage\"]\n` +
+		`    namespace: \"Microsoft.Search/searchServices\""}`
+
+	kafkaMetricsVarsExpected       = `{"hosts":["localhost:9092"],"period":"10s","ssl.certificate_authorities":[]}`
+	kafkaConsumerGroupVarsExpected = `{"topics":["don't mention the war, I mentioned it once but I think I got away with it"]}`
+	kafkaLogfileVarsExpected       = `{"kafka_home":"/opt/kafka*","paths":["/logs/controller.log*","/logs/server.log*",` +
+		`"/logs/state-change.log*","/logs/kafka-*.log*"],"preserve_original_event":false,"tags":["kafka-log"]}`
+
+	gcpVertexAIMetricsVarsExpected            = `{"period":"60s","regions":["us-central1"]}`
+	gcpVertexAIPromptResponseLogsVarsExpected = `{"exclude_labels":false,"period":"300s","table_id":"table_id",` +
+		`"tags":["forwarded","gcp-vertexai-prompt-response-logs"],"time_lookback_hours":1}`
+	gcpVertexAIAuditLogsVarsExpected = `{"preserve_original_event":false,"subscription_create":false,"subscription_name":"gcp-vertexai-audit-sub",` +
+		`"tags":["forwarded","gcp-vertexai-audit"],"topic":"gcp-vertexai-audit"}`
+
+	awsLogsSecretsRegexUsEast1 = `{"access_key_id":{"id":"\S+","isSecretRef":true},"default_region":"us-east-1",` +
+		`"endpoint":"endpoint","secret_access_key":{"id":"\S+","isSecretRef":true},"session_token":{"id":"\S+","isSecretRef":true}}`
+	awsLogsSecretsRegexUsEast2 = `{"access_key_id":{"id":"\S+","isSecretRef":true},"default_region":"us-east-2",` +
+		`"endpoint":"endpoint","secret_access_key":{"id":"\S+","isSecretRef":true},"session_token":{"id":"\S+","isSecretRef":true}}`
+
+	awsLogsStreamsJSONExpected = `{"aws_logs.generic":{"enabled":true,"vars":{"api_sleep":"200ms","api_timeput":"120s","custom":"",` +
+		`"data_stream.dataset":"aws_logs.generic","log_streams":[],"number_of_workers":1,` +
+		`"preserve_original_event":false,"scan_frequency":"1m","start_position":"beginning","tags":["forwarded"]}}}`
+
+	awsLogsCloudwatchVarsExpected = `{"api_sleep":"200ms","api_timeput":"120s","custom":"","data_stream.dataset":"aws_logs.generic",` +
+		`"log_streams":[],"number_of_workers":1,"preserve_original_event":false,"scan_frequency":"1m",` +
+		`"start_position":"beginning","tags":["forwarded"]}`
+	awsLogsCloudwatchVarsExpectedUpdated = `{"api_sleep":"200ms","api_timeput":"120s","custom":"","data_stream.dataset":"aws_logs.generic",` +
+		`"log_streams":[],"number_of_workers":1,"preserve_original_event":false,"scan_frequency":"2m",` +
+		`"start_position":"beginning","tags":["forwarded"]}`
+
+	awsLogsVarsJSONFormatCreated = `{"access_key_id":"placeholder","default_region":"us-east-1","endpoint":"endpoint",` +
+		`"secret_access_key":"created %s","session_token":"placeholder"}`
+	awsLogsVarsJSONFormatUpdated = `{"access_key_id":"placeholder","default_region":"us-east-2","endpoint":"endpoint",` +
+		`"secret_access_key":"updated %s","session_token":"placeholder"}`
 )
 
 func TestJsonTypes(t *testing.T) {
@@ -38,19 +110,116 @@ func TestAccResourceIntegrationPolicyMultipleAgentPolicies(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceIntegrationPolicyDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIntegrationPolicyDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicyIds),
-				Config:   testAccResourceIntegrationPolicyCreateMultipleAgentPolicies(policyName),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicyIDs),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "policy_id", fmt.Sprintf("%s-policy-id", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "description", "IntegrationPolicyTest Policy"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_name", "tcp"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_version", "1.16.0"),
+					resource.TestCheckResourceAttrSet("elasticstack_fleet_integration_policy.test_policy", "agent_policy_id"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration_policy.test_policy", "agent_policy_ids"),
+				),
+			},
+			{
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicyIDs),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("multiple_agent_policies"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "policy_id", fmt.Sprintf("%s-policy-id", policyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "description", "IntegrationPolicyTest Policy"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_name", "tcp"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_version", "1.16.0"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "agent_policy_ids.#", "2"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration_policy.test_policy", "agent_policy_id"),
+				),
+			},
+			{
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicyIDs),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("single_agent_policy"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "policy_id", fmt.Sprintf("%s-policy-id", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "description", "IntegrationPolicyTest Policy"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_name", "tcp"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_version", "1.16.0"),
+					resource.TestCheckResourceAttrSet("elasticstack_fleet_integration_policy.test_policy", "agent_policy_id"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration_policy.test_policy", "agent_policy_ids"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceIntegrationPolicyWithOutput(t *testing.T) {
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIntegrationPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutputID),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+					"output_name": config.StringVariable(fmt.Sprintf("Test Output %s", policyName)),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "description", "IntegrationPolicyTest Policy with Output"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_name", "tcp"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_version", "1.16.0"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "output_id", fmt.Sprintf("%s-test-output", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.tcp-tcp.enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.tcp-tcp.streams.tcp.generic.enabled", "true"),
+					resource.TestCheckResourceAttr(
+						"elasticstack_fleet_integration_policy.test_policy",
+						"inputs.tcp-tcp.streams.tcp.generic.vars",
+						tcpGenericVarsExpected8080,
+					),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutputID),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"policy_name":         config.StringVariable(policyName),
+					"output_name":         config.StringVariable(fmt.Sprintf("Test Output %s", policyName)),
+					"updated_output_name": config.StringVariable(fmt.Sprintf("Updated Test Output %s", policyName)),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "description", "Updated Integration Policy with Output"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_name", "tcp"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_version", "1.16.0"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "output_id", fmt.Sprintf("%s-updated-output", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.tcp-tcp.enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.tcp-tcp.streams.tcp.generic.enabled", "true"),
+					resource.TestCheckResourceAttr(
+						"elasticstack_fleet_integration_policy.test_policy",
+						"inputs.tcp-tcp.streams.tcp.generic.vars",
+						tcpGenericVarsExpected8080,
+					),
 				),
 			},
 		},
@@ -61,43 +230,61 @@ func TestAccResourceIntegrationPolicy(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceIntegrationPolicyDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIntegrationPolicyDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
-				Config:   testAccResourceIntegrationPolicyCreate(policyName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "description", "IntegrationPolicyTest Policy"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_name", "tcp"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_version", "1.16.0"),
 					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration_policy.test_policy", "vars_json"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.input_id", "tcp-tcp"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.enabled", "true"),
-					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.vars_json"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.streams_json", `{"tcp.generic":{"enabled":true,"vars":{"custom":"","data_stream.dataset":"tcp.generic","listen_address":"localhost","listen_port":8080,"ssl":"","syslog_options":"field: message","tags":[]}}}`),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration_policy.test_policy", "output_id"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.tcp-tcp.enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.tcp-tcp.streams.tcp.generic.enabled", "true"),
+					resource.TestCheckResourceAttr(
+						"elasticstack_fleet_integration_policy.test_policy",
+						"inputs.tcp-tcp.streams.tcp.generic.vars",
+						tcpGenericVarsExpected8080,
+					),
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
-				Config:   testAccResourceIntegrationPolicyUpdate(policyName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "description", "Updated Integration Policy"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_name", "tcp"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_version", "1.16.0"),
 					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration_policy.test_policy", "vars_json"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.input_id", "tcp-tcp"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.enabled", "false"),
-					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.vars_json"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.streams_json", `{"tcp.generic":{"enabled":false,"vars":{"custom":"","data_stream.dataset":"tcp.generic","listen_address":"localhost","listen_port":8085,"ssl":"","syslog_options":"field: message","tags":[]}}}`),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration_policy.test_policy", "output_id"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.tcp-tcp.enabled", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.tcp-tcp.streams.tcp.generic.enabled", "false"),
+					resource.TestCheckResourceAttr(
+						"elasticstack_fleet_integration_policy.test_policy",
+						"inputs.tcp-tcp.streams.tcp.generic.vars",
+						tcpGenericVarsExpected8085,
+					),
 				),
 			},
 		},
 	})
 }
+
+//go:embed testdata/TestAccResourceIntegrationPolicySecretsFromSDK/legacy/integration_policy.tf
+var sdkCreateTestConfig string
 
 func TestAccResourceIntegrationPolicySecretsFromSDK(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
@@ -116,35 +303,55 @@ func TestAccResourceIntegrationPolicySecretsFromSDK(t *testing.T) {
 						VersionConstraint: "0.11.7",
 					},
 				},
-				SkipFunc:           versionutils.CheckIfVersionMeetsConstraints(sdkConstrains),
-				Config:             testAccResourceIntegrationPolicySecretsCreate(policyName, "created"),
+				SkipFunc: versionutils.CheckIfVersionMeetsConstraints(sdkConstrains),
+				Config:   sdkCreateTestConfig,
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+					"secret_key":  config.StringVariable("created"),
+				},
 				ExpectNonEmptyPlan: true, // secret churn
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "description", "IntegrationPolicyTest Policy"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_name", "aws_logs"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_version", "1.4.0"),
-					resource.TestMatchResourceAttr("elasticstack_fleet_integration_policy.test_policy", "vars_json", regexp.MustCompile(`{"access_key_id":{"id":"\S+","isSecretRef":true},"default_region":"us-east-1","endpoint":"endpoint","secret_access_key":{"id":"\S+","isSecretRef":true},"session_token":{"id":"\S+","isSecretRef":true}}`)),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.input_id", "aws_logs-aws-cloudwatch"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.enabled", "true"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.vars_json", ""),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.streams_json", `{"aws_logs.generic":{"enabled":true,"vars":{"api_sleep":"200ms","api_timeput":"120s","custom":"","data_stream.dataset":"aws_logs.generic","log_streams":[],"number_of_workers":1,"preserve_original_event":false,"scan_frequency":"1m","start_position":"beginning","tags":["forwarded"]}}}`),
+					resource.TestMatchResourceAttr(
+						"elasticstack_fleet_integration_policy.test_policy",
+						"vars_json",
+						regexp.MustCompile(awsLogsSecretsRegexUsEast1),
+					),
+					resource.TestCheckResourceAttr(
+						"elasticstack_fleet_integration_policy.test_policy",
+						"input.0.streams_json",
+						awsLogsStreamsJSONExpected,
+					),
 				),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(sdkConstrains),
-				Config:                   testAccResourceIntegrationPolicySecretsCreate(policyName, "created"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("current"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+					"secret_key":  config.StringVariable("created"),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "description", "IntegrationPolicyTest Policy"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_name", "aws_logs"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_version", "1.4.0"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "vars_json", fmt.Sprintf(`{"access_key_id":"placeholder","default_region":"us-east-1","endpoint":"endpoint","secret_access_key":"created %s","session_token":"placeholder"}`, policyName)),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.input_id", "aws_logs-aws-cloudwatch"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.enabled", "true"),
-					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.vars_json"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.streams_json", `{"aws_logs.generic":{"enabled":true,"vars":{"api_sleep":"200ms","api_timeput":"120s","custom":"","data_stream.dataset":"aws_logs.generic","log_streams":[],"number_of_workers":1,"preserve_original_event":false,"scan_frequency":"1m","start_position":"beginning","tags":["forwarded"]}}}`),
+					resource.TestCheckResourceAttr(
+						"elasticstack_fleet_integration_policy.test_policy",
+						"vars_json",
+						fmt.Sprintf(awsLogsVarsJSONFormatCreated, policyName),
+					),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.aws_logs-aws-cloudwatch.enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.aws_logs-aws-cloudwatch.streams.aws_logs.generic.enabled", "true"),
+					resource.TestCheckResourceAttr(
+						"elasticstack_fleet_integration_policy.test_policy",
+						"inputs.aws_logs-aws-cloudwatch.streams.aws_logs.generic.vars",
+						awsLogsCloudwatchVarsExpected,
+					),
 				),
 			},
 		},
@@ -156,49 +363,86 @@ func TestAccResourceIntegrationPolicySecrets(t *testing.T) {
 
 	t.Run("single valued secrets", func(t *testing.T) {
 		resource.Test(t, resource.TestCase{
-			PreCheck:                 func() { acctest.PreCheck(t) },
-			CheckDestroy:             checkResourceIntegrationPolicyDestroy,
-			ProtoV6ProviderFactories: acctest.Providers,
+			PreCheck:     func() { acctest.PreCheck(t) },
+			CheckDestroy: checkResourceIntegrationPolicyDestroy,
 			Steps: []resource.TestStep{
 				{
-					SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
-					Config:   testAccResourceIntegrationPolicySecretsCreate(policyName, "created"),
+					ProtoV6ProviderFactories: acctest.Providers,
+					SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
+					ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+					ConfigVariables: config.Variables{
+						"policy_name": config.StringVariable(policyName),
+						"secret_key":  config.StringVariable("created"),
+					},
 					Check: resource.ComposeTestCheckFunc(
 						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName),
 						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "description", "IntegrationPolicyTest Policy"),
 						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_name", "aws_logs"),
 						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_version", "1.4.0"),
-						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "vars_json", fmt.Sprintf(`{"access_key_id":"placeholder","default_region":"us-east-1","endpoint":"endpoint","secret_access_key":"created %s","session_token":"placeholder"}`, policyName)),
-						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.input_id", "aws_logs-aws-cloudwatch"),
-						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.enabled", "true"),
-						resource.TestCheckNoResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.vars_json"),
-						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.streams_json", `{"aws_logs.generic":{"enabled":true,"vars":{"api_sleep":"200ms","api_timeput":"120s","custom":"","data_stream.dataset":"aws_logs.generic","log_streams":[],"number_of_workers":1,"preserve_original_event":false,"scan_frequency":"1m","start_position":"beginning","tags":["forwarded"]}}}`),
+						resource.TestCheckResourceAttr(
+							"elasticstack_fleet_integration_policy.test_policy",
+							"vars_json",
+							fmt.Sprintf(awsLogsVarsJSONFormatCreated, policyName),
+						),
+						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.aws_logs-aws-cloudwatch.enabled", "true"),
+						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.aws_logs-aws-cloudwatch.streams.aws_logs.generic.enabled", "true"),
+						resource.TestCheckResourceAttr(
+							"elasticstack_fleet_integration_policy.test_policy",
+							"inputs.aws_logs-aws-cloudwatch.streams.aws_logs.generic.vars",
+							awsLogsCloudwatchVarsExpected,
+						),
 					),
 				},
 				{
-					SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
-					Config:   testAccResourceIntegrationPolicySecretsUpdate(policyName, "updated"),
+					ProtoV6ProviderFactories: acctest.Providers,
+					SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
+					ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+					ConfigVariables: config.Variables{
+						"policy_name": config.StringVariable(policyName),
+						"secret_key":  config.StringVariable("updated"),
+					},
 					Check: resource.ComposeTestCheckFunc(
 						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName),
 						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "description", "Updated Integration Policy"),
 						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_name", "aws_logs"),
 						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_version", "1.4.0"),
-						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "vars_json", fmt.Sprintf(`{"access_key_id":"placeholder","default_region":"us-east-2","endpoint":"endpoint","secret_access_key":"updated %s","session_token":"placeholder"}`, policyName)),
-						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.input_id", "aws_logs-aws-cloudwatch"),
-						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.enabled", "false"),
-						resource.TestCheckNoResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.vars_json"),
-						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.streams_json", `{"aws_logs.generic":{"enabled":false,"vars":{"api_sleep":"200ms","api_timeput":"120s","custom":"","data_stream.dataset":"aws_logs.generic","log_streams":[],"number_of_workers":1,"preserve_original_event":false,"scan_frequency":"2m","start_position":"beginning","tags":["forwarded"]}}}`),
+						resource.TestCheckResourceAttr(
+							"elasticstack_fleet_integration_policy.test_policy",
+							"vars_json",
+							fmt.Sprintf(awsLogsVarsJSONFormatUpdated, policyName),
+						),
+						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.aws_logs-aws-cloudwatch.enabled", "false"),
+						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.aws_logs-aws-cloudwatch.streams.aws_logs.generic.enabled", "false"),
+						resource.TestCheckResourceAttr(
+							"elasticstack_fleet_integration_policy.test_policy",
+							"inputs.aws_logs-aws-cloudwatch.streams.aws_logs.generic.vars",
+							awsLogsCloudwatchVarsExpectedUpdated,
+						),
 					),
 				},
 				{
-					SkipFunc:                versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
-					ResourceName:            "elasticstack_fleet_integration_policy.test_policy",
-					Config:                  testAccResourceIntegrationPolicySecretsUpdate(policyName, "updated"),
-					ImportState:             true,
-					ImportStateVerify:       true,
-					ImportStateVerifyIgnore: []string{"vars_json", "space_ids"},
+					ProtoV6ProviderFactories: acctest.Providers,
+					SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
+					ResourceName:             "elasticstack_fleet_integration_policy.test_policy",
+					ConfigDirectory:          acctest.NamedTestCaseDirectory("import_test"),
+					ConfigVariables: config.Variables{
+						"policy_name": config.StringVariable(policyName),
+						"secret_key":  config.StringVariable("updated"),
+					},
+					ImportState:       true,
+					ImportStateVerify: true,
+					ImportStateVerifyIgnore: []string{
+						"vars_json",
+						"space_ids",
+						"inputs.aws_logs-aws-cloudwatch.defaults",
+						"inputs.aws_logs-aws-s3.defaults",
+					},
 					Check: resource.ComposeTestCheckFunc(
-						resource.TestMatchResourceAttr("elasticstack_fleet_integration_policy.test_policy", "vars_json", regexp.MustCompile(`{"access_key_id":{"id":"\S+","isSecretRef":true},"default_region":"us-east-2","endpoint":"endpoint","secret_access_key":{"id":"\S+","isSecretRef":true},"session_token":{"id":"\S+","isSecretRef":true}}`)),
+						resource.TestMatchResourceAttr(
+							"elasticstack_fleet_integration_policy.test_policy",
+							"vars_json",
+							regexp.MustCompile(awsLogsSecretsRegexUsEast2),
+						),
 					),
 				},
 			},
@@ -207,39 +451,399 @@ func TestAccResourceIntegrationPolicySecrets(t *testing.T) {
 
 	t.Run("multi-valued secrets", func(t *testing.T) {
 		resource.Test(t, resource.TestCase{
-			PreCheck:                 func() { acctest.PreCheck(t) },
-			CheckDestroy:             checkResourceIntegrationPolicyDestroy,
-			ProtoV6ProviderFactories: acctest.Providers,
+			PreCheck:     func() { acctest.PreCheck(t) },
+			CheckDestroy: checkResourceIntegrationPolicyDestroy,
 			Steps: []resource.TestStep{
 				{
-					SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionSqlIntegration),
-					Config:   testAccResourceIntegrationPolicySecretsIds(policyName, "created"),
+					ProtoV6ProviderFactories: acctest.Providers,
+					SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionSQLIntegration),
+					ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+					ConfigVariables: config.Variables{
+						"policy_name": config.StringVariable(policyName),
+						"secret_key":  config.StringVariable("created"),
+					},
 					Check: resource.ComposeTestCheckFunc(
 						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName),
 						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "description", "SQL Integration Policy"),
 						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_name", "sql"),
 						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_version", "1.1.0"),
-						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.input_id", "sql-sql/metrics"),
-						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.enabled", "true"),
-						resource.TestCheckNoResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.vars_json"),
-						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.streams_json", `{"sql.sql":{"enabled":true,"vars":{"data_stream.dataset":"sql","driver":"mysql","hosts":["root:test@tcp(127.0.0.1:3306)/"],"merge_results":false,"period":"1m","processors":"","sql_queries":"- query: SHOW GLOBAL STATUS LIKE 'Innodb_system%'\n  response_format: variables\n        \n","ssl":""}}}`),
+						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.sql-sql/metrics.enabled", "true"),
+						resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.sql-sql/metrics.streams.sql.sql.enabled", "true"),
+						resource.TestCheckResourceAttr(
+							"elasticstack_fleet_integration_policy.test_policy",
+							"inputs.sql-sql/metrics.streams.sql.sql.vars",
+							sqlSQLVarsExpected,
+						),
 					),
 				},
 				{
+					ProtoV6ProviderFactories: acctest.Providers,
 					SkipFunc: func() (bool, error) {
-						return versionutils.CheckIfVersionIsUnsupported(minVersionSqlIntegration)()
+						return versionutils.CheckIfVersionIsUnsupported(minVersionSQLIntegration)()
 					},
-					ResourceName:            "elasticstack_fleet_integration_policy.test_policy",
-					Config:                  testAccResourceIntegrationPolicySecretsIds(policyName, "created"),
+					ResourceName:    "elasticstack_fleet_integration_policy.test_policy",
+					ConfigDirectory: acctest.NamedTestCaseDirectory("import_test"),
+					ConfigVariables: config.Variables{
+						"policy_name": config.StringVariable(policyName),
+						"secret_key":  config.StringVariable("created"),
+					},
 					ImportState:             true,
 					ImportStateVerify:       true,
-					ImportStateVerifyIgnore: []string{"input.0.streams_json", "space_ids"},
+					ImportStateVerifyIgnore: []string{"inputs.sql-sql/metrics.streams.sql.sql.vars", "space_ids"},
 					Check: resource.ComposeTestCheckFunc(
-						resource.TestMatchResourceAttr("elasticstack_fleet_integration_policy.test_policy", "input.0.streams_json", regexp.MustCompile(`"hosts":{"ids":["\S+"],"isSecretRef":true}`)),
+						resource.TestMatchResourceAttr(
+							"elasticstack_fleet_integration_policy.test_policy",
+							"inputs.sql-sql/metrics.streams.sql.sql.vars",
+							regexp.MustCompile(sqlHostsSecretRefRegex),
+						),
 					),
 				},
 			},
 		})
+	})
+}
+
+func TestAccIntegrationPolicyAzureMetrics(t *testing.T) {
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIntegrationPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "description", "Azure Metrics Integration Policy"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_name", "azure_metrics"),
+					resource.TestCheckResourceAttrPair("elasticstack_fleet_integration_policy.test_policy", "integration_version", "data.elasticstack_fleet_integration.test", "version"),
+					resource.TestCheckResourceAttr(
+						"elasticstack_fleet_integration_policy.test_policy",
+						"vars_json",
+						azureMetricsVarsJSONExpected,
+					),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.monitor-azure/metrics.enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.monitor-azure/metrics.streams.azure.monitor.enabled", "true"),
+					resource.TestCheckResourceAttr(
+						"elasticstack_fleet_integration_policy.test_policy",
+						"inputs.monitor-azure/metrics.streams.azure.monitor.vars",
+						azureMonitorVarsExpected,
+					),
+				),
+			},
+		},
+	})
+}
+
+func TestAccIntegrationPolicyInputs(t *testing.T) {
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIntegrationPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "description", "Kafka Integration Policy"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_name", "kafka"),
+					// Check enabled inputs
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-logfile.enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-kafka/metrics.enabled", "true"),
+					// Check enabled streams
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-logfile.streams.kafka.log.enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-kafka/metrics.streams.kafka.broker.enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-kafka/metrics.streams.kafka.consumergroup.enabled", "true"),
+					// Check disabled stream
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-kafka/metrics.streams.kafka.partition.enabled", "false"),
+					// Check vars
+					resource.TestCheckResourceAttr(
+						"elasticstack_fleet_integration_policy.test_policy",
+						"inputs.kafka-kafka/metrics.vars",
+						kafkaMetricsVarsExpected,
+					),
+					// Check unspecified, disabled by default input
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-jolokia/metrics"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_disabled_input"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "description", "Kafka Integration Policy - Updated"),
+					// Check that disabling an input works correctly
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-logfile.enabled", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-kafka/metrics.enabled", "true"),
+					// Vars should remain the same since we didn't change them
+					resource.TestCheckResourceAttr(
+						"elasticstack_fleet_integration_policy.test_policy",
+						"inputs.kafka-kafka/metrics.vars",
+						kafkaMetricsVarsExpected,
+					),
+
+					// Disabled input should have no vars/streams in state
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-logfile.vars"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-logfile.streams"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_enabled_input"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName),
+					// Check that updating an enabled input's vars triggers a change
+					resource.TestCheckResourceAttr(
+						"elasticstack_fleet_integration_policy.test_policy",
+						"inputs.kafka-kafka/metrics.streams.kafka.consumergroup.vars",
+						kafkaConsumerGroupVarsExpected,
+					),
+					// Disabled input should remain disabled
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-logfile.enabled", "false"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_reenable_input"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "description", "Kafka Integration Policy - Re-enabled"),
+					// Check that the kafka-logfile input is re-enabled
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-logfile.enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-logfile.streams.kafka.log.enabled", "true"),
+					resource.TestCheckResourceAttr(
+						"elasticstack_fleet_integration_policy.test_policy",
+						"inputs.kafka-logfile.streams.kafka.log.vars",
+						kafkaLogfileVarsExpected,
+					),
+					// Check that the kafka/metrics input remains enabled
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-kafka/metrics.enabled", "true"),
+					resource.TestCheckResourceAttr(
+						"elasticstack_fleet_integration_policy.test_policy",
+						"inputs.kafka-kafka/metrics.vars",
+						kafkaMetricsVarsExpected,
+					),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-kafka/metrics.streams.kafka.broker.enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-kafka/metrics.streams.kafka.consumergroup.enabled", "true"),
+					resource.TestCheckResourceAttr(
+						"elasticstack_fleet_integration_policy.test_policy",
+						"inputs.kafka-kafka/metrics.streams.kafka.consumergroup.vars",
+						kafkaConsumerGroupVarsExpected,
+					),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-kafka/metrics.streams.kafka.partition.enabled", "false"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_logfile_tags_only"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "description", "Kafka Integration Policy - Logfile with tags only"),
+					// Check that the kafka-logfile input is enabled with only tags specified
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-logfile.enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-logfile.streams.kafka.log.enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-logfile.streams.kafka.log.vars", `{"tags":["custom-tag-1","custom-tag-2"]}`),
+					// Check that the kafka/metrics input remains enabled
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-kafka/metrics.enabled", "true"),
+					resource.TestCheckResourceAttr(
+						"elasticstack_fleet_integration_policy.test_policy",
+						"inputs.kafka-kafka/metrics.vars",
+						kafkaMetricsVarsExpected,
+					),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-kafka/metrics.streams.kafka.broker.enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-kafka/metrics.streams.kafka.consumergroup.enabled", "true"),
+					resource.TestCheckResourceAttr(
+						"elasticstack_fleet_integration_policy.test_policy",
+						"inputs.kafka-kafka/metrics.streams.kafka.consumergroup.vars",
+						kafkaConsumerGroupVarsExpected,
+					),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-kafka/metrics.streams.kafka.partition.enabled", "false"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("minimal"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "description", "Kafka Integration Policy - Minimal"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_name", "kafka"),
+					// Check specified inputs
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-logfile.enabled", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-kafka/metrics.enabled", "true"),
+					// Check unspecified, disabled by default input
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-jolokia/metrics"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("unset"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "description", "Kafka Integration Policy - Minimal"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_name", "kafka"),
+					// Check previously specified inputs
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-logfile.enabled", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.kafka-kafka/metrics.enabled", "true"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceIntegrationPolicyGCPVertexAI(t *testing.T) {
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIntegrationPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionGCPVertexAI),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_name", "gcp_vertexai"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_version", "1.4.0"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "vars_json", `{"project_id":"my-gcp-project"}`),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.GCP Vertex AI Metrics-gcp/metrics.enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.GCP Vertex AI Metrics-gcp/metrics.streams.gcp_vertexai.metrics.enabled", "true"),
+					resource.TestCheckResourceAttr(
+						"elasticstack_fleet_integration_policy.test_policy",
+						"inputs.GCP Vertex AI Metrics-gcp/metrics.streams.gcp_vertexai.metrics.vars",
+						gcpVertexAIMetricsVarsExpected,
+					),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.GCP Vertex AI  Logs-gcp/metrics.enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.GCP Vertex AI  Logs-gcp/metrics.streams.gcp_vertexai.prompt_response_logs.enabled", "true"),
+					resource.TestCheckResourceAttr(
+						"elasticstack_fleet_integration_policy.test_policy",
+						"inputs.GCP Vertex AI  Logs-gcp/metrics.streams.gcp_vertexai.prompt_response_logs.vars",
+						gcpVertexAIPromptResponseLogsVarsExpected,
+					),
+				),
+			},
+			{
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionGCPVertexAI),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_name", "gcp_vertexai"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_version", "1.4.0"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "vars_json", `{"project_id":"my-gcp-project"}`),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.GCP Vertex AI Metrics-gcp/metrics.enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.GCP Vertex AI Metrics-gcp/metrics.streams.gcp_vertexai.metrics.enabled", "true"),
+					resource.TestCheckResourceAttr(
+						"elasticstack_fleet_integration_policy.test_policy",
+						"inputs.GCP Vertex AI Metrics-gcp/metrics.streams.gcp_vertexai.metrics.vars",
+						gcpVertexAIMetricsVarsExpected,
+					),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.GCP Vertex AI  Logs-gcp/metrics.enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.GCP Vertex AI  Logs-gcp/metrics.streams.gcp_vertexai.prompt_response_logs.enabled", "true"),
+					resource.TestCheckResourceAttr(
+						"elasticstack_fleet_integration_policy.test_policy",
+						"inputs.GCP Vertex AI  Logs-gcp/metrics.streams.gcp_vertexai.prompt_response_logs.vars",
+						gcpVertexAIPromptResponseLogsVarsExpected,
+					),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.GCP Vertex AI  Logs-gcp-pubsub.enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "inputs.GCP Vertex AI  Logs-gcp-pubsub.streams.gcp_vertexai.auditlogs.enabled", "true"),
+					resource.TestCheckResourceAttr(
+						"elasticstack_fleet_integration_policy.test_policy",
+						"inputs.GCP Vertex AI  Logs-gcp-pubsub.streams.gcp_vertexai.auditlogs.vars",
+						gcpVertexAIAuditLogsVarsExpected,
+					),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceIntegrationPolicy_VersionUpdate(t *testing.T) {
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIntegrationPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName+"-integration"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_name", "tcp"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_version", "1.16.0"),
+					resource.TestCheckResourceAttrSet("elasticstack_fleet_integration_policy.test_policy", "agent_policy_id"),
+					resource.TestCheckResourceAttrPair(
+						"elasticstack_fleet_integration_policy.test_policy", "agent_policy_id",
+						"elasticstack_fleet_agent_policy.test_policy", "policy_id",
+					),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName+"-integration"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_name", "tcp"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_version", "1.17.0"),
+					// Critical check: agent_policy_id must still be set after version update
+					resource.TestCheckResourceAttrSet("elasticstack_fleet_integration_policy.test_policy", "agent_policy_id"),
+					resource.TestCheckResourceAttrPair(
+						"elasticstack_fleet_integration_policy.test_policy", "agent_policy_id",
+						"elasticstack_fleet_agent_policy.test_policy", "policy_id",
+					),
+				),
+			},
+		},
 	})
 }
 
@@ -278,336 +882,4 @@ func checkResourceIntegrationPolicyDestroy(s *terraform.State) error {
 
 	}
 	return nil
-}
-
-func testAccResourceIntegrationPolicyCommon(name string, integrationName string, integrationVersion string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_fleet_integration" "test_policy" {
-  name    = "%s"
-  version = "%s"
-  force   = true
-}
-
-resource "elasticstack_fleet_agent_policy" "test_policy" {
-  name            = "%s Agent Policy"
-  namespace       = "default"
-  description     = "IntegrationPolicyTest Agent Policy"
-  monitor_logs    = true
-  monitor_metrics = true
-  skip_destroy    = false
-}
-
-data "elasticstack_fleet_enrollment_tokens" "test_policy" {
-  policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
-}
-`, integrationName, integrationVersion, name)
-}
-
-func testAccResourceIntegrationPolicyCreate(id string) string {
-	common := testAccResourceIntegrationPolicyCommon(id, "tcp", "1.16.0")
-	return fmt.Sprintf(`
-%s
-
-resource "elasticstack_fleet_integration_policy" "test_policy" {
-  name            = "%s"
-  namespace       = "default"
-  description     = "IntegrationPolicyTest Policy"
-  agent_policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
-  integration_name    = elasticstack_fleet_integration.test_policy.name
-  integration_version = elasticstack_fleet_integration.test_policy.version
-
-  input {
-    input_id = "tcp-tcp"
-    enabled = true
-    streams_json = jsonencode({
-      "tcp.generic": {
-        "enabled": true
-        "vars": {
-          "listen_address": "localhost"
-          "listen_port": 8080
-          "data_stream.dataset": "tcp.generic"
-          "tags": []
-          "syslog_options": "field: message"
-          "ssl": ""
-          "custom": ""
-        }
-      }
-    })
-  }
-}
-`, common, id)
-}
-
-func testAccResourceIntegrationPolicyUpdate(id string) string {
-	common := testAccResourceIntegrationPolicyCommon(id, "tcp", "1.16.0")
-	return fmt.Sprintf(`
-%s
-
-resource "elasticstack_fleet_integration_policy" "test_policy" {
-  name            = "%s"
-  namespace       = "default"
-  description     = "Updated Integration Policy"
-  agent_policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
-  integration_name    = elasticstack_fleet_integration.test_policy.name
-  integration_version = elasticstack_fleet_integration.test_policy.version
-
-  input {
-    input_id = "tcp-tcp"
-    enabled  = false
-    streams_json = jsonencode({
-      "tcp.generic": {
-        "enabled": false
-        "vars": {
-          "listen_address": "localhost"
-          "listen_port": 8085
-          "data_stream.dataset": "tcp.generic"
-          "tags": []
-          "syslog_options": "field: message"
-          "ssl": ""
-          "custom": ""
-        }
-      }
-    })
-  }
-}
-`, common, id)
-}
-
-func testAccResourceIntegrationPolicySecretsCreate(id string, key string) string {
-	common := testAccResourceIntegrationPolicyCommon(id, "aws_logs", "1.4.0")
-	return fmt.Sprintf(`
-%s
-
-resource "elasticstack_fleet_integration_policy" "test_policy" {
-  name            = "%s"
-  namespace       = "default"
-  description     = "IntegrationPolicyTest Policy"
-  agent_policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
-  integration_name    = elasticstack_fleet_integration.test_policy.name
-  integration_version = elasticstack_fleet_integration.test_policy.version
-
-  vars_json = jsonencode({
-    "access_key_id": "placeholder"
-    "secret_access_key": "%s %s"
-    "session_token": "placeholder"
-    "endpoint": "endpoint"
-    "default_region": "us-east-1"
-  })
-  input {
-    input_id = "aws_logs-aws-cloudwatch"
-    enabled  = true
-    streams_json = jsonencode({
-      "aws_logs.generic" = {
-        enabled = true
-        vars = {
-          "number_of_workers": 1
-          "log_streams": []
-          "start_position": "beginning"
-          "scan_frequency": "1m"
-          "api_timeput": "120s"
-          "api_sleep": "200ms"
-          "tags": ["forwarded"]
-          "preserve_original_event": false
-          "data_stream.dataset": "aws_logs.generic"
-          "custom": ""
-        }
-      }
-    })
-  }
-  input {
-    input_id = "aws_logs-aws-s3"
-    enabled = true
-    streams_json = jsonencode({
-      "aws_logs.generic" = {
-        enabled = true
-        vars = {
-          "number_of_workers": 1
-          "bucket_list_interval": "120s"
-          "file_selectors": ""
-          "fips_enabled": false
-          "include_s3_metadata": []
-          "max_bytes": "10MiB"
-          "max_number_of_messages": 5
-          "parsers": ""
-          "sqs.max_receive_count": 5
-          "sqs.wait_time": "20s"
-          "tags": ["forwarded"]
-          "preserve_original_event": false
-          "data_stream.dataset": "aws_logs.generic"
-          "custom": ""
-        }
-      }
-    })
-  }
-}
-`, common, id, key, id)
-}
-
-func testAccResourceIntegrationPolicySecretsUpdate(id string, key string) string {
-	common := testAccResourceIntegrationPolicyCommon(id, "aws_logs", "1.4.0")
-	return fmt.Sprintf(`
-%s
-
-resource "elasticstack_fleet_integration_policy" "test_policy" {
-  name            = "%s"
-  namespace       = "default"
-  description     = "Updated Integration Policy"
-  agent_policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
-  integration_name    = elasticstack_fleet_integration.test_policy.name
-  integration_version = elasticstack_fleet_integration.test_policy.version
-
-  vars_json = jsonencode({
-    "access_key_id": "placeholder"
-    "secret_access_key": "%s %s"
-    "session_token": "placeholder"
-    "endpoint": "endpoint"
-    "default_region": "us-east-2"
-  })
-  input {
-    input_id = "aws_logs-aws-cloudwatch"
-    enabled  = false
-    streams_json = jsonencode({
-      "aws_logs.generic" = {
-        enabled = false
-        vars = {
-          "number_of_workers": 1,
-          "log_streams": [],
-          "start_position": "beginning",
-          "scan_frequency": "2m",
-          "api_timeput": "120s",
-          "api_sleep": "200ms",
-          "tags": ["forwarded"],
-          "preserve_original_event": false,
-          "data_stream.dataset": "aws_logs.generic",
-          "custom": "",
-        }
-      }
-    })
-  }
-  input {
-    input_id = "aws_logs-aws-s3"
-    enabled = false
-    streams_json = jsonencode({
-      "aws_logs.generic" = {
-        enabled = false
-        vars = {
-          "number_of_workers": 1,
-          "bucket_list_interval": "120s",
-          "file_selectors": "",
-          "fips_enabled": false,
-          "include_s3_metadata": [],
-          "max_bytes": "20MiB",
-          "max_number_of_messages": 5,
-          "parsers": "",
-          "sqs.max_receive_count": 5,
-          "sqs.wait_time": "20s",
-          "tags": ["forwarded"],
-          "preserve_original_event": false,
-          "data_stream.dataset": "aws_logs.generic",
-          "custom": "",
-        }
-      }
-    })
-  }
-}
-`, common, id, key, id)
-}
-
-func testAccResourceIntegrationPolicyCreateMultipleAgentPolicies(id string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-resource "elasticstack_fleet_integration" "test_policy" {
-  name    = "tcp"
-  version = "1.16.0"
-  force   = true
-}
-resource "elasticstack_fleet_agent_policy" "test_policy_1" {
-  name            = "%s Agent Policy 1"
-  namespace       = "default"
-  description     = "IntegrationPolicyTest Agent Policy 1"
-  monitor_logs    = true
-  monitor_metrics = true
-  skip_destroy    = false
-}
-resource "elasticstack_fleet_agent_policy" "test_policy_2" {
-  name            = "%s Agent Policy 2"
-  namespace       = "default"
-  description     = "IntegrationPolicyTest Agent Policy 2"
-  monitor_logs    = true
-  monitor_metrics = true
-  skip_destroy    = false
-}
-resource "elasticstack_fleet_integration_policy" "test_policy" {
-  name            = "%s"
-  namespace       = "default"
-  description     = "IntegrationPolicyTest Policy"
-  agent_policy_ids = [
-    elasticstack_fleet_agent_policy.test_policy_1.policy_id,
-    elasticstack_fleet_agent_policy.test_policy_2.policy_id
-  ]
-  integration_name    = elasticstack_fleet_integration.test_policy.name
-  integration_version = elasticstack_fleet_integration.test_policy.version
-  input {
-    input_id = "tcp-tcp"
-    streams_json = jsonencode({
-      "tcp.generic": {
-        "enabled": true
-        "vars": {
-          "listen_address": "localhost"
-          "listen_port": 8080
-          "data_stream.dataset": "tcp.generic"
-          "tags": []
-          "syslog_options": "field: message"
-          "ssl": ""
-          "custom": ""
-        }
-      }
-    })
-  }
-}
-`, id, id, id)
-}
-
-func testAccResourceIntegrationPolicySecretsIds(id string, key string) string {
-	common := testAccResourceIntegrationPolicyCommon(id, "sql", "1.1.0")
-	return fmt.Sprintf(`
-%s
-
-resource "elasticstack_fleet_integration_policy" "test_policy" {
-  name            = "%s"
-  namespace       = "default"
-  description     = "SQL Integration Policy"
-  agent_policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
-  integration_name    = elasticstack_fleet_integration.test_policy.name
-  integration_version = elasticstack_fleet_integration.test_policy.version
- 
-  input {
-    input_id  = "sql-sql/metrics"
-      enabled   = true
-      streams_json = jsonencode({
-        "sql.sql" : {
-          "enabled" : true,
-          "vars" : {
-            "hosts" : ["root:test@tcp(127.0.0.1:3306)/"],
-            "period" : "1m",
-            "driver" : "mysql",
-            "sql_queries" : "- query: SHOW GLOBAL STATUS LIKE 'Innodb_system%%'\n  response_format: variables\n        \n",
-            "merge_results" : false,
-            "ssl" : "",
-            "data_stream.dataset" : "sql",
-            "processors" : ""
-          }
-        }
-      })
-  }
-}
-`, common, id)
 }

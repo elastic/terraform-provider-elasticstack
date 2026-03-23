@@ -1,10 +1,28 @@
-package integration_policy
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package integrationpolicy
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -32,7 +50,7 @@ func (r *integrationPolicyResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
-	body, diags := planModel.toAPIModel(ctx, false, feat)
+	body, diags := planModel.toAPIModel(ctx, feat)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -41,10 +59,10 @@ func (r *integrationPolicyResource) Create(ctx context.Context, req resource.Cre
 	// Determine space context for creating the package policy
 	// The package policy must be created in the same space as the agent policy it references
 	var spaceID string
-	if !planModel.SpaceIds.IsNull() && !planModel.SpaceIds.IsUnknown() {
+	if !planModel.SpaceIDs.IsNull() && !planModel.SpaceIDs.IsUnknown() {
 		// Explicit space_ids provided - use the first one
 		var tempDiags diag.Diagnostics
-		spaceIDs := utils.SetTypeAs[types.String](ctx, planModel.SpaceIds, path.Root("space_ids"), &tempDiags)
+		spaceIDs := typeutils.SetTypeAs[types.String](ctx, planModel.SpaceIDs, path.Root("space_ids"), &tempDiags)
 		if !tempDiags.HasError() && len(spaceIDs) > 0 {
 			spaceID = spaceIDs[0].ValueString()
 		}
@@ -65,9 +83,23 @@ func (r *integrationPolicyResource) Create(ctx context.Context, req resource.Cre
 	}
 
 	// Remember if the user configured input in the plan
-	planHadInput := utils.IsKnown(planModel.Input) && !planModel.Input.IsNull() && len(planModel.Input.Elements()) > 0
+	planHadInput := typeutils.IsKnown(planModel.Inputs) && !planModel.Inputs.IsNull() && len(planModel.Inputs.Elements()) > 0
 
-	diags = planModel.populateFromAPI(ctx, policy)
+	if policy.Package == nil {
+		resp.Diagnostics.AddError(
+			"Missing package information",
+			fmt.Sprintf("The integration policy '%s' does not contain package information.", policy.Id),
+		)
+		return
+	}
+
+	pkg, diags := getPackageInfo(ctx, client, policy.Package.Name, policy.Package.Version)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	diags = planModel.populateFromAPI(ctx, pkg, policy)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -76,7 +108,7 @@ func (r *integrationPolicyResource) Create(ctx context.Context, req resource.Cre
 	// If plan didn't have input configured, ensure we don't add it now
 	// This prevents "Provider produced inconsistent result" errors
 	if !planHadInput {
-		planModel.Input = types.ListNull(getInputTypeV1())
+		planModel.Inputs = NewInputsNull(getInputsElementType())
 	}
 
 	diags = resp.State.Set(ctx, planModel)

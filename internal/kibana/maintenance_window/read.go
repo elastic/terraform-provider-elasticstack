@@ -1,16 +1,33 @@
-package maintenance_window
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package maintenancewindow
 
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibana_oapi"
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *MaintenanceWindowResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var stateModel MaintenanceWindowModel
+func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var stateModel Model
 
 	req.State.GetAttribute(ctx, path.Root("id"), &stateModel.ID)
 	req.State.GetAttribute(ctx, path.Root("space_id"), &stateModel.SpaceID)
@@ -37,7 +54,7 @@ func (r *MaintenanceWindowResource) Read(ctx context.Context, req resource.ReadR
 	}
 
 	maintenanceWindowID, spaceID := stateModel.getMaintenanceWindowIDAndSpaceID()
-	maintenanceWindow, diags := kibana_oapi.GetMaintenanceWindow(ctx, client, spaceID, maintenanceWindowID)
+	maintenanceWindow, diags := kibanaoapi.GetMaintenanceWindow(ctx, client, spaceID, maintenanceWindowID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

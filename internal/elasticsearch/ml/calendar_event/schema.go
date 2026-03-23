@@ -35,7 +35,7 @@ func (r *calendarEventResource) Schema(_ context.Context, _ resource.SchemaReque
 	resp.Schema = schema.Schema{
 		MarkdownDescription: "Manages scheduled events for a Machine Learning calendar. See the [ML Calendar Events API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/ml-post-calendar-event.html) for more details.",
 		Blocks: map[string]schema.Block{
-			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock("elasticsearch_connection", false),
+			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(false),
 		},
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{

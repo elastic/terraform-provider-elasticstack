@@ -32,22 +32,26 @@ resource "elasticstack_fleet_integration_policy" "sample" {
   agent_policy_id     = elasticstack_fleet_agent_policy.sample.policy_id
   integration_name    = elasticstack_fleet_integration.sample.name
   integration_version = elasticstack_fleet_integration.sample.version
+  // Optional: specify a custom output to send data to
+  // output_id           = "my-custom-output-id"
 
-  input {
-    input_id = "tcp-tcp"
-    streams_json = jsonencode({
-      "tcp.generic" : {
-        "enabled" : true,
-        "vars" : {
-          "listen_address" : "localhost",
-          "listen_port" : 8080,
-          "data_stream.dataset" : "tcp.generic",
-          "tags" : [],
-          "syslog_options" : "field: message\n#format: auto\n#timezone: Local\n",
-          "ssl" : "#certificate: |\n#    -----BEGIN CERTIFICATE-----\n#    ...\n#    -----END CERTIFICATE-----\n#key: |\n#    -----BEGIN PRIVATE KEY-----\n#    ...\n#    -----END PRIVATE KEY-----\n",
-          "custom" : ""
+  inputs = {
+    "tcp-tcp" = {
+      enabled = true
+      streams = {
+        "tcp.generic" = {
+          enabled = true,
+          vars = jsonencode({
+            "listen_address" : "localhost",
+            "listen_port" : 8080,
+            "data_stream.dataset" : "tcp.generic",
+            "tags" : [],
+            "syslog_options" : "field: message\n#format: auto\n#timezone: Local\n",
+            "ssl" : "#certificate: |\n#    -----BEGIN CERTIFICATE-----\n#    ...\n#    -----END CERTIFICATE-----\n#key: |\n#    -----BEGIN PRIVATE KEY-----\n#    ...\n#    -----END PRIVATE KEY-----\n",
+            "custom" : ""
+          })
         }
       }
-    })
+    }
   }
 }

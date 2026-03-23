@@ -1,0 +1,1 @@
+Helper data source which can be used to create the configuration for a URI parts processor. This processor parses a Uniform Resource Identifier (URI) string and extracts its components as an object. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/uri-parts-processor.html

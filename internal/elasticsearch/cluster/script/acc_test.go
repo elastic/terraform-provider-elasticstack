@@ -1,6 +1,24 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package script_test
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -57,6 +75,46 @@ func TestAccResourceScript(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_script.test", "source", "Math.log(_score * 4) + params['changed_modifier']"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_script.test", "params", `{"changed_modifier":2}`),
 				),
+			},
+		},
+	})
+}
+
+func TestAccResourceScriptImport(t *testing.T) {
+	scriptID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkScriptDestroy,
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccScriptCreate(scriptID),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_script.test", "script_id", scriptID),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_script.test", "lang", "painless"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_script.test", "source", "Math.log(_score * 2) + params['my_modifier']"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_script.test", "context", "score"),
+				),
+			},
+			{
+				ResourceName: "elasticstack_elasticsearch_script.test",
+				ImportStateIdFunc: func(_ *terraform.State) (string, error) {
+					client, err := clients.NewAcceptanceTestingClient()
+					if err != nil {
+						return "", err
+					}
+					clusterID, diag := client.ClusterID(context.Background())
+					if diag.HasError() {
+						return "", fmt.Errorf("failed to get cluster uuid: %s", diag[0].Summary)
+					}
+
+					return fmt.Sprintf("%s/%s", *clusterID, scriptID), nil
+				},
+				ImportState:       true,
+				ImportStateVerify: true,
+				// context is not returned by the Elasticsearch API so we cannot verify it
+				ImportStateVerifyIgnore: []string{"context"},
 			},
 		},
 	})
@@ -202,18 +260,18 @@ func checkScriptDestroy(s *terraform.State) error {
 			continue
 		}
 
-		compId, _ := clients.CompositeIdFromStr(rs.Primary.ID)
+		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 		esClient, err := client.GetESClient()
 		if err != nil {
 			return err
 		}
-		res, err := esClient.GetScript(compId.ResourceId)
+		res, err := esClient.GetScript(compID.ResourceID)
 		if err != nil {
 			return err
 		}
 
 		if res.StatusCode != 404 {
-			return fmt.Errorf("script (%s) still exists", compId.ResourceId)
+			return fmt.Errorf("script (%s) still exists", compID.ResourceID)
 		}
 	}
 	return nil

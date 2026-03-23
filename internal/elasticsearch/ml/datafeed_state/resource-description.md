@@ -1,0 +1,3 @@
+Manages the state of an existing Elasticsearch ML datafeed by starting or stopping it. This resource does not create or configure a datafeed, but instead manages the operational state of an existing datafeed.
+
+Note: Starting a non-realtime datafeed (i.e with an absolute end time) will result in the datafeed automatically stopping once all available data has been processed. By default, Terraform will restart the datafeed from the configured start time and reprocess all data again. It's recommended to ignore changes to the `state` attribute via the [resource lifecycle](https://developer.hashicorp.com/terraform/tutorials/state/resource-lifecycle#ignore-changes) for non-realtime datafeeds.  

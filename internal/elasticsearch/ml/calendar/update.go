@@ -58,13 +58,13 @@ func (r *calendarResource) update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	compID, sdkDiags := clients.CompositeIdFromStr(state.ID.ValueString())
+	compID, sdkDiags := clients.CompositeIDFromStr(state.ID.ValueString())
 	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	res, err := esClient.ML.GetCalendars(esClient.ML.GetCalendars.WithCalendarID(compID.ResourceId), esClient.ML.GetCalendars.WithContext(ctx))
+	res, err := esClient.ML.GetCalendars(esClient.ML.GetCalendars.WithCalendarID(compID.ResourceID), esClient.ML.GetCalendars.WithContext(ctx))
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to get current ML calendar", err.Error())
 		return

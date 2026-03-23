@@ -1,0 +1,891 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package dashboard
+
+import (
+	"context"
+	"encoding/json"
+	"math"
+
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+)
+
+func newXYChartPanelConfigConverter() xyChartPanelConfigConverter {
+	return xyChartPanelConfigConverter{
+		lensVisualizationBase: lensVisualizationBase{
+			visualizationType: string(kbapi.Xy),
+			hasTFPanelConfig:  func(pm panelModel) bool { return pm.XYChartConfig != nil },
+		},
+	}
+}
+
+type xyChartPanelConfigConverter struct {
+	lensVisualizationBase
+}
+
+func (c xyChartPanelConfigConverter) populateFromAttributes(ctx context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes) diag.Diagnostics {
+	xyChart, err := attrs.AsXyChart()
+	if err != nil {
+		return diagutil.FrameworkDiagFromError(err)
+	}
+
+	pm.XYChartConfig = &xyChartConfigModel{}
+	return pm.XYChartConfig.fromAPI(ctx, xyChart)
+}
+
+func (c xyChartPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelLens_Config_0_Attributes, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	configModel := *pm.XYChartConfig
+
+	// Convert the structured model to API schema
+	xyChart, xyDiags := configModel.toAPI()
+	diags.Append(xyDiags...)
+	if diags.HasError() {
+		return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}, diags
+	}
+
+	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	if err := attrs.FromXyChart(xyChart); err != nil {
+		diags.AddError("Failed to create XY chart attributes", err.Error())
+		return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}, diags
+	}
+
+	return attrs, diags
+}
+
+// test-compat wrappers for legacy converter tests
+type xyChartConfigModel struct {
+	Title       types.String        `tfsdk:"title"`
+	Description types.String        `tfsdk:"description"`
+	Axis        *xyAxisModel        `tfsdk:"axis"`
+	Decorations *xyDecorationsModel `tfsdk:"decorations"`
+	Fitting     *xyFittingModel     `tfsdk:"fitting"`
+	Layers      []xyLayerModel      `tfsdk:"layers"`
+	Legend      *xyLegendModel      `tfsdk:"legend"`
+	Query       *filterSimpleModel  `tfsdk:"query"`
+	Filters     []searchFilterModel `tfsdk:"filters"`
+}
+
+type xyAxisModel struct {
+	X     *xyAxisConfigModel `tfsdk:"x"`
+	Left  *yAxisConfigModel  `tfsdk:"left"`
+	Right *yAxisConfigModel  `tfsdk:"right"`
+}
+
+func (m *xyAxisModel) fromAPI(apiAxis kbapi.XyAxis) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	if apiAxis.X != nil {
+		m.X = &xyAxisConfigModel{}
+		xDiags := m.X.fromAPI(apiAxis.X)
+		diags.Append(xDiags...)
+		if m.X.isEmpty() {
+			m.X = nil
+		}
+	}
+
+	if apiAxis.Left != nil {
+		m.Left = &yAxisConfigModel{}
+		leftDiags := m.Left.fromAPILeft(apiAxis.Left)
+		diags.Append(leftDiags...)
+		if m.Left.isEmpty() {
+			m.Left = nil
+		}
+	}
+
+	if apiAxis.Right != nil {
+		m.Right = &yAxisConfigModel{}
+		rightDiags := m.Right.fromAPIRight(apiAxis.Right)
+		diags.Append(rightDiags...)
+		if m.Right.isEmpty() {
+			m.Right = nil
+		}
+	}
+
+	return diags
+}
+
+func (m *xyAxisModel) toAPI() (kbapi.XyAxis, diag.Diagnostics) {
+	if m == nil {
+		return kbapi.XyAxis{}, nil
+	}
+
+	var diags diag.Diagnostics
+	var axis kbapi.XyAxis
+
+	if m.X != nil {
+		xAxis, xDiags := m.X.toAPI()
+		diags.Append(xDiags...)
+		axis.X = xAxis
+	}
+
+	if m.Left != nil {
+		leftAxis, leftDiags := m.Left.toAPILeft()
+		diags.Append(leftDiags...)
+		axis.Left = leftAxis
+	}
+
+	if m.Right != nil {
+		rightAxis, rightDiags := m.Right.toAPIRight()
+		diags.Append(rightDiags...)
+		axis.Right = rightAxis
+	}
+
+	return axis, diags
+}
+
+type xyAxisConfigModel struct {
+	Title            *axisTitleModel      `tfsdk:"title"`
+	Ticks            types.Bool           `tfsdk:"ticks"`
+	Grid             types.Bool           `tfsdk:"grid"`
+	LabelOrientation types.String         `tfsdk:"label_orientation"`
+	ExtentJSON       jsontypes.Normalized `tfsdk:"extent_json"`
+}
+
+func (m *xyAxisConfigModel) isEmpty() bool {
+	if m == nil {
+		return true
+	}
+	if typeutils.IsKnown(m.Ticks) || typeutils.IsKnown(m.Grid) || typeutils.IsKnown(m.LabelOrientation) || typeutils.IsKnown(m.ExtentJSON) {
+		return false
+	}
+	return axisTitleIsDefault(m.Title)
+}
+
+type xyAxisConfigAPIModel = struct {
+	Extent           *kbapi.XyAxis_X_Extent         `json:"extent,omitempty"`
+	Grid             *bool                          `json:"grid,omitempty"`
+	LabelOrientation *kbapi.XyAxisXLabelOrientation `json:"label_orientation,omitempty"`
+	Ticks            *bool                          `json:"ticks,omitempty"`
+	Title            *struct {
+		Value   *string `json:"value,omitempty"`
+		Visible *bool   `json:"visible,omitempty"`
+	} `json:"title,omitempty"`
+}
+
+func (m *xyAxisConfigModel) fromAPI(apiAxis *xyAxisConfigAPIModel) diag.Diagnostics {
+	diags := diag.Diagnostics{}
+	if apiAxis == nil {
+		return diags
+	}
+
+	m.Grid = types.BoolPointerValue(apiAxis.Grid)
+	m.Ticks = types.BoolPointerValue(apiAxis.Ticks)
+	m.LabelOrientation = typeutils.StringishPointerValue(apiAxis.LabelOrientation)
+
+	if apiAxis.Title != nil {
+		m.Title = &axisTitleModel{}
+		m.Title.fromAPI(apiAxis.Title)
+	}
+
+	if apiAxis.Extent != nil {
+		extentJSON, err := json.Marshal(apiAxis.Extent)
+		if err == nil {
+			m.ExtentJSON = jsontypes.NewNormalizedValue(string(extentJSON))
+		}
+	}
+
+	return diags
+}
+
+func (m *xyAxisConfigModel) toAPI() (*xyAxisConfigAPIModel, diag.Diagnostics) {
+	if m == nil {
+		return nil, nil
+	}
+
+	var diags diag.Diagnostics
+	xAxis := &xyAxisConfigAPIModel{}
+
+	if typeutils.IsKnown(m.Grid) {
+		xAxis.Grid = new(m.Grid.ValueBool())
+	}
+	if typeutils.IsKnown(m.Ticks) {
+		xAxis.Ticks = new(m.Ticks.ValueBool())
+	}
+	if typeutils.IsKnown(m.LabelOrientation) {
+		labelOrient := kbapi.XyAxisXLabelOrientation(m.LabelOrientation.ValueString())
+		xAxis.LabelOrientation = &labelOrient
+	}
+	if m.Title != nil {
+		xAxis.Title = m.Title.toAPI()
+	}
+	if typeutils.IsKnown(m.ExtentJSON) {
+		var extent kbapi.XyAxis_X_Extent
+		extentDiags := m.ExtentJSON.Unmarshal(&extent)
+		diags.Append(extentDiags...)
+		if !extentDiags.HasError() {
+			xAxis.Extent = &extent
+		}
+	}
+
+	return xAxis, diags
+}
+
+type yAxisConfigModel struct {
+	Title            *axisTitleModel      `tfsdk:"title"`
+	Ticks            types.Bool           `tfsdk:"ticks"`
+	Grid             types.Bool           `tfsdk:"grid"`
+	LabelOrientation types.String         `tfsdk:"label_orientation"`
+	Scale            types.String         `tfsdk:"scale"`
+	ExtentJSON       jsontypes.Normalized `tfsdk:"extent_json"`
+}
+
+func (m *yAxisConfigModel) isEmpty() bool {
+	if m == nil {
+		return true
+	}
+	if typeutils.IsKnown(m.Ticks) || typeutils.IsKnown(m.Grid) || typeutils.IsKnown(m.LabelOrientation) || typeutils.IsKnown(m.Scale) || typeutils.IsKnown(m.ExtentJSON) {
+		return false
+	}
+	return axisTitleIsDefault(m.Title)
+}
+
+type leftYAxisConfigAPIModel = struct {
+	Extent           *kbapi.XyAxis_Left_Extent         `json:"extent,omitempty"`
+	Grid             *bool                             `json:"grid,omitempty"`
+	LabelOrientation *kbapi.XyAxisLeftLabelOrientation `json:"label_orientation,omitempty"`
+	Scale            *kbapi.XyAxisLeftScale            `json:"scale,omitempty"`
+	Ticks            *bool                             `json:"ticks,omitempty"`
+	Title            *struct {
+		Value   *string `json:"value,omitempty"`
+		Visible *bool   `json:"visible,omitempty"`
+	} `json:"title,omitempty"`
+}
+
+func (m *yAxisConfigModel) fromAPILeft(apiAxis *leftYAxisConfigAPIModel) diag.Diagnostics {
+	diags := diag.Diagnostics{}
+	if apiAxis == nil {
+		return diags
+	}
+
+	m.Grid = types.BoolPointerValue(apiAxis.Grid)
+	m.Ticks = types.BoolPointerValue(apiAxis.Ticks)
+	m.LabelOrientation = typeutils.StringishPointerValue(apiAxis.LabelOrientation)
+	m.Scale = typeutils.StringishPointerValue(apiAxis.Scale)
+
+	if apiAxis.Title != nil {
+		m.Title = &axisTitleModel{}
+		m.Title.fromAPI(apiAxis.Title)
+	}
+
+	if apiAxis.Extent != nil {
+		extentJSON, err := json.Marshal(apiAxis.Extent)
+		if err == nil {
+			m.ExtentJSON = jsontypes.NewNormalizedValue(string(extentJSON))
+		}
+	}
+
+	return diags
+}
+
+func (m *yAxisConfigModel) toAPILeft() (*leftYAxisConfigAPIModel, diag.Diagnostics) {
+	if m == nil {
+		return nil, nil
+	}
+
+	var diags diag.Diagnostics
+	yAxis := &leftYAxisConfigAPIModel{}
+
+	if typeutils.IsKnown(m.Grid) {
+		yAxis.Grid = new(m.Grid.ValueBool())
+	}
+	if typeutils.IsKnown(m.Ticks) {
+		yAxis.Ticks = new(m.Ticks.ValueBool())
+	}
+	if typeutils.IsKnown(m.LabelOrientation) {
+		labelOrient := kbapi.XyAxisLeftLabelOrientation(m.LabelOrientation.ValueString())
+		yAxis.LabelOrientation = &labelOrient
+	}
+	if typeutils.IsKnown(m.Scale) {
+		scale := kbapi.XyAxisLeftScale(m.Scale.ValueString())
+		yAxis.Scale = &scale
+	}
+	if m.Title != nil {
+		yAxis.Title = m.Title.toAPI()
+	}
+	if typeutils.IsKnown(m.ExtentJSON) {
+		var extent kbapi.XyAxis_Left_Extent
+		extentDiags := m.ExtentJSON.Unmarshal(&extent)
+		diags.Append(extentDiags...)
+		if !extentDiags.HasError() {
+			yAxis.Extent = &extent
+		}
+	}
+
+	return yAxis, diags
+}
+
+type rightYAxisConfigAPIModel = struct {
+	// Extent Y-axis extent configuration defining how the axis bounds are calculated
+	Extent *kbapi.XyAxis_Right_Extent `json:"extent,omitempty"`
+
+	// Grid Whether to show grid lines for this axis
+	Grid *bool `json:"grid,omitempty"`
+
+	// LabelOrientation Orientation of the axis labels
+	LabelOrientation *kbapi.XyAxisRightLabelOrientation `json:"label_orientation,omitempty"`
+
+	// Scale Y-axis scale type for data transformation
+	Scale *kbapi.XyAxisRightScale `json:"scale,omitempty"`
+
+	// Ticks Whether to show tick marks on the axis
+	Ticks *bool `json:"ticks,omitempty"`
+
+	// Title Axis title configuration
+	Title *struct {
+		// Value Axis title text
+		Value *string `json:"value,omitempty"`
+
+		// Visible Whether to show the title
+		Visible *bool `json:"visible,omitempty"`
+	} `json:"title,omitempty"`
+}
+
+func (m *yAxisConfigModel) fromAPIRight(apiAxis *rightYAxisConfigAPIModel) diag.Diagnostics {
+	diags := diag.Diagnostics{}
+	if apiAxis == nil {
+		return diags
+	}
+
+	m.Grid = types.BoolPointerValue(apiAxis.Grid)
+	m.Ticks = types.BoolPointerValue(apiAxis.Ticks)
+	m.LabelOrientation = typeutils.StringishPointerValue(apiAxis.LabelOrientation)
+	m.Scale = typeutils.StringishPointerValue(apiAxis.Scale)
+
+	if apiAxis.Title != nil {
+		m.Title = &axisTitleModel{}
+		m.Title.fromAPI(apiAxis.Title)
+	}
+
+	if apiAxis.Extent != nil {
+		extentJSON, err := json.Marshal(apiAxis.Extent)
+		if err == nil {
+			m.ExtentJSON = jsontypes.NewNormalizedValue(string(extentJSON))
+		}
+	}
+
+	return diags
+}
+
+func (m *yAxisConfigModel) toAPIRight() (*rightYAxisConfigAPIModel, diag.Diagnostics) {
+	if m == nil {
+		return nil, nil
+	}
+
+	var diags diag.Diagnostics
+	yAxis := &rightYAxisConfigAPIModel{}
+
+	if typeutils.IsKnown(m.Grid) {
+		yAxis.Grid = new(m.Grid.ValueBool())
+	}
+	if typeutils.IsKnown(m.Ticks) {
+		yAxis.Ticks = new(m.Ticks.ValueBool())
+	}
+	if typeutils.IsKnown(m.LabelOrientation) {
+		labelOrient := kbapi.XyAxisRightLabelOrientation(m.LabelOrientation.ValueString())
+		yAxis.LabelOrientation = &labelOrient
+	}
+	if typeutils.IsKnown(m.Scale) {
+		scale := kbapi.XyAxisRightScale(m.Scale.ValueString())
+		yAxis.Scale = &scale
+	}
+	if m.Title != nil {
+		yAxis.Title = m.Title.toAPI()
+	}
+	if typeutils.IsKnown(m.ExtentJSON) {
+		var extent kbapi.XyAxis_Right_Extent
+		extentDiags := m.ExtentJSON.Unmarshal(&extent)
+		diags.Append(extentDiags...)
+		if !extentDiags.HasError() {
+			yAxis.Extent = &extent
+		}
+	}
+
+	return yAxis, diags
+}
+
+type axisTitleModel struct {
+	Value   types.String `tfsdk:"value"`
+	Visible types.Bool   `tfsdk:"visible"`
+}
+
+func axisTitleIsDefault(title *axisTitleModel) bool {
+	if title == nil {
+		return true
+	}
+	if typeutils.IsKnown(title.Value) {
+		return false
+	}
+	if typeutils.IsKnown(title.Visible) {
+		return title.Visible.ValueBool()
+	}
+	return true
+}
+
+func (m *axisTitleModel) fromAPI(apiTitle *struct {
+	Value   *string `json:"value,omitempty"`
+	Visible *bool   `json:"visible,omitempty"`
+}) {
+	if apiTitle == nil {
+		return
+	}
+	m.Value = types.StringPointerValue(apiTitle.Value)
+	m.Visible = types.BoolPointerValue(apiTitle.Visible)
+}
+
+func (m *axisTitleModel) toAPI() *struct {
+	Value   *string `json:"value,omitempty"`
+	Visible *bool   `json:"visible,omitempty"`
+} {
+	if m == nil {
+		return nil
+	}
+
+	title := &struct {
+		Value   *string `json:"value,omitempty"`
+		Visible *bool   `json:"visible,omitempty"`
+	}{}
+
+	if typeutils.IsKnown(m.Value) {
+		title.Value = new(m.Value.ValueString())
+	}
+	if typeutils.IsKnown(m.Visible) {
+		title.Visible = new(m.Visible.ValueBool())
+	}
+
+	return title
+}
+
+type xyDecorationsModel struct {
+	ShowEndZones          types.Bool    `tfsdk:"show_end_zones"`
+	ShowCurrentTimeMarker types.Bool    `tfsdk:"show_current_time_marker"`
+	PointVisibility       types.String  `tfsdk:"point_visibility"`
+	LineInterpolation     types.String  `tfsdk:"line_interpolation"`
+	MinimumBarHeight      types.Int64   `tfsdk:"minimum_bar_height"`
+	ShowValueLabels       types.Bool    `tfsdk:"show_value_labels"`
+	FillOpacity           types.Float64 `tfsdk:"fill_opacity"`
+}
+
+func (m *xyDecorationsModel) fromAPI(apiDecorations kbapi.XyDecorations) {
+	m.ShowEndZones = types.BoolPointerValue(apiDecorations.ShowEndZones)
+	m.ShowCurrentTimeMarker = types.BoolPointerValue(apiDecorations.ShowCurrentTimeMarker)
+	m.PointVisibility = typeutils.StringishPointerValue(apiDecorations.PointVisibility)
+	m.LineInterpolation = typeutils.StringishPointerValue(apiDecorations.LineInterpolation)
+	m.ShowValueLabels = types.BoolPointerValue(apiDecorations.ShowValueLabels)
+
+	if apiDecorations.MinimumBarHeight != nil {
+		m.MinimumBarHeight = types.Int64Value(int64(*apiDecorations.MinimumBarHeight))
+	} else {
+		m.MinimumBarHeight = types.Int64Null()
+	}
+
+	if apiDecorations.FillOpacity != nil {
+		// Round to 2 decimal places to avoid float32 precision issues
+		val := float64(*apiDecorations.FillOpacity)
+		m.FillOpacity = types.Float64Value(math.Round(val*100) / 100)
+	} else {
+		m.FillOpacity = types.Float64Null()
+	}
+}
+
+func (m *xyDecorationsModel) toAPI() kbapi.XyDecorations {
+	if m == nil {
+		return kbapi.XyDecorations{}
+	}
+
+	var decorations kbapi.XyDecorations
+
+	if typeutils.IsKnown(m.ShowEndZones) {
+		decorations.ShowEndZones = new(m.ShowEndZones.ValueBool())
+	}
+	if typeutils.IsKnown(m.ShowCurrentTimeMarker) {
+		decorations.ShowCurrentTimeMarker = new(m.ShowCurrentTimeMarker.ValueBool())
+	}
+	if typeutils.IsKnown(m.PointVisibility) {
+		pointVisibility := kbapi.XyDecorationsPointVisibility(m.PointVisibility.ValueString())
+		decorations.PointVisibility = &pointVisibility
+	}
+	if typeutils.IsKnown(m.LineInterpolation) {
+		interp := kbapi.XyDecorationsLineInterpolation(m.LineInterpolation.ValueString())
+		decorations.LineInterpolation = &interp
+	}
+	if typeutils.IsKnown(m.MinimumBarHeight) {
+		decorations.MinimumBarHeight = new(float32(m.MinimumBarHeight.ValueInt64()))
+	}
+	if typeutils.IsKnown(m.ShowValueLabels) {
+		decorations.ShowValueLabels = new(m.ShowValueLabels.ValueBool())
+	}
+	if typeutils.IsKnown(m.FillOpacity) {
+		decorations.FillOpacity = new(float32(m.FillOpacity.ValueFloat64()))
+	}
+
+	return decorations
+}
+
+type xyFittingModel struct {
+	Type     types.String `tfsdk:"type"`
+	Dotted   types.Bool   `tfsdk:"dotted"`
+	EndValue types.String `tfsdk:"end_value"`
+}
+
+func (m *xyFittingModel) fromAPI(apiFitting kbapi.XyFitting) {
+	m.Type = typeutils.StringishValue(apiFitting.Type)
+	m.Dotted = types.BoolPointerValue(apiFitting.Dotted)
+	m.EndValue = typeutils.StringishPointerValue(apiFitting.EndValue)
+}
+
+func (m *xyFittingModel) toAPI() kbapi.XyFitting {
+	if m == nil {
+		return kbapi.XyFitting{}
+	}
+
+	var fitting kbapi.XyFitting
+
+	if typeutils.IsKnown(m.Type) {
+		fitting.Type = kbapi.XyFittingType(m.Type.ValueString())
+	}
+	if typeutils.IsKnown(m.Dotted) {
+		fitting.Dotted = new(m.Dotted.ValueBool())
+	}
+	if typeutils.IsKnown(m.EndValue) {
+		endVal := kbapi.XyFittingEndValue(m.EndValue.ValueString())
+		fitting.EndValue = &endVal
+	}
+
+	return fitting
+}
+
+type xyLegendModel struct {
+	Visibility         types.String `tfsdk:"visibility"`
+	Statistics         types.List   `tfsdk:"statistics"`
+	TruncateAfterLines types.Int64  `tfsdk:"truncate_after_lines"`
+	Inside             types.Bool   `tfsdk:"inside"`
+	Position           types.String `tfsdk:"position"`
+	Size               types.String `tfsdk:"size"`
+	Columns            types.Int64  `tfsdk:"columns"`
+	Alignment          types.String `tfsdk:"alignment"`
+}
+
+func (m *xyLegendModel) fromAPI(ctx context.Context, apiLegend kbapi.XyLegend) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	// Try inside legend first
+	legendInside, err := apiLegend.AsXyLegendInside()
+	if err == nil && legendInside.Inside {
+		m.Inside = types.BoolValue(true)
+		m.Visibility = types.StringValue(string(legendInside.Visibility))
+		m.Alignment = typeutils.StringishPointerValue(legendInside.Alignment)
+
+		if legendInside.TruncateAfterLines != nil {
+			m.TruncateAfterLines = types.Int64Value(int64(*legendInside.TruncateAfterLines))
+		} else {
+			m.TruncateAfterLines = types.Int64Null()
+		}
+
+		if legendInside.Columns != nil {
+			m.Columns = types.Int64Value(int64(*legendInside.Columns))
+		} else {
+			m.Columns = types.Int64Null()
+		}
+
+		if legendInside.Statistics != nil {
+			stats := make([]types.String, 0, len(*legendInside.Statistics))
+			for _, s := range *legendInside.Statistics {
+				stats = append(stats, types.StringValue(string(s)))
+			}
+			var statsDiags diag.Diagnostics
+			m.Statistics, statsDiags = types.ListValueFrom(ctx, types.StringType, stats)
+			diags.Append(statsDiags...)
+		} else {
+			m.Statistics = types.ListNull(types.StringType)
+		}
+		return diags
+	}
+
+	// Try outside legend
+	legendOutside, err := apiLegend.AsXyLegendOutside()
+	if err == nil {
+		m.Inside = types.BoolValue(false)
+		m.Visibility = types.StringValue(string(legendOutside.Visibility))
+		m.Position = typeutils.StringishPointerValue(legendOutside.Position)
+		m.Size = typeutils.StringishPointerValue(legendOutside.Size)
+
+		if legendOutside.TruncateAfterLines != nil {
+			m.TruncateAfterLines = types.Int64Value(int64(*legendOutside.TruncateAfterLines))
+		} else {
+			m.TruncateAfterLines = types.Int64Null()
+		}
+
+		if legendOutside.Statistics != nil {
+			stats := make([]types.String, 0, len(*legendOutside.Statistics))
+			for _, s := range *legendOutside.Statistics {
+				stats = append(stats, types.StringValue(string(s)))
+			}
+			var statsDiags diag.Diagnostics
+			m.Statistics, statsDiags = types.ListValueFrom(ctx, types.StringType, stats)
+			diags.Append(statsDiags...)
+		} else {
+			m.Statistics = types.ListNull(types.StringType)
+		}
+	}
+
+	return diags
+}
+
+func (m *xyLegendModel) toAPI() (kbapi.XyLegend, diag.Diagnostics) {
+	if m == nil {
+		return kbapi.XyLegend{}, nil
+	}
+
+	var diags diag.Diagnostics
+	isInside := typeutils.IsKnown(m.Inside) && m.Inside.ValueBool()
+	insideVisibility := kbapi.XyLegendInsideVisibilityAuto
+	outsideVisibility := kbapi.XyLegendOutsideVisibilityAuto
+	if typeutils.IsKnown(m.Visibility) {
+		insideVisibility = kbapi.XyLegendInsideVisibility(m.Visibility.ValueString())
+		outsideVisibility = kbapi.XyLegendOutsideVisibility(m.Visibility.ValueString())
+	}
+	statsElemsToStrings := func() ([]string, bool) {
+		if !typeutils.IsKnown(m.Statistics) {
+			return nil, false
+		}
+
+		elems := m.Statistics.Elements()
+		if len(elems) == 0 {
+			return nil, false
+		}
+
+		stats := make([]string, 0, len(elems))
+		for _, elem := range elems {
+			strVal, ok := elem.(types.String)
+			if !ok {
+				diags.AddError("Invalid legend statistic value", "Expected statistics element to be a string")
+				return nil, false
+			}
+			if !typeutils.IsKnown(strVal) {
+				diags.AddError("Invalid legend statistic value", "Statistics element must be known")
+				return nil, false
+			}
+			stats = append(stats, strVal.ValueString())
+		}
+
+		return stats, true
+	}
+
+	if isInside {
+		var legend kbapi.XyLegendInside
+		legend.Inside = true
+		legend.Visibility = insideVisibility
+
+		if typeutils.IsKnown(m.TruncateAfterLines) {
+			legend.TruncateAfterLines = new(float32(m.TruncateAfterLines.ValueInt64()))
+		}
+		if typeutils.IsKnown(m.Columns) {
+			legend.Columns = new(float32(m.Columns.ValueInt64()))
+		}
+		if typeutils.IsKnown(m.Alignment) {
+			align := kbapi.XyLegendInsideAlignment(m.Alignment.ValueString())
+			legend.Alignment = &align
+		}
+		if stats, ok := statsElemsToStrings(); ok {
+			statsAPI := make([]kbapi.XyLegendInsideStatistics, 0, len(stats))
+			for _, s := range stats {
+				statsAPI = append(statsAPI, kbapi.XyLegendInsideStatistics(s))
+			}
+			legend.Statistics = &statsAPI
+		}
+
+		var result kbapi.XyLegend
+		if err := result.FromXyLegendInside(legend); err != nil {
+			diags.AddError("Failed to create inside legend", err.Error())
+		}
+		return result, diags
+	}
+
+	// Outside legend
+	var legend kbapi.XyLegendOutside
+	legend.Visibility = outsideVisibility
+
+	if typeutils.IsKnown(m.TruncateAfterLines) {
+		legend.TruncateAfterLines = new(float32(m.TruncateAfterLines.ValueInt64()))
+	}
+	if typeutils.IsKnown(m.Position) {
+		pos := kbapi.XyLegendOutsidePosition(m.Position.ValueString())
+		legend.Position = &pos
+	}
+	if typeutils.IsKnown(m.Size) {
+		size := kbapi.XyLegendOutsideSize(m.Size.ValueString())
+		legend.Size = &size
+	}
+	if stats, ok := statsElemsToStrings(); ok {
+		statsAPI := make([]kbapi.XyLegendOutsideStatistics, 0, len(stats))
+		for _, s := range stats {
+			statsAPI = append(statsAPI, kbapi.XyLegendOutsideStatistics(s))
+		}
+		legend.Statistics = &statsAPI
+	}
+
+	var result kbapi.XyLegend
+	if err := result.FromXyLegendOutside(legend); err != nil {
+		diags.AddError("Failed to create outside legend", err.Error())
+	}
+	return result, diags
+}
+
+// toAPI converts the XY chart config model to API schema
+func (m *xyChartConfigModel) toAPI() (kbapi.XyChart, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	xyChart := kbapi.XyChart{
+		Type: kbapi.Xy,
+	}
+
+	// Convert title and description
+	if typeutils.IsKnown(m.Title) {
+		xyChart.Title = new(m.Title.ValueString())
+	}
+	if typeutils.IsKnown(m.Description) {
+		xyChart.Description = new(m.Description.ValueString())
+	}
+
+	// Convert axis
+	if m.Axis != nil {
+		axis, axisDiags := m.Axis.toAPI()
+		diags.Append(axisDiags...)
+		xyChart.Axis = axis
+	}
+
+	// Convert decorations
+	if m.Decorations != nil {
+		xyChart.Decorations = m.Decorations.toAPI()
+	}
+
+	// Convert fitting
+	if m.Fitting != nil {
+		xyChart.Fitting = m.Fitting.toAPI()
+	}
+
+	// Convert layers
+	if len(m.Layers) > 0 {
+		layers := make([]kbapi.XyChart_Layers_Item, 0, len(m.Layers))
+		for _, layer := range m.Layers {
+			apiLayer, layerDiags := layer.toAPI()
+			diags.Append(layerDiags...)
+			if !layerDiags.HasError() {
+				layers = append(layers, apiLayer)
+			}
+		}
+		if len(layers) > 0 {
+			xyChart.Layers = layers
+		}
+	}
+
+	// Convert legend
+	if m.Legend != nil {
+		legend, legendDiags := m.Legend.toAPI()
+		diags.Append(legendDiags...)
+		if !legendDiags.HasError() {
+			xyChart.Legend = legend
+		}
+	}
+
+	// Convert query
+	if m.Query != nil {
+		xyChart.Query = m.Query.toAPI()
+	}
+
+	// Convert filters
+	if len(m.Filters) > 0 {
+		filters := make([]kbapi.SearchFilter, 0, len(m.Filters))
+		for _, f := range m.Filters {
+			filter, filterDiags := f.toAPI()
+			diags.Append(filterDiags...)
+			if !filterDiags.HasError() {
+				filters = append(filters, filter)
+			}
+		}
+		if len(filters) > 0 {
+			xyChart.Filters = &filters
+		}
+	}
+
+	return xyChart, diags
+}
+
+// fromAPI populates the XY chart config model from API response
+func (m *xyChartConfigModel) fromAPI(ctx context.Context, apiChart kbapi.XyChart) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	m.Title = types.StringPointerValue(apiChart.Title)
+	m.Description = types.StringPointerValue(apiChart.Description)
+
+	// Convert layers
+	if len(apiChart.Layers) > 0 {
+		m.Layers = make([]xyLayerModel, 0, len(apiChart.Layers))
+		for _, apiLayer := range apiChart.Layers {
+			layer := xyLayerModel{}
+			layerDiags := layer.fromAPI(apiLayer)
+			diags.Append(layerDiags...)
+			if !layerDiags.HasError() {
+				m.Layers = append(m.Layers, layer)
+			}
+		}
+	}
+
+	// Convert axis
+	m.Axis = &xyAxisModel{}
+	axisDiags := m.Axis.fromAPI(apiChart.Axis)
+	diags.Append(axisDiags...)
+
+	// Convert decorations
+	m.Decorations = &xyDecorationsModel{}
+	m.Decorations.fromAPI(apiChart.Decorations)
+
+	// Convert fitting
+	m.Fitting = &xyFittingModel{}
+	m.Fitting.fromAPI(apiChart.Fitting)
+
+	// Convert legend
+	m.Legend = &xyLegendModel{}
+	legendDiags := m.Legend.fromAPI(ctx, apiChart.Legend)
+	diags.Append(legendDiags...)
+
+	// Convert query
+	m.Query = &filterSimpleModel{}
+	m.Query.fromAPI(apiChart.Query)
+
+	// Convert filters
+	if apiChart.Filters != nil && len(*apiChart.Filters) > 0 {
+		m.Filters = make([]searchFilterModel, 0, len(*apiChart.Filters))
+		for _, f := range *apiChart.Filters {
+			filter := searchFilterModel{}
+			filterDiags := filter.fromAPI(f)
+			diags.Append(filterDiags...)
+			if !filterDiags.HasError() {
+				m.Filters = append(m.Filters, filter)
+			}
+		}
+	}
+
+	return diags
+}

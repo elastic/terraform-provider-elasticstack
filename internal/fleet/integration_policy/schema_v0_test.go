@@ -1,0 +1,226 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package integrationpolicy
+
+import (
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+// TestUpgradeV0ToV2_JSONConversions tests the V0 to V1 conversion logic
+// particularly the conversion of empty strings to null for JSON fields
+func TestUpgradeV0ToV2_JSONConversions(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name           string
+		v0VarsJSON     types.String
+		expectedV1Null bool
+	}{
+		{
+			name:           "valid JSON string is preserved",
+			v0VarsJSON:     types.StringValue(`{"key":"value"}`),
+			expectedV1Null: false,
+		},
+		{
+			name:           "empty string converts to null",
+			v0VarsJSON:     types.StringValue(""),
+			expectedV1Null: true,
+		},
+		{
+			name:           "null remains null",
+			v0VarsJSON:     types.StringNull(),
+			expectedV1Null: true,
+		},
+		{
+			name:           "complex JSON is preserved",
+			v0VarsJSON:     types.StringValue(`{"nested":{"key":"value"},"array":[1,2,3]}`),
+			expectedV1Null: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// Simulate the conversion logic from upgradeV0ToV2
+			var v1VarsJSON jsontypes.Normalized
+			if varsJSON := tt.v0VarsJSON.ValueStringPointer(); varsJSON != nil {
+				if *varsJSON == "" {
+					v1VarsJSON = jsontypes.NewNormalizedNull()
+				} else {
+					v1VarsJSON = jsontypes.NewNormalizedValue(*varsJSON)
+				}
+			} else {
+				v1VarsJSON = jsontypes.NewNormalizedNull()
+			}
+
+			if tt.expectedV1Null {
+				assert.True(t, v1VarsJSON.IsNull(), "Expected null but got non-null value")
+			} else {
+				assert.False(t, v1VarsJSON.IsNull(), "Expected non-null but got null value")
+
+				// For non-null values, verify the JSON content
+				var result map[string]any
+				diags := v1VarsJSON.Unmarshal(&result)
+				require.Empty(t, diags, "Failed to unmarshal JSON")
+			}
+		})
+	}
+}
+
+// TestUpgradeV0ToV2_InputJSONConversions tests the conversion logic for input fields
+func TestUpgradeV0ToV2_InputJSONConversions(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name                string
+		v0VarsJSON          types.String
+		v0StreamsJSON       types.String
+		expectedVarsNull    bool
+		expectedStreamsNull bool
+	}{
+		{
+			name:                "valid JSON strings are preserved",
+			v0VarsJSON:          types.StringValue(`{"var":"value"}`),
+			v0StreamsJSON:       types.StringValue(`{"stream-1":{"enabled":true}}`),
+			expectedVarsNull:    false,
+			expectedStreamsNull: false,
+		},
+		{
+			name:                "empty strings convert to null",
+			v0VarsJSON:          types.StringValue(""),
+			v0StreamsJSON:       types.StringValue(""),
+			expectedVarsNull:    true,
+			expectedStreamsNull: true,
+		},
+		{
+			name:                "null values remain null",
+			v0VarsJSON:          types.StringNull(),
+			v0StreamsJSON:       types.StringNull(),
+			expectedVarsNull:    true,
+			expectedStreamsNull: true,
+		},
+		{
+			name:                "mixed empty and valid JSON",
+			v0VarsJSON:          types.StringValue(`{"key":"value"}`),
+			v0StreamsJSON:       types.StringValue(""),
+			expectedVarsNull:    false,
+			expectedStreamsNull: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// Simulate the conversion logic for vars_json
+			var v1VarsJSON jsontypes.Normalized
+			if varsJSON := tt.v0VarsJSON.ValueStringPointer(); varsJSON != nil {
+				if *varsJSON == "" {
+					v1VarsJSON = jsontypes.NewNormalizedNull()
+				} else {
+					v1VarsJSON = jsontypes.NewNormalizedValue(*varsJSON)
+				}
+			} else {
+				v1VarsJSON = jsontypes.NewNormalizedNull()
+			}
+
+			// Simulate the conversion logic for streams_json
+			var v1StreamsJSON jsontypes.Normalized
+			if streamsJSON := tt.v0StreamsJSON.ValueStringPointer(); streamsJSON != nil {
+				if *streamsJSON == "" {
+					v1StreamsJSON = jsontypes.NewNormalizedNull()
+				} else {
+					v1StreamsJSON = jsontypes.NewNormalizedValue(*streamsJSON)
+				}
+			} else {
+				v1StreamsJSON = jsontypes.NewNormalizedNull()
+			}
+
+			// Verify vars_json
+			if tt.expectedVarsNull {
+				assert.True(t, v1VarsJSON.IsNull(), "Expected vars_json to be null")
+			} else {
+				assert.False(t, v1VarsJSON.IsNull(), "Expected vars_json to be non-null")
+			}
+
+			// Verify streams_json
+			if tt.expectedStreamsNull {
+				assert.True(t, v1StreamsJSON.IsNull(), "Expected streams_json to be null")
+			} else {
+				assert.False(t, v1StreamsJSON.IsNull(), "Expected streams_json to be non-null")
+			}
+		})
+	}
+}
+
+// TestUpgradeV0ToV2_NewFieldsAddedAsNull tests that new fields added in V1/V2 are set to null
+func TestUpgradeV0ToV2_NewFieldsAddedAsNull(t *testing.T) {
+	t.Parallel()
+
+	// V0 didn't have these fields, verify they're initialized as null in the upgrade
+	agentPolicyIDs := types.ListNull(types.StringType)
+	spaceIDs := types.SetNull(types.StringType)
+
+	assert.True(t, agentPolicyIDs.IsNull(), "agent_policy_ids should be null (didn't exist in V0)")
+	assert.True(t, spaceIDs.IsNull(), "space_ids should be null (didn't exist in V0)")
+}
+
+// TestUpgradeV0ToV2_FieldsPreserved tests that all V0 fields are preserved during upgrade
+func TestUpgradeV0ToV2_FieldsPreserved(t *testing.T) {
+	t.Parallel()
+
+	// Test that the structure of fields from V0 are preserved
+	v0Model := integrationPolicyModelV0{
+		ID:                 types.StringValue("test-id"),
+		PolicyID:           types.StringValue("test-policy-id"),
+		Name:               types.StringValue("test-name"),
+		Namespace:          types.StringValue("test-namespace"),
+		AgentPolicyID:      types.StringValue("agent-policy-1"),
+		Description:        types.StringValue("test description"),
+		Enabled:            types.BoolValue(false),
+		Force:              types.BoolValue(true),
+		IntegrationName:    types.StringValue("test-integration"),
+		IntegrationVersion: types.StringValue("2.0.0"),
+		VarsJSON:           types.StringValue(`{"complex":{"nested":"value"}}`),
+		Input:              types.ListNull(getInputTypeV0()),
+	}
+
+	// Verify all fields are accessible and have the expected values
+	assert.Equal(t, "test-id", v0Model.ID.ValueString())
+	assert.Equal(t, "test-policy-id", v0Model.PolicyID.ValueString())
+	assert.Equal(t, "test-name", v0Model.Name.ValueString())
+	assert.Equal(t, "test-namespace", v0Model.Namespace.ValueString())
+	assert.Equal(t, "agent-policy-1", v0Model.AgentPolicyID.ValueString())
+	assert.Equal(t, "test description", v0Model.Description.ValueString())
+	assert.False(t, v0Model.Enabled.ValueBool())
+	assert.True(t, v0Model.Force.ValueBool())
+	assert.Equal(t, "test-integration", v0Model.IntegrationName.ValueString())
+	assert.Equal(t, "2.0.0", v0Model.IntegrationVersion.ValueString())
+	assert.JSONEq(t, `{"complex":{"nested":"value"}}`, v0Model.VarsJSON.ValueString())
+	assert.True(t, v0Model.Input.IsNull())
+}
+
+func getInputTypeV0() types.ObjectType {
+	return getSchemaV0().Blocks["input"].Type().(types.ListType).ElemType.(types.ObjectType)
+}

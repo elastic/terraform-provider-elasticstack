@@ -1,0 +1,1 @@
+Version identifier for the write-only password. This field is used to trigger updates when the password changes. Required when `password_wo` is set. Typically, you would use a hash of the password or a version identifier from your secret management system.

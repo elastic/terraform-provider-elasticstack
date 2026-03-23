@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package datafeed
 
 import (
@@ -32,9 +49,9 @@ func (r *datafeedResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 
 func GetSchema() schema.Schema {
 	return schema.Schema{
-		MarkdownDescription: "Creates and manages Machine Learning datafeeds. Datafeeds retrieve data from Elasticsearch for analysis by an anomaly detection job. Each anomaly detection job can have only one associated datafeed. See the [ML Datafeed API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/ml-put-datafeed.html) for more details.",
+		MarkdownDescription: schemaMarkdownDescription,
 		Blocks: map[string]schema.Block{
-			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock("elasticsearch_connection", false),
+			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(false),
 		},
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -45,14 +62,18 @@ func GetSchema() schema.Schema {
 				},
 			},
 			"datafeed_id": schema.StringAttribute{
-				MarkdownDescription: "A numerical character string that uniquely identifies the datafeed. This identifier can contain lowercase alphanumeric characters (a-z and 0-9), hyphens, and underscores. It must start and end with alphanumeric characters.",
+				MarkdownDescription: datafeedIDMarkdownDescription,
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(1, 64),
-					stringvalidator.RegexMatches(regexp.MustCompile(`^[a-z0-9][a-z0-9_-]*[a-z0-9]$|^[a-z0-9]$`), "must contain lowercase alphanumeric characters (a-z and 0-9), hyphens, and underscores. It must start and end with alphanumeric characters"),
+					stringvalidator.RegexMatches(
+						regexp.MustCompile(`^[a-z0-9][a-z0-9_-]*[a-z0-9]$|^[a-z0-9]$`),
+						"must contain lowercase alphanumeric characters (a-z and 0-9), hyphens, and underscores. "+
+							"It must start and end with alphanumeric characters",
+					),
 				},
 			},
 			"job_id": schema.StringAttribute{
@@ -71,7 +92,7 @@ func GetSchema() schema.Schema {
 				},
 			},
 			"query": schema.StringAttribute{
-				MarkdownDescription: "The Elasticsearch query domain-specific language (DSL). This value corresponds to the query object in an Elasticsearch search POST body. All the options that are supported by Elasticsearch can be used, as this object is passed verbatim to Elasticsearch. By default uses `{\"match_all\": {\"boost\": 1}}`.",
+				MarkdownDescription: queryMarkdownDescription,
 				Optional:            true,
 				Computed:            true,
 				CustomType:          jsontypes.NormalizedType{},
@@ -80,7 +101,7 @@ func GetSchema() schema.Schema {
 				},
 			},
 			"aggregations": schema.StringAttribute{
-				MarkdownDescription: "If set, the datafeed performs aggregation searches. Support for aggregations is limited and should be used only with low cardinality data. This should be a JSON object representing the aggregations to be performed.",
+				MarkdownDescription: aggregationsMarkdownDescription,
 				Optional:            true,
 				CustomType:          jsontypes.NormalizedType{},
 				Validators: []validator.String{
@@ -88,7 +109,7 @@ func GetSchema() schema.Schema {
 				},
 			},
 			"script_fields": schema.StringAttribute{
-				MarkdownDescription: "Specifies scripts that evaluate custom expressions and returns script fields to the datafeed. The detector configuration objects in a job can contain functions that use these script fields. This should be a JSON object representing the script fields.",
+				MarkdownDescription: scriptFieldsMarkdownDescription,
 				Optional:            true,
 				CustomType:          customtypes.NewJSONWithDefaultsType(populateScriptFieldsDefaults),
 				Validators: []validator.String{
@@ -101,7 +122,7 @@ func GetSchema() schema.Schema {
 				CustomType:          jsontypes.NormalizedType{},
 			},
 			"scroll_size": schema.Int64Attribute{
-				MarkdownDescription: "The size parameter that is used in Elasticsearch searches when the datafeed does not use aggregations. The maximum value is the value of `index.max_result_window`, which is 10,000 by default.",
+				MarkdownDescription: scrollSizeMarkdownDescription,
 				Optional:            true,
 				Computed:            true,
 				PlanModifiers: []planmodifier.Int64{
@@ -112,7 +133,7 @@ func GetSchema() schema.Schema {
 				},
 			},
 			"frequency": schema.StringAttribute{
-				MarkdownDescription: "The interval at which scheduled queries are made while the datafeed runs in real time. The default value is either the bucket span for short bucket spans, or, for longer bucket spans, a sensible fraction of the bucket span. When `frequency` is shorter than the bucket span, interim results for the last (partial) bucket are written then eventually overwritten by the full bucket results. If the datafeed uses aggregations, this value must be divisible by the interval of the date histogram aggregation.",
+				MarkdownDescription: frequencyMarkdownDescription,
 				Optional:            true,
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
@@ -123,7 +144,7 @@ func GetSchema() schema.Schema {
 				},
 			},
 			"query_delay": schema.StringAttribute{
-				MarkdownDescription: "The number of seconds behind real time that data is queried. For example, if data from 10:04 a.m. might not be searchable in Elasticsearch until 10:06 a.m., set this property to 120 seconds. The default value is randomly selected between `60s` and `120s`. This randomness improves the query performance when there are multiple jobs running on the same node.",
+				MarkdownDescription: queryDelayMarkdownDescription,
 				Optional:            true,
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
@@ -134,14 +155,14 @@ func GetSchema() schema.Schema {
 				},
 			},
 			"max_empty_searches": schema.Int64Attribute{
-				MarkdownDescription: "If a real-time datafeed has never seen any data (including during any initial training period), it automatically stops and closes the associated job after this many real-time searches return no documents. In other words, it stops after `frequency` times `max_empty_searches` of real-time operation. If not set, a datafeed with no end time that sees no data remains started until it is explicitly stopped.",
+				MarkdownDescription: maxEmptySearchesMarkdownDescription,
 				Optional:            true,
 				Validators: []validator.Int64{
 					int64validator.AtLeast(1),
 				},
 			},
 			"chunking_config": schema.SingleNestedAttribute{
-				MarkdownDescription: "Datafeeds might search over long time periods, for several months or years. This search is split into time chunks in order to ensure the load on Elasticsearch is managed. Chunking configuration controls how the size of these time chunks are calculated; it is an advanced configuration option.",
+				MarkdownDescription: chunkingConfigMarkdownDescription,
 				Optional:            true,
 				Computed:            true,
 				PlanModifiers: []planmodifier.Object{
@@ -149,7 +170,7 @@ func GetSchema() schema.Schema {
 				},
 				Attributes: map[string]schema.Attribute{
 					"mode": schema.StringAttribute{
-						MarkdownDescription: "The chunking mode. Can be `auto`, `manual`, or `off`. In `auto` mode, the chunk size is dynamically calculated. In `manual` mode, chunking is applied according to the specified `time_span`. In `off` mode, no chunking is applied.",
+						MarkdownDescription: chunkingModeMarkdownDescription,
 						Required:            true,
 						Validators: []validator.String{
 							stringvalidator.OneOf("auto", "manual", "off"),
@@ -170,7 +191,7 @@ func GetSchema() schema.Schema {
 				},
 			},
 			"delayed_data_check_config": schema.SingleNestedAttribute{
-				MarkdownDescription: "Specifies whether the datafeed checks for missing data and the size of the window. The datafeed can optionally search over indices that have already been read in an effort to determine whether any data has subsequently been added to the index. If missing data is found, it is a good indication that the `query_delay` is set too low and the data is being indexed after the datafeed has passed that moment in time. This check runs only on real-time datafeeds.",
+				MarkdownDescription: delayedDataCheckConfigMarkdownDescription,
 				Optional:            true,
 				Computed:            true,
 				PlanModifiers: []planmodifier.Object{
@@ -182,7 +203,7 @@ func GetSchema() schema.Schema {
 						Required:            true,
 					},
 					"check_window": schema.StringAttribute{
-						MarkdownDescription: "The window of time that is searched for late data. This window of time ends with the latest finalized bucket. It defaults to null, which causes an appropriate `check_window` to be calculated when the real-time datafeed runs.",
+						MarkdownDescription: checkWindowMarkdownDescription,
 						Optional:            true,
 						Computed:            true,
 						PlanModifiers: []planmodifier.String{
@@ -203,7 +224,7 @@ func GetSchema() schema.Schema {
 				},
 				Attributes: map[string]schema.Attribute{
 					"expand_wildcards": schema.ListAttribute{
-						MarkdownDescription: "Type of index that wildcard patterns can match. If the request can target data streams, this argument determines whether wildcard expressions match hidden data streams. Supports comma-separated values.",
+						MarkdownDescription: expandWildcardsMarkdownDescription,
 						Optional:            true,
 						Computed:            true,
 						ElementType:         types.StringType,

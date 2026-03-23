@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package integration
 
 import (
@@ -6,12 +23,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *integrationResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *integrationResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+	resp.Schema.Version = 1
 	resp.Schema.Description = `Installs or uninstalls a Fleet integration package. The Kibana Fleet UI can be
 used to view available packages. Additional information for managing integration
 packages can be found [here](https://www.elastic.co/guide/en/fleet/current/install-uninstall-integration-assets.html).
@@ -38,17 +54,32 @@ set ` + "`skip_destroy` to `true`."
 			Description: "Set to true to force the requested action.",
 			Optional:    true,
 		},
+		"prerelease": schema.BoolAttribute{
+			Description: "Set to true to allow installation of prerelease (beta, non-GA) packages.",
+			Optional:    true,
+		},
+		"ignore_mapping_update_errors": schema.BoolAttribute{
+			Description: "Set to true to ignore mapping update errors during package installation.",
+			Optional:    true,
+		},
+		"skip_data_stream_rollover": schema.BoolAttribute{
+			Description: "Set to true to skip data stream rollover during package installation.",
+			Optional:    true,
+		},
+		"ignore_constraints": schema.BoolAttribute{
+			Description: "Set to true to ignore constraint errors during package installation.",
+			Optional:    true,
+		},
 		"skip_destroy": schema.BoolAttribute{
 			Description: "Set to true if you do not wish the integration package to be uninstalled at destroy time, and instead just remove the integration package from the Terraform state.",
 			Optional:    true,
 		},
-		"space_ids": schema.SetAttribute{
-			Description: "The Kibana space IDs where this integration package should be installed. When set, the package will be installed and managed within the specified space. Note: The order of space IDs does not matter as this is a set.",
-			ElementType: types.StringType,
+		"space_id": schema.StringAttribute{
+			Description: "The Kibana space ID where this integration package should be installed.",
 			Optional:    true,
 			Computed:    true,
-			PlanModifiers: []planmodifier.Set{
-				setplanmodifier.RequiresReplace(),
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.RequiresReplace(),
 			},
 		},
 	}

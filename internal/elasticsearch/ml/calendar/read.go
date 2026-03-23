@@ -36,12 +36,12 @@ func (r *calendarResource) read(ctx context.Context, model *CalendarTFModel) (bo
 		return false, diags
 	}
 
-	compID, sdkDiags := clients.CompositeIdFromStr(model.ID.ValueString())
+	compID, sdkDiags := clients.CompositeIDFromStr(model.ID.ValueString())
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
 		return false, diags
 	}
-	calendarID := compID.ResourceId
+	calendarID := compID.ResourceID
 
 	tflog.Debug(ctx, fmt.Sprintf("Reading ML calendar: %s", calendarID))
 

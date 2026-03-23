@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package elasticsearch
 
 import (
@@ -14,7 +31,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
-func GetClusterInfo(ctx context.Context, apiClient *clients.ApiClient) (*models.ClusterInfo, diag.Diagnostics) {
+func GetClusterInfo(ctx context.Context, apiClient *clients.APIClient) (*models.ClusterInfo, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
@@ -36,7 +53,7 @@ func GetClusterInfo(ctx context.Context, apiClient *clients.ApiClient) (*models.
 	return &info, diags
 }
 
-func PutSnapshotRepository(ctx context.Context, apiClient *clients.ApiClient, repository *models.SnapshotRepository) diag.Diagnostics {
+func PutSnapshotRepository(ctx context.Context, apiClient *clients.APIClient, repository *models.SnapshotRepository) diag.Diagnostics {
 	var diags diag.Diagnostics
 	snapRepoBytes, err := json.Marshal(repository)
 	if err != nil {
@@ -58,7 +75,7 @@ func PutSnapshotRepository(ctx context.Context, apiClient *clients.ApiClient, re
 	return diags
 }
 
-func GetSnapshotRepository(ctx context.Context, apiClient *clients.ApiClient, name string) (*models.SnapshotRepository, diag.Diagnostics) {
+func GetSnapshotRepository(ctx context.Context, apiClient *clients.APIClient, name string) (*models.SnapshotRepository, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
@@ -82,7 +99,7 @@ func GetSnapshotRepository(ctx context.Context, apiClient *clients.ApiClient, na
 	}
 
 	if currentRepo, ok := snapRepoResponse[name]; ok {
-		if len(currentRepo.Name) <= 0 {
+		if len(currentRepo.Name) == 0 {
 			currentRepo.Name = name
 		}
 		return &currentRepo, diags
@@ -96,7 +113,7 @@ func GetSnapshotRepository(ctx context.Context, apiClient *clients.ApiClient, na
 	return nil, diags
 }
 
-func DeleteSnapshotRepository(ctx context.Context, apiClient *clients.ApiClient, name string) diag.Diagnostics {
+func DeleteSnapshotRepository(ctx context.Context, apiClient *clients.APIClient, name string) diag.Diagnostics {
 	var diags diag.Diagnostics
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
@@ -113,7 +130,7 @@ func DeleteSnapshotRepository(ctx context.Context, apiClient *clients.ApiClient,
 	return diags
 }
 
-func PutSlm(ctx context.Context, apiClient *clients.ApiClient, slm *models.SnapshotPolicy) diag.Diagnostics {
+func PutSlm(ctx context.Context, apiClient *clients.APIClient, slm *models.SnapshotPolicy) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	slmBytes, err := json.Marshal(slm)
@@ -125,7 +142,7 @@ func PutSlm(ctx context.Context, apiClient *clients.ApiClient, slm *models.Snaps
 		return diag.FromErr(err)
 	}
 	req := esClient.SlmPutLifecycle.WithBody(bytes.NewReader(slmBytes))
-	res, err := esClient.SlmPutLifecycle(slm.Id, req, esClient.SlmPutLifecycle.WithContext(ctx))
+	res, err := esClient.SlmPutLifecycle(slm.ID, req, esClient.SlmPutLifecycle.WithContext(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -137,7 +154,7 @@ func PutSlm(ctx context.Context, apiClient *clients.ApiClient, slm *models.Snaps
 	return diags
 }
 
-func GetSlm(ctx context.Context, apiClient *clients.ApiClient, slmName string) (*models.SnapshotPolicy, diag.Diagnostics) {
+func GetSlm(ctx context.Context, apiClient *clients.APIClient, slmName string) (*models.SnapshotPolicy, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
@@ -173,7 +190,7 @@ func GetSlm(ctx context.Context, apiClient *clients.ApiClient, slmName string) (
 	return nil, diags
 }
 
-func DeleteSlm(ctx context.Context, apiClient *clients.ApiClient, slmName string) diag.Diagnostics {
+func DeleteSlm(ctx context.Context, apiClient *clients.APIClient, slmName string) diag.Diagnostics {
 	var diags diag.Diagnostics
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
@@ -191,7 +208,7 @@ func DeleteSlm(ctx context.Context, apiClient *clients.ApiClient, slmName string
 	return diags
 }
 
-func PutSettings(ctx context.Context, apiClient *clients.ApiClient, settings map[string]interface{}) diag.Diagnostics {
+func PutSettings(ctx context.Context, apiClient *clients.APIClient, settings map[string]any) diag.Diagnostics {
 	var diags diag.Diagnostics
 	settingsBytes, err := json.Marshal(settings)
 	if err != nil {
@@ -212,7 +229,7 @@ func PutSettings(ctx context.Context, apiClient *clients.ApiClient, settings map
 	return diags
 }
 
-func GetSettings(ctx context.Context, apiClient *clients.ApiClient) (map[string]interface{}, diag.Diagnostics) {
+func GetSettings(ctx context.Context, apiClient *clients.APIClient) (map[string]any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
@@ -228,14 +245,14 @@ func GetSettings(ctx context.Context, apiClient *clients.ApiClient) (map[string]
 		return nil, diags
 	}
 
-	clusterSettings := make(map[string]interface{})
+	clusterSettings := make(map[string]any)
 	if err := json.NewDecoder(res.Body).Decode(&clusterSettings); err != nil {
 		return nil, diag.FromErr(err)
 	}
 	return clusterSettings, diags
 }
 
-func GetScript(ctx context.Context, apiClient *clients.ApiClient, id string) (*models.Script, fwdiag.Diagnostics) {
+func GetScript(ctx context.Context, apiClient *clients.APIClient, id string) (*models.Script, fwdiag.Diagnostics) {
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
 		return nil, fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Failed to get ES client", err.Error())}
@@ -261,7 +278,7 @@ func GetScript(ctx context.Context, apiClient *clients.ApiClient, id string) (*m
 	return scriptResponse.Script, nil
 }
 
-func PutScript(ctx context.Context, apiClient *clients.ApiClient, script *models.Script) fwdiag.Diagnostics {
+func PutScript(ctx context.Context, apiClient *clients.APIClient, script *models.Script) fwdiag.Diagnostics {
 	req := struct {
 		Script *models.Script `json:"script"`
 	}{
@@ -286,7 +303,7 @@ func PutScript(ctx context.Context, apiClient *clients.ApiClient, script *models
 	return nil
 }
 
-func DeleteScript(ctx context.Context, apiClient *clients.ApiClient, id string) fwdiag.Diagnostics {
+func DeleteScript(ctx context.Context, apiClient *clients.APIClient, id string) fwdiag.Diagnostics {
 	esClient, err := apiClient.GetESClient()
 	if err != nil {
 		return fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Failed to get ES client", err.Error())}

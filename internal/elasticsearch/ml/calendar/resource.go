@@ -35,7 +35,7 @@ func NewCalendarResource() resource.Resource {
 }
 
 type calendarResource struct {
-	client *clients.ApiClient
+	client *clients.APIClient
 }
 
 func (r *calendarResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {

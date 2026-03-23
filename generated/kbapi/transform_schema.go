@@ -1,10 +1,10 @@
 //go:build ignore
-// +build ignore
 
 package main
 
 import (
 	"bytes"
+	_ "embed"
 	"errors"
 	"flag"
 	"fmt"
@@ -556,6 +556,8 @@ func (s Slice) atoi(key string) int {
 type TransformFunc func(schema *Schema)
 
 var transformers = []TransformFunc{
+	mergeDashboardsSchema,
+	mergeWorkflowsSchema,
 	transformRemoveKbnXsrf,
 	transformRemoveApiVersionParam,
 	transformSimplifyContentType,
@@ -567,9 +569,73 @@ var transformers = []TransformFunc{
 	fixGetSpacesParams,
 	fixGetSyntheticsMonitorsParams,
 	fixGetMaintenanceWindowFindParams,
+	fixGetStreamsAttachmentTypesParams,
+	fixSecurityAPIPageSize,
+	fixSecurityExceptionListItems,
+	removeDuplicateOneOfRefs,
+	fixDashboardPanelItemRefs,
 	transformRemoveExamples,
 	transformRemoveUnusedComponents,
 	transformOmitEmptyNullable,
+	fixAlertingRuleParams,
+}
+
+//go:embed workflows.yaml
+var workflowsYaml string
+
+func mergeWorkflowsSchema(schema *Schema) {
+	var workflowsSchema Schema
+	err := yaml.Unmarshal([]byte(workflowsYaml), &workflowsSchema)
+	if err != nil {
+		log.Fatalf("failed to unmarshal schema from dashboards.yaml: %v", err)
+	}
+
+	// Merge paths
+	for path, pathInfo := range workflowsSchema.Paths {
+		// Only add the path if it doesn't already exist
+		if _, ok := schema.Paths[path]; !ok {
+			schema.Paths[path] = pathInfo
+		}
+	}
+
+	// Merge component schemas
+	dashboardSchemas := workflowsSchema.Components.MustGetMap("schemas")
+	schemaSchemas := schema.Components.MustGetMap("schemas")
+	for key, schemaInfo := range dashboardSchemas {
+		// Only add the schema if it doesn't already exist
+		if _, ok := schemaSchemas[key]; !ok {
+			schemaSchemas[key] = schemaInfo
+		}
+	}
+}
+
+//go:embed dashboards.json
+var dashboardsJSON string
+
+func mergeDashboardsSchema(schema *Schema) {
+	var dashboardsSchema Schema
+	err := yaml.Unmarshal([]byte(dashboardsJSON), &dashboardsSchema)
+	if err != nil {
+		log.Fatalf("failed to unmarshal schema from dashboards.yaml: %v", err)
+	}
+
+	// Merge paths
+	for path, pathInfo := range dashboardsSchema.Paths {
+		// Only add the path if it doesn't already exist
+		if _, ok := schema.Paths[path]; !ok {
+			schema.Paths[path] = pathInfo
+		}
+	}
+
+	// Merge component schemas
+	dashboardSchemas := dashboardsSchema.Components.MustGetMap("schemas")
+	schemaSchemas := schema.Components.MustGetMap("schemas")
+	for key, schemaInfo := range dashboardSchemas {
+		// Only add the schema if it doesn't already exist
+		if _, ok := schemaSchemas[key]; !ok {
+			schemaSchemas[key] = schemaInfo
+		}
+	}
 }
 
 // transformRemoveKbnXsrf removes the kbn-xsrf header as it	is already applied
@@ -690,6 +756,13 @@ func transformKibanaPaths(schema *Schema) {
 		"/api/maintenance_window/{id}",
 		"/api/actions/connector/{id}",
 		"/api/actions/connectors",
+		"/api/data_views/default",
+		"/api/detection_engine/rules",
+		"/api/exception_lists",
+		"/api/exception_lists/items",
+		"/api/lists",
+		"/api/lists/index",
+		"/api/lists/items",
 	}
 
 	// Add a spaceId parameter if not already present
@@ -862,7 +935,7 @@ func transformKibanaPaths(schema *Schema) {
 		},
 		"propertyName": "action_type_id",
 	})
-
+	schema.Components.Delete("schemas.Security_Exceptions_API_ExceptionListItemExpireTime.format")
 }
 
 func removeBrokenDiscriminator(schema *Schema) {
@@ -880,6 +953,7 @@ func removeBrokenDiscriminator(schema *Schema) {
 		"Security_Detections_API_RuleSource",
 		"Security_Endpoint_Exceptions_API_ExceptionListItemEntry",
 		"Security_Exceptions_API_ExceptionListItemEntry",
+		"Security_Endpoint_Management_API_ActionDetailsResponse",
 	}
 
 	for _, component := range brokenDiscriminatorComponents {
@@ -907,11 +981,115 @@ func fixGetSpacesParams(schema *Schema) {
 }
 
 func fixGetSyntheticsMonitorsParams(schema *Schema) {
-	schema.MustGetPath("/api/synthetics/monitors").MustGetEndpoint("get").Move("parameters.12.schema.oneOf.1", "parameters.12.schema")
+	schema.MustGetPath("/api/synthetics/monitors").MustGetEndpoint("get").Set("parameters.12.schema.oneOf.1.x-go-type", "[]GetSyntheticMonitorsParamsUseLogicalAndFor0")
 }
 
 func fixGetMaintenanceWindowFindParams(schema *Schema) {
-	schema.MustGetPath("/api/maintenance_window/_find").MustGetEndpoint("get").Move("parameters.2.schema.anyOf.1", "parameters.2.schema")
+	schema.MustGetPath("/api/maintenance_window/_find").MustGetEndpoint("get").Set("parameters.2.schema.anyOf.1.x-go-type", "[]GetMaintenanceWindowFindParamsStatus0")
+}
+
+func fixGetStreamsAttachmentTypesParams(schema *Schema) {
+	schema.MustGetPath("/api/streams/{streamName}/attachments").MustGetEndpoint("get").Set("parameters.2.schema.anyOf.1.x-go-type", "[]GetStreamsStreamnameAttachmentsParamsAttachmentTypes0")
+}
+
+func fixSecurityAPIPageSize(schema *Schema) {
+	apiPageSize := schema.Components.MustGetMap("schemas.Security_Endpoint_Management_API_ApiPageSize")
+	schema.Components.Set("schemas.Security_Endpoint_Management_API_ApiPageSize", apiPageSize.MustGetMap("allOf.0"))
+}
+
+func fixDashboardPanelItemRefs(schema *Schema) {
+	dashboardPath := schema.MustGetPath("/api/dashboards/{id}")
+
+	dashboardPath.Post.CreateRef(schema, "dashboard_panel_item", "requestBody.content.application/json.schema.properties.panels.items.anyOf.0")
+	dashboardPath.Post.CreateRef(schema, "dashboard_panel_section", "requestBody.content.application/json.schema.properties.panels.items.anyOf.1")
+	dashboardPath.Post.CreateRef(schema, "dashboard_panels", "requestBody.content.application/json.schema.properties.panels")
+
+	dashboardPath.Put.CreateRef(schema, "dashboard_panel_item", "requestBody.content.application/json.schema.properties.panels.items.anyOf.0")
+	dashboardPath.Put.CreateRef(schema, "dashboard_panel_section", "requestBody.content.application/json.schema.properties.panels.items.anyOf.1")
+	dashboardPath.Put.CreateRef(schema, "dashboard_panels", "requestBody.content.application/json.schema.properties.panels")
+
+	dashboardPath.Get.CreateRef(schema, "dashboard_panel_item", "responses.200.content.application/json.schema.properties.data.properties.panels.items.anyOf.0")
+	dashboardPath.Get.CreateRef(schema, "dashboard_panel_section", "responses.200.content.application/json.schema.properties.data.properties.panels.items.anyOf.1")
+	dashboardPath.Get.CreateRef(schema, "dashboard_panels", "responses.200.content.application/json.schema.properties.data.properties.panels")
+
+	schema.Components.Move("schemas.dashboard_panel_section.properties.panels.items.anyOf", "schemas.dashboard_panel_section.properties.panels.items.oneOf")
+	schema.Components.Set("schemas.dashboard_panel_section.properties.panels.items.discriminator", Map{"propertyName": "type"})
+	schema.Components.CreateRef(schema, "dashboard_panel_item", "schemas.dashboard_panel_section.properties.panels.items")
+
+	const panelTypePrefix = "kbn-dashboard-panel-"
+	panelOneOf := schema.Components.MustGetSlice("schemas.dashboard_panel_item.oneOf")
+	panelTypeMapping := Map{}
+	for _, entry := range panelOneOf {
+		entryMap, ok := entry.(Map)
+		if !ok {
+			continue
+		}
+		ref, ok := entryMap["$ref"].(string)
+		if !ok {
+			continue
+		}
+		schemaName := strings.TrimPrefix(ref, "#/components/schemas/")
+		typeKey := strings.TrimPrefix(schemaName, panelTypePrefix)
+		panelTypeMapping[typeKey] = ref
+	}
+	schema.Components.Set("schemas.dashboard_panel_item.discriminator", Map{
+		"propertyName": "type",
+		"mapping":      panelTypeMapping,
+	})
+}
+
+func fixSecurityExceptionListItems(schema *Schema) {
+	exceptionListItems := schema.MustGetPath("/s/{spaceId}/api/exception_lists/items")
+
+	putExceptionListItem := exceptionListItems.MustGetEndpoint("put")
+	putExceptionListItem.CreateRef(schema, "Security_Exceptions_API_UpdateExceptionListItem", "requestBody.content.application/json.schema")
+
+	postExceptionListItem := exceptionListItems.MustGetEndpoint("post")
+	postExceptionListItem.CreateRef(schema, "Security_Exceptions_API_CreateExceptionListItem", "requestBody.content.application/json.schema")
+}
+
+func removeDuplicateOneOfRefs(schema *Schema) {
+	componentSchemas := schema.Components.MustGetMap("schemas")
+	componentSchemas.Iterate(removeDuplicateOneOfRefsFromNode)
+}
+
+// https://github.com/elastic/kibana/issues/244264
+func removeDuplicateOneOfRefsFromNode(key string, node Map) {
+	maybeOneOf, hasOneOf := node.GetSlice("oneOf")
+	if hasOneOf {
+		// Check for duplicate $ref entries
+		seenRefs := map[string]bool{}
+		newOneOf := Slice{}
+		for _, item := range maybeOneOf {
+			itemMap, ok := item.(Map)
+			if !ok {
+				newOneOf = append(newOneOf, item)
+				continue
+			}
+			refValue, hasRef := itemMap["$ref"]
+			if hasRef {
+				refStr, ok := refValue.(string)
+				if !ok {
+					newOneOf = append(newOneOf, item)
+					continue
+				}
+				if _, seen := seenRefs[refStr]; seen {
+					// Duplicate found, skip it
+					continue
+				}
+				seenRefs[refStr] = true
+			}
+			newOneOf = append(newOneOf, item)
+		}
+		node["oneOf"] = newOneOf
+	}
+
+	properties, hasProperties := node.GetMap("properties")
+	if !hasProperties {
+		return
+	}
+
+	properties.Iterate(removeDuplicateOneOfRefsFromNode)
 }
 
 // transformFleetPaths fixes the fleet paths.
@@ -1172,4 +1350,9 @@ func transformRemoveUnusedComponents(schema *Schema) {
 			break
 		}
 	}
+}
+
+func fixAlertingRuleParams(schema *Schema) {
+	postEndpoint := schema.MustGetPath("/api/alerting/rule/{id}").MustGetEndpoint("post")
+	postEndpoint.CreateRef(schema, "Alerting_Rule_API_Params", "requestBody.content.application/json.schema.properties.params")
 }

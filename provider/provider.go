@@ -36,7 +36,7 @@ func New(version string) *schema.Provider {
 			"elasticstack_elasticsearch_ingest_processor_append":            ingest.DataSourceProcessorAppend(),
 			"elasticstack_elasticsearch_ingest_processor_bytes":             ingest.DataSourceProcessorBytes(),
 			"elasticstack_elasticsearch_ingest_processor_circle":            ingest.DataSourceProcessorCircle(),
-			"elasticstack_elasticsearch_ingest_processor_community_id":      ingest.DataSourceProcessorCommunityId(),
+			"elasticstack_elasticsearch_ingest_processor_community_id":      ingest.DataSourceProcessorCommunityID(),
 			"elasticstack_elasticsearch_ingest_processor_convert":           ingest.DataSourceProcessorConvert(),
 			"elasticstack_elasticsearch_ingest_processor_csv":               ingest.DataSourceProcessorCSV(),
 			"elasticstack_elasticsearch_ingest_processor_date":              ingest.DataSourceProcessorDate(),
@@ -51,9 +51,9 @@ func New(version string) *schema.Provider {
 			"elasticstack_elasticsearch_ingest_processor_geoip":             ingest.DataSourceProcessorGeoip(),
 			"elasticstack_elasticsearch_ingest_processor_grok":              ingest.DataSourceProcessorGrok(),
 			"elasticstack_elasticsearch_ingest_processor_gsub":              ingest.DataSourceProcessorGsub(),
-			"elasticstack_elasticsearch_ingest_processor_html_strip":        ingest.DataSourceProcessorHtmlStrip(),
+			"elasticstack_elasticsearch_ingest_processor_html_strip":        ingest.DataSourceProcessorHTMLStrip(),
 			"elasticstack_elasticsearch_ingest_processor_join":              ingest.DataSourceProcessorJoin(),
-			"elasticstack_elasticsearch_ingest_processor_json":              ingest.DataSourceProcessorJson(),
+			"elasticstack_elasticsearch_ingest_processor_json":              ingest.DataSourceProcessorJSON(),
 			"elasticstack_elasticsearch_ingest_processor_kv":                ingest.DataSourceProcessorKV(),
 			"elasticstack_elasticsearch_ingest_processor_lowercase":         ingest.DataSourceProcessorLowercase(),
 			"elasticstack_elasticsearch_ingest_processor_network_direction": ingest.DataSourceProcessorNetworkDirection(),
@@ -70,7 +70,7 @@ func New(version string) *schema.Provider {
 			"elasticstack_elasticsearch_ingest_processor_trim":              ingest.DataSourceProcessorTrim(),
 			"elasticstack_elasticsearch_ingest_processor_uppercase":         ingest.DataSourceProcessorUppercase(),
 			"elasticstack_elasticsearch_ingest_processor_urldecode":         ingest.DataSourceProcessorUrldecode(),
-			"elasticstack_elasticsearch_ingest_processor_uri_parts":         ingest.DataSourceProcessorUriParts(),
+			"elasticstack_elasticsearch_ingest_processor_uri_parts":         ingest.DataSourceProcessorURIParts(),
 			"elasticstack_elasticsearch_ingest_processor_user_agent":        ingest.DataSourceProcessorUserAgent(),
 			"elasticstack_elasticsearch_security_role":                      security.DataSourceRole(),
 			"elasticstack_elasticsearch_security_user":                      security.DataSourceUser(),
@@ -88,21 +88,17 @@ func New(version string) *schema.Provider {
 			"elasticstack_elasticsearch_index_template":      index.ResourceTemplate(),
 			"elasticstack_elasticsearch_ingest_pipeline":     ingest.ResourceIngestPipeline(),
 			"elasticstack_elasticsearch_logstash_pipeline":   logstash.ResourceLogstashPipeline(),
-			"elasticstack_elasticsearch_security_role":       security.ResourceRole(),
-			"elasticstack_elasticsearch_security_user":       security.ResourceUser(),
 			"elasticstack_elasticsearch_snapshot_lifecycle":  cluster.ResourceSlm(),
 			"elasticstack_elasticsearch_snapshot_repository": cluster.ResourceSnapshotRepository(),
 			"elasticstack_elasticsearch_transform":           transform.ResourceTransform(),
 			"elasticstack_elasticsearch_watch":               watcher.ResourceWatch(),
 
-			"elasticstack_kibana_alerting_rule": kibana.ResourceAlertingRule(),
 			"elasticstack_kibana_space":         kibana.ResourceSpace(),
 			"elasticstack_kibana_security_role": kibana.ResourceRole(),
-			"elasticstack_kibana_slo":           kibana.ResourceSlo(),
 		},
 	}
 
-	p.ConfigureContextFunc = clients.NewApiClientFuncFromSDK(version)
+	p.ConfigureContextFunc = clients.NewAPIClientFuncFromSDK(version)
 
 	return p
 }

@@ -1,14 +1,28 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package integration
 
 import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
@@ -36,14 +50,10 @@ func (r *integrationResource) Delete(ctx context.Context, req resource.DeleteReq
 		return
 	}
 
-	// If space_ids is set, use space-aware uninstallation
+	// If space_id is set, use space-aware uninstallation
 	var spaceID string
-	if !stateModel.SpaceIds.IsNull() && !stateModel.SpaceIds.IsUnknown() {
-		var tempDiags diag.Diagnostics
-		spaceIDs := utils.SetTypeAs[types.String](ctx, stateModel.SpaceIds, path.Root("space_ids"), &tempDiags)
-		if !tempDiags.HasError() && len(spaceIDs) > 0 {
-			spaceID = spaceIDs[0].ValueString()
-		}
+	if typeutils.IsKnown(stateModel.SpaceID) {
+		spaceID = stateModel.SpaceID.ValueString()
 	}
 
 	diags = fleet.Uninstall(ctx, client, name, version, spaceID, force)

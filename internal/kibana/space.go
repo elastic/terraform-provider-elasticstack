@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package kibana
 
 import (
@@ -12,7 +29,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-var SpaceSolutionMinVersion = version.Must(version.NewVersion("8.18.0"))
+var spaceSolutionMinVersion = version.Must(version.NewVersion("8.16.0"))
 
 func ResourceSpace() *schema.Resource {
 	apikeySchema := map[string]*schema.Schema{
@@ -22,10 +39,11 @@ func ResourceSpace() *schema.Resource {
 			Computed:    true,
 		},
 		"space_id": {
-			Description: "The space ID that is part of the Kibana URL when inside the space.",
-			Type:        schema.TypeString,
-			Required:    true,
-			ForceNew:    true,
+			Description:  "The space ID that is part of the Kibana URL when inside the space.",
+			Type:         schema.TypeString,
+			Required:     true,
+			ForceNew:     true,
+			ValidateFunc: validation.StringMatch(regexp.MustCompile("^[a-z0-9_-]+$"), "must only contain lowercase letters, numbers, hyphens, and underscores"),
 		},
 		"name": {
 			Description: "The display name for the space.",
@@ -90,8 +108,8 @@ func ResourceSpace() *schema.Resource {
 	}
 }
 
-func resourceSpaceUpsert(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+func resourceSpaceUpsert(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
@@ -108,8 +126,8 @@ func resourceSpaceUpsert(ctx context.Context, d *schema.ResourceData, meta inter
 			return diags
 		}
 
-		if !serverVersion.GreaterThanOrEqual(SpaceSolutionMinVersion) {
-			return diag.Errorf("solution field is not supported in this version of the Elastic Stack. Solution field requires %s or higher", SpaceSolutionMinVersion)
+		if !serverVersion.GreaterThanOrEqual(spaceSolutionMinVersion) {
+			return diag.Errorf("solution field is not supported in this version of the Elastic Stack. Solution field requires %s or higher", spaceSolutionMinVersion)
 		}
 	}
 
@@ -139,8 +157,8 @@ func resourceSpaceUpsert(ctx context.Context, d *schema.ResourceData, meta inter
 		space.Color = color.(string)
 	}
 
-	if imageUrl, ok := d.GetOk("image_url"); ok {
-		space.ImageURL = imageUrl.(string)
+	if imageURL, ok := d.GetOk("image_url"); ok {
+		space.ImageURL = imageURL.(string)
 	}
 
 	if solution, ok := d.GetOk("solution"); ok {
@@ -166,14 +184,14 @@ func resourceSpaceUpsert(ctx context.Context, d *schema.ResourceData, meta inter
 	return resourceSpaceRead(ctx, d, meta)
 }
 
-func resourceSpaceRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+func resourceSpaceRead(_ context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
 	id := d.Id()
-	if compId, diags := clients.CompositeIdFromStr(id); diags == nil {
-		id = compId.ResourceId
+	if compID, diags := clients.CompositeIDFromStr(id); diags == nil {
+		id = compID.ResourceID
 	}
 
 	kibana, err := client.GetKibanaClient()
@@ -216,14 +234,14 @@ func resourceSpaceRead(ctx context.Context, d *schema.ResourceData, meta interfa
 	return diags
 }
 
-func resourceSpaceDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client, diags := clients.NewApiClientFromSDKResource(d, meta)
+func resourceSpaceDelete(_ context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+	client, diags := clients.NewAPIClientFromSDKResource(d, meta)
 	if diags.HasError() {
 		return diags
 	}
 	id := d.Id()
-	if compId, diags := clients.CompositeIdFromStr(id); diags == nil {
-		id = compId.ResourceId
+	if compID, diags := clients.CompositeIDFromStr(id); diags == nil {
+		id = compID.ResourceID
 	}
 
 	kibana, err := client.GetKibanaClient()

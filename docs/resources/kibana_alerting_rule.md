@@ -68,12 +68,12 @@ resource "elasticstack_kibana_alerting_rule" "example" {
 - `notify_when` (String) Required until v8.6.0. Deprecated in v8.13.0. Use the `notify_when` property in the action `frequency` object instead. Defines how often alerts generate actions. Valid values include: `onActionGroupChange`: Actions run when the alert status changes; `onActiveAlert`: Actions run when the alert becomes active and at each check interval while the rule conditions are met; `onThrottleInterval`: Actions run when the alert becomes active and at the interval specified in the throttle property while the rule conditions are met. NOTE: This is a rule level property; if you update the rule in Kibana, it is automatically changed to use action-specific `notify_when` values.
 - `rule_id` (String) The identifier for the rule. Until Kibana version 8.17.0 this should be a UUID v1 or v4, for later versions any format can be used. If it is omitted, an ID is randomly generated.
 - `space_id` (String) An identifier for the space. If space_id is not provided, the default space is used.
-- `tags` (List of String) A list of tag names that are applied to the rule.
+- `tags` (Set of String) A list of tag names that are applied to the rule.
 - `throttle` (String) Deprecated in 8.13.0. Defines how often an alert generates repeated actions. This custom action interval must be specified in seconds, minutes, hours, or days. For example, 10m or 1h. This property is applicable only if `notify_when` is `onThrottleInterval`. NOTE: This is a rule level property; if you update the rule in Kibana, it is automatically changed to use action-specific `throttle` values.
 
 ### Read-Only
 
-- `id` (String) The ID of this resource.
+- `id` (String) Generated ID for the alerting rule.
 - `last_execution_date` (String) Date of the last execution of this rule.
 - `last_execution_status` (String) Status of the last execution of this rule.
 - `scheduled_task_id` (String) ID of the scheduled task that will execute the alert.
@@ -88,8 +88,8 @@ Required:
 
 Optional:
 
-- `alerts_filter` (Block List, Max: 1) Conditions that affect whether the action runs. If you specify multiple conditions, all conditions must be met for the action to run. For example, if an alert occurs within the specified time frame and matches the query, the action runs. (see [below for nested schema](#nestedblock--actions--alerts_filter))
-- `frequency` (Block List, Max: 1) The properties that affect how often actions are generated. If the rule type supports setting summary to true, the action can be a summary of alerts at the specified notification interval. Otherwise, an action runs for each alert at the specified notification interval. NOTE: You cannot specify these parameters when `notify_when` or `throttle` are defined at the rule level. (see [below for nested schema](#nestedblock--actions--frequency))
+- `alerts_filter` (Block, Optional) Conditions that affect whether the action runs. If you specify multiple conditions, all conditions must be met for the action to run. For example, if an alert occurs within the specified time frame and matches the query, the action runs. (see [below for nested schema](#nestedblock--actions--alerts_filter))
+- `frequency` (Block, Optional) The properties that affect how often actions are generated. If the rule type supports setting summary to true, the action can be a summary of alerts at the specified notification interval. Otherwise, an action runs for each alert at the specified notification interval. NOTE: You cannot specify these parameters when `notify_when` or `throttle` are defined at the rule level. (see [below for nested schema](#nestedblock--actions--frequency))
 - `group` (String) The group name, which affects when the action runs (for example, when the threshold is met or when the alert is recovered). Each rule type has a list of valid action group names.
 
 <a id="nestedblock--actions--alerts_filter"></a>
@@ -98,12 +98,12 @@ Optional:
 Optional:
 
 - `kql` (String) Defines a query filter that determines whether the action runs. Written in Kibana Query Language (KQL).
-- `timeframe` (Block List, Max: 1) Defines a period that limits whether the action runs. (see [below for nested schema](#nestedblock--actions--alerts_filter--timeframe))
+- `timeframe` (Block, Optional) Defines a period that limits whether the action runs. (see [below for nested schema](#nestedblock--actions--alerts_filter--timeframe))
 
 <a id="nestedblock--actions--alerts_filter--timeframe"></a>
 ### Nested Schema for `actions.alerts_filter.timeframe`
 
-Required:
+Optional:
 
 - `days` (List of Number) Defines the days of the week that the action can run, represented as an array of numbers. For example, 1 represents Monday. An empty array is equivalent to specifying all the days of the week.
 - `hours_end` (String) Defines the range of time in a day that the action can run. The end of the time frame in 24-hour notation (hh:mm).
@@ -115,14 +115,11 @@ Required:
 <a id="nestedblock--actions--frequency"></a>
 ### Nested Schema for `actions.frequency`
 
-Required:
-
-- `notify_when` (String) Defines how often alerts generate actions. Valid values include: `onActionGroupChange`: Actions run when the alert status changes; `onActiveAlert`: Actions run when the alert becomes active and at each check interval while the rule conditions are met; `onThrottleInterval`: Actions run when the alert becomes active and at the interval specified in the throttle property while the rule conditions are met. NOTE: This is a rule level property; if you update the rule in Kibana, it is automatically changed to use action-specific `notify_when` values.
-- `summary` (Boolean) Indicates whether the action is a summary.
-
 Optional:
 
-- `throttle` (String) Defines how often an alert generates repeated actions. This custom action interval must be specified in seconds, minutes, hours, or days. For example, 10m or 1h. This property is applicable only if `notify_when` is `onThrottleInterval`. NOTE: This is a rule level property; if you update the rule in Kibana, it is automatically changed to use action-specific `throttle` values.
+- `notify_when` (String) Defines how often alerts generate actions. Valid values include: `onActionGroupChange`: Actions run when the alert status changes; `onActiveAlert`: Actions run when the alert becomes active and at each check interval while the rule conditions are met; `onThrottleInterval`: Actions run when the alert becomes active and at the interval specified in the throttle property while the rule conditions are met.
+- `summary` (Boolean) Indicates whether the action is a summary.
+- `throttle` (String) Defines how often an alert generates repeated actions. This custom action interval must be specified in seconds, minutes, hours, or days. For example, 10m or 1h. This property is applicable only if `notify_when` is `onThrottleInterval`.
 
 ## Import
 

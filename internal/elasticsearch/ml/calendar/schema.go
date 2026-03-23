@@ -40,7 +40,7 @@ func GetSchema() schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: "Manages Machine Learning calendars. See the [ML Calendar API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/ml-put-calendar.html) for more details.",
 		Blocks: map[string]schema.Block{
-			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock("elasticsearch_connection", false),
+			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(false),
 		},
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{

@@ -1,0 +1,1 @@
+Helper data source which can be used to create the configuration for a rename processor. This processor renames an existing field. See the [rename processor documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/rename-processor.html) for more details.

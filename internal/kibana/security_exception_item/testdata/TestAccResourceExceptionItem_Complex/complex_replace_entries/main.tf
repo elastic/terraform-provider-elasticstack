@@ -1,0 +1,46 @@
+variable "list_id" {
+  type = string
+}
+
+variable "item_id" {
+  type = string
+}
+
+resource "elasticstack_kibana_security_exception_list" "test" {
+  name           = "test exception list for complex item"
+  description    = "test exception list for complex item"
+  type           = "detection"
+  list_id        = var.list_id
+  namespace_type = "single"
+}
+
+resource "elasticstack_kibana_security_exception_item" "test" {
+  list_id        = elasticstack_kibana_security_exception_list.test.list_id
+  item_id        = var.item_id
+  name           = "Test Complex Exception Item"
+  description    = "Test complex exception item for acceptance tests"
+  type           = "simple"
+  namespace_type = "single"
+  os_types       = ["linux", "macos", "windows"]
+  tags           = ["test", "complex", "updated"]
+
+  entries = [
+    {
+      type     = "match_any"
+      field    = "file.path"
+      operator = "included"
+      values   = ["/usr/bin/*", "/usr/sbin/*", "/bin/*"]
+    },
+    {
+      type     = "exists"
+      field    = "file.hash.sha256"
+      operator = "included"
+    },
+    {
+      type     = "wildcard"
+      field    = "process.command_line"
+      operator = "excluded"
+      value    = "*malicious*"
+    }
+  ]
+}
