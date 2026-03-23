@@ -294,7 +294,7 @@ func (m *waffleConfigModel) fromAPINoESQL(ctx context.Context, api kbapi.WaffleN
 			}
 			m.GroupBy[i].Config = customtypes.NewJSONWithDefaultsValue[map[string]any](
 				string(b),
-				populatePieChartGroupByDefaults,
+				populateLensGroupByDefaults,
 			)
 		}
 	}

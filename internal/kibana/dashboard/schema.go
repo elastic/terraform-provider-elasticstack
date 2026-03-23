@@ -122,8 +122,8 @@ func populateTagcloudMetricDefaults(model map[string]any) map[string]any {
 	return model
 }
 
-// populateMetricChartMetricDefaults populates default values for metric chart metric configuration
-func populateMetricChartMetricDefaults(model map[string]any) map[string]any {
+// populateLensMetricDefaults populates default values for Lens metric configuration (shared across XY, metric, pie, treemap, datatable, etc.).
+func populateLensMetricDefaults(model map[string]any) map[string]any {
 	if model == nil {
 		return model
 	}
@@ -279,6 +279,9 @@ func populateLegacyMetricMetricDefaults(model map[string]any) map[string]any {
 		return model
 	}
 	if operation, ok := model["operation"].(string); ok && isFieldMetricOperation(operation) {
+		if _, exists := model["show_array_values"]; !exists {
+			model["show_array_values"] = false
+		}
 		if _, exists := model["empty_as_null"]; !exists {
 			model["empty_as_null"] = false
 		}
@@ -763,7 +766,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 			},
 			"config_json": schema.StringAttribute{
 				MarkdownDescription: panelConfigDescription("The configuration of the panel as a JSON string.", "config_json", panelConfigNames),
-				CustomType:          jsontypes.NormalizedType{},
+				CustomType:          customtypes.NewJSONWithDefaultsType(populatePanelConfigJSONDefaults),
 				Optional:            true,
 				Computed:            true,
 				Validators: []validator.String{
@@ -1402,7 +1405,7 @@ func getWaffleSchema() map[string]schema.Attribute {
 				Attributes: map[string]schema.Attribute{
 					"config": schema.StringAttribute{
 						MarkdownDescription: "Group-by operation as JSON.",
-						CustomType:          customtypes.NewJSONWithDefaultsType(populatePieChartGroupByDefaults),
+						CustomType:          customtypes.NewJSONWithDefaultsType(populateLensGroupByDefaults),
 						Required:            true,
 					},
 				},
@@ -1935,7 +1938,7 @@ func getMetricChart() map[string]schema.Attribute {
 				Attributes: map[string]schema.Attribute{
 					"config_json": schema.StringAttribute{
 						MarkdownDescription: metricChartMetricConfigDescription,
-						CustomType:          customtypes.NewJSONWithDefaultsType(populateMetricChartMetricDefaults),
+						CustomType:          customtypes.NewJSONWithDefaultsType(populateLensMetricDefaults),
 						Required:            true,
 					},
 				},
@@ -2221,8 +2224,8 @@ func populatePieChartMetricDefaults(model map[string]any) map[string]any {
 	return model
 }
 
-// populatePieChartGroupByDefaults populates default values for pie chart group by configuration
-func populatePieChartGroupByDefaults(model map[string]any) map[string]any {
+// populateLensGroupByDefaults populates default values for Lens dimension/group-by configuration (shared across pie, treemap, datatable, etc.).
+func populateLensGroupByDefaults(model map[string]any) map[string]any {
 	if model == nil {
 		return model
 	}
@@ -2326,7 +2329,7 @@ func getPieChart() map[string]schema.Attribute {
 				Attributes: map[string]schema.Attribute{
 					"config": schema.StringAttribute{
 						MarkdownDescription: "Group by configuration as JSON.",
-						CustomType:          customtypes.NewJSONWithDefaultsType(populatePieChartGroupByDefaults),
+						CustomType:          customtypes.NewJSONWithDefaultsType(populateLensGroupByDefaults),
 						Required:            true,
 					},
 				},

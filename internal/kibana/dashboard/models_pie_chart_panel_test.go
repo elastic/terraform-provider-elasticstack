@@ -188,7 +188,7 @@ func Test_pieChartConfigModel_toAPI_withMetrics(t *testing.T) {
 			{Config: customtypes.NewJSONWithDefaultsValue[map[string]any](`{"operation":"sum","field":"bytes"}`, populatePieChartMetricDefaults)},
 		},
 		GroupBy: []pieGroupByModel{
-			{Config: customtypes.NewJSONWithDefaultsValue(`{"operation":"terms","field":"host.name"}`, populatePieChartGroupByDefaults)},
+			{Config: customtypes.NewJSONWithDefaultsValue(`{"operation":"terms","field":"host.name"}`, populateLensGroupByDefaults)},
 		},
 	}
 
@@ -212,8 +212,8 @@ func Test_pieChartConfigModel_toAPI_withGroupBy(t *testing.T) {
 			{Config: customtypes.NewJSONWithDefaultsValue[map[string]any](`{"operation":"count"}`, populatePieChartMetricDefaults)},
 		},
 		GroupBy: []pieGroupByModel{
-			{Config: customtypes.NewJSONWithDefaultsValue(`{"operation":"terms","field":"host.name","size":10}`, populatePieChartGroupByDefaults)},
-			{Config: customtypes.NewJSONWithDefaultsValue(`{"operation":"terms","field":"service.name"}`, populatePieChartGroupByDefaults)},
+			{Config: customtypes.NewJSONWithDefaultsValue(`{"operation":"terms","field":"host.name","size":10}`, populateLensGroupByDefaults)},
+			{Config: customtypes.NewJSONWithDefaultsValue(`{"operation":"terms","field":"service.name"}`, populateLensGroupByDefaults)},
 		},
 	}
 
