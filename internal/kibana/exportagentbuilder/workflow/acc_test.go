@@ -29,7 +29,9 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
+	"github.com/google/uuid"
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -88,6 +90,31 @@ func preCheckWithWorkflowsEnabled(t *testing.T) {
 	}
 }
 
+func TestAccDataSourceKibanaExportAgentBuilderWorkflowSpace(t *testing.T) {
+	spaceID := fmt.Sprintf("test-space-%s", uuid.New().String()[:8])
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { preCheckWithWorkflowsEnabled(t) },
+		Steps: []resource.TestStep{
+			{
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderAPIVersion),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables: config.Variables{
+					"space_id": config.StringVariable(spaceID),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_agentbuilder_export_workflow.test", "id"),
+					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_agentbuilder_export_workflow.test", "workflow_id"),
+					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_agentbuilder_export_workflow.test", "configuration_yaml"),
+					resource.TestCheckResourceAttr("data.elasticstack_kibana_agentbuilder_export_workflow.test", "space_id", spaceID),
+
+				),
+			},
+		},
+	})
+}
+
 func TestAccDataSourceKibanaExportAgentBuilderWorkflow(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { preCheckWithWorkflowsEnabled(t) },
@@ -99,7 +126,7 @@ func TestAccDataSourceKibanaExportAgentBuilderWorkflow(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_agentbuilder_export_workflow.test", "id"),
 					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_agentbuilder_export_workflow.test", "workflow_id"),
-					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_agentbuilder_export_workflow.test", "yaml"),
+					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_agentbuilder_export_workflow.test", "configuration_yaml"),
 				),
 			},
 		},

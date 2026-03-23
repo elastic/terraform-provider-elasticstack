@@ -64,7 +64,7 @@ func (r *WorkflowResource) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
-	workflow, diags := kibanaoapi.GetWorkflow(ctx, client, compID.ResourceID)
+	workflow, diags := kibanaoapi.GetWorkflow(ctx, client, compID.ClusterID, compID.ResourceID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

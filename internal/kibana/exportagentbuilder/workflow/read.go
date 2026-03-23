@@ -24,6 +24,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -70,7 +71,11 @@ func (d *DataSource) Read(ctx context.Context, req datasource.ReadRequest, resp 
 		}
 	}
 
-	workflow := kibanaoapi.FetchWorkflow(ctx, oapiClient.API, workflowID, &resp.Diagnostics)
+	workflow, diags := kibanaoapi.GetWorkflow(ctx, oapiClient, spaceID, workflowID)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 	if workflow == nil {
 		resp.Diagnostics.AddError("Workflow not found", fmt.Sprintf("Unable to fetch workflow with ID %s", workflowID))
 		return
@@ -81,8 +86,8 @@ func (d *DataSource) Read(ctx context.Context, req datasource.ReadRequest, resp 
 	var state dataSourceModel
 	state.ID = types.StringValue(compositeID.String())
 	state.SpaceID = types.StringValue(spaceID)
-	state.WorkflowID = types.StringValue(workflow.ID.ValueString())
-	state.Yaml = types.StringValue(workflow.Yaml.ValueString())
+	state.WorkflowID = types.StringValue(workflow.Id)
+	state.ConfigurationYaml = customtypes.NewNormalizedYamlValue(workflow.Yaml)
 
 	diags = resp.State.Set(ctx, &state)
 	resp.Diagnostics.Append(diags...)

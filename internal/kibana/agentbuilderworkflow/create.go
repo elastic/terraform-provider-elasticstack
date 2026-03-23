@@ -55,13 +55,15 @@ func (r *WorkflowResource) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	created, diags := kibanaoapi.CreateWorkflow(ctx, client, body)
+	spaceID := planModel.SpaceID.ValueString()
+
+	created, diags := kibanaoapi.CreateWorkflow(ctx, client, spaceID, body)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	workflow, diags := kibanaoapi.GetWorkflow(ctx, client, created.Id)
+	workflow, diags := kibanaoapi.GetWorkflow(ctx, client, spaceID, created.Id)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

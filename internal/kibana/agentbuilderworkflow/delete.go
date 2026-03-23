@@ -60,6 +60,6 @@ func (r *WorkflowResource) Delete(ctx context.Context, req resource.DeleteReques
 		return
 	}
 
-	diags = kibanaoapi.DeleteWorkflow(ctx, client, compID.ResourceID)
+	diags = kibanaoapi.DeleteWorkflow(ctx, client, compID.ClusterID, compID.ResourceID)
 	resp.Diagnostics.Append(diags...)
 }

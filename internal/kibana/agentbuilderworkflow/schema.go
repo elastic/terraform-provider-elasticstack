@@ -20,6 +20,7 @@ package agentbuilderworkflow
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -64,6 +65,7 @@ func getSchema() schema.Schema {
 			"configuration_yaml": schema.StringAttribute{
 				Required:            true,
 				MarkdownDescription: "The YAML configuration for the workflow.",
+				CustomType:          customtypes.NormalizedYamlType{},
 			},
 			"name": schema.StringAttribute{
 				Computed:            true,

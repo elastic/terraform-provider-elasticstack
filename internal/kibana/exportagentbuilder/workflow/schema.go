@@ -20,6 +20,7 @@ package workflow
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 )
@@ -42,9 +43,10 @@ func (d *DataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp 
 				Description: "The ID of the exported workflow.",
 				Computed:    true,
 			},
-			"yaml": schema.StringAttribute{
+			"configuration_yaml": schema.StringAttribute{
 				Description: "The exported workflow definition in YAML format.",
 				Computed:    true,
+				CustomType:  customtypes.NormalizedYamlType{},
 			},
 		},
 	}

@@ -66,13 +66,13 @@ func (r *WorkflowResource) Update(ctx context.Context, req resource.UpdateReques
 
 	body := planModel.toAPIUpdateModel()
 
-	_, diags = kibanaoapi.UpdateWorkflow(ctx, client, compID.ResourceID, body)
+	_, diags = kibanaoapi.UpdateWorkflow(ctx, client, compID.ClusterID, compID.ResourceID, body)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	workflow, diags := kibanaoapi.GetWorkflow(ctx, client, compID.ResourceID)
+	workflow, diags := kibanaoapi.GetWorkflow(ctx, client, compID.ClusterID, compID.ResourceID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

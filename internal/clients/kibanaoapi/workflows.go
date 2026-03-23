@@ -19,13 +19,11 @@ package kibanaoapi
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 // addInternalOriginHeader adds the required x-elastic-internal-origin header for workflow APIs
@@ -35,8 +33,8 @@ func addInternalOriginHeader(_ context.Context, req *http.Request) error {
 }
 
 // GetWorkflow reads a specific workflow from the API.
-func GetWorkflow(ctx context.Context, client *Client, workflowID string) (*kbapi.WorkflowDetailDto, diag.Diagnostics) {
-	resp, err := client.API.GetWorkflowsIdWithResponse(ctx, workflowID, addInternalOriginHeader)
+func GetWorkflow(ctx context.Context, client *Client, spaceID string, workflowID string) (*kbapi.WorkflowDetailDto, diag.Diagnostics) {
+	resp, err := client.API.GetWorkflowsIdWithResponse(ctx, workflowID, SpaceAwarePathRequestEditor(spaceID), addInternalOriginHeader)
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -52,8 +50,8 @@ func GetWorkflow(ctx context.Context, client *Client, workflowID string) (*kbapi
 }
 
 // CreateWorkflow creates a new workflow.
-func CreateWorkflow(ctx context.Context, client *Client, req kbapi.CreateWorkflowCommand) (*kbapi.WorkflowDetailDto, diag.Diagnostics) {
-	resp, err := client.API.PostWorkflowsWithResponse(ctx, req, addInternalOriginHeader)
+func CreateWorkflow(ctx context.Context, client *Client, spaceID string, req kbapi.CreateWorkflowCommand) (*kbapi.WorkflowDetailDto, diag.Diagnostics) {
+	resp, err := client.API.PostWorkflowsWithResponse(ctx, req, SpaceAwarePathRequestEditor(spaceID), addInternalOriginHeader)
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -67,8 +65,8 @@ func CreateWorkflow(ctx context.Context, client *Client, req kbapi.CreateWorkflo
 }
 
 // UpdateWorkflow updates an existing workflow.
-func UpdateWorkflow(ctx context.Context, client *Client, workflowID string, req kbapi.UpdateWorkflowCommand) (*kbapi.UpdatedWorkflowResponseDto, diag.Diagnostics) {
-	resp, err := client.API.PutWorkflowsIdWithResponse(ctx, workflowID, req, addInternalOriginHeader)
+func UpdateWorkflow(ctx context.Context, client *Client, spaceID string, workflowID string, req kbapi.UpdateWorkflowCommand) (*kbapi.UpdatedWorkflowResponseDto, diag.Diagnostics) {
+	resp, err := client.API.PutWorkflowsIdWithResponse(ctx, workflowID, req, SpaceAwarePathRequestEditor(spaceID), addInternalOriginHeader)
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -82,8 +80,8 @@ func UpdateWorkflow(ctx context.Context, client *Client, workflowID string, req 
 }
 
 // DeleteWorkflow deletes an existing workflow.
-func DeleteWorkflow(ctx context.Context, client *Client, workflowID string) diag.Diagnostics {
-	resp, err := client.API.DeleteWorkflowsIdWithResponse(ctx, workflowID, addInternalOriginHeader)
+func DeleteWorkflow(ctx context.Context, client *Client, spaceID string, workflowID string) diag.Diagnostics {
+	resp, err := client.API.DeleteWorkflowsIdWithResponse(ctx, workflowID, SpaceAwarePathRequestEditor(spaceID), addInternalOriginHeader)
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -98,32 +96,3 @@ func DeleteWorkflow(ctx context.Context, client *Client, workflowID string) diag
 	}
 }
 
-// WorkflowModel maps workflow data
-type WorkflowModel struct {
-	ID   types.String `tfsdk:"id"`
-	Yaml types.String `tfsdk:"yaml"`
-}
-
-// FetchWorkflow fetches and parses a workflow by ID
-func FetchWorkflow(ctx context.Context, client *kbapi.ClientWithResponses, workflowID string, diagnostics *diag.Diagnostics) *WorkflowModel {
-	workflowResp, err := client.GetWorkflowsIdWithResponse(ctx, workflowID, addInternalOriginHeader)
-	if err != nil {
-		diagnostics.AddWarning("Workflow fetch failed", fmt.Sprintf("Unable to get workflow %s: %v", workflowID, err))
-		return nil
-	}
-
-	if workflowResp.StatusCode() != http.StatusOK {
-		diagnostics.AddWarning("Workflow fetch failed", fmt.Sprintf("Unable to get workflow %s: HTTP %d", workflowID, workflowResp.StatusCode()))
-		return nil
-	}
-
-	if workflowResp.JSON200 == nil {
-		diagnostics.AddWarning("Workflow parse failed", fmt.Sprintf("Workflow %s returned nil data", workflowID))
-		return nil
-	}
-
-	return &WorkflowModel{
-		ID:   types.StringValue(workflowResp.JSON200.Id),
-		Yaml: types.StringValue(workflowResp.JSON200.Yaml),
-	}
-}

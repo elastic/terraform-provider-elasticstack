@@ -20,6 +20,7 @@ package agentbuilderworkflow
 import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -28,7 +29,7 @@ type workflowModel struct {
 	ID                types.String `tfsdk:"id"`
 	WorkflowID        types.String `tfsdk:"workflow_id"`
 	SpaceID           types.String `tfsdk:"space_id"`
-	ConfigurationYaml types.String `tfsdk:"configuration_yaml"`
+	ConfigurationYaml customtypes.NormalizedYamlValue `tfsdk:"configuration_yaml"`
 	Name              types.String `tfsdk:"name"`
 	Description       types.String `tfsdk:"description"`
 	Enabled           types.Bool   `tfsdk:"enabled"`
@@ -48,7 +49,7 @@ func (model *workflowModel) populateFromAPI(data *kbapi.WorkflowDetailDto) {
 	model.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: data.Id}).String())
 	model.WorkflowID = types.StringValue(data.Id)
 	model.SpaceID = types.StringValue(spaceID)
-	model.ConfigurationYaml = types.StringValue(data.Yaml)
+	model.ConfigurationYaml = customtypes.NewNormalizedYamlValue(data.Yaml)
 	model.Name = types.StringValue(data.Name)
 
 	if data.Description != nil && *data.Description != "" {
