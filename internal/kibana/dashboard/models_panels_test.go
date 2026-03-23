@@ -23,11 +23,50 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// buildLensMosaicPanelForTest creates a panel model with MosaicConfig for panelsToAPI tests.
+func buildLensMosaicPanelForTest(t *testing.T) panelModel {
+	t.Helper()
+	groupBy := `[{"operation":"terms","collapse_by":"avg","fields":["host.name"],` +
+		`"color":{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"color_code","value":"#D3DAE6"}}}]`
+	groupBreakdownBy := `[{"operation":"terms","collapse_by":"avg","fields":["service.name"],` +
+		`"color":{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"color_code","value":"#D3DAE6"}}}]`
+	apiJSON := `{
+		"type": "mosaic",
+		"title": "Lens Mosaic",
+		"dataset": {"type":"dataView","id":"metrics-*"},
+		"query": {"language":"kuery","query":""},
+		"legend": {"size":"small"},
+		"metrics": [{"operation":"count"}],
+		"group_by": ` + groupBy + `,
+		"group_breakdown_by": ` + groupBreakdownBy + `
+	}`
+	var api kbapi.MosaicNoESQL
+	require.NoError(t, json.Unmarshal([]byte(apiJSON), &api))
+
+	var chart kbapi.MosaicChart
+	require.NoError(t, chart.FromMosaicNoESQL(api))
+
+	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	require.NoError(t, attrs.FromMosaicChart(chart))
+
+	converter := newMosaicPanelConfigConverter()
+	pm := &panelModel{}
+	diags := converter.populateFromAttributes(context.Background(), pm, attrs)
+	require.False(t, diags.HasError())
+
+	return panelModel{
+		Type:         types.StringValue("lens"),
+		ID:           types.StringValue("mosaic-1"),
+		Grid:         panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0), W: types.Int64Value(6), H: types.Int64Value(6)},
+		MosaicConfig: pm.MosaicConfig,
+	}
+}
 
 // buildLensTreemapPanelForTest creates a panel model with TreemapConfig for panelsToAPI tests.
 func buildLensTreemapPanelForTest(t *testing.T) panelModel {
@@ -60,6 +99,39 @@ func buildLensTreemapPanelForTest(t *testing.T) panelModel {
 		ID:            types.StringValue("treemap-1"),
 		Grid:          panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0), W: types.Int64Value(6), H: types.Int64Value(6)},
 		TreemapConfig: pm.TreemapConfig,
+	}
+}
+
+// buildLensWafflePanelForTest creates a panel model with WaffleConfig for panelsToAPI tests.
+func buildLensWafflePanelForTest(t *testing.T) panelModel {
+	t.Helper()
+	apiJSON := `{
+		"type": "waffle",
+		"title": "Lens Waffle",
+		"dataset": {"type":"dataView","id":"metrics-*"},
+		"query": {"language":"kuery","query":""},
+		"legend": {"size":"small"},
+		"metrics": [{"operation":"count"}]
+	}`
+	var api kbapi.WaffleNoESQL
+	require.NoError(t, json.Unmarshal([]byte(apiJSON), &api))
+
+	var chart kbapi.WaffleChart
+	require.NoError(t, chart.FromWaffleNoESQL(api))
+
+	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	require.NoError(t, attrs.FromWaffleChart(chart))
+
+	converter := newWafflePanelConfigConverter()
+	pm := &panelModel{}
+	diags := converter.populateFromAttributes(context.Background(), pm, attrs)
+	require.False(t, diags.HasError())
+
+	return panelModel{
+		Type:         types.StringValue("lens"),
+		ID:           types.StringValue("waffle-1"),
+		Grid:         panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0), W: types.Int64Value(8), H: types.Int64Value(10)},
+		WaffleConfig: pm.WaffleConfig,
 	}
 }
 
@@ -117,11 +189,11 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 						HideTitle:   types.BoolValue(true),
 						Description: types.StringNull(),
 					},
-					ConfigJSON: jsontypes.NewNormalizedValue(`{
+					ConfigJSON: customtypes.NewJSONWithDefaultsValue(`{
 						"title": "My Panel",
 						"content": "some content",
                         "hide_title": true
-					}`),
+					}`, populatePanelConfigJSONDefaults),
 				},
 			},
 		},
@@ -153,7 +225,7 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 						HideTitle:   types.BoolNull(),
 						Description: types.StringNull(),
 					},
-					ConfigJSON: jsontypes.NewNormalizedValue(`{"unknownField": "something"}`),
+					ConfigJSON: customtypes.NewJSONWithDefaultsValue(`{"unknownField": "something"}`, populatePanelConfigJSONDefaults),
 				},
 			},
 		},
@@ -198,7 +270,7 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 								HideTitle:   types.BoolNull(),
 								Description: types.StringNull(),
 							},
-							ConfigJSON: jsontypes.NewNormalizedValue(`{ "title": "Inner Panel", "content": "Inner content" }`),
+							ConfigJSON: customtypes.NewJSONWithDefaultsValue(`{ "title": "Inner Panel", "content": "Inner content" }`, populatePanelConfigJSONDefaults),
 						},
 					},
 				},
@@ -248,7 +320,7 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 						HideTitle:   types.BoolNull(),
 						Description: types.StringNull(),
 					},
-					ConfigJSON: jsontypes.NewNormalizedValue(`{ "title": "Panel 1", "content": "Panel 1 body" }`),
+					ConfigJSON: customtypes.NewJSONWithDefaultsValue(`{ "title": "Panel 1", "content": "Panel 1 body" }`, populatePanelConfigJSONDefaults),
 				},
 				{
 					Type: types.StringValue("lens"),
@@ -260,7 +332,7 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 					},
 					ID:             types.StringValue("panel2"),
 					MarkdownConfig: nil,
-					ConfigJSON:     jsontypes.NewNormalizedValue(`{ "title": "Panel 2" }`),
+					ConfigJSON:     customtypes.NewJSONWithDefaultsValue(`{ "title": "Panel 2" }`, populatePanelConfigJSONDefaults),
 				},
 			},
 			expectedSections: []sectionModel{
@@ -287,7 +359,7 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 								HideTitle:   types.BoolNull(),
 								Description: types.StringNull(),
 							},
-							ConfigJSON: jsontypes.NewNormalizedValue(`{ "title": "Inner Panel", "content": "Inner panel body" }`),
+							ConfigJSON: customtypes.NewJSONWithDefaultsValue(`{ "title": "Inner Panel", "content": "Inner panel body" }`, populatePanelConfigJSONDefaults),
 						},
 					},
 				},
@@ -305,9 +377,53 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 			panels, sections, diags := model.mapPanelsFromAPI(t.Context(), &apiPanels)
 			require.False(t, diags.HasError())
 
-			assert.Equal(t, tt.expectedPanels, panels)
-			assert.Equal(t, tt.expectedSections, sections)
+			assert.Len(t, panels, len(tt.expectedPanels))
+			for i := range panels {
+				assertPanelsEqual(t, tt.expectedPanels[i], panels[i])
+			}
+			assert.Len(t, sections, len(tt.expectedSections))
+			for i := range sections {
+				assertSectionsEqual(t, tt.expectedSections[i], sections[i])
+			}
 		})
+	}
+}
+
+// assertPanelsEqual compares two panelModels, using semantic equality for ConfigJSON
+// since the API may return different JSON formatting (whitespace, key order).
+func assertPanelsEqual(t *testing.T, expected, actual panelModel) {
+	t.Helper()
+	assert.Equal(t, expected.Type, actual.Type)
+	assert.Equal(t, expected.Grid, actual.Grid)
+	assert.Equal(t, expected.ID, actual.ID)
+	assert.Equal(t, expected.MarkdownConfig, actual.MarkdownConfig)
+	assert.Equal(t, expected.XYChartConfig, actual.XYChartConfig)
+	assert.Equal(t, expected.TreemapConfig, actual.TreemapConfig)
+	assert.Equal(t, expected.DatatableConfig, actual.DatatableConfig)
+	assert.Equal(t, expected.TagcloudConfig, actual.TagcloudConfig)
+	assert.Equal(t, expected.MetricChartConfig, actual.MetricChartConfig)
+	assert.Equal(t, expected.PieChartConfig, actual.PieChartConfig)
+	assert.Equal(t, expected.GaugeConfig, actual.GaugeConfig)
+	assert.Equal(t, expected.LegacyMetricConfig, actual.LegacyMetricConfig)
+	assert.Equal(t, expected.RegionMapConfig, actual.RegionMapConfig)
+	assert.Equal(t, expected.HeatmapConfig, actual.HeatmapConfig)
+	// ConfigJSON: use semantic equality (handles formatting differences)
+	ctx := context.Background()
+	eq, diags := expected.ConfigJSON.StringSemanticEquals(ctx, actual.ConfigJSON)
+	require.False(t, diags.HasError())
+	assert.True(t, eq, "ConfigJSON should be semantically equal: expected %q, got %q",
+		expected.ConfigJSON.ValueString(), actual.ConfigJSON.ValueString())
+}
+
+func assertSectionsEqual(t *testing.T, expected, actual sectionModel) {
+	t.Helper()
+	assert.Equal(t, expected.Title, actual.Title)
+	assert.Equal(t, expected.ID, actual.ID)
+	assert.Equal(t, expected.Collapsed, actual.Collapsed)
+	assert.Equal(t, expected.Grid, actual.Grid)
+	assert.Len(t, actual.Panels, len(expected.Panels))
+	for i := range actual.Panels {
+		assertPanelsEqual(t, expected.Panels[i], actual.Panels[i])
 	}
 }
 
@@ -335,7 +451,7 @@ func Test_panelsToAPI(t *testing.T) {
 							Content:   types.StringValue("some content"),
 							HideTitle: types.BoolValue(true),
 						},
-						ConfigJSON: jsontypes.NewNormalizedNull(),
+						ConfigJSON: customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults),
 					},
 				},
 			},
@@ -369,7 +485,7 @@ func Test_panelsToAPI(t *testing.T) {
 						},
 						ID:             types.StringNull(),
 						MarkdownConfig: nil,
-						ConfigJSON:     jsontypes.NewNormalizedValue(`{"content":"from json"}`),
+						ConfigJSON:     customtypes.NewJSONWithDefaultsValue(`{"content":"from json"}`, populatePanelConfigJSONDefaults),
 					},
 				},
 			},
@@ -407,6 +523,64 @@ func Test_panelsToAPI(t *testing.T) {
 							"legend": {"size":"small"},
 							"metrics": [{"operation":"count"}],
 							"group_by": [{"operation":"terms","field":"host.name","collapse_by":"avg"}]
+						},
+						"time_range": {"from": "now-15m", "to": "now"}
+					}
+				}
+			]`,
+		},
+		{
+			name: "lens panel with mosaic config",
+			model: dashboardModel{
+				Panels: []panelModel{
+					buildLensMosaicPanelForTest(t),
+				},
+			},
+			expected: `[
+				{
+					"grid": {"h": 6, "w": 6, "x": 0, "y": 0},
+					"uid": "mosaic-1",
+					"type": "lens",
+					"config": {
+						"attributes": {
+							"type": "mosaic",
+							"title": "Lens Mosaic",
+							"dataset": {"type":"dataView","id":"metrics-*"},
+							"query": {"language":"kuery","query":""},
+							"legend": {"size":"small"},
+							"metrics": [{"operation":"count"}],
+							"group_by": [{"operation":"terms","collapse_by":"avg","fields":["host.name"],
+								"color":{"mode":"categorical","palette":"default","mapping":[],
+								"unassignedColor":{"type":"color_code","value":"#D3DAE6"}}}],
+							"group_breakdown_by": [{"operation":"terms","collapse_by":"avg","fields":["service.name"],
+								"color":{"mode":"categorical","palette":"default","mapping":[],
+								"unassignedColor":{"type":"color_code","value":"#D3DAE6"}}}]
+						},
+						"time_range": {"from": "now-15m", "to": "now"}
+					}
+				}
+			]`,
+		},
+		{
+			name: "lens panel with waffle config",
+			model: dashboardModel{
+				Panels: []panelModel{
+					buildLensWafflePanelForTest(t),
+				},
+			},
+			expected: `[
+				{
+					"grid": {"h": 10, "w": 8, "x": 0, "y": 0},
+					"uid": "waffle-1",
+					"type": "lens",
+					"config": {
+						"attributes": {
+							"type": "waffle",
+							"title": "Lens Waffle",
+							"dataset": {"type":"dataView","id":"metrics-*"},
+							"query": {"language":"kuery","query":""},
+							"legend": {"size":"small"},
+							"metrics": [{"operation":"count"}]
 						},
 						"time_range": {"from": "now-15m", "to": "now"}
 					}

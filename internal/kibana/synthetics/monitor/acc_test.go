@@ -18,7 +18,9 @@
 package monitor_test
 
 import (
+	"errors"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -402,7 +404,74 @@ resource "elasticstack_kibana_synthetics_monitor" "%s" {
 	}
 }
 `
+
+	httpMonitorInvalidNamespaceAndLocation = `
+resource "elasticstack_kibana_synthetics_monitor" "%s" {
+	name = "TestHttpMonitor Invalid - %s"
+	locations = ["us_central_qa"]
+	namespace = "%s"
+	http = {
+		url = "http://localhost:5601"
+	}
+}
+`
 )
+
+func validationTest(t *testing.T, check resource.ErrorCheckFunc) {
+	name := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	id := "invalid-monitor"
+
+	provider := `
+provider "elasticstack" {
+  	elasticsearch {}
+	kibana {}
+	fleet{}
+}
+
+`
+
+	config := provider + fmt.Sprintf(httpMonitorInvalidNamespaceAndLocation, id, name, "***")
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
+				Config:   config,
+			},
+		},
+		ErrorCheck: check,
+	})
+
+}
+
+func TestSyntheticMonitorSchemaValidation(t *testing.T) {
+
+	validationTest(t, func(err error) error {
+		if !strings.Contains(err.Error(), "Attribute locations[0] value must be one of") {
+			return errors.New("expected to get locations validation error")
+		}
+		if !strings.Contains(err.Error(), "Attribute namespace namespace must not contain any of the following") {
+			return errors.New("expected to get namespace validation error")
+		}
+		return nil
+	})
+}
+
+func TestSyntheticMonitorSchemaValidationNoLocation(t *testing.T) {
+
+	t.Setenv("TF_ELASTICSTACK_SKIP_LOCATION_VALIDATION", "true")
+	validationTest(t, func(err error) error {
+		if strings.Contains(err.Error(), "Attribute locations[0] value must be one of") {
+			return errors.New("not expected to get locations validation error")
+		}
+		if !strings.Contains(err.Error(), "Attribute namespace namespace must not contain any of the following") {
+			return errors.New("expected to get namespace validation error")
+		}
+		return nil
+	})
+}
 
 func TestSyntheticMonitorHTTPResource(t *testing.T) {
 
@@ -417,7 +486,6 @@ func TestSyntheticMonitorHTTPResource(t *testing.T) {
 	sslHTTPMonitorID, sslConfig := testMonitorConfig("http-monitor-ssl", httpMonitorSslConfig, sslName)
 
 	_, configUpdated := testMonitorConfig(id, httpMonitorUpdated, name)
-
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV6ProviderFactories: acctest.Providers,

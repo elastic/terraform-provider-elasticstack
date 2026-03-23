@@ -210,7 +210,7 @@ func (m *pieChartConfigModel) fromAPINoESQL(apiChart kbapi.PieNoESQL) diag.Diagn
 			}
 			m.GroupBy[i].Config = customtypes.NewJSONWithDefaultsValue(
 				string(groupByJSON),
-				populatePieChartGroupByDefaults,
+				populateLensGroupByDefaults,
 			)
 		}
 	}
@@ -303,7 +303,7 @@ func (m *pieChartConfigModel) fromAPIESQL(apiChart kbapi.PieESQL) diag.Diagnosti
 			}
 			m.GroupBy[i].Config = customtypes.NewJSONWithDefaultsValue[map[string]any](
 				string(groupByJSON),
-				populatePieChartGroupByDefaults,
+				populateLensGroupByDefaults,
 			)
 		}
 	}
