@@ -60,7 +60,7 @@ Create `internal/<domain>/<resource>/` (path mirrors where the SDK resource live
 
 ### 3. Provider Wiring
 
-- **Add**: `provider/plugin_framework.go` — register `NewResource` in `resources()`.
+- **Update**: `provider/plugin_framework.go` — register `NewResource` in `resources()` following the existing registration pattern.
 - **Remove**: `provider/provider.go` — remove the type from `ResourcesMap`.
 
 ### 4. Move Acceptance Tests
