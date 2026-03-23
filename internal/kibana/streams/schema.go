@@ -69,6 +69,12 @@ func getSchema() schema.Schema {
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
+			"description": schema.StringAttribute{
+				MarkdownDescription: "A human-readable description of the stream.",
+				Optional:            true,
+				Computed:            true,
+				Default:             stringdefault.StaticString(""),
+			},
 			"wired_config": schema.SingleNestedAttribute{
 				MarkdownDescription: "Configuration for a wired stream. Wired streams are fully managed data streams with explicit field mappings and routing rules. " +
 					"Mutually exclusive with `classic_config` and `query_config`.",
@@ -187,13 +193,13 @@ func getClassicConfigSchema() map[string]schema.Attribute {
 		},
 		"lifecycle_json": schema.StringAttribute{
 			MarkdownDescription: "Lifecycle configuration as a JSON object. Supports DSL, ILM, or inherited lifecycle.",
-			CustomType: jsontypes.NormalizedType{},
-			Optional:   true,
+			CustomType:          jsontypes.NormalizedType{},
+			Optional:            true,
 		},
 		"failure_store_json": schema.StringAttribute{
 			MarkdownDescription: "Failure store configuration as a JSON object.",
-			CustomType: jsontypes.NormalizedType{},
-			Optional:   true,
+			CustomType:          jsontypes.NormalizedType{},
+			Optional:            true,
 		},
 		"index_number_of_shards": schema.Int64Attribute{
 			MarkdownDescription: "Number of primary shards for the underlying index.",
@@ -236,6 +242,12 @@ func getStreamQuerySchema() schema.NestedAttributeObject {
 			"title": schema.StringAttribute{
 				MarkdownDescription: "A human-readable title for the query.",
 				Required:            true,
+			},
+			"description": schema.StringAttribute{
+				MarkdownDescription: "A human-readable description for the query.",
+				Optional:            true,
+				Computed:            true,
+				Default:             stringdefault.StaticString(""),
 			},
 			"esql": schema.StringAttribute{
 				MarkdownDescription: "The ES|QL query string.",

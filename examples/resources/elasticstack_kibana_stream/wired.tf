@@ -1,6 +1,7 @@
 resource "elasticstack_kibana_stream" "nginx" {
-  name     = "logs.nginx"
-  space_id = "default"
+  name        = "logs.nginx"
+  space_id    = "default"
+  description = "Nginx access log stream"
 
   wired_config {
     # Define explicit field type mappings
@@ -28,7 +29,7 @@ resource "elasticstack_kibana_stream" "nginx" {
       {
         grok = {
           field    = "message"
-          patterns = ["%{COMBINEDAPACHELOG}"]
+          patterns = ["%%{COMBINEDAPACHELOG}"]
         }
       }
     ])
@@ -50,6 +51,7 @@ resource "elasticstack_kibana_stream" "nginx" {
     {
       id             = "high-error-rate"
       title          = "High error rate"
+      description    = "Detects elevated 5xx error rates by host"
       esql           = "FROM logs.nginx | WHERE http.response.status_code >= 500 | STATS count = COUNT() BY host.name"
       severity_score = 70
     }

@@ -51,6 +51,8 @@ type StreamDefinition struct {
 	Type string `json:"type"`
 	// Name is the stream name (returned on read, not required on write).
 	Name string `json:"name,omitempty"`
+	// Description is a human-readable description of the stream.
+	Description string `json:"description"`
 
 	// Ingest is populated for wired and classic streams.
 	Ingest *StreamIngest `json:"ingest,omitempty"`
@@ -121,6 +123,7 @@ type StreamQueryESQLDef struct {
 type StreamQuery struct {
 	ID            string          `json:"id"`
 	Title         string          `json:"title"`
+	Description   string          `json:"description"`
 	Esql          StreamQueryEsql `json:"esql"`
 	SeverityScore *float32        `json:"severity_score,omitempty"`
 	Evidence      *[]string       `json:"evidence,omitempty"`

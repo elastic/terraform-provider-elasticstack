@@ -30,14 +30,14 @@ import (
 
 // wiredConfigModel is the Terraform model for a wired stream's configuration.
 type wiredConfigModel struct {
-	ProcessingStepsJSON    jsontypes.Normalized `tfsdk:"processing_steps_json"`
-	FieldsJSON             jsontypes.Normalized `tfsdk:"fields_json"`
-	RoutingJSON            jsontypes.Normalized `tfsdk:"routing_json"`
-	LifecycleJSON          jsontypes.Normalized `tfsdk:"lifecycle_json"`
-	FailureStoreJSON       jsontypes.Normalized `tfsdk:"failure_store_json"`
-	IndexNumberOfShards    types.Int64          `tfsdk:"index_number_of_shards"`
-	IndexNumberOfReplicas  types.Int64          `tfsdk:"index_number_of_replicas"`
-	IndexRefreshInterval   types.String         `tfsdk:"index_refresh_interval"`
+	ProcessingStepsJSON   jsontypes.Normalized `tfsdk:"processing_steps_json"`
+	FieldsJSON            jsontypes.Normalized `tfsdk:"fields_json"`
+	RoutingJSON           jsontypes.Normalized `tfsdk:"routing_json"`
+	LifecycleJSON         jsontypes.Normalized `tfsdk:"lifecycle_json"`
+	FailureStoreJSON      jsontypes.Normalized `tfsdk:"failure_store_json"`
+	IndexNumberOfShards   types.Int64          `tfsdk:"index_number_of_shards"`
+	IndexNumberOfReplicas types.Int64          `tfsdk:"index_number_of_replicas"`
+	IndexRefreshInterval  types.String         `tfsdk:"index_refresh_interval"`
 }
 
 // populateFromAPI populates the wired config model from an API ingest response.
@@ -95,6 +95,8 @@ func (m *wiredConfigModel) populateFromAPI(_ context.Context, ingest *kibanaoapi
 	if ingest.Settings.IndexNumberOfShards != nil {
 		if v, ok := ingest.Settings.IndexNumberOfShards.Value.(float64); ok {
 			m.IndexNumberOfShards = types.Int64Value(int64(v))
+		} else {
+			m.IndexNumberOfShards = types.Int64Null()
 		}
 	} else {
 		m.IndexNumberOfShards = types.Int64Null()
@@ -103,6 +105,8 @@ func (m *wiredConfigModel) populateFromAPI(_ context.Context, ingest *kibanaoapi
 	if ingest.Settings.IndexNumberOfReplicas != nil {
 		if v, ok := ingest.Settings.IndexNumberOfReplicas.Value.(float64); ok {
 			m.IndexNumberOfReplicas = types.Int64Value(int64(v))
+		} else {
+			m.IndexNumberOfReplicas = types.Int64Null()
 		}
 	} else {
 		m.IndexNumberOfReplicas = types.Int64Null()

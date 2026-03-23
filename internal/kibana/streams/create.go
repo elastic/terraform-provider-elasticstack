@@ -51,9 +51,16 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 		return
 	}
 
-	_, sdkDiags := r.client.EnforceMinVersion(ctx, minVersionStreams)
+	supported, sdkDiags := r.client.EnforceMinVersion(ctx, minVersionStreams)
 	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if resp.Diagnostics.HasError() {
+		return
+	}
+	if !supported {
+		resp.Diagnostics.AddError(
+			"Unsupported server version",
+			fmt.Sprintf("Kibana Streams require Elastic Stack %s or later.", minVersionStreams),
+		)
 		return
 	}
 

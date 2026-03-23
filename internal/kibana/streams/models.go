@@ -20,8 +20,8 @@ package streams
 import (
 	"context"
 
-	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -36,20 +36,22 @@ const (
 
 // streamModel is the top-level Terraform model for elasticstack_kibana_stream.
 type streamModel struct {
-	ID            types.String       `tfsdk:"id"`
-	SpaceID       types.String       `tfsdk:"space_id"`
-	Name          types.String       `tfsdk:"name"`
-	WiredConfig   *wiredConfigModel  `tfsdk:"wired_config"`
+	ID            types.String        `tfsdk:"id"`
+	SpaceID       types.String        `tfsdk:"space_id"`
+	Name          types.String        `tfsdk:"name"`
+	Description   types.String        `tfsdk:"description"`
+	WiredConfig   *wiredConfigModel   `tfsdk:"wired_config"`
 	ClassicConfig *classicConfigModel `tfsdk:"classic_config"`
-	QueryConfig   *queryConfigModel  `tfsdk:"query_config"`
-	Dashboards    types.List         `tfsdk:"dashboards"`
-	Queries       []streamQueryModel `tfsdk:"queries"`
+	QueryConfig   *queryConfigModel   `tfsdk:"query_config"`
+	Dashboards    types.List          `tfsdk:"dashboards"`
+	Queries       []streamQueryModel  `tfsdk:"queries"`
 }
 
 // streamQueryModel is the Terraform model for an attached ES|QL query.
 type streamQueryModel struct {
 	ID            types.String  `tfsdk:"id"`
 	Title         types.String  `tfsdk:"title"`
+	Description   types.String  `tfsdk:"description"`
 	Esql          types.String  `tfsdk:"esql"`
 	SeverityScore types.Float64 `tfsdk:"severity_score"`
 	Evidence      types.List    `tfsdk:"evidence"`
@@ -77,6 +79,7 @@ func (m *streamModel) populateFromAPI(ctx context.Context, resp *kibanaoapi.Stre
 	m.ID = types.StringValue(resourceID.String())
 	m.Name = types.StringValue(name)
 	m.SpaceID = types.StringValue(spaceID)
+	m.Description = types.StringValue(resp.Stream.Description)
 
 	// Map stream type config
 	switch resp.Stream.Type {
@@ -115,9 +118,10 @@ func (m *streamModel) populateFromAPI(ctx context.Context, resp *kibanaoapi.Stre
 		queries := make([]streamQueryModel, 0, len(resp.Queries))
 		for _, q := range resp.Queries {
 			qm := streamQueryModel{
-				ID:    types.StringValue(q.ID),
-				Title: types.StringValue(q.Title),
-				Esql:  types.StringValue(q.Esql.Query),
+				ID:          types.StringValue(q.ID),
+				Title:       types.StringValue(q.Title),
+				Description: types.StringValue(q.Description),
+				Esql:        types.StringValue(q.Esql.Query),
 			}
 			if q.SeverityScore != nil {
 				qm.SeverityScore = types.Float64Value(float64(*q.SeverityScore))
@@ -145,7 +149,8 @@ func (m *streamModel) toAPIUpsertRequest(ctx context.Context, diags *diag.Diagno
 
 	// Build stream definition
 	req.Stream = kibanaoapi.StreamDefinition{
-		Type: m.streamType(),
+		Type:        m.streamType(),
+		Description: m.Description.ValueString(),
 	}
 
 	switch m.streamType() {
@@ -167,9 +172,10 @@ func (m *streamModel) toAPIUpsertRequest(ctx context.Context, diags *diag.Diagno
 		req.Queries = make([]kibanaoapi.StreamQuery, 0, len(m.Queries))
 		for _, qm := range m.Queries {
 			q := kibanaoapi.StreamQuery{
-				ID:    qm.ID.ValueString(),
-				Title: qm.Title.ValueString(),
-				Esql:  kibanaoapi.StreamQueryEsql{Query: qm.Esql.ValueString()},
+				ID:          qm.ID.ValueString(),
+				Title:       qm.Title.ValueString(),
+				Description: qm.Description.ValueString(),
+				Esql:        kibanaoapi.StreamQueryEsql{Query: qm.Esql.ValueString()},
 			}
 			if typeutils.IsKnown(qm.SeverityScore) {
 				score := float32(qm.SeverityScore.ValueFloat64())

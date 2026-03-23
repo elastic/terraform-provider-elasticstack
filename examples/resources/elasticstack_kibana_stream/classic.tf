@@ -13,7 +13,7 @@ resource "elasticstack_kibana_stream" "existing_logs" {
       {
         grok = {
           field    = "message"
-          patterns = ["%{TIMESTAMP_ISO8601:@timestamp} %{LOGLEVEL:log.level} %{GREEDYDATA:message}"]
+          patterns = ["%%{TIMESTAMP_ISO8601:@timestamp} %%{LOGLEVEL:log.level} %%{GREEDYDATA:message}"]
         }
       }
     ])

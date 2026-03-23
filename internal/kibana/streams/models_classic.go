@@ -77,6 +77,8 @@ func (m *classicConfigModel) populateFromAPI(_ context.Context, ingest *kibanaoa
 	if ingest.Settings.IndexNumberOfShards != nil {
 		if v, ok := ingest.Settings.IndexNumberOfShards.Value.(float64); ok {
 			m.IndexNumberOfShards = types.Int64Value(int64(v))
+		} else {
+			m.IndexNumberOfShards = types.Int64Null()
 		}
 	} else {
 		m.IndexNumberOfShards = types.Int64Null()
@@ -85,6 +87,8 @@ func (m *classicConfigModel) populateFromAPI(_ context.Context, ingest *kibanaoa
 	if ingest.Settings.IndexNumberOfReplicas != nil {
 		if v, ok := ingest.Settings.IndexNumberOfReplicas.Value.(float64); ok {
 			m.IndexNumberOfReplicas = types.Int64Value(int64(v))
+		} else {
+			m.IndexNumberOfReplicas = types.Int64Null()
 		}
 	} else {
 		m.IndexNumberOfReplicas = types.Int64Null()
