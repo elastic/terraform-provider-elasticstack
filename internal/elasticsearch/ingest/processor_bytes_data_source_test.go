@@ -32,8 +32,42 @@ func TestAccDataSourceIngestProcessorBytes(t *testing.T) {
 			{
 				Config: testAccDataSourceIngestProcessorBytes,
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_bytes.test", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_bytes.test", "field", "file.size"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_bytes.test", "json", expectedJSONBytes),
+				),
+			},
+			{
+				Config: testAccDataSourceIngestProcessorBytesAllAttributes,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_bytes.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_bytes.test", "field", "document.size"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_bytes.test", "target_field", "document.size_bytes"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_bytes.test", "ignore_missing", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_bytes.test", "ignore_failure", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_bytes.test", "description", "Convert document size to bytes"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_bytes.test", "if", "ctx.document?.size != null"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_bytes.test", "tag", "bytes-tag"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_bytes.test", "json", expectedJSONBytesAllAttributes),
+				),
+			},
+		},
+	})
+}
+
+func TestAccDataSourceIngestProcessorBytesOnFailure(t *testing.T) {
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccDataSourceIngestProcessorBytesOnFailure,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_bytes.test_on_failure", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_bytes.test_on_failure", "field", "file.size"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_bytes.test_on_failure", "on_failure.#", "1"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_bytes.test_on_failure", "on_failure.0", `{"set":{"field":"error.message","value":"{{ _ingest.on_failure_message }}"}}`),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_bytes.test_on_failure", "json", expectedJSONBytesOnFailure),
 				),
 			},
 		},
@@ -48,6 +82,34 @@ const expectedJSONBytes = `{
 	}
 }`
 
+const expectedJSONBytesAllAttributes = `{
+	"bytes": {
+		"description": "Convert document size to bytes",
+		"if": "ctx.document?.size != null",
+		"ignore_failure": true,
+		"tag": "bytes-tag",
+		"field": "document.size",
+		"target_field": "document.size_bytes",
+		"ignore_missing": true
+	}
+}`
+
+const expectedJSONBytesOnFailure = `{
+	"bytes": {
+		"ignore_failure": false,
+		"on_failure": [
+			{
+				"set": {
+					"field": "error.message",
+					"value": "{{ _ingest.on_failure_message }}"
+				}
+			}
+		],
+		"field": "file.size",
+		"ignore_missing": false
+	}
+}`
+
 const testAccDataSourceIngestProcessorBytes = `
 provider "elasticstack" {
   elasticsearch {}
@@ -55,5 +117,40 @@ provider "elasticstack" {
 
 data "elasticstack_elasticsearch_ingest_processor_bytes" "test" {
   field = "file.size"
+}
+`
+
+const testAccDataSourceIngestProcessorBytesAllAttributes = `
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+data "elasticstack_elasticsearch_ingest_processor_bytes" "test" {
+  field          = "document.size"
+  target_field   = "document.size_bytes"
+  ignore_missing = true
+  ignore_failure = true
+  description    = "Convert document size to bytes"
+  if             = "ctx.document?.size != null"
+  tag            = "bytes-tag"
+}
+`
+
+const testAccDataSourceIngestProcessorBytesOnFailure = `
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+data "elasticstack_elasticsearch_ingest_processor_bytes" "test_on_failure" {
+  field = "file.size"
+
+  on_failure = [
+    jsonencode({
+      set = {
+        field = "error.message"
+        value = "{{ _ingest.on_failure_message }}"
+      }
+    })
+  ]
 }
 `

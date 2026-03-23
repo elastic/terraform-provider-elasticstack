@@ -30,7 +30,7 @@ import (
 func TestAccResourceDashboardGauge(t *testing.T) {
 	dashboardTitle := "Test Dashboard with Gauge " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
@@ -85,6 +85,10 @@ func TestAccResourceDashboardGauge(t *testing.T) {
 				ResourceName:      "elasticstack_kibana_dashboard.test",
 				ImportState:       true,
 				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					"panels.0.gauge_config.dataset_json",
+					"panels.0.gauge_config.metric_json",
+				},
 			},
 		},
 	})

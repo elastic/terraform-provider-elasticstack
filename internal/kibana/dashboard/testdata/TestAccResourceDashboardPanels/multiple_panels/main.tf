@@ -13,7 +13,7 @@ resource "elasticstack_kibana_dashboard" "test" {
   query_text             = ""
 
   panels = [{
-    type = "DASHBOARD_MARKDOWN"
+    type = "markdown"
     grid = {
       x = 0
       y = 0
@@ -26,7 +26,7 @@ resource "elasticstack_kibana_dashboard" "test" {
       hide_title = true
     }
     }, {
-    type = "DASHBOARD_MARKDOWN"
+    type = "markdown"
     grid = {
       x = 0
       y = 0

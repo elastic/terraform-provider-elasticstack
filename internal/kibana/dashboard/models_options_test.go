@@ -127,14 +127,50 @@ func Test_dashboardModel_optionsToAPI(t *testing.T) {
 
 func Test_dashboardModel_mapOptionsFromAPI(t *testing.T) {
 	tests := []struct {
-		name    string
-		options *optionsAPIModel
-		want    *optionsModel
+		name         string
+		stateOptions *optionsModel
+		options      *optionsAPIModel
+		want         *optionsModel
 	}{
 		{
 			name:    "returns nil when options is nil",
 			options: nil,
 			want:    nil,
+		},
+		{
+			name: "keeps options nil for API defaults when state omitted options",
+			options: &optionsAPIModel{
+				HidePanelTitles: new(false),
+				UseMargins:      new(true),
+				SyncColors:      new(false),
+				SyncTooltips:    new(false),
+				SyncCursor:      new(true),
+			},
+			want: nil,
+		},
+		{
+			name: "maps API defaults when state already has options",
+			stateOptions: &optionsModel{
+				HidePanelTitles: types.BoolValue(false),
+				UseMargins:      types.BoolValue(true),
+				SyncColors:      types.BoolValue(false),
+				SyncTooltips:    types.BoolValue(false),
+				SyncCursor:      types.BoolValue(true),
+			},
+			options: &optionsAPIModel{
+				HidePanelTitles: new(false),
+				UseMargins:      new(true),
+				SyncColors:      new(false),
+				SyncTooltips:    new(false),
+				SyncCursor:      new(true),
+			},
+			want: &optionsModel{
+				HidePanelTitles: types.BoolValue(false),
+				UseMargins:      types.BoolValue(true),
+				SyncColors:      types.BoolValue(false),
+				SyncTooltips:    types.BoolValue(false),
+				SyncCursor:      types.BoolValue(true),
+			},
 		},
 		{
 			name: "converts all fields when set to true",
@@ -219,7 +255,9 @@ func Test_dashboardModel_mapOptionsFromAPI(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m := &dashboardModel{}
+			m := &dashboardModel{
+				Options: tt.stateOptions,
+			}
 			got := m.mapOptionsFromAPI(tt.options)
 			assert.Equal(t, tt.want, got)
 		})

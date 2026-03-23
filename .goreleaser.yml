@@ -51,7 +51,7 @@ signs:
       - "--detach-sign"
       - "${artifact}"
 release:
-  prerelease: auto
+  prerelease: false
   github:
     owner: elastic
     name: terraform-provider-elasticstack

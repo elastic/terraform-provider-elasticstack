@@ -29,6 +29,45 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func Test_metricChartPanelConfigConverter_populateFromAttributes_buildAttributes_roundTrip(t *testing.T) {
+	ctx := context.Background()
+
+	apiChart := kbapi.MetricChart0{
+		Type:                kbapi.MetricChart0TypeMetric,
+		Title:               new("Metric Round-Trip"),
+		Description:         new("Converter test"),
+		IgnoreGlobalFilters: new(false),
+		Sampling:            new(float32(1.0)),
+		Query: kbapi.FilterSimple{
+			Language: new(kbapi.FilterSimpleLanguage("kuery")),
+			Query:    "*",
+		},
+		Metrics: []kbapi.MetricChart_0_Metrics_Item{},
+	}
+
+	var apiSchema kbapi.MetricChart
+	require.NoError(t, apiSchema.FromMetricChart0(apiChart))
+
+	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	require.NoError(t, attrs.FromMetricChart(apiSchema))
+
+	converter := newMetricChartPanelConfigConverter()
+	pm := &panelModel{}
+	diags := converter.populateFromAttributes(ctx, pm, attrs)
+	require.False(t, diags.HasError())
+	require.NotNil(t, pm.MetricChartConfig)
+
+	attrs2, diags := converter.buildAttributes(*pm)
+	require.False(t, diags.HasError())
+
+	chart2, err := attrs2.AsMetricChart()
+	require.NoError(t, err)
+	variant0, err := chart2.AsMetricChart0()
+	require.NoError(t, err)
+	assert.Equal(t, "Metric Round-Trip", *variant0.Title)
+	assert.Equal(t, kbapi.MetricChart0TypeMetric, variant0.Type)
+}
+
 func Test_newMetricChartPanelConfigConverter(t *testing.T) {
 	converter := newMetricChartPanelConfigConverter()
 	assert.NotNil(t, converter)
@@ -288,50 +327,6 @@ func Test_metricChartConfigModel_withMetrics(t *testing.T) {
 	assert.Len(t, resultVariant1.Metrics, 1)
 }
 
-func Test_metricChartPanelConfigConverter_handlesTFPanelConfig(t *testing.T) {
-	converter := newMetricChartPanelConfigConverter()
-
-	tests := []struct {
-		name     string
-		panel    panelModel
-		expected bool
-	}{
-		{
-			name: "handles metric chart config",
-			panel: panelModel{
-				MetricChartConfig: &metricChartConfigModel{},
-			},
-			expected: true,
-		},
-		{
-			name: "does not handle xy chart config",
-			panel: panelModel{
-				XYChartConfig: &xyChartConfigModel{},
-			},
-			expected: false,
-		},
-		{
-			name: "does not handle markdown config",
-			panel: panelModel{
-				MarkdownConfig: &markdownConfigModel{},
-			},
-			expected: false,
-		},
-		{
-			name:     "does not handle empty panel",
-			panel:    panelModel{},
-			expected: false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := converter.handlesTFPanelConfig(tt.panel)
-			assert.Equal(t, tt.expected, result)
-		})
-	}
-}
-
 func Test_metricChartConfigModel_withDataset(t *testing.T) {
 	ctx := context.Background()
 
@@ -491,7 +486,7 @@ func Test_metricItemModel_jsonRoundTrip(t *testing.T) {
 			item := metricItemModel{
 				ConfigJSON: customtypes.NewJSONWithDefaultsValue[map[string]any](
 					configJSON,
-					populateMetricChartMetricDefaults,
+					populateLensMetricDefaults,
 				),
 			}
 

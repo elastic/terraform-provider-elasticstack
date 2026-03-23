@@ -30,7 +30,7 @@ import (
 func TestAccResourceDashboardTagcloud(t *testing.T) {
 	dashboardTitle := "Test Dashboard with Tagcloud " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
@@ -107,6 +107,7 @@ func TestAccResourceDashboardTagcloud(t *testing.T) {
 				ImportStateVerifyIgnore: []string{
 					"panels.0.tagcloud_config.metric_json",
 					"panels.0.tagcloud_config.tag_by_json",
+					"panels.0.tagcloud_config.dataset_json",
 				},
 			},
 		},

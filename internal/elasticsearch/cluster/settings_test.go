@@ -20,6 +20,7 @@ package cluster_test
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -42,27 +43,33 @@ func TestAccResourceClusterSettings(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_cluster_settings.test", "transient.0.setting.#", "2"),
 					resource.TestCheckTypeSetElemNestedAttrs("elasticstack_elasticsearch_cluster_settings.test", "persistent.0.setting.*",
 						map[string]string{
-							"name":  "indices.lifecycle.poll_interval",
-							"value": "10m",
+							"name":         "indices.lifecycle.poll_interval",
+							"value":        "10m",
+							"value_list.#": "0",
 						}),
 					resource.TestCheckTypeSetElemNestedAttrs("elasticstack_elasticsearch_cluster_settings.test", "persistent.0.setting.*",
 						map[string]string{
-							"name":  "indices.recovery.max_bytes_per_sec",
-							"value": "50mb",
+							"name":         "indices.recovery.max_bytes_per_sec",
+							"value":        "50mb",
+							"value_list.#": "0",
 						}),
 					resource.TestCheckTypeSetElemNestedAttrs("elasticstack_elasticsearch_cluster_settings.test", "persistent.0.setting.*",
 						map[string]string{
-							"name":  "indices.breaker.total.limit",
-							"value": "65%",
+							"name":         "indices.breaker.total.limit",
+							"value":        "65%",
+							"value_list.#": "0",
 						}),
 					resource.TestCheckTypeSetElemNestedAttrs("elasticstack_elasticsearch_cluster_settings.test", "transient.0.setting.*",
 						map[string]string{
-							"name":  "indices.breaker.total.limit",
-							"value": "60%",
+							"name":         "indices.breaker.total.limit",
+							"value":        "60%",
+							"value_list.#": "0",
 						}),
 					resource.TestCheckTypeSetElemNestedAttrs("elasticstack_elasticsearch_cluster_settings.test", "transient.0.setting.*",
 						map[string]string{
-							"name": "xpack.security.audit.logfile.events.include",
+							"name":         "xpack.security.audit.logfile.events.include",
+							"value":        "",
+							"value_list.#": "2",
 						}),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_cluster_settings.test", "transient.0.setting.*.value_list.*", "ACCESS_DENIED"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_cluster_settings.test", "transient.0.setting.*.value_list.*", "ACCESS_GRANTED"),
@@ -76,30 +83,36 @@ func TestAccResourceClusterSettings(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_cluster_settings.test", "transient.0.setting.#", "2"),
 					resource.TestCheckTypeSetElemNestedAttrs("elasticstack_elasticsearch_cluster_settings.test", "persistent.0.setting.*",
 						map[string]string{
-							"name":  "indices.lifecycle.poll_interval",
-							"value": "10m",
+							"name":         "indices.lifecycle.poll_interval",
+							"value":        "10m",
+							"value_list.#": "0",
 						}),
 					resource.TestCheckTypeSetElemNestedAttrs("elasticstack_elasticsearch_cluster_settings.test", "persistent.0.setting.*",
 						map[string]string{
-							"name":  "indices.recovery.max_bytes_per_sec",
-							"value": "50mb",
+							"name":         "indices.recovery.max_bytes_per_sec",
+							"value":        "50mb",
+							"value_list.#": "0",
 						}),
 					resource.TestCheckTypeSetElemNestedAttrs("elasticstack_elasticsearch_cluster_settings.test", "persistent.0.setting.*",
 						map[string]string{
-							"name":  "indices.breaker.total.limit",
-							"value": "65%",
+							"name":         "indices.breaker.total.limit",
+							"value":        "65%",
+							"value_list.#": "0",
 						}),
 					resource.TestCheckTypeSetElemNestedAttrs("elasticstack_elasticsearch_cluster_settings.test", "transient.0.setting.*",
 						map[string]string{
-							"name":  "indices.breaker.total.limit",
-							"value": "70%",
+							"name":         "indices.breaker.total.limit",
+							"value":        "70%",
+							"value_list.#": "0",
 						}),
 					resource.TestCheckTypeSetElemNestedAttrs("elasticstack_elasticsearch_cluster_settings.test", "transient.0.setting.*",
 						map[string]string{
-							"name": "xpack.security.audit.logfile.events.include",
+							"name":         "xpack.security.audit.logfile.events.include",
+							"value":        "",
+							"value_list.#": "2",
 						}),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_cluster_settings.test", "transient.0.setting.*.value_list.*", "ACCESS_DENIED"),
-					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_cluster_settings.test", "transient.0.setting.*.value_list.*", "ACCESS_GRANTED"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_cluster_settings.test", "transient.0.setting.*.value_list.*", "AUTHENTICATION_SUCCESS"),
 				),
 			},
 			{
@@ -109,32 +122,114 @@ func TestAccResourceClusterSettings(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_cluster_settings.test", "persistent.0.setting.#", "4"),
 					resource.TestCheckTypeSetElemNestedAttrs("elasticstack_elasticsearch_cluster_settings.test", "persistent.0.setting.*",
 						map[string]string{
-							"name":  "indices.lifecycle.poll_interval",
-							"value": "15m",
+							"name":         "indices.lifecycle.poll_interval",
+							"value":        "15m",
+							"value_list.#": "0",
 						}),
 					resource.TestCheckTypeSetElemNestedAttrs("elasticstack_elasticsearch_cluster_settings.test", "persistent.0.setting.*",
 						map[string]string{
-							"name":  "indices.recovery.max_bytes_per_sec",
-							"value": "40mb",
+							"name":         "indices.recovery.max_bytes_per_sec",
+							"value":        "40mb",
+							"value_list.#": "0",
 						}),
 					resource.TestCheckTypeSetElemNestedAttrs("elasticstack_elasticsearch_cluster_settings.test", "persistent.0.setting.*",
 						map[string]string{
-							"name":  "indices.breaker.total.limit",
-							"value": "60%",
+							"name":         "indices.breaker.total.limit",
+							"value":        "60%",
+							"value_list.#": "0",
+						}),
+					resource.TestCheckTypeSetElemNestedAttrs("elasticstack_elasticsearch_cluster_settings.test", "persistent.0.setting.*",
+						map[string]string{
+							"name":         "xpack.security.audit.logfile.events.include",
+							"value":        "",
+							"value_list.#": "2",
 						}),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_cluster_settings.test", "persistent.0.setting.*.value_list.*", "ACCESS_DENIED"),
-					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_cluster_settings.test", "persistent.0.setting.*.value_list.*", "ACCESS_GRANTED"),
-					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_cluster_settings.test", "transient.#"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_cluster_settings.test", "persistent.0.setting.*.value_list.*", "AUTHENTICATION_SUCCESS"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_cluster_settings.test", "transient.#", "0"),
 				),
 			},
 			{
-				ResourceName:      "elasticstack_elasticsearch_cluster_settings.test",
-				ImportState:       true,
-				ImportStateVerify: true,
-				ImportStateVerifyIgnore: []string{
-					"persistent",
-					"transient",
+				Config: testAccResourceClusterSettingsPersistentValueListUpdate(),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_cluster_settings.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_cluster_settings.test", "persistent.0.setting.#", "4"),
+					resource.TestCheckTypeSetElemNestedAttrs("elasticstack_elasticsearch_cluster_settings.test", "persistent.0.setting.*",
+						map[string]string{
+							"name":         "indices.lifecycle.poll_interval",
+							"value":        "15m",
+							"value_list.#": "0",
+						}),
+					resource.TestCheckTypeSetElemNestedAttrs("elasticstack_elasticsearch_cluster_settings.test", "persistent.0.setting.*",
+						map[string]string{
+							"name":         "indices.recovery.max_bytes_per_sec",
+							"value":        "40mb",
+							"value_list.#": "0",
+						}),
+					resource.TestCheckTypeSetElemNestedAttrs("elasticstack_elasticsearch_cluster_settings.test", "persistent.0.setting.*",
+						map[string]string{
+							"name":         "indices.breaker.total.limit",
+							"value":        "60%",
+							"value_list.#": "0",
+						}),
+					resource.TestCheckTypeSetElemNestedAttrs("elasticstack_elasticsearch_cluster_settings.test", "persistent.0.setting.*",
+						map[string]string{
+							"name":         "xpack.security.audit.logfile.events.include",
+							"value":        "",
+							"value_list.#": "2",
+						}),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_cluster_settings.test", "persistent.0.setting.*.value_list.*", "ACCESS_DENIED"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_cluster_settings.test", "persistent.0.setting.*.value_list.*", "ACCESS_GRANTED"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_cluster_settings.test", "transient.#", "0"),
+				),
+			},
+			{
+				ResourceName: "elasticstack_elasticsearch_cluster_settings.test",
+				ImportState:  true,
+				ImportStateCheck: func(is []*terraform.InstanceState) error {
+					if len(is) != 1 {
+						return fmt.Errorf("expected 1 imported instance state, got %d", len(is))
+					}
+
+					importedID := is[0].ID
+					if importedID == "" {
+						return fmt.Errorf("expected imported resource ID to be set")
+					}
+
+					if !strings.HasSuffix(importedID, "/cluster-settings") {
+						return fmt.Errorf("expected imported resource ID [%s] to end with /cluster-settings", importedID)
+					}
+
+					if is[0].Attributes["id"] != importedID {
+						return fmt.Errorf("expected imported id attribute [%s] to equal resource ID [%s]", is[0].Attributes["id"], importedID)
+					}
+
+					return nil
 				},
+			},
+		},
+	})
+}
+
+func TestAccResourceClusterSettingsPersistentOnly(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceClusterSettingsDestroy,
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccResourceClusterSettingsPersistentOnly(),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_cluster_settings.test_persistent", "id"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_cluster_settings.test_persistent", "persistent.0.setting.#", "1"),
+					resource.TestCheckTypeSetElemNestedAttrs("elasticstack_elasticsearch_cluster_settings.test_persistent", "persistent.0.setting.*",
+						map[string]string{
+							"name":         "indices.lifecycle.poll_interval",
+							"value":        "10m",
+							"value_list.#": "0",
+						}),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_cluster_settings.test_persistent", "transient.#", "0"),
+				),
 			},
 		},
 	})
@@ -205,7 +300,7 @@ resource "elasticstack_elasticsearch_cluster_settings" "test" {
     }
     setting {
       name       = "xpack.security.audit.logfile.events.include"
-      value_list = ["ACCESS_DENIED", "ACCESS_GRANTED"]
+      value_list = ["ACCESS_DENIED", "AUTHENTICATION_SUCCESS"]
     }
   }
 }
@@ -234,7 +329,53 @@ resource "elasticstack_elasticsearch_cluster_settings" "test" {
     }
     setting {
       name       = "xpack.security.audit.logfile.events.include"
+      value_list = ["ACCESS_DENIED", "AUTHENTICATION_SUCCESS"]
+    }
+  }
+}
+`
+}
+
+func testAccResourceClusterSettingsPersistentValueListUpdate() string {
+	return `
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_cluster_settings" "test" {
+  persistent {
+    setting {
+      name  = "indices.lifecycle.poll_interval"
+      value = "15m"
+    }
+    setting {
+      name  = "indices.recovery.max_bytes_per_sec"
+      value = "40mb"
+    }
+    setting {
+      name  = "indices.breaker.total.limit"
+      value = "60%"
+    }
+    setting {
+      name       = "xpack.security.audit.logfile.events.include"
       value_list = ["ACCESS_DENIED", "ACCESS_GRANTED"]
+    }
+  }
+}
+`
+}
+
+func testAccResourceClusterSettingsPersistentOnly() string {
+	return `
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_cluster_settings" "test_persistent" {
+  persistent {
+    setting {
+      name  = "indices.lifecycle.poll_interval"
+      value = "10m"
     }
   }
 }

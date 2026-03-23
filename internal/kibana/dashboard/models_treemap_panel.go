@@ -32,7 +32,7 @@ import (
 
 func newTreemapPanelConfigConverter() treemapPanelConfigConverter {
 	return treemapPanelConfigConverter{
-		lensPanelConfigConverter: lensPanelConfigConverter{
+		lensVisualizationBase: lensVisualizationBase{
 			visualizationType: string(kbapi.TreemapNoESQLTypeTreemap),
 			hasTFPanelConfig:  func(pm panelModel) bool { return pm.TreemapConfig != nil },
 		},
@@ -40,96 +40,63 @@ func newTreemapPanelConfigConverter() treemapPanelConfigConverter {
 }
 
 type treemapPanelConfigConverter struct {
-	lensPanelConfigConverter
+	lensVisualizationBase
 }
 
-func (c treemapPanelConfigConverter) handlesTFPanelConfig(pm panelModel) bool {
-	return pm.TreemapConfig != nil
-}
-
-func (c treemapPanelConfigConverter) populateFromAPIPanel(_ context.Context, pm *panelModel, config kbapi.DashboardPanelItem_Config) diag.Diagnostics {
-	cfgMap, err := config.AsDashboardPanelItemConfig8()
+func (c treemapPanelConfigConverter) populateFromAttributes(_ context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes) diag.Diagnostics {
+	treemapChart, err := attrs.AsTreemapChart()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-
-	attrs, ok := cfgMap["attributes"]
-	if !ok {
-		return nil
-	}
-
-	attrsMap, ok := attrs.(map[string]any)
-	if !ok {
-		return nil
-	}
-
-	attrsJSON, err := json.Marshal(attrsMap)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	var treemapChart kbapi.TreemapChart
-	if err := json.Unmarshal(attrsJSON, &treemapChart); err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	_, hasQuery := attrsMap["query"]
 
 	if pm.TreemapConfig == nil {
 		pm.TreemapConfig = &treemapConfigModel{}
 	}
-	if hasQuery {
-		treemapNoESQL, err := treemapChart.AsTreemapNoESQL()
+
+	datasetType := ""
+	if attrsJSON, err := attrs.MarshalJSON(); err == nil {
+		var attrsMap map[string]any
+		if err := json.Unmarshal(attrsJSON, &attrsMap); err == nil {
+			if dataset, ok := attrsMap["dataset"].(map[string]any); ok {
+				if t, ok := dataset["type"].(string); ok {
+					datasetType = t
+				}
+			}
+		}
+	}
+
+	if datasetType == "esql" {
+		treemapESQL, err := treemapChart.AsTreemapESQL()
 		if err != nil {
 			return diagutil.FrameworkDiagFromError(err)
 		}
-		return pm.TreemapConfig.fromAPINoESQL(treemapNoESQL)
+		return pm.TreemapConfig.fromAPIESQL(treemapESQL)
 	}
 
-	treemapESQL, err := treemapChart.AsTreemapESQL()
+	treemapNoESQL, err := treemapChart.AsTreemapNoESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	return pm.TreemapConfig.fromAPIESQL(treemapESQL)
+	return pm.TreemapConfig.fromAPINoESQL(treemapNoESQL)
 }
 
-func (c treemapPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *kbapi.DashboardPanelItem_Config) diag.Diagnostics {
+func (c treemapPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelLens_Config_0_Attributes, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	configModel := *pm.TreemapConfig
 
 	treemapChart, treemapDiags := configModel.toAPI()
 	diags.Append(treemapDiags...)
 	if diags.HasError() {
-		return diags
+		return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}, diags
 	}
 
-	var attrs0 kbapi.DashboardPanelItemConfig70Attributes0
-	if err := attrs0.FromTreemapChart(treemapChart); err != nil {
+	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	if err := attrs.FromTreemapChart(treemapChart); err != nil {
 		diags.AddError("Failed to create treemap attributes", err.Error())
-		return diags
+		return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}, diags
 	}
 
-	var configAttrs kbapi.DashboardPanelItem_Config_7_0_Attributes
-	if err := configAttrs.FromDashboardPanelItemConfig70Attributes0(attrs0); err != nil {
-		diags.AddError("Failed to create config attributes", err.Error())
-		return diags
-	}
-
-	config10 := kbapi.DashboardPanelItemConfig70{
-		Attributes: configAttrs,
-	}
-
-	var config1 kbapi.DashboardPanelItemConfig7
-	if err := config1.FromDashboardPanelItemConfig70(config10); err != nil {
-		diags.AddError("Failed to create config1", err.Error())
-		return diags
-	}
-
-	if err := apiConfig.FromDashboardPanelItemConfig7(config1); err != nil {
-		diags.AddError("Failed to marshal treemap config", err.Error())
-	}
-
-	return diags
+	return attrs, diags
 }
 
 type treemapConfigModel struct {
@@ -143,20 +110,8 @@ type treemapConfigModel struct {
 	GroupBy             customtypes.JSONWithDefaultsValue[[]map[string]any] `tfsdk:"group_by_json"`
 	Metrics             customtypes.JSONWithDefaultsValue[[]map[string]any] `tfsdk:"metrics_json"`
 	LabelPosition       types.String                                        `tfsdk:"label_position"`
-	Legend              *treemapLegendModel                                 `tfsdk:"legend"`
-	ValueDisplay        *treemapValueDisplay                                `tfsdk:"value_display"`
-}
-
-type treemapLegendModel struct {
-	Nested            types.Bool    `tfsdk:"nested"`
-	Size              types.String  `tfsdk:"size"`
-	TruncateAfterLine types.Float64 `tfsdk:"truncate_after_lines"`
-	Visible           types.String  `tfsdk:"visible"`
-}
-
-type treemapValueDisplay struct {
-	Mode            types.String  `tfsdk:"mode"`
-	PercentDecimals types.Float64 `tfsdk:"percent_decimals"`
+	Legend              *partitionLegendModel                               `tfsdk:"legend"`
+	ValueDisplay        *partitionValueDisplay                              `tfsdk:"value_display"`
 }
 
 func (m *treemapConfigModel) fromAPINoESQL(api kbapi.TreemapNoESQL) diag.Diagnostics {
@@ -164,19 +119,8 @@ func (m *treemapConfigModel) fromAPINoESQL(api kbapi.TreemapNoESQL) diag.Diagnos
 
 	m.Title = types.StringPointerValue(api.Title)
 	m.Description = types.StringPointerValue(api.Description)
-	// Kibana may omit these optional attributes in GET responses even when they were
-	// provided on write. Preserve any already-known value (typically from the plan)
-	// to avoid "inconsistent result after apply" drift.
-	if api.IgnoreGlobalFilters != nil {
-		m.IgnoreGlobalFilters = types.BoolValue(*api.IgnoreGlobalFilters)
-	} else if !typeutils.IsKnown(m.IgnoreGlobalFilters) {
-		m.IgnoreGlobalFilters = types.BoolNull()
-	}
-	if api.Sampling != nil {
-		m.Sampling = types.Float64Value(float64(*api.Sampling))
-	} else if !typeutils.IsKnown(m.Sampling) {
-		m.Sampling = types.Float64Null()
-	}
+	m.IgnoreGlobalFilters = mapOptionalBoolWithSnapshotDefault(m.IgnoreGlobalFilters, api.IgnoreGlobalFilters, false)
+	m.Sampling = mapOptionalFloatWithSnapshotDefault(m.Sampling, api.Sampling, 1)
 
 	datasetBytes, err := api.Dataset.MarshalJSON()
 	if err != nil {
@@ -191,9 +135,9 @@ func (m *treemapConfigModel) fromAPINoESQL(api kbapi.TreemapNoESQL) diag.Diagnos
 			diags.AddError("Failed to marshal group_by", err.Error())
 			return diags
 		}
-		m.GroupBy = customtypes.NewJSONWithDefaultsValue[[]map[string]any](string(groupByBytes), populateTreemapGroupByDefaults)
+		m.GroupBy = customtypes.NewJSONWithDefaultsValue[[]map[string]any](string(groupByBytes), populatePartitionGroupByDefaults)
 	} else {
-		m.GroupBy = customtypes.NewJSONWithDefaultsNull(populateTreemapGroupByDefaults)
+		m.GroupBy = customtypes.NewJSONWithDefaultsNull(populatePartitionGroupByDefaults)
 	}
 
 	metricsBytes, err := json.Marshal(api.Metrics)
@@ -201,7 +145,7 @@ func (m *treemapConfigModel) fromAPINoESQL(api kbapi.TreemapNoESQL) diag.Diagnos
 		diags.AddError("Failed to marshal metrics", err.Error())
 		return diags
 	}
-	m.Metrics = customtypes.NewJSONWithDefaultsValue[[]map[string]any](string(metricsBytes), populateTreemapMetricsDefaults)
+	m.Metrics = customtypes.NewJSONWithDefaultsValue[[]map[string]any](string(metricsBytes), populatePartitionMetricsDefaults)
 
 	m.Query = &filterSimpleModel{}
 	m.Query.fromAPI(api.Query)
@@ -226,12 +170,12 @@ func (m *treemapConfigModel) fromAPINoESQL(api kbapi.TreemapNoESQL) diag.Diagnos
 		m.LabelPosition = types.StringNull()
 	}
 
-	m.Legend = &treemapLegendModel{}
-	m.Legend.fromAPI(api.Legend)
+	m.Legend = &partitionLegendModel{}
+	m.Legend.fromTreemapLegend(api.Legend)
 
 	if api.ValueDisplay != nil {
-		m.ValueDisplay = &treemapValueDisplay{}
-		m.ValueDisplay.fromAPINoESQL(api.ValueDisplay)
+		m.ValueDisplay = &partitionValueDisplay{}
+		m.ValueDisplay.fromTreemapNoESQL(api.ValueDisplay)
 	} else {
 		m.ValueDisplay = nil
 	}
@@ -248,19 +192,8 @@ func (m *treemapConfigModel) fromAPIESQL(api kbapi.TreemapESQL) diag.Diagnostics
 
 	m.Title = types.StringPointerValue(api.Title)
 	m.Description = types.StringPointerValue(api.Description)
-	// Kibana may omit these optional attributes in GET responses even when they were
-	// provided on write. Preserve any already-known value (typically from the plan)
-	// to avoid "inconsistent result after apply" drift.
-	if api.IgnoreGlobalFilters != nil {
-		m.IgnoreGlobalFilters = types.BoolValue(*api.IgnoreGlobalFilters)
-	} else if !typeutils.IsKnown(m.IgnoreGlobalFilters) {
-		m.IgnoreGlobalFilters = types.BoolNull()
-	}
-	if api.Sampling != nil {
-		m.Sampling = types.Float64Value(float64(*api.Sampling))
-	} else if !typeutils.IsKnown(m.Sampling) {
-		m.Sampling = types.Float64Null()
-	}
+	m.IgnoreGlobalFilters = mapOptionalBoolWithSnapshotDefault(m.IgnoreGlobalFilters, api.IgnoreGlobalFilters, false)
+	m.Sampling = mapOptionalFloatWithSnapshotDefault(m.Sampling, api.Sampling, 1)
 
 	datasetBytes, err := api.Dataset.MarshalJSON()
 	if err != nil {
@@ -275,9 +208,9 @@ func (m *treemapConfigModel) fromAPIESQL(api kbapi.TreemapESQL) diag.Diagnostics
 			diags.AddError("Failed to marshal group_by", err.Error())
 			return diags
 		}
-		m.GroupBy = customtypes.NewJSONWithDefaultsValue[[]map[string]any](string(groupByBytes), populateTreemapGroupByDefaults)
+		m.GroupBy = customtypes.NewJSONWithDefaultsValue[[]map[string]any](string(groupByBytes), populatePartitionGroupByDefaults)
 	} else {
-		m.GroupBy = customtypes.NewJSONWithDefaultsNull(populateTreemapGroupByDefaults)
+		m.GroupBy = customtypes.NewJSONWithDefaultsNull(populatePartitionGroupByDefaults)
 	}
 
 	metricsBytes, err := json.Marshal(api.Metrics)
@@ -285,7 +218,7 @@ func (m *treemapConfigModel) fromAPIESQL(api kbapi.TreemapESQL) diag.Diagnostics
 		diags.AddError("Failed to marshal metrics", err.Error())
 		return diags
 	}
-	m.Metrics = customtypes.NewJSONWithDefaultsValue[[]map[string]any](string(metricsBytes), populateTreemapMetricsDefaults)
+	m.Metrics = customtypes.NewJSONWithDefaultsValue[[]map[string]any](string(metricsBytes), populatePartitionMetricsDefaults)
 
 	if api.Filters != nil && len(*api.Filters) > 0 {
 		m.Filters = make([]searchFilterModel, 0, len(*api.Filters))
@@ -307,56 +240,17 @@ func (m *treemapConfigModel) fromAPIESQL(api kbapi.TreemapESQL) diag.Diagnostics
 		m.LabelPosition = types.StringNull()
 	}
 
-	m.Legend = &treemapLegendModel{}
-	m.Legend.fromAPI(api.Legend)
+	m.Legend = &partitionLegendModel{}
+	m.Legend.fromTreemapLegend(api.Legend)
 
 	if api.ValueDisplay != nil {
-		m.ValueDisplay = &treemapValueDisplay{}
-		m.ValueDisplay.fromAPIESQL(api.ValueDisplay)
+		m.ValueDisplay = &partitionValueDisplay{}
+		m.ValueDisplay.fromTreemapESQL(api.ValueDisplay)
 	} else {
 		m.ValueDisplay = nil
 	}
 
 	return diags
-}
-
-func (m *treemapLegendModel) fromAPI(api kbapi.TreemapLegend) {
-	m.Nested = types.BoolPointerValue(api.Nested)
-	m.Size = types.StringValue(string(api.Size))
-	if api.TruncateAfterLines != nil {
-		m.TruncateAfterLine = types.Float64Value(float64(*api.TruncateAfterLines))
-	} else {
-		m.TruncateAfterLine = types.Float64Null()
-	}
-	if api.Visible != nil {
-		m.Visible = types.StringValue(string(*api.Visible))
-	} else {
-		m.Visible = types.StringNull()
-	}
-}
-
-func (m *treemapValueDisplay) fromAPINoESQL(api *struct {
-	Mode            kbapi.TreemapNoESQLValueDisplayMode `json:"mode"`
-	PercentDecimals *float32                            `json:"percent_decimals,omitempty"`
-}) {
-	m.Mode = types.StringValue(string(api.Mode))
-	if api.PercentDecimals != nil {
-		m.PercentDecimals = types.Float64Value(float64(*api.PercentDecimals))
-	} else {
-		m.PercentDecimals = types.Float64Null()
-	}
-}
-
-func (m *treemapValueDisplay) fromAPIESQL(api *struct {
-	Mode            kbapi.TreemapESQLValueDisplayMode `json:"mode"`
-	PercentDecimals *float32                          `json:"percent_decimals,omitempty"`
-}) {
-	m.Mode = types.StringValue(string(api.Mode))
-	if api.PercentDecimals != nil {
-		m.PercentDecimals = types.Float64Value(float64(*api.PercentDecimals))
-	} else {
-		m.PercentDecimals = types.Float64Null()
-	}
 }
 
 func (m *treemapConfigModel) toAPI() (kbapi.TreemapChart, diag.Diagnostics) {
@@ -469,7 +363,7 @@ func (m *treemapConfigModel) toAPIESQLChartSchema() (kbapi.TreemapChart, diag.Di
 		diags.AddError("Missing legend", "treemap_config.legend must be provided")
 		return treemapChart, diags
 	}
-	legendBytes, err := json.Marshal(m.Legend.toAPI())
+	legendBytes, err := json.Marshal(m.Legend.toTreemapLegend())
 	if err != nil {
 		diags.AddError("Failed to marshal legend", err.Error())
 		return treemapChart, diags
@@ -482,7 +376,7 @@ func (m *treemapConfigModel) toAPIESQLChartSchema() (kbapi.TreemapChart, diag.Di
 	attrs["legend"] = legend
 
 	if m.ValueDisplay != nil {
-		valueDisplayBytes, err := json.Marshal(m.ValueDisplay.toAPIESQL())
+		valueDisplayBytes, err := json.Marshal(m.ValueDisplay.toTreemapESQL())
 		if err != nil {
 			diags.AddError("Failed to marshal value_display", err.Error())
 			return treemapChart, diags
@@ -599,59 +493,12 @@ func (m *treemapConfigModel) toAPINoESQL() (kbapi.TreemapNoESQL, diag.Diagnostic
 		diags.AddError("Missing legend", "treemap_config.legend must be provided")
 		return api, diags
 	}
-	api.Legend = m.Legend.toAPI()
+	api.Legend = m.Legend.toTreemapLegend()
 
 	if m.ValueDisplay != nil {
-		valueDisplay := m.ValueDisplay.toAPINoESQL()
+		valueDisplay := m.ValueDisplay.toTreemapNoESQL()
 		api.ValueDisplay = &valueDisplay
 	}
 
 	return api, diags
-}
-
-func (m *treemapLegendModel) toAPI() kbapi.TreemapLegend {
-	legend := kbapi.TreemapLegend{Size: kbapi.LegendSize(m.Size.ValueString())}
-	if typeutils.IsKnown(m.Nested) {
-		legend.Nested = new(m.Nested.ValueBool())
-	}
-	if typeutils.IsKnown(m.TruncateAfterLine) {
-		legend.TruncateAfterLines = new(float32(m.TruncateAfterLine.ValueFloat64()))
-	}
-	if typeutils.IsKnown(m.Visible) {
-		v := kbapi.TreemapLegendVisible(m.Visible.ValueString())
-		legend.Visible = &v
-	}
-	return legend
-}
-
-func (m *treemapValueDisplay) toAPINoESQL() struct {
-	Mode            kbapi.TreemapNoESQLValueDisplayMode `json:"mode"`
-	PercentDecimals *float32                            `json:"percent_decimals,omitempty"`
-} {
-	vd := struct {
-		Mode            kbapi.TreemapNoESQLValueDisplayMode `json:"mode"`
-		PercentDecimals *float32                            `json:"percent_decimals,omitempty"`
-	}{
-		Mode: kbapi.TreemapNoESQLValueDisplayMode(m.Mode.ValueString()),
-	}
-	if typeutils.IsKnown(m.PercentDecimals) {
-		vd.PercentDecimals = new(float32(m.PercentDecimals.ValueFloat64()))
-	}
-	return vd
-}
-
-func (m *treemapValueDisplay) toAPIESQL() struct {
-	Mode            kbapi.TreemapESQLValueDisplayMode `json:"mode"`
-	PercentDecimals *float32                          `json:"percent_decimals,omitempty"`
-} {
-	vd := struct {
-		Mode            kbapi.TreemapESQLValueDisplayMode `json:"mode"`
-		PercentDecimals *float32                          `json:"percent_decimals,omitempty"`
-	}{
-		Mode: kbapi.TreemapESQLValueDisplayMode(m.Mode.ValueString()),
-	}
-	if typeutils.IsKnown(m.PercentDecimals) {
-		vd.PercentDecimals = new(float32(m.PercentDecimals.ValueFloat64()))
-	}
-	return vd
 }
