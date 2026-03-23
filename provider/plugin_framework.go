@@ -41,6 +41,8 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ingest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/logstash"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/anomalydetectionjob"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/calendar"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/calendar_event"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed"
 	datafeedstate "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed_state"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/jobstate"
@@ -215,6 +217,8 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		templateilmattachment.NewResource,
 		datafeed.NewDatafeedResource,
 		anomalydetectionjob.NewAnomalyDetectionJobResource,
+		calendar.NewCalendarResource,
+		calendar_event.NewCalendarEventResource,
 		security_detection_rule.NewSecurityDetectionRuleResource,
 		jobstate.NewMLJobStateResource,
 		datafeedstate.NewMLDatafeedStateResource,
