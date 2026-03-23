@@ -38,5 +38,11 @@ func (r *inferenceEndpointResource) Delete(ctx context.Context, req resource.Del
 		return
 	}
 
-	resp.Diagnostics.Append(elasticsearch.DeleteInferenceEndpoint(ctx, r.client, compID.ResourceID)...)
+	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, data.ElasticsearchConnection, r.client)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(elasticsearch.DeleteInferenceEndpoint(ctx, client, compID.ResourceID)...)
 }

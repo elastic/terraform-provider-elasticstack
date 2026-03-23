@@ -30,8 +30,9 @@ import (
 )
 
 type Data struct {
-	ID               types.String                                      `tfsdk:"id"`
-	InferenceID      types.String                                      `tfsdk:"inference_id"`
+	ID                      types.String                                      `tfsdk:"id"`
+	ElasticsearchConnection types.List                                        `tfsdk:"elasticsearch_connection"`
+	InferenceID             types.String                                      `tfsdk:"inference_id"`
 	TaskType         types.String                                      `tfsdk:"task_type"`
 	Service          types.String                                      `tfsdk:"service"`
 	ServiceSettings  jsontypes.Normalized                              `tfsdk:"service_settings"`

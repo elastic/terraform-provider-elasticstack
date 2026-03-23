@@ -22,6 +22,7 @@ import (
 
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -38,14 +39,20 @@ func (r *inferenceEndpointResource) upsert(ctx context.Context, plan tfsdk.Plan,
 		return diags
 	}
 
+	client, clientDiags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, data.ElasticsearchConnection, r.client)
+	diags.Append(clientDiags...)
+	if diags.HasError() {
+		return diags
+	}
+
 	inferenceID := data.InferenceID.ValueString()
-	id, sdkDiags := r.client.ID(ctx, inferenceID)
+	id, sdkDiags := client.ID(ctx, inferenceID)
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
 		return diags
 	}
 
-	supported, sdkDiags := r.client.EnforceMinVersion(ctx, MinSupportedVersion)
+	supported, sdkDiags := client.EnforceMinVersion(ctx, MinSupportedVersion)
 	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
 		return diags
@@ -61,7 +68,7 @@ func (r *inferenceEndpointResource) upsert(ctx context.Context, plan tfsdk.Plan,
 		return diags
 	}
 
-	putDiags := elasticsearch.PutInferenceEndpoint(ctx, r.client, endpoint)
+	putDiags := elasticsearch.PutInferenceEndpoint(ctx, client, endpoint)
 	diags.Append(putDiags...)
 	if diags.HasError() {
 		return diags

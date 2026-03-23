@@ -55,7 +55,12 @@ func (r *inferenceEndpointResource) read(ctx context.Context, data Data) (*Data,
 		return nil, diags
 	}
 
-	endpoint, endpointDiags := elasticsearch.GetInferenceEndpoint(ctx, r.client, compID.ResourceID)
+	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, data.ElasticsearchConnection, r.client)
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	endpoint, endpointDiags := elasticsearch.GetInferenceEndpoint(ctx, client, compID.ResourceID)
 	diags.Append(endpointDiags...)
 	if diags.HasError() {
 		return nil, diags
