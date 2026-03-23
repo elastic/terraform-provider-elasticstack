@@ -3,25 +3,28 @@ provider "elasticstack" {
 }
 
 resource "elasticstack_elasticsearch_security_role" "test" {
-  name    = var.role_name
+  name = var.role_name
+
   cluster = ["all"]
+
+  global = jsonencode({
+    application = {}
+    profile = {
+      write = {
+        applications = ["*"]
+      }
+    }
+    role = {}
+  })
 
   indices {
     names                    = ["index1", "index2"]
     privileges               = ["all"]
     allow_restricted_indices = true
-  }
-
-  remote_indices {
-    clusters = ["test-cluster"]
-    field_security {
-      grant  = ["sample"]
-      except = []
-    }
-    names      = ["sample"]
-    privileges = ["create", "read", "write"]
     query = jsonencode({
-      match_all = {}
+      term = {
+        status = "active"
+      }
     })
   }
 
