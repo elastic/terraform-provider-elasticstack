@@ -1,11 +1,13 @@
 ---
-applyTo: "dev-docs/requirements/**/*"
+applyTo:
+  - "openspec/specs/**/*.md"
+  - "openspec/changes/**/specs/**/*.md"
 excludeAgent: "coding-agent"
 ---
 
 # Requirements Document Review
 
-When reviewing changes to requirement documents in `dev-docs/requirements/`, follow this process:
+When reviewing changes to OpenSpec requirement documents under `openspec/specs/` (or delta specs under `openspec/changes/**/specs/`), follow this process:
 
 ## 1. Read the requirements-verification skill
 

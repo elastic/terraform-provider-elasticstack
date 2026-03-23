@@ -148,7 +148,7 @@ func Test_pieChartConfigModel_fromAPI_toAPI_PieESQL(t *testing.T) {
 		"ignore_global_filters": true,
 		"legend": {"visible": "show"},
 		"metrics": [{"operation":"value","column":"bytes","color":{"type":"static","color":"#54B399"},"format":{"type":"number"}}],
-		"group_by": [{"operation":"value","column":"host.name","collapse_by":"avg","color":{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"colorCode","value":"#D3DAE6"}}}]
+		"group_by": [{"operation":"value","column":"host.name","collapse_by":"avg","color":{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"color_code","value":"#D3DAE6"}}}]
 	}`
 	var apiESQL kbapi.PieESQL
 	require.NoError(t, json.Unmarshal([]byte(apiJSON), &apiESQL))
@@ -188,7 +188,7 @@ func Test_pieChartConfigModel_toAPI_withMetrics(t *testing.T) {
 			{Config: customtypes.NewJSONWithDefaultsValue[map[string]any](`{"operation":"sum","field":"bytes"}`, populatePieChartMetricDefaults)},
 		},
 		GroupBy: []pieGroupByModel{
-			{Config: customtypes.NewJSONWithDefaultsValue(`{"operation":"terms","field":"host.name"}`, populatePieChartGroupByDefaults)},
+			{Config: customtypes.NewJSONWithDefaultsValue(`{"operation":"terms","field":"host.name"}`, populateLensGroupByDefaults)},
 		},
 	}
 
@@ -212,8 +212,8 @@ func Test_pieChartConfigModel_toAPI_withGroupBy(t *testing.T) {
 			{Config: customtypes.NewJSONWithDefaultsValue[map[string]any](`{"operation":"count"}`, populatePieChartMetricDefaults)},
 		},
 		GroupBy: []pieGroupByModel{
-			{Config: customtypes.NewJSONWithDefaultsValue(`{"operation":"terms","field":"host.name","size":10}`, populatePieChartGroupByDefaults)},
-			{Config: customtypes.NewJSONWithDefaultsValue(`{"operation":"terms","field":"service.name"}`, populatePieChartGroupByDefaults)},
+			{Config: customtypes.NewJSONWithDefaultsValue(`{"operation":"terms","field":"host.name","size":10}`, populateLensGroupByDefaults)},
+			{Config: customtypes.NewJSONWithDefaultsValue(`{"operation":"terms","field":"service.name"}`, populateLensGroupByDefaults)},
 		},
 	}
 

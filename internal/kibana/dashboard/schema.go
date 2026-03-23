@@ -62,6 +62,7 @@ var panelConfigNames = []string{
 	"pie_chart_config",
 	"datatable_config",
 	"heatmap_config",
+	"waffle_config",
 }
 
 func panelConfigPaths(names []string) []path.Expression {
@@ -123,8 +124,8 @@ func populateTagcloudMetricDefaults(model map[string]any) map[string]any {
 	return model
 }
 
-// populateMetricChartMetricDefaults populates default values for metric chart metric configuration
-func populateMetricChartMetricDefaults(model map[string]any) map[string]any {
+// populateLensMetricDefaults populates default values for Lens metric configuration (shared across XY, metric, pie, treemap, datatable, etc.).
+func populateLensMetricDefaults(model map[string]any) map[string]any {
 	if model == nil {
 		return model
 	}
@@ -290,6 +291,9 @@ func populateLegacyMetricMetricDefaults(model map[string]any) map[string]any {
 		return model
 	}
 	if operation, ok := model["operation"].(string); ok && isFieldMetricOperation(operation) {
+		if _, exists := model["show_array_values"]; !exists {
+			model["show_array_values"] = false
+		}
 		if _, exists := model["empty_as_null"]; !exists {
 			model["empty_as_null"] = false
 		}
@@ -715,6 +719,22 @@ func getPanelSchema() schema.NestedAttributeObject {
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"lens"}),
 				},
 			},
+			"waffle_config": schema.SingleNestedAttribute{
+				MarkdownDescription: panelConfigDescription(
+					"Configuration for a waffle (grid) chart Lens panel. Omit `query` (or leave `query.query` and `query.language` unset) for ES|QL mode.",
+					"waffle_config",
+					panelConfigNames,
+				),
+				Optional:   true,
+				Attributes: getWaffleSchema(),
+				Validators: []validator.Object{
+					objectvalidator.ConflictsWith(
+						siblingPanelConfigPathsExcept("waffle_config", panelConfigNames)...,
+					),
+					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"lens"}),
+					waffleConfigModeValidator{},
+				},
+			},
 			"region_map_config": schema.SingleNestedAttribute{
 				MarkdownDescription: panelConfigDescription("Configuration for a region map chart panel. Use this for geographic region maps.", "region_map_config", panelConfigNames),
 				Optional:            true,
@@ -772,7 +792,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 			},
 			"config_json": schema.StringAttribute{
 				MarkdownDescription: panelConfigDescription("The configuration of the panel as a JSON string.", "config_json", panelConfigNames),
-				CustomType:          jsontypes.NormalizedType{},
+				CustomType:          customtypes.NewJSONWithDefaultsType(populatePanelConfigJSONDefaults),
 				Optional:            true,
 				Computed:            true,
 				Validators: []validator.String{
@@ -1372,6 +1392,207 @@ func getPartitionChartBaseSchema() map[string]schema.Attribute {
 	}
 }
 
+// getWaffleSchema returns schema for waffle (grid) Lens chart configuration.
+func getWaffleSchema() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"title": schema.StringAttribute{
+			MarkdownDescription: "The title of the chart displayed in the panel.",
+			Optional:            true,
+		},
+		"description": schema.StringAttribute{
+			MarkdownDescription: "The description of the chart.",
+			Optional:            true,
+		},
+		"dataset_json": schema.StringAttribute{
+			MarkdownDescription: "Dataset configuration as JSON. For standard (non-ES|QL) waffles, use a data view or index dataset; for ES|QL, use an `esql` or table ES|QL dataset.",
+			CustomType:          jsontypes.NormalizedType{},
+			Required:            true,
+		},
+		"ignore_global_filters": schema.BoolAttribute{
+			MarkdownDescription: "If true, ignore global filters when fetching data for this chart. Default is false.",
+			Optional:            true,
+		},
+		"sampling": schema.Float64Attribute{
+			MarkdownDescription: "Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.",
+			Optional:            true,
+		},
+		"query": schema.SingleNestedAttribute{
+			MarkdownDescription: "Query configuration for non-ES|QL waffles. Omit this block (or leave `query` and `language` unset) to use ES|QL mode.",
+			Optional:            true,
+			Attributes:          getFilterSimple(),
+		},
+		"filters": schema.ListNestedAttribute{
+			MarkdownDescription: "Additional filters to apply to the chart data (maximum 100).",
+			Optional:            true,
+			NestedObject:        getSearchFilter(),
+		},
+		"legend": schema.SingleNestedAttribute{
+			MarkdownDescription: "Legend configuration for the waffle chart.",
+			Required:            true,
+			Attributes:          getWaffleLegendSchema(),
+		},
+		"value_display": schema.SingleNestedAttribute{
+			MarkdownDescription: "Configuration for displaying values in chart cells.",
+			Optional:            true,
+			Attributes: map[string]schema.Attribute{
+				"mode": schema.StringAttribute{
+					MarkdownDescription: "Value display mode in cells: hidden, absolute, or percentage.",
+					Required:            true,
+					Validators: []validator.String{
+						stringvalidator.OneOf("hidden", "absolute", "percentage"),
+					},
+				},
+				"percent_decimals": schema.Float64Attribute{
+					MarkdownDescription: "Decimal places for percentage display (0-10).",
+					Optional:            true,
+				},
+			},
+		},
+		"metrics": schema.ListNestedAttribute{
+			MarkdownDescription: "Metric configurations for non-ES|QL waffles (minimum 1). Each `config` is a JSON object (e.g. count, sum, or formula) matching the Kibana Lens waffle schema.",
+			Optional:            true,
+			NestedObject: schema.NestedAttributeObject{
+				Attributes: map[string]schema.Attribute{
+					"config": schema.StringAttribute{
+						MarkdownDescription: "Metric operation as JSON.",
+						CustomType:          customtypes.NewJSONWithDefaultsType(populatePieChartMetricDefaults),
+						Required:            true,
+					},
+				},
+			},
+		},
+		"group_by": schema.ListNestedAttribute{
+			MarkdownDescription: "Breakdown dimensions for non-ES|QL waffles. Each `config` is a JSON object (terms, date_histogram, etc.) matching the Kibana Lens waffle schema.",
+			Optional:            true,
+			NestedObject: schema.NestedAttributeObject{
+				Attributes: map[string]schema.Attribute{
+					"config": schema.StringAttribute{
+						MarkdownDescription: "Group-by operation as JSON.",
+						CustomType:          customtypes.NewJSONWithDefaultsType(populateLensGroupByDefaults),
+						Required:            true,
+					},
+				},
+			},
+		},
+		"esql_metrics": schema.ListNestedAttribute{
+			MarkdownDescription: "Metric columns for ES|QL waffles (minimum 1). Mutually exclusive with `metrics`.",
+			Optional:            true,
+			NestedObject:        getWaffleESQLMetricSchema(),
+		},
+		"esql_group_by": schema.ListNestedAttribute{
+			MarkdownDescription: "Breakdown columns for ES|QL waffles. Mutually exclusive with `group_by`.",
+			Optional:            true,
+			NestedObject:        getWaffleESQLGroupBySchema(),
+		},
+	}
+}
+
+// getWaffleLegendSchema returns schema for waffle legend (distinct from XY/heatmap legend).
+func getWaffleLegendSchema() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"size": schema.StringAttribute{
+			MarkdownDescription: "Legend size: auto, small, medium, large, or xlarge.",
+			Required:            true,
+			Validators: []validator.String{
+				stringvalidator.OneOf(dashboardValueAuto, "small", "medium", "large", "xlarge"),
+			},
+		},
+		"truncate_after_lines": schema.Int64Attribute{
+			MarkdownDescription: "Maximum lines before truncating legend items (1-10).",
+			Optional:            true,
+		},
+		"values": schema.ListAttribute{
+			MarkdownDescription: "Legend value display modes. For example `absolute` shows raw metric values in the legend.",
+			ElementType:         types.StringType,
+			Optional:            true,
+			Validators: []validator.List{
+				listvalidator.ValueStringsAre(stringvalidator.OneOf("absolute")),
+			},
+		},
+		"visible": schema.StringAttribute{
+			MarkdownDescription: "Legend visibility: auto, show, or hide.",
+			Optional:            true,
+			Validators: []validator.String{
+				stringvalidator.OneOf("auto", "show", "hide"),
+			},
+		},
+	}
+}
+
+func getWaffleESQLMetricSchema() schema.NestedAttributeObject {
+	return schema.NestedAttributeObject{
+		Attributes: map[string]schema.Attribute{
+			"column": schema.StringAttribute{
+				MarkdownDescription: "ES|QL column name for the metric.",
+				Required:            true,
+			},
+			"operation": schema.StringAttribute{
+				MarkdownDescription: "Metric operation. Currently `value`.",
+				Required:            true,
+				Validators: []validator.String{
+					stringvalidator.OneOf("value"),
+				},
+			},
+			"label": schema.StringAttribute{
+				MarkdownDescription: "Optional label for the metric.",
+				Optional:            true,
+			},
+			"format_json": schema.StringAttribute{
+				MarkdownDescription: "Number or other format configuration as JSON (`formatType` union).",
+				CustomType:          jsontypes.NormalizedType{},
+				Required:            true,
+			},
+			"color": schema.SingleNestedAttribute{
+				MarkdownDescription: "Static color for the metric.",
+				Required:            true,
+				Attributes: map[string]schema.Attribute{
+					"type": schema.StringAttribute{
+						MarkdownDescription: "Color type; use `static` for waffle ES|QL metrics.",
+						Required:            true,
+						Validators: []validator.String{
+							stringvalidator.OneOf("static"),
+						},
+					},
+					"color": schema.StringAttribute{
+						MarkdownDescription: "Color value (e.g. hex).",
+						Required:            true,
+					},
+				},
+			},
+		},
+	}
+}
+
+func getWaffleESQLGroupBySchema() schema.NestedAttributeObject {
+	return schema.NestedAttributeObject{
+		Attributes: map[string]schema.Attribute{
+			"column": schema.StringAttribute{
+				MarkdownDescription: "ES|QL column for the breakdown.",
+				Required:            true,
+			},
+			"operation": schema.StringAttribute{
+				MarkdownDescription: "Group-by operation. Currently `value`.",
+				Required:            true,
+				Validators: []validator.String{
+					stringvalidator.OneOf("value"),
+				},
+			},
+			"collapse_by": schema.StringAttribute{
+				MarkdownDescription: "Collapse function when multiple rows map to the same bucket.",
+				Required:            true,
+				Validators: []validator.String{
+					stringvalidator.OneOf("avg", "max", "min", "sum"),
+				},
+			},
+			"color_json": schema.StringAttribute{
+				MarkdownDescription: "Color mapping as JSON (`colorMapping` union).",
+				CustomType:          jsontypes.NormalizedType{},
+				Required:            true,
+			},
+		},
+	}
+}
+
 // getTreemapSchema returns the schema for treemap chart configuration
 func getTreemapSchema() map[string]schema.Attribute {
 	base := getPartitionChartBaseSchema()
@@ -1793,7 +2014,7 @@ func getMetricChart() map[string]schema.Attribute {
 				Attributes: map[string]schema.Attribute{
 					"config_json": schema.StringAttribute{
 						MarkdownDescription: metricChartMetricConfigDescription,
-						CustomType:          customtypes.NewJSONWithDefaultsType(populateMetricChartMetricDefaults),
+						CustomType:          customtypes.NewJSONWithDefaultsType(populateLensMetricDefaults),
 						Required:            true,
 					},
 				},
@@ -2079,8 +2300,8 @@ func populatePieChartMetricDefaults(model map[string]any) map[string]any {
 	return model
 }
 
-// populatePieChartGroupByDefaults populates default values for pie chart group by configuration
-func populatePieChartGroupByDefaults(model map[string]any) map[string]any {
+// populateLensGroupByDefaults populates default values for Lens dimension/group-by configuration (shared across pie, treemap, datatable, etc.).
+func populateLensGroupByDefaults(model map[string]any) map[string]any {
 	if model == nil {
 		return model
 	}
@@ -2184,7 +2405,7 @@ func getPieChart() map[string]schema.Attribute {
 				Attributes: map[string]schema.Attribute{
 					"config": schema.StringAttribute{
 						MarkdownDescription: "Group by configuration as JSON.",
-						CustomType:          customtypes.NewJSONWithDefaultsType(populatePieChartGroupByDefaults),
+						CustomType:          customtypes.NewJSONWithDefaultsType(populateLensGroupByDefaults),
 						Required:            true,
 					},
 				},

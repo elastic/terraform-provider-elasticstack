@@ -8,6 +8,6 @@ For example:
 * [Testing expectations](./high-level/testing.md) 
 * [Coding standards](./high-level/coding-standards.md)
 
-## Requirements
+## Requirements (OpenSpec)
 
-This directory details low level requirements for a specific package. These are used to drive AI code generation. 
+Canonical functional requirements live under [`openspec/specs/`](../openspec/specs/) (OpenSpec). See [`high-level/openspec-requirements.md`](./high-level/openspec-requirements.md) for how to add or validate specs. 

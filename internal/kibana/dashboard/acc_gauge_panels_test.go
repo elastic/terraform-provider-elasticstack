@@ -30,7 +30,7 @@ import (
 func TestAccResourceDashboardGauge(t *testing.T) {
 	dashboardTitle := "Test Dashboard with Gauge " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{

@@ -137,7 +137,29 @@ type tfModelV0 struct {
 //go:embed resource-description.md
 var monitorDescription string
 
-func monitorConfigSchema() schema.Schema {
+func locationValidator(validateLocation bool) []validator.List {
+	if validateLocation {
+		return []validator.List{
+			listvalidator.ValueStringsAre(
+				stringvalidator.OneOf(
+					"japan",
+					"india",
+					"singapore",
+					"australia_east",
+					"united_kingdom",
+					"germany",
+					"canada_east",
+					"brazil",
+					"us_east",
+					"us_west",
+				),
+			),
+		}
+	}
+	return []validator.List{}
+}
+
+func monitorConfigSchema(validateLocation bool) schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: monitorDescription,
 		Attributes: map[string]schema.Attribute{
@@ -190,22 +212,7 @@ func monitorConfigSchema() schema.Schema {
 				ElementType:         types.StringType,
 				Optional:            true,
 				MarkdownDescription: "Where to deploy the monitor. Monitors can be deployed in multiple locations so that you can detect differences in availability and response times across those locations.",
-				Validators: []validator.List{
-					listvalidator.ValueStringsAre(
-						stringvalidator.OneOf(
-							"japan",
-							"india",
-							"singapore",
-							"australia_east",
-							"united_kingdom",
-							"germany",
-							"canada_east",
-							"brazil",
-							"us_east",
-							"us_west",
-						),
-					),
-				},
+				Validators:          locationValidator(validateLocation),
 			},
 			"private_locations": schema.ListAttribute{
 				ElementType:         types.StringType,

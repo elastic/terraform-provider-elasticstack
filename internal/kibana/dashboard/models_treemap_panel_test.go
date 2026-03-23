@@ -33,7 +33,7 @@ func Test_treemapPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 
 	groupBy := `[{"operation":"terms","collapse_by":"avg","fields":["host.name"],` +
 		`"format":{"type":"number","decimals":2},` +
-		`"color":{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"colorCode","value":"#D3DAE6"}}}]`
+		`"color":{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"color_code","value":"#D3DAE6"}}}]`
 	apiJSON := `{
 		"type": "treemap",
 		"title": "Treemap NoESQL Round-Trip",
@@ -84,7 +84,7 @@ func Test_treemapPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 		"dataset": {"type":"esql","query":"FROM metrics-* | LIMIT 10"},
 		"legend": {"size": "small"},
 		"metrics": [{"column":"bytes","operation":"value","color":{"type":"static","color":"#54B399"},"format":{"type":"number","decimals":2}}],
-		"group_by": [{"collapse_by":"avg","column":"host.name","operation":"value","color":{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"colorCode","value":"#D3DAE6"}}}]
+		"group_by": [{"collapse_by":"avg","column":"host.name","operation":"value","color":{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"color_code","value":"#D3DAE6"}}}]
 	}`
 	var api kbapi.TreemapESQL
 	require.NoError(t, json.Unmarshal([]byte(apiJSON), &api))
@@ -159,7 +159,7 @@ func Test_treemapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 	require.NoError(t, json.Unmarshal([]byte(`{
 		"operation":"terms",
 		"collapse_by":"avg",
-		"color":{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"colorCode","value":"#D3DAE6"}},
+		"color":{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"color_code","value":"#D3DAE6"}},
 		"fields":["host.name"],
 		"format":{"type":"number","decimals":2}
 	}`), &groupByItem))
@@ -207,7 +207,7 @@ func Test_treemapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 
 func Test_treemapConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 	colorMapping := kbapi.ColorMapping{}
-	require.NoError(t, json.Unmarshal([]byte(`{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"colorCode","value":"#D3DAE6"}}`), &colorMapping))
+	require.NoError(t, json.Unmarshal([]byte(`{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"color_code","value":"#D3DAE6"}}`), &colorMapping))
 
 	staticColor := kbapi.StaticColor{}
 	require.NoError(t, json.Unmarshal([]byte(`{"type":"static","color":"#54B399"}`), &staticColor))
@@ -345,7 +345,7 @@ func Test_treemapConfigModel_toAPIESQLChartSchema(t *testing.T) {
 		"dataset": {"type":"esql","query":"FROM metrics-* | LIMIT 10"},
 		"legend": {"size": "small"},
 		"metrics": [{"column":"bytes","operation":"value","color":{"type":"static","color":"#54B399"},"format":{"type":"number","decimals":2}}],
-		"group_by": [{"collapse_by":"avg","column":"host.name","operation":"value","color":{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"colorCode","value":"#D3DAE6"}}}]
+		"group_by": [{"collapse_by":"avg","column":"host.name","operation":"value","color":{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"color_code","value":"#D3DAE6"}}}]
 	}`
 	var api kbapi.TreemapESQL
 	require.NoError(t, json.Unmarshal([]byte(apiJSON), &api))
