@@ -6,10 +6,10 @@ resource "elasticstack_kibana_stream" "nginx" {
   wired_config {
     # Define explicit field type mappings
     fields_json = jsonencode({
-      "host.name"                   = { type = "keyword" }
-      "http.response.status_code"   = { type = "long" }
-      "http.response.bytes"         = { type = "long" }
-      "url.path"                    = { type = "keyword" }
+      "host.name"                 = { type = "keyword" }
+      "http.response.status_code" = { type = "long" }
+      "http.response.bytes"       = { type = "long" }
+      "url.path"                  = { type = "keyword" }
     })
 
     # Route documents matching the condition to a child stream
