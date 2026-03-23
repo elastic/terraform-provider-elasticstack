@@ -25,7 +25,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 )
 
 func TestAccResourceMLDatafeedState_basic(t *testing.T) {
@@ -142,10 +145,16 @@ func TestAccResourceMLDatafeedState_stoppedThenStarted(t *testing.T) {
 	datafeedID := fmt.Sprintf("test-datafeed-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 	indexName := fmt.Sprintf("test-datafeed-index-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 
+	datafeedStateAddr := "elasticstack_elasticsearch_ml_datafeed_state.test"
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
+				// Bug #1866: Creating with state="stopped" must produce a plan where
+				// `start` is known-null, not unknown. Without the fix, the plan modifier
+				// early-returns on Create, leaving `start` as unknown. The apply then
+				// fails with "Provider returned invalid result object after apply".
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("stopped"),
 				ConfigVariables: config.Variables{
@@ -153,13 +162,24 @@ func TestAccResourceMLDatafeedState_stoppedThenStarted(t *testing.T) {
 					"datafeed_id": config.StringVariable(datafeedID),
 					"index_name":  config.StringVariable(indexName),
 				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(datafeedStateAddr, plancheck.ResourceActionCreate),
+						plancheck.ExpectKnownValue(datafeedStateAddr, tfjsonpath.New("start"), knownvalue.Null()),
+					},
+				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed_state.test", "datafeed_id", datafeedID),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed_state.test", "state", "stopped"),
-					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_ml_datafeed_state.test", "start"),
+					resource.TestCheckResourceAttr(datafeedStateAddr, "datafeed_id", datafeedID),
+					resource.TestCheckResourceAttr(datafeedStateAddr, "state", "stopped"),
+					resource.TestCheckNoResourceAttr(datafeedStateAddr, "start"),
 				),
 			},
 			{
+				// Bug #1867: Transitioning from stopped to started must produce a plan
+				// where `start` is unknown (to be computed by the API). Without the fix,
+				// `start` remains null (copied from stopped state by UseStateForUnknown),
+				// and the apply fails with "Provider produced inconsistent result after
+				// apply" when the API returns a concrete timestamp.
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("started"),
 				ConfigVariables: config.Variables{
@@ -167,9 +187,15 @@ func TestAccResourceMLDatafeedState_stoppedThenStarted(t *testing.T) {
 					"datafeed_id": config.StringVariable(datafeedID),
 					"index_name":  config.StringVariable(indexName),
 				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(datafeedStateAddr, plancheck.ResourceActionUpdate),
+						plancheck.ExpectUnknownValue(datafeedStateAddr, tfjsonpath.New("start")),
+					},
+				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed_state.test", "datafeed_id", datafeedID),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed_state.test", "state", "started"),
+					resource.TestCheckResourceAttr(datafeedStateAddr, "datafeed_id", datafeedID),
+					resource.TestCheckResourceAttr(datafeedStateAddr, "state", "started"),
 				),
 			},
 		},
