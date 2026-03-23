@@ -60,7 +60,7 @@ resource "elasticstack_elasticsearch_ml_anomaly_detection_job" "test2" {
 resource "elasticstack_elasticsearch_ml_calendar" "test" {
   calendar_id = var.calendar_id
   description = "Test calendar"
-  job_ids = [
+  job_ids     = [
     elasticstack_elasticsearch_ml_anomaly_detection_job.test.job_id,
     elasticstack_elasticsearch_ml_anomaly_detection_job.test2.job_id,
   ]
