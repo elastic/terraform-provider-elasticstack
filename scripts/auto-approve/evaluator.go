@@ -9,12 +9,13 @@ import (
 )
 
 const (
-	maxEditedLines = 300
+	maxEditedLines = 1000
 )
 
 var allowedCopilotAuthorLogins = map[string]struct{}{
 	"github-copilot[bot]": {},
 	"Copilot":             {},
+	"tobio":               {},
 }
 
 type EvaluationInput struct {
