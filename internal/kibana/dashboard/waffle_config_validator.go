@@ -20,6 +20,8 @@ package dashboard
 import (
 	"context"
 
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -38,11 +40,56 @@ func (v waffleConfigModeValidator) MarkdownDescription(ctx context.Context) stri
 	return v.Description(ctx)
 }
 
-func waffleListCount(list types.List) int {
-	if list.IsNull() || list.IsUnknown() {
-		return 0
+// waffleModeListState describes a Terraform list (or slice at apply time) for waffle mode validation.
+// When Unknown is true, count-based rules that depend on that list are skipped (deferred until values are known).
+type waffleModeListState struct {
+	Count   int
+	Unknown bool
+}
+
+func waffleModeListStateFromTF(list types.List) waffleModeListState {
+	if list.IsUnknown() {
+		return waffleModeListState{Unknown: true}
 	}
-	return len(list.Elements())
+	if list.IsNull() {
+		return waffleModeListState{Count: 0}
+	}
+	return waffleModeListState{Count: len(list.Elements())}
+}
+
+// waffleModeListStateFromSlice is used when converting from a parsed model at apply time (lengths are always known).
+func waffleModeListStateFromSlice(n int) waffleModeListState {
+	return waffleModeListState{Count: n}
+}
+
+// waffleConfigModeValidateDiags returns ES|QL vs non-ES|QL waffle field consistency diagnostics.
+// If attrPath is non-nil, errors are attribute-scoped (plan-time); if nil, plain errors (e.g. apply-time model conversion).
+func waffleConfigModeValidateDiags(esqlMode bool, metrics, groupBy, esqlMetrics, esqlGroupBy waffleModeListState, attrPath *path.Path) diag.Diagnostics {
+	var diags diag.Diagnostics
+	add := func(summary, detail string) {
+		if attrPath != nil {
+			diags.AddAttributeError(*attrPath, summary, detail)
+		} else {
+			diags.AddError(summary, detail)
+		}
+	}
+	if esqlMode {
+		if (!metrics.Unknown && metrics.Count > 0) || (!groupBy.Unknown && groupBy.Count > 0) {
+			add("Invalid waffle_config for ES|QL mode", "Do not set `metrics` or `group_by` when using ES|QL mode (omit `query` or leave `query.query` and `query.language` unset). Use `esql_metrics` instead.")
+		}
+		if !esqlMetrics.Unknown && esqlMetrics.Count < 1 {
+			add("Missing esql_metrics", "ES|QL waffles require at least one `esql_metrics` entry.")
+		}
+		return diags
+	}
+
+	if (!esqlMetrics.Unknown && esqlMetrics.Count > 0) || (!esqlGroupBy.Unknown && esqlGroupBy.Count > 0) {
+		add("Invalid waffle_config for non-ES|QL mode", "Do not set `esql_metrics` or `esql_group_by` when using a non-ES|QL waffle. Set `query` (and use `metrics` / optional `group_by`) instead.")
+	}
+	if !metrics.Unknown && metrics.Count < 1 {
+		add("Missing metrics", "Non-ES|QL waffles require at least one `metrics` entry.")
+	}
+	return diags
 }
 
 func (v waffleConfigModeValidator) ValidateObject(ctx context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {
@@ -76,41 +123,11 @@ func (v waffleConfigModeValidator) ValidateObject(ctx context.Context, req valid
 		return
 	}
 
-	nDSLMetrics := waffleListCount(metrics)
-	nDSLGroupBy := waffleListCount(groupBy)
-	nEsqlM := waffleListCount(esqlMetrics)
-	nEsqlG := waffleListCount(esqlGroupBy)
-
-	if esqlMode {
-		if nDSLMetrics > 0 || nDSLGroupBy > 0 {
-			resp.Diagnostics.AddAttributeError(
-				req.Path,
-				"Invalid waffle_config for ES|QL mode",
-				"Do not set `metrics` or `group_by` when using ES|QL mode (omit `query` or leave `query.query` and `query.language` unset). Use `esql_metrics` instead.",
-			)
-		}
-		if nEsqlM < 1 {
-			resp.Diagnostics.AddAttributeError(
-				req.Path,
-				"Missing esql_metrics",
-				"ES|QL waffles require at least one `esql_metrics` entry.",
-			)
-		}
-		return
-	}
-
-	if nEsqlM > 0 || nEsqlG > 0 {
-		resp.Diagnostics.AddAttributeError(
-			req.Path,
-			"Invalid waffle_config for non-ES|QL mode",
-			"Do not set `esql_metrics` or `esql_group_by` when using a non-ES|QL waffle. Set `query` (and use `metrics` / optional `group_by`) instead.",
-		)
-	}
-	if nDSLMetrics < 1 {
-		resp.Diagnostics.AddAttributeError(
-			req.Path,
-			"Missing metrics",
-			"Non-ES|QL waffles require at least one `metrics` entry.",
-		)
-	}
+	resp.Diagnostics.Append(waffleConfigModeValidateDiags(esqlMode,
+		waffleModeListStateFromTF(metrics),
+		waffleModeListStateFromTF(groupBy),
+		waffleModeListStateFromTF(esqlMetrics),
+		waffleModeListStateFromTF(esqlGroupBy),
+		&req.Path,
+	)...)
 }

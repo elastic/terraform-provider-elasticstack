@@ -479,6 +479,17 @@ func (m *waffleConfigModel) toAPI() (kbapi.WaffleChart, diag.Diagnostics) {
 		return chart, diags
 	}
 
+	diags.Append(waffleConfigModeValidateDiags(m.usesESQL(),
+		waffleModeListStateFromSlice(len(m.Metrics)),
+		waffleModeListStateFromSlice(len(m.GroupBy)),
+		waffleModeListStateFromSlice(len(m.EsqlMetrics)),
+		waffleModeListStateFromSlice(len(m.EsqlGroupBy)),
+		nil,
+	)...)
+	if diags.HasError() {
+		return chart, diags
+	}
+
 	if m.usesESQL() {
 		esql, d := m.toAPIESQL()
 		diags.Append(d...)
@@ -566,10 +577,6 @@ func (m *waffleConfigModel) toAPINoESQL() (kbapi.WaffleNoESQL, diag.Diagnostics)
 		api.ValueDisplay = &vd
 	}
 
-	if len(m.Metrics) == 0 {
-		diags.AddError("Missing metrics", "waffle_config.metrics must contain at least one entry for non-ES|QL waffles")
-		return api, diags
-	}
 	metrics := make([]kbapi.WaffleNoESQL_Metrics_Item, len(m.Metrics))
 	for i, met := range m.Metrics {
 		if err := json.Unmarshal([]byte(met.Config.ValueString()), &metrics[i]); err != nil {
@@ -649,10 +656,6 @@ func (m *waffleConfigModel) toAPIESQL() (kbapi.WaffleESQL, diag.Diagnostics) {
 		api.ValueDisplay = &vd
 	}
 
-	if len(m.EsqlMetrics) == 0 {
-		diags.AddError("Missing esql_metrics", "waffle_config.esql_metrics must contain at least one entry for ES|QL waffles")
-		return api, diags
-	}
 	metrics := make([]struct {
 		Color     kbapi.StaticColor                `json:"color"`
 		Column    string                           `json:"column"`

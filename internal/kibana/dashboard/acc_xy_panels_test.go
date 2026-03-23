@@ -34,7 +34,7 @@ const xyChartDataLayerBreakdownExpected = `{"collapse_by":"avg","color":{"mappin
 func TestAccResourceDashboardXYChart(t *testing.T) {
 	dashboardTitle := "Test Dashboard with XY Chart " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
