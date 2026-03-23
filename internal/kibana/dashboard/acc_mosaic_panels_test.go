@@ -90,7 +90,7 @@ func TestAccResourceDashboardMosaic(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.mosaic_config.metrics_json"),
 				),
 			},
-			// { // ESSQL Mosaic panels are not working in the Kibana UI at the moment
+			// { // ES|QL Mosaic panels are not working in the Kibana UI at the moment
 			// 	ProtoV6ProviderFactories: acctest.Providers,
 			// 	SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 			// 	ConfigDirectory:          acctest.NamedTestCaseDirectory("esql"),
