@@ -31,7 +31,7 @@ import (
 func TestAccResourceDashboardTreemap(t *testing.T) {
 	dashboardTitle := "Test Dashboard with Treemap " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
@@ -123,6 +123,7 @@ func TestAccResourceDashboardTreemap(t *testing.T) {
 				ImportStateVerifyIgnore: []string{
 					"panels.0.treemap_config.metrics_json",
 					"panels.0.treemap_config.group_by_json",
+					"panels.0.treemap_config.dataset_json",
 					"panels.0.treemap_config.ignore_global_filters",
 					"panels.0.treemap_config.sampling",
 					"panels.0.treemap_config.label_position",

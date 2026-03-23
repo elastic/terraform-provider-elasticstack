@@ -9,6 +9,7 @@ on:
       - 'README.md'
       - 'CHANGELOG.md'
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     paths-ignore:
       - 'README.md'
       - 'CHANGELOG.md'
@@ -31,11 +32,16 @@ jobs:
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
           script: |
+            if (context.eventName === 'pull_request' && context.payload.action === 'ready_for_review') {
+              core.setOutput('should_run', 'false');
+              return;
+            }
             if (context.eventName !== 'push') {
               core.setOutput('should_run', 'true');
               return;
             }
 
+            const copilotAuthorEmail = '198982749+Copilot@users.noreply.github.com';
             const branch = context.ref.replace('refs/heads/', '');
             const { data: pulls } = await github.rest.pulls.list({
               owner: context.repo.owner,
@@ -45,12 +51,24 @@ jobs:
               per_page: 1,
             });
 
-            const shouldRun = pulls.length === 0;
-            core.info(
-              shouldRun
-                ? `No open PR found for ${branch}; running workflow for push.`
-                : `Open PR found for ${branch}; skipping duplicate push workflow execution.`
-            );
+            const commits = context.payload.commits || [];
+            const noOpenPR = pulls.length === 0;
+            const allCopilot =
+              commits.length > 0 &&
+              commits.every((c) => (c.author && c.author.email) === copilotAuthorEmail);
+            const shouldRun = noOpenPR || allCopilot;
+
+            if (shouldRun) {
+              core.info(
+                noOpenPR
+                  ? `No open PR found for ${branch}; running workflow for push.`
+                  : `Open PR found for ${branch}, but all ${commits.length} pushed commit(s) are Copilot-authored; running workflow for push.`
+              );
+            } else {
+              core.info(
+                `Open PR found for ${branch} and not all pushed commits are Copilot-authored; skipping push workflow execution.`
+              );
+            }
             core.setOutput('should_run', shouldRun ? 'true' : 'false');
 
   build:
@@ -77,8 +95,15 @@ jobs:
     needs: preflight
     if: needs.preflight.outputs.should_run == 'true'
     runs-on: ubuntu-latest
+    env:
+      OPENSPEC_TELEMETRY: "0"
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: package-lock.json
       - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6
         with:
           go-version-file: 'go.mod'
@@ -289,8 +314,8 @@ jobs:
 
   auto-approve:
     name: Evaluate and auto-approve PR
-    if: github.event_name == 'pull_request'
-    needs: test
+    if: always() && github.event_name == 'pull_request' && (github.event.action == 'ready_for_review' || needs.test.result == 'success')
+    needs: [preflight, test]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:

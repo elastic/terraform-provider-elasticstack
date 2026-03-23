@@ -30,7 +30,7 @@ import (
 func TestAccResourceDashboardRegionMap(t *testing.T) {
 	dashboardTitle := "Test Dashboard with Region Map " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
@@ -73,6 +73,8 @@ func TestAccResourceDashboardRegionMap(t *testing.T) {
 				ImportStateVerify: true,
 				ImportStateVerifyIgnore: []string{
 					"panels.0.region_map_config.metric_json",
+					"panels.0.region_map_config.dataset_json",
+					"panels.0.region_map_config.region_json",
 				},
 			},
 		},

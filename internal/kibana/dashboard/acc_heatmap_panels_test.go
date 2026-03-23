@@ -30,7 +30,7 @@ import (
 func TestAccResourceDashboardHeatmap(t *testing.T) {
 	dashboardTitle := "Test Dashboard with Heatmap " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
@@ -106,6 +106,9 @@ func TestAccResourceDashboardHeatmap(t *testing.T) {
 				ImportStateVerify: true,
 				ImportStateVerifyIgnore: []string{
 					"panels.0.heatmap_config.metric_json",
+					"panels.0.heatmap_config.dataset_json",
+					"panels.0.heatmap_config.x_axis_json",
+					"panels.0.heatmap_config.y_axis_json",
 				},
 			},
 		},

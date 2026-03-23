@@ -22,6 +22,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -119,6 +120,7 @@ func DataSourceClusterInfo() *schema.Resource {
 			Required:    false,
 		},
 	}
+	schemautil.AddConnectionSchema(clusterInfoSchema)
 
 	return &schema.Resource{
 		Description: "Gets information about the Elastic cluster.",

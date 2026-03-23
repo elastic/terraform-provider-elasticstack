@@ -7,6 +7,10 @@ This repo is the Terraform provider for Elastic Stack, written in Go.
 - Follow the project’s coding conventions in [`coding-standards.md`](./dev-docs/high-level/coding-standards.md).
 - For contributor workflow, setup, and release notes, see [`contributing.md`](./dev-docs/high-level/contributing.md).
 
+## Requirements (OpenSpec)
+
+- Canonical functional specs: [`openspec/specs/`](./openspec/specs/) ([OpenSpec](https://openspec.dev/)). Run `make setup` (includes `npm ci` for the CLI) then `make check-openspec` or rely on `make check-lint`. Authoring guide: [`dev-docs/high-level/openspec-requirements.md`](./dev-docs/high-level/openspec-requirements.md).
+
 ## High-level dev docs
 
 - Repo orientation and where code lives: [`dev-docs/high-level/repo-structure.md`](./dev-docs/high-level/repo-structure.md)

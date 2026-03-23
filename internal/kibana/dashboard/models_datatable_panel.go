@@ -31,58 +31,29 @@ import (
 
 func newDatatablePanelConfigConverter() datatablePanelConfigConverter {
 	return datatablePanelConfigConverter{
-		lensPanelConfigConverter: lensPanelConfigConverter{
-			visualizationType: string(kbapi.DatatableNoESQLTypeDatatable),
+		lensVisualizationBase: lensVisualizationBase{
+			visualizationType: string(kbapi.DatatableNoESQLTypeDataTable),
+			hasTFPanelConfig:  func(pm panelModel) bool { return pm.DatatableConfig != nil },
 		},
 	}
 }
 
 type datatablePanelConfigConverter struct {
-	lensPanelConfigConverter
+	lensVisualizationBase
 }
 
-func (c datatablePanelConfigConverter) handlesTFPanelConfig(pm panelModel) bool {
-	return pm.DatatableConfig != nil
-}
-
-func (c datatablePanelConfigConverter) populateFromAPIPanel(ctx context.Context, pm *panelModel, config kbapi.DashboardPanelItem_Config) diag.Diagnostics {
-	cfgMap, err := config.AsDashboardPanelItemConfig8()
+func (c datatablePanelConfigConverter) populateFromAttributes(ctx context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes) diag.Diagnostics {
+	datatableChart, err := attrs.AsDatatableChart()
 	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	attrs, ok := cfgMap["attributes"]
-	if !ok {
-		return nil
-	}
-
-	attrsMap, ok := attrs.(map[string]any)
-	if !ok {
-		return nil
-	}
-
-	attrsJSON, err := json.Marshal(attrsMap)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	var datatableChart kbapi.DatatableChart
-	if err := json.Unmarshal(attrsJSON, &datatableChart); err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
 	pm.DatatableConfig = &datatableConfigModel{}
 
-	if _, ok := attrsMap["query"]; ok {
-		datatableNoESQL, err := datatableChart.AsDatatableNoESQL()
-		if err != nil {
-			return diagutil.FrameworkDiagFromError(err)
-		}
-
+	if datatableNoESQL, err := datatableChart.AsDatatableNoESQL(); err == nil && (datatableNoESQL.Query.Query != "" || datatableNoESQL.Query.Language != nil) {
 		pm.DatatableConfig.NoESQL = &datatableNoESQLConfigModel{}
 		return pm.DatatableConfig.NoESQL.fromAPI(ctx, datatableNoESQL)
 	}
-
 	datatableESQL, err := datatableChart.AsDatatableESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
@@ -92,10 +63,10 @@ func (c datatablePanelConfigConverter) populateFromAPIPanel(ctx context.Context,
 	return pm.DatatableConfig.ESQL.fromAPI(ctx, datatableESQL)
 }
 
-func (c datatablePanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *kbapi.DashboardPanelItem_Config) diag.Diagnostics {
+func (c datatablePanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelLens_Config_0_Attributes, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if pm.DatatableConfig == nil {
-		return diags
+		return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}, diags
 	}
 
 	var datatableChart kbapi.DatatableChart
@@ -105,56 +76,35 @@ func (c datatablePanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *k
 		noESQL, noDiags := pm.DatatableConfig.NoESQL.toAPI()
 		diags.Append(noDiags...)
 		if diags.HasError() {
-			return diags
+			return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}, diags
 		}
 
 		if err := datatableChart.FromDatatableNoESQL(noESQL); err != nil {
 			diags.AddError("Failed to convert datatable no-esql config", err.Error())
-			return diags
+			return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}, diags
 		}
 	case pm.DatatableConfig.ESQL != nil:
 		esql, esqlDiags := pm.DatatableConfig.ESQL.toAPI()
 		diags.Append(esqlDiags...)
 		if diags.HasError() {
-			return diags
+			return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}, diags
 		}
 
 		if err := datatableChart.FromDatatableESQL(esql); err != nil {
 			diags.AddError("Failed to convert datatable esql config", err.Error())
-			return diags
+			return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}, diags
 		}
 	default:
-		return diags
+		return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}, diags
 	}
 
-	var attrs0 kbapi.DashboardPanelItemConfig70Attributes0
-	if err := attrs0.FromDatatableChart(datatableChart); err != nil {
+	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	if err := attrs.FromDatatableChart(datatableChart); err != nil {
 		diags.AddError("Failed to create datatable attributes", err.Error())
-		return diags
+		return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}, diags
 	}
 
-	var configAttrs kbapi.DashboardPanelItem_Config_7_0_Attributes
-	if err := configAttrs.FromDashboardPanelItemConfig70Attributes0(attrs0); err != nil {
-		diags.AddError("Failed to create config attributes", err.Error())
-		return diags
-	}
-
-	config10 := kbapi.DashboardPanelItemConfig70{
-		Attributes: configAttrs,
-	}
-
-	var config1 kbapi.DashboardPanelItemConfig7
-	if err := config1.FromDashboardPanelItemConfig70(config10); err != nil {
-		diags.AddError("Failed to create config1", err.Error())
-		return diags
-	}
-
-	if err := apiConfig.FromDashboardPanelItemConfig7(config1); err != nil {
-		diags.AddError("Failed to marshal datatable config", err.Error())
-		return diags
-	}
-
-	return diags
+	return attrs, diags
 }
 
 type datatableConfigModel struct {
@@ -320,7 +270,7 @@ func (m *datatableNoESQLConfigModel) fromAPI(ctx context.Context, api kbapi.Data
 
 func (m *datatableNoESQLConfigModel) toAPI() (kbapi.DatatableNoESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	api := kbapi.DatatableNoESQL{Type: kbapi.DatatableNoESQLTypeDatatable}
+	api := kbapi.DatatableNoESQL{Type: kbapi.DatatableNoESQLTypeDataTable}
 
 	if typeutils.IsKnown(m.Title) {
 		api.Title = m.Title.ValueStringPointer()
@@ -517,7 +467,7 @@ func (m *datatableESQLConfigModel) fromAPI(ctx context.Context, api kbapi.Datata
 
 func (m *datatableESQLConfigModel) toAPI() (kbapi.DatatableESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	api := kbapi.DatatableESQL{Type: kbapi.DatatableESQLTypeDatatable}
+	api := kbapi.DatatableESQL{Type: kbapi.DatatableESQLTypeDataTable}
 
 	if typeutils.IsKnown(m.Title) {
 		api.Title = m.Title.ValueStringPointer()

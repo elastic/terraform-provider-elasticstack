@@ -34,6 +34,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 )
 
 const CurrentSchemaVersion = 1
@@ -215,7 +216,7 @@ func GetSchema(version int64) schema.Schema {
 			"global": schema.StringAttribute{
 				MarkdownDescription: "An object defining global privileges.",
 				Optional:            true,
-				CustomType:          jsontypes.NormalizedType{},
+				CustomType:          customtypes.NewJSONWithDefaultsType(populateGlobalPrivilegesDefaults),
 			},
 			"cluster": schema.SetAttribute{
 				MarkdownDescription: "A list of cluster privileges. These privileges define the cluster level actions that users with this role are able to execute.",
