@@ -22,14 +22,16 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/hashicorp/terraform-plugin-framework-validators/resourcevalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
 var (
-	_ resource.Resource                = &Resource{}
-	_ resource.ResourceWithConfigure   = &Resource{}
-	_ resource.ResourceWithImportState = &Resource{}
+	_ resource.Resource                     = &Resource{}
+	_ resource.ResourceWithConfigure        = &Resource{}
+	_ resource.ResourceWithImportState      = &Resource{}
+	_ resource.ResourceWithConfigValidators = &Resource{}
 )
 
 // NewResource is a helper function to simplify the provider implementation.
@@ -56,4 +58,14 @@ func (r *Resource) Metadata(_ context.Context, req resource.MetadataRequest, res
 
 func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
+
+func (r *Resource) ConfigValidators(_ context.Context) []resource.ConfigValidator {
+	return []resource.ConfigValidator{
+		resourcevalidator.ExactlyOneOf(
+			path.MatchRoot("wired_config"),
+			path.MatchRoot("classic_config"),
+			path.MatchRoot("query_config"),
+		),
+	}
 }

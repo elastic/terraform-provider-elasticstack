@@ -135,18 +135,22 @@ func (m *wiredConfigModel) toAPIIngest(diags *diag.Diagnostics) *kibanaoapi.Stre
 		ingest.Processing.Steps = json.RawMessage(m.ProcessingStepsJSON.ValueString())
 	}
 
-	// Wired fields and routing
-	ingest.Wired = &kibanaoapi.StreamIngestWired{}
-	if typeutils.IsKnown(m.FieldsJSON) {
-		ingest.Wired.Fields = json.RawMessage(m.FieldsJSON.ValueString())
-	}
-	if typeutils.IsKnown(m.RoutingJSON) {
-		var routing []kibanaoapi.StreamRoutingRule
-		if err := json.Unmarshal([]byte(m.RoutingJSON.ValueString()), &routing); err != nil {
-			diags.AddError("Failed to parse routing_json", err.Error())
-			return ingest
+	// Wired fields and routing — only allocated when at least one attribute is
+	// known, to avoid sending "wired": {} on update and inadvertently clearing
+	// existing server-side field mappings or routing rules.
+	if typeutils.IsKnown(m.FieldsJSON) || typeutils.IsKnown(m.RoutingJSON) {
+		ingest.Wired = &kibanaoapi.StreamIngestWired{}
+		if typeutils.IsKnown(m.FieldsJSON) {
+			ingest.Wired.Fields = json.RawMessage(m.FieldsJSON.ValueString())
 		}
-		ingest.Wired.Routing = routing
+		if typeutils.IsKnown(m.RoutingJSON) {
+			var routing []kibanaoapi.StreamRoutingRule
+			if err := json.Unmarshal([]byte(m.RoutingJSON.ValueString()), &routing); err != nil {
+				diags.AddError("Failed to parse routing_json", err.Error())
+				return ingest
+			}
+			ingest.Wired.Routing = routing
+		}
 	}
 
 	// Lifecycle
