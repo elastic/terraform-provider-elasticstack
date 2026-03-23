@@ -30,27 +30,27 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func newTreemapPanelConfigConverter() treemapPanelConfigConverter {
-	return treemapPanelConfigConverter{
+func newMosaicPanelConfigConverter() mosaicPanelConfigConverter {
+	return mosaicPanelConfigConverter{
 		lensVisualizationBase: lensVisualizationBase{
-			visualizationType: string(kbapi.TreemapNoESQLTypeTreemap),
-			hasTFPanelConfig:  func(pm panelModel) bool { return pm.TreemapConfig != nil },
+			visualizationType: string(kbapi.MosaicNoESQLTypeMosaic),
+			hasTFPanelConfig:  func(pm panelModel) bool { return pm.MosaicConfig != nil },
 		},
 	}
 }
 
-type treemapPanelConfigConverter struct {
+type mosaicPanelConfigConverter struct {
 	lensVisualizationBase
 }
 
-func (c treemapPanelConfigConverter) populateFromAttributes(_ context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes) diag.Diagnostics {
-	treemapChart, err := attrs.AsTreemapChart()
+func (c mosaicPanelConfigConverter) populateFromAttributes(_ context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes) diag.Diagnostics {
+	mosaicChart, err := attrs.AsMosaicChart()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
-	if pm.TreemapConfig == nil {
-		pm.TreemapConfig = &treemapConfigModel{}
+	if pm.MosaicConfig == nil {
+		pm.MosaicConfig = &mosaicConfigModel{}
 	}
 
 	datasetType := ""
@@ -65,41 +65,41 @@ func (c treemapPanelConfigConverter) populateFromAttributes(_ context.Context, p
 		}
 	}
 
-	if datasetType == "esql" {
-		treemapESQL, err := treemapChart.AsTreemapESQL()
+	if datasetType == legacyMetricDatasetTypeESQL {
+		mosaicESQL, err := mosaicChart.AsMosaicESQL()
 		if err != nil {
 			return diagutil.FrameworkDiagFromError(err)
 		}
-		return pm.TreemapConfig.fromAPIESQL(treemapESQL)
+		return pm.MosaicConfig.fromAPIESQL(mosaicESQL)
 	}
 
-	treemapNoESQL, err := treemapChart.AsTreemapNoESQL()
+	mosaicNoESQL, err := mosaicChart.AsMosaicNoESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	return pm.TreemapConfig.fromAPINoESQL(treemapNoESQL)
+	return pm.MosaicConfig.fromAPINoESQL(mosaicNoESQL)
 }
 
-func (c treemapPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelLens_Config_0_Attributes, diag.Diagnostics) {
+func (c mosaicPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelLens_Config_0_Attributes, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	configModel := *pm.TreemapConfig
+	configModel := *pm.MosaicConfig
 
-	treemapChart, treemapDiags := configModel.toAPI()
-	diags.Append(treemapDiags...)
+	mosaicChart, mosaicDiags := configModel.toAPI()
+	diags.Append(mosaicDiags...)
 	if diags.HasError() {
 		return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}, diags
 	}
 
 	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
-	if err := attrs.FromTreemapChart(treemapChart); err != nil {
-		diags.AddError("Failed to create treemap attributes", err.Error())
+	if err := attrs.FromMosaicChart(mosaicChart); err != nil {
+		diags.AddError("Failed to create mosaic attributes", err.Error())
 		return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}, diags
 	}
 
 	return attrs, diags
 }
 
-type treemapConfigModel struct {
+type mosaicConfigModel struct {
 	Title               types.String                                        `tfsdk:"title"`
 	Description         types.String                                        `tfsdk:"description"`
 	Dataset             jsontypes.Normalized                                `tfsdk:"dataset_json"`
@@ -108,13 +108,13 @@ type treemapConfigModel struct {
 	Query               *filterSimpleModel                                  `tfsdk:"query"`
 	Filters             []searchFilterModel                                 `tfsdk:"filters"`
 	GroupBy             customtypes.JSONWithDefaultsValue[[]map[string]any] `tfsdk:"group_by_json"`
+	GroupBreakdownBy    customtypes.JSONWithDefaultsValue[[]map[string]any] `tfsdk:"group_breakdown_by_json"`
 	Metrics             customtypes.JSONWithDefaultsValue[[]map[string]any] `tfsdk:"metrics_json"`
-	LabelPosition       types.String                                        `tfsdk:"label_position"`
 	Legend              *partitionLegendModel                               `tfsdk:"legend"`
 	ValueDisplay        *partitionValueDisplay                              `tfsdk:"value_display"`
 }
 
-func (m *treemapConfigModel) fromAPINoESQL(api kbapi.TreemapNoESQL) diag.Diagnostics {
+func (m *mosaicConfigModel) fromAPINoESQL(api kbapi.MosaicNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	m.Title = types.StringPointerValue(api.Title)
@@ -138,6 +138,17 @@ func (m *treemapConfigModel) fromAPINoESQL(api kbapi.TreemapNoESQL) diag.Diagnos
 		m.GroupBy = customtypes.NewJSONWithDefaultsValue[[]map[string]any](string(groupByBytes), populatePartitionGroupByDefaults)
 	} else {
 		m.GroupBy = customtypes.NewJSONWithDefaultsNull(populatePartitionGroupByDefaults)
+	}
+
+	if api.GroupBreakdownBy != nil {
+		groupBreakdownByBytes, err := json.Marshal(api.GroupBreakdownBy)
+		if err != nil {
+			diags.AddError("Failed to marshal group_breakdown_by", err.Error())
+			return diags
+		}
+		m.GroupBreakdownBy = customtypes.NewJSONWithDefaultsValue[[]map[string]any](string(groupBreakdownByBytes), populatePartitionGroupByDefaults)
+	} else {
+		m.GroupBreakdownBy = customtypes.NewJSONWithDefaultsNull(populatePartitionGroupByDefaults)
 	}
 
 	metricsBytes, err := json.Marshal(api.Metrics)
@@ -164,18 +175,12 @@ func (m *treemapConfigModel) fromAPINoESQL(api kbapi.TreemapNoESQL) diag.Diagnos
 		m.Filters = nil
 	}
 
-	if api.LabelPosition != nil {
-		m.LabelPosition = types.StringValue(string(*api.LabelPosition))
-	} else if !typeutils.IsKnown(m.LabelPosition) {
-		m.LabelPosition = types.StringNull()
-	}
-
 	m.Legend = &partitionLegendModel{}
-	m.Legend.fromTreemapLegend(api.Legend)
+	m.Legend.fromMosaicLegend(api.Legend)
 
 	if api.ValueDisplay != nil {
 		m.ValueDisplay = &partitionValueDisplay{}
-		m.ValueDisplay.fromTreemapNoESQL(api.ValueDisplay)
+		m.ValueDisplay.fromMosaicNoESQL(api.ValueDisplay)
 	} else {
 		m.ValueDisplay = nil
 	}
@@ -183,11 +188,9 @@ func (m *treemapConfigModel) fromAPINoESQL(api kbapi.TreemapNoESQL) diag.Diagnos
 	return diags
 }
 
-func (m *treemapConfigModel) fromAPIESQL(api kbapi.TreemapESQL) diag.Diagnostics {
+func (m *mosaicConfigModel) fromAPIESQL(api kbapi.MosaicESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	// ES|QL charts don't have a query block. Clear it to avoid carrying over
-	// query state from a previous non-ES|QL config.
 	m.Query = nil
 
 	m.Title = types.StringPointerValue(api.Title)
@@ -213,6 +216,17 @@ func (m *treemapConfigModel) fromAPIESQL(api kbapi.TreemapESQL) diag.Diagnostics
 		m.GroupBy = customtypes.NewJSONWithDefaultsNull(populatePartitionGroupByDefaults)
 	}
 
+	if api.GroupBreakdownBy != nil {
+		groupBreakdownByBytes, err := json.Marshal(api.GroupBreakdownBy)
+		if err != nil {
+			diags.AddError("Failed to marshal group_breakdown_by", err.Error())
+			return diags
+		}
+		m.GroupBreakdownBy = customtypes.NewJSONWithDefaultsValue[[]map[string]any](string(groupBreakdownByBytes), populatePartitionGroupByDefaults)
+	} else {
+		m.GroupBreakdownBy = customtypes.NewJSONWithDefaultsNull(populatePartitionGroupByDefaults)
+	}
+
 	metricsBytes, err := json.Marshal(api.Metrics)
 	if err != nil {
 		diags.AddError("Failed to marshal metrics", err.Error())
@@ -234,18 +248,12 @@ func (m *treemapConfigModel) fromAPIESQL(api kbapi.TreemapESQL) diag.Diagnostics
 		m.Filters = nil
 	}
 
-	if api.LabelPosition != nil {
-		m.LabelPosition = types.StringValue(string(*api.LabelPosition))
-	} else if !typeutils.IsKnown(m.LabelPosition) {
-		m.LabelPosition = types.StringNull()
-	}
-
 	m.Legend = &partitionLegendModel{}
-	m.Legend.fromTreemapLegend(api.Legend)
+	m.Legend.fromMosaicLegend(api.Legend)
 
 	if api.ValueDisplay != nil {
 		m.ValueDisplay = &partitionValueDisplay{}
-		m.ValueDisplay.fromTreemapESQL(api.ValueDisplay)
+		m.ValueDisplay.fromMosaicESQL(api.ValueDisplay)
 	} else {
 		m.ValueDisplay = nil
 	}
@@ -253,12 +261,12 @@ func (m *treemapConfigModel) fromAPIESQL(api kbapi.TreemapESQL) diag.Diagnostics
 	return diags
 }
 
-func (m *treemapConfigModel) toAPI() (kbapi.TreemapChart, diag.Diagnostics) {
+func (m *mosaicConfigModel) toAPI() (kbapi.MosaicChart, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	var treemapChart kbapi.TreemapChart
+	var mosaicChart kbapi.MosaicChart
 
 	if m == nil {
-		return treemapChart, diags
+		return mosaicChart, diags
 	}
 
 	if m.usesESQL() {
@@ -268,141 +276,16 @@ func (m *treemapConfigModel) toAPI() (kbapi.TreemapChart, diag.Diagnostics) {
 	noESQL, noESQLDiags := m.toAPINoESQL()
 	diags.Append(noESQLDiags...)
 	if diags.HasError() {
-		return treemapChart, diags
+		return mosaicChart, diags
 	}
-	if err := treemapChart.FromTreemapNoESQL(noESQL); err != nil {
-		diags.AddError("Failed to create treemap schema", err.Error())
+	if err := mosaicChart.FromMosaicNoESQL(noESQL); err != nil {
+		diags.AddError("Failed to create mosaic schema", err.Error())
 	}
 
-	return treemapChart, diags
+	return mosaicChart, diags
 }
 
-func (m *treemapConfigModel) toAPIESQLChartSchema() (kbapi.TreemapChart, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	var treemapChart kbapi.TreemapChart
-
-	attrs := map[string]any{
-		"type": string(kbapi.TreemapESQLTypeTreemap),
-	}
-
-	if typeutils.IsKnown(m.Title) {
-		attrs["title"] = m.Title.ValueString()
-	}
-	if typeutils.IsKnown(m.Description) {
-		attrs["description"] = m.Description.ValueString()
-	}
-	if typeutils.IsKnown(m.IgnoreGlobalFilters) {
-		attrs["ignore_global_filters"] = m.IgnoreGlobalFilters.ValueBool()
-	}
-	if typeutils.IsKnown(m.Sampling) {
-		attrs["sampling"] = m.Sampling.ValueFloat64()
-	}
-
-	if m.Dataset.IsNull() {
-		diags.AddError("Missing dataset_json", "treemap_config.dataset_json must be provided")
-		return treemapChart, diags
-	}
-	var dataset any
-	if err := json.Unmarshal([]byte(m.Dataset.ValueString()), &dataset); err != nil {
-		diags.AddError("Failed to unmarshal dataset", err.Error())
-		return treemapChart, diags
-	}
-	attrs["dataset"] = dataset
-
-	if m.GroupBy.IsNull() {
-		diags.AddError("Missing group_by_json", "treemap_config.group_by_json must be provided")
-		return treemapChart, diags
-	}
-	var groupBy any
-	if err := json.Unmarshal([]byte(m.GroupBy.ValueString()), &groupBy); err != nil {
-		diags.AddError("Failed to unmarshal group_by", err.Error())
-		return treemapChart, diags
-	}
-	attrs["group_by"] = groupBy
-
-	if m.Metrics.IsNull() {
-		diags.AddError("Missing metrics_json", "treemap_config.metrics_json must be provided")
-		return treemapChart, diags
-	}
-	var metrics any
-	if err := json.Unmarshal([]byte(m.Metrics.ValueString()), &metrics); err != nil {
-		diags.AddError("Failed to unmarshal metrics", err.Error())
-		return treemapChart, diags
-	}
-	attrs["metrics"] = metrics
-
-	if len(m.Filters) > 0 {
-		filters := make([]any, 0, len(m.Filters))
-		for _, filterModel := range m.Filters {
-			filter, filterDiags := filterModel.toAPI()
-			diags.Append(filterDiags...)
-			if diags.HasError() {
-				return treemapChart, diags
-			}
-
-			filterBytes, err := json.Marshal(filter)
-			if err != nil {
-				diags.AddError("Failed to marshal filter", err.Error())
-				return treemapChart, diags
-			}
-			var filterAny any
-			if err := json.Unmarshal(filterBytes, &filterAny); err != nil {
-				diags.AddError("Failed to unmarshal filter", err.Error())
-				return treemapChart, diags
-			}
-			filters = append(filters, filterAny)
-		}
-		attrs["filters"] = filters
-	}
-
-	if typeutils.IsKnown(m.LabelPosition) {
-		attrs["label_position"] = m.LabelPosition.ValueString()
-	}
-
-	if m.Legend == nil {
-		diags.AddError("Missing legend", "treemap_config.legend must be provided")
-		return treemapChart, diags
-	}
-	legendBytes, err := json.Marshal(m.Legend.toTreemapLegend())
-	if err != nil {
-		diags.AddError("Failed to marshal legend", err.Error())
-		return treemapChart, diags
-	}
-	var legend any
-	if err := json.Unmarshal(legendBytes, &legend); err != nil {
-		diags.AddError("Failed to unmarshal legend", err.Error())
-		return treemapChart, diags
-	}
-	attrs["legend"] = legend
-
-	if m.ValueDisplay != nil {
-		valueDisplayBytes, err := json.Marshal(m.ValueDisplay.toTreemapESQL())
-		if err != nil {
-			diags.AddError("Failed to marshal value_display", err.Error())
-			return treemapChart, diags
-		}
-		var valueDisplay any
-		if err := json.Unmarshal(valueDisplayBytes, &valueDisplay); err != nil {
-			diags.AddError("Failed to unmarshal value_display", err.Error())
-			return treemapChart, diags
-		}
-		attrs["value_display"] = valueDisplay
-	}
-
-	attrsJSON, err := json.Marshal(attrs)
-	if err != nil {
-		diags.AddError("Failed to marshal treemap attributes", err.Error())
-		return treemapChart, diags
-	}
-	if err := json.Unmarshal(attrsJSON, &treemapChart); err != nil {
-		diags.AddError("Failed to create treemap chart schema", err.Error())
-		return treemapChart, diags
-	}
-
-	return treemapChart, diags
-}
-
-func (m *treemapConfigModel) usesESQL() bool {
+func (m *mosaicConfigModel) usesESQL() bool {
 	if m == nil {
 		return false
 	}
@@ -412,9 +295,108 @@ func (m *treemapConfigModel) usesESQL() bool {
 	return m.Query.Query.IsNull() && m.Query.Language.IsNull()
 }
 
-func (m *treemapConfigModel) toAPINoESQL() (kbapi.TreemapNoESQL, diag.Diagnostics) {
+func (m *mosaicConfigModel) toAPIESQLChartSchema() (kbapi.MosaicChart, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	api := kbapi.TreemapNoESQL{Type: kbapi.TreemapNoESQLTypeTreemap}
+	var mosaicChart kbapi.MosaicChart
+
+	if m.Dataset.IsNull() {
+		diags.AddError("Missing dataset_json", "mosaic_config.dataset_json must be provided")
+		return mosaicChart, diags
+	}
+	if m.GroupBy.IsNull() {
+		diags.AddError("Missing group_by_json", "mosaic_config.group_by_json must be provided")
+		return mosaicChart, diags
+	}
+	if m.GroupBreakdownBy.IsNull() {
+		diags.AddError("Missing group_breakdown_by_json", "mosaic_config.group_breakdown_by_json must be provided")
+		return mosaicChart, diags
+	}
+	if m.Metrics.IsNull() {
+		diags.AddError("Missing metrics_json", "mosaic_config.metrics_json must be provided")
+		return mosaicChart, diags
+	}
+	if m.Legend == nil {
+		diags.AddError("Missing legend", "mosaic_config.legend must be provided")
+		return mosaicChart, diags
+	}
+	if diags.HasError() {
+		return mosaicChart, diags
+	}
+
+	api := kbapi.MosaicESQL{
+		Type:   kbapi.MosaicESQLTypeMosaic,
+		Legend: m.Legend.toMosaicLegend(),
+	}
+
+	if err := json.Unmarshal([]byte(m.Dataset.ValueString()), &api.Dataset); err != nil {
+		diags.AddError("Failed to unmarshal dataset", err.Error())
+		return mosaicChart, diags
+	}
+	if err := json.Unmarshal([]byte(m.GroupBy.ValueString()), &api.GroupBy); err != nil {
+		diags.AddError("Failed to unmarshal group_by", err.Error())
+		return mosaicChart, diags
+	}
+	if err := json.Unmarshal([]byte(m.GroupBreakdownBy.ValueString()), &api.GroupBreakdownBy); err != nil {
+		diags.AddError("Failed to unmarshal group_breakdown_by", err.Error())
+		return mosaicChart, diags
+	}
+	if err := json.Unmarshal([]byte(m.Metrics.ValueString()), &api.Metrics); err != nil {
+		diags.AddError("Failed to unmarshal metrics", err.Error())
+		return mosaicChart, diags
+	}
+	if len(api.Metrics) != 1 {
+		diags.AddError("Invalid metrics_json", "mosaic_config.metrics_json must contain exactly one item")
+		return mosaicChart, diags
+	}
+
+	if typeutils.IsKnown(m.Title) {
+		api.Title = new(m.Title.ValueString())
+	}
+	if typeutils.IsKnown(m.Description) {
+		api.Description = new(m.Description.ValueString())
+	}
+	if typeutils.IsKnown(m.IgnoreGlobalFilters) {
+		api.IgnoreGlobalFilters = new(m.IgnoreGlobalFilters.ValueBool())
+	}
+	if typeutils.IsKnown(m.Sampling) {
+		api.Sampling = new(float32(m.Sampling.ValueFloat64()))
+	}
+
+	if len(m.Filters) > 0 {
+		filters := make([]kbapi.SearchFilter, len(m.Filters))
+		for i, filterModel := range m.Filters {
+			filter, filterDiags := filterModel.toAPI()
+			diags.Append(filterDiags...)
+			if diags.HasError() {
+				return mosaicChart, diags
+			}
+			filters[i] = filter
+		}
+		api.Filters = &filters
+	}
+
+	if m.ValueDisplay != nil {
+		vd := m.ValueDisplay.toMosaicESQL()
+		api.ValueDisplay = &struct {
+			Mode            kbapi.MosaicESQLValueDisplayMode `json:"mode"`
+			PercentDecimals *float32                         `json:"percent_decimals,omitempty"`
+		}{
+			Mode:            vd.Mode,
+			PercentDecimals: vd.PercentDecimals,
+		}
+	}
+
+	if err := mosaicChart.FromMosaicESQL(api); err != nil {
+		diags.AddError("Failed to create mosaic chart schema", err.Error())
+		return mosaicChart, diags
+	}
+
+	return mosaicChart, diags
+}
+
+func (m *mosaicConfigModel) toAPINoESQL() (kbapi.MosaicNoESQL, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	api := kbapi.MosaicNoESQL{Type: kbapi.MosaicNoESQLTypeMosaic}
 
 	if typeutils.IsKnown(m.Title) {
 		api.Title = new(m.Title.ValueString())
@@ -430,7 +412,7 @@ func (m *treemapConfigModel) toAPINoESQL() (kbapi.TreemapNoESQL, diag.Diagnostic
 	}
 
 	if m.Dataset.IsNull() {
-		diags.AddError("Missing dataset_json", "treemap_config.dataset_json must be provided")
+		diags.AddError("Missing dataset_json", "mosaic_config.dataset_json must be provided")
 		return api, diags
 	}
 	if err := json.Unmarshal([]byte(m.Dataset.ValueString()), &api.Dataset); err != nil {
@@ -439,37 +421,52 @@ func (m *treemapConfigModel) toAPINoESQL() (kbapi.TreemapNoESQL, diag.Diagnostic
 	}
 
 	if m.GroupBy.IsNull() {
-		diags.AddError("Missing group_by_json", "treemap_config.group_by_json must be provided")
+		diags.AddError("Missing group_by_json", "mosaic_config.group_by_json must be provided")
 		return api, diags
 	}
-	var groupBy []kbapi.TreemapNoESQL_GroupBy_Item
+	var groupBy []kbapi.MosaicNoESQL_GroupBy_Item
 	if err := json.Unmarshal([]byte(m.GroupBy.ValueString()), &groupBy); err != nil {
 		diags.AddError("Failed to unmarshal group_by", err.Error())
 		return api, diags
 	}
 	if len(groupBy) == 0 {
-		diags.AddError("Invalid group_by_json", "treemap_config.group_by_json must contain at least one item")
+		diags.AddError("Invalid group_by_json", "mosaic_config.group_by_json must contain at least one item")
 		return api, diags
 	}
 	api.GroupBy = &groupBy
 
-	if m.Metrics.IsNull() {
-		diags.AddError("Missing metrics_json", "treemap_config.metrics_json must be provided")
+	if m.GroupBreakdownBy.IsNull() {
+		diags.AddError("Missing group_breakdown_by_json", "mosaic_config.group_breakdown_by_json must be provided")
 		return api, diags
 	}
-	var metrics []kbapi.TreemapNoESQL_Metrics_Item
+	var groupBreakdownBy []kbapi.MosaicNoESQL_GroupBreakdownBy_Item
+	if err := json.Unmarshal([]byte(m.GroupBreakdownBy.ValueString()), &groupBreakdownBy); err != nil {
+		diags.AddError("Failed to unmarshal group_breakdown_by", err.Error())
+		return api, diags
+	}
+	if len(groupBreakdownBy) == 0 {
+		diags.AddError("Invalid group_breakdown_by_json", "mosaic_config.group_breakdown_by_json must contain at least one item")
+		return api, diags
+	}
+	api.GroupBreakdownBy = &groupBreakdownBy
+
+	if m.Metrics.IsNull() {
+		diags.AddError("Missing metrics_json", "mosaic_config.metrics_json must be provided")
+		return api, diags
+	}
+	var metrics []kbapi.MosaicNoESQL_Metrics_Item
 	if err := json.Unmarshal([]byte(m.Metrics.ValueString()), &metrics); err != nil {
 		diags.AddError("Failed to unmarshal metrics", err.Error())
 		return api, diags
 	}
-	if len(metrics) == 0 {
-		diags.AddError("Invalid metrics_json", "treemap_config.metrics_json must contain at least one item")
+	if len(metrics) != 1 {
+		diags.AddError("Invalid metrics_json", "mosaic_config.metrics_json must contain exactly one item")
 		return api, diags
 	}
 	api.Metrics = metrics
 
 	if m.Query == nil {
-		diags.AddError("Missing query", "treemap_config.query is required for non-ES|QL treemap charts")
+		diags.AddError("Missing query", "mosaic_config.query is required for non-ES|QL mosaic charts")
 		return api, diags
 	}
 	api.Query = m.Query.toAPI()
@@ -484,19 +481,14 @@ func (m *treemapConfigModel) toAPINoESQL() (kbapi.TreemapNoESQL, diag.Diagnostic
 		api.Filters = &filters
 	}
 
-	if typeutils.IsKnown(m.LabelPosition) {
-		lp := kbapi.TreemapNoESQLLabelPosition(m.LabelPosition.ValueString())
-		api.LabelPosition = &lp
-	}
-
 	if m.Legend == nil {
-		diags.AddError("Missing legend", "treemap_config.legend must be provided")
+		diags.AddError("Missing legend", "mosaic_config.legend must be provided")
 		return api, diags
 	}
-	api.Legend = m.Legend.toTreemapLegend()
+	api.Legend = m.Legend.toMosaicLegend()
 
 	if m.ValueDisplay != nil {
-		valueDisplay := m.ValueDisplay.toTreemapNoESQL()
+		valueDisplay := m.ValueDisplay.toMosaicNoESQL()
 		api.ValueDisplay = &valueDisplay
 	}
 
