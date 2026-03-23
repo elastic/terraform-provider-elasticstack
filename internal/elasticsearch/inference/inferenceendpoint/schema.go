@@ -19,12 +19,16 @@ package inferenceendpoint
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
 
 const taskTypeDescription = "The task type of the inference endpoint. One of `sparse_embedding`, `text_embedding`, " +
@@ -32,6 +36,11 @@ const taskTypeDescription = "The task type of the inference endpoint. One of `sp
 
 const inferenceEndpointDescription = "Creates or updates an inference endpoint." +
 	"See the [inference endpoint API documentation](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-inference-put-1) for more details."
+
+var (
+	MinSupportedVersion = version.Must(version.NewVersion("8.18.0"))
+	validTaskTypes      = []string{"sparse_embedding", "text_embedding", "rerank", "completion", "chat_completion", "embedding"}
+)
 
 func (r *inferenceEndpointResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
@@ -55,9 +64,14 @@ func (r *inferenceEndpointResource) Schema(_ context.Context, _ resource.SchemaR
 				MarkdownDescription: taskTypeDescription,
 				Optional:            true,
 				Computed:            true,
+				Description:         fmt.Sprintf("must be one of [%v]", validTaskTypes),
+
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplaceIfConfigured(),
 					stringplanmodifier.UseStateForUnknown(),
+				},
+				Validators: []validator.String{
+					stringvalidator.OneOf(validTaskTypes...),
 				},
 			},
 			"service": schema.StringAttribute{
