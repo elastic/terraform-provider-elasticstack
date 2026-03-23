@@ -143,18 +143,22 @@ func TestAccResourceMLDatafeedState_withTimes(t *testing.T) {
 // TestAccResourceMLDatafeedState_stoppedThenStarted verifies the plan modifier
 // produces correct plan values for `start` during create and state transitions.
 //
-// The Terraform CLI errors reported in #1866 and #1867 ("Provider returned
-// invalid result object" / "Provider produced inconsistent result") do not
-// reproduce in the test framework because it handles unknown→null resolution
-// more leniently than the CLI. Plan checks are used to verify the root cause
-// directly: incorrect plan values for the `start` attribute.
+// The Terraform CLI errors reported in #1866 and #1867 do not reproduce
+// consistently in acceptance tests. On main, the plan modifier's early return
+// on Create leaves `start` as unknown, but the apply resolves it to null via
+// SetStartAndEndFromAPI — an unknown→null resolution that the Terraform
+// protocol considers valid. The reported errors appear to be triggered by a
+// subtle interaction between the timetypes.RFC3339 custom type and the
+// framework's state serialization that does not manifest in a clean test
+// environment.
 //
-// Without the fix to SetUnknownIfStateHasChanges:
-//   - Step 1 fails: `start` is unknown in the plan (should be null for a
-//     stopped datafeed). This is the root cause of #1866.
-//   - Step 2 would fail: `start` is null in the plan (should be unknown when
-//     transitioning to started, so the API-computed timestamp is accepted).
-//     This is the root cause of #1867.
+// Plan checks verify the fix produces the correct plan values upfront,
+// eliminating the dependency on the fragile unknown→null conversion:
+//   - Step 1: `start` must be known-null in the plan for a stopped datafeed
+//     (without fix: unknown, relying on apply-time resolution).
+//   - Step 2: `start` must be unknown in the plan when transitioning to
+//     started (without fix: null, inherited from stopped state by
+//     UseStateForUnknown before SetUnknownIfStateHasChanges can override it).
 func TestAccResourceMLDatafeedState_stoppedThenStarted(t *testing.T) {
 	jobID := fmt.Sprintf("test-job-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 	datafeedID := fmt.Sprintf("test-datafeed-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
