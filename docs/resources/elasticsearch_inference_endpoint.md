@@ -42,9 +42,30 @@ resource "elasticstack_elasticsearch_inference_endpoint" "example" {
 ### Optional
 
 - `chunking_settings` (String) Configuration for chunking input text, as a JSON object. Applicable only for embedding task types.
+- `elasticsearch_connection` (Block List, Deprecated) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - `task_settings` (String) Task-specific settings, as a JSON object. Optional and service-dependent. Only keys explicitly set here are tracked; server-applied defaults returned by the API are ignored to avoid perpetual drift.
 - `task_type` (String) The task type of the inference endpoint. One of `sparse_embedding`, `text_embedding`, `rerank`, `completion`, `chat_completion`. When omitted, the task type is inferred from the service.
 
 ### Read-Only
 
 - `id` (String) Internal identifier of the resource.
+
+<a id="nestedblock--elasticsearch_connection"></a>
+### Nested Schema for `elasticsearch_connection`
+
+Optional:
+
+- `api_key` (String, Sensitive) API Key to use for authentication to Elasticsearch
+- `bearer_token` (String, Sensitive) Bearer Token to use for authentication to Elasticsearch
+- `ca_data` (String) PEM-encoded custom Certificate Authority certificate
+- `ca_file` (String) Path to a custom Certificate Authority certificate
+- `cert_data` (String) PEM encoded certificate for client auth
+- `cert_file` (String) Path to a file containing the PEM encoded certificate for client auth
+- `endpoints` (List of String, Sensitive) A list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
+- `es_client_authentication` (String, Sensitive) ES Client Authentication field to be used with the JWT token
+- `headers` (Map of String, Sensitive) A list of headers to be sent with each request to Elasticsearch.
+- `insecure` (Boolean) Disable TLS certificate validation
+- `key_data` (String, Sensitive) PEM encoded private key for client auth
+- `key_file` (String) Path to a file containing the PEM encoded private key for client auth
+- `password` (String, Sensitive) Password to use for API authentication to Elasticsearch.
+- `username` (String) Username to use for API authentication to Elasticsearch.

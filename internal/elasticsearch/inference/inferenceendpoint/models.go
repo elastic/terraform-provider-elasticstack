@@ -33,11 +33,11 @@ type Data struct {
 	ID                      types.String                                      `tfsdk:"id"`
 	ElasticsearchConnection types.List                                        `tfsdk:"elasticsearch_connection"`
 	InferenceID             types.String                                      `tfsdk:"inference_id"`
-	TaskType         types.String                                      `tfsdk:"task_type"`
-	Service          types.String                                      `tfsdk:"service"`
-	ServiceSettings  jsontypes.Normalized                              `tfsdk:"service_settings"`
-	TaskSettings     jsontypes.Normalized                              `tfsdk:"task_settings"`
-	ChunkingSettings customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"chunking_settings"`
+	TaskType                types.String                                      `tfsdk:"task_type"`
+	Service                 types.String                                      `tfsdk:"service"`
+	ServiceSettings         jsontypes.Normalized                              `tfsdk:"service_settings"`
+	TaskSettings            jsontypes.Normalized                              `tfsdk:"task_settings"`
+	ChunkingSettings        customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"chunking_settings"`
 }
 
 func (data *Data) toAPIModel(_ context.Context) (*elasticsearch.InferenceEndpoint, diag.Diagnostics) {
