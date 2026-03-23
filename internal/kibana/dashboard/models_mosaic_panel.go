@@ -344,6 +344,10 @@ func (m *mosaicConfigModel) toAPIESQLChartSchema() (kbapi.MosaicChart, diag.Diag
 		diags.AddError("Failed to unmarshal metrics", err.Error())
 		return mosaicChart, diags
 	}
+	if len(api.Metrics) != 1 {
+		diags.AddError("Invalid metrics_json", "mosaic_config.metrics_json must contain exactly one item")
+		return mosaicChart, diags
+	}
 
 	if typeutils.IsKnown(m.Title) {
 		api.Title = new(m.Title.ValueString())
@@ -455,8 +459,8 @@ func (m *mosaicConfigModel) toAPINoESQL() (kbapi.MosaicNoESQL, diag.Diagnostics)
 		diags.AddError("Failed to unmarshal metrics", err.Error())
 		return api, diags
 	}
-	if len(metrics) == 0 {
-		diags.AddError("Invalid metrics_json", "mosaic_config.metrics_json must contain at least one item")
+	if len(metrics) != 1 {
+		diags.AddError("Invalid metrics_json", "mosaic_config.metrics_json must contain exactly one item")
 		return api, diags
 	}
 	api.Metrics = metrics

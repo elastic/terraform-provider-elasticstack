@@ -33,9 +33,9 @@ import (
 func buildLensMosaicPanelForTest(t *testing.T) panelModel {
 	t.Helper()
 	groupBy := `[{"operation":"terms","collapse_by":"avg","fields":["host.name"],` +
-		`"color":{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"colorCode","value":"#D3DAE6"}}}]`
+		`"color":{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"color_code","value":"#D3DAE6"}}}]`
 	groupBreakdownBy := `[{"operation":"terms","collapse_by":"avg","fields":["service.name"],` +
-		`"color":{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"colorCode","value":"#D3DAE6"}}}]`
+		`"color":{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"color_code","value":"#D3DAE6"}}}]`
 	apiJSON := `{
 		"type": "mosaic",
 		"title": "Lens Mosaic",
@@ -551,10 +551,10 @@ func Test_panelsToAPI(t *testing.T) {
 							"metrics": [{"operation":"count"}],
 							"group_by": [{"operation":"terms","collapse_by":"avg","fields":["host.name"],
 								"color":{"mode":"categorical","palette":"default","mapping":[],
-								"unassignedColor":{"type":"colorCode","value":"#D3DAE6"}}}],
+								"unassignedColor":{"type":"color_code","value":"#D3DAE6"}}}],
 							"group_breakdown_by": [{"operation":"terms","collapse_by":"avg","fields":["service.name"],
 								"color":{"mode":"categorical","palette":"default","mapping":[],
-								"unassignedColor":{"type":"colorCode","value":"#D3DAE6"}}}]
+								"unassignedColor":{"type":"color_code","value":"#D3DAE6"}}}]
 						},
 						"time_range": {"from": "now-15m", "to": "now"}
 					}

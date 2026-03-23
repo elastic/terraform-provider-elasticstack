@@ -20,9 +20,12 @@ package dashboard
 import (
 	"context"
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -33,10 +36,10 @@ func Test_mosaicPanelConfigConverter_populateFromAttributes_buildAttributes_roun
 
 	groupBy := `[{"operation":"terms","collapse_by":"avg","fields":["host.name"],` +
 		`"format":{"type":"number","decimals":2},` +
-		`"color":{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"colorCode","value":"#D3DAE6"}}}]`
+		`"color":{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"color_code","value":"#D3DAE6"}}}]`
 	groupBreakdownBy := `[{"operation":"terms","collapse_by":"avg","fields":["service.name"],` +
 		`"format":{"type":"number","decimals":2},` +
-		`"color":{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"colorCode","value":"#D3DAE6"}}}]`
+		`"color":{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"color_code","value":"#D3DAE6"}}}]`
 	apiJSON := `{
 		"type": "mosaic",
 		"title": "Mosaic NoESQL Round-Trip",
@@ -80,9 +83,9 @@ func Test_mosaicPanelConfigConverter_populateFromAttributes_buildAttributes_roun
 	ctx := context.Background()
 
 	groupBy := `[{"collapse_by":"avg","column":"host.name","operation":"value",` +
-		`"color":{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"colorCode","value":"#D3DAE6"}}}]`
+		`"color":{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"color_code","value":"#D3DAE6"}}}]`
 	groupBreakdownBy := `[{"collapse_by":"avg","column":"service.name","operation":"value",` +
-		`"color":{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"colorCode","value":"#D3DAE6"}}}]`
+		`"color":{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"color_code","value":"#D3DAE6"}}}]`
 	apiJSON := `{
 		"type": "mosaic",
 		"title": "Mosaic ESQL Round-Trip",
@@ -168,7 +171,7 @@ func Test_mosaicConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 	require.NoError(t, json.Unmarshal([]byte(`{
 		"operation":"terms",
 		"collapse_by":"avg",
-		"color":{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"colorCode","value":"#D3DAE6"}},
+		"color":{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"color_code","value":"#D3DAE6"}},
 		"fields":["host.name"],
 		"format":{"type":"number","decimals":2}
 	}`), &groupByItem))
@@ -179,7 +182,7 @@ func Test_mosaicConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 	require.NoError(t, json.Unmarshal([]byte(`{
 		"operation":"terms",
 		"collapse_by":"avg",
-		"color":{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"colorCode","value":"#D3DAE6"}},
+		"color":{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"color_code","value":"#D3DAE6"}},
 		"fields":["service.name"],
 		"format":{"type":"number","decimals":2}
 	}`), &groupBreakdownByItem))
@@ -226,7 +229,7 @@ func Test_mosaicConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 
 func Test_mosaicConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 	colorMapping := kbapi.ColorMapping{}
-	require.NoError(t, json.Unmarshal([]byte(`{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"colorCode","value":"#D3DAE6"}}`), &colorMapping))
+	require.NoError(t, json.Unmarshal([]byte(`{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"color_code","value":"#D3DAE6"}}`), &colorMapping))
 
 	format := kbapi.FormatType{}
 	require.NoError(t, json.Unmarshal([]byte(`{"type":"number","decimals":2}`), &format))
@@ -313,4 +316,96 @@ func Test_mosaicConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 	assert.NotNil(t, roundTrip.GroupBy)
 	assert.NotNil(t, roundTrip.GroupBreakdownBy)
 	assert.Len(t, roundTrip.Metrics, 1)
+}
+
+func newTestMosaicNoESQLModel(t *testing.T) *mosaicConfigModel {
+	t.Helper()
+	groupBy := `[{"operation":"terms","collapse_by":"avg","fields":["host.name"],` +
+		`"format":{"type":"number","decimals":2},` +
+		`"color":{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"color_code","value":"#D3DAE6"}}}]`
+	groupBreakdownBy := `[{"operation":"terms","collapse_by":"avg","fields":["service.name"],` +
+		`"format":{"type":"number","decimals":2},` +
+		`"color":{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"color_code","value":"#D3DAE6"}}}]`
+	apiJSON := `{
+		"type": "mosaic",
+		"legend": {"size": "medium"},
+		"metrics": [{"operation":"count"}],
+		"dataset": {"type":"dataView","id":"metrics-*"},
+		"query": {"language":"kuery","query":"status:200"},
+		"group_by": ` + groupBy + `,
+		"group_breakdown_by": ` + groupBreakdownBy + `
+	}`
+	var api kbapi.MosaicNoESQL
+	require.NoError(t, json.Unmarshal([]byte(apiJSON), &api))
+	model := &mosaicConfigModel{}
+	require.False(t, model.fromAPINoESQL(api).HasError())
+	return model
+}
+
+func newTestMosaicESQLModel(t *testing.T) *mosaicConfigModel {
+	t.Helper()
+	groupBy := `[{"collapse_by":"avg","column":"host.name","operation":"value",` +
+		`"color":{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"color_code","value":"#D3DAE6"}}}]`
+	groupBreakdownBy := `[{"collapse_by":"avg","column":"service.name","operation":"value",` +
+		`"color":{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"color_code","value":"#D3DAE6"}}}]`
+	apiJSON := `{
+		"type": "mosaic",
+		"legend": {"size": "small"},
+		"metrics": [{"column":"bytes","operation":"value","format":{"type":"number","decimals":2}}],
+		"dataset": {"type":"esql","query":"FROM metrics-* | LIMIT 10"},
+		"group_by": ` + groupBy + `,
+		"group_breakdown_by": ` + groupBreakdownBy + `
+	}`
+	var api kbapi.MosaicESQL
+	require.NoError(t, json.Unmarshal([]byte(apiJSON), &api))
+	model := &mosaicConfigModel{}
+	require.False(t, model.fromAPIESQL(api).HasError())
+	return model
+}
+
+func requireMosaicMetricsExactlyOneDiagnostic(t *testing.T, diags diag.Diagnostics) {
+	t.Helper()
+	require.True(t, diags.HasError())
+	var found bool
+	for _, d := range diags.Errors() {
+		if d.Summary() == "Invalid metrics_json" && strings.Contains(d.Detail(), "exactly one") {
+			found = true
+			break
+		}
+	}
+	require.True(t, found, "expected Invalid metrics_json with 'exactly one' in detail, got %#v", diags)
+}
+
+func Test_mosaicConfigModel_toAPI_metrics_json_exactly_one(t *testing.T) {
+	t.Run("noESQL_empty_array", func(t *testing.T) {
+		model := newTestMosaicNoESQLModel(t)
+		model.Metrics = customtypes.NewJSONWithDefaultsValue[[]map[string]any](`[]`, populatePartitionMetricsDefaults)
+		_, diags := model.toAPI()
+		requireMosaicMetricsExactlyOneDiagnostic(t, diags)
+	})
+	t.Run("noESQL_two_items", func(t *testing.T) {
+		model := newTestMosaicNoESQLModel(t)
+		model.Metrics = customtypes.NewJSONWithDefaultsValue[[]map[string]any](
+			`[{"operation":"count"},{"operation":"sum","field":"bytes"}]`,
+			populatePartitionMetricsDefaults,
+		)
+		_, diags := model.toAPI()
+		requireMosaicMetricsExactlyOneDiagnostic(t, diags)
+	})
+	t.Run("esql_empty_array", func(t *testing.T) {
+		model := newTestMosaicESQLModel(t)
+		model.Metrics = customtypes.NewJSONWithDefaultsValue[[]map[string]any](`[]`, populatePartitionMetricsDefaults)
+		_, diags := model.toAPI()
+		requireMosaicMetricsExactlyOneDiagnostic(t, diags)
+	})
+	t.Run("esql_two_items", func(t *testing.T) {
+		model := newTestMosaicESQLModel(t)
+		model.Metrics = customtypes.NewJSONWithDefaultsValue[[]map[string]any](
+			`[{"column":"bytes","operation":"value","format":{"type":"number","decimals":2}},`+
+				`{"column":"events","operation":"value","format":{"type":"number","decimals":2}}]`,
+			populatePartitionMetricsDefaults,
+		)
+		_, diags := model.toAPI()
+		requireMosaicMetricsExactlyOneDiagnostic(t, diags)
+	})
 }
