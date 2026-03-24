@@ -99,6 +99,9 @@ func getSchema() schema.Schema {
 				Description: notifyWhenDescription,
 				Optional:    true,
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 				Validators: []validator.String{
 					stringvalidator.OneOf("onActionGroupChange", "onActiveAlert", "onThrottleInterval"),
 				},
@@ -150,10 +153,16 @@ func getSchema() schema.Schema {
 			"last_execution_status": schema.StringAttribute{
 				Description: "Status of the last execution of this rule.",
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"last_execution_date": schema.StringAttribute{
 				Description: "Date of the last execution of this rule.",
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"alert_delay": schema.Int64Attribute{
 				Description: "A number that indicates how many consecutive runs need to meet the rule conditions for an alert to occur.",
