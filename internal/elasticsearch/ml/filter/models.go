@@ -24,7 +24,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-type FilterTFModel struct {
+type TFModel struct {
 	ID                      types.String `tfsdk:"id"`
 	ElasticsearchConnection types.List   `tfsdk:"elasticsearch_connection"`
 	FilterID                types.String `tfsdk:"filter_id"`
@@ -32,27 +32,27 @@ type FilterTFModel struct {
 	Items                   types.Set    `tfsdk:"items"`
 }
 
-type FilterCreateAPIModel struct {
+type CreateAPIModel struct {
 	Description string   `json:"description,omitempty"`
 	Items       []string `json:"items,omitempty"`
 }
 
-type FilterAPIModel struct {
+type APIModel struct {
 	FilterID    string   `json:"filter_id"`
 	Description string   `json:"description,omitempty"`
 	Items       []string `json:"items"`
 }
 
-type FilterUpdateAPIModel struct {
+type UpdateAPIModel struct {
 	Description *string  `json:"description,omitempty"`
 	AddItems    []string `json:"add_items,omitempty"`
 	RemoveItems []string `json:"remove_items,omitempty"`
 }
 
-func (m *FilterTFModel) toAPICreateModel(ctx context.Context) (*FilterCreateAPIModel, fwdiags.Diagnostics) {
+func (m *TFModel) toAPICreateModel(ctx context.Context) (*CreateAPIModel, fwdiags.Diagnostics) {
 	var diags fwdiags.Diagnostics
 
-	apiModel := &FilterCreateAPIModel{
+	apiModel := &CreateAPIModel{
 		Description: m.Description.ValueString(),
 	}
 
@@ -66,7 +66,7 @@ func (m *FilterTFModel) toAPICreateModel(ctx context.Context) (*FilterCreateAPIM
 	return apiModel, diags
 }
 
-func (m *FilterTFModel) fromAPIModel(ctx context.Context, apiModel *FilterAPIModel) fwdiags.Diagnostics {
+func (m *TFModel) fromAPIModel(ctx context.Context, apiModel *APIModel) fwdiags.Diagnostics {
 	var diags fwdiags.Diagnostics
 
 	m.FilterID = types.StringValue(apiModel.FilterID)
