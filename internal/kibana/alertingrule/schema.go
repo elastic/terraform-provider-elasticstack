@@ -163,10 +163,10 @@ func getSchema() schema.Schema {
 					int64planmodifier.UseStateForUnknown(),
 				},
 			},
-		},
-		Blocks: map[string]schema.Block{
-			"flapping": schema.SingleNestedBlock{
+			"flapping": schema.SingleNestedAttribute{
 				MarkdownDescription: flappingDescription,
+				Optional:            true,
+				Computed:            true,
 				Validators: []validator.Object{
 					objectvalidator.AlsoRequires(
 						path.MatchRelative().AtName("look_back_window"),
@@ -197,6 +197,8 @@ func getSchema() schema.Schema {
 					},
 				},
 			},
+		},
+		Blocks: map[string]schema.Block{
 			"actions": schema.ListNestedBlock{
 				Description: "An action that runs under defined conditions.",
 				NestedObject: schema.NestedBlockObject{
@@ -323,8 +325,8 @@ func initAttrTypes() {
 	tfBlock := filterBlock.Blocks["timeframe"].(schema.SingleNestedBlock)
 	cachedTimeframeTypes = tfBlock.Type().(attr.TypeWithAttributeTypes).AttributeTypes()
 
-	flapBlock := s.Blocks["flapping"].(schema.SingleNestedBlock)
-	cachedFlappingTypes = flapBlock.Type().(attr.TypeWithAttributeTypes).AttributeTypes()
+	flapAttr := s.Attributes["flapping"].(schema.SingleNestedAttribute)
+	cachedFlappingTypes = flapAttr.GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
 // getActionsAttrTypes returns the attribute types for actions list elements.
@@ -351,7 +353,7 @@ func getTimeframeAttrTypes() map[string]attr.Type {
 	return cachedTimeframeTypes
 }
 
-// getFlappingAttrTypes returns the attribute types for the flapping block object.
+// getFlappingAttrTypes returns the attribute types for the flapping object.
 func getFlappingAttrTypes() map[string]attr.Type {
 	attrTypesOnce.Do(initAttrTypes)
 	return cachedFlappingTypes

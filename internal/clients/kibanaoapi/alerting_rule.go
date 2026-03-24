@@ -413,16 +413,8 @@ func buildCreateRequestBody(rule models.AlertingRule) kbapi.PostAlertingRuleIdJS
 		}
 	}
 
-	if rule.Flapping != nil {
-		body.Flapping = &struct {
-			Enabled               *bool   `json:"enabled,omitempty"`
-			LookBackWindow        float32 `json:"look_back_window"`
-			StatusChangeThreshold float32 `json:"status_change_threshold"`
-		}{
-			LookBackWindow:        float32(rule.Flapping.LookBackWindow),
-			StatusChangeThreshold: float32(rule.Flapping.StatusChangeThreshold),
-			Enabled:               rule.Flapping.Enabled,
-		}
+	if w := flappingWireFromModel(rule.Flapping); w != nil {
+		body.Flapping = w
 	}
 
 	if len(rule.Actions) > 0 {
@@ -600,16 +592,8 @@ func buildUpdateRequestBody(rule models.AlertingRule) kbapi.PutAlertingRuleIdJSO
 		}
 	}
 
-	if rule.Flapping != nil {
-		body.Flapping = &struct {
-			Enabled               *bool   `json:"enabled,omitempty"`
-			LookBackWindow        float32 `json:"look_back_window"`
-			StatusChangeThreshold float32 `json:"status_change_threshold"`
-		}{
-			LookBackWindow:        float32(rule.Flapping.LookBackWindow),
-			StatusChangeThreshold: float32(rule.Flapping.StatusChangeThreshold),
-			Enabled:               rule.Flapping.Enabled,
-		}
+	if w := flappingWireFromModel(rule.Flapping); w != nil {
+		body.Flapping = w
 	}
 
 	if len(rule.Actions) > 0 {
@@ -744,6 +728,25 @@ func buildUpdateRequestBody(rule models.AlertingRule) kbapi.PutAlertingRuleIdJSO
 	}
 
 	return body
+}
+
+// flappingWire is a type alias for the flapping JSON object on create/update alerting rule requests.
+// Using an alias (not a new defined type) keeps values assignable to both Post and Put Flapping fields in kbapi.
+type flappingWire = struct {
+	Enabled               *bool   `json:"enabled,omitempty"`
+	LookBackWindow        float32 `json:"look_back_window"`
+	StatusChangeThreshold float32 `json:"status_change_threshold"`
+}
+
+func flappingWireFromModel(f *models.AlertingRuleFlapping) *flappingWire {
+	if f == nil {
+		return nil
+	}
+	return &flappingWire{
+		Enabled:               f.Enabled,
+		LookBackWindow:        float32(f.LookBackWindow),
+		StatusChangeThreshold: float32(f.StatusChangeThreshold),
+	}
 }
 
 func valueOrDefault(val *string, def string) string {

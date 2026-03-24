@@ -65,7 +65,7 @@ resource "elasticstack_kibana_alerting_rule" "example" {
 - `actions` (Block List) An action that runs under defined conditions. (see [below for nested schema](#nestedblock--actions))
 - `alert_delay` (Number) A number that indicates how many consecutive runs need to meet the rule conditions for an alert to occur.
 - `enabled` (Boolean) Indicates if you want to run the rule on an interval basis.
-- `flapping` (Block, Optional) Rule-level [flapping detection](https://www.elastic.co/guide/en/kibana/master/alerting-settings.html) (Kibana **8.16** or higher). When this block is present, `look_back_window` and `status_change_threshold` are required. The optional `enabled` attribute is supported only from **Elastic Stack 9.3** onward; configuring it against an older stack returns an error. When the block is omitted from configuration, updates do not send `flapping` to Kibana, so any existing rule-level flapping settings on the server are left unchanged. (see [below for nested schema](#nestedblock--flapping))
+- `flapping` (Attributes) Rule-level [flapping detection](https://www.elastic.co/guide/en/kibana/master/alerting-settings.html) (Kibana **8.16** or higher). When this object is set in configuration, `look_back_window` and `status_change_threshold` are required. The optional `enabled` attribute is supported only from **Elastic Stack 9.3** onward; configuring it against an older stack returns an error. When `flapping` is omitted from configuration on update, Terraform retains the previous value (it is optional and computed), so existing server-side flapping settings are not cleared by that omission. (see [below for nested schema](#nestedatt--flapping))
 - `notify_when` (String) Required until v8.6.0. Deprecated in v8.13.0. Use the `notify_when` property in the action `frequency` object instead. Defines how often alerts generate actions. Valid values include: `onActionGroupChange`: Actions run when the alert status changes; `onActiveAlert`: Actions run when the alert becomes active and at each check interval while the rule conditions are met; `onThrottleInterval`: Actions run when the alert becomes active and at the interval specified in the throttle property while the rule conditions are met. NOTE: This is a rule level property; if you update the rule in Kibana, it is automatically changed to use action-specific `notify_when` values.
 - `rule_id` (String) The identifier for the rule. Until Kibana version 8.17.0 this should be a UUID v1 or v4, for later versions any format can be used. If it is omitted, an ID is randomly generated.
 - `space_id` (String) An identifier for the space. If space_id is not provided, the default space is used.
@@ -124,7 +124,7 @@ Optional:
 
 
 
-<a id="nestedblock--flapping"></a>
+<a id="nestedatt--flapping"></a>
 ### Nested Schema for `flapping`
 
 Optional:
