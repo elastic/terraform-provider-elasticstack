@@ -202,11 +202,10 @@ func MaybeNewAPIClientFromFrameworkResource(ctx context.Context, esConnList type
 	}
 
 	return &APIClient{
-		elasticsearch:            esClient,
-		elasticsearchClusterInfo: defaultClient.elasticsearchClusterInfo,
-		kibana:                   defaultClient.kibana,
-		fleet:                    defaultClient.fleet,
-		version:                  defaultClient.version,
+		elasticsearch: esClient,
+		kibana:        defaultClient.kibana,
+		fleet:         defaultClient.fleet,
+		version:       defaultClient.version,
 	}, diags
 }
 

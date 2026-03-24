@@ -22,6 +22,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -40,17 +41,34 @@ const (
 	alertingRuleActionParamsUpdated = `{"documents":[{"message":"{{context.message}} 3","rule_id":"{{rule.id}} 1","rule_name":"{{rule.name}} 2"}]}`
 )
 
+func TestMain(m *testing.M) {
+	originalAPIKey, hadAPIKey := os.LookupEnv("KIBANA_API_KEY")
+	if err := os.Setenv("KIBANA_API_KEY", ""); err != nil {
+		panic(err)
+	}
+
+	exitCode := m.Run()
+
+	if hadAPIKey {
+		if err := os.Setenv("KIBANA_API_KEY", originalAPIKey); err != nil {
+			panic(err)
+		}
+	} else if err := os.Unsetenv("KIBANA_API_KEY"); err != nil {
+		panic(err)
+	}
+
+	os.Exit(exitCode)
+}
+
 func TestAccResourceAlertingRule(t *testing.T) {
 	minSupportedVersion := version.Must(version.NewSemver("7.14.0"))
 	minSupportedFrequencyVersion := version.Must(version.NewSemver("8.7.0"))
 	minSupportedAlertsFilterVersion := version.Must(version.NewSemver("8.9.0"))
 	minSupportedAlertDelayVersion := version.Must(version.NewSemver("8.13.0"))
 
-	t.Setenv("KIBANA_API_KEY", "")
-
 	ruleName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceAlertingRuleDestroy,
 		Steps: []resource.TestStep{
@@ -298,11 +316,9 @@ func TestAccResourceAlertingRule(t *testing.T) {
 func TestAccResourceAlertingRuleParamsLifecycle(t *testing.T) {
 	minSupportedVersion := version.Must(version.NewSemver("7.14.0"))
 
-	t.Setenv("KIBANA_API_KEY", "")
-
 	ruleName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceAlertingRuleDestroy,
 		Steps: []resource.TestStep{
@@ -422,11 +438,9 @@ func TestAccResourceAlertingRuleParamsLifecycle(t *testing.T) {
 func TestAccResourceAlertingRuleEnabledFalseOnCreate(t *testing.T) {
 	minSupportedVersion := version.Must(version.NewSemver("7.14.0"))
 
-	t.Setenv("KIBANA_API_KEY", "")
-
 	ruleName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceAlertingRuleDestroy,
 		Steps: []resource.TestStep{
@@ -453,9 +467,7 @@ func TestAccResourceAlertingRuleEnabledFalseOnCreate(t *testing.T) {
 func TestAccResourceAlertingRuleInconsistentParams(t *testing.T) {
 	minSupportedVersion := version.Must(version.NewSemver("8.13.0"))
 
-	t.Setenv("KIBANA_API_KEY", "")
-
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceAlertingRuleDestroy,
 		Steps: []resource.TestStep{
@@ -491,11 +503,9 @@ var sdkCreateTestConfig string
 func TestAccResourceAlertingRuleFromSDK(t *testing.T) {
 	minSupportedVersion := version.Must(version.NewSemver("7.14.0"))
 
-	t.Setenv("KIBANA_API_KEY", "")
-
 	ruleName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceAlertingRuleDestroy,
 		Steps: []resource.TestStep{
@@ -545,11 +555,9 @@ func TestAccResourceAlertingRuleFromSDK(t *testing.T) {
 func TestAccResourceAlertingRuleAlertDelay(t *testing.T) {
 	minSupportedVersion := version.Must(version.NewSemver("8.13.0"))
 
-	t.Setenv("KIBANA_API_KEY", "")
-
 	ruleName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceAlertingRuleDestroy,
 		Steps: []resource.TestStep{
@@ -597,11 +605,9 @@ func TestAccResourceAlertingRuleAlertDelay(t *testing.T) {
 func TestAccResourceAlertingRuleEsqlTermField(t *testing.T) {
 	minSupportedVersion := version.Must(version.NewSemver("8.13.0"))
 
-	t.Setenv("KIBANA_API_KEY", "")
-
 	ruleName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceAlertingRuleDestroy,
 		Steps: []resource.TestStep{

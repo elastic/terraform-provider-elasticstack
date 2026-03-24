@@ -6,9 +6,17 @@ provider "elasticstack" {
   kibana {}
 }
 
+variable "connector_name" {
+  type = string
+}
+
+variable "connector_id" {
+  type = string
+}
+
 resource "elasticstack_kibana_action_connector" "test" {
-  name         = "test connector 1"
-  connector_id = "1d30b67b-f90b-4e28-87c2-137cba361509"
+  name         = var.connector_name
+  connector_id = var.connector_id
 
   config = jsonencode({
     createIncidentJson                  = "{}"
