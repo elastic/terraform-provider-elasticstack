@@ -120,7 +120,7 @@ type datatableNoESQLConfigModel struct {
 	IgnoreGlobalFilters types.Bool              `tfsdk:"ignore_global_filters"`
 	Sampling            types.Float64           `tfsdk:"sampling"`
 	Query               *filterSimpleModel      `tfsdk:"query"`
-	Filters             []searchFilterModel     `tfsdk:"filters"`
+	Filters             []chartFilterJSONModel  `tfsdk:"filters"`
 	Metrics             []datatableMetricModel  `tfsdk:"metrics"`
 	Rows                []datatableRowModel     `tfsdk:"rows"`
 	SplitMetricsBy      []datatableSplitByModel `tfsdk:"split_metrics_by"`
@@ -135,7 +135,7 @@ type datatableESQLConfigModel struct {
 	Density             *datatableDensityModel  `tfsdk:"density"`
 	IgnoreGlobalFilters types.Bool              `tfsdk:"ignore_global_filters"`
 	Sampling            types.Float64           `tfsdk:"sampling"`
-	Filters             []searchFilterModel     `tfsdk:"filters"`
+	Filters             []chartFilterJSONModel  `tfsdk:"filters"`
 	Metrics             []datatableMetricModel  `tfsdk:"metrics"`
 	Rows                []datatableRowModel     `tfsdk:"rows"`
 	SplitMetricsBy      []datatableSplitByModel `tfsdk:"split_metrics_by"`
@@ -205,10 +205,14 @@ func (m *datatableNoESQLConfigModel) fromAPI(ctx context.Context, api kbapi.Data
 	m.Query.fromAPI(api.Query)
 
 	if api.Filters != nil && len(*api.Filters) > 0 {
-		m.Filters = make([]searchFilterModel, len(*api.Filters))
-		for i, filterSchema := range *api.Filters {
-			filterDiags := m.Filters[i].fromAPI(filterSchema)
+		m.Filters = make([]chartFilterJSONModel, 0, len(*api.Filters))
+		for _, filterSchema := range *api.Filters {
+			fm := chartFilterJSONModel{}
+			filterDiags := fm.populateFromAPIItem(filterSchema)
 			diags.Append(filterDiags...)
+			if !filterDiags.HasError() {
+				m.Filters = append(m.Filters, fm)
+			}
 		}
 	}
 
@@ -310,13 +314,18 @@ func (m *datatableNoESQLConfigModel) toAPI() (kbapi.DatatableNoESQL, diag.Diagno
 	}
 
 	if len(m.Filters) > 0 {
-		filters := make([]kbapi.SearchFilter, len(m.Filters))
-		for i, filterModel := range m.Filters {
-			filter, filterDiags := filterModel.toAPI()
+		filters := make([]kbapi.DatatableNoESQL_Filters_Item, 0, len(m.Filters))
+		for _, filterModel := range m.Filters {
+			var item kbapi.DatatableNoESQL_Filters_Item
+			filterDiags := decodeChartFilterJSON(filterModel.FilterJSON, &item)
 			diags.Append(filterDiags...)
-			filters[i] = filter
+			if !filterDiags.HasError() {
+				filters = append(filters, item)
+			}
 		}
-		api.Filters = &filters
+		if len(filters) > 0 {
+			api.Filters = &filters
+		}
 	}
 
 	if len(m.Metrics) > 0 {
@@ -402,10 +411,14 @@ func (m *datatableESQLConfigModel) fromAPI(ctx context.Context, api kbapi.Datata
 	}
 
 	if api.Filters != nil && len(*api.Filters) > 0 {
-		m.Filters = make([]searchFilterModel, len(*api.Filters))
-		for i, filterSchema := range *api.Filters {
-			filterDiags := m.Filters[i].fromAPI(filterSchema)
+		m.Filters = make([]chartFilterJSONModel, 0, len(*api.Filters))
+		for _, filterSchema := range *api.Filters {
+			fm := chartFilterJSONModel{}
+			filterDiags := fm.populateFromAPIItem(filterSchema)
 			diags.Append(filterDiags...)
+			if !filterDiags.HasError() {
+				m.Filters = append(m.Filters, fm)
+			}
 		}
 	}
 
@@ -503,13 +516,18 @@ func (m *datatableESQLConfigModel) toAPI() (kbapi.DatatableESQL, diag.Diagnostic
 	}
 
 	if len(m.Filters) > 0 {
-		filters := make([]kbapi.SearchFilter, len(m.Filters))
-		for i, filterModel := range m.Filters {
-			filter, filterDiags := filterModel.toAPI()
+		filters := make([]kbapi.DatatableESQL_Filters_Item, 0, len(m.Filters))
+		for _, filterModel := range m.Filters {
+			var item kbapi.DatatableESQL_Filters_Item
+			filterDiags := decodeChartFilterJSON(filterModel.FilterJSON, &item)
 			diags.Append(filterDiags...)
-			filters[i] = filter
+			if !filterDiags.HasError() {
+				filters = append(filters, item)
+			}
 		}
-		api.Filters = &filters
+		if len(filters) > 0 {
+			api.Filters = &filters
+		}
 	}
 
 	if len(m.Metrics) > 0 {
@@ -533,6 +551,8 @@ func (m *datatableESQLConfigModel) toAPI() (kbapi.DatatableESQL, diag.Diagnostic
 			CollapseBy   kbapi.CollapseBy                     `json:"collapse_by"`
 			Color        *kbapi.DatatableESQL_Rows_Color      `json:"color,omitempty"`
 			Column       string                               `json:"column"`
+			Format       kbapi.FormatType                     `json:"format"`
+			Label        *string                              `json:"label,omitempty"`
 			Operation    kbapi.DatatableESQLRowsOperation     `json:"operation"`
 			Visible      *bool                                `json:"visible,omitempty"`
 			Width        *float32                             `json:"width,omitempty"`
@@ -551,6 +571,8 @@ func (m *datatableESQLConfigModel) toAPI() (kbapi.DatatableESQL, diag.Diagnostic
 	if len(m.SplitMetricsBy) > 0 {
 		splits := make([]struct {
 			Column    string                                     `json:"column"`
+			Format    kbapi.FormatType                           `json:"format"`
+			Label     *string                                    `json:"label,omitempty"`
 			Operation kbapi.DatatableESQLSplitMetricsByOperation `json:"operation"`
 		}, len(m.SplitMetricsBy))
 		for i, splitModel := range m.SplitMetricsBy {
