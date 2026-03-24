@@ -171,6 +171,7 @@ func TestAccResourceKibanaStreamWired(t *testing.T) {
 			prepareStreamsEnvironment(t)
 		},
 		Steps: []resource.TestStep{
+			// Step 1: create a minimal wired stream.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 skipFn,
@@ -183,8 +184,13 @@ func TestAccResourceKibanaStreamWired(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_stream.wired", "name", "logs.otel.testacc"+suffix),
 					resource.TestCheckResourceAttr("elasticstack_kibana_stream.wired", "space_id", "default"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_stream.wired", "description", "Test wired stream"),
+					// Optional attributes absent — verify empty/default state.
+					resource.TestCheckResourceAttr("elasticstack_kibana_stream.wired", "wired_config.processing_steps.#", "0"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_stream.wired", "dashboards"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_stream.wired", "queries"),
 				),
 			},
+			// Step 2: add a processing step — assert the step JSON value (not just count).
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 skipFn,
@@ -195,22 +201,38 @@ func TestAccResourceKibanaStreamWired(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_stream.wired", "description", "Updated wired stream"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_stream.wired", "wired_config.processing_steps.#", "1"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_stream.wired", "wired_config.processing_steps.0.json"),
 				),
 			},
+			// Step 3: full update — lifecycle, failure_store, index settings, attached query.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 skipFn,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_full"),
 				ConfigVariables: config.Variables{
 					"suffix": config.StringVariable(suffix),
 				},
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ResourceName:            "elasticstack_kibana_stream.wired",
-				ImportStateVerifyIgnore: []string{
-					"wired_config.lifecycle_json",
-					"wired_config.failure_store_json",
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_stream.wired", "description", "Fully-configured wired stream"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_stream.wired", "wired_config.processing_steps.#", "1"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_stream.wired", "wired_config.lifecycle_json"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_stream.wired", "wired_config.failure_store_json"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_stream.wired", "wired_config.index_number_of_shards", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_stream.wired", "wired_config.index_number_of_replicas", "0"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_stream.wired", "wired_config.index_refresh_interval", "5s"),
+				),
+			},
+			// Step 4: import from the fully-configured state.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipFn,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_full"),
+				ConfigVariables: config.Variables{
+					"suffix": config.StringVariable(suffix),
 				},
+				ImportState:       true,
+				ImportStateVerify: true,
+				ResourceName:      "elasticstack_kibana_stream.wired",
 			},
 		},
 	})
@@ -274,6 +296,8 @@ func TestAccResourceKibanaStreamQuery(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_stream.query", "id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_stream.query", "name", "logs.otel.testacc"+suffix+".view"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_stream.query", "query_config.esql", "FROM logs* | LIMIT 10"),
+					// view is Optional+Computed; when unset it should be stored as "".
+					resource.TestCheckResourceAttr("elasticstack_kibana_stream.query", "query_config.view", ""),
 				),
 			},
 			{
