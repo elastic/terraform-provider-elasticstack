@@ -53,7 +53,7 @@ func (r *calendarResource) Create(ctx context.Context, req resource.CreateReques
 }
 
 func (r *calendarResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var state CalendarTFModel
+	var state TFModel
 	diags := req.State.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {

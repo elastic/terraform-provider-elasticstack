@@ -24,7 +24,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-type CalendarTFModel struct {
+type TFModel struct {
 	ID                      types.String `tfsdk:"id"`
 	ElasticsearchConnection types.List   `tfsdk:"elasticsearch_connection"`
 	CalendarID              types.String `tfsdk:"calendar_id"`
@@ -32,21 +32,21 @@ type CalendarTFModel struct {
 	JobIDs                  types.Set    `tfsdk:"job_ids"`
 }
 
-type CalendarCreateAPIModel struct {
+type CreateAPIModel struct {
 	JobIDs      []string `json:"job_ids,omitempty"`
 	Description string   `json:"description,omitempty"`
 }
 
-type CalendarAPIModel struct {
+type APIModel struct {
 	CalendarID  string   `json:"calendar_id"`
 	Description string   `json:"description,omitempty"`
 	JobIDs      []string `json:"job_ids"`
 }
 
-func (m *CalendarTFModel) toAPICreateModel(ctx context.Context) (*CalendarCreateAPIModel, fwdiags.Diagnostics) {
+func (m *TFModel) toAPICreateModel(ctx context.Context) (*CreateAPIModel, fwdiags.Diagnostics) {
 	var diags fwdiags.Diagnostics
 
-	apiModel := &CalendarCreateAPIModel{
+	apiModel := &CreateAPIModel{
 		Description: m.Description.ValueString(),
 	}
 
@@ -60,7 +60,7 @@ func (m *CalendarTFModel) toAPICreateModel(ctx context.Context) (*CalendarCreate
 	return apiModel, diags
 }
 
-func (m *CalendarTFModel) fromAPIModel(ctx context.Context, apiModel *CalendarAPIModel) fwdiags.Diagnostics {
+func (m *TFModel) fromAPIModel(ctx context.Context, apiModel *APIModel) fwdiags.Diagnostics {
 	var diags fwdiags.Diagnostics
 
 	m.CalendarID = types.StringValue(apiModel.CalendarID)

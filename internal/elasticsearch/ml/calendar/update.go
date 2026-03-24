@@ -34,14 +34,14 @@ func (r *calendarResource) update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	var plan CalendarTFModel
+	var plan TFModel
 	diags := req.Plan.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	var state CalendarTFModel
+	var state TFModel
 	diags = req.State.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -83,8 +83,8 @@ func (r *calendarResource) update(ctx context.Context, req resource.UpdateReques
 	}
 
 	var currentResponse struct {
-		Calendars []CalendarAPIModel `json:"calendars"`
-		Count     int                `json:"count"`
+		Calendars []APIModel `json:"calendars"`
+		Count     int        `json:"count"`
 	}
 	if err := json.NewDecoder(res.Body).Decode(&currentResponse); err != nil {
 		resp.Diagnostics.AddError("Failed to decode calendar response", err.Error())
