@@ -46,13 +46,10 @@ func priorHasDeclaredToggle(_ context.Context, prior types.Object, toggle string
 func flattenPhase(ctx context.Context, phaseName string, p models.Phase, prior types.Object) (types.Object, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	phase := make(map[string]any)
-	// Single map shared across readonly/freeze/unfollow, matching SDK flatten behavior.
-	enabled := make(map[string]any)
 
 	for _, aCase := range []string{"readonly", "freeze", "unfollow"} {
 		if priorHasDeclaredToggle(ctx, prior, aCase) {
-			enabled["enabled"] = false
-			phase[aCase] = []any{enabled}
+			phase[aCase] = []any{map[string]any{"enabled": false}}
 		}
 	}
 
@@ -62,8 +59,7 @@ func flattenPhase(ctx context.Context, phaseName string, p models.Phase, prior t
 	for actionName, action := range p.Actions {
 		switch actionName {
 		case "readonly", "freeze", "unfollow":
-			enabled["enabled"] = true
-			phase[actionName] = []any{enabled}
+			phase[actionName] = []any{map[string]any{"enabled": true}}
 		case "allocate":
 			allocateAction := make(map[string]any)
 			if v, ok := action["number_of_replicas"]; ok {

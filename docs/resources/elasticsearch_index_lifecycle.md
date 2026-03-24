@@ -108,7 +108,7 @@ Optional:
 Optional:
 
 - `fixed_interval` (String) Downsampling interval. Required when the `downsample` action is configured.
-- `wait_timeout` (String) Downsampling interval
+- `wait_timeout` (String) Maximum time to wait for the downsample operation to complete before timing out.
 
 
 <a id="nestedblock--cold--freeze"></a>
@@ -247,7 +247,7 @@ Optional:
 Optional:
 
 - `fixed_interval` (String) Downsampling interval. Required when the `downsample` action is configured.
-- `wait_timeout` (String) Downsampling interval
+- `wait_timeout` (String) Maximum time to wait for the downsample operation to complete before timing out.
 
 
 <a id="nestedblock--hot--forcemerge"></a>
@@ -353,7 +353,7 @@ Optional:
 Optional:
 
 - `fixed_interval` (String) Downsampling interval. Required when the `downsample` action is configured.
-- `wait_timeout` (String) Downsampling interval
+- `wait_timeout` (String) Maximum time to wait for the downsample operation to complete before timing out.
 
 
 <a id="nestedblock--warm--forcemerge"></a>
