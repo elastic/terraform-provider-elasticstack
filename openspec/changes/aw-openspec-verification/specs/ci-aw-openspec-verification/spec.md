@@ -178,17 +178,7 @@ The agent SHALL submit a pull request review with **`APPROVE`** if and only if t
 - WHEN the review is submitted
 - THEN **`event`** SHALL be **APPROVE**
 
-### Requirement: Optional structural validation (REQ-013)
-
-The workflow MAY run **`openspec validate --all`** or **`make check-openspec`** when tooling is available; telemetry SHALL follow repository policy. Omission or failure MAY be reported but SHALL NOT automatically override the heuristic verification unless explicitly configured.
-
-#### Scenario: Validate is optional
-
-- GIVEN the runner has Node and OpenSpec installed
-- WHEN the agent runs `openspec validate --all`
-- THEN the workflow MAY use the result as supplementary signal without replacing the openspec-verify-change heuristic report
-
-### Requirement: Archive after APPROVE only (REQ-014)
+### Requirement: Archive after APPROVE only (REQ-013)
 
 **Only** when the agent submits a pull request review with **`APPROVE`** for this run, the workflow SHALL **archive** the selected change `<id>` using repository-standard automation (e.g. **`openspec archive <id>`** and/or steps aligned with **openspec-archive-change**), updating **`openspec/changes/archive/`** and canonical specs per project policy.
 
@@ -198,7 +188,7 @@ The workflow MAY run **`openspec validate --all`** or **`make check-openspec`** 
 - WHEN the run completes
 - THEN the workflow SHALL NOT move the change to `archive/` or mutate canonical specs for this id via this workflow
 
-### Requirement: Push archive result to PR branch (REQ-015)
+### Requirement: Push archive result to PR branch (REQ-014)
 
 After a successful **APPROVE** and archive step, the workflow SHALL commit the working tree changes and SHALL apply **`push-to-pull-request-branch`** so the pull request head branch contains the archive commit(s).
 
