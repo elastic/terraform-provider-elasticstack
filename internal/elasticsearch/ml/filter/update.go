@@ -35,14 +35,14 @@ func (r *filterResource) update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
-	var plan FilterTFModel
+	var plan TFModel
 	diags := req.Plan.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	var state FilterTFModel
+	var state TFModel
 	diags = req.State.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -85,8 +85,8 @@ func (r *filterResource) update(ctx context.Context, req resource.UpdateRequest,
 	}
 
 	var currentResponse struct {
-		Filters []FilterAPIModel `json:"filters"`
-		Count   int              `json:"count"`
+		Filters []APIModel `json:"filters"`
+		Count   int        `json:"count"`
 	}
 	if err := json.NewDecoder(res.Body).Decode(&currentResponse); err != nil {
 		resp.Diagnostics.AddError("Failed to decode filter response", err.Error())
@@ -133,7 +133,7 @@ func (r *filterResource) update(ctx context.Context, req resource.UpdateRequest,
 		}
 	}
 
-	updateBody := FilterUpdateAPIModel{
+	updateBody := UpdateAPIModel{
 		AddItems:    addItems,
 		RemoveItems: removeItems,
 	}

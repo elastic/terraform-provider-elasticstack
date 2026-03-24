@@ -29,7 +29,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-func (r *filterResource) read(ctx context.Context, model *FilterTFModel) (bool, fwdiags.Diagnostics) {
+func (r *filterResource) read(ctx context.Context, model *TFModel) (bool, fwdiags.Diagnostics) {
 	var diags fwdiags.Diagnostics
 
 	if !r.resourceReady(&diags) {
@@ -69,8 +69,8 @@ func (r *filterResource) read(ctx context.Context, model *FilterTFModel) (bool, 
 	}
 
 	var response struct {
-		Filters []FilterAPIModel `json:"filters"`
-		Count   int              `json:"count"`
+		Filters []APIModel `json:"filters"`
+		Count   int        `json:"count"`
 	}
 	if err := json.NewDecoder(res.Body).Decode(&response); err != nil {
 		diags.AddError("Failed to decode filter response", err.Error())

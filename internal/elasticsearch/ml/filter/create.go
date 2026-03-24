@@ -34,7 +34,7 @@ func (r *filterResource) create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	var plan FilterTFModel
+	var plan TFModel
 	diags := req.Plan.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {

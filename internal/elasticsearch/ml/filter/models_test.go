@@ -26,54 +26,54 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestFilterTFModel_toAPICreateModel(t *testing.T) {
+func TestTFModel_toAPICreateModel(t *testing.T) {
 	ctx := context.Background()
 
 	tests := []struct {
 		name        string
-		model       FilterTFModel
-		expectedAPI *FilterCreateAPIModel
+		model       TFModel
+		expectedAPI *CreateAPIModel
 	}{
 		{
 			name: "with description and items",
-			model: FilterTFModel{
+			model: TFModel{
 				Description: types.StringValue("safe domains"),
 				Items:       mustStringSet(ctx, t, []string{"*.example.com", "trusted.org"}),
 			},
-			expectedAPI: &FilterCreateAPIModel{
+			expectedAPI: &CreateAPIModel{
 				Description: "safe domains",
 				Items:       []string{"*.example.com", "trusted.org"},
 			},
 		},
 		{
 			name: "with description only",
-			model: FilterTFModel{
+			model: TFModel{
 				Description: types.StringValue("empty filter"),
 				Items:       types.SetNull(types.StringType),
 			},
-			expectedAPI: &FilterCreateAPIModel{
+			expectedAPI: &CreateAPIModel{
 				Description: "empty filter",
 				Items:       nil,
 			},
 		},
 		{
 			name: "null description and null items",
-			model: FilterTFModel{
+			model: TFModel{
 				Description: types.StringNull(),
 				Items:       types.SetNull(types.StringType),
 			},
-			expectedAPI: &FilterCreateAPIModel{
+			expectedAPI: &CreateAPIModel{
 				Description: "",
 				Items:       nil,
 			},
 		},
 		{
 			name: "empty items set",
-			model: FilterTFModel{
+			model: TFModel{
 				Description: types.StringValue("no items"),
 				Items:       mustStringSet(ctx, t, []string{}),
 			},
-			expectedAPI: &FilterCreateAPIModel{
+			expectedAPI: &CreateAPIModel{
 				Description: "no items",
 				Items:       []string{},
 			},
@@ -90,13 +90,13 @@ func TestFilterTFModel_toAPICreateModel(t *testing.T) {
 	}
 }
 
-func TestFilterTFModel_fromAPIModel(t *testing.T) {
+func TestTFModel_fromAPIModel(t *testing.T) {
 	ctx := context.Background()
 
 	tests := []struct {
 		name             string
 		initialItems     types.Set
-		apiModel         *FilterAPIModel
+		apiModel         *APIModel
 		expectedFilterID string
 		expectedDesc     types.String
 		expectItemsNull  bool
@@ -105,7 +105,7 @@ func TestFilterTFModel_fromAPIModel(t *testing.T) {
 		{
 			name:         "full API response",
 			initialItems: mustStringSet(ctx, t, []string{"old-item"}),
-			apiModel: &FilterAPIModel{
+			apiModel: &APIModel{
 				FilterID:    "my-filter",
 				Description: "A safe domains filter",
 				Items:       []string{"*.example.com", "trusted.org"},
@@ -117,7 +117,7 @@ func TestFilterTFModel_fromAPIModel(t *testing.T) {
 		{
 			name:         "empty description from API becomes null",
 			initialItems: types.SetNull(types.StringType),
-			apiModel: &FilterAPIModel{
+			apiModel: &APIModel{
 				FilterID:    "my-filter",
 				Description: "",
 				Items:       []string{},
@@ -129,7 +129,7 @@ func TestFilterTFModel_fromAPIModel(t *testing.T) {
 		{
 			name:         "empty items with non-null TF state becomes empty set",
 			initialItems: mustStringSet(ctx, t, []string{}),
-			apiModel: &FilterAPIModel{
+			apiModel: &APIModel{
 				FilterID: "my-filter",
 				Items:    []string{},
 			},
@@ -140,7 +140,7 @@ func TestFilterTFModel_fromAPIModel(t *testing.T) {
 		{
 			name:         "empty items with null TF state stays null",
 			initialItems: types.SetNull(types.StringType),
-			apiModel: &FilterAPIModel{
+			apiModel: &APIModel{
 				FilterID: "my-filter",
 				Items:    []string{},
 			},
@@ -152,7 +152,7 @@ func TestFilterTFModel_fromAPIModel(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			model := &FilterTFModel{
+			model := &TFModel{
 				Items: tt.initialItems,
 			}
 
