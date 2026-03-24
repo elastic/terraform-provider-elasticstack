@@ -34,7 +34,7 @@ func (r *calendarResource) create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	var plan CalendarTFModel
+	var plan TFModel
 	diags := req.Plan.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {

@@ -26,55 +26,55 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestCalendarTFModel_toAPICreateModel(t *testing.T) {
+func TestTFModel_toAPICreateModel(t *testing.T) {
 	ctx := context.Background()
 
 	tests := []struct {
 		name           string
-		model          CalendarTFModel
-		expectedAPI    *CalendarCreateAPIModel
+		model          TFModel
+		expectedAPI    *CreateAPIModel
 		expectedJobIDs []string
 	}{
 		{
 			name: "with description and job_ids",
-			model: CalendarTFModel{
+			model: TFModel{
 				Description: types.StringValue("test calendar"),
 				JobIDs:      mustStringSet(ctx, t, []string{"job1", "job2"}),
 			},
-			expectedAPI: &CalendarCreateAPIModel{
+			expectedAPI: &CreateAPIModel{
 				Description: "test calendar",
 				JobIDs:      []string{"job1", "job2"},
 			},
 		},
 		{
 			name: "with description only",
-			model: CalendarTFModel{
+			model: TFModel{
 				Description: types.StringValue("just a description"),
 				JobIDs:      types.SetNull(types.StringType),
 			},
-			expectedAPI: &CalendarCreateAPIModel{
+			expectedAPI: &CreateAPIModel{
 				Description: "just a description",
 				JobIDs:      nil,
 			},
 		},
 		{
 			name: "with null description and null job_ids",
-			model: CalendarTFModel{
+			model: TFModel{
 				Description: types.StringNull(),
 				JobIDs:      types.SetNull(types.StringType),
 			},
-			expectedAPI: &CalendarCreateAPIModel{
+			expectedAPI: &CreateAPIModel{
 				Description: "",
 				JobIDs:      nil,
 			},
 		},
 		{
 			name: "with empty job_ids set",
-			model: CalendarTFModel{
+			model: TFModel{
 				Description: types.StringValue("empty jobs"),
 				JobIDs:      mustStringSet(ctx, t, []string{}),
 			},
-			expectedAPI: &CalendarCreateAPIModel{
+			expectedAPI: &CreateAPIModel{
 				Description: "empty jobs",
 				JobIDs:      []string{},
 			},
@@ -91,13 +91,13 @@ func TestCalendarTFModel_toAPICreateModel(t *testing.T) {
 	}
 }
 
-func TestCalendarTFModel_fromAPIModel(t *testing.T) {
+func TestTFModel_fromAPIModel(t *testing.T) {
 	ctx := context.Background()
 
 	tests := []struct {
 		name               string
 		initialJobIDs      types.Set
-		apiModel           *CalendarAPIModel
+		apiModel           *APIModel
 		expectedCalendarID string
 		expectedDesc       types.String
 		expectJobIDsNull   bool
@@ -106,7 +106,7 @@ func TestCalendarTFModel_fromAPIModel(t *testing.T) {
 		{
 			name:          "full API response",
 			initialJobIDs: mustStringSet(ctx, t, []string{"old-job"}),
-			apiModel: &CalendarAPIModel{
+			apiModel: &APIModel{
 				CalendarID:  "my-calendar",
 				Description: "A test calendar",
 				JobIDs:      []string{"job1", "job2"},
@@ -118,7 +118,7 @@ func TestCalendarTFModel_fromAPIModel(t *testing.T) {
 		{
 			name:          "empty description from API becomes null",
 			initialJobIDs: types.SetNull(types.StringType),
-			apiModel: &CalendarAPIModel{
+			apiModel: &APIModel{
 				CalendarID:  "my-calendar",
 				Description: "",
 				JobIDs:      []string{},
@@ -130,7 +130,7 @@ func TestCalendarTFModel_fromAPIModel(t *testing.T) {
 		{
 			name:          "empty job_ids from API with non-null TF state becomes empty set",
 			initialJobIDs: mustStringSet(ctx, t, []string{}),
-			apiModel: &CalendarAPIModel{
+			apiModel: &APIModel{
 				CalendarID: "my-calendar",
 				JobIDs:     []string{},
 			},
@@ -141,7 +141,7 @@ func TestCalendarTFModel_fromAPIModel(t *testing.T) {
 		{
 			name:          "empty job_ids from API with null TF state stays null",
 			initialJobIDs: types.SetNull(types.StringType),
-			apiModel: &CalendarAPIModel{
+			apiModel: &APIModel{
 				CalendarID: "my-calendar",
 				JobIDs:     []string{},
 			},
@@ -153,7 +153,7 @@ func TestCalendarTFModel_fromAPIModel(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			model := &CalendarTFModel{
+			model := &TFModel{
 				JobIDs: tt.initialJobIDs,
 			}
 

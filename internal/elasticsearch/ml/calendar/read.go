@@ -29,7 +29,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-func (r *calendarResource) read(ctx context.Context, model *CalendarTFModel) (bool, fwdiags.Diagnostics) {
+func (r *calendarResource) read(ctx context.Context, model *TFModel) (bool, fwdiags.Diagnostics) {
 	var diags fwdiags.Diagnostics
 
 	if !r.resourceReady(&diags) {
@@ -69,8 +69,8 @@ func (r *calendarResource) read(ctx context.Context, model *CalendarTFModel) (bo
 	}
 
 	var response struct {
-		Calendars []CalendarAPIModel `json:"calendars"`
-		Count     int                `json:"count"`
+		Calendars []APIModel `json:"calendars"`
+		Count     int        `json:"count"`
 	}
 	if err := json.NewDecoder(res.Body).Decode(&response); err != nil {
 		diags.AddError("Failed to decode calendar response", err.Error())

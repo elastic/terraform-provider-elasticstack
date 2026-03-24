@@ -38,7 +38,8 @@ func (r *calendarResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 
 func GetSchema() schema.Schema {
 	return schema.Schema{
-		MarkdownDescription: "Manages Machine Learning calendars. See the [ML Calendar API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/ml-put-calendar.html) for more details.",
+		MarkdownDescription: "Manages Machine Learning calendars. " +
+			"See the [ML Calendar API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/ml-put-calendar.html) for more details.",
 		Blocks: map[string]schema.Block{
 			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(false),
 		},
@@ -51,14 +52,19 @@ func GetSchema() schema.Schema {
 				},
 			},
 			"calendar_id": schema.StringAttribute{
-				MarkdownDescription: "A string that uniquely identifies a calendar. Must contain lowercase alphanumeric characters (a-z and 0-9), hyphens, or underscores. Must start and end with an alphanumeric character.",
-				Required:            true,
+				MarkdownDescription: "A string that uniquely identifies a calendar. Must contain lowercase alphanumeric characters " +
+					"(a-z and 0-9), hyphens, or underscores. Must start and end with an alphanumeric character.",
+				Required: true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(1, 64),
-					stringvalidator.RegexMatches(regexp.MustCompile(`^[a-z0-9]([a-z0-9_-]*[a-z0-9])?$|^[a-z0-9]$`), "must contain lowercase alphanumeric characters (a-z and 0-9), hyphens, and underscores, and must start and end with alphanumeric characters"),
+					stringvalidator.RegexMatches(
+						regexp.MustCompile(`^[a-z0-9]([a-z0-9_-]*[a-z0-9])?$|^[a-z0-9]$`),
+						"must contain lowercase alphanumeric characters, hyphens, and underscores, "+
+							"and must start and end with alphanumeric characters",
+					),
 				},
 			},
 			"description": schema.StringAttribute{
