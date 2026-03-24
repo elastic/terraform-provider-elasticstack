@@ -60,8 +60,9 @@ import (
 )
 
 const (
-	IncludeExperimentalEnvVar = "TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL"
-	AccTestVersion            = "acctest"
+	IncludeExperimentalEnvVar    = "TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL"
+	SkipLocationValidationEnvVar = "TF_ELASTICSTACK_SKIP_LOCATION_VALIDATION"
+	AccTestVersion               = "acctest"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -124,7 +125,8 @@ func (p *Provider) DataSources(ctx context.Context) []func() datasource.DataSour
 }
 
 func (p *Provider) Resources(ctx context.Context) []func() resource.Resource {
-	resources := p.resources(ctx)
+	validateLocation := !(os.Getenv(SkipLocationValidationEnvVar) == "true")
+	resources := p.resources(ctx, validateLocation)
 
 	if p.version == AccTestVersion || os.Getenv(IncludeExperimentalEnvVar) == "true" {
 		resources = append(resources, p.experimentalResources(ctx)...)
@@ -133,7 +135,7 @@ func (p *Provider) Resources(ctx context.Context) []func() resource.Resource {
 	return resources
 }
 
-func (p *Provider) resources(ctx context.Context) []func() resource.Resource {
+func (p *Provider) resources(_ context.Context, validateLocation bool) []func() resource.Resource {
 	return []func() resource.Resource{
 		agentconfiguration.NewAgentConfigurationResource,
 		func() resource.Resource { return &importsavedobjects.Resource{} },
@@ -143,7 +145,7 @@ func (p *Provider) resources(ctx context.Context) []func() resource.Resource {
 		func() resource.Resource { return &parameter.Resource{} },
 		func() resource.Resource { return &privatelocation.Resource{} },
 		func() resource.Resource { return &index.Resource{} },
-		monitor.NewResource,
+		func() resource.Resource { return monitor.NewResource(validateLocation) },
 		func() resource.Resource { return &apikey.Resource{} },
 		func() resource.Resource { return &datastreamlifecycle.Resource{} },
 		func() resource.Resource { return &connectors.Resource{} },

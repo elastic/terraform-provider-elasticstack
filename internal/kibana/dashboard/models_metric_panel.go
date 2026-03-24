@@ -85,15 +85,15 @@ func (c metricChartPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.K
 }
 
 type metricChartConfigModel struct {
-	Title               types.String         `tfsdk:"title"`
-	Description         types.String         `tfsdk:"description"`
-	DatasetJSON         jsontypes.Normalized `tfsdk:"dataset_json"`
-	IgnoreGlobalFilters types.Bool           `tfsdk:"ignore_global_filters"`
-	Sampling            types.Float64        `tfsdk:"sampling"`
-	Query               *filterSimpleModel   `tfsdk:"query"`
-	Filters             []searchFilterModel  `tfsdk:"filters"`
-	Metrics             []metricItemModel    `tfsdk:"metrics"`
-	BreakdownByJSON     jsontypes.Normalized `tfsdk:"breakdown_by_json"`
+	Title               types.String           `tfsdk:"title"`
+	Description         types.String           `tfsdk:"description"`
+	DatasetJSON         jsontypes.Normalized   `tfsdk:"dataset_json"`
+	IgnoreGlobalFilters types.Bool             `tfsdk:"ignore_global_filters"`
+	Sampling            types.Float64          `tfsdk:"sampling"`
+	Query               *filterSimpleModel     `tfsdk:"query"`
+	Filters             []chartFilterJSONModel `tfsdk:"filters"`
+	Metrics             []metricItemModel      `tfsdk:"metrics"`
+	BreakdownByJSON     jsontypes.Normalized   `tfsdk:"breakdown_by_json"`
 }
 
 type metricItemModel struct {
@@ -159,10 +159,14 @@ func (m *metricChartConfigModel) fromAPIVariant0(ctx context.Context, apiChart k
 
 	// Set filters
 	if apiChart.Filters != nil && len(*apiChart.Filters) > 0 {
-		m.Filters = make([]searchFilterModel, len(*apiChart.Filters))
-		for i, filter := range *apiChart.Filters {
-			filterDiags := m.Filters[i].fromAPI(filter)
+		m.Filters = make([]chartFilterJSONModel, 0, len(*apiChart.Filters))
+		for _, filter := range *apiChart.Filters {
+			fm := chartFilterJSONModel{}
+			filterDiags := fm.populateFromAPIItem(filter)
 			diags.Append(filterDiags...)
+			if !filterDiags.HasError() {
+				m.Filters = append(m.Filters, fm)
+			}
 		}
 	}
 
@@ -177,7 +181,7 @@ func (m *metricChartConfigModel) fromAPIVariant0(ctx context.Context, apiChart k
 			}
 			m.Metrics[i].ConfigJSON = customtypes.NewJSONWithDefaultsValue(
 				string(metricJSON),
-				populateMetricChartMetricDefaults,
+				populateLensMetricDefaults,
 			)
 		}
 	}
@@ -224,10 +228,14 @@ func (m *metricChartConfigModel) fromAPIVariant1(ctx context.Context, apiChart k
 
 	// Set filters
 	if apiChart.Filters != nil && len(*apiChart.Filters) > 0 {
-		m.Filters = make([]searchFilterModel, len(*apiChart.Filters))
-		for i, filter := range *apiChart.Filters {
-			filterDiags := m.Filters[i].fromAPI(filter)
+		m.Filters = make([]chartFilterJSONModel, 0, len(*apiChart.Filters))
+		for _, filter := range *apiChart.Filters {
+			fm := chartFilterJSONModel{}
+			filterDiags := fm.populateFromAPIItem(filter)
 			diags.Append(filterDiags...)
+			if !filterDiags.HasError() {
+				m.Filters = append(m.Filters, fm)
+			}
 		}
 	}
 
@@ -242,7 +250,7 @@ func (m *metricChartConfigModel) fromAPIVariant1(ctx context.Context, apiChart k
 			}
 			m.Metrics[i].ConfigJSON = customtypes.NewJSONWithDefaultsValue(
 				string(metricJSON),
-				populateMetricChartMetricDefaults,
+				populateLensMetricDefaults,
 			)
 		}
 	}
@@ -312,13 +320,18 @@ func (m *metricChartConfigModel) toAPIVariant0() (kbapi.MetricChart, diag.Diagno
 
 	// Set filters
 	if len(m.Filters) > 0 {
-		filters := make([]kbapi.SearchFilter, len(m.Filters))
-		for i, filter := range m.Filters {
-			apiFilter, filterDiags := filter.toAPI()
+		filters := make([]kbapi.MetricChart_0_Filters_Item, 0, len(m.Filters))
+		for _, filter := range m.Filters {
+			var item kbapi.MetricChart_0_Filters_Item
+			filterDiags := decodeChartFilterJSON(filter.FilterJSON, &item)
 			diags.Append(filterDiags...)
-			filters[i] = apiFilter
+			if !filterDiags.HasError() {
+				filters = append(filters, item)
+			}
 		}
-		variant0.Filters = &filters
+		if len(filters) > 0 {
+			variant0.Filters = &filters
+		}
 	}
 
 	// Set metrics
@@ -389,13 +402,18 @@ func (m *metricChartConfigModel) toAPIVariant1() (kbapi.MetricChart, diag.Diagno
 
 	// Set filters
 	if len(m.Filters) > 0 {
-		filters := make([]kbapi.SearchFilter, len(m.Filters))
-		for i, filter := range m.Filters {
-			apiFilter, filterDiags := filter.toAPI()
+		filters := make([]kbapi.MetricChart_1_Filters_Item, 0, len(m.Filters))
+		for _, filter := range m.Filters {
+			var item kbapi.MetricChart_1_Filters_Item
+			filterDiags := decodeChartFilterJSON(filter.FilterJSON, &item)
 			diags.Append(filterDiags...)
-			filters[i] = apiFilter
+			if !filterDiags.HasError() {
+				filters = append(filters, item)
+			}
 		}
-		variant1.Filters = &filters
+		if len(filters) > 0 {
+			variant1.Filters = &filters
+		}
 	}
 
 	// Set metrics
@@ -420,11 +438,17 @@ func (m *metricChartConfigModel) toAPIVariant1() (kbapi.MetricChart, diag.Diagno
 			CollapseBy kbapi.CollapseBy                       `json:"collapse_by"`
 			Column     string                                 `json:"column"`
 			Columns    *float32                               `json:"columns,omitempty"`
+			Format     kbapi.FormatType                       `json:"format"`
+			Label      *string                                `json:"label,omitempty"`
 			Operation  kbapi.MetricChart1BreakdownByOperation `json:"operation"`
 		}
 		breakdownDiags := m.BreakdownByJSON.Unmarshal(&breakdownBy)
 		diags.Append(breakdownDiags...)
 		if !breakdownDiags.HasError() {
+			fb, _ := json.Marshal(breakdownBy.Format)
+			if string(fb) == jsonNullString || len(fb) == 0 {
+				_ = breakdownBy.Format.FromNumericFormat(kbapi.NumericFormat{Type: kbapi.Number})
+			}
 			variant1.BreakdownBy = &breakdownBy
 		}
 	}

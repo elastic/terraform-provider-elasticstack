@@ -379,20 +379,9 @@ func Test_metricChartConfigModel_withDataset(t *testing.T) {
 func Test_metricChartConfigModel_withFilters(t *testing.T) {
 	ctx := context.Background()
 
-	filters := []kbapi.SearchFilter{
-		func() kbapi.SearchFilter {
-			var filter kbapi.SearchFilter
-			_ = filter.FromSearchFilter0(kbapi.SearchFilter0{
-				Language: new(kbapi.SearchFilter0Language("kuery")),
-				Query: func() kbapi.SearchFilter_0_Query {
-					var q kbapi.SearchFilter_0_Query
-					_ = q.FromSearchFilter0Query0("status:active")
-					return q
-				}(),
-			})
-			return filter
-		}(),
-	}
+	var fItem kbapi.MetricChart_0_Filters_Item
+	require.NoError(t, json.Unmarshal([]byte(`{"type":"condition","condition":{"field":"status","operator":"is","value":"active"}}`), &fItem))
+	filters := []kbapi.MetricChart_0_Filters_Item{fItem}
 
 	apiChart := kbapi.MetricChart0{
 		Type:    kbapi.MetricChart0TypeMetric,
@@ -414,8 +403,7 @@ func Test_metricChartConfigModel_withFilters(t *testing.T) {
 
 	// Verify filters were populated
 	assert.Len(t, model.Filters, 1)
-	assert.Equal(t, "status:active", model.Filters[0].Query.ValueString())
-	assert.Equal(t, "kuery", model.Filters[0].Language.ValueString())
+	assert.Contains(t, model.Filters[0].FilterJSON.ValueString(), `"field":"status"`)
 
 	// Test toAPI round-trip
 	resultSchema, diags := model.toAPI()
@@ -486,7 +474,7 @@ func Test_metricItemModel_jsonRoundTrip(t *testing.T) {
 			item := metricItemModel{
 				ConfigJSON: customtypes.NewJSONWithDefaultsValue[map[string]any](
 					configJSON,
-					populateMetricChartMetricDefaults,
+					populateLensMetricDefaults,
 				),
 			}
 

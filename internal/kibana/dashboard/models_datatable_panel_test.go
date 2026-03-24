@@ -168,6 +168,8 @@ func Test_datatableESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 	}
 	require.NoError(t, json.Unmarshal([]byte(`{"type":"number","decimals":2}`), &metric.Format))
 
+	rowFormat := kbapi.FormatType{}
+	require.NoError(t, json.Unmarshal([]byte(`{"type":"number"}`), &rowFormat))
 	row := struct {
 		Alignment    *kbapi.DatatableESQLRowsAlignment    `json:"alignment,omitempty"`
 		ApplyColorTo *kbapi.DatatableESQLRowsApplyColorTo `json:"apply_color_to,omitempty"`
@@ -175,20 +177,28 @@ func Test_datatableESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 		CollapseBy   kbapi.CollapseBy                     `json:"collapse_by"`
 		Color        *kbapi.DatatableESQL_Rows_Color      `json:"color,omitempty"`
 		Column       string                               `json:"column"`
+		Format       kbapi.FormatType                     `json:"format"`
+		Label        *string                              `json:"label,omitempty"`
 		Operation    kbapi.DatatableESQLRowsOperation     `json:"operation"`
 		Visible      *bool                                `json:"visible,omitempty"`
 		Width        *float32                             `json:"width,omitempty"`
 	}{
 		Column:     "host.name",
+		Format:     rowFormat,
 		Operation:  kbapi.DatatableESQLRowsOperationValue,
 		CollapseBy: kbapi.CollapseByAvg,
 	}
 
+	splitFormat := kbapi.FormatType{}
+	require.NoError(t, json.Unmarshal([]byte(`{"type":"number"}`), &splitFormat))
 	split := struct {
 		Column    string                                     `json:"column"`
+		Format    kbapi.FormatType                           `json:"format"`
+		Label     *string                                    `json:"label,omitempty"`
 		Operation kbapi.DatatableESQLSplitMetricsByOperation `json:"operation"`
 	}{
 		Column:    "host.name",
+		Format:    splitFormat,
 		Operation: kbapi.DatatableESQLSplitMetricsByOperationValue,
 	}
 
@@ -207,12 +217,16 @@ func Test_datatableESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 			CollapseBy   kbapi.CollapseBy                     `json:"collapse_by"`
 			Color        *kbapi.DatatableESQL_Rows_Color      `json:"color,omitempty"`
 			Column       string                               `json:"column"`
+			Format       kbapi.FormatType                     `json:"format"`
+			Label        *string                              `json:"label,omitempty"`
 			Operation    kbapi.DatatableESQLRowsOperation     `json:"operation"`
 			Visible      *bool                                `json:"visible,omitempty"`
 			Width        *float32                             `json:"width,omitempty"`
 		}{row},
 		SplitMetricsBy: &[]struct {
 			Column    string                                     `json:"column"`
+			Format    kbapi.FormatType                           `json:"format"`
+			Label     *string                                    `json:"label,omitempty"`
 			Operation kbapi.DatatableESQLSplitMetricsByOperation `json:"operation"`
 		}{split},
 	}

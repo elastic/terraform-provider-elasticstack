@@ -50,7 +50,14 @@ resource "elasticstack_kibana_dashboard" "test" {
       sampling              = 1
       filters = [
         {
-          query = "status:active"
+          filter_json = jsonencode({
+            type = "condition"
+            condition = {
+              field    = "status"
+              operator = "is"
+              value    = "active"
+            }
+          })
         }
       ]
     }

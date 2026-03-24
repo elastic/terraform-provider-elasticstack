@@ -30,7 +30,7 @@ import (
 func TestAccResourceDashboardRegionMap(t *testing.T) {
 	dashboardTitle := "Test Dashboard with Region Map " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{

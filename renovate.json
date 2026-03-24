@@ -6,8 +6,12 @@
   "customManagers": [
     {
       "customType": "regex",
-      "fileMatch": ["^generated/kbapi/Makefile$"],
-      "matchStrings": ["github_ref \\?= (?<currentDigest>.*?)\\n"],
+      "fileMatch": [
+        "^generated/kbapi/Makefile$"
+      ],
+      "matchStrings": [
+        "github_ref \\?= (?<currentDigest>.*?)\\n"
+      ],
       "currentValueTemplate": "main",
       "depNameTemplate": "kibana-openapi-spec",
       "packageNameTemplate": "https://github.com/elastic/kibana",
@@ -15,17 +19,21 @@
     }
   ],
   "postUpgradeTasks": {
-    "commands": ["make renovate-post-upgrade"],
+    "commands": [
+      "make renovate-post-upgrade"
+    ],
     "fileFilters": [
-      "generated/kbapi/kibana.gen.go", 
-      "generated/kbapi/oas-filtered.yaml", 
+      "generated/kbapi/kibana.gen.go",
+      "generated/kbapi/oas-filtered.yaml",
       "NOTICE"
     ]
   },
   "packageRules": [
     {
       "groupName": "hashicorp",
-      "matchPackagePatterns": ["^github\\.com/hashicorp/"]
+      "matchPackageNames": [
+        "/^github\\.com/hashicorp//"
+      ]
     }
   ],
   "automerge": true,
