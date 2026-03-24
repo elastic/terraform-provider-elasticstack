@@ -79,7 +79,7 @@ func TestWiredConfigPopulateFromAPI(t *testing.T) {
 		t.Parallel()
 		ingest := &kibanaoapi.StreamIngest{
 			Processing: kibanaoapi.StreamProcessing{
-				Steps: json.RawMessage(`[{"grok":{"field":"message","patterns":["%%{GREEDYDATA:msg}"]}}]`),
+				Steps: json.RawMessage(`[{"grok":{"field":"message","patterns":["%%{GREEDYDATA:msg}"]}},{"dissect":{"field":"log"}}]`),
 			},
 			Wired: &kibanaoapi.StreamIngestWired{
 				Fields:  json.RawMessage(`{"host.name":{"type":"keyword"}}`),
@@ -98,7 +98,8 @@ func TestWiredConfigPopulateFromAPI(t *testing.T) {
 		diags := m.populateFromAPI(ctx, ingest)
 		require.False(t, diags.HasError())
 
-		assert.False(t, m.ProcessingStepsJSON.IsNull())
+		require.Len(t, m.ProcessingSteps, 2, "expected two processing steps")
+		assert.False(t, m.ProcessingSteps[0].JSON.IsNull())
 		assert.False(t, m.FieldsJSON.IsNull())
 		assert.False(t, m.RoutingJSON.IsNull())
 		assert.False(t, m.LifecycleJSON.IsNull())
@@ -113,6 +114,21 @@ func TestWiredConfigPopulateFromAPI(t *testing.T) {
 		var m wiredConfigModel
 		diags := m.populateFromAPI(ctx, nil)
 		require.False(t, diags.HasError())
+	})
+
+	t.Run("processing steps split into individual models", func(t *testing.T) {
+		t.Parallel()
+		ingest := &kibanaoapi.StreamIngest{
+			Processing: kibanaoapi.StreamProcessing{
+				Steps: json.RawMessage(`[{"grok":{"field":"message"}},{"dissect":{"field":"log"}}]`),
+			},
+		}
+		var m wiredConfigModel
+		diags := m.populateFromAPI(ctx, ingest)
+		require.False(t, diags.HasError())
+		require.Len(t, m.ProcessingSteps, 2)
+		assert.Contains(t, m.ProcessingSteps[0].JSON.ValueString(), "grok")
+		assert.Contains(t, m.ProcessingSteps[1].JSON.ValueString(), "dissect")
 	})
 
 	t.Run("nil Wired block sets fields and routing to null", func(t *testing.T) {
@@ -153,10 +169,35 @@ func TestWiredConfigPopulateFromAPI(t *testing.T) {
 func TestWiredConfigToAPIIngest(t *testing.T) {
 	t.Parallel()
 
+	t.Run("processing steps marshalled into array", func(t *testing.T) {
+		t.Parallel()
+		m := wiredConfigModel{
+			ProcessingSteps: []processingStepModel{
+				{JSON: jsontypes.NewNormalizedValue(`{"grok":{"field":"message"}}`)},
+				{JSON: jsontypes.NewNormalizedValue(`{"dissect":{"field":"log"}}`)},
+			},
+			FieldsJSON:            jsontypes.NewNormalizedNull(),
+			RoutingJSON:           jsontypes.NewNormalizedNull(),
+			LifecycleJSON:         jsontypes.NewNormalizedNull(),
+			FailureStoreJSON:      jsontypes.NewNormalizedNull(),
+			IndexNumberOfShards:   types.Int64Null(),
+			IndexNumberOfReplicas: types.Int64Null(),
+			IndexRefreshInterval:  types.StringNull(),
+		}
+		var diags diag.Diagnostics
+		ingest := m.toAPIIngest(&diags)
+		require.False(t, diags.HasError())
+		var steps []json.RawMessage
+		require.NoError(t, json.Unmarshal(ingest.Processing.Steps, &steps))
+		require.Len(t, steps, 2)
+		assert.Contains(t, string(steps[0]), "grok")
+		assert.Contains(t, string(steps[1]), "dissect")
+	})
+
 	t.Run("nil fields and routing produce nil Wired block", func(t *testing.T) {
 		t.Parallel()
 		m := wiredConfigModel{
-			ProcessingStepsJSON:   jsontypes.NewNormalizedNull(),
+			ProcessingSteps:       nil,
 			FieldsJSON:            jsontypes.NewNormalizedNull(),
 			RoutingJSON:           jsontypes.NewNormalizedNull(),
 			LifecycleJSON:         jsontypes.NewNormalizedNull(),
@@ -176,7 +217,7 @@ func TestWiredConfigToAPIIngest(t *testing.T) {
 		m := wiredConfigModel{
 			FieldsJSON:            jsontypes.NewNormalizedValue(`{"host.name":{"type":"keyword"}}`),
 			RoutingJSON:           jsontypes.NewNormalizedNull(),
-			ProcessingStepsJSON:   jsontypes.NewNormalizedNull(),
+			ProcessingSteps:       nil,
 			LifecycleJSON:         jsontypes.NewNormalizedNull(),
 			FailureStoreJSON:      jsontypes.NewNormalizedNull(),
 			IndexNumberOfShards:   types.Int64Null(),
@@ -196,7 +237,7 @@ func TestWiredConfigToAPIIngest(t *testing.T) {
 		m := wiredConfigModel{
 			FieldsJSON:            jsontypes.NewNormalizedNull(),
 			RoutingJSON:           jsontypes.NewNormalizedValue(`[{"destination":"logs.errors","where":{}}]`),
-			ProcessingStepsJSON:   jsontypes.NewNormalizedNull(),
+			ProcessingSteps:       nil,
 			LifecycleJSON:         jsontypes.NewNormalizedNull(),
 			FailureStoreJSON:      jsontypes.NewNormalizedNull(),
 			IndexNumberOfShards:   types.Int64Null(),
@@ -217,7 +258,7 @@ func TestWiredConfigToAPIIngest(t *testing.T) {
 		m := wiredConfigModel{
 			RoutingJSON:           jsontypes.NewNormalizedValue(`not-valid-json`),
 			FieldsJSON:            jsontypes.NewNormalizedNull(),
-			ProcessingStepsJSON:   jsontypes.NewNormalizedNull(),
+			ProcessingSteps:       nil,
 			LifecycleJSON:         jsontypes.NewNormalizedNull(),
 			FailureStoreJSON:      jsontypes.NewNormalizedNull(),
 			IndexNumberOfShards:   types.Int64Null(),
@@ -234,7 +275,7 @@ func TestWiredConfigToAPIIngest(t *testing.T) {
 		m := wiredConfigModel{
 			FieldsJSON:            jsontypes.NewNormalizedNull(),
 			RoutingJSON:           jsontypes.NewNormalizedNull(),
-			ProcessingStepsJSON:   jsontypes.NewNormalizedNull(),
+			ProcessingSteps:       nil,
 			LifecycleJSON:         jsontypes.NewNormalizedNull(),
 			FailureStoreJSON:      jsontypes.NewNormalizedNull(),
 			IndexNumberOfShards:   types.Int64Value(3),
@@ -300,7 +341,7 @@ func TestClassicConfigToAPIIngest(t *testing.T) {
 	t.Run("field overrides set populates Classic block", func(t *testing.T) {
 		t.Parallel()
 		m := classicConfigModel{
-			ProcessingStepsJSON:   jsontypes.NewNormalizedNull(),
+			ProcessingSteps:       nil,
 			FieldOverridesJSON:    jsontypes.NewNormalizedValue(`{"host.name":{"type":"keyword"}}`),
 			LifecycleJSON:         jsontypes.NewNormalizedNull(),
 			FailureStoreJSON:      jsontypes.NewNormalizedNull(),
@@ -318,7 +359,7 @@ func TestClassicConfigToAPIIngest(t *testing.T) {
 	t.Run("nil field overrides does not populate Classic block", func(t *testing.T) {
 		t.Parallel()
 		m := classicConfigModel{
-			ProcessingStepsJSON:   jsontypes.NewNormalizedNull(),
+			ProcessingSteps:       nil,
 			FieldOverridesJSON:    jsontypes.NewNormalizedNull(),
 			LifecycleJSON:         jsontypes.NewNormalizedNull(),
 			FailureStoreJSON:      jsontypes.NewNormalizedNull(),
@@ -347,13 +388,15 @@ func TestQueryConfigRoundTrip(t *testing.T) {
 		assert.Equal(t, types.StringValue("my-view"), m.View)
 	})
 
-	t.Run("populateFromAPI without view produces null", func(t *testing.T) {
+	t.Run("populateFromAPI without view produces empty string (not null)", func(t *testing.T) {
 		t.Parallel()
 		q := &kibanaoapi.StreamQueryESQLDef{Esql: "FROM logs*"}
 		var m queryConfigModel
 		m.populateFromAPI(q)
 		assert.Equal(t, types.StringValue("FROM logs*"), m.Esql)
-		assert.True(t, m.View.IsNull())
+		// Empty string from API maps to StringValue(""), not null, to avoid
+		// perpetual drift when the user configures view = "".
+		assert.Equal(t, types.StringValue(""), m.View)
 	})
 
 	t.Run("populateFromAPI nil is no-op", func(t *testing.T) {
@@ -375,7 +418,7 @@ func TestQueryConfigRoundTrip(t *testing.T) {
 		assert.Equal(t, "my-view", q.View)
 	})
 
-	t.Run("toAPI with null view omits view", func(t *testing.T) {
+	t.Run("toAPI with null view sends empty string", func(t *testing.T) {
 		t.Parallel()
 		m := queryConfigModel{
 			Esql: types.StringValue("FROM logs*"),
@@ -401,7 +444,7 @@ func TestToAPIUpsertRequest(t *testing.T) {
 			SpaceID:     types.StringValue("default"),
 			Description: types.StringValue("Nginx logs"),
 			WiredConfig: &wiredConfigModel{
-				ProcessingStepsJSON:   jsontypes.NewNormalizedNull(),
+				ProcessingSteps:       nil,
 				FieldsJSON:            jsontypes.NewNormalizedNull(),
 				RoutingJSON:           jsontypes.NewNormalizedNull(),
 				LifecycleJSON:         jsontypes.NewNormalizedNull(),
@@ -450,7 +493,7 @@ func TestToAPIUpsertRequest(t *testing.T) {
 			SpaceID:     types.StringValue("default"),
 			Description: types.StringValue(""),
 			WiredConfig: &wiredConfigModel{
-				ProcessingStepsJSON:   jsontypes.NewNormalizedNull(),
+				ProcessingSteps:       nil,
 				FieldsJSON:            jsontypes.NewNormalizedNull(),
 				RoutingJSON:           jsontypes.NewNormalizedNull(),
 				LifecycleJSON:         jsontypes.NewNormalizedNull(),

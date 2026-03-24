@@ -9,14 +9,16 @@ resource "elasticstack_kibana_stream" "existing_logs" {
 
   classic_config {
     # Add a processing step to enrich ingest documents
-    processing_steps_json = jsonencode([
+    processing_steps = [
       {
-        grok = {
-          field    = "message"
-          patterns = ["%%{TIMESTAMP_ISO8601:@timestamp} %%{LOGLEVEL:log.level} %%{GREEDYDATA:message}"]
-        }
+        json = jsonencode({
+          grok = {
+            field    = "message"
+            patterns = ["%%{TIMESTAMP_ISO8601:@timestamp} %%{LOGLEVEL:log.level} %%{GREEDYDATA:message}"]
+          }
+        })
       }
-    ])
+    ]
 
     # Override field types for classic stream fields
     field_overrides_json = jsonencode({

@@ -34,20 +34,15 @@ func (m *queryConfigModel) populateFromAPI(q *kibanaoapi.StreamQueryESQLDef) {
 		return
 	}
 	m.Esql = types.StringValue(q.Esql)
-	if q.View != "" {
-		m.View = types.StringValue(q.View)
-	} else {
-		m.View = types.StringNull()
-	}
+	// Always use StringValue (even for empty string) so that a user who
+	// configures view = "" gets consistent state instead of a null mismatch.
+	m.View = types.StringValue(q.View)
 }
 
 // toAPI converts the query config model to an API query definition.
 func (m *queryConfigModel) toAPI() *kibanaoapi.StreamQueryESQLDef {
-	q := &kibanaoapi.StreamQueryESQLDef{
+	return &kibanaoapi.StreamQueryESQLDef{
 		Esql: m.Esql.ValueString(),
+		View: m.View.ValueString(), // empty string when null/unknown, which is correct
 	}
-	if !m.View.IsNull() && !m.View.IsUnknown() {
-		q.View = m.View.ValueString()
-	}
-	return q
 }

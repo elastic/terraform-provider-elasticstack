@@ -25,14 +25,16 @@ resource "elasticstack_kibana_stream" "nginx" {
     ])
 
     # Add a Grok processing step to parse the raw log message
-    processing_steps_json = jsonencode([
+    processing_steps = [
       {
-        grok = {
-          field    = "message"
-          patterns = ["%%{COMBINEDAPACHELOG}"]
-        }
+        json = jsonencode({
+          grok = {
+            field    = "message"
+            patterns = ["%%{COMBINEDAPACHELOG}"]
+          }
+        })
       }
-    ])
+    ]
 
     # Retain data for 30 days using DSL lifecycle
     lifecycle_json = jsonencode({

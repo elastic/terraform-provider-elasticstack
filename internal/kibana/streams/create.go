@@ -22,7 +22,6 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -64,35 +63,15 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 		return
 	}
 
-	kibanaClient, err := r.client.GetKibanaOapiClient()
-	if err != nil {
-		resp.Diagnostics.AddError("Unable to get Kibana client", err.Error())
-		return
-	}
-
 	spaceID := planModel.SpaceID.ValueString()
 	name := planModel.Name.ValueString()
-
-	apiReq := planModel.toAPIUpsertRequest(ctx, &resp.Diagnostics)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	_, upsertDiags := kibanaoapi.UpsertStream(ctx, kibanaClient, spaceID, name, apiReq)
-	resp.Diagnostics.Append(upsertDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	compositeID := clients.CompositeID{ClusterID: spaceID, ResourceID: name}
 	planModel.ID = types.StringValue(compositeID.String())
 
-	readModel, readDiags := r.read(ctx, planModel)
-	resp.Diagnostics.Append(readDiags...)
+	readModel := r.upsert(ctx, planModel, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
 	if readModel == nil {
 		resp.Diagnostics.AddError("Error reading stream after creation", "The stream was created but could not be read back.")
 		return

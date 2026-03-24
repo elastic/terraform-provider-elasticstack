@@ -129,11 +129,12 @@ func getSchema() schema.Schema {
 // getWiredConfigSchema returns the schema for wired stream configuration.
 func getWiredConfigSchema() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
-		"processing_steps_json": schema.StringAttribute{
-			MarkdownDescription: "Processing pipeline steps as a JSON array. Each step defines a processing rule " +
-				"(e.g. Grok, dissect, rename). Steps are applied in order during ingest.",
-			CustomType: jsontypes.NormalizedType{},
-			Optional:   true,
+		"processing_steps": schema.ListNestedAttribute{
+			MarkdownDescription: "Processing pipeline steps. Each entry defines a single processing rule " +
+				"(e.g. Grok, dissect, rename) as a JSON object. Steps are applied in order during ingest. " +
+				"Storing each step separately gives granular per-step diffs in Terraform plans.",
+			Optional:     true,
+			NestedObject: processingStepSchemaObject(),
 		},
 		"fields_json": schema.StringAttribute{
 			MarkdownDescription: "Field type mappings as a JSON object. Maps field names to their type definitions " +
@@ -179,11 +180,11 @@ func getWiredConfigSchema() map[string]schema.Attribute {
 // getClassicConfigSchema returns the schema for classic stream configuration.
 func getClassicConfigSchema() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
-		"processing_steps_json": schema.StringAttribute{
-			MarkdownDescription: "Processing pipeline steps as a JSON array. Each step defines a processing rule " +
-				"(e.g. Grok, dissect, rename). Steps are applied in order during ingest.",
-			CustomType: jsontypes.NormalizedType{},
-			Optional:   true,
+		"processing_steps": schema.ListNestedAttribute{
+			MarkdownDescription: "Processing pipeline steps. Each entry defines a single processing rule " +
+				"(e.g. Grok, dissect, rename) as a JSON object. Steps are applied in order during ingest.",
+			Optional:     true,
+			NestedObject: processingStepSchemaObject(),
 		},
 		"field_overrides_json": schema.StringAttribute{
 			MarkdownDescription: "Field override definitions as a JSON object. Maps field names to override configurations " +
@@ -261,6 +262,21 @@ func getStreamQuerySchema() schema.NestedAttributeObject {
 				MarkdownDescription: "Optional list of evidence field names for the query.",
 				ElementType:         types.StringType,
 				Optional:            true,
+			},
+		},
+	}
+}
+
+// processingStepSchemaObject returns the shared nested object schema for a
+// single processing step used in both wired and classic stream configs.
+func processingStepSchemaObject() schema.NestedAttributeObject {
+	return schema.NestedAttributeObject{
+		Attributes: map[string]schema.Attribute{
+			"json": schema.StringAttribute{
+				MarkdownDescription: "A single processing step as a JSON object, e.g. " +
+					"`{\"grok\":{\"field\":\"message\",\"patterns\":[\"%%{COMBINEDAPACHELOG}\"]}}`.",
+				CustomType: jsontypes.NormalizedType{},
+				Required:   true,
 			},
 		},
 	}

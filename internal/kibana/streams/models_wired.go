@@ -30,14 +30,14 @@ import (
 
 // wiredConfigModel is the Terraform model for a wired stream's configuration.
 type wiredConfigModel struct {
-	ProcessingStepsJSON   jsontypes.Normalized `tfsdk:"processing_steps_json"`
-	FieldsJSON            jsontypes.Normalized `tfsdk:"fields_json"`
-	RoutingJSON           jsontypes.Normalized `tfsdk:"routing_json"`
-	LifecycleJSON         jsontypes.Normalized `tfsdk:"lifecycle_json"`
-	FailureStoreJSON      jsontypes.Normalized `tfsdk:"failure_store_json"`
-	IndexNumberOfShards   types.Int64          `tfsdk:"index_number_of_shards"`
-	IndexNumberOfReplicas types.Int64          `tfsdk:"index_number_of_replicas"`
-	IndexRefreshInterval  types.String         `tfsdk:"index_refresh_interval"`
+	ProcessingSteps       []processingStepModel `tfsdk:"processing_steps"`
+	FieldsJSON            jsontypes.Normalized  `tfsdk:"fields_json"`
+	RoutingJSON           jsontypes.Normalized  `tfsdk:"routing_json"`
+	LifecycleJSON         jsontypes.Normalized  `tfsdk:"lifecycle_json"`
+	FailureStoreJSON      jsontypes.Normalized  `tfsdk:"failure_store_json"`
+	IndexNumberOfShards   types.Int64           `tfsdk:"index_number_of_shards"`
+	IndexNumberOfReplicas types.Int64           `tfsdk:"index_number_of_replicas"`
+	IndexRefreshInterval  types.String          `tfsdk:"index_refresh_interval"`
 }
 
 // populateFromAPI populates the wired config model from an API ingest response.
@@ -47,11 +47,20 @@ func (m *wiredConfigModel) populateFromAPI(_ context.Context, ingest *kibanaoapi
 		return diags
 	}
 
-	// Processing steps
+	// Processing steps — split into individual step models for per-step plan diffs
 	if len(ingest.Processing.Steps) > 0 {
-		m.ProcessingStepsJSON = jsontypes.NewNormalizedValue(string(ingest.Processing.Steps))
+		var rawSteps []json.RawMessage
+		if err := json.Unmarshal(ingest.Processing.Steps, &rawSteps); err != nil {
+			diags.AddError("Failed to unmarshal processing steps", err.Error())
+			return diags
+		}
+		steps := make([]processingStepModel, len(rawSteps))
+		for i, raw := range rawSteps {
+			steps[i] = processingStepModel{JSON: jsontypes.NewNormalizedValue(string(raw))}
+		}
+		m.ProcessingSteps = steps
 	} else {
-		m.ProcessingStepsJSON = jsontypes.NewNormalizedNull()
+		m.ProcessingSteps = nil
 	}
 
 	// Wired-specific fields and routing
@@ -131,8 +140,19 @@ func (m *wiredConfigModel) toAPIIngest(diags *diag.Diagnostics) *kibanaoapi.Stre
 	ingest := &kibanaoapi.StreamIngest{}
 
 	// Processing steps
-	if typeutils.IsKnown(m.ProcessingStepsJSON) {
-		ingest.Processing.Steps = json.RawMessage(m.ProcessingStepsJSON.ValueString())
+	if len(m.ProcessingSteps) > 0 {
+		rawSteps := make([]json.RawMessage, 0, len(m.ProcessingSteps))
+		for _, step := range m.ProcessingSteps {
+			if typeutils.IsKnown(step.JSON) {
+				rawSteps = append(rawSteps, json.RawMessage(step.JSON.ValueString()))
+			}
+		}
+		stepsJSON, err := json.Marshal(rawSteps)
+		if err != nil {
+			diags.AddError("Failed to marshal processing steps", err.Error())
+			return ingest
+		}
+		ingest.Processing.Steps = stepsJSON
 	}
 
 	// Wired fields and routing — only allocated when at least one attribute is

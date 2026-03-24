@@ -20,7 +20,6 @@ package streams
 import (
 	"context"
 
-	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
@@ -32,32 +31,10 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 		return
 	}
 
-	kibanaClient, err := r.client.GetKibanaOapiClient()
-	if err != nil {
-		resp.Diagnostics.AddError("Unable to get Kibana client", err.Error())
-		return
-	}
-
-	spaceID := planModel.SpaceID.ValueString()
-	name := planModel.Name.ValueString()
-
-	apiReq := planModel.toAPIUpsertRequest(ctx, &resp.Diagnostics)
+	readModel := r.upsert(ctx, planModel, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	_, upsertDiags := kibanaoapi.UpsertStream(ctx, kibanaClient, spaceID, name, apiReq)
-	resp.Diagnostics.Append(upsertDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	readModel, readDiags := r.read(ctx, planModel)
-	resp.Diagnostics.Append(readDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	if readModel == nil {
 		resp.Diagnostics.AddError("Error reading stream after update", "The stream was updated but could not be read back.")
 		return

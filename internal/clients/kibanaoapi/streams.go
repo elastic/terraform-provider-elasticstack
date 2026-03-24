@@ -18,7 +18,6 @@
 package kibanaoapi
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"net/http"
@@ -30,11 +29,11 @@ import (
 
 // StreamResponse is our own typed response struct for the Streams API.
 //
-// NOTE: The generated kbapi client does not yet produce typed JSON200 fields for
-// stream responses because the Kibana OAS spec lacks discriminator metadata on
-// the stream definition union. Once elastic/kibana#256682 (and its prerequisites)
-// propagate into the OAS output and the kbapi client is regenerated, this struct
-// can be replaced with the generated typed response fields.
+// NOTE: The generated kbapi response types (GetStreamsNameResponse,
+// PutStreamsNameResponse) only carry raw Body []byte — there are no typed JSON200
+// fields. We therefore unmarshal manually into this struct. If the kbapi
+// generator is ever updated to emit typed response bodies for these endpoints,
+// this struct can be replaced.
 type StreamResponse struct {
 	// Stream is the discriminated stream definition.
 	Stream StreamDefinition `json:"stream"`
@@ -166,21 +165,21 @@ func GetStream(ctx context.Context, client *Client, spaceID string, name string)
 }
 
 // UpsertStream creates or updates a stream via PUT /api/streams/{name}.
-//
-// We use PutStreamsNameWithBodyWithResponse (raw bytes) rather than
-// PutStreamsNameWithResponse because the generated kbapi.PutStreamsNameJSONRequestBody
-// is a union wrapper with an unexported `union json.RawMessage` field that the
-// standard encoding/json package cannot marshal, so the typed path would send an
-// empty body. Once the kbapi client is regenerated with the discriminator types
-// from elastic/kibana#256682, this can be revisited.
 func UpsertStream(ctx context.Context, client *Client, spaceID string, name string, req StreamUpsertRequest) (*StreamResponse, diag.Diagnostics) {
 	body, err := json.Marshal(req)
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	resp, err := client.API.PutStreamsNameWithBodyWithResponse(
-		ctx, name, "application/json", bytes.NewReader(body),
+	// The kbapi request body is a discriminated union; UnmarshalJSON/MarshalJSON
+	// are now generated, so we can use the typed path directly.
+	var kbReq kbapi.PutStreamsNameJSONRequestBody
+	if jsonErr := json.Unmarshal(body, &kbReq); jsonErr != nil {
+		return nil, diagutil.FrameworkDiagFromError(jsonErr)
+	}
+
+	resp, err := client.API.PutStreamsNameWithResponse(
+		ctx, name, kbReq,
 		spaceAwarePathRequestEditor(spaceID),
 	)
 	if err != nil {
