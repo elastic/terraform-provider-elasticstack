@@ -287,7 +287,7 @@ func blockDownsample() schema.SingleNestedBlock {
 					Optional:    true,
 				},
 				"wait_timeout": schema.StringAttribute{
-					Description: "Downsampling interval",
+					Description: "Maximum time to wait for the downsample operation to complete before timing out.",
 					Optional:    true,
 					Computed:    true,
 				},

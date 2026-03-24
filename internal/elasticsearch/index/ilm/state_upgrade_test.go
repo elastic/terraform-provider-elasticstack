@@ -31,7 +31,7 @@ func TestILMResourceUpgradeState(t *testing.T) {
 	t.Parallel()
 
 	raw := map[string]any{
-		"id":   "cluster:policy-x",
+		"id":   "cluster-uuid/policy-x",
 		"name": "policy-x",
 		"hot": []any{
 			map[string]any{
