@@ -4,12 +4,12 @@ variable "alias_name" {
 }
 
 variable "index_name" {
-  description = "The write index name"
+  description = "The index name"
   type        = string
 }
 
 variable "index_name2" {
-  description = "The read index name"
+  description = "The second index name"
   type        = string
 }
 
@@ -37,16 +37,21 @@ resource "elasticstack_elasticsearch_index_alias" "test_alias" {
   name = var.alias_name
 
   write_index = {
-    routing        = "wr1"
-    name           = elasticstack_elasticsearch_index.index1.name
-    index_routing  = "wir1"
-    search_routing = "wsr1"
+    name          = elasticstack_elasticsearch_index.index1.name
+    index_routing = "write-routing"
+    filter = jsonencode({
+      term = {
+        status = "review"
+      }
+    })
   }
 
   read_indices = [{
-    routing        = "rr1"
-    name           = elasticstack_elasticsearch_index.index2.name
-    index_routing  = "rir1"
-    search_routing = "rsr1"
+    name = elasticstack_elasticsearch_index.index2.name
+    filter = jsonencode({
+      term = {
+        status = "archived"
+      }
+    })
   }]
 }

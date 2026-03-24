@@ -37,16 +37,16 @@ resource "elasticstack_elasticsearch_index_alias" "test_alias" {
   name = var.alias_name
 
   write_index = {
-    routing        = "wr1"
     name           = elasticstack_elasticsearch_index.index1.name
-    index_routing  = "wir1"
-    search_routing = "wsr1"
+    routing        = "wr2"
+    index_routing  = "wir2"
+    search_routing = "wsr2"
   }
 
   read_indices = [{
-    routing        = "rr1"
     name           = elasticstack_elasticsearch_index.index2.name
-    index_routing  = "rir1"
-    search_routing = "rsr1"
+    routing        = "rr2"
+    index_routing  = "rir2"
+    search_routing = "rsr2"
   }]
 }

@@ -19,6 +19,7 @@ package alias_test
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -50,11 +51,18 @@ func TestAccResourceAlias(t *testing.T) {
 					"index_name2": config.StringVariable(indexName2),
 				},
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index_alias.test_alias", "id"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "name", aliasName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "write_index.name", indexName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "write_index.is_hidden", "false"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "read_indices.#", "0"),
 				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ResourceName:             "elasticstack_elasticsearch_index_alias.test_alias",
+				ImportState:              true,
+				ImportStateVerify:        true,
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -65,6 +73,7 @@ func TestAccResourceAlias(t *testing.T) {
 					"index_name2": config.StringVariable(indexName2),
 				},
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index_alias.test_alias", "id"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "name", aliasName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "write_index.name", indexName2),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "read_indices.#", "1"),
@@ -82,6 +91,7 @@ func TestAccResourceAlias(t *testing.T) {
 					"index_name2": config.StringVariable(indexName2),
 				},
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index_alias.test_alias", "id"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "name", aliasName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "write_index.name", indexName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "write_index.filter", `{"term":{"status":"published"}}`),
@@ -91,6 +101,45 @@ func TestAccResourceAlias(t *testing.T) {
 						"name":   indexName2,
 						"filter": `{"term":{"status":"draft"}}`,
 					}),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_filter"),
+				ConfigVariables: map[string]config.Variable{
+					"alias_name":  config.StringVariable(aliasName),
+					"index_name":  config.StringVariable(indexName),
+					"index_name2": config.StringVariable(indexName2),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index_alias.test_alias", "id"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "name", aliasName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "write_index.name", indexName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "write_index.filter", `{"term":{"status":"review"}}`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "write_index.index_routing", "write-routing"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "read_indices.#", "1"),
+					resource.TestCheckTypeSetElemNestedAttrs("elasticstack_elasticsearch_index_alias.test_alias", "read_indices.*", map[string]string{
+						"name":   indexName2,
+						"filter": `{"term":{"status":"archived"}}`,
+					}),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("remove_filter"),
+				ConfigVariables: map[string]config.Variable{
+					"alias_name":  config.StringVariable(aliasName),
+					"index_name":  config.StringVariable(indexName),
+					"index_name2": config.StringVariable(indexName2),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index_alias.test_alias", "id"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "name", aliasName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "write_index.name", indexName),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "write_index.filter"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "write_index.index_routing", "write-routing"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "read_indices.#", "1"),
+					testCheckReadIndexAttrs("elasticstack_elasticsearch_index_alias.test_alias", indexName2, map[string]string{}, []string{"filter"}),
 				),
 			},
 		},
@@ -275,16 +324,62 @@ func TestAccResourceAliasRouting(t *testing.T) {
 					"index_name2": config.StringVariable(indexName2),
 				},
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index_alias.test_alias", "id"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "name", aliasName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "write_index.name", indexName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "write_index.routing", "wr1"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "write_index.index_routing", "wir1"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "write_index.search_routing", "wsr1"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "read_indices.#", "1"),
 					resource.TestCheckTypeSetElemNestedAttrs("elasticstack_elasticsearch_index_alias.test_alias", "read_indices.*", map[string]string{
 						"name":           indexName2,
+						"routing":        "rr1",
 						"index_routing":  "rir1",
 						"search_routing": "rsr1",
 					}),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_routing"),
+				ConfigVariables: map[string]config.Variable{
+					"alias_name":  config.StringVariable(aliasName),
+					"index_name":  config.StringVariable(indexName),
+					"index_name2": config.StringVariable(indexName2),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index_alias.test_alias", "id"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "name", aliasName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "write_index.name", indexName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "write_index.routing", "wr2"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "write_index.index_routing", "wir2"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "write_index.search_routing", "wsr2"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "read_indices.#", "1"),
+					resource.TestCheckTypeSetElemNestedAttrs("elasticstack_elasticsearch_index_alias.test_alias", "read_indices.*", map[string]string{
+						"name":           indexName2,
+						"routing":        "rr2",
+						"index_routing":  "rir2",
+						"search_routing": "rsr2",
+					}),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("remove_routing"),
+				ConfigVariables: map[string]config.Variable{
+					"alias_name":  config.StringVariable(aliasName),
+					"index_name":  config.StringVariable(indexName),
+					"index_name2": config.StringVariable(indexName2),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index_alias.test_alias", "id"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "name", aliasName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "write_index.name", indexName),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "write_index.routing"),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "write_index.index_routing"),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "write_index.search_routing"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_alias.test_alias", "read_indices.#", "1"),
+					testCheckReadIndexAttrs("elasticstack_elasticsearch_index_alias.test_alias", indexName2, map[string]string{}, []string{"routing", "index_routing", "search_routing"}),
 				),
 			},
 		},
@@ -379,4 +474,45 @@ func checkResourceAliasDestroy(s *terraform.State) error {
 		}
 	}
 	return nil
+}
+
+func testCheckReadIndexAttrs(resourceName, indexName string, expected map[string]string, absent []string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceName]
+		if !ok {
+			return fmt.Errorf("resource not found in state: %s", resourceName)
+		}
+
+		var prefix string
+		for key, value := range rs.Primary.Attributes {
+			if strings.HasPrefix(key, "read_indices.") && strings.HasSuffix(key, ".name") && value == indexName {
+				prefix = strings.TrimSuffix(key, ".name")
+				break
+			}
+		}
+
+		if prefix == "" {
+			return fmt.Errorf("read index %q not found in state for resource %s", indexName, resourceName)
+		}
+
+		for attr, want := range expected {
+			key := prefix + "." + attr
+			got, ok := rs.Primary.Attributes[key]
+			if !ok {
+				return fmt.Errorf("expected attribute %q to be set for read index %q", key, indexName)
+			}
+			if got != want {
+				return fmt.Errorf("expected attribute %q for read index %q to be %q, got %q", key, indexName, want, got)
+			}
+		}
+
+		for _, attr := range absent {
+			key := prefix + "." + attr
+			if got, ok := rs.Primary.Attributes[key]; ok {
+				return fmt.Errorf("expected attribute %q for read index %q to be absent, got %q", key, indexName, got)
+			}
+		}
+
+		return nil
+	}
 }
