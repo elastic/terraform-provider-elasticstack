@@ -3,7 +3,7 @@ resource "elasticstack_kibana_stream" "nginx" {
   space_id    = "default"
   description = "Nginx access log stream"
 
-  wired_config {
+  wired_config = {
     # Define explicit field type mappings
     fields_json = jsonencode({
       "host.name"                 = { type = "keyword" }
@@ -28,10 +28,9 @@ resource "elasticstack_kibana_stream" "nginx" {
     processing_steps = [
       {
         json = jsonencode({
-          grok = {
-            field    = "message"
-            patterns = ["%%{COMBINEDAPACHELOG}"]
-          }
+          action   = "grok"
+          from     = "message"
+          patterns = ["%%{COMBINEDAPACHELOG}"]
         })
       }
     ]

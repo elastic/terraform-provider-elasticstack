@@ -95,8 +95,10 @@ type StreamIngestWired struct {
 	// Fields is a map of field_name -> field_definition. The field definition
 	// itself is a union type (string type name, or a full definition object),
 	// so we keep it as raw JSON.
-	Fields  json.RawMessage     `json:"fields,omitempty"`
-	Routing []StreamRoutingRule `json:"routing,omitempty"`
+	Fields json.RawMessage `json:"fields,omitempty"`
+	// Routing must be present even when empty — omitempty would omit an empty
+	// slice as null which the API rejects.
+	Routing []StreamRoutingRule `json:"routing"`
 }
 
 // StreamRoutingRule defines a single routing rule for a wired stream.
@@ -115,7 +117,9 @@ type StreamIngestClassic struct {
 // StreamQueryESQLDef holds the query definition for a query stream.
 type StreamQueryESQLDef struct {
 	Esql string `json:"esql"`
-	View string `json:"view,omitempty"`
+	// View must always be serialised (even as empty string) because the API
+	// treats a missing "view" key as invalid.
+	View string `json:"view"`
 }
 
 // StreamQuery holds an ES|QL query attached to a stream.
@@ -134,10 +138,13 @@ type StreamQueryEsql struct {
 }
 
 // StreamUpsertRequest is the body for PUT /api/streams/{name}.
+// All three array fields are required by the API — they must be present even
+// when empty (sending null or omitting them causes HTTP 400).
 type StreamUpsertRequest struct {
 	Stream     StreamDefinition `json:"stream"`
-	Dashboards []string         `json:"dashboards,omitempty"`
-	Queries    []StreamQuery    `json:"queries,omitempty"`
+	Dashboards []string         `json:"dashboards"`
+	Rules      []string         `json:"rules"`
+	Queries    []StreamQuery    `json:"queries"`
 }
 
 // GetStream reads a specific stream from the API.

@@ -28,7 +28,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-var minVersionStreams = version.Must(version.NewVersion("9.4.0"))
+var minVersionStreams = version.Must(version.NewVersion("9.2.0-SNAPSHOT"))
 
 func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var planModel streamModel

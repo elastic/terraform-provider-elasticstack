@@ -47,25 +47,31 @@ func (m *wiredConfigModel) populateFromAPI(_ context.Context, ingest *kibanaoapi
 		return diags
 	}
 
-	// Processing steps — split into individual step models for per-step plan diffs
+	// Processing steps — split into individual step models for per-step plan diffs.
+	// An empty array from the API is treated as null (no steps configured).
 	if len(ingest.Processing.Steps) > 0 {
 		var rawSteps []json.RawMessage
 		if err := json.Unmarshal(ingest.Processing.Steps, &rawSteps); err != nil {
 			diags.AddError("Failed to unmarshal processing steps", err.Error())
 			return diags
 		}
-		steps := make([]processingStepModel, len(rawSteps))
-		for i, raw := range rawSteps {
-			steps[i] = processingStepModel{JSON: jsontypes.NewNormalizedValue(string(raw))}
+		if len(rawSteps) > 0 {
+			steps := make([]processingStepModel, len(rawSteps))
+			for i, raw := range rawSteps {
+				steps[i] = processingStepModel{JSON: jsontypes.NewNormalizedValue(string(raw))}
+			}
+			m.ProcessingSteps = steps
+		} else {
+			m.ProcessingSteps = nil
 		}
-		m.ProcessingSteps = steps
 	} else {
 		m.ProcessingSteps = nil
 	}
 
-	// Wired-specific fields and routing
+	// Wired-specific fields and routing.
+	// An empty object {} from the API means no fields are configured → null.
 	if ingest.Wired != nil {
-		if len(ingest.Wired.Fields) > 0 {
+		if len(ingest.Wired.Fields) > 0 && string(ingest.Wired.Fields) != "{}" {
 			m.FieldsJSON = jsontypes.NewNormalizedValue(string(ingest.Wired.Fields))
 		} else {
 			m.FieldsJSON = jsontypes.NewNormalizedNull()
@@ -139,48 +145,51 @@ func (m *wiredConfigModel) populateFromAPI(_ context.Context, ingest *kibanaoapi
 func (m *wiredConfigModel) toAPIIngest(diags *diag.Diagnostics) *kibanaoapi.StreamIngest {
 	ingest := &kibanaoapi.StreamIngest{}
 
-	// Processing steps
-	if len(m.ProcessingSteps) > 0 {
-		rawSteps := make([]json.RawMessage, 0, len(m.ProcessingSteps))
-		for _, step := range m.ProcessingSteps {
-			if typeutils.IsKnown(step.JSON) {
-				rawSteps = append(rawSteps, json.RawMessage(step.JSON.ValueString()))
-			}
+	// Processing steps — the API requires the array to be present (even empty).
+	rawSteps := make([]json.RawMessage, 0, len(m.ProcessingSteps))
+	for _, step := range m.ProcessingSteps {
+		if typeutils.IsKnown(step.JSON) {
+			rawSteps = append(rawSteps, json.RawMessage(step.JSON.ValueString()))
 		}
-		stepsJSON, err := json.Marshal(rawSteps)
-		if err != nil {
-			diags.AddError("Failed to marshal processing steps", err.Error())
+	}
+	stepsJSON, err := json.Marshal(rawSteps)
+	if err != nil {
+		diags.AddError("Failed to marshal processing steps", err.Error())
+		return ingest
+	}
+	ingest.Processing.Steps = stepsJSON
+
+	// Wired fields and routing — the API requires the wired block to be present.
+	ingest.Wired = &kibanaoapi.StreamIngestWired{
+		Fields:  json.RawMessage(`{}`),
+		Routing: []kibanaoapi.StreamRoutingRule{},
+	}
+	if typeutils.IsKnown(m.FieldsJSON) {
+		ingest.Wired.Fields = json.RawMessage(m.FieldsJSON.ValueString())
+	}
+	if typeutils.IsKnown(m.RoutingJSON) {
+		var routing []kibanaoapi.StreamRoutingRule
+		if err := json.Unmarshal([]byte(m.RoutingJSON.ValueString()), &routing); err != nil {
+			diags.AddError("Failed to parse routing_json", err.Error())
 			return ingest
 		}
-		ingest.Processing.Steps = stepsJSON
+		ingest.Wired.Routing = routing
 	}
 
-	// Wired fields and routing — only allocated when at least one attribute is
-	// known, to avoid sending "wired": {} on update and inadvertently clearing
-	// existing server-side field mappings or routing rules.
-	if typeutils.IsKnown(m.FieldsJSON) || typeutils.IsKnown(m.RoutingJSON) {
-		ingest.Wired = &kibanaoapi.StreamIngestWired{}
-		if typeutils.IsKnown(m.FieldsJSON) {
-			ingest.Wired.Fields = json.RawMessage(m.FieldsJSON.ValueString())
-		}
-		if typeutils.IsKnown(m.RoutingJSON) {
-			var routing []kibanaoapi.StreamRoutingRule
-			if err := json.Unmarshal([]byte(m.RoutingJSON.ValueString()), &routing); err != nil {
-				diags.AddError("Failed to parse routing_json", err.Error())
-				return ingest
-			}
-			ingest.Wired.Routing = routing
-		}
-	}
-
-	// Lifecycle
+	// Lifecycle — required by API; default to inherit when not configured.
 	if typeutils.IsKnown(m.LifecycleJSON) {
 		ingest.Lifecycle = json.RawMessage(m.LifecycleJSON.ValueString())
+	} else {
+		ingest.Lifecycle = json.RawMessage(`{"inherit":{}}`)
 	}
 
-	// Failure store
+	// Failure store — required by API; default to disabled when not configured.
+	// {inherit:{}} would cause "all ancestors have inherit configuration" errors
+	// when the parent stream has not been explicitly configured.
 	if typeutils.IsKnown(m.FailureStoreJSON) {
 		ingest.FailureStore = json.RawMessage(m.FailureStoreJSON.ValueString())
+	} else {
+		ingest.FailureStore = json.RawMessage(`{"disabled":{}}`)
 	}
 
 	// Index settings

@@ -45,18 +45,20 @@ func (m *classicConfigModel) populateFromAPI(_ context.Context, ingest *kibanaoa
 		return
 	}
 
-	// Processing steps — split into individual step models for per-step plan diffs
+	// Processing steps — split into individual step models for per-step plan diffs.
+	// An empty array from the API is treated as null (no steps configured).
 	if len(ingest.Processing.Steps) > 0 {
 		var rawSteps []json.RawMessage
 		if err := json.Unmarshal(ingest.Processing.Steps, &rawSteps); err != nil {
-			// Non-fatal: leave steps empty rather than corrupting state
 			m.ProcessingSteps = nil
-		} else {
+		} else if len(rawSteps) > 0 {
 			steps := make([]processingStepModel, len(rawSteps))
 			for i, raw := range rawSteps {
 				steps[i] = processingStepModel{JSON: jsontypes.NewNormalizedValue(string(raw))}
 			}
 			m.ProcessingSteps = steps
+		} else {
+			m.ProcessingSteps = nil
 		}
 	} else {
 		m.ProcessingSteps = nil
@@ -120,21 +122,19 @@ func (m *classicConfigModel) populateFromAPI(_ context.Context, ingest *kibanaoa
 func (m *classicConfigModel) toAPIIngest(diags *diag.Diagnostics) *kibanaoapi.StreamIngest {
 	ingest := &kibanaoapi.StreamIngest{}
 
-	// Processing steps
-	if len(m.ProcessingSteps) > 0 {
-		rawSteps := make([]json.RawMessage, 0, len(m.ProcessingSteps))
-		for _, step := range m.ProcessingSteps {
-			if typeutils.IsKnown(step.JSON) {
-				rawSteps = append(rawSteps, json.RawMessage(step.JSON.ValueString()))
-			}
+	// Processing steps — the API requires the array to be present (even empty).
+	rawSteps := make([]json.RawMessage, 0, len(m.ProcessingSteps))
+	for _, step := range m.ProcessingSteps {
+		if typeutils.IsKnown(step.JSON) {
+			rawSteps = append(rawSteps, json.RawMessage(step.JSON.ValueString()))
 		}
-		stepsJSON, err := json.Marshal(rawSteps)
-		if err != nil {
-			diags.AddError("Failed to marshal processing steps", err.Error())
-			return ingest
-		}
-		ingest.Processing.Steps = stepsJSON
 	}
+	stepsJSON, err := json.Marshal(rawSteps)
+	if err != nil {
+		diags.AddError("Failed to marshal processing steps", err.Error())
+		return ingest
+	}
+	ingest.Processing.Steps = stepsJSON
 
 	// Classic field overrides
 	if typeutils.IsKnown(m.FieldOverridesJSON) {
@@ -143,14 +143,18 @@ func (m *classicConfigModel) toAPIIngest(diags *diag.Diagnostics) *kibanaoapi.St
 		}
 	}
 
-	// Lifecycle
+	// Lifecycle — required by API; default to inherit when not configured.
 	if typeutils.IsKnown(m.LifecycleJSON) {
 		ingest.Lifecycle = json.RawMessage(m.LifecycleJSON.ValueString())
+	} else {
+		ingest.Lifecycle = json.RawMessage(`{"inherit":{}}`)
 	}
 
-	// Failure store
+	// Failure store — required by API; default to disabled when not configured.
 	if typeutils.IsKnown(m.FailureStoreJSON) {
 		ingest.FailureStore = json.RawMessage(m.FailureStoreJSON.ValueString())
+	} else {
+		ingest.FailureStore = json.RawMessage(`{"disabled":{}}`)
 	}
 
 	// Index settings

@@ -7,15 +7,14 @@ resource "elasticstack_kibana_stream" "existing_logs" {
   name     = "logs-myapp-default"
   space_id = "default"
 
-  classic_config {
+  classic_config = {
     # Add a processing step to enrich ingest documents
     processing_steps = [
       {
         json = jsonencode({
-          grok = {
-            field    = "message"
-            patterns = ["%%{TIMESTAMP_ISO8601:@timestamp} %%{LOGLEVEL:log.level} %%{GREEDYDATA:message}"]
-          }
+          action   = "grok"
+          from     = "message"
+          patterns = ["%%{TIMESTAMP_ISO8601:@timestamp} %%{LOGLEVEL:log.level} %%{GREEDYDATA:message}"]
         })
       }
     ]

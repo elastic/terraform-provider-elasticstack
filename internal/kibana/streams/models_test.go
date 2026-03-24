@@ -194,7 +194,7 @@ func TestWiredConfigToAPIIngest(t *testing.T) {
 		assert.Contains(t, string(steps[1]), "dissect")
 	})
 
-	t.Run("nil fields and routing produce nil Wired block", func(t *testing.T) {
+	t.Run("nil fields and routing still produce Wired block with empty defaults", func(t *testing.T) {
 		t.Parallel()
 		m := wiredConfigModel{
 			ProcessingSteps:       nil,
@@ -209,10 +209,16 @@ func TestWiredConfigToAPIIngest(t *testing.T) {
 		var diags diag.Diagnostics
 		ingest := m.toAPIIngest(&diags)
 		require.False(t, diags.HasError())
-		assert.Nil(t, ingest.Wired, "Wired should be nil when neither fields_json nor routing_json are set")
+		// Wired block must always be present (API requires it)
+		require.NotNil(t, ingest.Wired)
+		assert.JSONEq(t, `{}`, string(ingest.Wired.Fields))
+		assert.Empty(t, ingest.Wired.Routing)
+		assert.JSONEq(t, `{"inherit":{}}`, string(ingest.Lifecycle))
+		// Failure store defaults to disabled (not inherit) to avoid ancestor resolution errors
+		assert.JSONEq(t, `{"disabled":{}}`, string(ingest.FailureStore))
 	})
 
-	t.Run("only fields_json set populates Wired with fields only", func(t *testing.T) {
+	t.Run("only fields_json set populates Wired with fields and empty routing", func(t *testing.T) {
 		t.Parallel()
 		m := wiredConfigModel{
 			FieldsJSON:            jsontypes.NewNormalizedValue(`{"host.name":{"type":"keyword"}}`),
@@ -229,10 +235,10 @@ func TestWiredConfigToAPIIngest(t *testing.T) {
 		require.False(t, diags.HasError())
 		require.NotNil(t, ingest.Wired)
 		assert.NotNil(t, ingest.Wired.Fields)
-		assert.Nil(t, ingest.Wired.Routing)
+		assert.Empty(t, ingest.Wired.Routing) // empty slice, not nil
 	})
 
-	t.Run("only routing_json set populates Wired with routing only", func(t *testing.T) {
+	t.Run("only routing_json set populates Wired with empty fields and routing", func(t *testing.T) {
 		t.Parallel()
 		m := wiredConfigModel{
 			FieldsJSON:            jsontypes.NewNormalizedNull(),
@@ -248,7 +254,7 @@ func TestWiredConfigToAPIIngest(t *testing.T) {
 		ingest := m.toAPIIngest(&diags)
 		require.False(t, diags.HasError())
 		require.NotNil(t, ingest.Wired)
-		assert.Nil(t, ingest.Wired.Fields)
+		assert.JSONEq(t, `{}`, string(ingest.Wired.Fields)) // default empty object
 		assert.Len(t, ingest.Wired.Routing, 1)
 		assert.Equal(t, "logs.errors", ingest.Wired.Routing[0].Destination)
 	})

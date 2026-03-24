@@ -40,7 +40,7 @@ func getSchema() schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: "Manages Kibana [Streams](https://www.elastic.co/docs/api/doc/kibana/group/endpoint-streams). " +
 			"Streams is an experimental feature for managing data ingestion in Kibana. " +
-			"Requires Elastic Stack 9.4.0 or higher. This functionality is in technical preview and may be changed or removed in a future release.\n\n" +
+			"Requires Elastic Stack 9.2.0 or higher. This functionality is in technical preview and may be changed or removed in a future release.\n\n" +
 			"Three stream types are supported:\n" +
 			"- **Wired streams** (`wired_config`): fully managed data streams with typed field mappings and routing rules.\n" +
 			"- **Classic streams** (`classic_config`): adopt existing Elasticsearch data streams — they cannot be created or deleted via this resource, only imported and updated.\n" +
@@ -151,15 +151,19 @@ func getWiredConfigSchema() map[string]schema.Attribute {
 		},
 		"lifecycle_json": schema.StringAttribute{
 			MarkdownDescription: "Lifecycle configuration as a JSON object. Supports DSL (`{\"dsl\": {\"data_retention\": \"30d\"}}`), " +
-				"ILM (`{\"ilm\": {\"policy\": \"my-policy\"}}`), or inherited lifecycle (`{\"inherit\": {}}`).",
+				"ILM (`{\"ilm\": {\"policy\": \"my-policy\"}}`), or inherited lifecycle (`{\"inherit\": {}}`). " +
+				"When not set, defaults to `{\"inherit\":{}}` and the server value is stored in state.",
 			CustomType: jsontypes.NormalizedType{},
 			Optional:   true,
+			Computed:   true,
 		},
 		"failure_store_json": schema.StringAttribute{
 			MarkdownDescription: "Failure store configuration as a JSON object. Controls where failed ingest documents are stored. " +
-				"Supports `{\"inherit\": {}}`, `{\"disabled\": {}}`, or a lifecycle-enabled configuration.",
+				"Supports `{\"inherit\": {}}`, `{\"disabled\": {}}`, or a lifecycle-enabled configuration. " +
+				"When not set, defaults to `{\"inherit\":{}}` and the server value is stored in state.",
 			CustomType: jsontypes.NormalizedType{},
 			Optional:   true,
+			Computed:   true,
 		},
 		"index_number_of_shards": schema.Int64Attribute{
 			MarkdownDescription: "Number of primary shards for the underlying index.",
@@ -193,14 +197,18 @@ func getClassicConfigSchema() map[string]schema.Attribute {
 			Optional:   true,
 		},
 		"lifecycle_json": schema.StringAttribute{
-			MarkdownDescription: "Lifecycle configuration as a JSON object. Supports DSL, ILM, or inherited lifecycle.",
-			CustomType:          jsontypes.NormalizedType{},
-			Optional:            true,
+			MarkdownDescription: "Lifecycle configuration as a JSON object. Supports DSL, ILM, or inherited lifecycle. " +
+				"When not set, defaults to `{\"inherit\":{}}` and the server value is stored in state.",
+			CustomType: jsontypes.NormalizedType{},
+			Optional:   true,
+			Computed:   true,
 		},
 		"failure_store_json": schema.StringAttribute{
-			MarkdownDescription: "Failure store configuration as a JSON object.",
-			CustomType:          jsontypes.NormalizedType{},
-			Optional:            true,
+			MarkdownDescription: "Failure store configuration as a JSON object. " +
+				"When not set, defaults to `{\"inherit\":{}}` and the server value is stored in state.",
+			CustomType: jsontypes.NormalizedType{},
+			Optional:   true,
+			Computed:   true,
 		},
 		"index_number_of_shards": schema.Int64Attribute{
 			MarkdownDescription: "Number of primary shards for the underlying index.",

@@ -154,7 +154,13 @@ func (m *streamModel) populateFromAPI(ctx context.Context, resp *kibanaoapi.Stre
 
 // toAPIUpsertRequest converts the Terraform model to an API upsert request.
 func (m *streamModel) toAPIUpsertRequest(ctx context.Context, diags *diag.Diagnostics) kibanaoapi.StreamUpsertRequest {
-	req := kibanaoapi.StreamUpsertRequest{}
+	// Initialise all required array fields as empty slices, not nil.
+	// The API rejects requests where these are absent or null.
+	req := kibanaoapi.StreamUpsertRequest{
+		Dashboards: []string{},
+		Rules:      []string{},
+		Queries:    []kibanaoapi.StreamQuery{},
+	}
 
 	// Build stream definition
 	req.Stream = kibanaoapi.StreamDefinition{
@@ -173,10 +179,12 @@ func (m *streamModel) toAPIUpsertRequest(ctx context.Context, diags *diag.Diagno
 
 	// Map dashboards
 	if typeutils.IsKnown(m.Dashboards) {
-		req.Dashboards = typeutils.ListTypeToSliceString(ctx, m.Dashboards, path.Root("dashboards"), diags)
+		if d := typeutils.ListTypeToSliceString(ctx, m.Dashboards, path.Root("dashboards"), diags); d != nil {
+			req.Dashboards = d
+		}
 	}
 
-	// Map queries
+	// Map queries — req.Queries is pre-initialised to []{}; append if present
 	if len(m.Queries) > 0 {
 		req.Queries = make([]kibanaoapi.StreamQuery, 0, len(m.Queries))
 		for _, qm := range m.Queries {
