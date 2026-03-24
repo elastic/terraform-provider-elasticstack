@@ -18,12 +18,12 @@ resource "elasticstack_elasticsearch_index_lifecycle" "example" {
   modified_date = <computed, string> # last modification time from the cluster
 
   # At least one of hot, warm, cold, frozen, delete MUST be set (schema: AtLeastOneOf).
-  # Each phase is a list with MaxItems = 1; the single element is an object (see below).
-  hot    = [<phase_hot>]
-  warm   = [<phase_warm>]
-  cold   = [<phase_cold>]
-  frozen = [<phase_frozen>]
-  delete = [<phase_delete>]
+  # Each phase is a Plugin Framework SingleNestedBlock (at most one block per phase; state stores a single object or null).
+  hot    { /* phase_hot */ }
+  warm   { /* phase_warm */ }
+  cold   { /* phase_cold */ }
+  frozen { /* phase_frozen */ }
+  delete { /* phase_delete */ }
 
   elasticsearch_connection {
     endpoints                = <optional, list(string)>
@@ -44,7 +44,7 @@ resource "elasticstack_elasticsearch_index_lifecycle" "example" {
 }
 ```
 
-In Terraform configuration, each phase is written as a **single nested block** (for example `hot { ... }`), which corresponds to a one-element list in the provider schema.
+In Terraform configuration, each phase is written as a **`SingleNestedBlock`** (for example `hot { ... }`). State stores that phase as an object-shaped value (or null when absent), not as a single-element list.
 
 ### Per-phase object (common)
 
@@ -56,7 +56,7 @@ Every phase object MAY include:
 
 ### Allowed nested actions by phase
 
-| Phase | Nested action blocks (each is a list with **MaxItems = 1** unless noted) |
+| Phase | Nested action blocks (each is a **`SingleNestedBlock`**) |
 |-------|-----------------------------------------------------------------------------|
 | **hot** | `set_priority`, `unfollow`, `rollover`, `readonly`, `shrink`, `forcemerge`, `searchable_snapshot`, `downsample` |
 | **warm** | `set_priority`, `unfollow`, `readonly`, `allocate`, `migrate`, `shrink`, `forcemerge`, `downsample` |
@@ -66,7 +66,7 @@ Every phase object MAY include:
 
 ### Nested action block schemas
 
-Each action below is expressed as Terraform nested block syntax. All such blocks are **optional**; each uses **list** semantics with **max 1** element in practice (`action { ... }` is one list element).
+Each action below is expressed as Terraform nested block syntax. All such blocks are **optional** and use **`SingleNestedBlock`** semantics (`action { ... }`); state stores each declared action as an object, not as a list.
 
 ```hcl
 # allocate — warm, cold only
@@ -84,8 +84,9 @@ delete {
 }
 
 # forcemerge — hot, warm only
+# When the block is omitted, max_num_segments is not required. When the block is declared, max_num_segments is required (object-level AlsoRequires).
 forcemerge {
-  max_num_segments = <required, int, >= 1>
+  max_num_segments = <optional, int, >= 1> # required when block is present
   index_codec        = <optional, string>
 }
 
@@ -119,14 +120,16 @@ rollover {
 }
 
 # searchable_snapshot — hot, cold, frozen only
+# snapshot_repository required when block is present (object-level AlsoRequires).
 searchable_snapshot {
-  snapshot_repository = <required, string>
+  snapshot_repository = <optional, string> # required when block is present
   force_merge_index   = <optional, bool, default true>
 }
 
 # set_priority — hot, warm, cold only
+# priority required when block is present (object-level AlsoRequires).
 set_priority {
-  priority = <required, int, >= 0> # index recovery priority for this phase
+  priority = <optional, int, >= 0> # required when block is present; index recovery priority for this phase
 }
 
 # shrink — hot, warm only
@@ -142,26 +145,28 @@ unfollow {
 }
 
 # wait_for_snapshot — delete phase only
+# policy required when block is present (object-level AlsoRequires).
 wait_for_snapshot {
-  policy = <required, string> # SLM policy name to wait for
+  policy = <optional, string> # required when block is present; SLM policy name to wait for
 }
 
 # downsample — hot, warm, cold only
+# fixed_interval required when block is present (object-level AlsoRequires).
 downsample {
-  fixed_interval = <required, string>
+  fixed_interval = <optional, string> # required when block is present
   wait_timeout     = <optional + computed, string> # may be set by the cluster on read
 }
 ```
 
 ### Example: fully expanded phase shapes (illustrative)
 
-The `[{ ... }]` form below is equivalent to one nested block per phase (e.g. `hot { min_age = "1h" ... }`).
+Each phase is one `SingleNestedBlock` (e.g. `hot { min_age = "1h" ... }`).
 
 ```hcl
-  hot = [{
+  hot {
     min_age = <optional+computed, string>
 
-    set_priority { priority = <required int> }
+    set_priority { priority = <optional int; required when block present> }
     unfollow { enabled = <optional bool> }
     rollover {
       max_age = <optional string>
@@ -174,20 +179,20 @@ The `[{ ... }]` form below is equivalent to one nested block per phase (e.g. `ho
       allow_write_after_shrink = <optional bool>
     }
     forcemerge {
-      max_num_segments = <required int>
+      max_num_segments = <optional int; required when block present>
       index_codec      = <optional string>
     }
     searchable_snapshot {
-      snapshot_repository = <required string>
+      snapshot_repository = <optional string; required when block present>
       force_merge_index   = <optional bool>
     }
     downsample {
-      fixed_interval = <required string>
+      fixed_interval = <optional string; required when block present>
       wait_timeout   = <optional+computed string>
     }
-  }]
+  }
 
-  warm = [{
+  warm {
     min_age = <optional+computed, string>
     set_priority { ... }
     unfollow { ... }
@@ -197,9 +202,9 @@ The `[{ ... }]` form below is equivalent to one nested block per phase (e.g. `ho
     shrink { ... }
     forcemerge { ... }
     downsample { ... }
-  }]
+  }
 
-  cold = [{
+  cold {
     min_age = <optional+computed, string>
     set_priority { ... }
     unfollow { ... }
@@ -209,21 +214,21 @@ The `[{ ... }]` form below is equivalent to one nested block per phase (e.g. `ho
     migrate { ... }
     freeze { ... }
     downsample { ... }
-  }]
+  }
 
-  frozen = [{
+  frozen {
     min_age = <optional+computed, string>
     searchable_snapshot {
-      snapshot_repository = <required string>
+      snapshot_repository = <optional string; required when block present>
       force_merge_index   = <optional bool>
     }
-  }]
+  }
 
-  delete = [{
+  delete {
     min_age = <optional+computed, string>
-    wait_for_snapshot { policy = <required string> }
+    wait_for_snapshot { policy = <optional string; required when block present> }
     delete { delete_searchable_snapshot = <optional bool> }
-  }]
+  }
 ```
 
 ## Requirements
@@ -369,3 +374,75 @@ If expansion encounters an action key that is not supported by the provider’s 
 - GIVEN an internal expansion path surfaces an unknown action name
 - WHEN the policy is expanded
 - THEN the provider SHALL return a diagnostic
+
+### Requirement: Single nested blocks for phases and actions (REQ-020)
+
+The resource SHALL model each of the phase blocks `hot`, `warm`, `cold`, `frozen`, and `delete` as a **Plugin Framework `SingleNestedBlock`** (at most one block per phase in configuration; state stores a single nested object or null when absent), not as a list nested block with a maximum length of one.
+
+Each ILM action block allowed under a phase (for example `set_priority`, `rollover`, `forcemerge`, `searchable_snapshot`, `wait_for_snapshot`, `delete`, and other actions defined by the provider schema) SHALL likewise be modeled as a **`SingleNestedBlock`**.
+
+The **`elasticsearch_connection`** block SHALL remain a **list nested block** as provided by the shared provider connection schema.
+
+#### Scenario: Phase block cardinality
+
+- GIVEN a Terraform configuration for this resource
+- WHEN the user declares a phase (for example `hot { ... }`)
+- THEN the schema SHALL allow at most one such block for that phase and SHALL persist that phase as an object-shaped value in state, not as a single-element list
+
+#### Scenario: Action block cardinality
+
+- GIVEN a phase that supports an ILM action block
+- WHEN the user declares that action (for example `forcemerge { ... }`)
+- THEN the schema SHALL allow at most one such block and SHALL persist it as an object-shaped value in state, not as a single-element list
+
+### Requirement: State schema version and upgrade (REQ-021)
+
+The resource SHALL use a **non-zero** `schema.Schema.Version` for this resource type after this change.
+
+The resource SHALL implement **`ResourceWithUpgradeState`** and SHALL migrate stored Terraform state from the **prior version** (list-shaped nested values for phases and ILM actions) to the **new version** (object-shaped nested values) for the same logical configuration.
+
+The migration SHALL unwrap list-encoded values **only** for known ILM phase keys and known ILM action keys under those phases (including the delete-phase ILM action block named `delete`). The migration SHALL **not** alter the encoding of **`elasticsearch_connection`**.
+
+#### Scenario: Upgrade from list-shaped phase state
+
+- GIVEN persisted state where a phase is stored as a JSON array containing one object
+- WHEN Terraform loads state and runs the state upgrader
+- THEN the upgraded state SHALL store that phase as a single object (or equivalent null) consistent with `SingleNestedBlock` semantics
+
+#### Scenario: Connection block unchanged by upgrade
+
+- GIVEN persisted state that includes `elasticsearch_connection` as a list
+- WHEN the state upgrader runs
+- THEN the `elasticsearch_connection` value SHALL remain list-shaped as defined by the connection schema
+
+### Requirement: Action fields optional with object-level AlsoRequires (REQ-022)
+
+For the ILM action blocks **`forcemerge`**, **`searchable_snapshot`**, **`set_priority`**, **`wait_for_snapshot`**, and **`downsample`**, each attribute that is **required for API correctness when the action is declared** SHALL be **optional** at the Terraform attribute level (so an entirely omitted action block does not force those attributes to appear).
+
+When the user **declares** one of these action blocks in configuration, validation SHALL require that all of the following previously required attributes are set (non-null), using object-level validation equivalent to **`objectvalidator.AlsoRequires`**:
+
+- **`forcemerge`**: `max_num_segments`
+- **`searchable_snapshot`**: `snapshot_repository`
+- **`set_priority`**: `priority`
+- **`wait_for_snapshot`**: `policy`
+- **`downsample`**: `fixed_interval`
+
+Existing attribute-level validators (for example minimum values) SHALL remain on those attributes where applicable.
+
+#### Scenario: Omitted action block is valid
+
+- GIVEN a phase without a particular action block (for example no `forcemerge` block)
+- WHEN Terraform validates configuration
+- THEN validation SHALL NOT fail solely because `max_num_segments` is unset
+
+#### Scenario: Empty action block is invalid
+
+- GIVEN the user declares `forcemerge { }` with no attributes
+- WHEN Terraform validates configuration
+- THEN validation SHALL fail with a diagnostic indicating the required fields when the block is present
+
+#### Scenario: Searchable snapshot requires repository when present
+
+- GIVEN the user declares `searchable_snapshot { force_merge_index = true }` without `snapshot_repository`
+- WHEN Terraform validates configuration
+- THEN validation SHALL fail with a diagnostic
