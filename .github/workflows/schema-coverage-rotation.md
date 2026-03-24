@@ -18,6 +18,8 @@ tools:
     - id: schema-coverage-rotation
       file-glob: ["memory/schema-coverage-rotation/schema-coverage.json"]
       create-orphan: true
+      max-file-size: 524288
+      max-patch-size: 102400
 safe-outputs:
   create-issue:
     title-prefix: "[schema-coverage] "

@@ -22,7 +22,7 @@
 #
 # Rotates schema-coverage analysis across stale provider entities and opens actionable test-improvement issues.
 #
-# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"80dad9e2236dc8c175d95ad11ddcbd45e54515ce3b3ad175d459c72b1a84f634","compiler_version":"v0.62.5","strict":true,"agent_id":"copilot","agent_model":"gpt-5.4"}
+# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"ed3331e11d0e55d2c1487a331438ddf8061d482b12611c01ae3775d972ca86c5","compiler_version":"v0.62.5","strict":true,"agent_id":"copilot","agent_model":"gpt-5.4"}
 
 name: "Schema Coverage Rotation"
 "on":
@@ -339,7 +339,7 @@ jobs:
           mkdir -p /tmp/gh-aw/safeoutputs
           mkdir -p /tmp/gh-aw/mcp-logs/safeoutputs
           cat > ${RUNNER_TEMP}/gh-aw/safeoutputs/config.json << 'GH_AW_SAFE_OUTPUTS_CONFIG_EOF'
-          {"assign_to_agent":{"allowed":["copilot"],"default_agent":"copilot","max":3,"target":"*"},"create_issue":{"max":3},"missing_data":{},"missing_tool":{},"noop":{"max":1},"push_repo_memory":{"memories":[{"dir":"/tmp/gh-aw/repo-memory/schema-coverage-rotation","id":"schema-coverage-rotation","max_file_count":100,"max_file_size":10240,"max_patch_size":10240}]}}
+          {"assign_to_agent":{"allowed":["copilot"],"default_agent":"copilot","max":3,"target":"*"},"create_issue":{"max":3},"missing_data":{},"missing_tool":{},"noop":{"max":1},"push_repo_memory":{"memories":[{"dir":"/tmp/gh-aw/repo-memory/schema-coverage-rotation","id":"schema-coverage-rotation","max_file_count":100,"max_file_size":524288,"max_patch_size":102400}]}}
           GH_AW_SAFE_OUTPUTS_CONFIG_EOF
       - name: Write Safe Outputs Tools
         run: |
@@ -1052,9 +1052,9 @@ jobs:
           MEMORY_ID: schema-coverage-rotation
           TARGET_REPO: ${{ github.repository }}
           BRANCH_NAME: memory/schema-coverage-rotation
-          MAX_FILE_SIZE: 10240
+          MAX_FILE_SIZE: 524288
           MAX_FILE_COUNT: 100
-          MAX_PATCH_SIZE: 10240
+          MAX_PATCH_SIZE: 102400
           ALLOWED_EXTENSIONS: '[]'
           FILE_GLOB_FILTER: "memory/schema-coverage-rotation/schema-coverage.json"
         with:
