@@ -15,7 +15,6 @@ const (
 var allowedCopilotAuthorLogins = map[string]struct{}{
 	"github-copilot[bot]": {},
 	"Copilot":             {},
-	"tobio":               {},
 }
 
 type EvaluationInput struct {
