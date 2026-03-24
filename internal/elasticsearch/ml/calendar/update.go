@@ -124,9 +124,9 @@ func (r *calendarResource) update(ctx context.Context, req resource.UpdateReques
 				resp.Diagnostics.AddError("Failed to add job to calendar", fmt.Sprintf("Failed to add job %s to calendar %s: %s", jobID, calendarID, err.Error()))
 				return
 			}
-			defer addRes.Body.Close()
 
 			diags = diagutil.CheckErrorFromFW(addRes, fmt.Sprintf("Unable to add job %s to calendar %s", jobID, calendarID))
+			addRes.Body.Close()
 			resp.Diagnostics.Append(diags...)
 			if resp.Diagnostics.HasError() {
 				return
@@ -141,9 +141,9 @@ func (r *calendarResource) update(ctx context.Context, req resource.UpdateReques
 				resp.Diagnostics.AddError("Failed to remove job from calendar", fmt.Sprintf("Failed to remove job %s from calendar %s: %s", jobID, calendarID, err.Error()))
 				return
 			}
-			defer removeRes.Body.Close()
 
 			diags = diagutil.CheckErrorFromFW(removeRes, fmt.Sprintf("Unable to remove job %s from calendar %s", jobID, calendarID))
+			removeRes.Body.Close()
 			resp.Diagnostics.Append(diags...)
 			if resp.Diagnostics.HasError() {
 				return
