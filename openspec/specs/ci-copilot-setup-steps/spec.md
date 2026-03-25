@@ -27,9 +27,7 @@ jobs:
     # checkout → setup-node (node-version-file: package.json; npm cache via package-lock.json)
     # → setup-go (go.mod) → setup-terraform → stack and Makefile steps
 ```
-
 ## Requirements
-
 ### Requirement: Workflow identity and triggers (REQ-001–REQ-003)
 
 The workflow name SHALL be `Copilot Setup Steps`. On `push` and `pull_request`, the workflow SHALL use GitHub Actions path filters such that it runs when **at least one** changed file matches `.github/workflows/copilot-setup-steps.yml` (matching is not limited to exclusive changes to that file). The workflow SHALL support manual execution via `workflow_dispatch`.
@@ -100,19 +98,19 @@ The job SHALL start the Fleet-oriented Docker Compose stack by running `make doc
 
 #### Scenario: Stack containers start
 
-- GIVEN the repository `.env` file provides the Docker Compose bootstrap defaults
-- WHEN the stack setup step runs
-- THEN `make docker-fleet` SHALL complete successfully before dependency and Kibana steps
+- **GIVEN** the repository `.env` file provides the Docker Compose bootstrap defaults
+- **WHEN** the stack setup step runs
+- **THEN** `make docker-fleet` SHALL complete successfully before dependency and Kibana steps
 
 #### Scenario: Workflow leaves bootstrap defaults external
 
-- WHEN the workflow YAML is inspected
-- THEN the workflow SHALL not declare workflow-level bootstrap credential defaults
+- **WHEN** the workflow YAML is inspected
+- **THEN** the workflow SHALL not declare workflow-level bootstrap credential defaults
 
 #### Scenario: Workflow does not embed bootstrap defaults
 
-- WHEN the workflow YAML is inspected
-- THEN the `copilot-setup-steps` job SHALL NOT declare bootstrap credential defaults in `jobs.copilot-setup-steps.env`
+- **WHEN** the workflow YAML is inspected
+- **THEN** the `copilot-setup-steps` job SHALL NOT declare bootstrap credential defaults in `jobs.copilot-setup-steps.env`
 
 ### Requirement: Repository setup target (REQ-010)
 
@@ -130,17 +128,17 @@ The job SHALL run `make set-kibana-password` without step-specific credential ov
 
 #### Scenario: Credentials align with configured environment
 
-- GIVEN Elasticsearch is listening for bootstrap operations
-- AND the Makefile defaults remain `ELASTICSEARCH_USERNAME=elastic`, `KIBANA_SYSTEM_USERNAME=kibana_system`, and `KIBANA_SYSTEM_PASSWORD=password` unless explicitly overridden
-- WHEN `set-kibana-password` runs
-- THEN environment variables SHALL supply values consistent with the running stack’s configured `elastic` and Kibana system user passwords
+- **GIVEN** Elasticsearch is listening for bootstrap operations
+- **AND** the Makefile defaults remain `ELASTICSEARCH_USERNAME=elastic`, `KIBANA_SYSTEM_USERNAME=kibana_system`, and `KIBANA_SYSTEM_PASSWORD=password` unless explicitly overridden
+- **WHEN** `set-kibana-password` runs
+- **THEN** environment variables SHALL supply values consistent with the running stack’s configured `elastic` and Kibana system user passwords
 
-#### Scenario: Manual run uses externally provided configuration
+#### Scenario: Manual run uses repository defaults unless overridden
 
-- GIVEN a maintainer runs the workflow via `workflow_dispatch`
-- AND the repository defaults remain available for the Elasticsearch and Kibana system user values unless the execution environment overrides them
-- WHEN the setup job executes
-- THEN the job SHALL use those provided values instead of workflow-defined defaults
+- **GIVEN** a maintainer runs the workflow via `workflow_dispatch`
+- **AND** the repository defaults remain available for the Elasticsearch and Kibana system user values unless the execution environment overrides them
+- **WHEN** the setup job executes
+- **THEN** the job SHALL use those provided values instead of workflow-defined defaults
 
 ### Requirement: Elasticsearch API key for the agent (REQ-013–REQ-014)
 
@@ -148,21 +146,21 @@ The job SHALL include a step that runs `make create-es-api-key`, parses JSON wit
 
 #### Scenario: API key output is published
 
-- GIVEN Elasticsearch accepts security API calls
-- AND the Makefile authentication defaults or execution-environment overrides provide the Elasticsearch connection settings used by the Makefile
-- WHEN the API key step succeeds
-- THEN the step output named `apikey` SHALL contain the base64-encoded API key material from the `encoded` field
+- **GIVEN** Elasticsearch accepts security API calls
+- **AND** the Makefile authentication defaults or execution-environment overrides provide the Elasticsearch connection settings used by the Makefile
+- **WHEN** the API key step succeeds
+- **THEN** the step output named `apikey` SHALL contain the base64-encoded API key material from the `encoded` field
 
 ### Requirement: Fleet policy bootstrap (REQ-015–REQ-016)
 
-The job SHALL run `make setup-kibana-fleet` while relying on the current Makefile authentication defaults unless the execution environment overrides them. The step SHALL set `FLEET_NAME` to `fleet` so Fleet server host URLs match the Compose service name expected by the Makefile’s `FLEET_ENDPOINT` construction.
+The job SHALL run `make setup-kibana-fleet` while relying on the current Makefile authentication defaults unless the execution environment overrides them. The step SHALL explicitly set `FLEET_NAME` to `fleet` so Fleet server host URLs match the Compose service name expected by the Makefile’s `FLEET_ENDPOINT` construction.
 
 #### Scenario: Fleet defaults match Compose service
 
-- GIVEN Kibana is available on localhost
-- AND the Makefile authentication defaults or execution-environment overrides provide the Elasticsearch connection settings used by the Makefile
-- WHEN Fleet setup runs
-- THEN `FLEET_NAME` SHALL be `fleet` for that step
+- **GIVEN** Kibana is available on localhost
+- **AND** the Makefile authentication defaults or execution-environment overrides provide the Elasticsearch connection settings used by the Makefile
+- **WHEN** Fleet setup runs
+- **THEN** `FLEET_NAME` SHALL be `fleet` for that step
 
 ### Requirement: Supply chain for actions (REQ-017)
 
@@ -187,3 +185,4 @@ When the `copilot-setup-steps` job fails after attempting repository setup or El
 
 - WHEN the `copilot-setup-steps` job completes successfully
 - THEN the workflow SHALL not run the Docker Compose log collection step
+
