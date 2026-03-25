@@ -18,6 +18,16 @@
 package dataview_test
 
 import (
+	"fmt"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"net/http/httputil"
+	"net/url"
+	"os"
+	"strconv"
+	"strings"
+	"sync/atomic"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -26,6 +36,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/stretchr/testify/require"
 )
 
 var minDataViewAPISupport = version.Must(version.NewVersion("8.1.0"))
@@ -100,7 +111,7 @@ func TestAccResourceDataView(t *testing.T) {
 func TestAccResourceDataViewColorFieldFormat(t *testing.T) {
 	indexName := "my-color-index-" + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
@@ -140,4 +151,94 @@ func TestAccResourceDataViewColorFieldFormat(t *testing.T) {
 			},
 		},
 	})
+}
+
+func TestAccResourceDataViewCreateErrorRecovery(t *testing.T) {
+	if os.Getenv("TF_ACC") != "1" {
+		t.Skip("acceptance tests skipped unless TF_ACC=1")
+	}
+
+	acctest.PreCheck(t)
+	unsupported, err := versionutils.CheckIfVersionIsUnsupported(minFullDataviewSupport)()
+	require.NoError(t, err)
+	if unsupported {
+		t.Skipf("data view create recovery requires stack version %s or later", minFullDataviewSupport)
+	}
+
+	acctest.PreCheckWithExplicitKibanaEndpoint(t)
+
+	indexName := "my-index-" + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+	spaceID := "test-space-" + sdkacctest.RandStringFromCharSet(6, sdkacctest.CharSetAlphaNum)
+	dataViewID := "test-data-view-" + sdkacctest.RandStringFromCharSet(6, sdkacctest.CharSetAlphaNum)
+
+	proxyServer, createFailures := testAccDataViewCreateErrorProxy(t, os.Getenv("KIBANA_ENDPOINT"), spaceID)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"index_name":      config.StringVariable(indexName),
+					"space_id":        config.StringVariable(spaceID),
+					"data_view_id":    config.StringVariable(dataViewID),
+					"kibana_endpoint": config.StringVariable(proxyServer.URL),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "id", fmt.Sprintf("%s/%s", spaceID, dataViewID)),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "space_id", spaceID),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.id", dataViewID),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"index_name":      config.StringVariable(indexName),
+					"space_id":        config.StringVariable(spaceID),
+					"data_view_id":    config.StringVariable(dataViewID),
+					"kibana_endpoint": config.StringVariable(proxyServer.URL),
+				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+		},
+	})
+
+	require.Equal(t, int32(1), createFailures.Load())
+}
+
+func testAccDataViewCreateErrorProxy(t *testing.T, upstreamEndpoint, spaceID string) (*httptest.Server, *atomic.Int32) {
+	targetURL, err := url.Parse(upstreamEndpoint)
+	require.NoError(t, err)
+
+	createFailures := &atomic.Int32{}
+	proxy := httputil.NewSingleHostReverseProxy(targetURL)
+	proxy.ModifyResponse = func(resp *http.Response) error {
+		if resp.Request.Method != http.MethodPost || !testAccIsDataViewCreatePath(resp.Request.URL.Path, spaceID) {
+			return nil
+		}
+		if !createFailures.CompareAndSwap(0, 1) {
+			return nil
+		}
+
+		body := `{"statusCode":400,"error":"Bad Request","message":"synthetic create failure after upstream persistence"}`
+		resp.StatusCode = http.StatusBadRequest
+		resp.Status = http.StatusText(http.StatusBadRequest)
+		resp.Body = io.NopCloser(strings.NewReader(body))
+		resp.ContentLength = int64(len(body))
+		resp.Header.Del("Content-Encoding")
+		resp.Header.Set("Content-Length", strconv.Itoa(len(body)))
+		resp.Header.Set("Content-Type", "application/json")
+		return nil
+	}
+
+	server := httptest.NewServer(proxy)
+	t.Cleanup(server.Close)
+	return server, createFailures
+}
+
+func testAccIsDataViewCreatePath(path, spaceID string) bool {
+	return path == "/api/data_views/data_view" || path == fmt.Sprintf("/s/%s/api/data_views/data_view", spaceID)
 }

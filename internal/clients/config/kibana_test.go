@@ -127,6 +127,35 @@ func Test_newKibanaConfigFromSDK(t *testing.T) {
 				}
 			},
 		},
+		{
+			name: "should keep configured endpoint when explicitly requested",
+			args: func() args {
+				baseCfg := baseConfig{
+					Username: "elastic",
+					Password: "changeme",
+				}
+
+				return args{
+					baseCfg: baseCfg,
+					resourceData: map[string]any{
+						"kibana": []any{
+							map[string]any{
+								"endpoints": []any{"example.com/kibana"},
+							},
+						},
+					},
+					env: map[string]string{
+						"KIBANA_ENDPOINT":                    "example.com/cabana",
+						PreferConfiguredKibanaEndpointEnvVar: "true",
+					},
+					expectedConfig: kibanaConfig{
+						Address:  "example.com/kibana",
+						Username: "elastic",
+						Password: "changeme",
+					},
+				}
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -138,6 +167,7 @@ func Test_newKibanaConfigFromSDK(t *testing.T) {
 			os.Unsetenv("KIBANA_API_KEY")
 			os.Unsetenv("KIBANA_BEARER_TOKEN")
 			os.Unsetenv("KIBANA_CA_CERTS")
+			os.Unsetenv(PreferConfiguredKibanaEndpointEnvVar)
 
 			args := tt.args()
 			rd := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
@@ -164,6 +194,7 @@ func Test_newKibanaConfigFromSDK_BearerToken(t *testing.T) {
 	os.Unsetenv("KIBANA_API_KEY")
 	os.Unsetenv("KIBANA_BEARER_TOKEN")
 	os.Unsetenv("KIBANA_CA_CERTS")
+	os.Unsetenv(PreferConfiguredKibanaEndpointEnvVar)
 
 	baseCfg := baseConfig{}
 	rd := schema.TestResourceDataRaw(t, map[string]*schema.Schema{
@@ -194,6 +225,7 @@ func Test_newKibanaConfigFromSDK_BearerTokenEnvOverride(t *testing.T) {
 	os.Unsetenv("KIBANA_API_KEY")
 	os.Unsetenv("KIBANA_BEARER_TOKEN")
 	os.Unsetenv("KIBANA_CA_CERTS")
+	os.Unsetenv(PreferConfiguredKibanaEndpointEnvVar)
 
 	t.Setenv("KIBANA_BEARER_TOKEN", "env-jwt-token")
 
@@ -350,6 +382,39 @@ func Test_newKibanaConfigFromFramework(t *testing.T) {
 				}
 			},
 		},
+		{
+			name: "should keep configured endpoint when explicitly requested",
+			args: func() args {
+				baseCfg := baseConfig{
+					Username: "elastic",
+					Password: "changeme",
+				}
+
+				return args{
+					baseCfg: baseCfg,
+					providerConfig: ProviderConfiguration{
+						Kibana: []KibanaConnection{
+							{
+								Endpoints: types.ListValueMust(types.StringType, []attr.Value{
+									types.StringValue("example.com/kibana"),
+								}),
+								CACerts:  types.ListValueMust(types.StringType, []attr.Value{}),
+								Insecure: types.BoolValue(false),
+							},
+						},
+					},
+					env: map[string]string{
+						"KIBANA_ENDPOINT":                    "example.com/cabana",
+						PreferConfiguredKibanaEndpointEnvVar: "true",
+					},
+					expectedConfig: kibanaConfig{
+						Address:  "example.com/kibana",
+						Username: "elastic",
+						Password: "changeme",
+					},
+				}
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -361,6 +426,7 @@ func Test_newKibanaConfigFromFramework(t *testing.T) {
 			os.Unsetenv("KIBANA_ENDPOINT")
 			os.Unsetenv("KIBANA_CA_CERTS")
 			os.Unsetenv("KIBANA_INSECURE")
+			os.Unsetenv(PreferConfiguredKibanaEndpointEnvVar)
 
 			args := tt.args()
 
@@ -384,6 +450,7 @@ func Test_newKibanaConfigFromFramework_BearerToken(t *testing.T) {
 	os.Unsetenv("KIBANA_ENDPOINT")
 	os.Unsetenv("KIBANA_CA_CERTS")
 	os.Unsetenv("KIBANA_INSECURE")
+	os.Unsetenv(PreferConfiguredKibanaEndpointEnvVar)
 
 	baseCfg := baseConfig{}
 	providerConfig := ProviderConfiguration{
@@ -415,6 +482,7 @@ func Test_newKibanaConfigFromFramework_BearerTokenEnvOverride(t *testing.T) {
 	os.Unsetenv("KIBANA_ENDPOINT")
 	os.Unsetenv("KIBANA_CA_CERTS")
 	os.Unsetenv("KIBANA_INSECURE")
+	os.Unsetenv(PreferConfiguredKibanaEndpointEnvVar)
 
 	t.Setenv("KIBANA_BEARER_TOKEN", "env-jwt-token")
 
