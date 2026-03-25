@@ -85,7 +85,7 @@ func TestAccIndexTemplateDataSource(t *testing.T) {
 }
 
 // TestAccIndexTemplateDataSourceTemplate covers the template subtree:
-// aliases (name, filter, index_routing, search_routing, is_hidden, is_write_index), mappings, and settings.
+// aliases (name, filter, routing, index_routing, search_routing, is_hidden, is_write_index), mappings, and settings.
 func TestAccIndexTemplateDataSourceTemplate(t *testing.T) {
 	templateName := "test-ds-tpl-" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
@@ -94,7 +94,11 @@ func TestAccIndexTemplateDataSourceTemplate(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccIndexTemplateDataSourceTemplateConfig(templateName),
+				Config: testAccIndexTemplateDataSourceTemplateConfig(
+					templateName,
+					`{"properties":{"log_level":{"type":"keyword"}}}`,
+					`{"index":{"number_of_shards":"1"}}`,
+				),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "name", templateName),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.#", "1"),
@@ -104,21 +108,50 @@ func TestAccIndexTemplateDataSourceTemplate(t *testing.T) {
 						"template.0.alias.*",
 						map[string]string{
 							"name":           "my_alias",
+							"filter":         `{"term":{"status":"active"}}`,
 							"index_routing":  "shard_1",
+							"routing":        "shard_1",
 							"search_routing": "shard_1",
 							"is_hidden":      "false",
 							"is_write_index": "true",
 						},
 					),
-					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_index_template.test", "template.0.mappings"),
-					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_index_template.test", "template.0.settings"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.0.mappings", `{"properties":{"log_level":{"type":"keyword"}}}`),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.0.settings", `{"index":{"number_of_shards":"1"}}`),
+				),
+			},
+			{
+				Config: testAccIndexTemplateDataSourceTemplateConfig(
+					templateName,
+					`{"properties":{"log_level":{"type":"keyword"},"severity":{"type":"integer"}}}`,
+					`{"index":{"number_of_shards":"2"}}`,
+				),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "name", templateName),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.#", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.0.alias.#", "1"),
+					resource.TestCheckTypeSetElemNestedAttrs(
+						"data.elasticstack_elasticsearch_index_template.test",
+						"template.0.alias.*",
+						map[string]string{
+							"name":           "my_alias",
+							"filter":         `{"term":{"status":"active"}}`,
+							"index_routing":  "shard_1",
+							"routing":        "shard_1",
+							"search_routing": "shard_1",
+							"is_hidden":      "false",
+							"is_write_index": "true",
+						},
+					),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.0.mappings", `{"properties":{"log_level":{"type":"keyword"},"severity":{"type":"integer"}}}`),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.0.settings", `{"index":{"number_of_shards":"2"}}`),
 				),
 			},
 		},
 	})
 }
 
-func testAccIndexTemplateDataSourceTemplateConfig(name string) string {
+func testAccIndexTemplateDataSourceTemplateConfig(name, mappings, settings string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   elasticsearch {}
@@ -133,29 +166,21 @@ resource "elasticstack_elasticsearch_index_template" "test" {
       name           = "my_alias"
       filter         = jsonencode({ term = { status = "active" } })
       index_routing  = "shard_1"
+      routing        = "shard_1"
       search_routing = "shard_1"
       is_hidden      = false
       is_write_index = true
     }
 
-    mappings = jsonencode({
-      properties = {
-        log_level = { type = "keyword" }
-      }
-    })
-
-    settings = jsonencode({
-      index = {
-        number_of_shards = "1"
-      }
-    })
+    mappings = jsonencode(%[2]s)
+    settings = jsonencode(%[3]s)
   }
 }
 
 data "elasticstack_elasticsearch_index_template" "test" {
   name = elasticstack_elasticsearch_index_template.test.name
 }
-`, name)
+`, name, mappings, settings)
 }
 
 // TestAccIndexTemplateDataSourceDataStream covers data_stream.0.hidden and data_stream.0.allow_custom_routing.
@@ -244,7 +269,16 @@ func TestAccIndexTemplateDataSourceMetadataVersionID(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "name", templateName),
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_index_template.test", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "version", "5"),
-					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_index_template.test", "metadata"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "metadata", `{"description":"initial","owner":"team-a"}`),
+				),
+			},
+			{
+				Config: testAccIndexTemplateDataSourceMetadataVersionConfig(templateName, `{"owner":"team-b","description":"updated"}`, 7),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "name", templateName),
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_index_template.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "version", "7"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "metadata", `{"description":"updated","owner":"team-b"}`),
 				),
 			},
 		},
