@@ -23,6 +23,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -46,6 +47,7 @@ const (
 // resource.ParallelTest, which calls t.Parallel — Go forbids t.Setenv in tests that use t.Parallel.
 func preCheckAlertingRuleAcc(t *testing.T) {
 	t.Helper()
+	//nolint:usetesting // t.Setenv is unsafe here: ParallelTest uses t.Parallel, which forbids t.Setenv after parallel.
 	_ = os.Setenv("KIBANA_API_KEY", "")
 	acctest.PreCheck(t)
 }
@@ -776,6 +778,42 @@ func TestAccResourceAlertingRuleEsqlTermField(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.esql_term_field", "name", ruleName),
 				),
+			},
+		},
+	})
+}
+
+// TestAccResourceAlertingRuleFrequencyExclusivity asserts REQ-042: plan-time validation rejects
+// combining rule-level notify_when or throttle with actions[*].frequency.
+func TestAccResourceAlertingRuleFrequencyExclusivity(t *testing.T) {
+	minSupportedFrequencyVersion := version.Must(version.NewSemver("8.7.0"))
+
+	ruleName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	ruleID := uuid.New().String()
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { preCheckAlertingRuleAcc(t) },
+		CheckDestroy: checkResourceAlertingRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedFrequencyVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("notify_when_with_frequency"),
+				ConfigVariables: config.Variables{
+					"name":    config.StringVariable(ruleName),
+					"rule_id": config.StringVariable(ruleID),
+				},
+				ExpectError: regexp.MustCompile(`Cannot combine rule-level notify_when with actions\.frequency`),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedFrequencyVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("throttle_with_frequency"),
+				ConfigVariables: config.Variables{
+					"name":    config.StringVariable(ruleName),
+					"rule_id": config.StringVariable(ruleID),
+				},
+				ExpectError: regexp.MustCompile(`Cannot combine rule-level throttle with actions\.frequency`),
 			},
 		},
 	})
