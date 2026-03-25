@@ -1124,7 +1124,8 @@ func convertThreatToModel(ctx context.Context, apiThreats *kbapi.SecurityDetecti
 		}
 
 		// Convert techniques (optional)
-		if apiThreat.Technique != nil && len(*apiThreat.Technique) > 0 {
+		switch {
+		case apiThreat.Technique != nil && len(*apiThreat.Technique) > 0:
 			// Extract prior techniques for per-technique subtechnique fallback.
 			var priorTechniqueModels []ThreatTechniqueModel
 			if priorThreat != nil && !priorThreat.Technique.IsNull() && !priorThreat.Technique.IsUnknown() {
@@ -1143,7 +1144,8 @@ func convertThreatToModel(ctx context.Context, apiThreats *kbapi.SecurityDetecti
 				}
 
 				// Convert subtechniques (optional)
-				if apiTechnique.Subtechnique != nil && len(*apiTechnique.Subtechnique) > 0 {
+				switch {
+				case apiTechnique.Subtechnique != nil && len(*apiTechnique.Subtechnique) > 0:
 					subtechniques := make([]ThreatSubtechniqueModel, 0)
 
 					for _, apiSubtechnique := range *apiTechnique.Subtechnique {
@@ -1160,10 +1162,10 @@ func convertThreatToModel(ctx context.Context, apiThreats *kbapi.SecurityDetecti
 					if !subtechniquesListDiags.HasError() {
 						technique.Subtechnique = subtechniquesList
 					}
-				} else if j < len(priorTechniqueModels) {
+				case j < len(priorTechniqueModels):
 					// API returned no subtechniques: preserve the prior value (may be []).
 					technique.Subtechnique = priorTechniqueModels[j].Subtechnique
-				} else {
+				default:
 					technique.Subtechnique = types.ListNull(getThreatSubtechniqueElementType())
 				}
 
@@ -1175,10 +1177,10 @@ func convertThreatToModel(ctx context.Context, apiThreats *kbapi.SecurityDetecti
 			if !techniquesListDiags.HasError() {
 				threat.Technique = techniquesList
 			}
-		} else if priorThreat != nil {
+		case priorThreat != nil:
 			// API returned no techniques: preserve the prior value (may be []).
 			threat.Technique = priorThreat.Technique
-		} else {
+		default:
 			threat.Technique = types.ListNull(getThreatTechniqueElementType())
 		}
 
