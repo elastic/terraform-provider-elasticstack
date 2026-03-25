@@ -73,3 +73,7 @@ jobs:
         env:
           ELASTICSEARCH_PASSWORD: ${{ env.ELASTIC_PASSWORD }}
           FLEET_NAME: "fleet"
+
+      - name: Docker compose logs
+        if: failure()
+        run: docker compose logs --no-color
