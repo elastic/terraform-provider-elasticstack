@@ -20,6 +20,7 @@ package dashboard
 import (
 	"context"
 	"encoding/json"
+	"strconv"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
@@ -122,6 +123,52 @@ func (c wafflePanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDas
 	return attrs, diags
 }
 
+// normalizeKibanaLensNumberFormatJSONString trims Lens number-format defaults Kibana adds on read
+// (decimals: 2, compact: false) so state matches compact Terraform jsonencode like {"type":"number"}.
+func normalizeKibanaLensNumberFormatJSONString(jsonStr string) string {
+	var m map[string]any
+	if err := json.Unmarshal([]byte(jsonStr), &m); err != nil {
+		return jsonStr
+	}
+	typ, _ := m["type"].(string)
+	if typ != "number" {
+		return jsonStr
+	}
+	if jsonNumericEqualsLoose(m["decimals"], 2) {
+		delete(m, "decimals")
+	}
+	if b, ok := m["compact"].(bool); ok && !b {
+		delete(m, "compact")
+	}
+	sorted := sortJSONMapKeysRecursive(m)
+	out, err := json.Marshal(sorted)
+	if err != nil {
+		return jsonStr
+	}
+	return string(out)
+}
+
+func jsonNumericEqualsLoose(v any, want float64) bool {
+	switch x := v.(type) {
+	case float64:
+		return x == want
+	case float32:
+		return float64(x) == want
+	case int:
+		return float64(x) == want
+	case int64:
+		return float64(x) == want
+	case json.Number:
+		f, err := x.Float64()
+		return err == nil && f == want
+	case string:
+		f, err := strconv.ParseFloat(x, 64)
+		return err == nil && f == want
+	default:
+		return false
+	}
+}
+
 // mergeWaffleConfigFromPlanSeed restores optional fields Kibana omits or defaults on read
 // so Refresh after Apply matches the Terraform plan (see mapPanelFromAPI seeding comment).
 func mergeWaffleConfigFromPlanSeed(cur, seed *waffleConfigModel) {
@@ -154,19 +201,19 @@ func mergeWaffleConfigFromPlanSeed(cur, seed *waffleConfigModel) {
 }
 
 type waffleConfigModel struct {
-	Title               types.String         `tfsdk:"title"`
-	Description         types.String         `tfsdk:"description"`
-	DatasetJSON         jsontypes.Normalized `tfsdk:"dataset_json"`
-	IgnoreGlobalFilters types.Bool           `tfsdk:"ignore_global_filters"`
-	Sampling            types.Float64        `tfsdk:"sampling"`
-	Query               *filterSimpleModel   `tfsdk:"query"`
-	Filters             []searchFilterModel  `tfsdk:"filters"`
-	Legend              *waffleLegendModel   `tfsdk:"legend"`
-	ValueDisplay        *waffleValueDisplay  `tfsdk:"value_display"`
-	Metrics             []waffleDSLMetric    `tfsdk:"metrics"`
-	GroupBy             []waffleDSLGroupBy   `tfsdk:"group_by"`
-	EsqlMetrics         []waffleEsqlMetric   `tfsdk:"esql_metrics"`
-	EsqlGroupBy         []waffleEsqlGroupBy  `tfsdk:"esql_group_by"`
+	Title               types.String           `tfsdk:"title"`
+	Description         types.String           `tfsdk:"description"`
+	DatasetJSON         jsontypes.Normalized   `tfsdk:"dataset_json"`
+	IgnoreGlobalFilters types.Bool             `tfsdk:"ignore_global_filters"`
+	Sampling            types.Float64          `tfsdk:"sampling"`
+	Query               *filterSimpleModel     `tfsdk:"query"`
+	Filters             []chartFilterJSONModel `tfsdk:"filters"`
+	Legend              *waffleLegendModel     `tfsdk:"legend"`
+	ValueDisplay        *waffleValueDisplay    `tfsdk:"value_display"`
+	Metrics             []waffleDSLMetric      `tfsdk:"metrics"`
+	GroupBy             []waffleDSLGroupBy     `tfsdk:"group_by"`
+	EsqlMetrics         []waffleEsqlMetric     `tfsdk:"esql_metrics"`
+	EsqlGroupBy         []waffleEsqlGroupBy    `tfsdk:"esql_group_by"`
 }
 
 type waffleDSLMetric struct {
@@ -207,6 +254,8 @@ type waffleEsqlGroupBy struct {
 	Operation  types.String         `tfsdk:"operation"`
 	CollapseBy types.String         `tfsdk:"collapse_by"`
 	ColorJSON  jsontypes.Normalized `tfsdk:"color_json"`
+	FormatJSON jsontypes.Normalized `tfsdk:"format_json"`
+	Label      types.String         `tfsdk:"label"`
 }
 
 func (m *waffleConfigModel) usesESQL() bool {
@@ -244,10 +293,10 @@ func (m *waffleConfigModel) fromAPINoESQL(ctx context.Context, api kbapi.WaffleN
 	m.Query.fromAPI(api.Query)
 
 	if api.Filters != nil && len(*api.Filters) > 0 {
-		m.Filters = make([]searchFilterModel, 0, len(*api.Filters))
+		m.Filters = make([]chartFilterJSONModel, 0, len(*api.Filters))
 		for _, f := range *api.Filters {
-			fm := searchFilterModel{}
-			fd := fm.fromAPI(f)
+			fm := chartFilterJSONModel{}
+			fd := fm.populateFromAPIItem(f)
 			diags.Append(fd...)
 			if !fd.HasError() {
 				m.Filters = append(m.Filters, fm)
@@ -258,7 +307,7 @@ func (m *waffleConfigModel) fromAPINoESQL(ctx context.Context, api kbapi.WaffleN
 	m.Legend = &waffleLegendModel{}
 	m.Legend.fromAPI(ctx, api.Legend)
 
-	if api.ValueDisplay != nil {
+	if api.ValueDisplay.Mode != "" || api.ValueDisplay.PercentDecimals != nil {
 		m.ValueDisplay = &waffleValueDisplay{
 			Mode: types.StringValue(string(api.ValueDisplay.Mode)),
 		}
@@ -328,10 +377,10 @@ func (m *waffleConfigModel) fromAPIESQL(ctx context.Context, api kbapi.WaffleESQ
 	m.Query = nil
 
 	if api.Filters != nil && len(*api.Filters) > 0 {
-		m.Filters = make([]searchFilterModel, 0, len(*api.Filters))
+		m.Filters = make([]chartFilterJSONModel, 0, len(*api.Filters))
 		for _, f := range *api.Filters {
-			fm := searchFilterModel{}
-			fd := fm.fromAPI(f)
+			fm := chartFilterJSONModel{}
+			fd := fm.populateFromAPIItem(f)
 			diags.Append(fd...)
 			if !fd.HasError() {
 				m.Filters = append(m.Filters, fm)
@@ -342,7 +391,7 @@ func (m *waffleConfigModel) fromAPIESQL(ctx context.Context, api kbapi.WaffleESQ
 	m.Legend = &waffleLegendModel{}
 	m.Legend.fromAPI(ctx, api.Legend)
 
-	if api.ValueDisplay != nil {
+	if api.ValueDisplay.Mode != "" || api.ValueDisplay.PercentDecimals != nil {
 		m.ValueDisplay = &waffleValueDisplay{
 			Mode: types.StringValue(string(api.ValueDisplay.Mode)),
 		}
@@ -365,10 +414,10 @@ func (m *waffleConfigModel) fromAPIESQL(ctx context.Context, api kbapi.WaffleESQ
 						return jsontypes.NewNormalizedNull()
 					}
 					// Kibana may omit format on saved-object round-trip, leaving Format as an empty union.
-					if string(b) == "null" || len(b) == 0 {
+					if string(b) == jsonNullString || len(b) == 0 {
 						b = []byte(`{"type":"number"}`)
 					}
-					return jsontypes.NewNormalizedValue(string(b))
+					return jsontypes.NewNormalizedValue(normalizeKibanaLensNumberFormatJSONString(string(b)))
 				}(),
 				Color: &waffleStaticColor{
 					Type:  types.StringValue(string(met.Color.Type)),
@@ -392,12 +441,27 @@ func (m *waffleConfigModel) fromAPIESQL(ctx context.Context, api kbapi.WaffleESQ
 				diags.AddError("Failed to marshal esql group_by color", err.Error())
 				continue
 			}
-			m.EsqlGroupBy[i] = waffleEsqlGroupBy{
+			formatBytes, err := json.Marshal(gb.Format)
+			if err != nil {
+				diags.AddError("Failed to marshal esql group_by format", err.Error())
+				continue
+			}
+			if string(formatBytes) == jsonNullString || len(formatBytes) == 0 {
+				formatBytes = []byte(`{"type":"number"}`)
+			}
+			formatStr := normalizeKibanaLensNumberFormatJSONString(string(formatBytes))
+			eg := waffleEsqlGroupBy{
 				Column:     types.StringValue(gb.Column),
 				Operation:  types.StringValue(string(gb.Operation)),
 				CollapseBy: types.StringValue(string(gb.CollapseBy)),
 				ColorJSON:  jsontypes.NewNormalizedValue(string(colorBytes)),
+				FormatJSON: jsontypes.NewNormalizedValue(formatStr),
+				Label:      types.StringNull(),
 			}
+			if gb.Label != nil {
+				eg.Label = types.StringValue(*gb.Label)
+			}
+			m.EsqlGroupBy[i] = eg
 		}
 	}
 
@@ -546,13 +610,18 @@ func (m *waffleConfigModel) toAPINoESQL() (kbapi.WaffleNoESQL, diag.Diagnostics)
 	api.Query = m.Query.toAPI()
 
 	if len(m.Filters) > 0 {
-		filters := make([]kbapi.SearchFilter, 0, len(m.Filters))
+		filters := make([]kbapi.WaffleNoESQL_Filters_Item, 0, len(m.Filters))
 		for _, f := range m.Filters {
-			sf, fd := f.toAPI()
+			var item kbapi.WaffleNoESQL_Filters_Item
+			fd := decodeChartFilterJSON(f.FilterJSON, &item)
 			diags.Append(fd...)
-			filters = append(filters, sf)
+			if !fd.HasError() {
+				filters = append(filters, item)
+			}
 		}
-		api.Filters = &filters
+		if len(filters) > 0 {
+			api.Filters = &filters
+		}
 	}
 
 	if m.Legend == nil {
@@ -564,17 +633,19 @@ func (m *waffleConfigModel) toAPINoESQL() (kbapi.WaffleNoESQL, diag.Diagnostics)
 	api.Legend = leg
 
 	if m.ValueDisplay != nil && typeutils.IsKnown(m.ValueDisplay.Mode) {
-		vd := struct {
-			Mode            kbapi.WaffleNoESQLValueDisplayMode `json:"mode"`
-			PercentDecimals *float32                           `json:"percent_decimals,omitempty"`
-		}{
-			Mode: kbapi.WaffleNoESQLValueDisplayMode(m.ValueDisplay.Mode.ValueString()),
+		vd := kbapi.ValueDisplay{
+			Mode: kbapi.ValueDisplayMode(m.ValueDisplay.Mode.ValueString()),
 		}
 		if typeutils.IsKnown(m.ValueDisplay.PercentDecimals) {
 			p := float32(m.ValueDisplay.PercentDecimals.ValueFloat64())
 			vd.PercentDecimals = &p
 		}
-		api.ValueDisplay = &vd
+		api.ValueDisplay = vd
+	} else {
+		// Required by the Dashboard API; omitting mode yields HTTP 400.
+		api.ValueDisplay = kbapi.ValueDisplay{
+			Mode: kbapi.ValueDisplayModePercentage,
+		}
 	}
 
 	metrics := make([]kbapi.WaffleNoESQL_Metrics_Item, len(m.Metrics))
@@ -625,13 +696,18 @@ func (m *waffleConfigModel) toAPIESQL() (kbapi.WaffleESQL, diag.Diagnostics) {
 	}
 
 	if len(m.Filters) > 0 {
-		filters := make([]kbapi.SearchFilter, 0, len(m.Filters))
+		filters := make([]kbapi.WaffleESQL_Filters_Item, 0, len(m.Filters))
 		for _, f := range m.Filters {
-			sf, fd := f.toAPI()
+			var item kbapi.WaffleESQL_Filters_Item
+			fd := decodeChartFilterJSON(f.FilterJSON, &item)
 			diags.Append(fd...)
-			filters = append(filters, sf)
+			if !fd.HasError() {
+				filters = append(filters, item)
+			}
 		}
-		api.Filters = &filters
+		if len(filters) > 0 {
+			api.Filters = &filters
+		}
 	}
 
 	if m.Legend == nil {
@@ -643,17 +719,18 @@ func (m *waffleConfigModel) toAPIESQL() (kbapi.WaffleESQL, diag.Diagnostics) {
 	api.Legend = leg
 
 	if m.ValueDisplay != nil && typeutils.IsKnown(m.ValueDisplay.Mode) {
-		vd := struct {
-			Mode            kbapi.WaffleESQLValueDisplayMode `json:"mode"`
-			PercentDecimals *float32                         `json:"percent_decimals,omitempty"`
-		}{
-			Mode: kbapi.WaffleESQLValueDisplayMode(m.ValueDisplay.Mode.ValueString()),
+		vd := kbapi.ValueDisplay{
+			Mode: kbapi.ValueDisplayMode(m.ValueDisplay.Mode.ValueString()),
 		}
 		if typeutils.IsKnown(m.ValueDisplay.PercentDecimals) {
 			p := float32(m.ValueDisplay.PercentDecimals.ValueFloat64())
 			vd.PercentDecimals = &p
 		}
-		api.ValueDisplay = &vd
+		api.ValueDisplay = vd
+	} else {
+		api.ValueDisplay = kbapi.ValueDisplay{
+			Mode: kbapi.ValueDisplayModePercentage,
+		}
 	}
 
 	metrics := make([]struct {
@@ -689,6 +766,8 @@ func (m *waffleConfigModel) toAPIESQL() (kbapi.WaffleESQL, diag.Diagnostics) {
 			CollapseBy kbapi.CollapseBy                 `json:"collapse_by"`
 			Color      kbapi.ColorMapping               `json:"color"`
 			Column     string                           `json:"column"`
+			Format     kbapi.FormatType                 `json:"format"`
+			Label      *string                          `json:"label,omitempty"`
 			Operation  kbapi.WaffleESQLGroupByOperation `json:"operation"`
 		}, len(m.EsqlGroupBy))
 		for i, eg := range m.EsqlGroupBy {
@@ -698,6 +777,17 @@ func (m *waffleConfigModel) toAPIESQL() (kbapi.WaffleESQL, diag.Diagnostics) {
 			gb[i].Column = eg.Column.ValueString()
 			gb[i].Operation = kbapi.WaffleESQLGroupByOperation(eg.Operation.ValueString())
 			gb[i].CollapseBy = kbapi.CollapseBy(eg.CollapseBy.ValueString())
+			formatSrc := `{"type":"number"}`
+			if typeutils.IsKnown(eg.FormatJSON) {
+				formatSrc = eg.FormatJSON.ValueString()
+			}
+			if err := json.Unmarshal([]byte(formatSrc), &gb[i].Format); err != nil {
+				diags.AddError("Failed to unmarshal format_json", err.Error())
+			}
+			if typeutils.IsKnown(eg.Label) {
+				s := eg.Label.ValueString()
+				gb[i].Label = &s
+			}
 		}
 		api.GroupBy = &gb
 	}

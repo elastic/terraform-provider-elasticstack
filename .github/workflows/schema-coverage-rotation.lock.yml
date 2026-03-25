@@ -51,7 +51,7 @@ jobs:
       secret_verification_result: ${{ steps.validate-secret.outputs.verification_result }}
     steps:
       - name: Setup Scripts
-        uses: github/gh-aw-actions/setup@853312c41e88e0d6f51d0e4e0658f3ad7461366a # v0.62.5
+        uses: github/gh-aw-actions/setup@f00748eed7ad5332d58709e92e1946cd1c8d3f8f # v0.63.1
         with:
           destination: ${{ runner.temp }}/gh-aw/actions
       - name: Generate agentic run info
@@ -261,7 +261,7 @@ jobs:
       output_types: ${{ steps.collect_output.outputs.output_types }}
     steps:
       - name: Setup Scripts
-        uses: github/gh-aw-actions/setup@853312c41e88e0d6f51d0e4e0658f3ad7461366a # v0.62.5
+        uses: github/gh-aw-actions/setup@f00748eed7ad5332d58709e92e1946cd1c8d3f8f # v0.63.1
         with:
           destination: ${{ runner.temp }}/gh-aw/actions
       - name: Set runtime paths
@@ -908,7 +908,7 @@ jobs:
       total_count: ${{ steps.missing_tool.outputs.total_count }}
     steps:
       - name: Setup Scripts
-        uses: github/gh-aw-actions/setup@853312c41e88e0d6f51d0e4e0658f3ad7461366a # v0.62.5
+        uses: github/gh-aw-actions/setup@f00748eed7ad5332d58709e92e1946cd1c8d3f8f # v0.63.1
         with:
           destination: ${{ runner.temp }}/gh-aw/actions
       - name: Download agent output artifact
@@ -1014,7 +1014,7 @@ jobs:
       validation_failed_schema-coverage-rotation: ${{ steps.push_repo_memory_schema-coverage-rotation.outputs.validation_failed }}
     steps:
       - name: Setup Scripts
-        uses: github/gh-aw-actions/setup@853312c41e88e0d6f51d0e4e0658f3ad7461366a # v0.62.5
+        uses: github/gh-aw-actions/setup@f00748eed7ad5332d58709e92e1946cd1c8d3f8f # v0.63.1
         with:
           destination: ${{ runner.temp }}/gh-aw/actions
       - name: Checkout repository
@@ -1092,7 +1092,7 @@ jobs:
       process_safe_outputs_temporary_id_map: ${{ steps.process_safe_outputs.outputs.temporary_id_map }}
     steps:
       - name: Setup Scripts
-        uses: github/gh-aw-actions/setup@853312c41e88e0d6f51d0e4e0658f3ad7461366a # v0.62.5
+        uses: github/gh-aw-actions/setup@f00748eed7ad5332d58709e92e1946cd1c8d3f8f # v0.63.1
         with:
           destination: ${{ runner.temp }}/gh-aw/actions
           safe-output-custom-tokens: 'true'

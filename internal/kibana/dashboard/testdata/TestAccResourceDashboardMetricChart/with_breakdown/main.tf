@@ -61,8 +61,14 @@ resource "elasticstack_kibana_dashboard" "test" {
       })
       filters = [
         {
-          language = "kuery"
-          query    = "event.category:web"
+          filter_json = jsonencode({
+            type = "condition"
+            condition = {
+              field    = "event.category"
+              operator = "is"
+              value    = "web"
+            }
+          })
         }
       ]
       ignore_global_filters = false

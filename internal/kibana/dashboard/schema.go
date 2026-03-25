@@ -223,12 +223,7 @@ func populatePartitionGroupByDefaults(model []map[string]any) []map[string]any {
 			continue
 		}
 		operation, _ := item["operation"].(string)
-		// ES|QL treemaps may omit group_by.color on write, but Kibana may return it as null.
-		// Normalize both sides so semantic equality doesn't drift.
 		if operation == "value" {
-			if _, exists := item["color"]; !exists {
-				item["color"] = nil
-			}
 			continue
 		}
 		if operation != operationTerms {
@@ -651,7 +646,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 					"filters": schema.ListNestedAttribute{
 						MarkdownDescription: "Additional filters to apply to the chart data (maximum 100).",
 						Optional:            true,
-						NestedObject:        getSearchFilter(),
+						NestedObject:        getChartFilter(),
 					},
 				},
 				Validators: []validator.Object{
@@ -839,6 +834,13 @@ func getXYAxisSchema() map[string]schema.Attribute {
 					Optional:            true,
 					Validators: []validator.String{
 						stringvalidator.OneOf("horizontal", "vertical", "angled"),
+					},
+				},
+				"scale": schema.StringAttribute{
+					MarkdownDescription: "X-axis scale: linear (numeric), ordinal (categorical), or temporal (dates).",
+					Optional:            true,
+					Validators: []validator.String{
+						stringvalidator.OneOf("linear", "ordinal", "temporal"),
 					},
 				},
 				"extent_json": schema.StringAttribute{
@@ -1040,27 +1042,15 @@ func getFilterSimple() map[string]schema.Attribute {
 	}
 }
 
-// getSearchFilter returns the schema for search filter configuration
-func getSearchFilter() schema.NestedAttributeObject {
+// getChartFilter returns the schema for a single chart-level filter (API-shaped JSON).
+func getChartFilter() schema.NestedAttributeObject {
 	return schema.NestedAttributeObject{
 		Attributes: map[string]schema.Attribute{
-			"query": schema.StringAttribute{
-				MarkdownDescription: "Filter query string or JSON object.",
-				Optional:            true,
-			},
-			"meta_json": schema.StringAttribute{
-				MarkdownDescription: "Filter metadata as JSON.",
-				CustomType:          jsontypes.NormalizedType{},
-				Optional:            true,
-			},
-			"language": schema.StringAttribute{
-				MarkdownDescription: "Query language. Defaults to `kuery` if not specified.",
-				Optional:            true,
-				Computed:            true,
-				Default:             stringdefault.StaticString("kuery"),
-				Validators: []validator.String{
-					stringvalidator.OneOf("kuery", "lucene"),
-				},
+			"filter_json": schema.StringAttribute{
+				MarkdownDescription: "Chart filter as normalized JSON. Must match the Kibana dashboard API for this chart: " +
+					"one of the filter union members (condition, group, DSL, or spatial) described in the dashboards OpenAPI specification.",
+				CustomType: jsontypes.NormalizedType{},
+				Required:   true,
 			},
 		},
 	}
@@ -1252,7 +1242,7 @@ func getTagcloudSchema() map[string]schema.Attribute {
 		"filters": schema.ListNestedAttribute{
 			MarkdownDescription: "Additional filters to apply to the chart data (maximum 100).",
 			Optional:            true,
-			NestedObject:        getSearchFilter(),
+			NestedObject:        getChartFilter(),
 		},
 		"orientation": schema.StringAttribute{
 			MarkdownDescription: "Orientation of the tagcloud. Valid values: 'horizontal', 'vertical', 'angled'.",
@@ -1320,7 +1310,7 @@ func getHeatmapSchema() map[string]schema.Attribute {
 		"filters": schema.ListNestedAttribute{
 			MarkdownDescription: "Additional filters to apply to the chart data (maximum 100).",
 			Optional:            true,
-			NestedObject:        getSearchFilter(),
+			NestedObject:        getChartFilter(),
 		},
 		"axes": schema.SingleNestedAttribute{
 			MarkdownDescription: "Axis configuration for X and Y axes.",
@@ -1387,7 +1377,7 @@ func getPartitionChartBaseSchema() map[string]schema.Attribute {
 		"filters": schema.ListNestedAttribute{
 			MarkdownDescription: "Additional filters to apply to the chart data (maximum 100).",
 			Optional:            true,
-			NestedObject:        getSearchFilter(),
+			NestedObject:        getChartFilter(),
 		},
 	}
 }
@@ -1424,7 +1414,7 @@ func getWaffleSchema() map[string]schema.Attribute {
 		"filters": schema.ListNestedAttribute{
 			MarkdownDescription: "Additional filters to apply to the chart data (maximum 100).",
 			Optional:            true,
-			NestedObject:        getSearchFilter(),
+			NestedObject:        getChartFilter(),
 		},
 		"legend": schema.SingleNestedAttribute{
 			MarkdownDescription: "Legend configuration for the waffle chart.",
@@ -1588,6 +1578,15 @@ func getWaffleESQLGroupBySchema() schema.NestedAttributeObject {
 				MarkdownDescription: "Color mapping as JSON (`colorMapping` union).",
 				CustomType:          jsontypes.NormalizedType{},
 				Required:            true,
+			},
+			"format_json": schema.StringAttribute{
+				MarkdownDescription: "Column format as JSON (e.g. `{\"type\":\"number\"}`). Defaults to numeric format when omitted.",
+				CustomType:          jsontypes.NormalizedType{},
+				Optional:            true,
+			},
+			"label": schema.StringAttribute{
+				MarkdownDescription: "Optional label for the group-by column.",
+				Optional:            true,
 			},
 		},
 	}
@@ -1866,7 +1865,7 @@ func getRegionMapSchema() map[string]schema.Attribute {
 		"filters": schema.ListNestedAttribute{
 			MarkdownDescription: "Additional filters to apply to the chart data (maximum 100).",
 			Optional:            true,
-			NestedObject:        getSearchFilter(),
+			NestedObject:        getChartFilter(),
 		},
 		"metric_json": schema.StringAttribute{
 			MarkdownDescription: "Metric configuration as JSON. For ES|QL, this defines the metric column and format. For standard mode, this defines the metric operation or formula.",
@@ -1910,7 +1909,7 @@ func getLegacyMetricSchema() map[string]schema.Attribute {
 		"filters": schema.ListNestedAttribute{
 			MarkdownDescription: "Additional filters to apply to the chart data (maximum 100).",
 			Optional:            true,
-			NestedObject:        getSearchFilter(),
+			NestedObject:        getChartFilter(),
 		},
 		"sampling": schema.Float64Attribute{
 			MarkdownDescription: "Sampling factor between 0 (no sampling) and 1 (full sampling). Default is 1.",
@@ -1955,7 +1954,7 @@ func getGaugeSchema() map[string]schema.Attribute {
 		"filters": schema.ListNestedAttribute{
 			MarkdownDescription: "Additional filters to apply to the chart data (maximum 100).",
 			Optional:            true,
-			NestedObject:        getSearchFilter(),
+			NestedObject:        getChartFilter(),
 		},
 		"metric_json": schema.StringAttribute{
 			MarkdownDescription: gaugeMetricDescription,
@@ -2002,7 +2001,7 @@ func getMetricChart() map[string]schema.Attribute {
 		"filters": schema.ListNestedAttribute{
 			MarkdownDescription: "Additional filters to apply to the chart data (maximum 100).",
 			Optional:            true,
-			NestedObject:        getSearchFilter(),
+			NestedObject:        getChartFilter(),
 		},
 		"metrics": schema.ListNestedAttribute{
 			MarkdownDescription: metricChartMetricsDescription,
@@ -2086,7 +2085,7 @@ func getDatatableNoESQLSchema() map[string]schema.Attribute {
 		"filters": schema.ListNestedAttribute{
 			MarkdownDescription: "Additional filters to apply to the datatable data (maximum 100).",
 			Optional:            true,
-			NestedObject:        getSearchFilter(),
+			NestedObject:        getChartFilter(),
 		},
 		"metrics": schema.ListNestedAttribute{
 			MarkdownDescription: "Array of metric configurations as JSON. Each entry defines a datatable metric column.",
@@ -2170,7 +2169,7 @@ func getDatatableESQLSchema() map[string]schema.Attribute {
 		"filters": schema.ListNestedAttribute{
 			MarkdownDescription: "Additional filters to apply to the datatable data (maximum 100).",
 			Optional:            true,
-			NestedObject:        getSearchFilter(),
+			NestedObject:        getChartFilter(),
 		},
 		"metrics": schema.ListNestedAttribute{
 			MarkdownDescription: "Array of metric configurations as JSON. Each entry defines a datatable metric column.",
@@ -2377,7 +2376,7 @@ func getPieChart() map[string]schema.Attribute {
 		"filters": schema.ListNestedAttribute{
 			MarkdownDescription: "Additional filters to apply to the chart data (maximum 100).",
 			Optional:            true,
-			NestedObject:        getSearchFilter(),
+			NestedObject:        getChartFilter(),
 		},
 		"metrics": schema.ListNestedAttribute{
 			MarkdownDescription: "Array of metric configurations (minimum 1).",

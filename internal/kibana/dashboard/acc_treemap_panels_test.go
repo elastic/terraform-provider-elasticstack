@@ -79,7 +79,7 @@ func TestAccResourceDashboardTreemap(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.treemap_config.sampling", "0.5"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.treemap_config.label_position", "hidden"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.treemap_config.filters.#", "1"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.treemap_config.filters.0.query", "host.os.keyword: \"linux\""),
+					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.treemap_config.filters.0.filter_json", regexp.MustCompile(`"field":"host.os.keyword"`)),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.treemap_config.legend.size", "small"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.treemap_config.legend.nested", "false"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.treemap_config.legend.visible", "show"),

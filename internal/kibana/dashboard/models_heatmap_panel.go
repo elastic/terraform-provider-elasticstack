@@ -33,7 +33,7 @@ import (
 func newHeatmapPanelConfigConverter() heatmapPanelConfigConverter {
 	return heatmapPanelConfigConverter{
 		lensVisualizationBase: lensVisualizationBase{
-			visualizationType: string(kbapi.HeatmapNoESQLTypeHeatMap),
+			visualizationType: string(kbapi.HeatmapNoESQLTypeHeatmap),
 			hasTFPanelConfig:  func(pm panelModel) bool { return pm.HeatmapConfig != nil },
 		},
 	}
@@ -86,7 +86,7 @@ type heatmapConfigModel struct {
 	IgnoreGlobalFilters types.Bool                                        `tfsdk:"ignore_global_filters"`
 	Sampling            types.Float64                                     `tfsdk:"sampling"`
 	Query               *filterSimpleModel                                `tfsdk:"query"`
-	Filters             []searchFilterModel                               `tfsdk:"filters"`
+	Filters             []chartFilterJSONModel                            `tfsdk:"filters"`
 	Axes                *heatmapAxesModel                                 `tfsdk:"axes"`
 	Cells               *heatmapCellsModel                                `tfsdk:"cells"`
 	Legend              *heatmapLegendModel                               `tfsdk:"legend"`
@@ -126,15 +126,15 @@ func (m *heatmapConfigModel) fromAPINoESQL(ctx context.Context, api kbapi.Heatma
 		populateTagcloudMetricDefaults,
 	)
 
-	xAxisBytes, err := api.XAxis.MarshalJSON()
+	xAxisBytes, err := api.X.MarshalJSON()
 	if err != nil {
 		diags.AddError("Failed to marshal x_axis_json", err.Error())
 		return diags
 	}
 	m.XAxisJSON = jsontypes.NewNormalizedValue(string(xAxisBytes))
 
-	if api.YAxis != nil {
-		yAxisBytes, err := api.YAxis.MarshalJSON()
+	if api.Y != nil {
+		yAxisBytes, err := api.Y.MarshalJSON()
 		if err != nil {
 			diags.AddError("Failed to marshal y_axis_json", err.Error())
 			return diags
@@ -145,7 +145,7 @@ func (m *heatmapConfigModel) fromAPINoESQL(ctx context.Context, api kbapi.Heatma
 	}
 
 	m.Axes = &heatmapAxesModel{}
-	axesDiags := m.Axes.fromAPI(api.Axes)
+	axesDiags := m.Axes.fromAPI(api.Axis)
 	diags.Append(axesDiags...)
 
 	m.Cells = &heatmapCellsModel{}
@@ -158,13 +158,13 @@ func (m *heatmapConfigModel) fromAPINoESQL(ctx context.Context, api kbapi.Heatma
 	m.Query.fromAPI(api.Query)
 
 	if api.Filters != nil && len(*api.Filters) > 0 {
-		m.Filters = make([]searchFilterModel, 0, len(*api.Filters))
+		m.Filters = make([]chartFilterJSONModel, 0, len(*api.Filters))
 		for _, filter := range *api.Filters {
-			filterModel := searchFilterModel{}
-			filterDiags := filterModel.fromAPI(filter)
+			fm := chartFilterJSONModel{}
+			filterDiags := fm.populateFromAPIItem(filter)
 			diags.Append(filterDiags...)
 			if !filterDiags.HasError() {
-				m.Filters = append(m.Filters, filterModel)
+				m.Filters = append(m.Filters, fm)
 			}
 		}
 	}
@@ -203,15 +203,15 @@ func (m *heatmapConfigModel) fromAPIESQL(ctx context.Context, api kbapi.HeatmapE
 		populateTagcloudMetricDefaults,
 	)
 
-	xAxisBytes, err := json.Marshal(api.XAxis)
+	xAxisBytes, err := json.Marshal(api.X)
 	if err != nil {
 		diags.AddError("Failed to marshal x_axis_json", err.Error())
 		return diags
 	}
 	m.XAxisJSON = jsontypes.NewNormalizedValue(string(xAxisBytes))
 
-	if api.YAxis != nil {
-		yAxisBytes, err := json.Marshal(api.YAxis)
+	if api.Y != nil {
+		yAxisBytes, err := json.Marshal(api.Y)
 		if err != nil {
 			diags.AddError("Failed to marshal y_axis_json", err.Error())
 			return diags
@@ -222,7 +222,7 @@ func (m *heatmapConfigModel) fromAPIESQL(ctx context.Context, api kbapi.HeatmapE
 	}
 
 	m.Axes = &heatmapAxesModel{}
-	axesDiags := m.Axes.fromAPI(api.Axes)
+	axesDiags := m.Axes.fromAPI(api.Axis)
 	diags.Append(axesDiags...)
 
 	m.Cells = &heatmapCellsModel{}
@@ -232,13 +232,13 @@ func (m *heatmapConfigModel) fromAPIESQL(ctx context.Context, api kbapi.HeatmapE
 	m.Legend.fromAPI(api.Legend)
 
 	if api.Filters != nil && len(*api.Filters) > 0 {
-		m.Filters = make([]searchFilterModel, 0, len(*api.Filters))
+		m.Filters = make([]chartFilterJSONModel, 0, len(*api.Filters))
 		for _, filter := range *api.Filters {
-			filterModel := searchFilterModel{}
-			filterDiags := filterModel.fromAPI(filter)
+			fm := chartFilterJSONModel{}
+			filterDiags := fm.populateFromAPIItem(filter)
 			diags.Append(filterDiags...)
 			if !filterDiags.HasError() {
-				m.Filters = append(m.Filters, filterModel)
+				m.Filters = append(m.Filters, fm)
 			}
 		}
 	}
@@ -291,7 +291,7 @@ func (m *heatmapConfigModel) usesESQL() bool {
 func (m *heatmapConfigModel) toAPINoESQL() (kbapi.HeatmapNoESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	api := kbapi.HeatmapNoESQL{
-		Type: kbapi.HeatmapNoESQLTypeHeatMap,
+		Type: kbapi.HeatmapNoESQLTypeHeatmap,
 	}
 
 	if typeutils.IsKnown(m.Title) {
@@ -329,18 +329,18 @@ func (m *heatmapConfigModel) toAPINoESQL() (kbapi.HeatmapNoESQL, diag.Diagnostic
 		diags.AddError("Missing x_axis", "heatmap_config.x_axis_json must be provided")
 		return api, diags
 	}
-	if err := json.Unmarshal([]byte(m.XAxisJSON.ValueString()), &api.XAxis); err != nil {
+	if err := json.Unmarshal([]byte(m.XAxisJSON.ValueString()), &api.X); err != nil {
 		diags.AddError("Failed to unmarshal x_axis_json", err.Error())
 		return api, diags
 	}
 
 	if !m.YAxisJSON.IsNull() {
-		var yAxis kbapi.HeatmapNoESQL_YAxis
+		var yAxis kbapi.HeatmapNoESQL_Y
 		if err := json.Unmarshal([]byte(m.YAxisJSON.ValueString()), &yAxis); err != nil {
 			diags.AddError("Failed to unmarshal y_axis_json", err.Error())
 			return api, diags
 		}
-		api.YAxis = &yAxis
+		api.Y = &yAxis
 	}
 
 	if m.Axes == nil {
@@ -349,7 +349,7 @@ func (m *heatmapConfigModel) toAPINoESQL() (kbapi.HeatmapNoESQL, diag.Diagnostic
 	}
 	axes, axesDiags := m.Axes.toAPI()
 	diags.Append(axesDiags...)
-	api.Axes = axes
+	api.Axis = axes
 
 	if m.Cells == nil {
 		diags.AddError("Missing cells", "heatmap_config.cells must be provided")
@@ -372,12 +372,13 @@ func (m *heatmapConfigModel) toAPINoESQL() (kbapi.HeatmapNoESQL, diag.Diagnostic
 	api.Query = m.Query.toAPI()
 
 	if len(m.Filters) > 0 {
-		filters := make([]kbapi.SearchFilter, 0, len(m.Filters))
+		filters := make([]kbapi.HeatmapNoESQL_Filters_Item, 0, len(m.Filters))
 		for _, filter := range m.Filters {
-			apiFilter, filterDiags := filter.toAPI()
+			var item kbapi.HeatmapNoESQL_Filters_Item
+			filterDiags := decodeChartFilterJSON(filter.FilterJSON, &item)
 			diags.Append(filterDiags...)
 			if !filterDiags.HasError() {
-				filters = append(filters, apiFilter)
+				filters = append(filters, item)
 			}
 		}
 		if len(filters) > 0 {
@@ -391,7 +392,7 @@ func (m *heatmapConfigModel) toAPINoESQL() (kbapi.HeatmapNoESQL, diag.Diagnostic
 func (m *heatmapConfigModel) toAPIESQL() (kbapi.HeatmapESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	api := kbapi.HeatmapESQL{
-		Type: kbapi.HeatmapESQLTypeHeatMap,
+		Type: kbapi.HeatmapESQLTypeHeatmap,
 	}
 
 	if typeutils.IsKnown(m.Title) {
@@ -420,41 +421,41 @@ func (m *heatmapConfigModel) toAPIESQL() (kbapi.HeatmapESQL, diag.Diagnostics) {
 		diags.AddError("Missing metric", "heatmap_config.metric_json must be provided")
 		return api, diags
 	}
-	var metric struct {
-		Color     kbapi.ColorByValue               `json:"color"`
-		Column    string                           `json:"column"`
-		Operation kbapi.HeatmapESQLMetricOperation `json:"operation"`
-	}
-	if err := json.Unmarshal([]byte(m.MetricJSON.ValueString()), &metric); err != nil {
+	if err := json.Unmarshal([]byte(m.MetricJSON.ValueString()), &api.Metric); err != nil {
 		diags.AddError("Failed to unmarshal metric_json", err.Error())
 		return api, diags
 	}
-	api.Metric = metric
 
 	if m.XAxisJSON.IsNull() {
 		diags.AddError("Missing x_axis", "heatmap_config.x_axis_json must be provided")
 		return api, diags
 	}
-	var xAxis struct {
-		Column    string                          `json:"column"`
-		Operation kbapi.HeatmapESQLXAxisOperation `json:"operation"`
-	}
-	if err := json.Unmarshal([]byte(m.XAxisJSON.ValueString()), &xAxis); err != nil {
+	if err := json.Unmarshal([]byte(m.XAxisJSON.ValueString()), &api.X); err != nil {
 		diags.AddError("Failed to unmarshal x_axis_json", err.Error())
 		return api, diags
 	}
-	api.XAxis = xAxis
 
 	if !m.YAxisJSON.IsNull() {
-		var yAxis struct {
-			Column    string                          `json:"column"`
-			Operation kbapi.HeatmapESQLYAxisOperation `json:"operation"`
-		}
-		if err := json.Unmarshal([]byte(m.YAxisJSON.ValueString()), &yAxis); err != nil {
-			diags.AddError("Failed to unmarshal y_axis_json", err.Error())
+		partial, err := json.Marshal(api)
+		if err != nil {
+			diags.AddError("Failed to marshal heatmap for y_axis merge", err.Error())
 			return api, diags
 		}
-		api.YAxis = &yAxis
+		var envelope map[string]json.RawMessage
+		if err := json.Unmarshal(partial, &envelope); err != nil {
+			diags.AddError("Failed to prepare heatmap JSON for y_axis merge", err.Error())
+			return api, diags
+		}
+		envelope["y"] = json.RawMessage([]byte(m.YAxisJSON.ValueString()))
+		merged, err := json.Marshal(envelope)
+		if err != nil {
+			diags.AddError("Failed to marshal merged heatmap", err.Error())
+			return api, diags
+		}
+		if err := json.Unmarshal(merged, &api); err != nil {
+			diags.AddError("Failed to unmarshal heatmap after y_axis merge", err.Error())
+			return api, diags
+		}
 	}
 
 	if m.Axes == nil {
@@ -463,7 +464,7 @@ func (m *heatmapConfigModel) toAPIESQL() (kbapi.HeatmapESQL, diag.Diagnostics) {
 	}
 	axes, axesDiags := m.Axes.toAPI()
 	diags.Append(axesDiags...)
-	api.Axes = axes
+	api.Axis = axes
 
 	if m.Cells == nil {
 		diags.AddError("Missing cells", "heatmap_config.cells must be provided")
@@ -480,12 +481,13 @@ func (m *heatmapConfigModel) toAPIESQL() (kbapi.HeatmapESQL, diag.Diagnostics) {
 	api.Legend = legend
 
 	if len(m.Filters) > 0 {
-		filters := make([]kbapi.SearchFilter, 0, len(m.Filters))
+		filters := make([]kbapi.HeatmapESQL_Filters_Item, 0, len(m.Filters))
 		for _, filter := range m.Filters {
-			apiFilter, filterDiags := filter.toAPI()
+			var item kbapi.HeatmapESQL_Filters_Item
+			filterDiags := decodeChartFilterJSON(filter.FilterJSON, &item)
 			diags.Append(filterDiags...)
 			if !filterDiags.HasError() {
-				filters = append(filters, apiFilter)
+				filters = append(filters, item)
 			}
 		}
 		if len(filters) > 0 {

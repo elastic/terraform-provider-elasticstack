@@ -18,6 +18,7 @@
 package dashboard_test
 
 import (
+	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -78,7 +79,7 @@ func TestAccResourceDashboardMosaic(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.mosaic_config.ignore_global_filters", "true"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.mosaic_config.sampling", "0.5"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.mosaic_config.filters.#", "1"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.mosaic_config.filters.0.query", "host.os.keyword: \"linux\""),
+					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.mosaic_config.filters.0.filter_json", regexp.MustCompile(`"field":"host.os.keyword"`)),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.mosaic_config.legend.size", "small"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.mosaic_config.legend.nested", "false"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.mosaic_config.legend.visible", "show"),
