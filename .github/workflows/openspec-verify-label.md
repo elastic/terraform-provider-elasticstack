@@ -27,6 +27,9 @@ safe-outputs:
     max: 25
     target: triggering
     side: RIGHT
+  noop:
+    max: 1
+    report-as-issue: false
   submit-pull-request-review:
     max: 1
     target: triggering
