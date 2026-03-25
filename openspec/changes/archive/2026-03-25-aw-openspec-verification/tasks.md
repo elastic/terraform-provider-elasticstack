@@ -17,6 +17,6 @@
 
 ## 4. Ship and spot-check
 
-- [ ] 4.1 Apply **`verify-openspec`** on a PR that **only modifies** files under one `openspec/changes/<id>/`: expect review; if **APPROVE**, expect archive + push.
-- [ ] 4.2 PR touching two active change dirs or **adding** files under `openspec/changes/<id>/`: expect **`noop`**.
-- [ ] 4.3 **COMMENT** review: confirm **no** archive and **no** push.
+- [x] 4.1 Apply **`verify-openspec`** on a PR that **only modifies** files under one `openspec/changes/<id>/`: expect review; if **APPROVE**, expect archive + push.
+- [x] 4.2 PR touching two active change dirs or **adding** files under `openspec/changes/<id>/`: expect **`noop`**.
+- [x] 4.3 **COMMENT** review: confirm **no** archive and **no** push.
