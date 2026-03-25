@@ -38,25 +38,38 @@ resource "elasticstack_kibana_alerting_rule" "test_rule" {
     termField           = "name"
   })
   rule_type_id = ".index-threshold"
-  interval     = "10m"
-  enabled      = false
-  tags         = ["first", "second"]
+  interval     = "1m"
+  enabled      = true
 
   actions {
     id    = elasticstack_kibana_action_connector.index_example.connector_id
     group = "threshold met"
     params = jsonencode({
       "documents" : [{
-        "rule_id" : "{{rule.id}} 1",
-        "rule_name" : "{{rule.name}} 2",
-        "message" : "{{context.message}} 3"
+        "rule_id" : "{{rule.id}}",
+        "rule_name" : "{{rule.name}}",
+        "message" : "{{context.message}}"
       }]
     })
 
     frequency {
-      summary     = false
-      notify_when = "onActiveAlert"
-      throttle    = "2h"
+      summary     = true
+      notify_when = "onActionGroupChange"
+      throttle    = "10m"
     }
+  }
+
+  flapping = {
+    look_back_window        = 10
+    status_change_threshold = 3
+  }
+
+  # Volatile computed attributes from Kibana rule execution; ignore in acc tests so
+  # post-apply no-refresh plans stay empty (terraform-plugin-testing perpetual diff check).
+  lifecycle {
+    ignore_changes = [
+      last_execution_date,
+      last_execution_status,
+    ]
   }
 }

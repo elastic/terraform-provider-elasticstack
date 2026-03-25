@@ -33,6 +33,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -46,6 +47,7 @@ var (
 	cachedFrequencyTypes map[string]attr.Type
 	cachedFilterTypes    map[string]attr.Type
 	cachedTimeframeTypes map[string]attr.Type
+	cachedFlappingTypes  map[string]attr.Type
 )
 
 func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
@@ -97,6 +99,12 @@ func getSchema() schema.Schema {
 				Description: notifyWhenDescription,
 				Optional:    true,
 				Computed:    true,
+				// REQ-041 runs before UseStateForUnknown so unknown planned notify_when is nulled when
+				// per-action frequency is configured; USFU still fills remaining unknowns from state.
+				PlanModifiers: []planmodifier.String{
+					notifyWhenNullIfUnknownWithActionFrequency(),
+					stringplanmodifier.UseStateForUnknown(),
+				},
 				Validators: []validator.String{
 					stringvalidator.OneOf("onActionGroupChange", "onActiveAlert", "onThrottleInterval"),
 				},
@@ -159,6 +167,40 @@ func getSchema() schema.Schema {
 				Optional:    true,
 				PlanModifiers: []planmodifier.Int64{
 					int64planmodifier.UseStateForUnknown(),
+				},
+			},
+			"flapping": schema.SingleNestedAttribute{
+				MarkdownDescription: flappingDescription,
+				Optional:            true,
+				Computed:            true,
+				Validators: []validator.Object{
+					objectvalidator.AlsoRequires(
+						path.MatchRelative().AtName("look_back_window"),
+						path.MatchRelative().AtName("status_change_threshold"),
+					),
+				},
+				PlanModifiers: []planmodifier.Object{
+					objectplanmodifier.UseStateForUnknown(),
+				},
+				Attributes: map[string]schema.Attribute{
+					"enabled": schema.BoolAttribute{
+						Description: "Whether the rule may enter the flapping state. When unset, the Kibana default applies. Supported only from Elastic Stack 9.3 onward.",
+						Optional:    true,
+					},
+					"look_back_window": schema.Int64Attribute{
+						Description: "Minimum number of rule runs in which the status change threshold must be met.",
+						Optional:    true,
+						Validators: []validator.Int64{
+							int64validator.AtLeast(1),
+						},
+					},
+					"status_change_threshold": schema.Int64Attribute{
+						Description: "Minimum number of times an alert must switch between active and recovered within the look-back window.",
+						Optional:    true,
+						Validators: []validator.Int64{
+							int64validator.AtLeast(1),
+						},
+					},
 				},
 			},
 		},
@@ -288,6 +330,9 @@ func initAttrTypes() {
 
 	tfBlock := filterBlock.Blocks["timeframe"].(schema.SingleNestedBlock)
 	cachedTimeframeTypes = tfBlock.Type().(attr.TypeWithAttributeTypes).AttributeTypes()
+
+	flapAttr := s.Attributes["flapping"].(schema.SingleNestedAttribute)
+	cachedFlappingTypes = flapAttr.GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
 // getActionsAttrTypes returns the attribute types for actions list elements.
@@ -312,4 +357,10 @@ func getAlertsFilterAttrTypes() map[string]attr.Type {
 func getTimeframeAttrTypes() map[string]attr.Type {
 	attrTypesOnce.Do(initAttrTypes)
 	return cachedTimeframeTypes
+}
+
+// getFlappingAttrTypes returns the attribute types for the flapping object.
+func getFlappingAttrTypes() map[string]attr.Type {
+	attrTypesOnce.Do(initAttrTypes)
+	return cachedFlappingTypes
 }

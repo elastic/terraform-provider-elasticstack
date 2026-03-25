@@ -20,10 +20,12 @@ resource "elasticstack_kibana_action_connector" "index_example" {
   })
 }
 
+# Invalid under REQ-042: rule-level throttle with per-action frequency (no rule-level notify_when).
 resource "elasticstack_kibana_alerting_rule" "test_rule" {
   name     = var.name
   rule_id  = var.rule_id
   consumer = "alerts"
+  throttle = "5m"
   params = jsonencode({
     aggType             = "avg"
     groupBy             = "top"
@@ -38,25 +40,24 @@ resource "elasticstack_kibana_alerting_rule" "test_rule" {
     termField           = "name"
   })
   rule_type_id = ".index-threshold"
-  interval     = "10m"
-  enabled      = false
-  tags         = ["first", "second"]
+  interval     = "1m"
+  enabled      = true
 
   actions {
     id    = elasticstack_kibana_action_connector.index_example.connector_id
     group = "threshold met"
     params = jsonencode({
       "documents" : [{
-        "rule_id" : "{{rule.id}} 1",
-        "rule_name" : "{{rule.name}} 2",
-        "message" : "{{context.message}} 3"
+        "rule_id" : "{{rule.id}}",
+        "rule_name" : "{{rule.name}}",
+        "message" : "{{context.message}}"
       }]
     })
 
     frequency {
-      summary     = false
-      notify_when = "onActiveAlert"
-      throttle    = "2h"
+      summary     = true
+      notify_when = "onActionGroupChange"
+      throttle    = "10m"
     }
   }
 }
