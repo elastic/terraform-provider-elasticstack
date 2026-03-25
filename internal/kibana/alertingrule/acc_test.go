@@ -43,13 +43,23 @@ const (
 	alertingRuleActionParamsUpdated = `{"documents":[{"message":"{{context.message}} 3","rule_id":"{{rule.id}} 1","rule_name":"{{rule.name}} 2"}]}`
 )
 
-// preCheckAlertingRuleAcc clears KIBANA_API_KEY via the process environment (not t.Setenv) so tests can use
-// resource.ParallelTest, which calls t.Parallel — Go forbids t.Setenv in tests that use t.Parallel.
-func preCheckAlertingRuleAcc(t *testing.T) {
-	t.Helper()
-	//nolint:usetesting // t.Setenv is unsafe here: ParallelTest uses t.Parallel, which forbids t.Setenv after parallel.
-	_ = os.Setenv("KIBANA_API_KEY", "")
-	acctest.PreCheck(t)
+func TestMain(m *testing.M) {
+	originalAPIKey, hadAPIKey := os.LookupEnv("KIBANA_API_KEY")
+	if err := os.Setenv("KIBANA_API_KEY", ""); err != nil {
+		panic(err)
+	}
+
+	exitCode := m.Run()
+
+	if hadAPIKey {
+		if err := os.Setenv("KIBANA_API_KEY", originalAPIKey); err != nil {
+			panic(err)
+		}
+	} else if err := os.Unsetenv("KIBANA_API_KEY"); err != nil {
+		panic(err)
+	}
+
+	os.Exit(exitCode)
 }
 
 func TestAccResourceAlertingRule(t *testing.T) {
@@ -64,7 +74,7 @@ func TestAccResourceAlertingRule(t *testing.T) {
 	ruleIDNoFreq := uuid.New().String()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:     func() { preCheckAlertingRuleAcc(t) },
+		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceAlertingRuleDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -325,7 +335,7 @@ func TestAccResourceAlertingRuleParamsLifecycle(t *testing.T) {
 	ruleID := uuid.New().String()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:     func() { preCheckAlertingRuleAcc(t) },
+		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceAlertingRuleDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -451,7 +461,7 @@ func TestAccResourceAlertingRuleEnabledFalseOnCreate(t *testing.T) {
 	ruleID := uuid.New().String()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:     func() { preCheckAlertingRuleAcc(t) },
+		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceAlertingRuleDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -479,7 +489,7 @@ func TestAccResourceAlertingRuleInconsistentParams(t *testing.T) {
 	minSupportedVersion := version.Must(version.NewSemver("8.13.0"))
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:     func() { preCheckAlertingRuleAcc(t) },
+		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceAlertingRuleDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -518,7 +528,7 @@ func TestAccResourceAlertingRuleFromSDK(t *testing.T) {
 	ruleID := uuid.New().String()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:     func() { preCheckAlertingRuleAcc(t) },
+		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceAlertingRuleDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -572,7 +582,7 @@ func TestAccResourceAlertingRuleAlertDelay(t *testing.T) {
 	ruleName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:     func() { preCheckAlertingRuleAcc(t) },
+		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceAlertingRuleDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -620,7 +630,7 @@ func TestAccResourceAlertingRuleFlapping(t *testing.T) {
 	ruleID := uuid.New().String()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:     func() { preCheckAlertingRuleAcc(t) },
+		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceAlertingRuleDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -691,7 +701,7 @@ func TestAccResourceAlertingRuleFlappingEnabled(t *testing.T) {
 	ruleID := uuid.New().String()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:     func() { preCheckAlertingRuleAcc(t) },
+		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceAlertingRuleDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -751,7 +761,7 @@ func TestAccResourceAlertingRuleEsqlTermField(t *testing.T) {
 	ruleName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:     func() { preCheckAlertingRuleAcc(t) },
+		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceAlertingRuleDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -792,7 +802,7 @@ func TestAccResourceAlertingRuleFrequencyExclusivity(t *testing.T) {
 	ruleID := uuid.New().String()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:     func() { preCheckAlertingRuleAcc(t) },
+		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceAlertingRuleDestroy,
 		Steps: []resource.TestStep{
 			{

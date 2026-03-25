@@ -18,6 +18,7 @@
 package kibanaoapi_test
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -421,6 +422,24 @@ func TestConnectorConfigWithDefaults(t *testing.T) {
 			planConfig:      `{"key":"value"}`,
 			expectedError:   true,
 			errorContains:   "unknown connector type ID",
+		},
+		{
+			name:            "cases-webhook without authType gets webhook-authentication-basic (Stack 9.4+ default)",
+			connectorTypeID: ".cases-webhook",
+			planConfig: `{"createIncidentJson":"{}","createIncidentResponseKey":"k",` +
+				`"createIncidentUrl":"https://example.com","getIncidentResponseExternalTitleKey":"t",` +
+				`"getIncidentUrl":"https://example.com","updateIncidentJson":"{}",` +
+				`"updateIncidentUrl":"https://example.com","viewIncidentUrl":"https://example.com"}`,
+			expectedError: false,
+			validateResult: func(t *testing.T, result string) {
+				var m map[string]any
+				require.NoError(t, json.Unmarshal([]byte(result), &m))
+				require.Equal(t, "webhook-authentication-basic", m["authType"])
+				require.Equal(t, true, m["hasAuth"])
+				require.Equal(t, "post", m["createIncidentMethod"])
+				require.Equal(t, "put", m["updateIncidentMethod"])
+				require.Equal(t, "put", m["createCommentMethod"])
+			},
 		},
 	}
 

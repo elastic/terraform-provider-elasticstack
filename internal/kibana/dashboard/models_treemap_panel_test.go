@@ -144,11 +144,8 @@ func Test_treemapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 				return &v
 			}(),
 		},
-		ValueDisplay: &struct {
-			Mode            kbapi.TreemapNoESQLValueDisplayMode `json:"mode"`
-			PercentDecimals *float32                            `json:"percent_decimals,omitempty"`
-		}{
-			Mode:            kbapi.TreemapNoESQLValueDisplayModePercentage,
+		ValueDisplay: kbapi.ValueDisplay{
+			Mode:            kbapi.ValueDisplayModePercentage,
 			PercentDecimals: new(float32(2)),
 		},
 	}
@@ -219,12 +216,15 @@ func Test_treemapConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 		CollapseBy kbapi.CollapseBy                  `json:"collapse_by"`
 		Color      kbapi.ColorMapping                `json:"color"`
 		Column     string                            `json:"column"`
+		Format     kbapi.FormatType                  `json:"format"`
+		Label      *string                           `json:"label,omitempty"`
 		Operation  kbapi.TreemapESQLGroupByOperation `json:"operation"`
 	}{
 		{
 			CollapseBy: kbapi.CollapseByAvg,
 			Color:      colorMapping,
 			Column:     "host.name",
+			Format:     format,
 			Operation:  kbapi.TreemapESQLGroupByOperationValue,
 		},
 	}
@@ -253,11 +253,8 @@ func Test_treemapConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 		Legend:              kbapi.TreemapLegend{Size: kbapi.LegendSizeSmall},
 		Metrics:             metrics,
 		GroupBy:             &groupBy,
-		ValueDisplay: &struct {
-			Mode            kbapi.TreemapESQLValueDisplayMode `json:"mode"`
-			PercentDecimals *float32                          `json:"percent_decimals,omitempty"`
-		}{
-			Mode: kbapi.TreemapESQLValueDisplayModeAbsolute,
+		ValueDisplay: kbapi.ValueDisplay{
+			Mode: kbapi.ValueDisplayModeAbsolute,
 		},
 	}
 	require.NoError(t, json.Unmarshal([]byte(`{"type":"esql","query":"FROM metrics-* | LIMIT 10"}`), &api.Dataset))

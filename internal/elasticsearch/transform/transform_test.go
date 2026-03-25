@@ -36,7 +36,7 @@ var minSupportedAdvancedSettingsVersion = version.Must(version.NewSemver("8.5.0"
 func TestAccResourceTransformWithPivot(t *testing.T) {
 
 	transformNamePivot := sdkacctest.RandStringFromCharSet(18, sdkacctest.CharSetAlphaNum)
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		CheckDestroy:             checkResourceTransformDestroy,
 		ProtoV6ProviderFactories: acctest.Providers,
@@ -93,7 +93,7 @@ func TestAccResourceTransformWithPivot(t *testing.T) {
 func TestAccResourceTransformWithLatest(t *testing.T) {
 
 	transformNameLatest := sdkacctest.RandStringFromCharSet(20, sdkacctest.CharSetAlphaNum)
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		CheckDestroy:             checkResourceTransformDestroy,
 		ProtoV6ProviderFactories: acctest.Providers,
@@ -121,7 +121,7 @@ func TestAccResourceTransformWithAdvancedSettings(t *testing.T) {
 	transformName := sdkacctest.RandStringFromCharSet(18, sdkacctest.CharSetAlphaNum)
 	pipelineName := sdkacctest.RandStringFromCharSet(20, sdkacctest.CharSetAlphaNum)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		CheckDestroy:             checkResourceTransformDestroy,
 		ProtoV6ProviderFactories: acctest.Providers,
@@ -156,7 +156,7 @@ func TestAccResourceTransformNoDefer(t *testing.T) {
 
 	transformName := sdkacctest.RandStringFromCharSet(18, sdkacctest.CharSetAlphaNum)
 	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		CheckDestroy:             checkResourceTransformDestroy,
 		ProtoV6ProviderFactories: acctest.Providers,
@@ -178,7 +178,7 @@ func TestAccResourceTransformNoDefer(t *testing.T) {
 
 func TestAccResourceTransformWithAliases(t *testing.T) {
 	transformName := sdkacctest.RandStringFromCharSet(18, sdkacctest.CharSetAlphaNum)
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		CheckDestroy:             checkResourceTransformDestroy,
 		ProtoV6ProviderFactories: acctest.Providers,

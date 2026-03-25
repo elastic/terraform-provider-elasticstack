@@ -18,6 +18,7 @@
 package dashboard_test
 
 import (
+	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -30,7 +31,7 @@ import (
 func TestAccResourceDashboardGauge(t *testing.T) {
 	dashboardTitle := "Test Dashboard with Gauge " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
@@ -71,8 +72,7 @@ func TestAccResourceDashboardGauge(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "title", dashboardTitle),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.gauge_config.filters.#", "1"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.gauge_config.filters.0.query", "response:200"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.gauge_config.filters.0.language", "kuery"),
+					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.gauge_config.filters.0.filter_json", regexp.MustCompile(`"field":"response"`)),
 				),
 			},
 			{

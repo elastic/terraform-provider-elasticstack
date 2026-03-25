@@ -29,6 +29,45 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// buildLensMosaicPanelForTest creates a panel model with MosaicConfig for panelsToAPI tests.
+func buildLensMosaicPanelForTest(t *testing.T) panelModel {
+	t.Helper()
+	groupBy := `[{"operation":"terms","collapse_by":"avg","fields":["host.name"],` +
+		`"color":{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"color_code","value":"#D3DAE6"}}}]`
+	groupBreakdownBy := `[{"operation":"terms","collapse_by":"avg","fields":["service.name"],` +
+		`"color":{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"color_code","value":"#D3DAE6"}}}]`
+	apiJSON := `{
+		"type": "mosaic",
+		"title": "Lens Mosaic",
+		"dataset": {"type":"dataView","id":"metrics-*"},
+		"query": {"language":"kuery","query":""},
+		"legend": {"size":"small"},
+		"metric": {"operation":"count"},
+		"group_by": ` + groupBy + `,
+		"group_breakdown_by": ` + groupBreakdownBy + `
+	}`
+	var api kbapi.MosaicNoESQL
+	require.NoError(t, json.Unmarshal([]byte(apiJSON), &api))
+
+	var chart kbapi.MosaicChart
+	require.NoError(t, chart.FromMosaicNoESQL(api))
+
+	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	require.NoError(t, attrs.FromMosaicChart(chart))
+
+	converter := newMosaicPanelConfigConverter()
+	pm := &panelModel{}
+	diags := converter.populateFromAttributes(context.Background(), pm, attrs)
+	require.False(t, diags.HasError())
+
+	return panelModel{
+		Type:         types.StringValue("lens"),
+		ID:           types.StringValue("mosaic-1"),
+		Grid:         panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0), W: types.Int64Value(6), H: types.Int64Value(6)},
+		MosaicConfig: pm.MosaicConfig,
+	}
+}
+
 // buildLensTreemapPanelForTest creates a panel model with TreemapConfig for panelsToAPI tests.
 func buildLensTreemapPanelForTest(t *testing.T) panelModel {
 	t.Helper()
@@ -60,6 +99,39 @@ func buildLensTreemapPanelForTest(t *testing.T) panelModel {
 		ID:            types.StringValue("treemap-1"),
 		Grid:          panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0), W: types.Int64Value(6), H: types.Int64Value(6)},
 		TreemapConfig: pm.TreemapConfig,
+	}
+}
+
+// buildLensWafflePanelForTest creates a panel model with WaffleConfig for panelsToAPI tests.
+func buildLensWafflePanelForTest(t *testing.T) panelModel {
+	t.Helper()
+	apiJSON := `{
+		"type": "waffle",
+		"title": "Lens Waffle",
+		"dataset": {"type":"dataView","id":"metrics-*"},
+		"query": {"language":"kuery","query":""},
+		"legend": {"size":"small"},
+		"metrics": [{"operation":"count"}]
+	}`
+	var api kbapi.WaffleNoESQL
+	require.NoError(t, json.Unmarshal([]byte(apiJSON), &api))
+
+	var chart kbapi.WaffleChart
+	require.NoError(t, chart.FromWaffleNoESQL(api))
+
+	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	require.NoError(t, attrs.FromWaffleChart(chart))
+
+	converter := newWafflePanelConfigConverter()
+	pm := &panelModel{}
+	diags := converter.populateFromAttributes(context.Background(), pm, attrs)
+	require.False(t, diags.HasError())
+
+	return panelModel{
+		Type:         types.StringValue("lens"),
+		ID:           types.StringValue("waffle-1"),
+		Grid:         panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0), W: types.Int64Value(8), H: types.Int64Value(10)},
+		WaffleConfig: pm.WaffleConfig,
 	}
 }
 
@@ -450,7 +522,68 @@ func Test_panelsToAPI(t *testing.T) {
 							"query": {"language":"kuery","query":""},
 							"legend": {"size":"small"},
 							"metrics": [{"operation":"count"}],
-							"group_by": [{"operation":"terms","field":"host.name","collapse_by":"avg"}]
+							"group_by": [{"operation":"terms","field":"host.name","collapse_by":"avg"}],
+							"value_display": {"mode": ""}
+						},
+						"time_range": {"from": "now-15m", "to": "now"}
+					}
+				}
+			]`,
+		},
+		{
+			name: "lens panel with mosaic config",
+			model: dashboardModel{
+				Panels: []panelModel{
+					buildLensMosaicPanelForTest(t),
+				},
+			},
+			expected: `[
+				{
+					"grid": {"h": 6, "w": 6, "x": 0, "y": 0},
+					"uid": "mosaic-1",
+					"type": "lens",
+					"config": {
+						"attributes": {
+							"type": "mosaic",
+							"title": "Lens Mosaic",
+							"dataset": {"type":"dataView","id":"metrics-*"},
+							"query": {"language":"kuery","query":""},
+							"legend": {"size":"small"},
+							"metric": {"operation":"count"},
+							"group_by": [{"operation":"terms","collapse_by":"avg","fields":["host.name"],
+								"color":{"mode":"categorical","palette":"default","mapping":[],
+								"unassignedColor":{"type":"color_code","value":"#D3DAE6"}}}],
+							"group_breakdown_by": [{"operation":"terms","collapse_by":"avg","fields":["service.name"],
+								"color":{"mode":"categorical","palette":"default","mapping":[],
+								"unassignedColor":{"type":"color_code","value":"#D3DAE6"}}}],
+							"value_display": {"mode": ""}
+						},
+						"time_range": {"from": "now-15m", "to": "now"}
+					}
+				}
+			]`,
+		},
+		{
+			name: "lens panel with waffle config",
+			model: dashboardModel{
+				Panels: []panelModel{
+					buildLensWafflePanelForTest(t),
+				},
+			},
+			expected: `[
+				{
+					"grid": {"h": 10, "w": 8, "x": 0, "y": 0},
+					"uid": "waffle-1",
+					"type": "lens",
+					"config": {
+						"attributes": {
+							"type": "waffle",
+							"title": "Lens Waffle",
+							"dataset": {"type":"dataView","id":"metrics-*"},
+							"query": {"language":"kuery","query":""},
+							"legend": {"size":"small"},
+							"metrics": [{"operation":"count"}],
+							"value_display": {"mode": "percentage"}
 						},
 						"time_range": {"from": "now-15m", "to": "now"}
 					}

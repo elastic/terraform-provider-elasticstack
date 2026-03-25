@@ -35,6 +35,7 @@ type panelModel struct {
 	MarkdownConfig     *markdownConfigModel                              `tfsdk:"markdown_config"`
 	XYChartConfig      *xyChartConfigModel                               `tfsdk:"xy_chart_config"`
 	TreemapConfig      *treemapConfigModel                               `tfsdk:"treemap_config"`
+	MosaicConfig       *mosaicConfigModel                                `tfsdk:"mosaic_config"`
 	DatatableConfig    *datatableConfigModel                             `tfsdk:"datatable_config"`
 	TagcloudConfig     *tagcloudConfigModel                              `tfsdk:"tagcloud_config"`
 	MetricChartConfig  *metricChartConfigModel                           `tfsdk:"metric_chart_config"`
@@ -43,6 +44,7 @@ type panelModel struct {
 	LegacyMetricConfig *legacyMetricConfigModel                          `tfsdk:"legacy_metric_config"`
 	RegionMapConfig    *regionMapConfigModel                             `tfsdk:"region_map_config"`
 	HeatmapConfig      *heatmapConfigModel                               `tfsdk:"heatmap_config"`
+	WaffleConfig       *waffleConfigModel                                `tfsdk:"waffle_config"`
 	ConfigJSON         customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config_json"`
 }
 
@@ -68,6 +70,7 @@ type sectionGridModel struct {
 var lensVizConverters = []lensVisualizationConverter{
 	newXYChartPanelConfigConverter(),
 	newTreemapPanelConfigConverter(),
+	newMosaicPanelConfigConverter(),
 	newDatatablePanelConfigConverter(),
 	newTagcloudPanelConfigConverter(),
 	newHeatmapPanelConfigConverter(),
@@ -76,6 +79,7 @@ var lensVizConverters = []lensVisualizationConverter{
 	newGaugePanelConfigConverter(),
 	newMetricChartPanelConfigConverter(),
 	newPieChartPanelConfigConverter(),
+	newWafflePanelConfigConverter(),
 }
 
 func (m *dashboardModel) mapPanelsFromAPI(ctx context.Context, apiPanels *kbapi.DashboardPanels) ([]panelModel, []sectionModel, diag.Diagnostics) {
@@ -196,7 +200,8 @@ func panelUsesConfigJSONOnly(pm *panelModel) bool {
 		pm.GaugeConfig == nil &&
 		pm.LegacyMetricConfig == nil &&
 		pm.RegionMapConfig == nil &&
-		pm.HeatmapConfig == nil
+		pm.HeatmapConfig == nil &&
+		pm.WaffleConfig == nil
 }
 
 func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelModel, panelItem kbapi.DashboardPanelItem) (panelModel, diag.Diagnostics) {

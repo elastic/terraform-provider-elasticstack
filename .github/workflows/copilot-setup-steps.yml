@@ -15,6 +15,12 @@ jobs:
   # The job MUST be called `copilot-setup-steps` or it will not be picked up by Copilot.
   copilot-setup-steps:
     runs-on: ubuntu-latest
+    # Defaults match Makefile / docker-compose and the acceptance-test workflow (`test.yml`)
+    # so `workflow_dispatch` and path-triggered runs work without repo secrets.
+    env:
+      ELASTIC_PASSWORD: password
+      KIBANA_SYSTEM_USERNAME: kibana_system
+      KIBANA_SYSTEM_PASSWORD: password
 
     # Set the permissions to the lowest permissions possible needed for your steps.
     # Copilot will be given its own token for its operations.
@@ -24,6 +30,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6 — same pin as test.yml lint
+        with:
+          node-version-file: package.json
+          cache: npm
+          cache-dependency-path: package-lock.json
       - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6
         with:
           go-version-file: 'go.mod'
@@ -34,6 +45,9 @@ jobs:
 
       - name: Setup Elastic Stack
         run: make docker-fleet
+        env:
+          ELASTICSEARCH_PASSWORD: ${{ env.ELASTIC_PASSWORD }}
+          KIBANA_PASSWORD: ${{ env.ELASTIC_PASSWORD }}
 
       - name: Get dependencies
         run: make setup
@@ -41,7 +55,7 @@ jobs:
       - name: Setup Kibana user
         run: make set-kibana-password
         env:
-          ELASTICSEARCH_PASSWORD: ${{ env.ELASTICSEARCH_PASSWORD }}
+          ELASTICSEARCH_PASSWORD: ${{ env.ELASTIC_PASSWORD }}
           KIBANA_SYSTEM_USERNAME: ${{ env.KIBANA_SYSTEM_USERNAME }}
           KIBANA_SYSTEM_PASSWORD: ${{ env.KIBANA_SYSTEM_PASSWORD }}
 
@@ -50,12 +64,12 @@ jobs:
         run: |-
           echo "apikey=$(make create-es-api-key | jq -r .encoded)" >> "$GITHUB_OUTPUT"
         env:
-          ELASTICSEARCH_PASSWORD: ${{ env.ELASTICSEARCH_PASSWORD }}
+          ELASTICSEARCH_PASSWORD: ${{ env.ELASTIC_PASSWORD }}
 
       - id: setup-fleet
         name: Setup Fleet
         run: |-
           make setup-kibana-fleet
         env:
-          ELASTICSEARCH_PASSWORD: ${{ env.ELASTICSEARCH_PASSWORD }}
+          ELASTICSEARCH_PASSWORD: ${{ env.ELASTIC_PASSWORD }}
           FLEET_NAME: "fleet"

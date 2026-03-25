@@ -46,7 +46,7 @@ var sdkCreateTestConfig string
 func TestAccResourceAgentPolicyFromSDK(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceAgentPolicyDestroy,
 		Steps: []resource.TestStep{
@@ -99,7 +99,7 @@ func TestAccResourceAgentPolicy(t *testing.T) {
 
 	var originalPolicyID string
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceAgentPolicyDestroy,
 		Steps: []resource.TestStep{
@@ -325,7 +325,7 @@ func TestAccResourceAgentPolicy(t *testing.T) {
 func TestAccResourceAgentPolicySkipDestroy(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceAgentPolicySkipDestroy,
 		Steps: []resource.TestStep{
@@ -353,7 +353,7 @@ func TestAccResourceAgentPolicySkipDestroy(t *testing.T) {
 func TestAccResourceAgentPolicyWithBadGlobalDataTags(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
@@ -373,7 +373,7 @@ func TestAccResourceAgentPolicyWithBadGlobalDataTags(t *testing.T) {
 func TestAccResourceAgentPolicyWithSpaceIDs(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceAgentPolicyDestroy,
 		Steps: []resource.TestStep{
@@ -410,7 +410,7 @@ func TestAccResourceAgentPolicySpaceReordering(t *testing.T) {
 
 	var originalPolicyID string
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceAgentPolicyDestroy,
 		Steps: []resource.TestStep{
@@ -545,7 +545,7 @@ func checkResourceAgentPolicySkipDestroy(s *terraform.State) error {
 func TestAccResourceAgentPolicyWithHostNameFormat(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceAgentPolicyDestroy,
 		Steps: []resource.TestStep{
@@ -601,7 +601,7 @@ func TestAccResourceAgentPolicyWithHostNameFormat(t *testing.T) {
 func TestAccResourceAgentPolicyWithRequiredVersions(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceAgentPolicyDestroy,
 		Steps: []resource.TestStep{
@@ -683,7 +683,7 @@ func TestAccResourceAgentPolicyWithRequiredVersions(t *testing.T) {
 func TestAccResourceAgentPolicyWithAdvancedSettings(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceAgentPolicyDestroy,
 		Steps: []resource.TestStep{
@@ -779,7 +779,7 @@ func TestAccResourceAgentPolicyWithAdvancedSettings(t *testing.T) {
 func TestAccResourceAgentPolicyWithAdvancedMonitoring(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceAgentPolicyDestroy,
 		Steps: []resource.TestStep{
@@ -895,7 +895,7 @@ func TestAccResourceAgentPolicyNonDefaultSpace(t *testing.T) {
 	spaceName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	spaceID := fmt.Sprintf("space-%s", spaceName)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceAgentPolicyDestroy,
 		Steps: []resource.TestStep{
@@ -948,7 +948,7 @@ func TestAccResourceAgentPolicyWithRestrictedUser(t *testing.T) {
 	roleName := "test-role-" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	password := "Password123!"
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceAgentPolicyDestroy,
 		Steps: []resource.TestStep{

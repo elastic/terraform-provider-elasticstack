@@ -60,6 +60,8 @@ func populateLensAttributesDefaults(attrs map[string]any) map[string]any {
 		populateHeatmapAttributes(attrs)
 	case "treemap":
 		populateTreemapAttributes(attrs)
+	case "waffle":
+		populateWaffleAttributes(attrs)
 	case "xy":
 		populateXYChartAttributes(attrs)
 	case "datatable":
@@ -137,6 +139,12 @@ func populatePieChartAttributes(attrs map[string]any) {
 	}
 }
 
+// populateWaffleAttributes mirrors pie chart defaulting for metrics and group_by (see getWaffleSchema
+// and models_waffle_panel: same populatePieChartMetricDefaults / populateLensGroupByDefaults).
+func populateWaffleAttributes(attrs map[string]any) {
+	populatePieChartAttributes(attrs)
+}
+
 func populateRegionMapAttributes(attrs map[string]any) {
 	if _, exists := attrs["filters"]; !exists {
 		attrs["filters"] = []any{}
@@ -166,7 +174,8 @@ func populateTreemapAttributes(attrs map[string]any) {
 				groupByMaps = append(groupByMaps, m)
 			}
 		}
-		populated := populateTreemapGroupByDefaults(groupByMaps)
+
+		populated := populatePartitionGroupByDefaults(groupByMaps)
 		for i := range groupBy {
 			if i < len(populated) {
 				groupBy[i] = populated[i]
@@ -180,7 +189,7 @@ func populateTreemapAttributes(attrs map[string]any) {
 				metricsMaps = append(metricsMaps, mp)
 			}
 		}
-		populated := populateTreemapMetricsDefaults(metricsMaps)
+		populated := populatePartitionMetricsDefaults(metricsMaps)
 		for i := range metrics {
 			if i < len(populated) {
 				metrics[i] = populated[i]

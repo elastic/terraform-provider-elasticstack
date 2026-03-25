@@ -90,10 +90,17 @@ var minResponseActionVersionSupport = version.Must(version.NewVersion("8.16.0"))
 
 const securityDetectionRuleResourceName = "elasticstack_kibana_security_detection_rule.test"
 
+func testAccRandomizedRuleName(prefix string) string {
+	return fmt.Sprintf("%s-%s", prefix, sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum))
+}
+
 func TestAccResourceSecurityDetectionRule_Query(t *testing.T) {
 	resourceName := securityDetectionRuleResourceName
+	createRuleName := testAccRandomizedRuleName("test-query-rule")
+	updatedRuleName := testAccRandomizedRuleName("test-query-rule-updated")
+	noFiltersRuleName := testAccRandomizedRuleName("test-query-rule-no-filters")
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
@@ -102,10 +109,10 @@ func TestAccResourceSecurityDetectionRule_Query(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable("test-query-rule"),
+					"name": config.StringVariable(createRuleName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "name", "test-query-rule"),
+					resource.TestCheckResourceAttr(resourceName, "name", createRuleName),
 					resource.TestCheckResourceAttr(resourceName, "type", "query"),
 					resource.TestCheckResourceAttr(resourceName, "query", "*:*"),
 					resource.TestCheckResourceAttr(resourceName, "language", "kuery"),
@@ -188,10 +195,10 @@ func TestAccResourceSecurityDetectionRule_Query(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable("test-query-rule-updated"),
+					"name": config.StringVariable(updatedRuleName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "name", "test-query-rule-updated"),
+					resource.TestCheckResourceAttr(resourceName, "name", updatedRuleName),
 					resource.TestCheckResourceAttr(resourceName, "description", "Updated test query security detection rule"),
 					resource.TestCheckResourceAttr(resourceName, "severity", "high"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score", "75"),
@@ -279,10 +286,10 @@ func TestAccResourceSecurityDetectionRule_Query(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("remove_filters"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable("test-query-rule-no-filters"),
+					"name": config.StringVariable(noFiltersRuleName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "name", "test-query-rule-no-filters"),
+					resource.TestCheckResourceAttr(resourceName, "name", noFiltersRuleName),
 					resource.TestCheckResourceAttr(resourceName, "description", "Test query rule with filters removed"),
 					resource.TestCheckResourceAttr(resourceName, "severity", "medium"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score", "55"),
@@ -296,7 +303,7 @@ func TestAccResourceSecurityDetectionRule_Query(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("remove_filters"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable("test-query-rule-no-filters"),
+					"name": config.StringVariable(noFiltersRuleName),
 				},
 				ResourceName:      resourceName,
 				ImportState:       true,
@@ -308,8 +315,10 @@ func TestAccResourceSecurityDetectionRule_Query(t *testing.T) {
 
 func TestAccResourceSecurityDetectionRule_EQL(t *testing.T) {
 	resourceName := securityDetectionRuleResourceName
+	createRuleName := testAccRandomizedRuleName("test-eql-rule")
+	updatedRuleName := testAccRandomizedRuleName("test-eql-rule-updated")
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
@@ -318,10 +327,10 @@ func TestAccResourceSecurityDetectionRule_EQL(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable("test-eql-rule"),
+					"name": config.StringVariable(createRuleName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "name", "test-eql-rule"),
+					resource.TestCheckResourceAttr(resourceName, "name", createRuleName),
 					resource.TestCheckResourceAttr(resourceName, "type", "eql"),
 					resource.TestCheckResourceAttr(resourceName, "query", "process where process.name == \"cmd.exe\""),
 					resource.TestCheckResourceAttr(resourceName, "language", "eql"),
@@ -388,10 +397,10 @@ func TestAccResourceSecurityDetectionRule_EQL(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable("test-eql-rule-updated"),
+					"name": config.StringVariable(updatedRuleName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "name", "test-eql-rule-updated"),
+					resource.TestCheckResourceAttr(resourceName, "name", updatedRuleName),
 					resource.TestCheckResourceAttr(resourceName, "query", "process where process.name == \"powershell.exe\""),
 					resource.TestCheckResourceAttr(resourceName, "description", "Updated test EQL security detection rule"),
 					resource.TestCheckResourceAttr(resourceName, "severity", "critical"),
@@ -460,8 +469,10 @@ func TestAccResourceSecurityDetectionRule_EQL(t *testing.T) {
 
 func TestAccResourceSecurityDetectionRule_ESQL(t *testing.T) {
 	resourceName := securityDetectionRuleResourceName
+	createRuleName := testAccRandomizedRuleName("test-esql-rule")
+	updatedRuleName := testAccRandomizedRuleName("test-esql-rule-updated")
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
@@ -470,10 +481,10 @@ func TestAccResourceSecurityDetectionRule_ESQL(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable("test-esql-rule"),
+					"name": config.StringVariable(createRuleName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "name", "test-esql-rule"),
+					resource.TestCheckResourceAttr(resourceName, "name", createRuleName),
 					resource.TestCheckResourceAttr(resourceName, "type", "esql"),
 					resource.TestCheckResourceAttr(resourceName, "query", "FROM logs-* | WHERE event.action == \"login\" | STATS count(*) BY user.name"),
 					resource.TestCheckResourceAttr(resourceName, "language", "esql"),
@@ -547,10 +558,10 @@ func TestAccResourceSecurityDetectionRule_ESQL(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable("test-esql-rule-updated"),
+					"name": config.StringVariable(updatedRuleName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "name", "test-esql-rule-updated"),
+					resource.TestCheckResourceAttr(resourceName, "name", updatedRuleName),
 					resource.TestCheckResourceAttr(resourceName, "query", "FROM logs-* | WHERE event.action == \"logout\" | STATS count(*) BY user.name, source.ip"),
 					resource.TestCheckResourceAttr(resourceName, "description", "Updated test ESQL security detection rule"),
 					resource.TestCheckResourceAttr(resourceName, "severity", "high"),
@@ -616,8 +627,10 @@ func TestAccResourceSecurityDetectionRule_ESQL(t *testing.T) {
 
 func TestAccResourceSecurityDetectionRule_MachineLearning(t *testing.T) {
 	resourceName := securityDetectionRuleResourceName
+	createRuleName := testAccRandomizedRuleName("test-ml-rule")
+	updatedRuleName := testAccRandomizedRuleName("test-ml-rule-updated")
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
@@ -626,10 +639,10 @@ func TestAccResourceSecurityDetectionRule_MachineLearning(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable("test-ml-rule"),
+					"name": config.StringVariable(createRuleName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "name", "test-ml-rule"),
+					resource.TestCheckResourceAttr(resourceName, "name", createRuleName),
 					resource.TestCheckResourceAttr(resourceName, "type", "machine_learning"),
 					resource.TestCheckResourceAttr(resourceName, "enabled", "true"),
 					resource.TestCheckResourceAttr(resourceName, "description", "Test ML security detection rule"),
@@ -701,10 +714,10 @@ func TestAccResourceSecurityDetectionRule_MachineLearning(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable("test-ml-rule-updated"),
+					"name": config.StringVariable(updatedRuleName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "name", "test-ml-rule-updated"),
+					resource.TestCheckResourceAttr(resourceName, "name", updatedRuleName),
 					resource.TestCheckResourceAttr(resourceName, "description", "Updated test ML security detection rule"),
 					resource.TestCheckResourceAttr(resourceName, "severity", "high"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score", "85"),
@@ -781,8 +794,10 @@ func TestAccResourceSecurityDetectionRule_MachineLearning(t *testing.T) {
 
 func TestAccResourceSecurityDetectionRule_NewTerms(t *testing.T) {
 	resourceName := securityDetectionRuleResourceName
+	createRuleName := testAccRandomizedRuleName("test-new-terms-rule")
+	updatedRuleName := testAccRandomizedRuleName("test-new-terms-rule-updated")
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
@@ -791,10 +806,10 @@ func TestAccResourceSecurityDetectionRule_NewTerms(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable("test-new-terms-rule"),
+					"name": config.StringVariable(createRuleName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "name", "test-new-terms-rule"),
+					resource.TestCheckResourceAttr(resourceName, "name", createRuleName),
 					resource.TestCheckResourceAttr(resourceName, "type", "new_terms"),
 					resource.TestCheckResourceAttr(resourceName, "query", "user.name:*"),
 					resource.TestCheckResourceAttr(resourceName, "language", "kuery"),
@@ -873,10 +888,10 @@ func TestAccResourceSecurityDetectionRule_NewTerms(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable("test-new-terms-rule-updated"),
+					"name": config.StringVariable(updatedRuleName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "name", "test-new-terms-rule-updated"),
+					resource.TestCheckResourceAttr(resourceName, "name", updatedRuleName),
 					resource.TestCheckResourceAttr(resourceName, "query", "user.name:* AND source.ip:*"),
 					resource.TestCheckResourceAttr(resourceName, "description", "Updated test new terms security detection rule"),
 					resource.TestCheckResourceAttr(resourceName, "severity", "high"),
@@ -931,8 +946,10 @@ func TestAccResourceSecurityDetectionRule_NewTerms(t *testing.T) {
 
 func TestAccResourceSecurityDetectionRule_SavedQuery(t *testing.T) {
 	resourceName := securityDetectionRuleResourceName
+	createRuleName := testAccRandomizedRuleName("test-saved-query-rule")
+	updatedRuleName := testAccRandomizedRuleName("test-saved-query-rule-updated")
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
@@ -941,10 +958,10 @@ func TestAccResourceSecurityDetectionRule_SavedQuery(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable("test-saved-query-rule"),
+					"name": config.StringVariable(createRuleName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "name", "test-saved-query-rule"),
+					resource.TestCheckResourceAttr(resourceName, "name", createRuleName),
 					resource.TestCheckResourceAttr(resourceName, "type", "saved_query"),
 					resource.TestCheckResourceAttr(resourceName, "enabled", "true"),
 					resource.TestCheckResourceAttr(resourceName, "description", "Test saved query security detection rule"),
@@ -1020,10 +1037,10 @@ func TestAccResourceSecurityDetectionRule_SavedQuery(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable("test-saved-query-rule-updated"),
+					"name": config.StringVariable(updatedRuleName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "name", "test-saved-query-rule-updated"),
+					resource.TestCheckResourceAttr(resourceName, "name", updatedRuleName),
 					resource.TestCheckResourceAttr(resourceName, "query", "event.action:*"),
 					resource.TestCheckResourceAttr(resourceName, "description", "Updated test saved query security detection rule"),
 					resource.TestCheckResourceAttr(resourceName, "severity", "medium"),
@@ -1102,8 +1119,10 @@ func TestAccResourceSecurityDetectionRule_SavedQuery(t *testing.T) {
 
 func TestAccResourceSecurityDetectionRule_ThreatMatch(t *testing.T) {
 	resourceName := securityDetectionRuleResourceName
+	createRuleName := testAccRandomizedRuleName("test-threat-match-rule")
+	updatedRuleName := testAccRandomizedRuleName("test-threat-match-rule-updated")
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
@@ -1112,10 +1131,10 @@ func TestAccResourceSecurityDetectionRule_ThreatMatch(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable("test-threat-match-rule"),
+					"name": config.StringVariable(createRuleName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "name", "test-threat-match-rule"),
+					resource.TestCheckResourceAttr(resourceName, "name", createRuleName),
 					resource.TestCheckResourceAttr(resourceName, "type", "threat_match"),
 					resource.TestCheckResourceAttr(resourceName, "query", "destination.ip:*"),
 					resource.TestCheckResourceAttr(resourceName, "language", "kuery"),
@@ -1199,10 +1218,10 @@ func TestAccResourceSecurityDetectionRule_ThreatMatch(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable("test-threat-match-rule-updated"),
+					"name": config.StringVariable(updatedRuleName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "name", "test-threat-match-rule-updated"),
+					resource.TestCheckResourceAttr(resourceName, "name", updatedRuleName),
 					resource.TestCheckResourceAttr(resourceName, "query", "destination.ip:* OR source.ip:*"),
 					resource.TestCheckResourceAttr(resourceName, "description", "Updated test threat match security detection rule"),
 					resource.TestCheckResourceAttr(resourceName, "severity", "critical"),
@@ -1282,8 +1301,10 @@ func TestAccResourceSecurityDetectionRule_ThreatMatch(t *testing.T) {
 func TestAccResourceSecurityDetectionRule_ThreatMatch_ThreatFilters(t *testing.T) {
 	resourceName := securityDetectionRuleResourceName
 	ruleID := "threat-filters-" + sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	reproRuleName := testAccRandomizedRuleName("test-threat-filters-repro")
+	emptyRuleName := testAccRandomizedRuleName("test-threat-filters-empty")
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
@@ -1292,11 +1313,11 @@ func TestAccResourceSecurityDetectionRule_ThreatMatch_ThreatFilters(t *testing.T
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("repro"),
 				ConfigVariables: config.Variables{
-					"name":    config.StringVariable("test-threat-filters-repro"),
+					"name":    config.StringVariable(reproRuleName),
 					"rule_id": config.StringVariable(ruleID),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "name", "test-threat-filters-repro"),
+					resource.TestCheckResourceAttr(resourceName, "name", reproRuleName),
 					resource.TestCheckResourceAttr(resourceName, "rule_id", ruleID),
 					resource.TestCheckResourceAttr(resourceName, "type", "threat_match"),
 					resource.TestCheckResourceAttr(resourceName, "language", "kuery"),
@@ -1322,11 +1343,11 @@ func TestAccResourceSecurityDetectionRule_ThreatMatch_ThreatFilters(t *testing.T
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty"),
 				ConfigVariables: config.Variables{
-					"name":    config.StringVariable("test-threat-filters-empty"),
+					"name":    config.StringVariable(emptyRuleName),
 					"rule_id": config.StringVariable(ruleID),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "name", "test-threat-filters-empty"),
+					resource.TestCheckResourceAttr(resourceName, "name", emptyRuleName),
 					resource.TestCheckResourceAttr(resourceName, "rule_id", ruleID),
 					resource.TestCheckResourceAttr(resourceName, "type", "threat_match"),
 					resource.TestCheckResourceAttr(resourceName, "language", "kuery"),
@@ -1338,7 +1359,7 @@ func TestAccResourceSecurityDetectionRule_ThreatMatch_ThreatFilters(t *testing.T
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty"),
 				ConfigVariables: config.Variables{
-					"name":    config.StringVariable("test-threat-filters-empty"),
+					"name":    config.StringVariable(emptyRuleName),
 					"rule_id": config.StringVariable(ruleID),
 				},
 				PlanOnly:           true,
@@ -1350,8 +1371,10 @@ func TestAccResourceSecurityDetectionRule_ThreatMatch_ThreatFilters(t *testing.T
 
 func TestAccResourceSecurityDetectionRule_Threshold(t *testing.T) {
 	resourceName := securityDetectionRuleResourceName
+	createRuleName := testAccRandomizedRuleName("test-threshold-rule")
+	updatedRuleName := testAccRandomizedRuleName("test-threshold-rule-updated")
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
@@ -1360,10 +1383,10 @@ func TestAccResourceSecurityDetectionRule_Threshold(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable("test-threshold-rule"),
+					"name": config.StringVariable(createRuleName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "name", "test-threshold-rule"),
+					resource.TestCheckResourceAttr(resourceName, "name", createRuleName),
 					resource.TestCheckResourceAttr(resourceName, "type", "threshold"),
 					resource.TestCheckResourceAttr(resourceName, "query", "event.action:login"),
 					resource.TestCheckResourceAttr(resourceName, "language", "kuery"),
@@ -1437,10 +1460,10 @@ func TestAccResourceSecurityDetectionRule_Threshold(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable("test-threshold-rule-updated"),
+					"name": config.StringVariable(updatedRuleName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "name", "test-threshold-rule-updated"),
+					resource.TestCheckResourceAttr(resourceName, "name", updatedRuleName),
 					resource.TestCheckResourceAttr(resourceName, "query", "event.action:(login OR logout)"),
 					resource.TestCheckResourceAttr(resourceName, "description", "Updated test threshold security detection rule"),
 					resource.TestCheckResourceAttr(resourceName, "severity", "high"),
@@ -1587,8 +1610,12 @@ func testAccCheckSecurityDetectionRuleDestroy(s *terraform.State) error {
 func TestAccResourceSecurityDetectionRule_WithConnectorAction(t *testing.T) {
 	resourceName := securityDetectionRuleResourceName
 	connectorResourceName := "elasticstack_kibana_action_connector.test"
+	createRuleName := testAccRandomizedRuleName("test-rule-with-action")
+	updatedRuleName := testAccRandomizedRuleName("test-rule-with-action-updated")
+	connectorName := testAccRandomizedRuleName("test-connector")
+	connectorID := uuid.New().String()
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
@@ -1597,18 +1624,20 @@ func TestAccResourceSecurityDetectionRule_WithConnectorAction(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable("test-rule-with-action"),
+					"name":           config.StringVariable(createRuleName),
+					"connector_name": config.StringVariable(connectorName),
+					"connector_id":   config.StringVariable(connectorID),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					// Check connector attributes
-					resource.TestCheckResourceAttr(connectorResourceName, "name", "test connector 1"),
-					resource.TestCheckResourceAttr(connectorResourceName, "connector_id", "1d30b67b-f90b-4e28-87c2-137cba361509"),
+					resource.TestCheckResourceAttr(connectorResourceName, "name", connectorName),
+					resource.TestCheckResourceAttr(connectorResourceName, "connector_id", connectorID),
 					resource.TestCheckResourceAttr(connectorResourceName, "connector_type_id", ".cases-webhook"),
 					resource.TestCheckResourceAttrSet(connectorResourceName, "config"),
 					resource.TestCheckResourceAttrSet(connectorResourceName, "secrets"),
 
 					// Check security detection rule attributes
-					resource.TestCheckResourceAttr(resourceName, "name", "test-rule-with-action"),
+					resource.TestCheckResourceAttr(resourceName, "name", createRuleName),
 					resource.TestCheckResourceAttr(resourceName, "type", "query"),
 					resource.TestCheckResourceAttr(resourceName, "query", "user.name:*"),
 					resource.TestCheckResourceAttr(resourceName, "language", "kuery"),
@@ -1629,7 +1658,7 @@ func TestAccResourceSecurityDetectionRule_WithConnectorAction(t *testing.T) {
 					// Check action attributes
 					resource.TestCheckResourceAttr(resourceName, "actions.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "actions.0.action_type_id", ".cases-webhook"),
-					resource.TestCheckResourceAttr(resourceName, "actions.0.id", "1d30b67b-f90b-4e28-87c2-137cba361509"),
+					resource.TestCheckResourceAttr(resourceName, "actions.0.id", connectorID),
 					resource.TestCheckResourceAttr(resourceName, "actions.0.group", "default"),
 					resource.TestCheckResourceAttr(resourceName, "actions.0.params.message", "CRITICAL EQL Alert: PowerShell process detected"),
 					resource.TestCheckResourceAttr(resourceName, "actions.0.frequency.notify_when", "onActiveAlert"),
@@ -1647,11 +1676,13 @@ func TestAccResourceSecurityDetectionRule_WithConnectorAction(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable("test-rule-with-action-updated"),
+					"name":           config.StringVariable(updatedRuleName),
+					"connector_name": config.StringVariable(connectorName),
+					"connector_id":   config.StringVariable(connectorID),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					// Check updated rule attributes
-					resource.TestCheckResourceAttr(resourceName, "name", "test-rule-with-action-updated"),
+					resource.TestCheckResourceAttr(resourceName, "name", updatedRuleName),
 					resource.TestCheckResourceAttr(resourceName, "description", "Updated test security detection rule with connector action"),
 					resource.TestCheckResourceAttr(resourceName, "severity", "high"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score", "75"),
@@ -1685,8 +1716,11 @@ func TestAccResourceSecurityDetectionRule_WithConnectorAction(t *testing.T) {
 
 func TestAccResourceSecurityDetectionRule_BuildingBlockType(t *testing.T) {
 	resourceName := securityDetectionRuleResourceName
+	createRuleName := testAccRandomizedRuleName("test-building-block-rule")
+	updatedRuleName := testAccRandomizedRuleName("test-building-block-rule-updated")
+	removedRuleName := testAccRandomizedRuleName("test-building-block-rule-no-type")
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
@@ -1695,10 +1729,10 @@ func TestAccResourceSecurityDetectionRule_BuildingBlockType(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable("test-building-block-rule"),
+					"name": config.StringVariable(createRuleName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "name", "test-building-block-rule"),
+					resource.TestCheckResourceAttr(resourceName, "name", createRuleName),
 					resource.TestCheckResourceAttr(resourceName, "type", "query"),
 					resource.TestCheckResourceAttr(resourceName, "query", "process.name:*"),
 					resource.TestCheckResourceAttr(resourceName, "language", "kuery"),
@@ -1719,10 +1753,10 @@ func TestAccResourceSecurityDetectionRule_BuildingBlockType(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable("test-building-block-rule-updated"),
+					"name": config.StringVariable(updatedRuleName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "name", "test-building-block-rule-updated"),
+					resource.TestCheckResourceAttr(resourceName, "name", updatedRuleName),
 					resource.TestCheckResourceAttr(resourceName, "query", "process.name:* AND user.name:*"),
 					resource.TestCheckResourceAttr(resourceName, "description", "Updated test building block security detection rule"),
 					resource.TestCheckResourceAttr(resourceName, "severity", "medium"),
@@ -1740,10 +1774,10 @@ func TestAccResourceSecurityDetectionRule_BuildingBlockType(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("removed"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable("test-building-block-rule-no-type"),
+					"name": config.StringVariable(removedRuleName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "name", "test-building-block-rule-no-type"),
+					resource.TestCheckResourceAttr(resourceName, "name", removedRuleName),
 					resource.TestCheckResourceAttr(resourceName, "description", "Test rule without building block type"),
 					resource.TestCheckResourceAttr(resourceName, "data_view_id", "no-building-block-data-view-id"),
 					resource.TestCheckResourceAttr(resourceName, "namespace", "no-building-block-namespace"),
@@ -1756,8 +1790,10 @@ func TestAccResourceSecurityDetectionRule_BuildingBlockType(t *testing.T) {
 
 func TestAccResourceSecurityDetectionRule_QueryMinimal(t *testing.T) {
 	resourceName := securityDetectionRuleResourceName
+	createRuleName := testAccRandomizedRuleName("test-query-rule-minimal")
+	updatedRuleName := testAccRandomizedRuleName("test-query-rule-minimal-updated")
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
@@ -1766,10 +1802,10 @@ func TestAccResourceSecurityDetectionRule_QueryMinimal(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable("test-query-rule-minimal"),
+					"name": config.StringVariable(createRuleName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "name", "test-query-rule-minimal"),
+					resource.TestCheckResourceAttr(resourceName, "name", createRuleName),
 					resource.TestCheckResourceAttr(resourceName, "type", "query"),
 					resource.TestCheckResourceAttr(resourceName, "query", "*:*"),
 					resource.TestCheckResourceAttr(resourceName, "language", "kuery"),
@@ -1807,10 +1843,10 @@ func TestAccResourceSecurityDetectionRule_QueryMinimal(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable("test-query-rule-minimal-updated"),
+					"name": config.StringVariable(updatedRuleName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "name", "test-query-rule-minimal-updated"),
+					resource.TestCheckResourceAttr(resourceName, "name", updatedRuleName),
 					resource.TestCheckResourceAttr(resourceName, "type", "query"),
 					resource.TestCheckResourceAttr(resourceName, "query", "event.category:authentication"),
 					resource.TestCheckResourceAttr(resourceName, "language", "kuery"),
@@ -1852,8 +1888,10 @@ func TestAccResourceSecurityDetectionRule_QueryMinimalWithSpace(t *testing.T) {
 	resourceName := securityDetectionRuleResourceName
 	spaceResourceName := "elasticstack_kibana_space.test"
 	spaceID := fmt.Sprintf("test-space-%s", uuid.New().String()[:8])
+	createRuleName := testAccRandomizedRuleName("test-query-rule-with-space")
+	updatedRuleName := testAccRandomizedRuleName("test-query-rule-with-space-updated")
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
@@ -1862,7 +1900,7 @@ func TestAccResourceSecurityDetectionRule_QueryMinimalWithSpace(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
-					"name":     config.StringVariable("test-query-rule-with-space"),
+					"name":     config.StringVariable(createRuleName),
 					"space_id": config.StringVariable(spaceID),
 				},
 				Check: resource.ComposeTestCheckFunc(
@@ -1871,7 +1909,7 @@ func TestAccResourceSecurityDetectionRule_QueryMinimalWithSpace(t *testing.T) {
 					resource.TestCheckResourceAttr(spaceResourceName, "name", "Test Space for Detection Rules"),
 
 					// Check detection rule attributes
-					resource.TestCheckResourceAttr(resourceName, "name", "test-query-rule-with-space"),
+					resource.TestCheckResourceAttr(resourceName, "name", createRuleName),
 					resource.TestCheckResourceAttr(resourceName, "type", "query"),
 					resource.TestCheckResourceAttr(resourceName, "query", "*:*"),
 					resource.TestCheckResourceAttr(resourceName, "language", "kuery"),
@@ -1910,7 +1948,7 @@ func TestAccResourceSecurityDetectionRule_QueryMinimalWithSpace(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
-					"name":     config.StringVariable("test-query-rule-with-space-updated"),
+					"name":     config.StringVariable(updatedRuleName),
 					"space_id": config.StringVariable(spaceID),
 				},
 				Check: resource.ComposeTestCheckFunc(
@@ -1919,7 +1957,7 @@ func TestAccResourceSecurityDetectionRule_QueryMinimalWithSpace(t *testing.T) {
 					resource.TestCheckResourceAttr(spaceResourceName, "name", "Test Space for Detection Rules"),
 
 					// Check updated detection rule attributes
-					resource.TestCheckResourceAttr(resourceName, "name", "test-query-rule-with-space-updated"),
+					resource.TestCheckResourceAttr(resourceName, "name", updatedRuleName),
 					resource.TestCheckResourceAttr(resourceName, "type", "query"),
 					resource.TestCheckResourceAttr(resourceName, "query", "event.category:authentication"),
 					resource.TestCheckResourceAttr(resourceName, "language", "kuery"),
@@ -1959,7 +1997,7 @@ func TestAccResourceSecurityDetectionRule_QueryMinimalWithSpace(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
-					"name":     config.StringVariable("test-query-rule-with-space-updated"),
+					"name":     config.StringVariable(updatedRuleName),
 					"space_id": config.StringVariable(spaceID),
 				},
 				ResourceName:      resourceName,
@@ -1972,8 +2010,10 @@ func TestAccResourceSecurityDetectionRule_QueryMinimalWithSpace(t *testing.T) {
 
 func TestAccResourceSecurityDetectionRule_EQLMinimal(t *testing.T) {
 	resourceName := securityDetectionRuleResourceName
+	createRuleName := testAccRandomizedRuleName("test-eql-rule-minimal")
+	updatedRuleName := testAccRandomizedRuleName("test-eql-rule-minimal-updated")
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
@@ -1982,10 +2022,10 @@ func TestAccResourceSecurityDetectionRule_EQLMinimal(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable("test-eql-rule-minimal"),
+					"name": config.StringVariable(createRuleName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "name", "test-eql-rule-minimal"),
+					resource.TestCheckResourceAttr(resourceName, "name", createRuleName),
 					resource.TestCheckResourceAttr(resourceName, "type", "eql"),
 					resource.TestCheckResourceAttr(resourceName, "query", "process where process.name == \"cmd.exe\""),
 					resource.TestCheckResourceAttr(resourceName, "language", "eql"),
@@ -2024,10 +2064,10 @@ func TestAccResourceSecurityDetectionRule_EQLMinimal(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable("test-eql-rule-minimal-updated"),
+					"name": config.StringVariable(updatedRuleName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "name", "test-eql-rule-minimal-updated"),
+					resource.TestCheckResourceAttr(resourceName, "name", updatedRuleName),
 					resource.TestCheckResourceAttr(resourceName, "query", "process where process.name == \"powershell.exe\""),
 					resource.TestCheckResourceAttr(resourceName, "description", "Updated minimal test EQL security detection rule"),
 					resource.TestCheckResourceAttr(resourceName, "severity", "medium"),
@@ -2040,8 +2080,10 @@ func TestAccResourceSecurityDetectionRule_EQLMinimal(t *testing.T) {
 
 func TestAccResourceSecurityDetectionRule_ESQLMinimal(t *testing.T) {
 	resourceName := securityDetectionRuleResourceName
+	createRuleName := testAccRandomizedRuleName("test-esql-rule-minimal")
+	updatedRuleName := testAccRandomizedRuleName("test-esql-rule-minimal-updated")
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
@@ -2050,10 +2092,10 @@ func TestAccResourceSecurityDetectionRule_ESQLMinimal(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable("test-esql-rule-minimal"),
+					"name": config.StringVariable(createRuleName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "name", "test-esql-rule-minimal"),
+					resource.TestCheckResourceAttr(resourceName, "name", createRuleName),
 					resource.TestCheckResourceAttr(resourceName, "type", "esql"),
 					resource.TestCheckResourceAttr(resourceName, "query", "FROM logs-* | WHERE event.action == \"login\" | STATS count(*) BY user.name"),
 					resource.TestCheckResourceAttr(resourceName, "language", "esql"),
@@ -2091,10 +2133,10 @@ func TestAccResourceSecurityDetectionRule_ESQLMinimal(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable("test-esql-rule-minimal-updated"),
+					"name": config.StringVariable(updatedRuleName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "name", "test-esql-rule-minimal-updated"),
+					resource.TestCheckResourceAttr(resourceName, "name", updatedRuleName),
 					resource.TestCheckResourceAttr(resourceName, "query", "FROM logs-* | WHERE event.action == \"logout\" | STATS count(*) BY user.name, source.ip"),
 					resource.TestCheckResourceAttr(resourceName, "description", "Updated minimal test ESQL security detection rule"),
 					resource.TestCheckResourceAttr(resourceName, "severity", "medium"),
@@ -2107,8 +2149,10 @@ func TestAccResourceSecurityDetectionRule_ESQLMinimal(t *testing.T) {
 
 func TestAccResourceSecurityDetectionRule_MachineLearningMinimal(t *testing.T) {
 	resourceName := securityDetectionRuleResourceName
+	createRuleName := testAccRandomizedRuleName("test-ml-rule-minimal")
+	updatedRuleName := testAccRandomizedRuleName("test-ml-rule-minimal-updated")
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
@@ -2117,10 +2161,10 @@ func TestAccResourceSecurityDetectionRule_MachineLearningMinimal(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable("test-ml-rule-minimal"),
+					"name": config.StringVariable(createRuleName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "name", "test-ml-rule-minimal"),
+					resource.TestCheckResourceAttr(resourceName, "name", createRuleName),
 					resource.TestCheckResourceAttr(resourceName, "type", "machine_learning"),
 					resource.TestCheckResourceAttr(resourceName, "enabled", "true"),
 					resource.TestCheckResourceAttr(resourceName, "description", "Minimal test ML security detection rule"),
@@ -2157,10 +2201,10 @@ func TestAccResourceSecurityDetectionRule_MachineLearningMinimal(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable("test-ml-rule-minimal-updated"),
+					"name": config.StringVariable(updatedRuleName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "name", "test-ml-rule-minimal-updated"),
+					resource.TestCheckResourceAttr(resourceName, "name", updatedRuleName),
 					resource.TestCheckResourceAttr(resourceName, "description", "Updated minimal test ML security detection rule"),
 					resource.TestCheckResourceAttr(resourceName, "severity", "medium"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score", "55"),
@@ -2175,8 +2219,10 @@ func TestAccResourceSecurityDetectionRule_MachineLearningMinimal(t *testing.T) {
 
 func TestAccResourceSecurityDetectionRule_NewTermsMinimal(t *testing.T) {
 	resourceName := securityDetectionRuleResourceName
+	createRuleName := testAccRandomizedRuleName("test-new-terms-rule-minimal")
+	updatedRuleName := testAccRandomizedRuleName("test-new-terms-rule-minimal-updated")
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
@@ -2185,10 +2231,10 @@ func TestAccResourceSecurityDetectionRule_NewTermsMinimal(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable("test-new-terms-rule-minimal"),
+					"name": config.StringVariable(createRuleName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "name", "test-new-terms-rule-minimal"),
+					resource.TestCheckResourceAttr(resourceName, "name", createRuleName),
 					resource.TestCheckResourceAttr(resourceName, "type", "new_terms"),
 					resource.TestCheckResourceAttr(resourceName, "query", "user.name:*"),
 					resource.TestCheckResourceAttr(resourceName, "language", "kuery"),
@@ -2228,10 +2274,10 @@ func TestAccResourceSecurityDetectionRule_NewTermsMinimal(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable("test-new-terms-rule-minimal-updated"),
+					"name": config.StringVariable(updatedRuleName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "name", "test-new-terms-rule-minimal-updated"),
+					resource.TestCheckResourceAttr(resourceName, "name", updatedRuleName),
 					resource.TestCheckResourceAttr(resourceName, "query", "host.name:*"),
 					resource.TestCheckResourceAttr(resourceName, "description", "Updated minimal test new terms security detection rule"),
 					resource.TestCheckResourceAttr(resourceName, "severity", "medium"),
@@ -2246,8 +2292,10 @@ func TestAccResourceSecurityDetectionRule_NewTermsMinimal(t *testing.T) {
 
 func TestAccResourceSecurityDetectionRule_SavedQueryMinimal(t *testing.T) {
 	resourceName := securityDetectionRuleResourceName
+	createRuleName := testAccRandomizedRuleName("test-saved-query-rule-minimal")
+	updatedRuleName := testAccRandomizedRuleName("test-saved-query-rule-minimal-updated")
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
@@ -2256,10 +2304,10 @@ func TestAccResourceSecurityDetectionRule_SavedQueryMinimal(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable("test-saved-query-rule-minimal"),
+					"name": config.StringVariable(createRuleName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "name", "test-saved-query-rule-minimal"),
+					resource.TestCheckResourceAttr(resourceName, "name", createRuleName),
 					resource.TestCheckResourceAttr(resourceName, "type", "saved_query"),
 					resource.TestCheckResourceAttr(resourceName, "query", "*:*"),
 					resource.TestCheckResourceAttr(resourceName, "enabled", "true"),
@@ -2297,10 +2345,10 @@ func TestAccResourceSecurityDetectionRule_SavedQueryMinimal(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable("test-saved-query-rule-minimal-updated"),
+					"name": config.StringVariable(updatedRuleName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "name", "test-saved-query-rule-minimal-updated"),
+					resource.TestCheckResourceAttr(resourceName, "name", updatedRuleName),
 					resource.TestCheckResourceAttr(resourceName, "query", "event.category:authentication"),
 					resource.TestCheckResourceAttr(resourceName, "description", "Updated minimal test saved query security detection rule"),
 					resource.TestCheckResourceAttr(resourceName, "severity", "medium"),
@@ -2314,8 +2362,10 @@ func TestAccResourceSecurityDetectionRule_SavedQueryMinimal(t *testing.T) {
 
 func TestAccResourceSecurityDetectionRule_ThreatMatchMinimal(t *testing.T) {
 	resourceName := securityDetectionRuleResourceName
+	createRuleName := testAccRandomizedRuleName("test-threat-match-rule-minimal")
+	updatedRuleName := testAccRandomizedRuleName("test-threat-match-rule-minimal-updated")
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
@@ -2324,10 +2374,10 @@ func TestAccResourceSecurityDetectionRule_ThreatMatchMinimal(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable("test-threat-match-rule-minimal"),
+					"name": config.StringVariable(createRuleName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "name", "test-threat-match-rule-minimal"),
+					resource.TestCheckResourceAttr(resourceName, "name", createRuleName),
 					resource.TestCheckResourceAttr(resourceName, "type", "threat_match"),
 					resource.TestCheckResourceAttr(resourceName, "query", "destination.ip:*"),
 					resource.TestCheckResourceAttr(resourceName, "language", "kuery"),
@@ -2370,10 +2420,10 @@ func TestAccResourceSecurityDetectionRule_ThreatMatchMinimal(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable("test-threat-match-rule-minimal-updated"),
+					"name": config.StringVariable(updatedRuleName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "name", "test-threat-match-rule-minimal-updated"),
+					resource.TestCheckResourceAttr(resourceName, "name", updatedRuleName),
 					resource.TestCheckResourceAttr(resourceName, "query", "source.ip:*"),
 					resource.TestCheckResourceAttr(resourceName, "description", "Updated minimal test threat match security detection rule"),
 					resource.TestCheckResourceAttr(resourceName, "severity", "medium"),
@@ -2389,8 +2439,10 @@ func TestAccResourceSecurityDetectionRule_ThreatMatchMinimal(t *testing.T) {
 
 func TestAccResourceSecurityDetectionRule_ThresholdMinimal(t *testing.T) {
 	resourceName := securityDetectionRuleResourceName
+	createRuleName := testAccRandomizedRuleName("test-threshold-rule-minimal")
+	updatedRuleName := testAccRandomizedRuleName("test-threshold-rule-minimal-updated")
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
@@ -2399,10 +2451,10 @@ func TestAccResourceSecurityDetectionRule_ThresholdMinimal(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable("test-threshold-rule-minimal"),
+					"name": config.StringVariable(createRuleName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "name", "test-threshold-rule-minimal"),
+					resource.TestCheckResourceAttr(resourceName, "name", createRuleName),
 					resource.TestCheckResourceAttr(resourceName, "type", "threshold"),
 					resource.TestCheckResourceAttr(resourceName, "query", "event.action:login"),
 					resource.TestCheckResourceAttr(resourceName, "language", "kuery"),
@@ -2442,10 +2494,10 @@ func TestAccResourceSecurityDetectionRule_ThresholdMinimal(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable("test-threshold-rule-minimal-updated"),
+					"name": config.StringVariable(updatedRuleName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "name", "test-threshold-rule-minimal-updated"),
+					resource.TestCheckResourceAttr(resourceName, "name", updatedRuleName),
 					resource.TestCheckResourceAttr(resourceName, "query", "event.action:logout"),
 					resource.TestCheckResourceAttr(resourceName, "description", "Updated minimal test threshold security detection rule"),
 					resource.TestCheckResourceAttr(resourceName, "severity", "medium"),
@@ -2460,8 +2512,10 @@ func TestAccResourceSecurityDetectionRule_ThresholdMinimal(t *testing.T) {
 
 func TestAccResourceSecurityDetectionRule_QueryWithMitreThreat(t *testing.T) {
 	resourceName := securityDetectionRuleResourceName
+	createRuleName := testAccRandomizedRuleName("test-query-mitre-rule")
+	updatedRuleName := testAccRandomizedRuleName("test-query-mitre-rule-updated")
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: testAccCheckSecurityDetectionRuleDestroy,
 		Steps: []resource.TestStep{
@@ -2470,10 +2524,10 @@ func TestAccResourceSecurityDetectionRule_QueryWithMitreThreat(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable("test-query-mitre-rule"),
+					"name": config.StringVariable(createRuleName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "name", "test-query-mitre-rule"),
+					resource.TestCheckResourceAttr(resourceName, "name", createRuleName),
 					resource.TestCheckResourceAttr(resourceName, "type", "query"),
 					resource.TestCheckResourceAttr(resourceName, "query", "process.parent.name:(EXCEL.EXE OR WINWORD.EXE OR POWERPNT.EXE OR OUTLOOK.EXE)"),
 					resource.TestCheckResourceAttr(resourceName, "language", "kuery"),
@@ -2534,10 +2588,10 @@ func TestAccResourceSecurityDetectionRule_QueryWithMitreThreat(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable("test-query-mitre-rule-updated"),
+					"name": config.StringVariable(updatedRuleName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "name", "test-query-mitre-rule-updated"),
+					resource.TestCheckResourceAttr(resourceName, "name", updatedRuleName),
 					resource.TestCheckResourceAttr(resourceName, "description", "Updated detection rule for processes started by MS Office programs"),
 					resource.TestCheckResourceAttr(resourceName, "severity", "medium"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score", "75"),
@@ -2600,7 +2654,13 @@ func TestAccResourceSecurityDetectionRule_QueryWithMitreThreat(t *testing.T) {
 // TestAccResourceSecurityDetectionRule_ValidateConfig tests the ValidateConfig method
 // to ensure proper validation of index vs data_view_id configuration
 func TestAccResourceSecurityDetectionRule_ValidateConfig(t *testing.T) {
-	resource.Test(t, resource.TestCase{
+	indexOnlyRuleName := testAccRandomizedRuleName("test-validation-index-only")
+	dataviewOnlyRuleName := testAccRandomizedRuleName("test-validation-dataview-only")
+	bothRuleName := testAccRandomizedRuleName("test-validation-both")
+	neitherRuleName := testAccRandomizedRuleName("test-validation-neither")
+	esqlRuleName := testAccRandomizedRuleName("test-validation-esql")
+	mlRuleName := testAccRandomizedRuleName("test-validation-ml")
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			// Test 1: Valid config with only index (should succeed)
@@ -2609,10 +2669,10 @@ func TestAccResourceSecurityDetectionRule_ValidateConfig(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("index_only"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable("test-validation-index-only"),
+					"name": config.StringVariable(indexOnlyRuleName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(securityDetectionRuleResourceName, "name", "test-validation-index-only"),
+					resource.TestCheckResourceAttr(securityDetectionRuleResourceName, "name", indexOnlyRuleName),
 					resource.TestCheckResourceAttr(securityDetectionRuleResourceName, "index.0", "logs-*"),
 					resource.TestCheckNoResourceAttr(securityDetectionRuleResourceName, "data_view_id"),
 				),
@@ -2623,10 +2683,10 @@ func TestAccResourceSecurityDetectionRule_ValidateConfig(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("dataview_only"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable("test-validation-dataview-only"),
+					"name": config.StringVariable(dataviewOnlyRuleName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(securityDetectionRuleResourceName, "name", "test-validation-dataview-only"),
+					resource.TestCheckResourceAttr(securityDetectionRuleResourceName, "name", dataviewOnlyRuleName),
 					resource.TestCheckResourceAttr(securityDetectionRuleResourceName, "data_view_id", "test-data-view-id"),
 					resource.TestCheckNoResourceAttr(securityDetectionRuleResourceName, "index.0"),
 				),
@@ -2637,7 +2697,7 @@ func TestAccResourceSecurityDetectionRule_ValidateConfig(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("both"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable("test-validation-both"),
+					"name": config.StringVariable(bothRuleName),
 				},
 				ExpectError: regexp.MustCompile("Both 'index' and 'data_view_id' cannot be set at the same time"),
 				PlanOnly:    true,
@@ -2648,7 +2708,7 @@ func TestAccResourceSecurityDetectionRule_ValidateConfig(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("neither"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable("test-validation-neither"),
+					"name": config.StringVariable(neitherRuleName),
 				},
 				ExpectError: regexp.MustCompile("One of 'index' or 'data_view_id' must be set"),
 				PlanOnly:    true,
@@ -2659,10 +2719,10 @@ func TestAccResourceSecurityDetectionRule_ValidateConfig(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("esql_type"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable("test-validation-esql"),
+					"name": config.StringVariable(esqlRuleName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(securityDetectionRuleResourceName, "name", "test-validation-esql"),
+					resource.TestCheckResourceAttr(securityDetectionRuleResourceName, "name", esqlRuleName),
 					resource.TestCheckResourceAttr(securityDetectionRuleResourceName, "type", "esql"),
 					resource.TestCheckNoResourceAttr(securityDetectionRuleResourceName, "index.0"),
 					resource.TestCheckNoResourceAttr(securityDetectionRuleResourceName, "data_view_id"),
@@ -2674,10 +2734,10 @@ func TestAccResourceSecurityDetectionRule_ValidateConfig(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("ml_type"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable("test-validation-ml"),
+					"name": config.StringVariable(mlRuleName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(securityDetectionRuleResourceName, "name", "test-validation-ml"),
+					resource.TestCheckResourceAttr(securityDetectionRuleResourceName, "name", mlRuleName),
 					resource.TestCheckResourceAttr(securityDetectionRuleResourceName, "type", "machine_learning"),
 					resource.TestCheckNoResourceAttr(securityDetectionRuleResourceName, "index.0"),
 					resource.TestCheckNoResourceAttr(securityDetectionRuleResourceName, "data_view_id"),
