@@ -5,11 +5,11 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/google/go-github/v74/github"
+	"github.com/google/go-github/v84/github"
 )
 
 const (
-	maxEditedLines = 300
+	maxEditedLines = 1000
 )
 
 var allowedCopilotAuthorLogins = map[string]struct{}{
@@ -47,10 +47,6 @@ func Evaluate(input EvaluationInput) EvaluationResult {
 
 	if input.PullRequest.GetState() != "open" {
 		reasons = append(reasons, "pull request is not open")
-	}
-
-	if input.PullRequest.GetDraft() {
-		reasons = append(reasons, "pull request is draft")
 	}
 
 	category := matchedCategory(input.PullRequest)

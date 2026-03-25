@@ -37,8 +37,14 @@ resource "elasticstack_kibana_dashboard" "test" {
 
       filters = [
         {
-          query    = "host.os.keyword: \"linux\""
-          language = "kuery"
+          filter_json = jsonencode({
+            type = "condition"
+            condition = {
+              field    = "host.os.keyword"
+              operator = "is"
+              value    = "linux"
+            }
+          })
         }
       ]
 
@@ -50,7 +56,7 @@ resource "elasticstack_kibana_dashboard" "test" {
             palette = "default"
             mapping = []
             unassignedColor = {
-              type  = "colorCode"
+              type  = "color_code"
               value = "#D3DAE6"
             }
           }

@@ -33,7 +33,14 @@ resource "elasticstack_kibana_dashboard" "test" {
       }
       filters = [
         {
-          query = "status:200"
+          filter_json = jsonencode({
+            type = "condition"
+            condition = {
+              field    = "status"
+              operator = "is"
+              value    = "200"
+            }
+          })
         }
       ]
       metric_json = jsonencode({

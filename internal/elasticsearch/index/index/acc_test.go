@@ -41,7 +41,7 @@ const indexTemplateMappingsExpected = `{"dynamic_templates":[{"strings_as_ip":{"
 func TestAccResourceIndex(t *testing.T) {
 	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceIndexDestroy,
 		Steps: []resource.TestStep{
@@ -132,7 +132,7 @@ var sdkCreateTestConfig string
 func TestAccResourceIndexFromSDK(t *testing.T) {
 	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceIndexDestroy,
 		Steps: []resource.TestStep{
@@ -243,7 +243,7 @@ func TestAccResourceIndexFromSDK(t *testing.T) {
 func TestAccResourceIndexSettings(t *testing.T) {
 	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceIndexDestroy,
 		Steps: []resource.TestStep{
@@ -320,7 +320,7 @@ func TestAccResourceIndexSettings(t *testing.T) {
 func TestAccResourceIndexWithTemplate(t *testing.T) {
 	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceIndexDestroy,
 		Steps: []resource.TestStep{
@@ -348,7 +348,7 @@ func TestAccResourceIndexWithTemplate(t *testing.T) {
 func TestAccResourceIndexRemovingField(t *testing.T) {
 	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceIndexDestroy,
 		Steps: []resource.TestStep{

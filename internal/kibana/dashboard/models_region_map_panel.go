@@ -32,43 +32,20 @@ import (
 
 func newRegionMapPanelConfigConverter() regionMapPanelConfigConverter {
 	return regionMapPanelConfigConverter{
-		lensPanelConfigConverter: lensPanelConfigConverter{
+		lensVisualizationBase: lensVisualizationBase{
 			visualizationType: string(kbapi.RegionMapNoESQLTypeRegionMap),
+			hasTFPanelConfig:  func(pm panelModel) bool { return pm.RegionMapConfig != nil },
 		},
 	}
 }
 
 type regionMapPanelConfigConverter struct {
-	lensPanelConfigConverter
+	lensVisualizationBase
 }
 
-func (c regionMapPanelConfigConverter) handlesTFPanelConfig(pm panelModel) bool {
-	return pm.RegionMapConfig != nil
-}
-
-func (c regionMapPanelConfigConverter) populateFromAPIPanel(ctx context.Context, pm *panelModel, config kbapi.DashboardPanelItem_Config) diag.Diagnostics {
-	cfgMap, err := config.AsDashboardPanelItemConfig8()
+func (c regionMapPanelConfigConverter) populateFromAttributes(ctx context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes) diag.Diagnostics {
+	regionMap, err := attrs.AsRegionMapChart()
 	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	attrs, ok := cfgMap["attributes"]
-	if !ok {
-		return nil
-	}
-
-	attrsMap, ok := attrs.(map[string]any)
-	if !ok {
-		return nil
-	}
-
-	attrsJSON, err := json.Marshal(attrsMap)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	var regionMap kbapi.RegionMapChart
-	if err := json.Unmarshal(attrsJSON, &regionMap); err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
@@ -87,43 +64,23 @@ func (c regionMapPanelConfigConverter) populateFromAPIPanel(ctx context.Context,
 	return diagutil.FrameworkDiagFromError(err)
 }
 
-func (c regionMapPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *kbapi.DashboardPanelItem_Config) diag.Diagnostics {
+func (c regionMapPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelLens_Config_0_Attributes, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	configModel := *pm.RegionMapConfig
 
 	regionMap, regionDiags := configModel.toAPI()
 	diags.Append(regionDiags...)
 	if diags.HasError() {
-		return diags
+		return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}, diags
 	}
 
-	var attrs0 kbapi.DashboardPanelItemConfig70Attributes0
-	if err := attrs0.FromRegionMapChart(regionMap); err != nil {
+	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	if err := attrs.FromRegionMapChart(regionMap); err != nil {
 		diags.AddError("Failed to create region map attributes", err.Error())
-		return diags
+		return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}, diags
 	}
 
-	var configAttrs kbapi.DashboardPanelItem_Config_7_0_Attributes
-	if err := configAttrs.FromDashboardPanelItemConfig70Attributes0(attrs0); err != nil {
-		diags.AddError("Failed to create config attributes", err.Error())
-		return diags
-	}
-
-	config10 := kbapi.DashboardPanelItemConfig70{
-		Attributes: configAttrs,
-	}
-
-	var config1 kbapi.DashboardPanelItemConfig7
-	if err := config1.FromDashboardPanelItemConfig70(config10); err != nil {
-		diags.AddError("Failed to create config1", err.Error())
-		return diags
-	}
-
-	if err := apiConfig.FromDashboardPanelItemConfig7(config1); err != nil {
-		diags.AddError("Failed to marshal region map config", err.Error())
-	}
-
-	return diags
+	return attrs, diags
 }
 
 type regionMapConfigModel struct {
@@ -133,7 +90,7 @@ type regionMapConfigModel struct {
 	IgnoreGlobalFilters types.Bool                                        `tfsdk:"ignore_global_filters"`
 	Sampling            types.Float64                                     `tfsdk:"sampling"`
 	Query               *filterSimpleModel                                `tfsdk:"query"`
-	Filters             []searchFilterModel                               `tfsdk:"filters"`
+	Filters             []chartFilterJSONModel                            `tfsdk:"filters"`
 	MetricJSON          customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"metric_json"`
 	RegionJSON          jsontypes.Normalized                              `tfsdk:"region_json"`
 }
@@ -163,10 +120,14 @@ func (m *regionMapConfigModel) fromAPINoESQL(ctx context.Context, api kbapi.Regi
 	m.Query.fromAPI(api.Query)
 
 	if api.Filters != nil && len(*api.Filters) > 0 {
-		m.Filters = make([]searchFilterModel, len(*api.Filters))
-		for i, filterSchema := range *api.Filters {
-			filterDiags := m.Filters[i].fromAPI(filterSchema)
+		m.Filters = make([]chartFilterJSONModel, 0, len(*api.Filters))
+		for _, filterSchema := range *api.Filters {
+			fm := chartFilterJSONModel{}
+			filterDiags := fm.populateFromAPIItem(filterSchema)
 			diags.Append(filterDiags...)
+			if !filterDiags.HasError() {
+				m.Filters = append(m.Filters, fm)
+			}
 		}
 	}
 
@@ -212,10 +173,14 @@ func (m *regionMapConfigModel) fromAPIESQL(ctx context.Context, api kbapi.Region
 	}
 
 	if api.Filters != nil && len(*api.Filters) > 0 {
-		m.Filters = make([]searchFilterModel, len(*api.Filters))
-		for i, filterSchema := range *api.Filters {
-			filterDiags := m.Filters[i].fromAPI(filterSchema)
+		m.Filters = make([]chartFilterJSONModel, 0, len(*api.Filters))
+		for _, filterSchema := range *api.Filters {
+			fm := chartFilterJSONModel{}
+			filterDiags := fm.populateFromAPIItem(filterSchema)
 			diags.Append(filterDiags...)
+			if !filterDiags.HasError() {
+				m.Filters = append(m.Filters, fm)
+			}
 		}
 	}
 
@@ -273,13 +238,18 @@ func (m *regionMapConfigModel) toAPI() (kbapi.RegionMapChart, diag.Diagnostics) 
 		api.Query = m.Query.toAPI()
 
 		if len(m.Filters) > 0 {
-			filters := make([]kbapi.SearchFilter, len(m.Filters))
-			for i, filterModel := range m.Filters {
-				filter, filterDiags := filterModel.toAPI()
+			filters := make([]kbapi.RegionMapNoESQL_Filters_Item, 0, len(m.Filters))
+			for _, filterModel := range m.Filters {
+				var item kbapi.RegionMapNoESQL_Filters_Item
+				filterDiags := decodeChartFilterJSON(filterModel.FilterJSON, &item)
 				diags.Append(filterDiags...)
-				filters[i] = filter
+				if !filterDiags.HasError() {
+					filters = append(filters, item)
+				}
 			}
-			api.Filters = &filters
+			if len(filters) > 0 {
+				api.Filters = &filters
+			}
 		}
 
 		if typeutils.IsKnown(m.MetricJSON) {
@@ -327,13 +297,18 @@ func (m *regionMapConfigModel) toAPI() (kbapi.RegionMapChart, diag.Diagnostics) 
 	}
 
 	if len(m.Filters) > 0 {
-		filters := make([]kbapi.SearchFilter, len(m.Filters))
-		for i, filterModel := range m.Filters {
-			filter, filterDiags := filterModel.toAPI()
+		filters := make([]kbapi.RegionMapESQL_Filters_Item, 0, len(m.Filters))
+		for _, filterModel := range m.Filters {
+			var item kbapi.RegionMapESQL_Filters_Item
+			filterDiags := decodeChartFilterJSON(filterModel.FilterJSON, &item)
 			diags.Append(filterDiags...)
-			filters[i] = filter
+			if !filterDiags.HasError() {
+				filters = append(filters, item)
+			}
 		}
-		api.Filters = &filters
+		if len(filters) > 0 {
+			api.Filters = &filters
+		}
 	}
 
 	if typeutils.IsKnown(m.MetricJSON) {

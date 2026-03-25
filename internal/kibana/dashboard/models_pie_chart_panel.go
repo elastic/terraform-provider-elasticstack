@@ -31,7 +31,7 @@ import (
 
 func newPieChartPanelConfigConverter() pieChartPanelConfigConverter {
 	return pieChartPanelConfigConverter{
-		lensPanelConfigConverter: lensPanelConfigConverter{
+		lensVisualizationBase: lensVisualizationBase{
 			visualizationType: "pie", // Visualization type literal used by the Kibana API for pie chart panels
 			hasTFPanelConfig:  func(pm panelModel) bool { return pm.PieChartConfig != nil },
 		},
@@ -39,55 +39,22 @@ func newPieChartPanelConfigConverter() pieChartPanelConfigConverter {
 }
 
 type pieChartPanelConfigConverter struct {
-	lensPanelConfigConverter
+	lensVisualizationBase
 }
 
-func (c pieChartPanelConfigConverter) handlesTFPanelConfig(pm panelModel) bool {
-	return pm.PieChartConfig != nil
-}
-
-func (c pieChartPanelConfigConverter) populateFromAPIPanel(_ context.Context, pm *panelModel, config kbapi.DashboardPanelItem_Config) diag.Diagnostics {
-	// Try to extract the pie chart config from the panel config
-	cfgMap, err := config.AsDashboardPanelItemConfig8()
+func (c pieChartPanelConfigConverter) populateFromAttributes(_ context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes) diag.Diagnostics {
+	pieChart, err := attrs.AsPieChart()
 	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	// Extract the attributes
-	attrs, ok := cfgMap["attributes"]
-	if !ok {
-		return nil
-	}
-
-	attrsMap, ok := attrs.(map[string]any)
-	if !ok {
-		return nil
-	}
-
-	// Marshal and unmarshal to get the PieChart
-	attrsJSON, err := json.Marshal(attrsMap)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	var pieChart kbapi.PieChart
-	if err := json.Unmarshal(attrsJSON, &pieChart); err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
 	// Populate the model.
 	//
-	// Disambiguate NoESQL vs ESQL using the presence of the `query` key. The generated union
-	// types can successfully unmarshal into both variants, so we need an external discriminator.
+	// Disambiguate NoESQL vs ESQL using query presence in decoded no-esql variant.
 	pm.PieChartConfig = &pieChartConfigModel{}
-	if _, ok := attrsMap["query"]; ok {
-		noESQL, err := pieChart.AsPieNoESQL()
-		if err != nil {
-			return diagutil.FrameworkDiagFromError(err)
-		}
+	if noESQL, err := pieChart.AsPieNoESQL(); err == nil && (noESQL.Query.Query != "" || noESQL.Query.Language != nil) {
 		return pm.PieChartConfig.fromAPINoESQL(noESQL)
 	}
-
 	esql, err := pieChart.AsPieESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
@@ -95,7 +62,7 @@ func (c pieChartPanelConfigConverter) populateFromAPIPanel(_ context.Context, pm
 	return pm.PieChartConfig.fromAPIESQL(esql)
 }
 
-func (c pieChartPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *kbapi.DashboardPanelItem_Config) diag.Diagnostics {
+func (c pieChartPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelLens_Config_0_Attributes, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	configModel := *pm.PieChartConfig
 
@@ -103,53 +70,31 @@ func (c pieChartPanelConfigConverter) mapPanelToAPI(pm panelModel, apiConfig *kb
 	pieChart, pieDiags := configModel.toAPI()
 	diags.Append(pieDiags...)
 	if diags.HasError() {
-		return diags
+		return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}, diags
 	}
 
-	// Create the nested Config1 structure
-	var attrs0 kbapi.DashboardPanelItemConfig70Attributes0
-	if err := attrs0.FromPieChart(pieChart); err != nil {
+	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	if err := attrs.FromPieChart(pieChart); err != nil {
 		diags.AddError("Failed to create pie chart attributes", err.Error())
-		return diags
+		return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}, diags
 	}
 
-	var configAttrs kbapi.DashboardPanelItem_Config_7_0_Attributes
-	if err := configAttrs.FromDashboardPanelItemConfig70Attributes0(attrs0); err != nil {
-		diags.AddError("Failed to create config attributes", err.Error())
-		return diags
-	}
-
-	config10 := kbapi.DashboardPanelItemConfig70{
-		Attributes: configAttrs,
-	}
-
-	var config1 kbapi.DashboardPanelItemConfig7
-	if err := config1.FromDashboardPanelItemConfig70(config10); err != nil {
-		diags.AddError("Failed to create config1", err.Error())
-		return diags
-	}
-
-	if err := apiConfig.FromDashboardPanelItemConfig7(config1); err != nil {
-		diags.AddError("Failed to marshal pie chart config", err.Error())
-		return diags
-	}
-
-	return diags
+	return attrs, diags
 }
 
 type pieChartConfigModel struct {
-	Title               types.String         `tfsdk:"title"`
-	Description         types.String         `tfsdk:"description"`
-	Dataset             jsontypes.Normalized `tfsdk:"dataset"`
-	IgnoreGlobalFilters types.Bool           `tfsdk:"ignore_global_filters"`
-	Sampling            types.Float64        `tfsdk:"sampling"`
-	DonutHole           types.String         `tfsdk:"donut_hole"`
-	LabelPosition       types.String         `tfsdk:"label_position"`
-	Legend              jsontypes.Normalized `tfsdk:"legend"`
-	Query               *filterSimpleModel   `tfsdk:"query"`
-	Filters             []searchFilterModel  `tfsdk:"filters"`
-	Metrics             []pieMetricModel     `tfsdk:"metrics"`
-	GroupBy             []pieGroupByModel    `tfsdk:"group_by"`
+	Title               types.String           `tfsdk:"title"`
+	Description         types.String           `tfsdk:"description"`
+	Dataset             jsontypes.Normalized   `tfsdk:"dataset"`
+	IgnoreGlobalFilters types.Bool             `tfsdk:"ignore_global_filters"`
+	Sampling            types.Float64          `tfsdk:"sampling"`
+	DonutHole           types.String           `tfsdk:"donut_hole"`
+	LabelPosition       types.String           `tfsdk:"label_position"`
+	Legend              jsontypes.Normalized   `tfsdk:"legend"`
+	Query               *filterSimpleModel     `tfsdk:"query"`
+	Filters             []chartFilterJSONModel `tfsdk:"filters"`
+	Metrics             []pieMetricModel       `tfsdk:"metrics"`
+	GroupBy             []pieGroupByModel      `tfsdk:"group_by"`
 }
 
 type pieMetricModel struct {
@@ -231,10 +176,14 @@ func (m *pieChartConfigModel) fromAPINoESQL(apiChart kbapi.PieNoESQL) diag.Diagn
 
 	// Filters
 	if apiChart.Filters != nil && len(*apiChart.Filters) > 0 {
-		m.Filters = make([]searchFilterModel, len(*apiChart.Filters))
-		for i, filter := range *apiChart.Filters {
-			filterDiags := m.Filters[i].fromAPI(filter)
+		m.Filters = make([]chartFilterJSONModel, 0, len(*apiChart.Filters))
+		for _, filter := range *apiChart.Filters {
+			fm := chartFilterJSONModel{}
+			filterDiags := fm.populateFromAPIItem(filter)
 			diags.Append(filterDiags...)
+			if !filterDiags.HasError() {
+				m.Filters = append(m.Filters, fm)
+			}
 		}
 	}
 
@@ -265,7 +214,7 @@ func (m *pieChartConfigModel) fromAPINoESQL(apiChart kbapi.PieNoESQL) diag.Diagn
 			}
 			m.GroupBy[i].Config = customtypes.NewJSONWithDefaultsValue(
 				string(groupByJSON),
-				populatePieChartGroupByDefaults,
+				populateLensGroupByDefaults,
 			)
 		}
 	}
@@ -324,10 +273,14 @@ func (m *pieChartConfigModel) fromAPIESQL(apiChart kbapi.PieESQL) diag.Diagnosti
 
 	// Filters
 	if apiChart.Filters != nil && len(*apiChart.Filters) > 0 {
-		m.Filters = make([]searchFilterModel, len(*apiChart.Filters))
-		for i, filter := range *apiChart.Filters {
-			filterDiags := m.Filters[i].fromAPI(filter)
+		m.Filters = make([]chartFilterJSONModel, 0, len(*apiChart.Filters))
+		for _, filter := range *apiChart.Filters {
+			fm := chartFilterJSONModel{}
+			filterDiags := fm.populateFromAPIItem(filter)
 			diags.Append(filterDiags...)
+			if !filterDiags.HasError() {
+				m.Filters = append(m.Filters, fm)
+			}
 		}
 	}
 
@@ -358,7 +311,7 @@ func (m *pieChartConfigModel) fromAPIESQL(apiChart kbapi.PieESQL) diag.Diagnosti
 			}
 			m.GroupBy[i].Config = customtypes.NewJSONWithDefaultsValue[map[string]any](
 				string(groupByJSON),
-				populatePieChartGroupByDefaults,
+				populateLensGroupByDefaults,
 			)
 		}
 	}
@@ -376,6 +329,11 @@ func (m *pieChartConfigModel) toAPI() (kbapi.PieChart, diag.Diagnostics) {
 
 	if isNoESQL {
 		var chart kbapi.PieNoESQL
+
+		// Required by the Dashboard API (Lens pie schema); omitting mode yields HTTP 400.
+		chart.ValueDisplay = kbapi.ValueDisplay{
+			Mode: kbapi.ValueDisplayModePercentage,
+		}
 
 		chart.Title = m.Title.ValueStringPointer()
 		chart.Description = m.Description.ValueStringPointer()
@@ -418,13 +376,18 @@ func (m *pieChartConfigModel) toAPI() (kbapi.PieChart, diag.Diagnostics) {
 
 		// Filters
 		if len(m.Filters) > 0 {
-			filters := make([]kbapi.SearchFilter, len(m.Filters))
-			for i, filter := range m.Filters {
-				f, d := filter.toAPI()
+			filters := make([]kbapi.PieNoESQL_Filters_Item, 0, len(m.Filters))
+			for _, filter := range m.Filters {
+				var item kbapi.PieNoESQL_Filters_Item
+				d := decodeChartFilterJSON(filter.FilterJSON, &item)
 				diags.Append(d...)
-				filters[i] = f
+				if !d.HasError() {
+					filters = append(filters, item)
+				}
 			}
-			chart.Filters = &filters
+			if len(filters) > 0 {
+				chart.Filters = &filters
+			}
 		}
 
 		// Metrics
@@ -457,6 +420,10 @@ func (m *pieChartConfigModel) toAPI() (kbapi.PieChart, diag.Diagnostics) {
 		}
 	} else {
 		var chart kbapi.PieESQL
+
+		chart.ValueDisplay = kbapi.ValueDisplay{
+			Mode: kbapi.ValueDisplayModePercentage,
+		}
 
 		// Set basic properties
 		chart.Title = m.Title.ValueStringPointer()
@@ -497,13 +464,18 @@ func (m *pieChartConfigModel) toAPI() (kbapi.PieChart, diag.Diagnostics) {
 
 		// Filters
 		if len(m.Filters) > 0 {
-			filters := make([]kbapi.SearchFilter, len(m.Filters))
-			for i, filter := range m.Filters {
-				f, d := filter.toAPI()
+			filters := make([]kbapi.PieESQL_Filters_Item, 0, len(m.Filters))
+			for _, filter := range m.Filters {
+				var item kbapi.PieESQL_Filters_Item
+				d := decodeChartFilterJSON(filter.FilterJSON, &item)
 				diags.Append(d...)
-				filters[i] = f
+				if !d.HasError() {
+					filters = append(filters, item)
+				}
 			}
-			chart.Filters = &filters
+			if len(filters) > 0 {
+				chart.Filters = &filters
+			}
 		}
 
 		// Metrics
@@ -529,11 +501,17 @@ func (m *pieChartConfigModel) toAPI() (kbapi.PieChart, diag.Diagnostics) {
 				CollapseBy kbapi.CollapseBy              `json:"collapse_by"`
 				Color      kbapi.ColorMapping            `json:"color"`
 				Column     string                        `json:"column"`
+				Format     kbapi.FormatType              `json:"format"`
+				Label      *string                       `json:"label,omitempty"`
 				Operation  kbapi.PieESQLGroupByOperation `json:"operation"`
 			}, len(m.GroupBy))
 			for i, grp := range m.GroupBy {
 				if err := json.Unmarshal([]byte(grp.Config.ValueString()), &groupBy[i]); err != nil {
 					diags.AddError("Failed to unmarshal group_by", err.Error())
+				}
+				fb, _ := json.Marshal(groupBy[i].Format)
+				if string(fb) == jsonNullString || len(fb) == 0 {
+					_ = groupBy[i].Format.FromNumericFormat(kbapi.NumericFormat{Type: kbapi.Number})
 				}
 			}
 			chart.GroupBy = &groupBy

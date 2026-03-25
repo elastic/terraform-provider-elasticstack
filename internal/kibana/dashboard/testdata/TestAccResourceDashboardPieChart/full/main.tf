@@ -55,7 +55,7 @@ resource "elasticstack_kibana_dashboard" "test" {
               palette = "default"
               mapping = []
               unassignedColor = {
-                type  = "colorCode"
+                type  = "color_code"
                 value = "#555555"
               }
             }
@@ -66,8 +66,14 @@ resource "elasticstack_kibana_dashboard" "test" {
       sampling              = 1     // Default value
       filters = [
         {
-          query    = "response:200"
-          language = "kuery"
+          filter_json = jsonencode({
+            type = "condition"
+            condition = {
+              field    = "response"
+              operator = "is"
+              value    = "200"
+            }
+          })
         }
       ]
     }

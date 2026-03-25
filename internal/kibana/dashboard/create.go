@@ -56,12 +56,17 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 		return
 	}
 
+	if createResp.JSON201 == nil {
+		resp.Diagnostics.AddError("Dashboard create returned no body", "expected 201 response with dashboard id")
+		return
+	}
 	compID := clients.CompositeID{
 		ClusterID:  spaceID,
-		ResourceID: createResp.JSON200.Id,
+		ResourceID: createResp.JSON201.Id,
 	}
 	planModel.ID = types.StringValue(compID.String())
 
+	planPanels := planModel.Panels
 	readModel, diags := r.read(ctx, planModel)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -72,6 +77,8 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 		resp.Diagnostics.AddError("Error reading dashboard after creation", "The dashboard was created but could not be read.")
 		return
 	}
+
+	alignXYChartXAxisScaleFromPlanPanels(planPanels, readModel.Panels)
 
 	// Set state
 	diags = resp.State.Set(ctx, *readModel)

@@ -1,11 +1,11 @@
 ---
 name: requirements-verification
-description: Analyzes a Terraform entity requirements document for internal consistency, implementation compliance, and test opportunities. Outputs consistency findings, a requirement-by-requirement implementation check, and suggested unit/acceptance tests. Use when reviewing requirements docs, verifying implementation against requirements, or identifying test gaps.
+description: Analyzes an OpenSpec requirements spec for internal consistency, implementation compliance, and test opportunities; when a shell is available, run openspec validate first for structural checks. Use when reviewing specs, verifying implementation against requirements, or identifying test gaps.
 ---
 
 # Requirements Document Analysis
 
-Analyze a requirements document (from `dev-docs/requirements/`) and produce three outputs:
+Analyze an OpenSpec requirements spec (from `openspec/specs/<capability>/spec.md`, or a delta spec under `openspec/changes/**/specs/`) and produce three outputs:
 
 1. **Internal consistency** — whether requirements contradict each other or the schema.
 2. **Implementation compliance** — whether the implementation meets each requirement.
@@ -13,15 +13,27 @@ Analyze a requirements document (from `dev-docs/requirements/`) and produce thre
 
 ## Input
 
-- **Requirements document**: User specifies the path (e.g. `dev-docs/requirements/elasticsearch/security/role.md`) or the entity name/implementation path. Resolve to the single `.md` file under `dev-docs/requirements/`.
+- **Requirements document**: User specifies the path (e.g. `openspec/specs/elasticsearch-security-role/spec.md`) or the entity name/implementation path. Resolve to the `spec.md` under `openspec/specs/<capability>/` (or the relevant delta spec path).
 - **Implementation**: From the doc’s “Resource implementation” or “Data source implementation” line (e.g. `internal/elasticsearch/security/role`). Use that package for compliance and test analysis.
 
 ## Workflow
 
+### 0. OpenSpec structural validation (recommended when a shell is available)
+
+Before deep analysis, run the OpenSpec CLI so the spec matches what CI enforces. This checks **structure** (e.g. `### Requirement:` / `#### Scenario:` shape, **SHALL** / **MUST** in requirement bodies)—not semantic consistency or implementation compliance.
+
+- **Repo root**, after `make setup` (or `make setup-openspec` / `npm ci`):  
+  `make check-openspec`  
+  or: `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate --specs`
+- **Single spec** (optional): `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate <capability> --type spec` (e.g. `elasticsearch-security-role`)
+- **Active change deltas** (optional): `openspec validate --all` to include `openspec/changes/**`
+
+If validation **fails**, report the CLI errors first and fix the markdown before spending effort on sections 1–3. If no terminal is available, proceed with manual review and note that `openspec validate` was not run.
+
 ### 1. Parse the requirements document
 
-- Read the doc and extract: **title/type name**, **implementation path**, **Schema** (HCL block: attributes/blocks, required/optional/computed, notes).
-- List every requirement with **id** (REQ-NNN), **category**, and **text** (the “shall” statement). Normalize references (e.g. “id format”, “cluster_uuid/name”) for consistency checks.
+- Read the doc and extract: **title/type name**, **implementation path** (from `Resource implementation:` / `Data source implementation:` / `Workflow implementation:` / `Script implementation:`), **Purpose**, **Schema** (HCL/YAML block if present).
+- List every `### Requirement:` section: **id** (use `(REQ-NNN)` or `(REQ-001–REQ-003)` from the heading if present; otherwise derive a short id from the heading), **category** (infer from content: API, Identity, Import, etc.), and **text** (full SHALL/MUST statements in that section). Normalize references (e.g. “id format”, “cluster_uuid/name”) for consistency checks.
 
 ### 2. Internal consistency
 
@@ -63,8 +75,8 @@ Produce a single report with three sections:
 ```markdown
 # Requirements analysis: <entity name>
 
-**Document**: `dev-docs/reqs/.../...md`  
-**Implementation**: `internal/...`
+**Document**: `openspec/specs/.../spec.md`  
+**Implementation**: `internal/...` (or workflow/script path from the spec)
 
 ## 1. Internal consistency
 
@@ -90,6 +102,7 @@ Produce a single report with three sections:
 
 ## Reference
 
+- OpenSpec authoring and CLI overview: [`dev-docs/high-level/openspec-requirements.md`](../../../dev-docs/high-level/openspec-requirements.md)
 - Requirement categories and implementation mapping: [reference.md](reference.md)
-- Existing entity code-path checklist (for locating implementation): `.cursor/skills/existing-entity-requirements/reference.md`
+- Existing entity code-path checklist (for locating implementation): `.agents/skills/existing-entity-requirements/reference.md`
 - Schema/acceptance test coverage (for test patterns): `.cursor/skills/schema-coverage/` if analyzing attribute-level coverage alongside requirements.

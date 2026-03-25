@@ -23,7 +23,8 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -33,17 +34,17 @@ import (
 )
 
 type Data struct {
-	ID                      types.String         `tfsdk:"id"`
-	ElasticsearchConnection types.List           `tfsdk:"elasticsearch_connection"`
-	Name                    types.String         `tfsdk:"name"`
-	Description             types.String         `tfsdk:"description"`
-	Applications            types.Set            `tfsdk:"applications"`
-	Global                  jsontypes.Normalized `tfsdk:"global"`
-	Cluster                 types.Set            `tfsdk:"cluster"`
-	Indices                 types.Set            `tfsdk:"indices"`
-	RemoteIndices           types.Set            `tfsdk:"remote_indices"`
-	Metadata                jsontypes.Normalized `tfsdk:"metadata"`
-	RunAs                   types.Set            `tfsdk:"run_as"`
+	ID                      types.String                                      `tfsdk:"id"`
+	ElasticsearchConnection types.List                                        `tfsdk:"elasticsearch_connection"`
+	Name                    types.String                                      `tfsdk:"name"`
+	Description             types.String                                      `tfsdk:"description"`
+	Applications            types.Set                                         `tfsdk:"applications"`
+	Global                  customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"global"`
+	Cluster                 types.Set                                         `tfsdk:"cluster"`
+	Indices                 types.Set                                         `tfsdk:"indices"`
+	RemoteIndices           types.Set                                         `tfsdk:"remote_indices"`
+	Metadata                jsontypes.Normalized                              `tfsdk:"metadata"`
+	RunAs                   types.Set                                         `tfsdk:"run_as"`
 }
 
 type ApplicationData struct {
@@ -346,9 +347,9 @@ func (data *Data) fromAPIModel(ctx context.Context, role *models.Role) diag.Diag
 			diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling global JSON: %s", err))
 			return diags
 		}
-		data.Global = jsontypes.NewNormalizedValue(string(global))
+		data.Global = customtypes.NewJSONWithDefaultsValue(string(global), populateGlobalPrivilegesDefaults)
 	} else {
-		data.Global = jsontypes.NewNormalizedNull()
+		data.Global = customtypes.NewJSONWithDefaultsNull(populateGlobalPrivilegesDefaults)
 	}
 
 	// Indices
