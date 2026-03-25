@@ -654,14 +654,15 @@ func (d *Data) updateThreatFiltersFromAPI(ctx context.Context, apiThreatFilters 
 func (d *Data) updateSeverityMappingFromAPI(ctx context.Context, severityMapping *kbapi.SecurityDetectionsAPISeverityMapping) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	if severityMapping != nil && len(*severityMapping) > 0 {
-		severityMappingValue, severityMappingDiags := convertSeverityMappingToModel(ctx, severityMapping)
-		diags.Append(severityMappingDiags...)
-		if !severityMappingDiags.HasError() {
-			d.SeverityMapping = severityMappingValue
-		}
-	} else {
-		d.SeverityMapping = types.ListNull(getSeverityMappingElementType())
+	if severityMapping == nil || len(*severityMapping) == 0 {
+		// Preserve current value (plan's empty list or null from defaults)
+		return diags
+	}
+
+	severityMappingValue, severityMappingDiags := convertSeverityMappingToModel(ctx, severityMapping)
+	diags.Append(severityMappingDiags...)
+	if !severityMappingDiags.HasError() {
+		d.SeverityMapping = severityMappingValue
 	}
 
 	return diags
@@ -890,14 +891,15 @@ func (d *Data) updateSetupFromAPI(ctx context.Context, setup kbapi.SecurityDetec
 func (d *Data) updateExceptionsListFromAPI(ctx context.Context, exceptionsList []kbapi.SecurityDetectionsAPIRuleExceptionList) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	if len(exceptionsList) > 0 {
-		exceptionsListValue, exceptionsListDiags := convertExceptionsListToModel(ctx, exceptionsList)
-		diags.Append(exceptionsListDiags...)
-		if !exceptionsListDiags.HasError() {
-			d.ExceptionsList = exceptionsListValue
-		}
-	} else {
-		d.ExceptionsList = types.ListNull(getExceptionsListElementType())
+	if len(exceptionsList) == 0 {
+		// Preserve current value (plan's empty list or null from defaults)
+		return diags
+	}
+
+	exceptionsListValue, exceptionsListDiags := convertExceptionsListToModel(ctx, exceptionsList)
+	diags.Append(exceptionsListDiags...)
+	if !exceptionsListDiags.HasError() {
+		d.ExceptionsList = exceptionsListValue
 	}
 
 	return diags
@@ -907,14 +909,15 @@ func (d *Data) updateExceptionsListFromAPI(ctx context.Context, exceptionsList [
 func (d *Data) updateRiskScoreMappingFromAPI(ctx context.Context, riskScoreMapping kbapi.SecurityDetectionsAPIRiskScoreMapping) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	if len(riskScoreMapping) > 0 {
-		riskScoreMappingValue, riskScoreMappingDiags := convertRiskScoreMappingToModel(ctx, riskScoreMapping)
-		diags.Append(riskScoreMappingDiags...)
-		if !riskScoreMappingDiags.HasError() {
-			d.RiskScoreMapping = riskScoreMappingValue
-		}
-	} else {
-		d.RiskScoreMapping = types.ListNull(getRiskScoreMappingElementType())
+	if len(riskScoreMapping) == 0 {
+		// Preserve current value (plan's empty list or null from defaults)
+		return diags
+	}
+
+	riskScoreMappingValue, riskScoreMappingDiags := convertRiskScoreMappingToModel(ctx, riskScoreMapping)
+	diags.Append(riskScoreMappingDiags...)
+	if !riskScoreMappingDiags.HasError() {
+		d.RiskScoreMapping = riskScoreMappingValue
 	}
 
 	return diags
@@ -924,14 +927,15 @@ func (d *Data) updateRiskScoreMappingFromAPI(ctx context.Context, riskScoreMappi
 func (d *Data) updateActionsFromAPI(ctx context.Context, actions []kbapi.SecurityDetectionsAPIRuleAction) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	if len(actions) > 0 {
-		actionsListValue, actionDiags := convertActionsToModel(ctx, actions)
-		diags.Append(actionDiags...)
-		if !actionDiags.HasError() {
-			d.Actions = actionsListValue
-		}
-	} else {
-		d.Actions = types.ListNull(getActionElementType())
+	if len(actions) == 0 {
+		// Preserve current value (plan's empty list or null from defaults)
+		return diags
+	}
+
+	actionsListValue, actionDiags := convertActionsToModel(ctx, actions)
+	diags.Append(actionDiags...)
+	if !actionDiags.HasError() {
+		d.Actions = actionsListValue
 	}
 
 	return diags
@@ -1040,14 +1044,15 @@ func (d *Data) updateInvestigationFieldsFromAPI(ctx context.Context, investigati
 func (d *Data) updateRelatedIntegrationsFromAPI(ctx context.Context, relatedIntegrations *kbapi.SecurityDetectionsAPIRelatedIntegrationArray) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	if relatedIntegrations != nil && len(*relatedIntegrations) > 0 {
-		relatedIntegrationsValue, relatedIntegrationsDiags := convertRelatedIntegrationsToModel(ctx, relatedIntegrations)
-		diags.Append(relatedIntegrationsDiags...)
-		if !relatedIntegrationsDiags.HasError() {
-			d.RelatedIntegrations = relatedIntegrationsValue
-		}
-	} else {
-		d.RelatedIntegrations = types.ListNull(getRelatedIntegrationElementType())
+	if relatedIntegrations == nil || len(*relatedIntegrations) == 0 {
+		// Preserve current value (plan's empty list or null from defaults)
+		return diags
+	}
+
+	relatedIntegrationsValue, relatedIntegrationsDiags := convertRelatedIntegrationsToModel(ctx, relatedIntegrations)
+	diags.Append(relatedIntegrationsDiags...)
+	if !relatedIntegrationsDiags.HasError() {
+		d.RelatedIntegrations = relatedIntegrationsValue
 	}
 
 	return diags
@@ -1070,17 +1075,30 @@ func (d *Data) updateRequiredFieldsFromAPI(ctx context.Context, requiredFields *
 	return diags
 }
 
-// convertThreatToModel converts kbapi.SecurityDetectionsAPIThreatArray to Terraform model
-func convertThreatToModel(ctx context.Context, apiThreats *kbapi.SecurityDetectionsAPIThreatArray) (types.List, diag.Diagnostics) {
+// convertThreatToModel converts kbapi.SecurityDetectionsAPIThreatArray to Terraform model.
+// priorThreats is used as a fallback for optional list fields (e.g. technique, subtechnique)
+// when the API returns an empty/nil array – preserving the original configured value
+// (which may be an explicit empty list) instead of silently converting it to null.
+func convertThreatToModel(ctx context.Context, apiThreats *kbapi.SecurityDetectionsAPIThreatArray, priorThreats types.List) (types.List, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	if apiThreats == nil || len(*apiThreats) == 0 {
 		return types.ListNull(getThreatElementType()), diags
 	}
 
+	// Extract prior threat models so we can fall back to their technique/subtechnique
+	// values when the API returns an empty array for those optional fields.
+	var priorThreatModels []ThreatModel
+	if !priorThreats.IsNull() && !priorThreats.IsUnknown() {
+		if elemDiags := priorThreats.ElementsAs(ctx, &priorThreatModels, false); elemDiags.HasError() {
+			// Non-fatal: fall back to null for nested optionals if extraction fails.
+			priorThreatModels = nil
+		}
+	}
+
 	threats := make([]ThreatModel, 0)
 
-	for _, apiThreat := range *apiThreats {
+	for i, apiThreat := range *apiThreats {
 		threat := ThreatModel{
 			Framework: types.StringValue(apiThreat.Framework),
 		}
@@ -1099,11 +1117,25 @@ func convertThreatToModel(ctx context.Context, apiThreats *kbapi.SecurityDetecti
 		}
 		threat.Tactic = tacticObj
 
+		// Resolve a prior threat at the same index for technique/subtechnique fallback.
+		var priorThreat *ThreatModel
+		if i < len(priorThreatModels) {
+			priorThreat = &priorThreatModels[i]
+		}
+
 		// Convert techniques (optional)
 		if apiThreat.Technique != nil && len(*apiThreat.Technique) > 0 {
+			// Extract prior techniques for per-technique subtechnique fallback.
+			var priorTechniqueModels []ThreatTechniqueModel
+			if priorThreat != nil && !priorThreat.Technique.IsNull() && !priorThreat.Technique.IsUnknown() {
+				if elemDiags := priorThreat.Technique.ElementsAs(ctx, &priorTechniqueModels, false); elemDiags.HasError() {
+					priorTechniqueModels = nil
+				}
+			}
+
 			techniques := make([]ThreatTechniqueModel, 0)
 
-			for _, apiTechnique := range *apiThreat.Technique {
+			for j, apiTechnique := range *apiThreat.Technique {
 				technique := ThreatTechniqueModel{
 					ID:        types.StringValue(apiTechnique.Id),
 					Name:      types.StringValue(apiTechnique.Name),
@@ -1128,6 +1160,9 @@ func convertThreatToModel(ctx context.Context, apiThreats *kbapi.SecurityDetecti
 					if !subtechniquesListDiags.HasError() {
 						technique.Subtechnique = subtechniquesList
 					}
+				} else if j < len(priorTechniqueModels) {
+					// API returned no subtechniques: preserve the prior value (may be []).
+					technique.Subtechnique = priorTechniqueModels[j].Subtechnique
 				} else {
 					technique.Subtechnique = types.ListNull(getThreatSubtechniqueElementType())
 				}
@@ -1140,6 +1175,9 @@ func convertThreatToModel(ctx context.Context, apiThreats *kbapi.SecurityDetecti
 			if !techniquesListDiags.HasError() {
 				threat.Technique = techniquesList
 			}
+		} else if priorThreat != nil {
+			// API returned no techniques: preserve the prior value (may be []).
+			threat.Technique = priorThreat.Technique
 		} else {
 			threat.Technique = types.ListNull(getThreatTechniqueElementType())
 		}
@@ -1156,14 +1194,15 @@ func convertThreatToModel(ctx context.Context, apiThreats *kbapi.SecurityDetecti
 func (d *Data) updateThreatFromAPI(ctx context.Context, threat *kbapi.SecurityDetectionsAPIThreatArray) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	if threat != nil && len(*threat) > 0 {
-		threatValue, threatDiags := convertThreatToModel(ctx, threat)
-		diags.Append(threatDiags...)
-		if !threatDiags.HasError() {
-			d.Threat = threatValue
-		}
-	} else {
-		d.Threat = types.ListNull(getThreatElementType())
+	if threat == nil || len(*threat) == 0 {
+		// Preserve current value (plan's empty list or null from defaults)
+		return diags
+	}
+
+	threatValue, threatDiags := convertThreatToModel(ctx, threat, d.Threat)
+	diags.Append(threatDiags...)
+	if !threatDiags.HasError() {
+		d.Threat = threatValue
 	}
 
 	return diags

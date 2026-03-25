@@ -2746,3 +2746,51 @@ func TestAccResourceSecurityDetectionRule_ValidateConfig(t *testing.T) {
 		},
 	})
 }
+
+
+// TestAccResourceSecurityDetectionRule_EmptyLists verifies that optional list
+// attributes configured as explicit empty lists ([]) remain empty lists in state
+// after apply/read rather than being converted to null.  Before the fix this
+// scenario would trigger a "Provider produced inconsistent result after apply"
+// error from the Terraform framework.
+func TestAccResourceSecurityDetectionRule_EmptyLists(t *testing.T) {
+	resourceName := securityDetectionRuleResourceName
+	createRuleName := testAccRandomizedRuleName("test-empty-lists-rule")
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: testAccCheckSecurityDetectionRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionSupport),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(createRuleName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", createRuleName),
+					resource.TestCheckResourceAttr(resourceName, "type", "query"),
+
+					// Empty lists must remain empty lists in state, not null.
+					resource.TestCheckResourceAttr(resourceName, "actions.#", "0"),
+					resource.TestCheckResourceAttr(resourceName, "exceptions_list.#", "0"),
+					resource.TestCheckResourceAttr(resourceName, "severity_mapping.#", "0"),
+					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.#", "0"),
+					resource.TestCheckResourceAttr(resourceName, "related_integrations.#", "0"),
+
+					// Threat is non-empty; technique is non-empty; subtechnique is [].
+					resource.TestCheckResourceAttr(resourceName, "threat.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "threat.0.framework", "MITRE ATT&CK"),
+					resource.TestCheckResourceAttr(resourceName, "threat.0.tactic.id", "TA0002"),
+					resource.TestCheckResourceAttr(resourceName, "threat.0.technique.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "threat.0.technique.0.id", "T1059"),
+					resource.TestCheckResourceAttr(resourceName, "threat.0.technique.0.subtechnique.#", "0"),
+
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttrSet(resourceName, "rule_id"),
+				),
+			},
+		},
+	})
+}

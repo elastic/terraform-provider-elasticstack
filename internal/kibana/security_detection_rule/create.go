@@ -87,7 +87,7 @@ func (r *securityDetectionRuleResource) Create(ctx context.Context, req resource
 		ResourceID: id,
 	}
 	data.ID = types.StringValue(compID.String())
-	readData, diags := r.read(ctx, id, data.SpaceID.ValueString())
+	readData, diags := r.read(ctx, id, data.SpaceID.ValueString(), &data)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
