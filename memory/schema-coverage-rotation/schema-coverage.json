@@ -1,8 +1,8 @@
 {
   "data-sources": {
     "elasticsearch_enrich_policy": "2026-03-24T02:05:31Z",
-    "elasticsearch_index_template": null,
-    "elasticsearch_indices": null,
+    "elasticsearch_index_template": "2026-03-25T02:59:16Z",
+    "elasticsearch_indices": "2026-03-25T02:59:16Z",
     "elasticsearch_info": null,
     "elasticsearch_ingest_processor_append": null,
     "elasticsearch_ingest_processor_bytes": "2026-03-15T02:30:08Z",
