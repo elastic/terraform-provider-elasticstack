@@ -21,10 +21,6 @@ on:
 jobs:
   copilot-setup-steps:
     runs-on: ubuntu-latest
-    env:
-      ELASTIC_PASSWORD: password
-      KIBANA_SYSTEM_USERNAME: kibana_system
-      KIBANA_SYSTEM_PASSWORD: password
     permissions:
       contents: read
     # Toolchain order (implementation uses SHA-pinned actions per REQ-017):
@@ -100,13 +96,23 @@ The job SHALL check out the repository using `actions/checkout` pinned by commit
 
 ### Requirement: Elastic Stack bootstrap (REQ-009)
 
-The job SHALL start the Fleet-oriented Docker Compose stack by running `make docker-fleet`. The step SHALL set `ELASTICSEARCH_PASSWORD` and `KIBANA_PASSWORD` from the job’s default superuser password (`ELASTIC_PASSWORD`) so Compose receives the same values used to bootstrap Elasticsearch and Kibana in `docker-compose.yml` (aligned with `.github/workflows/test.yml`).
+The job SHALL start the Fleet-oriented Docker Compose stack by running `make docker-fleet`. The workflow SHALL NOT define workflow-local default credential values in `jobs.copilot-setup-steps.env`. Stack bootstrap SHALL rely on the repository `.env` defaults for Docker Compose bootstrap values such as `ELASTICSEARCH_PASSWORD` and `KIBANA_PASSWORD`, unless the execution environment overrides them before the Make target runs.
 
 #### Scenario: Stack containers start
 
-- GIVEN a clean runner with Docker available
+- GIVEN the repository `.env` file provides the Docker Compose bootstrap defaults
 - WHEN the stack setup step runs
 - THEN `make docker-fleet` SHALL complete successfully before dependency and Kibana steps
+
+#### Scenario: Workflow leaves bootstrap defaults external
+
+- WHEN the workflow YAML is inspected
+- THEN the workflow SHALL not declare workflow-level bootstrap credential defaults
+
+#### Scenario: Workflow does not embed bootstrap defaults
+
+- WHEN the workflow YAML is inspected
+- THEN the `copilot-setup-steps` job SHALL NOT declare bootstrap credential defaults in `jobs.copilot-setup-steps.env`
 
 ### Requirement: Repository setup target (REQ-010)
 
@@ -120,37 +126,41 @@ The job SHALL run `make setup` after the stack is started.
 
 ### Requirement: Kibana system user password (REQ-011–REQ-012)
 
-The job SHALL run `make set-kibana-password`. The job SHALL define default values on the job-level `env` for `ELASTIC_PASSWORD`, `KIBANA_SYSTEM_USERNAME`, and `KIBANA_SYSTEM_PASSWORD` (matching Makefile defaults and the acceptance-test workflow pattern) so `workflow_dispatch` and path-filtered runs succeed without repository secrets. The step SHALL set `ELASTICSEARCH_PASSWORD` from `ELASTIC_PASSWORD` and pass `KIBANA_SYSTEM_USERNAME` and `KIBANA_SYSTEM_PASSWORD` from the job environment so curl-based password changes authenticate as the Elasticsearch superuser and target the correct Kibana system user. Higher-precedence environment configuration (e.g. Copilot or repository environment variables) MAY override these defaults when injected at job scope.
+The job SHALL run `make set-kibana-password` without step-specific credential overrides. The step SHALL rely on the existing Makefile defaults for `ELASTICSEARCH_USERNAME`, `KIBANA_SYSTEM_USERNAME`, and `KIBANA_SYSTEM_PASSWORD` unless the execution context overrides them. The workflow SHALL NOT declare default values for these variables in the job definition.
 
-#### Scenario: Credentials align with Compose
+#### Scenario: Credentials align with configured environment
 
 - GIVEN Elasticsearch is listening for bootstrap operations
+- AND the Makefile defaults remain `ELASTICSEARCH_USERNAME=elastic`, `KIBANA_SYSTEM_USERNAME=kibana_system`, and `KIBANA_SYSTEM_PASSWORD=password` unless explicitly overridden
 - WHEN `set-kibana-password` runs
-- THEN environment variables SHALL supply values consistent with the running stack’s configured `elastic` and Kibana system user passwords (as consumed by the Makefile and `docker-compose.yml`)
+- THEN environment variables SHALL supply values consistent with the running stack’s configured `elastic` and Kibana system user passwords
 
-#### Scenario: Self-contained manual run
+#### Scenario: Manual run uses externally provided configuration
 
-- GIVEN no repository secrets are required for the default stack password
-- WHEN a maintainer runs the workflow via `workflow_dispatch`
-- THEN the job-level defaults SHALL be sufficient for stack bootstrap and subsequent Makefile steps
+- GIVEN a maintainer runs the workflow via `workflow_dispatch`
+- AND the repository defaults remain available for the Elasticsearch and Kibana system user values unless the execution environment overrides them
+- WHEN the setup job executes
+- THEN the job SHALL use those provided values instead of workflow-defined defaults
 
 ### Requirement: Elasticsearch API key for the agent (REQ-013–REQ-014)
 
-The job SHALL include a step that runs `make create-es-api-key`, parses JSON with `jq` to read the `encoded` API key, and appends `apikey=<value>` to `GITHUB_OUTPUT` for the step. The step SHALL supply `ELASTICSEARCH_PASSWORD` to the environment, derived from the job’s `ELASTIC_PASSWORD` default (or override), for authenticated API key creation.
+The job SHALL include a step that runs `make create-es-api-key`, parses JSON with `jq` to read the `encoded` API key, and appends `apikey=<value>` to `GITHUB_OUTPUT` for the step. The step SHALL rely on the current Makefile authentication defaults unless the execution environment overrides them.
 
 #### Scenario: API key output is published
 
 - GIVEN Elasticsearch accepts security API calls
+- AND the Makefile authentication defaults or execution-environment overrides provide the Elasticsearch connection settings used by the Makefile
 - WHEN the API key step succeeds
 - THEN the step output named `apikey` SHALL contain the base64-encoded API key material from the `encoded` field
 
 ### Requirement: Fleet policy bootstrap (REQ-015–REQ-016)
 
-The job SHALL run `make setup-kibana-fleet` with `ELASTICSEARCH_PASSWORD` set from the job’s `ELASTIC_PASSWORD` default (or override) for authenticated Kibana Fleet API calls. The step SHALL set `FLEET_NAME` to `fleet` so Fleet server host URLs match the Compose service name expected by the Makefile’s `FLEET_ENDPOINT` construction.
+The job SHALL run `make setup-kibana-fleet` while relying on the current Makefile authentication defaults unless the execution environment overrides them. The step SHALL set `FLEET_NAME` to `fleet` so Fleet server host URLs match the Compose service name expected by the Makefile’s `FLEET_ENDPOINT` construction.
 
 #### Scenario: Fleet defaults match Compose service
 
 - GIVEN Kibana is available on localhost
+- AND the Makefile authentication defaults or execution-environment overrides provide the Elasticsearch connection settings used by the Makefile
 - WHEN Fleet setup runs
 - THEN `FLEET_NAME` SHALL be `fleet` for that step
 

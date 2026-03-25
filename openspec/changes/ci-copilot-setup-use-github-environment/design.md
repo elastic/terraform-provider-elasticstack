@@ -1,14 +1,14 @@
 ## Context
 
-The `copilot-setup-steps` workflow currently embeds default Elastic Stack credentials in `jobs.copilot-setup-steps.env`, a behavior introduced by commit `6501f04bc251db7c69f581e3be2cdd20fb041b66`. The requested change is to remove those workflow-local defaults and return to the earlier model where the workflow consumes credentials supplied through GitHub repository environment settings. This proposal changes a single workflow and its corresponding OpenSpec capability, but it also changes the contract for manual and path-triggered runs because credentials are no longer self-contained in the YAML.
+The `copilot-setup-steps` workflow no longer embeds default Elastic Stack credentials in `jobs.copilot-setup-steps.env`. It also no longer exports shared connection settings through workflow-level `env`. Instead, the workflow relies on the existing repository `.env` file and Makefile defaults for bootstrap and authentication values, while keeping `FLEET_NAME` explicitly set on the Fleet step. This proposal changes a single workflow and its corresponding OpenSpec capability so the documented contract matches that implementation.
 
 ## Goals / Non-Goals
 
 **Goals:**
 
 - Remove the job-level credential defaults from `.github/workflows/copilot-setup-steps.yml`.
-- Restore credential references so setup steps consume externally managed environment values rather than `ELASTIC_PASSWORD` defaults declared in the workflow.
-- Update the `ci-copilot-setup-steps` OpenSpec capability to document GitHub-managed configuration as the expected source of Elastic Stack credentials.
+- Document that the workflow no longer declares top-level or per-step credential env overrides for the setup targets.
+- Update the `ci-copilot-setup-steps` OpenSpec capability to document the repository `.env` and Makefile defaults that the workflow now relies on.
 
 **Non-Goals:**
 
@@ -18,19 +18,20 @@ The `copilot-setup-steps` workflow currently embeds default Elastic Stack creden
 
 ## Decisions
 
-1. **Revert only the credential-defaulting behavior from `6501f04`** — Remove `jobs.copilot-setup-steps.env` and restore step environment wiring to the pre-change variable names (`ELASTICSEARCH_PASSWORD`, `KIBANA_SYSTEM_USERNAME`, `KIBANA_SYSTEM_PASSWORD`) without discarding later unrelated workflow updates. **Alternative considered:** reverting the whole commit mechanically, which would also remove the canonical spec that has since been extended by later changes.
-2. **Treat GitHub repository environment settings as the source of truth** — The workflow requirements will state that Elastic Stack credentials are supplied externally by GitHub-managed environment configuration rather than hard-coded workflow defaults, specifically for the variables consumed by the current workflow and Compose bootstrap: `ELASTICSEARCH_PASSWORD`, `KIBANA_PASSWORD`, `KIBANA_SYSTEM_USERNAME`, and `KIBANA_SYSTEM_PASSWORD`. **Alternative considered:** keeping YAML defaults with optional overrides, which preserves configuration duplication in version control.
-3. **Document the changed manual-run contract explicitly** — The spec should no longer promise a self-contained `workflow_dispatch` run without repository-managed configuration, because that guarantee depends on the removed defaults. **Alternative considered:** leaving the older self-contained wording in place, which would misdescribe the post-change workflow behavior.
+1. **Remove only the job-local default credential block** — Keep later unrelated workflow improvements, but stop declaring credential defaults in `jobs.copilot-setup-steps.env`. **Alternative considered:** reverting the earlier change mechanically, which would also discard later unrelated updates.
+2. **Leave bootstrap and authentication values to existing defaults** — The workflow requirements will state that the setup targets rely on the repository `.env` file and Makefile defaults unless the execution environment overrides them. **Alternative considered:** exporting workflow-level variables or adding step-specific credential wiring, which no longer matches the current YAML.
+3. **Keep only the Fleet-specific override explicit** — The workflow requirements will document that `FLEET_NAME` remains explicitly set to `fleet` on the Fleet setup step so the Makefile points at the expected Compose service name. **Alternative considered:** relying on the Makefile default `FLEET_NAME`, which would no longer match the current workflow behavior.
 
 ## Risks / Trade-offs
 
-- **[Risk] Manual or validation runs can fail if the expected GitHub environment variables are not configured** -> **Mitigation:** document the external configuration requirement in the delta spec and implementation tasks.
-- **[Risk] Required variable names become implicit and drift from the workflow** -> **Mitigation:** keep the workflow variable references unchanged from the pre-`6501f04` behavior and name them explicitly in the updated requirements.
+- **[Risk] Repository `.env` or Makefile defaults can drift from the workflow’s documented assumptions** -> **Mitigation:** document which targets rely on those defaults and verify the affected targets against the current repo defaults.
+- **[Risk] Removing explicit credential wiring makes the workflow contract less obvious when reading the YAML alone** -> **Mitigation:** keep the spec explicit about which values come from repository defaults and which override remains explicit (`FLEET_NAME`).
 - **[Risk] Reverting only part of the original change could accidentally remove newer workflow improvements** -> **Mitigation:** implement the revert as a targeted edit against the current file, preserving later setup-node and diagnostics additions.
 
 ## Migration Plan
 
-- Ensure the required GitHub repository environment settings are present before merging the workflow change.
+- Confirm the repository `.env` file and Makefile defaults still provide the values expected by the setup targets.
+- Confirm the explicit `FLEET_NAME=fleet` step override remains in place for Fleet setup.
 - Land the workflow update together with the delta spec so the documented contract matches the implementation immediately.
 - If rollback is needed, restore the job-level defaults in the workflow and revert the delta spec to the previous self-contained behavior.
 

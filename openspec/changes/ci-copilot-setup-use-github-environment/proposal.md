@@ -1,12 +1,12 @@
 ## Why
 
-The `copilot-setup-steps` workflow currently hard-codes default Elastic Stack credentials at job scope, which duplicates configuration that should live in GitHub repository environment settings. Reverting that behavior removes credential defaults from versioned workflow code and restores the pre-`6501f04` contract where the workflow consumes externally managed environment configuration.
+The `copilot-setup-steps` workflow no longer needs hard-coded credential defaults at job scope. Instead, it relies on the existing repository `.env` file and Makefile defaults for the bootstrap and authentication values used by the setup targets, while keeping `FLEET_NAME` explicitly set on the Fleet step.
 
 ## What Changes
 
 - Remove the `jobs.copilot-setup-steps.env` default credential block from `.github/workflows/copilot-setup-steps.yml`.
-- Update the documented workflow requirements so Copilot setup credentials are expected to come from GitHub repository environment settings instead of workflow-defined defaults.
-- Revert the credential-wiring behavior introduced in commit `6501f04bc251db7c69f581e3be2cdd20fb041b66` while preserving later unrelated workflow updates.
+- Keep the setup steps free of workflow-level or job-level credential wiring, except for the explicit `FLEET_NAME` override on the Fleet step.
+- Update the documented workflow requirements so bootstrap and authentication values are described as coming from the existing repository `.env` file and Makefile defaults unless explicitly overridden.
 
 ## Capabilities
 
@@ -16,10 +16,11 @@ The `copilot-setup-steps` workflow currently hard-codes default Elastic Stack cr
 
 ### Modified Capabilities
 
-- `ci-copilot-setup-steps`: Change the workflow requirements so Elastic Stack and Kibana credentials are supplied by GitHub-managed environment configuration rather than job-level defaults embedded in the workflow file.
+- `ci-copilot-setup-steps`: Change the workflow requirements so bootstrap and authentication values rely on existing repository defaults instead of job-level workflow defaults, with `FLEET_NAME` remaining explicitly set on the Fleet step.
 
 ## Impact
 
 - **Workflow**: `.github/workflows/copilot-setup-steps.yml` will stop declaring default credential values in `jobs.copilot-setup-steps.env`.
-- **Specs**: `openspec/specs/ci-copilot-setup-steps/spec.md` will be updated through a delta spec to describe externally managed credential inputs instead of self-contained workflow defaults.
-- **GitHub configuration**: Repository environment settings become the expected source of the variables needed by the Copilot setup steps.
+- **Workflow**: The setup steps will rely on inherited repository defaults, with only `FLEET_NAME` set explicitly for the Fleet setup step.
+- **Specs**: `openspec/specs/ci-copilot-setup-steps/spec.md` will be updated through a delta spec to describe the current reliance on repository `.env` and Makefile defaults.
+- **Configuration**: The repository `.env` file and Makefile defaults continue to supply bootstrap and authentication defaults unless the execution environment overrides them.

@@ -10,17 +10,10 @@ on:
   pull_request:
     paths:
       - .github/workflows/copilot-setup-steps.yml
-
 jobs:
   # The job MUST be called `copilot-setup-steps` or it will not be picked up by Copilot.
   copilot-setup-steps:
     runs-on: ubuntu-latest
-    # Defaults match Makefile / docker-compose and the acceptance-test workflow (`test.yml`)
-    # so `workflow_dispatch` and path-triggered runs work without repo secrets.
-    env:
-      ELASTIC_PASSWORD: password
-      KIBANA_SYSTEM_USERNAME: kibana_system
-      KIBANA_SYSTEM_PASSWORD: password
 
     # Set the permissions to the lowest permissions possible needed for your steps.
     # Copilot will be given its own token for its operations.
@@ -45,33 +38,23 @@ jobs:
 
       - name: Setup Elastic Stack
         run: make docker-fleet
-        env:
-          ELASTICSEARCH_PASSWORD: ${{ env.ELASTIC_PASSWORD }}
-          KIBANA_PASSWORD: ${{ env.ELASTIC_PASSWORD }}
 
       - name: Get dependencies
         run: make setup
 
       - name: Setup Kibana user
         run: make set-kibana-password
-        env:
-          ELASTICSEARCH_PASSWORD: ${{ env.ELASTIC_PASSWORD }}
-          KIBANA_SYSTEM_USERNAME: ${{ env.KIBANA_SYSTEM_USERNAME }}
-          KIBANA_SYSTEM_PASSWORD: ${{ env.KIBANA_SYSTEM_PASSWORD }}
 
       - id: get-api-key
         name: Get ES API key
         run: |-
           echo "apikey=$(make create-es-api-key | jq -r .encoded)" >> "$GITHUB_OUTPUT"
-        env:
-          ELASTICSEARCH_PASSWORD: ${{ env.ELASTIC_PASSWORD }}
 
       - id: setup-fleet
         name: Setup Fleet
         run: |-
           make setup-kibana-fleet
         env:
-          ELASTICSEARCH_PASSWORD: ${{ env.ELASTIC_PASSWORD }}
           FLEET_NAME: "fleet"
 
       - name: Docker compose logs
