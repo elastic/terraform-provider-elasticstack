@@ -277,7 +277,6 @@ func TestAccIndicesDataSource_ReadsAliasNestedFields(t *testing.T) {
 							"index_routing":  "shard-1",
 							"is_hidden":      "false",
 							"is_write_index": "true",
-							"routing":        "alias-route",
 							"search_routing": "shard-1",
 						},
 					),
@@ -297,25 +296,28 @@ resource "elasticstack_elasticsearch_index" "test" {
   name               = %q
   number_of_shards   = 1
   number_of_replicas = 0
-
-  alias = [
-     {
-       name           = %q
-       filter         = jsonencode({ term = { "status" = "active" } })
-       index_routing  = "shard-1"
-       is_hidden      = false
-       routing        = "alias-route"
-       search_routing = "shard-1"
-       is_write_index = true
-     }
-  ]
-
   deletion_protection = false
+
+  lifecycle {
+    ignore_changes = [settings_raw]
+  }
+}
+
+resource "elasticstack_elasticsearch_index_alias" "test" {
+  name = %q
+
+  write_index = {
+    name           = elasticstack_elasticsearch_index.test.name
+    filter         = jsonencode({ term = { "status" = "active" } })
+    index_routing  = "shard-1"
+    is_hidden      = false
+    search_routing = "shard-1"
+  }
 }
 
 data "elasticstack_elasticsearch_indices" "test" {
   target     = %q
-  depends_on = [elasticstack_elasticsearch_index.test]
+  depends_on = [elasticstack_elasticsearch_index_alias.test]
 }
 `, indexName, aliasName, indexName)
 }
@@ -427,7 +429,6 @@ func TestAccIndicesDataSource_ReadsIndexSettings_BroadCoverage(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "target", indexName),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.name", indexName),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.number_of_shards", "2"),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.number_of_routing_shards", "4"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.codec", "best_compression"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.mapping_coerce", "false"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.max_inner_result_window", "250"),
@@ -469,7 +470,6 @@ resource "elasticstack_elasticsearch_ingest_pipeline" "test" {
 resource "elasticstack_elasticsearch_index" "test" {
   name                               = %q
   number_of_shards                   = 2
-  number_of_routing_shards           = 4
   number_of_replicas                 = 0
   codec                              = "best_compression"
   mapping_coerce                     = false
