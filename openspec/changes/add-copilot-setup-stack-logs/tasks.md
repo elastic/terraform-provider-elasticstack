@@ -10,4 +10,4 @@
 ## 3. Verification
 
 - [x] 3.1 Run `./node_modules/.bin/openspec validate --all` or `make check-openspec`
-- [ ] 3.2 Optionally trigger the Copilot setup workflow or equivalent validation path to confirm failed runs emit stack logs and successful runs do not
+- [x] 3.2 Optionally trigger the Copilot setup workflow or equivalent validation path to confirm failed runs emit stack logs and successful runs do not
