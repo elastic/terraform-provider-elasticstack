@@ -86,7 +86,7 @@ type legacyMetricConfigModel struct {
 	IgnoreGlobalFilters types.Bool                                        `tfsdk:"ignore_global_filters"`
 	Sampling            types.Float64                                     `tfsdk:"sampling"`
 	Query               *filterSimpleModel                                `tfsdk:"query"`
-	Filters             []searchFilterModel                               `tfsdk:"filters"`
+	Filters             []chartFilterJSONModel                            `tfsdk:"filters"`
 	MetricJSON          customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"metric_json"`
 }
 
@@ -132,10 +132,14 @@ func (m *legacyMetricConfigModel) fromAPINoESQL(ctx context.Context, api kbapi.L
 	m.Query.fromAPI(api.Query)
 
 	if api.Filters != nil && len(*api.Filters) > 0 {
-		m.Filters = make([]searchFilterModel, len(*api.Filters))
-		for i, filterSchema := range *api.Filters {
-			filterDiags := m.Filters[i].fromAPI(filterSchema)
+		m.Filters = make([]chartFilterJSONModel, 0, len(*api.Filters))
+		for _, filterSchema := range *api.Filters {
+			fm := chartFilterJSONModel{}
+			filterDiags := fm.populateFromAPIItem(filterSchema)
 			diags.Append(filterDiags...)
+			if !filterDiags.HasError() {
+				m.Filters = append(m.Filters, fm)
+			}
 		}
 	}
 
@@ -174,10 +178,14 @@ func (m *legacyMetricConfigModel) fromAPIESQL(ctx context.Context, api kbapi.Leg
 	}
 
 	if api.Filters != nil && len(*api.Filters) > 0 {
-		m.Filters = make([]searchFilterModel, len(*api.Filters))
-		for i, filterSchema := range *api.Filters {
-			filterDiags := m.Filters[i].fromAPI(filterSchema)
+		m.Filters = make([]chartFilterJSONModel, 0, len(*api.Filters))
+		for _, filterSchema := range *api.Filters {
+			fm := chartFilterJSONModel{}
+			filterDiags := fm.populateFromAPIItem(filterSchema)
 			diags.Append(filterDiags...)
+			if !filterDiags.HasError() {
+				m.Filters = append(m.Filters, fm)
+			}
 		}
 	}
 
@@ -232,13 +240,18 @@ func (m *legacyMetricConfigModel) toAPI() (kbapi.LegacyMetricChart, diag.Diagnos
 		}
 
 		if len(m.Filters) > 0 {
-			filters := make([]kbapi.SearchFilter, len(m.Filters))
-			for i, filterModel := range m.Filters {
-				filter, filterDiags := filterModel.toAPI()
+			filters := make([]kbapi.LegacyMetricESQL_Filters_Item, 0, len(m.Filters))
+			for _, filterModel := range m.Filters {
+				var item kbapi.LegacyMetricESQL_Filters_Item
+				filterDiags := decodeChartFilterJSON(filterModel.FilterJSON, &item)
 				diags.Append(filterDiags...)
-				filters[i] = filter
+				if !filterDiags.HasError() {
+					filters = append(filters, item)
+				}
 			}
-			api.Filters = &filters
+			if len(filters) > 0 {
+				api.Filters = &filters
+			}
 		}
 
 		if m.Query != nil {
@@ -301,13 +314,18 @@ func (m *legacyMetricConfigModel) toAPI() (kbapi.LegacyMetricChart, diag.Diagnos
 		}
 
 		if len(m.Filters) > 0 {
-			filters := make([]kbapi.SearchFilter, len(m.Filters))
-			for i, filterModel := range m.Filters {
-				filter, filterDiags := filterModel.toAPI()
+			filters := make([]kbapi.LegacyMetricNoESQL_Filters_Item, 0, len(m.Filters))
+			for _, filterModel := range m.Filters {
+				var item kbapi.LegacyMetricNoESQL_Filters_Item
+				filterDiags := decodeChartFilterJSON(filterModel.FilterJSON, &item)
 				diags.Append(filterDiags...)
-				filters[i] = filter
+				if !filterDiags.HasError() {
+					filters = append(filters, item)
+				}
 			}
-			api.Filters = &filters
+			if len(filters) > 0 {
+				api.Filters = &filters
+			}
 		}
 
 		if m.Query != nil {

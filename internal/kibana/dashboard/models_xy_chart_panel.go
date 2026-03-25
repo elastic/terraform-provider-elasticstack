@@ -75,15 +75,15 @@ func (c xyChartPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDa
 
 // test-compat wrappers for legacy converter tests
 type xyChartConfigModel struct {
-	Title       types.String        `tfsdk:"title"`
-	Description types.String        `tfsdk:"description"`
-	Axis        *xyAxisModel        `tfsdk:"axis"`
-	Decorations *xyDecorationsModel `tfsdk:"decorations"`
-	Fitting     *xyFittingModel     `tfsdk:"fitting"`
-	Layers      []xyLayerModel      `tfsdk:"layers"`
-	Legend      *xyLegendModel      `tfsdk:"legend"`
-	Query       *filterSimpleModel  `tfsdk:"query"`
-	Filters     []searchFilterModel `tfsdk:"filters"`
+	Title       types.String           `tfsdk:"title"`
+	Description types.String           `tfsdk:"description"`
+	Axis        *xyAxisModel           `tfsdk:"axis"`
+	Decorations *xyDecorationsModel    `tfsdk:"decorations"`
+	Fitting     *xyFittingModel        `tfsdk:"fitting"`
+	Layers      []xyLayerModel         `tfsdk:"layers"`
+	Legend      *xyLegendModel         `tfsdk:"legend"`
+	Query       *filterSimpleModel     `tfsdk:"query"`
+	Filters     []chartFilterJSONModel `tfsdk:"filters"`
 }
 
 type xyAxisModel struct {
@@ -96,8 +96,18 @@ func (m *xyAxisModel) fromAPI(apiAxis kbapi.XyAxis) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	if apiAxis.X != nil {
+		xBytes, err := json.Marshal(apiAxis.X)
+		if err != nil {
+			diags.AddError("Failed to marshal XY chart X axis", err.Error())
+			return diags
+		}
+		var xView xyAxisConfigAPIModel
+		if err := json.Unmarshal(xBytes, &xView); err != nil {
+			diags.AddError("Failed to decode XY chart X axis", err.Error())
+			return diags
+		}
 		m.X = &xyAxisConfigModel{}
-		xDiags := m.X.fromAPI(apiAxis.X)
+		xDiags := m.X.fromAPI(&xView)
 		diags.Append(xDiags...)
 		if m.X.isEmpty() {
 			m.X = nil
@@ -136,7 +146,33 @@ func (m *xyAxisModel) toAPI() (kbapi.XyAxis, diag.Diagnostics) {
 	if m.X != nil {
 		xAxis, xDiags := m.X.toAPI()
 		diags.Append(xDiags...)
-		axis.X = xAxis
+		if !xDiags.HasError() && xAxis != nil {
+			xb, err := json.Marshal(xAxis)
+			if err != nil {
+				diags.AddError("Failed to marshal XY X axis model", err.Error())
+				return axis, diags
+			}
+			partial, err := json.Marshal(axis)
+			if err != nil {
+				diags.AddError("Failed to marshal XY axis envelope", err.Error())
+				return axis, diags
+			}
+			var env map[string]json.RawMessage
+			if err := json.Unmarshal(partial, &env); err != nil {
+				diags.AddError("Failed to prepare XY axis merge", err.Error())
+				return axis, diags
+			}
+			env["x"] = json.RawMessage(xb)
+			merged, err := json.Marshal(env)
+			if err != nil {
+				diags.AddError("Failed to marshal merged XY axis", err.Error())
+				return axis, diags
+			}
+			if err := json.Unmarshal(merged, &axis); err != nil {
+				diags.AddError("Failed to merge XY X axis into API model", err.Error())
+				return axis, diags
+			}
+		}
 	}
 
 	if m.Left != nil {
@@ -159,6 +195,7 @@ type xyAxisConfigModel struct {
 	Ticks            types.Bool           `tfsdk:"ticks"`
 	Grid             types.Bool           `tfsdk:"grid"`
 	LabelOrientation types.String         `tfsdk:"label_orientation"`
+	Scale            types.String         `tfsdk:"scale"`
 	ExtentJSON       jsontypes.Normalized `tfsdk:"extent_json"`
 }
 
@@ -166,7 +203,7 @@ func (m *xyAxisConfigModel) isEmpty() bool {
 	if m == nil {
 		return true
 	}
-	if typeutils.IsKnown(m.Ticks) || typeutils.IsKnown(m.Grid) || typeutils.IsKnown(m.LabelOrientation) || typeutils.IsKnown(m.ExtentJSON) {
+	if typeutils.IsKnown(m.Ticks) || typeutils.IsKnown(m.Grid) || typeutils.IsKnown(m.LabelOrientation) || typeutils.IsKnown(m.Scale) || typeutils.IsKnown(m.ExtentJSON) {
 		return false
 	}
 	return axisTitleIsDefault(m.Title)
@@ -176,6 +213,7 @@ type xyAxisConfigAPIModel = struct {
 	Extent           *kbapi.XyAxis_X_Extent         `json:"extent,omitempty"`
 	Grid             *bool                          `json:"grid,omitempty"`
 	LabelOrientation *kbapi.XyAxisXLabelOrientation `json:"label_orientation,omitempty"`
+	Scale            *kbapi.XyAxisXScale            `json:"scale,omitempty"`
 	Ticks            *bool                          `json:"ticks,omitempty"`
 	Title            *struct {
 		Value   *string `json:"value,omitempty"`
@@ -192,6 +230,7 @@ func (m *xyAxisConfigModel) fromAPI(apiAxis *xyAxisConfigAPIModel) diag.Diagnost
 	m.Grid = types.BoolPointerValue(apiAxis.Grid)
 	m.Ticks = types.BoolPointerValue(apiAxis.Ticks)
 	m.LabelOrientation = typeutils.StringishPointerValue(apiAxis.LabelOrientation)
+	m.Scale = typeutils.StringishPointerValue(apiAxis.Scale)
 
 	if apiAxis.Title != nil {
 		m.Title = &axisTitleModel{}
@@ -225,6 +264,10 @@ func (m *xyAxisConfigModel) toAPI() (*xyAxisConfigAPIModel, diag.Diagnostics) {
 	if typeutils.IsKnown(m.LabelOrientation) {
 		labelOrient := kbapi.XyAxisXLabelOrientation(m.LabelOrientation.ValueString())
 		xAxis.LabelOrientation = &labelOrient
+	}
+	if typeutils.IsKnown(m.Scale) {
+		scale := kbapi.XyAxisXScale(m.Scale.ValueString())
+		xAxis.Scale = &scale
 	}
 	if m.Title != nil {
 		xAxis.Title = m.Title.toAPI()
@@ -816,12 +859,13 @@ func (m *xyChartConfigModel) toAPI() (kbapi.XyChart, diag.Diagnostics) {
 
 	// Convert filters
 	if len(m.Filters) > 0 {
-		filters := make([]kbapi.SearchFilter, 0, len(m.Filters))
+		filters := make([]kbapi.XyChart_Filters_Item, 0, len(m.Filters))
 		for _, f := range m.Filters {
-			filter, filterDiags := f.toAPI()
+			var item kbapi.XyChart_Filters_Item
+			filterDiags := decodeChartFilterJSON(f.FilterJSON, &item)
 			diags.Append(filterDiags...)
 			if !filterDiags.HasError() {
-				filters = append(filters, filter)
+				filters = append(filters, item)
 			}
 		}
 		if len(filters) > 0 {
@@ -876,16 +920,38 @@ func (m *xyChartConfigModel) fromAPI(ctx context.Context, apiChart kbapi.XyChart
 
 	// Convert filters
 	if apiChart.Filters != nil && len(*apiChart.Filters) > 0 {
-		m.Filters = make([]searchFilterModel, 0, len(*apiChart.Filters))
+		m.Filters = make([]chartFilterJSONModel, 0, len(*apiChart.Filters))
 		for _, f := range *apiChart.Filters {
-			filter := searchFilterModel{}
-			filterDiags := filter.fromAPI(f)
+			fm := chartFilterJSONModel{}
+			filterDiags := fm.populateFromAPIItem(f)
 			diags.Append(filterDiags...)
 			if !filterDiags.HasError() {
-				m.Filters = append(m.Filters, filter)
+				m.Filters = append(m.Filters, fm)
 			}
 		}
 	}
 
 	return diags
+}
+
+// alignXYChartXAxisScaleFromPlanPanels preserves unset axis.x.scale in state when Kibana returns the implicit default "ordinal".
+func alignXYChartXAxisScaleFromPlanPanels(planPanels, statePanels []panelModel) {
+	n := min(len(statePanels), len(planPanels))
+	for i := range n {
+		pp, sp := planPanels[i].XYChartConfig, statePanels[i].XYChartConfig
+		if pp == nil || sp == nil || pp.Axis == nil || sp.Axis == nil {
+			continue
+		}
+		if pp.Axis.X == nil || sp.Axis.X == nil {
+			continue
+		}
+		planX, stateX := pp.Axis.X, sp.Axis.X
+		planScaleUnset := !typeutils.IsKnown(planX.Scale) || planX.Scale.IsNull()
+		if !planScaleUnset {
+			continue
+		}
+		if typeutils.IsKnown(stateX.Scale) && stateX.Scale.ValueString() == string(kbapi.XyAxisXScaleOrdinal) {
+			stateX.Scale = planX.Scale
+		}
+	}
 }

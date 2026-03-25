@@ -236,6 +236,11 @@ func ConvertResponseToModel(spaceID string, resp any) (*models.AlertingRule, dia
 		AlertDelay *struct {
 			Active float32 `json:"active"`
 		} `json:"alert_delay"`
+		Flapping *struct {
+			Enabled               *bool   `json:"enabled,omitempty"`
+			LookBackWindow        float64 `json:"look_back_window"`
+			StatusChangeThreshold float64 `json:"status_change_threshold"`
+		} `json:"flapping"`
 		Actions []struct {
 			Group     *string        `json:"group"`
 			ID        string         `json:"id"`
@@ -317,6 +322,15 @@ func ConvertResponseToModel(spaceID string, resp any) (*models.AlertingRule, dia
 		alertDelay = &intermediate.AlertDelay.Active
 	}
 
+	var flapping *models.AlertingRuleFlapping
+	if intermediate.Flapping != nil {
+		flapping = &models.AlertingRuleFlapping{
+			LookBackWindow:        int64(intermediate.Flapping.LookBackWindow),
+			StatusChangeThreshold: int64(intermediate.Flapping.StatusChangeThreshold),
+			Enabled:               intermediate.Flapping.Enabled,
+		}
+	}
+
 	var lastExecutionDate *time.Time
 	if intermediate.ExecutionStatus.LastExecutionDate != "" {
 		if parsed, err := time.Parse(time.RFC3339, intermediate.ExecutionStatus.LastExecutionDate); err == nil {
@@ -350,6 +364,7 @@ func ConvertResponseToModel(spaceID string, resp any) (*models.AlertingRule, dia
 		},
 		Actions:    actions,
 		AlertDelay: alertDelay,
+		Flapping:   flapping,
 	}, nil
 }
 
@@ -396,6 +411,10 @@ func buildCreateRequestBody(rule models.AlertingRule) kbapi.PostAlertingRuleIdJS
 		}{
 			Active: *rule.AlertDelay,
 		}
+	}
+
+	if w := flappingWireFromModel(rule.Flapping); w != nil {
+		body.Flapping = w
 	}
 
 	if len(rule.Actions) > 0 {
@@ -573,6 +592,10 @@ func buildUpdateRequestBody(rule models.AlertingRule) kbapi.PutAlertingRuleIdJSO
 		}
 	}
 
+	if w := flappingWireFromModel(rule.Flapping); w != nil {
+		body.Flapping = w
+	}
+
 	if len(rule.Actions) > 0 {
 		actions := make([]struct {
 			AlertsFilter *struct {
@@ -705,6 +728,25 @@ func buildUpdateRequestBody(rule models.AlertingRule) kbapi.PutAlertingRuleIdJSO
 	}
 
 	return body
+}
+
+// flappingWire is a type alias for the flapping JSON object on create/update alerting rule requests.
+// Using an alias (not a new defined type) keeps values assignable to both Post and Put Flapping fields in kbapi.
+type flappingWire = struct {
+	Enabled               *bool   `json:"enabled,omitempty"`
+	LookBackWindow        float32 `json:"look_back_window"`
+	StatusChangeThreshold float32 `json:"status_change_threshold"`
+}
+
+func flappingWireFromModel(f *models.AlertingRuleFlapping) *flappingWire {
+	if f == nil {
+		return nil
+	}
+	return &flappingWire{
+		Enabled:               f.Enabled,
+		LookBackWindow:        float32(f.LookBackWindow),
+		StatusChangeThreshold: float32(f.StatusChangeThreshold),
+	}
 }
 
 func valueOrDefault(val *string, def string) string {

@@ -83,18 +83,18 @@ func (c pieChartPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnD
 }
 
 type pieChartConfigModel struct {
-	Title               types.String         `tfsdk:"title"`
-	Description         types.String         `tfsdk:"description"`
-	Dataset             jsontypes.Normalized `tfsdk:"dataset"`
-	IgnoreGlobalFilters types.Bool           `tfsdk:"ignore_global_filters"`
-	Sampling            types.Float64        `tfsdk:"sampling"`
-	DonutHole           types.String         `tfsdk:"donut_hole"`
-	LabelPosition       types.String         `tfsdk:"label_position"`
-	Legend              jsontypes.Normalized `tfsdk:"legend"`
-	Query               *filterSimpleModel   `tfsdk:"query"`
-	Filters             []searchFilterModel  `tfsdk:"filters"`
-	Metrics             []pieMetricModel     `tfsdk:"metrics"`
-	GroupBy             []pieGroupByModel    `tfsdk:"group_by"`
+	Title               types.String           `tfsdk:"title"`
+	Description         types.String           `tfsdk:"description"`
+	Dataset             jsontypes.Normalized   `tfsdk:"dataset"`
+	IgnoreGlobalFilters types.Bool             `tfsdk:"ignore_global_filters"`
+	Sampling            types.Float64          `tfsdk:"sampling"`
+	DonutHole           types.String           `tfsdk:"donut_hole"`
+	LabelPosition       types.String           `tfsdk:"label_position"`
+	Legend              jsontypes.Normalized   `tfsdk:"legend"`
+	Query               *filterSimpleModel     `tfsdk:"query"`
+	Filters             []chartFilterJSONModel `tfsdk:"filters"`
+	Metrics             []pieMetricModel       `tfsdk:"metrics"`
+	GroupBy             []pieGroupByModel      `tfsdk:"group_by"`
 }
 
 type pieMetricModel struct {
@@ -176,10 +176,14 @@ func (m *pieChartConfigModel) fromAPINoESQL(apiChart kbapi.PieNoESQL) diag.Diagn
 
 	// Filters
 	if apiChart.Filters != nil && len(*apiChart.Filters) > 0 {
-		m.Filters = make([]searchFilterModel, len(*apiChart.Filters))
-		for i, filter := range *apiChart.Filters {
-			filterDiags := m.Filters[i].fromAPI(filter)
+		m.Filters = make([]chartFilterJSONModel, 0, len(*apiChart.Filters))
+		for _, filter := range *apiChart.Filters {
+			fm := chartFilterJSONModel{}
+			filterDiags := fm.populateFromAPIItem(filter)
 			diags.Append(filterDiags...)
+			if !filterDiags.HasError() {
+				m.Filters = append(m.Filters, fm)
+			}
 		}
 	}
 
@@ -269,10 +273,14 @@ func (m *pieChartConfigModel) fromAPIESQL(apiChart kbapi.PieESQL) diag.Diagnosti
 
 	// Filters
 	if apiChart.Filters != nil && len(*apiChart.Filters) > 0 {
-		m.Filters = make([]searchFilterModel, len(*apiChart.Filters))
-		for i, filter := range *apiChart.Filters {
-			filterDiags := m.Filters[i].fromAPI(filter)
+		m.Filters = make([]chartFilterJSONModel, 0, len(*apiChart.Filters))
+		for _, filter := range *apiChart.Filters {
+			fm := chartFilterJSONModel{}
+			filterDiags := fm.populateFromAPIItem(filter)
 			diags.Append(filterDiags...)
+			if !filterDiags.HasError() {
+				m.Filters = append(m.Filters, fm)
+			}
 		}
 	}
 
@@ -322,6 +330,11 @@ func (m *pieChartConfigModel) toAPI() (kbapi.PieChart, diag.Diagnostics) {
 	if isNoESQL {
 		var chart kbapi.PieNoESQL
 
+		// Required by the Dashboard API (Lens pie schema); omitting mode yields HTTP 400.
+		chart.ValueDisplay = kbapi.ValueDisplay{
+			Mode: kbapi.ValueDisplayModePercentage,
+		}
+
 		chart.Title = m.Title.ValueStringPointer()
 		chart.Description = m.Description.ValueStringPointer()
 		chart.IgnoreGlobalFilters = m.IgnoreGlobalFilters.ValueBoolPointer()
@@ -363,13 +376,18 @@ func (m *pieChartConfigModel) toAPI() (kbapi.PieChart, diag.Diagnostics) {
 
 		// Filters
 		if len(m.Filters) > 0 {
-			filters := make([]kbapi.SearchFilter, len(m.Filters))
-			for i, filter := range m.Filters {
-				f, d := filter.toAPI()
+			filters := make([]kbapi.PieNoESQL_Filters_Item, 0, len(m.Filters))
+			for _, filter := range m.Filters {
+				var item kbapi.PieNoESQL_Filters_Item
+				d := decodeChartFilterJSON(filter.FilterJSON, &item)
 				diags.Append(d...)
-				filters[i] = f
+				if !d.HasError() {
+					filters = append(filters, item)
+				}
 			}
-			chart.Filters = &filters
+			if len(filters) > 0 {
+				chart.Filters = &filters
+			}
 		}
 
 		// Metrics
@@ -402,6 +420,10 @@ func (m *pieChartConfigModel) toAPI() (kbapi.PieChart, diag.Diagnostics) {
 		}
 	} else {
 		var chart kbapi.PieESQL
+
+		chart.ValueDisplay = kbapi.ValueDisplay{
+			Mode: kbapi.ValueDisplayModePercentage,
+		}
 
 		// Set basic properties
 		chart.Title = m.Title.ValueStringPointer()
@@ -442,13 +464,18 @@ func (m *pieChartConfigModel) toAPI() (kbapi.PieChart, diag.Diagnostics) {
 
 		// Filters
 		if len(m.Filters) > 0 {
-			filters := make([]kbapi.SearchFilter, len(m.Filters))
-			for i, filter := range m.Filters {
-				f, d := filter.toAPI()
+			filters := make([]kbapi.PieESQL_Filters_Item, 0, len(m.Filters))
+			for _, filter := range m.Filters {
+				var item kbapi.PieESQL_Filters_Item
+				d := decodeChartFilterJSON(filter.FilterJSON, &item)
 				diags.Append(d...)
-				filters[i] = f
+				if !d.HasError() {
+					filters = append(filters, item)
+				}
 			}
-			chart.Filters = &filters
+			if len(filters) > 0 {
+				chart.Filters = &filters
+			}
 		}
 
 		// Metrics
@@ -474,11 +501,17 @@ func (m *pieChartConfigModel) toAPI() (kbapi.PieChart, diag.Diagnostics) {
 				CollapseBy kbapi.CollapseBy              `json:"collapse_by"`
 				Color      kbapi.ColorMapping            `json:"color"`
 				Column     string                        `json:"column"`
+				Format     kbapi.FormatType              `json:"format"`
+				Label      *string                       `json:"label,omitempty"`
 				Operation  kbapi.PieESQLGroupByOperation `json:"operation"`
 			}, len(m.GroupBy))
 			for i, grp := range m.GroupBy {
 				if err := json.Unmarshal([]byte(grp.Config.ValueString()), &groupBy[i]); err != nil {
 					diags.AddError("Failed to unmarshal group_by", err.Error())
+				}
+				fb, _ := json.Marshal(groupBy[i].Format)
+				if string(fb) == jsonNullString || len(fb) == 0 {
+					_ = groupBy[i].Format.FromNumericFormat(kbapi.NumericFormat{Type: kbapi.Number})
 				}
 			}
 			chart.GroupBy = &groupBy

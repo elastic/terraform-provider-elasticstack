@@ -37,8 +37,14 @@ resource "elasticstack_kibana_dashboard" "test" {
 
       filters = [
         {
-          query    = "host.os.keyword: \"linux\""
-          language = "kuery"
+          filter_json = jsonencode({
+            type = "condition"
+            condition = {
+              field    = "host.os.keyword"
+              operator = "is"
+              value    = "linux"
+            }
+          })
         }
       ]
 
