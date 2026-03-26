@@ -44,7 +44,7 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 			"Classic streams cannot be created",
 			"Classic streams are pre-existing Elasticsearch data streams adopted by Kibana Streams. "+
 				"Use `terraform import` to manage an existing classic stream instead of creating one.\n\n"+
-				fmt.Sprintf("To import: terraform import elasticstack_kibana_stream.name '%s/%s'",
+				fmt.Sprintf("To import: terraform import elasticstack_kibana_stream.<resource_name> '%s/%s'",
 					planModel.SpaceID.ValueString(), planModel.Name.ValueString()),
 		)
 		return

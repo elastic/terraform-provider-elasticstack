@@ -326,4 +326,3 @@ func TestAccResourceKibanaStreamQuery(t *testing.T) {
 		},
 	})
 }
-

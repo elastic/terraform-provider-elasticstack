@@ -34,7 +34,6 @@ const (
 	streamTypeQuery   = "query"
 )
 
-
 // streamModel is the top-level Terraform model for elasticstack_kibana_stream.
 type streamModel struct {
 	ID            types.String        `tfsdk:"id"`

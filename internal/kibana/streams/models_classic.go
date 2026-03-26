@@ -32,12 +32,12 @@ import (
 // classicConfigModel is the Terraform model for a classic stream's configuration.
 type classicConfigModel struct {
 	ProcessingSteps       types.List           `tfsdk:"processing_steps"`
-	FieldOverridesJSON    jsontypes.Normalized  `tfsdk:"field_overrides_json"`
-	LifecycleJSON         jsontypes.Normalized  `tfsdk:"lifecycle_json"`
-	FailureStoreJSON      jsontypes.Normalized  `tfsdk:"failure_store_json"`
-	IndexNumberOfShards   types.Int64           `tfsdk:"index_number_of_shards"`
-	IndexNumberOfReplicas types.Int64           `tfsdk:"index_number_of_replicas"`
-	IndexRefreshInterval  types.String          `tfsdk:"index_refresh_interval"`
+	FieldOverridesJSON    jsontypes.Normalized `tfsdk:"field_overrides_json"`
+	LifecycleJSON         jsontypes.Normalized `tfsdk:"lifecycle_json"`
+	FailureStoreJSON      jsontypes.Normalized `tfsdk:"failure_store_json"`
+	IndexNumberOfShards   types.Int64          `tfsdk:"index_number_of_shards"`
+	IndexNumberOfReplicas types.Int64          `tfsdk:"index_number_of_replicas"`
+	IndexRefreshInterval  types.String         `tfsdk:"index_refresh_interval"`
 }
 
 // populateFromAPI populates the classic config model from an API ingest response.

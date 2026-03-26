@@ -19,7 +19,9 @@ package streams
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
@@ -28,6 +30,19 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &planModel)...)
 	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	supported, sdkDiags := r.client.EnforceMinVersion(ctx, minVersionStreams)
+	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if !supported {
+		resp.Diagnostics.AddError(
+			"Unsupported server version",
+			fmt.Sprintf("Kibana Streams require Elastic Stack %s or later.", minVersionStreams),
+		)
 		return
 	}
 

@@ -80,7 +80,7 @@ func TestWiredConfigPopulateFromAPI(t *testing.T) {
 		t.Parallel()
 		ingest := &kibanaoapi.StreamIngest{
 			Processing: kibanaoapi.StreamProcessing{
-				Steps: json.RawMessage(`[{"grok":{"field":"message","patterns":["%%{GREEDYDATA:msg}"]}},{"dissect":{"field":"log"}}]`),
+				Steps: json.RawMessage(`[{"action":"grok","from":"message","patterns":["%%{GREEDYDATA:msg}"]},{"action":"dissect","from":"log","pattern":"%{key:value}"}]`),
 			},
 			Wired: &kibanaoapi.StreamIngestWired{
 				Fields:  json.RawMessage(`{"host.name":{"type":"keyword"}}`),
@@ -121,7 +121,7 @@ func TestWiredConfigPopulateFromAPI(t *testing.T) {
 		t.Parallel()
 		ingest := &kibanaoapi.StreamIngest{
 			Processing: kibanaoapi.StreamProcessing{
-				Steps: json.RawMessage(`[{"grok":{"field":"message"}},{"dissect":{"field":"log"}}]`),
+				Steps: json.RawMessage(`[{"action":"grok","from":"message","patterns":["%%{GREEDYDATA:msg}"]},{"action":"dissect","from":"log","pattern":"%{key:value}"}]`),
 			},
 		}
 		var m wiredConfigModel
@@ -175,8 +175,8 @@ func TestWiredConfigToAPIIngest(t *testing.T) {
 		t.Parallel()
 		m := wiredConfigModel{
 			ProcessingSteps: types.ListValueMust(jsontypes.NormalizedType{}, []attr.Value{
-				jsontypes.NewNormalizedValue(`{"grok":{"field":"message"}}`),
-				jsontypes.NewNormalizedValue(`{"dissect":{"field":"log"}}`),
+				jsontypes.NewNormalizedValue(`{"action":"grok","from":"message","patterns":["%%{GREEDYDATA:msg}"]}`),
+				jsontypes.NewNormalizedValue(`{"action":"dissect","from":"log","pattern":"%{key:value}"}`),
 			}),
 			FieldsJSON:            jsontypes.NewNormalizedNull(),
 			RoutingJSON:           jsontypes.NewNormalizedNull(),

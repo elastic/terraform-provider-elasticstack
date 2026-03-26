@@ -154,18 +154,25 @@ func getWiredConfigSchema() map[string]schema.Attribute {
 		"lifecycle_json": schema.StringAttribute{
 			MarkdownDescription: "Lifecycle configuration as a JSON object. Supports DSL (`{\"dsl\": {\"data_retention\": \"30d\"}}`), " +
 				"ILM (`{\"ilm\": {\"policy\": \"my-policy\"}}`), or inherited lifecycle (`{\"inherit\": {}}`). " +
-				"When not set, defaults to `{\"inherit\":{}}` and the server value is stored in state.",
+				"When not set, the previous state value is preserved on update; on first create defaults to `{\"inherit\":{}}` " +
+				"and the server value is stored in state.",
 			CustomType: jsontypes.NormalizedType{},
 			Optional:   true,
 			Computed:   true,
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
+			},
 		},
 		"failure_store_json": schema.StringAttribute{
 			MarkdownDescription: "Failure store configuration as a JSON object. Controls where failed ingest documents are stored. " +
 				"Supports `{\"inherit\": {}}`, `{\"disabled\": {}}`, or a lifecycle-enabled configuration. " +
-				"When not set, defaults to `{\"inherit\":{}}` and the server value is stored in state.",
+				"When not set, defaults to `{\"disabled\":{}}` and the server value is stored in state.",
 			CustomType: jsontypes.NormalizedType{},
 			Optional:   true,
 			Computed:   true,
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
+			},
 		},
 		"index_number_of_shards": schema.Int64Attribute{
 			MarkdownDescription: "Number of primary shards for the underlying index.",
@@ -200,17 +207,23 @@ func getClassicConfigSchema() map[string]schema.Attribute {
 		},
 		"lifecycle_json": schema.StringAttribute{
 			MarkdownDescription: "Lifecycle configuration as a JSON object. Supports DSL, ILM, or inherited lifecycle. " +
-				"When not set, defaults to `{\"inherit\":{}}` and the server value is stored in state.",
+				"When not set, the previous state value is preserved on update.",
 			CustomType: jsontypes.NormalizedType{},
 			Optional:   true,
 			Computed:   true,
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
+			},
 		},
 		"failure_store_json": schema.StringAttribute{
 			MarkdownDescription: "Failure store configuration as a JSON object. " +
-				"When not set, defaults to `{\"inherit\":{}}` and the server value is stored in state.",
+				"When not set, defaults to `{\"disabled\":{}}` and the server value is stored in state.",
 			CustomType: jsontypes.NormalizedType{},
 			Optional:   true,
 			Computed:   true,
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
+			},
 		},
 		"index_number_of_shards": schema.Int64Attribute{
 			MarkdownDescription: "Number of primary shards for the underlying index.",
@@ -238,6 +251,9 @@ func getQueryConfigSchema() map[string]schema.Attribute {
 			MarkdownDescription: "Optional view name for the query stream.",
 			Optional:            true,
 			Computed:            true,
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
+			},
 		},
 	}
 }
@@ -276,4 +292,3 @@ func getStreamQuerySchema() schema.NestedAttributeObject {
 		},
 	}
 }
-
