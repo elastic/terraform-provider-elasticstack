@@ -1,3 +1,25 @@
+## MODIFIED Requirements
+
+### Requirement: Replacement fields and schema validation (REQ-006)
+
+REQ-006 is extended to include:
+
+- `options_list_control_config` SHALL be valid only for panels with `type = "options_list_control"`.
+- `options_list_control_config` SHALL be mutually exclusive with all other panel configuration blocks and with `config_json`.
+- The `search_technique` attribute within `options_list_control_config` SHALL be restricted to the values `prefix`, `wildcard`, and `exact` when set; any other value SHALL be rejected at plan time.
+
+### Requirement: Panels, sections, and `config_json` round-trip behavior (REQ-010)
+
+The existing REQ-010 text:
+
+> On write, `config_json` SHALL be supported only for `markdown` and `lens` panel types; using `config_json` with any other panel type, or omitting all panel configuration blocks, SHALL return an error diagnostic.
+
+is updated to additionally state:
+
+> The `options_list_control` panel type SHALL be managed exclusively through the typed `options_list_control_config` block; using `config_json` with `type = "options_list_control"` SHALL return an error diagnostic.
+
+---
+
 ## ADDED Requirements
 
 ### Requirement: Options list control panel behavior (REQ-027)
@@ -29,24 +51,24 @@ For API mapping, the provider SHALL write the `options_list_control_config` attr
 
 #### Scenario: Options list control panel requires data_view_id and field_name
 
-- **GIVEN** a panel entry with `type = "options_list_control"` and an `options_list_control_config` block that omits `data_view_id` or `field_name`
-- **WHEN** Terraform validates the resource configuration
-- **THEN** the provider SHALL return an error diagnostic indicating that `data_view_id` and `field_name` are required
+- GIVEN a panel entry with `type = "options_list_control"` and an `options_list_control_config` block that omits `data_view_id` or `field_name`
+- WHEN Terraform validates the resource configuration
+- THEN the provider SHALL return an error diagnostic indicating that `data_view_id` and `field_name` are required
 
 #### Scenario: Options list control panel with invalid search_technique
 
-- **GIVEN** a panel entry with `type = "options_list_control"` and `options_list_control_config.search_technique` set to a value other than `prefix`, `wildcard`, or `exact`
-- **WHEN** Terraform validates the resource configuration
-- **THEN** the provider SHALL return an error diagnostic indicating the value is not one of the accepted enum values
+- GIVEN a panel entry with `type = "options_list_control"` and `options_list_control_config.search_technique` set to a value other than `prefix`, `wildcard`, or `exact`
+- WHEN Terraform validates the resource configuration
+- THEN the provider SHALL return an error diagnostic indicating the value is not one of the accepted enum values
 
 #### Scenario: Options list control panel round-trips through Kibana
 
-- **GIVEN** a dashboard with an `options_list_control` panel that sets `data_view_id`, `field_name`, `search_technique = "prefix"`, `single_select = true`, and a `display_settings` block
-- **WHEN** the provider creates the dashboard and reads it back
-- **THEN** all configured attributes SHALL be present in state and a subsequent plan SHALL show no changes
+- GIVEN a dashboard with an `options_list_control` panel that sets `data_view_id`, `field_name`, `search_technique = "prefix"`, `single_select = true`, and a `display_settings` block
+- WHEN the provider creates the dashboard and reads it back
+- THEN all configured attributes SHALL be present in state and a subsequent plan SHALL show no changes
 
 #### Scenario: Options list control config conflicts with other typed blocks
 
-- **GIVEN** a panel entry with `type = "options_list_control"` that sets both `options_list_control_config` and any other typed config block (e.g. `markdown_config`)
-- **WHEN** Terraform validates the resource configuration
-- **THEN** the provider SHALL return an error diagnostic indicating the conflicting blocks are mutually exclusive
+- GIVEN a panel entry with `type = "options_list_control"` that sets both `options_list_control_config` and any other typed config block (e.g. `markdown_config`)
+- WHEN Terraform validates the resource configuration
+- THEN the provider SHALL return an error diagnostic indicating the conflicting blocks are mutually exclusive

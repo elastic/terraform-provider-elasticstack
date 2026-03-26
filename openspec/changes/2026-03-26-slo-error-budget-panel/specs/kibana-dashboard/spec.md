@@ -1,3 +1,26 @@
+## MODIFIED Requirements
+
+### Requirement: Replacement fields and schema validation (REQ-006)
+
+REQ-006 is extended to include:
+
+- `slo_error_budget_config` SHALL be valid only for panels with `type = "slo_error_budget"`.
+- `slo_error_budget_config` SHALL be mutually exclusive with all other panel configuration blocks and with `config_json`.
+- The `trigger` attribute within each `drilldowns` entry SHALL be restricted to the value `"on_open_panel_menu"`; any other value SHALL be rejected at plan time.
+- The `type` attribute within each `drilldowns` entry SHALL be restricted to the value `"url_drilldown"`; any other value SHALL be rejected at plan time.
+
+### Requirement: Panels, sections, and `config_json` round-trip behavior (REQ-010)
+
+The existing REQ-010 text:
+
+> On write, `config_json` SHALL be supported only for `markdown` and `lens` panel types; using `config_json` with any other panel type, or omitting all panel configuration blocks, SHALL return an error diagnostic.
+
+is updated to additionally state:
+
+> The `slo_error_budget` panel type SHALL be managed exclusively through the typed `slo_error_budget_config` block; using `config_json` with `type = "slo_error_budget"` SHALL return an error diagnostic.
+
+---
+
 ## ADDED Requirements
 
 ### Requirement: SLO error budget panel behavior (REQ-031)

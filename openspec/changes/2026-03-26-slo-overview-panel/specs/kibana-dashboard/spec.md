@@ -2,19 +2,13 @@
 
 ### Requirement: Replacement fields and schema validation (REQ-006)
 
-Changes to `space_id` or `dashboard_id` SHALL require replacement rather than in-place update. The schema SHALL reject `time_range_mode` values other than `absolute` or `relative`, reject `access_control.access_mode` values other than `write_restricted` or `default`, and reject configurations that set both `query_text` and `query_json`. Each panel SHALL declare at least one panel configuration block, panel configuration blocks SHALL be mutually exclusive, typed panel configuration blocks SHALL only be valid for their supported panel type, and `waffle_config` SHALL enforce its ES|QL-vs-non-ES|QL field consistency rules. For `slo_overview_config`, the schema SHALL additionally enforce that exactly one of the `single` or `groups` nested blocks is present, that `single.slo_id` is provided when the `single` block is configured, and that `groups.group_filters.group_by` is one of the documented enum values when set.
+REQ-006 is extended to include:
 
-#### Scenario: Query conflict
-
-- GIVEN configuration sets both `query_text` and `query_json`
-- WHEN Terraform validates the resource schema
-- THEN the configuration SHALL be rejected before any dashboard API call
-
-#### Scenario: Panel configuration mismatch
-
-- GIVEN a panel with `type = "markdown"` and `xy_chart_config` set
-- WHEN Terraform validates the resource schema
-- THEN the configuration SHALL be rejected before apply
+- `slo_overview_config` SHALL be valid only for panels with `type = "slo_overview"`.
+- `slo_overview_config` SHALL be mutually exclusive with all other panel configuration blocks and with `config_json`.
+- Within `slo_overview_config`, exactly one of `single` or `groups` SHALL be set; setting both or neither SHALL be rejected at plan time.
+- The `single.slo_id` attribute SHALL be required when the `single` block is configured.
+- The `groups.group_filters.group_by` attribute SHALL be restricted to the values `"slo.tags"`, `"status"`, `"slo.indicator.type"`, and `"_index"` when set; any other value SHALL be rejected at plan time.
 
 #### Scenario: SLO overview config mode conflict
 
@@ -36,13 +30,13 @@ Changes to `space_id` or `dashboard_id` SHALL require replacement rather than in
 
 ### Requirement: Panels, sections, and `config_json` round-trip behavior (REQ-010)
 
-The resource SHALL support top-level `panels`, section-contained `panels`, and `sections` in the order returned by the API and the order given in configuration when building requests. For panel reads, it SHALL distinguish sections from top-level panels and map each panel's `type`, `grid`, optional `id`, and configuration. For typed panel mappings, the resource SHALL seed from prior state or plan so that optional panel attributes omitted by Kibana on read can be preserved. When a panel is managed through `config_json` only, the resource SHALL preserve that JSON-centric representation and SHALL NOT populate typed configuration blocks from the API for that panel. On write, `config_json` SHALL be supported only for `markdown` and `lens` panel types; using `config_json` with any other panel type, or omitting all panel configuration blocks, SHALL return an error diagnostic. The `slo_overview` panel type SHALL NOT be supported through `config_json`; it SHALL only be managed through the typed `slo_overview_config` block.
+The existing REQ-010 text:
 
-#### Scenario: JSON-only lens panel
+> On write, `config_json` SHALL be supported only for `markdown` and `lens` panel types; using `config_json` with any other panel type, or omitting all panel configuration blocks, SHALL return an error diagnostic.
 
-- GIVEN a panel with `type = "lens"` configured only through `config_json`
-- WHEN the dashboard is read back from Kibana
-- THEN the provider SHALL keep `config_json` as the round-tripped panel representation and SHALL leave typed panel blocks unset for that panel
+is updated to additionally state:
+
+> The `slo_overview` panel type SHALL be managed exclusively through the typed `slo_overview_config` block; using `config_json` with `type = "slo_overview"` SHALL return an error diagnostic.
 
 #### Scenario: config_json rejected for slo_overview
 

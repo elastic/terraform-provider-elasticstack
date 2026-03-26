@@ -63,15 +63,15 @@ The `synthetics_stats_overview_config` block SHALL be mutually exclusive with al
 - WHEN the provider builds the API request
 - THEN it SHALL return an error diagnostic for unsupported `config_json` panel type
 
-## UPDATED Requirements
+## MODIFIED Requirements
 
-### Update to REQ-006 (Replacement fields and schema validation)
+### Requirement: Replacement fields and schema validation (REQ-006)
 
 REQ-006 is extended to include:
 
 - `synthetics_stats_overview_config` SHALL only be valid on panels with `type = "synthetics_stats_overview"`.
 - `synthetics_stats_overview_config` SHALL be mutually exclusive with all other typed panel config blocks and with `config_json`.
 
-### Update to REQ-010 (Panels, sections, and `config_json` round-trip behavior)
+### Requirement: Panels, sections, and `config_json` round-trip behavior (REQ-010)
 
 REQ-010 is updated to document that `config_json` write support is **not** extended to `synthetics_stats_overview`. The write-path dispatcher SHALL return an error diagnostic if `config_json` is set on a panel with `type = "synthetics_stats_overview"`. The error message SHALL explicitly name `synthetics_stats_overview` as an unsupported type for `config_json`.

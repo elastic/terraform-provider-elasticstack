@@ -1,3 +1,25 @@
+## MODIFIED Requirements
+
+### Requirement: Replacement fields and schema validation (REQ-006)
+
+REQ-006 is extended to include:
+
+- `range_slider_control_config` SHALL be valid only for panels with `type = "range_slider_control"`.
+- `range_slider_control_config` SHALL be mutually exclusive with all other panel configuration blocks and with `config_json`.
+- The `value` attribute within `range_slider_control_config` SHALL contain exactly 2 elements when set; any other list length SHALL be rejected at plan time.
+
+### Requirement: Panels, sections, and `config_json` round-trip behavior (REQ-010)
+
+The existing REQ-010 text:
+
+> On write, `config_json` SHALL be supported only for `markdown` and `lens` panel types; using `config_json` with any other panel type, or omitting all panel configuration blocks, SHALL return an error diagnostic.
+
+is updated to additionally state:
+
+> The `range_slider_control` panel type SHALL be managed exclusively through the typed `range_slider_control_config` block; using `config_json` with `type = "range_slider_control"` SHALL return an error diagnostic.
+
+---
+
 ## ADDED Requirements
 
 ### Requirement: Range slider control panel behavior (REQ-028)
