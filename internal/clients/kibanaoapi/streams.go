@@ -18,6 +18,7 @@
 package kibanaoapi
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"net/http"
@@ -194,20 +195,21 @@ func GetStream(ctx context.Context, client *Client, spaceID string, name string)
 
 // UpsertStream creates or updates a stream via PUT /api/streams/{name}.
 // Retries on HTTP 409 (Kibana Streams write-lock contention) with exponential backoff.
+//
+// We use PutStreamsNameWithBodyWithResponse (raw bytes) rather than the typed
+// PutStreamsNameWithResponse path because the generated kbapi.PutStreamsNameJSONRequestBody
+// is an anyOf union wrapper with an unexported `union json.RawMessage` field;
+// encoding/json cannot marshal unexported fields, so the typed path would send an
+// empty body. Track oapi-codegen#1665 for when this can be replaced with the typed path.
 func UpsertStream(ctx context.Context, client *Client, spaceID string, name string, req StreamUpsertRequest) (*StreamResponse, diag.Diagnostics) {
 	body, err := json.Marshal(req)
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	var kbReq kbapi.PutStreamsNameJSONRequestBody
-	if jsonErr := json.Unmarshal(body, &kbReq); jsonErr != nil {
-		return nil, diagutil.FrameworkDiagFromError(jsonErr)
-	}
-
 	return streamsLockRetry(ctx, 5, func() (*StreamResponse, int, diag.Diagnostics) {
-		resp, err := client.API.PutStreamsNameWithResponse(
-			ctx, name, kbReq,
+		resp, err := client.API.PutStreamsNameWithBodyWithResponse(
+			ctx, name, "application/json", bytes.NewReader(body),
 			spaceAwarePathRequestEditor(spaceID),
 		)
 		if err != nil {
