@@ -154,7 +154,16 @@ func prepareStreamsEnvironment(t *testing.T) {
 	probeName := logsRoot + ".__tfacc_probe__"
 	_, probeDiags := kibanaoapi.UpsertStream(context.Background(), kibanaClient, "default", probeName, probeReq)
 	if probeDiags.HasError() {
-		t.Logf("prepareStreamsEnvironment: probe stream creation failed: %s", probeDiags[0].Detail())
+		msg := probeDiags[0].Detail() + probeDiags[0].Summary()
+		t.Logf("prepareStreamsEnvironment: probe stream creation failed: %s", msg)
+		// Skip the test if Streams is not enabled or not available on this stack.
+		if strings.Contains(msg, "not enabled") ||
+			strings.Contains(msg, "Failed to resolve failure store") ||
+			strings.Contains(msg, "unsupported root stream") ||
+			strings.Contains(msg, "404") ||
+			strings.Contains(msg, "Not Found") {
+			t.Skip("Kibana Streams is not available in this environment — skipping acceptance test")
+		}
 	} else {
 		t.Logf("prepareStreamsEnvironment: probe stream created OK — environment ready")
 		_ = kibanaoapi.DeleteStream(context.Background(), kibanaClient, "default", probeName)
