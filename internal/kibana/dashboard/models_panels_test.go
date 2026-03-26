@@ -643,3 +643,62 @@ func Test_panelsToAPI(t *testing.T) {
 		})
 	}
 }
+
+func Test_panelModel_toAPI_configJSONErrors(t *testing.T) {
+	tests := []struct {
+		name          string
+		panel         panelModel
+		errorSummary  string
+		errorContains string
+	}{
+		{
+			name: "rejects unsupported config_json panel type",
+			panel: panelModel{
+				Type:       types.StringValue("metric"),
+				Grid:       panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0)},
+				ConfigJSON: customtypes.NewJSONWithDefaultsValue(`{"content":"ignored"}`, populatePanelConfigJSONDefaults),
+			},
+			errorSummary:  "Unsupported panel type for config_json",
+			errorContains: "Only markdown and lens panel types are currently supported",
+		},
+		{
+			name: "rejects missing panel configuration",
+			panel: panelModel{
+				Type:       types.StringValue("markdown"),
+				Grid:       panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0)},
+				ConfigJSON: customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults),
+			},
+			errorSummary:  "Unsupported panel configuration",
+			errorContains: "No panel configuration block was provided",
+		},
+		{
+			name: "rejects invalid markdown config_json",
+			panel: panelModel{
+				Type:       types.StringValue("markdown"),
+				Grid:       panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0)},
+				ConfigJSON: customtypes.NewJSONWithDefaultsValue(`{"content":`, populatePanelConfigJSONDefaults),
+			},
+			errorSummary:  "Failed to create markdown panel",
+			errorContains: "unexpected end of JSON input",
+		},
+		{
+			name: "rejects invalid lens config_json",
+			panel: panelModel{
+				Type:       types.StringValue("lens"),
+				Grid:       panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0)},
+				ConfigJSON: customtypes.NewJSONWithDefaultsValue(`{"attributes":`, populatePanelConfigJSONDefaults),
+			},
+			errorSummary:  "Failed to create lens panel",
+			errorContains: "unexpected end of JSON input",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, diags := tt.panel.toAPI()
+			require.True(t, diags.HasError())
+			require.Equal(t, tt.errorSummary, diags[0].Summary())
+			require.Contains(t, diags[0].Detail(), tt.errorContains)
+		})
+	}
+}
