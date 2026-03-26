@@ -148,10 +148,13 @@ func Test_wafflePanelConfigConverter_populateFromAttributes_buildAttributes_roun
 			CollapseBy kbapi.CollapseBy                 `json:"collapse_by"`
 			Color      kbapi.ColorMapping               `json:"color"`
 			Column     string                           `json:"column"`
+			Format     kbapi.FormatType                 `json:"format"`
+			Label      *string                          `json:"label,omitempty"`
 			Operation  kbapi.WaffleESQLGroupByOperation `json:"operation"`
 		}{
 			{
 				Column:     "host",
+				Format:     format,
 				Operation:  kbapi.WaffleESQLGroupByOperationValue,
 				CollapseBy: kbapi.CollapseByAvg,
 				Color:      colorMap,

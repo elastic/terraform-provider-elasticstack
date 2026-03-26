@@ -106,7 +106,7 @@ type treemapConfigModel struct {
 	IgnoreGlobalFilters types.Bool                                          `tfsdk:"ignore_global_filters"`
 	Sampling            types.Float64                                       `tfsdk:"sampling"`
 	Query               *filterSimpleModel                                  `tfsdk:"query"`
-	Filters             []searchFilterModel                                 `tfsdk:"filters"`
+	Filters             []chartFilterJSONModel                              `tfsdk:"filters"`
 	GroupBy             customtypes.JSONWithDefaultsValue[[]map[string]any] `tfsdk:"group_by_json"`
 	Metrics             customtypes.JSONWithDefaultsValue[[]map[string]any] `tfsdk:"metrics_json"`
 	LabelPosition       types.String                                        `tfsdk:"label_position"`
@@ -130,12 +130,11 @@ func (m *treemapConfigModel) fromAPINoESQL(api kbapi.TreemapNoESQL) diag.Diagnos
 	m.Dataset = jsontypes.NewNormalizedValue(string(datasetBytes))
 
 	if api.GroupBy != nil {
-		groupByBytes, err := json.Marshal(api.GroupBy)
-		if err != nil {
-			diags.AddError("Failed to marshal group_by", err.Error())
-			return diags
+		gb, gbDiags := newPartitionGroupByJSONFromAPI(api.GroupBy)
+		diags.Append(gbDiags...)
+		if !gbDiags.HasError() {
+			m.GroupBy = gb
 		}
-		m.GroupBy = customtypes.NewJSONWithDefaultsValue[[]map[string]any](string(groupByBytes), populatePartitionGroupByDefaults)
 	} else {
 		m.GroupBy = customtypes.NewJSONWithDefaultsNull(populatePartitionGroupByDefaults)
 	}
@@ -151,13 +150,13 @@ func (m *treemapConfigModel) fromAPINoESQL(api kbapi.TreemapNoESQL) diag.Diagnos
 	m.Query.fromAPI(api.Query)
 
 	if api.Filters != nil && len(*api.Filters) > 0 {
-		m.Filters = make([]searchFilterModel, 0, len(*api.Filters))
+		m.Filters = make([]chartFilterJSONModel, 0, len(*api.Filters))
 		for _, filter := range *api.Filters {
-			filterModel := searchFilterModel{}
-			filterDiags := filterModel.fromAPI(filter)
+			fm := chartFilterJSONModel{}
+			filterDiags := fm.populateFromAPIItem(filter)
 			diags.Append(filterDiags...)
 			if !filterDiags.HasError() {
-				m.Filters = append(m.Filters, filterModel)
+				m.Filters = append(m.Filters, fm)
 			}
 		}
 	} else {
@@ -173,9 +172,9 @@ func (m *treemapConfigModel) fromAPINoESQL(api kbapi.TreemapNoESQL) diag.Diagnos
 	m.Legend = &partitionLegendModel{}
 	m.Legend.fromTreemapLegend(api.Legend)
 
-	if api.ValueDisplay != nil {
+	if api.ValueDisplay.Mode != "" || api.ValueDisplay.PercentDecimals != nil {
 		m.ValueDisplay = &partitionValueDisplay{}
-		m.ValueDisplay.fromTreemapNoESQL(api.ValueDisplay)
+		m.ValueDisplay.fromValueDisplay(api.ValueDisplay)
 	} else {
 		m.ValueDisplay = nil
 	}
@@ -203,12 +202,11 @@ func (m *treemapConfigModel) fromAPIESQL(api kbapi.TreemapESQL) diag.Diagnostics
 	m.Dataset = jsontypes.NewNormalizedValue(string(datasetBytes))
 
 	if api.GroupBy != nil {
-		groupByBytes, err := json.Marshal(api.GroupBy)
-		if err != nil {
-			diags.AddError("Failed to marshal group_by", err.Error())
-			return diags
+		gb, gbDiags := newPartitionGroupByJSONFromAPI(api.GroupBy)
+		diags.Append(gbDiags...)
+		if !gbDiags.HasError() {
+			m.GroupBy = gb
 		}
-		m.GroupBy = customtypes.NewJSONWithDefaultsValue[[]map[string]any](string(groupByBytes), populatePartitionGroupByDefaults)
 	} else {
 		m.GroupBy = customtypes.NewJSONWithDefaultsNull(populatePartitionGroupByDefaults)
 	}
@@ -221,13 +219,13 @@ func (m *treemapConfigModel) fromAPIESQL(api kbapi.TreemapESQL) diag.Diagnostics
 	m.Metrics = customtypes.NewJSONWithDefaultsValue[[]map[string]any](string(metricsBytes), populatePartitionMetricsDefaults)
 
 	if api.Filters != nil && len(*api.Filters) > 0 {
-		m.Filters = make([]searchFilterModel, 0, len(*api.Filters))
+		m.Filters = make([]chartFilterJSONModel, 0, len(*api.Filters))
 		for _, filter := range *api.Filters {
-			filterModel := searchFilterModel{}
-			filterDiags := filterModel.fromAPI(filter)
+			fm := chartFilterJSONModel{}
+			filterDiags := fm.populateFromAPIItem(filter)
 			diags.Append(filterDiags...)
 			if !filterDiags.HasError() {
-				m.Filters = append(m.Filters, filterModel)
+				m.Filters = append(m.Filters, fm)
 			}
 		}
 	} else {
@@ -243,9 +241,9 @@ func (m *treemapConfigModel) fromAPIESQL(api kbapi.TreemapESQL) diag.Diagnostics
 	m.Legend = &partitionLegendModel{}
 	m.Legend.fromTreemapLegend(api.Legend)
 
-	if api.ValueDisplay != nil {
+	if api.ValueDisplay.Mode != "" || api.ValueDisplay.PercentDecimals != nil {
 		m.ValueDisplay = &partitionValueDisplay{}
-		m.ValueDisplay.fromTreemapESQL(api.ValueDisplay)
+		m.ValueDisplay.fromValueDisplay(api.ValueDisplay)
 	} else {
 		m.ValueDisplay = nil
 	}
@@ -334,20 +332,10 @@ func (m *treemapConfigModel) toAPIESQLChartSchema() (kbapi.TreemapChart, diag.Di
 	if len(m.Filters) > 0 {
 		filters := make([]any, 0, len(m.Filters))
 		for _, filterModel := range m.Filters {
-			filter, filterDiags := filterModel.toAPI()
+			var filterAny map[string]any
+			filterDiags := decodeChartFilterJSON(filterModel.FilterJSON, &filterAny)
 			diags.Append(filterDiags...)
 			if diags.HasError() {
-				return treemapChart, diags
-			}
-
-			filterBytes, err := json.Marshal(filter)
-			if err != nil {
-				diags.AddError("Failed to marshal filter", err.Error())
-				return treemapChart, diags
-			}
-			var filterAny any
-			if err := json.Unmarshal(filterBytes, &filterAny); err != nil {
-				diags.AddError("Failed to unmarshal filter", err.Error())
 				return treemapChart, diags
 			}
 			filters = append(filters, filterAny)
@@ -376,7 +364,7 @@ func (m *treemapConfigModel) toAPIESQLChartSchema() (kbapi.TreemapChart, diag.Di
 	attrs["legend"] = legend
 
 	if m.ValueDisplay != nil {
-		valueDisplayBytes, err := json.Marshal(m.ValueDisplay.toTreemapESQL())
+		valueDisplayBytes, err := json.Marshal(m.ValueDisplay.toValueDisplay())
 		if err != nil {
 			diags.AddError("Failed to marshal value_display", err.Error())
 			return treemapChart, diags
@@ -475,13 +463,18 @@ func (m *treemapConfigModel) toAPINoESQL() (kbapi.TreemapNoESQL, diag.Diagnostic
 	api.Query = m.Query.toAPI()
 
 	if len(m.Filters) > 0 {
-		filters := make([]kbapi.SearchFilter, len(m.Filters))
-		for i, filterModel := range m.Filters {
-			filter, filterDiags := filterModel.toAPI()
+		filters := make([]kbapi.TreemapNoESQL_Filters_Item, 0, len(m.Filters))
+		for _, filterModel := range m.Filters {
+			var item kbapi.TreemapNoESQL_Filters_Item
+			filterDiags := decodeChartFilterJSON(filterModel.FilterJSON, &item)
 			diags.Append(filterDiags...)
-			filters[i] = filter
+			if !filterDiags.HasError() {
+				filters = append(filters, item)
+			}
 		}
-		api.Filters = &filters
+		if len(filters) > 0 {
+			api.Filters = &filters
+		}
 	}
 
 	if typeutils.IsKnown(m.LabelPosition) {
@@ -496,8 +489,7 @@ func (m *treemapConfigModel) toAPINoESQL() (kbapi.TreemapNoESQL, diag.Diagnostic
 	api.Legend = m.Legend.toTreemapLegend()
 
 	if m.ValueDisplay != nil {
-		valueDisplay := m.ValueDisplay.toTreemapNoESQL()
-		api.ValueDisplay = &valueDisplay
+		api.ValueDisplay = m.ValueDisplay.toValueDisplay()
 	}
 
 	return api, diags

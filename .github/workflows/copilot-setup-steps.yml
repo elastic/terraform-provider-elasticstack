@@ -10,17 +10,10 @@ on:
   pull_request:
     paths:
       - .github/workflows/copilot-setup-steps.yml
-
 jobs:
   # The job MUST be called `copilot-setup-steps` or it will not be picked up by Copilot.
   copilot-setup-steps:
     runs-on: ubuntu-latest
-    # Defaults match Makefile / docker-compose and the acceptance-test workflow (`test.yml`)
-    # so `workflow_dispatch` and path-triggered runs work without repo secrets.
-    env:
-      ELASTIC_PASSWORD: password
-      KIBANA_SYSTEM_USERNAME: kibana_system
-      KIBANA_SYSTEM_PASSWORD: password
 
     # Set the permissions to the lowest permissions possible needed for your steps.
     # Copilot will be given its own token for its operations.
@@ -30,7 +23,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4 — same pin as test.yml lint
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6 — same pin as test.yml lint
         with:
           node-version-file: package.json
           cache: npm
@@ -45,31 +38,25 @@ jobs:
 
       - name: Setup Elastic Stack
         run: make docker-fleet
-        env:
-          ELASTICSEARCH_PASSWORD: ${{ env.ELASTIC_PASSWORD }}
-          KIBANA_PASSWORD: ${{ env.ELASTIC_PASSWORD }}
 
       - name: Get dependencies
         run: make setup
 
       - name: Setup Kibana user
         run: make set-kibana-password
-        env:
-          ELASTICSEARCH_PASSWORD: ${{ env.ELASTIC_PASSWORD }}
-          KIBANA_SYSTEM_USERNAME: ${{ env.KIBANA_SYSTEM_USERNAME }}
-          KIBANA_SYSTEM_PASSWORD: ${{ env.KIBANA_SYSTEM_PASSWORD }}
 
       - id: get-api-key
         name: Get ES API key
         run: |-
           echo "apikey=$(make create-es-api-key | jq -r .encoded)" >> "$GITHUB_OUTPUT"
-        env:
-          ELASTICSEARCH_PASSWORD: ${{ env.ELASTIC_PASSWORD }}
 
       - id: setup-fleet
         name: Setup Fleet
         run: |-
           make setup-kibana-fleet
         env:
-          ELASTICSEARCH_PASSWORD: ${{ env.ELASTIC_PASSWORD }}
           FLEET_NAME: "fleet"
+
+      - name: Docker compose logs
+        if: failure()
+        run: docker compose logs --no-color

@@ -61,7 +61,9 @@ func assertLegacyMetricConfigEqual(ctx context.Context, t *testing.T, a, b *lega
 	}
 	assert.Len(t, b.Filters, len(a.Filters))
 	for i := range a.Filters {
-		assert.Equal(t, a.Filters[i].Query, b.Filters[i].Query)
+		eq, d := a.Filters[i].FilterJSON.StringSemanticEquals(ctx, b.Filters[i].FilterJSON)
+		require.False(t, d.HasError())
+		assert.True(t, eq, "filter_json should be semantically equal")
 	}
 	if a.MetricJSON.IsNull() != b.MetricJSON.IsNull() || a.MetricJSON.IsUnknown() != b.MetricJSON.IsUnknown() {
 		assert.Fail(t, "metric null/unknown state mismatch")

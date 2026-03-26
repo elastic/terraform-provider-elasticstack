@@ -19,9 +19,12 @@ package indices_test
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
+	"github.com/hashicorp/go-version"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
@@ -37,7 +40,8 @@ func TestAccIndicesDataSource(t *testing.T) {
 				Config: testAccIndicesDataSourceConfig,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// At least one index must be returned for the .security-* pattern.
-					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_indices.security_indices", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.security_indices", "id", ".security-*"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.security_indices", "target", ".security-*"),
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_indices.security_indices", "indices.0.name"),
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_indices.security_indices", "indices.0.number_of_shards"),
 				),
@@ -68,7 +72,8 @@ func TestAccIndicesDataSource_Target_DefaultAndExplicitAll(t *testing.T) {
 				// Omitted target — defaults to "*" (all indices).
 				Config: testAccIndicesDataSourceConfigNoTarget,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_indices.all_default", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.all_default", "id", "*"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_indices.all_default", "target"),
 					// indices.0.name being set proves at least one index was returned.
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_indices.all_default", "indices.0.name"),
 				),
@@ -77,7 +82,8 @@ func TestAccIndicesDataSource_Target_DefaultAndExplicitAll(t *testing.T) {
 				// Explicit "*" wildcard — should return all non-hidden indices.
 				Config: testAccIndicesDataSourceConfigStar,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_indices.all_star", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.all_star", "id", "*"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.all_star", "target", "*"),
 					// indices.0.name being set proves at least one index was returned.
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_indices.all_star", "indices.0.name"),
 				),
@@ -86,7 +92,8 @@ func TestAccIndicesDataSource_Target_DefaultAndExplicitAll(t *testing.T) {
 				// Explicit "_all" wildcard — equivalent to "*".
 				Config: testAccIndicesDataSourceConfigExplicitAll,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_indices.all_explicit", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.all_explicit", "id", "_all"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.all_explicit", "target", "_all"),
 					// indices.0.name being set proves at least one index was returned.
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_indices.all_explicit", "indices.0.name"),
 				),
@@ -140,7 +147,11 @@ func TestAccIndicesDataSource_Target_FilteringExactVsWildcard(t *testing.T) {
 				// Wildcard should return both indices.
 				Config: testAccIndicesDataSourceConfigFilteringWildcard(prefix, indexA, indexB),
 				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.wildcard", "id", prefix+"*"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.wildcard", "target", prefix+"*"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.wildcard", "indices.#", "2"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.exact", "id", indexA),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.exact", "target", indexA),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.exact", "indices.#", "1"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.exact", "indices.0.name", indexA),
 				),
@@ -262,8 +273,10 @@ func TestAccIndicesDataSource_ReadsAliasNestedFields(t *testing.T) {
 						"indices.0.alias.*",
 						map[string]string{
 							"name":           aliasName,
-							"is_write_index": "true",
+							"filter":         `{"term":{"status":"active"}}`,
 							"index_routing":  "shard-1",
+							"is_hidden":      "false",
+							"is_write_index": "true",
 							"search_routing": "shard-1",
 						},
 					),
@@ -283,23 +296,28 @@ resource "elasticstack_elasticsearch_index" "test" {
   name               = %q
   number_of_shards   = 1
   number_of_replicas = 0
-
-  alias = [
-    {
-      name           = %q
-      filter         = jsonencode({ term = { "status" = "active" } })
-      index_routing  = "shard-1"
-      search_routing = "shard-1"
-      is_write_index = true
-    }
-  ]
-
   deletion_protection = false
+
+  lifecycle {
+    ignore_changes = [settings_raw]
+  }
+}
+
+resource "elasticstack_elasticsearch_index_alias" "test" {
+  name = %q
+
+  write_index = {
+    name           = elasticstack_elasticsearch_index.test.name
+    filter         = jsonencode({ term = { "status" = "active" } })
+    index_routing  = "shard-1"
+    is_hidden      = false
+    search_routing = "shard-1"
+  }
 }
 
 data "elasticstack_elasticsearch_indices" "test" {
   target     = %q
-  depends_on = [elasticstack_elasticsearch_index.test]
+  depends_on = [elasticstack_elasticsearch_index_alias.test]
 }
 `, indexName, aliasName, indexName)
 }
@@ -323,11 +341,28 @@ func TestAccIndicesDataSource_ReadsMappingsAnalysisAndSettingsRaw(t *testing.T) 
 			{
 				Config: testAccIndicesDataSourceConfigMappingsAnalysis(indexName),
 				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "target", indexName),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.name", indexName),
-					// mappings is a computed JSON string — assert it is populated.
-					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_indices.test", "indices.0.mappings"),
-					// settings_raw should be populated with the raw settings blob.
-					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_indices.test", "indices.0.settings_raw"),
+					resource.TestCheckResourceAttr(
+						"data.elasticstack_elasticsearch_indices.test",
+						"indices.0.mappings",
+						`{"properties":{"status":{"type":"keyword"},"title":{"type":"text"}}}`,
+					),
+					resource.TestMatchResourceAttr(
+						"data.elasticstack_elasticsearch_indices.test",
+						"indices.0.settings_raw",
+						regexp.MustCompile(regexp.QuoteMeta(`"index.analysis.analyzer.custom_english.type":"custom"`)),
+					),
+					resource.TestMatchResourceAttr(
+						"data.elasticstack_elasticsearch_indices.test",
+						"indices.0.settings_raw",
+						regexp.MustCompile(regexp.QuoteMeta(`"index.analysis.filter.english_stop.type":"stop"`)),
+					),
+					resource.TestMatchResourceAttr(
+						"data.elasticstack_elasticsearch_indices.test",
+						"indices.0.settings_raw",
+						regexp.MustCompile(regexp.QuoteMeta(`"index.number_of_replicas":"0"`)),
+					),
 				),
 			},
 		},
@@ -375,4 +410,169 @@ data "elasticstack_elasticsearch_indices" "test" {
   depends_on = [elasticstack_elasticsearch_index.test]
 }
 `, indexName, indexName)
+}
+
+// TestAccIndicesDataSource_ReadsIndexSettings_BroadCoverage creates an index with a
+// wider set of scalar settings and verifies the data source returns exact values for
+// high-impact settings that were previously untested.
+func TestAccIndicesDataSource_ReadsIndexSettings_BroadCoverage(t *testing.T) {
+	indexName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlpha)
+	pipelineName := sdkacctest.RandomWithPrefix("tf-acc-test")
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccIndicesDataSourceConfigBroadSettings(indexName, pipelineName),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "target", indexName),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.name", indexName),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.number_of_shards", "2"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.codec", "best_compression"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.mapping_coerce", "false"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.max_inner_result_window", "250"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.max_rescore_window", "300"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.max_docvalue_fields_search", "50"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.max_script_fields", "20"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.max_shingle_diff", "4"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.max_refresh_listeners", "150"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.analyze_max_token_count", "5000"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.highlight_max_analyzed_offset", "200000"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.max_terms_count", "2048"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.max_regex_length", "2000"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.routing_rebalance_enable", "replicas"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.blocks_metadata", "false"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.default_pipeline", pipelineName),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.final_pipeline", pipelineName),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.unassigned_node_left_delayed_timeout", "45s"),
+				),
+			},
+		},
+	})
+}
+
+func testAccIndicesDataSourceConfigBroadSettings(indexName, pipelineName string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_ingest_pipeline" "test" {
+  name        = %q
+  description = "Acceptance test pipeline"
+
+  processors = [
+    jsonencode({ set = { field = "_pipeline_test", value = "1" } })
+  ]
+}
+
+resource "elasticstack_elasticsearch_index" "test" {
+  name                               = %q
+  number_of_shards                   = 2
+  number_of_replicas                 = 0
+  codec                              = "best_compression"
+  mapping_coerce                     = false
+  max_inner_result_window            = 250
+  max_rescore_window                 = 300
+  max_docvalue_fields_search         = 50
+  max_script_fields                  = 20
+  max_shingle_diff                   = 4
+  max_refresh_listeners              = 150
+  analyze_max_token_count            = 5000
+  highlight_max_analyzed_offset      = 200000
+  max_terms_count                    = 2048
+  max_regex_length                   = 2000
+  routing_rebalance_enable           = "replicas"
+  blocks_metadata                    = false
+  default_pipeline                   = elasticstack_elasticsearch_ingest_pipeline.test.name
+  final_pipeline                     = elasticstack_elasticsearch_ingest_pipeline.test.name
+  unassigned_node_left_delayed_timeout = "45s"
+  deletion_protection                = false
+}
+
+data "elasticstack_elasticsearch_indices" "test" {
+  target     = %q
+  depends_on = [elasticstack_elasticsearch_index.test]
+}
+`, pipelineName, indexName, indexName)
+}
+
+// TestAccIndicesDataSource_ReadsSlowlogSettings verifies representative search and
+// indexing slowlog thresholds from the data source.
+func TestAccIndicesDataSource_ReadsSlowlogSettings(t *testing.T) {
+	indexName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlpha)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccIndicesDataSourceConfigSlowlog(indexName, false),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "target", indexName),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.name", indexName),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.search_slowlog_threshold_query_warn", "10s"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.search_slowlog_threshold_fetch_info", "800ms"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.indexing_slowlog_threshold_index_debug", "10ms"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.indexing_slowlog_source", "1000"),
+				),
+			},
+		},
+	})
+}
+
+var slowlogLevelVersionConstraint, _ = version.NewConstraint("< 8.0.0")
+
+// TestAccIndicesDataSource_ReadsSlowlogLevels verifies the slowlog level fields on
+// Elastic Stack versions that still expose them.
+func TestAccIndicesDataSource_ReadsSlowlogLevels(t *testing.T) {
+	indexName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlpha)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc: versionutils.CheckIfVersionMeetsConstraints(slowlogLevelVersionConstraint),
+				Config:   testAccIndicesDataSourceConfigSlowlog(indexName, true),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "target", indexName),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.name", indexName),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.search_slowlog_level", "info"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.indexing_slowlog_level", "warn"),
+				),
+			},
+		},
+	})
+}
+
+func testAccIndicesDataSourceConfigSlowlog(indexName string, includeLevels bool) string {
+	slowlogLevels := ""
+	if includeLevels {
+		slowlogLevels = `
+  search_slowlog_level                 = "info"
+  indexing_slowlog_level               = "warn"
+`
+	}
+
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_index" "test" {
+  name                                 = %q
+  search_slowlog_threshold_query_warn  = "10s"
+  search_slowlog_threshold_fetch_info  = "800ms"
+  indexing_slowlog_threshold_index_debug = "10ms"
+  indexing_slowlog_source              = "1000"%s
+  deletion_protection                  = false
+}
+
+data "elasticstack_elasticsearch_indices" "test" {
+  target     = %q
+  depends_on = [elasticstack_elasticsearch_index.test]
+}
+`, indexName, slowlogLevels, indexName)
 }
