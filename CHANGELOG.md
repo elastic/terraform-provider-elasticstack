@@ -8,6 +8,7 @@
 - Fix provider panic in `elasticstack_fleet_integration_policy` when the integration version is no longer available in the package registry. ([#1913](https://github.com/elastic/terraform-provider-elasticstack/pull/1913))
 - Add an experimental flag to skip synthetics location validation. ([#1924](https://github.com/elastic/terraform-provider-elasticstack/pull/1924))
 - Add flapping detection to `elasticstack_kibana_alerting_rule`. ([1966](https://github.com/elastic/terraform-provider-elasticstack/pull/1966))
+- Attempt recovery when data view creation fails ([#2024](https://github.com/elastic/terraform-provider-elasticstack/pull/2024))
 
 
 ## [0.14.3] - 2026-03-02
