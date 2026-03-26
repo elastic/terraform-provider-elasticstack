@@ -557,7 +557,6 @@ type TransformFunc func(schema *Schema)
 
 var transformers = []TransformFunc{
 	mergeDashboardsSchema,
-	mergeWorkflowsSchema,
 	transformRemoveKbnXsrf,
 	transformRemoveApiVersionParam,
 	transformSimplifyContentType,
@@ -570,7 +569,7 @@ var transformers = []TransformFunc{
 	fixGetSyntheticsMonitorsParams,
 	fixGetMaintenanceWindowFindParams,
 	fixGetStreamsAttachmentTypesParams,
-	fixGetWorkflowExecutionsParams,
+	fixGetWorkflowsExecutionsParams,
 	fixSecurityAPIPageSize,
 	fixSecurityExceptionListItems,
 	removeDuplicateOneOfRefs,
@@ -579,35 +578,6 @@ var transformers = []TransformFunc{
 	transformRemoveUnusedComponents,
 	transformOmitEmptyNullable,
 	fixAlertingRuleParams,
-}
-
-//go:embed workflows.yaml
-var workflowsYaml string
-
-func mergeWorkflowsSchema(schema *Schema) {
-	var workflowsSchema Schema
-	err := yaml.Unmarshal([]byte(workflowsYaml), &workflowsSchema)
-	if err != nil {
-		log.Fatalf("failed to unmarshal schema from dashboards.yaml: %v", err)
-	}
-
-	// Merge paths
-	for path, pathInfo := range workflowsSchema.Paths {
-		// Only add the path if it doesn't already exist
-		if _, ok := schema.Paths[path]; !ok {
-			schema.Paths[path] = pathInfo
-		}
-	}
-
-	// Merge component schemas
-	dashboardSchemas := workflowsSchema.Components.MustGetMap("schemas")
-	schemaSchemas := schema.Components.MustGetMap("schemas")
-	for key, schemaInfo := range dashboardSchemas {
-		// Only add the schema if it doesn't already exist
-		if _, ok := schemaSchemas[key]; !ok {
-			schemaSchemas[key] = schemaInfo
-		}
-	}
 }
 
 //go:embed dashboards.json
@@ -993,15 +963,10 @@ func fixGetStreamsAttachmentTypesParams(schema *Schema) {
 	schema.MustGetPath("/api/streams/{streamName}/attachments").MustGetEndpoint("get").Set("parameters.2.schema.anyOf.1.x-go-type", "[]GetStreamsStreamnameAttachmentsParamsAttachmentTypes0")
 }
 
-func fixGetWorkflowExecutionsParams(schema *Schema) {
-	// oapi-codegen generates self-referential array types for anyOf[string, array-of-string]
-	// query params on this endpoint. Set x-go-type on the array variants to break the loop.
-	// Guard with GetPath (non-panicking) since this endpoint may not exist in all spec versions.
-	base := "/api/workflows/workflow/{workflowId}/executions"
-	if p := schema.GetPath(base); p != nil {
-		p.MustGetEndpoint("get").Set("parameters.1.schema.anyOf.1.x-go-type", "[]GetWorkflowsWorkflowWorkflowidExecutionsParamsStatuses0")
-		p.MustGetEndpoint("get").Set("parameters.2.schema.anyOf.1.x-go-type", "[]GetWorkflowsWorkflowWorkflowidExecutionsParamsExecutionTypes0")
-	}
+func fixGetWorkflowsExecutionsParams(schema *Schema) {
+	get := schema.MustGetPath("/api/workflows/workflow/{workflowId}/executions").MustGetEndpoint("get")
+	get.Set("parameters.1.schema.anyOf.1.x-go-type", "[]GetWorkflowsWorkflowWorkflowidExecutionsParamsStatuses0")
+	get.Set("parameters.2.schema.anyOf.1.x-go-type", "[]GetWorkflowsWorkflowWorkflowidExecutionsParamsExecutionTypes0")
 }
 
 func fixSecurityAPIPageSize(schema *Schema) {
