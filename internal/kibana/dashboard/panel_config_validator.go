@@ -140,12 +140,14 @@ func (v panelConfigValidator) ValidateObject(_ context.Context, req validator.Ob
 	}
 
 	attrs := req.ConfigValue.Attributes()
-	typeValue, ok := attrs["type"].(interface{ ValueString() string })
-	if !ok {
-		resp.Diagnostics.AddAttributeError(req.Path, "Invalid panel type", "The panel `type` must be a string value.")
+	typeAttr := attrs["type"]
+	if typeAttr == nil || typeAttr.IsNull() || typeAttr.IsUnknown() {
 		return
 	}
-	if attrs["type"] == nil || attrs["type"].IsNull() || attrs["type"].IsUnknown() {
+
+	typeValue, ok := typeAttr.(interface{ ValueString() string })
+	if !ok {
+		resp.Diagnostics.AddAttributeError(req.Path, "Invalid panel type", "The panel `type` must be a string value.")
 		return
 	}
 

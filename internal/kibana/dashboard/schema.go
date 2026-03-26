@@ -823,6 +823,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 					stringvalidator.ConflictsWith(
 						siblingPanelConfigPathsExcept("config_json", panelConfigNames)...,
 					),
+					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeLens, panelTypeMarkdown}),
 				},
 			},
 		},
