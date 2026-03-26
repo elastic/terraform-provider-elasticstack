@@ -65,15 +65,15 @@ func populateTimeSliderControlFromAPI(pm *panelModel, tfPanel *panelModel, apiCo
 		return
 	}
 
-	// If the existing state has no config block, only create one if Kibana returned data.
+	// If the existing state has no config block, never create one here; always preserve nil intent.
 	if existing == nil {
-		// If Kibana returned nothing meaningful, leave block nil.
+		// If Kibana returned nothing meaningful, there's nothing to sync, so keep the block nil.
 		if apiConfig.StartPercentageOfTimeRange == nil &&
 			apiConfig.EndPercentageOfTimeRange == nil &&
 			apiConfig.IsAnchored == nil {
 			return
 		}
-		// Kibana returned data but practitioner didn't configure a block — preserve nil intent.
+		// Kibana returned data but the practitioner didn't configure a block — still preserve nil intent.
 		return
 	}
 
