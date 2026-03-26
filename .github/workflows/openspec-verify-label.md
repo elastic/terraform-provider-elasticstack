@@ -2,8 +2,8 @@
 name: OpenSpec verify (label)
 description: >-
   When maintainers add the verify-openspec label, verifies the PR against exactly one active
-  OpenSpec change (modified-only), posts a PR review, and on APPROVE archives the change and
-  pushes the result to the PR branch.
+  OpenSpec change (modified-only), posts a PR review, on APPROVE archives the change and pushes
+  the result to the PR branch, and removes the trigger label before the workflow fully completes.
 on:
   pull_request:
     types: [labeled]
@@ -15,6 +15,48 @@ engine:
 permissions:
   contents: read
   pull-requests: read
+jobs:
+  completion_cleanup:
+    name: Remove verify-openspec label
+    needs:
+      - pre_activation
+      - activation
+      - agent
+      - safe_outputs
+    if: >-
+      always() && github.event_name == 'pull_request' && github.event.action == 'labeled' &&
+      github.event.label.name == 'verify-openspec'
+    runs-on: ubuntu-slim
+    permissions:
+      issues: write
+    steps:
+      - name: Remove verify-openspec label
+        uses: actions/github-script@v8
+        with:
+          github-token: ${{ secrets.GH_AW_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+          script: |
+            const issueNumber = context.payload.pull_request?.number;
+            if (!issueNumber) {
+              core.info('No pull request number found in the event payload; skipping cleanup.');
+              return;
+            }
+
+            try {
+              await github.rest.issues.removeLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                name: 'verify-openspec',
+              });
+              core.info('Removed verify-openspec from the triggering pull request.');
+            } catch (error) {
+              if (error.status === 404) {
+                core.info('verify-openspec was already absent on the triggering pull request.');
+                return;
+              }
+
+              throw error;
+            }
 tools:
   github:
     toolsets: [repos, pull_requests]
@@ -38,7 +80,7 @@ safe-outputs:
     max: 1
 ---
 
-# OpenSpec verify and archive (label-gated)
+# OpenSpec verify, archive, and clean up (label-gated)
 
 You verify a pull request against **one** active OpenSpec change under `openspec/changes/<id>/`, following `.agents/skills/openspec-verify-change/SKILL.md`, submit a **single** pull request review, and **only** after an **APPROVE** review run `openspec archive` and push the branch.
 
@@ -117,3 +159,4 @@ You verify a pull request against **one** active OpenSpec change under `openspec
 ## Noop completion
 
 18. Whenever you exit early with **`noop`**, include a **clear, short** message explaining which gate failed (wrong label, multiple change ids, added file under `openspec/changes/`, non-modified status, etc.).
+
