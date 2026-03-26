@@ -223,6 +223,10 @@ func testAccDataViewCreateErrorProxy(t *testing.T, upstreamEndpoint, spaceID str
 			return nil
 		}
 
+		if resp.Body != nil {
+			_ = resp.Body.Close()
+		}
+
 		body := `{"statusCode":400,"error":"Bad Request","message":"synthetic create failure after upstream persistence"}`
 		resp.StatusCode = http.StatusBadRequest
 		resp.Status = http.StatusText(http.StatusBadRequest)
