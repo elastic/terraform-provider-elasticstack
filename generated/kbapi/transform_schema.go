@@ -570,6 +570,7 @@ var transformers = []TransformFunc{
 	fixGetSyntheticsMonitorsParams,
 	fixGetMaintenanceWindowFindParams,
 	fixGetStreamsAttachmentTypesParams,
+	fixGetWorkflowExecutionsParams,
 	fixSecurityAPIPageSize,
 	fixSecurityExceptionListItems,
 	removeDuplicateOneOfRefs,
@@ -990,6 +991,14 @@ func fixGetMaintenanceWindowFindParams(schema *Schema) {
 
 func fixGetStreamsAttachmentTypesParams(schema *Schema) {
 	schema.MustGetPath("/api/streams/{streamName}/attachments").MustGetEndpoint("get").Set("parameters.2.schema.anyOf.1.x-go-type", "[]GetStreamsStreamnameAttachmentsParamsAttachmentTypes0")
+}
+
+func fixGetWorkflowExecutionsParams(schema *Schema) {
+	// oapi-codegen generates self-referential array types for anyOf[string, array-of-string]
+	// query params on this endpoint. Set x-go-type on the array variants to break the loop.
+	base := "/api/workflows/workflow/{workflowId}/executions"
+	schema.MustGetPath(base).MustGetEndpoint("get").Set("parameters.1.schema.anyOf.1.x-go-type", "[]GetWorkflowsWorkflowWorkflowidExecutionsParamsStatuses0")
+	schema.MustGetPath(base).MustGetEndpoint("get").Set("parameters.2.schema.anyOf.1.x-go-type", "[]GetWorkflowsWorkflowWorkflowidExecutionsParamsExecutionTypes0")
 }
 
 func fixSecurityAPIPageSize(schema *Schema) {
