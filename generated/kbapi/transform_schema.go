@@ -557,7 +557,6 @@ type TransformFunc func(schema *Schema)
 
 var transformers = []TransformFunc{
 	mergeDashboardsSchema,
-	mergeWorkflowsSchema,
 	transformRemoveKbnXsrf,
 	transformRemoveApiVersionParam,
 	transformSimplifyContentType,
@@ -570,6 +569,7 @@ var transformers = []TransformFunc{
 	fixGetSyntheticsMonitorsParams,
 	fixGetMaintenanceWindowFindParams,
 	fixGetStreamsAttachmentTypesParams,
+	fixGetWorkflowsExecutionsParams,
 	fixSecurityAPIPageSize,
 	fixSecurityExceptionListItems,
 	removeDuplicateOneOfRefs,
@@ -578,35 +578,6 @@ var transformers = []TransformFunc{
 	transformRemoveUnusedComponents,
 	transformOmitEmptyNullable,
 	fixAlertingRuleParams,
-}
-
-//go:embed workflows.yaml
-var workflowsYaml string
-
-func mergeWorkflowsSchema(schema *Schema) {
-	var workflowsSchema Schema
-	err := yaml.Unmarshal([]byte(workflowsYaml), &workflowsSchema)
-	if err != nil {
-		log.Fatalf("failed to unmarshal schema from dashboards.yaml: %v", err)
-	}
-
-	// Merge paths
-	for path, pathInfo := range workflowsSchema.Paths {
-		// Only add the path if it doesn't already exist
-		if _, ok := schema.Paths[path]; !ok {
-			schema.Paths[path] = pathInfo
-		}
-	}
-
-	// Merge component schemas
-	dashboardSchemas := workflowsSchema.Components.MustGetMap("schemas")
-	schemaSchemas := schema.Components.MustGetMap("schemas")
-	for key, schemaInfo := range dashboardSchemas {
-		// Only add the schema if it doesn't already exist
-		if _, ok := schemaSchemas[key]; !ok {
-			schemaSchemas[key] = schemaInfo
-		}
-	}
 }
 
 //go:embed dashboards.json
@@ -990,6 +961,12 @@ func fixGetMaintenanceWindowFindParams(schema *Schema) {
 
 func fixGetStreamsAttachmentTypesParams(schema *Schema) {
 	schema.MustGetPath("/api/streams/{streamName}/attachments").MustGetEndpoint("get").Set("parameters.2.schema.anyOf.1.x-go-type", "[]GetStreamsStreamnameAttachmentsParamsAttachmentTypes0")
+}
+
+func fixGetWorkflowsExecutionsParams(schema *Schema) {
+	get := schema.MustGetPath("/api/workflows/workflow/{workflowId}/executions").MustGetEndpoint("get")
+	get.Set("parameters.1.schema.anyOf.1.x-go-type", "[]GetWorkflowsWorkflowWorkflowidExecutionsParamsStatuses0")
+	get.Set("parameters.2.schema.anyOf.1.x-go-type", "[]GetWorkflowsWorkflowWorkflowidExecutionsParamsExecutionTypes0")
 }
 
 func fixSecurityAPIPageSize(schema *Schema) {
