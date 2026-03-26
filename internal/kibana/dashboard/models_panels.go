@@ -226,7 +226,7 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 
 	var diags diag.Diagnostics
 	switch discriminator {
-	case "markdown":
+	case panelTypeMarkdown:
 		markdownPanel, err := panelItem.AsKbnDashboardPanelMarkdown()
 		if err != nil {
 			return panelModel{}, diagutil.FrameworkDiagFromError(err)
@@ -245,7 +245,7 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 				pm.ConfigJSON = customtypes.NewJSONWithDefaultsValue(string(configBytes), populatePanelConfigJSONDefaults)
 			}
 		}
-	case "time_slider_control":
+	case panelTypeTimeSlider:
 		tsPanel, err := panelItem.AsKbnDashboardPanelTimeSliderControl()
 		if err != nil {
 			return panelModel{}, diagutil.FrameworkDiagFromError(err)
@@ -256,7 +256,7 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 			pm.ConfigJSON = customtypes.NewJSONWithDefaultsValue(string(configBytes), populatePanelConfigJSONDefaults)
 		}
 		populateTimeSliderControlFromAPI(&pm, tfPanel, tsPanel.Config)
-	case "lens":
+	case panelTypeLens:
 		lensPanel, err := panelItem.AsKbnDashboardPanelLens()
 		if err != nil {
 			return panelModel{}, diagutil.FrameworkDiagFromError(err)
@@ -419,7 +419,7 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 		return panelItem, diags
 	}
 
-	if pm.Type.ValueString() == "time_slider_control" || pm.TimeSliderControlConfig != nil {
+	if pm.Type.ValueString() == panelTypeTimeSlider || pm.TimeSliderControlConfig != nil {
 		tsPanel := kbapi.KbnDashboardPanelTimeSliderControl{
 			Grid: grid,
 			Uid:  uid,
@@ -471,7 +471,7 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 	if typeutils.IsKnown(pm.ConfigJSON) {
 		configJSON := []byte(pm.ConfigJSON.ValueString())
 		switch pm.Type.ValueString() {
-		case "markdown":
+		case panelTypeMarkdown:
 			var config kbapi.KbnDashboardPanelMarkdown_Config
 			if err := config.UnmarshalJSON(configJSON); err != nil {
 				diags.AddError("Failed to unmarshal markdown panel config", err.Error())
@@ -486,7 +486,7 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 				diags.AddError("Failed to create markdown panel", err.Error())
 			}
 			return panelItem, diags
-		case "lens":
+		case panelTypeLens:
 			var config kbapi.KbnDashboardPanelLens_Config
 			if err := config.UnmarshalJSON(configJSON); err != nil {
 				diags.AddError("Failed to unmarshal lens panel config", err.Error())

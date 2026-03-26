@@ -18,6 +18,7 @@
 package dashboard_test
 
 import (
+	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -94,6 +95,57 @@ func TestAccResourceDashboardTimeSliderControl(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.type", "time_slider_control"),
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.time_slider_control_config"),
 				),
+			},
+		},
+	})
+}
+
+func TestAccResourceDashboardTimeSliderControlNoConfig(t *testing.T) {
+	dashboardTitle := "Test Dashboard with Time Slider Control No Config " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("no_config"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "title", dashboardTitle),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.type", "time_slider_control"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.time_slider_control_config"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceDashboardTimeSliderControlInvalidConfig(t *testing.T) {
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("invalid_start"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable("unused"),
+				},
+				ExpectError: regexp.MustCompile(`(?s)start_percentage_of_time_range.*between 0\.[0-9]+ and 1\.[0-9]+`),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("invalid_end"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable("unused"),
+				},
+				ExpectError: regexp.MustCompile(`(?s)end_percentage_of_time_range.*between 0\.[0-9]+ and 1\.[0-9]+`),
 			},
 		},
 	})
