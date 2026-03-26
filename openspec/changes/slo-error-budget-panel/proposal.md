@@ -22,7 +22,7 @@ Practitioners cannot manage SLO error budget panels as code today. These panels 
 
 ## Impact
 
-- Specs: delta spec under `openspec/changes/2026-03-26-slo-error-budget-panel/specs/kibana-dashboard/spec.md`.
+- Specs: delta spec under `openspec/changes/slo-error-budget-panel/specs/kibana-dashboard/spec.md`.
 - Schema: `internal/kibana/dashboard/schema.go`.
 - Models: `internal/kibana/dashboard/models_panels.go` and new `internal/kibana/dashboard/models_slo_error_budget_panel.go`.
 - Tests: new acceptance tests in `internal/kibana/dashboard/acc_test.go` (or a dedicated file) and unit tests alongside the converter.

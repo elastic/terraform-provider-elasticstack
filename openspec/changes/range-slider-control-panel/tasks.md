@@ -1,6 +1,6 @@
 ## 1. Spec
 
-- [ ] 1.1 Keep delta spec aligned with `proposal.md` / `design.md`; run `npx openspec validate 2026-03-26-range-slider-control-panel --type change` (or `make check-openspec` after sync).
+- [ ] 1.1 Keep delta spec aligned with `proposal.md` / `design.md`; run `npx openspec validate range-slider-control-panel --type change` (or `make check-openspec` after sync).
 - [ ] 1.2 On completion of implementation, **sync** delta into `openspec/specs/kibana-dashboard/spec.md` or **archive** the change per project workflow.
 
 ## 2. Implementation

@@ -22,7 +22,7 @@ Practitioners cannot manage options list control panels as code today. These con
 
 ## Impact
 
-- Specs: delta spec under `openspec/changes/2026-03-26-options-list-control-panel/specs/kibana-dashboard/spec.md`.
+- Specs: delta spec under `openspec/changes/options-list-control-panel/specs/kibana-dashboard/spec.md`.
 - Schema: `internal/kibana/dashboard/schema.go`.
 - Models: `internal/kibana/dashboard/models_panels.go` and new `internal/kibana/dashboard/models_options_list_control_panel.go`.
 - Tests: new acceptance tests in `internal/kibana/dashboard/acc_test.go` (or a dedicated file) and unit tests alongside the converter.

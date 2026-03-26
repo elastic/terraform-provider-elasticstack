@@ -27,7 +27,7 @@ Without Terraform support, teams that manage their dashboards as code must eithe
 
 ## Impact
 
-- Specs: delta spec under `openspec/changes/2026-03-26-synthetics-stats-overview-panel/specs/kibana-dashboard/spec.md`.
+- Specs: delta spec under `openspec/changes/synthetics-stats-overview-panel/specs/kibana-dashboard/spec.md`.
 - Schema: `internal/kibana/dashboard/schema.go`.
 - Models: `internal/kibana/dashboard/models_panels.go` and new `internal/kibana/dashboard/models_synthetics_stats_overview_panel.go`.
 - Tests: new acceptance tests in `internal/kibana/dashboard/acc_test.go` (or a dedicated file) and unit tests alongside the converter.

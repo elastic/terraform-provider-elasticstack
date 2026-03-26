@@ -1,6 +1,6 @@
 ## 1. Spec
 
-- [ ] 1.1 Validate the change with `./node_modules/.bin/openspec validate 2026-03-26-slo-overview-panel`.
+- [ ] 1.1 Validate the change with `./node_modules/.bin/openspec validate slo-overview-panel`.
 - [ ] 1.2 Sync or archive the delta into `openspec/specs/kibana-dashboard/spec.md` after implementation is verified.
 
 ## 2. Schema
