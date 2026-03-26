@@ -21,11 +21,32 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
+
+// streamsLockRetry retries fn (up to maxAttempts) when the Kibana Streams API
+// returns HTTP 409 "Could not acquire lock for applying changes". The API holds
+// a short exclusive lock during writes; a brief exponential backoff resolves
+// the contention without user-visible errors on concurrent applies/destroys.
+func streamsLockRetry[T any](ctx context.Context, maxAttempts int, fn func() (T, int, diag.Diagnostics)) (T, diag.Diagnostics) {
+	backoff := 500 * time.Millisecond
+	for attempt := 1; ; attempt++ {
+		result, statusCode, diags := fn()
+		if statusCode != http.StatusConflict || attempt >= maxAttempts {
+			return result, diags
+		}
+		select {
+		case <-ctx.Done():
+			return result, diagutil.FrameworkDiagFromError(ctx.Err())
+		case <-time.After(backoff):
+		}
+		backoff *= 2
+	}
+}
 
 // StreamResponse is our own typed response struct for the Streams API.
 //
@@ -172,56 +193,57 @@ func GetStream(ctx context.Context, client *Client, spaceID string, name string)
 }
 
 // UpsertStream creates or updates a stream via PUT /api/streams/{name}.
+// Retries on HTTP 409 (Kibana Streams write-lock contention) with exponential backoff.
 func UpsertStream(ctx context.Context, client *Client, spaceID string, name string, req StreamUpsertRequest) (*StreamResponse, diag.Diagnostics) {
 	body, err := json.Marshal(req)
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	// The kbapi request body is a discriminated union; UnmarshalJSON/MarshalJSON
-	// are now generated, so we can use the typed path directly.
 	var kbReq kbapi.PutStreamsNameJSONRequestBody
 	if jsonErr := json.Unmarshal(body, &kbReq); jsonErr != nil {
 		return nil, diagutil.FrameworkDiagFromError(jsonErr)
 	}
 
-	resp, err := client.API.PutStreamsNameWithResponse(
-		ctx, name, kbReq,
-		spaceAwarePathRequestEditor(spaceID),
-	)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		var streamResp StreamResponse
-		if jsonErr := json.Unmarshal(resp.Body, &streamResp); jsonErr != nil {
-			return nil, diagutil.FrameworkDiagFromError(jsonErr)
+	return streamsLockRetry(ctx, 5, func() (*StreamResponse, int, diag.Diagnostics) {
+		resp, err := client.API.PutStreamsNameWithResponse(
+			ctx, name, kbReq,
+			spaceAwarePathRequestEditor(spaceID),
+		)
+		if err != nil {
+			return nil, 0, diagutil.FrameworkDiagFromError(err)
 		}
-		return &streamResp, nil
-	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
-	}
+		switch resp.StatusCode() {
+		case http.StatusOK:
+			var streamResp StreamResponse
+			if jsonErr := json.Unmarshal(resp.Body, &streamResp); jsonErr != nil {
+				return nil, resp.StatusCode(), diagutil.FrameworkDiagFromError(jsonErr)
+			}
+			return &streamResp, resp.StatusCode(), nil
+		default:
+			return nil, resp.StatusCode(), reportUnknownError(resp.StatusCode(), resp.Body)
+		}
+	})
 }
 
 // DeleteStream deletes a wired or query stream via DELETE /api/streams/{name}.
 // For classic streams this is a no-op (classic streams cannot be deleted via the API).
+// Retries on HTTP 409 (Kibana Streams write-lock contention) with exponential backoff.
 func DeleteStream(ctx context.Context, client *Client, spaceID string, name string) diag.Diagnostics {
-	resp, err := client.API.DeleteStreamsNameWithResponse(
-		ctx, name, kbapi.DeleteStreamsNameJSONRequestBody{},
-		spaceAwarePathRequestEditor(spaceID),
-	)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	switch resp.StatusCode() {
-	case http.StatusOK, http.StatusNoContent:
-		return nil
-	case http.StatusNotFound:
-		return nil
-	default:
-		return reportUnknownError(resp.StatusCode(), resp.Body)
-	}
+	_, diags := streamsLockRetry(ctx, 5, func() (struct{}, int, diag.Diagnostics) {
+		resp, err := client.API.DeleteStreamsNameWithResponse(
+			ctx, name, kbapi.DeleteStreamsNameJSONRequestBody{},
+			spaceAwarePathRequestEditor(spaceID),
+		)
+		if err != nil {
+			return struct{}{}, 0, diagutil.FrameworkDiagFromError(err)
+		}
+		switch resp.StatusCode() {
+		case http.StatusOK, http.StatusNoContent, http.StatusNotFound:
+			return struct{}{}, resp.StatusCode(), nil
+		default:
+			return struct{}{}, resp.StatusCode(), reportUnknownError(resp.StatusCode(), resp.Body)
+		}
+	})
+	return diags
 }
