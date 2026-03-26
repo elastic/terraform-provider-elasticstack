@@ -14,11 +14,11 @@ When Kibana returns an empty or absent `config` object for a `time_slider_contro
 
 The `time_slider_control_config` block SHALL conflict with all other typed panel config blocks and with `config_json`. This conflict SHALL be enforced by schema-level validators at plan time, consistent with the pattern used by other typed panel config blocks.
 
-#### Scenario: Time slider control panel with no config
+#### Scenario: Time slider control panel with empty config block
 
-- GIVEN a `time_slider_control` panel with no `time_slider_control_config` block
+- GIVEN a `time_slider_control` panel with an empty `time_slider_control_config = {}` block (block present, all fields omitted)
 - WHEN the provider builds the API request
-- THEN it SHALL send the panel with an empty or absent `config` object
+- THEN it SHALL send the panel with an empty `config` object
 - AND SHALL NOT return an error diagnostic
 
 #### Scenario: Time slider control panel with percentage fields

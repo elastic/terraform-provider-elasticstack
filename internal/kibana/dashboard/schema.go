@@ -25,6 +25,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework-validators/float64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -63,6 +64,7 @@ var panelConfigNames = []string{
 	"datatable_config",
 	"heatmap_config",
 	"waffle_config",
+	"time_slider_control_config",
 }
 
 func panelConfigPaths(names []string) []path.Expression {
@@ -783,6 +785,40 @@ func getPanelSchema() schema.NestedAttributeObject {
 						siblingPanelConfigPathsExcept("legacy_metric_config", panelConfigNames)...,
 					),
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"lens"}),
+				},
+			},
+			"time_slider_control_config": schema.SingleNestedAttribute{
+				MarkdownDescription: panelConfigDescription(
+					"Configuration for a time slider control panel. Controls the visible time window within the dashboard's global time range.",
+					"time_slider_control_config",
+					panelConfigNames,
+				),
+				Optional: true,
+				Attributes: map[string]schema.Attribute{
+					"start_percentage_of_time_range": schema.Float64Attribute{
+						MarkdownDescription: "The start position of the time window as a fraction of the dashboard's global time range (0.0 to 1.0 inclusive).",
+						Optional:            true,
+						Validators: []validator.Float64{
+							float64validator.Between(0.0, 1.0),
+						},
+					},
+					"end_percentage_of_time_range": schema.Float64Attribute{
+						MarkdownDescription: "The end position of the time window as a fraction of the dashboard's global time range (0.0 to 1.0 inclusive).",
+						Optional:            true,
+						Validators: []validator.Float64{
+							float64validator.Between(0.0, 1.0),
+						},
+					},
+					"is_anchored": schema.BoolAttribute{
+						MarkdownDescription: "Whether the start of the time window is anchored (fixed), so only the end slides.",
+						Optional:            true,
+					},
+				},
+				Validators: []validator.Object{
+					objectvalidator.ConflictsWith(
+						siblingPanelConfigPathsExcept("time_slider_control_config", panelConfigNames)...,
+					),
+					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"time_slider_control"}),
 				},
 			},
 			"config_json": schema.StringAttribute{

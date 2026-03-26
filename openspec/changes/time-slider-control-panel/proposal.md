@@ -19,6 +19,10 @@ After this change, practitioners will be able to:
 - Omit the `time_slider_control_config` block entirely or omit any combination of its fields to accept Kibana's defaults.
 - Import and plan-refresh existing `time_slider_control` panels without losing their configuration.
 
+## Implementation Notes
+
+- **Dual `config_json` population**: consistent with all other typed panel implementations (`markdown`, `lens`, etc.), the read path populates `config_json` in state alongside `time_slider_control_config`. This is a supported pattern that allows practitioners to switch to the raw `config_json` workflow without triggering a plan diff; it is not a bug.
+
 ## Impact
 
 - **Additive only**: no existing panel types or behaviors are changed.

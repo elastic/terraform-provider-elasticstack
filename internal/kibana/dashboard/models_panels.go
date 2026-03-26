@@ -19,6 +19,7 @@ package dashboard
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
@@ -29,23 +30,24 @@ import (
 )
 
 type panelModel struct {
-	Type               types.String                                      `tfsdk:"type"`
-	Grid               panelGridModel                                    `tfsdk:"grid"`
-	ID                 types.String                                      `tfsdk:"id"`
-	MarkdownConfig     *markdownConfigModel                              `tfsdk:"markdown_config"`
-	XYChartConfig      *xyChartConfigModel                               `tfsdk:"xy_chart_config"`
-	TreemapConfig      *treemapConfigModel                               `tfsdk:"treemap_config"`
-	MosaicConfig       *mosaicConfigModel                                `tfsdk:"mosaic_config"`
-	DatatableConfig    *datatableConfigModel                             `tfsdk:"datatable_config"`
-	TagcloudConfig     *tagcloudConfigModel                              `tfsdk:"tagcloud_config"`
-	MetricChartConfig  *metricChartConfigModel                           `tfsdk:"metric_chart_config"`
-	PieChartConfig     *pieChartConfigModel                              `tfsdk:"pie_chart_config"`
-	GaugeConfig        *gaugeConfigModel                                 `tfsdk:"gauge_config"`
-	LegacyMetricConfig *legacyMetricConfigModel                          `tfsdk:"legacy_metric_config"`
-	RegionMapConfig    *regionMapConfigModel                             `tfsdk:"region_map_config"`
-	HeatmapConfig      *heatmapConfigModel                               `tfsdk:"heatmap_config"`
-	WaffleConfig       *waffleConfigModel                                `tfsdk:"waffle_config"`
-	ConfigJSON         customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config_json"`
+	Type                    types.String                                      `tfsdk:"type"`
+	Grid                    panelGridModel                                    `tfsdk:"grid"`
+	ID                      types.String                                      `tfsdk:"id"`
+	MarkdownConfig          *markdownConfigModel                              `tfsdk:"markdown_config"`
+	XYChartConfig           *xyChartConfigModel                               `tfsdk:"xy_chart_config"`
+	TreemapConfig           *treemapConfigModel                               `tfsdk:"treemap_config"`
+	MosaicConfig            *mosaicConfigModel                                `tfsdk:"mosaic_config"`
+	DatatableConfig         *datatableConfigModel                             `tfsdk:"datatable_config"`
+	TagcloudConfig          *tagcloudConfigModel                              `tfsdk:"tagcloud_config"`
+	MetricChartConfig       *metricChartConfigModel                           `tfsdk:"metric_chart_config"`
+	PieChartConfig          *pieChartConfigModel                              `tfsdk:"pie_chart_config"`
+	GaugeConfig             *gaugeConfigModel                                 `tfsdk:"gauge_config"`
+	LegacyMetricConfig      *legacyMetricConfigModel                          `tfsdk:"legacy_metric_config"`
+	RegionMapConfig         *regionMapConfigModel                             `tfsdk:"region_map_config"`
+	HeatmapConfig           *heatmapConfigModel                               `tfsdk:"heatmap_config"`
+	WaffleConfig            *waffleConfigModel                                `tfsdk:"waffle_config"`
+	TimeSliderControlConfig *timeSliderControlConfigModel                     `tfsdk:"time_slider_control_config"`
+	ConfigJSON              customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config_json"`
 }
 
 type panelGridModel struct {
@@ -201,7 +203,8 @@ func panelUsesConfigJSONOnly(pm *panelModel) bool {
 		pm.LegacyMetricConfig == nil &&
 		pm.RegionMapConfig == nil &&
 		pm.HeatmapConfig == nil &&
-		pm.WaffleConfig == nil
+		pm.WaffleConfig == nil &&
+		pm.TimeSliderControlConfig == nil
 }
 
 func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelModel, panelItem kbapi.DashboardPanelItem) (panelModel, diag.Diagnostics) {
@@ -242,6 +245,17 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 				pm.ConfigJSON = customtypes.NewJSONWithDefaultsValue(string(configBytes), populatePanelConfigJSONDefaults)
 			}
 		}
+	case "time_slider_control":
+		tsPanel, err := panelItem.AsKbnDashboardPanelTimeSliderControl()
+		if err != nil {
+			return panelModel{}, diagutil.FrameworkDiagFromError(err)
+		}
+		setPanelGridFromAPI(&pm, tsPanel.Grid.X, tsPanel.Grid.Y, tsPanel.Grid.W, tsPanel.Grid.H)
+		pm.ID = types.StringPointerValue(tsPanel.Uid)
+		if configBytes, err := json.Marshal(tsPanel.Config); err == nil {
+			pm.ConfigJSON = customtypes.NewJSONWithDefaultsValue(string(configBytes), populatePanelConfigJSONDefaults)
+		}
+		populateTimeSliderControlFromAPI(&pm, tfPanel, tsPanel.Config)
 	case "lens":
 		lensPanel, err := panelItem.AsKbnDashboardPanelLens()
 		if err != nil {
@@ -401,6 +415,23 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 		}
 		if err := panelItem.FromKbnDashboardPanelMarkdown(markdownPanel); err != nil {
 			diags.AddError("Failed to create markdown panel", err.Error())
+		}
+		return panelItem, diags
+	}
+
+	if pm.Type.ValueString() == "time_slider_control" || pm.TimeSliderControlConfig != nil {
+		tsPanel := kbapi.KbnDashboardPanelTimeSliderControl{
+			Grid: grid,
+			Uid:  uid,
+			Config: struct {
+				EndPercentageOfTimeRange   *float32 `json:"end_percentage_of_time_range,omitempty"`
+				IsAnchored                 *bool    `json:"is_anchored,omitempty"`
+				StartPercentageOfTimeRange *float32 `json:"start_percentage_of_time_range,omitempty"`
+			}{},
+		}
+		buildTimeSliderControlConfig(pm, &tsPanel)
+		if err := panelItem.FromKbnDashboardPanelTimeSliderControl(tsPanel); err != nil {
+			diags.AddError("Failed to create time slider control panel", err.Error())
 		}
 		return panelItem, diags
 	}
