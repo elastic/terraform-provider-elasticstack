@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -46,7 +47,9 @@ func TestAccResourceEnrichPolicyFW(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "name", name),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "policy_type", "match"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "match_field", `email`),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "indices.#", "1"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_enrich_policy.policy", "indices.*", name),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "enrich_fields.#", "2"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_enrich_policy.policy", "enrich_fields.*", "first_name"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_enrich_policy.policy", "enrich_fields.*", "last_name"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "query", "{\"match_all\": {}}\n"),
@@ -69,10 +72,12 @@ func TestAccResourceEnrichPolicyNoExecute(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "name", name),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "policy_type", "match"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "match_field", "email"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "execute", "false"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_enrich_policy.policy", "indices.*", name),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_enrich_policy.policy", "enrich_fields.*", "first_name"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_enrich_policy.policy", "enrich_fields.*", "last_name"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "query", "{\"match_all\": {}}\n"),
 					checkEnrichPolicyIndexDoesNotExist(name),
 				),
 			},
@@ -93,6 +98,7 @@ func TestAccResourceEnrichPolicyQueryOmitted(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "name", name),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "policy_type", "match"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "match_field", "email"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "execute", "true"),
 					checkEnrichPolicyQueryNull("elasticstack_elasticsearch_enrich_policy.policy"),
 				),
 			},
@@ -114,7 +120,35 @@ func TestAccResourceEnrichPolicyRangePolicyType(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "policy_type", "range"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "match_field", "range_field"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_enrich_policy.policy", "indices.*", name),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "enrich_fields.#", "1"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_enrich_policy.policy", "enrich_fields.*", "range_label"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "execute", "true"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceEnrichPolicyGeoMatchPolicyType(t *testing.T) {
+	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkEnrichPolicyDestroyFW(name),
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccEnrichPolicyGeoMatch(name),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_enrich_policy.policy", "id"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "name", name),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "policy_type", "geo_match"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "match_field", "location"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "indices.#", "1"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_enrich_policy.policy", "indices.*", name),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "enrich_fields.#", "2"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_enrich_policy.policy", "enrich_fields.*", "name"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_enrich_policy.policy", "enrich_fields.*", "description"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "execute", "true"),
 				),
 			},
 		},
@@ -274,6 +308,180 @@ func TestAccDataSourceEnrichPolicyConnection(t *testing.T) {
 	})
 }
 
+func TestAccDataSourceEnrichPolicyQueryNull(t *testing.T) {
+	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccEnrichPolicyDataSourceQueryNull(name),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_enrich_policy.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "name", name),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "policy_type", "match"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "match_field", "email"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "indices.#", "1"),
+					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_enrich_policy.test", "indices.*", name),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "enrich_fields.#", "2"),
+					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_enrich_policy.test", "enrich_fields.*", "first_name"),
+					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_enrich_policy.test", "enrich_fields.*", "last_name"),
+					checkEnrichPolicyQueryNull("data.elasticstack_elasticsearch_enrich_policy.test"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccDataSourceEnrichPolicyQueryUpdate(t *testing.T) {
+	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccEnrichPolicyDataSourceQueryUpdate(name, false),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_enrich_policy.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "name", name),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "policy_type", "match"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "match_field", "email"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "indices.#", "1"),
+					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_enrich_policy.test", "indices.*", name),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "enrich_fields.#", "1"),
+					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_enrich_policy.test", "enrich_fields.*", "city"),
+					checkEnrichPolicyQueryNull("data.elasticstack_elasticsearch_enrich_policy.test"),
+				),
+			},
+			{
+				Config: testAccEnrichPolicyDataSourceQueryUpdate(name, true),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_enrich_policy.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "name", name),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "policy_type", "match"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "match_field", "email"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "indices.#", "1"),
+					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_enrich_policy.test", "indices.*", name),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "enrich_fields.#", "1"),
+					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_enrich_policy.test", "enrich_fields.*", "city"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "query", `{"term":{"active":{"value":true}}}`),
+				),
+			},
+		},
+	})
+}
+
+func TestAccDataSourceEnrichPolicyConnectionAPIKey(t *testing.T) {
+	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	endpoint := primaryESEndpoint()
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccEnrichPolicyDataSourceConnectionAPIKey(name),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_enrich_policy.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "name", name),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "policy_type", "match"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "match_field", "email"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "indices.#", "1"),
+					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_enrich_policy.test", "indices.*", name),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "enrich_fields.#", "2"),
+					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_enrich_policy.test", "enrich_fields.*", "first_name"),
+					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_enrich_policy.test", "enrich_fields.*", "last_name"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "query", `{"match_all":{}}`),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.#", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.endpoints.#", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.endpoints.0", endpoint),
+				),
+			},
+		},
+	})
+}
+
+func TestAccDataSourceEnrichPolicyConnectionBasicAuth(t *testing.T) {
+	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	endpoint := primaryESEndpoint()
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { preCheckESBasicAuth(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccEnrichPolicyDataSourceConnectionBasicAuth(name),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_enrich_policy.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "name", name),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "policy_type", "match"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "match_field", "email"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "indices.#", "1"),
+					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_enrich_policy.test", "indices.*", name),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "enrich_fields.#", "2"),
+					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_enrich_policy.test", "enrich_fields.*", "first_name"),
+					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_enrich_policy.test", "enrich_fields.*", "last_name"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "query", `{"match_all":{}}`),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.#", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.endpoints.#", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.endpoints.0", endpoint),
+				),
+			},
+		},
+	})
+}
+
+func TestAccDataSourceEnrichPolicyConnectionValidation(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				Config:      testAccEnrichPolicyDataSourceConnectionValidationCAConflict(),
+				ExpectError: regexp.MustCompile(`(?s)(Invalid Attribute Combination|ca_file.*ca_data|ca_data.*ca_file)`),
+			},
+			{
+				Config:      testAccEnrichPolicyDataSourceConnectionValidationCertData(),
+				ExpectError: regexp.MustCompile(`(?s)(Missing Configuration for Required Attribute|cert_data.*key_data|key_data.*cert_data)`),
+			},
+			{
+				Config:      testAccEnrichPolicyDataSourceConnectionValidationCertFile(),
+				ExpectError: regexp.MustCompile(`(?s)(Missing Configuration for Required Attribute|cert_file.*key_file|key_file.*cert_file)`),
+			},
+			{
+				Config:      testAccEnrichPolicyDataSourceConnectionValidationClientAuth(),
+				ExpectError: regexp.MustCompile(`(?s)(Missing Configuration for Required Attribute|es_client_authentication.*bearer_token|bearer_token.*es_client_authentication)`),
+			},
+			{
+				Config:      testAccEnrichPolicyDataSourceConnectionValidationMultipleBlocks(),
+				ExpectError: regexp.MustCompile(`(?s)(at most 1 elements|at most 1 element|elasticsearch_connection)`),
+			},
+		},
+	})
+}
+
+func TestAccResourceEnrichPolicyConnection(t *testing.T) {
+	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkEnrichPolicyDestroyFW(name),
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccEnrichPolicyResourceConnection(name),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_enrich_policy.policy", "id"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "name", name),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "policy_type", "match"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "match_field", "email"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "indices.#", "1"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_enrich_policy.policy", "indices.*", name),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "enrich_fields.#", "1"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_enrich_policy.policy", "enrich_fields.*", "first_name"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "execute", "true"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccDataSourceEnrichPolicyTermQuery(t *testing.T) {
 	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
@@ -415,6 +623,35 @@ resource "elasticstack_elasticsearch_enrich_policy" "policy" {
   query = <<-EOD
   {"match_all": {}}
   EOD
+}
+	`, name, name)
+}
+
+func testAccEnrichPolicyGeoMatch(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_index" "geo_index" {
+  name = "%s"
+
+  mappings = jsonencode({
+    properties = {
+      location    = { type = "geo_shape" }
+      name        = { type = "keyword" }
+      description = { type = "text" }
+    }
+  })
+  deletion_protection = false
+}
+
+resource "elasticstack_elasticsearch_enrich_policy" "policy" {
+  name          = "%s"
+  policy_type   = "geo_match"
+  indices       = [elasticstack_elasticsearch_index.geo_index.name]
+  match_field   = "location"
+  enrich_fields = ["name", "description"]
 }
 	`, name, name)
 }
@@ -604,6 +841,288 @@ data "elasticstack_elasticsearch_enrich_policy" "test" {
 `, name, name, connBlock)
 }
 
+func testAccEnrichPolicyDataSourceQueryNull(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_index" "my_index" {
+  name = "%s"
+
+  mappings = jsonencode({
+    properties = {
+      email      = { type = "keyword" }
+      first_name = { type = "text" }
+      last_name  = { type = "text" }
+    }
+  })
+  deletion_protection = false
+}
+
+resource "elasticstack_elasticsearch_enrich_policy" "policy" {
+  name          = "%s"
+  policy_type   = "match"
+  indices       = [elasticstack_elasticsearch_index.my_index.name]
+  match_field   = "email"
+  enrich_fields = ["first_name", "last_name"]
+}
+
+data "elasticstack_elasticsearch_enrich_policy" "test" {
+  name = elasticstack_elasticsearch_enrich_policy.policy.name
+}
+`, name, name)
+}
+
+func testAccEnrichPolicyDataSourceQueryUpdate(name string, withQuery bool) string {
+	query := ""
+	if withQuery {
+		query = `
+  query = jsonencode({ term = { active = { value = true } } })`
+	}
+
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_index" "my_index" {
+  name = "%s"
+
+  mappings = jsonencode({
+    properties = {
+      email  = { type = "keyword" }
+      active = { type = "boolean" }
+      city   = { type = "keyword" }
+    }
+  })
+  deletion_protection = false
+}
+
+resource "elasticstack_elasticsearch_enrich_policy" "policy" {
+  name          = "%s"
+  policy_type   = "match"
+  indices       = [elasticstack_elasticsearch_index.my_index.name]
+  match_field   = "email"
+  enrich_fields = ["city"]%s
+}
+
+data "elasticstack_elasticsearch_enrich_policy" "test" {
+  name = elasticstack_elasticsearch_enrich_policy.policy.name
+}
+`, name, name, query)
+}
+
+func testAccEnrichPolicyDataSourceConnectionAPIKey(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_index" "my_index" {
+  name = "%s"
+
+  mappings = jsonencode({
+    properties = {
+      email      = { type = "keyword" }
+      first_name = { type = "text" }
+      last_name  = { type = "text" }
+    }
+  })
+  deletion_protection = false
+}
+
+resource "elasticstack_elasticsearch_enrich_policy" "policy" {
+  name          = "%s"
+  policy_type   = "match"
+  indices       = [elasticstack_elasticsearch_index.my_index.name]
+  match_field   = "email"
+  enrich_fields = ["first_name", "last_name"]
+  query         = jsonencode({ match_all = {} })
+}
+
+resource "elasticstack_elasticsearch_security_api_key" "test" {
+  name = "%s-api-key"
+  role_descriptors = jsonencode({
+    enrich = {
+      cluster = ["all"]
+    }
+  })
+}
+
+data "elasticstack_elasticsearch_enrich_policy" "test" {
+  name = elasticstack_elasticsearch_enrich_policy.policy.name
+
+  elasticsearch_connection {
+    endpoints = [%q]
+    api_key   = elasticstack_elasticsearch_security_api_key.test.encoded
+    headers = {
+      "X-Terraform-Test" = "enrich-policy"
+    }
+  }
+}
+`, name, name, name, primaryESEndpoint())
+}
+
+func testAccEnrichPolicyDataSourceConnectionBasicAuth(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_index" "my_index" {
+  name = "%s"
+
+  mappings = jsonencode({
+    properties = {
+      email      = { type = "keyword" }
+      first_name = { type = "text" }
+      last_name  = { type = "text" }
+    }
+  })
+  deletion_protection = false
+}
+
+resource "elasticstack_elasticsearch_enrich_policy" "policy" {
+  name          = "%s"
+  policy_type   = "match"
+  indices       = [elasticstack_elasticsearch_index.my_index.name]
+  match_field   = "email"
+  enrich_fields = ["first_name", "last_name"]
+  query         = jsonencode({ match_all = {} })
+}
+
+data "elasticstack_elasticsearch_enrich_policy" "test" {
+  name = elasticstack_elasticsearch_enrich_policy.policy.name
+
+  elasticsearch_connection {
+    endpoints = [%q]
+    username  = %q
+    password  = %q
+    insecure  = false
+  }
+}
+`, name, name, primaryESEndpoint(), os.Getenv("ELASTICSEARCH_USERNAME"), os.Getenv("ELASTICSEARCH_PASSWORD"))
+}
+
+func testAccEnrichPolicyResourceConnection(name string) string {
+	connBlock := buildESConnectionBlock()
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_index" "my_index" {
+  name = "%s"
+
+  mappings = jsonencode({
+    properties = {
+      email      = { type = "keyword" }
+      first_name = { type = "text" }
+    }
+  })
+  deletion_protection = false
+}
+
+resource "elasticstack_elasticsearch_enrich_policy" "policy" {
+  name          = "%s"
+  policy_type   = "match"
+  indices       = [elasticstack_elasticsearch_index.my_index.name]
+  match_field   = "email"
+  enrich_fields = ["first_name"]
+
+  elasticsearch_connection {
+    %s
+  }
+}
+`, name, name, connBlock)
+}
+
+func testAccEnrichPolicyDataSourceConnectionValidationCAConflict() string {
+	return `
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+data "elasticstack_elasticsearch_enrich_policy" "test" {
+  name = "validation"
+
+  elasticsearch_connection {
+    ca_file = "/tmp/ca.pem"
+    ca_data = "pem-data"
+  }
+}
+`
+}
+
+func testAccEnrichPolicyDataSourceConnectionValidationCertData() string {
+	return `
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+data "elasticstack_elasticsearch_enrich_policy" "test" {
+  name = "validation"
+
+  elasticsearch_connection {
+    cert_data = "pem-data"
+  }
+}
+`
+}
+
+func testAccEnrichPolicyDataSourceConnectionValidationCertFile() string {
+	return `
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+data "elasticstack_elasticsearch_enrich_policy" "test" {
+  name = "validation"
+
+  elasticsearch_connection {
+    cert_file = "/tmp/cert.pem"
+  }
+}
+`
+}
+
+func testAccEnrichPolicyDataSourceConnectionValidationClientAuth() string {
+	return `
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+data "elasticstack_elasticsearch_enrich_policy" "test" {
+  name = "validation"
+
+  elasticsearch_connection {
+    es_client_authentication = "Authorization"
+  }
+}
+`
+}
+
+func testAccEnrichPolicyDataSourceConnectionValidationMultipleBlocks() string {
+	return `
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+data "elasticstack_elasticsearch_enrich_policy" "test" {
+  name = "validation"
+
+  elasticsearch_connection {
+    endpoints = ["http://localhost:9200"]
+  }
+
+  elasticsearch_connection {
+    endpoints = ["http://localhost:9200"]
+  }
+}
+`
+}
+
 // buildESConnectionBlock returns the inner attributes for an elasticsearch_connection block
 // using environment variables available in the acceptance test environment.
 func buildESConnectionBlock() string {
@@ -630,6 +1149,24 @@ func buildESConnectionBlock() string {
 	return fmt.Sprintf(`endpoints = [%s]
     username  = "%s"
     password  = "%s"`, endpointList, username, password)
+}
+
+func preCheckESBasicAuth(t *testing.T) {
+	acctest.PreCheck(t)
+	if os.Getenv("ELASTICSEARCH_USERNAME") == "" || os.Getenv("ELASTICSEARCH_PASSWORD") == "" {
+		t.Skip("ELASTICSEARCH_USERNAME and ELASTICSEARCH_PASSWORD must be set for explicit basic auth coverage")
+	}
+}
+
+func primaryESEndpoint() string {
+	for endpoint := range strings.SplitSeq(os.Getenv("ELASTICSEARCH_ENDPOINTS"), ",") {
+		endpoint = strings.TrimSpace(endpoint)
+		if endpoint != "" {
+			return endpoint
+		}
+	}
+
+	return "http://localhost:9200"
 }
 
 func testAccEnrichPolicyDataSourceTermQuery(name string) string {

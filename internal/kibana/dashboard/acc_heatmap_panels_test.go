@@ -18,6 +18,7 @@
 package dashboard_test
 
 import (
+	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -30,7 +31,7 @@ import (
 func TestAccResourceDashboardHeatmap(t *testing.T) {
 	dashboardTitle := "Test Dashboard with Heatmap " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
@@ -90,8 +91,7 @@ func TestAccResourceDashboardHeatmap(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.heatmap_config.axes.y.title.visible", "true"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.heatmap_config.cells.labels.visible", "false"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.heatmap_config.filters.#", "1"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.heatmap_config.filters.0.query", "host.os.keyword: \"linux\""),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.heatmap_config.filters.0.language", "kuery"),
+					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.heatmap_config.filters.0.filter_json", regexp.MustCompile(`"field":"host.os.keyword"`)),
 				),
 			},
 			{
@@ -106,6 +106,9 @@ func TestAccResourceDashboardHeatmap(t *testing.T) {
 				ImportStateVerify: true,
 				ImportStateVerifyIgnore: []string{
 					"panels.0.heatmap_config.metric_json",
+					"panels.0.heatmap_config.dataset_json",
+					"panels.0.heatmap_config.x_axis_json",
+					"panels.0.heatmap_config.y_axis_json",
 				},
 			},
 		},

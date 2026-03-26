@@ -22,12 +22,15 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"os"
+	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
+	"github.com/google/uuid"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -40,17 +43,37 @@ const (
 	alertingRuleActionParamsUpdated = `{"documents":[{"message":"{{context.message}} 3","rule_id":"{{rule.id}} 1","rule_name":"{{rule.name}} 2"}]}`
 )
 
+func TestMain(m *testing.M) {
+	originalAPIKey, hadAPIKey := os.LookupEnv("KIBANA_API_KEY")
+	if err := os.Setenv("KIBANA_API_KEY", ""); err != nil {
+		panic(err)
+	}
+
+	exitCode := m.Run()
+
+	if hadAPIKey {
+		if err := os.Setenv("KIBANA_API_KEY", originalAPIKey); err != nil {
+			panic(err)
+		}
+	} else if err := os.Unsetenv("KIBANA_API_KEY"); err != nil {
+		panic(err)
+	}
+
+	os.Exit(exitCode)
+}
+
 func TestAccResourceAlertingRule(t *testing.T) {
 	minSupportedVersion := version.Must(version.NewSemver("7.14.0"))
 	minSupportedFrequencyVersion := version.Must(version.NewSemver("8.7.0"))
 	minSupportedAlertsFilterVersion := version.Must(version.NewSemver("8.9.0"))
 	minSupportedAlertDelayVersion := version.Must(version.NewSemver("8.13.0"))
 
-	t.Setenv("KIBANA_API_KEY", "")
-
 	ruleName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	ruleIDMain := uuid.New().String()
+	ruleIDLogs := uuid.New().String()
+	ruleIDNoFreq := uuid.New().String()
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceAlertingRuleDestroy,
 		Steps: []resource.TestStep{
@@ -59,11 +82,12 @@ func TestAccResourceAlertingRule(t *testing.T) {
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable(ruleName),
+					"name":    config.StringVariable(ruleName),
+					"rule_id": config.StringVariable(ruleIDMain),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "name", ruleName),
-					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_id", "bf33ce2d-9fc4-5131-a350-b5bd6482735c"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_id", ruleIDMain),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "consumer", "alerts"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "notify_when", "onActiveAlert"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_type_id", ".index-threshold"),
@@ -83,7 +107,8 @@ func TestAccResourceAlertingRule(t *testing.T) {
 				ImportStateVerifyIgnore: []string{"notify_when", "last_execution_date", "last_execution_status"},
 				ConfigDirectory:         acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable(ruleName),
+					"name":    config.StringVariable(ruleName),
+					"rule_id": config.StringVariable(ruleIDMain),
 				},
 			},
 			{
@@ -91,11 +116,12 @@ func TestAccResourceAlertingRule(t *testing.T) {
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable(fmt.Sprintf("Updated %s", ruleName)),
+					"name":    config.StringVariable(fmt.Sprintf("Updated %s", ruleName)),
+					"rule_id": config.StringVariable(ruleIDMain),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "name", fmt.Sprintf("Updated %s", ruleName)),
-					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_id", "bf33ce2d-9fc4-5131-a350-b5bd6482735c"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_id", ruleIDMain),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "consumer", "alerts"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "notify_when", "onActiveAlert"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_type_id", ".index-threshold"),
@@ -110,11 +136,12 @@ func TestAccResourceAlertingRule(t *testing.T) {
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedFrequencyVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("frequency_create"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable(ruleName),
+					"name":    config.StringVariable(ruleName),
+					"rule_id": config.StringVariable(ruleIDMain),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "name", ruleName),
-					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_id", "bf33ce2d-9fc4-5131-a350-b5bd6482735c"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_id", ruleIDMain),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "consumer", "alerts"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_type_id", ".index-threshold"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "interval", "1m"),
@@ -135,11 +162,12 @@ func TestAccResourceAlertingRule(t *testing.T) {
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedFrequencyVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("frequency_update"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable(fmt.Sprintf("Updated %s", ruleName)),
+					"name":    config.StringVariable(fmt.Sprintf("Updated %s", ruleName)),
+					"rule_id": config.StringVariable(ruleIDMain),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "name", fmt.Sprintf("Updated %s", ruleName)),
-					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_id", "bf33ce2d-9fc4-5131-a350-b5bd6482735c"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_id", ruleIDMain),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "consumer", "alerts"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_type_id", ".index-threshold"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "interval", "10m"),
@@ -162,11 +190,12 @@ func TestAccResourceAlertingRule(t *testing.T) {
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedAlertsFilterVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("alerts_filter_create"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable(ruleName),
+					"name":    config.StringVariable(ruleName),
+					"rule_id": config.StringVariable(ruleIDLogs),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "name", ruleName),
-					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_id", "cf33ce2d-9fc4-5131-a350-b5bd6482736c"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_id", ruleIDLogs),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "consumer", "alerts"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_type_id", "logs.alert.document.count"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "interval", "1m"),
@@ -193,11 +222,12 @@ func TestAccResourceAlertingRule(t *testing.T) {
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedAlertsFilterVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("alerts_filter_update"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable(ruleName),
+					"name":    config.StringVariable(ruleName),
+					"rule_id": config.StringVariable(ruleIDLogs),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "name", ruleName),
-					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_id", "cf33ce2d-9fc4-5131-a350-b5bd6482736c"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_id", ruleIDLogs),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "consumer", "alerts"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_type_id", "logs.alert.document.count"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "interval", "1m"),
@@ -219,11 +249,12 @@ func TestAccResourceAlertingRule(t *testing.T) {
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedAlertDelayVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("alert_delay_create"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable(ruleName),
+					"name":    config.StringVariable(ruleName),
+					"rule_id": config.StringVariable(ruleIDLogs),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "name", ruleName),
-					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_id", "cf33ce2d-9fc4-5131-a350-b5bd6482736c"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_id", ruleIDLogs),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "consumer", "alerts"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_type_id", ".index-threshold"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "interval", "1m"),
@@ -245,11 +276,12 @@ func TestAccResourceAlertingRule(t *testing.T) {
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedAlertDelayVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("alert_delay_update"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable(ruleName),
+					"name":    config.StringVariable(ruleName),
+					"rule_id": config.StringVariable(ruleIDLogs),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "name", ruleName),
-					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_id", "cf33ce2d-9fc4-5131-a350-b5bd6482736c"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_id", ruleIDLogs),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "consumer", "alerts"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_type_id", ".index-threshold"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "interval", "1m"),
@@ -271,11 +303,12 @@ func TestAccResourceAlertingRule(t *testing.T) {
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("actions_no_frequency_create"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable(ruleName),
+					"name":    config.StringVariable(ruleName),
+					"rule_id": config.StringVariable(ruleIDNoFreq),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "name", ruleName),
-					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_id", "af33ce2d-9fc4-5131-a350-b5bd6482746f"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_id", ruleIDNoFreq),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "consumer", "alerts"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "notify_when", "onActionGroupChange"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_type_id", ".index-threshold"),
@@ -298,11 +331,10 @@ func TestAccResourceAlertingRule(t *testing.T) {
 func TestAccResourceAlertingRuleParamsLifecycle(t *testing.T) {
 	minSupportedVersion := version.Must(version.NewSemver("7.14.0"))
 
-	t.Setenv("KIBANA_API_KEY", "")
-
 	ruleName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	ruleID := uuid.New().String()
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceAlertingRuleDestroy,
 		Steps: []resource.TestStep{
@@ -311,11 +343,12 @@ func TestAccResourceAlertingRuleParamsLifecycle(t *testing.T) {
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_explicit"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable(ruleName),
+					"name":    config.StringVariable(ruleName),
+					"rule_id": config.StringVariable(ruleID),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "name", ruleName),
-					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_id", "ff33ce2d-9fc4-5131-a350-b5bd6482799f"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_id", ruleID),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_type_id", ".index-threshold"),
 					testCheckAlertingRuleAPIParamStringEquals("elasticstack_kibana_alerting_rule.test_rule", "aggType", "avg"),
 					testCheckAlertingRuleAPIParamStringEquals("elasticstack_kibana_alerting_rule.test_rule", "aggField", "version"),
@@ -351,7 +384,8 @@ func TestAccResourceAlertingRuleParamsLifecycle(t *testing.T) {
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("remove_aggtype"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable(ruleName),
+					"name":    config.StringVariable(ruleName),
+					"rule_id": config.StringVariable(ruleID),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					// When aggType/aggField are removed from config, Kibana should revert to its defaults.
@@ -384,7 +418,8 @@ func TestAccResourceAlertingRuleParamsLifecycle(t *testing.T) {
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("add_aggtype"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable(ruleName),
+					"name":    config.StringVariable(ruleName),
+					"rule_id": config.StringVariable(ruleID),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					testCheckAlertingRuleAPIParamStringEquals("elasticstack_kibana_alerting_rule.test_rule", "aggType", "avg"),
@@ -422,11 +457,10 @@ func TestAccResourceAlertingRuleParamsLifecycle(t *testing.T) {
 func TestAccResourceAlertingRuleEnabledFalseOnCreate(t *testing.T) {
 	minSupportedVersion := version.Must(version.NewSemver("7.14.0"))
 
-	t.Setenv("KIBANA_API_KEY", "")
-
 	ruleName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	ruleID := uuid.New().String()
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceAlertingRuleDestroy,
 		Steps: []resource.TestStep{
@@ -435,11 +469,12 @@ func TestAccResourceAlertingRuleEnabledFalseOnCreate(t *testing.T) {
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable(ruleName),
+					"name":    config.StringVariable(ruleName),
+					"rule_id": config.StringVariable(ruleID),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule_disabled", "name", ruleName),
-					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule_disabled", "rule_id", "df33ce2d-9fc4-5131-a350-b5bd6482737d"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule_disabled", "rule_id", ruleID),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule_disabled", "consumer", "alerts"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule_disabled", "rule_type_id", ".index-threshold"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule_disabled", "interval", "1m"),
@@ -453,9 +488,7 @@ func TestAccResourceAlertingRuleEnabledFalseOnCreate(t *testing.T) {
 func TestAccResourceAlertingRuleInconsistentParams(t *testing.T) {
 	minSupportedVersion := version.Must(version.NewSemver("8.13.0"))
 
-	t.Setenv("KIBANA_API_KEY", "")
-
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceAlertingRuleDestroy,
 		Steps: []resource.TestStep{
@@ -486,16 +519,15 @@ func TestAccResourceAlertingRuleInconsistentParams(t *testing.T) {
 }
 
 //go:embed testdata/TestAccResourceAlertingRuleFromSDK/create/rule.tf
-var sdkCreateTestConfig string
+var testAccResourceAlertingRuleFromSDKCreateConfig string
 
 func TestAccResourceAlertingRuleFromSDK(t *testing.T) {
 	minSupportedVersion := version.Must(version.NewSemver("7.14.0"))
 
-	t.Setenv("KIBANA_API_KEY", "")
-
 	ruleName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	ruleID := uuid.New().String()
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceAlertingRuleDestroy,
 		Steps: []resource.TestStep{
@@ -508,13 +540,14 @@ func TestAccResourceAlertingRuleFromSDK(t *testing.T) {
 						VersionConstraint: "0.13.1",
 					},
 				},
-				Config: sdkCreateTestConfig,
+				Config: testAccResourceAlertingRuleFromSDKCreateConfig,
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable(ruleName),
+					"name":    config.StringVariable(ruleName),
+					"rule_id": config.StringVariable(ruleID),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "name", ruleName),
-					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_id", "ef33ce2d-9fc4-5131-a350-b5bd6482745e"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_id", ruleID),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "consumer", "alerts"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_type_id", ".index-threshold"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "interval", "1m"),
@@ -527,11 +560,12 @@ func TestAccResourceAlertingRuleFromSDK(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable(ruleName),
+					"name":    config.StringVariable(ruleName),
+					"rule_id": config.StringVariable(ruleID),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "name", ruleName),
-					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_id", "ef33ce2d-9fc4-5131-a350-b5bd6482745e"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_id", ruleID),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "consumer", "alerts"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_type_id", ".index-threshold"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "interval", "1m"),
@@ -545,11 +579,9 @@ func TestAccResourceAlertingRuleFromSDK(t *testing.T) {
 func TestAccResourceAlertingRuleAlertDelay(t *testing.T) {
 	minSupportedVersion := version.Must(version.NewSemver("8.13.0"))
 
-	t.Setenv("KIBANA_API_KEY", "")
-
 	ruleName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceAlertingRuleDestroy,
 		Steps: []resource.TestStep{
@@ -586,6 +618,212 @@ func TestAccResourceAlertingRuleAlertDelay(t *testing.T) {
 					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_alerting_rule.autoops_service_crashloopbackoff", "tags.*", "autoops"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.autoops_service_crashloopbackoff", "alert_delay", "1"),
 				),
+			},
+		},
+	})
+}
+
+func TestAccResourceAlertingRuleFlapping(t *testing.T) {
+	minSupportedFlappingVersion := version.Must(version.NewSemver("8.16.0"))
+
+	ruleName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	ruleID := uuid.New().String()
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceAlertingRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedFlappingVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"name":    config.StringVariable(ruleName),
+					"rule_id": config.StringVariable(ruleID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "name", ruleName),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_type_id", ".index-threshold"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "flapping.look_back_window", "10"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "flapping.status_change_threshold", "3"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedFlappingVersion),
+				ResourceName:             "elasticstack_kibana_alerting_rule.test_rule",
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ImportStateVerifyIgnore:  []string{"notify_when", "last_execution_date", "last_execution_status"},
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"name":    config.StringVariable(ruleName),
+					"rule_id": config.StringVariable(ruleID),
+				},
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedFlappingVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"name":    config.StringVariable(ruleName),
+					"rule_id": config.StringVariable(ruleID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "name", ruleName),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "flapping.look_back_window", "20"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "flapping.status_change_threshold", "5"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedFlappingVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("no_flapping"),
+				ConfigVariables: config.Variables{
+					"name":    config.StringVariable(ruleName),
+					"rule_id": config.StringVariable(ruleID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "name", ruleName),
+					// Omitting flapping on update does not clear it in Kibana; refresh repopulates state from the API.
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "flapping.look_back_window", "20"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "flapping.status_change_threshold", "5"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceAlertingRuleFlappingEnabled(t *testing.T) {
+	minSupportedFlappingEnabledVersion := version.Must(version.NewSemver("9.3.0"))
+
+	ruleName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	ruleID := uuid.New().String()
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceAlertingRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedFlappingEnabledVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"name":    config.StringVariable(ruleName),
+					"rule_id": config.StringVariable(ruleID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "name", ruleName),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_type_id", ".index-threshold"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "flapping.look_back_window", "10"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "flapping.status_change_threshold", "3"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "flapping.enabled", "true"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedFlappingEnabledVersion),
+				ResourceName:             "elasticstack_kibana_alerting_rule.test_rule",
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ImportStateVerifyIgnore:  []string{"notify_when", "last_execution_date", "last_execution_status"},
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"name":    config.StringVariable(ruleName),
+					"rule_id": config.StringVariable(ruleID),
+				},
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedFlappingEnabledVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"name":    config.StringVariable(ruleName),
+					"rule_id": config.StringVariable(ruleID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "name", ruleName),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "flapping.look_back_window", "20"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "flapping.status_change_threshold", "5"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "flapping.enabled", "false"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceAlertingRuleEsqlTermField verifies that the termField parameter
+// is accepted for ESQL (.es-query with searchType=esqlQuery) alert rules and
+// roundtrips cleanly without producing inconsistent state on re-apply.
+func TestAccResourceAlertingRuleEsqlTermField(t *testing.T) {
+	minSupportedVersion := version.Must(version.NewSemver("8.13.0"))
+
+	ruleName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceAlertingRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(ruleName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.esql_term_field", "name", ruleName),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.esql_term_field", "rule_type_id", ".es-query"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.esql_term_field", "consumer", "alerts"),
+					testCheckAlertingRuleAPIParamStringEquals("elasticstack_kibana_alerting_rule.esql_term_field", "termField", "rule.id"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(ruleName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.esql_term_field", "name", ruleName),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceAlertingRuleFrequencyExclusivity asserts REQ-042: plan-time validation rejects
+// combining rule-level notify_when or throttle with actions[*].frequency.
+func TestAccResourceAlertingRuleFrequencyExclusivity(t *testing.T) {
+	minSupportedFrequencyVersion := version.Must(version.NewSemver("8.7.0"))
+
+	ruleName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	ruleID := uuid.New().String()
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceAlertingRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedFrequencyVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("notify_when_with_frequency"),
+				ConfigVariables: config.Variables{
+					"name":    config.StringVariable(ruleName),
+					"rule_id": config.StringVariable(ruleID),
+				},
+				ExpectError: regexp.MustCompile(`Cannot combine rule-level notify_when with actions\.frequency`),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedFrequencyVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("throttle_with_frequency"),
+				ConfigVariables: config.Variables{
+					"name":    config.StringVariable(ruleName),
+					"rule_id": config.StringVariable(ruleID),
+				},
+				ExpectError: regexp.MustCompile(`Cannot combine rule-level throttle with actions\.frequency`),
 			},
 		},
 	})
@@ -655,7 +893,6 @@ func testCheckAlertingRuleAPIParams(resourceName string, check func(params map[s
 	}
 }
 
-//nolint:unparam
 func testCheckAlertingRuleAPIParamStringEquals(resourceName, key, expected string) resource.TestCheckFunc {
 	return testCheckAlertingRuleAPIParams(resourceName, func(params map[string]any) error {
 		v, ok := params[key]

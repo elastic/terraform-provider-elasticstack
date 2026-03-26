@@ -192,7 +192,7 @@ func (k kibanaConfig) withEnvironmentOverrides() kibanaConfig {
 	k.Password = withEnvironmentOverride(k.Password, "KIBANA_PASSWORD")
 	k.ApiKey = withEnvironmentOverride(k.ApiKey, "KIBANA_API_KEY")
 	k.BearerToken = withEnvironmentOverride(k.BearerToken, "KIBANA_BEARER_TOKEN")
-	k.Address = withEnvironmentOverride(k.Address, "KIBANA_ENDPOINT")
+	k.Address = withEnvironmentOverrideUnlessConfigured(k.Address, "KIBANA_ENDPOINT", PreferConfiguredKibanaEndpointEnvVar)
 	if caCerts, ok := os.LookupEnv("KIBANA_CA_CERTS"); ok {
 		k.CAs = strings.Split(caCerts, ",")
 	}

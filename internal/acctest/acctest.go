@@ -25,6 +25,7 @@ import (
 	"path"
 	"testing"
 
+	clientconfig "github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
 	"github.com/elastic/terraform-provider-elasticstack/provider"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-testing/config"
@@ -70,6 +71,10 @@ func PreCheck(t *testing.T) {
 	if !authOk {
 		t.Fatal("ELASTICSEARCH_USERNAME and ELASTICSEARCH_PASSWORD, or KIBANA_USERNAME and KIBANA_PASSWORD, or ELASTICSEARCH_API_KEY, or KIBANA_API_KEY must be set for acceptance tests to run")
 	}
+}
+
+func PreCheckWithExplicitKibanaEndpoint(t *testing.T) {
+	t.Setenv(clientconfig.PreferConfiguredKibanaEndpointEnvVar, "true")
 }
 
 func NamedTestCaseDirectory(name string) config.TestStepConfigFunc {

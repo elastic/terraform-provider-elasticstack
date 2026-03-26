@@ -18,7 +18,7 @@ resource "elasticstack_kibana_dashboard" "test" {
       y = 0
     }
     panels = [{
-      type = "DASHBOARD_MARKDOWN"
+      type = "markdown"
       grid = {
         x = 0
         y = 0
@@ -31,7 +31,7 @@ resource "elasticstack_kibana_dashboard" "test" {
         hide_title = false
       }
       }, {
-      type = "DASHBOARD_MARKDOWN"
+      type = "markdown"
       grid = {
         x = 0
         y = 10
@@ -50,7 +50,7 @@ resource "elasticstack_kibana_dashboard" "test" {
       y = 20
     }
     panels = [{
-      type = "DASHBOARD_MARKDOWN"
+      type = "markdown"
       grid = {
         x = 0
         y = 0
@@ -63,7 +63,7 @@ resource "elasticstack_kibana_dashboard" "test" {
         hide_title = false
       }
       }, {
-      type = "DASHBOARD_MARKDOWN"
+      type = "markdown"
       grid = {
         x = 0
         y = 10

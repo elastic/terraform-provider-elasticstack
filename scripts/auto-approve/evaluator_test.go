@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/google/go-github/v74/github"
+	"github.com/google/go-github/v84/github"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -100,22 +100,31 @@ func TestEvaluate(t *testing.T) {
 			wantReason:  "pull request contains files outside *_test.go and *.tf",
 		},
 		{
-			name: "rejects exactly 300 edited lines",
+			name: "approves copilot PR with total edits between 300 and 1000",
 			mutate: func(in *EvaluationInput) {
-				in.PullRequest.Additions = github.Ptr(200)
-				in.PullRequest.Deletions = github.Ptr(100)
+				in.PullRequest.Additions = github.Ptr(400)
+				in.PullRequest.Deletions = github.Ptr(500)
 			},
-			wantApprove: false,
-			wantReason:  "edited lines must be < 300",
+			wantApprove: true,
+			wantReason:  "all gates passed",
 		},
 		{
-			name: "rejects over 300 edited lines",
+			name: "rejects exactly 1000 edited lines",
 			mutate: func(in *EvaluationInput) {
-				in.PullRequest.Additions = github.Ptr(250)
-				in.PullRequest.Deletions = github.Ptr(80)
+				in.PullRequest.Additions = github.Ptr(600)
+				in.PullRequest.Deletions = github.Ptr(400)
 			},
 			wantApprove: false,
-			wantReason:  "edited lines must be < 300",
+			wantReason:  "edited lines must be < 1000",
+		},
+		{
+			name: "rejects over 1000 edited lines",
+			mutate: func(in *EvaluationInput) {
+				in.PullRequest.Additions = github.Ptr(600)
+				in.PullRequest.Deletions = github.Ptr(500)
+			},
+			wantApprove: false,
+			wantReason:  "edited lines must be < 1000",
 		},
 		{
 			name: "rejects when no category matches",
@@ -146,12 +155,12 @@ func TestEvaluate(t *testing.T) {
 			wantReason:  "pull request is not open",
 		},
 		{
-			name: "rejects draft pull request",
+			name: "approves draft pull request when all gates pass",
 			mutate: func(in *EvaluationInput) {
 				in.PullRequest.Draft = github.Ptr(true)
 			},
-			wantApprove: false,
-			wantReason:  "pull request is draft",
+			wantApprove: true,
+			wantReason:  "all gates passed",
 		},
 	}
 

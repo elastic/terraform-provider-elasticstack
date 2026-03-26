@@ -68,14 +68,14 @@ resource "elasticstack_kibana_dashboard" "test" {
                 mapping = [
                   {
                     color = {
-                      type  = "colorCode"
+                      type  = "color_code"
                       value = "#54B399"
                     }
                     values = ["host-a"]
                   }
                 ]
                 unassignedColor = {
-                  type  = "colorCode"
+                  type  = "color_code"
                   value = "#D3DAE6"
                 }
               }

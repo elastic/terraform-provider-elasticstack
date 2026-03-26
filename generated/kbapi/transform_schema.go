@@ -982,7 +982,30 @@ func fixDashboardPanelItemRefs(schema *Schema) {
 	dashboardPath.Get.CreateRef(schema, "dashboard_panel_section", "responses.200.content.application/json.schema.properties.data.properties.panels.items.anyOf.1")
 	dashboardPath.Get.CreateRef(schema, "dashboard_panels", "responses.200.content.application/json.schema.properties.data.properties.panels")
 
+	schema.Components.Move("schemas.dashboard_panel_section.properties.panels.items.anyOf", "schemas.dashboard_panel_section.properties.panels.items.oneOf")
+	schema.Components.Set("schemas.dashboard_panel_section.properties.panels.items.discriminator", Map{"propertyName": "type"})
 	schema.Components.CreateRef(schema, "dashboard_panel_item", "schemas.dashboard_panel_section.properties.panels.items")
+
+	const panelTypePrefix = "kbn-dashboard-panel-"
+	panelOneOf := schema.Components.MustGetSlice("schemas.dashboard_panel_item.oneOf")
+	panelTypeMapping := Map{}
+	for _, entry := range panelOneOf {
+		entryMap, ok := entry.(Map)
+		if !ok {
+			continue
+		}
+		ref, ok := entryMap["$ref"].(string)
+		if !ok {
+			continue
+		}
+		schemaName := strings.TrimPrefix(ref, "#/components/schemas/")
+		typeKey := strings.TrimPrefix(schemaName, panelTypePrefix)
+		panelTypeMapping[typeKey] = ref
+	}
+	schema.Components.Set("schemas.dashboard_panel_item.discriminator", Map{
+		"propertyName": "type",
+		"mapping":      panelTypeMapping,
+	})
 }
 
 func fixSecurityExceptionListItems(schema *Schema) {

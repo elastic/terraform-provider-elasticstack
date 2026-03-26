@@ -18,6 +18,7 @@
 package dashboard_test
 
 import (
+	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -30,7 +31,7 @@ import (
 func TestAccResourceDashboardMetricChart(t *testing.T) {
 	dashboardTitle := "Test Dashboard with Metric Chart " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
@@ -89,8 +90,7 @@ func TestAccResourceDashboardMetricChart(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.metric_chart_config.breakdown_by_json"),
 					// Check filters
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.metric_chart_config.filters.#", "1"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.metric_chart_config.filters.0.language", "kuery"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.metric_chart_config.filters.0.query", "event.category:web"),
+					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.metric_chart_config.filters.0.filter_json", regexp.MustCompile(`"field":"event.category"`)),
 				),
 			},
 			{
