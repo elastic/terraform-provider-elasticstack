@@ -24,13 +24,14 @@ import (
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 // wiredConfigModel is the Terraform model for a wired stream's configuration.
 type wiredConfigModel struct {
-	ProcessingSteps       []processingStepModel `tfsdk:"processing_steps"`
+	ProcessingSteps       types.List           `tfsdk:"processing_steps"`
 	FieldsJSON            jsontypes.Normalized  `tfsdk:"fields_json"`
 	RoutingJSON           jsontypes.Normalized  `tfsdk:"routing_json"`
 	LifecycleJSON         jsontypes.Normalized  `tfsdk:"lifecycle_json"`
@@ -47,7 +48,7 @@ func (m *wiredConfigModel) populateFromAPI(_ context.Context, ingest *kibanaoapi
 		return diags
 	}
 
-	// Processing steps — split into individual step models for per-step plan diffs.
+	// Processing steps — each step is a JSON-encoded streamlang object.
 	// An empty array from the API is treated as null (no steps configured).
 	if len(ingest.Processing.Steps) > 0 {
 		var rawSteps []json.RawMessage
@@ -56,16 +57,16 @@ func (m *wiredConfigModel) populateFromAPI(_ context.Context, ingest *kibanaoapi
 			return diags
 		}
 		if len(rawSteps) > 0 {
-			steps := make([]processingStepModel, len(rawSteps))
+			elems := make([]attr.Value, len(rawSteps))
 			for i, raw := range rawSteps {
-				steps[i] = processingStepModel{JSON: jsontypes.NewNormalizedValue(string(raw))}
+				elems[i] = jsontypes.NewNormalizedValue(string(raw))
 			}
-			m.ProcessingSteps = steps
+			m.ProcessingSteps = types.ListValueMust(jsontypes.NormalizedType{}, elems)
 		} else {
-			m.ProcessingSteps = nil
+			m.ProcessingSteps = types.ListNull(jsontypes.NormalizedType{})
 		}
 	} else {
-		m.ProcessingSteps = nil
+		m.ProcessingSteps = types.ListNull(jsontypes.NormalizedType{})
 	}
 
 	// Wired-specific fields and routing.
@@ -146,10 +147,10 @@ func (m *wiredConfigModel) toAPIIngest(diags *diag.Diagnostics) *kibanaoapi.Stre
 	ingest := &kibanaoapi.StreamIngest{}
 
 	// Processing steps — the API requires the array to be present (even empty).
-	rawSteps := make([]json.RawMessage, 0, len(m.ProcessingSteps))
-	for _, step := range m.ProcessingSteps {
-		if typeutils.IsKnown(step.JSON) {
-			rawSteps = append(rawSteps, json.RawMessage(step.JSON.ValueString()))
+	rawSteps := make([]json.RawMessage, 0)
+	for _, elem := range m.ProcessingSteps.Elements() {
+		if norm, ok := elem.(jsontypes.Normalized); ok && typeutils.IsKnown(norm) {
+			rawSteps = append(rawSteps, json.RawMessage(norm.ValueString()))
 		}
 	}
 	stepsJSON, err := json.Marshal(rawSteps)

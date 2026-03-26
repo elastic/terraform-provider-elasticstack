@@ -15,13 +15,11 @@ resource "elasticstack_kibana_stream" "wired" {
 
   wired_config = {
     processing_steps = [
-      {
-        json = jsonencode({
-          action   = "grok"
-          from     = "message"
-          patterns = ["%%{GREEDYDATA:attributes.msg}"]
-        })
-      }
+      jsonencode({
+        action   = "grok"
+        from     = "message"
+        patterns = ["%%{GREEDYDATA:attributes.msg}"]
+      })
     ]
   }
 }

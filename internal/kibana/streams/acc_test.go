@@ -201,7 +201,7 @@ func TestAccResourceKibanaStreamWired(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_stream.wired", "description", "Updated wired stream"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_stream.wired", "wired_config.processing_steps.#", "1"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_stream.wired", "wired_config.processing_steps.0.json"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_stream.wired", "wired_config.processing_steps.0"),
 				),
 			},
 			// Step 3: full update — lifecycle, failure_store, index settings, attached query.

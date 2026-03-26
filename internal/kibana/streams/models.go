@@ -23,7 +23,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -35,13 +34,6 @@ const (
 	streamTypeQuery   = "query"
 )
 
-// processingStepModel represents a single ingest processing step.
-// Each step is stored as a JSON object for flexibility across all processor
-// types (grok, dissect, rename, etc.), while still giving users per-step
-// diffs in Terraform plans.
-type processingStepModel struct {
-	JSON jsontypes.Normalized `tfsdk:"json"`
-}
 
 // streamModel is the top-level Terraform model for elasticstack_kibana_stream.
 type streamModel struct {

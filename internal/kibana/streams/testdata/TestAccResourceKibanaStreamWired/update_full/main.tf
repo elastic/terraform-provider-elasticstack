@@ -16,13 +16,11 @@ resource "elasticstack_kibana_stream" "wired" {
   wired_config = {
     # Processing step — streamlang grok format
     processing_steps = [
-      {
-        json = jsonencode({
-          action   = "grok"
-          from     = "message"
-          patterns = ["%%{GREEDYDATA:attributes.msg}"]
-        })
-      }
+      jsonencode({
+        action   = "grok"
+        from     = "message"
+        patterns = ["%%{GREEDYDATA:attributes.msg}"]
+      })
     ]
 
     # Lifecycle: retain data for 30 days
