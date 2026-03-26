@@ -1,6 +1,6 @@
 ## MODIFIED Requirements
 
-### Requirement: Permissions for read, review, push, and label cleanup (REQ-003)
+### Requirement: Permissions for read, review, and push (REQ-003)
 
 The workflow SHALL request permissions sufficient to read the repository, submit pull request reviews and review comments, push commits to the pull request branch via `push-to-pull-request-branch`, and remove the `verify-openspec` label from the triggering pull request when the run completes. At minimum this SHALL include `contents: write`, `pull-requests: write`, and `issues: write` unless the agentic compiler emits a narrower equivalent that still allows those operations.
 
