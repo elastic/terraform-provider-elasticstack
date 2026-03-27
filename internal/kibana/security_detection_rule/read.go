@@ -44,8 +44,9 @@ func (r *securityDetectionRuleResource) Read(ctx context.Context, req resource.R
 		return
 	}
 
-	// Use the extracted read method
-	readData, diags := r.read(ctx, compID.ResourceID, compID.ClusterID)
+	// Use the extracted read method, passing the current state data so that
+	// optional empty list attributes are preserved (not converted to null).
+	readData, diags := r.read(ctx, compID.ResourceID, compID.ClusterID, &data)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -63,11 +64,18 @@ func (r *securityDetectionRuleResource) Read(ctx context.Context, req resource.R
 	resp.Diagnostics.Append(resp.State.Set(ctx, readData)...)
 }
 
-// read extracts the core functionality of reading a security detection rule
-func (r *securityDetectionRuleResource) read(ctx context.Context, resourceID, spaceID string) (*Data, diag.Diagnostics) {
+// read extracts the core functionality of reading a security detection rule.
+// priorData is optional; when provided its field values are used as the starting
+// point before applying API results.  This ensures that optional list attributes
+// explicitly set to an empty list in the configuration remain as empty lists in
+// state rather than being converted to null when the API returns an empty array.
+func (r *securityDetectionRuleResource) read(ctx context.Context, resourceID, spaceID string, priorData *Data) (*Data, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	data := &Data{}
+	if priorData != nil {
+		*data = *priorData
+	}
 	data.initializeAllFieldsToDefaults()
 
 	// Get the rule using kbapi client
