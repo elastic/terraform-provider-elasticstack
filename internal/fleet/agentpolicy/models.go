@@ -471,7 +471,7 @@ func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, feat featur
 				),
 			}
 		}
-		body.AdvancedSettings = model.convertAdvancedSettingsToAPI(ctx).toPostBody()
+		body.AdvancedSettings = model.convertAdvancedSettingsToAPI(ctx)
 	}
 
 	// Handle advanced monitoring options
@@ -630,7 +630,7 @@ func (model *agentPolicyModel) toAPIUpdateModel(ctx context.Context, feat featur
 				),
 			}
 		}
-		body.AdvancedSettings = model.convertAdvancedSettingsToAPI(ctx).toPutBody()
+		body.AdvancedSettings = model.convertAdvancedSettingsToAPI(ctx)
 	}
 
 	// Handle advanced monitoring options
