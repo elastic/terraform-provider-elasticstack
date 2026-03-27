@@ -20,6 +20,7 @@ package dashboard
 import (
 	"context"
 	"maps"
+	"regexp"
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
@@ -50,7 +51,10 @@ const (
 	panelTypeMarkdown     = "markdown"
 	panelTypeLens         = "lens"
 	panelTypeTimeSlider   = "time_slider_control"
+	panelTypeSloBurnRate  = "slo_burn_rate"
 )
+
+var sloBurnRateDurationRegex = regexp.MustCompile(`^\d+[mhd]$`)
 
 var panelConfigNames = []string{
 	"markdown_config",
@@ -68,6 +72,7 @@ var panelConfigNames = []string{
 	"heatmap_config",
 	"waffle_config",
 	"time_slider_control_config",
+	"slo_burn_rate_config",
 }
 
 func siblingPanelConfigPathsExcept(name string, names []string) []path.Expression {
@@ -814,6 +819,88 @@ func getPanelSchema() schema.NestedAttributeObject {
 						siblingPanelConfigPathsExcept("time_slider_control_config", panelConfigNames)...,
 					),
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeTimeSlider}),
+				},
+			},
+			"slo_burn_rate_config": schema.SingleNestedAttribute{
+				MarkdownDescription: panelConfigDescription(
+					"Configuration for an SLO burn rate panel. Use this for panels that visualize the burn rate of an SLO over a configurable look-back window.",
+					"slo_burn_rate_config",
+					panelConfigNames,
+				),
+				Optional: true,
+				Attributes: map[string]schema.Attribute{
+					"slo_id": schema.StringAttribute{
+						MarkdownDescription: "The ID of the SLO to display the burn rate for.",
+						Required:            true,
+					},
+					"duration": schema.StringAttribute{
+						MarkdownDescription: "Duration for the burn rate chart in the format `[value][unit]`, where unit is `m` (minutes), `h` (hours), or `d` (days). For example: `5m`, `3h`, `6d`.",
+						Required:            true,
+						Validators: []validator.String{
+							stringvalidator.RegexMatches(
+								sloBurnRateDurationRegex,
+								"must match the pattern `^\\d+[mhd]$` (a positive integer followed by m, h, or d)",
+							),
+						},
+					},
+					"slo_instance_id": schema.StringAttribute{
+						MarkdownDescription: "ID of the SLO instance. Set when the SLO uses `group_by`; identifies which instance to show. Omit to show all instances (API default `\"*\"`).",
+						Optional:            true,
+					},
+					"title": schema.StringAttribute{
+						MarkdownDescription: "Optional panel title.",
+						Optional:            true,
+					},
+					"description": schema.StringAttribute{
+						MarkdownDescription: "Optional panel description.",
+						Optional:            true,
+					},
+					"hide_title": schema.BoolAttribute{
+						MarkdownDescription: "When true, hides the panel title.",
+						Optional:            true,
+					},
+					"hide_border": schema.BoolAttribute{
+						MarkdownDescription: "When true, hides the panel border.",
+						Optional:            true,
+					},
+					"drilldowns": schema.ListNestedAttribute{
+						MarkdownDescription: "Optional list of URL drilldowns attached to the panel.",
+						Optional:            true,
+						NestedObject: schema.NestedAttributeObject{
+							Attributes: map[string]schema.Attribute{
+								"url": schema.StringAttribute{
+									MarkdownDescription: "Templated URL for the drilldown.",
+									Required:            true,
+								},
+								"label": schema.StringAttribute{
+									MarkdownDescription: "Display label shown in the drilldown menu.",
+									Required:            true,
+								},
+								"trigger": schema.StringAttribute{
+									MarkdownDescription: "Event that triggers the drilldown. Use `\"on_open_panel_menu\"`.",
+									Required:            true,
+								},
+								"type": schema.StringAttribute{
+									MarkdownDescription: "Drilldown type. Use `\"url_drilldown\"`.",
+									Required:            true,
+								},
+								"encode_url": schema.BoolAttribute{
+									MarkdownDescription: "When true, the URL is percent-encoded. Omit to use the API default.",
+									Optional:            true,
+								},
+								"open_in_new_tab": schema.BoolAttribute{
+									MarkdownDescription: "When true, the URL opens in a new browser tab. Omit to use the API default.",
+									Optional:            true,
+								},
+							},
+						},
+					},
+				},
+				Validators: []validator.Object{
+					objectvalidator.ConflictsWith(
+						siblingPanelConfigPathsExcept("slo_burn_rate_config", panelConfigNames)...,
+					),
+					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeSloBurnRate}),
 				},
 			},
 			"config_json": schema.StringAttribute{
