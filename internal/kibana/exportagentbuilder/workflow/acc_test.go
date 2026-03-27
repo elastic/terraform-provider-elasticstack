@@ -36,7 +36,7 @@ import (
 )
 
 var (
-	minKibanaAgentBuilderAPIVersion = version.Must(version.NewVersion("9.3.0"))
+	minKibanaAgentBuilderAPIVersion = version.Must(version.NewVersion("9.4.0-SNAPSHOT"))
 )
 
 func preCheckWithWorkflowsEnabled(t *testing.T) {

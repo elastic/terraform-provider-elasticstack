@@ -29,7 +29,7 @@ import (
 var (
 	_                               datasource.DataSource              = &DataSource{}
 	_                               datasource.DataSourceWithConfigure = &DataSource{}
-	minKibanaAgentBuilderAPIVersion                                    = version.Must(version.NewVersion("9.3.0"))
+	minKibanaAgentBuilderAPIVersion                                    = version.Must(version.NewVersion("9.4.0-SNAPSHOT"))
 )
 
 // NewDataSource is a helper function to simplify the provider implementation.
