@@ -1139,12 +1139,6 @@ func transformFleetPaths(schema *Schema) {
 		schema.Components.CreateRef(schema, fmt.Sprintf("%s_logstash", name), fmt.Sprintf("schemas.%s_union.anyOf.2", name))
 		schema.Components.CreateRef(schema, kafkaComponent, fmt.Sprintf("schemas.%s_union.anyOf.3", name))
 
-		// Extract child structs
-		for _, typ := range []string{"elasticsearch", "remote_elasticsearch", "logstash", "kafka"} {
-			schema.Components.CreateRef(schema, fmt.Sprintf("%s_shipper", name), fmt.Sprintf("schemas.%s_%s.properties.shipper", name, typ))
-			schema.Components.CreateRef(schema, fmt.Sprintf("%s_ssl", name), fmt.Sprintf("schemas.%s_%s.properties.ssl", name, typ))
-		}
-
 		// Ideally just remove the "anyOf", however then we would need to make
 		// refs for each of the "oneOf" options. So turn them into an "any" instead.
 		// See: https://github.com/elastic/kibana/issues/197153
@@ -1161,25 +1155,18 @@ func transformFleetPaths(schema *Schema) {
 			  - type: number
 			  - not: {}
 		*/
+	}
 
-		// https://github.com/elastic/kibana/issues/197153
-		kafkaRequiredName := fmt.Sprintf("schemas.%s.required", kafkaComponent)
-		props := schema.Components.MustGetMap(fmt.Sprintf("schemas.%s.properties", kafkaComponent))
-		required := schema.Components.MustGetSlice(kafkaRequiredName)
-		for key, apiType := range map[string]string{"compression_level": "integer", "connection_type": "string", "password": "string", "username": "string"} {
-			props.Set(key, Map{
-				"type": apiType,
-			})
-			required = slices.DeleteFunc(required, func(item any) bool {
-				itemStr, ok := item.(string)
-				if !ok {
-					return false
-				}
-
-				return itemStr == key
-			})
-		}
-		schema.Components.Set(kafkaRequiredName, required)
+	for _, componentName := range []string{
+		"schemas.Kibana_HTTP_APIs_new_output_kafka",
+		"schemas.Kibana_HTTP_APIs_output_kafka",
+		"schemas.update_output_kafka",
+	} {
+		kafkaComponent := schema.Components.MustGetMap(componentName)
+		kafkaComponent.Delete("properties.compression_level.oneOf")
+		kafkaComponent.Delete("properties.connection_type.oneOf")
+		kafkaComponent.Delete("properties.password.oneOf")
+		kafkaComponent.Delete("properties.username.oneOf")
 	}
 
 	// Add the missing discriminator to the response union
