@@ -21,12 +21,14 @@ After this change, practitioners will be able to:
 
 ## Implementation Notes
 
-- **Dual `config_json` population**: consistent with all other typed panel implementations (`markdown`, `lens`, etc.), the read path populates `config_json` in state alongside `time_slider_control_config`. This is a supported pattern that allows practitioners to switch to the raw `config_json` workflow without triggering a plan diff; it is not a bug.
+- **Percentage fields as float32**: `start_percentage_of_time_range` and `end_percentage_of_time_range` are modeled as Terraform `float32` attributes so state matches Kibana's API representation and refresh does not introduce spurious diffs for common decimals (for example `0.1` / `0.9`) that are not exactly representable in binary floating point. Alternatives considered: rounding to a fixed decimal precision (lossy); or keeping float64 in schema while coercing read-back through float32 (smaller change but leaves authored type wider than the API).
+
+- **`config_json` is computed read-back for `time_slider_control`, not an authored input:** the read path may populate `config_json` in state alongside `time_slider_control_config`, similar to other typed panels, but practitioners must not set `config_json` in HCL for this panel type. Schema validation on `config_json` (type allowlist: `markdown` and `lens` only) rejects `time_slider_control`; the panel object validator describes the same rule without emitting a duplicate diagnostic.
 
 ## Impact
 
-- **Additive only**: no existing panel types or behaviors are changed.
-- **Schema change**: adds a new optional `time_slider_control_config` block to the panel schema alongside existing typed config blocks.
+- **Mostly additive**: adds a new optional `time_slider_control_config` block and does not change other panel types or their schemas. Dashboards that never use `time_slider_control` are unaffected.
+- **Schema change**: new block on the panel object; `start_percentage_of_time_range` and `end_percentage_of_time_range` are **`float32` attributes** (Plugin Framework), not `float64`, to match Kibana’s API and avoid refresh drift.
 - **REQ-006 update**: broadens the schema validation rules to cover the new panel type and config block.
-- **No state migration**: new block; existing dashboard state is unaffected.
-- **No breaking change**: all existing dashboards remain valid.
+- **State / upgrades**: the provider does not ship a custom Terraform `StateUpgrader` for this resource. For the **first released** shape of `time_slider_control_config`, there is no prior released state shape to migrate. Any unpublished or forked build that exposed the same logical fields as `float64` would be a **schema type change** (float64 → float32); practitioners should plan for Terraform to refresh/reconcile those attributes and should avoid relying on float64-only precision in HCL (values are coerced to float32 at plan time).
+- **Compatibility**: existing configurations that do not use `time_slider_control` remain valid. Configurations that use `time_slider_control` must use the typed block (not practitioner-authored `config_json`) and percentage literals within float32 semantics.

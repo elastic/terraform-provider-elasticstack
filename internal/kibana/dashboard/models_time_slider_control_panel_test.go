@@ -18,6 +18,7 @@
 package dashboard
 
 import (
+	"math"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -63,8 +64,8 @@ func Test_populateTimeSliderControlFromAPI_import_withAPIData(t *testing.T) {
 	pm := &panelModel{}
 	populateTimeSliderControlFromAPI(pm, nil, apiTimeSliderConfig(new(float32(0.1)), new(float32(0.9)), new(true)))
 	require.NotNil(t, pm.TimeSliderControlConfig)
-	assert.InDelta(t, 0.1, pm.TimeSliderControlConfig.StartPercentageOfTimeRange.ValueFloat64(), 0.001)
-	assert.InDelta(t, 0.9, pm.TimeSliderControlConfig.EndPercentageOfTimeRange.ValueFloat64(), 0.001)
+	assert.Equal(t, types.Float32Value(0.1), pm.TimeSliderControlConfig.StartPercentageOfTimeRange)
+	assert.Equal(t, types.Float32Value(0.9), pm.TimeSliderControlConfig.EndPercentageOfTimeRange)
 	assert.Equal(t, types.BoolValue(true), pm.TimeSliderControlConfig.IsAnchored)
 }
 
@@ -79,16 +80,16 @@ func Test_populateTimeSliderControlFromAPI_import_emptyAPIConfig(t *testing.T) {
 func Test_populateTimeSliderControlFromAPI_knownFields_populatedFromAPI(t *testing.T) {
 	pm := &panelModel{
 		TimeSliderControlConfig: &timeSliderControlConfigModel{
-			StartPercentageOfTimeRange: types.Float64Value(0.1),
-			EndPercentageOfTimeRange:   types.Float64Value(0.9),
+			StartPercentageOfTimeRange: types.Float32Value(0.1),
+			EndPercentageOfTimeRange:   types.Float32Value(0.9),
 			IsAnchored:                 types.BoolValue(false),
 		},
 	}
 	tfPanel := &panelModel{TimeSliderControlConfig: pm.TimeSliderControlConfig}
 	populateTimeSliderControlFromAPI(pm, tfPanel, apiTimeSliderConfig(new(float32(0.2)), new(float32(0.8)), new(true)))
 	require.NotNil(t, pm.TimeSliderControlConfig)
-	assert.InDelta(t, 0.2, pm.TimeSliderControlConfig.StartPercentageOfTimeRange.ValueFloat64(), 0.001)
-	assert.InDelta(t, 0.8, pm.TimeSliderControlConfig.EndPercentageOfTimeRange.ValueFloat64(), 0.001)
+	assert.Equal(t, types.Float32Value(0.2), pm.TimeSliderControlConfig.StartPercentageOfTimeRange)
+	assert.Equal(t, types.Float32Value(0.8), pm.TimeSliderControlConfig.EndPercentageOfTimeRange)
 	assert.Equal(t, types.BoolValue(true), pm.TimeSliderControlConfig.IsAnchored)
 }
 
@@ -96,8 +97,8 @@ func Test_populateTimeSliderControlFromAPI_knownFields_populatedFromAPI(t *testi
 func Test_populateTimeSliderControlFromAPI_nullFields_preservedAsNull(t *testing.T) {
 	pm := &panelModel{
 		TimeSliderControlConfig: &timeSliderControlConfigModel{
-			StartPercentageOfTimeRange: types.Float64Null(),
-			EndPercentageOfTimeRange:   types.Float64Null(),
+			StartPercentageOfTimeRange: types.Float32Null(),
+			EndPercentageOfTimeRange:   types.Float32Null(),
 			IsAnchored:                 types.BoolNull(),
 		},
 	}
@@ -113,8 +114,8 @@ func Test_populateTimeSliderControlFromAPI_nullFields_preservedAsNull(t *testing
 func Test_populateTimeSliderControlFromAPI_mixedFields(t *testing.T) {
 	pm := &panelModel{
 		TimeSliderControlConfig: &timeSliderControlConfigModel{
-			StartPercentageOfTimeRange: types.Float64Value(0.1),
-			EndPercentageOfTimeRange:   types.Float64Null(),
+			StartPercentageOfTimeRange: types.Float32Value(0.1),
+			EndPercentageOfTimeRange:   types.Float32Null(),
 			IsAnchored:                 types.BoolNull(),
 		},
 	}
@@ -122,7 +123,7 @@ func Test_populateTimeSliderControlFromAPI_mixedFields(t *testing.T) {
 	populateTimeSliderControlFromAPI(pm, tfPanel, apiTimeSliderConfig(new(float32(0.2)), new(float32(0.8)), new(true)))
 	require.NotNil(t, pm.TimeSliderControlConfig)
 	// known field is updated
-	assert.InDelta(t, 0.2, pm.TimeSliderControlConfig.StartPercentageOfTimeRange.ValueFloat64(), 0.001)
+	assert.Equal(t, types.Float32Value(0.2), pm.TimeSliderControlConfig.StartPercentageOfTimeRange)
 	// null fields are preserved
 	assert.True(t, pm.TimeSliderControlConfig.EndPercentageOfTimeRange.IsNull())
 	assert.True(t, pm.TimeSliderControlConfig.IsAnchored.IsNull())
@@ -132,8 +133,8 @@ func Test_populateTimeSliderControlFromAPI_mixedFields(t *testing.T) {
 func Test_buildTimeSliderControlConfig_knownFields(t *testing.T) {
 	pm := panelModel{
 		TimeSliderControlConfig: &timeSliderControlConfigModel{
-			StartPercentageOfTimeRange: types.Float64Value(0.25),
-			EndPercentageOfTimeRange:   types.Float64Value(0.75),
+			StartPercentageOfTimeRange: types.Float32Value(0.25),
+			EndPercentageOfTimeRange:   types.Float32Value(0.75),
 			IsAnchored:                 types.BoolValue(true),
 		},
 	}
@@ -148,8 +149,9 @@ func Test_buildTimeSliderControlConfig_knownFields(t *testing.T) {
 	require.NotNil(t, tsPanel.Config.StartPercentageOfTimeRange)
 	require.NotNil(t, tsPanel.Config.EndPercentageOfTimeRange)
 	require.NotNil(t, tsPanel.Config.IsAnchored)
-	assert.InDelta(t, float32(0.25), *tsPanel.Config.StartPercentageOfTimeRange, 0.001)
-	assert.InDelta(t, float32(0.75), *tsPanel.Config.EndPercentageOfTimeRange, 0.001)
+	// Exact float32 equality via IEEE 754 bits (build path copies ValueFloat32() without widening).
+	require.Equal(t, math.Float32bits(float32(0.25)), math.Float32bits(*tsPanel.Config.StartPercentageOfTimeRange))
+	require.Equal(t, math.Float32bits(float32(0.75)), math.Float32bits(*tsPanel.Config.EndPercentageOfTimeRange))
 	assert.True(t, *tsPanel.Config.IsAnchored)
 }
 
@@ -157,8 +159,8 @@ func Test_buildTimeSliderControlConfig_knownFields(t *testing.T) {
 func Test_buildTimeSliderControlConfig_nullFields(t *testing.T) {
 	pm := panelModel{
 		TimeSliderControlConfig: &timeSliderControlConfigModel{
-			StartPercentageOfTimeRange: types.Float64Null(),
-			EndPercentageOfTimeRange:   types.Float64Null(),
+			StartPercentageOfTimeRange: types.Float32Null(),
+			EndPercentageOfTimeRange:   types.Float32Null(),
 			IsAnchored:                 types.BoolNull(),
 		},
 	}
@@ -179,8 +181,8 @@ func Test_buildTimeSliderControlConfig_nullFields(t *testing.T) {
 func Test_buildTimeSliderControlConfig_boundaryValues(t *testing.T) {
 	pm := panelModel{
 		TimeSliderControlConfig: &timeSliderControlConfigModel{
-			StartPercentageOfTimeRange: types.Float64Value(0.0),
-			EndPercentageOfTimeRange:   types.Float64Value(1.0),
+			StartPercentageOfTimeRange: types.Float32Value(0.0),
+			EndPercentageOfTimeRange:   types.Float32Value(1.0),
 			IsAnchored:                 types.BoolNull(),
 		},
 	}
@@ -194,6 +196,43 @@ func Test_buildTimeSliderControlConfig_boundaryValues(t *testing.T) {
 	buildTimeSliderControlConfig(pm, &tsPanel)
 	require.NotNil(t, tsPanel.Config.StartPercentageOfTimeRange)
 	require.NotNil(t, tsPanel.Config.EndPercentageOfTimeRange)
-	assert.InDelta(t, float32(0.0), *tsPanel.Config.StartPercentageOfTimeRange, 0.001)
-	assert.InDelta(t, float32(1.0), *tsPanel.Config.EndPercentageOfTimeRange, 0.001)
+	require.Equal(t, math.Float32bits(float32(0.0)), math.Float32bits(*tsPanel.Config.StartPercentageOfTimeRange))
+	require.Equal(t, math.Float32bits(float32(1.0)), math.Float32bits(*tsPanel.Config.EndPercentageOfTimeRange))
+}
+
+// Test: non-dyadic decimals round-trip through API struct without float64 widening drift.
+func Test_timeSliderPercentage_float32RoundTrip_writeThenRead(t *testing.T) {
+	start := float32(0.1)
+	end := float32(0.9)
+	pm := panelModel{
+		TimeSliderControlConfig: &timeSliderControlConfigModel{
+			StartPercentageOfTimeRange: types.Float32Value(start),
+			EndPercentageOfTimeRange:   types.Float32Value(end),
+			IsAnchored:                 types.BoolValue(false),
+		},
+	}
+	tsPanel := kbapi.KbnDashboardPanelTimeSliderControl{
+		Config: struct {
+			EndPercentageOfTimeRange   *float32 `json:"end_percentage_of_time_range,omitempty"`
+			IsAnchored                 *bool    `json:"is_anchored,omitempty"`
+			StartPercentageOfTimeRange *float32 `json:"start_percentage_of_time_range,omitempty"`
+		}{},
+	}
+	buildTimeSliderControlConfig(pm, &tsPanel)
+	require.NotNil(t, tsPanel.Config.StartPercentageOfTimeRange)
+	require.NotNil(t, tsPanel.Config.EndPercentageOfTimeRange)
+
+	out := &panelModel{
+		TimeSliderControlConfig: &timeSliderControlConfigModel{
+			StartPercentageOfTimeRange: types.Float32Value(start),
+			EndPercentageOfTimeRange:   types.Float32Value(end),
+			IsAnchored:                 types.BoolValue(false),
+		},
+	}
+	tfPanel := &panelModel{TimeSliderControlConfig: out.TimeSliderControlConfig}
+	populateTimeSliderControlFromAPI(out, tfPanel, tsPanel.Config)
+
+	require.NotNil(t, out.TimeSliderControlConfig)
+	assert.Equal(t, types.Float32Value(start), out.TimeSliderControlConfig.StartPercentageOfTimeRange)
+	assert.Equal(t, types.Float32Value(end), out.TimeSliderControlConfig.EndPercentageOfTimeRange)
 }

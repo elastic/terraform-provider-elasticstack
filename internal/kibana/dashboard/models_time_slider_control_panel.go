@@ -24,8 +24,8 @@ import (
 )
 
 type timeSliderControlConfigModel struct {
-	StartPercentageOfTimeRange types.Float64 `tfsdk:"start_percentage_of_time_range"`
-	EndPercentageOfTimeRange   types.Float64 `tfsdk:"end_percentage_of_time_range"`
+	StartPercentageOfTimeRange types.Float32 `tfsdk:"start_percentage_of_time_range"`
+	EndPercentageOfTimeRange   types.Float32 `tfsdk:"end_percentage_of_time_range"`
 	IsAnchored                 types.Bool    `tfsdk:"is_anchored"`
 }
 
@@ -54,10 +54,10 @@ func populateTimeSliderControlFromAPI(pm *panelModel, tfPanel *panelModel, apiCo
 		pm.TimeSliderControlConfig = &timeSliderControlConfigModel{}
 		existing = pm.TimeSliderControlConfig
 		if apiConfig.StartPercentageOfTimeRange != nil {
-			existing.StartPercentageOfTimeRange = types.Float64Value(float64(*apiConfig.StartPercentageOfTimeRange))
+			existing.StartPercentageOfTimeRange = types.Float32Value(*apiConfig.StartPercentageOfTimeRange)
 		}
 		if apiConfig.EndPercentageOfTimeRange != nil {
-			existing.EndPercentageOfTimeRange = types.Float64Value(float64(*apiConfig.EndPercentageOfTimeRange))
+			existing.EndPercentageOfTimeRange = types.Float32Value(*apiConfig.EndPercentageOfTimeRange)
 		}
 		if apiConfig.IsAnchored != nil {
 			existing.IsAnchored = types.BoolValue(*apiConfig.IsAnchored)
@@ -79,10 +79,10 @@ func populateTimeSliderControlFromAPI(pm *panelModel, tfPanel *panelModel, apiCo
 
 	// Block exists in state — update only fields that are already known (non-null).
 	if typeutils.IsKnown(existing.StartPercentageOfTimeRange) && apiConfig.StartPercentageOfTimeRange != nil {
-		existing.StartPercentageOfTimeRange = types.Float64Value(float64(*apiConfig.StartPercentageOfTimeRange))
+		existing.StartPercentageOfTimeRange = types.Float32Value(*apiConfig.StartPercentageOfTimeRange)
 	}
 	if typeutils.IsKnown(existing.EndPercentageOfTimeRange) && apiConfig.EndPercentageOfTimeRange != nil {
-		existing.EndPercentageOfTimeRange = types.Float64Value(float64(*apiConfig.EndPercentageOfTimeRange))
+		existing.EndPercentageOfTimeRange = types.Float32Value(*apiConfig.EndPercentageOfTimeRange)
 	}
 	if typeutils.IsKnown(existing.IsAnchored) && apiConfig.IsAnchored != nil {
 		existing.IsAnchored = types.BoolValue(*apiConfig.IsAnchored)
@@ -96,11 +96,11 @@ func buildTimeSliderControlConfig(pm panelModel, tsPanel *kbapi.KbnDashboardPane
 		return
 	}
 	if typeutils.IsKnown(cfg.StartPercentageOfTimeRange) {
-		v := float32(cfg.StartPercentageOfTimeRange.ValueFloat64())
+		v := cfg.StartPercentageOfTimeRange.ValueFloat32()
 		tsPanel.Config.StartPercentageOfTimeRange = &v
 	}
 	if typeutils.IsKnown(cfg.EndPercentageOfTimeRange) {
-		v := float32(cfg.EndPercentageOfTimeRange.ValueFloat64())
+		v := cfg.EndPercentageOfTimeRange.ValueFloat32()
 		tsPanel.Config.EndPercentageOfTimeRange = &v
 	}
 	if typeutils.IsKnown(cfg.IsAnchored) {

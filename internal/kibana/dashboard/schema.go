@@ -25,7 +25,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
-	"github.com/hashicorp/terraform-plugin-framework-validators/float64validator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/float32validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -788,18 +788,20 @@ func getPanelSchema() schema.NestedAttributeObject {
 				),
 				Optional: true,
 				Attributes: map[string]schema.Attribute{
-					"start_percentage_of_time_range": schema.Float64Attribute{
-						MarkdownDescription: "The start position of the time window as a fraction of the dashboard's global time range (0.0 to 1.0 inclusive).",
-						Optional:            true,
-						Validators: []validator.Float64{
-							float64validator.Between(0.0, 1.0),
+					"start_percentage_of_time_range": schema.Float32Attribute{
+						MarkdownDescription: "Start of the visible time window as a fraction of the dashboard global range (0.0–1.0). " +
+							"Float32 in state matches the Kibana API and avoids refresh drift.",
+						Optional: true,
+						Validators: []validator.Float32{
+							float32validator.Between(0.0, 1.0),
 						},
 					},
-					"end_percentage_of_time_range": schema.Float64Attribute{
-						MarkdownDescription: "The end position of the time window as a fraction of the dashboard's global time range (0.0 to 1.0 inclusive).",
-						Optional:            true,
-						Validators: []validator.Float64{
-							float64validator.Between(0.0, 1.0),
+					"end_percentage_of_time_range": schema.Float32Attribute{
+						MarkdownDescription: "End of the visible time window as a fraction of the dashboard global range (0.0–1.0). " +
+							"Float32 in state matches the Kibana API and avoids refresh drift.",
+						Optional: true,
+						Validators: []validator.Float32{
+							float32validator.Between(0.0, 1.0),
 						},
 					},
 					"is_anchored": schema.BoolAttribute{

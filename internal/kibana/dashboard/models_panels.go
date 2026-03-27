@@ -252,6 +252,8 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 		}
 		setPanelGridFromAPI(&pm, tsPanel.Grid.X, tsPanel.Grid.Y, tsPanel.Grid.W, tsPanel.Grid.H)
 		pm.ID = types.StringPointerValue(tsPanel.Uid)
+		// Computed read-back only: practitioner-authored config_json is not supported for
+		// time_slider_control (see `config_json` type-allowlist validators on the panel schema).
 		if configBytes, err := json.Marshal(tsPanel.Config); err == nil {
 			pm.ConfigJSON = customtypes.NewJSONWithDefaultsValue(string(configBytes), populatePanelConfigJSONDefaults)
 		}

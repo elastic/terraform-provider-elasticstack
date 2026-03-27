@@ -157,14 +157,40 @@ func Test_panelConfigValidateDiags_lens(t *testing.T) {
 }
 
 func Test_panelConfigValidateDiags_timeSlider(t *testing.T) {
-	diags := panelConfigValidateDiags(
-		"time_slider_control",
-		panelConfigValueState{},
-		panelConfigValueState{},
-		lensConfigStates(nil),
-		nil,
-	)
-	require.False(t, diags.HasError())
+	t.Run("accepts no config blocks", func(t *testing.T) {
+		diags := panelConfigValidateDiags(
+			"time_slider_control",
+			panelConfigValueState{},
+			panelConfigValueState{},
+			lensConfigStates(nil),
+			nil,
+		)
+		require.False(t, diags.HasError())
+	})
+
+	t.Run("does not emit diagnostic for practitioner-authored config_json", func(t *testing.T) {
+		// Schema validation on `config_json` (type allowlist) produces the single plan-time error;
+		// this object validator intentionally does not duplicate it.
+		diags := panelConfigValidateDiags(
+			"time_slider_control",
+			panelConfigValueState{},
+			panelConfigValueState{Set: true},
+			lensConfigStates(nil),
+			nil,
+		)
+		require.False(t, diags.HasError())
+	})
+
+	t.Run("accepts time_slider when config_json is unknown", func(t *testing.T) {
+		diags := panelConfigValidateDiags(
+			"time_slider_control",
+			panelConfigValueState{},
+			panelConfigValueState{Unknown: true},
+			lensConfigStates(nil),
+			nil,
+		)
+		require.False(t, diags.HasError())
+	})
 }
 
 func Test_timeSliderControlPercentageValidators(t *testing.T) {
@@ -194,19 +220,19 @@ func Test_timeSliderControlPercentageValidators(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			attr, ok := timeSliderAttr.Attributes[tc.attrName].(schema.Float64Attribute)
+			attr, ok := timeSliderAttr.Attributes[tc.attrName].(schema.Float32Attribute)
 			require.True(t, ok)
 			require.NotEmpty(t, attr.Validators)
 
-			req := tfvalidator.Float64Request{
+			req := tfvalidator.Float32Request{
 				Path:           path.Root(tc.attrName),
 				PathExpression: path.MatchRoot(tc.attrName),
-				ConfigValue:    types.Float64Value(tc.value),
+				ConfigValue:    types.Float32Value(float32(tc.value)),
 			}
-			resp := tfvalidator.Float64Response{}
+			resp := tfvalidator.Float32Response{}
 
 			for _, v := range attr.Validators {
-				v.ValidateFloat64(context.Background(), req, &resp)
+				v.ValidateFloat32(context.Background(), req, &resp)
 			}
 
 			if tc.expectErr {

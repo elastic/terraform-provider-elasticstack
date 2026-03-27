@@ -51,10 +51,21 @@ func TestAccResourceDashboardTimeSliderControl(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.y", "0"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.w", "24"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.h", "4"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.time_slider_control_config.start_percentage_of_time_range", "0.25"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.time_slider_control_config.end_percentage_of_time_range", "0.75"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.time_slider_control_config.start_percentage_of_time_range", "0.1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.time_slider_control_config.end_percentage_of_time_range", "0.9"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.time_slider_control_config.is_anchored", "false"),
 				),
+			},
+			// Refresh/plan: ensure Kibana read-back does not induce perpetual drift for non-dyadic float32 percentages
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_config"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
 			},
 			// Import
 			{
@@ -146,6 +157,15 @@ func TestAccResourceDashboardTimeSliderControlInvalidConfig(t *testing.T) {
 					"dashboard_title": config.StringVariable("unused"),
 				},
 				ExpectError: regexp.MustCompile(`(?s)end_percentage_of_time_range.*between 0\.[0-9]+ and 1\.[0-9]+`),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("invalid_config_json"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable("unused"),
+				},
+				ExpectError: regexp.MustCompile(`Invalid Configuration`),
 			},
 		},
 	})

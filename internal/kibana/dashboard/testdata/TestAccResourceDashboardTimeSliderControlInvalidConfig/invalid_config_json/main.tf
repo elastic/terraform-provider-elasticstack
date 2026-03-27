@@ -4,7 +4,7 @@ variable "dashboard_title" {
 
 resource "elasticstack_kibana_dashboard" "test" {
   title       = var.dashboard_title
-  description = "Dashboard with Time Slider Control Panel (with config)"
+  description = "Dashboard with time slider plus unsupported config_json"
 
   time_from = "now-15m"
   time_to   = "now"
@@ -23,10 +23,9 @@ resource "elasticstack_kibana_dashboard" "test" {
       w = 24
       h = 4
     }
-    time_slider_control_config = {
-      start_percentage_of_time_range = 0.1
-      end_percentage_of_time_range   = 0.9
-      is_anchored                    = false
-    }
+    config_json = jsonencode({
+      start_percentage_of_time_range = 0.25
+      end_percentage_of_time_range   = 0.75
+    })
   }]
 }

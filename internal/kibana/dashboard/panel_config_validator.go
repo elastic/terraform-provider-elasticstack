@@ -49,7 +49,11 @@ var lensPanelConfigNames = []string{
 type panelConfigValidator struct{}
 
 func (panelConfigValidator) Description(_ context.Context) string {
-	return "Ensures markdown panels configure `markdown_config` or `config_json`, lens panels configure exactly one lens config block or `config_json`, and time slider panels may omit config."
+	return "Ensures markdown panels configure `markdown_config` or `config_json`, " +
+		"lens panels configure exactly one lens config block or `config_json`, " +
+		"and `time_slider_control` panels use `time_slider_control_config` or omit config. " +
+		"Practitioner-authored `config_json` for `time_slider_control` is rejected only by the `config_json` " +
+		"attribute validator (type allowlist) to avoid duplicate diagnostics."
 }
 
 func (v panelConfigValidator) MarkdownDescription(ctx context.Context) string {
