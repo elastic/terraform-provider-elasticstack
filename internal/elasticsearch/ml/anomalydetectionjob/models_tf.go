@@ -517,11 +517,12 @@ func (plan *TFModel) convertAnalysisConfigFromAPI(ctx context.Context, apiConfig
 			perPartitionCategorizationTF := PerPartitionCategorizationTFModel{
 				Enabled: types.BoolValue(apiConfig.PerPartitionCategorization.Enabled),
 			}
-			if apiConfig.PerPartitionCategorization.StopOnWarn != nil {
+			switch {
+			case apiConfig.PerPartitionCategorization.StopOnWarn != nil:
 				perPartitionCategorizationTF.StopOnWarn = types.BoolValue(*apiConfig.PerPartitionCategorization.StopOnWarn)
-			} else if analysisConfigTF.PerPartitionCategorization != nil {
+			case analysisConfigTF.PerPartitionCategorization != nil:
 				perPartitionCategorizationTF.StopOnWarn = analysisConfigTF.PerPartitionCategorization.StopOnWarn
-			} else {
+			default:
 				perPartitionCategorizationTF.StopOnWarn = types.BoolNull()
 			}
 			analysisConfigTF.PerPartitionCategorization = &perPartitionCategorizationTF

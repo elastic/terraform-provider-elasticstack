@@ -28,6 +28,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
+const testResourceAddr = "elasticstack_elasticsearch_ml_anomaly_detection_job.test"
+
 func TestAccResourceAnomalyDetectionJobBasic(t *testing.T) {
 	jobID := fmt.Sprintf("test-anomaly-detector-basic-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 
@@ -179,7 +181,7 @@ func TestAccResourceAnomalyDetectionJobComprehensive(t *testing.T) {
 // Regression test for #1567: empty influencer list causes "inconsistent result after apply".
 func TestAccResourceAnomalyDetectionJobEmptyInfluencers(t *testing.T) {
 	jobID := fmt.Sprintf("test-ad-empty-inf-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
-	addr := "elasticstack_elasticsearch_ml_anomaly_detection_job.test"
+	addr := testResourceAddr
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -203,7 +205,7 @@ func TestAccResourceAnomalyDetectionJobEmptyInfluencers(t *testing.T) {
 // because ES silently converts them to categorization_analyzer char_filter patterns.
 func TestAccResourceAnomalyDetectionJobCategorizationFilters(t *testing.T) {
 	jobID := fmt.Sprintf("test-ad-cat-filt-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
-	addr := "elasticstack_elasticsearch_ml_anomaly_detection_job.test"
+	addr := testResourceAddr
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -227,7 +229,7 @@ func TestAccResourceAnomalyDetectionJobCategorizationFilters(t *testing.T) {
 // "inconsistent result" because ES drops stop_on_warn when disabled.
 func TestAccResourceAnomalyDetectionJobPerPartitionDisabled(t *testing.T) {
 	jobID := fmt.Sprintf("test-ad-ppc-off-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
-	addr := "elasticstack_elasticsearch_ml_anomaly_detection_job.test"
+	addr := testResourceAddr
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -251,7 +253,7 @@ func TestAccResourceAnomalyDetectionJobPerPartitionDisabled(t *testing.T) {
 // and the read path failed to serialize them back from the API response.
 func TestAccResourceAnomalyDetectionJobCustomRules(t *testing.T) {
 	jobID := fmt.Sprintf("test-ad-rules-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
-	addr := "elasticstack_elasticsearch_ml_anomaly_detection_job.test"
+	addr := testResourceAddr
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
