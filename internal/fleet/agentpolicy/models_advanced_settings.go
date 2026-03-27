@@ -48,8 +48,7 @@ func advancedSettingsAttrTypes() map[string]attr.Type {
 	return getSchema().Attributes["advanced_settings"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
-// advancedSettingsAPIResult is the return type for convertAdvancedSettingsToAPI
-type advancedSettingsAPIResult = struct {
+type advancedSettingsAPIValues struct {
 	AgentDownloadTargetDirectory       any `json:"agent_download_target_directory,omitempty"`
 	AgentDownloadTimeout               any `json:"agent_download_timeout,omitempty"`
 	AgentInternal                      any `json:"agent_internal,omitempty"`
@@ -61,6 +60,98 @@ type advancedSettingsAPIResult = struct {
 	AgentLoggingMetricsPeriod          any `json:"agent_logging_metrics_period,omitempty"`
 	AgentLoggingToFiles                any `json:"agent_logging_to_files,omitempty"`
 	AgentMonitoringRuntimeExperimental any `json:"agent_monitoring_runtime_experimental,omitempty"`
+}
+
+func (settings *advancedSettingsAPIValues) toPostBody() *struct {
+	AgentDownloadTargetDirectory                any `json:"agent_download_target_directory,omitempty"`
+	AgentDownloadTimeout                        any `json:"agent_download_timeout,omitempty"`
+	AgentFeaturesDisablePolicyChangeAcksEnabled any `json:"agent_features_disable_policy_change_acks_enabled,omitempty"`
+	AgentInternal                               any `json:"agent_internal,omitempty"`
+	AgentLimitsGoMaxProcs                       any `json:"agent_limits_go_max_procs,omitempty"`
+	AgentLoggingFilesInterval                   any `json:"agent_logging_files_interval,omitempty"`
+	AgentLoggingFilesKeepfiles                  any `json:"agent_logging_files_keepfiles,omitempty"`
+	AgentLoggingFilesRotateeverybytes           any `json:"agent_logging_files_rotateeverybytes,omitempty"`
+	AgentLoggingLevel                           any `json:"agent_logging_level,omitempty"`
+	AgentLoggingMetricsPeriod                   any `json:"agent_logging_metrics_period,omitempty"`
+	AgentLoggingToFiles                         any `json:"agent_logging_to_files,omitempty"`
+	AgentMonitoringRuntimeExperimental          any `json:"agent_monitoring_runtime_experimental,omitempty"`
+} {
+	if settings == nil {
+		return nil
+	}
+
+	return &struct {
+		AgentDownloadTargetDirectory                any `json:"agent_download_target_directory,omitempty"`
+		AgentDownloadTimeout                        any `json:"agent_download_timeout,omitempty"`
+		AgentFeaturesDisablePolicyChangeAcksEnabled any `json:"agent_features_disable_policy_change_acks_enabled,omitempty"`
+		AgentInternal                               any `json:"agent_internal,omitempty"`
+		AgentLimitsGoMaxProcs                       any `json:"agent_limits_go_max_procs,omitempty"`
+		AgentLoggingFilesInterval                   any `json:"agent_logging_files_interval,omitempty"`
+		AgentLoggingFilesKeepfiles                  any `json:"agent_logging_files_keepfiles,omitempty"`
+		AgentLoggingFilesRotateeverybytes           any `json:"agent_logging_files_rotateeverybytes,omitempty"`
+		AgentLoggingLevel                           any `json:"agent_logging_level,omitempty"`
+		AgentLoggingMetricsPeriod                   any `json:"agent_logging_metrics_period,omitempty"`
+		AgentLoggingToFiles                         any `json:"agent_logging_to_files,omitempty"`
+		AgentMonitoringRuntimeExperimental          any `json:"agent_monitoring_runtime_experimental,omitempty"`
+	}{
+		AgentDownloadTargetDirectory:       settings.AgentDownloadTargetDirectory,
+		AgentDownloadTimeout:               settings.AgentDownloadTimeout,
+		AgentInternal:                      settings.AgentInternal,
+		AgentLimitsGoMaxProcs:              settings.AgentLimitsGoMaxProcs,
+		AgentLoggingFilesInterval:          settings.AgentLoggingFilesInterval,
+		AgentLoggingFilesKeepfiles:         settings.AgentLoggingFilesKeepfiles,
+		AgentLoggingFilesRotateeverybytes:  settings.AgentLoggingFilesRotateeverybytes,
+		AgentLoggingLevel:                  settings.AgentLoggingLevel,
+		AgentLoggingMetricsPeriod:          settings.AgentLoggingMetricsPeriod,
+		AgentLoggingToFiles:                settings.AgentLoggingToFiles,
+		AgentMonitoringRuntimeExperimental: settings.AgentMonitoringRuntimeExperimental,
+	}
+}
+
+func (settings *advancedSettingsAPIValues) toPutBody() *struct {
+	AgentDownloadTargetDirectory                any `json:"agent_download_target_directory,omitempty"`
+	AgentDownloadTimeout                        any `json:"agent_download_timeout,omitempty"`
+	AgentFeaturesDisablePolicyChangeAcksEnabled any `json:"agent_features_disable_policy_change_acks_enabled,omitempty"`
+	AgentInternal                               any `json:"agent_internal,omitempty"`
+	AgentLimitsGoMaxProcs                       any `json:"agent_limits_go_max_procs,omitempty"`
+	AgentLoggingFilesInterval                   any `json:"agent_logging_files_interval,omitempty"`
+	AgentLoggingFilesKeepfiles                  any `json:"agent_logging_files_keepfiles,omitempty"`
+	AgentLoggingFilesRotateeverybytes           any `json:"agent_logging_files_rotateeverybytes,omitempty"`
+	AgentLoggingLevel                           any `json:"agent_logging_level,omitempty"`
+	AgentLoggingMetricsPeriod                   any `json:"agent_logging_metrics_period,omitempty"`
+	AgentLoggingToFiles                         any `json:"agent_logging_to_files,omitempty"`
+	AgentMonitoringRuntimeExperimental          any `json:"agent_monitoring_runtime_experimental,omitempty"`
+} {
+	if settings == nil {
+		return nil
+	}
+
+	return &struct {
+		AgentDownloadTargetDirectory                any `json:"agent_download_target_directory,omitempty"`
+		AgentDownloadTimeout                        any `json:"agent_download_timeout,omitempty"`
+		AgentFeaturesDisablePolicyChangeAcksEnabled any `json:"agent_features_disable_policy_change_acks_enabled,omitempty"`
+		AgentInternal                               any `json:"agent_internal,omitempty"`
+		AgentLimitsGoMaxProcs                       any `json:"agent_limits_go_max_procs,omitempty"`
+		AgentLoggingFilesInterval                   any `json:"agent_logging_files_interval,omitempty"`
+		AgentLoggingFilesKeepfiles                  any `json:"agent_logging_files_keepfiles,omitempty"`
+		AgentLoggingFilesRotateeverybytes           any `json:"agent_logging_files_rotateeverybytes,omitempty"`
+		AgentLoggingLevel                           any `json:"agent_logging_level,omitempty"`
+		AgentLoggingMetricsPeriod                   any `json:"agent_logging_metrics_period,omitempty"`
+		AgentLoggingToFiles                         any `json:"agent_logging_to_files,omitempty"`
+		AgentMonitoringRuntimeExperimental          any `json:"agent_monitoring_runtime_experimental,omitempty"`
+	}{
+		AgentDownloadTargetDirectory:       settings.AgentDownloadTargetDirectory,
+		AgentDownloadTimeout:               settings.AgentDownloadTimeout,
+		AgentInternal:                      settings.AgentInternal,
+		AgentLimitsGoMaxProcs:              settings.AgentLimitsGoMaxProcs,
+		AgentLoggingFilesInterval:          settings.AgentLoggingFilesInterval,
+		AgentLoggingFilesKeepfiles:         settings.AgentLoggingFilesKeepfiles,
+		AgentLoggingFilesRotateeverybytes:  settings.AgentLoggingFilesRotateeverybytes,
+		AgentLoggingLevel:                  settings.AgentLoggingLevel,
+		AgentLoggingMetricsPeriod:          settings.AgentLoggingMetricsPeriod,
+		AgentLoggingToFiles:                settings.AgentLoggingToFiles,
+		AgentMonitoringRuntimeExperimental: settings.AgentMonitoringRuntimeExperimental,
+	}
 }
 
 // populateAdvancedSettingsFromAPI populates the advanced settings from API response
@@ -191,7 +282,7 @@ func (model *agentPolicyModel) populateAdvancedSettingsFromAPI(ctx context.Conte
 }
 
 // convertAdvancedSettingsToAPI converts the advanced settings config to API format
-func (model *agentPolicyModel) convertAdvancedSettingsToAPI(ctx context.Context) *advancedSettingsAPIResult {
+func (model *agentPolicyModel) convertAdvancedSettingsToAPI(ctx context.Context) *advancedSettingsAPIValues {
 	if !typeutils.IsKnown(model.AdvancedSettings) {
 		return nil
 	}
@@ -215,7 +306,7 @@ func (model *agentPolicyModel) convertAdvancedSettingsToAPI(ctx context.Context)
 		return nil
 	}
 
-	result := &advancedSettingsAPIResult{}
+	result := &advancedSettingsAPIValues{}
 
 	if typeutils.IsKnown(settings.LoggingLevel) {
 		result.AgentLoggingLevel = settings.LoggingLevel.ValueString()
