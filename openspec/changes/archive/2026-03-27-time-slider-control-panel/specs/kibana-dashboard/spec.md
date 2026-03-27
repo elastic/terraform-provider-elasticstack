@@ -67,6 +67,13 @@ Practitioner-authored `config_json` SHALL NOT be used when `type = "time_slider_
 
 ## MODIFIED Requirements
 
-### Requirement: Panel type/config block exclusivity (REQ-006)
+### Requirement: Replacement fields and schema validation (REQ-006)
 
 Schema validation SHALL enforce that each typed panel config block is only present on a panel whose `type` matches that block's panel type, and that at most one typed config block is present on any panel. This exclusivity requirement now applies to `time_slider_control_config` in addition to all previously supported typed config blocks.
+
+#### Scenario: Reject conflicting time slider config blocks
+
+- GIVEN a panel with `type = "time_slider_control"`
+- AND `time_slider_control_config` is set together with another typed panel config block or practitioner-authored `config_json`
+- WHEN Terraform validates the resource schema
+- THEN the provider SHALL return a plan-time validation error describing the conflict or unsupported configuration
