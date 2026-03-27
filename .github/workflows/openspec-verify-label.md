@@ -64,6 +64,22 @@ network:
   allowed: [defaults, node]
 checkout:
   fetch-depth: 0
+steps:
+  - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
+    with:
+      node-version-file: package.json
+      cache: npm
+      cache-dependency-path: package-lock.json
+  - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6
+    with:
+      go-version-file: go.mod
+      cache: true
+      cache-dependency-path: go.sum
+  - uses: hashicorp/setup-terraform@5e8dbf3c6d9deaf4193ca7a8fb23f2ac83bb6c85 # v4.0.0
+    with:
+      terraform_wrapper: false
+  - name: Setup repository dependencies
+    run: make setup
 safe-outputs:
   create-pull-request-review-comment:
     max: 25
@@ -107,13 +123,18 @@ You verify a pull request against **one** active OpenSpec change under `openspec
 
 6. Check out the **full** repository at the PR head ref (the triggering pull request branch) with enough history for a clean working tree.
 
-7. Install Node dependencies so OpenSpec CLI is available, using repository practice:
+7. Before agent reasoning begins, the workflow SHALL prepare the review workspace:
 
-   - Run `npm ci` at the repository root (requires `network: node`).
+   - Provision Node with `actions/setup-node` using `node-version-file: package.json`, npm caching, and `package-lock.json`.
+   - Provision Go with `actions/setup-go` using `go-version-file: go.mod` and Go module caching.
+   - Provision Terraform CLI with `hashicorp/setup-terraform` and `terraform_wrapper: false`.
+   - Run `make setup` at the repository root so local Node dependencies and repository-standard setup are ready in the agent workspace.
 
-8. Use **`npx openspec`** for all OpenSpec CLI invocations below.
+8. Use **`npx openspec`** for all OpenSpec CLI invocations below; do **not** rerun ad hoc bootstrap commands unless verification work reveals a separate repository issue.
 
 ## Verification (active change)
+
+**Do not consider syntactic correctness, CI will pick up these issues**
 
 9. For the selected `<id>`, run:
 

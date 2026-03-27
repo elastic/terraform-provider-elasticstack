@@ -25,6 +25,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework-validators/float32validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -46,6 +47,9 @@ const (
 	pieChartTypeNumber    = "number"
 	pieChartTypePercent   = "percent"
 	operationTerms        = "terms"
+	panelTypeMarkdown     = "markdown"
+	panelTypeLens         = "lens"
+	panelTypeTimeSlider   = "time_slider_control"
 )
 
 var panelConfigNames = []string{
@@ -63,14 +67,7 @@ var panelConfigNames = []string{
 	"datatable_config",
 	"heatmap_config",
 	"waffle_config",
-}
-
-func panelConfigPaths(names []string) []path.Expression {
-	paths := make([]path.Expression, 0, len(names))
-	for _, name := range names {
-		paths = append(paths, path.MatchRelative().AtName(name))
-	}
-	return paths
+	"time_slider_control_config",
 }
 
 func siblingPanelConfigPathsExcept(name string, names []string) []path.Expression {
@@ -531,9 +528,7 @@ func getSchema() schema.Schema {
 func getPanelSchema() schema.NestedAttributeObject {
 	return schema.NestedAttributeObject{
 		Validators: []validator.Object{
-			objectvalidator.AtLeastOneOf(
-				panelConfigPaths(panelConfigNames)...,
-			),
+			panelConfigValidator{},
 		},
 		Attributes: map[string]schema.Attribute{
 			"type": schema.StringAttribute{
@@ -595,7 +590,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 					objectvalidator.ConflictsWith(
 						siblingPanelConfigPathsExcept("markdown_config", panelConfigNames)...,
 					),
-					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"markdown"}),
+					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeMarkdown}),
 				},
 			},
 			"xy_chart_config": schema.SingleNestedAttribute{
@@ -653,7 +648,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 					objectvalidator.ConflictsWith(
 						siblingPanelConfigPathsExcept("xy_chart_config", panelConfigNames)...,
 					),
-					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"lens"}),
+					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeLens}),
 				},
 			},
 			"treemap_config": schema.SingleNestedAttribute{
@@ -664,7 +659,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 					objectvalidator.ConflictsWith(
 						siblingPanelConfigPathsExcept("treemap_config", panelConfigNames)...,
 					),
-					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"lens"}),
+					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeLens}),
 				},
 			},
 			"mosaic_config": schema.SingleNestedAttribute{
@@ -678,7 +673,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 					objectvalidator.ConflictsWith(
 						siblingPanelConfigPathsExcept("mosaic_config", panelConfigNames)...,
 					),
-					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"lens"}),
+					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeLens}),
 				},
 			},
 			"datatable_config": schema.SingleNestedAttribute{
@@ -689,7 +684,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 					objectvalidator.ConflictsWith(
 						siblingPanelConfigPathsExcept("datatable_config", panelConfigNames)...,
 					),
-					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"lens"}),
+					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeLens}),
 				},
 			},
 			"tagcloud_config": schema.SingleNestedAttribute{
@@ -700,7 +695,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 					objectvalidator.ConflictsWith(
 						siblingPanelConfigPathsExcept("tagcloud_config", panelConfigNames)...,
 					),
-					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"lens"}),
+					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeLens}),
 				},
 			},
 			"heatmap_config": schema.SingleNestedAttribute{
@@ -711,7 +706,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 					objectvalidator.ConflictsWith(
 						siblingPanelConfigPathsExcept("heatmap_config", panelConfigNames)...,
 					),
-					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"lens"}),
+					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeLens}),
 				},
 			},
 			"waffle_config": schema.SingleNestedAttribute{
@@ -726,7 +721,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 					objectvalidator.ConflictsWith(
 						siblingPanelConfigPathsExcept("waffle_config", panelConfigNames)...,
 					),
-					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"lens"}),
+					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeLens}),
 					waffleConfigModeValidator{},
 				},
 			},
@@ -738,7 +733,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 					objectvalidator.ConflictsWith(
 						siblingPanelConfigPathsExcept("region_map_config", panelConfigNames)...,
 					),
-					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"lens"}),
+					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeLens}),
 				},
 			},
 			"gauge_config": schema.SingleNestedAttribute{
@@ -749,7 +744,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 					objectvalidator.ConflictsWith(
 						siblingPanelConfigPathsExcept("gauge_config", panelConfigNames)...,
 					),
-					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"lens"}),
+					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeLens}),
 				},
 			},
 			"metric_chart_config": schema.SingleNestedAttribute{
@@ -760,7 +755,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 					objectvalidator.ConflictsWith(
 						siblingPanelConfigPathsExcept("metric_chart_config", panelConfigNames)...,
 					),
-					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"lens"}),
+					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeLens}),
 				},
 			},
 			"pie_chart_config": schema.SingleNestedAttribute{
@@ -771,7 +766,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 					objectvalidator.ConflictsWith(
 						siblingPanelConfigPathsExcept("pie_chart_config", panelConfigNames)...,
 					),
-					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"lens"}),
+					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeLens}),
 				},
 			},
 			"legacy_metric_config": schema.SingleNestedAttribute{
@@ -782,7 +777,43 @@ func getPanelSchema() schema.NestedAttributeObject {
 					objectvalidator.ConflictsWith(
 						siblingPanelConfigPathsExcept("legacy_metric_config", panelConfigNames)...,
 					),
-					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{"lens"}),
+					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeLens}),
+				},
+			},
+			"time_slider_control_config": schema.SingleNestedAttribute{
+				MarkdownDescription: panelConfigDescription(
+					"Configuration for a time slider control panel. Controls the visible time window within the dashboard's global time range.",
+					"time_slider_control_config",
+					panelConfigNames,
+				),
+				Optional: true,
+				Attributes: map[string]schema.Attribute{
+					"start_percentage_of_time_range": schema.Float32Attribute{
+						MarkdownDescription: "Start of the visible time window as a fraction of the dashboard global range (0.0–1.0). " +
+							"Float32 in state matches the Kibana API and avoids refresh drift.",
+						Optional: true,
+						Validators: []validator.Float32{
+							float32validator.Between(0.0, 1.0),
+						},
+					},
+					"end_percentage_of_time_range": schema.Float32Attribute{
+						MarkdownDescription: "End of the visible time window as a fraction of the dashboard global range (0.0–1.0). " +
+							"Float32 in state matches the Kibana API and avoids refresh drift.",
+						Optional: true,
+						Validators: []validator.Float32{
+							float32validator.Between(0.0, 1.0),
+						},
+					},
+					"is_anchored": schema.BoolAttribute{
+						MarkdownDescription: "Whether the start of the time window is anchored (fixed), so only the end slides.",
+						Optional:            true,
+					},
+				},
+				Validators: []validator.Object{
+					objectvalidator.ConflictsWith(
+						siblingPanelConfigPathsExcept("time_slider_control_config", panelConfigNames)...,
+					),
+					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeTimeSlider}),
 				},
 			},
 			"config_json": schema.StringAttribute{
@@ -794,6 +825,7 @@ func getPanelSchema() schema.NestedAttributeObject {
 					stringvalidator.ConflictsWith(
 						siblingPanelConfigPathsExcept("config_json", panelConfigNames)...,
 					),
+					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeLens, panelTypeMarkdown}),
 				},
 			},
 		},
