@@ -24,21 +24,12 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-// WorkflowDetail holds the fields returned by the workflow API.
-type WorkflowDetail struct {
-	ID          string  `json:"id"`
-	Yaml        string  `json:"yaml"`
-	Name        string  `json:"name"`
-	Description *string `json:"description,omitempty"`
-	Enabled     bool    `json:"enabled"`
-	Valid       bool    `json:"valid"`
-}
-
 // GetWorkflow reads a specific workflow from the API.
-func GetWorkflow(ctx context.Context, client *Client, spaceID string, workflowID string) (*WorkflowDetail, diag.Diagnostics) {
+func GetWorkflow(ctx context.Context, client *Client, spaceID string, workflowID string) (*models.Workflow, diag.Diagnostics) {
 	resp, err := client.API.GetWorkflowsWorkflowIdWithResponse(ctx, workflowID, SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
@@ -46,7 +37,7 @@ func GetWorkflow(ctx context.Context, client *Client, spaceID string, workflowID
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		var detail WorkflowDetail
+		var detail models.Workflow
 		if err := json.Unmarshal(resp.Body, &detail); err != nil {
 			return nil, diagutil.FrameworkDiagFromError(err)
 		}
@@ -59,7 +50,7 @@ func GetWorkflow(ctx context.Context, client *Client, spaceID string, workflowID
 }
 
 // CreateWorkflow creates a new workflow.
-func CreateWorkflow(ctx context.Context, client *Client, spaceID string, req kbapi.PostWorkflowsWorkflowJSONRequestBody) (*WorkflowDetail, diag.Diagnostics) {
+func CreateWorkflow(ctx context.Context, client *Client, spaceID string, req kbapi.PostWorkflowsWorkflowJSONRequestBody) (*models.Workflow, diag.Diagnostics) {
 	resp, err := client.API.PostWorkflowsWorkflowWithResponse(ctx, req, SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
@@ -67,7 +58,7 @@ func CreateWorkflow(ctx context.Context, client *Client, spaceID string, req kba
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		var detail WorkflowDetail
+		var detail models.Workflow
 		if err := json.Unmarshal(resp.Body, &detail); err != nil {
 			return nil, diagutil.FrameworkDiagFromError(err)
 		}
