@@ -20,6 +20,7 @@ package agentbuilderworkflow
 import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -36,7 +37,7 @@ type workflowModel struct {
 	Valid             types.Bool                      `tfsdk:"valid"`
 }
 
-func (model *workflowModel) populateFromAPI(data *kbapi.WorkflowDetailDto) {
+func (model *workflowModel) populateFromAPI(data *kibanaoapi.WorkflowDetail) {
 	if data == nil {
 		return
 	}
@@ -46,8 +47,8 @@ func (model *workflowModel) populateFromAPI(data *kbapi.WorkflowDetailDto) {
 		spaceID = "default"
 	}
 
-	model.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: data.Id}).String())
-	model.WorkflowID = types.StringValue(data.Id)
+	model.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: data.ID}).String())
+	model.WorkflowID = types.StringValue(data.ID)
 	model.SpaceID = types.StringValue(spaceID)
 	model.ConfigurationYaml = customtypes.NewNormalizedYamlValue(data.Yaml)
 	model.Name = types.StringValue(data.Name)
@@ -62,22 +63,22 @@ func (model *workflowModel) populateFromAPI(data *kbapi.WorkflowDetailDto) {
 	model.Valid = types.BoolValue(data.Valid)
 }
 
-func (model workflowModel) toAPICreateModel() kbapi.CreateWorkflowCommand {
-	body := kbapi.CreateWorkflowCommand{
+func (model workflowModel) toAPICreateModel() kbapi.PostWorkflowsWorkflowJSONRequestBody {
+	body := kbapi.PostWorkflowsWorkflowJSONRequestBody{
 		Yaml: model.ConfigurationYaml.ValueString(),
 	}
 
 	if typeutils.IsKnown(model.WorkflowID) {
-		id := model.WorkflowID.ValueString()
-		body.Id = &id
+		ID := model.WorkflowID.ValueString()
+		body.Id = &ID
 	}
 
 	return body
 }
 
-func (model workflowModel) toAPIUpdateModel() kbapi.UpdateWorkflowCommand {
+func (model workflowModel) toAPIUpdateModel() kbapi.PutWorkflowsWorkflowIdJSONRequestBody {
 	yaml := model.ConfigurationYaml.ValueString()
-	return kbapi.UpdateWorkflowCommand{
+	return kbapi.PutWorkflowsWorkflowIdJSONRequestBody{
 		Yaml: &yaml,
 	}
 }

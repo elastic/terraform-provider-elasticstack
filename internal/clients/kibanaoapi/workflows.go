@@ -19,6 +19,7 @@ package kibanaoapi
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -26,22 +27,30 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-// addInternalOriginHeader adds the required x-elastic-internal-origin header for workflow APIs
-func addInternalOriginHeader(_ context.Context, req *http.Request) error {
-	req.Header.Set("x-elastic-internal-origin", "Kibana")
-	return nil
+// WorkflowDetail holds the fields returned by the workflow API.
+type WorkflowDetail struct {
+	ID          string  `json:"id"`
+	Yaml        string  `json:"yaml"`
+	Name        string  `json:"name"`
+	Description *string `json:"description,omitempty"`
+	Enabled     bool    `json:"enabled"`
+	Valid       bool    `json:"valid"`
 }
 
 // GetWorkflow reads a specific workflow from the API.
-func GetWorkflow(ctx context.Context, client *Client, spaceID string, workflowID string) (*kbapi.WorkflowDetailDto, diag.Diagnostics) {
-	resp, err := client.API.GetWorkflowsIdWithResponse(ctx, workflowID, SpaceAwarePathRequestEditor(spaceID), addInternalOriginHeader)
+func GetWorkflow(ctx context.Context, client *Client, spaceID string, workflowID string) (*WorkflowDetail, diag.Diagnostics) {
+	resp, err := client.API.GetWorkflowsWorkflowIdWithResponse(ctx, workflowID, SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		return resp.JSON200, nil
+		var detail WorkflowDetail
+		if err := json.Unmarshal(resp.Body, &detail); err != nil {
+			return nil, diagutil.FrameworkDiagFromError(err)
+		}
+		return &detail, nil
 	case http.StatusNotFound:
 		return nil, nil
 	default:
@@ -50,38 +59,43 @@ func GetWorkflow(ctx context.Context, client *Client, spaceID string, workflowID
 }
 
 // CreateWorkflow creates a new workflow.
-func CreateWorkflow(ctx context.Context, client *Client, spaceID string, req kbapi.CreateWorkflowCommand) (*kbapi.WorkflowDetailDto, diag.Diagnostics) {
-	resp, err := client.API.PostWorkflowsWithResponse(ctx, req, SpaceAwarePathRequestEditor(spaceID), addInternalOriginHeader)
+func CreateWorkflow(ctx context.Context, client *Client, spaceID string, req kbapi.PostWorkflowsWorkflowJSONRequestBody) (*WorkflowDetail, diag.Diagnostics) {
+	resp, err := client.API.PostWorkflowsWorkflowWithResponse(ctx, req, SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		return resp.JSON200, nil
+		var detail WorkflowDetail
+		if err := json.Unmarshal(resp.Body, &detail); err != nil {
+			return nil, diagutil.FrameworkDiagFromError(err)
+		}
+		return &detail, nil
 	default:
 		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
 	}
 }
 
 // UpdateWorkflow updates an existing workflow.
-func UpdateWorkflow(ctx context.Context, client *Client, spaceID string, workflowID string, req kbapi.UpdateWorkflowCommand) (*kbapi.UpdatedWorkflowResponseDto, diag.Diagnostics) {
-	resp, err := client.API.PutWorkflowsIdWithResponse(ctx, workflowID, req, SpaceAwarePathRequestEditor(spaceID), addInternalOriginHeader)
+// The PUT response is partial (id, valid, enabled only); callers must GET afterwards for full state.
+func UpdateWorkflow(ctx context.Context, client *Client, spaceID string, workflowID string, req kbapi.PutWorkflowsWorkflowIdJSONRequestBody) diag.Diagnostics {
+	resp, err := client.API.PutWorkflowsWorkflowIdWithResponse(ctx, workflowID, req, SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+		return diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		return resp.JSON200, nil
+		return nil
 	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+		return reportUnknownError(resp.StatusCode(), resp.Body)
 	}
 }
 
 // DeleteWorkflow deletes an existing workflow.
 func DeleteWorkflow(ctx context.Context, client *Client, spaceID string, workflowID string) diag.Diagnostics {
-	resp, err := client.API.DeleteWorkflowsIdWithResponse(ctx, workflowID, SpaceAwarePathRequestEditor(spaceID), addInternalOriginHeader)
+	resp, err := client.API.DeleteWorkflowsWorkflowIdWithResponse(ctx, workflowID, SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}

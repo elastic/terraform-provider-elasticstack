@@ -28,10 +28,11 @@ import (
 )
 
 var (
-	_                               resource.Resource                = &WorkflowResource{}
-	_                               resource.ResourceWithConfigure   = &WorkflowResource{}
-	_                               resource.ResourceWithImportState = &WorkflowResource{}
-	minKibanaAgentBuilderAPIVersion                                  = version.Must(version.NewVersion("9.3.0"))
+	_ resource.Resource                = &WorkflowResource{}
+	_ resource.ResourceWithConfigure   = &WorkflowResource{}
+	_ resource.ResourceWithImportState = &WorkflowResource{}
+	// Workflow API is GA from 9.4.x onwards
+	minKibanaAgentBuilderAPIVersion = version.Must(version.NewVersion("9.4.0-SNAPSHOT"))
 )
 
 // NewResource is a helper function to simplify the provider implementation.

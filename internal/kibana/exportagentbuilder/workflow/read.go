@@ -86,7 +86,7 @@ func (d *DataSource) Read(ctx context.Context, req datasource.ReadRequest, resp 
 	var state dataSourceModel
 	state.ID = types.StringValue(compositeID.String())
 	state.SpaceID = types.StringValue(spaceID)
-	state.WorkflowID = types.StringValue(workflow.Id)
+	state.WorkflowID = types.StringValue(workflow.ID)
 	state.ConfigurationYaml = customtypes.NewNormalizedYamlValue(workflow.Yaml)
 
 	diags = resp.State.Set(ctx, &state)

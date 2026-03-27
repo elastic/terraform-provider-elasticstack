@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -219,6 +220,59 @@ func TestAccResourceAgentBuilderWorkflowSpace(t *testing.T) {
 					return s.RootModule().Resources[resourceID].Primary.ID, nil
 				},
 				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccResourceAgentBuilderWorkflowInvalidCreate(t *testing.T) {
+	workflowUUID := uuid.New()
+	workflowID := "workflow-" + workflowUUID.String()
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { preCheckWithWorkflowsEnabled(t) },
+		Steps: []resource.TestStep{
+			{
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderAPIVersion),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_invalid"),
+				ConfigVariables: config.Variables{
+					"workflow_id": config.StringVariable(workflowID),
+				},
+				ExpectError: regexp.MustCompile(`(?i)invalid workflow`),
+			},
+		},
+	})
+}
+
+func TestAccResourceAgentBuilderWorkflowInvalidUpdate(t *testing.T) {
+	workflowUUID := uuid.New()
+	workflowID := "workflow-" + workflowUUID.String()
+	resourceID := "elasticstack_kibana_agentbuilder_workflow.test_invalid"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { preCheckWithWorkflowsEnabled(t) },
+		Steps: []resource.TestStep{
+			{
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderAPIVersion),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_valid"),
+				ConfigVariables: config.Variables{
+					"workflow_id": config.StringVariable(workflowID),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceID, "workflow_id", workflowID),
+					resource.TestCheckResourceAttr(resourceID, "valid", "true"),
+				),
+			},
+			{
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderAPIVersion),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_invalid"),
+				ConfigVariables: config.Variables{
+					"workflow_id": config.StringVariable(workflowID),
+				},
+				ExpectError: regexp.MustCompile(`(?i)invalid workflow`),
 			},
 		},
 	})

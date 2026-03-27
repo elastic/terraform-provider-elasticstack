@@ -66,7 +66,7 @@ func (r *WorkflowResource) Update(ctx context.Context, req resource.UpdateReques
 
 	body := planModel.toAPIUpdateModel()
 
-	_, diags = kibanaoapi.UpdateWorkflow(ctx, client, compID.ClusterID, compID.ResourceID, body)
+	diags = kibanaoapi.UpdateWorkflow(ctx, client, compID.ClusterID, compID.ResourceID, body)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -82,4 +82,8 @@ func (r *WorkflowResource) Update(ctx context.Context, req resource.UpdateReques
 
 	diags = resp.State.Set(ctx, planModel)
 	resp.Diagnostics.Append(diags...)
+
+	if !workflow.Valid {
+		resp.Diagnostics.AddError("Invalid workflow", "The workflow was updated but its configuration is invalid. Please check the YAML definition.")
+	}
 }

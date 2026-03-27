@@ -63,7 +63,7 @@ func (r *WorkflowResource) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	workflow, diags := kibanaoapi.GetWorkflow(ctx, client, spaceID, created.Id)
+	workflow, diags := kibanaoapi.GetWorkflow(ctx, client, spaceID, created.ID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -73,4 +73,8 @@ func (r *WorkflowResource) Create(ctx context.Context, req resource.CreateReques
 
 	diags = resp.State.Set(ctx, planModel)
 	resp.Diagnostics.Append(diags...)
+
+	if !workflow.Valid {
+		resp.Diagnostics.AddError("Invalid workflow", "The workflow was created but its configuration is invalid. Please check the YAML definition.")
+	}
 }
