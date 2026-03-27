@@ -2,22 +2,29 @@
 
 ### Requirement: Replacement fields and schema validation (REQ-006)
 
-REQ-006 is extended to include:
+`slo_error_budget_config` SHALL be valid only for panels with `type = "slo_error_budget"` and SHALL be mutually exclusive with all other panel configuration blocks and with `config_json`. The `trigger` attribute within each `drilldowns` entry SHALL be restricted to the value `"on_open_panel_menu"`. The `type` attribute within each `drilldowns` entry SHALL be restricted to the value `"url_drilldown"`. Both SHALL be rejected at plan time if any other value is supplied.
 
-- `slo_error_budget_config` SHALL be valid only for panels with `type = "slo_error_budget"`.
-- `slo_error_budget_config` SHALL be mutually exclusive with all other panel configuration blocks and with `config_json`.
-- The `trigger` attribute within each `drilldowns` entry SHALL be restricted to the value `"on_open_panel_menu"`; any other value SHALL be rejected at plan time.
-- The `type` attribute within each `drilldowns` entry SHALL be restricted to the value `"url_drilldown"`; any other value SHALL be rejected at plan time.
+#### Scenario: slo_error_budget_config rejected on non-slo_error_budget panel type
+
+- GIVEN a panel with `type = "markdown"` and an `slo_error_budget_config` block
+- WHEN the practitioner runs terraform plan
+- THEN the provider SHALL return a plan-time error indicating `slo_error_budget_config` is not valid for `type = "markdown"`
+
+#### Scenario: invalid trigger value rejected at plan time
+
+- GIVEN a panel with `type = "slo_error_budget"` and a `drilldowns` entry with `trigger = "invalid_trigger"`
+- WHEN the practitioner runs terraform plan
+- THEN the provider SHALL return a plan-time error indicating the value is not one of the allowed values
 
 ### Requirement: Panels, sections, and `config_json` round-trip behavior (REQ-010)
 
-The existing REQ-010 text:
+The `slo_error_budget` panel type SHALL be managed exclusively through the typed `slo_error_budget_config` block. Using `config_json` with `type = "slo_error_budget"` SHALL return an error diagnostic. This extends the existing constraint that `config_json` is supported only for `markdown` and `lens` panel types.
 
-> On write, `config_json` SHALL be supported only for `markdown` and `lens` panel types; using `config_json` with any other panel type, or omitting all panel configuration blocks, SHALL return an error diagnostic.
+#### Scenario: config_json rejected for slo_error_budget panel type
 
-is updated to additionally state:
-
-> The `slo_error_budget` panel type SHALL be managed exclusively through the typed `slo_error_budget_config` block; using `config_json` with `type = "slo_error_budget"` SHALL return an error diagnostic.
+- GIVEN a panel with `type = "slo_error_budget"` and a `config_json` attribute
+- WHEN the provider attempts to write the panel
+- THEN the provider SHALL return an error diagnostic indicating `config_json` is not supported for `slo_error_budget` panels
 
 ---
 
