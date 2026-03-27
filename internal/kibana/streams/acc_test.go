@@ -34,7 +34,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-var minVersionStreamsAcc = version.Must(version.NewVersion("9.2.0"))
+var minVersionStreamsAcc = version.Must(version.NewVersion("9.4.0-SNAPSHOT"))
 
 // prepareStreamsEnvironment runs before each test step to work around
 // SNAPSHOT/test-environment quirks. It:
@@ -166,8 +166,12 @@ func prepareStreamsEnvironment(t *testing.T) {
 			strings.Contains(msg, "Failed to resolve failure store") ||
 			strings.Contains(msg, "unsupported root stream") ||
 			strings.Contains(msg, "404") ||
-			strings.Contains(msg, "Not Found") {
-			t.Skip("Kibana Streams is not available in this environment — skipping acceptance test")
+			strings.Contains(msg, "Not Found") ||
+			// 9.3.x and earlier don't have the stream.type discriminator field
+			// introduced in kibana#256682 (9.4.0). Reject gracefully.
+			strings.Contains(msg, "unrecognized_keys") ||
+			strings.Contains(msg, "Excess keys are not allowed") {
+			t.Skip("Kibana Streams API version is not compatible with this provider — skipping acceptance test")
 		}
 	} else {
 		t.Logf("prepareStreamsEnvironment: probe stream created OK — environment ready")

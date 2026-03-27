@@ -40,7 +40,8 @@ func getSchema() schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: "Manages Kibana [Streams](https://www.elastic.co/docs/api/doc/kibana/group/endpoint-streams). " +
 			"Streams is an experimental feature for managing data ingestion in Kibana. " +
-			"Requires Elastic Stack 9.2.0 or higher. This functionality is in technical preview and may be changed or removed in a future release.\n\n" +
+			"Requires Elastic Stack 9.4.0 or higher (the stream type discriminator field used by this resource was introduced in 9.4.0). " +
+			"This functionality is in technical preview and may be changed or removed in a future release.\n\n" +
 			"Three stream types are supported:\n" +
 			"- **Wired streams** (`wired_config`): fully managed data streams with typed field mappings and routing rules.\n" +
 			"- **Classic streams** (`classic_config`): adopt existing Elasticsearch data streams — they cannot be created or deleted via this resource, only imported and updated.\n" +

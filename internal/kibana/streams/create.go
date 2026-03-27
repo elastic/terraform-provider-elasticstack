@@ -28,7 +28,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-var minVersionStreams = version.Must(version.NewVersion("9.2.0-SNAPSHOT"))
+// minVersionStreams reflects the Kibana version where the stream.type discriminator
+// field was introduced (kibana#256682). Earlier versions of the Streams API
+// (9.2.x–9.3.x) reject requests containing this field.
+var minVersionStreams = version.Must(version.NewVersion("9.4.0-SNAPSHOT"))
 
 func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var planModel streamModel
