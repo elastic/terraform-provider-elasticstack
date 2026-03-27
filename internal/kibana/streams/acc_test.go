@@ -176,7 +176,6 @@ func prepareStreamsEnvironment(t *testing.T) {
 }
 
 func TestAccResourceKibanaStreamWired(t *testing.T) {
-	t.Parallel()
 	suffix := sdkacctest.RandStringFromCharSet(6, sdkacctest.CharSetAlphaNum)
 	skipFn := versionutils.CheckIfVersionIsUnsupported(minVersionStreamsAcc)
 
@@ -286,7 +285,6 @@ func checkQueryStreamsEnabled() func() (bool, error) {
 }
 
 func TestAccResourceKibanaStreamQuery(t *testing.T) {
-	t.Parallel()
 	suffix := sdkacctest.RandStringFromCharSet(6, sdkacctest.CharSetAlphaNum)
 	skipFn := func() (bool, error) {
 		if skip, err := versionutils.CheckIfVersionIsUnsupported(minVersionStreamsAcc)(); skip || err != nil {
