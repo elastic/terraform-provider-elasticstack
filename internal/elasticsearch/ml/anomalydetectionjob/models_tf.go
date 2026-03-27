@@ -162,6 +162,41 @@ func (plan *TFModel) toAPIModel(ctx context.Context) (*APIModel, diag.Diagnostic
 		if typeutils.IsKnown(detector.UseNull) {
 			apiDetectors[i].UseNull = new(detector.UseNull.ValueBool())
 		}
+		if typeutils.IsKnown(detector.CustomRules) {
+			var customRulesTF []CustomRuleTFModel
+			d := detector.CustomRules.ElementsAs(ctx, &customRulesTF, false)
+			diags.Append(d...)
+			if diags.HasError() {
+				return nil, diags
+			}
+			apiRules := make([]CustomRuleAPIModel, len(customRulesTF))
+			for j, rule := range customRulesTF {
+				var actions []string
+				d = rule.Actions.ElementsAs(ctx, &actions, false)
+				diags.Append(d...)
+				apiActions := make([]any, len(actions))
+				for k, a := range actions {
+					apiActions[k] = a
+				}
+				apiRules[j].Actions = apiActions
+
+				if typeutils.IsKnown(rule.Conditions) {
+					var conditionsTF []RuleConditionTFModel
+					d = rule.Conditions.ElementsAs(ctx, &conditionsTF, false)
+					diags.Append(d...)
+					apiConditions := make([]RuleConditionAPIModel, len(conditionsTF))
+					for k, cond := range conditionsTF {
+						apiConditions[k] = RuleConditionAPIModel{
+							AppliesTo: cond.AppliesTo.ValueString(),
+							Operator:  cond.Operator.ValueString(),
+							Value:     cond.Value.ValueFloat64(),
+						}
+					}
+					apiRules[j].Conditions = apiConditions
+				}
+			}
+			apiDetectors[i].CustomRules = apiRules
+		}
 	}
 
 	// Convert influencers
@@ -406,7 +441,14 @@ func (plan *TFModel) convertAnalysisConfigFromAPI(ctx context.Context, apiConfig
 			detectorsTF[i].ByFieldName = typeutils.NonEmptyStringishValue(detector.ByFieldName)
 			detectorsTF[i].OverFieldName = typeutils.NonEmptyStringishValue(detector.OverFieldName)
 			detectorsTF[i].PartitionFieldName = typeutils.NonEmptyStringishValue(detector.PartitionFieldName)
-			detectorsTF[i].DetectorDescription = typeutils.NonEmptyStringishValue(detector.DetectorDescription)
+			// ES auto-generates detector_description (e.g. "count over clientip") when
+			// not set by the user. Preserve null to avoid plan/apply inconsistency,
+			// but only when the original is available (not during import).
+			if originalDetector.DetectorDescription.IsNull() && originalDetector.Function.ValueString() != "" {
+				detectorsTF[i].DetectorDescription = types.StringNull()
+			} else {
+				detectorsTF[i].DetectorDescription = typeutils.NonEmptyStringishValue(detector.DetectorDescription)
+			}
 			detectorsTF[i].ExcludeFrequent = typeutils.NonEmptyStringishValue(detector.ExcludeFrequent)
 
 			// Convert boolean field
@@ -454,27 +496,36 @@ func (plan *TFModel) convertAnalysisConfigFromAPI(ctx context.Context, apiConfig
 				}
 			}
 
-			var customRulesDiags diag.Diagnostics
-			detectorsTF[i].CustomRules, customRulesDiags = typeutils.NonEmptyListOrDefault(
-				ctx,
-				originalDetector.CustomRules,
-				types.ObjectType{AttrTypes: getCustomRuleAttrTypes()},
-				apiConfig.Detectors[i].CustomRules,
-			)
-			diags.Append(customRulesDiags...)
-			// Ensure the list is properly typed (handles untyped zero-value lists from import)
-			detectorsTF[i].CustomRules = typeutils.EnsureTypedList(ctx, detectorsTF[i].CustomRules, types.ObjectType{AttrTypes: getCustomRuleAttrTypes()})
+			if len(customRulesTF) > 0 {
+				customRulesListValue, d := types.ListValueFrom(ctx, types.ObjectType{AttrTypes: getCustomRuleAttrTypes()}, customRulesTF)
+				diags.Append(d...)
+				detectorsTF[i].CustomRules = customRulesListValue
+			} else if len(detector.CustomRules) == 0 {
+				// Preserve user's empty list vs null distinction
+				detectorsTF[i].CustomRules = originalDetector.CustomRules
+				detectorsTF[i].CustomRules = typeutils.EnsureTypedList(ctx, detectorsTF[i].CustomRules, types.ObjectType{AttrTypes: getCustomRuleAttrTypes()})
+			}
 		}
 		analysisConfigTF.Detectors = detectorsTF
 	}
 
-	// Convert per_partition_categorization
+	// Convert per_partition_categorization. ES may return defaults (enabled=false)
+	// even when the user didn't configure it. Only populate if user configured it
+	// or if ES has it enabled.
 	if apiConfig.PerPartitionCategorization != nil {
-		perPartitionCategorizationTF := PerPartitionCategorizationTFModel{
-			Enabled: types.BoolValue(apiConfig.PerPartitionCategorization.Enabled),
+		if analysisConfigTF.PerPartitionCategorization != nil || apiConfig.PerPartitionCategorization.Enabled {
+			perPartitionCategorizationTF := PerPartitionCategorizationTFModel{
+				Enabled: types.BoolValue(apiConfig.PerPartitionCategorization.Enabled),
+			}
+			if apiConfig.PerPartitionCategorization.StopOnWarn != nil {
+				perPartitionCategorizationTF.StopOnWarn = types.BoolValue(*apiConfig.PerPartitionCategorization.StopOnWarn)
+			} else if analysisConfigTF.PerPartitionCategorization != nil {
+				perPartitionCategorizationTF.StopOnWarn = analysisConfigTF.PerPartitionCategorization.StopOnWarn
+			} else {
+				perPartitionCategorizationTF.StopOnWarn = types.BoolNull()
+			}
+			analysisConfigTF.PerPartitionCategorization = &perPartitionCategorizationTF
 		}
-		perPartitionCategorizationTF.StopOnWarn = types.BoolPointerValue(apiConfig.PerPartitionCategorization.StopOnWarn)
-		analysisConfigTF.PerPartitionCategorization = &perPartitionCategorizationTF
 	}
 
 	return &analysisConfigTF
