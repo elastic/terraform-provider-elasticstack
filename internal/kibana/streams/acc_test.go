@@ -34,13 +34,17 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-var minVersionStreamsAcc = version.Must(version.NewVersion("9.2.0-SNAPSHOT"))
+var minVersionStreamsAcc = version.Must(version.NewVersion("9.2.0"))
 
-// prepareStreamsEnvironment runs before each test step. It calls the Kibana
-// Streams resync API (to repair any inconsistent state from prior runs) and
-// then attempts to configure the logs root stream with an explicit
-// failure_store so child stream creation does not fail with
-// "all ancestors have inherit configuration".
+// prepareStreamsEnvironment runs before each test step to work around
+// SNAPSHOT/test-environment quirks. It:
+//  1. Calls the Kibana Streams resync API to repair inconsistent state from
+//     prior runs.
+//  2. Configures the logs.otel root stream with an explicit failure_store so
+//     child stream creation doesn't fail with "all ancestors have inherit
+//     configuration". This only occurs on fresh SNAPSHOT installs where root
+//     streams are auto-created with {inherit:{}} — real users on a properly
+//     initialized 9.4+ cluster will not encounter this.
 func prepareStreamsEnvironment(t *testing.T) {
 	t.Helper()
 
@@ -151,7 +155,8 @@ func prepareStreamsEnvironment(t *testing.T) {
 		Rules:      []string{},
 		Queries:    []kibanaoapi.StreamQuery{},
 	}
-	probeName := logsRoot + ".__tfacc_probe__"
+	// Use a unique probe name so parallel test runs don't conflict.
+	probeName := logsRoot + ".__tfacc_probe_" + sdkacctest.RandStringFromCharSet(6, sdkacctest.CharSetAlphaNum) + "__"
 	_, probeDiags := kibanaoapi.UpsertStream(context.Background(), kibanaClient, "default", probeName, probeReq)
 	if probeDiags.HasError() {
 		msg := probeDiags[0].Detail() + probeDiags[0].Summary()
@@ -171,10 +176,11 @@ func prepareStreamsEnvironment(t *testing.T) {
 }
 
 func TestAccResourceKibanaStreamWired(t *testing.T) {
+	t.Parallel()
 	suffix := sdkacctest.RandStringFromCharSet(6, sdkacctest.CharSetAlphaNum)
 	skipFn := versionutils.CheckIfVersionIsUnsupported(minVersionStreamsAcc)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() {
 			acctest.PreCheck(t)
 			prepareStreamsEnvironment(t)
@@ -280,6 +286,7 @@ func checkQueryStreamsEnabled() func() (bool, error) {
 }
 
 func TestAccResourceKibanaStreamQuery(t *testing.T) {
+	t.Parallel()
 	suffix := sdkacctest.RandStringFromCharSet(6, sdkacctest.CharSetAlphaNum)
 	skipFn := func() (bool, error) {
 		if skip, err := versionutils.CheckIfVersionIsUnsupported(minVersionStreamsAcc)(); skip || err != nil {
@@ -288,7 +295,7 @@ func TestAccResourceKibanaStreamQuery(t *testing.T) {
 		return checkQueryStreamsEnabled()()
 	}
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() {
 			acctest.PreCheck(t)
 			prepareStreamsEnvironment(t)
