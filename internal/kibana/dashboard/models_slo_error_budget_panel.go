@@ -135,7 +135,8 @@ func populateSloErrorBudgetFromAPI(pm *panelModel, tfPanel *panelModel, apiConfi
 	existing.SloID = types.StringValue(apiConfig.SloId)
 
 	// slo_instance_id: only write if prior intent was non-null (or import).
-	if typeutils.IsKnown(priorSloInstanceID) && apiConfig.SloInstanceId != nil {
+	// Normalize "*" (all-instances wildcard) to null, matching create+refresh behaviour.
+	if typeutils.IsKnown(priorSloInstanceID) && apiConfig.SloInstanceId != nil && *apiConfig.SloInstanceId != "*" {
 		existing.SloInstanceID = types.StringValue(*apiConfig.SloInstanceId)
 	}
 
