@@ -307,6 +307,7 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 		}
 		setPanelGridFromAPI(&pm, sebPanel.Grid.X, sebPanel.Grid.Y, sebPanel.Grid.W, sebPanel.Grid.H)
 		pm.ID = types.StringPointerValue(sebPanel.Uid)
+		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
 		populateSloErrorBudgetFromAPI(&pm, tfPanel, sebPanel.Config)
 	default:
 		// No typed mapping yet; keep only the panel type.
