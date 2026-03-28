@@ -107,8 +107,16 @@ func sloOverviewToAPI(pm panelModel, grid struct {
 		if diags.HasError() {
 			return kbapi.DashboardPanelItem{}, diags
 		}
-		if err := config.FromSloSingleOverviewEmbeddable(single); err != nil {
-			diags.AddError("Failed to build SLO single overview config", err.Error())
+		// NOTE: config.FromSloSingleOverviewEmbeddable overwrites OverviewMode to the
+		// discriminator string "slo-single-overview-embeddable"; bypass it and marshal
+		// directly so that overview_mode = "single" is preserved in the payload.
+		b, err := json.Marshal(single)
+		if err != nil {
+			diags.AddError("Failed to marshal SLO single overview config", err.Error())
+			return kbapi.DashboardPanelItem{}, diags
+		}
+		if err := config.UnmarshalJSON(b); err != nil {
+			diags.AddError("Failed to set SLO single overview config", err.Error())
 			return kbapi.DashboardPanelItem{}, diags
 		}
 	} else if cfg.Groups != nil {
@@ -117,8 +125,15 @@ func sloOverviewToAPI(pm panelModel, grid struct {
 		if diags.HasError() {
 			return kbapi.DashboardPanelItem{}, diags
 		}
-		if err := config.FromSloGroupOverviewEmbeddable(groups); err != nil {
-			diags.AddError("Failed to build SLO groups overview config", err.Error())
+		// Same workaround: FromSloGroupOverviewEmbeddable would overwrite overview_mode
+		// to "slo-group-overview-embeddable"; marshal directly to preserve "groups".
+		b, err := json.Marshal(groups)
+		if err != nil {
+			diags.AddError("Failed to marshal SLO groups overview config", err.Error())
+			return kbapi.DashboardPanelItem{}, diags
+		}
+		if err := config.UnmarshalJSON(b); err != nil {
+			diags.AddError("Failed to set SLO groups overview config", err.Error())
 			return kbapi.DashboardPanelItem{}, diags
 		}
 	}
@@ -504,7 +519,10 @@ func sloGroupsFromAPI(pm *panelModel, tfPanel *panelModel, api kbapi.SloGroupOve
 		}
 	}
 
-	if api.GroupFilters != nil {
+	if api.GroupFilters != nil && (priorGroups == nil || priorGroups.GroupFilters != nil) {
+		// Null-preservation: if prior state had a group_filters block (or this is an import with
+		// no prior state), populate from API. If prior state had no group_filters block, keep null
+		// even when the API echoes back defaults (e.g. group_by="status").
 		gf := &sloGroupFiltersModel{}
 
 		var priorGroupBy types.String
