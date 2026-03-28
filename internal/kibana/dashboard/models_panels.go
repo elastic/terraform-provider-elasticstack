@@ -254,6 +254,7 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 		}
 		setPanelGridFromAPI(&pm, sloPanel.Grid.X, sloPanel.Grid.Y, sloPanel.Grid.W, sloPanel.Grid.H)
 		pm.ID = types.StringPointerValue(sloPanel.Uid)
+		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
 		d := sloOverviewFromAPI(&pm, tfPanel, sloPanel)
 		diags.Append(d...)
 	case panelTypeTimeSlider:
