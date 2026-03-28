@@ -5,6 +5,15 @@ variable "dashboard_title" {
 resource "elasticstack_kibana_dashboard" "test" {
   title = var.dashboard_title
 
+  time_from = "now-15m"
+  time_to   = "now"
+
+  refresh_interval_pause = true
+  refresh_interval_value = 0
+
+  query_language = "kuery"
+  query_text     = ""
+
   panels = [{
     type = "slo_burn_rate"
     grid = {

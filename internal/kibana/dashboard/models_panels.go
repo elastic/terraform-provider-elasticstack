@@ -267,6 +267,7 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 		}
 		setPanelGridFromAPI(&pm, sbrPanel.Grid.X, sbrPanel.Grid.Y, sbrPanel.Grid.W, sbrPanel.Grid.H)
 		pm.ID = types.StringPointerValue(sbrPanel.Uid)
+		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
 		populateSloBurnRateFromAPI(&pm, tfPanel, sbrPanel.Config)
 	case panelTypeLens:
 		lensPanel, err := panelItem.AsKbnDashboardPanelLens()

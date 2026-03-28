@@ -198,7 +198,7 @@ func TestAccResourceDashboardSloBurnRateInvalidDuration(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable("unused"),
 				},
-				ExpectError: regexp.MustCompile(`(?s)duration.*\d\+\[mhd\]`),
+				ExpectError: regexp.MustCompile(`(?s)duration.*\\d\+\[mhd\]`),
 			},
 		},
 	})

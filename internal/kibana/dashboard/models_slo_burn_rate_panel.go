@@ -115,7 +115,8 @@ func populateSloBurnRateFromAPI(pm *panelModel, tfPanel *panelModel, apiConfig k
 			SloID:    types.StringValue(apiConfig.SloId),
 			Duration: types.StringValue(apiConfig.Duration),
 		}
-		if apiConfig.SloInstanceId != nil {
+		// Normalize "*" (all-instances wildcard) to null, matching create+refresh behaviour.
+		if apiConfig.SloInstanceId != nil && *apiConfig.SloInstanceId != "*" {
 			cfg.SloInstanceID = types.StringValue(*apiConfig.SloInstanceId)
 		} else {
 			cfg.SloInstanceID = types.StringNull()
