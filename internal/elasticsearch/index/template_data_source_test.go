@@ -85,7 +85,7 @@ func TestAccIndexTemplateDataSource(t *testing.T) {
 }
 
 // TestAccIndexTemplateDataSourceTemplate covers the template subtree:
-// aliases (name, filter, routing, index_routing, search_routing, is_hidden, is_write_index), mappings, and settings.
+// aliases (name, filter, index_routing, search_routing, is_hidden, is_write_index), mappings, and settings.
 func TestAccIndexTemplateDataSourceTemplate(t *testing.T) {
 	templateName := "test-ds-tpl-" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
@@ -110,7 +110,6 @@ func TestAccIndexTemplateDataSourceTemplate(t *testing.T) {
 							"name":           "my_alias",
 							"filter":         `{"term":{"status":"active"}}`,
 							"index_routing":  "shard_1",
-							"routing":        "shard_1",
 							"search_routing": "shard_1",
 							"is_hidden":      "false",
 							"is_write_index": "true",
@@ -137,7 +136,6 @@ func TestAccIndexTemplateDataSourceTemplate(t *testing.T) {
 							"name":           "my_alias",
 							"filter":         `{"term":{"status":"active"}}`,
 							"index_routing":  "shard_1",
-							"routing":        "shard_1",
 							"search_routing": "shard_1",
 							"is_hidden":      "false",
 							"is_write_index": "true",
@@ -166,7 +164,6 @@ resource "elasticstack_elasticsearch_index_template" "test" {
       name           = "my_alias"
       filter         = jsonencode({ term = { status = "active" } })
       index_routing  = "shard_1"
-      routing        = "shard_1"
       search_routing = "shard_1"
       is_hidden      = false
       is_write_index = true
@@ -181,6 +178,58 @@ data "elasticstack_elasticsearch_index_template" "test" {
   name = elasticstack_elasticsearch_index_template.test.name
 }
 `, name, mappings, settings)
+}
+
+// TestAccIndexTemplateDataSourceAliasRoutingFromRoutingOnly covers alias routing when only the generic routing value is configured.
+func TestAccIndexTemplateDataSourceAliasRoutingFromRoutingOnly(t *testing.T) {
+	templateName := "test-ds-routing-" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccIndexTemplateDataSourceAliasRoutingOnlyConfig(templateName),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "name", templateName),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.#", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.0.alias.#", "1"),
+					resource.TestCheckTypeSetElemNestedAttrs(
+						"data.elasticstack_elasticsearch_index_template.test",
+						"template.0.alias.*",
+						map[string]string{
+							"name":    "routing_only_alias",
+							"routing": "shard_1",
+						},
+					),
+				),
+			},
+		},
+	})
+}
+
+func testAccIndexTemplateDataSourceAliasRoutingOnlyConfig(name string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_index_template" "test" {
+  name           = "%[1]s"
+  index_patterns = ["%[1]s-*"]
+
+  template {
+    alias {
+      name    = "routing_only_alias"
+      routing = "shard_1"
+    }
+  }
+}
+
+data "elasticstack_elasticsearch_index_template" "test" {
+  name = elasticstack_elasticsearch_index_template.test.name
+}
+`, name)
 }
 
 // TestAccIndexTemplateDataSourceDataStream covers data_stream.0.hidden and data_stream.0.allow_custom_routing.
