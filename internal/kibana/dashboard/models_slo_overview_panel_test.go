@@ -327,8 +327,7 @@ func Test_sloOverviewToAPI_single(t *testing.T) {
 	single, err := panel.Config.AsSloSingleOverviewEmbeddable()
 	require.NoError(t, err)
 	assert.Equal(t, "test-slo", single.SloId)
-	// The generated kbapi code sets overview_mode to the embeddable type name
-	assert.Equal(t, kbapi.SloSingleOverviewEmbeddableOverviewMode("slo-single-overview-embeddable"), single.OverviewMode)
+	assert.Equal(t, kbapi.SloSingleOverviewEmbeddableOverviewModeSingle, single.OverviewMode)
 }
 
 func Test_sloOverviewToAPI_groups(t *testing.T) {
@@ -371,8 +370,7 @@ func Test_sloOverviewToAPI_groups(t *testing.T) {
 	require.NoError(t, err)
 	groups, err := panel.Config.AsSloGroupOverviewEmbeddable()
 	require.NoError(t, err)
-	// The generated kbapi code sets overview_mode to the embeddable type name
-	assert.Equal(t, kbapi.SloGroupOverviewEmbeddableOverviewMode("slo-group-overview-embeddable"), groups.OverviewMode)
+	assert.Equal(t, kbapi.Groups, groups.OverviewMode)
 	require.NotNil(t, groups.GroupFilters)
 	require.NotNil(t, groups.GroupFilters.GroupBy)
 	assert.Equal(t, kbapi.SloGroupOverviewEmbeddableGroupFiltersGroupBySloTags, *groups.GroupFilters.GroupBy)

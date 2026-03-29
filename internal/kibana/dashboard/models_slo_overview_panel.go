@@ -198,31 +198,9 @@ func singleToAPI(m *sloSingleConfigModel) (kbapi.SloSingleOverviewEmbeddable, di
 	return api, diags
 }
 
-// setDrilldownsOnSingle sets the Drilldowns field on a SloSingleOverviewEmbeddable using
-// JSON marshaling to avoid referencing the anonymous struct field type directly.
+// setDrilldownsOnSingle sets the Drilldowns field on a SloSingleOverviewEmbeddable.
 func setDrilldownsOnSingle(api *kbapi.SloSingleOverviewEmbeddable, drilldowns []sloDrilldownModel) diag.Diagnostics {
-	ddsJSON, err := json.Marshal(buildDrilldownsWire(drilldowns))
-	if err != nil {
-		return diag.Diagnostics{diag.NewErrorDiagnostic("Failed to marshal drilldowns", err.Error())}
-	}
-	// Marshal the struct to JSON, overlay the drilldowns key, and unmarshal back.
-	base, err := json.Marshal(api)
-	if err != nil {
-		return diag.Diagnostics{diag.NewErrorDiagnostic("Failed to marshal SLO single config", err.Error())}
-	}
-	var m map[string]json.RawMessage
-	if err := json.Unmarshal(base, &m); err != nil {
-		return diag.Diagnostics{diag.NewErrorDiagnostic("Failed to unmarshal SLO single config", err.Error())}
-	}
-	m["drilldowns"] = ddsJSON
-	merged, err := json.Marshal(m)
-	if err != nil {
-		return diag.Diagnostics{diag.NewErrorDiagnostic("Failed to re-marshal SLO single config", err.Error())}
-	}
-	if err := json.Unmarshal(merged, api); err != nil {
-		return diag.Diagnostics{diag.NewErrorDiagnostic("Failed to apply drilldowns to SLO single config", err.Error())}
-	}
-	return nil
+	return injectDrilldownsJSON(api, drilldowns)
 }
 
 // groupsToAPI converts a sloGroupsConfigModel to the kbapi SloGroupOverviewEmbeddable type.
@@ -261,28 +239,35 @@ func groupsToAPI(m *sloGroupsConfigModel) (kbapi.SloGroupOverviewEmbeddable, dia
 	return api, diags
 }
 
-// setDrilldownsOnGroups sets the Drilldowns field on a SloGroupOverviewEmbeddable using
-// JSON marshaling to avoid referencing the anonymous struct field type directly.
+// setDrilldownsOnGroups sets the Drilldowns field on a SloGroupOverviewEmbeddable.
 func setDrilldownsOnGroups(api *kbapi.SloGroupOverviewEmbeddable, drilldowns []sloDrilldownModel) diag.Diagnostics {
+	return injectDrilldownsJSON(api, drilldowns)
+}
+
+// injectDrilldownsJSON marshals api to JSON, overlays the "drilldowns" key with the
+// provided drilldown models, and unmarshals back. Used for both single and groups SLO
+// overview embeddables whose Drilldowns field has an anonymous struct type that cannot
+// be referenced directly in typed Go code.
+func injectDrilldownsJSON(api any, drilldowns []sloDrilldownModel) diag.Diagnostics {
 	ddsJSON, err := json.Marshal(buildDrilldownsWire(drilldowns))
 	if err != nil {
 		return diag.Diagnostics{diag.NewErrorDiagnostic("Failed to marshal drilldowns", err.Error())}
 	}
 	base, err := json.Marshal(api)
 	if err != nil {
-		return diag.Diagnostics{diag.NewErrorDiagnostic("Failed to marshal SLO groups config", err.Error())}
+		return diag.Diagnostics{diag.NewErrorDiagnostic("Failed to marshal SLO config", err.Error())}
 	}
 	var m map[string]json.RawMessage
 	if err := json.Unmarshal(base, &m); err != nil {
-		return diag.Diagnostics{diag.NewErrorDiagnostic("Failed to unmarshal SLO groups config", err.Error())}
+		return diag.Diagnostics{diag.NewErrorDiagnostic("Failed to unmarshal SLO config", err.Error())}
 	}
 	m["drilldowns"] = ddsJSON
 	merged, err := json.Marshal(m)
 	if err != nil {
-		return diag.Diagnostics{diag.NewErrorDiagnostic("Failed to re-marshal SLO groups config", err.Error())}
+		return diag.Diagnostics{diag.NewErrorDiagnostic("Failed to re-marshal SLO config", err.Error())}
 	}
 	if err := json.Unmarshal(merged, api); err != nil {
-		return diag.Diagnostics{diag.NewErrorDiagnostic("Failed to apply drilldowns to SLO groups config", err.Error())}
+		return diag.Diagnostics{diag.NewErrorDiagnostic("Failed to apply drilldowns to SLO config", err.Error())}
 	}
 	return nil
 }
@@ -583,16 +568,8 @@ func drilldownsFromWireJSON(b []byte) []sloDrilldownModel {
 			Trigger: types.StringValue(dd.Trigger),
 			Type:    types.StringValue(dd.Type),
 		}
-		if dd.EncodeURL != nil {
-			result[i].EncodeURL = types.BoolPointerValue(dd.EncodeURL)
-		} else {
-			result[i].EncodeURL = types.BoolNull()
-		}
-		if dd.OpenInNewTab != nil {
-			result[i].OpenInNewTab = types.BoolPointerValue(dd.OpenInNewTab)
-		} else {
-			result[i].OpenInNewTab = types.BoolNull()
-		}
+		result[i].EncodeURL = types.BoolPointerValue(dd.EncodeURL)
+		result[i].OpenInNewTab = types.BoolPointerValue(dd.OpenInNewTab)
 	}
 	return result
 }
