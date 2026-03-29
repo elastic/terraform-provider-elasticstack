@@ -234,13 +234,19 @@ func deriveAliasRoutingInTemplateState(rawTemplate any) []any {
 			continue
 		}
 
-		routing, _ := aliasMap["routing"].(string)
-		if routing != "" {
+		routing, _, ok := getOptionalStringAttr(aliasMap, "routing")
+		if !ok || routing != "" {
 			continue
 		}
 
-		indexRouting, _ := aliasMap["index_routing"].(string)
-		searchRouting, _ := aliasMap["search_routing"].(string)
+		indexRouting, indexRoutingExists, ok := getOptionalStringAttr(aliasMap, "index_routing")
+		if !ok || !indexRoutingExists {
+			continue
+		}
+		searchRouting, searchRoutingExists, ok := getOptionalStringAttr(aliasMap, "search_routing")
+		if !ok || !searchRoutingExists {
+			continue
+		}
 		if indexRouting != "" && indexRouting == searchRouting {
 			aliasMap["routing"] = indexRouting
 		}
@@ -260,4 +266,18 @@ func normalizeFlattenedAliases(rawAliases any) ([]any, bool) {
 	default:
 		return nil, false
 	}
+}
+
+func getOptionalStringAttr(values map[string]any, key string) (string, bool, bool) {
+	value, ok := values[key]
+	if !ok {
+		return "", false, true
+	}
+
+	str, ok := value.(string)
+	if !ok {
+		return "", true, false
+	}
+
+	return str, true, true
 }

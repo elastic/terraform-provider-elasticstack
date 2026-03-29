@@ -7,10 +7,12 @@ variable "template_name" {
 }
 
 variable "mappings" {
+  # Expected to be a JSON-encoded string.
   type = string
 }
 
 variable "settings" {
+  # Expected to be a JSON-encoded string.
   type = string
 }
 
