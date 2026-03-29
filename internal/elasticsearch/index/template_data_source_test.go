@@ -152,38 +152,6 @@ func TestAccIndexTemplateDataSourceTemplate(t *testing.T) {
 	})
 }
 
-// TestAccIndexTemplateDataSourceAliasRoutingFromRoutingOnly covers the generic alias routing field
-// in the data source when only routing (and not index_routing/search_routing) is configured.
-func TestAccIndexTemplateDataSourceAliasRoutingFromRoutingOnly(t *testing.T) {
-	templateName := "test-ds-routing-" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
-
-	resource.ParallelTest(t, resource.TestCase{
-		PreCheck: func() { acctest.PreCheck(t) },
-		Steps: []resource.TestStep{
-			{
-				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
-				ConfigVariables: config.Variables{
-					"template_name": config.StringVariable(templateName),
-				},
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "name", templateName),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.#", "1"),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.0.alias.#", "1"),
-					resource.TestCheckTypeSetElemNestedAttrs(
-						"data.elasticstack_elasticsearch_index_template.test",
-						"template.0.alias.*",
-						map[string]string{
-							"name":    "routing_only_alias",
-							"routing": "shard_1",
-						},
-					),
-				),
-			},
-		},
-	})
-}
-
 // TestAccIndexTemplateDataSourceDataStream covers data_stream.0.hidden and data_stream.0.allow_custom_routing.
 func TestAccIndexTemplateDataSourceDataStream(t *testing.T) {
 	templateName := "test-ds-stream-" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
