@@ -121,26 +121,10 @@ func populateSloBurnRateFromAPI(pm *panelModel, tfPanel *panelModel, apiConfig k
 		} else {
 			cfg.SloInstanceID = types.StringNull()
 		}
-		if apiConfig.Title != nil {
-			cfg.Title = types.StringValue(*apiConfig.Title)
-		} else {
-			cfg.Title = types.StringNull()
-		}
-		if apiConfig.Description != nil {
-			cfg.Description = types.StringValue(*apiConfig.Description)
-		} else {
-			cfg.Description = types.StringNull()
-		}
-		if apiConfig.HideTitle != nil {
-			cfg.HideTitle = types.BoolValue(*apiConfig.HideTitle)
-		} else {
-			cfg.HideTitle = types.BoolNull()
-		}
-		if apiConfig.HideBorder != nil {
-			cfg.HideBorder = types.BoolValue(*apiConfig.HideBorder)
-		} else {
-			cfg.HideBorder = types.BoolNull()
-		}
+		cfg.Title = types.StringPointerValue(apiConfig.Title)
+		cfg.Description = types.StringPointerValue(apiConfig.Description)
+		cfg.HideTitle = types.BoolPointerValue(apiConfig.HideTitle)
+		cfg.HideBorder = types.BoolPointerValue(apiConfig.HideBorder)
 		cfg.Drilldowns = readSloBurnRateDrilldownsFromAPI(apiConfig.Drilldowns, nil)
 		pm.SloBurnRateConfig = cfg
 		return
@@ -157,17 +141,11 @@ func populateSloBurnRateFromAPI(pm *panelModel, tfPanel *panelModel, apiConfig k
 	existing.SloID = types.StringValue(apiConfig.SloId)
 	existing.Duration = types.StringValue(apiConfig.Duration)
 
-	// slo_instance_id null-preservation: if state is null and API returns "*", keep null.
+	// slo_instance_id null-preservation: if state is null (practitioner omitted it), keep null
+	// regardless of what the API returns — the API echoes "*" for all-instances which has no
+	// meaningful TF representation.
 	if typeutils.IsKnown(existing.SloInstanceID) {
-		// Practitioner explicitly set a value — round-trip normally.
-		if apiConfig.SloInstanceId != nil {
-			existing.SloInstanceID = types.StringValue(*apiConfig.SloInstanceId)
-		} else {
-			existing.SloInstanceID = types.StringNull()
-		}
-	} else if existing.SloInstanceID.IsNull() {
-		// Practitioner did not configure slo_instance_id — preserve null regardless of API response.
-		// (If API returns "*", we do NOT populate it.)
+		existing.SloInstanceID = types.StringPointerValue(apiConfig.SloInstanceId)
 	}
 
 	// Optional string fields: only update from API when they were already known in state.

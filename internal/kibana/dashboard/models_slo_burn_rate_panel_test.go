@@ -28,9 +28,6 @@ import (
 
 // helpers
 
-//go:fix inline
-func ptr[T any](v T) *T { return new(v) }
-
 func makeSloBurnRateAPIConfig(sloID, duration string, opts ...func(*kbapi.SloBurnRateEmbeddable)) kbapi.SloBurnRateEmbeddable {
 	c := kbapi.SloBurnRateEmbeddable{
 		SloId:    sloID,
