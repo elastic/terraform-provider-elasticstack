@@ -1,12 +1,15 @@
 # `elasticstack_elasticsearch_security_role` — Schema and Functional Requirements
 
 Resource implementation: `internal/elasticsearch/security/role`
+Data source implementation: `internal/elasticsearch/security/role_data_source.go`
 
 ## Purpose
 
-Define the Terraform schema and runtime behavior for the `elasticstack_elasticsearch_security_role` resource, including Elasticsearch API usage, identity/import, connection handling, compatibility gates, state mapping, and state upgrades.
+Define the Terraform schema and runtime behavior for the `elasticstack_elasticsearch_security_role` resource and data source, including Elasticsearch API usage, identity/import, connection handling, compatibility gates, state mapping, and state upgrades.
 
 ## Schema
+
+### Resource schema
 
 ```hcl
 resource "elasticstack_elasticsearch_security_role" "example" {
@@ -69,7 +72,129 @@ resource "elasticstack_elasticsearch_security_role" "example" {
 }
 ```
 
+### Data source schema
+
+```hcl
+data "elasticstack_elasticsearch_security_role" "example" {
+  name   = <required, string>
+
+  # Computed attributes (all read from Elasticsearch)
+  id          = <computed, string>
+  description = <computed, string>
+  global      = <computed, string>  # JSON string
+  metadata    = <computed, string>  # JSON string
+  cluster     = <computed, set(string)>
+  run_as      = <optional, set(string)>  # optional in SDK schema
+
+  # Deprecated: resource-level Elasticsearch connection override
+  elasticsearch_connection {
+    endpoints    = <optional, list(string)>
+    username     = <optional, string>
+    password     = <optional, string>
+    api_key      = <optional, string>
+    bearer_token = <optional, string>
+    es_client_authentication = <optional, string>
+    insecure     = <optional, bool>
+    ca_file      = <optional, string>
+    ca_data      = <optional, string>
+    cert_file    = <optional, string>
+    cert_data    = <optional, string>
+    key_file     = <optional, string>
+    key_data     = <optional, string>
+    headers      = <optional, map(string)>
+  }
+
+  applications {
+    application = <computed, string>
+    privileges  = <computed, set(string)>
+    resources   = <computed, set(string)>
+  }
+
+  indices {
+    names                    = <computed, set(string)>
+    privileges               = <computed, set(string)>
+    query                    = <computed, string>
+    allow_restricted_indices = <computed, bool>
+    field_security {
+      grant  = <computed, set(string)>
+      except = <computed, set(string)>
+    }
+  }
+
+  remote_indices {
+    clusters   = <computed, set(string)>
+    names      = <computed, set(string)>
+    privileges = <computed, set(string)>
+    query      = <computed, string>
+    field_security {
+      grant  = <computed, set(string)>
+      except = <computed, set(string)>
+    }
+  }
+}
+```
+
 ## Requirements
+
+### Requirement: Data source read API (DS-REQ-001)
+
+The data source SHALL use the Elasticsearch Get roles API to read a role by name ([Get role API docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-get-role.html)).
+
+#### Scenario: Successful data source read
+
+- GIVEN a role exists in Elasticsearch
+- WHEN the data source is read
+- THEN the provider SHALL call the Get role API and populate all attributes in state
+
+### Requirement: Data source API error surfacing (DS-REQ-002)
+
+When Elasticsearch returns a non-success status for the read request (other than "not found"), the data source SHALL surface the API error to Terraform diagnostics.
+
+#### Scenario: Non-success API response
+
+- GIVEN the Elasticsearch API returns an error (not a 404) when reading a role
+- WHEN the data source reads
+- THEN the error SHALL appear in Terraform diagnostics
+
+### Requirement: Data source identity (DS-REQ-003)
+
+The data source SHALL expose a computed `id` representing a composite identifier in the format `<cluster_uuid>/<role_name>`, derived from the configured `name` and the target cluster UUID.
+
+#### Scenario: Data source id after read
+
+- GIVEN a successful data source read
+- WHEN state is written
+- THEN `id` SHALL equal `<cluster_uuid>/<role_name>` for the target cluster and configured name
+
+### Requirement: Data source not found behavior (DS-REQ-004)
+
+When a role is not found (the API returns no result), the data source SHALL remove itself from Terraform state (set `id` to empty string) rather than returning an error.
+
+#### Scenario: Role does not exist
+
+- GIVEN the role named in `name` does not exist in Elasticsearch
+- WHEN the data source reads
+- THEN `id` SHALL be set to empty string and no error diagnostic SHALL be returned
+
+### Requirement: Data source connection (DS-REQ-005–DS-REQ-006)
+
+The data source SHALL use the provider's configured Elasticsearch client by default. When the (deprecated) `elasticsearch_connection` block is configured on the data source, the data source SHALL use that connection to create an Elasticsearch client for all API calls of that instance.
+
+#### Scenario: Data source with resource-scoped connection
+
+- GIVEN `elasticsearch_connection` is set on the data source
+- WHEN the data source reads
+- THEN the client SHALL be built from that block
+
+### Requirement: Data source attribute mapping (DS-REQ-007)
+
+When reading a role, the data source SHALL map all role fields from the API response to state: `name`, `description` (when present), `applications`, `cluster`, `global` (serialized as JSON string when present), `indices` (including `field_security`), `remote_indices` (including `field_security`), `metadata` (serialized as JSON string when present), and `run_as`.
+
+#### Scenario: Full role mapping
+
+- GIVEN a role with all fields set in Elasticsearch
+- WHEN the data source reads
+- THEN all attributes SHALL be populated in state with correct values from the API response
 
 ### Requirement: Role CRUD APIs (REQ-001–REQ-003)
 
