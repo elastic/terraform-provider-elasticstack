@@ -161,7 +161,7 @@ lint: GOLANGCIFLAGS += --fix
 lint: setup golangci-lint fmt docs-generate ## Run lints to check the spelling and common go patterns
 
 .PHONY: check-lint
-check-lint: setup check-openspec golangci-lint check-fmt check-docs
+check-lint: setup check-openspec check-go-runtime golangci-lint check-fmt check-docs
 
 .PHONY: setup-openspec
 setup-openspec: node_modules/.openspec-stamp ## Install Node dependencies (OpenSpec CLI via npm ci)
@@ -175,6 +175,24 @@ node_modules/.openspec-stamp: package-lock.json package.json
 check-openspec: ## Validate OpenSpec specs (structural); requires `make setup` or `make setup-openspec`
 	@ test -x $(OPENSPEC_BIN) || { echo "OpenSpec CLI missing; run 'make setup' or 'make setup-openspec'" >&2; exit 1; }
 	@ OPENSPEC_TELEMETRY=0 $(OPENSPEC_BIN) validate --specs
+
+OPENSPEC_WORKFLOW_SOURCE := .github/workflows/openspec-verify-label.md
+
+.PHONY: check-go-runtime
+check-go-runtime: ## Check that openspec-verify-label.md runtimes.go.version matches go.mod
+	@ go_mod_version=$$(grep '^go ' go.mod | awk '{print $$2}'); \
+	  workflow_version=$$(grep '^    version:' $(OPENSPEC_WORKFLOW_SOURCE) | head -1 | sed 's/.*version:[[:space:]]*"\([^"]*\)".*/\1/'); \
+	  if [ "$$go_mod_version" != "$$workflow_version" ]; then \
+	    echo "Go runtime drift: go.mod declares $$go_mod_version but $(OPENSPEC_WORKFLOW_SOURCE) runtimes.go.version is '$$workflow_version'" >&2; \
+	    exit 1; \
+	  fi; \
+	  echo "Go runtime OK: $(OPENSPEC_WORKFLOW_SOURCE) runtimes.go.version matches go.mod ($$go_mod_version)"
+
+.PHONY: sync-go-runtime
+sync-go-runtime: ## Sync openspec-verify-label.md runtimes.go.version from go.mod and recompile lock file
+	@ go_mod_version=$$(grep '^go ' go.mod | awk '{print $$2}'); \
+	  sed -i.bak 's/^    version:.*$$/    version: "'"$$go_mod_version"'"/' $(OPENSPEC_WORKFLOW_SOURCE) && rm -f $(OPENSPEC_WORKFLOW_SOURCE).bak; \
+	  gh aw compile
 
 .PHONY: renovate-post-upgrade
 renovate-post-upgrade: vendor notice
