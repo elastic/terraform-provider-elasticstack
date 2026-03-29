@@ -52,24 +52,19 @@ func buildSloErrorBudgetConfig(pm panelModel, sebPanel *kbapi.KbnDashboardPanelS
 	sebPanel.Config.SloId = cfg.SloID.ValueString()
 
 	if typeutils.IsKnown(cfg.SloInstanceID) {
-		v := cfg.SloInstanceID.ValueString()
-		sebPanel.Config.SloInstanceId = &v
+		sebPanel.Config.SloInstanceId = cfg.SloInstanceID.ValueStringPointer()
 	}
 	if typeutils.IsKnown(cfg.Title) {
-		v := cfg.Title.ValueString()
-		sebPanel.Config.Title = &v
+		sebPanel.Config.Title = cfg.Title.ValueStringPointer()
 	}
 	if typeutils.IsKnown(cfg.Description) {
-		v := cfg.Description.ValueString()
-		sebPanel.Config.Description = &v
+		sebPanel.Config.Description = cfg.Description.ValueStringPointer()
 	}
 	if typeutils.IsKnown(cfg.HideTitle) {
-		v := cfg.HideTitle.ValueBool()
-		sebPanel.Config.HideTitle = &v
+		sebPanel.Config.HideTitle = cfg.HideTitle.ValueBoolPointer()
 	}
 	if typeutils.IsKnown(cfg.HideBorder) {
-		v := cfg.HideBorder.ValueBool()
-		sebPanel.Config.HideBorder = &v
+		sebPanel.Config.HideBorder = cfg.HideBorder.ValueBoolPointer()
 	}
 
 	if len(cfg.Drilldowns) > 0 {
@@ -88,12 +83,10 @@ func buildSloErrorBudgetConfig(pm panelModel, sebPanel *kbapi.KbnDashboardPanelS
 			drilldowns[i].Trigger = kbapi.SloErrorBudgetEmbeddableDrilldownsTrigger(d.Trigger.ValueString())
 			drilldowns[i].Type = kbapi.SloErrorBudgetEmbeddableDrilldownsType(d.Type.ValueString())
 			if typeutils.IsKnown(d.EncodeURL) {
-				v := d.EncodeURL.ValueBool()
-				drilldowns[i].EncodeUrl = &v
+				drilldowns[i].EncodeUrl = d.EncodeURL.ValueBoolPointer()
 			}
 			if typeutils.IsKnown(d.OpenInNewTab) {
-				v := d.OpenInNewTab.ValueBool()
-				drilldowns[i].OpenInNewTab = &v
+				drilldowns[i].OpenInNewTab = d.OpenInNewTab.ValueBoolPointer()
 			}
 		}
 		sebPanel.Config.Drilldowns = &drilldowns
@@ -148,7 +141,7 @@ func populateSloErrorBudgetFromAPI(pm *panelModel, tfPanel *panelModel, apiConfi
 		existing.Description = types.StringValue(*apiConfig.Description)
 	}
 	if typeutils.IsKnown(existing.HideTitle) && apiConfig.HideTitle != nil {
-		existing.HideBorder = types.BoolValue(*apiConfig.HideTitle)
+		existing.HideTitle = types.BoolValue(*apiConfig.HideTitle)
 	}
 	if typeutils.IsKnown(existing.HideBorder) && apiConfig.HideBorder != nil {
 		existing.HideBorder = types.BoolValue(*apiConfig.HideBorder)
