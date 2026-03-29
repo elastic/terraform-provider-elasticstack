@@ -14,4 +14,4 @@
 
 - [x] 3.1 Add analyzer tests for compliant helper-derived usage at `internal/clients/elasticsearch` function-call sinks.
 - [x] 3.2 Add analyzer tests for compliant and non-compliant `*clients.APIClient` receiver-call usage, including wrapper allowlist and fact-proven wrapper cases.
-- [ ] 3.3 Run targeted analyzer tests and repository lint checks to confirm compliant cases pass and violations fail as specified.
+- [x] 3.3 Run targeted analyzer tests and repository lint checks to confirm compliant cases pass and violations fail as specified.

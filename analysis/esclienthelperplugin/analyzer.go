@@ -392,11 +392,14 @@ func calledFunction(pass *analysis.Pass, call *ast.CallExpr) *types.Func {
 
 func applyAssignment(pass *analysis.Pass, assign *ast.AssignStmt, allowedWrappers map[string]struct{}, derivedVars map[*types.Var]bool) {
 	if len(assign.Rhs) == 1 && len(assign.Lhs) > 1 {
-		if isDerivedClientExpr(pass, assign.Rhs[0], allowedWrappers, derivedVars) {
-			if id, ok := assign.Lhs[0].(*ast.Ident); ok {
-				if v, ok := pass.TypesInfo.ObjectOf(id).(*types.Var); ok && v != nil {
-					derivedVars[v] = true
-				}
+		derived := isDerivedClientExpr(pass, assign.Rhs[0], allowedWrappers, derivedVars)
+		for _, lhs := range assign.Lhs {
+			id, ok := lhs.(*ast.Ident)
+			if !ok || id.Name == "_" {
+				continue
+			}
+			if v, ok := pass.TypesInfo.ObjectOf(id).(*types.Var); ok && v != nil {
+				derivedVars[v] = derived
 			}
 		}
 		return
@@ -417,9 +420,10 @@ func applyAssignment(pass *analysis.Pass, assign *ast.AssignStmt, allowedWrapper
 
 func applyValueSpec(pass *analysis.Pass, spec *ast.ValueSpec, allowedWrappers map[string]struct{}, derivedVars map[*types.Var]bool) {
 	if len(spec.Values) == 1 && len(spec.Names) > 1 {
-		if isDerivedClientExpr(pass, spec.Values[0], allowedWrappers, derivedVars) {
-			if v, ok := pass.TypesInfo.ObjectOf(spec.Names[0]).(*types.Var); ok && v != nil {
-				derivedVars[v] = true
+		derived := isDerivedClientExpr(pass, spec.Values[0], allowedWrappers, derivedVars)
+		for _, name := range spec.Names {
+			if v, ok := pass.TypesInfo.ObjectOf(name).(*types.Var); ok && v != nil {
+				derivedVars[v] = derived
 			}
 		}
 		return

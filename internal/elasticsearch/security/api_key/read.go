@@ -66,16 +66,17 @@ func (r *Resource) read(ctx context.Context, model tfModel) (*tfModel, diag.Diag
 		return nil, diags
 	}
 
-	apiKey, diags := elasticsearch.GetAPIKey(client, compID.ResourceID)
+	apiKey, apiKeyDiags := elasticsearch.GetAPIKey(client, compID.ResourceID)
+	diags.Append(apiKeyDiags...)
 	if diags.HasError() {
 		return nil, diags
 	}
 	if apiKey == nil {
-		return nil, nil
+		return nil, diags
 	}
 
 	version, sdkDiags := client.ServerVersion(ctx)
-	diags = diagutil.FrameworkDiagsFromSDK(sdkDiags)
+	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
 		return nil, diags
 	}

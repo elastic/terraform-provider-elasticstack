@@ -62,12 +62,13 @@ func (r *Resource) updateCrossClusterAPIKey(ctx context.Context, planModel tfMod
 
 	// Handle cross-cluster API key update
 	crossClusterModel, modelDiags := planModel.toCrossClusterAPIModel(ctx)
-	if modelDiags.HasError() {
-		return modelDiags
+	diags.Append(modelDiags...)
+	if diags.HasError() {
+		return diags
 	}
 
-	updateDiags := elasticsearch.UpdateCrossClusterAPIKey(client, crossClusterModel)
-	return updateDiags
+	diags.Append(elasticsearch.UpdateCrossClusterAPIKey(client, crossClusterModel)...)
+	return diags
 }
 
 func (r *Resource) updateAPIKey(ctx context.Context, planModel tfModel) diag.Diagnostics {
@@ -78,10 +79,11 @@ func (r *Resource) updateAPIKey(ctx context.Context, planModel tfModel) diag.Dia
 
 	// Handle regular API key update
 	apiModel, modelDiags := r.buildAPIModel(ctx, planModel)
-	if modelDiags.HasError() {
-		return modelDiags
+	diags.Append(modelDiags...)
+	if diags.HasError() {
+		return diags
 	}
 
-	updateDiags := elasticsearch.UpdateAPIKey(client, apiModel)
-	return updateDiags
+	diags.Append(elasticsearch.UpdateAPIKey(client, apiModel)...)
+	return diags
 }

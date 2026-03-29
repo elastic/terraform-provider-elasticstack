@@ -98,7 +98,7 @@ func (r *Resource) saveClusterVersion(ctx context.Context, model tfModel, priv p
 	}
 
 	version, sdkDiags := client.ServerVersion(ctx)
-	diags = diagutil.FrameworkDiagsFromSDK(sdkDiags)
+	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
 		return diags
 	}

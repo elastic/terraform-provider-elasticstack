@@ -45,8 +45,8 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 	}
 
 	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, planModel.ElasticsearchConnection, r.client)
+	resp.Diagnostics.Append(diags...)
 	if diags.HasError() {
-		resp.Diagnostics.Append(diags...)
 		return
 	}
 
@@ -83,6 +83,9 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 	}
 
 	resp.Diagnostics.Append(r.updateMappings(ctx, planModel, client, name, planModel.Mappings, stateModel.Mappings)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	finalModel, diags := readIndex(ctx, planModel, client)
 	resp.Diagnostics.Append(diags...)
@@ -114,20 +117,22 @@ func (r *Resource) updateAliases(
 	}
 
 	if len(aliasesToDelete) > 0 {
-		diags := elasticsearch.DeleteIndexAlias(ctx, client, indexName, aliasesToDelete)
+		opDiags := elasticsearch.DeleteIndexAlias(ctx, client, indexName, aliasesToDelete)
+		diags.Append(opDiags...)
 		if diags.HasError() {
 			return diags
 		}
 	}
 
 	for _, alias := range planAliases {
-		diags := elasticsearch.UpdateIndexAlias(ctx, client, indexName, &alias)
+		opDiags := elasticsearch.UpdateIndexAlias(ctx, client, indexName, &alias)
+		diags.Append(opDiags...)
 		if diags.HasError() {
 			return diags
 		}
 	}
 
-	return nil
+	return diags
 }
 
 func (r *Resource) updateSettings(
@@ -164,13 +169,14 @@ func (r *Resource) updateSettings(
 			}
 		}
 
-		diags := elasticsearch.UpdateIndexSettings(ctx, client, indexName, planDynamicSettings)
+		opDiags := elasticsearch.UpdateIndexSettings(ctx, client, indexName, planDynamicSettings)
+		diags.Append(opDiags...)
 		if diags.HasError() {
 			return diags
 		}
 	}
 
-	return nil
+	return diags
 }
 
 func (r *Resource) updateMappings(
@@ -195,10 +201,11 @@ func (r *Resource) updateMappings(
 		return nil
 	}
 
-	diags = elasticsearch.UpdateIndexMappings(ctx, client, indexName, planMappings.ValueString())
+	opDiags := elasticsearch.UpdateIndexMappings(ctx, client, indexName, planMappings.ValueString())
+	diags.Append(opDiags...)
 	if diags.HasError() {
 		return diags
 	}
 
-	return nil
+	return diags
 }

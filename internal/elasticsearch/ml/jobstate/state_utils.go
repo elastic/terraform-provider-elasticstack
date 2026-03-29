@@ -38,16 +38,17 @@ func (r *mlJobStateResource) getJobState(ctx context.Context, data MLJobStateDat
 	}
 
 	// Get job stats to check current state
-	currentJob, diags := elasticsearch.GetMLJobStats(ctx, client, jobID)
+	currentJob, getDiags := elasticsearch.GetMLJobStats(ctx, client, jobID)
+	diags.Append(getDiags...)
 	if diags.HasError() {
 		return nil, diags
 	}
 
 	if currentJob == nil {
-		return nil, nil
+		return nil, diags
 	}
 
-	return &currentJob.State, nil
+	return &currentJob.State, diags
 }
 
 // waitForJobState waits for a job to reach the desired state

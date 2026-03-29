@@ -152,7 +152,8 @@ func (r *mlDatafeedStateResource) updateAfterMissedTransition(
 		return nil, diags
 	}
 
-	statsAfterUpdate, diags := elasticsearch.GetDatafeedStats(ctx, client, datafeedID)
+	statsAfterUpdate, getDiags := elasticsearch.GetDatafeedStats(ctx, client, datafeedID)
+	diags.Append(getDiags...)
 	if diags.HasError() {
 		return nil, diags
 	}
@@ -183,7 +184,7 @@ func (r *mlDatafeedStateResource) updateAfterMissedTransition(
 		data.Start = timetypes.NewRFC3339Null()
 	}
 
-	return &data, nil
+	return &data, diags
 }
 
 // performStateTransition handles the ML datafeed state transition process

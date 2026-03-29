@@ -37,3 +37,13 @@ func aliasAndReassign(d *schema.ResourceData, meta any) error {
 	alias = &clients.APIClient{}
 	return elasticsearch.Do(alias) // want "Elasticsearch client usage must use a helper-derived \\*clients.APIClient from clients.NewAPIClientFromSDKResource\\(\\.\\.\\.\\) or clients.MaybeNewAPIClientFromFrameworkResource\\(\\.\\.\\.\\)"
 }
+
+func directClient() (*clients.APIClient, error) {
+	return &clients.APIClient{}, nil
+}
+
+func multiAssignmentClearsDerived(d *schema.ResourceData, meta any) error {
+	client, _ := clients.NewAPIClientFromSDKResource(d, meta)
+	client, _ = directClient()
+	return elasticsearch.Do(client) // want "Elasticsearch client usage must use a helper-derived \\*clients.APIClient from clients.NewAPIClientFromSDKResource\\(\\.\\.\\.\\) or clients.MaybeNewAPIClientFromFrameworkResource\\(\\.\\.\\.\\)"
+}
