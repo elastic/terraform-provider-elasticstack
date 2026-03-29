@@ -197,5 +197,67 @@ func dataSourceIndexTemplateRead(ctx context.Context, d *schema.ResourceData, me
 	}
 	d.SetId(id.String())
 
-	return resourceIndexTemplateRead(ctx, d, meta)
+	diags = resourceIndexTemplateRead(ctx, d, meta)
+	if diags.HasError() {
+		return diags
+	}
+
+	derivedTemplate := deriveAliasRoutingInTemplateState(d.Get("template"))
+	if derivedTemplate != nil {
+		if err := d.Set("template", derivedTemplate); err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
+	return diags
+}
+
+func deriveAliasRoutingInTemplateState(rawTemplate any) []any {
+	templates, ok := rawTemplate.([]any)
+	if !ok || len(templates) == 0 || templates[0] == nil {
+		return nil
+	}
+
+	tmpl, ok := templates[0].(map[string]any)
+	if !ok {
+		return nil
+	}
+
+	aliases, ok := normalizeFlattenedAliases(tmpl["alias"])
+	if !ok {
+		return templates
+	}
+
+	for _, rawAlias := range aliases {
+		aliasMap, ok := rawAlias.(map[string]any)
+		if !ok {
+			continue
+		}
+
+		routing, _ := aliasMap["routing"].(string)
+		if routing != "" {
+			continue
+		}
+
+		indexRouting, _ := aliasMap["index_routing"].(string)
+		searchRouting, _ := aliasMap["search_routing"].(string)
+		if indexRouting != "" && indexRouting == searchRouting {
+			aliasMap["routing"] = indexRouting
+		}
+	}
+
+	tmpl["alias"] = aliases
+	templates[0] = tmpl
+	return templates
+}
+
+func normalizeFlattenedAliases(rawAliases any) ([]any, bool) {
+	switch aliases := rawAliases.(type) {
+	case *schema.Set:
+		return aliases.List(), true
+	case []any:
+		return aliases, true
+	default:
+		return nil, false
+	}
 }
