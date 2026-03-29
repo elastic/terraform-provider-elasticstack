@@ -41,7 +41,7 @@ func TestAccResourceIndexTemplate(t *testing.T) {
 	templateName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	templateNameComponent := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceIndexTemplateDestroy,
 		Steps: []resource.TestStep{
@@ -189,13 +189,19 @@ func checkResourceIndexTemplateDestroy(s *terraform.State) error {
 func TestAccResourceIndexTemplateMetadataAndMappings(t *testing.T) {
 	templateName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceIndexTemplateDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIndexTemplateDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceIndexTemplateWithMetadataAndMappings(templateName, `{"description":"initial template","owner":"team-a"}`, `{"properties":{"log_level":{"type":"keyword"}}}`, 1),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"template_name":    config.StringVariable(templateName),
+					"metadata":         config.StringVariable(`{"description":"initial template","owner":"team-a"}`),
+					"mappings":         config.StringVariable(`{"properties":{"log_level":{"type":"keyword"}}}`),
+					"template_version": config.IntegerVariable(1),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "name", templateName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "version", "1"),
@@ -204,12 +210,14 @@ func TestAccResourceIndexTemplateMetadataAndMappings(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccResourceIndexTemplateWithMetadataAndMappings(
-					templateName,
-					`{"description":"updated template","owner":"team-b"}`,
-					`{"properties":{"log_level":{"type":"keyword"},"severity":{"type":"integer"}}}`,
-					2,
-				),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"template_name":    config.StringVariable(templateName),
+					"metadata":         config.StringVariable(`{"description":"updated template","owner":"team-b"}`),
+					"mappings":         config.StringVariable(`{"properties":{"log_level":{"type":"keyword"},"severity":{"type":"integer"}}}`),
+					"template_version": config.IntegerVariable(2),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "name", templateName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "version", "2"),
@@ -218,7 +226,11 @@ func TestAccResourceIndexTemplateMetadataAndMappings(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccResourceIndexTemplateWithoutMetadataAndMappings(templateName + "unset"),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("unset"),
+				ConfigVariables: config.Variables{
+					"template_name": config.StringVariable(templateName + "unset"),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "name", templateName+"unset"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "index_patterns.#", "2"),
@@ -233,47 +245,21 @@ func TestAccResourceIndexTemplateMetadataAndMappings(t *testing.T) {
 	})
 }
 
-func testAccResourceIndexTemplateWithMetadataAndMappings(name, metadata, mappings string, ver int) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_index_template" "test" {
-  name           = "%s"
-  index_patterns = ["%s-*"]
-  version        = %d
-  metadata       = jsonencode(%s)
-
-  template {
-    mappings = jsonencode(%s)
-  }
-}`, name, name, ver, metadata, mappings)
-}
-
-func testAccResourceIndexTemplateWithoutMetadataAndMappings(name string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_index_template" "test" {
-  name           = "%s"
-  index_patterns = ["%s-a-*", "%s-b-*"]
-}`, name, name, name)
-}
-
 func TestAccResourceIndexTemplateLifecycle(t *testing.T) {
 	templateName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceIndexTemplateDestroy,
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion),
-				Config:                   testAccResourceIndexTemplateLifecycle(templateName, "30d"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"template_name":  config.StringVariable(templateName),
+					"data_retention": config.StringVariable("30d"),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "name", templateName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "template.#", "1"),
@@ -290,7 +276,11 @@ func TestAccResourceIndexTemplateLifecycle(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion),
-				Config:                   testAccResourceIndexTemplateLifecycle(templateName, "60d"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"template_name":  config.StringVariable(templateName),
+					"data_retention": config.StringVariable("60d"),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "name", templateName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "template.#", "1"),
@@ -308,36 +298,21 @@ func TestAccResourceIndexTemplateLifecycle(t *testing.T) {
 	})
 }
 
-func testAccResourceIndexTemplateLifecycle(name, dataRetention string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_index_template" "test" {
-  name           = "%s"
-  index_patterns = ["%s-*"]
-
-  data_stream {}
-
-  template {
-    lifecycle {
-      data_retention = "%s"
-    }
-  }
-}`, name, name, dataRetention)
-}
-
 func TestAccResourceIndexTemplateAliasFilter(t *testing.T) {
 	templateName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceIndexTemplateDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIndexTemplateDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceIndexTemplateAliasFilter(templateName, "filtered_alias_v1", `{"term":{"status":"active"}}`),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"template_name": config.StringVariable(templateName),
+					"alias_name":    config.StringVariable("filtered_alias_v1"),
+					"filter":        config.StringVariable(`{"term":{"status":"active"}}`),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "name", templateName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "template.0.alias.#", "1"),
@@ -352,7 +327,13 @@ func TestAccResourceIndexTemplateAliasFilter(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccResourceIndexTemplateAliasFilter(templateName, "filtered_alias_v2", `{"bool":{"must":[{"term":{"service.name":"api"}},{"term":{"status":"active"}}]}}`),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"template_name": config.StringVariable(templateName),
+					"alias_name":    config.StringVariable("filtered_alias_v2"),
+					"filter":        config.StringVariable(`{"bool":{"must":[{"term":{"service.name":"api"}},{"term":{"status":"active"}}]}}`),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "name", templateName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "template.0.alias.#", "1"),
@@ -367,7 +348,12 @@ func TestAccResourceIndexTemplateAliasFilter(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccResourceIndexTemplateAliasFilterRemoved(templateName, "filtered_alias_v3"),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("remove"),
+				ConfigVariables: config.Variables{
+					"template_name": config.StringVariable(templateName),
+					"alias_name":    config.StringVariable("filtered_alias_v3"),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "name", templateName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "template.0.alias.#", "1"),
@@ -385,53 +371,19 @@ func TestAccResourceIndexTemplateAliasFilter(t *testing.T) {
 	})
 }
 
-func testAccResourceIndexTemplateAliasFilter(name, aliasName, filter string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_index_template" "test" {
-  name           = "%s"
-  index_patterns = ["%s-*"]
-
-  template {
-    alias {
-      name   = "%s"
-      filter = jsonencode(%s)
-    }
-  }
-}`, name, name, aliasName, filter)
-}
-
-func testAccResourceIndexTemplateAliasFilterRemoved(name, aliasName string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_index_template" "test" {
-  name           = "%s"
-  index_patterns = ["%s-*"]
-
-  template {
-    alias {
-      name = "%s"
-    }
-  }
-}`, name, name, aliasName)
-}
-
 func TestAccResourceIndexTemplateAliasDetails(t *testing.T) {
 	templateName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceIndexTemplateDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIndexTemplateDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceIndexTemplateWithAliasDetails(templateName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"template_name": config.StringVariable(templateName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "name", templateName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "template.0.alias.#", "1"),
@@ -453,39 +405,19 @@ func TestAccResourceIndexTemplateAliasDetails(t *testing.T) {
 	})
 }
 
-func testAccResourceIndexTemplateWithAliasDetails(name string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_index_template" "test" {
-  name           = "%s"
-  index_patterns = ["%s-*"]
-
-  template {
-    alias {
-      name           = "detailed_alias"
-      is_hidden      = true
-      is_write_index = true
-      routing        = "shard_1"
-      search_routing = "shard_1"
-      index_routing  = "shard_1"
-    }
-  }
-}`, name, name)
-}
-
 func TestAccResourceIndexTemplateAliasRoutingFromRoutingOnly(t *testing.T) {
 	templateName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceIndexTemplateDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIndexTemplateDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceIndexTemplateWithAliasRoutingOnly(templateName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"template_name": config.StringVariable(templateName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "name", templateName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "template.0.alias.#", "1"),
@@ -505,36 +437,21 @@ func TestAccResourceIndexTemplateAliasRoutingFromRoutingOnly(t *testing.T) {
 	})
 }
 
-func testAccResourceIndexTemplateWithAliasRoutingOnly(name string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_index_template" "test" {
-  name           = "%s"
-  index_patterns = ["%s-*"]
-
-  template {
-    alias {
-      name    = "routing_only_alias"
-      routing = "shard_1"
-    }
-  }
-}`, name, name)
-}
-
 func TestAccResourceIndexTemplateDataStreamCustomRouting(t *testing.T) {
 	templateName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceIndexTemplateDestroy,
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedAllowCustomRoutingVersion),
-				Config:                   testAccResourceIndexTemplateDataStreamCustomRouting(templateName, true),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"template_name":        config.StringVariable(templateName),
+					"allow_custom_routing": config.BoolVariable(true),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "name", templateName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "data_stream.0.allow_custom_routing", "true"),
@@ -543,7 +460,11 @@ func TestAccResourceIndexTemplateDataStreamCustomRouting(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedAllowCustomRoutingVersion),
-				Config:                   testAccResourceIndexTemplateDataStreamCustomRouting(templateName, false),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"template_name":        config.StringVariable(templateName),
+					"allow_custom_routing": config.BoolVariable(false),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "name", templateName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "data_stream.0.allow_custom_routing", "false"),
@@ -553,32 +474,19 @@ func TestAccResourceIndexTemplateDataStreamCustomRouting(t *testing.T) {
 	})
 }
 
-func testAccResourceIndexTemplateDataStreamCustomRouting(name string, allowCustomRouting bool) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_index_template" "test" {
-  name           = "%s"
-  index_patterns = ["%s-*"]
-
-  data_stream {
-    allow_custom_routing = %t
-  }
-}`, name, name, allowCustomRouting)
-}
-
 func TestAccResourceIndexTemplateEmptyTemplateBlock(t *testing.T) {
 	templateName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceIndexTemplateDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIndexTemplateDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceIndexTemplateWithAliasAndSettings(templateName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"template_name": config.StringVariable(templateName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "name", templateName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "template.#", "1"),
@@ -587,7 +495,11 @@ func TestAccResourceIndexTemplateEmptyTemplateBlock(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccResourceIndexTemplateWithEmptyTemplateBlock(templateName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"template_name": config.StringVariable(templateName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "name", templateName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "template.#", "1"),
@@ -600,55 +512,22 @@ func TestAccResourceIndexTemplateEmptyTemplateBlock(t *testing.T) {
 	})
 }
 
-func testAccResourceIndexTemplateWithAliasAndSettings(name string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_index_template" "test" {
-  name           = "%s"
-  index_patterns = ["%s-*"]
-
-  template {
-    alias {
-      name = "empty_template_alias"
-    }
-
-    settings = jsonencode({
-      index = {
-        number_of_shards = "2"
-      }
-    })
-  }
-}`, name, name)
-}
-
-func testAccResourceIndexTemplateWithEmptyTemplateBlock(name string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_index_template" "test" {
-  name           = "%s"
-  index_patterns = ["%s-*"]
-
-  template {}
-}`, name, name)
-}
-
 func TestAccResourceIndexTemplateDataStreamEmptyObject(t *testing.T) {
 	templateName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceIndexTemplateDestroy,
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedAllowCustomRoutingVersion),
-				Config:                   testAccResourceIndexTemplateDataStreamState(templateName, true, true),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"template_name":        config.StringVariable(templateName),
+					"hidden":               config.BoolVariable(true),
+					"allow_custom_routing": config.BoolVariable(true),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "name", templateName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "data_stream.#", "1"),
@@ -659,7 +538,10 @@ func TestAccResourceIndexTemplateDataStreamEmptyObject(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedAllowCustomRoutingVersion),
-				Config:                   testAccResourceIndexTemplateDataStreamEmptyObject(templateName),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"template_name": config.StringVariable(templateName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "name", templateName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "data_stream.#", "1"),
@@ -671,48 +553,21 @@ func TestAccResourceIndexTemplateDataStreamEmptyObject(t *testing.T) {
 	})
 }
 
-func testAccResourceIndexTemplateDataStreamState(name string, hidden, allowCustomRouting bool) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_index_template" "test" {
-  name           = "%s"
-  index_patterns = ["%s-*"]
-
-  data_stream {
-    hidden               = %t
-    allow_custom_routing = %t
-  }
-}`, name, name, hidden, allowCustomRouting)
-}
-
-func testAccResourceIndexTemplateDataStreamEmptyObject(name string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_index_template" "test" {
-  name           = "%s"
-  index_patterns = ["%s-*"]
-
-  data_stream {}
-}`, name, name)
-}
-
 func TestAccResourceIndexTemplateEmptyCollections(t *testing.T) {
 	templateName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceIndexTemplateDestroy,
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(index.MinSupportedIgnoreMissingComponentTemplateVersion),
-				Config:                   testAccResourceIndexTemplateWithCollections(templateName, templateName+"-comp@custom", templateName+"-comp@custom"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"template_name":  config.StringVariable(templateName),
+					"component_name": config.StringVariable(templateName + "-comp@custom"),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "name", templateName),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_index_template.test", "composed_of.*", templateName+"-comp@custom"),
@@ -722,7 +577,10 @@ func TestAccResourceIndexTemplateEmptyCollections(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(index.MinSupportedIgnoreMissingComponentTemplateVersion),
-				Config:                   testAccResourceIndexTemplateWithEmptyCollections(templateName),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"template_name": config.StringVariable(templateName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "name", templateName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "composed_of.#", "0"),
@@ -731,36 +589,6 @@ func TestAccResourceIndexTemplateEmptyCollections(t *testing.T) {
 			},
 		},
 	})
-}
-
-func testAccResourceIndexTemplateWithCollections(name, composedOf, ignoreMissing string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_index_template" "test" {
-  name           = "%s"
-  index_patterns = ["%s-*"]
-
-  composed_of                         = ["%s"]
-  ignore_missing_component_templates  = ["%s"]
-}`, name, name, composedOf, ignoreMissing)
-}
-
-func testAccResourceIndexTemplateWithEmptyCollections(name string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_index_template" "test" {
-  name           = "%s"
-  index_patterns = ["%s-*"]
-
-  composed_of                         = []
-  ignore_missing_component_templates  = []
-}`, name, name)
 }
 
 func testCheckTemplateAliasAttrCleared(resourceName, aliasName, attrName string) resource.TestCheckFunc {
