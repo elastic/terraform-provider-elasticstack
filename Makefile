@@ -131,8 +131,22 @@ copy-kibana-ca: ## Copy Kibana CA certificate to local machine
 docs-generate: tools ## Generate documentation for the provider
 	@ go tool github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate --provider-name terraform-provider-elasticstack
 
+.PHONY: workflow-generate
+workflow-generate: ## Generate workflow markdown sources
+	@ go run ./scripts/compile-workflow-sources --manifest .github/workflows-src/manifest.json
+	@ gh aw compile
+
+.PHONY: workflow-test
+workflow-test: ## Run unit tests for workflow source generation
+	@ go test ./scripts/compile-workflow-sources -run 'TestCompileWorkflow'
+	@ node --test .github/workflows-src/lib/*.test.mjs
+
+.PHONY: check-workflows
+check-workflows: ## Check generated workflow markdown sources
+	@ go run ./scripts/compile-workflow-sources --manifest .github/workflows-src/manifest.json --check
+
 .PHONY: gen
-gen: docs-generate ## Generate the code and documentation
+gen: docs-generate workflow-generate ## Generate the code and documentation
 	@ go generate ./...
 
 .PHONY: clean
@@ -158,10 +172,10 @@ golangci-lint: golangci-lint-custom
 
 .PHONY: lint
 lint: GOLANGCIFLAGS += --fix
-lint: setup golangci-lint fmt docs-generate ## Run lints to check the spelling and common go patterns
+lint: setup golangci-lint fmt docs-generate workflow-generate ## Run lints to check the spelling and common go patterns
 
 .PHONY: check-lint
-check-lint: setup check-openspec check-go-runtime golangci-lint check-fmt check-docs
+check-lint: setup check-openspec check-go-runtime golangci-lint workflow-test check-workflows check-fmt check-docs
 
 .PHONY: setup-openspec
 setup-openspec: node_modules/.openspec-stamp ## Install Node dependencies (OpenSpec CLI via npm ci)
