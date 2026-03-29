@@ -16,7 +16,7 @@ website/build
 website/node_modules
 .vagrant/
 *.backup
-/*.tfstate
+*.tfstate
 .terraform/
 .terraform.lock.hcl
 *.log
