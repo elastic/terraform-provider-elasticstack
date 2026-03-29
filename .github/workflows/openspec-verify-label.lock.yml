@@ -309,7 +309,7 @@ jobs:
           cache: true
           cache-dependency-path: go.sum
           go-version-file: go.mod
-      - uses: hashicorp/setup-terraform@5e8dbf3c6d9deaf4193ca7a8fb23f2ac83bb6c85
+      - uses: hashicorp/setup-terraform@b0cc02d63867e0daaa034a47e2cdf5d525a863a1
         with:
           terraform_wrapper: false
       - name: Setup repository dependencies
