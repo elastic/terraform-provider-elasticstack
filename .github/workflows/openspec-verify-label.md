@@ -64,12 +64,21 @@ network:
   allowed: [defaults, node]
 checkout:
   fetch-depth: 0
+# runtimes configures the agent environment. go.version must be kept in sync with go.mod
+# because the gh-aw runtimes block does not support file-based version resolution.
+# Use `make sync-go-runtime` to update this value and regenerate the compiled workflow,
+# and `make check-go-runtime` (run by `make check-lint`) to detect drift.
+runtimes:
+  go:
+    version: "1.26.1"
 steps:
   - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
     with:
       node-version-file: package.json
       cache: npm
       cache-dependency-path: package-lock.json
+  # actions/setup-go configures Go in the runner environment for dependency installation
+  # and repository bootstrap (make setup). The agent environment uses runtimes.go.version above.
   - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6
     with:
       go-version-file: go.mod
@@ -123,12 +132,7 @@ You verify a pull request against **one** active OpenSpec change under `openspec
 
 6. Check out the **full** repository at the PR head ref (the triggering pull request branch) with enough history for a clean working tree.
 
-7. Before agent reasoning begins, the workflow SHALL prepare the review workspace:
-
-   - Provision Node with `actions/setup-node` using `node-version-file: package.json`, npm caching, and `package-lock.json`.
-   - Provision Go with `actions/setup-go` using `go-version-file: go.mod` and Go module caching.
-   - Provision Terraform CLI with `hashicorp/setup-terraform` and `terraform_wrapper: false`.
-   - Run `make setup` at the repository root so local Node dependencies and repository-standard setup are ready in the agent workspace.
+7. Required tooling (Go, Node, and OpenSpec) are already available in the agent environment.
 
 8. Use **`npx openspec`** for all OpenSpec CLI invocations below; do **not** rerun ad hoc bootstrap commands unless verification work reveals a separate repository issue.
 
