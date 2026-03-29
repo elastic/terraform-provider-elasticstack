@@ -5,7 +5,7 @@ Elasticsearch entities currently rely on convention to resolve `*clients.APIClie
 ## What Changes
 
 - Introduce a new OpenSpec capability for provider lint rules that enforce helper-derived Elasticsearch client resolution at concrete sink call sites.
-- Define the approved client-source helpers, wrapper policies, sink scope, provenance-fact behavior, and diagnostic expectations for the analyzer implemented in `internal/analysis/esclienthelper`.
+- Define the approved client-source helpers, wrapper policies, sink scope, provenance-fact behavior, and diagnostic expectations for the analyzer implemented in `analysis/esclienthelper`.
 - Require repository lint execution and analyzer tests to enforce the rule in local development and CI.
 
 ## Capabilities
@@ -19,6 +19,6 @@ Elasticsearch entities currently rely on convention to resolve `*clients.APIClie
 ## Impact
 
 - **Specs**: new capability under `openspec/changes/elasticsearch-client-resolution-lint/specs/elasticsearch-client-resolution-lint/spec.md`
-- **Analyzer implementation**: `internal/analysis/esclienthelper`
+- **Analyzer implementation**: `analysis/esclienthelper`
 - **Lint wiring**: `golangci-lint` integration and `make check-lint`
 - **Tests**: analyzer regression coverage for compliant and non-compliant sink usage

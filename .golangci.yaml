@@ -21,6 +21,7 @@ linters:
     - unparam
     - usetesting
     - revive
+    - esclienthelper
   exclusions:
     generated: lax
     presets:
@@ -37,6 +38,10 @@ linters:
       line-length: 200
     goheader:
       template-path: ./.LICENSE_HEADER.tmpl
+    custom:
+      esclienthelper:
+        type: module
+        description: Enforce Elasticsearch entity client helper usage.
 formatters:
   exclusions:
     generated: lax

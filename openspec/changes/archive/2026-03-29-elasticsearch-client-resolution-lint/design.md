@@ -2,7 +2,7 @@
 
 Elasticsearch resources and data sources under `internal/elasticsearch/**` can reach Elasticsearch through two kinds of sink calls: package-level helper functions in `internal/clients/elasticsearch` that accept `*clients.APIClient`, and direct method calls on `*clients.APIClient`. The provider already has approved helper flows for constructing these clients, but the current protection is social rather than enforced, which makes it easy for new code to bypass the helper path with provider-meta casts or direct construction.
 
-The analyzer target is `internal/analysis/esclienthelper`, wired through repository lint execution. Because client values can be delegated through small wrapper functions, the design needs to balance strictness with false-positive control by combining a narrow sink definition, type-based analysis, and interprocedural provenance facts.
+The analyzer target is `analysis/esclienthelper`, wired through repository lint execution. Because client values can be delegated through small wrapper functions, the design needs to balance strictness with false-positive control by combining a narrow sink definition, type-based analysis, and interprocedural provenance facts.
 
 ## Goals / Non-Goals
 
@@ -36,7 +36,7 @@ The analyzer target is `internal/analysis/esclienthelper`, wired through reposit
 ## Migration Plan
 
 1. Add the new `elasticsearch-client-resolution-lint` delta spec that captures sink scope, approved sources, diagnostics, CI expectations, and regression coverage.
-2. Implement or update `internal/analysis/esclienthelper` to enforce helper-derived provenance at the defined sinks, including wrapper allowlisting and fact export/import.
+2. Implement or update `analysis/esclienthelper` to enforce helper-derived provenance at the defined sinks, including wrapper allowlisting and fact export/import.
 3. Wire the analyzer into repository lint execution so `make check-lint` fails on violations.
 4. Add analyzer tests covering compliant direct-helper usage, violating bypass paths, wrapper allowlist behavior, and fact-proven wrappers.
 

@@ -26,6 +26,7 @@ require (
 	github.com/oapi-codegen/runtime v1.3.1
 	github.com/stretchr/testify v1.11.1
 	golang.org/x/oauth2 v0.36.0
+	golang.org/x/tools v0.42.0
 )
 
 require (
@@ -165,6 +166,7 @@ require (
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dprotaso/go-yit v0.0.0-20250513223454-5ece0c5aa76c // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
+	github.com/elastic/terraform-provider-elasticstack/analysis/esclienthelperplugin v0.0.0
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/envoyproxy/go-control-plane/envoy v1.36.0 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.3.0 // indirect
@@ -401,7 +403,6 @@ require (
 	golang.org/x/term v0.40.0 // indirect
 	golang.org/x/text v0.34.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
-	golang.org/x/tools v0.42.0 // indirect
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
 	google.golang.org/api v0.260.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
@@ -432,3 +433,5 @@ tool (
 	go.uber.org/mock/mockgen
 	gotest.tools/gotestsum
 )
+
+replace github.com/elastic/terraform-provider-elasticstack/analysis/esclienthelperplugin => ./analysis/esclienthelperplugin
