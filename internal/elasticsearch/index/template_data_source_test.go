@@ -180,7 +180,8 @@ data "elasticstack_elasticsearch_index_template" "test" {
 `, name, mappings, settings)
 }
 
-// TestAccIndexTemplateDataSourceAliasRoutingFromRoutingOnly covers alias routing when only the generic routing value is configured.
+// TestAccIndexTemplateDataSourceAliasRoutingFromRoutingOnly covers the generic alias routing field
+// in the data source when only routing (and not index_routing/search_routing) is configured.
 func TestAccIndexTemplateDataSourceAliasRoutingFromRoutingOnly(t *testing.T) {
 	templateName := "test-ds-routing-" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
