@@ -415,6 +415,7 @@ func TestAccResourceILMHotActions(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(allowWriteAfterShrinkVersionLimit),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("max_primary_shard_size"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
