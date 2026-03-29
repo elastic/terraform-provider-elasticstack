@@ -257,6 +257,8 @@ func deriveAliasRoutingInTemplateState(rawTemplate any) []any {
 	return templates
 }
 
+// normalizeFlattenedAliases converts the flattened alias state into a consistent []any form.
+// The returned bool reports whether the input used a supported alias container shape.
 func normalizeFlattenedAliases(rawAliases any) ([]any, bool) {
 	switch aliases := rawAliases.(type) {
 	case *schema.Set:
@@ -268,6 +270,8 @@ func normalizeFlattenedAliases(rawAliases any) ([]any, bool) {
 	}
 }
 
+// getOptionalStringAttr returns the string value for key, whether the key exists,
+// and whether the value shape is valid for a string attribute.
 func getOptionalStringAttr(values map[string]any, key string) (string, bool, bool) {
 	value, ok := values[key]
 	if !ok {
