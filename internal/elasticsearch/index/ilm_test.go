@@ -35,6 +35,7 @@ import (
 var totalShardsPerNodeVersionLimit = version.Must(version.NewVersion("7.16.0"))
 var downsampleNoTimeoutVersionLimit = version.Must(version.NewVersion("8.5.0"))
 var downsampleVersionLimit = version.Must(version.NewVersion("8.10.0"))
+var allowWriteAfterShrinkVersionLimit = version.Must(version.NewVersion("8.14.0"))
 
 func TestAccResourceILM(t *testing.T) {
 	// generate a random policy name
@@ -63,6 +64,7 @@ func TestAccResourceILM(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "warm.#", "0"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "cold.#", "0"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "frozen.#", "0"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index_lifecycle.test", "id"),
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index_lifecycle.test", "modified_date"),
 				),
 			},
@@ -321,6 +323,163 @@ func TestAccResourceILMForcemerge(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_forcemerge", "warm.0.forcemerge.0.max_num_segments", "1"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_forcemerge", "warm.0.forcemerge.0.index_codec", "best_compression"),
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index_lifecycle.test_forcemerge", "modified_date"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceILMFrozenPhase(t *testing.T) {
+	policyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	repositoryName := fmt.Sprintf("%s-repo", policyName)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceILMDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name":     config.StringVariable(policyName),
+					"repository_name": config.StringVariable(repositoryName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_frozen", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_frozen", "frozen.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_frozen", "frozen.0.min_age", "30d"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_frozen", "frozen.0.searchable_snapshot.0.snapshot_repository", repositoryName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_frozen", "frozen.0.searchable_snapshot.0.force_merge_index", "false"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index_lifecycle.test_frozen", "modified_date"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceILMDeleteWaitForSnapshot(t *testing.T) {
+	policyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	repositoryName := fmt.Sprintf("%s-repo", policyName)
+	slmPolicyName := fmt.Sprintf("%s-slm", policyName)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceILMDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name":     config.StringVariable(policyName),
+					"repository_name": config.StringVariable(repositoryName),
+					"slm_policy_name": config.StringVariable(slmPolicyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_delete_snapshot", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_delete_snapshot", "delete.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_delete_snapshot", "delete.0.wait_for_snapshot.0.policy", slmPolicyName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_delete_snapshot", "delete.0.delete.0.delete_searchable_snapshot", "false"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index_lifecycle.test_delete_snapshot", "modified_date"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceILMHotActions(t *testing.T) {
+	policyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceILMDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(allowWriteAfterShrinkVersionLimit),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("number_of_shards"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_hot_actions", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_hot_actions", "hot.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_hot_actions", "hot.0.forcemerge.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_hot_actions", "hot.0.forcemerge.0.max_num_segments", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_hot_actions", "hot.0.forcemerge.0.index_codec", "best_compression"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_hot_actions", "hot.0.shrink.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_hot_actions", "hot.0.shrink.0.number_of_shards", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_hot_actions", "hot.0.shrink.0.allow_write_after_shrink", "true"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_hot_actions", "hot.0.unfollow.0.enabled", "true"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index_lifecycle.test_hot_actions", "modified_date"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(allowWriteAfterShrinkVersionLimit),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("max_primary_shard_size"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_hot_actions", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_hot_actions", "hot.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_hot_actions", "hot.0.forcemerge.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_hot_actions", "hot.0.forcemerge.0.max_num_segments", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_hot_actions", "hot.0.forcemerge.0.index_codec", "best_compression"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_hot_actions", "hot.0.shrink.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_hot_actions", "hot.0.shrink.0.max_primary_shard_size", "50gb"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_hot_actions", "hot.0.shrink.0.allow_write_after_shrink", "true"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_hot_actions", "hot.0.unfollow.0.enabled", "true"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index_lifecycle.test_hot_actions", "modified_date"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceILMPhaseActionToggles(t *testing.T) {
+	policyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceILMDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_toggles", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_toggles", "hot.0.readonly.0.enabled", "false"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_toggles", "hot.0.unfollow.0.enabled", "false"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_toggles", "warm.0.readonly.0.enabled", "false"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_toggles", "warm.0.migrate.0.enabled", "false"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_toggles", "warm.0.unfollow.0.enabled", "false"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_toggles", "cold.0.readonly.0.enabled", "false"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_toggles", "cold.0.migrate.0.enabled", "false"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_toggles", "cold.0.freeze.0.enabled", "false"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_toggles", "cold.0.unfollow.0.enabled", "false"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_toggles", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_toggles", "hot.0.readonly.0.enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_toggles", "hot.0.unfollow.0.enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_toggles", "warm.0.readonly.0.enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_toggles", "warm.0.migrate.0.enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_toggles", "warm.0.unfollow.0.enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_toggles", "cold.0.readonly.0.enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_toggles", "cold.0.migrate.0.enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_toggles", "cold.0.freeze.0.enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_toggles", "cold.0.unfollow.0.enabled", "true"),
 				),
 			},
 		},
