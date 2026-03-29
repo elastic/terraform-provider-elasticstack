@@ -202,6 +202,9 @@ func dataSourceIndexTemplateRead(ctx context.Context, d *schema.ResourceData, me
 		return diags
 	}
 
+	// Keep this data source specific. The resource read path must not synthesize
+	// generic routing from index/search routing because that would introduce
+	// unexpected state for resource configurations that only set the specific fields.
 	derivedTemplate := deriveAliasRoutingInTemplateState(d.Get("template"))
 	if derivedTemplate != nil {
 		if err := d.Set("template", derivedTemplate); err != nil {

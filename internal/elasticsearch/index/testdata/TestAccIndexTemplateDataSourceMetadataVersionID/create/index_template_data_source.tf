@@ -10,6 +10,7 @@ variable "metadata" {
   type = string
 }
 
+// Terraform reserves "version" as a variable name, so this fixture uses template_version.
 variable "template_version" {
   type = string
 }
