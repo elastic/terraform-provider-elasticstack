@@ -304,7 +304,7 @@ jobs:
           cache: npm
           cache-dependency-path: package-lock.json
           node-version-file: package.json
-      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
         with:
           cache: true
           cache-dependency-path: go.sum
