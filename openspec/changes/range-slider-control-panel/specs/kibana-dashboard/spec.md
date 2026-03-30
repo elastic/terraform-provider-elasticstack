@@ -2,13 +2,23 @@
 
 ### Requirement: Replacement fields and schema validation (REQ-006)
 
+Schema validation SHALL enforce that `range_slider_control_config` is valid only for panels with `type = "range_slider_control"`, is mutually exclusive with all other panel configuration blocks and with `config_json`, and that the `value` attribute contains exactly 2 elements when set.
+
 REQ-006 is extended to include:
 
 - `range_slider_control_config` SHALL be valid only for panels with `type = "range_slider_control"`.
 - `range_slider_control_config` SHALL be mutually exclusive with all other panel configuration blocks and with `config_json`.
 - The `value` attribute within `range_slider_control_config` SHALL contain exactly 2 elements when set; any other list length SHALL be rejected at plan time.
 
+#### Scenario: range_slider_control_config rejected for non-range_slider_control panel
+
+- GIVEN a panel with `type = "lens"` and `range_slider_control_config` set
+- WHEN Terraform validates the resource schema
+- THEN the configuration SHALL be rejected before any dashboard API call
+
 ### Requirement: Panels, sections, and `config_json` round-trip behavior (REQ-010)
+
+`config_json` SHALL NOT be supported for `range_slider_control` panels; the `range_slider_control` panel type SHALL be managed exclusively through the typed `range_slider_control_config` block.
 
 The existing REQ-010 text:
 
@@ -17,6 +27,12 @@ The existing REQ-010 text:
 is updated to additionally state:
 
 > The `range_slider_control` panel type SHALL be managed exclusively through the typed `range_slider_control_config` block; using `config_json` with `type = "range_slider_control"` SHALL return an error diagnostic.
+
+#### Scenario: config_json rejected for range_slider_control panel type
+
+- GIVEN a panel with `type = "range_slider_control"` configured through `config_json`
+- WHEN the provider builds the API request on create or update
+- THEN it SHALL return an error diagnostic stating that `config_json` is not supported for `range_slider_control`
 
 ---
 
