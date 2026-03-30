@@ -153,9 +153,10 @@ func (m *partitionValueDisplay) fromValueDisplay(api kbapi.ValueDisplay) {
 }
 
 func (m *partitionValueDisplay) toValueDisplay() kbapi.ValueDisplay {
-	mode := kbapi.ValueDisplayMode(m.Mode.ValueString())
-	vd := kbapi.ValueDisplay{
-		Mode: &mode,
+	vd := kbapi.ValueDisplay{}
+	if typeutils.IsKnown(m.Mode) {
+		mode := kbapi.ValueDisplayMode(m.Mode.ValueString())
+		vd.Mode = &mode
 	}
 	if typeutils.IsKnown(m.PercentDecimals) {
 		vd.PercentDecimals = new(float32(m.PercentDecimals.ValueFloat64()))

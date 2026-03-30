@@ -523,6 +523,9 @@ func getSchema() schema.Schema {
 					"access_mode": schema.StringAttribute{
 						MarkdownDescription: "The access mode for the dashboard (e.g., 'write_restricted', 'default').",
 						Optional:            true,
+						PlanModifiers: []planmodifier.String{
+							stringplanmodifier.RequiresReplace(),
+						},
 						Validators: []validator.String{
 							stringvalidator.OneOf("write_restricted", "default"),
 						},
@@ -1389,17 +1392,7 @@ func getPartitionChartBaseSchema() map[string]schema.Attribute {
 
 // getWaffleSchema returns schema for waffle (grid) Lens chart configuration.
 func getWaffleSchema() map[string]schema.Attribute {
-	attrs := lensChartBaseAttributes()
-	attrs["dataset_json"] = schema.StringAttribute{
-		MarkdownDescription: "Dataset configuration as JSON. For standard (non-ES|QL) waffles, use a data view or index dataset; for ES|QL, use an `esql` or table ES|QL dataset.",
-		CustomType:          jsontypes.NormalizedType{},
-		Required:            true,
-	}
-	attrs["query"] = schema.SingleNestedAttribute{
-		MarkdownDescription: "Query configuration for non-ES|QL waffles. Omit this block (or leave `query` and `language` unset) to use ES|QL mode.",
-		Optional:            true,
-		Attributes:          getFilterSimple(),
-	}
+	attrs := getPartitionChartBaseSchema()
 	attrs["legend"] = schema.SingleNestedAttribute{
 		MarkdownDescription: "Legend configuration for the waffle chart.",
 		Required:            true,

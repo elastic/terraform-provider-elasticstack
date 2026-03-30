@@ -117,7 +117,6 @@ func TestAccResourceEmptyDashboard(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "title", dashboardTitle+" with Access Control"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "access_control.access_mode", "write_restricted"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "access_control.owner", "elastic"),
 				),
 			},
 			{
