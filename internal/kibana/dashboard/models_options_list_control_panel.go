@@ -18,10 +18,11 @@
 package dashboard
 
 import (
-	"fmt"
+	"strconv"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -49,7 +50,7 @@ type optionsListControlConfigModel struct {
 	ExistsSelected    types.Bool                              `tfsdk:"exists_selected"`
 	RunPastTimeout    types.Bool                              `tfsdk:"run_past_timeout"`
 	SearchTechnique   types.String                            `tfsdk:"search_technique"`
-	SelectedOptions   []types.String                          `tfsdk:"selected_options"`
+	SelectedOptions   types.List                              `tfsdk:"selected_options"`
 	DisplaySettings   *optionsListControlDisplaySettingsModel `tfsdk:"display_settings"`
 	Sort              *optionsListControlSortModel            `tfsdk:"sort"`
 }
@@ -96,7 +97,9 @@ func populateOptionsListControlFromAPI(pm *panelModel, tfPanel *panelModel, apiC
 			existing.SearchTechnique = types.StringValue(string(*apiConfig.SearchTechnique))
 		}
 		if apiConfig.SelectedOptions != nil {
-			existing.SelectedOptions = selectedOptionsToStrings(*apiConfig.SelectedOptions)
+			existing.SelectedOptions = selectedOptionsToList(*apiConfig.SelectedOptions)
+		} else {
+			existing.SelectedOptions = types.ListNull(types.StringType)
 		}
 		if apiConfig.DisplaySettings != nil {
 			existing.DisplaySettings = displaySettingsFromAPI(apiConfig.DisplaySettings)
@@ -143,8 +146,8 @@ func populateOptionsListControlFromAPI(pm *panelModel, tfPanel *panelModel, apiC
 	if typeutils.IsKnown(existing.SearchTechnique) && apiConfig.SearchTechnique != nil {
 		existing.SearchTechnique = types.StringValue(string(*apiConfig.SearchTechnique))
 	}
-	if existing.SelectedOptions != nil && apiConfig.SelectedOptions != nil {
-		existing.SelectedOptions = selectedOptionsToStrings(*apiConfig.SelectedOptions)
+	if !existing.SelectedOptions.IsNull() && apiConfig.SelectedOptions != nil {
+		existing.SelectedOptions = selectedOptionsToList(*apiConfig.SelectedOptions)
 	}
 
 	// Display settings: nil or empty API response => treat as omitted block.
@@ -210,11 +213,13 @@ func buildOptionsListControlConfig(pm panelModel, olPanel *kbapi.KbnDashboardPan
 		st := kbapi.KbnDashboardPanelOptionsListControlConfigSearchTechnique(cfg.SearchTechnique.ValueString())
 		olPanel.Config.SearchTechnique = &st
 	}
-	if cfg.SelectedOptions != nil {
-		items := make([]kbapi.KbnDashboardPanelOptionsListControl_Config_SelectedOptions_Item, 0, len(cfg.SelectedOptions))
-		for _, s := range cfg.SelectedOptions {
+	if !cfg.SelectedOptions.IsNull() {
+		elems := cfg.SelectedOptions.Elements()
+		items := make([]kbapi.KbnDashboardPanelOptionsListControl_Config_SelectedOptions_Item, 0, len(elems))
+		for _, e := range elems {
+			s := e.(types.String).ValueString()
 			var item kbapi.KbnDashboardPanelOptionsListControl_Config_SelectedOptions_Item
-			if err := item.FromKbnDashboardPanelOptionsListControlConfigSelectedOptions0(s.ValueString()); err == nil {
+			if err := item.FromKbnDashboardPanelOptionsListControlConfigSelectedOptions0(s); err == nil {
 				items = append(items, item)
 			}
 		}
@@ -257,18 +262,18 @@ func buildOptionsListControlConfig(pm panelModel, olPanel *kbapi.KbnDashboardPan
 	}
 }
 
-func selectedOptionsToStrings(items []kbapi.KbnDashboardPanelOptionsListControl_Config_SelectedOptions_Item) []types.String {
-	result := make([]types.String, 0, len(items))
+func selectedOptionsToList(items []kbapi.KbnDashboardPanelOptionsListControl_Config_SelectedOptions_Item) types.List {
+	values := make([]attr.Value, 0, len(items))
 	for _, item := range items {
 		if s, err := item.AsKbnDashboardPanelOptionsListControlConfigSelectedOptions0(); err == nil {
-			result = append(result, types.StringValue(s))
+			values = append(values, types.StringValue(s))
 			continue
 		}
 		if n, err := item.AsKbnDashboardPanelOptionsListControlConfigSelectedOptions1(); err == nil {
-			result = append(result, types.StringValue(fmt.Sprintf("%g", n)))
+			values = append(values, types.StringValue(strconv.FormatFloat(float64(n), 'f', -1, 32)))
 		}
 	}
-	return result
+	return types.ListValueMust(types.StringType, values)
 }
 
 func displaySettingsFromAPI(api *struct {

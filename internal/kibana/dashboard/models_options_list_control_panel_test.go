@@ -332,15 +332,33 @@ func Test_optionsListControl_roundTrip(t *testing.T) {
 	assert.Equal(t, types.StringValue("asc"), cfg.Sort.Direction)
 }
 
-// Test: selectedOptionsToStrings converts string items.
-func Test_selectedOptionsToStrings_stringItems(t *testing.T) {
+// Test: selectedOptionsToList converts string items.
+func Test_selectedOptionsToList_stringItems(t *testing.T) {
 	var item1 kbapi.KbnDashboardPanelOptionsListControl_Config_SelectedOptions_Item
 	require.NoError(t, item1.FromKbnDashboardPanelOptionsListControlConfigSelectedOptions0("alpha"))
 	var item2 kbapi.KbnDashboardPanelOptionsListControl_Config_SelectedOptions_Item
 	require.NoError(t, item2.FromKbnDashboardPanelOptionsListControlConfigSelectedOptions0("beta"))
 
-	result := selectedOptionsToStrings([]kbapi.KbnDashboardPanelOptionsListControl_Config_SelectedOptions_Item{item1, item2})
-	require.Len(t, result, 2)
-	assert.Equal(t, types.StringValue("alpha"), result[0])
-	assert.Equal(t, types.StringValue("beta"), result[1])
+	result := selectedOptionsToList([]kbapi.KbnDashboardPanelOptionsListControl_Config_SelectedOptions_Item{item1, item2})
+	require.False(t, result.IsNull())
+	elems := result.Elements()
+	require.Len(t, elems, 2)
+	assert.Equal(t, types.StringValue("alpha"), elems[0])
+	assert.Equal(t, types.StringValue("beta"), elems[1])
+}
+
+// Test: selectedOptionsToList converts numeric items using fixed-point notation.
+func Test_selectedOptionsToList_numericItems(t *testing.T) {
+	var item1 kbapi.KbnDashboardPanelOptionsListControl_Config_SelectedOptions_Item
+	require.NoError(t, item1.FromKbnDashboardPanelOptionsListControlConfigSelectedOptions1(1000000))
+	var item2 kbapi.KbnDashboardPanelOptionsListControl_Config_SelectedOptions_Item
+	require.NoError(t, item2.FromKbnDashboardPanelOptionsListControlConfigSelectedOptions1(3.14))
+
+	result := selectedOptionsToList([]kbapi.KbnDashboardPanelOptionsListControl_Config_SelectedOptions_Item{item1, item2})
+	require.False(t, result.IsNull())
+	elems := result.Elements()
+	require.Len(t, elems, 2)
+	// Must be fixed-point, not scientific notation.
+	assert.Equal(t, types.StringValue("1000000"), elems[0])
+	assert.Equal(t, types.StringValue("3.14"), elems[1])
 }

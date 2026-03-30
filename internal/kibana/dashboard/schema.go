@@ -995,12 +995,18 @@ func getPanelSchema() schema.NestedAttributeObject {
 						Optional:            true,
 						Attributes: map[string]schema.Attribute{
 							"by": schema.StringAttribute{
-								MarkdownDescription: "The field or criterion to sort by.",
+								MarkdownDescription: "The field or criterion to sort by. Must be one of `_count` or `_key`.",
 								Required:            true,
+								Validators: []validator.String{
+									stringvalidator.OneOf("_count", "_key"),
+								},
 							},
 							"direction": schema.StringAttribute{
-								MarkdownDescription: "The sort direction.",
+								MarkdownDescription: "The sort direction. Must be one of `asc` or `desc`.",
 								Required:            true,
+								Validators: []validator.String{
+									stringvalidator.OneOf("asc", "desc"),
+								},
 							},
 						},
 					},
