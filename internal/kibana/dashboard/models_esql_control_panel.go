@@ -20,6 +20,7 @@ package dashboard
 import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -32,15 +33,34 @@ type esqlControlDisplaySettingsModel struct {
 }
 
 type esqlControlConfigModel struct {
-	SelectedOptions  []string                          `tfsdk:"selected_options"`
+	SelectedOptions  types.List                        `tfsdk:"selected_options"`
 	VariableName     types.String                      `tfsdk:"variable_name"`
 	VariableType     types.String                      `tfsdk:"variable_type"`
 	EsqlQuery        types.String                      `tfsdk:"esql_query"`
 	ControlType      types.String                      `tfsdk:"control_type"`
 	Title            types.String                      `tfsdk:"title"`
 	SingleSelect     types.Bool                        `tfsdk:"single_select"`
-	AvailableOptions []string                          `tfsdk:"available_options"`
+	AvailableOptions types.List                        `tfsdk:"available_options"`
 	DisplaySettings  *esqlControlDisplaySettingsModel  `tfsdk:"display_settings"`
+}
+
+// stringsToList converts a []string to a types.List of string elements.
+func stringsToList(strs []string) types.List {
+	vals := make([]attr.Value, len(strs))
+	for i, s := range strs {
+		vals[i] = types.StringValue(s)
+	}
+	return types.ListValueMust(types.StringType, vals)
+}
+
+// listToStrings extracts a []string from a types.List of string elements.
+func listToStrings(list types.List) []string {
+	elems := list.Elements()
+	strs := make([]string, len(elems))
+	for i, v := range elems {
+		strs[i] = v.(types.String).ValueString()
+	}
+	return strs
 }
 
 // populateEsqlControlFromAPI reads back an ES|QL control config from the API response and
@@ -52,23 +72,27 @@ type esqlControlConfigModel struct {
 // tfPanel is the prior TF state/plan panel, or nil on import. When nil, the function
 // populates all API-returned fields unconditionally (no prior intent to preserve).
 func populateEsqlControlFromAPI(pm *panelModel, tfPanel *panelModel, apiConfig kbapi.KbnDashboardPanelEsqlControl_Config) {
+	existing := pm.EsqlControlConfig
+
 	// On import (tfPanel == nil) there is no prior intent — populate from API.
 	if tfPanel == nil {
-		pm.EsqlControlConfig = &esqlControlConfigModel{
-			SelectedOptions: apiConfig.SelectedOptions,
+		existing = &esqlControlConfigModel{
+			SelectedOptions: stringsToList(apiConfig.SelectedOptions),
 			VariableName:    types.StringValue(apiConfig.VariableName),
 			VariableType:    types.StringValue(string(apiConfig.VariableType)),
 			EsqlQuery:       types.StringValue(apiConfig.EsqlQuery),
 			ControlType:     types.StringValue(string(apiConfig.ControlType)),
+			AvailableOptions: types.ListNull(types.StringType),
 		}
+		pm.EsqlControlConfig = existing
 		if apiConfig.Title != nil {
-			pm.EsqlControlConfig.Title = types.StringValue(*apiConfig.Title)
+			existing.Title = types.StringValue(*apiConfig.Title)
 		}
 		if apiConfig.SingleSelect != nil {
-			pm.EsqlControlConfig.SingleSelect = types.BoolValue(*apiConfig.SingleSelect)
+			existing.SingleSelect = types.BoolValue(*apiConfig.SingleSelect)
 		}
 		if apiConfig.AvailableOptions != nil {
-			pm.EsqlControlConfig.AvailableOptions = *apiConfig.AvailableOptions
+			existing.AvailableOptions = stringsToList(*apiConfig.AvailableOptions)
 		}
 		if apiConfig.DisplaySettings != nil {
 			d := apiConfig.DisplaySettings
@@ -88,12 +112,10 @@ func populateEsqlControlFromAPI(pm *panelModel, tfPanel *panelModel, apiConfig k
 			if d.HideSort != nil {
 				m.HideSort = types.BoolValue(*d.HideSort)
 			}
-			pm.EsqlControlConfig.DisplaySettings = m
+			existing.DisplaySettings = m
 		}
 		return
 	}
-
-	existing := pm.EsqlControlConfig
 
 	// If the existing state has no config block, preserve nil intent.
 	if existing == nil {
@@ -101,7 +123,7 @@ func populateEsqlControlFromAPI(pm *panelModel, tfPanel *panelModel, apiConfig k
 	}
 
 	// Required fields always get updated from API.
-	existing.SelectedOptions = apiConfig.SelectedOptions
+	existing.SelectedOptions = stringsToList(apiConfig.SelectedOptions)
 	existing.VariableName = types.StringValue(apiConfig.VariableName)
 	existing.VariableType = types.StringValue(string(apiConfig.VariableType))
 	existing.EsqlQuery = types.StringValue(apiConfig.EsqlQuery)
@@ -115,9 +137,9 @@ func populateEsqlControlFromAPI(pm *panelModel, tfPanel *panelModel, apiConfig k
 		existing.SingleSelect = types.BoolValue(*apiConfig.SingleSelect)
 	}
 
-	// available_options: if TF state had it set (non-nil slice), update from API.
-	if existing.AvailableOptions != nil && apiConfig.AvailableOptions != nil {
-		existing.AvailableOptions = *apiConfig.AvailableOptions
+	// available_options: if TF state had it set (non-null list), update from API.
+	if !existing.AvailableOptions.IsNull() && apiConfig.AvailableOptions != nil {
+		existing.AvailableOptions = stringsToList(*apiConfig.AvailableOptions)
 	}
 
 	// display_settings: if block is present in state, update from API; otherwise preserve nil.
@@ -148,7 +170,7 @@ func buildEsqlControlConfig(pm panelModel, esqlPanel *kbapi.KbnDashboardPanelEsq
 		return
 	}
 
-	esqlPanel.Config.SelectedOptions = cfg.SelectedOptions
+	esqlPanel.Config.SelectedOptions = listToStrings(cfg.SelectedOptions)
 	esqlPanel.Config.VariableName = cfg.VariableName.ValueString()
 	esqlPanel.Config.VariableType = kbapi.KbnDashboardPanelEsqlControlConfigVariableType(cfg.VariableType.ValueString())
 	esqlPanel.Config.EsqlQuery = cfg.EsqlQuery.ValueString()
@@ -160,8 +182,8 @@ func buildEsqlControlConfig(pm panelModel, esqlPanel *kbapi.KbnDashboardPanelEsq
 	if typeutils.IsKnown(cfg.SingleSelect) {
 		esqlPanel.Config.SingleSelect = cfg.SingleSelect.ValueBoolPointer()
 	}
-	if cfg.AvailableOptions != nil {
-		opts := cfg.AvailableOptions
+	if !cfg.AvailableOptions.IsNull() {
+		opts := listToStrings(cfg.AvailableOptions)
 		esqlPanel.Config.AvailableOptions = &opts
 	}
 	if cfg.DisplaySettings != nil {
