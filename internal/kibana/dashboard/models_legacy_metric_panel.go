@@ -240,7 +240,7 @@ func (m *legacyMetricConfigModel) toAPI() (kbapi.LegacyMetricChart, diag.Diagnos
 		}
 
 		api.Filters = []kbapi.LensPanelFilters_Item{}
-	if len(m.Filters) > 0 {
+		if len(m.Filters) > 0 {
 			filters := make([]kbapi.LensPanelFilters_Item, 0, len(m.Filters))
 			for _, filterModel := range m.Filters {
 				var item kbapi.LensPanelFilters_Item
@@ -316,7 +316,7 @@ func (m *legacyMetricConfigModel) toAPI() (kbapi.LegacyMetricChart, diag.Diagnos
 		}
 
 		api.Filters = []kbapi.LensPanelFilters_Item{}
-	if len(m.Filters) > 0 {
+		if len(m.Filters) > 0 {
 			filters := make([]kbapi.LensPanelFilters_Item, 0, len(m.Filters))
 			for _, filterModel := range m.Filters {
 				var item kbapi.LensPanelFilters_Item
