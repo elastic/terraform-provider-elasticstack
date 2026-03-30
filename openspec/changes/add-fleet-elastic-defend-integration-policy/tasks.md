@@ -1,3 +1,5 @@
+ # Tasks: Add Fleet Elastic Defend Integration Policy
+
 ## 1. Define the new capability
 
 - [ ] 1.1 Add the `fleet-elastic-defend-integration-policy` delta spec describing the dedicated Elastic Defend resource, its focused schema, and its Fleet package-policy lifecycle.

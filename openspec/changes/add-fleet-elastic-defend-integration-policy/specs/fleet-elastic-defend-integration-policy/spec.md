@@ -61,7 +61,7 @@ On read and import, the resource SHALL validate that the resolved package policy
 
 The resource SHALL model Defend-owned configuration through typed Terraform attributes and nested attributes instead of raw package-policy JSON. The schema SHALL include:
 
-- `preset` as the Terraform representation of `integration_config.value.endpointConfig.preset`
+- `preset` as the Terraform representation of `config.integration_config.value.endpointConfig.preset`
 - a `policy` nested attribute
 - optional operating-system nested attributes under `policy` for `windows`, `mac`, and `linux`
 
