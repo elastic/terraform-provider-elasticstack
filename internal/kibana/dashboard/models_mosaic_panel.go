@@ -123,11 +123,11 @@ func (m *mosaicConfigModel) fromAPINoESQL(api kbapi.MosaicNoESQL) diag.Diagnosti
 	m.Sampling = mapOptionalFloatWithSnapshotDefault(m.Sampling, api.Sampling, 1)
 
 	datasetBytes, err := api.Dataset.MarshalJSON()
-	if err != nil {
-		diags.AddError("Failed to marshal dataset", err.Error())
+	dv, ok := marshalToNormalized(datasetBytes, err, "dataset", &diags)
+	if !ok {
 		return diags
 	}
-	m.Dataset = jsontypes.NewNormalizedValue(string(datasetBytes))
+	m.Dataset = dv
 
 	if api.GroupBy != nil {
 		gb, gbDiags := newPartitionGroupByJSONFromAPI(api.GroupBy)
@@ -159,21 +159,13 @@ func (m *mosaicConfigModel) fromAPINoESQL(api kbapi.MosaicNoESQL) diag.Diagnosti
 		diags.AddError("Failed to marshal metrics_json", err.Error())
 		return diags
 	}
-	m.Metrics = customtypes.NewJSONWithDefaultsValue[[]map[string]any](string(metricsWrapped), populatePartitionMetricsDefaults)
+	m.Metrics = customtypes.NewJSONWithDefaultsValue(string(metricsWrapped), populatePartitionMetricsDefaults)
 
 	m.Query = &filterSimpleModel{}
 	m.Query.fromAPI(api.Query)
 
 	if len(api.Filters) > 0 {
-		m.Filters = make([]chartFilterJSONModel, 0, len(api.Filters))
-		for _, filter := range api.Filters {
-			fm := chartFilterJSONModel{}
-			filterDiags := fm.populateFromAPIItem(filter)
-			diags.Append(filterDiags...)
-			if !filterDiags.HasError() {
-				m.Filters = append(m.Filters, fm)
-			}
-		}
+		m.Filters = populateFiltersFromAPI(api.Filters, &diags)
 	} else {
 		m.Filters = nil
 	}
@@ -202,11 +194,11 @@ func (m *mosaicConfigModel) fromAPIESQL(api kbapi.MosaicESQL) diag.Diagnostics {
 	m.Sampling = mapOptionalFloatWithSnapshotDefault(m.Sampling, api.Sampling, 1)
 
 	datasetBytes, err := api.Dataset.MarshalJSON()
-	if err != nil {
-		diags.AddError("Failed to marshal dataset", err.Error())
+	dv, ok := marshalToNormalized(datasetBytes, err, "dataset", &diags)
+	if !ok {
 		return diags
 	}
-	m.Dataset = jsontypes.NewNormalizedValue(string(datasetBytes))
+	m.Dataset = dv
 
 	if api.GroupBy != nil {
 		gb, gbDiags := newPartitionGroupByJSONFromAPI(api.GroupBy)
@@ -238,18 +230,10 @@ func (m *mosaicConfigModel) fromAPIESQL(api kbapi.MosaicESQL) diag.Diagnostics {
 		diags.AddError("Failed to marshal metrics_json", err.Error())
 		return diags
 	}
-	m.Metrics = customtypes.NewJSONWithDefaultsValue[[]map[string]any](string(metricsWrapped), populatePartitionMetricsDefaults)
+	m.Metrics = customtypes.NewJSONWithDefaultsValue(string(metricsWrapped), populatePartitionMetricsDefaults)
 
 	if len(api.Filters) > 0 {
-		m.Filters = make([]chartFilterJSONModel, 0, len(api.Filters))
-		for _, filter := range api.Filters {
-			fm := chartFilterJSONModel{}
-			filterDiags := fm.populateFromAPIItem(filter)
-			diags.Append(filterDiags...)
-			if !filterDiags.HasError() {
-				m.Filters = append(m.Filters, fm)
-			}
-		}
+		m.Filters = populateFiltersFromAPI(api.Filters, &diags)
 	} else {
 		m.Filters = nil
 	}
@@ -373,22 +357,7 @@ func (m *mosaicConfigModel) toAPIESQLChartSchema() (kbapi.MosaicChart, diag.Diag
 		api.Sampling = new(float32(m.Sampling.ValueFloat64()))
 	}
 
-	api.Filters = []kbapi.LensPanelFilters_Item{}
-	if len(m.Filters) > 0 {
-		filters := make([]kbapi.LensPanelFilters_Item, 0, len(m.Filters))
-		for _, filterModel := range m.Filters {
-			var item kbapi.LensPanelFilters_Item
-			filterDiags := decodeChartFilterJSON(filterModel.FilterJSON, &item)
-			diags.Append(filterDiags...)
-			if diags.HasError() {
-				return mosaicChart, diags
-			}
-			filters = append(filters, item)
-		}
-		if len(filters) > 0 {
-			api.Filters = filters
-		}
-	}
+	api.Filters = buildFiltersForAPI(m.Filters, &diags)
 
 	if m.ValueDisplay != nil {
 		api.Values = m.ValueDisplay.toValueDisplay()
@@ -482,21 +451,7 @@ func (m *mosaicConfigModel) toAPINoESQL() (kbapi.MosaicNoESQL, diag.Diagnostics)
 	}
 	api.Query = m.Query.toAPI()
 
-	api.Filters = []kbapi.LensPanelFilters_Item{}
-	if len(m.Filters) > 0 {
-		filters := make([]kbapi.LensPanelFilters_Item, 0, len(m.Filters))
-		for _, filterModel := range m.Filters {
-			var item kbapi.LensPanelFilters_Item
-			filterDiags := decodeChartFilterJSON(filterModel.FilterJSON, &item)
-			diags.Append(filterDiags...)
-			if !filterDiags.HasError() {
-				filters = append(filters, item)
-			}
-		}
-		if len(filters) > 0 {
-			api.Filters = filters
-		}
-	}
+	api.Filters = buildFiltersForAPI(m.Filters, &diags)
 
 	if m.Legend == nil {
 		diags.AddError("Missing legend", "mosaic_config.legend must be provided")

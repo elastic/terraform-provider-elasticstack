@@ -146,46 +146,44 @@ func (m *metricChartConfigModel) fromAPI(ctx context.Context, apiChart kbapi.Met
 	return diags
 }
 
+func (m *metricChartConfigModel) populateCommonFields(
+	title, description *string,
+	ignoreGlobalFilters *bool,
+	sampling *float32,
+	datasetBytes []byte,
+	datasetErr error,
+	filters []kbapi.LensPanelFilters_Item,
+	diags *diag.Diagnostics,
+) bool {
+	m.Title = types.StringPointerValue(title)
+	m.Description = types.StringPointerValue(description)
+	m.IgnoreGlobalFilters = types.BoolPointerValue(ignoreGlobalFilters)
+	if sampling != nil {
+		m.Sampling = types.Float64Value(float64(*sampling))
+	} else {
+		m.Sampling = types.Float64Null()
+	}
+	dv, ok := marshalToNormalized(datasetBytes, datasetErr, "dataset", diags)
+	if !ok {
+		return false
+	}
+	m.DatasetJSON = dv
+	m.Filters = populateFiltersFromAPI(filters, diags)
+	return !diags.HasError()
+}
+
 func (m *metricChartConfigModel) fromAPIVariant0(ctx context.Context, apiChart kbapi.MetricNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
 
-	// Set simple fields
-	m.Title = types.StringPointerValue(apiChart.Title)
-	m.Description = types.StringPointerValue(apiChart.Description)
-	m.IgnoreGlobalFilters = types.BoolPointerValue(apiChart.IgnoreGlobalFilters)
-	if apiChart.Sampling != nil {
-		m.Sampling = types.Float64Value(float64(*apiChart.Sampling))
-	} else {
-		m.Sampling = types.Float64Null()
-	}
-
-	// Set dataset
-	datasetJSON, err := json.Marshal(apiChart.Dataset)
-	if err != nil {
-		diags.AddError("Failed to marshal dataset", err.Error())
+	datasetBytes, datasetErr := json.Marshal(apiChart.Dataset)
+	if !m.populateCommonFields(apiChart.Title, apiChart.Description, apiChart.IgnoreGlobalFilters, apiChart.Sampling, datasetBytes, datasetErr, apiChart.Filters, &diags) {
 		return diags
 	}
-	m.DatasetJSON = jsontypes.NewNormalizedValue(string(datasetJSON))
 
-	// Set query
 	m.Query = &filterSimpleModel{}
 	m.Query.fromAPI(apiChart.Query)
 
-	// Set filters
-	if len(apiChart.Filters) > 0 {
-		m.Filters = make([]chartFilterJSONModel, 0, len(apiChart.Filters))
-		for _, filter := range apiChart.Filters {
-			fm := chartFilterJSONModel{}
-			filterDiags := fm.populateFromAPIItem(filter)
-			diags.Append(filterDiags...)
-			if !filterDiags.HasError() {
-				m.Filters = append(m.Filters, fm)
-			}
-		}
-	}
-
-	// Set metrics - MetricChart0 has a slice of metrics
 	if len(apiChart.Metrics) > 0 {
 		m.Metrics = make([]metricItemModel, len(apiChart.Metrics))
 		for i, metric := range apiChart.Metrics {
@@ -201,7 +199,6 @@ func (m *metricChartConfigModel) fromAPIVariant0(ctx context.Context, apiChart k
 		}
 	}
 
-	// Set breakdown_by
 	if apiChart.BreakdownBy != nil {
 		breakdownJSON, err := json.Marshal(apiChart.BreakdownBy)
 		if err != nil {
@@ -220,41 +217,13 @@ func (m *metricChartConfigModel) fromAPIVariant1(ctx context.Context, apiChart k
 	var diags diag.Diagnostics
 	_ = ctx
 
-	// Set simple fields
-	m.Title = types.StringPointerValue(apiChart.Title)
-	m.Description = types.StringPointerValue(apiChart.Description)
-	m.IgnoreGlobalFilters = types.BoolPointerValue(apiChart.IgnoreGlobalFilters)
-	if apiChart.Sampling != nil {
-		m.Sampling = types.Float64Value(float64(*apiChart.Sampling))
-	} else {
-		m.Sampling = types.Float64Null()
-	}
-
-	// Set dataset
-	datasetJSON, err := json.Marshal(apiChart.Dataset)
-	if err != nil {
-		diags.AddError("Failed to marshal dataset", err.Error())
+	datasetBytes, datasetErr := json.Marshal(apiChart.Dataset)
+	if !m.populateCommonFields(apiChart.Title, apiChart.Description, apiChart.IgnoreGlobalFilters, apiChart.Sampling, datasetBytes, datasetErr, apiChart.Filters, &diags) {
 		return diags
 	}
-	m.DatasetJSON = jsontypes.NewNormalizedValue(string(datasetJSON))
 
-	// Variant 1 doesn't always have a query (ES|QL case)
 	m.Query = nil
 
-	// Set filters
-	if len(apiChart.Filters) > 0 {
-		m.Filters = make([]chartFilterJSONModel, 0, len(apiChart.Filters))
-		for _, filter := range apiChart.Filters {
-			fm := chartFilterJSONModel{}
-			filterDiags := fm.populateFromAPIItem(filter)
-			diags.Append(filterDiags...)
-			if !filterDiags.HasError() {
-				m.Filters = append(m.Filters, fm)
-			}
-		}
-	}
-
-	// Set metrics - MetricChart1 has a slice of metrics
 	if len(apiChart.Metrics) > 0 {
 		m.Metrics = make([]metricItemModel, len(apiChart.Metrics))
 		for i, metric := range apiChart.Metrics {
@@ -270,7 +239,6 @@ func (m *metricChartConfigModel) fromAPIVariant1(ctx context.Context, apiChart k
 		}
 	}
 
-	// Set breakdown_by
 	if apiChart.BreakdownBy != nil {
 		breakdownJSON, err := json.Marshal(apiChart.BreakdownBy)
 		if err != nil {
@@ -334,21 +302,7 @@ func (m *metricChartConfigModel) toAPIVariant0() (kbapi.MetricChart, diag.Diagno
 	}
 
 	// Set filters
-	variant0.Filters = []kbapi.LensPanelFilters_Item{}
-	if len(m.Filters) > 0 {
-		filters := make([]kbapi.LensPanelFilters_Item, 0, len(m.Filters))
-		for _, filter := range m.Filters {
-			var item kbapi.LensPanelFilters_Item
-			filterDiags := decodeChartFilterJSON(filter.FilterJSON, &item)
-			diags.Append(filterDiags...)
-			if !filterDiags.HasError() {
-				filters = append(filters, item)
-			}
-		}
-		if len(filters) > 0 {
-			variant0.Filters = filters
-		}
-	}
+	variant0.Filters = buildFiltersForAPI(m.Filters, &diags)
 
 	// Set metrics
 	if len(m.Metrics) > 0 {
@@ -417,21 +371,7 @@ func (m *metricChartConfigModel) toAPIVariant1() (kbapi.MetricChart, diag.Diagno
 	}
 
 	// Set filters
-	variant1.Filters = []kbapi.LensPanelFilters_Item{}
-	if len(m.Filters) > 0 {
-		filters := make([]kbapi.LensPanelFilters_Item, 0, len(m.Filters))
-		for _, filter := range m.Filters {
-			var item kbapi.LensPanelFilters_Item
-			filterDiags := decodeChartFilterJSON(filter.FilterJSON, &item)
-			diags.Append(filterDiags...)
-			if !filterDiags.HasError() {
-				filters = append(filters, item)
-			}
-		}
-		if len(filters) > 0 {
-			variant1.Filters = filters
-		}
-	}
+	variant1.Filters = buildFiltersForAPI(m.Filters, &diags)
 
 	// Set metrics
 	if len(m.Metrics) > 0 {

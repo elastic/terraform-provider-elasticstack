@@ -283,26 +283,16 @@ func (m *waffleConfigModel) fromAPINoESQL(ctx context.Context, api kbapi.WaffleN
 	}
 
 	datasetBytes, err := api.Dataset.MarshalJSON()
-	if err != nil {
-		diags.AddError("Failed to marshal dataset_json", err.Error())
+	dv, ok := marshalToNormalized(datasetBytes, err, "dataset_json", &diags)
+	if !ok {
 		return diags
 	}
-	m.DatasetJSON = jsontypes.NewNormalizedValue(string(datasetBytes))
+	m.DatasetJSON = dv
 
 	m.Query = &filterSimpleModel{}
 	m.Query.fromAPI(api.Query)
 
-	if len(api.Filters) > 0 {
-		m.Filters = make([]chartFilterJSONModel, 0, len(api.Filters))
-		for _, f := range api.Filters {
-			fm := chartFilterJSONModel{}
-			fd := fm.populateFromAPIItem(f)
-			diags.Append(fd...)
-			if !fd.HasError() {
-				m.Filters = append(m.Filters, fm)
-			}
-		}
-	}
+	m.Filters = populateFiltersFromAPI(api.Filters, &diags)
 
 	m.Legend = &waffleLegendModel{}
 	m.Legend.fromAPI(ctx, api.Legend)
@@ -326,7 +316,7 @@ func (m *waffleConfigModel) fromAPINoESQL(ctx context.Context, api kbapi.WaffleN
 				diags.AddError("Failed to marshal metric", err.Error())
 				continue
 			}
-			m.Metrics[i].Config = customtypes.NewJSONWithDefaultsValue[map[string]any](
+			m.Metrics[i].Config = customtypes.NewJSONWithDefaultsValue(
 				string(b),
 				populatePieChartMetricDefaults,
 			)
@@ -341,7 +331,7 @@ func (m *waffleConfigModel) fromAPINoESQL(ctx context.Context, api kbapi.WaffleN
 				diags.AddError("Failed to marshal group_by", err.Error())
 				continue
 			}
-			m.GroupBy[i].Config = customtypes.NewJSONWithDefaultsValue[map[string]any](
+			m.GroupBy[i].Config = customtypes.NewJSONWithDefaultsValue(
 				string(b),
 				populateLensGroupByDefaults,
 			)
@@ -368,25 +358,15 @@ func (m *waffleConfigModel) fromAPIESQL(ctx context.Context, api kbapi.WaffleESQ
 	}
 
 	datasetBytes, err := api.Dataset.MarshalJSON()
-	if err != nil {
-		diags.AddError("Failed to marshal dataset_json", err.Error())
+	dv, ok := marshalToNormalized(datasetBytes, err, "dataset_json", &diags)
+	if !ok {
 		return diags
 	}
-	m.DatasetJSON = jsontypes.NewNormalizedValue(string(datasetBytes))
+	m.DatasetJSON = dv
 
 	m.Query = nil
 
-	if len(api.Filters) > 0 {
-		m.Filters = make([]chartFilterJSONModel, 0, len(api.Filters))
-		for _, f := range api.Filters {
-			fm := chartFilterJSONModel{}
-			fd := fm.populateFromAPIItem(f)
-			diags.Append(fd...)
-			if !fd.HasError() {
-				m.Filters = append(m.Filters, fm)
-			}
-		}
-	}
+	m.Filters = populateFiltersFromAPI(api.Filters, &diags)
 
 	m.Legend = &waffleLegendModel{}
 	m.Legend.fromAPI(ctx, api.Legend)
@@ -609,21 +589,7 @@ func (m *waffleConfigModel) toAPINoESQL() (kbapi.WaffleNoESQL, diag.Diagnostics)
 	}
 	api.Query = m.Query.toAPI()
 
-	api.Filters = []kbapi.LensPanelFilters_Item{}
-	if len(m.Filters) > 0 {
-		filters := make([]kbapi.LensPanelFilters_Item, 0, len(m.Filters))
-		for _, f := range m.Filters {
-			var item kbapi.LensPanelFilters_Item
-			fd := decodeChartFilterJSON(f.FilterJSON, &item)
-			diags.Append(fd...)
-			if !fd.HasError() {
-				filters = append(filters, item)
-			}
-		}
-		if len(filters) > 0 {
-			api.Filters = filters
-		}
-	}
+	api.Filters = buildFiltersForAPI(m.Filters, &diags)
 
 	if m.Legend == nil {
 		diags.AddError("Missing legend", "waffle_config.legend must be provided")
@@ -698,21 +664,7 @@ func (m *waffleConfigModel) toAPIESQL() (kbapi.WaffleESQL, diag.Diagnostics) {
 		return api, diags
 	}
 
-	api.Filters = []kbapi.LensPanelFilters_Item{}
-	if len(m.Filters) > 0 {
-		filters := make([]kbapi.LensPanelFilters_Item, 0, len(m.Filters))
-		for _, f := range m.Filters {
-			var item kbapi.LensPanelFilters_Item
-			fd := decodeChartFilterJSON(f.FilterJSON, &item)
-			diags.Append(fd...)
-			if !fd.HasError() {
-				filters = append(filters, item)
-			}
-		}
-		if len(filters) > 0 {
-			api.Filters = filters
-		}
-	}
+	api.Filters = buildFiltersForAPI(m.Filters, &diags)
 
 	if m.Legend == nil {
 		diags.AddError("Missing legend", "waffle_config.legend must be provided")

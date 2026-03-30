@@ -183,11 +183,11 @@ func (m *datatableNoESQLConfigModel) fromAPI(ctx context.Context, api kbapi.Data
 	m.Description = types.StringPointerValue(api.Description)
 
 	datasetBytes, err := json.Marshal(api.Dataset)
-	if err != nil {
-		diags.AddError("Failed to marshal dataset", err.Error())
+	dv, ok := marshalToNormalized(datasetBytes, err, "dataset", &diags)
+	if !ok {
 		return diags
 	}
-	m.DatasetJSON = jsontypes.NewNormalizedValue(string(datasetBytes))
+	m.DatasetJSON = dv
 
 	m.IgnoreGlobalFilters = types.BoolPointerValue(api.IgnoreGlobalFilters)
 	if api.Sampling != nil {
@@ -204,27 +204,17 @@ func (m *datatableNoESQLConfigModel) fromAPI(ctx context.Context, api kbapi.Data
 	m.Query = &filterSimpleModel{}
 	m.Query.fromAPI(api.Query)
 
-	if len(api.Filters) > 0 {
-		m.Filters = make([]chartFilterJSONModel, 0, len(api.Filters))
-		for _, filterSchema := range api.Filters {
-			fm := chartFilterJSONModel{}
-			filterDiags := fm.populateFromAPIItem(filterSchema)
-			diags.Append(filterDiags...)
-			if !filterDiags.HasError() {
-				m.Filters = append(m.Filters, fm)
-			}
-		}
-	}
+	m.Filters = populateFiltersFromAPI(api.Filters, &diags)
 
 	if len(api.Metrics) > 0 {
 		m.Metrics = make([]datatableMetricModel, len(api.Metrics))
 		for i, metric := range api.Metrics {
 			metricBytes, err := json.Marshal(metric)
-			if err != nil {
-				diags.AddError("Failed to marshal metric", err.Error())
+			mv, ok := marshalToNormalized(metricBytes, err, "metric", &diags)
+			if !ok {
 				return diags
 			}
-			m.Metrics[i].ConfigJSON = jsontypes.NewNormalizedValue(string(metricBytes))
+			m.Metrics[i].ConfigJSON = mv
 		}
 	}
 
@@ -232,11 +222,11 @@ func (m *datatableNoESQLConfigModel) fromAPI(ctx context.Context, api kbapi.Data
 		m.Rows = make([]datatableRowModel, len(*api.Rows))
 		for i, row := range *api.Rows {
 			rowBytes, err := json.Marshal(row)
-			if err != nil {
-				diags.AddError("Failed to marshal row", err.Error())
+			rv, ok := marshalToNormalized(rowBytes, err, "row", &diags)
+			if !ok {
 				return diags
 			}
-			m.Rows[i].ConfigJSON = jsontypes.NewNormalizedValue(string(rowBytes))
+			m.Rows[i].ConfigJSON = rv
 		}
 	}
 
@@ -244,21 +234,21 @@ func (m *datatableNoESQLConfigModel) fromAPI(ctx context.Context, api kbapi.Data
 		m.SplitMetricsBy = make([]datatableSplitByModel, len(*api.SplitMetricsBy))
 		for i, splitBy := range *api.SplitMetricsBy {
 			splitBytes, err := json.Marshal(splitBy)
-			if err != nil {
-				diags.AddError("Failed to marshal split_metrics_by", err.Error())
+			sv, ok := marshalToNormalized(splitBytes, err, "split_metrics_by", &diags)
+			if !ok {
 				return diags
 			}
-			m.SplitMetricsBy[i].ConfigJSON = jsontypes.NewNormalizedValue(string(splitBytes))
+			m.SplitMetricsBy[i].ConfigJSON = sv
 		}
 	}
 
 	if api.SortBy != nil {
 		sortBytes, err := json.Marshal(api.SortBy)
-		if err != nil {
-			diags.AddError("Failed to marshal sort_by", err.Error())
+		sortV, ok := marshalToNormalized(sortBytes, err, "sort_by", &diags)
+		if !ok {
 			return diags
 		}
-		m.SortByJSON = jsontypes.NewNormalizedValue(string(sortBytes))
+		m.SortByJSON = sortV
 	} else {
 		m.SortByJSON = jsontypes.NewNormalizedNull()
 	}
@@ -313,21 +303,7 @@ func (m *datatableNoESQLConfigModel) toAPI() (kbapi.DatatableNoESQL, diag.Diagno
 		api.Query = m.Query.toAPI()
 	}
 
-	api.Filters = []kbapi.LensPanelFilters_Item{}
-	if len(m.Filters) > 0 {
-		filters := make([]kbapi.LensPanelFilters_Item, 0, len(m.Filters))
-		for _, filterModel := range m.Filters {
-			var item kbapi.LensPanelFilters_Item
-			filterDiags := decodeChartFilterJSON(filterModel.FilterJSON, &item)
-			diags.Append(filterDiags...)
-			if !filterDiags.HasError() {
-				filters = append(filters, item)
-			}
-		}
-		if len(filters) > 0 {
-			api.Filters = filters
-		}
-	}
+	api.Filters = buildFiltersForAPI(m.Filters, &diags)
 
 	if len(m.Metrics) > 0 {
 		metrics := make([]kbapi.DatatableNoESQL_Metrics_Item, len(m.Metrics))
@@ -393,11 +369,11 @@ func (m *datatableESQLConfigModel) fromAPI(ctx context.Context, api kbapi.Datata
 	m.Description = types.StringPointerValue(api.Description)
 
 	datasetBytes, err := json.Marshal(api.Dataset)
-	if err != nil {
-		diags.AddError("Failed to marshal dataset", err.Error())
+	dv, ok := marshalToNormalized(datasetBytes, err, "dataset", &diags)
+	if !ok {
 		return diags
 	}
-	m.DatasetJSON = jsontypes.NewNormalizedValue(string(datasetBytes))
+	m.DatasetJSON = dv
 
 	m.IgnoreGlobalFilters = types.BoolPointerValue(api.IgnoreGlobalFilters)
 	if api.Sampling != nil {
@@ -411,27 +387,17 @@ func (m *datatableESQLConfigModel) fromAPI(ctx context.Context, api kbapi.Datata
 		return densityDiags
 	}
 
-	if len(api.Filters) > 0 {
-		m.Filters = make([]chartFilterJSONModel, 0, len(api.Filters))
-		for _, filterSchema := range api.Filters {
-			fm := chartFilterJSONModel{}
-			filterDiags := fm.populateFromAPIItem(filterSchema)
-			diags.Append(filterDiags...)
-			if !filterDiags.HasError() {
-				m.Filters = append(m.Filters, fm)
-			}
-		}
-	}
+	m.Filters = populateFiltersFromAPI(api.Filters, &diags)
 
 	if api.Metrics != nil && len(*api.Metrics) > 0 {
 		m.Metrics = make([]datatableMetricModel, len(*api.Metrics))
 		for i, metric := range *api.Metrics {
 			metricBytes, err := json.Marshal(metric)
-			if err != nil {
-				diags.AddError("Failed to marshal metric", err.Error())
+			mv, ok := marshalToNormalized(metricBytes, err, "metric", &diags)
+			if !ok {
 				return diags
 			}
-			m.Metrics[i].ConfigJSON = jsontypes.NewNormalizedValue(string(metricBytes))
+			m.Metrics[i].ConfigJSON = mv
 		}
 	}
 
@@ -439,11 +405,11 @@ func (m *datatableESQLConfigModel) fromAPI(ctx context.Context, api kbapi.Datata
 		m.Rows = make([]datatableRowModel, len(*api.Rows))
 		for i, row := range *api.Rows {
 			rowBytes, err := json.Marshal(row)
-			if err != nil {
-				diags.AddError("Failed to marshal row", err.Error())
+			rv, ok := marshalToNormalized(rowBytes, err, "row", &diags)
+			if !ok {
 				return diags
 			}
-			m.Rows[i].ConfigJSON = jsontypes.NewNormalizedValue(string(rowBytes))
+			m.Rows[i].ConfigJSON = rv
 		}
 	}
 
@@ -451,21 +417,21 @@ func (m *datatableESQLConfigModel) fromAPI(ctx context.Context, api kbapi.Datata
 		m.SplitMetricsBy = make([]datatableSplitByModel, len(*api.SplitMetricsBy))
 		for i, splitBy := range *api.SplitMetricsBy {
 			splitBytes, err := json.Marshal(splitBy)
-			if err != nil {
-				diags.AddError("Failed to marshal split_metrics_by", err.Error())
+			sv, ok := marshalToNormalized(splitBytes, err, "split_metrics_by", &diags)
+			if !ok {
 				return diags
 			}
-			m.SplitMetricsBy[i].ConfigJSON = jsontypes.NewNormalizedValue(string(splitBytes))
+			m.SplitMetricsBy[i].ConfigJSON = sv
 		}
 	}
 
 	if api.SortBy != nil {
 		sortBytes, err := json.Marshal(api.SortBy)
-		if err != nil {
-			diags.AddError("Failed to marshal sort_by", err.Error())
+		sortV, ok := marshalToNormalized(sortBytes, err, "sort_by", &diags)
+		if !ok {
 			return diags
 		}
-		m.SortByJSON = jsontypes.NewNormalizedValue(string(sortBytes))
+		m.SortByJSON = sortV
 	} else {
 		m.SortByJSON = jsontypes.NewNormalizedNull()
 	}
@@ -516,21 +482,7 @@ func (m *datatableESQLConfigModel) toAPI() (kbapi.DatatableESQL, diag.Diagnostic
 		api.Sampling = &sampling
 	}
 
-	api.Filters = []kbapi.LensPanelFilters_Item{}
-	if len(m.Filters) > 0 {
-		filters := make([]kbapi.LensPanelFilters_Item, 0, len(m.Filters))
-		for _, filterModel := range m.Filters {
-			var item kbapi.LensPanelFilters_Item
-			filterDiags := decodeChartFilterJSON(filterModel.FilterJSON, &item)
-			diags.Append(filterDiags...)
-			if !filterDiags.HasError() {
-				filters = append(filters, item)
-			}
-		}
-		if len(filters) > 0 {
-			api.Filters = filters
-		}
-	}
+	api.Filters = buildFiltersForAPI(m.Filters, &diags)
 
 	if len(m.Metrics) > 0 {
 		metrics := make([]kbapi.DatatableESQLMetric, len(m.Metrics))

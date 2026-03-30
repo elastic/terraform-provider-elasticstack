@@ -931,21 +931,7 @@ func (m *xyChartConfigModel) toAPI() (kbapi.XyChart, diag.Diagnostics) {
 	}
 
 	// Convert filters
-	xyChart.Filters = []kbapi.LensPanelFilters_Item{}
-	if len(m.Filters) > 0 {
-		filters := make([]kbapi.LensPanelFilters_Item, 0, len(m.Filters))
-		for _, f := range m.Filters {
-			var item kbapi.LensPanelFilters_Item
-			filterDiags := decodeChartFilterJSON(f.FilterJSON, &item)
-			diags.Append(filterDiags...)
-			if !filterDiags.HasError() {
-				filters = append(filters, item)
-			}
-		}
-		if len(filters) > 0 {
-			xyChart.Filters = filters
-		}
-	}
+	xyChart.Filters = buildFiltersForAPI(m.Filters, &diags)
 
 	return xyChart, diags
 }
@@ -993,17 +979,7 @@ func (m *xyChartConfigModel) fromAPI(ctx context.Context, apiChart kbapi.XyChart
 	m.Query.fromAPI(apiChart.Query)
 
 	// Convert filters
-	if len(apiChart.Filters) > 0 {
-		m.Filters = make([]chartFilterJSONModel, 0, len(apiChart.Filters))
-		for _, f := range apiChart.Filters {
-			fm := chartFilterJSONModel{}
-			filterDiags := fm.populateFromAPIItem(f)
-			diags.Append(filterDiags...)
-			if !filterDiags.HasError() {
-				m.Filters = append(m.Filters, fm)
-			}
-		}
-	}
+	m.Filters = populateFiltersFromAPI(apiChart.Filters, &diags)
 
 	return diags
 }

@@ -124,68 +124,81 @@ func (m *pieChartConfigModel) fromAPI(_ context.Context, apiChart kbapi.PieChart
 	return diags
 }
 
-func (m *pieChartConfigModel) fromAPINoESQL(apiChart kbapi.PieNoESQL) diag.Diagnostics {
-	var diags diag.Diagnostics
-
-	m.Title = types.StringPointerValue(apiChart.Title)
-	m.Description = types.StringPointerValue(apiChart.Description)
-
-	if apiChart.IgnoreGlobalFilters != nil {
-		m.IgnoreGlobalFilters = types.BoolValue(*apiChart.IgnoreGlobalFilters)
+func (m *pieChartConfigModel) populateCommonFields(
+	title, description *string,
+	ignoreGlobalFilters *bool,
+	sampling *float32,
+	donutHole, labelPosition *string,
+	datasetBytes []byte,
+	datasetErr error,
+	legendBytes []byte,
+	legendErr error,
+	filters []kbapi.LensPanelFilters_Item,
+	diags *diag.Diagnostics,
+) bool {
+	m.Title = types.StringPointerValue(title)
+	m.Description = types.StringPointerValue(description)
+	if ignoreGlobalFilters != nil {
+		m.IgnoreGlobalFilters = types.BoolValue(*ignoreGlobalFilters)
 	} else {
 		m.IgnoreGlobalFilters = types.BoolValue(false)
 	}
-
-	if apiChart.Sampling != nil {
-		m.Sampling = types.Float64Value(float64(*apiChart.Sampling))
+	if sampling != nil {
+		m.Sampling = types.Float64Value(float64(*sampling))
 	} else {
 		m.Sampling = types.Float64Value(1.0)
 	}
-
-	if apiChart.DonutHole != nil {
-		m.DonutHole = types.StringValue(string(*apiChart.DonutHole))
+	if donutHole != nil {
+		m.DonutHole = types.StringValue(*donutHole)
 	} else {
 		m.DonutHole = types.StringNull()
 	}
-
-	if apiChart.Labels != nil && apiChart.Labels.Position != nil {
-		m.LabelPosition = types.StringValue(string(*apiChart.Labels.Position))
+	if labelPosition != nil {
+		m.LabelPosition = types.StringValue(*labelPosition)
 	} else {
 		m.LabelPosition = types.StringNull()
 	}
+	dv, ok := marshalToNormalized(datasetBytes, datasetErr, "dataset", diags)
+	if !ok {
+		return false
+	}
+	m.Dataset = dv
+	lv, ok := marshalToNormalized(legendBytes, legendErr, "legend", diags)
+	if !ok {
+		return false
+	}
+	m.Legend = lv
+	m.Filters = populateFiltersFromAPI(filters, diags)
+	return !diags.HasError()
+}
 
-	// Dataset
-	datasetJSON, err := json.Marshal(apiChart.Dataset)
-	if err != nil {
-		diags.AddError("Failed to marshal dataset", err.Error())
+func (m *pieChartConfigModel) fromAPINoESQL(apiChart kbapi.PieNoESQL) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	var donutHole *string
+	if apiChart.DonutHole != nil {
+		s := string(*apiChart.DonutHole)
+		donutHole = &s
+	}
+	var labelPosition *string
+	if apiChart.Labels != nil && apiChart.Labels.Position != nil {
+		s := string(*apiChart.Labels.Position)
+		labelPosition = &s
+	}
+	datasetBytes, datasetErr := json.Marshal(apiChart.Dataset)
+	legendBytes, legendErr := json.Marshal(apiChart.Legend)
+
+	if !m.populateCommonFields(
+		apiChart.Title, apiChart.Description, apiChart.IgnoreGlobalFilters, apiChart.Sampling,
+		donutHole, labelPosition,
+		datasetBytes, datasetErr, legendBytes, legendErr,
+		apiChart.Filters, &diags,
+	) {
 		return diags
 	}
-	m.Dataset = jsontypes.NewNormalizedValue(string(datasetJSON))
 
-	// Legend
-	legendJSON, err := json.Marshal(apiChart.Legend)
-	if err != nil {
-		diags.AddError("Failed to marshal legend", err.Error())
-		return diags
-	}
-	m.Legend = jsontypes.NewNormalizedValue(string(legendJSON))
-
-	// Query
 	m.Query = &filterSimpleModel{}
 	m.Query.fromAPI(apiChart.Query)
-
-	// Filters
-	if len(apiChart.Filters) > 0 {
-		m.Filters = make([]chartFilterJSONModel, 0, len(apiChart.Filters))
-		for _, filter := range apiChart.Filters {
-			fm := chartFilterJSONModel{}
-			filterDiags := fm.populateFromAPIItem(filter)
-			diags.Append(filterDiags...)
-			if !filterDiags.HasError() {
-				m.Filters = append(m.Filters, fm)
-			}
-		}
-	}
 
 	// Metrics
 	if len(apiChart.Metrics) > 0 {
@@ -196,7 +209,7 @@ func (m *pieChartConfigModel) fromAPINoESQL(apiChart kbapi.PieNoESQL) diag.Diagn
 				diags.AddError("Failed to marshal metric", err.Error())
 				continue
 			}
-			m.Metrics[i].Config = customtypes.NewJSONWithDefaultsValue[map[string]any](
+			m.Metrics[i].Config = customtypes.NewJSONWithDefaultsValue(
 				string(metricJSON),
 				populatePieChartMetricDefaults,
 			)
@@ -225,64 +238,29 @@ func (m *pieChartConfigModel) fromAPINoESQL(apiChart kbapi.PieNoESQL) diag.Diagn
 func (m *pieChartConfigModel) fromAPIESQL(apiChart kbapi.PieESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	m.Title = types.StringPointerValue(apiChart.Title)
-	m.Description = types.StringPointerValue(apiChart.Description)
-
-	if apiChart.IgnoreGlobalFilters != nil {
-		m.IgnoreGlobalFilters = types.BoolValue(*apiChart.IgnoreGlobalFilters)
-	} else {
-		m.IgnoreGlobalFilters = types.BoolValue(false)
-	}
-
-	if apiChart.Sampling != nil {
-		m.Sampling = types.Float64Value(float64(*apiChart.Sampling))
-	} else {
-		m.Sampling = types.Float64Value(1.0)
-	}
-
+	var donutHole *string
 	if apiChart.DonutHole != nil {
-		m.DonutHole = types.StringValue(string(*apiChart.DonutHole))
-	} else {
-		m.DonutHole = types.StringNull()
+		s := string(*apiChart.DonutHole)
+		donutHole = &s
 	}
-
+	var labelPosition *string
 	if apiChart.Labels != nil && apiChart.Labels.Position != nil {
-		m.LabelPosition = types.StringValue(string(*apiChart.Labels.Position))
-	} else {
-		m.LabelPosition = types.StringNull()
+		s := string(*apiChart.Labels.Position)
+		labelPosition = &s
 	}
+	datasetBytes, datasetErr := json.Marshal(apiChart.Dataset)
+	legendBytes, legendErr := json.Marshal(apiChart.Legend)
 
-	// Dataset
-	datasetJSON, err := json.Marshal(apiChart.Dataset)
-	if err != nil {
-		diags.AddError("Failed to marshal dataset", err.Error())
+	if !m.populateCommonFields(
+		apiChart.Title, apiChart.Description, apiChart.IgnoreGlobalFilters, apiChart.Sampling,
+		donutHole, labelPosition,
+		datasetBytes, datasetErr, legendBytes, legendErr,
+		apiChart.Filters, &diags,
+	) {
 		return diags
 	}
-	m.Dataset = jsontypes.NewNormalizedValue(string(datasetJSON))
 
-	// Legend
-	legendJSON, err := json.Marshal(apiChart.Legend)
-	if err != nil {
-		diags.AddError("Failed to marshal legend", err.Error())
-		return diags
-	}
-	m.Legend = jsontypes.NewNormalizedValue(string(legendJSON))
-
-	// No Query field for ESQL (it's part of dataset usually or handled differently)
 	m.Query = nil
-
-	// Filters
-	if len(apiChart.Filters) > 0 {
-		m.Filters = make([]chartFilterJSONModel, 0, len(apiChart.Filters))
-		for _, filter := range apiChart.Filters {
-			fm := chartFilterJSONModel{}
-			filterDiags := fm.populateFromAPIItem(filter)
-			diags.Append(filterDiags...)
-			if !filterDiags.HasError() {
-				m.Filters = append(m.Filters, fm)
-			}
-		}
-	}
 
 	// Metrics
 	if len(apiChart.Metrics) > 0 {
@@ -293,7 +271,7 @@ func (m *pieChartConfigModel) fromAPIESQL(apiChart kbapi.PieESQL) diag.Diagnosti
 				diags.AddError("Failed to marshal metric", err.Error())
 				continue
 			}
-			m.Metrics[i].Config = customtypes.NewJSONWithDefaultsValue[map[string]any](
+			m.Metrics[i].Config = customtypes.NewJSONWithDefaultsValue(
 				string(metricJSON),
 				populatePieChartMetricDefaults,
 			)
@@ -309,7 +287,7 @@ func (m *pieChartConfigModel) fromAPIESQL(apiChart kbapi.PieESQL) diag.Diagnosti
 				diags.AddError("Failed to marshal group_by", err.Error())
 				continue
 			}
-			m.GroupBy[i].Config = customtypes.NewJSONWithDefaultsValue[map[string]any](
+			m.GroupBy[i].Config = customtypes.NewJSONWithDefaultsValue(
 				string(groupByJSON),
 				populateLensGroupByDefaults,
 			)
@@ -377,21 +355,7 @@ func (m *pieChartConfigModel) toAPI() (kbapi.PieChart, diag.Diagnostics) {
 		chart.Query = m.Query.toAPI()
 
 		// Filters
-		chart.Filters = []kbapi.LensPanelFilters_Item{}
-		if len(m.Filters) > 0 {
-			filters := make([]kbapi.LensPanelFilters_Item, 0, len(m.Filters))
-			for _, filter := range m.Filters {
-				var item kbapi.LensPanelFilters_Item
-				d := decodeChartFilterJSON(filter.FilterJSON, &item)
-				diags.Append(d...)
-				if !d.HasError() {
-					filters = append(filters, item)
-				}
-			}
-			if len(filters) > 0 {
-				chart.Filters = filters
-			}
-		}
+		chart.Filters = buildFiltersForAPI(m.Filters, &diags)
 
 		// Metrics
 		if len(m.Metrics) > 0 {
@@ -468,21 +432,7 @@ func (m *pieChartConfigModel) toAPI() (kbapi.PieChart, diag.Diagnostics) {
 		}
 
 		// Filters
-		chart.Filters = []kbapi.LensPanelFilters_Item{}
-		if len(m.Filters) > 0 {
-			filters := make([]kbapi.LensPanelFilters_Item, 0, len(m.Filters))
-			for _, filter := range m.Filters {
-				var item kbapi.LensPanelFilters_Item
-				d := decodeChartFilterJSON(filter.FilterJSON, &item)
-				diags.Append(d...)
-				if !d.HasError() {
-					filters = append(filters, item)
-				}
-			}
-			if len(filters) > 0 {
-				chart.Filters = filters
-			}
-		}
+		chart.Filters = buildFiltersForAPI(m.Filters, &diags)
 
 		// Metrics
 		if len(m.Metrics) > 0 {
