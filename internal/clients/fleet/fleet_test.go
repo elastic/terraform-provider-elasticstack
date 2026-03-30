@@ -40,9 +40,9 @@ func newTestClient(t *testing.T, server *httptest.Server) *fleet.Client {
 
 func TestGetPackages_SpaceAwarePath(t *testing.T) {
 	tests := []struct {
-		name         string
-		spaceID      string
-		wantPathPfx  string
+		name        string
+		spaceID     string
+		wantPathPfx string
 	}{
 		{
 			name:        "no space id uses default path",
