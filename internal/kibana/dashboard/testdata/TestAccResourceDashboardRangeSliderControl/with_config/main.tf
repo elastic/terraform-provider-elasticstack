@@ -24,11 +24,13 @@ resource "elasticstack_kibana_dashboard" "test" {
       h = 4
     }
     range_slider_control_config = {
-      data_view_id       = "test-data-view-id"
-      field_name         = "bytes"
-      title              = "Bytes Range"
-      use_global_filters = true
-      value              = ["100", "500"]
+      data_view_id        = "test-data-view-id"
+      field_name          = "bytes"
+      title               = "Bytes Range"
+      use_global_filters  = true
+      ignore_validations  = false
+      value               = ["100", "500"]
+      step                = 10
     }
   }]
 }

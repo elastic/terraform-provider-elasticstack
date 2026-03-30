@@ -54,9 +54,11 @@ func TestAccResourceDashboardRangeSliderControl(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.range_slider_control_config.field_name", "bytes"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.range_slider_control_config.title", "Bytes Range"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.range_slider_control_config.use_global_filters", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.range_slider_control_config.ignore_validations", "false"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.range_slider_control_config.value.#", "2"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.range_slider_control_config.value.0", "100"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.range_slider_control_config.value.1", "500"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.range_slider_control_config.step", "10"),
 				),
 			},
 			// Refresh/plan: ensure no perpetual drift
