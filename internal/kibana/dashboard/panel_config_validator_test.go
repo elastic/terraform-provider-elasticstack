@@ -205,7 +205,7 @@ func Test_panelConfigValidateDiags_timeSlider(t *testing.T) {
 	})
 }
 
-func Test_panelConfigValidateDiags_sloBurnRate(t *testing.T) {
+func Test_panelConfigValidateDiags_SloBurnRate(t *testing.T) {
 	t.Run("accepts slo_burn_rate_config", func(t *testing.T) {
 		diags := panelConfigValidateDiags(
 			"slo_burn_rate",
