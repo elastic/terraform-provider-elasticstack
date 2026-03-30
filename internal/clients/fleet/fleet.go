@@ -518,12 +518,12 @@ func ListAccessibleSpaces(ctx context.Context, client *Client) ([]string, diag.D
 // user's accessible spaces and tries each one. Returns the space ID where the policy was
 // found, or empty string if not found.
 func FindAgentPolicySpace(ctx context.Context, client *Client, agentPolicyID string) string {
-	tflog.Debug(ctx, "FindAgentPolicySpace: starting", map[string]interface{}{"agent_policy_id": agentPolicyID})
+	tflog.Debug(ctx, "FindAgentPolicySpace: starting", map[string]any{"agent_policy_id": agentPolicyID})
 
 	// Try the global endpoint first (works for admin users with default-space policies)
 	if policy, _ := GetAgentPolicy(ctx, client, agentPolicyID, ""); policy != nil {
 		if policy.SpaceIds != nil && len(*policy.SpaceIds) > 0 {
-			tflog.Debug(ctx, "FindAgentPolicySpace: found via global endpoint", map[string]interface{}{"space": (*policy.SpaceIds)[0]})
+			tflog.Debug(ctx, "FindAgentPolicySpace: found via global endpoint", map[string]any{"space": (*policy.SpaceIds)[0]})
 			return (*policy.SpaceIds)[0]
 		}
 		return ""
@@ -532,7 +532,7 @@ func FindAgentPolicySpace(ctx context.Context, client *Client, agentPolicyID str
 	// Global endpoint didn't find it — enumerate accessible spaces and try each one
 	spaces, diags := ListAccessibleSpaces(ctx, client)
 	if diags.HasError() {
-		tflog.Warn(ctx, "FindAgentPolicySpace: failed to list accessible spaces", map[string]interface{}{"errors": diags.Errors()})
+		tflog.Warn(ctx, "FindAgentPolicySpace: failed to list accessible spaces", map[string]any{"errors": diags.Errors()})
 		return ""
 	}
 	if len(spaces) == 0 {
@@ -540,14 +540,14 @@ func FindAgentPolicySpace(ctx context.Context, client *Client, agentPolicyID str
 		return ""
 	}
 
-	tflog.Debug(ctx, "FindAgentPolicySpace: searching accessible spaces", map[string]interface{}{"spaces": fmt.Sprintf("%v", spaces)})
+	tflog.Debug(ctx, "FindAgentPolicySpace: searching accessible spaces", map[string]any{"spaces": fmt.Sprintf("%v", spaces)})
 
 	for _, space := range spaces {
 		if space == "default" {
 			continue // already tried via global endpoint
 		}
 		if policy, _ := GetAgentPolicy(ctx, client, agentPolicyID, space); policy != nil {
-			tflog.Debug(ctx, "FindAgentPolicySpace: found agent policy in space", map[string]interface{}{"space": space})
+			tflog.Debug(ctx, "FindAgentPolicySpace: found agent policy in space", map[string]any{"space": space})
 			return space
 		}
 	}
