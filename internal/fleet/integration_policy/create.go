@@ -56,15 +56,29 @@ func (r *integrationPolicyResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
-	// Determine space context for creating the package policy
-	// The package policy must be created in the same space as the agent policy it references
+	// Determine space context for creating the package policy.
+	// The package policy must be created in the same space as the agent policy it references.
 	var spaceID string
-	if !planModel.SpaceIDs.IsNull() && !planModel.SpaceIDs.IsUnknown() {
+	if typeutils.IsKnown(planModel.SpaceIDs) {
 		// Explicit space_ids provided - use the first one
 		var tempDiags diag.Diagnostics
 		spaceIDs := typeutils.SetTypeAs[types.String](ctx, planModel.SpaceIDs, path.Root("space_ids"), &tempDiags)
 		if !tempDiags.HasError() && len(spaceIDs) > 0 {
 			spaceID = spaceIDs[0].ValueString()
+		}
+	} else {
+		// No explicit space_ids: attempt to inherit the space from the referenced agent policy.
+		// This tries the global endpoint first (for admin users), then enumerates the user's
+		// accessible spaces to find the agent policy (for space-restricted users).
+		agentPolicyID := planModel.AgentPolicyID.ValueString()
+		if agentPolicyID == "" && typeutils.IsKnown(planModel.AgentPolicyIDs) && len(planModel.AgentPolicyIDs.Elements()) > 0 {
+			var ids []string
+			if diags := planModel.AgentPolicyIDs.ElementsAs(ctx, &ids, false); !diags.HasError() && len(ids) > 0 {
+				agentPolicyID = ids[0]
+			}
+		}
+		if agentPolicyID != "" {
+			spaceID = fleet.FindAgentPolicySpace(ctx, client, agentPolicyID)
 		}
 	}
 
@@ -73,6 +87,14 @@ func (r *integrationPolicyResource) Create(ctx context.Context, req resource.Cre
 
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
+		if !typeutils.IsKnown(planModel.SpaceIDs) {
+			resp.Diagnostics.AddWarning(
+				"Integration policy space_ids not set",
+				"The agent policy may reside in a non-default Kibana space. If the error above is "+
+					"a 403 Forbidden, set space_ids on the integration policy to match the agent policy's space. "+
+					"For example: space_ids = elasticstack_fleet_agent_policy.<name>.space_ids",
+			)
+		}
 		return
 	}
 
@@ -93,7 +115,7 @@ func (r *integrationPolicyResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
-	pkg, diags := getPackageInfo(ctx, client, policy.Package.Name, policy.Package.Version)
+	pkg, diags := getPackageInfo(ctx, client, policy.Package.Name, policy.Package.Version, spaceID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -103,6 +125,17 @@ func (r *integrationPolicyResource) Create(ctx context.Context, req resource.Cre
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
+	}
+
+	// If we discovered a space during creation but space_ids wasn't populated
+	// from the API response, persist it in state so that subsequent Read/Delete
+	// operations use the correct space-scoped endpoint.
+	if spaceID != "" && !typeutils.IsKnown(planModel.SpaceIDs) {
+		spaceIDs, d := types.SetValueFrom(ctx, types.StringType, []string{spaceID})
+		resp.Diagnostics.Append(d...)
+		if !d.HasError() {
+			planModel.SpaceIDs = spaceIDs
+		}
 	}
 
 	// If plan didn't have input configured, ensure we don't add it now

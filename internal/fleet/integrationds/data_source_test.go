@@ -24,11 +24,15 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
+	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-var minVersionIntegrationDataSource = version.Must(version.NewVersion("8.6.0"))
+var (
+	minVersionIntegrationDataSource        = version.Must(version.NewVersion("8.6.0"))
+	minVersionIntegrationDataSourceSpaceID = version.Must(version.NewVersion("9.1.0"))
+)
 
 func TestAccDataSourceIntegration(t *testing.T) {
 	resource.Test(t, resource.TestCase{
@@ -57,6 +61,49 @@ data "elasticstack_fleet_integration" "test" {
   name = "tcp"
 }
 `
+
+func TestAccDataSourceIntegrationWithSpaceID(t *testing.T) {
+	spaceName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	spaceID := fmt.Sprintf("space-%s", spaceName)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationDataSourceSpaceID),
+				Config:   testAccDataSourceIntegrationWithSpaceID(spaceID, spaceName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_fleet_integration.test", "name", "tcp"),
+					resource.TestCheckResourceAttr("data.elasticstack_fleet_integration.test", "space_id", spaceID),
+					checkResourceAttrStringNotEmpty("data.elasticstack_fleet_integration.test", "version"),
+				),
+			},
+		},
+	})
+}
+
+func testAccDataSourceIntegrationWithSpaceID(spaceID, spaceName string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_kibana_space" "test_space" {
+  space_id    = %q
+  name        = %q
+  description = "Test space for Fleet integration data source space_id test"
+}
+
+data "elasticstack_fleet_integration" "test" {
+  name     = "tcp"
+  space_id = elasticstack_kibana_space.test_space.space_id
+
+  depends_on = [elasticstack_kibana_space.test_space]
+}
+`, spaceID, spaceName)
+}
 
 // checkResourceAttrStringNotEmpty verifies that the string value at key
 // is not empty.

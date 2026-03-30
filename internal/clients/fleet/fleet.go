@@ -27,6 +27,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 // buildSpaceAwarePath constructs an API path with space awareness.
@@ -409,10 +410,10 @@ func DeletePackagePolicy(ctx context.Context, client *Client, id string, spaceID
 }
 
 // GetPackage reads a specific package from the API.
-func GetPackage(ctx context.Context, client *Client, name, version string) (*kbapi.PackageInfo, diag.Diagnostics) {
+func GetPackage(ctx context.Context, client *Client, name, version, spaceID string) (*kbapi.PackageInfo, diag.Diagnostics) {
 	params := kbapi.GetFleetEpmPackagesPkgnamePkgversionParams{}
 
-	resp, err := client.API.GetFleetEpmPackagesPkgnamePkgversionWithResponse(ctx, name, version, &params)
+	resp, err := client.API.GetFleetEpmPackagesPkgnamePkgversionWithResponse(ctx, name, version, &params, spaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -485,13 +486,83 @@ func Uninstall(ctx context.Context, client *Client, name, version string, spaceI
 	}
 }
 
+// ListAccessibleSpaces returns the IDs of all Kibana spaces the current user can access.
+// This is used as a fallback to discover which space an agent policy resides in when
+// the caller doesn't know the space (e.g. during integration policy creation).
+func ListAccessibleSpaces(ctx context.Context, client *Client) ([]string, diag.Diagnostics) {
+	resp, err := client.API.GetSpacesSpaceWithResponse(ctx, nil)
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+
+	switch resp.StatusCode() {
+	case http.StatusOK:
+		var spaces []struct {
+			ID string `json:"id"`
+		}
+		if err := json.Unmarshal(resp.Body, &spaces); err != nil {
+			return nil, diagutil.FrameworkDiagFromError(err)
+		}
+		ids := make([]string, 0, len(spaces))
+		for _, s := range spaces {
+			ids = append(ids, s.ID)
+		}
+		return ids, nil
+	default:
+		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
+	}
+}
+
+// FindAgentPolicySpace attempts to locate the Kibana space that an agent policy resides in.
+// It first tries the global (default space) endpoint. If that returns nil, it enumerates the
+// user's accessible spaces and tries each one. Returns the space ID where the policy was
+// found, or empty string if not found.
+func FindAgentPolicySpace(ctx context.Context, client *Client, agentPolicyID string) string {
+	tflog.Debug(ctx, "FindAgentPolicySpace: starting", map[string]interface{}{"agent_policy_id": agentPolicyID})
+
+	// Try the global endpoint first (works for admin users with default-space policies)
+	if policy, _ := GetAgentPolicy(ctx, client, agentPolicyID, ""); policy != nil {
+		if policy.SpaceIds != nil && len(*policy.SpaceIds) > 0 {
+			tflog.Debug(ctx, "FindAgentPolicySpace: found via global endpoint", map[string]interface{}{"space": (*policy.SpaceIds)[0]})
+			return (*policy.SpaceIds)[0]
+		}
+		return ""
+	}
+
+	// Global endpoint didn't find it — enumerate accessible spaces and try each one
+	spaces, diags := ListAccessibleSpaces(ctx, client)
+	if diags.HasError() {
+		tflog.Warn(ctx, "FindAgentPolicySpace: failed to list accessible spaces", map[string]interface{}{"errors": diags.Errors()})
+		return ""
+	}
+	if len(spaces) == 0 {
+		tflog.Debug(ctx, "FindAgentPolicySpace: no accessible spaces found")
+		return ""
+	}
+
+	tflog.Debug(ctx, "FindAgentPolicySpace: searching accessible spaces", map[string]interface{}{"spaces": fmt.Sprintf("%v", spaces)})
+
+	for _, space := range spaces {
+		if space == "default" {
+			continue // already tried via global endpoint
+		}
+		if policy, _ := GetAgentPolicy(ctx, client, agentPolicyID, space); policy != nil {
+			tflog.Debug(ctx, "FindAgentPolicySpace: found agent policy in space", map[string]interface{}{"space": space})
+			return space
+		}
+	}
+
+	return ""
+}
+
 // GetPackages returns information about the latest packages known to Fleet.
-func GetPackages(ctx context.Context, client *Client, prerelease bool) ([]kbapi.PackageListItem, diag.Diagnostics) {
+// If spaceID is non-empty and not "default", the request will be scoped to that Kibana space.
+func GetPackages(ctx context.Context, client *Client, prerelease bool, spaceID string) ([]kbapi.PackageListItem, diag.Diagnostics) {
 	params := kbapi.GetFleetEpmPackagesParams{
 		Prerelease: &prerelease,
 	}
 
-	resp, err := client.API.GetFleetEpmPackagesWithResponse(ctx, &params)
+	resp, err := client.API.GetFleetEpmPackagesWithResponse(ctx, &params, spaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
