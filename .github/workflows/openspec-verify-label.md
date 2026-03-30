@@ -9,6 +9,112 @@ on:
     types: [labeled]
     # Hard gate: compiled workflow skips agent jobs unless this label triggered the run.
     names: [verify-openspec]
+  steps:
+    - name: Verify triggering label
+      id: verify_label
+      uses: actions/github-script@v8
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const label = context.payload.label?.name;
+          if (label !== 'verify-openspec') {
+            core.setOutput('label_verified', 'false');
+            core.setOutput('label_reason', `Unexpected label: ${label || '(none)'}`);
+            core.info(`Label check failed: expected verify-openspec, got ${label || '(none)'}`);
+          } else {
+            core.setOutput('label_verified', 'true');
+            core.setOutput('label_reason', 'Label verified: verify-openspec');
+            core.info('Label verified: verify-openspec');
+          }
+    - name: Select active change from PR files
+      id: select_change
+      uses: actions/github-script@v8
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const prNumber = context.payload.pull_request?.number;
+          if (!prNumber) {
+            core.setOutput('selection_status', 'ineligible');
+            core.setOutput('selection_reason', 'No pull request number in event payload');
+            core.setOutput('selected_change', '');
+            return;
+          }
+
+          const files = await github.paginate(github.rest.pulls.listFiles, {
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            pull_number: prNumber,
+            per_page: 100,
+          });
+
+          const changePattern = /^openspec\/changes\/([^\/]+)\/.+$/;
+          const archivePattern = /^openspec\/changes\/archive\//;
+
+          const relevantFiles = files.filter(
+            f => changePattern.test(f.filename) && !archivePattern.test(f.filename)
+          );
+
+          if (relevantFiles.length === 0) {
+            core.setOutput('selection_status', 'ineligible');
+            core.setOutput('selection_reason', 'No files under openspec/changes/ (non-archive) found in this PR');
+            core.setOutput('selected_change', '');
+            return;
+          }
+
+          const addedFiles = relevantFiles.filter(f => f.status === 'added');
+          if (addedFiles.length > 0) {
+            core.setOutput('selection_status', 'ineligible');
+            core.setOutput('selection_reason', `Added file(s) under openspec/changes/: ${addedFiles.map(f => f.filename).join(', ')}`);
+            core.setOutput('selected_change', '');
+            return;
+          }
+
+          const nonModifiedFiles = relevantFiles.filter(f => f.status !== 'modified');
+          if (nonModifiedFiles.length > 0) {
+            core.setOutput('selection_status', 'ineligible');
+            core.setOutput('selection_reason', `Non-modified file(s) under openspec/changes/: ${nonModifiedFiles.map(f => `${f.filename} (${f.status})`).join(', ')}`);
+            core.setOutput('selected_change', '');
+            return;
+          }
+
+          const modifiedIds = new Set(
+            relevantFiles
+              .filter(f => f.status === 'modified')
+              .map(f => f.filename.match(changePattern)[1])
+          );
+
+          if (modifiedIds.size === 0) {
+            core.setOutput('selection_status', 'ineligible');
+            core.setOutput('selection_reason', 'No active change id with a modified file found');
+            core.setOutput('selected_change', '');
+            return;
+          }
+
+          if (modifiedIds.size > 1) {
+            core.setOutput('selection_status', 'ineligible');
+            core.setOutput('selection_reason', `Multiple active change ids with modified files: ${[...modifiedIds].join(', ')}`);
+            core.setOutput('selected_change', '');
+            return;
+          }
+
+          const selectedChange = [...modifiedIds][0];
+          core.setOutput('selection_status', 'eligible');
+          core.setOutput('selection_reason', `Selected change: ${selectedChange}`);
+          core.setOutput('selected_change', selectedChange);
+          core.info(`Selected active change: ${selectedChange}`);
+    - name: Gate — skip agent when run is ineligible
+      id: gate
+      if: >-
+        steps.verify_label.outputs.label_verified != 'true' ||
+        steps.select_change.outputs.selection_status != 'eligible'
+      uses: actions/github-script@v8
+      with:
+        script: |
+          const reason = '${{ steps.verify_label.outputs.label_verified }}' !== 'true'
+            ? '${{ steps.verify_label.outputs.label_reason }}'
+            : '${{ steps.select_change.outputs.selection_reason }}';
+          core.info(`Run is ineligible — skipping agent: ${reason}`);
+          core.setFailed(`Ineligible: ${reason}`);
 engine:
   id: copilot
   model: "gpt-5.4"
@@ -16,6 +122,13 @@ permissions:
   contents: read
   pull-requests: read
 jobs:
+  pre_activation:
+    outputs:
+      label_verified: ${{ steps.verify_label.outputs.label_verified }}
+      label_reason: ${{ steps.verify_label.outputs.label_reason }}
+      selected_change: ${{ steps.select_change.outputs.selected_change }}
+      selection_status: ${{ steps.select_change.outputs.selection_status }}
+      selection_reason: ${{ steps.select_change.outputs.selection_reason }}
   completion_cleanup:
     name: Remove verify-openspec label
     needs:
@@ -89,6 +202,8 @@ steps:
       terraform_wrapper: false
   - name: Setup repository dependencies
     run: make setup
+  - name: Install Node dependencies
+    run: npm ci
 safe-outputs:
   create-pull-request-review-comment:
     max: 25
@@ -109,79 +224,56 @@ safe-outputs:
 
 You verify a pull request against **one** active OpenSpec change under `openspec/changes/<id>/`, following `.agents/skills/openspec-verify-change/SKILL.md`, submit a **single** pull request review, and **only** after an **APPROVE** review run `openspec archive` and push the branch.
 
-## Trigger and first gate
+## Pre-activation context
 
-1. The workflow is compiled so it runs the agent **only** when a `pull_request` **`labeled`** event applies the label **`verify-openspec`** (see frontmatter `names:`). **Before any other step**, if the injected event shows a different label name than `verify-openspec`, call **`noop`** and **stop** (defensive; should not occur when the compiler’s label gate is in effect).
+Deterministic pre-activation steps have verified the triggering label and selected the active change. A deterministic setup step has installed Node dependencies before agent reasoning begins.
 
-## Pull request files and change selection
+- **Selected change id**: `${{ needs.pre_activation.outputs.selected_change }}`
+- **Gating**: already complete — the workflow reached this point only because exactly one active change with modified-only files was found. Do **not** re-inspect PR files or re-derive the change id.
 
-2. Load the pull request **changed files** list for the triggering PR (GitHub API: each entry has **path** and **status**: `added`, `modified`, `removed`, `renamed`, etc.).
-
-3. Filter paths to those under `openspec/changes/` **excluding** `openspec/changes/archive/**`. For each such path, derive `<id>` as the **first path segment** after `openspec/changes/` (so `openspec/changes/foo/bar.md` → `foo`; skip if the segment is `archive`).
-
-4. **Gating — call `noop` and stop** (no review, no archive, no push) if **any** of these hold:
-
-   - **Any** non-archive path under `openspec/changes/` has status **`added`**.
-   - **More than one** distinct `<id>` has **at least one** file with status **`modified`** among those paths.
-   - **Zero** distinct `<id>` has **at least one** **`modified`** file under `openspec/changes/<id>/` (non-archive).
-   - **Any** file under `openspec/changes/<id>/` (non-archive) that appears in the PR has a status **other than** **`modified`** (treat **`removed`**, **`renamed`**, and any other non-`modified` status as **noop**).
-
-5. If gating passes, you have **exactly one** selected change id `<id>`. Record it and continue.
-
-## Repository setup for OpenSpec
-
-6. Check out the **full** repository at the PR head ref (the triggering pull request branch) with enough history for a clean working tree.
-
-7. Required tooling (Go, Node, and OpenSpec) are already available in the agent environment.
-
-8. Use **`npx openspec`** for all OpenSpec CLI invocations below; do **not** rerun ad hoc bootstrap commands unless verification work reveals a separate repository issue.
+Use **`npx openspec`** for all OpenSpec CLI invocations.
 
 ## Verification (active change)
 
-**Do not consider syntactic correctness, CI will pick up these issues**
+Let `<id>` be `${{ needs.pre_activation.outputs.selected_change }}`.
 
-9. For the selected `<id>`, run:
+1. Run:
 
-   - `npx openspec status --change "<id>" --json`
-   - `npx openspec instructions apply --change "<id>" --json`
+   - `npx openspec status --change "${{ needs.pre_activation.outputs.selected_change }}" --json`
+   - `npx openspec instructions apply --change "${{ needs.pre_activation.outputs.selected_change }}" --json`
 
-10. Read **`.agents/skills/openspec-verify-change/SKILL.md`** and perform verification **rooted at** `openspec/changes/<id>/` using the skill’s steps (status / apply JSON for context files, completeness / correctness / coherence, **Issues by priority**: CRITICAL, WARNING, SUGGESTION, **Final assessment**).
+2. Read **`.agents/skills/openspec-verify-change/SKILL.md`** and perform verification **rooted at** `openspec/changes/<id>/` using the skill's steps (status / apply JSON for context files, completeness / correctness / coherence, **Issues by priority**: CRITICAL, WARNING, SUGGESTION, **Final assessment**).
 
 ## Structural allowlist and relevance
 
-11. **Structurally in scope** (no per-file relevance classification required):
+3. **Structurally in scope** (no per-file relevance classification required):
 
-    - All paths under `openspec/changes/<id>/`.
-    - For each delta spec `openspec/changes/<id>/specs/<capability>/spec.md`, the matching **`openspec/specs/<capability>/spec.md`** if it appears in the PR.
+   - All paths under `openspec/changes/${{ needs.pre_activation.outputs.selected_change }}/`.
+   - For each delta spec `openspec/changes/${{ needs.pre_activation.outputs.selected_change }}/specs/<capability>/spec.md`, the matching **`openspec/specs/<capability>/spec.md`** if it appears in the PR.
 
-12. For **every other** changed file in the PR, read the diff and classify vs `openspec/changes/<id>/` artifacts (**proposal**, **design**, **tasks**, delta specs) as **`relevant`**, **`uncertain`**, or **`unassociated`**. Only **`unassociated`** blocks **APPROVE**; when unsure, prefer **`relevant`** or **`uncertain`**.
+4. For **every other** changed file in the PR, read the diff and classify vs `openspec/changes/<id>/` artifacts (**proposal**, **design**, **tasks**, delta specs) as **`relevant`**, **`uncertain`**, or **`unassociated`**. Only **`unassociated`** blocks **APPROVE**; when unsure, prefer **`relevant`** or **`uncertain`**.
 
 ## Review body, inline comments, and decision
 
-13. **Review body** must include:
+5. **Review body** must include:
 
-    - Summary / scorecard from verification (**Issues by priority**).
-    - **Out-of-scope / unassociated changes**: list **`unassociated`** files, summarize **`uncertain`**, note accepted **`relevant`** briefly.
+   - Summary / scorecard from verification (**Issues by priority**).
+   - **Out-of-scope / unassociated changes**: list **`unassociated`** files, summarize **`uncertain`**, note accepted **`relevant`** briefly.
 
-14. Add **line-level** **`create-pull-request-review-comment`** entries for mappable CRITICAL (and other high-signal) issues and for **`unassociated`** hunks where the API allows; avoid spam on large **`relevant`** sets.
+6. Add **line-level** **`create-pull-request-review-comment`** entries for mappable CRITICAL (and other high-signal) issues and for **`unassociated`** hunks where the API allows; avoid spam on large **`relevant`** sets.
 
-15. Submit **exactly one** **`submit-pull-request-review`** for this run:
+7. Submit **exactly one** **`submit-pull-request-review`** for this run:
 
-    - Use **`APPROVE`** **if and only if** there are **zero CRITICAL** issues and **zero `unassociated`** files.
-    - Otherwise use **`COMMENT`**.
-    - **Never** use **`REQUEST_CHANGES`**. WARNING and SUGGESTION **alone** do **not** block APPROVE.
+   - Use **`APPROVE`** **if and only if** there are **zero CRITICAL** issues and **zero `unassociated`** files.
+   - Otherwise use **`COMMENT`**.
+   - **Never** use **`REQUEST_CHANGES`**. WARNING and SUGGESTION **alone** do **not** block APPROVE.
 
 ## Archive and push (APPROVE only)
 
-16. **Only** if the review you submitted in step 15 used **`APPROVE`**:
+8. **Only** if the review you submitted in step 7 used **`APPROVE`**:
 
-    - Run **`npx openspec archive "<id>" --yes`** (non-interactive; add `--skip-specs` only if the change is explicitly doc-only and repository policy allows — default is full archive).
-    - If the working tree has changes, **commit** them with a clear message (e.g. `chore(openspec): archive <id> via verify-openspec`).
-    - Use **`push-to-pull-request-branch`** to update the **triggering** PR branch.
+   - Run **`npx openspec archive "${{ needs.pre_activation.outputs.selected_change }}" --yes`** (non-interactive; add `--skip-specs` only if the change is explicitly doc-only and repository policy allows — default is full archive).
+   - If the working tree has changes, **commit** them with a clear message (e.g. `chore(openspec): archive ${{ needs.pre_activation.outputs.selected_change }} via verify-openspec`).
+   - Use **`push-to-pull-request-branch`** to update the **triggering** PR branch.
 
-17. If the review was **`COMMENT`** (or you exited via **`noop`** earlier), **do not** run `openspec archive`, **do not** commit for archive purposes, and **do not** call **`push-to-pull-request-branch`**.
-
-## Noop completion
-
-18. Whenever you exit early with **`noop`**, include a **clear, short** message explaining which gate failed (wrong label, multiple change ids, added file under `openspec/changes/`, non-modified status, etc.).
-
+9. If the review was **`COMMENT`**, **do not** run `openspec archive`, **do not** commit for archive purposes, and **do not** call **`push-to-pull-request-branch`**.

@@ -22,7 +22,7 @@
 #
 # When maintainers add the verify-openspec label, verifies the PR against exactly one active OpenSpec change (modified-only), posts a PR review, on APPROVE archives the change and pushes the result to the PR branch, and removes the trigger label before the workflow fully completes.
 #
-# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"60710e5213b03a66f2bfd288710c427d6997c476b7e2fd4e325c53439d0670e5","compiler_version":"v0.64.2","strict":true,"agent_id":"copilot","agent_model":"gpt-5.4"}
+# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"72046a5d299b26dafc8734bac9cdefcb17875703b1b27d42dac2977861c81088","compiler_version":"v0.64.2","strict":true,"agent_id":"copilot","agent_model":"gpt-5.4"}
 
 name: "OpenSpec verify (label)"
 "on":
@@ -31,6 +31,110 @@ name: "OpenSpec verify (label)"
     # - verify-openspec # Label filtering applied via job conditions
     types:
     - labeled
+  # steps: # Steps injected into pre-activation job
+  # - id: verify_label
+    # name: Verify triggering label
+    # uses: actions/github-script@v8
+    # with:
+      # github-token: ${{ secrets.GITHUB_TOKEN }}
+      # script: |
+        # const label = context.payload.label?.name;
+        # if (label !== 'verify-openspec') {
+          # core.setOutput('label_verified', 'false');
+          # core.setOutput('label_reason', `Unexpected label: ${label || '(none)'}`);
+          # core.info(`Label check failed: expected verify-openspec, got ${label || '(none)'}`);
+        # } else {
+          # core.setOutput('label_verified', 'true');
+          # core.setOutput('label_reason', 'Label verified: verify-openspec');
+          # core.info('Label verified: verify-openspec');
+        # }
+  # - id: select_change
+    # name: Select active change from PR files
+    # uses: actions/github-script@v8
+    # with:
+      # github-token: ${{ secrets.GITHUB_TOKEN }}
+      # script: |
+        # const prNumber = context.payload.pull_request?.number;
+        # if (!prNumber) {
+          # core.setOutput('selection_status', 'ineligible');
+          # core.setOutput('selection_reason', 'No pull request number in event payload');
+          # core.setOutput('selected_change', '');
+          # return;
+        # }
+        # 
+        # const files = await github.paginate(github.rest.pulls.listFiles, {
+          # owner: context.repo.owner,
+          # repo: context.repo.repo,
+          # pull_number: prNumber,
+          # per_page: 100,
+        # });
+        # 
+        # const changePattern = /^openspec\/changes\/([^\/]+)\/.+$/;
+        # const archivePattern = /^openspec\/changes\/archive\//;
+        # 
+        # const relevantFiles = files.filter(
+          # f => changePattern.test(f.filename) && !archivePattern.test(f.filename)
+        # );
+        # 
+        # if (relevantFiles.length === 0) {
+          # core.setOutput('selection_status', 'ineligible');
+          # core.setOutput('selection_reason', 'No files under openspec/changes/ (non-archive) found in this PR');
+          # core.setOutput('selected_change', '');
+          # return;
+        # }
+        # 
+        # const addedFiles = relevantFiles.filter(f => f.status === 'added');
+        # if (addedFiles.length > 0) {
+          # core.setOutput('selection_status', 'ineligible');
+          # core.setOutput('selection_reason', `Added file(s) under openspec/changes/: ${addedFiles.map(f => f.filename).join(', ')}`);
+          # core.setOutput('selected_change', '');
+          # return;
+        # }
+        # 
+        # const nonModifiedFiles = relevantFiles.filter(f => f.status !== 'modified');
+        # if (nonModifiedFiles.length > 0) {
+          # core.setOutput('selection_status', 'ineligible');
+          # core.setOutput('selection_reason', `Non-modified file(s) under openspec/changes/: ${nonModifiedFiles.map(f => `${f.filename} (${f.status})`).join(', ')}`);
+          # core.setOutput('selected_change', '');
+          # return;
+        # }
+        # 
+        # const modifiedIds = new Set(
+          # relevantFiles
+            # .filter(f => f.status === 'modified')
+            # .map(f => f.filename.match(changePattern)[1])
+        # );
+        # 
+        # if (modifiedIds.size === 0) {
+          # core.setOutput('selection_status', 'ineligible');
+          # core.setOutput('selection_reason', 'No active change id with a modified file found');
+          # core.setOutput('selected_change', '');
+          # return;
+        # }
+        # 
+        # if (modifiedIds.size > 1) {
+          # core.setOutput('selection_status', 'ineligible');
+          # core.setOutput('selection_reason', `Multiple active change ids with modified files: ${[...modifiedIds].join(', ')}`);
+          # core.setOutput('selected_change', '');
+          # return;
+        # }
+        # 
+        # const selectedChange = [...modifiedIds][0];
+        # core.setOutput('selection_status', 'eligible');
+        # core.setOutput('selection_reason', `Selected change: ${selectedChange}`);
+        # core.setOutput('selected_change', selectedChange);
+        # core.info(`Selected active change: ${selectedChange}`);
+  # - id: gate
+    # if: steps.verify_label.outputs.label_verified != 'true' || steps.select_change.outputs.selection_status != 'eligible'
+    # name: Gate — skip agent when run is ineligible
+    # uses: actions/github-script@v8
+    # with:
+      # script: |
+        # const reason = '${{ steps.verify_label.outputs.label_verified }}' !== 'true'
+          # ? '${{ steps.verify_label.outputs.label_reason }}'
+          # : '${{ steps.select_change.outputs.selection_reason }}';
+        # core.info(`Run is ineligible — skipping agent: ${reason}`);
+        # core.setFailed(`Ineligible: ${reason}`);
 
 permissions: {}
 
@@ -42,7 +146,9 @@ run-name: "OpenSpec verify (label)"
 
 jobs:
   activation:
-    needs: pre_activation
+    needs:
+      - pre_activation
+      - pre_activation
     if: >
       needs.pre_activation.outputs.activated == 'true' && ((github.event_name != 'pull_request' || github.event.pull_request.head.repo.id == github.repository_id) &&
       (github.event_name != 'pull_request' || github.event.action != 'labeled' || github.event.label.name == 'verify-openspec'))
@@ -134,23 +240,24 @@ jobs:
           GH_AW_GITHUB_REPOSITORY: ${{ github.repository }}
           GH_AW_GITHUB_RUN_ID: ${{ github.run_id }}
           GH_AW_GITHUB_WORKSPACE: ${{ github.workspace }}
+          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_SELECTED_CHANGE: ${{ needs.pre_activation.outputs.selected_change }}
         # poutine:ignore untrusted_checkout_exec
         run: |
           bash ${RUNNER_TEMP}/gh-aw/actions/create_prompt_first.sh
           {
-          cat << 'GH_AW_PROMPT_c4c5abd33ee2acff_EOF'
+          cat << 'GH_AW_PROMPT_8709236f5650f9d6_EOF'
           <system>
-          GH_AW_PROMPT_c4c5abd33ee2acff_EOF
+          GH_AW_PROMPT_8709236f5650f9d6_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/xpia.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/temp_folder_prompt.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/markdown.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/safe_outputs_prompt.md"
-          cat << 'GH_AW_PROMPT_c4c5abd33ee2acff_EOF'
+          cat << 'GH_AW_PROMPT_8709236f5650f9d6_EOF'
           <safe-output-tools>
           Tools: create_pull_request_review_comment(max:25), submit_pull_request_review, push_to_pull_request_branch, missing_tool, missing_data, noop
-          GH_AW_PROMPT_c4c5abd33ee2acff_EOF
+          GH_AW_PROMPT_8709236f5650f9d6_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/safe_outputs_push_to_pr_branch.md"
-          cat << 'GH_AW_PROMPT_c4c5abd33ee2acff_EOF'
+          cat << 'GH_AW_PROMPT_8709236f5650f9d6_EOF'
           </safe-output-tools>
           <github-context>
           The following GitHub context information is available for this workflow:
@@ -183,19 +290,20 @@ jobs:
             - **Note**: If a branch you need is not in the list above and is not listed as an additional fetched ref, it has NOT been checked out. For private repositories you cannot fetch it without proper authentication. If the branch is required and not available, exit with an error and ask the user to add it to the `fetch:` option of the `checkout:` configuration (e.g., `fetch: ["refs/pulls/open/*"]` for all open PR refs, or `fetch: ["main", "feature/my-branch"]` for specific branches).
           </github-context>
           
-          GH_AW_PROMPT_c4c5abd33ee2acff_EOF
+          GH_AW_PROMPT_8709236f5650f9d6_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/github_mcp_tools_with_safeoutputs_prompt.md"
-          cat << 'GH_AW_PROMPT_c4c5abd33ee2acff_EOF'
+          cat << 'GH_AW_PROMPT_8709236f5650f9d6_EOF'
           </system>
-          GH_AW_PROMPT_c4c5abd33ee2acff_EOF
-          cat << 'GH_AW_PROMPT_c4c5abd33ee2acff_EOF'
+          GH_AW_PROMPT_8709236f5650f9d6_EOF
+          cat << 'GH_AW_PROMPT_8709236f5650f9d6_EOF'
           {{#runtime-import .github/workflows/openspec-verify-label.md}}
-          GH_AW_PROMPT_c4c5abd33ee2acff_EOF
+          GH_AW_PROMPT_8709236f5650f9d6_EOF
           } > "$GH_AW_PROMPT"
       - name: Interpolate variables and render templates
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         env:
           GH_AW_PROMPT: /tmp/gh-aw/aw-prompts/prompt.txt
+          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_SELECTED_CHANGE: ${{ needs.pre_activation.outputs.selected_change }}
         with:
           script: |
             const { setupGlobals } = require('${{ runner.temp }}/gh-aw/actions/setup_globals.cjs');
@@ -215,6 +323,7 @@ jobs:
           GH_AW_GITHUB_RUN_ID: ${{ github.run_id }}
           GH_AW_GITHUB_WORKSPACE: ${{ github.workspace }}
           GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ACTIVATED: ${{ needs.pre_activation.outputs.activated }}
+          GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_SELECTED_CHANGE: ${{ needs.pre_activation.outputs.selected_change }}
         with:
           script: |
             const { setupGlobals } = require('${{ runner.temp }}/gh-aw/actions/setup_globals.cjs');
@@ -234,7 +343,8 @@ jobs:
                 GH_AW_GITHUB_REPOSITORY: process.env.GH_AW_GITHUB_REPOSITORY,
                 GH_AW_GITHUB_RUN_ID: process.env.GH_AW_GITHUB_RUN_ID,
                 GH_AW_GITHUB_WORKSPACE: process.env.GH_AW_GITHUB_WORKSPACE,
-                GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ACTIVATED: process.env.GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ACTIVATED
+                GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ACTIVATED: process.env.GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_ACTIVATED,
+                GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_SELECTED_CHANGE: process.env.GH_AW_NEEDS_PRE_ACTIVATION_OUTPUTS_SELECTED_CHANGE
               }
             });
       - name: Validate prompt placeholders
@@ -293,27 +403,32 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0
+      - name: Setup Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: 'package-lock.json'
+          node-version-file: 'package.json'
+          package-manager-cache: false
       - name: Create gh-aw temp directory
         run: bash ${RUNNER_TEMP}/gh-aw/actions/create_gh_aw_tmp_dir.sh
       - name: Configure gh CLI for GitHub Enterprise
         run: bash ${RUNNER_TEMP}/gh-aw/actions/configure_gh_for_ghe.sh
         env:
           GH_TOKEN: ${{ github.token }}
-      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f
-        with:
-          cache: npm
-          cache-dependency-path: package-lock.json
-          node-version-file: package.json
-      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
+      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417
         with:
           cache: true
           cache-dependency-path: go.sum
           go-version-file: go.mod
-      - uses: hashicorp/setup-terraform@b0cc02d63867e0daaa034a47e2cdf5d525a863a1
+      - uses: hashicorp/setup-terraform@5e8dbf3c6d9deaf4193ca7a8fb23f2ac83bb6c85
         with:
           terraform_wrapper: false
       - name: Setup repository dependencies
         run: make setup
+      - name: Install Node dependencies
+        run: npm ci
 
       - name: Configure Git credentials
         env:
@@ -364,12 +479,12 @@ jobs:
           mkdir -p ${RUNNER_TEMP}/gh-aw/safeoutputs
           mkdir -p /tmp/gh-aw/safeoutputs
           mkdir -p /tmp/gh-aw/mcp-logs/safeoutputs
-          cat > ${RUNNER_TEMP}/gh-aw/safeoutputs/config.json << 'GH_AW_SAFE_OUTPUTS_CONFIG_5290ec409901fd40_EOF'
+          cat > ${RUNNER_TEMP}/gh-aw/safeoutputs/config.json << 'GH_AW_SAFE_OUTPUTS_CONFIG_b1eaffc573bd078f_EOF'
           {"create_pull_request_review_comment":{"max":25,"side":"RIGHT","target":"triggering"},"missing_data":{},"missing_tool":{},"noop":{"max":1,"report-as-issue":"false"},"push_to_pull_request_branch":{"if_no_changes":"warn","max":1,"max_patch_size":1024,"protected_files":["package.json","bun.lockb","bunfig.toml","deno.json","deno.jsonc","deno.lock","global.json","NuGet.Config","Directory.Packages.props","mix.exs","mix.lock","go.mod","go.sum","stack.yaml","stack.yaml.lock","pom.xml","build.gradle","build.gradle.kts","settings.gradle","settings.gradle.kts","gradle.properties","package-lock.json","yarn.lock","pnpm-lock.yaml","npm-shrinkwrap.json","requirements.txt","Pipfile","Pipfile.lock","pyproject.toml","setup.py","setup.cfg","Gemfile","Gemfile.lock","uv.lock","CODEOWNERS"],"protected_path_prefixes":[".github/",".agents/"],"target":"triggering"},"submit_pull_request_review":{"max":1,"target":"triggering"}}
-          GH_AW_SAFE_OUTPUTS_CONFIG_5290ec409901fd40_EOF
+          GH_AW_SAFE_OUTPUTS_CONFIG_b1eaffc573bd078f_EOF
       - name: Write Safe Outputs Tools
         run: |
-          cat > ${RUNNER_TEMP}/gh-aw/safeoutputs/tools_meta.json << 'GH_AW_SAFE_OUTPUTS_TOOLS_META_4c563a3ee7cf3eda_EOF'
+          cat > ${RUNNER_TEMP}/gh-aw/safeoutputs/tools_meta.json << 'GH_AW_SAFE_OUTPUTS_TOOLS_META_9da8488d061d5599_EOF'
           {
             "description_suffixes": {
               "create_pull_request_review_comment": " CONSTRAINTS: Maximum 25 review comment(s) can be created. Comments will be on the RIGHT side of the diff.",
@@ -379,8 +494,8 @@ jobs:
             "repo_params": {},
             "dynamic_tools": []
           }
-          GH_AW_SAFE_OUTPUTS_TOOLS_META_4c563a3ee7cf3eda_EOF
-          cat > ${RUNNER_TEMP}/gh-aw/safeoutputs/validation.json << 'GH_AW_SAFE_OUTPUTS_VALIDATION_68f50c85012f5a51_EOF'
+          GH_AW_SAFE_OUTPUTS_TOOLS_META_9da8488d061d5599_EOF
+          cat > ${RUNNER_TEMP}/gh-aw/safeoutputs/validation.json << 'GH_AW_SAFE_OUTPUTS_VALIDATION_b1f3b9db10fd7122_EOF'
           {
             "create_pull_request_review_comment": {
               "defaultMax": 1,
@@ -515,7 +630,7 @@ jobs:
               }
             }
           }
-          GH_AW_SAFE_OUTPUTS_VALIDATION_68f50c85012f5a51_EOF
+          GH_AW_SAFE_OUTPUTS_VALIDATION_b1f3b9db10fd7122_EOF
           node ${RUNNER_TEMP}/gh-aw/actions/generate_safe_outputs_tools.cjs
       - name: Generate Safe Outputs MCP Server Config
         id: safe-outputs-config
@@ -583,7 +698,7 @@ jobs:
           export MCP_GATEWAY_DOCKER_COMMAND='docker run -i --rm --network host -v /var/run/docker.sock:/var/run/docker.sock -e MCP_GATEWAY_PORT -e MCP_GATEWAY_DOMAIN -e MCP_GATEWAY_API_KEY -e MCP_GATEWAY_PAYLOAD_DIR -e MCP_GATEWAY_PAYLOAD_SIZE_THRESHOLD -e DEBUG -e MCP_GATEWAY_LOG_DIR -e GH_AW_MCP_LOG_DIR -e GH_AW_SAFE_OUTPUTS -e GH_AW_SAFE_OUTPUTS_CONFIG_PATH -e GH_AW_SAFE_OUTPUTS_TOOLS_PATH -e GH_AW_ASSETS_BRANCH -e GH_AW_ASSETS_MAX_SIZE_KB -e GH_AW_ASSETS_ALLOWED_EXTS -e DEFAULT_BRANCH -e GITHUB_MCP_SERVER_TOKEN -e GITHUB_MCP_GUARD_MIN_INTEGRITY -e GITHUB_MCP_GUARD_REPOS -e GITHUB_REPOSITORY -e GITHUB_SERVER_URL -e GITHUB_SHA -e GITHUB_WORKSPACE -e GITHUB_TOKEN -e GITHUB_RUN_ID -e GITHUB_RUN_NUMBER -e GITHUB_RUN_ATTEMPT -e GITHUB_JOB -e GITHUB_ACTION -e GITHUB_EVENT_NAME -e GITHUB_EVENT_PATH -e GITHUB_ACTOR -e GITHUB_ACTOR_ID -e GITHUB_TRIGGERING_ACTOR -e GITHUB_WORKFLOW -e GITHUB_WORKFLOW_REF -e GITHUB_WORKFLOW_SHA -e GITHUB_REF -e GITHUB_REF_NAME -e GITHUB_REF_TYPE -e GITHUB_HEAD_REF -e GITHUB_BASE_REF -e GH_AW_SAFE_OUTPUTS_PORT -e GH_AW_SAFE_OUTPUTS_API_KEY -v /tmp/gh-aw/mcp-payloads:/tmp/gh-aw/mcp-payloads:rw -v /opt:/opt:ro -v /tmp:/tmp:rw -v '"${GITHUB_WORKSPACE}"':'"${GITHUB_WORKSPACE}"':rw ghcr.io/github/gh-aw-mcpg:v0.2.6'
           
           mkdir -p /home/runner/.copilot
-          cat << GH_AW_MCP_CONFIG_bf15c5a07b7110b7_EOF | bash ${RUNNER_TEMP}/gh-aw/actions/start_mcp_gateway.sh
+          cat << GH_AW_MCP_CONFIG_79232677a9cf000c_EOF | bash ${RUNNER_TEMP}/gh-aw/actions/start_mcp_gateway.sh
           {
             "mcpServers": {
               "github": {
@@ -624,7 +739,7 @@ jobs:
               "payloadDir": "${MCP_GATEWAY_PAYLOAD_DIR}"
             }
           }
-          GH_AW_MCP_CONFIG_bf15c5a07b7110b7_EOF
+          GH_AW_MCP_CONFIG_79232677a9cf000c_EOF
       - name: Download activation artifact
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -1118,7 +1233,15 @@ jobs:
     runs-on: ubuntu-slim
     outputs:
       activated: ${{ steps.check_membership.outputs.is_team_member == 'true' }}
+      gate_result: ${{ steps.gate.outcome }}
+      label_reason: ${{ steps.verify_label.outputs.label_reason }}
+      label_verified: ${{ steps.verify_label.outputs.label_verified }}
       matched_command: ''
+      select_change_result: ${{ steps.select_change.outcome }}
+      selected_change: ${{ steps.select_change.outputs.selected_change }}
+      selection_reason: ${{ steps.select_change.outputs.selection_reason }}
+      selection_status: ${{ steps.select_change.outputs.selection_status }}
+      verify_label_result: ${{ steps.verify_label.outcome }}
     steps:
       - name: Setup Scripts
         uses: github/gh-aw-actions/setup@f22886a9607f5c27e79742a8bfc5faa34737138b # v0.64.2
@@ -1136,6 +1259,109 @@ jobs:
             setupGlobals(core, github, context, exec, io);
             const { main } = require('${{ runner.temp }}/gh-aw/actions/check_membership.cjs');
             await main();
+      - name: Verify triggering label
+        id: verify_label
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const label = context.payload.label?.name;
+            if (label !== 'verify-openspec') {
+              core.setOutput('label_verified', 'false');
+              core.setOutput('label_reason', `Unexpected label: ${label || '(none)'}`);
+              core.info(`Label check failed: expected verify-openspec, got ${label || '(none)'}`);
+            } else {
+              core.setOutput('label_verified', 'true');
+              core.setOutput('label_reason', 'Label verified: verify-openspec');
+              core.info('Label verified: verify-openspec');
+            }
+      - name: Select active change from PR files
+        id: select_change
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const prNumber = context.payload.pull_request?.number;
+            if (!prNumber) {
+              core.setOutput('selection_status', 'ineligible');
+              core.setOutput('selection_reason', 'No pull request number in event payload');
+              core.setOutput('selected_change', '');
+              return;
+            }
+
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+              per_page: 100,
+            });
+
+            const changePattern = /^openspec\/changes\/([^\/]+)\/.+$/;
+            const archivePattern = /^openspec\/changes\/archive\//;
+
+            const relevantFiles = files.filter(
+              f => changePattern.test(f.filename) && !archivePattern.test(f.filename)
+            );
+
+            if (relevantFiles.length === 0) {
+              core.setOutput('selection_status', 'ineligible');
+              core.setOutput('selection_reason', 'No files under openspec/changes/ (non-archive) found in this PR');
+              core.setOutput('selected_change', '');
+              return;
+            }
+
+            const addedFiles = relevantFiles.filter(f => f.status === 'added');
+            if (addedFiles.length > 0) {
+              core.setOutput('selection_status', 'ineligible');
+              core.setOutput('selection_reason', `Added file(s) under openspec/changes/: ${addedFiles.map(f => f.filename).join(', ')}`);
+              core.setOutput('selected_change', '');
+              return;
+            }
+
+            const nonModifiedFiles = relevantFiles.filter(f => f.status !== 'modified');
+            if (nonModifiedFiles.length > 0) {
+              core.setOutput('selection_status', 'ineligible');
+              core.setOutput('selection_reason', `Non-modified file(s) under openspec/changes/: ${nonModifiedFiles.map(f => `${f.filename} (${f.status})`).join(', ')}`);
+              core.setOutput('selected_change', '');
+              return;
+            }
+
+            const modifiedIds = new Set(
+              relevantFiles
+                .filter(f => f.status === 'modified')
+                .map(f => f.filename.match(changePattern)[1])
+            );
+
+            if (modifiedIds.size === 0) {
+              core.setOutput('selection_status', 'ineligible');
+              core.setOutput('selection_reason', 'No active change id with a modified file found');
+              core.setOutput('selected_change', '');
+              return;
+            }
+
+            if (modifiedIds.size > 1) {
+              core.setOutput('selection_status', 'ineligible');
+              core.setOutput('selection_reason', `Multiple active change ids with modified files: ${[...modifiedIds].join(', ')}`);
+              core.setOutput('selected_change', '');
+              return;
+            }
+
+            const selectedChange = [...modifiedIds][0];
+            core.setOutput('selection_status', 'eligible');
+            core.setOutput('selection_reason', `Selected change: ${selectedChange}`);
+            core.setOutput('selected_change', selectedChange);
+            core.info(`Selected active change: ${selectedChange}`);
+      - name: Gate — skip agent when run is ineligible
+        id: gate
+        if: steps.verify_label.outputs.label_verified != 'true' || steps.select_change.outputs.selection_status != 'eligible'
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          script: |
+            const reason = '${{ steps.verify_label.outputs.label_verified }}' !== 'true'
+              ? '${{ steps.verify_label.outputs.label_reason }}'
+              : '${{ steps.select_change.outputs.selection_reason }}';
+            core.info(`Run is ineligible — skipping agent: ${reason}`);
+            core.setFailed(`Ineligible: ${reason}`);
 
   safe_outputs:
     needs:
