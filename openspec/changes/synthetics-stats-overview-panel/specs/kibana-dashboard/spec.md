@@ -82,10 +82,10 @@ REQ-006 is extended to include:
 
 ### Requirement: Panels, sections, and `config_json` round-trip behavior (REQ-010)
 
-REQ-010 is updated to document that `config_json` write support is **not** extended to `synthetics_stats_overview`. The write-path dispatcher SHALL return an error diagnostic if `config_json` is set on a panel with `type = "synthetics_stats_overview"`. The error message SHALL explicitly name `synthetics_stats_overview` as an unsupported type for `config_json`.
+REQ-010 is updated to document that `config_json` write support is **not** extended to `synthetics_stats_overview`. The write-path dispatcher SHALL return an error diagnostic if `config_json` is set on a panel with `type = "synthetics_stats_overview"`. The error message SHALL indicate that `config_json` is unsupported for the configured panel type.
 
 #### Scenario: config_json rejected for synthetics_stats_overview panel type
 
 - GIVEN a panel with `type = "synthetics_stats_overview"` configured through `config_json`
 - WHEN the provider builds the API request on create or update
-- THEN it SHALL return an error diagnostic stating that `config_json` is not supported for `synthetics_stats_overview`
+- THEN it SHALL return an error diagnostic indicating that `config_json` is not supported for the configured panel type
