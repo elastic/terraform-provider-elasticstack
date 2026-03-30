@@ -43,16 +43,16 @@ import (
 )
 
 const (
-	dashboardValueAuto    = "auto"
-	dashboardValueAverage = "average"
-	pieChartTypeNumber    = "number"
-	pieChartTypePercent   = "percent"
-	operationTerms        = "terms"
-	panelTypeMarkdown            = "markdown"
-	panelTypeLens                = "lens"
-	panelTypeTimeSlider          = "time_slider_control"
-	panelTypeSloBurnRate         = "slo_burn_rate"
-	panelTypeOptionsListControl  = "options_list_control"
+	dashboardValueAuto          = "auto"
+	dashboardValueAverage       = "average"
+	pieChartTypeNumber          = "number"
+	pieChartTypePercent         = "percent"
+	operationTerms              = "terms"
+	panelTypeMarkdown           = "markdown"
+	panelTypeLens               = "lens"
+	panelTypeTimeSlider         = "time_slider_control"
+	panelTypeSloBurnRate        = "slo_burn_rate"
+	panelTypeOptionsListControl = "options_list_control"
 )
 
 var sloBurnRateDurationRegex = regexp.MustCompile(`^\d+[mhd]$`)

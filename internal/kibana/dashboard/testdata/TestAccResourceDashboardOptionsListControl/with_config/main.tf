@@ -38,8 +38,8 @@ resource "elasticstack_kibana_dashboard" "test" {
       search_technique = "prefix"
       single_select    = true
       display_settings = {
-        placeholder    = "Select status..."
-        hide_sort      = true
+        placeholder = "Select status..."
+        hide_sort   = true
       }
     }
   }]
