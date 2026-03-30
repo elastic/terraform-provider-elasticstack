@@ -45,10 +45,11 @@ type panelModel struct {
 	LegacyMetricConfig      *legacyMetricConfigModel                          `tfsdk:"legacy_metric_config"`
 	RegionMapConfig         *regionMapConfigModel                             `tfsdk:"region_map_config"`
 	HeatmapConfig           *heatmapConfigModel                               `tfsdk:"heatmap_config"`
-	WaffleConfig            *waffleConfigModel                                `tfsdk:"waffle_config"`
-	TimeSliderControlConfig *timeSliderControlConfigModel                     `tfsdk:"time_slider_control_config"`
-	SloBurnRateConfig       *sloBurnRateConfigModel                           `tfsdk:"slo_burn_rate_config"`
-	ConfigJSON              customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config_json"`
+	WaffleConfig             *waffleConfigModel                                `tfsdk:"waffle_config"`
+	TimeSliderControlConfig  *timeSliderControlConfigModel                     `tfsdk:"time_slider_control_config"`
+	SloBurnRateConfig        *sloBurnRateConfigModel                           `tfsdk:"slo_burn_rate_config"`
+	OptionsListControlConfig *optionsListControlConfigModel                    `tfsdk:"options_list_control_config"`
+	ConfigJSON               customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config_json"`
 }
 
 type panelGridModel struct {
@@ -206,7 +207,8 @@ func panelUsesConfigJSONOnly(pm *panelModel) bool {
 		pm.HeatmapConfig == nil &&
 		pm.WaffleConfig == nil &&
 		pm.TimeSliderControlConfig == nil &&
-		pm.SloBurnRateConfig == nil
+		pm.SloBurnRateConfig == nil &&
+		pm.OptionsListControlConfig == nil
 }
 
 func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelModel, panelItem kbapi.DashboardPanelItem) (panelModel, diag.Diagnostics) {
@@ -269,6 +271,17 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 		pm.ID = types.StringPointerValue(sbrPanel.Uid)
 		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
 		populateSloBurnRateFromAPI(&pm, tfPanel, sbrPanel.Config)
+	case panelTypeOptionsListControl:
+		olPanel, err := panelItem.AsKbnDashboardPanelOptionsListControl()
+		if err != nil {
+			return panelModel{}, diagutil.FrameworkDiagFromError(err)
+		}
+		setPanelGridFromAPI(&pm, olPanel.Grid.X, olPanel.Grid.Y, olPanel.Grid.W, olPanel.Grid.H)
+		pm.ID = types.StringPointerValue(olPanel.Uid)
+		if configBytes, err := json.Marshal(olPanel.Config); err == nil {
+			pm.ConfigJSON = customtypes.NewJSONWithDefaultsValue(string(configBytes), populatePanelConfigJSONDefaults)
+		}
+		populateOptionsListControlFromAPI(&pm, tfPanel, olPanel.Config)
 	case panelTypeLens:
 		lensPanel, err := panelItem.AsKbnDashboardPanelLens()
 		if err != nil {
@@ -464,6 +477,18 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 		buildSloBurnRateConfig(pm, &sbrPanel)
 		if err := panelItem.FromKbnDashboardPanelSloBurnRate(sbrPanel); err != nil {
 			diags.AddError("Failed to create SLO burn rate panel", err.Error())
+		}
+		return panelItem, diags
+	}
+
+	if pm.Type.ValueString() == panelTypeOptionsListControl || pm.OptionsListControlConfig != nil {
+		olPanel := kbapi.KbnDashboardPanelOptionsListControl{
+			Grid: grid,
+			Uid:  uid,
+		}
+		buildOptionsListControlConfig(pm, &olPanel)
+		if err := panelItem.FromKbnDashboardPanelOptionsListControl(olPanel); err != nil {
+			diags.AddError("Failed to create options list control panel", err.Error())
 		}
 		return panelItem, diags
 	}
