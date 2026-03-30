@@ -118,8 +118,11 @@ func buildRangeSliderControlConfig(pm panelModel, rsPanel *kbapi.KbnDashboardPan
 		rsPanel.Config.IgnoreValidations = cfg.IgnoreValidations.ValueBoolPointer()
 	}
 	if typeutils.IsKnown(cfg.Value) {
-		var elems []string
-		_ = cfg.Value.ElementsAs(context.Background(), &elems, false)
+		raw := cfg.Value.Elements()
+		elems := make([]string, len(raw))
+		for i, e := range raw {
+			elems[i] = e.(types.String).ValueString()
+		}
 		rsPanel.Config.Value = &elems
 	}
 	if typeutils.IsKnown(cfg.Step) {
