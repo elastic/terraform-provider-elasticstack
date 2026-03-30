@@ -48,6 +48,14 @@ func withSloDescription(d string) func(*kbapi.SloErrorBudgetEmbeddable) {
 	return func(c *kbapi.SloErrorBudgetEmbeddable) { c.Description = new(d) }
 }
 
+func withHideTitle(v bool) func(*kbapi.SloErrorBudgetEmbeddable) {
+	return func(c *kbapi.SloErrorBudgetEmbeddable) { c.HideTitle = new(v) }
+}
+
+func withHideBorder(v bool) func(*kbapi.SloErrorBudgetEmbeddable) {
+	return func(c *kbapi.SloErrorBudgetEmbeddable) { c.HideBorder = new(v) }
+}
+
 func withSloDrilldown(url, label string, encodeURL, openInNewTab *bool) func(*kbapi.SloErrorBudgetEmbeddable) {
 	return func(c *kbapi.SloErrorBudgetEmbeddable) {
 		d := struct {
@@ -153,8 +161,6 @@ func Test_buildSloErrorBudgetConfig_withDrilldowns(t *testing.T) {
 				{
 					URL:          types.StringValue("https://example.com"),
 					Label:        types.StringValue("Open in example"),
-					Trigger:      types.StringValue("on_open_panel_menu"),
-					Type:         types.StringValue("url_drilldown"),
 					EncodeURL:    types.BoolValue(true),
 					OpenInNewTab: types.BoolValue(false),
 				},
@@ -184,8 +190,6 @@ func Test_buildSloErrorBudgetConfig_drilldownsWithNullOptionalBools(t *testing.T
 				{
 					URL:          types.StringValue("https://example.com"),
 					Label:        types.StringValue("Go"),
-					Trigger:      types.StringValue("on_open_panel_menu"),
-					Type:         types.StringValue("url_drilldown"),
 					EncodeURL:    types.BoolNull(),
 					OpenInNewTab: types.BoolNull(),
 				},
@@ -265,11 +269,17 @@ func Test_populateSloErrorBudgetFromAPI_import_populatesAll(t *testing.T) {
 		withSloInstanceID("my-instance"),
 		withSloTitle("My Title"),
 		withSloDescription("My Desc"),
+		withHideTitle(true),
+		withHideBorder(false),
 	)
 	populateSloErrorBudgetFromAPI(pm, nil, apiCfg)
 	require.NotNil(t, pm.SloErrorBudgetConfig)
 	assert.Equal(t, "my-slo-id", pm.SloErrorBudgetConfig.SloID.ValueString())
 	assert.Equal(t, "my-instance", pm.SloErrorBudgetConfig.SloInstanceID.ValueString())
+	assert.Equal(t, "My Title", pm.SloErrorBudgetConfig.Title.ValueString())
+	assert.Equal(t, "My Desc", pm.SloErrorBudgetConfig.Description.ValueString())
+	assert.True(t, pm.SloErrorBudgetConfig.HideTitle.ValueBool())
+	assert.False(t, pm.SloErrorBudgetConfig.HideBorder.ValueBool())
 }
 
 func Test_populateSloErrorBudgetFromAPI_nilPriorBlock_preservesNil(t *testing.T) {
@@ -289,8 +299,6 @@ func Test_populateSloErrorBudgetFromAPI_drilldowns_roundTrip(t *testing.T) {
 				{
 					URL:          types.StringValue("https://example.com"),
 					Label:        types.StringValue("Go"),
-					Trigger:      types.StringValue("on_open_panel_menu"),
-					Type:         types.StringValue("url_drilldown"),
 					EncodeURL:    types.BoolNull(),
 					OpenInNewTab: types.BoolNull(),
 				},
@@ -304,8 +312,6 @@ func Test_populateSloErrorBudgetFromAPI_drilldowns_roundTrip(t *testing.T) {
 				{
 					URL:          types.StringValue("https://example.com"),
 					Label:        types.StringValue("Go"),
-					Trigger:      types.StringValue("on_open_panel_menu"),
-					Type:         types.StringValue("url_drilldown"),
 					EncodeURL:    types.BoolNull(), // omitted by practitioner
 					OpenInNewTab: types.BoolNull(), // omitted by practitioner
 				},
@@ -337,8 +343,6 @@ func Test_populateSloErrorBudgetFromAPI_drilldowns_falseValueWritten(t *testing.
 				{
 					URL:          types.StringValue("https://example.com"),
 					Label:        types.StringValue("Go"),
-					Trigger:      types.StringValue("on_open_panel_menu"),
-					Type:         types.StringValue("url_drilldown"),
 					EncodeURL:    types.BoolNull(),
 					OpenInNewTab: types.BoolNull(),
 				},
@@ -352,8 +356,6 @@ func Test_populateSloErrorBudgetFromAPI_drilldowns_falseValueWritten(t *testing.
 				{
 					URL:          types.StringValue("https://example.com"),
 					Label:        types.StringValue("Go"),
-					Trigger:      types.StringValue("on_open_panel_menu"),
-					Type:         types.StringValue("url_drilldown"),
 					EncodeURL:    types.BoolNull(),
 					OpenInNewTab: types.BoolNull(),
 				},
@@ -382,8 +384,6 @@ func Test_populateSloErrorBudgetFromAPI_drilldowns_knownEncodeURLUpdated(t *test
 				{
 					URL:          types.StringValue("https://example.com"),
 					Label:        types.StringValue("Go"),
-					Trigger:      types.StringValue("on_open_panel_menu"),
-					Type:         types.StringValue("url_drilldown"),
 					EncodeURL:    types.BoolValue(true),
 					OpenInNewTab: types.BoolValue(true),
 				},
@@ -397,8 +397,6 @@ func Test_populateSloErrorBudgetFromAPI_drilldowns_knownEncodeURLUpdated(t *test
 				{
 					URL:          types.StringValue("https://example.com"),
 					Label:        types.StringValue("Go"),
-					Trigger:      types.StringValue("on_open_panel_menu"),
-					Type:         types.StringValue("url_drilldown"),
 					EncodeURL:    types.BoolValue(true),
 					OpenInNewTab: types.BoolValue(true),
 				},

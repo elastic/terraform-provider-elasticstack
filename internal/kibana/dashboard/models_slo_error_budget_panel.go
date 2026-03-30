@@ -36,8 +36,6 @@ type sloErrorBudgetConfigModel struct {
 type sloErrorBudgetDrilldownModel struct {
 	URL          types.String `tfsdk:"url"`
 	Label        types.String `tfsdk:"label"`
-	Trigger      types.String `tfsdk:"trigger"`
-	Type         types.String `tfsdk:"type"`
 	EncodeURL    types.Bool   `tfsdk:"encode_url"`
 	OpenInNewTab types.Bool   `tfsdk:"open_in_new_tab"`
 }
@@ -80,8 +78,8 @@ func buildSloErrorBudgetConfig(pm panelModel, sebPanel *kbapi.KbnDashboardPanelS
 		for i, d := range cfg.Drilldowns {
 			drilldowns[i].Url = d.URL.ValueString()
 			drilldowns[i].Label = d.Label.ValueString()
-			drilldowns[i].Trigger = kbapi.SloErrorBudgetEmbeddableDrilldownsTrigger(d.Trigger.ValueString())
-			drilldowns[i].Type = kbapi.SloErrorBudgetEmbeddableDrilldownsType(d.Type.ValueString())
+			drilldowns[i].Trigger = kbapi.SloErrorBudgetEmbeddableDrilldownsTriggerOnOpenPanelMenu
+			drilldowns[i].Type = kbapi.SloErrorBudgetEmbeddableDrilldownsTypeUrlDrilldown
 			if typeutils.IsKnown(d.EncodeURL) {
 				drilldowns[i].EncodeUrl = d.EncodeURL.ValueBoolPointer()
 			}
@@ -133,17 +131,18 @@ func populateSloErrorBudgetFromAPI(pm *panelModel, tfPanel *panelModel, apiConfi
 		existing.SloInstanceID = types.StringValue(*apiConfig.SloInstanceId)
 	}
 
-	// title, description, hide_title, hide_border: only update if already known.
-	if typeutils.IsKnown(existing.Title) && apiConfig.Title != nil {
+	// Import has no prior intent, so populate all optional display fields. During normal
+	// refreshes, preserve omitted values unless the practitioner configured them.
+	if (tfPanel == nil || typeutils.IsKnown(existing.Title)) && apiConfig.Title != nil {
 		existing.Title = types.StringValue(*apiConfig.Title)
 	}
-	if typeutils.IsKnown(existing.Description) && apiConfig.Description != nil {
+	if (tfPanel == nil || typeutils.IsKnown(existing.Description)) && apiConfig.Description != nil {
 		existing.Description = types.StringValue(*apiConfig.Description)
 	}
-	if typeutils.IsKnown(existing.HideTitle) && apiConfig.HideTitle != nil {
+	if (tfPanel == nil || typeutils.IsKnown(existing.HideTitle)) && apiConfig.HideTitle != nil {
 		existing.HideTitle = types.BoolValue(*apiConfig.HideTitle)
 	}
-	if typeutils.IsKnown(existing.HideBorder) && apiConfig.HideBorder != nil {
+	if (tfPanel == nil || typeutils.IsKnown(existing.HideBorder)) && apiConfig.HideBorder != nil {
 		existing.HideBorder = types.BoolValue(*apiConfig.HideBorder)
 	}
 
@@ -158,10 +157,8 @@ func populateSloErrorBudgetFromAPI(pm *panelModel, tfPanel *panelModel, apiConfi
 		newDrilldowns := make([]sloErrorBudgetDrilldownModel, 0, len(*apiConfig.Drilldowns))
 		for i, d := range *apiConfig.Drilldowns {
 			dm := sloErrorBudgetDrilldownModel{
-				URL:     types.StringValue(d.Url),
-				Label:   types.StringValue(d.Label),
-				Trigger: types.StringValue(string(d.Trigger)),
-				Type:    types.StringValue(string(d.Type)),
+				URL:   types.StringValue(d.Url),
+				Label: types.StringValue(d.Label),
 			}
 
 			// encode_url: normalize API default (true) — only write if prior state had it set,

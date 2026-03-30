@@ -979,20 +979,6 @@ func getSloErrorBudgetSchema() map[string]schema.Attribute {
 						MarkdownDescription: "The label displayed for the drilldown.",
 						Required:            true,
 					},
-					"trigger": schema.StringAttribute{
-						MarkdownDescription: `The trigger for the drilldown. Must be "on_open_panel_menu".`,
-						Required:            true,
-						Validators: []validator.String{
-							stringvalidator.OneOf("on_open_panel_menu"),
-						},
-					},
-					"type": schema.StringAttribute{
-						MarkdownDescription: `The drilldown type. Must be "url_drilldown".`,
-						Required:            true,
-						Validators: []validator.String{
-							stringvalidator.OneOf("url_drilldown"),
-						},
-					},
 					"encode_url": schema.BoolAttribute{
 						MarkdownDescription: "When true, the URL is escaped using percent encoding. Defaults to `true` when omitted.",
 						Optional:            true,

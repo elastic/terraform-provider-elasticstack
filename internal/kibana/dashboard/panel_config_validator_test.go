@@ -303,6 +303,19 @@ func Test_panelConfigValidateDiags_sloErrorBudget(t *testing.T) {
 	})
 }
 
+func Test_getSloErrorBudgetSchema_drilldownsHardcodeAPIConstants(t *testing.T) {
+	drilldownsAttr, ok := getSloErrorBudgetSchema()["drilldowns"].(schema.ListNestedAttribute)
+	require.True(t, ok)
+
+	attrs := drilldownsAttr.NestedObject.Attributes
+	require.Contains(t, attrs, "url")
+	require.Contains(t, attrs, "label")
+	require.Contains(t, attrs, "encode_url")
+	require.Contains(t, attrs, "open_in_new_tab")
+	require.NotContains(t, attrs, "trigger")
+	require.NotContains(t, attrs, "type")
+}
+
 func Test_timeSliderControlPercentageValidators(t *testing.T) {
 	panelSchema := getPanelSchema()
 	timeSliderAttr, ok := panelSchema.Attributes["time_slider_control_config"].(schema.SingleNestedAttribute)

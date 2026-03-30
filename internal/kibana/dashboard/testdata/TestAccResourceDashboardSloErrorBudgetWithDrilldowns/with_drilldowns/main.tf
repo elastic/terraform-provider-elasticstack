@@ -26,10 +26,8 @@ resource "elasticstack_kibana_dashboard" "test" {
     slo_error_budget_config = {
       slo_id = "my-slo-id"
       drilldowns = [{
-        url     = "https://example.com/{{context.panel.title}}"
-        label   = "Open Example"
-        trigger = "on_open_panel_menu"
-        type    = "url_drilldown"
+        url   = "https://example.com/{{context.panel.title}}"
+        label = "Open Example"
         # encode_url and open_in_new_tab are intentionally omitted
         # to verify API default normalization (no drift)
       }]

@@ -556,12 +556,6 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 				diags.AddError("Failed to create lens panel", err.Error())
 			}
 			return panelItem, diags
-		case panelTypeSloErrorBudget:
-			diags.AddError(
-				"Unsupported panel type for config_json",
-				"The slo_error_budget panel type must be configured using `slo_error_budget_config`, not `config_json`.",
-			)
-			return kbapi.DashboardPanelItem{}, diags
 		default:
 			diags.AddError(
 				"Unsupported panel type for config_json",

@@ -119,8 +119,8 @@ func TestAccResourceDashboardSloErrorBudgetWithDrilldowns(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.slo_error_budget_config.drilldowns.#", "1"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.slo_error_budget_config.drilldowns.0.url", "https://example.com/{{context.panel.title}}"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.slo_error_budget_config.drilldowns.0.label", "Open Example"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.slo_error_budget_config.drilldowns.0.trigger", "on_open_panel_menu"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.slo_error_budget_config.drilldowns.0.type", "url_drilldown"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.slo_error_budget_config.drilldowns.0.trigger"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.slo_error_budget_config.drilldowns.0.type"),
 					// encode_url and open_in_new_tab are omitted in config; should not appear in state
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.slo_error_budget_config.drilldowns.0.encode_url"),
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.slo_error_budget_config.drilldowns.0.open_in_new_tab"),
