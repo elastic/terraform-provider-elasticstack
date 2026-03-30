@@ -22,9 +22,7 @@ on:
 permissions:
   contents: read
 ```
-
 ## Requirements
-
 ### Requirement: Workflow identity and triggers (REQ-001–REQ-006)
 
 The workflow name SHALL be `Build/Lint/Test`. The workflow SHALL run on `push` to any branch, excluding tag refs matching `v*` and excluding changes limited to `README.md` and `CHANGELOG.md`. The workflow SHALL run on `pull_request`, excluding changes limited to `README.md` and `CHANGELOG.md`. The workflow SHALL run on `pull_request` events of type `ready_for_review` (in addition to default types `opened`, `synchronize`, `reopened`). The workflow SHALL support manual execution via `workflow_dispatch`.
@@ -149,3 +147,4 @@ On `ready_for_review` `pull_request` events, only the `auto-approve` job SHALL e
 - GIVEN a `pull_request` with action `ready_for_review`
 - WHEN the workflow runs
 - THEN only auto-approve SHALL be eligible to run (per gate outputs)
+
