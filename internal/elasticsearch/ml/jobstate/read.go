@@ -43,7 +43,7 @@ func (r *mlJobStateResource) Read(ctx context.Context, req resource.ReadRequest,
 
 	// Get job stats to check current state
 	jobID := compID.ResourceID
-	currentState, diags := r.getJobState(ctx, jobID)
+	currentState, diags := r.getJobState(ctx, data, jobID)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

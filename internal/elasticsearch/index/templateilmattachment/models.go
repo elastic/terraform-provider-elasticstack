@@ -30,9 +30,10 @@ import (
 
 // tfModel represents the Terraform state model for this resource.
 type tfModel struct {
-	ID            types.String `tfsdk:"id"`
-	IndexTemplate types.String `tfsdk:"index_template"`
-	LifecycleName types.String `tfsdk:"lifecycle_name"`
+	ID                      types.String `tfsdk:"id"`
+	IndexTemplate           types.String `tfsdk:"index_template"`
+	LifecycleName           types.String `tfsdk:"lifecycle_name"`
+	ElasticsearchConnection types.List   `tfsdk:"elasticsearch_connection"`
 }
 
 // getComponentTemplateName returns the name of the @custom component template.
@@ -100,10 +101,16 @@ func extractILMSetting(template *models.Template) string {
 // It returns (true, nil) on success, (false, diags) on SDK error, and (false, nil) when the
 // template or ILM setting is missing. The caller decides how to handle "not found" (e.g. Read
 // removes from state, Create/Update report an error).
-func readILMAttachment(ctx context.Context, client *clients.APIClient, model *tfModel) (bool, diag.Diagnostics) {
+func readILMAttachment(ctx context.Context, model *tfModel, defaultClient *clients.APIClient) (bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	componentTemplateName := model.getComponentTemplateName()
+
+	client, fwDiags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, model.ElasticsearchConnection, defaultClient)
+	diags.Append(fwDiags...)
+	if diags.HasError() {
+		return false, diags
+	}
 
 	tpl, sdkDiags := elasticsearch.GetComponentTemplate(ctx, client, componentTemplateName, true)
 	if sdkDiags.HasError() {

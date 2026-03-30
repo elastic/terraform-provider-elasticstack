@@ -31,7 +31,7 @@ import (
 func TestAccResourceDashboardTreemap(t *testing.T) {
 	dashboardTitle := "Test Dashboard with Treemap " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
@@ -79,7 +79,7 @@ func TestAccResourceDashboardTreemap(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.treemap_config.sampling", "0.5"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.treemap_config.label_position", "hidden"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.treemap_config.filters.#", "1"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.treemap_config.filters.0.query", "host.os.keyword: \"linux\""),
+					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.treemap_config.filters.0.filter_json", regexp.MustCompile(`"field":"host.os.keyword"`)),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.treemap_config.legend.size", "small"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.treemap_config.legend.nested", "false"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.treemap_config.legend.visible", "show"),
@@ -123,6 +123,7 @@ func TestAccResourceDashboardTreemap(t *testing.T) {
 				ImportStateVerifyIgnore: []string{
 					"panels.0.treemap_config.metrics_json",
 					"panels.0.treemap_config.group_by_json",
+					"panels.0.treemap_config.dataset_json",
 					"panels.0.treemap_config.ignore_global_filters",
 					"panels.0.treemap_config.sampling",
 					"panels.0.treemap_config.label_position",

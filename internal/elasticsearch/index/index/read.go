@@ -33,13 +33,7 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 		return
 	}
 
-	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, stateModel.ElasticsearchConnection, r.client)
-	if diags.HasError() {
-		resp.Diagnostics.Append(diags...)
-		return
-	}
-
-	model, diags := readIndex(ctx, stateModel, client)
+	model, diags := readIndex(ctx, stateModel, r.client)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -53,7 +47,12 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
 }
 
-func readIndex(ctx context.Context, stateModel tfModel, client *clients.APIClient) (*tfModel, diag.Diagnostics) {
+func readIndex(ctx context.Context, stateModel tfModel, defaultClient *clients.APIClient) (*tfModel, diag.Diagnostics) {
+	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, stateModel.ElasticsearchConnection, defaultClient)
+	if diags.HasError() {
+		return nil, diags
+	}
+
 	id, diags := stateModel.GetID()
 	if diags.HasError() {
 		return nil, diags

@@ -569,6 +569,7 @@ var transformers = []TransformFunc{
 	fixGetSyntheticsMonitorsParams,
 	fixGetMaintenanceWindowFindParams,
 	fixGetStreamsAttachmentTypesParams,
+	fixGetWorkflowsExecutionsParams,
 	fixSecurityAPIPageSize,
 	fixSecurityExceptionListItems,
 	removeDuplicateOneOfRefs,
@@ -962,6 +963,12 @@ func fixGetStreamsAttachmentTypesParams(schema *Schema) {
 	schema.MustGetPath("/api/streams/{streamName}/attachments").MustGetEndpoint("get").Set("parameters.2.schema.anyOf.1.x-go-type", "[]GetStreamsStreamnameAttachmentsParamsAttachmentTypes0")
 }
 
+func fixGetWorkflowsExecutionsParams(schema *Schema) {
+	get := schema.MustGetPath("/api/workflows/workflow/{workflowId}/executions").MustGetEndpoint("get")
+	get.Set("parameters.1.schema.anyOf.1.x-go-type", "[]GetWorkflowsWorkflowWorkflowidExecutionsParamsStatuses0")
+	get.Set("parameters.2.schema.anyOf.1.x-go-type", "[]GetWorkflowsWorkflowWorkflowidExecutionsParamsExecutionTypes0")
+}
+
 func fixSecurityAPIPageSize(schema *Schema) {
 	apiPageSize := schema.Components.MustGetMap("schemas.Security_Endpoint_Management_API_ApiPageSize")
 	schema.Components.Set("schemas.Security_Endpoint_Management_API_ApiPageSize", apiPageSize.MustGetMap("allOf.0"))
@@ -982,7 +989,30 @@ func fixDashboardPanelItemRefs(schema *Schema) {
 	dashboardPath.Get.CreateRef(schema, "dashboard_panel_section", "responses.200.content.application/json.schema.properties.data.properties.panels.items.anyOf.1")
 	dashboardPath.Get.CreateRef(schema, "dashboard_panels", "responses.200.content.application/json.schema.properties.data.properties.panels")
 
+	schema.Components.Move("schemas.dashboard_panel_section.properties.panels.items.anyOf", "schemas.dashboard_panel_section.properties.panels.items.oneOf")
+	schema.Components.Set("schemas.dashboard_panel_section.properties.panels.items.discriminator", Map{"propertyName": "type"})
 	schema.Components.CreateRef(schema, "dashboard_panel_item", "schemas.dashboard_panel_section.properties.panels.items")
+
+	const panelTypePrefix = "kbn-dashboard-panel-"
+	panelOneOf := schema.Components.MustGetSlice("schemas.dashboard_panel_item.oneOf")
+	panelTypeMapping := Map{}
+	for _, entry := range panelOneOf {
+		entryMap, ok := entry.(Map)
+		if !ok {
+			continue
+		}
+		ref, ok := entryMap["$ref"].(string)
+		if !ok {
+			continue
+		}
+		schemaName := strings.TrimPrefix(ref, "#/components/schemas/")
+		typeKey := strings.TrimPrefix(schemaName, panelTypePrefix)
+		panelTypeMapping[typeKey] = ref
+	}
+	schema.Components.Set("schemas.dashboard_panel_item.discriminator", Map{
+		"propertyName": "type",
+		"mapping":      panelTypeMapping,
+	})
 }
 
 func fixSecurityExceptionListItems(schema *Schema) {
@@ -1109,12 +1139,6 @@ func transformFleetPaths(schema *Schema) {
 		schema.Components.CreateRef(schema, fmt.Sprintf("%s_logstash", name), fmt.Sprintf("schemas.%s_union.anyOf.2", name))
 		schema.Components.CreateRef(schema, kafkaComponent, fmt.Sprintf("schemas.%s_union.anyOf.3", name))
 
-		// Extract child structs
-		for _, typ := range []string{"elasticsearch", "remote_elasticsearch", "logstash", "kafka"} {
-			schema.Components.CreateRef(schema, fmt.Sprintf("%s_shipper", name), fmt.Sprintf("schemas.%s_%s.properties.shipper", name, typ))
-			schema.Components.CreateRef(schema, fmt.Sprintf("%s_ssl", name), fmt.Sprintf("schemas.%s_%s.properties.ssl", name, typ))
-		}
-
 		// Ideally just remove the "anyOf", however then we would need to make
 		// refs for each of the "oneOf" options. So turn them into an "any" instead.
 		// See: https://github.com/elastic/kibana/issues/197153
@@ -1131,25 +1155,18 @@ func transformFleetPaths(schema *Schema) {
 			  - type: number
 			  - not: {}
 		*/
+	}
 
-		// https://github.com/elastic/kibana/issues/197153
-		kafkaRequiredName := fmt.Sprintf("schemas.%s.required", kafkaComponent)
-		props := schema.Components.MustGetMap(fmt.Sprintf("schemas.%s.properties", kafkaComponent))
-		required := schema.Components.MustGetSlice(kafkaRequiredName)
-		for key, apiType := range map[string]string{"compression_level": "integer", "connection_type": "string", "password": "string", "username": "string"} {
-			props.Set(key, Map{
-				"type": apiType,
-			})
-			required = slices.DeleteFunc(required, func(item any) bool {
-				itemStr, ok := item.(string)
-				if !ok {
-					return false
-				}
-
-				return itemStr == key
-			})
-		}
-		schema.Components.Set(kafkaRequiredName, required)
+	for _, componentName := range []string{
+		"schemas.Kibana_HTTP_APIs_new_output_kafka",
+		"schemas.Kibana_HTTP_APIs_output_kafka",
+		"schemas.update_output_kafka",
+	} {
+		kafkaComponent := schema.Components.MustGetMap(componentName)
+		kafkaComponent.Delete("properties.compression_level.oneOf")
+		kafkaComponent.Delete("properties.connection_type.oneOf")
+		kafkaComponent.Delete("properties.password.oneOf")
+		kafkaComponent.Delete("properties.username.oneOf")
 	}
 
 	// Add the missing discriminator to the response union

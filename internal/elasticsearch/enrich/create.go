@@ -57,14 +57,14 @@ func (r *enrichPolicyResource) upsert(ctx context.Context, plan tfsdk.Plan, stat
 	}
 
 	policyName := data.Name.ValueString()
-	id, sdkDiags := r.client.ID(ctx, policyName)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	client, connDiags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, data.ElasticsearchConnection, r.client)
+	diags.Append(connDiags...)
 	if diags.HasError() {
 		return diags
 	}
 
-	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, data.ElasticsearchConnection, r.client)
-	diags.Append(diags...)
+	id, sdkDiags := client.ID(ctx, policyName)
+	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
 		return diags
 	}

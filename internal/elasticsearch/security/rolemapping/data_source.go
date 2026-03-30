@@ -115,7 +115,7 @@ func (d *roleMappingDataSource) Read(ctx context.Context, req datasource.ReadReq
 	data.ID = types.StringValue(id.String())
 
 	// Use the extracted read function
-	readData, readDiags := readRoleMapping(ctx, client, roleMappingName, data.ElasticsearchConnection)
+	readData, readDiags := readRoleMapping(ctx, data, roleMappingName, d.client)
 	resp.Diagnostics.Append(readDiags...)
 	if resp.Diagnostics.HasError() {
 		return

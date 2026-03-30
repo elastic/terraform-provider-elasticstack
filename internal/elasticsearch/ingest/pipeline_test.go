@@ -30,6 +30,7 @@ import (
 
 func TestAccResourceIngestPipeline(t *testing.T) {
 	pipelineName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	resourceName := "elasticstack_elasticsearch_ingest_pipeline.test_pipeline"
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -39,18 +40,33 @@ func TestAccResourceIngestPipeline(t *testing.T) {
 			{
 				Config: testAccResourceIngestPipelineCreate(pipelineName),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ingest_pipeline.test_pipeline", "name", pipelineName),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ingest_pipeline.test_pipeline", "description", "Test Pipeline"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ingest_pipeline.test_pipeline", "processors.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "name", pipelineName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "description", "Test Pipeline"),
+					resource.TestCheckResourceAttr(resourceName, "processors.#", "2"),
+					CheckResourceJSON(resourceName, "processors.0", `{"set":{"description":"My set processor description","field":"_meta","value":"indexed"}}`),
+					CheckResourceJSON(resourceName, "processors.1", `{"json":{"field":"data","target_field":"parsed_data"}}`),
+					resource.TestCheckResourceAttr(resourceName, "on_failure.#", "1"),
+					CheckResourceJSON(resourceName, "on_failure.0", `{"set":{"field":"_index","value":"failed-{{ _index }}"}}`),
+					CheckResourceJSON(resourceName, "metadata", `{"owner":"test"}`),
 				),
 			},
 			{
 				Config: testAccResourceIngestPipelineUpdate(pipelineName),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ingest_pipeline.test_pipeline", "name", pipelineName),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ingest_pipeline.test_pipeline", "description", "Test Pipeline"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ingest_pipeline.test_pipeline", "processors.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "name", pipelineName),
+					resource.TestCheckResourceAttr(resourceName, "description", "Updated Pipeline"),
+					resource.TestCheckResourceAttr(resourceName, "processors.#", "1"),
+					CheckResourceJSON(resourceName, "processors.0", `{"set":{"description":"Updated set processor","field":"_meta","value":"reindexed"}}`),
+					CheckResourceJSON(resourceName, "metadata", `{"owner":"updated"}`),
+					resource.TestCheckNoResourceAttr(resourceName, "on_failure.#"),
 				),
+			},
+			{
+				ResourceName:            resourceName,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"elasticsearch_connection"},
 			},
 		},
 	})
@@ -65,6 +81,7 @@ provider "elasticstack" {
 resource "elasticstack_elasticsearch_ingest_pipeline" "test_pipeline" {
   name        = "%s"
   description = "Test Pipeline"
+  metadata    = jsonencode({ owner = "test" })
 
   processors = [
     jsonencode({
@@ -82,6 +99,15 @@ resource "elasticstack_elasticsearch_ingest_pipeline" "test_pipeline" {
 EOF
     ,
   ]
+
+  on_failure = [
+    jsonencode({
+      set = {
+        field = "_index"
+        value = "failed-{{ _index }}"
+      }
+    })
+  ]
 }
 	`, name)
 }
@@ -94,14 +120,15 @@ provider "elasticstack" {
 
 resource "elasticstack_elasticsearch_ingest_pipeline" "test_pipeline" {
   name        = "%s"
-  description = "Test Pipeline"
+  description = "Updated Pipeline"
+  metadata    = jsonencode({ owner = "updated" })
 
   processors = [
     jsonencode({
       set = {
-        description = "My set processor description"
+        description = "Updated set processor"
         field       = "_meta"
-        value       = "indexed"
+        value       = "reindexed"
       }
     })
   ]

@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -34,6 +35,8 @@ type baseConfig struct {
 	UserAgent   string
 	Header      http.Header
 }
+
+const PreferConfiguredKibanaEndpointEnvVar = "TF_ELASTICSTACK_PREFER_CONFIGURED_KIBANA_ENDPOINT"
 
 func newBaseConfigFromSDK(d *schema.ResourceData, version string, esKey string) baseConfig {
 	userAgent := buildUserAgent(version)
@@ -126,6 +129,16 @@ func withEnvironmentOverride(currentValue, envOverrideKey string) string {
 	}
 
 	return currentValue
+}
+
+func withEnvironmentOverrideUnlessConfigured(currentValue, envOverrideKey, preferConfiguredEnvKey string) string {
+	if currentValue != "" {
+		if preferConfigured, err := strconv.ParseBool(os.Getenv(preferConfiguredEnvKey)); err == nil && preferConfigured {
+			return currentValue
+		}
+	}
+
+	return withEnvironmentOverride(currentValue, envOverrideKey)
 }
 
 func buildUserAgent(version string) string {

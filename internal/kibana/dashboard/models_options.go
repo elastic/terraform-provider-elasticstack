@@ -69,6 +69,12 @@ func (m *dashboardModel) mapOptionsFromAPI(options *optionsAPIModel) *optionsMod
 	if options == nil {
 		return nil
 	}
+	// Kibana snapshots can materialize dashboard option defaults even when the
+	// options block was omitted in Terraform config. Preserve a nil options block
+	// in that case to avoid "inconsistent result after apply".
+	if m.Options == nil && isDashboardOptionsDefaultSet(options) {
+		return nil
+	}
 
 	model := optionsModel{
 		HidePanelTitles: types.BoolPointerValue(options.HidePanelTitles),
@@ -100,4 +106,20 @@ func (m optionsModel) toAPI() *optionsAPIModel {
 	}
 
 	return &options
+}
+
+func isDashboardOptionsDefaultSet(options *optionsAPIModel) bool {
+	if options == nil {
+		return false
+	}
+
+	return boolPtrEquals(options.HidePanelTitles, false) &&
+		boolPtrEquals(options.UseMargins, true) &&
+		boolPtrEquals(options.SyncColors, false) &&
+		boolPtrEquals(options.SyncTooltips, false) &&
+		boolPtrEquals(options.SyncCursor, true)
+}
+
+func boolPtrEquals(value *bool, expected bool) bool {
+	return value != nil && *value == expected
 }

@@ -20,6 +20,7 @@ package datafeed
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -50,14 +51,20 @@ func (r *datafeedResource) create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	createDiags := elasticsearch.PutDatafeed(ctx, r.client, datafeedID, *createRequest)
+	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, plan.ElasticsearchConnection, r.client)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	createDiags := elasticsearch.PutDatafeed(ctx, client, datafeedID, *createRequest)
 	resp.Diagnostics.Append(createDiags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	// Read the created datafeed to get the full state.
-	compID, sdkDiags := r.client.ID(ctx, datafeedID)
+	compID, sdkDiags := client.ID(ctx, datafeedID)
 	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if resp.Diagnostics.HasError() {
 		return

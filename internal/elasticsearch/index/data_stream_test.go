@@ -44,6 +44,7 @@ func TestAccResourceDataStream(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_data_stream.test_ds", "id"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "name", dsName),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "metadata"),
 					// check some computed fields
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "indices.#", "1"),
 					resource.TestMatchResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "indices.0.index_name", dataStreamBackingIndexNameRegexp(dsName)),
@@ -65,6 +66,7 @@ func TestAccResourceDataStream(t *testing.T) {
 				ImportStateVerify: true,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "name", dsName),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "metadata"),
 					resource.TestMatchResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "indices.0.index_name", dataStreamBackingIndexNameRegexp(dsName)),
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_data_stream.test_ds", "indices.0.index_uuid"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "template", dsName),
@@ -81,6 +83,7 @@ func TestAccResourceDataStream(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "name", dsNameUpdated),
 					resource.TestMatchResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "id", regexp.MustCompile(fmt.Sprintf(".+/%s$", dsNameUpdated))),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "metadata"),
 					resource.TestMatchResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "indices.0.index_name", dataStreamBackingIndexNameRegexp(dsNameUpdated)),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "template", dsNameUpdated),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "ilm_policy", dsNameUpdated),
@@ -108,9 +111,17 @@ func TestAccResourceDataStreamWithMetadata(t *testing.T) {
 				Config: testAccResourceDataStreamWithMetadata(dsName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "name", dsName),
-					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_data_stream.test_ds", "metadata"),
-					resource.TestMatchResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "metadata", regexp.MustCompile(`"env":"test"`)),
-					resource.TestMatchResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "metadata", regexp.MustCompile(`"version":1`)),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "metadata", `{"env":"test","version":1}`),
+				),
+			},
+			{
+				Config:            testAccResourceDataStreamWithMetadata(dsName),
+				ResourceName:      "elasticstack_elasticsearch_data_stream.test_ds",
+				ImportState:       true,
+				ImportStateVerify: true,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "name", dsName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "metadata", `{"env":"test","version":1}`),
 				),
 			},
 		},

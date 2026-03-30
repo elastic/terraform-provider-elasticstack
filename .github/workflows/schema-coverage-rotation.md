@@ -7,18 +7,19 @@ on:
     - cron: daily
 engine: 
   id: copilot
-  model: "gpt-5.3-codex" 
+  model: "gpt-5.4" 
 permissions:
   contents: read
   issues: read
   pull-requests: read
   actions: read
 tools:
-  cache-memory:
-    - id: default
-      key: schema-coverage-rotation-memory
-      retention-days: 90
-  create-orphan: true
+  repo-memory:
+    - id: schema-coverage-rotation
+      file-glob: ["memory/schema-coverage-rotation/schema-coverage.json"]
+      create-orphan: true
+      max-file-size: 524288
+      max-patch-size: 102400
 safe-outputs:
   create-issue:
     title-prefix: "[schema-coverage] "
@@ -26,7 +27,7 @@ safe-outputs:
     max: 3
   assign-to-agent:
     name: copilot
-    model: "claude-sonnet-4.6" 
+    model: "gpt-5.4" 
     custom-agent: acceptance-test-improver
     allowed: [copilot]
     target: "*"
@@ -44,8 +45,8 @@ You are responsible for running schema-coverage analysis on up to 3 provider ent
 - Provider entity sources of truth:
   - `docs/resources/*.md` for resources
   - `docs/data-sources/*.md` for data sources
-- Bootstrap memory seed: `.github/aw/memory/schema-coverage-rotation-entities-last-analysed.json`
-- Persistent memory path: `/tmp/gh-aw/cache-memory/default/schema-coverage-rotation-entities-last-analysed.json`
+- Bootstrap memory seed: `.github/aw/memory/schema-coverage.json`
+- Persistent memory path: `/tmp/gh-aw/repo-memory/schema-coverage-rotation/memory/schema-coverage-rotation/schema-coverage.json`
 
 ## Memory format
 
@@ -75,8 +76,8 @@ Timestamp value rules:
    - Exit immediately.
    - Call `noop` with a short reason indicating the open-issue cap has been reached.
 3. Read `.agents/skills/schema-coverage/SKILL.md` and follow it strictly when evaluating coverage.
-4. Load `/tmp/gh-aw/cache-memory/default/schema-coverage-rotation-entities-last-analysed.json`.
-   - If it does not exist, initialize it from `.github/aw/memory/schema-coverage-rotation-entities-last-analysed.json`.
+4. Load `/tmp/gh-aw/repo-memory/schema-coverage-rotation/memory/schema-coverage-rotation/schema-coverage.json`.
+   - If it does not exist, initialize it from `.github/aw/memory/schema-coverage.json`.
 5. Build the current canonical entity list from docs only:
    - Resources from `docs/resources/*.md` (exclude non-entity pages such as `index.md` if present).
    - Data sources from `docs/data-sources/*.md`.
@@ -89,7 +90,7 @@ Timestamp value rules:
    - Perform schema coverage analysis using the skill rubric.
    - Determine whether there are actionable testing gaps.
    - Update the entity timestamp to the current UTC time after analysis, regardless of whether a gap exists.
-8. Persist the updated memory file to `/tmp/gh-aw/cache-memory/default/schema-coverage-rotation-entities-last-analysed.json`.
+8. Persist the updated memory file to `/tmp/gh-aw/repo-memory/schema-coverage-rotation/memory/schema-coverage-rotation/schema-coverage.json`.
 
 ## Issue creation rules
 
@@ -110,7 +111,7 @@ Do NOT include instructions in the issue body that override the acceptance-test-
 For each issue created, you MUST call `assign-to-agent` with:
 - `name: copilot`
 - `custom_agent: acceptance-test-improver`
-- the created issue number
+- the temporary ID of the created issue
 
 If an analyzed entity has no actionable gaps, do not create an issue for it.
 
