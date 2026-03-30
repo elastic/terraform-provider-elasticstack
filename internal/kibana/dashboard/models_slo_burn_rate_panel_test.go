@@ -324,12 +324,12 @@ func Test_populateSloBurnRateFromAPI_drilldowns_optionalBoolNullPreservation(t *
 
 	// API returns drilldown with encode_url and open_in_new_tab set to true
 	apiDrilldowns := &[]struct {
-		EncodeUrl    *bool                                        `json:"encode_url,omitempty"`
+		EncodeUrl    *bool                                        `json:"encode_url,omitempty"` //nolint:revive
 		Label        string                                       `json:"label"`
 		OpenInNewTab *bool                                        `json:"open_in_new_tab,omitempty"`
 		Trigger      kbapi.SloBurnRateEmbeddableDrilldownsTrigger `json:"trigger"`
 		Type         kbapi.SloBurnRateEmbeddableDrilldownsType    `json:"type"`
-		Url          string                                       `json:"url"`
+		Url          string                                       `json:"url"` //nolint:revive
 	}{
 		{
 			Url:          "https://example.com",
@@ -371,12 +371,12 @@ func Test_populateSloBurnRateFromAPI_drilldowns_optionalBoolsExplicit_roundTrip(
 	tfPanel := &panelModel{SloBurnRateConfig: existing}
 
 	apiDrilldowns := &[]struct {
-		EncodeUrl    *bool                                        `json:"encode_url,omitempty"`
+		EncodeUrl    *bool                                        `json:"encode_url,omitempty"` //nolint:revive
 		Label        string                                       `json:"label"`
 		OpenInNewTab *bool                                        `json:"open_in_new_tab,omitempty"`
 		Trigger      kbapi.SloBurnRateEmbeddableDrilldownsTrigger `json:"trigger"`
 		Type         kbapi.SloBurnRateEmbeddableDrilldownsType    `json:"type"`
-		Url          string                                       `json:"url"`
+		Url          string                                       `json:"url"` //nolint:revive
 	}{
 		{
 			Url:          "https://example.com",

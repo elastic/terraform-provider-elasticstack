@@ -25,24 +25,24 @@ import (
 
 // sloBurnRateConfigModel is the Terraform model for the slo_burn_rate_config block.
 type sloBurnRateConfigModel struct {
-	SloID          types.String             `tfsdk:"slo_id"`
-	Duration       types.String             `tfsdk:"duration"`
-	SloInstanceID  types.String             `tfsdk:"slo_instance_id"`
-	Title          types.String             `tfsdk:"title"`
-	Description    types.String             `tfsdk:"description"`
-	HideTitle      types.Bool               `tfsdk:"hide_title"`
-	HideBorder     types.Bool               `tfsdk:"hide_border"`
-	Drilldowns     []sloBurnRateDrilldownModel `tfsdk:"drilldowns"`
+	SloID         types.String                `tfsdk:"slo_id"`
+	Duration      types.String                `tfsdk:"duration"`
+	SloInstanceID types.String                `tfsdk:"slo_instance_id"`
+	Title         types.String                `tfsdk:"title"`
+	Description   types.String                `tfsdk:"description"`
+	HideTitle     types.Bool                  `tfsdk:"hide_title"`
+	HideBorder    types.Bool                  `tfsdk:"hide_border"`
+	Drilldowns    []sloBurnRateDrilldownModel `tfsdk:"drilldowns"`
 }
 
 // sloBurnRateDrilldownModel represents a single drilldown entry within slo_burn_rate_config.
 type sloBurnRateDrilldownModel struct {
-	URL           types.String `tfsdk:"url"`
-	Label         types.String `tfsdk:"label"`
-	Trigger       types.String `tfsdk:"trigger"`
-	Type          types.String `tfsdk:"type"`
-	EncodeURL     types.Bool   `tfsdk:"encode_url"`
-	OpenInNewTab  types.Bool   `tfsdk:"open_in_new_tab"`
+	URL          types.String `tfsdk:"url"`
+	Label        types.String `tfsdk:"label"`
+	Trigger      types.String `tfsdk:"trigger"`
+	Type         types.String `tfsdk:"type"`
+	EncodeURL    types.Bool   `tfsdk:"encode_url"`
+	OpenInNewTab types.Bool   `tfsdk:"open_in_new_tab"`
 }
 
 // buildSloBurnRateConfig writes the TF model fields into the API panel struct.
@@ -75,12 +75,12 @@ func buildSloBurnRateConfig(pm panelModel, panel *kbapi.KbnDashboardPanelSloBurn
 
 	if len(cfg.Drilldowns) > 0 {
 		drilldowns := make([]struct {
-			EncodeUrl    *bool                                  `json:"encode_url,omitempty"`
-			Label        string                                 `json:"label"`
-			OpenInNewTab *bool                                  `json:"open_in_new_tab,omitempty"`
+			EncodeUrl    *bool                                        `json:"encode_url,omitempty"` //nolint:revive
+			Label        string                                       `json:"label"`
+			OpenInNewTab *bool                                        `json:"open_in_new_tab,omitempty"`
 			Trigger      kbapi.SloBurnRateEmbeddableDrilldownsTrigger `json:"trigger"`
 			Type         kbapi.SloBurnRateEmbeddableDrilldownsType    `json:"type"`
-			Url          string                                 `json:"url"`
+			Url          string                                       `json:"url"` //nolint:revive
 		}, len(cfg.Drilldowns))
 
 		for i, d := range cfg.Drilldowns {
@@ -190,12 +190,12 @@ func populateSloBurnRateFromAPI(pm *panelModel, tfPanel *panelModel, apiConfig k
 // value was null, keep null even if the API returns a value.
 func readSloBurnRateDrilldownsFromAPI(
 	apiDrilldowns *[]struct {
-		EncodeUrl    *bool                                  `json:"encode_url,omitempty"`
-		Label        string                                 `json:"label"`
-		OpenInNewTab *bool                                  `json:"open_in_new_tab,omitempty"`
+		EncodeUrl    *bool                                        `json:"encode_url,omitempty"` //nolint:revive
+		Label        string                                       `json:"label"`
+		OpenInNewTab *bool                                        `json:"open_in_new_tab,omitempty"`
 		Trigger      kbapi.SloBurnRateEmbeddableDrilldownsTrigger `json:"trigger"`
 		Type         kbapi.SloBurnRateEmbeddableDrilldownsType    `json:"type"`
-		Url          string                                 `json:"url"`
+		Url          string                                       `json:"url"` //nolint:revive
 	},
 	priorDrilldowns []sloBurnRateDrilldownModel,
 ) []sloBurnRateDrilldownModel {
@@ -219,20 +219,22 @@ func readSloBurnRateDrilldownsFromAPI(
 		}
 
 		// encode_url: null-preserve if prior was null, otherwise populate from API.
-		if prior != nil && prior.EncodeURL.IsNull() {
+		switch {
+		case prior != nil && prior.EncodeURL.IsNull():
 			result[i].EncodeURL = types.BoolNull()
-		} else if d.EncodeUrl != nil {
+		case d.EncodeUrl != nil:
 			result[i].EncodeURL = types.BoolValue(*d.EncodeUrl)
-		} else {
+		default:
 			result[i].EncodeURL = types.BoolNull()
 		}
 
 		// open_in_new_tab: null-preserve if prior was null, otherwise populate from API.
-		if prior != nil && prior.OpenInNewTab.IsNull() {
+		switch {
+		case prior != nil && prior.OpenInNewTab.IsNull():
 			result[i].OpenInNewTab = types.BoolNull()
-		} else if d.OpenInNewTab != nil {
+		case d.OpenInNewTab != nil:
 			result[i].OpenInNewTab = types.BoolValue(*d.OpenInNewTab)
-		} else {
+		default:
 			result[i].OpenInNewTab = types.BoolNull()
 		}
 	}
