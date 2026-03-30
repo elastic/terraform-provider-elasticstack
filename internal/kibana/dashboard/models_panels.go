@@ -448,7 +448,7 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 			Uid:    uid,
 			Config: kbapi.KbnDashboardPanelRangeSliderControl_Config{},
 		}
-		buildRangeSliderControlConfig(context.Background(), pm, &rsPanel)
+		buildRangeSliderControlConfig(pm, &rsPanel)
 		if err := panelItem.FromKbnDashboardPanelRangeSliderControl(rsPanel); err != nil {
 			diags.AddError("Failed to create range slider control panel", err.Error())
 		}

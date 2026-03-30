@@ -100,7 +100,7 @@ func populateRangeSliderControlFromAPI(ctx context.Context, pm *panelModel, tfPa
 }
 
 // buildRangeSliderControlConfig writes the TF model fields into the API panel struct.
-func buildRangeSliderControlConfig(ctx context.Context, pm panelModel, rsPanel *kbapi.KbnDashboardPanelRangeSliderControl) {
+func buildRangeSliderControlConfig(pm panelModel, rsPanel *kbapi.KbnDashboardPanelRangeSliderControl) {
 	cfg := pm.RangeSliderControlConfig
 	if cfg == nil {
 		return
@@ -119,7 +119,7 @@ func buildRangeSliderControlConfig(ctx context.Context, pm panelModel, rsPanel *
 	}
 	if typeutils.IsKnown(cfg.Value) {
 		var elems []string
-		_ = cfg.Value.ElementsAs(ctx, &elems, false)
+		_ = cfg.Value.ElementsAs(context.Background(), &elems, false)
 		rsPanel.Config.Value = &elems
 	}
 	if typeutils.IsKnown(cfg.Step) {
