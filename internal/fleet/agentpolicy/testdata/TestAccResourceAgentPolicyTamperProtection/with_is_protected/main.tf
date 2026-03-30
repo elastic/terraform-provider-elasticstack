@@ -4,9 +4,9 @@ provider "elasticstack" {
 }
 
 resource "elasticstack_fleet_agent_policy" "test_policy" {
-  name             = var.policy_name
-  namespace        = "default"
-  description      = "Test Agent Policy with tamper protection"
+  name            = var.policy_name
+  namespace       = "default"
+  description     = "Test Agent Policy with tamper protection"
   monitor_logs    = true
   monitor_metrics = false
   skip_destroy    = false
