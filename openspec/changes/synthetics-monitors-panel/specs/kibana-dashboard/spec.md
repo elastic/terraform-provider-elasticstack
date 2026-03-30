@@ -32,7 +32,11 @@ Notes:
 
 ---
 
-## MODIFIED: Replacement fields and schema validation (REQ-006)
+## MODIFIED Requirements
+
+### Requirement: Replacement fields and schema validation (REQ-006)
+
+Schema validation SHALL enforce that `synthetics_monitors_config` is valid only for panels with `type = "synthetics_monitors"` and is mutually exclusive with all other panel configuration blocks and with `config_json`.
 
 The existing REQ-006 text is extended with the following additions:
 
@@ -53,7 +57,9 @@ The existing REQ-006 text is extended with the following additions:
 
 ---
 
-## MODIFIED: Panels and `config_json` round-trip behavior (REQ-010)
+### Requirement: Panels and `config_json` round-trip behavior (REQ-010)
+
+`config_json` SHALL NOT be supported for `synthetics_monitors` panels; the `synthetics_monitors` panel type SHALL be managed exclusively through the typed `synthetics_monitors_config` block.
 
 The existing REQ-010 text:
 
@@ -71,7 +77,7 @@ is updated to additionally state:
 
 ---
 
-## ADDED: Synthetics monitors panel behavior (REQ-034)
+## ADDED Requirements
 
 ### Requirement: Synthetics monitors panel behavior (REQ-034)
 
