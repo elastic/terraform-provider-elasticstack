@@ -24,13 +24,13 @@ import (
 )
 
 type sloErrorBudgetConfigModel struct {
-	SloID          types.String                        `tfsdk:"slo_id"`
-	SloInstanceID  types.String                        `tfsdk:"slo_instance_id"`
-	Title          types.String                        `tfsdk:"title"`
-	Description    types.String                        `tfsdk:"description"`
-	HideTitle      types.Bool                          `tfsdk:"hide_title"`
-	HideBorder     types.Bool                          `tfsdk:"hide_border"`
-	Drilldowns     []sloErrorBudgetDrilldownModel      `tfsdk:"drilldowns"`
+	SloID         types.String                   `tfsdk:"slo_id"`
+	SloInstanceID types.String                   `tfsdk:"slo_instance_id"`
+	Title         types.String                   `tfsdk:"title"`
+	Description   types.String                   `tfsdk:"description"`
+	HideTitle     types.Bool                     `tfsdk:"hide_title"`
+	HideBorder    types.Bool                     `tfsdk:"hide_border"`
+	Drilldowns    []sloErrorBudgetDrilldownModel `tfsdk:"drilldowns"`
 }
 
 type sloErrorBudgetDrilldownModel struct {
@@ -69,12 +69,12 @@ func buildSloErrorBudgetConfig(pm panelModel, sebPanel *kbapi.KbnDashboardPanelS
 
 	if len(cfg.Drilldowns) > 0 {
 		drilldowns := make([]struct {
-			EncodeUrl    *bool                                     `json:"encode_url,omitempty"`
-			Label        string                                    `json:"label"`
-			OpenInNewTab *bool                                     `json:"open_in_new_tab,omitempty"`
+			EncodeUrl    *bool                                           `json:"encode_url,omitempty"` //nolint:revive
+			Label        string                                          `json:"label"`
+			OpenInNewTab *bool                                           `json:"open_in_new_tab,omitempty"`
 			Trigger      kbapi.SloErrorBudgetEmbeddableDrilldownsTrigger `json:"trigger"`
 			Type         kbapi.SloErrorBudgetEmbeddableDrilldownsType    `json:"type"`
-			Url          string                                    `json:"url"`
+			Url          string                                          `json:"url"` //nolint:revive
 		}, len(cfg.Drilldowns))
 
 		for i, d := range cfg.Drilldowns {

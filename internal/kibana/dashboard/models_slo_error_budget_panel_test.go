@@ -28,14 +28,8 @@ import (
 
 // helpers
 
-//go:fix inline
-func ptrString(s string) *string { return new(s) }
-
-//go:fix inline
-func ptrBool(b bool) *bool { return new(b) }
-
-func makeSloErrorBudgetAPIConfig(sloID string, opts ...func(*kbapi.SloErrorBudgetEmbeddable)) kbapi.SloErrorBudgetEmbeddable {
-	cfg := kbapi.SloErrorBudgetEmbeddable{SloId: sloID}
+func makeSloErrorBudgetAPIConfig(opts ...func(*kbapi.SloErrorBudgetEmbeddable)) kbapi.SloErrorBudgetEmbeddable {
+	cfg := kbapi.SloErrorBudgetEmbeddable{SloId: "my-slo-id"}
 	for _, opt := range opts {
 		opt(&cfg)
 	}
@@ -57,12 +51,12 @@ func withSloDescription(d string) func(*kbapi.SloErrorBudgetEmbeddable) {
 func withSloDrilldown(url, label string, encodeURL, openInNewTab *bool) func(*kbapi.SloErrorBudgetEmbeddable) {
 	return func(c *kbapi.SloErrorBudgetEmbeddable) {
 		d := struct {
-			EncodeUrl    *bool                                           `json:"encode_url,omitempty"`
+			EncodeUrl    *bool                                           `json:"encode_url,omitempty"` //nolint:revive
 			Label        string                                          `json:"label"`
 			OpenInNewTab *bool                                           `json:"open_in_new_tab,omitempty"`
 			Trigger      kbapi.SloErrorBudgetEmbeddableDrilldownsTrigger `json:"trigger"`
 			Type         kbapi.SloErrorBudgetEmbeddableDrilldownsType    `json:"type"`
-			Url          string                                          `json:"url"`
+			Url          string                                          `json:"url"` //nolint:revive
 		}{
 			Url:          url,
 			Label:        label,
@@ -73,12 +67,12 @@ func withSloDrilldown(url, label string, encodeURL, openInNewTab *bool) func(*kb
 		}
 		if c.Drilldowns == nil {
 			c.Drilldowns = &[]struct {
-				EncodeUrl    *bool                                           `json:"encode_url,omitempty"`
+				EncodeUrl    *bool                                           `json:"encode_url,omitempty"` //nolint:revive
 				Label        string                                          `json:"label"`
 				OpenInNewTab *bool                                           `json:"open_in_new_tab,omitempty"`
 				Trigger      kbapi.SloErrorBudgetEmbeddableDrilldownsTrigger `json:"trigger"`
 				Type         kbapi.SloErrorBudgetEmbeddableDrilldownsType    `json:"type"`
-				Url          string                                          `json:"url"`
+				Url          string                                          `json:"url"` //nolint:revive
 			}{}
 		}
 		*c.Drilldowns = append(*c.Drilldowns, d)
@@ -219,7 +213,7 @@ func Test_populateSloErrorBudgetFromAPI_minimal(t *testing.T) {
 			SloID: types.StringValue(""),
 		},
 	}
-	apiCfg := makeSloErrorBudgetAPIConfig("my-slo-id")
+	apiCfg := makeSloErrorBudgetAPIConfig()
 	populateSloErrorBudgetFromAPI(pm, tfPanel, apiCfg)
 	require.NotNil(t, pm.SloErrorBudgetConfig)
 	assert.Equal(t, "my-slo-id", pm.SloErrorBudgetConfig.SloID.ValueString())
@@ -239,7 +233,7 @@ func Test_populateSloErrorBudgetFromAPI_sloInstanceID_nullPreservation(t *testin
 			SloInstanceID: types.StringNull(),
 		},
 	}
-	apiCfg := makeSloErrorBudgetAPIConfig("my-slo-id", withSloInstanceID("*"))
+	apiCfg := makeSloErrorBudgetAPIConfig(withSloInstanceID("*"))
 	populateSloErrorBudgetFromAPI(pm, tfPanel, apiCfg)
 	require.NotNil(t, pm.SloErrorBudgetConfig)
 	assert.True(t, pm.SloErrorBudgetConfig.SloInstanceID.IsNull(), "slo_instance_id should remain null")
@@ -259,7 +253,7 @@ func Test_populateSloErrorBudgetFromAPI_sloInstanceID_writtenWhenKnown(t *testin
 			SloInstanceID: types.StringValue("old-instance"),
 		},
 	}
-	apiCfg := makeSloErrorBudgetAPIConfig("my-slo-id", withSloInstanceID("new-instance"))
+	apiCfg := makeSloErrorBudgetAPIConfig(withSloInstanceID("new-instance"))
 	populateSloErrorBudgetFromAPI(pm, tfPanel, apiCfg)
 	assert.Equal(t, "new-instance", pm.SloErrorBudgetConfig.SloInstanceID.ValueString())
 }
@@ -267,7 +261,7 @@ func Test_populateSloErrorBudgetFromAPI_sloInstanceID_writtenWhenKnown(t *testin
 func Test_populateSloErrorBudgetFromAPI_import_populatesAll(t *testing.T) {
 	// tfPanel == nil means import. Should populate all API-returned fields.
 	pm := &panelModel{}
-	apiCfg := makeSloErrorBudgetAPIConfig("my-slo-id",
+	apiCfg := makeSloErrorBudgetAPIConfig(
 		withSloInstanceID("my-instance"),
 		withSloTitle("My Title"),
 		withSloDescription("My Desc"),
@@ -282,7 +276,7 @@ func Test_populateSloErrorBudgetFromAPI_nilPriorBlock_preservesNil(t *testing.T)
 	// Prior state had no config block (nil). Should not create one.
 	pm := &panelModel{}
 	tfPanel := &panelModel{} // SloErrorBudgetConfig is nil
-	apiCfg := makeSloErrorBudgetAPIConfig("my-slo-id")
+	apiCfg := makeSloErrorBudgetAPIConfig()
 	populateSloErrorBudgetFromAPI(pm, tfPanel, apiCfg)
 	assert.Nil(t, pm.SloErrorBudgetConfig)
 }
@@ -319,7 +313,7 @@ func Test_populateSloErrorBudgetFromAPI_drilldowns_roundTrip(t *testing.T) {
 		},
 	}
 	// Kibana returns default true for encode_url and open_in_new_tab
-	apiCfg := makeSloErrorBudgetAPIConfig("my-slo-id",
+	apiCfg := makeSloErrorBudgetAPIConfig(
 		withSloDrilldown("https://example.com", "Go", new(true), new(true)),
 	)
 	populateSloErrorBudgetFromAPI(pm, tfPanel, apiCfg)
@@ -367,7 +361,7 @@ func Test_populateSloErrorBudgetFromAPI_drilldowns_falseValueWritten(t *testing.
 		},
 	}
 	// API returns false for both (non-default)
-	apiCfg := makeSloErrorBudgetAPIConfig("my-slo-id",
+	apiCfg := makeSloErrorBudgetAPIConfig(
 		withSloDrilldown("https://example.com", "Go", new(false), new(false)),
 	)
 	populateSloErrorBudgetFromAPI(pm, tfPanel, apiCfg)
@@ -411,7 +405,7 @@ func Test_populateSloErrorBudgetFromAPI_drilldowns_knownEncodeURLUpdated(t *test
 			},
 		},
 	}
-	apiCfg := makeSloErrorBudgetAPIConfig("my-slo-id",
+	apiCfg := makeSloErrorBudgetAPIConfig(
 		withSloDrilldown("https://example.com", "Go", new(true), new(true)),
 	)
 	populateSloErrorBudgetFromAPI(pm, tfPanel, apiCfg)
