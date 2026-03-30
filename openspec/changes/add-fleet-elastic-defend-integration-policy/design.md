@@ -51,29 +51,157 @@ resource "elasticstack_fleet_elastic_defend_integration_policy" "example" {
   integration_version = <required, string>
   space_ids           = <optional+computed, set(string)>
 
-  preset = <optional, string> # maps to integration_config.value.endpointConfig.preset
+  preset = <optional, string> # maps to config.integration_config.value.endpointConfig.preset
 
   policy = <required, single nested attribute> {
-    windows = <optional, single nested attribute>
-    mac     = <optional, single nested attribute>
-    linux   = <optional, single nested attribute>
+    windows = <optional, single nested attribute> {
+      events = <optional, single nested attribute> {
+        # Windows-specific event collection flags
+        process             = <optional, bool>
+        network             = <optional, bool>
+        file                = <optional, bool>
+        dll_and_driver_load = <optional, bool>
+        dns                 = <optional, bool>
+        registry            = <optional, bool>
+        security            = <optional, bool>
+        authentication      = <optional, bool>
+      }
+      malware = <optional, single nested attribute> {
+        mode          = <optional, string>  # "off" | "detect" | "prevent"
+        blocklist     = <optional, bool>
+        on_write_scan = <optional, bool>
+        notify_user   = <optional, bool>
+      }
+      ransomware = <optional, single nested attribute> {
+        mode      = <optional, string>  # "off" | "detect" | "prevent"
+        supported = <optional, bool>
+      }
+      memory_protection = <optional, single nested attribute> {
+        mode      = <optional, string>  # "off" | "detect" | "prevent"
+        supported = <optional, bool>
+      }
+      behavior_protection = <optional, single nested attribute> {
+        mode               = <optional, string>  # "off" | "detect" | "prevent"
+        supported          = <optional, bool>
+        reputation_service = <optional, bool>
+      }
+      popup = <optional, single nested attribute> {
+        malware = <optional, single nested attribute> {
+          message = <optional, string>
+          enabled = <optional, bool>
+        }
+        ransomware = <optional, single nested attribute> {
+          message = <optional, string>
+          enabled = <optional, bool>
+        }
+        memory_protection = <optional, single nested attribute> {
+          message = <optional, string>
+          enabled = <optional, bool>
+        }
+        behavior_protection = <optional, single nested attribute> {
+          message = <optional, string>
+          enabled = <optional, bool>
+        }
+      }
+      logging = <optional, single nested attribute> {
+        file = <optional, string>  # "info" | "debug" | "warning" | "error" | "critical"
+      }
+      antivirus_registration = <optional, single nested attribute> {
+        enabled = <optional, bool>
+      }
+      attack_surface_reduction = <optional, single nested attribute> {
+        credential_hardening = <optional, single nested attribute> {
+          enabled = <optional, bool>
+        }
+      }
+    }
+    mac = <optional, single nested attribute> {
+      events = <optional, single nested attribute> {
+        # Mac-specific event collection flags
+        process = <optional, bool>
+        network = <optional, bool>
+        file    = <optional, bool>
+      }
+      malware = <optional, single nested attribute> {
+        mode          = <optional, string>  # "off" | "detect" | "prevent"
+        blocklist     = <optional, bool>
+        on_write_scan = <optional, bool>
+        notify_user   = <optional, bool>
+      }
+      memory_protection = <optional, single nested attribute> {
+        mode      = <optional, string>  # "off" | "detect" | "prevent"
+        supported = <optional, bool>
+      }
+      behavior_protection = <optional, single nested attribute> {
+        mode               = <optional, string>  # "off" | "detect" | "prevent"
+        supported          = <optional, bool>
+        reputation_service = <optional, bool>
+      }
+      popup = <optional, single nested attribute> {
+        malware = <optional, single nested attribute> {
+          message = <optional, string>
+          enabled = <optional, bool>
+        }
+        memory_protection = <optional, single nested attribute> {
+          message = <optional, string>
+          enabled = <optional, bool>
+        }
+        behavior_protection = <optional, single nested attribute> {
+          message = <optional, string>
+          enabled = <optional, bool>
+        }
+      }
+      logging = <optional, single nested attribute> {
+        file = <optional, string>  # "info" | "debug" | "warning" | "error" | "critical"
+      }
+    }
+    linux = <optional, single nested attribute> {
+      events = <optional, single nested attribute> {
+        # Linux-specific event collection flags
+        process      = <optional, bool>
+        network      = <optional, bool>
+        file         = <optional, bool>
+        session_data = <optional, bool>
+        tty_io       = <optional, bool>
+      }
+      malware = <optional, single nested attribute> {
+        mode      = <optional, string>  # "off" | "detect" | "prevent"
+        blocklist = <optional, bool>
+      }
+      memory_protection = <optional, single nested attribute> {
+        mode      = <optional, string>  # "off" | "detect" | "prevent"
+        supported = <optional, bool>
+      }
+      behavior_protection = <optional, single nested attribute> {
+        mode               = <optional, string>  # "off" | "detect" | "prevent"
+        supported          = <optional, bool>
+        reputation_service = <optional, bool>
+      }
+      popup = <optional, single nested attribute> {
+        malware = <optional, single nested attribute> {
+          message = <optional, string>
+          enabled = <optional, bool>
+        }
+        memory_protection = <optional, single nested attribute> {
+          message = <optional, string>
+          enabled = <optional, bool>
+        }
+        behavior_protection = <optional, single nested attribute> {
+          message = <optional, string>
+          enabled = <optional, bool>
+        }
+      }
+      logging = <optional, single nested attribute> {
+        file = <optional, string>  # "info" | "debug" | "warning" | "error" | "critical"
+      }
+    }
   }
 }
 ```
 
-Each operating-system nested attribute should be decomposed into typed nested attributes for the currently supported stable settings, for example:
+Each OS block (`windows`, `mac`, `linux`) uses a **distinct nested attribute schema** containing only the fields applicable to that operating system. This makes structurally invalid combinations (such as `policy.linux.ransomware` or `policy.mac.antivirus_registration`) impossible at plan time without requiring custom validation. Each OS block's schema is defined by the attributes documented above.
 
-- `events`
-- `malware`
-- `ransomware` (Windows only)
-- `memory_protection`
-- `behavior_protection`
-- `popup`
-- `logging`
-- `antivirus_registration` (Windows only)
-- `attack_surface_reduction` (Windows only)
-
-Leaf fields such as booleans, mode strings, notification enablement, and message text should be modeled as typed attributes rather than as raw JSON blobs. Event collection should include the OS-specific leaves exposed in the documented API examples, including Linux-specific flags such as `session_data` and `tty_io`.
+Leaf fields such as booleans, mode strings, notification enablement, and message text are modeled as typed attributes rather than as raw JSON blobs. Event collection includes the OS-specific leaves exposed in the documented API examples, with Linux carrying `session_data` and `tty_io` that do not appear in the Windows or Mac schemas.
 
 The public schema should not expose the typed package policy input itself. The resource owns that translation internally, including:
 

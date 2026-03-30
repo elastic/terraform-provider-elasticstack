@@ -1,4 +1,4 @@
- # Tasks: Add Fleet Elastic Defend Integration Policy
+# Tasks: Add Fleet Elastic Defend Integration Policy
 
 ## 1. Define the new capability
 

@@ -65,19 +65,39 @@ The resource SHALL model Defend-owned configuration through typed Terraform attr
 - a `policy` nested attribute
 - optional operating-system nested attributes under `policy` for `windows`, `mac`, and `linux`
 
-The operating-system nested attributes SHALL decompose currently modeled settings into typed nested attributes where appropriate, including:
+Each operating-system nested attribute (`windows`, `mac`, `linux`) SHALL use a **distinct** nested attribute schema containing only the fields applicable to that operating system. Structurally invalid combinations (such as `policy.linux.ransomware` or `policy.mac.antivirus_registration`) SHALL be impossible at plan time without requiring custom validation.
 
-- `events`
-- `malware`
-- `ransomware` for Windows
-- `memory_protection`
-- `behavior_protection`
-- `popup`
-- `logging`
-- `antivirus_registration` for Windows
-- `attack_surface_reduction` for Windows
+The `windows` nested attribute schema SHALL include:
 
-Boolean toggles, mode strings, message strings, and similar stable leaf settings SHALL be represented as typed Terraform attributes rather than as arbitrary JSON strings. The modeled event settings SHALL include the OS-specific event leaves exposed in the documented Defend policy examples, including Linux-specific flags such as `session_data` and `tty_io`.
+- `events` — single nested attribute with typed boolean fields: `process`, `network`, `file`, `dll_and_driver_load`, `dns`, `registry`, `security`, `authentication`
+- `malware` — single nested attribute with: `mode` (string), `blocklist` (bool), `on_write_scan` (bool), `notify_user` (bool)
+- `ransomware` — single nested attribute with: `mode` (string), `supported` (bool)
+- `memory_protection` — single nested attribute with: `mode` (string), `supported` (bool)
+- `behavior_protection` — single nested attribute with: `mode` (string), `supported` (bool), `reputation_service` (bool)
+- `popup` — single nested attribute containing one nested attribute per protection (`malware`, `ransomware`, `memory_protection`, `behavior_protection`), each with `message` (string) and `enabled` (bool)
+- `logging` — single nested attribute with: `file` (string)
+- `antivirus_registration` — single nested attribute with: `enabled` (bool)
+- `attack_surface_reduction` — single nested attribute containing a `credential_hardening` nested attribute with `enabled` (bool)
+
+The `mac` nested attribute schema SHALL include:
+
+- `events` — single nested attribute with typed boolean fields: `process`, `network`, `file`
+- `malware` — single nested attribute with: `mode` (string), `blocklist` (bool), `on_write_scan` (bool), `notify_user` (bool)
+- `memory_protection` — single nested attribute with: `mode` (string), `supported` (bool)
+- `behavior_protection` — single nested attribute with: `mode` (string), `supported` (bool), `reputation_service` (bool)
+- `popup` — single nested attribute containing one nested attribute per protection (`malware`, `memory_protection`, `behavior_protection`), each with `message` (string) and `enabled` (bool)
+- `logging` — single nested attribute with: `file` (string)
+
+The `linux` nested attribute schema SHALL include:
+
+- `events` — single nested attribute with typed boolean fields: `process`, `network`, `file`, `session_data`, `tty_io`
+- `malware` — single nested attribute with: `mode` (string), `blocklist` (bool)
+- `memory_protection` — single nested attribute with: `mode` (string), `supported` (bool)
+- `behavior_protection` — single nested attribute with: `mode` (string), `supported` (bool), `reputation_service` (bool)
+- `popup` — single nested attribute containing one nested attribute per protection (`malware`, `memory_protection`, `behavior_protection`), each with `message` (string) and `enabled` (bool)
+- `logging` — single nested attribute with: `file` (string)
+
+Boolean toggles, mode strings, message strings, and similar stable leaf settings SHALL be represented as typed Terraform attributes rather than as arbitrary JSON strings. The `mode` string attributes represent protection levels (for example `"off"`, `"detect"`, `"prevent"`) as defined by the Defend API. The `logging.file` string represents the log level (for example `"info"`, `"debug"`, `"warning"`, `"error"`, `"critical"`) as defined by the Defend API.
 
 #### Scenario: Policy settings are modeled as typed attributes
 
