@@ -20,7 +20,7 @@ REQ-006 SHALL be extended to include the following rules for the `slo_burn_rate_
 - WHEN Terraform validates the resource schema
 - THEN the configuration SHALL be rejected at plan time with a diagnostic indicating the required format
 
-### Requirement: Panels and `config_json` round-trip behavior (REQ-010)
+### Requirement: Panels, sections, and `config_json` round-trip behavior (REQ-010)
 
 REQ-010 SHALL be updated so that `slo_burn_rate` is explicitly excluded from `config_json` support. The existing REQ-010 text:
 
