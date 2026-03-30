@@ -155,6 +155,21 @@ if: >-
   needs.pre_activation.outputs.label_verified == 'true' &&
   needs.pre_activation.outputs.selection_status == 'eligible'
 steps:
+  - name: Setup Go
+    uses: actions/setup-go@v6
+    with:
+      go-version-file: go.mod
+      cache: false
+  - name: Capture GOROOT for AWF chroot mode
+    run: echo "GOROOT=$(go env GOROOT)" >> "$GITHUB_ENV"
+  - name: Setup Node.js
+    uses: actions/setup-node@v6
+    with:
+      node-version-file: package.json
+  - name: Setup Terraform CLI
+    uses: hashicorp/setup-terraform@v4
+    with:
+      terraform_wrapper: false
   - name: Setup repository dependencies
     run: make setup
 engine:
@@ -220,15 +235,6 @@ network:
   allowed: [defaults, node]
 checkout:
   fetch-depth: 0
-# runtimes configures the agent environment. go.version must be kept in sync with go.mod
-# because the gh-aw runtimes block does not support file-based version resolution.
-# Use `make sync-go-runtime` to update this value and regenerate the compiled workflow,
-# and `make check-go-runtime` (run by `make check-lint`) to detect drift.
-runtimes:
-  go:
-    version: "1.26.1"
-  node:
-    version: "24"
 safe-outputs:
   create-pull-request-review-comment:
     max: 25

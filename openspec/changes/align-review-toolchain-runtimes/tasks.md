@@ -1,14 +1,14 @@
 ## 1. Update workflow runtime requirements
 
-- [ ] 1.1 Update the `ci-aw-openspec-verification` canonical spec and the verify-label workflow source so the review environment is documented around explicit `runtimes.go.version: "1.26.1"` and `runtimes.node.version: "24"` only.
-- [ ] 1.2 Remove any review-bootstrap use of `actions/setup-go` from the workflow source and related generated workflow artifacts while preserving Terraform CLI setup behavior.
+- [x] 1.1 Update the `ci-aw-openspec-verification` canonical spec, delta spec, and verify-label workflow source so Go comes from `go.mod`, Node comes from `package.json`, and `runtimes.go` is not used.
+- [x] 1.2 Add the `Capture GOROOT for AWF chroot mode` step immediately after Go setup while preserving Terraform CLI setup behavior.
 
-## 2. Extend repository runtime validation
+## 2. Remove legacy runtime maintenance
 
-- [ ] 2.1 Update the make-based runtime validation so the workflow Go runtime is still checked against `go.mod`.
-- [ ] 2.2 Add Node runtime validation so the workflow `runtimes.node.version` is verified against the `package.json` `engines.node` range in the same check path used for Go runtime drift detection.
+- [x] 2.1 Remove the legacy verify-label runtime maintenance Makefile targets and any `check-lint` dependency on them now that the workflow reads repository version files directly.
+- [x] 2.2 Remove the supporting `makefile-workflows` requirement text for that legacy runtime maintenance path.
 
 ## 3. Regenerate and verify workflow artifacts
 
-- [ ] 3.1 Recompile the verify-label workflow outputs after the source changes so the committed generated artifacts match the source.
-- [ ] 3.2 Run the relevant repository checks for workflow/runtime alignment and OpenSpec validation, then resolve any drift or validation failures.
+- [x] 3.1 Recompile the verify-label workflow outputs after the source changes so the committed generated artifacts match the source.
+- [x] 3.2 Run the relevant repository checks for workflow generation and OpenSpec validation, then resolve any drift or validation failures.
