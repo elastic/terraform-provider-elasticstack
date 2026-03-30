@@ -39,8 +39,8 @@ func minimalEsqlAPIConfig() kbapi.KbnDashboardPanelEsqlControl_Config {
 // Test: on import (tfPanel == nil) populate all fields from API.
 func Test_populateEsqlControlFromAPI_import_populatesAllFields(t *testing.T) {
 	cfg := minimalEsqlAPIConfig()
-	cfg.Title = ptr("My Control")
-	cfg.SingleSelect = ptr(true)
+	cfg.Title = new("My Control")
+	cfg.SingleSelect = new(true)
 	opts := []string{"a", "b"}
 	cfg.AvailableOptions = &opts
 	cfg.DisplaySettings = &struct {
@@ -50,8 +50,8 @@ func Test_populateEsqlControlFromAPI_import_populatesAllFields(t *testing.T) {
 		HideSort      *bool   `json:"hide_sort,omitempty"`
 		Placeholder   *string `json:"placeholder,omitempty"`
 	}{
-		Placeholder:   ptr("Select..."),
-		HideActionBar: ptr(true),
+		Placeholder:   new("Select..."),
+		HideActionBar: new(true),
 	}
 
 	pm := &panelModel{}
@@ -118,8 +118,8 @@ func Test_populateEsqlControlFromAPI_nullOptionalFields_preserved(t *testing.T) 
 	}
 	tfPanel := &panelModel{EsqlControlConfig: pm.EsqlControlConfig}
 	cfg := minimalEsqlAPIConfig()
-	cfg.Title = ptr("API Title")
-	cfg.SingleSelect = ptr(true)
+	cfg.Title = new("API Title")
+	cfg.SingleSelect = new(true)
 	populateEsqlControlFromAPI(pm, tfPanel, cfg)
 
 	require.NotNil(t, pm.EsqlControlConfig)
@@ -148,7 +148,7 @@ func Test_populateEsqlControlFromAPI_nilDisplaySettings_preserved(t *testing.T) 
 		HideExists    *bool   `json:"hide_exists,omitempty"`
 		HideSort      *bool   `json:"hide_sort,omitempty"`
 		Placeholder   *string `json:"placeholder,omitempty"`
-	}{Placeholder: ptr("hint")}
+	}{Placeholder: new("hint")}
 	populateEsqlControlFromAPI(pm, tfPanel, cfg)
 	assert.Nil(t, pm.EsqlControlConfig.DisplaySettings)
 }
@@ -178,8 +178,8 @@ func Test_populateEsqlControlFromAPI_displaySettings_nullFieldsPreserved(t *test
 		HideSort      *bool   `json:"hide_sort,omitempty"`
 		Placeholder   *string `json:"placeholder,omitempty"`
 	}{
-		Placeholder:   ptr("hint"),
-		HideActionBar: ptr(false),
+		Placeholder:   new("hint"),
+		HideActionBar: new(false),
 	}
 	populateEsqlControlFromAPI(pm, tfPanel, cfg)
 
@@ -319,4 +319,3 @@ func Test_esqlControl_roundTrip(t *testing.T) {
 	assert.Equal(t, original.SingleSelect, out.EsqlControlConfig.SingleSelect)
 }
 
-func ptr[T any](v T) *T { return &v }
