@@ -9,11 +9,7 @@ variable "template_name" {
 resource "elasticstack_elasticsearch_index_template" "test" {
   name = var.template_name
 
-  index_patterns = [
-    "${var.template_name}-logs-*",
-    "${var.template_name}-metrics-*",
-    "${var.template_name}-traces-*",
-  ]
+  index_patterns = ["${var.template_name}-archive-*"]
 
   template {
     alias {
