@@ -2,6 +2,7 @@
 
 ### Changes
 
+- Add `elasticstack_fleet_agent_download_source` resource ([#2801](https://github.com/elastic/terraform-provider-elasticstack/pull/2081))
 - Add `elasticstack_fleet_output` data source. ([#1762](https://github.com/elastic/terraform-provider-elasticstack/pull/1762))
 - Fix `termField` validation for ESQL `.es-query` alert rules in `elasticstack_kibana_alerting_rule`. ([#1914](https://github.com/elastic/terraform-provider-elasticstack/pull/1914))
 - Fix perpetual diff in `elasticstack_elasticsearch_index_template` if `search_routing` or `index_routing` was unset but `routing` was set ([#1841](https://github.com/elastic/terraform-provider-elasticstack/pull/1841))
