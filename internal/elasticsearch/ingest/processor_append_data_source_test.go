@@ -32,8 +32,21 @@ func TestAccDataSourceIngestProcessorAppend(t *testing.T) {
 			{
 				Config: testAccDataSourceIngestProcessorAppend,
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_append.test", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_append.test", "field", "tags"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_append.test", "json", expectedJSONAppend),
+				),
+			},
+			{
+				Config: testAccDataSourceIngestProcessorAppendAllAttributes,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_append.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_append.test", "media_type", "application/json"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_append.test", "if", "ctx.error != null"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_append.test", "tag", "append-tag"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_append.test", "on_failure.#", "1"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_append.test", "on_failure.0", `{"set":{"field":"error.message","value":"append failed"}}`),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_append.test", "json", expectedJSONAppendAllAttributes),
 				),
 			},
 		},
@@ -50,6 +63,27 @@ const expectedJSONAppend = `{
 	}
 }`
 
+const expectedJSONAppendAllAttributes = `{
+	"append": {
+		"field": "tags",
+		"value": ["404"],
+		"allow_duplicates": false,
+		"media_type": "application/json",
+		"description": "Append a numeric-like error code to tags",
+		"if": "ctx.error != null",
+		"ignore_failure": true,
+		"on_failure": [
+			{
+				"set": {
+					"field": "error.message",
+					"value": "append failed"
+				}
+			}
+		],
+		"tag": "append-tag"
+	}
+}`
+
 const testAccDataSourceIngestProcessorAppend = `
 provider "elasticstack" {
   elasticsearch {}
@@ -60,5 +94,30 @@ data "elasticstack_elasticsearch_ingest_processor_append" "test" {
   field            = "tags"
   value            = ["production", "{{{app}}}", "{{{owner}}}"]
   allow_duplicates = true
+}
+`
+
+const testAccDataSourceIngestProcessorAppendAllAttributes = `
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+data "elasticstack_elasticsearch_ingest_processor_append" "test" {
+  description      = "Append a numeric-like error code to tags"
+  field            = "tags"
+  value            = ["404"]
+  allow_duplicates = false
+  media_type       = "application/json"
+  if               = "ctx.error != null"
+  ignore_failure   = true
+  tag              = "append-tag"
+  on_failure = [
+    jsonencode({
+      set = {
+        field = "error.message"
+        value = "append failed"
+      }
+    })
+  ]
 }
 `

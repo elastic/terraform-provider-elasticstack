@@ -20,6 +20,9 @@ resource "elasticstack_elasticsearch_security_role" "test" {
     }
     names      = ["sample"]
     privileges = ["create", "read", "write"]
+    query = jsonencode({
+      match_all = {}
+    })
   }
 
   applications {

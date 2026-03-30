@@ -18,6 +18,7 @@
 package dashboard_test
 
 import (
+	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -34,7 +35,7 @@ var minDashboardAPISupport = version.Must(version.NewVersion("9.4.0-SNAPSHOT"))
 func TestAccResourceEmptyDashboard(t *testing.T) {
 	dashboardTitle := "Test Dashboard " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
@@ -140,7 +141,7 @@ func TestAccResourceDashboardInSpace(t *testing.T) {
 	spaceName := "test-space-" + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 	dashboardTitle := "Test Dashboard in Space " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
@@ -176,7 +177,7 @@ func TestAccResourceDashboardInSpace(t *testing.T) {
 func TestAccResourceDashboardPanels(t *testing.T) {
 	dashboardTitle := "Test Dashboard with Panel " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
@@ -238,7 +239,7 @@ func TestAccResourceDashboardPanels(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "sections.0.id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.grid.y", "0"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.panels.#", "1"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.panels.0.type", "DASHBOARD_MARKDOWN"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.panels.0.type", "markdown"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.panels.0.grid.h", "10"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.panels.0.grid.w", "24"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "sections.0.panels.0.grid.x", "0"),
@@ -324,8 +325,9 @@ func TestAccResourceDashboardPanels(t *testing.T) {
 
 func TestAccResourceDashboardPanelsJSONConfig(t *testing.T) {
 	dashboardTitle := "Test Dashboard Panel with JSON Config " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+	dashboardID := "test-legacy-metric-json-" + sdkacctest.RandStringFromCharSet(6, sdkacctest.CharSetAlphaNum)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
@@ -344,6 +346,26 @@ func TestAccResourceDashboardPanelsJSONConfig(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.x", "0"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.y", "0"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.config_json"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("legacy_metric_json"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+					"dashboard_id":    config.StringVariable(dashboardID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "dashboard_id", dashboardID),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "title", dashboardTitle),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.type", "lens"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.config_json"),
+					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.config_json", regexp.MustCompile(`"type"\s*:\s*"legacy_metric"`)),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.legacy_metric_config.dataset_json"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.legacy_metric_config.metric_json"),
 				),
 			},
 		},

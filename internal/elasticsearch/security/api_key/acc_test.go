@@ -120,6 +120,67 @@ func TestAccResourceSecurityAPIKey(t *testing.T) {
 	})
 }
 
+func TestAccResourceSecurityAPIKeyRotation(t *testing.T) {
+	apiKeyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	var firstKeyID string
+	var firstRotationID string
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		CheckDestroy:             checkResourceSecurityAPIKeyDestroy,
+		ProtoV6ProviderFactories: acctest.Providers,
+		ExternalProviders: map[string]resource.ExternalProvider{
+			"time": {
+				Source:            "hashicorp/time",
+				VersionConstraint: "0.9.0",
+			},
+		},
+		Steps: []resource.TestStep{
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(apikey.MinVersion),
+				Config:   testAccResourceSecurityAPIKeyRotation(apiKeyName, "1"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("time_rotating.api_key_rotation", "id"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.test", "key_id"),
+					resource.TestCheckResourceAttrWith("time_rotating.api_key_rotation", "id", func(value string) error {
+						firstRotationID = value
+						if value == "" {
+							return fmt.Errorf("expected time_rotating id to be non-empty")
+						}
+						return nil
+					}),
+					resource.TestCheckResourceAttrWith("elasticstack_elasticsearch_security_api_key.test", "key_id", func(value string) error {
+						firstKeyID = value
+						if value == "" {
+							return fmt.Errorf("expected key_id to be non-empty")
+						}
+						return nil
+					}),
+				),
+			},
+			{
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(apikey.MinVersion),
+				Config:   testAccResourceSecurityAPIKeyRotation(apiKeyName, "2"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrWith("time_rotating.api_key_rotation", "id", func(value string) error {
+						if value == firstRotationID {
+							return fmt.Errorf("expected rotation id to change after updating epoch, got %q", value)
+						}
+						return nil
+					}),
+					resource.TestCheckResourceAttrWith("elasticstack_elasticsearch_security_api_key.test", "key_id", func(value string) error {
+						if value == firstKeyID {
+							return fmt.Errorf("expected api key key_id to change after rotation, got %q", value)
+						}
+						return nil
+					}),
+				),
+			},
+		},
+	})
+}
+
 func TestAccResourceSecurityAPIKeyWithRemoteIndices(t *testing.T) {
 	minSupportedRemoteIndicesVersion := version.Must(version.NewSemver("8.10.0"))
 
@@ -335,6 +396,52 @@ resource "elasticstack_elasticsearch_security_api_key" "test" {
 	expiration = "1d"
 }
 	`, apiKeyName)
+}
+
+func testAccResourceSecurityAPIKeyRotation(apiKeyName string, epoch string) string {
+	return fmt.Sprintf(`
+terraform {
+  required_providers {
+    time = {
+      source = "hashicorp/time"
+    }
+  }
+}
+
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+provider "time" {}
+
+resource "time_rotating" "api_key_rotation" {
+  rotation_minutes = 1
+  triggers = {
+    epoch = "%s"
+  }
+}
+
+resource "elasticstack_elasticsearch_security_api_key" "test" {
+  name = "%s-${time_rotating.api_key_rotation.id}"
+
+  lifecycle {
+    create_before_destroy = true
+  }
+
+  role_descriptors = jsonencode({
+    rotate-test = {
+      cluster = ["monitor"]
+      indices = [{
+        names = ["logs-*"]
+        privileges = ["read"]
+        allow_restricted_indices = false
+      }]
+    }
+  })
+
+  expiration = "1d"
+}
+	`, epoch, apiKeyName)
 }
 
 func testAccResourceSecurityAPIKeyUpdate(apiKeyName string) string {

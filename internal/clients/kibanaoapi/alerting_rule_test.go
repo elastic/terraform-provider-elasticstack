@@ -99,6 +99,11 @@ func Test_convertResponseToModel(t *testing.T) {
 				"alert_delay": map[string]any{
 					"active": float64(4),
 				},
+				"flapping": map[string]any{
+					"look_back_window":        float64(10),
+					"status_change_threshold": float64(2),
+					"enabled":                 true,
+				},
 				"actions": []any{
 					map[string]any{
 						"group":  "group-1",
@@ -192,6 +197,11 @@ func Test_convertResponseToModel(t *testing.T) {
 					},
 				},
 				AlertDelay: new(float32(4)),
+				Flapping: &models.AlertingRuleFlapping{
+					LookBackWindow:        10,
+					StatusChangeThreshold: 2,
+					Enabled:               new(true),
+				},
 			},
 		},
 	}
@@ -218,6 +228,7 @@ func Test_convertResponseToModel(t *testing.T) {
 				require.Equal(t, tt.expectedModel.Throttle, model.Throttle)
 				require.Equal(t, tt.expectedModel.ScheduledTaskID, model.ScheduledTaskID)
 				require.Equal(t, tt.expectedModel.AlertDelay, model.AlertDelay)
+				require.Equal(t, tt.expectedModel.Flapping, model.Flapping)
 
 				// Check execution status
 				if tt.expectedModel.ExecutionStatus.LastExecutionDate != nil {

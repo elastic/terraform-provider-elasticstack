@@ -20,6 +20,7 @@ package alias
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -33,6 +34,11 @@ func (r *aliasResource) Delete(ctx context.Context, req resource.DeleteRequest, 
 	}
 
 	aliasName := stateModel.Name.ValueString()
+	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, stateModel.ElasticsearchConnection, r.client)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	// Get current configuration from state
 	currentConfigs, diags := stateModel.toAliasConfigs(ctx)
@@ -53,6 +59,6 @@ func (r *aliasResource) Delete(ctx context.Context, req resource.DeleteRequest, 
 
 	// Remove the alias from all indices
 	if len(actions) > 0 {
-		resp.Diagnostics.Append(elasticsearch.UpdateAliasesAtomic(ctx, r.client, actions)...)
+		resp.Diagnostics.Append(elasticsearch.UpdateAliasesAtomic(ctx, client, actions)...)
 	}
 }

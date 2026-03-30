@@ -21,6 +21,7 @@ resource "elasticstack_elasticsearch_index" "test_settings" {
   number_of_routing_shards             = 2
   codec                                = "best_compression"
   routing_partition_size               = 1
+  load_fixed_bitset_filters_eagerly    = true
   shard_check_on_startup               = "false"
   sort_field                           = ["sort_key"]
   sort_order                           = ["asc"]

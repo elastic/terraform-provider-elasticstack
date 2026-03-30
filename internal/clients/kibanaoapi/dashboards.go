@@ -60,7 +60,7 @@ func addAPIVersionQueryParamRequestEditor() func(ctx context.Context, req *http.
 // GetDashboard reads a specific dashboard from the API.
 func GetDashboard(ctx context.Context, client *Client, spaceID string, dashboardID string) (*kbapi.GetDashboardsIdResponse, diag.Diagnostics) {
 	resp, err := client.API.GetDashboardsIdWithResponse(
-		ctx, dashboardID, &kbapi.GetDashboardsIdParams{},
+		ctx, dashboardID,
 		spaceAwarePathRequestEditor(spaceID),
 		addAPIVersionQueryParamRequestEditor(),
 	)
@@ -81,7 +81,7 @@ func GetDashboard(ctx context.Context, client *Client, spaceID string, dashboard
 // CreateDashboard creates a new dashboard.
 func CreateDashboard(ctx context.Context, client *Client, spaceID string, dashboardID string, req kbapi.PostDashboardsIdJSONRequestBody) (*kbapi.PostDashboardsIdResponse, diag.Diagnostics) {
 	resp, err := client.API.PostDashboardsIdWithResponse(
-		ctx, dashboardID, &kbapi.PostDashboardsIdParams{},
+		ctx, dashboardID,
 		req,
 		spaceAwarePathRequestEditor(spaceID),
 		addAPIVersionQueryParamRequestEditor(),
@@ -91,7 +91,7 @@ func CreateDashboard(ctx context.Context, client *Client, spaceID string, dashbo
 	}
 
 	switch resp.StatusCode() {
-	case http.StatusOK:
+	case http.StatusCreated:
 		return resp, nil
 	default:
 		return nil, reportUnknownError(resp.StatusCode(), resp.Body)

@@ -20,6 +20,7 @@ package alias
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -40,9 +41,14 @@ func (r *aliasResource) Create(ctx context.Context, req resource.CreateRequest, 
 	}
 
 	aliasName := planModel.Name.ValueString()
+	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, planModel.ElasticsearchConnection, r.client)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	// Set the ID using client.ID
-	id, sdkDiags := r.client.ID(ctx, aliasName)
+	id, sdkDiags := client.ID(ctx, aliasName)
 	if sdkDiags.HasError() {
 		resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 		return
@@ -74,13 +80,19 @@ func (r *aliasResource) Create(ctx context.Context, req resource.CreateRequest, 
 	}
 
 	// Create the alias atomically
-	resp.Diagnostics.Append(elasticsearch.UpdateAliasesAtomic(ctx, r.client, actions)...)
+	resp.Diagnostics.Append(elasticsearch.UpdateAliasesAtomic(ctx, client, actions)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	// Read back the alias to ensure state consistency, updating the current model
-	diags = readAliasIntoModel(ctx, r.client, aliasName, &planModel)
+	indices, diags := elasticsearch.GetAlias(ctx, client, aliasName)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	diags = readAliasIntoModel(ctx, aliasName, indices, &planModel)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

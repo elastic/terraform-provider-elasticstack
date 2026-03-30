@@ -54,6 +54,10 @@ resource "elasticstack_kibana_dashboard" "test" {
             field             = "@timestamp",
             sort_by           = "@timestamp",
             show_array_values = false,
+            label_position    = "before",
+            alignments = {
+              value = "right"
+            }
             filter = {
               query    = "\"@timestamp\": *"
               language = "kuery"

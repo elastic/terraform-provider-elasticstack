@@ -152,8 +152,8 @@ Example phrases:
 
 ---
 
-## File layout for requirements docs
+## File layout for OpenSpec specs
 
-- Path: `dev-docs/requirements/<domain>/<name>.md`.
-- Match existing layout: e.g. `dev-docs/requirements/elasticsearch/security/role.md`, `dev-docs/requirements/kibana/slo/slo.md`.
-- One document per Terraform resource or data source (not per Go package if one package serves multiple entities).
+- Path: `openspec/specs/<capability>/spec.md` (e.g. `openspec/specs/elasticsearch-security-role/spec.md`).
+- Capability id: stable slug such as `<backend>-<area>-<resource>`; see `dev-docs/high-level/openspec-requirements.md`.
+- One spec directory per Terraform resource or data source (not per Go package if one package serves multiple entities).

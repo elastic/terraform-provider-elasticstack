@@ -50,6 +50,7 @@ type alertingRuleModel struct {
 	LastExecutionStatus types.String         `tfsdk:"last_execution_status"`
 	LastExecutionDate   types.String         `tfsdk:"last_execution_date"`
 	AlertDelay          types.Int64          `tfsdk:"alert_delay"`
+	Flapping            types.Object         `tfsdk:"flapping"`
 	Actions             types.List           `tfsdk:"actions"`
 }
 
@@ -81,6 +82,13 @@ type timeframeModel struct {
 	Timezone   types.String `tfsdk:"timezone"`
 	HoursStart types.String `tfsdk:"hours_start"`
 	HoursEnd   types.String `tfsdk:"hours_end"`
+}
+
+// flappingModel is the Terraform model for rule-level flapping detection.
+type flappingModel struct {
+	Enabled               types.Bool  `tfsdk:"enabled"`
+	LookBackWindow        types.Int64 `tfsdk:"look_back_window"`
+	StatusChangeThreshold types.Int64 `tfsdk:"status_change_threshold"`
 }
 
 // populateFromAPI populates the model from the API response.
@@ -169,6 +177,24 @@ func (m *alertingRuleModel) populateFromAPI(ctx context.Context, rule *models.Al
 		m.AlertDelay = types.Int64Value(int64(*rule.AlertDelay))
 	} else if m.AlertDelay.IsUnknown() {
 		m.AlertDelay = types.Int64Null()
+	}
+
+	// Flapping — same partial-response pattern as alert_delay / scheduled_task_id
+	if rule.Flapping != nil {
+		fm := flappingModel{
+			LookBackWindow:        types.Int64Value(rule.Flapping.LookBackWindow),
+			StatusChangeThreshold: types.Int64Value(rule.Flapping.StatusChangeThreshold),
+		}
+		if rule.Flapping.Enabled != nil {
+			fm.Enabled = types.BoolValue(*rule.Flapping.Enabled)
+		} else {
+			fm.Enabled = types.BoolNull()
+		}
+		flObj, d := types.ObjectValueFrom(ctx, getFlappingAttrTypes(), fm)
+		diags.Append(d...)
+		m.Flapping = flObj
+	} else if m.Flapping.IsUnknown() {
+		m.Flapping = types.ObjectNull(getFlappingAttrTypes())
 	}
 
 	// Actions
@@ -295,9 +321,11 @@ func removeInjectedDefaultsRecursive(api any, prior any) any {
 
 // Version thresholds for feature support
 var (
-	frequencyMinSupportedVersion    = version.Must(version.NewVersion("8.6.0"))
-	alertsFilterMinSupportedVersion = version.Must(version.NewVersion("8.9.0"))
-	alertDelayMinSupportedVersion   = version.Must(version.NewVersion("8.13.0"))
+	frequencyMinSupportedVersion       = version.Must(version.NewVersion("8.6.0"))
+	alertsFilterMinSupportedVersion    = version.Must(version.NewVersion("8.9.0"))
+	alertDelayMinSupportedVersion      = version.Must(version.NewVersion("8.13.0"))
+	flappingMinSupportedVersion        = version.Must(version.NewVersion("8.16.0"))
+	flappingEnabledMinSupportedVersion = version.Must(version.NewVersion("9.3.0"))
 )
 
 // toAPIModel converts the Terraform model to the API model.
@@ -326,6 +354,33 @@ func (m alertingRuleModel) toAPIModel(ctx context.Context, serverVersion *versio
 					"alert_delay is only supported for Elasticsearch v8.13 or higher",
 				)
 				return models.AlertingRule{}, diags
+			}
+		}
+
+		// flapping is only supported from Kibana v8.16+
+		if typeutils.IsKnown(m.Flapping) && !m.Flapping.IsNull() {
+			if serverVersion.LessThan(flappingMinSupportedVersion) {
+				diags.AddError(
+					"flapping is only supported for Kibana v8.16 or higher",
+					"flapping is only supported for Kibana v8.16 or higher",
+				)
+				return models.AlertingRule{}, diags
+			}
+
+			var fm flappingModel
+			diags.Append(m.Flapping.As(ctx, &fm, basetypes.ObjectAsOptions{})...)
+			if diags.HasError() {
+				return models.AlertingRule{}, diags
+			}
+			// flapping.enabled is only supported from Elastic Stack 9.3+
+			if typeutils.IsKnown(fm.Enabled) && !fm.Enabled.IsNull() {
+				if serverVersion.LessThan(flappingEnabledMinSupportedVersion) {
+					diags.AddError(
+						"flapping.enabled is only supported for Elastic Stack 9.3 or higher",
+						"flapping.enabled is only supported for Elastic Stack 9.3 or higher",
+					)
+					return models.AlertingRule{}, diags
+				}
 			}
 		}
 
@@ -432,6 +487,22 @@ func (m alertingRuleModel) toAPIModel(ctx context.Context, serverVersion *versio
 	if typeutils.IsKnown(m.AlertDelay) && !m.AlertDelay.IsNull() {
 		alertDelay := float32(m.AlertDelay.ValueInt64())
 		rule.AlertDelay = &alertDelay
+	}
+
+	// Flapping
+	if typeutils.IsKnown(m.Flapping) && !m.Flapping.IsNull() {
+		var fm flappingModel
+		diags.Append(m.Flapping.As(ctx, &fm, basetypes.ObjectAsOptions{})...)
+		if diags.HasError() {
+			return models.AlertingRule{}, diags
+		}
+		rule.Flapping = &models.AlertingRuleFlapping{
+			LookBackWindow:        fm.LookBackWindow.ValueInt64(),
+			StatusChangeThreshold: fm.StatusChangeThreshold.ValueInt64(),
+		}
+		if typeutils.IsKnown(fm.Enabled) && !fm.Enabled.IsNull() {
+			rule.Flapping.Enabled = fm.Enabled.ValueBoolPointer()
+		}
 	}
 
 	// Actions
