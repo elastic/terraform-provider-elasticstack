@@ -84,7 +84,7 @@ func Test_populateRangeSliderControlFromAPI_import_allFields(t *testing.T) {
 	assert.Equal(t, types.BoolValue(true), pm.RangeSliderControlConfig.UseGlobalFilters)
 	assert.Equal(t, types.BoolValue(false), pm.RangeSliderControlConfig.IgnoreValidations)
 	assert.Equal(t, mustStringList("100", "500"), pm.RangeSliderControlConfig.Value)
-	assert.Equal(t, types.Float64Value(10), pm.RangeSliderControlConfig.Step)
+	assert.Equal(t, types.Float32Value(10), pm.RangeSliderControlConfig.Step)
 }
 
 // Test: on import (tfPanel == nil) with minimal API data (only required fields).
@@ -119,7 +119,7 @@ func Test_populateRangeSliderControlFromAPI_knownFields_updatedFromAPI(t *testin
 			UseGlobalFilters:  types.BoolValue(false),
 			IgnoreValidations: types.BoolValue(false),
 			Value:             mustStringList("1", "9"),
-			Step:              types.Float64Value(1),
+			Step:              types.Float32Value(1),
 		},
 	}
 	tfPanel := &panelModel{RangeSliderControlConfig: pm.RangeSliderControlConfig}
@@ -138,7 +138,7 @@ func Test_populateRangeSliderControlFromAPI_knownFields_updatedFromAPI(t *testin
 	assert.Equal(t, types.BoolValue(true), pm.RangeSliderControlConfig.UseGlobalFilters)
 	assert.Equal(t, types.BoolValue(true), pm.RangeSliderControlConfig.IgnoreValidations)
 	assert.Equal(t, mustStringList("10", "90"), pm.RangeSliderControlConfig.Value)
-	assert.Equal(t, types.Float64Value(5), pm.RangeSliderControlConfig.Step)
+	assert.Equal(t, types.Float32Value(5), pm.RangeSliderControlConfig.Step)
 }
 
 // Test: null-preservation — null optional fields in state are not overwritten by API values.
@@ -151,7 +151,7 @@ func Test_populateRangeSliderControlFromAPI_nullOptionalFields_preserved(t *test
 			UseGlobalFilters:  types.BoolNull(),
 			IgnoreValidations: types.BoolNull(),
 			Value:             types.ListNull(types.StringType),
-			Step:              types.Float64Null(),
+			Step:              types.Float32Null(),
 		},
 	}
 	tfPanel := &panelModel{RangeSliderControlConfig: pm.RangeSliderControlConfig}
@@ -185,7 +185,7 @@ func Test_buildRangeSliderControlConfig_knownFields(t *testing.T) {
 			UseGlobalFilters:  types.BoolValue(true),
 			IgnoreValidations: types.BoolValue(false),
 			Value:             mustStringList("10", "100"),
-			Step:              types.Float64Value(5),
+			Step:              types.Float32Value(5),
 		},
 	}
 	rsPanel := kbapi.KbnDashboardPanelRangeSliderControl{
@@ -216,7 +216,7 @@ func Test_buildRangeSliderControlConfig_nullOptionalFields(t *testing.T) {
 			UseGlobalFilters:  types.BoolNull(),
 			IgnoreValidations: types.BoolNull(),
 			Value:             types.ListNull(types.StringType),
-			Step:              types.Float64Null(),
+			Step:              types.Float32Null(),
 		},
 	}
 	rsPanel := kbapi.KbnDashboardPanelRangeSliderControl{
@@ -241,7 +241,7 @@ func Test_rangeSliderControl_roundTrip(t *testing.T) {
 		UseGlobalFilters:  types.BoolValue(true),
 		IgnoreValidations: types.BoolValue(false),
 		Value:             mustStringList("50", "200"),
-		Step:              types.Float64Value(10),
+		Step:              types.Float32Value(10),
 	}
 	pm := panelModel{RangeSliderControlConfig: &original}
 	rsPanel := kbapi.KbnDashboardPanelRangeSliderControl{
@@ -257,7 +257,7 @@ func Test_rangeSliderControl_roundTrip(t *testing.T) {
 			UseGlobalFilters:  types.BoolValue(true),
 			IgnoreValidations: types.BoolValue(false),
 			Value:             mustStringList("50", "200"),
-			Step:              types.Float64Value(10),
+			Step:              types.Float32Value(10),
 		},
 	}
 	tfPanel := &panelModel{RangeSliderControlConfig: out.RangeSliderControlConfig}

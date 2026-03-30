@@ -945,8 +945,8 @@ func getPanelSchema() schema.NestedAttributeObject {
 							listvalidator.SizeAtMost(2),
 						},
 					},
-					"step": schema.Float64Attribute{
-						MarkdownDescription: "The step size for the range slider.",
+					"step": schema.Float32Attribute{
+						MarkdownDescription: "The step size for the range slider. Stored as float32 to match the Kibana API type and avoid refresh drift.",
 						Optional:            true,
 					},
 				},

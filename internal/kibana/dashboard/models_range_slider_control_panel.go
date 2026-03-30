@@ -32,7 +32,7 @@ type rangeSliderControlConfigModel struct {
 	UseGlobalFilters  types.Bool    `tfsdk:"use_global_filters"`
 	IgnoreValidations types.Bool    `tfsdk:"ignore_validations"`
 	Value             types.List    `tfsdk:"value"`
-	Step              types.Float64 `tfsdk:"step"`
+	Step              types.Float32 `tfsdk:"step"`
 }
 
 // populateRangeSliderControlFromAPI reads back a range slider control config from the API
@@ -67,7 +67,7 @@ func populateRangeSliderControlFromAPI(ctx context.Context, pm *panelModel, tfPa
 			existing.Value = v
 		}
 		if apiConfig.Step != nil {
-			existing.Step = types.Float64Value(float64(*apiConfig.Step))
+			existing.Step = types.Float32Value(*apiConfig.Step)
 		}
 		return
 	}
@@ -95,7 +95,7 @@ func populateRangeSliderControlFromAPI(ctx context.Context, pm *panelModel, tfPa
 		existing.Value = v
 	}
 	if typeutils.IsKnown(existing.Step) && apiConfig.Step != nil {
-		existing.Step = types.Float64Value(float64(*apiConfig.Step))
+		existing.Step = types.Float32Value(*apiConfig.Step)
 	}
 }
 
@@ -123,7 +123,7 @@ func buildRangeSliderControlConfig(ctx context.Context, pm panelModel, rsPanel *
 		rsPanel.Config.Value = &elems
 	}
 	if typeutils.IsKnown(cfg.Step) {
-		v := float32(cfg.Step.ValueFloat64())
+		v := cfg.Step.ValueFloat32()
 		rsPanel.Config.Step = &v
 	}
 }
