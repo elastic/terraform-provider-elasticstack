@@ -245,6 +245,86 @@ func Test_panelConfigValidateDiags_SloBurnRate(t *testing.T) {
 	})
 }
 
+func Test_panelConfigValidateDiags_optionsListControl(t *testing.T) {
+	t.Run("accepts no config blocks", func(t *testing.T) {
+		diags := panelConfigValidateDiags(
+			"options_list_control",
+			panelConfigValueState{},
+			panelConfigValueState{},
+			lensConfigStates(nil),
+			nil,
+		)
+		require.False(t, diags.HasError())
+	})
+
+	t.Run("does not emit diagnostic for practitioner-authored config_json", func(t *testing.T) {
+		// Schema validation on `config_json` (type allowlist) produces the single plan-time error;
+		// this object validator intentionally does not duplicate it.
+		diags := panelConfigValidateDiags(
+			"options_list_control",
+			panelConfigValueState{},
+			panelConfigValueState{Set: true},
+			lensConfigStates(nil),
+			nil,
+		)
+		require.False(t, diags.HasError())
+	})
+
+	t.Run("accepts options_list_control when config_json is unknown", func(t *testing.T) {
+		diags := panelConfigValidateDiags(
+			"options_list_control",
+			panelConfigValueState{},
+			panelConfigValueState{Unknown: true},
+			lensConfigStates(nil),
+			nil,
+		)
+		require.False(t, diags.HasError())
+	})
+}
+
+func Test_optionsListControlSearchTechniqueValidator(t *testing.T) {
+	panelSchema := getPanelSchema()
+	olAttr, ok := panelSchema.Attributes["options_list_control_config"].(schema.SingleNestedAttribute)
+	require.True(t, ok)
+
+	searchTechAttr, ok := olAttr.Attributes["search_technique"].(schema.StringAttribute)
+	require.True(t, ok)
+	require.NotEmpty(t, searchTechAttr.Validators)
+
+	testCases := []struct {
+		name      string
+		value     string
+		expectErr bool
+	}{
+		{name: "accepts prefix", value: "prefix", expectErr: false},
+		{name: "accepts wildcard", value: "wildcard", expectErr: false},
+		{name: "accepts exact", value: "exact", expectErr: false},
+		{name: "rejects fuzzy", value: "fuzzy", expectErr: true},
+		{name: "rejects empty string", value: "", expectErr: true},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			req := tfvalidator.StringRequest{
+				Path:           path.Root("search_technique"),
+				PathExpression: path.MatchRoot("search_technique"),
+				ConfigValue:    types.StringValue(tc.value),
+			}
+			resp := tfvalidator.StringResponse{}
+
+			for _, v := range searchTechAttr.Validators {
+				v.ValidateString(context.Background(), req, &resp)
+			}
+
+			if tc.expectErr {
+				require.True(t, resp.Diagnostics.HasError())
+			} else {
+				require.False(t, resp.Diagnostics.HasError())
+			}
+		})
+	}
+}
+
 func Test_timeSliderControlPercentageValidators(t *testing.T) {
 	panelSchema := getPanelSchema()
 	timeSliderAttr, ok := panelSchema.Attributes["time_slider_control_config"].(schema.SingleNestedAttribute)

@@ -54,6 +54,8 @@ func TestAccResourceDashboardOptionsListControl(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.options_list_control_config.field_name", "status"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.options_list_control_config.search_technique", "prefix"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.options_list_control_config.single_select", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.options_list_control_config.display_settings.placeholder", "Select status..."),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.options_list_control_config.display_settings.hide_sort", "true"),
 				),
 			},
 			// Refresh/plan: ensure read-back does not induce perpetual drift

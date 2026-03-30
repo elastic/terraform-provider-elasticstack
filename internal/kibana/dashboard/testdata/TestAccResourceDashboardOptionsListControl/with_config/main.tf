@@ -37,6 +37,10 @@ resource "elasticstack_kibana_dashboard" "test" {
       field_name       = "status"
       search_technique = "prefix"
       single_select    = true
+      display_settings = {
+        placeholder    = "Select status..."
+        hide_sort      = true
+      }
     }
   }]
 }

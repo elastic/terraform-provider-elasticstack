@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -213,6 +214,7 @@ func Test_buildOptionsListControlConfig_allFields(t *testing.T) {
 			ExistsSelected:    types.BoolValue(false),
 			RunPastTimeout:    types.BoolValue(true),
 			SearchTechnique:   types.StringValue("exact"),
+			SelectedOptions:   types.ListValueMust(types.StringType, []attr.Value{types.StringValue("active"), types.StringValue("inactive")}),
 			DisplaySettings: &optionsListControlDisplaySettingsModel{
 				Placeholder:   types.StringValue("Pick one"),
 				HideActionBar: types.BoolValue(true),
@@ -241,12 +243,28 @@ func Test_buildOptionsListControlConfig_allFields(t *testing.T) {
 	assert.True(t, *olPanel.Config.RunPastTimeout)
 	require.NotNil(t, olPanel.Config.SearchTechnique)
 	assert.Equal(t, kbapi.KbnDashboardPanelOptionsListControlConfigSearchTechniqueExact, *olPanel.Config.SearchTechnique)
+	require.NotNil(t, olPanel.Config.SelectedOptions)
+	require.Len(t, *olPanel.Config.SelectedOptions, 2)
 	require.NotNil(t, olPanel.Config.DisplaySettings)
 	assert.Equal(t, "Pick one", *olPanel.Config.DisplaySettings.Placeholder)
 	assert.True(t, *olPanel.Config.DisplaySettings.HideActionBar)
 	require.NotNil(t, olPanel.Config.Sort)
 	assert.Equal(t, kbapi.KbnDashboardPanelOptionsListControlConfigSortByUnderscoreCount, olPanel.Config.Sort.By)
 	assert.Equal(t, kbapi.KbnDashboardPanelOptionsListControlConfigSortDirectionDesc, olPanel.Config.Sort.Direction)
+}
+
+// Test: buildOptionsListControlConfig with null SelectedOptions omits the field.
+func Test_buildOptionsListControlConfig_nullSelectedOptions_omitted(t *testing.T) {
+	pm := panelModel{
+		OptionsListControlConfig: &optionsListControlConfigModel{
+			DataViewID:      types.StringValue("dv1"),
+			FieldName:       types.StringValue("field1"),
+			SelectedOptions: types.ListNull(types.StringType),
+		},
+	}
+	olPanel := kbapi.KbnDashboardPanelOptionsListControl{}
+	buildOptionsListControlConfig(pm, &olPanel)
+	assert.Nil(t, olPanel.Config.SelectedOptions)
 }
 
 // Test: buildOptionsListControlConfig with nil optional fields omits them.
