@@ -28,8 +28,8 @@ resource "elasticstack_kibana_dashboard" "test" {
       duration        = "6d"
       slo_instance_id = "host-a"
       drilldowns = [{
-        url     = "https://example.com/{{context.panel.title}}"
-        label   = "View details"
+        url   = "https://example.com/{{context.panel.title}}"
+        label = "View details"
       }]
     }
   }]
