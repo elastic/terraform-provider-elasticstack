@@ -65,6 +65,6 @@ On read, the `slo_instance_id` field SHALL use null-preservation: if the prior s
 
 #### Scenario: Creation of slo_burn_rate panel with slo_instance_id and drilldowns
 
-- GIVEN a dashboard configuration containing an `slo_burn_rate` panel with `slo_instance_id = "host-a"` and a drilldown entry
+- GIVEN a dashboard configuration containing an `slo_burn_rate` panel with `slo_burn_rate_config.slo_instance_id = "host-a"` and a drilldown entry
 - WHEN the resource is created and read back
 - THEN all configured attributes SHALL be present in state and a subsequent plan SHALL show no changes

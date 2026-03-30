@@ -225,6 +225,15 @@ func TestAccResourceDashboardSloBurnRateInvalidConfig(t *testing.T) {
 				},
 				ExpectError: regexp.MustCompile(`Invalid Configuration`),
 			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("missing_config"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable("unused"),
+				},
+				ExpectError: regexp.MustCompile(`Missing SLO burn rate panel configuration`),
+			},
 		},
 	})
 }

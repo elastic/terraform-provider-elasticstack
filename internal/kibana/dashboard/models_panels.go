@@ -450,6 +450,13 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 	}
 
 	if pm.Type.ValueString() == panelTypeSloBurnRate || pm.SloBurnRateConfig != nil {
+		if pm.SloBurnRateConfig == nil {
+			diags.AddError(
+				"Missing SLO burn rate panel configuration",
+				"SLO burn rate panels require `slo_burn_rate_config`.",
+			)
+			return kbapi.DashboardPanelItem{}, diags
+		}
 		sbrPanel := kbapi.KbnDashboardPanelSloBurnRate{
 			Grid: grid,
 			Uid:  uid,
