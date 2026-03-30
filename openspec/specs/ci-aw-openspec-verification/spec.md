@@ -55,13 +55,13 @@ The workflow SHALL run on `pull_request` events of type `labeled`. A determinist
 
 ### Requirement: Permissions for read, review, and push (REQ-003)
 
-The workflow SHALL be authored so that reading the repository, submitting pull request reviews and review comments, pushing commits to the pull request branch via `push-to-pull-request-branch`, and removing the `verify-openspec` label from the triggering pull request are all permitted under the combination of workflow `permissions` and declared safe outputs enforced by `gh aw compile`. When the compiler runs in strict mode and disallows broad `write` scopes in frontmatter (for example `contents: write` or `issues: write`), the workflow SHALL use the narrowest compiler-accepted base `permissions` (typically `contents: read` and `pull-requests: read`) and SHALL rely on safe outputs—including `remove-labels`—to authorize those write operations rather than declaring disallowed scopes.
+The workflow SHALL request permissions sufficient to read the repository, submit pull request reviews and review comments, push commits to the pull request branch via `push-to-pull-request-branch`, and remove the `verify-openspec` label from the triggering pull request via the `remove-labels` safe output. At minimum this SHALL include `contents: write`, `pull-requests: write`, and `issues: write` unless the agentic compiler emits a narrower equivalent that still allows those operations.
 
 #### Scenario: Push safe output and label cleanup are permitted
 
 - GIVEN the agent archives the change and produces a commit on the PR branch
-- WHEN `push-to-pull-request-branch` runs and the agent requests `remove-labels` for `verify-openspec` on the triggering pull request
-- THEN those operations SHALL be authorized by the workflow’s safe-output configuration under normal repository settings
+- WHEN `push-to-pull-request-branch` and `remove-labels` safe outputs run
+- THEN the token SHALL have authority to push to the PR head branch and mutate the triggering pull request label set under normal repository settings
 
 ### Requirement: Safe outputs for review and push (REQ-004)
 
@@ -204,8 +204,6 @@ After a successful `APPROVE` and archive step, the workflow SHALL commit the wor
 ### Requirement: Remove trigger label after workflow completion (REQ-015)
 
 For a run triggered by applying the `verify-openspec` label, the workflow SHALL instruct the agent to request removal of that same label from the triggering pull request through the `remove-labels` safe output before the agent concludes its handling of the pull request. The cleanup request SHALL remove only `verify-openspec`; it SHALL NOT remove unrelated pull request labels, and the workflow SHALL NOT rely on a separate post-agent cleanup script or job for this behavior.
-
-The agent SHALL request this cleanup for `APPROVE` and for `COMMENT` or `noop` outcomes once it has reached a decision, as described in the workflow prompt. Runs where the agent job does not run (for example, deterministic gating skips the agent) or where the agent stops before emitting terminal safe outputs (for example, failure or cancellation) are outside this contract: the workflow does not guarantee label removal in those cases, and maintainers MAY clear the label manually.
 
 #### Scenario: Approved run requests trigger label cleanup
 
