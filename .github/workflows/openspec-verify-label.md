@@ -151,21 +151,9 @@ on:
             core.info(`Selected active change: ${result.selected_change}`);
           }
           
-    - name: Gate — skip agent when run is ineligible
-      id: gate
-      if: >-
-        steps.verify_label.outputs.label_verified != 'true' ||
-        steps.select_change.outputs.selection_status != 'eligible'
-      uses: actions/github-script@v8
-      with:
-        script: |
-          const reason = '${{ steps.verify_label.outputs.label_verified }}' !== 'true'
-            ? '${{ steps.verify_label.outputs.label_reason }}'
-            : '${{ steps.select_change.outputs.selection_reason }}';
-          
-          core.info(`Run is ineligible — skipping agent: ${reason}`);
-          core.setFailed(`Ineligible: ${reason}`);
-          
+if: >-
+  needs.pre_activation.outputs.label_verified == 'true' &&
+  needs.pre_activation.outputs.selection_status == 'eligible'
 steps:
   - name: Install Node dependencies
     run: npm ci
@@ -176,6 +164,13 @@ permissions:
   contents: read
   pull-requests: read
 jobs:
+  pre-activation:
+    outputs:
+      label_verified: ${{ steps.verify_label.outputs.label_verified }}
+      label_reason: ${{ steps.verify_label.outputs.label_reason }}
+      selection_status: ${{ steps.select_change.outputs.selection_status }}
+      selection_reason: ${{ steps.select_change.outputs.selection_reason }}
+      selected_change: ${{ steps.select_change.outputs.selected_change }}
   completion_cleanup:
     name: Remove verify-openspec label
     needs:
