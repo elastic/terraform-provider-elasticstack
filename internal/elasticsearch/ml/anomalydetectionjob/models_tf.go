@@ -477,7 +477,8 @@ func (plan *TFModel) convertAnalysisConfigFromAPI(ctx context.Context, apiConfig
 			customRulesTF := make([]CustomRuleTFModel, len(detector.CustomRules))
 			for j, rule := range detector.CustomRules {
 				// Convert actions
-				if len(rule.Actions) > 0 {
+				switch {
+				case len(rule.Actions) > 0:
 					// Convert interface{} actions to strings
 					actions := make([]string, len(rule.Actions))
 					for k, action := range rule.Actions {
@@ -488,15 +489,16 @@ func (plan *TFModel) convertAnalysisConfigFromAPI(ctx context.Context, apiConfig
 					actionsListValue, d := types.ListValueFrom(ctx, types.StringType, actions)
 					diags.Append(d...)
 					customRulesTF[j].Actions = actionsListValue
-				} else if j < len(originalCustomRules) && typeutils.IsKnown(originalCustomRules[j].Actions) {
+				case j < len(originalCustomRules) && typeutils.IsKnown(originalCustomRules[j].Actions):
 					// API omits empty slices (JSON omitempty); preserve explicit [] vs null from config.
 					customRulesTF[j].Actions = typeutils.EnsureTypedList(ctx, originalCustomRules[j].Actions, types.StringType)
-				} else {
+				default:
 					customRulesTF[j].Actions = types.ListNull(types.StringType)
 				}
 
 				// Convert conditions
-				if len(rule.Conditions) > 0 {
+				switch {
+				case len(rule.Conditions) > 0:
 					conditionsTF := make([]RuleConditionTFModel, len(rule.Conditions))
 					for k, condition := range rule.Conditions {
 						conditionsTF[k] = RuleConditionTFModel{
@@ -508,9 +510,9 @@ func (plan *TFModel) convertAnalysisConfigFromAPI(ctx context.Context, apiConfig
 					conditionsListValue, d := types.ListValueFrom(ctx, ruleConditionElemType, conditionsTF)
 					diags.Append(d...)
 					customRulesTF[j].Conditions = conditionsListValue
-				} else if j < len(originalCustomRules) && typeutils.IsKnown(originalCustomRules[j].Conditions) {
+				case j < len(originalCustomRules) && typeutils.IsKnown(originalCustomRules[j].Conditions):
 					customRulesTF[j].Conditions = typeutils.EnsureTypedList(ctx, originalCustomRules[j].Conditions, ruleConditionElemType)
-				} else {
+				default:
 					customRulesTF[j].Conditions = types.ListNull(ruleConditionElemType)
 				}
 			}
