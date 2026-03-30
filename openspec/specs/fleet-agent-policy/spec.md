@@ -25,6 +25,8 @@ resource "elasticstack_fleet_agent_policy" "example" {
   monitor_logs    = <optional+computed, bool>  # default false
   monitor_metrics = <optional+computed, bool>  # default false
 
+  is_protected = <optional+computed, bool> # tamper protection; maps to API is_protected; default false; min 8.10.0 to enable
+
   skip_destroy = <optional, bool> # when true, destroy removes from state only
 
   host_name_format = <optional+computed, string> # "hostname" (default) or "fqdn"; min 8.7.0
@@ -155,7 +157,7 @@ The resource SHALL use the provider-level Fleet client for all API calls. There 
 
 ### Requirement: Compatibility — version-gated features (REQ-009–REQ-017)
 
-When `supports_agentless` is configured, the resource SHALL verify the stack version is at least 8.15.0, and if it is lower the resource SHALL fail with an "Unsupported Elasticsearch version" error. When `inactivity_timeout` is configured, the resource SHALL verify the stack version is at least 8.7.0, and if it is lower the resource SHALL fail with an "Unsupported Elasticsearch version" error. When `unenrollment_timeout` is configured, the resource SHALL verify the stack version is at least 8.15.0, and if it is lower the resource SHALL fail with an "Unsupported Elasticsearch version" error. When `global_data_tags` is configured with one or more entries, the resource SHALL verify the stack version is at least 8.15.0, and if it is lower the resource SHALL fail with a "global_data_tags ES version error". When `host_name_format` is set to `"fqdn"`, the resource SHALL verify the stack version is at least 8.7.0, and if it is lower the resource SHALL fail with an "Unsupported Elasticsearch version" error. When `space_ids` is configured, the resource SHALL verify the stack version is at least 9.1.0, and if it is lower the resource SHALL fail with an "Unsupported Elasticsearch version" error. When `required_versions` is configured, the resource SHALL verify the stack version is at least 9.1.0, and if it is lower the resource SHALL fail with an "Unsupported Elasticsearch version" error. When `advanced_monitoring_options` is configured, the resource SHALL verify the stack version is at least 8.16.0, and if it is lower the resource SHALL fail with an "Unsupported Elasticsearch version" error. When `advanced_settings` is configured, the resource SHALL verify the stack version is at least 8.17.0, and if it is lower the resource SHALL fail with an "Unsupported Elasticsearch version" error.
+When `supports_agentless` is configured, the resource SHALL verify the stack version is at least 8.15.0, and if it is lower the resource SHALL fail with an "Unsupported Elasticsearch version" error. When `inactivity_timeout` is configured, the resource SHALL verify the stack version is at least 8.7.0, and if it is lower the resource SHALL fail with an "Unsupported Elasticsearch version" error. When `unenrollment_timeout` is configured, the resource SHALL verify the stack version is at least 8.15.0, and if it is lower the resource SHALL fail with an "Unsupported Elasticsearch version" error. When `global_data_tags` is configured with one or more entries, the resource SHALL verify the stack version is at least 8.15.0, and if it is lower the resource SHALL fail with a "global_data_tags ES version error". When `host_name_format` is set to `"fqdn"`, the resource SHALL verify the stack version is at least 8.7.0, and if it is lower the resource SHALL fail with an "Unsupported Elasticsearch version" error. When `space_ids` is configured, the resource SHALL verify the stack version is at least 9.1.0, and if it is lower the resource SHALL fail with an "Unsupported Elasticsearch version" error. When `required_versions` is configured, the resource SHALL verify the stack version is at least 9.1.0, and if it is lower the resource SHALL fail with an "Unsupported Elasticsearch version" error. When `advanced_monitoring_options` is configured, the resource SHALL verify the stack version is at least 8.16.0, and if it is lower the resource SHALL fail with an "Unsupported Elasticsearch version" error. When `advanced_settings` is configured, the resource SHALL verify the stack version is at least 8.17.0, and if it is lower the resource SHALL fail with an "Unsupported Elasticsearch version" error. When `is_protected` is `true`, the resource SHALL verify the stack version is at least 8.10.0, and if it is lower the resource SHALL fail with an "Unsupported Elasticsearch version" error.
 
 #### Scenario: global_data_tags on unsupported version
 
@@ -258,6 +260,16 @@ The resource SHALL map `monitor_logs = true` to the `logs` entry in the `monitor
 - GIVEN the API response includes `"logs"` in `monitoring_enabled`
 - WHEN read populates state
 - THEN `monitor_logs` SHALL be `true` in state
+
+### Requirement: Mapping — is_protected (tamper protection) (REQ-036)
+
+The resource SHALL map `is_protected` to the Fleet Agent Policy API field `is_protected` on create and update when the stack version is at least 8.10.0. On read, the resource SHALL set `is_protected` from the API response.
+
+#### Scenario: Tamper protection round-trip
+
+- GIVEN `is_protected = true` in config and stack version ≥ 8.10.0
+- WHEN create runs
+- THEN the API request SHALL include `is_protected: true`
 
 ### Requirement: Mapping — host_name_format via agent features (REQ-029)
 

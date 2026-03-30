@@ -60,6 +60,7 @@ type features struct {
 	SupportsAgentFeatures       bool
 	SupportsAdvancedMonitoring  bool
 	SupportsAdvancedSettings    bool
+	SupportsTamperProtection    bool
 }
 
 type globalDataTagsItemModel struct {
@@ -79,6 +80,7 @@ type agentPolicyModel struct {
 	DownloadSourceID          types.String         `tfsdk:"download_source_id"`
 	MonitorLogs               types.Bool           `tfsdk:"monitor_logs"`
 	MonitorMetrics            types.Bool           `tfsdk:"monitor_metrics"`
+	IsProtected               types.Bool           `tfsdk:"is_protected"`
 	SysMonitoring             types.Bool           `tfsdk:"sys_monitoring"`
 	SkipDestroy               types.Bool           `tfsdk:"skip_destroy"`
 	HostNameFormat            types.String         `tfsdk:"host_name_format"`
@@ -118,6 +120,8 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 	if !typeutils.IsKnown(model.MonitorMetrics) {
 		model.MonitorMetrics = types.BoolValue(false)
 	}
+
+	model.IsProtected = types.BoolValue(data.IsProtected)
 
 	model.MonitoringOutputID = types.StringPointerValue(data.MonitoringOutputId)
 	model.Name = types.StringValue(data.Name)
@@ -359,6 +363,22 @@ func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, feat featur
 		Namespace:          model.Namespace.ValueString(),
 	}
 
+	if typeutils.IsKnown(model.IsProtected) {
+		if model.IsProtected.ValueBool() && !feat.SupportsTamperProtection {
+			return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diag.Diagnostics{
+				diag.NewAttributeErrorDiagnostic(
+					path.Root("is_protected"),
+					"Unsupported Elasticsearch version",
+					fmt.Sprintf("Tamper protection (`is_protected`) is only supported in Elastic Stack %s and above", MinVersionTamperProtection),
+				),
+			}
+		}
+		if feat.SupportsTamperProtection {
+			v := model.IsProtected.ValueBool()
+			body.IsProtected = &v
+		}
+	}
+
 	if typeutils.IsKnown(model.SupportsAgentless) {
 		if !feat.SupportsSupportsAgentless {
 			return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diag.Diagnostics{
@@ -513,6 +533,22 @@ func (model *agentPolicyModel) toAPIUpdateModel(ctx context.Context, feat featur
 		MonitoringOutputId: model.MonitoringOutputID.ValueStringPointer(),
 		Name:               model.Name.ValueString(),
 		Namespace:          model.Namespace.ValueString(),
+	}
+
+	if typeutils.IsKnown(model.IsProtected) {
+		if model.IsProtected.ValueBool() && !feat.SupportsTamperProtection {
+			return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diag.Diagnostics{
+				diag.NewAttributeErrorDiagnostic(
+					path.Root("is_protected"),
+					"Unsupported Elasticsearch version",
+					fmt.Sprintf("Tamper protection (`is_protected`) is only supported in Elastic Stack %s and above", MinVersionTamperProtection),
+				),
+			}
+		}
+		if feat.SupportsTamperProtection {
+			v := model.IsProtected.ValueBool()
+			body.IsProtected = &v
+		}
 	}
 
 	if typeutils.IsKnown(model.SupportsAgentless) {

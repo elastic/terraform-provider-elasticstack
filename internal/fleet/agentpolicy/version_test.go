@@ -631,3 +631,86 @@ func TestAgentFeaturesVersionValidation(t *testing.T) {
 		t.Errorf("Did not expect error when host_name_format is not set in update: %v", diags)
 	}
 }
+
+func TestMinVersionTamperProtection(t *testing.T) {
+	expected := "8.10.0"
+	actual := MinVersionTamperProtection.String()
+	if actual != expected {
+		t.Errorf("Expected MinVersionTamperProtection to be '%s', got '%s'", expected, actual)
+	}
+
+	olderVersion := version.Must(version.NewVersion("8.9.0"))
+	if MinVersionTamperProtection.LessThan(olderVersion) {
+		t.Errorf("MinVersionTamperProtection (%s) should be greater than %s", MinVersionTamperProtection.String(), olderVersion.String())
+	}
+
+	newerVersion := version.Must(version.NewVersion("8.11.0"))
+	if MinVersionTamperProtection.GreaterThan(newerVersion) {
+		t.Errorf("MinVersionTamperProtection (%s) should be less than %s", MinVersionTamperProtection.String(), newerVersion.String())
+	}
+}
+
+func TestIsProtectedVersionValidation(t *testing.T) {
+	ctx := context.Background()
+
+	model := &agentPolicyModel{
+		Name:        types.StringValue("test"),
+		Namespace:   types.StringValue("default"),
+		IsProtected: types.BoolValue(true),
+	}
+
+	feat := features{
+		SupportsTamperProtection: false,
+	}
+
+	_, diags := model.toAPICreateModel(ctx, feat)
+	if !diags.HasError() {
+		t.Error("Expected error when is_protected=true on unsupported version, but got none")
+	}
+
+	found := false
+	for _, diag := range diags {
+		if diag.Summary() == unsupportedElasticsearchVersionSummary {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("Expected %q error, but didn't find it", unsupportedElasticsearchVersionSummary)
+	}
+
+	_, diags = model.toAPIUpdateModel(ctx, feat, nil)
+	if !diags.HasError() {
+		t.Error("Expected error when is_protected=true on unsupported version in update, but got none")
+	}
+
+	featSupported := features{
+		SupportsTamperProtection: true,
+	}
+
+	_, diags = model.toAPICreateModel(ctx, featSupported)
+	if diags.HasError() {
+		t.Errorf("Did not expect error when is_protected is supported: %v", diags)
+	}
+
+	_, diags = model.toAPIUpdateModel(ctx, featSupported, nil)
+	if diags.HasError() {
+		t.Errorf("Did not expect error when is_protected is supported in update: %v", diags)
+	}
+
+	modelFalse := &agentPolicyModel{
+		Name:        types.StringValue("test"),
+		Namespace:   types.StringValue("default"),
+		IsProtected: types.BoolValue(false),
+	}
+
+	_, diags = modelFalse.toAPICreateModel(ctx, feat)
+	if diags.HasError() {
+		t.Errorf("Did not expect error when is_protected=false on unsupported version: %v", diags)
+	}
+
+	_, diags = modelFalse.toAPIUpdateModel(ctx, feat, nil)
+	if diags.HasError() {
+		t.Errorf("Did not expect error when is_protected=false on unsupported version in update: %v", diags)
+	}
+}
