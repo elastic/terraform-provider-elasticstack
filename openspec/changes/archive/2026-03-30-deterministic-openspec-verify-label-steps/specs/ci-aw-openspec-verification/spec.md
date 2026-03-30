@@ -17,7 +17,7 @@ The workflow SHALL use deterministic pre-activation outputs to decide whether th
 
 ## MODIFIED Requirements
 
-### Requirement: Label trigger
+### Requirement: Label trigger (REQ-002)
 The workflow SHALL run on `pull_request` events of type `labeled`. A deterministic pre-activation step SHALL verify that `github.event.label.name` (or equivalent injected label data) is exactly `verify-openspec` and SHALL publish the result for downstream jobs. The workflow SHALL not perform verification or archive steps when that deterministic check indicates a different label.
 
 #### Scenario: Correct label runs automation
@@ -30,7 +30,7 @@ The workflow SHALL run on `pull_request` events of type `labeled`. A determinist
 - **WHEN** the `labeled` event fires
 - **THEN** the workflow SHALL not perform verification or archive steps for that event
 
-### Requirement: Discover active change id from PR files
+### Requirement: Discover active change id from PR files (REQ-005)
 The workflow SHALL use a deterministic pre-activation step to load the pull request changed files list, including each file entry's status (`added`, `modified`, `removed`, `renamed`, and so on). It SHALL consider only paths matching `openspec/changes/<id>/...` where `<id>` is a single path segment and `archive` is not the first segment (that is, exclude `openspec/changes/archive/**`). For each such path, it SHALL record the status of that file entry and SHALL publish pre-activation outputs that include the gate result and, when selection succeeds, the selected active change id.
 
 #### Scenario: Derive change id from path
@@ -43,7 +43,7 @@ The workflow SHALL use a deterministic pre-activation step to load the pull requ
 - **WHEN** the deterministic selection step completes
 - **THEN** the workflow SHALL expose that change id as a pre-activation output for the later agent job
 
-### Requirement: Noop when change selection rules fail
+### Requirement: Noop when change selection rules fail (REQ-006)
 The workflow SHALL not submit a pull request review and SHALL not archive when the deterministic gating result indicates any of the following:
 
 1. More than one distinct `<id>` has at least one file with status `modified` among paths under `openspec/changes/<id>/` (non-archive).
@@ -66,7 +66,7 @@ The workflow SHALL not submit a pull request review and SHALL not archive when t
 - **WHEN** deterministic gating runs
 - **THEN** the workflow SHALL select that `<id>` and continue to verification
 
-### Requirement: Verification using active OpenSpec tooling
+### Requirement: Verification using active OpenSpec tooling (REQ-007)
 For the selected change id published by the deterministic pre-activation step, the agent SHALL use standard OpenSpec commands and `.agents/skills/openspec-verify-change/SKILL.md`, including where applicable `npx openspec status --change "<id>" --json` and `npx openspec instructions apply --change "<id>" --json`, and SHALL perform verification with context rooted at `openspec/changes/<id>/`. The prompt SHALL consume the selected change id from workflow outputs rather than requiring the agent to rediscover PR files before verification. The verification report SHALL include Summary, Issues by priority (CRITICAL, WARNING, SUGGESTION), and Final assessment per the skill.
 
 #### Scenario: CLI resolves the change
