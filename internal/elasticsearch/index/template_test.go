@@ -446,7 +446,7 @@ func TestAccResourceIndexTemplateAliasFilter(t *testing.T) {
 							"name": "filtered_alias_v3",
 						},
 					),
-					testCheckTemplateAliasAttrCleared("elasticstack_elasticsearch_index_template.test", "filtered_alias_v3", "filter"),
+					testCheckTemplateAliasAttrCleared("filtered_alias_v3", "filter"),
 				),
 			},
 		},
@@ -535,12 +535,12 @@ func TestAccResourceIndexTemplateAliasLifecycleRemoval(t *testing.T) {
 							"name": "detailed_alias_reset",
 						},
 					),
-					testCheckTemplateAliasBoolAttrFalseOrAbsent("elasticstack_elasticsearch_index_template.test", "detailed_alias_reset", "is_hidden"),
-					testCheckTemplateAliasBoolAttrFalseOrAbsent("elasticstack_elasticsearch_index_template.test", "detailed_alias_reset", "is_write_index"),
-					testCheckTemplateAliasAttrCleared("elasticstack_elasticsearch_index_template.test", "detailed_alias_reset", "routing"),
-					testCheckTemplateAliasAttrCleared("elasticstack_elasticsearch_index_template.test", "detailed_alias_reset", "search_routing"),
-					testCheckTemplateAliasAttrCleared("elasticstack_elasticsearch_index_template.test", "detailed_alias_reset", "index_routing"),
-					testCheckTemplateLifecycleAttrCleared("elasticstack_elasticsearch_index_template.test", "data_retention"),
+					testCheckTemplateAliasBoolAttrFalseOrAbsent("detailed_alias_reset", "is_hidden"),
+					testCheckTemplateAliasBoolAttrFalseOrAbsent("detailed_alias_reset", "is_write_index"),
+					testCheckTemplateAliasAttrCleared("detailed_alias_reset", "routing"),
+					testCheckTemplateAliasAttrCleared("detailed_alias_reset", "search_routing"),
+					testCheckTemplateAliasAttrCleared("detailed_alias_reset", "index_routing"),
+					testCheckTemplateLifecycleAttrCleared("data_retention"),
 				),
 			},
 		},
@@ -733,8 +733,9 @@ func TestAccResourceIndexTemplateEmptyCollections(t *testing.T) {
 	})
 }
 
-func testCheckTemplateAliasAttrCleared(resourceName, aliasName, attrName string) resource.TestCheckFunc {
+func testCheckTemplateAliasAttrCleared(aliasName, attrName string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
+		const resourceName = "elasticstack_elasticsearch_index_template.test"
 		aliasPrefix, err := templateAliasPrefix(s, resourceName, aliasName)
 		if err != nil {
 			return err
@@ -748,8 +749,9 @@ func testCheckTemplateAliasAttrCleared(resourceName, aliasName, attrName string)
 	}
 }
 
-func testCheckTemplateAliasBoolAttrFalseOrAbsent(resourceName, aliasName, attrName string) resource.TestCheckFunc {
+func testCheckTemplateAliasBoolAttrFalseOrAbsent(aliasName, attrName string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
+		const resourceName = "elasticstack_elasticsearch_index_template.test"
 		aliasPrefix, err := templateAliasPrefix(s, resourceName, aliasName)
 		if err != nil {
 			return err
@@ -763,8 +765,9 @@ func testCheckTemplateAliasBoolAttrFalseOrAbsent(resourceName, aliasName, attrNa
 	}
 }
 
-func testCheckTemplateLifecycleAttrCleared(resourceName, attrName string) resource.TestCheckFunc {
+func testCheckTemplateLifecycleAttrCleared(attrName string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
+		const resourceName = "elasticstack_elasticsearch_index_template.test"
 		rs, ok := s.RootModule().Resources[resourceName]
 		if !ok {
 			return fmt.Errorf("resource not found in state: %s", resourceName)
