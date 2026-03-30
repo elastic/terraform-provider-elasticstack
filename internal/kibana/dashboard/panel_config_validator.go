@@ -88,7 +88,12 @@ func panelConfigSelectionList() string {
 	return strings.Join(options, ", ")
 }
 
-func panelConfigValidateDiags(panelType string, markdownConfig, configJSON, sloBurnRateConfig panelConfigValueState, lensConfigs map[string]panelConfigValueState, attrPath *path.Path) diag.Diagnostics {
+func panelConfigValidateDiags(
+	panelType string,
+	markdownConfig, configJSON, sloBurnRateConfig panelConfigValueState,
+	lensConfigs map[string]panelConfigValueState,
+	attrPath *path.Path,
+) diag.Diagnostics {
 	var diags diag.Diagnostics
 	add := func(summary, detail string) {
 		if attrPath != nil {
