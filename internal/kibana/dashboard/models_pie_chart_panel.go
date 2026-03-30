@@ -42,7 +42,7 @@ type pieChartPanelConfigConverter struct {
 	lensVisualizationBase
 }
 
-func (c pieChartPanelConfigConverter) populateFromAttributes(_ context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes) diag.Diagnostics {
+func (c pieChartPanelConfigConverter) populateFromAttributes(_ context.Context, pm *panelModel, attrs kbapi.LensApiState) diag.Diagnostics {
 	pieChart, err := attrs.AsPieChart()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
@@ -62,7 +62,7 @@ func (c pieChartPanelConfigConverter) populateFromAttributes(_ context.Context, 
 	return pm.PieChartConfig.fromAPIESQL(esql)
 }
 
-func (c pieChartPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelLens_Config_0_Attributes, diag.Diagnostics) {
+func (c pieChartPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.LensApiState, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	configModel := *pm.PieChartConfig
 
@@ -70,13 +70,13 @@ func (c pieChartPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnD
 	pieChart, pieDiags := configModel.toAPI()
 	diags.Append(pieDiags...)
 	if diags.HasError() {
-		return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}, diags
+		return kbapi.LensApiState{}, diags
 	}
 
-	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	var attrs kbapi.LensApiState
 	if err := attrs.FromPieChart(pieChart); err != nil {
 		diags.AddError("Failed to create pie chart attributes", err.Error())
-		return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}, diags
+		return kbapi.LensApiState{}, diags
 	}
 
 	return attrs, diags
@@ -148,8 +148,8 @@ func (m *pieChartConfigModel) fromAPINoESQL(apiChart kbapi.PieNoESQL) diag.Diagn
 		m.DonutHole = types.StringNull()
 	}
 
-	if apiChart.LabelPosition != nil {
-		m.LabelPosition = types.StringValue(string(*apiChart.LabelPosition))
+	if apiChart.Labels != nil && apiChart.Labels.Position != nil {
+		m.LabelPosition = types.StringValue(string(*apiChart.Labels.Position))
 	} else {
 		m.LabelPosition = types.StringNull()
 	}
@@ -175,9 +175,9 @@ func (m *pieChartConfigModel) fromAPINoESQL(apiChart kbapi.PieNoESQL) diag.Diagn
 	m.Query.fromAPI(apiChart.Query)
 
 	// Filters
-	if apiChart.Filters != nil && len(*apiChart.Filters) > 0 {
-		m.Filters = make([]chartFilterJSONModel, 0, len(*apiChart.Filters))
-		for _, filter := range *apiChart.Filters {
+	if len(apiChart.Filters) > 0 {
+		m.Filters = make([]chartFilterJSONModel, 0, len(apiChart.Filters))
+		for _, filter := range apiChart.Filters {
 			fm := chartFilterJSONModel{}
 			filterDiags := fm.populateFromAPIItem(filter)
 			diags.Append(filterDiags...)
@@ -246,8 +246,8 @@ func (m *pieChartConfigModel) fromAPIESQL(apiChart kbapi.PieESQL) diag.Diagnosti
 		m.DonutHole = types.StringNull()
 	}
 
-	if apiChart.LabelPosition != nil {
-		m.LabelPosition = types.StringValue(string(*apiChart.LabelPosition))
+	if apiChart.Labels != nil && apiChart.Labels.Position != nil {
+		m.LabelPosition = types.StringValue(string(*apiChart.Labels.Position))
 	} else {
 		m.LabelPosition = types.StringNull()
 	}
@@ -272,9 +272,9 @@ func (m *pieChartConfigModel) fromAPIESQL(apiChart kbapi.PieESQL) diag.Diagnosti
 	m.Query = nil
 
 	// Filters
-	if apiChart.Filters != nil && len(*apiChart.Filters) > 0 {
-		m.Filters = make([]chartFilterJSONModel, 0, len(*apiChart.Filters))
-		for _, filter := range *apiChart.Filters {
+	if len(apiChart.Filters) > 0 {
+		m.Filters = make([]chartFilterJSONModel, 0, len(apiChart.Filters))
+		for _, filter := range apiChart.Filters {
 			fm := chartFilterJSONModel{}
 			filterDiags := fm.populateFromAPIItem(filter)
 			diags.Append(filterDiags...)
@@ -331,9 +331,8 @@ func (m *pieChartConfigModel) toAPI() (kbapi.PieChart, diag.Diagnostics) {
 		var chart kbapi.PieNoESQL
 
 		// Required by the Dashboard API (Lens pie schema); omitting mode yields HTTP 400.
-		chart.ValueDisplay = kbapi.ValueDisplay{
-			Mode: kbapi.ValueDisplayModePercentage,
-		}
+		defaultMode := kbapi.ValueDisplayModePercentage
+		chart.Values = kbapi.ValueDisplay{Mode: &defaultMode}
 
 		chart.Title = m.Title.ValueStringPointer()
 		chart.Description = m.Description.ValueStringPointer()
@@ -350,8 +349,11 @@ func (m *pieChartConfigModel) toAPI() (kbapi.PieChart, diag.Diagnostics) {
 		}
 
 		if !m.LabelPosition.IsNull() {
-			val := kbapi.PieNoESQLLabelPosition(m.LabelPosition.ValueString())
-			chart.LabelPosition = &val
+			pos := kbapi.PieNoESQLLabelsPosition(m.LabelPosition.ValueString())
+			chart.Labels = &struct {
+				Position *kbapi.PieNoESQLLabelsPosition `json:"position,omitempty"`
+				Visible  *bool                          `json:"visible,omitempty"`
+			}{Position: &pos}
 		}
 
 		// Legend
@@ -375,10 +377,11 @@ func (m *pieChartConfigModel) toAPI() (kbapi.PieChart, diag.Diagnostics) {
 		chart.Query = m.Query.toAPI()
 
 		// Filters
+		chart.Filters = []kbapi.LensPanelFilters_Item{}
 		if len(m.Filters) > 0 {
-			filters := make([]kbapi.PieNoESQL_Filters_Item, 0, len(m.Filters))
+			filters := make([]kbapi.LensPanelFilters_Item, 0, len(m.Filters))
 			for _, filter := range m.Filters {
-				var item kbapi.PieNoESQL_Filters_Item
+				var item kbapi.LensPanelFilters_Item
 				d := decodeChartFilterJSON(filter.FilterJSON, &item)
 				diags.Append(d...)
 				if !d.HasError() {
@@ -386,7 +389,7 @@ func (m *pieChartConfigModel) toAPI() (kbapi.PieChart, diag.Diagnostics) {
 				}
 			}
 			if len(filters) > 0 {
-				chart.Filters = &filters
+				chart.Filters = filters
 			}
 		}
 
@@ -421,9 +424,8 @@ func (m *pieChartConfigModel) toAPI() (kbapi.PieChart, diag.Diagnostics) {
 	} else {
 		var chart kbapi.PieESQL
 
-		chart.ValueDisplay = kbapi.ValueDisplay{
-			Mode: kbapi.ValueDisplayModePercentage,
-		}
+		defaultMode := kbapi.ValueDisplayModePercentage
+		chart.Values = kbapi.ValueDisplay{Mode: &defaultMode}
 
 		// Set basic properties
 		chart.Title = m.Title.ValueStringPointer()
@@ -441,8 +443,11 @@ func (m *pieChartConfigModel) toAPI() (kbapi.PieChart, diag.Diagnostics) {
 		}
 
 		if !m.LabelPosition.IsNull() {
-			val := kbapi.PieESQLLabelPosition(m.LabelPosition.ValueString())
-			chart.LabelPosition = &val
+			pos := kbapi.PieESQLLabelsPosition(m.LabelPosition.ValueString())
+			chart.Labels = &struct {
+				Position *kbapi.PieESQLLabelsPosition `json:"position,omitempty"`
+				Visible  *bool                        `json:"visible,omitempty"`
+			}{Position: &pos}
 		}
 
 		// Legend
@@ -463,10 +468,11 @@ func (m *pieChartConfigModel) toAPI() (kbapi.PieChart, diag.Diagnostics) {
 		}
 
 		// Filters
+		chart.Filters = []kbapi.LensPanelFilters_Item{}
 		if len(m.Filters) > 0 {
-			filters := make([]kbapi.PieESQL_Filters_Item, 0, len(m.Filters))
+			filters := make([]kbapi.LensPanelFilters_Item, 0, len(m.Filters))
 			for _, filter := range m.Filters {
-				var item kbapi.PieESQL_Filters_Item
+				var item kbapi.LensPanelFilters_Item
 				d := decodeChartFilterJSON(filter.FilterJSON, &item)
 				diags.Append(d...)
 				if !d.HasError() {
@@ -474,7 +480,7 @@ func (m *pieChartConfigModel) toAPI() (kbapi.PieChart, diag.Diagnostics) {
 				}
 			}
 			if len(filters) > 0 {
-				chart.Filters = &filters
+				chart.Filters = filters
 			}
 		}
 

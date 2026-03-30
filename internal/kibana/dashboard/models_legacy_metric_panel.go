@@ -50,7 +50,7 @@ type legacyMetricPanelConfigConverter struct {
 	lensVisualizationBase
 }
 
-func (c legacyMetricPanelConfigConverter) populateFromAttributes(ctx context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes) diag.Diagnostics {
+func (c legacyMetricPanelConfigConverter) populateFromAttributes(ctx context.Context, pm *panelModel, attrs kbapi.LensApiState) diag.Diagnostics {
 	legacyMetricChart, err := attrs.AsLegacyMetricChart()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
@@ -60,20 +60,20 @@ func (c legacyMetricPanelConfigConverter) populateFromAttributes(ctx context.Con
 	return pm.LegacyMetricConfig.fromAPI(ctx, legacyMetricChart)
 }
 
-func (c legacyMetricPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelLens_Config_0_Attributes, diag.Diagnostics) {
+func (c legacyMetricPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.LensApiState, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	configModel := *pm.LegacyMetricConfig
 
 	legacyMetricChart, legacyDiags := configModel.toAPI()
 	diags.Append(legacyDiags...)
 	if diags.HasError() {
-		return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}, diags
+		return kbapi.LensApiState{}, diags
 	}
 
-	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	var attrs kbapi.LensApiState
 	if err := attrs.FromLegacyMetricChart(legacyMetricChart); err != nil {
 		diags.AddError("Failed to create legacy metric attributes", err.Error())
-		return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}, diags
+		return kbapi.LensApiState{}, diags
 	}
 
 	return attrs, diags
@@ -131,9 +131,9 @@ func (m *legacyMetricConfigModel) fromAPINoESQL(ctx context.Context, api kbapi.L
 	m.Query = &filterSimpleModel{}
 	m.Query.fromAPI(api.Query)
 
-	if api.Filters != nil && len(*api.Filters) > 0 {
-		m.Filters = make([]chartFilterJSONModel, 0, len(*api.Filters))
-		for _, filterSchema := range *api.Filters {
+	if len(api.Filters) > 0 {
+		m.Filters = make([]chartFilterJSONModel, 0, len(api.Filters))
+		for _, filterSchema := range api.Filters {
 			fm := chartFilterJSONModel{}
 			filterDiags := fm.populateFromAPIItem(filterSchema)
 			diags.Append(filterDiags...)
@@ -177,9 +177,9 @@ func (m *legacyMetricConfigModel) fromAPIESQL(ctx context.Context, api kbapi.Leg
 		m.Sampling = types.Float64Null()
 	}
 
-	if api.Filters != nil && len(*api.Filters) > 0 {
-		m.Filters = make([]chartFilterJSONModel, 0, len(*api.Filters))
-		for _, filterSchema := range *api.Filters {
+	if len(api.Filters) > 0 {
+		m.Filters = make([]chartFilterJSONModel, 0, len(api.Filters))
+		for _, filterSchema := range api.Filters {
 			fm := chartFilterJSONModel{}
 			filterDiags := fm.populateFromAPIItem(filterSchema)
 			diags.Append(filterDiags...)
@@ -239,10 +239,11 @@ func (m *legacyMetricConfigModel) toAPI() (kbapi.LegacyMetricChart, diag.Diagnos
 			api.Sampling = &sampling
 		}
 
-		if len(m.Filters) > 0 {
-			filters := make([]kbapi.LegacyMetricESQL_Filters_Item, 0, len(m.Filters))
+		api.Filters = []kbapi.LensPanelFilters_Item{}
+	if len(m.Filters) > 0 {
+			filters := make([]kbapi.LensPanelFilters_Item, 0, len(m.Filters))
 			for _, filterModel := range m.Filters {
-				var item kbapi.LegacyMetricESQL_Filters_Item
+				var item kbapi.LensPanelFilters_Item
 				filterDiags := decodeChartFilterJSON(filterModel.FilterJSON, &item)
 				diags.Append(filterDiags...)
 				if !filterDiags.HasError() {
@@ -250,7 +251,7 @@ func (m *legacyMetricConfigModel) toAPI() (kbapi.LegacyMetricChart, diag.Diagnos
 				}
 			}
 			if len(filters) > 0 {
-				api.Filters = &filters
+				api.Filters = filters
 			}
 		}
 
@@ -276,7 +277,8 @@ func (m *legacyMetricConfigModel) toAPI() (kbapi.LegacyMetricChart, diag.Diagnos
 			diags.AddError("Failed to unmarshal metric", err.Error())
 			return result, diags
 		}
-		api.Metric.Alignments = metric.Alignments
+		api.Metric.Labels = metric.Labels
+		api.Metric.Values = metric.Values
 		api.Metric.ApplyColorTo = metric.ApplyColorTo
 		var color kbapi.LegacyMetricESQL_Metric_Color
 		if err := color.FromColorByValueAbsolute(metric.Color); err != nil {
@@ -313,10 +315,11 @@ func (m *legacyMetricConfigModel) toAPI() (kbapi.LegacyMetricChart, diag.Diagnos
 			api.Sampling = &sampling
 		}
 
-		if len(m.Filters) > 0 {
-			filters := make([]kbapi.LegacyMetricNoESQL_Filters_Item, 0, len(m.Filters))
+		api.Filters = []kbapi.LensPanelFilters_Item{}
+	if len(m.Filters) > 0 {
+			filters := make([]kbapi.LensPanelFilters_Item, 0, len(m.Filters))
 			for _, filterModel := range m.Filters {
-				var item kbapi.LegacyMetricNoESQL_Filters_Item
+				var item kbapi.LensPanelFilters_Item
 				filterDiags := decodeChartFilterJSON(filterModel.FilterJSON, &item)
 				diags.Append(filterDiags...)
 				if !filterDiags.HasError() {
@@ -324,7 +327,7 @@ func (m *legacyMetricConfigModel) toAPI() (kbapi.LegacyMetricChart, diag.Diagnos
 				}
 			}
 			if len(filters) > 0 {
-				api.Filters = &filters
+				api.Filters = filters
 			}
 		}
 
@@ -386,10 +389,12 @@ func (m *legacyMetricConfigModel) datasetType() (string, diag.Diagnostics) {
 }
 
 type legacyMetricESQLMetricAPIModel struct {
-	Alignments *struct {
-		Labels *kbapi.LegacyMetricESQLMetricAlignmentsLabels `json:"labels,omitempty"`
-		Value  *kbapi.LegacyMetricESQLMetricAlignmentsValue  `json:"value,omitempty"`
-	} `json:"alignments,omitempty"`
+	Labels *struct {
+		Alignment *kbapi.LegacyMetricESQLMetricLabelsAlignment `json:"alignment,omitempty"`
+	} `json:"labels,omitempty"`
+	Values *struct {
+		Alignment *kbapi.LegacyMetricESQLMetricValuesAlignment `json:"alignment,omitempty"`
+	} `json:"values,omitempty"`
 	ApplyColorTo *kbapi.LegacyMetricESQLMetricApplyColorTo `json:"apply_color_to,omitempty"`
 	Color        kbapi.ColorByValueAbsolute                `json:"color"`
 	Column       string                                    `json:"column"`

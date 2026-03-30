@@ -43,7 +43,7 @@ type mosaicPanelConfigConverter struct {
 	lensVisualizationBase
 }
 
-func (c mosaicPanelConfigConverter) populateFromAttributes(_ context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes) diag.Diagnostics {
+func (c mosaicPanelConfigConverter) populateFromAttributes(_ context.Context, pm *panelModel, attrs kbapi.LensApiState) diag.Diagnostics {
 	mosaicChart, err := attrs.AsMosaicChart()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
@@ -80,20 +80,20 @@ func (c mosaicPanelConfigConverter) populateFromAttributes(_ context.Context, pm
 	return pm.MosaicConfig.fromAPINoESQL(mosaicNoESQL)
 }
 
-func (c mosaicPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelLens_Config_0_Attributes, diag.Diagnostics) {
+func (c mosaicPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.LensApiState, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	configModel := *pm.MosaicConfig
 
 	mosaicChart, mosaicDiags := configModel.toAPI()
 	diags.Append(mosaicDiags...)
 	if diags.HasError() {
-		return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}, diags
+		return kbapi.LensApiState{}, diags
 	}
 
-	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	var attrs kbapi.LensApiState
 	if err := attrs.FromMosaicChart(mosaicChart); err != nil {
 		diags.AddError("Failed to create mosaic attributes", err.Error())
-		return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}, diags
+		return kbapi.LensApiState{}, diags
 	}
 
 	return attrs, diags
@@ -164,9 +164,9 @@ func (m *mosaicConfigModel) fromAPINoESQL(api kbapi.MosaicNoESQL) diag.Diagnosti
 	m.Query = &filterSimpleModel{}
 	m.Query.fromAPI(api.Query)
 
-	if api.Filters != nil && len(*api.Filters) > 0 {
-		m.Filters = make([]chartFilterJSONModel, 0, len(*api.Filters))
-		for _, filter := range *api.Filters {
+	if len(api.Filters) > 0 {
+		m.Filters = make([]chartFilterJSONModel, 0, len(api.Filters))
+		for _, filter := range api.Filters {
 			fm := chartFilterJSONModel{}
 			filterDiags := fm.populateFromAPIItem(filter)
 			diags.Append(filterDiags...)
@@ -181,9 +181,9 @@ func (m *mosaicConfigModel) fromAPINoESQL(api kbapi.MosaicNoESQL) diag.Diagnosti
 	m.Legend = &partitionLegendModel{}
 	m.Legend.fromMosaicLegend(api.Legend)
 
-	if api.ValueDisplay.Mode != "" || api.ValueDisplay.PercentDecimals != nil {
+	if api.Values.Mode != nil || api.Values.PercentDecimals != nil {
 		m.ValueDisplay = &partitionValueDisplay{}
-		m.ValueDisplay.fromValueDisplay(api.ValueDisplay)
+		m.ValueDisplay.fromValueDisplay(api.Values)
 	} else {
 		m.ValueDisplay = nil
 	}
@@ -240,9 +240,9 @@ func (m *mosaicConfigModel) fromAPIESQL(api kbapi.MosaicESQL) diag.Diagnostics {
 	}
 	m.Metrics = customtypes.NewJSONWithDefaultsValue[[]map[string]any](string(metricsWrapped), populatePartitionMetricsDefaults)
 
-	if api.Filters != nil && len(*api.Filters) > 0 {
-		m.Filters = make([]chartFilterJSONModel, 0, len(*api.Filters))
-		for _, filter := range *api.Filters {
+	if len(api.Filters) > 0 {
+		m.Filters = make([]chartFilterJSONModel, 0, len(api.Filters))
+		for _, filter := range api.Filters {
 			fm := chartFilterJSONModel{}
 			filterDiags := fm.populateFromAPIItem(filter)
 			diags.Append(filterDiags...)
@@ -257,9 +257,9 @@ func (m *mosaicConfigModel) fromAPIESQL(api kbapi.MosaicESQL) diag.Diagnostics {
 	m.Legend = &partitionLegendModel{}
 	m.Legend.fromMosaicLegend(api.Legend)
 
-	if api.ValueDisplay.Mode != "" || api.ValueDisplay.PercentDecimals != nil {
+	if api.Values.Mode != nil || api.Values.PercentDecimals != nil {
 		m.ValueDisplay = &partitionValueDisplay{}
-		m.ValueDisplay.fromValueDisplay(api.ValueDisplay)
+		m.ValueDisplay.fromValueDisplay(api.Values)
 	} else {
 		m.ValueDisplay = nil
 	}
@@ -373,10 +373,11 @@ func (m *mosaicConfigModel) toAPIESQLChartSchema() (kbapi.MosaicChart, diag.Diag
 		api.Sampling = new(float32(m.Sampling.ValueFloat64()))
 	}
 
+	api.Filters = []kbapi.LensPanelFilters_Item{}
 	if len(m.Filters) > 0 {
-		filters := make([]kbapi.MosaicESQL_Filters_Item, 0, len(m.Filters))
+		filters := make([]kbapi.LensPanelFilters_Item, 0, len(m.Filters))
 		for _, filterModel := range m.Filters {
-			var item kbapi.MosaicESQL_Filters_Item
+			var item kbapi.LensPanelFilters_Item
 			filterDiags := decodeChartFilterJSON(filterModel.FilterJSON, &item)
 			diags.Append(filterDiags...)
 			if diags.HasError() {
@@ -385,12 +386,12 @@ func (m *mosaicConfigModel) toAPIESQLChartSchema() (kbapi.MosaicChart, diag.Diag
 			filters = append(filters, item)
 		}
 		if len(filters) > 0 {
-			api.Filters = &filters
+			api.Filters = filters
 		}
 	}
 
 	if m.ValueDisplay != nil {
-		api.ValueDisplay = m.ValueDisplay.toValueDisplay()
+		api.Values = m.ValueDisplay.toValueDisplay()
 	}
 
 	if err := mosaicChart.FromMosaicESQL(api); err != nil {
@@ -481,10 +482,11 @@ func (m *mosaicConfigModel) toAPINoESQL() (kbapi.MosaicNoESQL, diag.Diagnostics)
 	}
 	api.Query = m.Query.toAPI()
 
+	api.Filters = []kbapi.LensPanelFilters_Item{}
 	if len(m.Filters) > 0 {
-		filters := make([]kbapi.MosaicNoESQL_Filters_Item, 0, len(m.Filters))
+		filters := make([]kbapi.LensPanelFilters_Item, 0, len(m.Filters))
 		for _, filterModel := range m.Filters {
-			var item kbapi.MosaicNoESQL_Filters_Item
+			var item kbapi.LensPanelFilters_Item
 			filterDiags := decodeChartFilterJSON(filterModel.FilterJSON, &item)
 			diags.Append(filterDiags...)
 			if !filterDiags.HasError() {
@@ -492,7 +494,7 @@ func (m *mosaicConfigModel) toAPINoESQL() (kbapi.MosaicNoESQL, diag.Diagnostics)
 			}
 		}
 		if len(filters) > 0 {
-			api.Filters = &filters
+			api.Filters = filters
 		}
 	}
 
@@ -503,7 +505,7 @@ func (m *mosaicConfigModel) toAPINoESQL() (kbapi.MosaicNoESQL, diag.Diagnostics)
 	api.Legend = m.Legend.toMosaicLegend()
 
 	if m.ValueDisplay != nil {
-		api.ValueDisplay = m.ValueDisplay.toValueDisplay()
+		api.Values = m.ValueDisplay.toValueDisplay()
 	}
 
 	return api, diags

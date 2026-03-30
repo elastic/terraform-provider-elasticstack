@@ -84,8 +84,8 @@ func (m *partitionLegendModel) fromTreemapLegend(api kbapi.TreemapLegend) {
 	} else {
 		m.TruncateAfterLine = types.Float64Null()
 	}
-	if api.Visible != nil {
-		m.Visible = types.StringValue(string(*api.Visible))
+	if api.Visibility != nil {
+		m.Visible = types.StringValue(string(*api.Visibility))
 	} else {
 		m.Visible = types.StringNull()
 	}
@@ -99,8 +99,8 @@ func (m *partitionLegendModel) fromMosaicLegend(api kbapi.MosaicLegend) {
 	} else {
 		m.TruncateAfterLine = types.Float64Null()
 	}
-	if api.Visible != nil {
-		m.Visible = types.StringValue(string(*api.Visible))
+	if api.Visibility != nil {
+		m.Visible = types.StringValue(string(*api.Visibility))
 	} else {
 		m.Visible = types.StringNull()
 	}
@@ -115,8 +115,8 @@ func (m *partitionLegendModel) toTreemapLegend() kbapi.TreemapLegend {
 		legend.TruncateAfterLines = new(float32(m.TruncateAfterLine.ValueFloat64()))
 	}
 	if typeutils.IsKnown(m.Visible) {
-		v := kbapi.TreemapLegendVisible(m.Visible.ValueString())
-		legend.Visible = &v
+		v := kbapi.TreemapLegendVisibility(m.Visible.ValueString())
+		legend.Visibility = &v
 	}
 	return legend
 }
@@ -130,8 +130,8 @@ func (m *partitionLegendModel) toMosaicLegend() kbapi.MosaicLegend {
 		legend.TruncateAfterLines = new(float32(m.TruncateAfterLine.ValueFloat64()))
 	}
 	if typeutils.IsKnown(m.Visible) {
-		v := kbapi.MosaicLegendVisible(m.Visible.ValueString())
-		legend.Visible = &v
+		v := kbapi.MosaicLegendVisibility(m.Visible.ValueString())
+		legend.Visibility = &v
 	}
 	return legend
 }
@@ -144,7 +144,7 @@ type partitionValueDisplay struct {
 }
 
 func (m *partitionValueDisplay) fromValueDisplay(api kbapi.ValueDisplay) {
-	m.Mode = types.StringValue(string(api.Mode))
+	m.Mode = typeutils.StringishPointerValue(api.Mode)
 	if api.PercentDecimals != nil {
 		m.PercentDecimals = types.Float64Value(float64(*api.PercentDecimals))
 	} else {
@@ -153,8 +153,9 @@ func (m *partitionValueDisplay) fromValueDisplay(api kbapi.ValueDisplay) {
 }
 
 func (m *partitionValueDisplay) toValueDisplay() kbapi.ValueDisplay {
+	mode := kbapi.ValueDisplayMode(m.Mode.ValueString())
 	vd := kbapi.ValueDisplay{
-		Mode: kbapi.ValueDisplayMode(m.Mode.ValueString()),
+		Mode: &mode,
 	}
 	if typeutils.IsKnown(m.PercentDecimals) {
 		vd.PercentDecimals = new(float32(m.PercentDecimals.ValueFloat64()))

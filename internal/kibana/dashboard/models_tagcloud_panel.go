@@ -24,7 +24,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -43,7 +42,7 @@ type tagcloudPanelConfigConverter struct {
 	lensVisualizationBase
 }
 
-func (c tagcloudPanelConfigConverter) populateFromAttributes(ctx context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes) diag.Diagnostics {
+func (c tagcloudPanelConfigConverter) populateFromAttributes(ctx context.Context, pm *panelModel, attrs kbapi.LensApiState) diag.Diagnostics {
 	tagcloudChart, err := attrs.AsTagcloudChart()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
@@ -59,7 +58,7 @@ func (c tagcloudPanelConfigConverter) populateFromAttributes(ctx context.Context
 	return pm.TagcloudConfig.fromAPI(ctx, tagcloudNoESQL)
 }
 
-func (c tagcloudPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelLens_Config_0_Attributes, diag.Diagnostics) {
+func (c tagcloudPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.LensApiState, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	configModel := *pm.TagcloudConfig
 
@@ -67,20 +66,20 @@ func (c tagcloudPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnD
 	tagcloudNoESQL, tagcloudDiags := configModel.toAPI()
 	diags.Append(tagcloudDiags...)
 	if diags.HasError() {
-		return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}, diags
+		return kbapi.LensApiState{}, diags
 	}
 
 	// Convert TagcloudNoESQL to TagcloudChart
 	var tagcloudChart kbapi.TagcloudChart
 	if err := tagcloudChart.FromTagcloudNoESQL(tagcloudNoESQL); err != nil {
 		diags.AddError("Failed to convert tagcloud to schema", err.Error())
-		return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}, diags
+		return kbapi.LensApiState{}, diags
 	}
 
-	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	var attrs kbapi.LensApiState
 	if err := attrs.FromTagcloudChart(tagcloudChart); err != nil {
 		diags.AddError("Failed to create tagcloud attributes", err.Error())
-		return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}, diags
+		return kbapi.LensApiState{}, diags
 	}
 
 	return attrs, diags
@@ -132,9 +131,9 @@ func (m *tagcloudConfigModel) fromAPI(ctx context.Context, api kbapi.TagcloudNoE
 	m.Query.fromAPI(api.Query)
 
 	// Handle filters
-	if api.Filters != nil && len(*api.Filters) > 0 {
-		m.Filters = make([]chartFilterJSONModel, 0, len(*api.Filters))
-		for _, filterSchema := range *api.Filters {
+	if len(api.Filters) > 0 {
+		m.Filters = make([]chartFilterJSONModel, 0, len(api.Filters))
+		for _, filterSchema := range api.Filters {
 			fm := chartFilterJSONModel{}
 			filterDiags := fm.populateFromAPIItem(filterSchema)
 			diags.Append(filterDiags...)
@@ -145,7 +144,11 @@ func (m *tagcloudConfigModel) fromAPI(ctx context.Context, api kbapi.TagcloudNoE
 	}
 
 	// Handle orientation
-	m.Orientation = typeutils.StringishPointerValue(api.Orientation)
+	if api.Orientation != "" {
+		m.Orientation = types.StringValue(string(api.Orientation))
+	} else {
+		m.Orientation = types.StringNull()
+	}
 
 	// Handle font size
 	if api.FontSize != nil {
@@ -225,10 +228,11 @@ func (m *tagcloudConfigModel) toAPI() (kbapi.TagcloudNoESQL, diag.Diagnostics) {
 	}
 
 	// Handle filters
+	api.Filters = []kbapi.LensPanelFilters_Item{}
 	if len(m.Filters) > 0 {
-		filters := make([]kbapi.TagcloudNoESQL_Filters_Item, 0, len(m.Filters))
+		filters := make([]kbapi.LensPanelFilters_Item, 0, len(m.Filters))
 		for _, filterModel := range m.Filters {
-			var item kbapi.TagcloudNoESQL_Filters_Item
+			var item kbapi.LensPanelFilters_Item
 			filterDiags := decodeChartFilterJSON(filterModel.FilterJSON, &item)
 			diags.Append(filterDiags...)
 			if !filterDiags.HasError() {
@@ -236,14 +240,13 @@ func (m *tagcloudConfigModel) toAPI() (kbapi.TagcloudNoESQL, diag.Diagnostics) {
 			}
 		}
 		if len(filters) > 0 {
-			api.Filters = &filters
+			api.Filters = filters
 		}
 	}
 
 	// Handle orientation
 	if !m.Orientation.IsNull() {
-		orientation := kbapi.TagcloudNoESQLOrientation(m.Orientation.ValueString())
-		api.Orientation = &orientation
+		api.Orientation = kbapi.VisApiOrientation(m.Orientation.ValueString())
 	}
 
 	// Handle font size

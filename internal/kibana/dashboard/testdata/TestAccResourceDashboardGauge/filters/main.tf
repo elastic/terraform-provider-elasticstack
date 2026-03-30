@@ -34,8 +34,6 @@ resource "elasticstack_kibana_dashboard" "test" {
       metric_json = jsonencode({
         operation     = "count"
         empty_as_null = false
-        hide_title    = false
-        ticks         = "auto"
       })
       shape_json = jsonencode({
         type = "circle"

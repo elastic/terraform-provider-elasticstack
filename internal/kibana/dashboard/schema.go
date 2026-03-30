@@ -165,25 +165,37 @@ func populateLensMetricDefaults(model map[string]any) map[string]any {
 		model["fit"] = false
 	}
 
-	// Secondary metrics have label position defaults.
-	if metricType, ok := model["type"].(string); ok && metricType == "secondary" {
-		if _, exists := model["label_position"]; !exists {
-			model["label_position"] = "before"
+	metricType, _ := model["type"].(string)
+
+	// Primary metrics have value/labels alignment defaults.
+	if metricType == "primary" {
+		if _, exists := model["value"]; !exists {
+			model["value"] = map[string]any{"alignment": "right"}
+		} else if v, ok := model["value"].(map[string]any); ok {
+			if _, exists := v["alignment"]; !exists {
+				v["alignment"] = "right"
+			}
+		}
+		if _, exists := model["labels"]; !exists {
+			model["labels"] = map[string]any{"alignment": "left"}
+		} else if l, ok := model["labels"].(map[string]any); ok {
+			if _, exists := l["alignment"]; !exists {
+				l["alignment"] = "left"
+			}
 		}
 	}
 
-	// Set defaults for icon alignment if icon exists
-	if icon, ok := model["icon"].(map[string]any); ok {
-		if _, exists := icon["align"]; !exists {
-			// Kibana defaults metric icon alignment to the right.
-			icon["align"] = "right"
+	// Secondary metrics have placement and value alignment defaults.
+	if metricType == "secondary" {
+		if _, exists := model["placement"]; !exists {
+			model["placement"] = "before"
 		}
-	}
-
-	// Set defaults for alignments if present
-	if alignments, ok := model["alignments"].(map[string]any); ok {
-		if _, exists := alignments["value"]; !exists {
-			alignments["value"] = "right"
+		if _, exists := model["value"]; !exists {
+			model["value"] = map[string]any{"alignment": "right"}
+		} else if v, ok := model["value"].(map[string]any); ok {
+			if _, exists := v["alignment"]; !exists {
+				v["alignment"] = "right"
+			}
 		}
 	}
 
@@ -323,11 +335,11 @@ func populateGaugeMetricDefaults(model map[string]any) map[string]any {
 	if _, exists := model["empty_as_null"]; !exists {
 		model["empty_as_null"] = false
 	}
-	if _, exists := model["hide_title"]; !exists {
-		model["hide_title"] = false
+	if _, exists := model["title"]; !exists {
+		model["title"] = map[string]any{"visible": true}
 	}
 	if _, exists := model["ticks"]; !exists {
-		model["ticks"] = dashboardValueAuto
+		model["ticks"] = map[string]any{"visible": true, "mode": dashboardValueAuto}
 	}
 
 	return model
@@ -514,10 +526,6 @@ func getSchema() schema.Schema {
 						Validators: []validator.String{
 							stringvalidator.OneOf("write_restricted", "default"),
 						},
-					},
-					"owner": schema.StringAttribute{
-						MarkdownDescription: "The owner of the dashboard.",
-						Optional:            true,
 					},
 				},
 			},
@@ -1532,10 +1540,10 @@ func getWaffleLegendSchema() map[string]schema.Attribute {
 			},
 		},
 		"visible": schema.StringAttribute{
-			MarkdownDescription: "Legend visibility: auto, show, or hide.",
+			MarkdownDescription: "Legend visibility: auto, visible, or hidden.",
 			Optional:            true,
 			Validators: []validator.String{
-				stringvalidator.OneOf("auto", "show", "hide"),
+				stringvalidator.OneOf("auto", "visible", "hidden"),
 			},
 		},
 	}
@@ -1642,13 +1650,6 @@ func getTreemapSchema() map[string]schema.Attribute {
 			CustomType: customtypes.NewJSONWithDefaultsType(populatePartitionMetricsDefaults),
 			Required:   true,
 		},
-		"label_position": schema.StringAttribute{
-			MarkdownDescription: "Position of the labels: hidden or visible.",
-			Optional:            true,
-			Validators: []validator.String{
-				stringvalidator.OneOf("hidden", "visible"),
-			},
-		},
 		"legend": schema.SingleNestedAttribute{
 			MarkdownDescription: "Legend configuration for the treemap chart.",
 			Required:            true,
@@ -1723,10 +1724,10 @@ func getPartitionLegendSchema() map[string]schema.Attribute {
 			Optional:            true,
 		},
 		"visible": schema.StringAttribute{
-			MarkdownDescription: "Legend visibility: auto, show, or hide.",
+			MarkdownDescription: "Legend visibility: auto, visible, or hidden.",
 			Optional:            true,
 			Validators: []validator.String{
-				stringvalidator.OneOf("auto", "show", "hide"),
+				stringvalidator.OneOf("auto", "visible", "hidden"),
 			},
 		},
 	}
