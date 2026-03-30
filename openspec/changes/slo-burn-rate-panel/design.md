@@ -6,7 +6,7 @@ The Kibana Dashboard API exposes SLO burn rate panels as panel type `slo_burn_ra
 
 The API schema for `slo-burn-rate-embeddable` defines a `config` object with two required fields (`slo_id`, `duration`) and several optional fields (`slo_instance_id`, `drilldowns`, `title`, `description`, `hide_title`, `hide_border`).
 
-The existing provider architecture for typed panel configs (e.g. `markdown_config`, `xy_chart_config`) maps naturally onto this shape. This design follows those precedents. The `drilldowns` shape is shared with `slo_overview` (REQ-030) and `slo_error_budget` (REQ-031); this proposal uses the same typed drilldown object structure for consistency.
+The existing provider architecture for typed panel configs (e.g. `markdown_config`, `xy_chart_config`) maps naturally onto this shape. This design follows those precedents. The `drilldowns` shape is shared with `slo_overview` (REQ-030) and `slo_error_budget` (REQ-031); this proposal uses the same typed drilldown object structure for consistency, except that the SLO burn rate implementation hardcodes the only API-supported `trigger` and `type` values rather than exposing them as practitioner input.
 
 ## Goals
 
@@ -48,8 +48,6 @@ slo_burn_rate_config = {
   drilldowns = list(object({
     url              = string  # required
     label            = string  # required
-    trigger          = string  # required; const "on_open_panel_menu"
-    type             = string  # required; const "url_drilldown"
     encode_url       = bool    # optional; API default true
     open_in_new_tab  = bool    # optional; API default true
   }))
@@ -81,7 +79,7 @@ On read-back, if the API returns `slo_instance_id = "*"` but the prior state val
 
 ### `drilldowns` as list of typed objects
 
-`drilldowns` is modeled as a list of typed objects. The drilldown shape (`url`, `label`, `trigger`, `type`, `encode_url`, `open_in_new_tab`) is consistent with the `slo_overview` (REQ-030) and `slo_error_budget` (REQ-031) drilldown shapes. `trigger` and `type` are effectively constants (`"on_open_panel_menu"` and `"url_drilldown"` respectively), but they are exposed as required string attributes rather than hidden constants so that the schema matches the API faithfully and any future extension is a backward-compatible addition.
+`drilldowns` is modeled as a list of typed objects. Practitioners configure `url`, `label`, `encode_url`, and `open_in_new_tab`. The API-required `trigger` and `type` fields are not exposed because the generated Kibana schema currently defines only one valid value for each: `trigger = "on_open_panel_menu"` and `type = "url_drilldown"`. The provider injects those constants on write and ignores them on read.
 
 ### `config_json` support for `slo_burn_rate`
 
@@ -111,4 +109,3 @@ This change is purely additive. No existing dashboard state is affected. There i
 
 2. **`drilldowns` ordering**: The API returns drilldowns as an array. If Kibana reorders drilldowns on read-back, plan noise will result. Confirm during acceptance testing whether drilldown ordering is stable across create/read cycles. If not, a set-based comparison or sorted normalization may be needed.
 
-3. **`trigger` and `type` constants**: The design exposes `trigger` and `type` as required string attributes on each drilldown. If the API schema enforces these as constants, schema-level enum validators should be added. Confirm the allowed values from the live API schema during implementation.

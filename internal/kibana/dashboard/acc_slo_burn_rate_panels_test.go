@@ -125,11 +125,10 @@ func TestAccResourceDashboardSloBurnRateWithDrilldowns(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.type", "slo_burn_rate"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.slo_burn_rate_config.slo_instance_id", "host-a"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.slo_burn_rate_config.drilldowns.#", "1"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.slo_burn_rate_config.drilldowns.0.url", "https://example.com/{{context.panel.title}}"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.slo_burn_rate_config.drilldowns.0.label", "View details"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.slo_burn_rate_config.drilldowns.0.trigger", "on_open_panel_menu"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.slo_burn_rate_config.drilldowns.0.type", "url_drilldown"),
 					// Optional drilldown bools omitted in config — confirm null-preservation in state.
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.slo_burn_rate_config.drilldowns.0.encode_url"),
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.slo_burn_rate_config.drilldowns.0.open_in_new_tab"),
@@ -199,6 +198,32 @@ func TestAccResourceDashboardSloBurnRateInvalidDuration(t *testing.T) {
 					"dashboard_title": config.StringVariable("unused"),
 				},
 				ExpectError: regexp.MustCompile(`(?s)duration.*\\d\+\[mhd\]`),
+			},
+		},
+	})
+}
+
+func TestAccResourceDashboardSloBurnRateInvalidConfig(t *testing.T) {
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("invalid_panel_type"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable("unused"),
+				},
+				ExpectError: regexp.MustCompile(`Invalid Configuration`),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("invalid_config_json"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable("unused"),
+				},
+				ExpectError: regexp.MustCompile(`Invalid Configuration`),
 			},
 		},
 	})

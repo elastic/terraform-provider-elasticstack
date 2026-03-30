@@ -876,14 +876,6 @@ func getPanelSchema() schema.NestedAttributeObject {
 									MarkdownDescription: "Display label shown in the drilldown menu.",
 									Required:            true,
 								},
-								"trigger": schema.StringAttribute{
-									MarkdownDescription: "Event that triggers the drilldown. Use `\"on_open_panel_menu\"`.",
-									Required:            true,
-								},
-								"type": schema.StringAttribute{
-									MarkdownDescription: "Drilldown type. Use `\"url_drilldown\"`.",
-									Required:            true,
-								},
 								"encode_url": schema.BoolAttribute{
 									MarkdownDescription: "When true, the URL is percent-encoded. Omit to use the API default.",
 									Optional:            true,

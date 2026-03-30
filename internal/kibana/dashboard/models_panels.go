@@ -529,7 +529,7 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 		default:
 			diags.AddError(
 				"Unsupported panel type for config_json",
-				"Only markdown and lens panel types are currently supported with config_json. The slo_burn_rate panel type must be managed exclusively through the slo_burn_rate_config block.",
+				"Only markdown and lens panel types are currently supported with config_json.",
 			)
 			return kbapi.DashboardPanelItem{}, diags
 		}

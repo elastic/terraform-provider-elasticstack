@@ -28,13 +28,13 @@ REQ-010 SHALL be updated so that `slo_burn_rate` is explicitly excluded from `co
 
 is updated to additionally state:
 
-> The `slo_burn_rate` panel type SHALL be managed exclusively through the typed `slo_burn_rate_config` block; using `config_json` with `type = "slo_burn_rate"` SHALL return an error diagnostic.
+> The `slo_burn_rate` panel type SHALL remain outside the `config_json`-supported set; using `config_json` with `type = "slo_burn_rate"` SHALL return the standard diagnostic that `config_json` is supported only for `markdown` and `lens` panel types.
 
 #### Scenario: config_json rejected for slo_burn_rate panel type
 
 - GIVEN a panel with `type = "slo_burn_rate"` configured through `config_json`
 - WHEN the provider builds the API request on create or update
-- THEN it SHALL return an error diagnostic stating that `config_json` is not supported for `slo_burn_rate`
+- THEN it SHALL return an error diagnostic stating that `config_json` is supported only for `markdown` and `lens` panel types
 
 ## ADDED Requirements
 
@@ -44,7 +44,7 @@ The resource SHALL support `type = "slo_burn_rate"` panels through the typed `sl
 
 The `duration` field SHALL be validated at plan time against the pattern `^\d+[mhd]$`. Any value that does not match SHALL be rejected before any dashboard API call.
 
-On write, the provider SHALL map `slo_burn_rate_config` to the `config` object in the `slo-burn-rate-embeddable` API schema. Optional fields SHALL be included only when set; absent optional fields SHALL NOT be sent to the API. When `drilldowns` is set, each drilldown object SHALL include all four required attributes (`url`, `label`, `trigger`, `type`) and the optional attributes (`encode_url`, `open_in_new_tab`) only when explicitly set.
+On write, the provider SHALL map `slo_burn_rate_config` to the `config` object in the `slo-burn-rate-embeddable` API schema. Optional fields SHALL be included only when set; absent optional fields SHALL NOT be sent to the API. When `drilldowns` is set, each drilldown object SHALL accept practitioner-configured `url` and `label`, SHALL hardcode `trigger = "on_open_panel_menu"` and `type = "url_drilldown"` in the API request, and SHALL include the optional attributes (`encode_url`, `open_in_new_tab`) only when explicitly set.
 
 On read, the `slo_instance_id` field SHALL use null-preservation: if the prior state value was null and the API returns `"*"`, the provider SHALL keep `slo_instance_id` null in state rather than introducing the API sentinel. When `slo_instance_id` is explicitly configured to `"*"`, the provider SHALL round-trip it normally.
 

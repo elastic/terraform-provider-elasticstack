@@ -18,7 +18,7 @@ After this change, practitioners will be able to:
 - Declare `slo_burn_rate` panels on a dashboard with full control over the target SLO and look-back duration.
 - Specify the SLO by `slo_id` and, when the SLO uses `group_by`, target a specific instance via `slo_instance_id`.
 - Configure the burn rate chart look-back window using `duration` in a `[value][unit]` format (e.g. `"5m"`, `"3h"`, `"6d"`).
-- Configure optional URL drilldowns via a typed `drilldowns` list that carries `url`, `label`, `trigger`, and `type` as required attributes plus optional `encode_url` and `open_in_new_tab`.
+- Configure optional URL drilldowns via a typed `drilldowns` list that carries practitioner-supplied `url` and `label`, while the provider supplies the fixed API-required `trigger` and `type` values plus optional `encode_url` and `open_in_new_tab`.
 - Optionally set panel-level display attributes (`title`, `description`, `hide_title`, `hide_border`).
 - Import and plan-refresh existing `slo_burn_rate` panels without losing their configuration.
 

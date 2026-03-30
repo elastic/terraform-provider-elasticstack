@@ -39,8 +39,6 @@ type sloBurnRateConfigModel struct {
 type sloBurnRateDrilldownModel struct {
 	URL          types.String `tfsdk:"url"`
 	Label        types.String `tfsdk:"label"`
-	Trigger      types.String `tfsdk:"trigger"`
-	Type         types.String `tfsdk:"type"`
 	EncodeURL    types.Bool   `tfsdk:"encode_url"`
 	OpenInNewTab types.Bool   `tfsdk:"open_in_new_tab"`
 }
@@ -86,8 +84,8 @@ func buildSloBurnRateConfig(pm panelModel, panel *kbapi.KbnDashboardPanelSloBurn
 		for i, d := range cfg.Drilldowns {
 			drilldowns[i].Url = d.URL.ValueString()
 			drilldowns[i].Label = d.Label.ValueString()
-			drilldowns[i].Trigger = kbapi.SloBurnRateEmbeddableDrilldownsTrigger(d.Trigger.ValueString())
-			drilldowns[i].Type = kbapi.SloBurnRateEmbeddableDrilldownsType(d.Type.ValueString())
+			drilldowns[i].Trigger = kbapi.SloBurnRateEmbeddableDrilldownsTriggerOnOpenPanelMenu
+			drilldowns[i].Type = kbapi.SloBurnRateEmbeddableDrilldownsTypeUrlDrilldown
 			if typeutils.IsKnown(d.EncodeURL) {
 				drilldowns[i].EncodeUrl = d.EncodeURL.ValueBoolPointer()
 			}
@@ -150,34 +148,18 @@ func populateSloBurnRateFromAPI(pm *panelModel, tfPanel *panelModel, apiConfig k
 
 	// Optional string fields: only update from API when they were already known in state.
 	if typeutils.IsKnown(existing.Title) {
-		if apiConfig.Title != nil {
-			existing.Title = types.StringValue(*apiConfig.Title)
-		} else {
-			existing.Title = types.StringNull()
-		}
+		existing.Title = types.StringPointerValue(apiConfig.Title)
 	}
 	if typeutils.IsKnown(existing.Description) {
-		if apiConfig.Description != nil {
-			existing.Description = types.StringValue(*apiConfig.Description)
-		} else {
-			existing.Description = types.StringNull()
-		}
+		existing.Description = types.StringPointerValue(apiConfig.Description)
 	}
 
 	// Optional bool fields: only update from API when they were already known in state.
 	if typeutils.IsKnown(existing.HideTitle) {
-		if apiConfig.HideTitle != nil {
-			existing.HideTitle = types.BoolValue(*apiConfig.HideTitle)
-		} else {
-			existing.HideTitle = types.BoolNull()
-		}
+		existing.HideTitle = types.BoolPointerValue(apiConfig.HideTitle)
 	}
 	if typeutils.IsKnown(existing.HideBorder) {
-		if apiConfig.HideBorder != nil {
-			existing.HideBorder = types.BoolValue(*apiConfig.HideBorder)
-		} else {
-			existing.HideBorder = types.BoolNull()
-		}
+		existing.HideBorder = types.BoolPointerValue(apiConfig.HideBorder)
 	}
 
 	// Drilldowns: update from API preserving optional bool null-preservation per drilldown.
@@ -206,10 +188,8 @@ func readSloBurnRateDrilldownsFromAPI(
 	result := make([]sloBurnRateDrilldownModel, len(*apiDrilldowns))
 	for i, d := range *apiDrilldowns {
 		result[i] = sloBurnRateDrilldownModel{
-			URL:     types.StringValue(d.Url),
-			Label:   types.StringValue(d.Label),
-			Trigger: types.StringValue(string(d.Trigger)),
-			Type:    types.StringValue(string(d.Type)),
+			URL:   types.StringValue(d.Url),
+			Label: types.StringValue(d.Label),
 		}
 
 		// Determine prior state for this drilldown (if it exists at this index).

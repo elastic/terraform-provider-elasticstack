@@ -124,8 +124,6 @@ func Test_buildSloBurnRateConfig_withDrilldowns(t *testing.T) {
 				{
 					URL:          types.StringValue("https://example.com"),
 					Label:        types.StringValue("View details"),
-					Trigger:      types.StringValue("on_open_panel_menu"),
-					Type:         types.StringValue("url_drilldown"),
 					EncodeURL:    types.BoolNull(),
 					OpenInNewTab: types.BoolNull(),
 				},
@@ -155,8 +153,6 @@ func Test_buildSloBurnRateConfig_withDrilldowns_optionalBoolsSet(t *testing.T) {
 				{
 					URL:          types.StringValue("https://example.com"),
 					Label:        types.StringValue("Link"),
-					Trigger:      types.StringValue("on_open_panel_menu"),
-					Type:         types.StringValue("url_drilldown"),
 					EncodeURL:    types.BoolValue(true),
 					OpenInNewTab: types.BoolValue(false),
 				},
@@ -270,6 +266,26 @@ func Test_populateSloBurnRateFromAPI_sloInstanceID_explicitValue_roundTrips(t *t
 	assert.Equal(t, "host-a", pm.SloBurnRateConfig.SloInstanceID.ValueString())
 }
 
+// When slo_instance_id is explicitly configured to "*", round-trip it normally.
+func Test_populateSloBurnRateFromAPI_sloInstanceID_explicitWildcard_roundTrips(t *testing.T) {
+	existing := &sloBurnRateConfigModel{
+		SloID:         types.StringValue("slo-1"),
+		Duration:      types.StringValue("72h"),
+		SloInstanceID: types.StringValue("*"),
+		Title:         types.StringNull(),
+		Description:   types.StringNull(),
+		HideTitle:     types.BoolNull(),
+		HideBorder:    types.BoolNull(),
+	}
+	pm := &panelModel{SloBurnRateConfig: existing}
+	tfPanel := &panelModel{SloBurnRateConfig: existing}
+
+	apiCfg := makeSloBurnRateAPIConfig("slo-1", "72h", withSloInstanceID("*"))
+	populateSloBurnRateFromAPI(pm, tfPanel, apiCfg)
+
+	assert.Equal(t, "*", pm.SloBurnRateConfig.SloInstanceID.ValueString())
+}
+
 // When prior state has no config block (nil), preserve nil intent.
 func Test_populateSloBurnRateFromAPI_nilBlock_preservesNilIntent(t *testing.T) {
 	pm := &panelModel{}
@@ -312,8 +328,6 @@ func Test_populateSloBurnRateFromAPI_drilldowns_optionalBoolNullPreservation(t *
 			{
 				URL:          types.StringValue("https://example.com"),
 				Label:        types.StringValue("View"),
-				Trigger:      types.StringValue("on_open_panel_menu"),
-				Type:         types.StringValue("url_drilldown"),
 				EncodeURL:    types.BoolNull(), // not configured
 				OpenInNewTab: types.BoolNull(), // not configured
 			},
@@ -360,8 +374,6 @@ func Test_populateSloBurnRateFromAPI_drilldowns_optionalBoolsExplicit_roundTrip(
 			{
 				URL:          types.StringValue("https://example.com"),
 				Label:        types.StringValue("View"),
-				Trigger:      types.StringValue("on_open_panel_menu"),
-				Type:         types.StringValue("url_drilldown"),
 				EncodeURL:    types.BoolValue(true),
 				OpenInNewTab: types.BoolValue(false),
 			},
