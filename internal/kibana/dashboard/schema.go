@@ -1258,10 +1258,6 @@ func getTagcloudSchema() map[string]schema.Attribute {
 		CustomType:          jsontypes.NormalizedType{},
 		Required:            true,
 	}
-	attrs["ignore_global_filters"] = schema.BoolAttribute{
-		MarkdownDescription: "If true, ignore global filters when fetching data for this layer. Default is false.",
-		Optional:            true,
-	}
 	attrs["query"] = schema.SingleNestedAttribute{
 		MarkdownDescription: "Query configuration for filtering data.",
 		Required:            true,
@@ -1308,10 +1304,6 @@ func getHeatmapSchema() map[string]schema.Attribute {
 		MarkdownDescription: "Dataset configuration as JSON. For standard heatmaps, this specifies the data view or index; for ES|QL, this specifies the ES|QL query dataset.",
 		CustomType:          jsontypes.NormalizedType{},
 		Required:            true,
-	}
-	attrs["ignore_global_filters"] = schema.BoolAttribute{
-		MarkdownDescription: "If true, ignore global filters when fetching data for this chart. Default is false.",
-		Optional:            true,
 	}
 	attrs["query"] = schema.SingleNestedAttribute{
 		MarkdownDescription: "Query configuration for filtering data. Required for non-ES|QL heatmaps.",
@@ -1387,10 +1379,6 @@ func getPartitionChartBaseSchema() map[string]schema.Attribute {
 		CustomType:          jsontypes.NormalizedType{},
 		Required:            true,
 	}
-	attrs["ignore_global_filters"] = schema.BoolAttribute{
-		MarkdownDescription: "If true, ignore global filters when fetching data for this chart. Default is false.",
-		Optional:            true,
-	}
 	attrs["query"] = schema.SingleNestedAttribute{
 		MarkdownDescription: "Query configuration for filtering data. Required for non-ES|QL partition charts.",
 		Optional:            true,
@@ -1406,10 +1394,6 @@ func getWaffleSchema() map[string]schema.Attribute {
 		MarkdownDescription: "Dataset configuration as JSON. For standard (non-ES|QL) waffles, use a data view or index dataset; for ES|QL, use an `esql` or table ES|QL dataset.",
 		CustomType:          jsontypes.NormalizedType{},
 		Required:            true,
-	}
-	attrs["ignore_global_filters"] = schema.BoolAttribute{
-		MarkdownDescription: "If true, ignore global filters when fetching data for this chart. Default is false.",
-		Optional:            true,
 	}
 	attrs["query"] = schema.SingleNestedAttribute{
 		MarkdownDescription: "Query configuration for non-ES|QL waffles. Omit this block (or leave `query` and `language` unset) to use ES|QL mode.",
@@ -1834,10 +1818,6 @@ func getRegionMapSchema() map[string]schema.Attribute {
 		CustomType:          jsontypes.NormalizedType{},
 		Required:            true,
 	}
-	attrs["ignore_global_filters"] = schema.BoolAttribute{
-		MarkdownDescription: "If true, ignore global filters when fetching data for this layer. Default is false.",
-		Optional:            true,
-	}
 	attrs["query"] = schema.SingleNestedAttribute{
 		MarkdownDescription: "Query configuration for filtering data. Required for non-ES|QL region map configurations.",
 		Optional:            true,
@@ -1864,10 +1844,6 @@ func getLegacyMetricSchema() map[string]schema.Attribute {
 		CustomType:          jsontypes.NormalizedType{},
 		Required:            true,
 	}
-	attrs["ignore_global_filters"] = schema.BoolAttribute{
-		MarkdownDescription: "If true, ignore global filters when fetching data for this panel. Default is false.",
-		Optional:            true,
-	}
 	attrs["metric_json"] = schema.StringAttribute{
 		MarkdownDescription: "Metric configuration as JSON. For standard datasets, use a metric operation or formula. For ES|QL datasets, include format, operation, column, and color configuration.",
 		CustomType:          customtypes.NewJSONWithDefaultsType(populateLegacyMetricMetricDefaults),
@@ -1888,10 +1864,6 @@ func getGaugeSchema() map[string]schema.Attribute {
 		MarkdownDescription: "Dataset configuration as JSON. For standard layers, this specifies the data view and query.",
 		CustomType:          jsontypes.NormalizedType{},
 		Required:            true,
-	}
-	attrs["ignore_global_filters"] = schema.BoolAttribute{
-		MarkdownDescription: "If true, ignore global filters when fetching data for this layer. Default is false.",
-		Optional:            true,
 	}
 	attrs["query"] = schema.SingleNestedAttribute{
 		MarkdownDescription: "Query configuration for filtering data.",
@@ -1918,10 +1890,6 @@ func getMetricChart() map[string]schema.Attribute {
 		MarkdownDescription: metricChartDatasetDescription,
 		CustomType:          jsontypes.NormalizedType{},
 		Required:            true,
-	}
-	attrs["ignore_global_filters"] = schema.BoolAttribute{
-		MarkdownDescription: "If true, ignore global filters when fetching data for this layer. Default is false.",
-		Optional:            true,
 	}
 	attrs["query"] = schema.SingleNestedAttribute{
 		MarkdownDescription: "Query configuration for filtering data. Required for non-ES|QL datasets.",
@@ -1985,15 +1953,6 @@ func getDatatableNoESQLSchema() map[string]schema.Attribute {
 		MarkdownDescription: "Density configuration for the datatable.",
 		Required:            true,
 		Attributes:          getDatatableDensitySchema(),
-	}
-	attrs["ignore_global_filters"] = schema.BoolAttribute{
-		MarkdownDescription: "If true, ignore global filters when fetching data for this datatable.",
-		Optional:            true,
-	}
-	attrs["filters"] = schema.ListNestedAttribute{
-		MarkdownDescription: "Additional filters to apply to the datatable data (maximum 100).",
-		Optional:            true,
-		NestedObject:        getChartFilter(),
 	}
 	attrs["query"] = schema.SingleNestedAttribute{
 		MarkdownDescription: "Query configuration for filtering data.",
@@ -2062,15 +2021,6 @@ func getDatatableESQLSchema() map[string]schema.Attribute {
 		MarkdownDescription: "Density configuration for the datatable.",
 		Required:            true,
 		Attributes:          getDatatableDensitySchema(),
-	}
-	attrs["ignore_global_filters"] = schema.BoolAttribute{
-		MarkdownDescription: "If true, ignore global filters when fetching data for this datatable.",
-		Optional:            true,
-	}
-	attrs["filters"] = schema.ListNestedAttribute{
-		MarkdownDescription: "Additional filters to apply to the datatable data (maximum 100).",
-		Optional:            true,
-		NestedObject:        getChartFilter(),
 	}
 	attrs["metrics"] = schema.ListNestedAttribute{
 		MarkdownDescription: "Array of metric configurations as JSON. Each entry defines a datatable metric column.",
