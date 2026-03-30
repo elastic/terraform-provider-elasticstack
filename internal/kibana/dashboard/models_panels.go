@@ -46,9 +46,10 @@ type panelModel struct {
 	RegionMapConfig         *regionMapConfigModel                             `tfsdk:"region_map_config"`
 	HeatmapConfig           *heatmapConfigModel                               `tfsdk:"heatmap_config"`
 	WaffleConfig            *waffleConfigModel                                `tfsdk:"waffle_config"`
-	TimeSliderControlConfig *timeSliderControlConfigModel                     `tfsdk:"time_slider_control_config"`
-	SloBurnRateConfig       *sloBurnRateConfigModel                           `tfsdk:"slo_burn_rate_config"`
-	ConfigJSON              customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config_json"`
+	TimeSliderControlConfig  *timeSliderControlConfigModel                     `tfsdk:"time_slider_control_config"`
+	SloBurnRateConfig        *sloBurnRateConfigModel                           `tfsdk:"slo_burn_rate_config"`
+	RangeSliderControlConfig *rangeSliderControlConfigModel                    `tfsdk:"range_slider_control_config"`
+	ConfigJSON               customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config_json"`
 }
 
 type panelGridModel struct {
@@ -206,7 +207,8 @@ func panelUsesConfigJSONOnly(pm *panelModel) bool {
 		pm.HeatmapConfig == nil &&
 		pm.WaffleConfig == nil &&
 		pm.TimeSliderControlConfig == nil &&
-		pm.SloBurnRateConfig == nil
+		pm.SloBurnRateConfig == nil &&
+		pm.RangeSliderControlConfig == nil
 }
 
 func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelModel, panelItem kbapi.DashboardPanelItem) (panelModel, diag.Diagnostics) {
@@ -269,6 +271,14 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 		pm.ID = types.StringPointerValue(sbrPanel.Uid)
 		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
 		populateSloBurnRateFromAPI(&pm, tfPanel, sbrPanel.Config)
+	case panelTypeRangeSlider:
+		rsPanel, err := panelItem.AsKbnDashboardPanelRangeSliderControl()
+		if err != nil {
+			return panelModel{}, diagutil.FrameworkDiagFromError(err)
+		}
+		setPanelGridFromAPI(&pm, rsPanel.Grid.X, rsPanel.Grid.Y, rsPanel.Grid.W, rsPanel.Grid.H)
+		pm.ID = types.StringPointerValue(rsPanel.Uid)
+		populateRangeSliderControlFromAPI(ctx, &pm, tfPanel, rsPanel.Config)
 	case panelTypeLens:
 		lensPanel, err := panelItem.AsKbnDashboardPanelLens()
 		if err != nil {
@@ -428,6 +438,19 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 		}
 		if err := panelItem.FromKbnDashboardPanelMarkdown(markdownPanel); err != nil {
 			diags.AddError("Failed to create markdown panel", err.Error())
+		}
+		return panelItem, diags
+	}
+
+	if pm.Type.ValueString() == panelTypeRangeSlider || pm.RangeSliderControlConfig != nil {
+		rsPanel := kbapi.KbnDashboardPanelRangeSliderControl{
+			Grid:   grid,
+			Uid:    uid,
+			Config: kbapi.KbnDashboardPanelRangeSliderControl_Config{},
+		}
+		buildRangeSliderControlConfig(context.Background(), pm, &rsPanel)
+		if err := panelItem.FromKbnDashboardPanelRangeSliderControl(rsPanel); err != nil {
+			diags.AddError("Failed to create range slider control panel", err.Error())
 		}
 		return panelItem, diags
 	}

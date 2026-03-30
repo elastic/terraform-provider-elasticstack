@@ -50,8 +50,9 @@ const (
 	operationTerms        = "terms"
 	panelTypeMarkdown     = "markdown"
 	panelTypeLens         = "lens"
-	panelTypeTimeSlider   = "time_slider_control"
-	panelTypeSloBurnRate  = "slo_burn_rate"
+	panelTypeTimeSlider  = "time_slider_control"
+	panelTypeSloBurnRate = "slo_burn_rate"
+	panelTypeRangeSlider = "range_slider_control"
 )
 
 var sloBurnRateDurationRegex = regexp.MustCompile(`^\d+[mhd]$`)
@@ -73,6 +74,7 @@ var panelConfigNames = []string{
 	"waffle_config",
 	"time_slider_control_config",
 	"slo_burn_rate_config",
+	"range_slider_control_config",
 }
 
 func siblingPanelConfigPathsExcept(name string, names []string) []path.Expression {
@@ -904,6 +906,55 @@ func getPanelSchema() schema.NestedAttributeObject {
 						siblingPanelConfigPathsExcept("slo_burn_rate_config", panelConfigNames)...,
 					),
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeSloBurnRate}),
+				},
+			},
+			"range_slider_control_config": schema.SingleNestedAttribute{
+				MarkdownDescription: panelConfigDescription(
+					"Configuration for a range slider control panel. Provides a min/max range filter tied to a data view field.",
+					"range_slider_control_config",
+					panelConfigNames,
+				),
+				Optional: true,
+				Attributes: map[string]schema.Attribute{
+					"title": schema.StringAttribute{
+						MarkdownDescription: "A human-readable title for the control.",
+						Optional:            true,
+					},
+					"data_view_id": schema.StringAttribute{
+						MarkdownDescription: "The ID of the data view that the control is tied to.",
+						Required:            true,
+					},
+					"field_name": schema.StringAttribute{
+						MarkdownDescription: "The name of the field in the data view that the control is tied to.",
+						Required:            true,
+					},
+					"use_global_filters": schema.BoolAttribute{
+						MarkdownDescription: "Whether the control respects dashboard-level filters.",
+						Optional:            true,
+					},
+					"ignore_validations": schema.BoolAttribute{
+						MarkdownDescription: "Whether to suppress validation errors during intermediate states.",
+						Optional:            true,
+					},
+					"value": schema.ListAttribute{
+						MarkdownDescription: "Initial range as a list of exactly 2 strings: [min, max].",
+						ElementType:         types.StringType,
+						Optional:            true,
+						Validators: []validator.List{
+							listvalidator.SizeAtLeast(2),
+							listvalidator.SizeAtMost(2),
+						},
+					},
+					"step": schema.Float64Attribute{
+						MarkdownDescription: "The step size for the range slider.",
+						Optional:            true,
+					},
+				},
+				Validators: []validator.Object{
+					objectvalidator.ConflictsWith(
+						siblingPanelConfigPathsExcept("range_slider_control_config", panelConfigNames)...,
+					),
+					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeRangeSlider}),
 				},
 			},
 			"config_json": schema.StringAttribute{
