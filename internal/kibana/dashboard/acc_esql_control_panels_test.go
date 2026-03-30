@@ -116,6 +116,103 @@ func TestAccResourceDashboardESQLControl(t *testing.T) {
 	})
 }
 
+func TestAccResourceDashboardESQLControlValuesFromQuery(t *testing.T) {
+	dashboardTitle := "Test Dashboard with ES|QL Control VALUES_FROM_QUERY " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			// Create with VALUES_FROM_QUERY control type
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("values_from_query"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.type", "esql_control"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.esql_control_config.control_type", "VALUES_FROM_QUERY"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.esql_control_config.variable_type", "fields"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.esql_control_config.variable_name", "target_field"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.esql_control_config.esql_query", "FROM logs-* | KEEP host.name"),
+				),
+			},
+			// Refresh/plan: no drift (selected_options may be updated by Kibana for VALUES_FROM_QUERY)
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("values_from_query"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+		},
+	})
+}
+
+func TestAccResourceDashboardESQLControlDisplaySettings(t *testing.T) {
+	dashboardTitle := "Test Dashboard with ES|QL Control display_settings " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			// Create with display_settings block
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_display_settings"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.type", "esql_control"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.esql_control_config.display_settings.placeholder", "Select a value"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.esql_control_config.display_settings.hide_action_bar", "true"),
+				),
+			},
+			// Refresh/plan: no drift
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_display_settings"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+		},
+	})
+}
+
+func TestAccResourceDashboardESQLControlConfigJSONRejected(t *testing.T) {
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				Config: `
+resource "elasticstack_kibana_dashboard" "test" {
+  title = "config-json-esql-test"
+  panels = [{
+    type        = "esql_control"
+    grid        = { x = 0, y = 0 }
+    config_json = "{}"
+  }]
+}
+`,
+				ExpectError: regexp.MustCompile(`(?i)esql_control|not supported|not allowed`),
+			},
+		},
+	})
+}
+
 func TestAccResourceDashboardESQLControlInvalidEnum(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
