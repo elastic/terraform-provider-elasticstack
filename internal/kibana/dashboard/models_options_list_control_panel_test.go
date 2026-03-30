@@ -27,13 +27,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func strPtr(s string) *string { return &s }
-func boolPtr(b bool) *bool    { return &b }
-
-func searchTechPtr(v kbapi.KbnDashboardPanelOptionsListControlConfigSearchTechnique) *kbapi.KbnDashboardPanelOptionsListControlConfigSearchTechnique {
-	return &v
-}
-
 func makeAPIConfig(dataViewID, fieldName string) kbapi.KbnDashboardPanelOptionsListControl_Config {
 	return kbapi.KbnDashboardPanelOptionsListControl_Config{
 		DataViewId: dataViewID,
@@ -57,13 +50,13 @@ func Test_populateOptionsListControlFromAPI_import_populatesAllFields(t *testing
 	apiCfg := kbapi.KbnDashboardPanelOptionsListControl_Config{
 		DataViewId:        "dv1",
 		FieldName:         "field1",
-		Title:             strPtr("My Control"),
-		UseGlobalFilters:  boolPtr(true),
-		IgnoreValidations: boolPtr(false),
-		SingleSelect:      boolPtr(true),
-		Exclude:           boolPtr(false),
-		ExistsSelected:    boolPtr(true),
-		RunPastTimeout:    boolPtr(false),
+		Title:             new("My Control"),
+		UseGlobalFilters:  new(true),
+		IgnoreValidations: new(false),
+		SingleSelect:      new(true),
+		Exclude:           new(false),
+		ExistsSelected:    new(true),
+		RunPastTimeout:    new(false),
 		SearchTechnique:   &st,
 		DisplaySettings: &struct {
 			HideActionBar *bool   `json:"hide_action_bar,omitempty"`
@@ -72,11 +65,11 @@ func Test_populateOptionsListControlFromAPI_import_populatesAllFields(t *testing
 			HideSort      *bool   `json:"hide_sort,omitempty"`
 			Placeholder   *string `json:"placeholder,omitempty"`
 		}{
-			Placeholder:   strPtr("Select..."),
-			HideActionBar: boolPtr(true),
-			HideExclude:   boolPtr(false),
-			HideExists:    boolPtr(true),
-			HideSort:      boolPtr(false),
+			Placeholder:   new("Select..."),
+			HideActionBar: new(true),
+			HideExclude:   new(false),
+			HideExists:    new(true),
+			HideSort:      new(false),
 		},
 		Sort: &struct {
 			By        kbapi.KbnDashboardPanelOptionsListControlConfigSortBy        `json:"by"`
@@ -137,7 +130,7 @@ func Test_populateOptionsListControlFromAPI_knownFields_updatedFromAPI(t *testin
 	apiCfg := kbapi.KbnDashboardPanelOptionsListControl_Config{
 		DataViewId:       "new-dv",
 		FieldName:        "new-field",
-		UseGlobalFilters: boolPtr(true),
+		UseGlobalFilters: new(true),
 		SearchTechnique:  &st,
 	}
 	populateOptionsListControlFromAPI(pm, tfPanel, apiCfg)
@@ -163,7 +156,7 @@ func Test_populateOptionsListControlFromAPI_nullFields_preservedAsNull(t *testin
 	apiCfg := kbapi.KbnDashboardPanelOptionsListControl_Config{
 		DataViewId:       "dv1",
 		FieldName:        "f1",
-		UseGlobalFilters: boolPtr(true),
+		UseGlobalFilters: new(true),
 		SearchTechnique:  &st,
 	}
 	populateOptionsListControlFromAPI(pm, tfPanel, apiCfg)
@@ -192,7 +185,7 @@ func Test_populateOptionsListControlFromAPI_nilDisplaySettings_preservedAsNil(t 
 			HideSort      *bool   `json:"hide_sort,omitempty"`
 			Placeholder   *string `json:"placeholder,omitempty"`
 		}{
-			Placeholder: strPtr("test"),
+			Placeholder: new("test"),
 		},
 	}
 	populateOptionsListControlFromAPI(pm, tfPanel, apiCfg)
