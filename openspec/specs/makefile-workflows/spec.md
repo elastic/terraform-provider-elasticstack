@@ -41,9 +41,7 @@ Environment variables consumed by underlying tools (for example Terraform loggin
 - **Lint, format, docs, OpenSpec:** `tools`, `golangci-lint`, `lint`, `check-lint`, `fmt`, `check-fmt`, `docs-generate`, `check-docs`, `setup-openspec`, `check-openspec`, `setup`
 - **Release & maintenance:** `release-snapshot`, `release-no-publish`, `release`, `check-sign-release`, `check-publish-release`, `release-notes`, `renovate-post-upgrade`, `notice`
 - **Codegen:** `gen`, `generate-slo-client`, `generate-clients`
-
 ## Requirements
-
 ### Requirement: Default goal and help (REQ-001–REQ-002)
 
 The default goal when no target is given SHALL be `help`. The `help` target SHALL list documented targets and short descriptions for interactive use.
@@ -237,14 +235,17 @@ The `tools` target SHALL provision golangci-lint at the **version pinned in the 
 - THEN it SHALL report issues without the fix-only mode used by `lint`
 
 ### Requirement: Lint aggregate targets (REQ-044–REQ-045)
-
-The `lint` target SHALL run setup, golangci-lint (with fix), formatting, and documentation generation. The `check-lint` target SHALL run setup, OpenSpec structural validation, golangci-lint (check mode), format check, and documentation freshness check.
+The `lint` target SHALL run setup, golangci-lint (with fix), formatting, and documentation generation. The `check-lint` target SHALL run setup, OpenSpec structural validation, golangci-lint (check mode), workflow generation checks, format check, and documentation freshness check.
 
 #### Scenario: Lint matches contributor workflow
-
 - GIVEN `make lint`
 - WHEN it completes successfully
 - THEN formatting, lint with fix, and docs generation SHALL have run after setup
+
+#### Scenario: Check-lint runs workflow generation validation
+- **GIVEN** generated workflow sources are out of date with their checked-in templates
+- **WHEN** `make check-lint` runs
+- **THEN** it SHALL fail before reporting success for repository validation
 
 ### Requirement: OpenSpec install and validation (REQ-046–REQ-049)
 
@@ -335,3 +336,4 @@ The `generate-slo-client` target SHALL regenerate the Go client under `generated
 - GIVEN Docker is available and `make generate-slo-client` runs successfully
 - WHEN generation finishes
 - THEN `generated/slo` SHALL contain formatted Go sources suitable for commit
+

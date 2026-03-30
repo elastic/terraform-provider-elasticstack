@@ -41,14 +41,14 @@ func (r *scriptResource) update(ctx context.Context, plan tfsdk.Plan, state *tfs
 	}
 
 	scriptID := data.ScriptID.ValueString()
-	id, sdkDiags := r.client.ID(ctx, scriptID)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	client, connDiags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, data.ElasticsearchConnection, r.client)
+	diags.Append(connDiags...)
 	if diags.HasError() {
 		return diags
 	}
 
-	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, data.ElasticsearchConnection, r.client)
-	diags.Append(diags...)
+	id, sdkDiags := client.ID(ctx, scriptID)
+	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
 		return diags
 	}
@@ -82,7 +82,7 @@ func (r *scriptResource) update(ctx context.Context, plan tfsdk.Plan, state *tfs
 	}
 
 	// Read the script back from Elasticsearch to populate state
-	readData, readDiags := r.read(ctx, scriptID, client)
+	readData, readDiags := r.read(ctx, scriptID, data)
 	diags.Append(readDiags...)
 	if diags.HasError() {
 		return diags

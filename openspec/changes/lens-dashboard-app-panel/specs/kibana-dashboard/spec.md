@@ -41,7 +41,11 @@ lens_dashboard_app_config = <optional, object({
 
 ---
 
-## MODIFIED: Replacement fields and schema validation (REQ-006)
+## MODIFIED Requirements
+
+### Requirement: Replacement fields and schema validation (REQ-006)
+
+Schema validation SHALL enforce that `lens_dashboard_app_config` is valid only for panels with `type = "lens-dashboard-app"`, is mutually exclusive with all other panel configuration blocks, and that exactly one of `by_value` or `by_reference` is set.
 
 The existing REQ-006 text is extended. The sentence:
 
@@ -75,7 +79,9 @@ gains the following additions:
 
 ---
 
-## MODIFIED: Raw `config_json` panel behavior (REQ-025)
+### Requirement: Raw `config_json` panel behavior (REQ-025)
+
+`config_json` SHALL NOT be supported for `lens-dashboard-app` panels; the `lens-dashboard-app` panel type SHALL be managed exclusively through the typed `lens_dashboard_app_config` block.
 
 The existing REQ-025 text:
 
@@ -93,7 +99,7 @@ is updated to:
 
 ---
 
-## ADDED: `lens-dashboard-app` panel behavior (REQ-035)
+## ADDED Requirements
 
 ### Requirement: `lens-dashboard-app` panel behavior (REQ-035)
 

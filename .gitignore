@@ -16,7 +16,7 @@ website/build
 website/node_modules
 .vagrant/
 *.backup
-./*.tfstate
+*.tfstate
 .terraform/
 .terraform.lock.hcl
 *.log
@@ -39,7 +39,7 @@ website/vendor
 # Keep windows files with windows line endings
 *.winfile eol=crlf
 
-terraform-provider-elasticstack
+/terraform-provider-elasticstack
 dist
 certs
 .ci/.gpg_*

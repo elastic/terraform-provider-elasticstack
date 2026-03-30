@@ -58,14 +58,14 @@ func (r *userResource) update(ctx context.Context, plan tfsdk.Plan, config tfsdk
 	}
 
 	usernameID := planData.Username.ValueString()
-	id, sdkDiags := r.client.ID(ctx, usernameID)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	client, connDiags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, planData.ElasticsearchConnection, r.client)
+	diags.Append(connDiags...)
 	if diags.HasError() {
 		return diags
 	}
 
-	client, connDiags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, planData.ElasticsearchConnection, r.client)
-	diags.Append(connDiags...)
+	id, sdkDiags := client.ID(ctx, usernameID)
+	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
 		return diags
 	}
