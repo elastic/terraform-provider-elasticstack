@@ -171,19 +171,27 @@ func (plan *TFModel) toAPIModel(ctx context.Context) (*APIModel, diag.Diagnostic
 			}
 			apiRules := make([]CustomRuleAPIModel, len(customRulesTF))
 			for j, rule := range customRulesTF {
-				var actions []string
-				d = rule.Actions.ElementsAs(ctx, &actions, false)
-				diags.Append(d...)
-				apiActions := make([]any, len(actions))
-				for k, a := range actions {
-					apiActions[k] = a
+				if typeutils.IsKnown(rule.Actions) {
+					var actions []string
+					d := rule.Actions.ElementsAs(ctx, &actions, false)
+					diags.Append(d...)
+					if diags.HasError() {
+						return nil, diags
+					}
+					apiActions := make([]any, len(actions))
+					for k, a := range actions {
+						apiActions[k] = a
+					}
+					apiRules[j].Actions = apiActions
 				}
-				apiRules[j].Actions = apiActions
 
 				if typeutils.IsKnown(rule.Conditions) {
 					var conditionsTF []RuleConditionTFModel
-					d = rule.Conditions.ElementsAs(ctx, &conditionsTF, false)
+					d := rule.Conditions.ElementsAs(ctx, &conditionsTF, false)
 					diags.Append(d...)
+					if diags.HasError() {
+						return nil, diags
+					}
 					apiConditions := make([]RuleConditionAPIModel, len(conditionsTF))
 					for k, cond := range conditionsTF {
 						apiConditions[k] = RuleConditionAPIModel{
@@ -459,6 +467,12 @@ func (plan *TFModel) convertAnalysisConfigFromAPI(ctx context.Context, apiConfig
 			}
 
 			// Convert custom rules
+			var originalCustomRules []CustomRuleTFModel
+			if typeutils.IsKnown(originalDetector.CustomRules) {
+				d := originalDetector.CustomRules.ElementsAs(ctx, &originalCustomRules, false)
+				diags.Append(d...)
+			}
+			ruleConditionElemType := types.ObjectType{AttrTypes: getRuleConditionAttrTypes()}
 
 			customRulesTF := make([]CustomRuleTFModel, len(detector.CustomRules))
 			for j, rule := range detector.CustomRules {
@@ -474,6 +488,9 @@ func (plan *TFModel) convertAnalysisConfigFromAPI(ctx context.Context, apiConfig
 					actionsListValue, d := types.ListValueFrom(ctx, types.StringType, actions)
 					diags.Append(d...)
 					customRulesTF[j].Actions = actionsListValue
+				} else if j < len(originalCustomRules) && typeutils.IsKnown(originalCustomRules[j].Actions) {
+					// API omits empty slices (JSON omitempty); preserve explicit [] vs null from config.
+					customRulesTF[j].Actions = typeutils.EnsureTypedList(ctx, originalCustomRules[j].Actions, types.StringType)
 				} else {
 					customRulesTF[j].Actions = types.ListNull(types.StringType)
 				}
@@ -488,11 +505,13 @@ func (plan *TFModel) convertAnalysisConfigFromAPI(ctx context.Context, apiConfig
 							Value:     types.Float64Value(condition.Value),
 						}
 					}
-					conditionsListValue, d := types.ListValueFrom(ctx, types.ObjectType{AttrTypes: getRuleConditionAttrTypes()}, conditionsTF)
+					conditionsListValue, d := types.ListValueFrom(ctx, ruleConditionElemType, conditionsTF)
 					diags.Append(d...)
 					customRulesTF[j].Conditions = conditionsListValue
+				} else if j < len(originalCustomRules) && typeutils.IsKnown(originalCustomRules[j].Conditions) {
+					customRulesTF[j].Conditions = typeutils.EnsureTypedList(ctx, originalCustomRules[j].Conditions, ruleConditionElemType)
 				} else {
-					customRulesTF[j].Conditions = types.ListNull(types.ObjectType{AttrTypes: getRuleConditionAttrTypes()})
+					customRulesTF[j].Conditions = types.ListNull(ruleConditionElemType)
 				}
 			}
 
