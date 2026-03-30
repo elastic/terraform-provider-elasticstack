@@ -155,8 +155,8 @@ if: >-
   needs.pre_activation.outputs.label_verified == 'true' &&
   needs.pre_activation.outputs.selection_status == 'eligible'
 steps:
-  - name: Install Node dependencies
-    run: npm ci
+  - name: Setup repository dependencies
+    run: make setup
 engine:
   id: copilot
   model: "gpt-5.4"
@@ -227,6 +227,8 @@ checkout:
 runtimes:
   go:
     version: "1.26.1"
+  node:
+    version: "24"
 safe-outputs:
   create-pull-request-review-comment:
     max: 25
