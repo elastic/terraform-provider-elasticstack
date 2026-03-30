@@ -2,6 +2,8 @@
 
 ### Requirement: Replacement fields and schema validation (REQ-006)
 
+Schema validation SHALL enforce that `slo_error_budget_config` is valid only for panels with `type = "slo_error_budget"`, is mutually exclusive with all other panel configuration blocks and with `config_json`, and that `drilldowns` entries use only the allowed constant values for `trigger` and `type`.
+
 REQ-006 is extended to include:
 
 - `slo_error_budget_config` SHALL be valid only for panels with `type = "slo_error_budget"`.
@@ -9,7 +11,15 @@ REQ-006 is extended to include:
 - The `trigger` attribute within each `drilldowns` entry SHALL be restricted to the value `"on_open_panel_menu"`; any other value SHALL be rejected at plan time.
 - The `type` attribute within each `drilldowns` entry SHALL be restricted to the value `"url_drilldown"`; any other value SHALL be rejected at plan time.
 
+#### Scenario: slo_error_budget_config rejected for non-slo_error_budget panel
+
+- GIVEN a panel with `type = "lens"` and `slo_error_budget_config` set
+- WHEN Terraform validates the resource schema
+- THEN the configuration SHALL be rejected before any dashboard API call
+
 ### Requirement: Panels, sections, and `config_json` round-trip behavior (REQ-010)
+
+`config_json` SHALL NOT be supported for `slo_error_budget` panels; the `slo_error_budget` panel type SHALL be managed exclusively through the typed `slo_error_budget_config` block.
 
 The existing REQ-010 text:
 
@@ -18,6 +28,12 @@ The existing REQ-010 text:
 is updated to additionally state:
 
 > The `slo_error_budget` panel type SHALL be managed exclusively through the typed `slo_error_budget_config` block; using `config_json` with `type = "slo_error_budget"` SHALL return an error diagnostic.
+
+#### Scenario: config_json rejected for slo_error_budget panel type
+
+- GIVEN a panel with `type = "slo_error_budget"` configured through `config_json`
+- WHEN the provider builds the API request on create or update
+- THEN it SHALL return an error diagnostic stating that `config_json` is not supported for `slo_error_budget`
 
 ---
 

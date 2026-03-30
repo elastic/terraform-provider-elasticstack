@@ -35,7 +35,11 @@ esql_control_config = <optional, object({
 
 ---
 
-## MODIFIED: Replacement fields and schema validation (REQ-006)
+## MODIFIED Requirements
+
+### Requirement: Replacement fields and schema validation (REQ-006)
+
+Schema validation SHALL enforce that `esql_control_config` is valid only for panels with `type = "esql_control"`, is mutually exclusive with all other panel configuration blocks, and that `variable_type` and `control_type` values are restricted to their documented enum values.
 
 The existing REQ-006 text is extended. The sentence:
 
@@ -68,7 +72,9 @@ gains the following additions:
 
 ---
 
-## MODIFIED: Panels and `config_json` round-trip behavior (REQ-010)
+### Requirement: Panels and `config_json` round-trip behavior (REQ-010)
+
+`config_json` SHALL NOT be supported for `esql_control` panels; the `esql_control` panel type SHALL be managed exclusively through the typed `esql_control_config` block.
 
 The existing REQ-010 text:
 
@@ -86,7 +92,7 @@ is updated to:
 
 ---
 
-## ADDED: ES|QL control panel behavior (REQ-026)
+## ADDED Requirements
 
 ### Requirement: ES|QL control panel behavior (REQ-026)
 
