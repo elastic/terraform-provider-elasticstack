@@ -35,20 +35,26 @@ type model struct {
 }
 
 func (m model) toAPICreateModel(_ context.Context) kbapi.PostFleetAgentDownloadSourcesJSONRequestBody {
-	return kbapi.PostFleetAgentDownloadSourcesJSONRequestBody{
+	body := kbapi.PostFleetAgentDownloadSourcesJSONRequestBody{
 		Host:      m.Host.ValueString(),
 		Name:      m.Name.ValueString(),
-		Id:        m.SourceID.ValueStringPointer(),
 		IsDefault: m.Default.ValueBoolPointer(),
 		ProxyId:   m.ProxyID.ValueStringPointer(),
 	}
+
+	// The API allows setting a custom id only at creation time.
+	if !m.SourceID.IsNull() && !m.SourceID.IsUnknown() && m.SourceID.ValueString() != "" {
+		id := m.SourceID.ValueString()
+		body.Id = &id
+	}
+
+	return body
 }
 
 func (m model) toAPIUpdateModel(_ context.Context) kbapi.PutFleetAgentDownloadSourcesSourceidJSONRequestBody {
 	return kbapi.PutFleetAgentDownloadSourcesSourceidJSONRequestBody{
 		Host:      m.Host.ValueString(),
 		Name:      m.Name.ValueString(),
-		Id:        m.SourceID.ValueStringPointer(),
 		IsDefault: m.Default.ValueBoolPointer(),
 		ProxyId:   m.ProxyID.ValueStringPointer(),
 	}
