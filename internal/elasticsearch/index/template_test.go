@@ -496,7 +496,7 @@ func TestAccResourceIndexTemplateAliasLifecycleRemoval(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				Config:                   testAccResourceIndexTemplateAliasLifecycleConfig(templateName, "30d", true),
+				Config:                   testAccResourceIndexTemplateAliasLifecycleConfig(templateName, "detailed_alias_initial", "30d", true),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "name", templateName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "template.0.alias.#", "1"),
@@ -504,7 +504,7 @@ func TestAccResourceIndexTemplateAliasLifecycleRemoval(t *testing.T) {
 						"elasticstack_elasticsearch_index_template.test",
 						"template.0.alias.*",
 						map[string]string{
-							"name":           "detailed_alias",
+							"name":           "detailed_alias_initial",
 							"is_hidden":      "true",
 							"is_write_index": "true",
 							"routing":        "shard_1",
@@ -524,7 +524,7 @@ func TestAccResourceIndexTemplateAliasLifecycleRemoval(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				Config:                   testAccResourceIndexTemplateAliasLifecycleConfig(templateName, "", false),
+				Config:                   testAccResourceIndexTemplateAliasLifecycleConfig(templateName, "detailed_alias_reset", "", false),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "name", templateName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "template.0.alias.#", "1"),
@@ -532,14 +532,14 @@ func TestAccResourceIndexTemplateAliasLifecycleRemoval(t *testing.T) {
 						"elasticstack_elasticsearch_index_template.test",
 						"template.0.alias.*",
 						map[string]string{
-							"name": "detailed_alias",
+							"name": "detailed_alias_reset",
 						},
 					),
-					testCheckTemplateAliasBoolAttrFalseOrAbsent("elasticstack_elasticsearch_index_template.test", "detailed_alias", "is_hidden"),
-					testCheckTemplateAliasBoolAttrFalseOrAbsent("elasticstack_elasticsearch_index_template.test", "detailed_alias", "is_write_index"),
-					testCheckTemplateAliasAttrCleared("elasticstack_elasticsearch_index_template.test", "detailed_alias", "routing"),
-					testCheckTemplateAliasAttrCleared("elasticstack_elasticsearch_index_template.test", "detailed_alias", "search_routing"),
-					testCheckTemplateAliasAttrCleared("elasticstack_elasticsearch_index_template.test", "detailed_alias", "index_routing"),
+					testCheckTemplateAliasBoolAttrFalseOrAbsent("elasticstack_elasticsearch_index_template.test", "detailed_alias_reset", "is_hidden"),
+					testCheckTemplateAliasBoolAttrFalseOrAbsent("elasticstack_elasticsearch_index_template.test", "detailed_alias_reset", "is_write_index"),
+					testCheckTemplateAliasAttrCleared("elasticstack_elasticsearch_index_template.test", "detailed_alias_reset", "routing"),
+					testCheckTemplateAliasAttrCleared("elasticstack_elasticsearch_index_template.test", "detailed_alias_reset", "search_routing"),
+					testCheckTemplateAliasAttrCleared("elasticstack_elasticsearch_index_template.test", "detailed_alias_reset", "index_routing"),
 					testCheckTemplateLifecycleAttrCleared("elasticstack_elasticsearch_index_template.test", "data_retention"),
 				),
 			},
@@ -863,7 +863,7 @@ resource "elasticstack_elasticsearch_index_template" "test" {
 }`, name, name+"-connection-*", buildIndexTemplateESConnectionBlock())
 }
 
-func testAccResourceIndexTemplateAliasLifecycleConfig(name, dataRetention string, includeAliasDetails bool) string {
+func testAccResourceIndexTemplateAliasLifecycleConfig(name, aliasName, dataRetention string, includeAliasDetails bool) string {
 	lifecycleBlock := ""
 	if dataRetention != "" {
 		lifecycleBlock = fmt.Sprintf(`
@@ -895,10 +895,10 @@ resource "elasticstack_elasticsearch_index_template" "test" {
 
   template {
     alias {
-      name = "detailed_alias"%s
+      name = %q%s
     }%s
   }
-}`, name, name+"-*", aliasFields, lifecycleBlock)
+}`, name, name+"-*", aliasName, aliasFields, lifecycleBlock)
 }
 
 func buildIndexTemplateESConnectionBlock() string {

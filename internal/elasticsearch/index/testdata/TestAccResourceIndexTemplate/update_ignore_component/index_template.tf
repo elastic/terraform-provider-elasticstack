@@ -9,19 +9,31 @@ variable "template_name" {
 resource "elasticstack_elasticsearch_component_template" "component_a" {
   name = "${var.template_name}-logscomponent-a@custom"
 
-  template {}
+  template {
+    settings = jsonencode({
+      number_of_shards = "1"
+    })
+  }
 }
 
 resource "elasticstack_elasticsearch_component_template" "component_b" {
   name = "${var.template_name}-logscomponent-b@custom"
 
-  template {}
+  template {
+    settings = jsonencode({
+      number_of_shards = "1"
+    })
+  }
 }
 
 resource "elasticstack_elasticsearch_component_template" "component_c" {
   name = "${var.template_name}-logscomponent-c@custom"
 
-  template {}
+  template {
+    settings = jsonencode({
+      number_of_shards = "1"
+    })
+  }
 }
 
 resource "elasticstack_elasticsearch_index_template" "test_component" {
