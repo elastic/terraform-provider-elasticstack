@@ -15,11 +15,11 @@ resource "elasticstack_kibana_dashboard" "test" {
       h = 15
     }
     esql_control_config = {
-      selected_options  = []
-      variable_name     = "target_field"
-      variable_type     = "fields"
-      esql_query        = "FROM logs-* | KEEP host.name"
-      control_type      = "VALUES_FROM_QUERY"
+      selected_options = []
+      variable_name    = "target_field"
+      variable_type    = "fields"
+      esql_query       = "FROM logs-* | KEEP host.name"
+      control_type     = "VALUES_FROM_QUERY"
     }
   }]
 }

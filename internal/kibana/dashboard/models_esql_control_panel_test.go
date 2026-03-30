@@ -318,4 +318,3 @@ func Test_esqlControl_roundTrip(t *testing.T) {
 	assert.Equal(t, original.Title, out.EsqlControlConfig.Title)
 	assert.Equal(t, original.SingleSelect, out.EsqlControlConfig.SingleSelect)
 }
-

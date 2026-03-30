@@ -33,15 +33,15 @@ type esqlControlDisplaySettingsModel struct {
 }
 
 type esqlControlConfigModel struct {
-	SelectedOptions  types.List                        `tfsdk:"selected_options"`
-	VariableName     types.String                      `tfsdk:"variable_name"`
-	VariableType     types.String                      `tfsdk:"variable_type"`
-	EsqlQuery        types.String                      `tfsdk:"esql_query"`
-	ControlType      types.String                      `tfsdk:"control_type"`
-	Title            types.String                      `tfsdk:"title"`
-	SingleSelect     types.Bool                        `tfsdk:"single_select"`
-	AvailableOptions types.List                        `tfsdk:"available_options"`
-	DisplaySettings  *esqlControlDisplaySettingsModel  `tfsdk:"display_settings"`
+	SelectedOptions  types.List                       `tfsdk:"selected_options"`
+	VariableName     types.String                     `tfsdk:"variable_name"`
+	VariableType     types.String                     `tfsdk:"variable_type"`
+	EsqlQuery        types.String                     `tfsdk:"esql_query"`
+	ControlType      types.String                     `tfsdk:"control_type"`
+	Title            types.String                     `tfsdk:"title"`
+	SingleSelect     types.Bool                       `tfsdk:"single_select"`
+	AvailableOptions types.List                       `tfsdk:"available_options"`
+	DisplaySettings  *esqlControlDisplaySettingsModel `tfsdk:"display_settings"`
 }
 
 // stringsToList converts a []string to a types.List of string elements.
@@ -77,11 +77,11 @@ func populateEsqlControlFromAPI(pm *panelModel, tfPanel *panelModel, apiConfig k
 	// On import (tfPanel == nil) there is no prior intent — populate from API.
 	if tfPanel == nil {
 		existing = &esqlControlConfigModel{
-			SelectedOptions: stringsToList(apiConfig.SelectedOptions),
-			VariableName:    types.StringValue(apiConfig.VariableName),
-			VariableType:    types.StringValue(string(apiConfig.VariableType)),
-			EsqlQuery:       types.StringValue(apiConfig.EsqlQuery),
-			ControlType:     types.StringValue(string(apiConfig.ControlType)),
+			SelectedOptions:  stringsToList(apiConfig.SelectedOptions),
+			VariableName:     types.StringValue(apiConfig.VariableName),
+			VariableType:     types.StringValue(string(apiConfig.VariableType)),
+			EsqlQuery:        types.StringValue(apiConfig.EsqlQuery),
+			ControlType:      types.StringValue(string(apiConfig.ControlType)),
 			AvailableOptions: types.ListNull(types.StringType),
 		}
 		pm.EsqlControlConfig = existing
