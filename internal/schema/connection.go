@@ -44,7 +44,6 @@ func GetEsFWConnectionBlock(isProviderConfiguration bool) fwschema.Block {
 	return fwschema.ListNestedBlock{
 		MarkdownDescription: "Elasticsearch connection configuration block. ",
 		Description:         "Elasticsearch connection configuration block. ",
-		DeprecationMessage:  getDeprecationMessage(isProviderConfiguration),
 		NestedObject: fwschema.NestedBlockObject{
 			Attributes: map[string]fwschema.Attribute{
 				"username": fwschema.StringAttribute{
@@ -299,8 +298,7 @@ func GetEsConnectionSchema(keyName string, isProviderConfiguration bool) *schema
 	}
 
 	return &schema.Schema{
-		Description: fmt.Sprintf("Elasticsearch connection configuration block. %s", getDeprecationMessage(isProviderConfiguration)),
-		Deprecated:  getDeprecationMessage(isProviderConfiguration),
+		Description: "Elasticsearch connection configuration block.",
 		Type:        schema.TypeList,
 		MaxItems:    1,
 		Optional:    true,
@@ -545,9 +543,3 @@ func makePathRef(keyName string, keyValue string) string {
 	return fmt.Sprintf("%s.0.%s", keyName, keyValue)
 }
 
-func getDeprecationMessage(isProviderConfiguration bool) string {
-	if isProviderConfiguration {
-		return ""
-	}
-	return "This property will be removed in a future provider version. Configure the Elasticsearch connection via the provider configuration instead."
-}
