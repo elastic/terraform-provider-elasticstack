@@ -26,6 +26,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
@@ -40,7 +41,8 @@ func TestAccResourceDataStream(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceDataStreamCreate(dsName),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{"name": config.StringVariable(dsName)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_data_stream.test_ds", "id"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "name", dsName),
@@ -60,7 +62,8 @@ func TestAccResourceDataStream(t *testing.T) {
 				),
 			},
 			{
-				Config:            testAccResourceDataStreamCreate(dsName),
+				ConfigDirectory:   acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:   config.Variables{"name": config.StringVariable(dsName)},
 				ResourceName:      "elasticstack_elasticsearch_data_stream.test_ds",
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -79,7 +82,8 @@ func TestAccResourceDataStream(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccResourceDataStreamCreate(dsNameUpdated),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{"name": config.StringVariable(dsNameUpdated)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "name", dsNameUpdated),
 					resource.TestMatchResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "id", regexp.MustCompile(fmt.Sprintf(".+/%s$", dsNameUpdated))),
@@ -108,14 +112,16 @@ func TestAccResourceDataStreamWithMetadata(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceDataStreamWithMetadata(dsName),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{"name": config.StringVariable(dsName)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "name", dsName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream.test_ds", "metadata", `{"env":"test","version":1}`),
 				),
 			},
 			{
-				Config:            testAccResourceDataStreamWithMetadata(dsName),
+				ConfigDirectory:   acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:   config.Variables{"name": config.StringVariable(dsName)},
 				ResourceName:      "elasticstack_elasticsearch_data_stream.test_ds",
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -150,115 +156,6 @@ func TestAccResourceDataStreamNameValidation(t *testing.T) {
 			},
 		},
 	})
-}
-
-func testAccResourceDataStreamCreate(name string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_index_lifecycle" "test_ilm" {
-  name = "%s"
-
-  hot {
-    min_age = "1h"
-    set_priority {
-      priority = 10
-    }
-    rollover {
-      max_age = "1d"
-    }
-    readonly {}
-  }
-
-  delete {
-    min_age = "2d"
-    delete {}
-  }
-}
-
-resource "elasticstack_elasticsearch_index_template" "test_ds_template" {
-  name = "%s"
-
-  index_patterns = ["%s*"]
-
-  template {
-    // make sure our template uses prepared ILM policy
-    settings = jsonencode({
-      "lifecycle.name" = elasticstack_elasticsearch_index_lifecycle.test_ilm.name
-    })
-
-  }
-
-  data_stream {}
-}
-
-// and now we can create data stream based on the index template
-resource "elasticstack_elasticsearch_data_stream" "test_ds" {
-  name = "%s"
-
-  // make sure that template is created before the data stream
-  depends_on = [
-    elasticstack_elasticsearch_index_template.test_ds_template
-  ]
-}
-	`, name, name, name, name)
-}
-
-func testAccResourceDataStreamWithMetadata(name string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_index_lifecycle" "test_ilm" {
-  name = "%s"
-
-  hot {
-    min_age = "1h"
-    set_priority {
-      priority = 10
-    }
-    rollover {
-      max_age = "1d"
-    }
-    readonly {}
-  }
-
-  delete {
-    min_age = "2d"
-    delete {}
-  }
-}
-
-resource "elasticstack_elasticsearch_index_template" "test_ds_template" {
-  name = "%s"
-
-  index_patterns = ["%s*"]
-
-  metadata = jsonencode({
-    env     = "test"
-    version = 1
-  })
-
-  template {
-    settings = jsonencode({
-      "lifecycle.name" = elasticstack_elasticsearch_index_lifecycle.test_ilm.name
-    })
-  }
-
-  data_stream {}
-}
-
-resource "elasticstack_elasticsearch_data_stream" "test_ds" {
-  name = "%s"
-
-  depends_on = [
-    elasticstack_elasticsearch_index_template.test_ds_template
-  ]
-}
-	`, name, name, name, name)
 }
 
 func testAccResourceDataStreamInvalidName(name string) string {
