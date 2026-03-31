@@ -65,7 +65,7 @@ resource "elasticstack_elasticsearch_security_user" "dev" {
 
 > **NOTE**: [Write-only arguments](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments) are supported in Terraform 1.11 and later.
 
-- `elasticsearch_connection` (Block List, Deprecated) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- `elasticsearch_connection` (Block List) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - `email` (String) The email of the user.
 - `enabled` (Boolean) Specifies whether the user is enabled. The default value is true.
 - `full_name` (String) The full name of the user.

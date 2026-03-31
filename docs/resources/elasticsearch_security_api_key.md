@@ -165,7 +165,7 @@ resource "elasticstack_elasticsearch_security_api_key" "rotating_api_key" {
 ### Optional
 
 - `access` (Attributes) Access configuration for cross-cluster API keys. Only applicable when type is 'cross_cluster'. (see [below for nested schema](#nestedatt--access))
-- `elasticsearch_connection` (Block List, Deprecated) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- `elasticsearch_connection` (Block List) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - `expiration` (String) Expiration time for the API key. By default, API keys never expire.
 - `metadata` (String) Arbitrary metadata that you want to associate with the API key.
 - `role_descriptors` (String) Role descriptors for this API key.

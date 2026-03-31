@@ -53,6 +53,7 @@ const (
 	panelTypeTimeSlider   = "time_slider_control"
 	panelTypeSloBurnRate  = "slo_burn_rate"
 	// panelTypeSloOverview is defined in models_slo_overview_panel.go
+	panelTypeEsqlControl  = "esql_control"
 )
 
 var sloBurnRateDurationRegex = regexp.MustCompile(`^\d+[mhd]$`)
@@ -75,6 +76,7 @@ var panelConfigNames = []string{
 	"time_slider_control_config",
 	"slo_burn_rate_config",
 	"slo_overview_config",
+	"esql_control_config",
 }
 
 func siblingPanelConfigPathsExcept(name string, names []string) []path.Expression {
@@ -922,6 +924,89 @@ func getPanelSchema() schema.NestedAttributeObject {
 					),
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeSloOverview}),
 					sloOverviewConfigModeValidator{},
+				},
+			},
+			"esql_control_config": schema.SingleNestedAttribute{
+				MarkdownDescription: panelConfigDescription(
+					"Configuration for an ES|QL control panel. Use this to manage ES|QL variable controls on a dashboard.",
+					"esql_control_config",
+					panelConfigNames,
+				),
+				Optional: true,
+				Attributes: map[string]schema.Attribute{
+					"selected_options": schema.ListAttribute{
+						MarkdownDescription: "List of currently selected option values for the control.",
+						Required:            true,
+						ElementType:         types.StringType,
+					},
+					"variable_name": schema.StringAttribute{
+						MarkdownDescription: "The ES|QL variable name that this control binds to.",
+						Required:            true,
+					},
+					"variable_type": schema.StringAttribute{
+						MarkdownDescription: "The type of ES|QL variable. Allowed values: `fields`, `values`, `functions`, `time_literal`, `multi_values`.",
+						Required:            true,
+						Validators: []validator.String{
+							stringvalidator.OneOf("fields", "values", "functions", "time_literal", "multi_values"),
+						},
+					},
+					"esql_query": schema.StringAttribute{
+						MarkdownDescription: "The ES|QL query used to populate the control's options.",
+						Required:            true,
+					},
+					"control_type": schema.StringAttribute{
+						MarkdownDescription: "The control type. Allowed values: `STATIC_VALUES`, `VALUES_FROM_QUERY`.",
+						Required:            true,
+						Validators: []validator.String{
+							stringvalidator.OneOf("STATIC_VALUES", "VALUES_FROM_QUERY"),
+						},
+					},
+					"title": schema.StringAttribute{
+						MarkdownDescription: "A human-readable title displayed above the control widget.",
+						Optional:            true,
+					},
+					"single_select": schema.BoolAttribute{
+						MarkdownDescription: "When true, restricts the control to single-value selection.",
+						Optional:            true,
+					},
+					"available_options": schema.ListAttribute{
+						MarkdownDescription: "Pre-populated list of available options shown before the query executes.",
+						Optional:            true,
+						ElementType:         types.StringType,
+					},
+					"display_settings": schema.SingleNestedAttribute{
+						MarkdownDescription: "Display configuration for the control widget.",
+						Optional:            true,
+						Attributes: map[string]schema.Attribute{
+							"placeholder": schema.StringAttribute{
+								MarkdownDescription: "Placeholder text shown when no option is selected.",
+								Optional:            true,
+							},
+							"hide_action_bar": schema.BoolAttribute{
+								MarkdownDescription: "Whether to hide the action bar on the control.",
+								Optional:            true,
+							},
+							"hide_exclude": schema.BoolAttribute{
+								MarkdownDescription: "Whether to hide the exclude option.",
+								Optional:            true,
+							},
+							"hide_exists": schema.BoolAttribute{
+								MarkdownDescription: "Whether to hide the exists filter option.",
+								Optional:            true,
+							},
+							"hide_sort": schema.BoolAttribute{
+								MarkdownDescription: "Whether to hide the sort option.",
+								Optional:            true,
+							},
+						},
+					},
+				},
+				Validators: []validator.Object{
+					objectvalidator.ConflictsWith(
+						siblingPanelConfigPathsExcept("esql_control_config", panelConfigNames)...,
+					),
+					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeEsqlControl}),
+					validators.RequiredIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeEsqlControl}),
 				},
 			},
 			"config_json": schema.StringAttribute{
