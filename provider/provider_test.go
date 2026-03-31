@@ -18,18 +18,17 @@
 package provider_test
 
 import (
-	"fmt"
 	"os"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/api_key"
+	apikey "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/api_key"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/elastic/terraform-provider-elasticstack/provider"
 	"github.com/hashicorp/go-version"
-	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	tfconfig "github.com/hashicorp/terraform-plugin-testing/config"
+	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -153,7 +152,8 @@ func TestKibanaConfiguration(t *testing.T) {
 							SkipFunc: func() (bool, error) {
 								return envConfig.Kibana.Username == "", nil
 							},
-							Config: testKibanaConfiguration(envConfig),
+							ConfigDirectory: acctest.NamedTestCaseDirectory("username_password"),
+							ConfigVariables: kibanaUsernamePasswordConfigVariables(envConfig),
 							Check: resource.ComposeTestCheckFunc(
 								resource.TestCheckResourceAttrSet("elasticstack_kibana_space.acc_test", "name"),
 							),
@@ -181,7 +181,8 @@ func TestKibanaConfiguration(t *testing.T) {
 							SkipFunc: func() (bool, error) {
 								return os.Getenv("KIBANA_API_KEY") == "", nil
 							},
-							Config: testKibanaAPIKeyConfiguration(envConfig),
+							ConfigDirectory: acctest.NamedTestCaseDirectory("api_key"),
+							ConfigVariables: kibanaApiKeyConfigVariables(envConfig),
 							Check: resource.ComposeTestCheckFunc(
 								resource.TestCheckResourceAttrSet("elasticstack_kibana_space.acc_test", "name"),
 							),
@@ -210,7 +211,8 @@ func TestKibanaConfiguration(t *testing.T) {
 							SkipFunc: func() (bool, error) {
 								return os.Getenv("KIBANA_BEARER_TOKEN") == "", nil
 							},
-							Config: testKibanaBearerTokenConfiguration(envConfig),
+							ConfigDirectory: acctest.NamedTestCaseDirectory("bearer_token"),
+							ConfigVariables: kibanaBearerTokenConfigVariables(envConfig),
 							Check: resource.ComposeTestCheckFunc(
 								resource.TestCheckResourceAttrSet("elasticstack_kibana_space.acc_test", "name"),
 							),
@@ -230,37 +232,19 @@ func TestKibanaConfiguration(t *testing.T) {
 	}
 }
 
-func testKibanaConfiguration(cfg config.Client) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-	elasticsearch {}
-	kibana {
-		endpoints = ["%s"]
-		username  = "%s"
-		password  = "%s"
+func kibanaUsernamePasswordConfigVariables(cfg config.Client) tfconfig.Variables {
+	return tfconfig.Variables{
+		"kibana_endpoint": tfconfig.StringVariable(cfg.Kibana.Address),
+		"kibana_username": tfconfig.StringVariable(cfg.Kibana.Username),
+		"kibana_password": tfconfig.StringVariable(cfg.Kibana.Password),
 	}
 }
 
-resource "elasticstack_kibana_space" "acc_test" {
-	space_id          = "acc_test_space"
-	name              = "Acceptance Test Space"
-}`, cfg.Kibana.Address, cfg.Kibana.Username, cfg.Kibana.Password)
-}
-
-func testKibanaAPIKeyConfiguration(cfg config.Client) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-	elasticsearch {}
-	kibana {
-		endpoints = ["%s"]
-		api_key   = "%s"
+func kibanaApiKeyConfigVariables(cfg config.Client) tfconfig.Variables {
+	return tfconfig.Variables{
+		"kibana_endpoint": tfconfig.StringVariable(cfg.Kibana.Address),
+		"kibana_api_key":  tfconfig.StringVariable(cfg.Kibana.ApiKey),
 	}
-}
-
-resource "elasticstack_kibana_space" "acc_test" {
-	space_id          = "acc_test_space"
-	name              = "Acceptance Test Space"
-}`, cfg.Kibana.Address, cfg.Kibana.ApiKey)
 }
 
 func fleetConfigVariables(cfg config.Client) tfconfig.Variables {
@@ -290,19 +274,9 @@ func fleetBearerTokenConfigVariables(cfg config.Client, bearerToken string) tfco
 	}
 }
 
-func testKibanaBearerTokenConfiguration(cfg config.Client) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-	elasticsearch {}
-	kibana {
-		endpoints    = ["%s"]
-		bearer_token = "%s"
+func kibanaBearerTokenConfigVariables(cfg config.Client) tfconfig.Variables {
+	return tfconfig.Variables{
+		"kibana_endpoint":     tfconfig.StringVariable(cfg.Kibana.Address),
+		"kibana_bearer_token": tfconfig.StringVariable(cfg.Kibana.BearerToken),
 	}
 }
-
-resource "elasticstack_kibana_space" "acc_test" {
-	space_id          = "acc_test_space"
-	name              = "Acceptance Test Space"
-}`, cfg.Kibana.Address, cfg.Kibana.BearerToken)
-}
-
