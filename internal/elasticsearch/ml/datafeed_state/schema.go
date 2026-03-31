@@ -49,7 +49,7 @@ func GetSchema(ctx context.Context) schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: description,
 		Blocks: map[string]schema.Block{
-			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(false),
+			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(),
 		},
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{

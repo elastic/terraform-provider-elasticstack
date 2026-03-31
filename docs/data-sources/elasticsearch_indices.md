@@ -28,7 +28,7 @@ data "elasticstack_elasticsearch_indices" "security_indices" {
 
 ### Optional
 
-- `elasticsearch_connection` (Block List, Deprecated) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- `elasticsearch_connection` (Block List) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - `target` (String) Comma-separated list of data streams, indices, and aliases used to limit the request. Supports wildcards (*).
 
 To target all data streams and indices, omit this attribute or use `*` or `_all`.
