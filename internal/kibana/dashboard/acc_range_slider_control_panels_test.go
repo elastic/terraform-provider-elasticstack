@@ -18,6 +18,7 @@
 package dashboard_test
 
 import (
+	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -112,6 +113,34 @@ func TestAccResourceDashboardRangeSliderControl(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.type", "range_slider_control"),
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.range_slider_control_config"),
 				),
+			},
+		},
+	})
+}
+
+func TestAccResourceDashboardRangeSliderControlInvalidConfig(t *testing.T) {
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			// config_json is not supported for range_slider_control panels (REQ-010).
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("invalid_config_json"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable("unused"),
+				},
+				ExpectError: regexp.MustCompile(`Invalid Configuration`),
+			},
+			// value must contain exactly 2 elements (REQ-006 / REQ-028).
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("invalid_value_length"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable("unused"),
+				},
+				ExpectError: regexp.MustCompile(`(?s)value.*list must contain at least 2 elements`),
 			},
 		},
 	})
