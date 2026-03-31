@@ -166,6 +166,7 @@ require (
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dprotaso/go-yit v0.0.0-20250513223454-5ece0c5aa76c // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
+	github.com/elastic/terraform-provider-elasticstack/analysis/acctestconfigdirlintplugin v0.0.0
 	github.com/elastic/terraform-provider-elasticstack/analysis/esclienthelperplugin v0.0.0
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/envoyproxy/go-control-plane/envoy v1.36.0 // indirect
@@ -435,3 +436,5 @@ tool (
 )
 
 replace github.com/elastic/terraform-provider-elasticstack/analysis/esclienthelperplugin => ./analysis/esclienthelperplugin
+
+replace github.com/elastic/terraform-provider-elasticstack/analysis/acctestconfigdirlintplugin => ./analysis/acctestconfigdirlintplugin
