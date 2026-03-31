@@ -42,4 +42,3 @@ resource "elasticstack_fleet_agent_download_source" "example" {
 ### Read-Only
 
 - `id` (String) The ID of this resource.
-
