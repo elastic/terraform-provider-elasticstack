@@ -106,32 +106,50 @@ func TestAccResourceEmptyDashboard(t *testing.T) {
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"time_range_mode"},
 			},
-			// {
-			// 	ProtoV6ProviderFactories: acctest.Providers,
-			// 	SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
-			// 	ConfigDirectory:          acctest.NamedTestCaseDirectory("with_access_control"),
-			// 	ConfigVariables: config.Variables{
-			// 		"dashboard_title": config.StringVariable(dashboardTitle + " with Access Control"),
-			// 	},
-			// 	Check: resource.ComposeTestCheckFunc(
-			// 		resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
-			// 		resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "title", dashboardTitle+" with Access Control"),
-			// 		resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "access_control.access_mode", "write_restricted"),
-			// 	),
-			// },
-			// {
-			// 	ProtoV6ProviderFactories: acctest.Providers,
-			// 	SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
-			// 	ConfigDirectory:          acctest.NamedTestCaseDirectory("with_access_control"),
-			// 	ConfigVariables: config.Variables{
-			// 		"dashboard_title": config.StringVariable(dashboardTitle + " with Access Control"),
-			// 	},
-			// 	ResourceName:      "elasticstack_kibana_dashboard.test",
-			// 	ImportState:       true,
-			// 	ImportStateVerify: true,
-			// 	// Access control is not returned by the GET Dashboard API.
-			// 	ImportStateVerifyIgnore: []string{"access_control"},
-			// },
+		},
+	})
+}
+
+func TestAccResourceDashboardAccessControl(t *testing.T) {
+	dashboardTitle := "Test Dashboard " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum) + " with Access Control"
+	username := "tf-dashboard-" + sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
+	password := "TestPass-" + sdkacctest.RandStringFromCharSet(12, sdkacctest.CharSetAlphaNum)
+
+	t.Skip("Access control requires a full user profile which is not currently supported in the test environment")
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
+				ConfigVariables: config.Variables{
+					"dashboard_title":    config.StringVariable(dashboardTitle),
+					"dashboard_username": config.StringVariable(username),
+					"dashboard_password": config.StringVariable(password),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "title", dashboardTitle),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "access_control.access_mode", "write_restricted"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
+				ConfigVariables: config.Variables{
+					"dashboard_title":    config.StringVariable(dashboardTitle),
+					"dashboard_username": config.StringVariable(username),
+					"dashboard_password": config.StringVariable(password),
+				},
+				ResourceName:      "elasticstack_kibana_dashboard.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+				// Access control is not returned by the GET Dashboard API.
+				ImportStateVerifyIgnore: []string{"access_control"},
+			},
 		},
 	})
 }
