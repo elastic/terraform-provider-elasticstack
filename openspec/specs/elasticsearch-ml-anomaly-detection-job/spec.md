@@ -4,7 +4,7 @@ Resource implementation: `internal/elasticsearch/ml/anomalydetectionjob`
 
 ## Purpose
 
-Define schema and behavior for the Elasticsearch ML anomaly detection job resource: API usage, identity and import, connection, lifecycle (force-new attributes), create/read/update/delete flows (including job close before delete), and mapping between Terraform configuration and the Elasticsearch Machine Learning Jobs API.
+Define schema and behavior for the Elasticsearch ML anomaly detection job resource: API usage, identity and import, connection, lifecycle (force-new attributes), create/read/update/delete flows (including job close before delete), and mapping between Terraform configuration and the Elasticsearch Machine Learning Jobs API, including state consistency when Elasticsearch normalizes or omits fields on read.
 
 ## Schema
 
@@ -260,7 +260,7 @@ The `analysis_config.detectors` list SHALL contain at least one element. Each de
 
 ### Requirement: Mapping — config to API model (REQ-025–REQ-026)
 
-On create and update, optional fields that are null or unknown SHALL be omitted from the API request body. The `custom_settings` field SHALL be validated as a JSON string and SHALL be decoded into a `map[string]any` for the API request. When `custom_settings` is not valid JSON, the resource SHALL return an error diagnostic and SHALL not call the API.
+On create and update, optional fields that are null or unknown SHALL be omitted from the API request body. On create, the resource SHALL serialize `analysis_config.detectors[*].custom_rules[*].actions` as a JSON array of strings and SHALL serialize `analysis_config.detectors[*].custom_rules[*].conditions[*]` as objects containing `applies_to`, `operator`, and `value`. The `custom_settings` field SHALL be validated as a JSON string and SHALL be decoded into a `map[string]any` for the API request. When `custom_settings` is not valid JSON, the resource SHALL return an error diagnostic and SHALL not call the API.
 
 #### Scenario: Invalid custom_settings JSON
 
@@ -268,12 +268,22 @@ On create and update, optional fields that are null or unknown SHALL be omitted 
 - WHEN create or update runs
 - THEN the provider SHALL return an error diagnostic and SHALL not call the Put Job or Update Job API
 
+#### Scenario: Custom rules are sent on create
+
+- GIVEN a detector with `custom_rules` containing `actions` and `conditions`
+- WHEN create builds the Put Job request body
+- THEN the request SHALL include those `custom_rules` entries with their configured values
+
 ### Requirement: Mapping — API response to state (REQ-027–REQ-031)
 
 On read, the resource SHALL set the following state attributes from the Get Jobs API response:
 - `job_id`, `description`, `job_type`, `job_version`, `create_time`, `model_snapshot_id` from the corresponding API fields.
 - `groups` SHALL be set to null in state when the API returns an empty or nil groups list; otherwise it SHALL be set to the returned set of strings.
-- `analysis_config` (including `bucket_span`, `categorization_field_name`, `categorization_filters`, `detectors`, `influencers`, `latency`, `model_prune_window`, `multivariate_by_fields`, `per_partition_categorization`, `summary_count_field_name`) from `analysis_config` in the API response.
+- `analysis_config.bucket_span`, `categorization_field_name`, `latency`, `model_prune_window`, `multivariate_by_fields`, and `summary_count_field_name` from the corresponding `analysis_config` API fields.
+- `analysis_config.categorization_filters` SHALL use the API values when Elasticsearch returns a non-empty list. When Elasticsearch omits the list or returns it empty, the resource SHALL preserve the prior configured value so server-side normalization into `categorization_analyzer` does not create drift.
+- `analysis_config.influencers` SHALL use the API values when Elasticsearch returns a non-empty list. When Elasticsearch omits the list or returns it empty, the resource SHALL preserve the prior configured value, including an explicit empty list.
+- `analysis_config.detectors[*]` SHALL be set from the corresponding detector in the API response. When the prior detector configuration omitted `detector_description` and Elasticsearch returns an auto-generated description, the resource SHALL keep `detector_description` null in state instead of storing the generated value. `custom_rules[*].actions` and `custom_rules[*].conditions` SHALL be populated from the API response; when Elasticsearch omits an empty `actions` or `conditions` list, the resource SHALL preserve a previously configured empty list rather than converting it to null.
+- `analysis_config.per_partition_categorization` SHALL be populated only when the block was previously configured or when Elasticsearch reports `enabled = true`. When the block exists in prior state and Elasticsearch omits `stop_on_warn`, the resource SHALL preserve the prior `stop_on_warn` value.
 - Empty or nil string fields in the API response SHALL be stored as null in state (not as empty string), using `typeutils.NonEmptyStringishValue`.
 - `results_index_name` SHALL be stored after stripping a `custom-` prefix from the API response value.
 - `custom_settings` SHALL be JSON-marshaled from the API response `map[string]any` when non-nil; when nil it SHALL be stored as null in state.
@@ -289,6 +299,36 @@ On read, the resource SHALL set the following state attributes from the Get Jobs
 - GIVEN a job where custom_settings is not set on the server
 - WHEN read runs
 - THEN `custom_settings` SHALL be null (not empty string) in state
+
+#### Scenario: Empty influencers list remains empty
+
+- GIVEN configuration that sets `analysis_config.influencers = []`
+- WHEN read runs and Elasticsearch returns no influencers
+- THEN `analysis_config.influencers` SHALL remain an empty list in state
+
+#### Scenario: Categorization filters survive Elasticsearch normalization
+
+- GIVEN configuration that sets `analysis_config.categorization_filters`
+- WHEN read runs and Elasticsearch does not return `categorization_filters` because it normalized them internally
+- THEN the prior configured `analysis_config.categorization_filters` SHALL remain in state
+
+#### Scenario: Auto-generated detector description does not create drift
+
+- GIVEN a detector without `detector_description` in configuration
+- WHEN read runs and Elasticsearch returns an auto-generated detector description
+- THEN `analysis_config.detectors[*].detector_description` SHALL remain null in state
+
+#### Scenario: Custom rule conditions round-trip from API to state
+
+- GIVEN a detector with `custom_rules` containing conditions
+- WHEN create succeeds and read refreshes state
+- THEN the configured `actions` and `conditions` SHALL be present in state
+
+#### Scenario: Disabled per-partition categorization preserves configured stop_on_warn
+
+- GIVEN configuration that sets `analysis_config.per_partition_categorization.enabled = false` and `stop_on_warn = false`
+- WHEN read runs and Elasticsearch omits `stop_on_warn`
+- THEN the resource SHALL keep the configured `stop_on_warn` value in state
 
 #### Scenario: results_index_name strips custom- prefix
 

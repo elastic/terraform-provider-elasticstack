@@ -48,7 +48,7 @@ func GetSchema() schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: systemUserResourceDescription,
 		Blocks: map[string]schema.Block{
-			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(false),
+			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(),
 		},
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
