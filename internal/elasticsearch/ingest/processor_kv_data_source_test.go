@@ -30,7 +30,7 @@ func TestAccDataSourceIngestProcessorKV(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorKV,
+				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_kv.test", "json", expectedJSONKV),
 				),
@@ -55,17 +55,3 @@ const expectedJSONKV = `{
 }
 `
 
-const testAccDataSourceIngestProcessorKV = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_kv" "test" {
-  field       = "message"
-  field_split = " "
-  value_split = "="
-
-  exclude_keys = ["tags"]
-  prefix       = "setting_"
-}
-`

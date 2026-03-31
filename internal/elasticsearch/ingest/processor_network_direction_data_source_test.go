@@ -30,7 +30,7 @@ func TestAccDataSourceIngestProcessorNetworkDirection(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorNetworkDirection,
+				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_network_direction.test", "json", expectedJSONNetworkDirection),
 				),
@@ -49,12 +49,3 @@ const expectedJSONNetworkDirection = `{
 	}
 }`
 
-const testAccDataSourceIngestProcessorNetworkDirection = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_network_direction" "test" {
-  internal_networks = ["private"]
-}
-`

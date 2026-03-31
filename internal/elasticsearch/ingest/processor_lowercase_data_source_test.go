@@ -30,7 +30,7 @@ func TestAccDataSourceIngestProcessorLowercase(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorLowercase,
+				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_lowercase.test", "field", "foo"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_lowercase.test", "json", expectedJSONLowercase),
@@ -48,12 +48,3 @@ const expectedJSONLowercase = `{
 	}
 }`
 
-const testAccDataSourceIngestProcessorLowercase = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_lowercase" "test" {
-  field = "foo"
-}
-`

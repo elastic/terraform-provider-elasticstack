@@ -30,7 +30,7 @@ func TestAccDataSourceIngestProcessorReroute(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorReroute,
+				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "json", expectedJSONReroute),
 				),
@@ -46,12 +46,3 @@ const expectedJSONReroute = `{
 	}
 }`
 
-const testAccDataSourceIngestProcessorReroute = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_reroute" "test" {
-  destination = "logs-generic-default"
-}
-`

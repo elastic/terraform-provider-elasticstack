@@ -30,7 +30,7 @@ func TestAccDataSourceIngestProcessorUrldecode(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorUrldecode,
+				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_urldecode.test", "field", "my_url_to_decode"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_urldecode.test", "json", expectedJSONUrldecode),
@@ -48,12 +48,3 @@ const expectedJSONUrldecode = `{
 	}
 }`
 
-const testAccDataSourceIngestProcessorUrldecode = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_urldecode" "test" {
-  field = "my_url_to_decode"
-}
-`

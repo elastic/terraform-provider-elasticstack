@@ -30,7 +30,7 @@ func TestAccDataSourceIngestProcessorGrok(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorGrok,
+				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_grok.test", "field", "message"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_grok.test", "json", expectedJSONGrok),
@@ -58,17 +58,3 @@ const expectedJSONGrok = `{
 }
 `
 
-const testAccDataSourceIngestProcessorGrok = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_grok" "test" {
-  field    = "message"
-  patterns = ["%%{FAVORITE_DOG:pet}", "%%{FAVORITE_CAT:pet}"]
-  pattern_definitions = {
-    FAVORITE_DOG = "beagle"
-    FAVORITE_CAT = "burmese"
-  }
-}
-`

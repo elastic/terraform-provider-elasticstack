@@ -30,7 +30,7 @@ func TestAccDataSourceIngestProcessorGsub(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorGsub,
+				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_gsub.test", "field", "field1"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_gsub.test", "json", expectedJSONGsub),
@@ -50,14 +50,3 @@ const expectedJSONGsub = `{
 	}
 }`
 
-const testAccDataSourceIngestProcessorGsub = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_gsub" "test" {
-  field       = "field1"
-  pattern     = "\\."
-  replacement = "-"
-}
-`

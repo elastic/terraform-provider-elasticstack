@@ -30,7 +30,7 @@ func TestAccDataSourceIngestProcessorTrim(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorTrim,
+				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_trim.test", "field", "foo"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_trim.test", "json", expectedJSONTrim),
@@ -48,12 +48,3 @@ const expectedJSONTrim = `{
 	}
 }`
 
-const testAccDataSourceIngestProcessorTrim = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_trim" "test" {
-  field = "foo"
-}
-`

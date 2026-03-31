@@ -30,7 +30,7 @@ func TestAccDataSourceIngestProcessorCommunityID(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorCommunityID,
+				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "seed", "0"),
@@ -187,14 +187,6 @@ const expectedJSONCommunityIDOnFailure = `{
 		"ignore_missing": false
 	}
 }`
-
-const testAccDataSourceIngestProcessorCommunityID = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_community_id" "test" {}
-`
 
 const testAccDataSourceIngestProcessorCommunityIDCoreNetwork = `
 provider "elasticstack" {

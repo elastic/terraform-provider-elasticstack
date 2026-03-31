@@ -30,7 +30,7 @@ func TestAccDataSourceIngestProcessorURIParts(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorURIParts,
+				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "field", "input_field"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "json", expectedJSONURIParts),
@@ -50,15 +50,3 @@ const expectedJSONURIParts = `{
 	}
 }`
 
-const testAccDataSourceIngestProcessorURIParts = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_uri_parts" "test" {
-  field                = "input_field"
-  target_field         = "url"
-  keep_original        = true
-  remove_if_successful = false
-}
-`

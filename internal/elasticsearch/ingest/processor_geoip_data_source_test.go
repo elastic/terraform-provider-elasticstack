@@ -30,7 +30,7 @@ func TestAccDataSourceIngestProcessorGeoip(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorGeoip,
+				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_geoip.test", "field", "ip"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_geoip.test", "json", expectedJSONGeoip),
@@ -50,12 +50,3 @@ const expectedJSONGeoip = `{
 }
 `
 
-const testAccDataSourceIngestProcessorGeoip = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_geoip" "test" {
-  field = "ip"
-}
-`

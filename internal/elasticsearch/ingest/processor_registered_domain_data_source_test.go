@@ -30,7 +30,7 @@ func TestAccDataSourceIngestProcessorRegisteredDomain(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorRegisteredDomain,
+				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_registered_domain.test", "field", "fqdn"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_registered_domain.test", "target_field", "url"),
@@ -50,13 +50,3 @@ const expectedJSONRegisteredDomain = `{
 	}
 }`
 
-const testAccDataSourceIngestProcessorRegisteredDomain = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_registered_domain" "test" {
-  field        = "fqdn"
-  target_field = "url"
-}
-`

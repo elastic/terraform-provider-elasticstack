@@ -30,7 +30,7 @@ func TestAccDataSourceIngestProcessorHTMLStrip(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorHTMLStrip,
+				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_html_strip.test", "field", "foo"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_html_strip.test", "json", expectedJSONHTMLStrip),
@@ -48,12 +48,3 @@ const expectedJSONHTMLStrip = `{
 	}
 }`
 
-const testAccDataSourceIngestProcessorHTMLStrip = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_html_strip" "test" {
-  field = "foo"
-}
-`

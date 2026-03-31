@@ -30,7 +30,7 @@ func TestAccDataSourceIngestProcessorRename(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorRename,
+				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_rename.test", "field", "provider"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_rename.test", "json", expectedJSONRename),
@@ -49,13 +49,3 @@ const expectedJSONRename = `{
 	}
 }`
 
-const testAccDataSourceIngestProcessorRename = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_rename" "test" {
-  field        = "provider"
-  target_field = "cloud.provider"
-}
-`

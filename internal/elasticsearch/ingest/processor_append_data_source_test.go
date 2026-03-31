@@ -30,7 +30,7 @@ func TestAccDataSourceIngestProcessorAppend(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorAppend,
+				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_append.test", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_append.test", "field", "tags"),
@@ -38,7 +38,7 @@ func TestAccDataSourceIngestProcessorAppend(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccDataSourceIngestProcessorAppendAllAttributes,
+				ConfigDirectory: acctest.NamedTestCaseDirectory("all_attributes"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_append.test", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_append.test", "media_type", "application/json"),
@@ -84,40 +84,4 @@ const expectedJSONAppendAllAttributes = `{
 	}
 }`
 
-const testAccDataSourceIngestProcessorAppend = `
-provider "elasticstack" {
-  elasticsearch {}
-}
 
-data "elasticstack_elasticsearch_ingest_processor_append" "test" {
-  description      = "Append tags to the doc"
-  field            = "tags"
-  value            = ["production", "{{{app}}}", "{{{owner}}}"]
-  allow_duplicates = true
-}
-`
-
-const testAccDataSourceIngestProcessorAppendAllAttributes = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_append" "test" {
-  description      = "Append a numeric-like error code to tags"
-  field            = "tags"
-  value            = ["404"]
-  allow_duplicates = false
-  media_type       = "application/json"
-  if               = "ctx.error != null"
-  ignore_failure   = true
-  tag              = "append-tag"
-  on_failure = [
-    jsonencode({
-      set = {
-        field = "error.message"
-        value = "append failed"
-      }
-    })
-  ]
-}
-`

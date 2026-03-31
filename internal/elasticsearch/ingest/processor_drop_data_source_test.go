@@ -30,7 +30,7 @@ func TestAccDataSourceIngestProcessorDrop(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorDrop,
+				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_drop.test", "json", expectedJSONDrop),
 				),
@@ -47,12 +47,3 @@ const expectedJSONDrop = `{
 }
 `
 
-const testAccDataSourceIngestProcessorDrop = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_drop" "test" {
-  if = "ctx.network_name == 'Guest'"
-}
-`

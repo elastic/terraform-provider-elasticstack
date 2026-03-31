@@ -30,7 +30,7 @@ func TestAccDataSourceIngestProcessorUppercase(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorUppercase,
+				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_uppercase.test", "field", "foo"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_uppercase.test", "json", expectedJSONUppercase),
@@ -48,12 +48,3 @@ const expectedJSONUppercase = `{
 	}
 }`
 
-const testAccDataSourceIngestProcessorUppercase = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_uppercase" "test" {
-  field = "foo"
-}
-`

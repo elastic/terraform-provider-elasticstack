@@ -30,7 +30,7 @@ func TestAccDataSourceIngestProcessorFail(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorFail,
+				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_fail.test", "json", expectedJSONFail),
 				),
@@ -48,13 +48,3 @@ const expectedJSONFail = `{
 }
 `
 
-const testAccDataSourceIngestProcessorFail = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_fail" "test" {
-  if      = "ctx.tags.contains('production') != true"
-  message = "The production tag is not present, found tags: {{{tags}}}"
-}
-`

@@ -30,7 +30,7 @@ func TestAccDataSourceIngestProcessorCSV(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorCSV,
+				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_csv.test", "field", "my_field"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_csv.test", "json", expectedJSONCSV),
@@ -52,13 +52,3 @@ const expectedJSONCSV = `{
 	}
 }`
 
-const testAccDataSourceIngestProcessorCSV = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_csv" "test" {
-  field         = "my_field"
-  target_fields = ["field1", "field2"]
-}
-`

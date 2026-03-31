@@ -25,6 +25,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
@@ -38,7 +39,8 @@ func TestAccResourceIngestPipeline(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceIngestPipelineCreate(pipelineName),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{"name": config.StringVariable(pipelineName)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", pipelineName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -52,7 +54,8 @@ func TestAccResourceIngestPipeline(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccResourceIngestPipelineUpdate(pipelineName),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{"name": config.StringVariable(pipelineName)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", pipelineName),
 					resource.TestCheckResourceAttr(resourceName, "description", "Updated Pipeline"),
@@ -70,70 +73,6 @@ func TestAccResourceIngestPipeline(t *testing.T) {
 			},
 		},
 	})
-}
-
-func testAccResourceIngestPipelineCreate(name string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_ingest_pipeline" "test_pipeline" {
-  name        = "%s"
-  description = "Test Pipeline"
-  metadata    = jsonencode({ owner = "test" })
-
-  processors = [
-    jsonencode({
-      set = {
-        description = "My set processor description"
-        field       = "_meta"
-        value       = "indexed"
-      }
-    }),
-    <<EOF
-    {"json": {
-      "field": "data",
-      "target_field": "parsed_data"
-    }}
-EOF
-    ,
-  ]
-
-  on_failure = [
-    jsonencode({
-      set = {
-        field = "_index"
-        value = "failed-{{ _index }}"
-      }
-    })
-  ]
-}
-	`, name)
-}
-
-func testAccResourceIngestPipelineUpdate(name string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_ingest_pipeline" "test_pipeline" {
-  name        = "%s"
-  description = "Updated Pipeline"
-  metadata    = jsonencode({ owner = "updated" })
-
-  processors = [
-    jsonencode({
-      set = {
-        description = "Updated set processor"
-        field       = "_meta"
-        value       = "reindexed"
-      }
-    })
-  ]
-}
-	`, name)
 }
 
 func checkResourceIngestPipelineDestroy(s *terraform.State) error {

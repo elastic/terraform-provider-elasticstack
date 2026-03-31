@@ -30,7 +30,7 @@ func TestAccDataSourceIngestProcessorSet(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorSet,
+				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_set.test", "field", "count"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_set.test", "json", expectedJSONSet),
@@ -51,13 +51,3 @@ const expectedJSONSet = `{
 	}
 }`
 
-const testAccDataSourceIngestProcessorSet = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_set" "test" {
-  field = "count"
-  value = 1
-}
-`

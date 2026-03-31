@@ -30,7 +30,7 @@ func TestAccDataSourceIngestProcessorUserAgent(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorUserAgent,
+				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_user_agent.test", "field", "agent"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_user_agent.test", "json", expectedJSONUserAgent),
@@ -47,12 +47,3 @@ const expectedJSONUserAgent = `{
 	}
 }`
 
-const testAccDataSourceIngestProcessorUserAgent = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_user_agent" "test" {
-  field = "agent"
-}
-`

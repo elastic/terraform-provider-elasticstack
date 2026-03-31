@@ -30,7 +30,7 @@ func TestAccDataSourceIngestProcessorRemove(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorRemove,
+				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_remove.test", "json", expectedJSONRemove),
 				),
@@ -47,12 +47,3 @@ const expectedJSONRemove = `{
 	}
 }`
 
-const testAccDataSourceIngestProcessorRemove = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_remove" "test" {
-  field = ["user_agent"]
-}
-`

@@ -30,7 +30,7 @@ func TestAccDataSourceIngestProcessorCircle(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorCircle,
+				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_circle.test", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_circle.test", "field", "circle"),
@@ -40,7 +40,7 @@ func TestAccDataSourceIngestProcessorCircle(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccDataSourceIngestProcessorCircleAllAttributes,
+				ConfigDirectory: acctest.NamedTestCaseDirectory("all_attributes"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_circle.test", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_circle.test", "field", "location"),
@@ -67,7 +67,7 @@ func TestAccDataSourceIngestProcessorCircleShapeType(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorCircleShapeType,
+				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_circle.test_shape", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_circle.test_shape", "field", "circle"),
@@ -122,52 +122,5 @@ const expectedJSONCircleShapeType = `{
 	}
 }`
 
-const testAccDataSourceIngestProcessorCircle = `
-provider "elasticstack" {
-  elasticsearch {}
-}
 
-data "elasticstack_elasticsearch_ingest_processor_circle" "test" {
-  field          = "circle"
-  error_distance = 28.1
-  shape_type     = "geo_shape"
-}
-`
 
-const testAccDataSourceIngestProcessorCircleAllAttributes = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_circle" "test" {
-  field          = "location"
-  target_field   = "location_shape"
-  ignore_missing = true
-  error_distance = 5
-  shape_type     = "geo_shape"
-  description    = "Convert circle to polygon"
-  if             = "ctx.location != null"
-  ignore_failure = true
-  on_failure = [
-    jsonencode({
-      set = {
-        field = "error.message"
-        value = "circle failed"
-      }
-    })
-  ]
-  tag = "circle-tag"
-}
-`
-
-const testAccDataSourceIngestProcessorCircleShapeType = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_circle" "test_shape" {
-  field          = "circle"
-  error_distance = 10
-  shape_type     = "shape"
-}
-`

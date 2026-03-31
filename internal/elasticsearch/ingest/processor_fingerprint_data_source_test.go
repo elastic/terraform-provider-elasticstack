@@ -30,7 +30,7 @@ func TestAccDataSourceIngestProcessorFingerprint(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorFingerprint,
+				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_fingerprint.test", "json", expectedJSONFingerprint),
 				),
@@ -52,12 +52,3 @@ const expectedJSONFingerprint = `{
 }
 `
 
-const testAccDataSourceIngestProcessorFingerprint = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_fingerprint" "test" {
-  fields = ["user"]
-}
-`

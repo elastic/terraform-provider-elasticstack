@@ -30,7 +30,7 @@ func TestAccDataSourceIngestProcessorSplit(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorSplit,
+				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_split.test", "field", "my_field"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_split.test", "json", expectedJSONSplit),
@@ -50,13 +50,3 @@ const expectedJSONSplit = `{
 	}
 }`
 
-const testAccDataSourceIngestProcessorSplit = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_split" "test" {
-  field     = "my_field"
-  separator = "\\s+"
-}
-`

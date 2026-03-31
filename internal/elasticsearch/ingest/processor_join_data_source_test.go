@@ -30,7 +30,7 @@ func TestAccDataSourceIngestProcessorJoin(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorJoin,
+				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_join.test", "field", "joined_array_field"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_join.test", "json", expectedJSONJoin),
@@ -48,13 +48,3 @@ const expectedJSONJoin = `{
 	}
 }`
 
-const testAccDataSourceIngestProcessorJoin = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_join" "test" {
-  field     = "joined_array_field"
-  separator = "-"
-}
-`
