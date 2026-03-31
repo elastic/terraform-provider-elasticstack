@@ -42,8 +42,8 @@ func GetEsFWConnectionBlock(_ bool) fwschema.Block {
 	keyDataPath := path.MatchRelative().AtParent().AtName("key_data")
 
 	return fwschema.ListNestedBlock{
-		MarkdownDescription: "Elasticsearch connection configuration block. ",
-		Description:         "Elasticsearch connection configuration block. ",
+		MarkdownDescription: "Elasticsearch connection configuration block.",
+		Description:         "Elasticsearch connection configuration block.",
 		NestedObject: fwschema.NestedBlockObject{
 			Attributes: map[string]fwschema.Attribute{
 				"username": fwschema.StringAttribute{
