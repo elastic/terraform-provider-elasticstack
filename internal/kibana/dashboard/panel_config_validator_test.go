@@ -251,6 +251,7 @@ func Test_panelConfigValidateDiags_optionsListControl(t *testing.T) {
 			"options_list_control",
 			panelConfigValueState{},
 			panelConfigValueState{},
+			panelConfigValueState{},
 			lensConfigStates(nil),
 			nil,
 		)
@@ -264,6 +265,7 @@ func Test_panelConfigValidateDiags_optionsListControl(t *testing.T) {
 			"options_list_control",
 			panelConfigValueState{},
 			panelConfigValueState{Set: true},
+			panelConfigValueState{},
 			lensConfigStates(nil),
 			nil,
 		)
@@ -275,6 +277,7 @@ func Test_panelConfigValidateDiags_optionsListControl(t *testing.T) {
 			"options_list_control",
 			panelConfigValueState{},
 			panelConfigValueState{Unknown: true},
+			panelConfigValueState{},
 			lensConfigStates(nil),
 			nil,
 		)
