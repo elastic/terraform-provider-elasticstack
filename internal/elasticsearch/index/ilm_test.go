@@ -745,11 +745,11 @@ resource "elasticstack_elasticsearch_index_lifecycle" "test_conn" {
 
 func checkILMDownsampleDefaultWaitTimeout(resourceName, attribute string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		unsupported, err := versionutils.CheckIfVersionIsUnsupported(downsampleVersionLimit)()
+		versionLacksDefaultExposure, err := versionutils.CheckIfVersionIsUnsupported(downsampleVersionLimit)()
 		if err != nil {
 			return err
 		}
-		if unsupported {
+		if versionLacksDefaultExposure {
 			return nil
 		}
 
