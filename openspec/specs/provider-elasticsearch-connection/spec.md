@@ -10,9 +10,7 @@ Define provider-level requirements so every Elasticsearch Terraform entity expos
 **In scope:** All `elasticstack_elasticsearch_*` resources and data sources registered on the provider.
 
 **Out of scope:** `elasticstack_elasticsearch_ingest_processor*` data sources — they are schema-construction helpers and do not create or use Elasticsearch clients; they are excluded from coverage requirements.
-
 ## Requirements
-
 ### Requirement: SDK entity coverage (REQ-001)
 
 For every SDK resource or data source registered in `provider.New(...)` whose type name has prefix `elasticstack_elasticsearch_`, except `elasticstack_elasticsearch_ingest_processor*` data sources, the entity schema SHALL define `elasticsearch_connection`.
@@ -96,3 +94,4 @@ When a covered entity lacks a matching `elasticsearch_connection` definition, th
 - GIVEN a regression where a covered entity is missing or mismatched `elasticsearch_connection`
 - WHEN the connection coverage subtest for that entity runs
 - THEN the failure output SHALL identify the entity by its type name
+
