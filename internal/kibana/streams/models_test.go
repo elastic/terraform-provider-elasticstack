@@ -402,8 +402,6 @@ func TestQueryConfigRoundTrip(t *testing.T) {
 		var m queryConfigModel
 		m.populateFromAPI(q)
 		assert.Equal(t, types.StringValue("FROM logs*"), m.Esql)
-		// Empty string from API maps to StringValue(""), not null, to avoid
-		// perpetual drift when the user configures view = "".
 		assert.Equal(t, types.StringValue(""), m.View)
 	})
 
@@ -480,7 +478,7 @@ func TestToAPIUpsertRequest(t *testing.T) {
 			Description: types.StringValue(""),
 			QueryConfig: &queryConfigModel{
 				Esql: types.StringValue("FROM logs.nginx | WHERE http.response.status_code >= 400"),
-				View: types.StringNull(),
+				View: types.StringValue("logs-nginx-errors"),
 			},
 			Dashboards: types.ListNull(types.StringType),
 		}
@@ -491,6 +489,7 @@ func TestToAPIUpsertRequest(t *testing.T) {
 		assert.Nil(t, req.Stream.Ingest)
 		require.NotNil(t, req.Stream.Query)
 		assert.Equal(t, "FROM logs.nginx | WHERE http.response.status_code >= 400", req.Stream.Query.Esql)
+		assert.Equal(t, "logs-nginx-errors", req.Stream.Query.View)
 	})
 
 	t.Run("attached queries include all fields", func(t *testing.T) {

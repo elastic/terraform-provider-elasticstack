@@ -15,5 +15,6 @@ resource "elasticstack_kibana_stream" "query" {
 
   query_config = {
     esql = "FROM logs* | LIMIT 10"
+    view = "logs-otel-testacc-${var.suffix}"
   }
 }

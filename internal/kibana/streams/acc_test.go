@@ -268,16 +268,16 @@ func checkQueryStreamsEnabled() func() (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		probe := kibanaoapi.StreamUpsertRequest{
-			Stream: kibanaoapi.StreamDefinition{
-				Type:  "query",
-				Query: &kibanaoapi.StreamQueryESQLDef{Esql: "FROM logs* | LIMIT 1"},
-			},
-			Dashboards: []string{},
-			Rules:      []string{},
-			Queries:    []kibanaoapi.StreamQuery{},
-		}
-		_, diags := kibanaoapi.UpsertStream(context.Background(), kibanaClient, "default", "logs.__tfacc_query_probe__", probe)
+	probe := kibanaoapi.StreamUpsertRequest{
+		Stream: kibanaoapi.StreamDefinition{
+			Type:  "query",
+			Query: &kibanaoapi.StreamQueryESQLDef{Esql: "FROM logs* | LIMIT 1", View: "logs-tfacc-query-probe"},
+		},
+		Dashboards: []string{},
+		Rules:      []string{},
+		Queries:    []kibanaoapi.StreamQuery{},
+	}
+	_, diags := kibanaoapi.UpsertStream(context.Background(), kibanaClient, "default", "logs.__tfacc_query_probe__", probe)
 		if diags.HasError() {
 			if strings.Contains(diags[0].Detail()+diags[0].Summary(), "not enabled") {
 				return true, nil
@@ -314,8 +314,7 @@ func TestAccResourceKibanaStreamQuery(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_stream.query", "id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_stream.query", "name", "logs.otel.testacc"+suffix+".view"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_stream.query", "query_config.esql", "FROM logs* | LIMIT 10"),
-					// view is Optional+Computed; when unset it should be stored as "".
-					resource.TestCheckResourceAttr("elasticstack_kibana_stream.query", "query_config.view", ""),
+					resource.TestCheckResourceAttr("elasticstack_kibana_stream.query", "query_config.view", "logs-otel-testacc-"+suffix),
 				),
 			},
 			{

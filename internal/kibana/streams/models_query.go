@@ -43,6 +43,6 @@ func (m *queryConfigModel) populateFromAPI(q *kibanaoapi.StreamQueryESQLDef) {
 func (m *queryConfigModel) toAPI() *kibanaoapi.StreamQueryESQLDef {
 	return &kibanaoapi.StreamQueryESQLDef{
 		Esql: m.Esql.ValueString(),
-		View: m.View.ValueString(), // empty string when null/unknown, which is correct
+		View: m.View.ValueString(),
 	}
 }
