@@ -44,7 +44,13 @@ func (r *aliasResource) Read(ctx context.Context, req resource.ReadRequest, resp
 	}
 
 	// Read the alias and update the model
-	diags = readAliasIntoModel(ctx, client, aliasName, &stateModel)
+	indices, diags := elasticsearch.GetAlias(ctx, client, aliasName)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	diags = readAliasIntoModel(ctx, aliasName, indices, &stateModel)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -59,14 +65,8 @@ func (r *aliasResource) Read(ctx context.Context, req resource.ReadRequest, resp
 	resp.Diagnostics.Append(resp.State.Set(ctx, stateModel)...)
 }
 
-// readAliasIntoModel reads an alias from Elasticsearch and populates the provided model
-func readAliasIntoModel(ctx context.Context, client *clients.APIClient, aliasName string, model *tfModel) diag.Diagnostics {
-	// Get the alias
-	indices, diags := elasticsearch.GetAlias(ctx, client, aliasName)
-	if diags.HasError() {
-		return diags
-	}
-
+// readAliasIntoModel populates the provided model from alias API response.
+func readAliasIntoModel(ctx context.Context, aliasName string, indices map[string]models.Index, model *tfModel) diag.Diagnostics {
 	// If no indices returned, the alias doesn't exist
 	if len(indices) == 0 {
 		// Set both to null to indicate the alias doesn't exist

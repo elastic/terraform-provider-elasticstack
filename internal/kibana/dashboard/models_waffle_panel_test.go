@@ -60,7 +60,7 @@ func Test_wafflePanelConfigConverter_populateFromAttributes_NoESQL_emptyQueryNoL
 	var waffleChart kbapi.WaffleChart
 	require.NoError(t, waffleChart.FromWaffleNoESQL(waffle))
 
-	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	var attrs kbapi.LensApiState
 	require.NoError(t, attrs.FromWaffleChart(waffleChart))
 
 	converter := newWafflePanelConfigConverter()
@@ -92,7 +92,7 @@ func Test_wafflePanelConfigConverter_populateFromAttributes_buildAttributes_roun
 	var waffleChart kbapi.WaffleChart
 	require.NoError(t, waffleChart.FromWaffleNoESQL(waffle))
 
-	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	var attrs kbapi.LensApiState
 	require.NoError(t, attrs.FromWaffleChart(waffleChart))
 
 	converter := newWafflePanelConfigConverter()
@@ -166,7 +166,7 @@ func Test_wafflePanelConfigConverter_populateFromAttributes_buildAttributes_roun
 	var waffleChart kbapi.WaffleChart
 	require.NoError(t, waffleChart.FromWaffleESQL(waffle))
 
-	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	var attrs kbapi.LensApiState
 	require.NoError(t, attrs.FromWaffleChart(waffleChart))
 
 	converter := newWafflePanelConfigConverter()

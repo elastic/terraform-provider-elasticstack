@@ -178,7 +178,7 @@ func Test_legacyMetricPanelConfigConverter_populateFromAttributes_buildAttribute
 	var legacyMetricChart kbapi.LegacyMetricChart
 	require.NoError(t, legacyMetricChart.FromLegacyMetricNoESQL(apiNoESQL))
 
-	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	var attrs kbapi.LensApiState
 	require.NoError(t, attrs.FromLegacyMetricChart(legacyMetricChart))
 
 	converter := newLegacyMetricPanelConfigConverter()

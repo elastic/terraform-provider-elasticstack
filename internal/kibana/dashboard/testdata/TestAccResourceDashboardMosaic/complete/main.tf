@@ -55,7 +55,7 @@ resource "elasticstack_kibana_dashboard" "test" {
             mode    = "categorical"
             palette = "default"
             mapping = []
-            unassignedColor = {
+            unassigned = {
               type  = "color_code"
               value = "#D3DAE6"
             }
@@ -82,7 +82,7 @@ resource "elasticstack_kibana_dashboard" "test" {
       legend = {
         nested               = false
         size                 = "small"
-        visible              = "show"
+        visible              = "visible"
         truncate_after_lines = 10
       }
 

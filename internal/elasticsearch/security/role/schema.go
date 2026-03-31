@@ -51,7 +51,7 @@ func GetSchema(version int64) schema.Schema {
 		Version:             version,
 		MarkdownDescription: roleResourceDescription,
 		Blocks: map[string]schema.Block{
-			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(false),
+			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(),
 			"applications": schema.SetNestedBlock{
 				MarkdownDescription: "A list of application privilege entries.",
 				NestedObject: schema.NestedBlockObject{

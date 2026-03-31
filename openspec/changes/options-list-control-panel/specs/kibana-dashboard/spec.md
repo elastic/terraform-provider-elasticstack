@@ -2,13 +2,23 @@
 
 ### Requirement: Replacement fields and schema validation (REQ-006)
 
+Schema validation SHALL enforce that `options_list_control_config` is valid only for panels with `type = "options_list_control"`, is mutually exclusive with all other panel configuration blocks and with `config_json`, and that `search_technique` is restricted to `prefix`, `wildcard`, or `exact` when set.
+
 REQ-006 is extended to include:
 
 - `options_list_control_config` SHALL be valid only for panels with `type = "options_list_control"`.
 - `options_list_control_config` SHALL be mutually exclusive with all other panel configuration blocks and with `config_json`.
 - The `search_technique` attribute within `options_list_control_config` SHALL be restricted to the values `prefix`, `wildcard`, and `exact` when set; any other value SHALL be rejected at plan time.
 
+#### Scenario: options_list_control_config rejected for non-options_list_control panel
+
+- GIVEN a panel with `type = "lens"` and `options_list_control_config` set
+- WHEN Terraform validates the resource schema
+- THEN the configuration SHALL be rejected before any dashboard API call
+
 ### Requirement: Panels, sections, and `config_json` round-trip behavior (REQ-010)
+
+`config_json` SHALL NOT be supported for `options_list_control` panels; the `options_list_control` panel type SHALL be managed exclusively through the typed `options_list_control_config` block.
 
 The existing REQ-010 text:
 
@@ -17,6 +27,12 @@ The existing REQ-010 text:
 is updated to additionally state:
 
 > The `options_list_control` panel type SHALL be managed exclusively through the typed `options_list_control_config` block; using `config_json` with `type = "options_list_control"` SHALL return an error diagnostic.
+
+#### Scenario: config_json rejected for options_list_control panel type
+
+- GIVEN a panel with `type = "options_list_control"` configured through `config_json`
+- WHEN the provider builds the API request on create or update
+- THEN it SHALL return an error diagnostic stating that `config_json` is not supported for `options_list_control`
 
 ---
 

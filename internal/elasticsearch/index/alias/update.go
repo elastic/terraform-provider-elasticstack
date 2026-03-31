@@ -121,7 +121,13 @@ func (r *aliasResource) Update(ctx context.Context, req resource.UpdateRequest, 
 	}
 
 	// Read back the alias to ensure state consistency, updating the current model
-	diags = readAliasIntoModel(ctx, client, aliasName, &planModel)
+	indices, diags := elasticsearch.GetAlias(ctx, client, aliasName)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	diags = readAliasIntoModel(ctx, aliasName, indices, &planModel)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

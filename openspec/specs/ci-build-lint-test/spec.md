@@ -22,9 +22,7 @@ on:
 permissions:
   contents: read
 ```
-
 ## Requirements
-
 ### Requirement: Workflow identity and triggers (REQ-001–REQ-006)
 
 The workflow name SHALL be `Build/Lint/Test`. The workflow SHALL run on `push` to any branch, excluding tag refs matching `v*` and excluding changes limited to `README.md` and `CHANGELOG.md`. The workflow SHALL run on `pull_request`, excluding changes limited to `README.md` and `CHANGELOG.md`. The workflow SHALL run on `pull_request` events of type `ready_for_review` (in addition to default types `opened`, `synchronize`, `reopened`). The workflow SHALL support manual execution via `workflow_dispatch`.
@@ -102,7 +100,7 @@ The workflow SHALL evaluate whether to execute CI jobs via a dedicated preflight
 For `push` events, the preflight gate SHALL set `should_run=true` when either:
 
 * No open pull request exists for the pushed branch in the same repository
-* All commits in the push event were authored by Copilot coding agent (`198982749+Copilot@users.noreply.github.com`)
+* All commits in the push event were authored by an allowed bot user: Copilot coding agent (`198982749+Copilot@users.noreply.github.com`) or GitHub Actions (`41898282+github-actions[bot]@users.noreply.github.com`)
 
 For `push` events where **neither** of the above holds, the preflight gate SHALL set `should_run=false`.
 
@@ -116,17 +114,17 @@ The `build`, `lint`, and matrix acceptance `test` jobs SHALL only execute when t
 - WHEN preflight runs
 - THEN `should_run` SHALL be `true`
 
-#### Scenario: Push with open PR and all commits by Copilot agent
+#### Scenario: Push with open PR and all commits by an allowed bot user
 
 - GIVEN a push to a branch that has an open PR from the same repo
-- AND every commit in the push event was authored by Copilot coding agent (`198982749+Copilot@users.noreply.github.com`)
+- AND every commit in the push event was authored by Copilot coding agent (`198982749+Copilot@users.noreply.github.com`) or GitHub Actions (`41898282+github-actions[bot]@users.noreply.github.com`)
 - WHEN preflight runs
 - THEN `should_run` SHALL be `true`
 
-#### Scenario: Push with open PR and a commit not by Copilot agent
+#### Scenario: Push with open PR and a commit not by an allowed bot user
 
 - GIVEN a push to a branch that has an open PR from the same repo
-- AND at least one commit in the push event was not authored by Copilot coding agent (`198982749+Copilot@users.noreply.github.com`)
+- AND at least one commit in the push event was not authored by Copilot coding agent (`198982749+Copilot@users.noreply.github.com`) or GitHub Actions (`41898282+github-actions[bot]@users.noreply.github.com`)
 - WHEN preflight runs
 - THEN `should_run` SHALL be `false` and downstream jobs SHALL be skipped
 
@@ -149,3 +147,4 @@ On `ready_for_review` `pull_request` events, only the `auto-approve` job SHALL e
 - GIVEN a `pull_request` with action `ready_for_review`
 - WHEN the workflow runs
 - THEN only auto-approve SHALL be eligible to run (per gate outputs)
+

@@ -90,7 +90,7 @@ func (r *roleMappingResource) update(ctx context.Context, plan tfsdk.Plan, state
 	}
 
 	// Read the updated role mapping to ensure consistent result
-	readData, readDiags := readRoleMapping(ctx, client, roleMappingName, data.ElasticsearchConnection)
+	readData, readDiags := readRoleMapping(ctx, data, roleMappingName, r.client)
 	diags.Append(readDiags...)
 	if diags.HasError() {
 		return diags

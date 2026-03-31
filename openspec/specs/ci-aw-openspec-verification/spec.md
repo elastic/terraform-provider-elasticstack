@@ -4,7 +4,7 @@ Workflow implementation: `.github/workflows/openspec-verify-label.md` (name MAY 
 
 ## Purpose
 
-Define a GitHub Agentic Workflow that runs when pull request label `verify-openspec` is applied, selects exactly one active OpenSpec change from the PR diff when that change's tree was updated without adding new files under active change paths, verifies the PR against that change using normal OpenSpec tooling and `.agents/skills/openspec-verify-change/SKILL.md`, submits a pull request review, and, only on `APPROVE`, archives that change and pushes the result to the PR branch.
+Define a GitHub Agentic Workflow that runs when pull request label `verify-openspec` is applied, selects exactly one active OpenSpec change from the PR diff when that change's tree was updated without adding new files under active change paths, verifies the PR against that change using normal OpenSpec tooling and `.agents/skills/openspec-verify-change/SKILL.md`, submits a pull request review, and, only on `APPROVE`, archives that change and pushes the result to the PR branch. When the agent finishes handling an eligible run, it removes the trigger label through the `remove-labels` safe output (see REQ-015), not through a separate cleanup job.
 
 ## Schema
 
@@ -14,8 +14,8 @@ on:
   pull_request:
     types: [labeled]
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
+  pull-requests: read
 safe-outputs:
   create-pull-request-review-comment: {}
   submit-pull-request-review:
@@ -23,6 +23,10 @@ safe-outputs:
     max: 1
   push-to-pull-request-branch:
     target: triggering
+    max: 1
+  remove-labels:
+    target: triggering
+    allowed: [verify-openspec]
     max: 1
 ```
 ## Requirements
@@ -37,30 +41,27 @@ The automation SHALL be authored as a GitHub Agentic Workflow markdown file unde
 - THEN the `.md` source and regenerated `.lock.yml` SHALL match `gh aw compile` output
 
 ### Requirement: Label trigger (REQ-002)
-
-The workflow SHALL run on `pull_request` events of type `labeled`. The agent (or workflow condition) SHALL proceed only when `github.event.label.name` (or equivalent) is exactly `verify-openspec`.
+The workflow SHALL run on `pull_request` events of type `labeled`. A deterministic pre-activation step SHALL verify that `github.event.label.name` (or equivalent injected label data) is exactly `verify-openspec` and SHALL publish the result for downstream jobs. The workflow SHALL not perform verification or archive steps when that deterministic check indicates a different label.
 
 #### Scenario: Correct label runs automation
-
-- GIVEN a pull request receives the label `verify-openspec`
-- WHEN GitHub dispatches the `labeled` event
-- THEN the workflow SHALL execute the agentic job for that pull request
+- **GIVEN** a pull request receives the label `verify-openspec`
+- **WHEN** GitHub dispatches the `labeled` event
+- **THEN** the deterministic pre-activation gate SHALL mark the run eligible for the agentic verification path
 
 #### Scenario: Other labels do not start verification
-
-- GIVEN a pull request receives a label other than `verify-openspec`
-- WHEN the `labeled` event fires
-- THEN the workflow SHALL NOT perform verification or archive steps for that event (early exit or job skip)
+- **GIVEN** a pull request receives a label other than `verify-openspec`
+- **WHEN** the `labeled` event fires
+- **THEN** the workflow SHALL not perform verification or archive steps for that event
 
 ### Requirement: Permissions for read, review, and push (REQ-003)
 
-The workflow SHALL request permissions sufficient to read the repository, submit pull request reviews and review comments, push commits to the pull request branch via `push-to-pull-request-branch`, and remove the `verify-openspec` label from the triggering pull request when the run completes. At minimum this SHALL include `contents: write`, `pull-requests: write`, and `issues: write` unless the agentic compiler emits a narrower equivalent that still allows those operations.
+The workflow SHALL request permissions sufficient to read the repository, submit pull request reviews and review comments, push commits to the pull request branch via `push-to-pull-request-branch`, and remove the `verify-openspec` label from the triggering pull request via the `remove-labels` safe output. At minimum this SHALL include `contents: write`, `pull-requests: write`, and `issues: write` unless the agentic compiler emits a narrower equivalent that still allows those operations.
 
 #### Scenario: Push safe output and label cleanup are permitted
 
 - GIVEN the agent archives the change and produces a commit on the PR branch
-- WHEN `push-to-pull-request-branch` runs and the workflow removes `verify-openspec` during completion cleanup
-- THEN the token SHALL have authority to push to the PR head branch and mutate the pull request labels under normal repository settings
+- WHEN `push-to-pull-request-branch` and `remove-labels` safe outputs run
+- THEN the token SHALL have authority to push to the PR head branch and mutate the triggering pull request label set under normal repository settings
 
 ### Requirement: Safe outputs for review and push (REQ-004)
 
@@ -69,6 +70,7 @@ The workflow SHALL declare safe outputs for:
 - `create-pull-request-review-comment` with `max` large enough for verification and unassociated-file commentary.
 - `submit-pull-request-review` with `max: 1` and `target` appropriate to the triggering pull request.
 - `push-to-pull-request-branch` with `max: 1` (or documented policy) and `target: triggering`, plus any `checkout` `fetch` / `title-prefix` / `labels` required by repository policy and [GitHub Agentic Workflows - Push to PR branch](https://github.github.io/gh-aw/reference/safe-outputs-pull-requests/#push-to-pr-branch-push-to-pull-request-branch).
+- `remove-labels` with `target: triggering`, `allowed` constrained to `verify-openspec`, and a `max` that permits the single trigger-label cleanup action.
 
 #### Scenario: One review decision per run
 
@@ -76,52 +78,55 @@ The workflow SHALL declare safe outputs for:
 - WHEN reviews are submitted
 - THEN at most one final submitted pull request review SHALL represent the approval decision before any archive push
 
-### Requirement: Discover active change id from PR files (REQ-005)
+#### Scenario: Cleanup output is limited to the trigger label
 
-The agent SHALL load the pull request changed files list (including per-file status: added, modified, removed, renamed, etc.). It SHALL consider only paths matching `openspec/changes/<id>/...` where `<id>` is a single path segment and `archive` is not the first segment (that is, exclude `openspec/changes/archive/**`). For each such path, it SHALL record the status of that file entry.
+- GIVEN the workflow requests label cleanup through safe outputs
+- WHEN `remove-labels` is evaluated
+- THEN the workflow configuration SHALL allow removal of `verify-openspec` and SHALL NOT require broader label-removal authority
+
+### Requirement: Discover active change id from PR files (REQ-005)
+The workflow SHALL use a deterministic pre-activation step to load the pull request changed files list, including each file entry's status (`added`, `modified`, `removed`, `renamed`, and so on). It SHALL consider only paths matching `openspec/changes/<id>/...` where `<id>` is a single path segment and `archive` is not the first segment (that is, exclude `openspec/changes/archive/**`). For each such path, it SHALL record the status of that file entry and SHALL publish pre-activation outputs that include the gate result and, when selection succeeds, the selected active change id.
 
 #### Scenario: Derive change id from path
+- **GIVEN** a modified file `openspec/changes/my-feature/tasks.md`
+- **WHEN** the deterministic selection step parses paths
+- **THEN** the active change id SHALL be recognized as `my-feature`
 
-- GIVEN a modified file `openspec/changes/my-feature/tasks.md`
-- WHEN parsing paths
-- THEN the active change id SHALL be recognized as `my-feature`
+#### Scenario: Selected change is exposed to the agent
+- **GIVEN** exactly one active change satisfies the gating rules
+- **WHEN** the deterministic selection step completes
+- **THEN** the workflow SHALL expose that change id as a pre-activation output for the later agent job
 
 ### Requirement: Noop when change selection rules fail (REQ-006)
-
-The workflow SHALL not submit a pull request review, not archive, and SHALL complete with the agentic `noop` output (with a clear message) when any of the following holds:
+The workflow SHALL not submit a pull request review and SHALL not archive when the deterministic gating result indicates any of the following:
 
 1. More than one distinct `<id>` has at least one file with status `modified` among paths under `openspec/changes/<id>/` (non-archive).
 2. Any file under `openspec/changes/` (non-archive) has status `added`.
 3. Zero distinct `<id>` has at least one `modified` file under `openspec/changes/<id>/` (non-archive).
-4. Any file under `openspec/changes/<id>/` (non-archive) has a status other than `modified` among the set the workflow cares about (for example, `removed` or `renamed`) if the workflow instructions adopt modified-only strictness as in design.
+4. Any file under `openspec/changes/<id>/` (non-archive) has a status other than `modified` among the set the workflow cares about (for example, `removed` or `renamed`) if the workflow adopts modified-only strictness for verification.
 
 #### Scenario: Two active changes modified
-
-- GIVEN the PR modifies `openspec/changes/foo/proposal.md` and `openspec/changes/bar/tasks.md`
-- WHEN gating runs
-- THEN the workflow SHALL `noop` and SHALL NOT submit a review
+- **GIVEN** the pull request modifies `openspec/changes/foo/proposal.md` and `openspec/changes/bar/tasks.md`
+- **WHEN** deterministic gating runs
+- **THEN** the workflow SHALL skip verification and SHALL not submit a review
 
 #### Scenario: New file under active change
-
-- GIVEN the PR adds `openspec/changes/foo/new.md`
-- WHEN gating runs
-- THEN the workflow SHALL `noop`
+- **GIVEN** the pull request adds `openspec/changes/foo/new.md`
+- **WHEN** deterministic gating runs
+- **THEN** the workflow SHALL skip verification
 
 #### Scenario: Single change updated by modifications only
-
-- GIVEN all non-archive `openspec/changes/` paths in the PR refer to a single `<id>` and every such entry has status `modified`
-- WHEN gating runs
-- THEN the workflow SHALL select that `<id>` and continue to verification
+- **GIVEN** all non-archive `openspec/changes/` paths in the pull request refer to a single `<id>` and every such entry has status `modified`
+- **WHEN** deterministic gating runs
+- **THEN** the workflow SHALL select that `<id>` and continue to verification
 
 ### Requirement: Verification using active OpenSpec tooling (REQ-007)
-
-For the selected change id `<id>`, the agent SHALL use standard OpenSpec commands and `.agents/skills/openspec-verify-change/SKILL.md`, including where applicable `openspec status --change "<id>" --json` and `openspec instructions apply --change "<id>" --json`, and SHALL perform verification with context rooted at `openspec/changes/<id>/`. It SHALL produce a report with Summary, Issues by priority (CRITICAL, WARNING, SUGGESTION), and Final assessment per the skill.
+For the selected change id published by the deterministic pre-activation step, the agent SHALL use standard OpenSpec commands and `.agents/skills/openspec-verify-change/SKILL.md`, including where applicable `npx openspec status --change "<id>" --json` and `npx openspec instructions apply --change "<id>" --json`, and SHALL perform verification with context rooted at `openspec/changes/<id>/`. The prompt SHALL consume the selected change id from workflow outputs rather than requiring the agent to rediscover PR files before verification. The verification report SHALL include Summary, Issues by priority (CRITICAL, WARNING, SUGGESTION), and Final assessment per the skill.
 
 #### Scenario: CLI resolves the change
-
-- GIVEN `openspec/changes/<id>/` exists on the PR branch
-- WHEN `openspec status --change "<id>"` runs in the workflow environment
-- THEN it SHALL succeed for a well-formed active change
+- **GIVEN** `openspec/changes/<id>/` exists on the pull request branch and deterministic setup has completed
+- **WHEN** `npx openspec status --change "<id>"` runs in the workflow environment
+- **THEN** it SHALL succeed for a well-formed active change
 
 ### Requirement: Structural allowlist for in-scope paths (REQ-008)
 
@@ -198,32 +203,42 @@ After a successful `APPROVE` and archive step, the workflow SHALL commit the wor
 
 ### Requirement: Remove trigger label after workflow completion (REQ-015)
 
-For a run triggered by applying the `verify-openspec` label, the workflow SHALL remove that same label from the triggering pull request before the run fully completes, regardless of whether the verification outcome is `APPROVE`, `COMMENT`, `noop`, or failure after the workflow has started. The workflow SHALL remove only `verify-openspec`; it SHALL NOT remove unrelated pull request labels as part of this cleanup behavior.
+For a run triggered by applying the `verify-openspec` label, the workflow SHALL instruct the agent to request removal of that same label from the triggering pull request through the `remove-labels` safe output before the agent concludes its handling of the pull request. The cleanup request SHALL remove only `verify-openspec`; it SHALL NOT remove unrelated pull request labels, and the workflow SHALL NOT rely on a separate post-agent cleanup script or job for this behavior.
 
-#### Scenario: Approved run clears trigger label
+#### Scenario: Approved run requests trigger label cleanup
 
-- GIVEN a `verify-openspec`-triggered run submits an `APPROVE` review and completes archive or push steps as applicable
-- WHEN the workflow enters its final completion handling
-- THEN the workflow SHALL remove the `verify-openspec` label before the run completes
+- GIVEN a `verify-openspec`-triggered run submits an `APPROVE` review and completes archive or push handling as applicable
+- WHEN the agent emits its final safe outputs for the run
+- THEN those outputs SHALL include removal of the `verify-openspec` label from the triggering pull request
 
-#### Scenario: Non-approval run clears trigger label
+#### Scenario: Non-approval run requests trigger label cleanup
 
-- GIVEN a `verify-openspec`-triggered run ends with `COMMENT`, `noop`, or failure
-- WHEN the workflow enters its final completion handling
-- THEN the workflow SHALL remove the `verify-openspec` label before the run completes
+- GIVEN a `verify-openspec`-triggered run ends with `COMMENT` or `noop` after agent handling begins
+- WHEN the agent emits its final safe outputs for the run
+- THEN those outputs SHALL include removal of the `verify-openspec` label from the triggering pull request
 
 ### Requirement: Review environment bootstraps repository toolchains
-The workflow SHALL provision the same core toolchain layers as the `lint` job before agent verification begins. At a minimum, the review environment SHALL set up Node using the version range declared in `package.json` engines, Go using the version declared in `go.mod`, and Terraform CLI with wrapper behavior disabled so agent-executed commands do not depend on runner-default toolchains.
+The workflow SHALL provision the same core toolchain layers as the `lint` job before agent verification begins. At a minimum, the review environment SHALL set up Node using `actions/setup-node` with `node-version-file: package.json`, SHALL configure Go in the runner environment through `actions/setup-go` with `go-version-file: go.mod`, SHALL export `GOROOT` after Go setup for AWF chroot mode, and SHALL NOT use workflow frontmatter `runtimes.go` for Go provisioning. The workflow SHALL also make Terraform CLI available with wrapper behavior disabled so agent-executed commands do not depend on runner-default toolchains.
 
-#### Scenario: Node toolchain follows the repository declaration
-- **GIVEN** the repository declares a Node version range in `package.json` engines
+#### Scenario: Node toolchain follows package.json
+- **GIVEN** the repository declares the supported Node version in `package.json`
 - **WHEN** the `verify-openspec` review environment is prepared
-- **THEN** the Node runtime available to the agent SHALL satisfy that declared engine range
+- **THEN** the workflow SHALL configure `actions/setup-node` with `node-version-file: package.json`
 
-#### Scenario: Go toolchain follows the repository declaration
-- **GIVEN** the repository declares a Go version in `go.mod`
-- **WHEN** the `verify-openspec` review environment is prepared
-- **THEN** the Go toolchain available to the agent SHALL satisfy the version declared in `go.mod`
+#### Scenario: Go toolchain follows go.mod
+- **GIVEN** the workflow prepares the runner environment for repository setup steps
+- **WHEN** the Go toolchain is installed
+- **THEN** the workflow SHALL configure `actions/setup-go` with `go-version-file: go.mod`
+
+#### Scenario: AWF chroot mode receives the configured GOROOT
+- **GIVEN** the review workflow has installed Go from `go.mod`
+- **WHEN** the agent environment is prepared for AWF chroot mode
+- **THEN** the workflow SHALL export `GOROOT=$(go env GOROOT)` to `GITHUB_ENV`
+
+#### Scenario: Review bootstrap does not use runtimes.go
+- **GIVEN** the review workflow bootstrap is implemented
+- **WHEN** maintainers inspect the authored workflow source
+- **THEN** it SHALL provision Go from `go.mod` and SHALL NOT declare `runtimes.go`
 
 #### Scenario: Terraform CLI matches repository CI expectations
 - **GIVEN** the review workflow uses repository scripts or commands that require Terraform CLI behavior consistent with CI
@@ -247,4 +262,19 @@ Before the agent performs verification, the workflow SHALL run `make setup` in t
 - **GIVEN** verification work invokes `go test` or another repository Go command
 - **WHEN** `make setup` has completed in the review workspace
 - **THEN** that command SHALL run against the provisioned Go toolchain and repository dependencies instead of failing solely because the base runner lacked the required Go version or module setup
+
+### Requirement: Deterministic agent setup before verification
+The workflow SHALL use deterministic custom workflow steps in the agent job to prepare the repository workspace before agent reasoning begins. At a minimum, it SHALL run repository-standard Node dependency installation at the repository root so `npx openspec` is available to the agent without the prompt having to rediscover setup steps.
+
+#### Scenario: OpenSpec CLI is available before agent reasoning
+- **WHEN** the agent job starts for a verification run
+- **THEN** deterministic custom steps SHALL install the repository's Node dependencies before the agent uses `npx openspec`
+
+### Requirement: Deterministic gates may skip agent execution
+The workflow SHALL use deterministic pre-activation outputs to decide whether the expensive agent job runs. When label verification or change-selection gating determines that the pull request is not eligible for verification, the workflow SHALL skip the agent job rather than starting it only to emit a no-op result. When the agent job is skipped, the `remove-labels` safe output is not invoked by this workflow for that run; REQ-015’s label-removal contract applies only when the agent runs and completes handling.
+
+#### Scenario: Ineligible run skips agent job
+- **GIVEN** deterministic pre-activation gating concludes the pull request is not eligible for verification
+- **WHEN** downstream job conditions are evaluated
+- **THEN** the workflow SHALL skip the agent job
 
