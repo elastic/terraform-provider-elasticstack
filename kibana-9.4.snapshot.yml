@@ -8,3 +8,4 @@ xpack.streams.preconfigured.enabled: true
 uiSettings:
   overrides:
     observability:streamsEnableQueryStreams: true
+    observability:streamsEnableWiredStreamViews: true

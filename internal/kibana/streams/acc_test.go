@@ -18,8 +18,12 @@
 package streams_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"io"
+	"net/http"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -45,6 +49,11 @@ var minVersionStreamsAcc = version.Must(version.NewVersion("9.4.0-SNAPSHOT"))
 //     configuration". This only occurs on fresh SNAPSHOT installs where root
 //     streams are auto-created with {inherit:{}} — real users on a properly
 //     initialized 9.4+ cluster will not encounter this.
+//  3. Explicitly creates the $.logs.otel ES|QL view in Elasticsearch so that
+//     query streams can use FROM $.logs.otel. Kibana auto-creates this when
+//     OBSERVABILITY_STREAMS_ENABLE_WIRED_STREAM_VIEWS is enabled, but that
+//     creation is best-effort; creating it here matches what Kibana's own
+//     integration tests do.
 func prepareStreamsEnvironment(t *testing.T) {
 	t.Helper()
 
@@ -138,6 +147,32 @@ func prepareStreamsEnvironment(t *testing.T) {
 			logsRoot, diags[0].Summary(), diags[0].Detail())
 	} else {
 		t.Logf("prepareStreamsEnvironment: %s configured OK", logsRoot)
+	}
+
+	// Explicitly create the $.{logsRoot} ES|QL view via Elasticsearch so that
+	// query streams can reference it with FROM $.{logsRoot}.
+	// Kibana creates this automatically when OBSERVABILITY_STREAMS_ENABLE_WIRED_STREAM_VIEWS
+	// is enabled, but that creation is best-effort and silently swallowed on failure.
+	// Creating it here mirrors what Kibana's own integration tests do.
+	esClient, esErr := apiClient.GetESClient()
+	if esErr != nil {
+		t.Logf("prepareStreamsEnvironment: could not get ES client: %v", esErr)
+	} else {
+		viewBody, _ := json.Marshal(map[string]string{"query": "FROM " + logsRoot})
+		viewReq := &http.Request{
+			Method: http.MethodPut,
+			URL:    &url.URL{Path: "/_query/view/$." + logsRoot},
+			Header: make(http.Header),
+			Body:   io.NopCloser(bytes.NewReader(viewBody)),
+		}
+		viewReq.Header.Set("Content-Type", "application/json")
+		viewResp, viewErr := esClient.Transport.Perform(viewReq)
+		if viewErr != nil {
+			t.Logf("prepareStreamsEnvironment: create ES|QL view $.%s failed: %v", logsRoot, viewErr)
+		} else {
+			viewResp.Body.Close()
+			t.Logf("prepareStreamsEnvironment: create ES|QL view $.%s → HTTP %d", logsRoot, viewResp.StatusCode)
+		}
 	}
 
 	// Probe creating a test stream to surface any remaining issues.
@@ -315,9 +350,9 @@ func TestAccResourceKibanaStreamQuery(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_stream.query", "id"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_stream.query", "name", "logs.otel.testacc-w"+suffix+".view"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_stream.query", "query_config.esql", "FROM $.logs.otel.testacc-w"+suffix+" | LIMIT 10"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_stream.query", "query_config.view", "$.logs.otel.testacc-w"+suffix+".view"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_stream.query", "name", "logs.otel.testacc-q"+suffix),
+					resource.TestCheckResourceAttr("elasticstack_kibana_stream.query", "query_config.esql", "FROM $.logs.otel | LIMIT 10"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_stream.query", "query_config.view", "$.logs.otel.testacc-q"+suffix),
 				),
 			},
 			{
