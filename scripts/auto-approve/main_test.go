@@ -127,7 +127,9 @@ func TestLogJSON(t *testing.T) {
 	var got map[string]any
 	require.NoError(t, json.Unmarshal(out, &got))
 	assert.Equal(t, "evaluation", got["event"])
-	assert.InEpsilon(t, 7, got["pull_request"].(float64), 0.0001)
+	pr, ok := got["pull_request"].(float64)
+	require.True(t, ok, "pull_request type, got %T", got["pull_request"])
+	assert.InEpsilon(t, 7, pr, 0.0001)
 }
 
 func TestListAllPaginationHelpers(t *testing.T) {

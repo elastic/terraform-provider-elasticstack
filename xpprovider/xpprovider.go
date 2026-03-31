@@ -34,6 +34,13 @@ type XPAPIClient = clients.APIClient
 // Configuration exports the internal type config.ProviderConfiguration of the Terraform provider.
 type Configuration = config.ProviderConfiguration
 
+// XPProviderConfiguration is an alias for [Configuration].
+//
+// Deprecated: prefer [Configuration]; this name remains for backward compatibility with existing consumers.
+//
+//nolint:revive // Intentional legacy name; stutter is acceptable for a deprecated compatibility alias.
+type XPProviderConfiguration = Configuration
+
 // XPElasticsearchConnection exports the internal type config.ElasticsearchConnection of the Terraform provider
 type XPElasticsearchConnection = config.ElasticsearchConnection
 
@@ -43,6 +50,6 @@ type XPKibanaConnection = config.KibanaConnection
 // XPFleetConnection exports the internal type config.FleetConnection of the Terraform provider
 type XPFleetConnection = config.FleetConnection
 
-func NewAPIClientFromFramework(ctx context.Context, config Configuration, version string) (*XPAPIClient, fwdiags.Diagnostics) {
-	return clients.NewAPIClientFromFramework(ctx, config, version)
+func NewAPIClientFromFramework(ctx context.Context, cfg Configuration, version string) (*XPAPIClient, fwdiags.Diagnostics) {
+	return clients.NewAPIClientFromFramework(ctx, cfg, version)
 }
