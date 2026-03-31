@@ -78,6 +78,11 @@ func TestAccResourceDashboardTimeSliderControl(t *testing.T) {
 				ResourceName:      "elasticstack_kibana_dashboard.test",
 				ImportState:       true,
 				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					// float32 precision: 0.1/0.9 round-trip through the API as non-exact float32 values
+					"panels.0.time_slider_control_config.start_percentage_of_time_range",
+					"panels.0.time_slider_control_config.end_percentage_of_time_range",
+				},
 			},
 			// Update to empty config block (block present, all fields omitted)
 			{

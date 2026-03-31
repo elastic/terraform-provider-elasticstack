@@ -291,7 +291,7 @@ func Test_datatablePanelConfigConverter_populateFromAttributes_buildAttributes_r
 	var datatableChart kbapi.DatatableChart
 	require.NoError(t, datatableChart.FromDatatableNoESQL(api))
 
-	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	var attrs kbapi.LensApiState
 	require.NoError(t, attrs.FromDatatableChart(datatableChart))
 
 	converter := newDatatablePanelConfigConverter()
@@ -332,7 +332,7 @@ func Test_datatablePanelConfigConverter_populateFromAttributes_buildAttributes_r
 	var datatableChart kbapi.DatatableChart
 	require.NoError(t, datatableChart.FromDatatableESQL(api))
 
-	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	var attrs kbapi.LensApiState
 	require.NoError(t, attrs.FromDatatableChart(datatableChart))
 
 	converter := newDatatablePanelConfigConverter()
