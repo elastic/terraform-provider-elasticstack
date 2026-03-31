@@ -23,8 +23,8 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
-	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -41,7 +41,7 @@ func TestAccResourceScript(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
-					ConfigVariables: config.Variables{"script_id": config.StringVariable(scriptID)},
+				ConfigVariables: config.Variables{"script_id": config.StringVariable(scriptID)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_script.test", "script_id", scriptID),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_script.test", "lang", "painless"),
@@ -51,7 +51,7 @@ func TestAccResourceScript(t *testing.T) {
 			},
 			{
 				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
-					ConfigVariables: config.Variables{"script_id": config.StringVariable(scriptID)},
+				ConfigVariables: config.Variables{"script_id": config.StringVariable(scriptID)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_script.test", "script_id", scriptID),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_script.test", "lang", "painless"),
@@ -72,7 +72,7 @@ func TestAccResourceScript(t *testing.T) {
 					require.NoError(t, err)
 				},
 				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
-					ConfigVariables: config.Variables{"script_id": config.StringVariable(scriptID)},
+				ConfigVariables: config.Variables{"script_id": config.StringVariable(scriptID)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_script.test", "script_id", scriptID),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_script.test", "lang", "painless"),
@@ -94,7 +94,7 @@ func TestAccResourceScriptImport(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
-					ConfigVariables: config.Variables{"script_id": config.StringVariable(scriptID)},
+				ConfigVariables: config.Variables{"script_id": config.StringVariable(scriptID)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_script.test", "script_id", scriptID),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_script.test", "lang", "painless"),
@@ -135,7 +135,7 @@ func TestAccResourceScriptSearchTemplate(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
-					ConfigVariables: config.Variables{"script_id": config.StringVariable(scriptID)},
+				ConfigVariables: config.Variables{"script_id": config.StringVariable(scriptID)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_script.search_template_test", "script_id", scriptID),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_script.search_template_test", "lang", "mustache"),
