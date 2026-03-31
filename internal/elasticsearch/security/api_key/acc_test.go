@@ -137,17 +137,17 @@ func TestAccResourceSecurityAPIKeyRotation(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceSecurityAPIKeyDestroy,
-		ExternalProviders: map[string]resource.ExternalProvider{
-			"time": {
-				Source:            "hashicorp/time",
-				VersionConstraint: "0.9.0",
-			},
-		},
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(apikey.MinVersion),
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("rotation"),
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"time": {
+						Source:            "hashicorp/time",
+						VersionConstraint: "0.9.0",
+					},
+				},
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(apikey.MinVersion),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("rotation"),
 				ConfigVariables: config.Variables{
 					"api_key_name": config.StringVariable(apiKeyName),
 					"epoch":        config.StringVariable("1"),
@@ -173,8 +173,14 @@ func TestAccResourceSecurityAPIKeyRotation(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(apikey.MinVersion),
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("rotation"),
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"time": {
+						Source:            "hashicorp/time",
+						VersionConstraint: "0.9.0",
+					},
+				},
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(apikey.MinVersion),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("rotation"),
 				ConfigVariables: config.Variables{
 					"api_key_name": config.StringVariable(apiKeyName),
 					"epoch":        config.StringVariable("2"),

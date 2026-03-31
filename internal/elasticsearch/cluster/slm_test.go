@@ -56,8 +56,6 @@ func TestAccResourceSLM(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
-				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
 				RefreshState:             true,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "ignore_unavailable", "false"),
@@ -107,8 +105,6 @@ func TestAccResourceSLMWithMetadata(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
-				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
 				RefreshState:             true,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_snapshot_lifecycle.test_slm_metadata", "metadata"),
