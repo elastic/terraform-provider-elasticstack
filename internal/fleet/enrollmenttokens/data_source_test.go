@@ -42,7 +42,7 @@ func TestAccDataSourceEnrollmentTokens(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionEnrollmentTokens),
-				Config:   testAccDataSourceEnrollmentToken,
+				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_fleet_enrollment_tokens.test", "policy_id", "223b1bf8-240f-463f-8466-5062670d0754"),
 					resource.TestCheckResourceAttr("data.elasticstack_fleet_enrollment_tokens.test", "tokens.0.policy_id", "223b1bf8-240f-463f-8466-5062670d0754"),
@@ -52,23 +52,6 @@ func TestAccDataSourceEnrollmentTokens(t *testing.T) {
 	})
 }
 
-const testAccDataSourceEnrollmentToken = `
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_fleet_agent_policy" "test" {
-  policy_id   = "223b1bf8-240f-463f-8466-5062670d0754"
-  name        = "Test Agent Policy"
-  namespace   = "default"
-  description = "Agent Policy for testing Enrollment Tokens"
-}
-
-data "elasticstack_fleet_enrollment_tokens" "test" {
-  policy_id = elasticstack_fleet_agent_policy.test.policy_id
-}
-`
 
 func checkResourceAgentPolicyDestroy(s *terraform.State) error {
 	client, err := clients.NewAcceptanceTestingClient()

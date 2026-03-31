@@ -30,6 +30,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/stretchr/testify/require"
 )
@@ -51,7 +52,19 @@ func TestAccResourceIntegrationFromSDK(t *testing.T) {
 					},
 				},
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
-				Config:   testAccResourceIntegration,
+				Config: `
+provider "elasticstack" {
+  elasticsearch {}
+  kibana {}
+}
+
+resource "elasticstack_fleet_integration" "test_integration" {
+  name         = "tcp"
+  version      = "1.16.0"
+  force        = true
+  skip_destroy = true
+}
+`,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "name", "tcp"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "version", "1.16.0"),
@@ -60,7 +73,7 @@ func TestAccResourceIntegrationFromSDK(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
-				Config:                   testAccResourceIntegration,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "name", "tcp"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "version", "1.16.0"),
@@ -76,8 +89,8 @@ func TestAccResourceIntegration(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
-				Config:   testAccResourceIntegration,
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "name", "tcp"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "version", "1.16.0"),
@@ -86,7 +99,7 @@ func TestAccResourceIntegration(t *testing.T) {
 			{
 				SkipFunc:          versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
 				ResourceName:      "elasticstack_fleet_integration.test_integration",
-				Config:            testAccResourceIntegration,
+				ConfigDirectory:   acctest.NamedTestCaseDirectory("create"),
 				ImportState:       true,
 				ImportStateVerify: true,
 				ExpectError:       regexp.MustCompile("Resource Import Not Implemented"),
@@ -102,16 +115,22 @@ func TestAccResourceIntegrationWithPolicy(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
-				Config:   testAccResourceIntegrationWithPolicy(policyName, "1.16.0"),
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("v1_16_0"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "name", "tcp"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "version", "1.16.0"),
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
-				Config:   testAccResourceIntegrationWithPolicy(policyName, "1.17.0"),
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("v1_17_0"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "name", "tcp"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "version", "1.17.0"),
@@ -120,7 +139,10 @@ func TestAccResourceIntegrationWithPolicy(t *testing.T) {
 			{
 				SkipFunc:          versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
 				ResourceName:      "elasticstack_fleet_integration.test_integration",
-				Config:            testAccResourceIntegrationWithPolicy(policyName, "1.17.0"),
+				ConfigDirectory:   acctest.NamedTestCaseDirectory("v1_17_0"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
 				ImportState:       true,
 				ImportStateVerify: true,
 				ExpectError:       regexp.MustCompile("Resource Import Not Implemented"),
@@ -135,16 +157,16 @@ func TestAccResourceIntegrationDeleted(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
-				Config:   testAccResourceIntegrationDeleted,
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "name", "sysmon_linux"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "version", "1.7.0"),
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
-				Config:   testAccResourceIntegrationDeleted,
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				// Force uninstall the integration
 				PreConfig: func() {
 					client, err := clients.NewAcceptanceTestingClient()
@@ -171,16 +193,16 @@ func TestAccResourceIntegration_ExternalChange(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
-				Config:   testAccResourceIntegration,
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "name", "tcp"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "version", "1.16.0"),
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
-				Config:   testAccResourceIntegration,
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				PreConfig: func() {
 					notSupported, err := versionutils.CheckIfVersionIsUnsupported(minVersionIntegration)()
 					require.NoError(t, err)
@@ -207,8 +229,8 @@ func TestAccResourceIntegration_ExternalChange(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
-				Config:   testAccResourceIntegration,
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				PreConfig: func() {
 					notSupported, err := versionutils.CheckIfVersionIsUnsupported(minVersionIntegration)()
 					require.NoError(t, err)
@@ -236,102 +258,14 @@ func TestAccResourceIntegration_ExternalChange(t *testing.T) {
 	})
 }
 
-const testAccResourceIntegration = `
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_fleet_integration" "test_integration" {
-  name         = "tcp"
-  version      = "1.16.0"
-  force        = true
-  skip_destroy = true
-}
-`
-
-func testAccResourceIntegrationWithPolicy(policyName, version string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_fleet_integration" "test_integration" {
-  name         = "tcp"
-  version      = "%s"
-  force        = true
-  skip_destroy = true
-}
-
-// An agent policy to hold the integration policy.
-resource "elasticstack_fleet_agent_policy" "sample" {
-  name            = "%s"
-  namespace       = "default"
-  description     = "A sample agent policy"
-  monitor_logs    = true
-  monitor_metrics = true
-  skip_destroy    = false
-}
-
-// The associated enrollment token.
-data "elasticstack_fleet_enrollment_tokens" "sample" {
-  policy_id = elasticstack_fleet_agent_policy.sample.policy_id
-}
-
-// The integration policy.
-resource "elasticstack_fleet_integration_policy" "sample" {
-  name                = "%s"
-  namespace           = "default"
-  description         = "A sample integration policy"
-  agent_policy_id     = elasticstack_fleet_agent_policy.sample.policy_id
-  integration_name    = elasticstack_fleet_integration.test_integration.name
-  integration_version = elasticstack_fleet_integration.test_integration.version
-
-  inputs = {
-    "tcp-tcp" = {
-	  streams = {
-	    "tcp.generic" = {
-	      enabled = true,
-		  vars = jsonencode({ 
-		    "listen_address" : "localhost",
-			"listen_port" : 8080,
-		  	"data_stream.dataset" : "tcp.generic",
-			"tags" : [],
-			"syslog_options" : "field: message\n#format: auto\n#timezone: Local\n",
-			"ssl" : "#certificate: |\n#    -----BEGIN CERTIFICATE-----\n#    ...\n#    -----END CERTIFICATE-----\n#key: |\n#    -----BEGIN PRIVATE KEY-----\n#    ...\n#    -----END PRIVATE KEY-----\n",
-			"custom" : ""
-		  })
-		}
-      }
-    }
-  }
-}
-`, version, policyName, policyName)
-}
-
-const testAccResourceIntegrationDeleted = `
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_fleet_integration" "test_integration" {
-  name         = "sysmon_linux"
-  version      = "1.7.0"
-  force        = true
-  skip_destroy = false
-}
-`
-
 func TestAccResourceIntegrationWithPrerelease(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
-				Config:   testAccResourceIntegrationWithPrerelease,
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_prerelease", "name", "tcp"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_prerelease", "prerelease", "true"),
@@ -342,29 +276,14 @@ func TestAccResourceIntegrationWithPrerelease(t *testing.T) {
 	})
 }
 
-const testAccResourceIntegrationWithPrerelease = `
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_fleet_integration" "test_integration_prerelease" {
-  name         = "tcp"
-  version      = "1.16.0"
-  prerelease   = true
-  force        = true
-  skip_destroy = true
-}
-`
-
 func TestAccResourceIntegrationWithAllParameters(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
-				Config:   testAccResourceIntegrationWithAllParametersStep1,
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("all_params_step1"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "name", "tcp"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "prerelease", "true"),
@@ -373,8 +292,8 @@ func TestAccResourceIntegrationWithAllParameters(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(integration.MinVersionIgnoreMappingUpdateErrors),
-				Config:   testAccResourceIntegrationWithAllParametersStep2,
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(integration.MinVersionIgnoreMappingUpdateErrors),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("all_params_step2"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "name", "tcp"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "prerelease", "true"),
@@ -387,40 +306,6 @@ func TestAccResourceIntegrationWithAllParameters(t *testing.T) {
 		},
 	})
 }
-
-const testAccResourceIntegrationWithAllParametersStep1 = `
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_fleet_integration" "test_integration_all_params" {
-  name                          = "tcp"
-  version                       = "1.16.0"
-  prerelease                    = true
-  force                         = true
-  ignore_constraints            = true
-  skip_destroy                  = true
-}
-`
-
-const testAccResourceIntegrationWithAllParametersStep2 = `
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_fleet_integration" "test_integration_all_params" {
-  name                          = "tcp"
-  version                       = "1.16.0"
-  prerelease                    = true
-  force                         = true
-  ignore_mapping_update_errors  = true
-  skip_data_stream_rollover     = true
-  ignore_constraints            = true
-  skip_destroy                  = true
-}
-`
 
 func TestAccResourceIntegrationFrom0_13_1(t *testing.T) {
 	spaceID := "aa_test_space_" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
@@ -444,7 +329,10 @@ func TestAccResourceIntegrationFrom0_13_1(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
-				Config:                   testAccResourceIntegrationV1(spaceID),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("upgrade"),
+				ConfigVariables: config.Variables{
+					"space_id": config.StringVariable(spaceID),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_upgrade", "name", "tcp"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_upgrade", "version", "1.16.0"),
@@ -477,24 +365,3 @@ resource "elasticstack_fleet_integration" "test_integration_upgrade" {
 `, spaceID)
 }
 
-func testAccResourceIntegrationV1(spaceID string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_kibana_space" "test" {
-  space_id = "%s"
-  name     = "Test Space"
-}
-
-resource "elasticstack_fleet_integration" "test_integration_upgrade" {
-  name         = "tcp"
-  version      = "1.16.0"
-  space_id     = elasticstack_kibana_space.test.space_id
-  force        = true
-  skip_destroy = true
-}
-`, spaceID)
-}

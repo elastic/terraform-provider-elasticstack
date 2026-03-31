@@ -37,7 +37,7 @@ func TestAccDataSourceIntegration(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationDataSource),
-				Config:   testAccDataSourceIntegration,
+				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_fleet_integration.test", "name", "tcp"),
 					checkResourceAttrStringNotEmpty("data.elasticstack_fleet_integration.test", "version"),
@@ -47,16 +47,6 @@ func TestAccDataSourceIntegration(t *testing.T) {
 	})
 }
 
-const testAccDataSourceIntegration = `
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-data "elasticstack_fleet_integration" "test" {
-  name = "tcp"
-}
-`
 
 // checkResourceAttrStringNotEmpty verifies that the string value at key
 // is not empty.
