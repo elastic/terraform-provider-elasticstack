@@ -27,7 +27,7 @@
 
 ## 5. Add regression coverage
 
-- [ ] 5.1 Add analyzer tests for compliant ordinary steps that use `ConfigDirectory: acctest.NamedTestCaseDirectory(...)`.
-- [ ] 5.2 Add analyzer tests for compliant compatibility steps that use `ExternalProviders` with inline `Config`.
-- [ ] 5.3 Add analyzer tests for invalid ordinary inline `Config`, invalid `ConfigDirectory` helper usage, and invalid mixed `ExternalProviders` plus `ConfigDirectory` shapes.
-- [ ] 5.4 Run targeted analyzer tests and repository lint checks to confirm compliant cases pass and violations fail as specified.
+- [x] 5.1 Add analyzer tests for compliant ordinary steps that use `ConfigDirectory: acctest.NamedTestCaseDirectory(...)`.
+- [x] 5.2 Add analyzer tests for compliant compatibility steps that use `ExternalProviders` with inline `Config`.
+- [x] 5.3 Add analyzer tests for invalid ordinary inline `Config`, invalid `ConfigDirectory` helper usage, and invalid mixed `ExternalProviders` plus `ConfigDirectory` shapes.
+- [x] 5.4 Run targeted analyzer tests and repository lint checks to confirm compliant cases pass and violations fail as specified.

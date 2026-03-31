@@ -23,7 +23,24 @@ import (
 	"golang.org/x/tools/go/analysis/analysistest"
 )
 
-func TestAnalyzer(t *testing.T) {
+// TestAnalyzer_CompliantCases verifies that fully compliant test steps produce no diagnostics.
+// Covered patterns:
+//   - ordinary step: ConfigDirectory: acctest.NamedTestCaseDirectory(...) inside resource.Test
+//   - ordinary step: ConfigDirectory: acctest.NamedTestCaseDirectory(...) inside resource.ParallelTest
+//   - compatibility step: ExternalProviders + Config: "..." inside resource.Test
+//   - import-only step: neither Config nor ConfigDirectory
+func TestAnalyzer_CompliantCases(t *testing.T) {
 	testdata := analysistest.TestData()
-	analysistest.Run(t, testdata, NewAnalyzer(), "github.com/elastic/terraform-provider-elasticstack/internal/acctestcases/basic")
+	analysistest.Run(t, testdata, NewAnalyzer(), "github.com/elastic/terraform-provider-elasticstack/internal/acctestcases/compliant")
+}
+
+// TestAnalyzer_Violations verifies that non-compliant test steps each produce the expected diagnostic.
+// Covered violations:
+//   - inline Config without ExternalProviders (violation 1)
+//   - ConfigDirectory set to config.TestNameDirectory() instead of acctest.NamedTestCaseDirectory (violation 2)
+//   - ExternalProviders + ConfigDirectory together (violation 4)
+//   - inline Config without ExternalProviders inside resource.ParallelTest (violation 1, parallel variant)
+func TestAnalyzer_Violations(t *testing.T) {
+	testdata := analysistest.TestData()
+	analysistest.Run(t, testdata, NewAnalyzer(), "github.com/elastic/terraform-provider-elasticstack/internal/acctestcases/violations")
 }
