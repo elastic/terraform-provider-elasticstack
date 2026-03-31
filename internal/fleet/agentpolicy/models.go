@@ -50,6 +50,17 @@ type apiAgentFeature = struct {
 	Name    string `json:"name"`
 }
 
+func agentFeaturesFromPolicy(p *kbapi.AgentPolicy) []apiAgentFeature {
+	if p == nil || p.AgentFeatures == nil {
+		return nil
+	}
+	out := make([]apiAgentFeature, len(*p.AgentFeatures))
+	for i, f := range *p.AgentFeatures {
+		out[i] = apiAgentFeature{Enabled: f.Enabled, Name: f.Name}
+	}
+	return out
+}
+
 type features struct {
 	SupportsGlobalDataTags      bool
 	SupportsSupportsAgentless   bool

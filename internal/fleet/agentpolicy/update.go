@@ -66,10 +66,7 @@ func (r *agentPolicyResource) Update(ctx context.Context, req resource.UpdateReq
 		return
 	}
 
-	var existingFeatures []apiAgentFeature
-	if currentPolicy != nil && currentPolicy.AgentFeatures != nil {
-		existingFeatures = *currentPolicy.AgentFeatures
-	}
+	existingFeatures := agentFeaturesFromPolicy(currentPolicy)
 
 	body, diags := planModel.toAPIUpdateModel(ctx, feat, existingFeatures)
 
