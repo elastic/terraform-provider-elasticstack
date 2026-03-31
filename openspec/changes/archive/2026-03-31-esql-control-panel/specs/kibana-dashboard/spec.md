@@ -72,7 +72,7 @@ gains the following additions:
 
 ---
 
-### Requirement: Panels and `config_json` round-trip behavior (REQ-010)
+### Requirement: Panels, sections, and `config_json` round-trip behavior (REQ-010)
 
 `config_json` SHALL NOT be supported for `esql_control` panels; the `esql_control` panel type SHALL be managed exclusively through the typed `esql_control_config` block.
 
