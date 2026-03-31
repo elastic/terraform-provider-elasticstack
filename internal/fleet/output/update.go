@@ -70,6 +70,7 @@ func (r *outputResource) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
+	plannedSSL := planModel.Ssl
 	// Populate from API response
 	// With Sets, we don't need order preservation - Terraform handles set comparison automatically
 	diags = planModel.populateFromAPI(ctx, output)
@@ -77,6 +78,7 @@ func (r *outputResource) Update(ctx context.Context, req resource.UpdateRequest,
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	planModel.Ssl = normalizeSSLFromPlan(plannedSSL, planModel.Ssl)
 
 	diags = resp.State.Set(ctx, planModel)
 	resp.Diagnostics.Append(diags...)

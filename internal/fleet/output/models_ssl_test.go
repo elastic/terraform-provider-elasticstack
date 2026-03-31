@@ -187,3 +187,54 @@ func Test_sslToObjectValue(t *testing.T) {
 		})
 	}
 }
+
+func Test_normalizeSSLFromPlan(t *testing.T) {
+	mappedSSL := types.ObjectValueMust(
+		getSslAttrTypes(),
+		map[string]attr.Value{
+			"certificate_authorities": types.ListValueMust(types.StringType, []attr.Value{types.StringValue("ca")}),
+			"certificate":             types.StringValue("cert"),
+			"key":                     types.StringValue("key"),
+		},
+	)
+
+	tests := []struct {
+		name       string
+		plannedSSL types.Object
+		mappedSSL  types.Object
+		want       types.Object
+	}{
+		{
+			name:       "returns null when planned ssl is null",
+			plannedSSL: types.ObjectNull(getSslAttrTypes()),
+			mappedSSL:  mappedSSL,
+			want:       types.ObjectNull(getSslAttrTypes()),
+		},
+		{
+			name:       "returns null when planned ssl is unknown",
+			plannedSSL: types.ObjectUnknown(getSslAttrTypes()),
+			mappedSSL:  mappedSSL,
+			want:       types.ObjectNull(getSslAttrTypes()),
+		},
+		{
+			name: "keeps mapped value when planned ssl configured",
+			plannedSSL: types.ObjectValueMust(
+				getSslAttrTypes(),
+				map[string]attr.Value{
+					"certificate_authorities": types.ListValueMust(types.StringType, []attr.Value{types.StringValue("ca")}),
+					"certificate":             types.StringValue("configured-cert"),
+					"key":                     types.StringValue("configured-key"),
+				},
+			),
+			mappedSSL: mappedSSL,
+			want:      mappedSSL,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := normalizeSSLFromPlan(tt.plannedSSL, tt.mappedSSL)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}

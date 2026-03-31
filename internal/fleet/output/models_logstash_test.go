@@ -102,6 +102,30 @@ func Test_outputModel_populateFromAPI_logstash(t *testing.T) {
 	assert.Equal(t, []attr.Value{types.StringValue("logstash:5044")}, model.Hosts.Elements())
 }
 
+func Test_outputModel_populateFromAPI_logstash_withoutSSL(t *testing.T) {
+	t.Parallel()
+
+	var union kbapi.OutputUnion
+	err := union.FromOutputLogstash(kbapi.OutputLogstash{
+		Id:                  ptrString("logstash-no-ssl-output-id"),
+		Name:                "Fleet Logstash Output No SSL",
+		Type:                kbapi.KibanaHTTPAPIsOutputLogstashTypeLogstash,
+		Hosts:               []string{"logstash:5044"},
+		IsDefault:           ptrBool(false),
+		IsDefaultMonitoring: ptrBool(false),
+		Ssl:                 nil,
+	})
+	require.NoError(t, err)
+
+	model := outputModel{
+		SpaceIDs: types.SetNull(types.StringType),
+	}
+	diags := model.populateFromAPI(context.Background(), &union)
+	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags)
+
+	assert.True(t, model.Ssl.IsNull(), "expected ssl to be null when API returns nil ssl")
+}
+
 //go:fix inline
 func ptrString(v string) *string {
 	return new(v)

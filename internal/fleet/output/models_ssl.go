@@ -228,3 +228,13 @@ func sslToObjectValue(ctx context.Context, certificate *string, certificateAutho
 	diags.Append(diagTemp...)
 	return obj, diags
 }
+
+// normalizeSSLFromPlan keeps ssl explicitly null when users omit it in configuration.
+// This avoids post-apply inconsistencies for nested sensitive values when APIs return
+// partial SSL objects while plan did not configure SSL.
+func normalizeSSLFromPlan(plannedSSL types.Object, mappedSSL types.Object) types.Object {
+	if plannedSSL.IsNull() || plannedSSL.IsUnknown() {
+		return types.ObjectNull(getSslAttrTypes())
+	}
+	return mappedSSL
+}

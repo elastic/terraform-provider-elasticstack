@@ -268,6 +268,64 @@ func TestAccResourceOutputLogstash(t *testing.T) {
 	})
 }
 
+func TestAccResourceOutputLogstashSSLToggle(t *testing.T) {
+	policyName := sdkacctest.RandString(22)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceOutputDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_no_ssl"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "name", fmt.Sprintf("Logstash Output (No SSL) %s", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "id", fmt.Sprintf("%s-logstash-output-no-ssl", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "type", "logstash"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "hosts.0", "logstash:5044"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_output.test_output", "ssl.certificate"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_output.test_output", "ssl.key"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_with_ssl"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "name", fmt.Sprintf("Logstash Output (With SSL) %s", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "id", fmt.Sprintf("%s-logstash-output-no-ssl", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "type", "logstash"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "hosts.0", "logstash:5044"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "ssl.certificate_authorities.0", "placeholder"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "ssl.certificate", "placeholder"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "ssl.key", "placeholder"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_no_ssl"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "name", fmt.Sprintf("Logstash Output (No SSL) %s", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "id", fmt.Sprintf("%s-logstash-output-no-ssl", policyName)),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_output.test_output", "ssl.certificate"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_output.test_output", "ssl.key"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccResourceOutputKafka(t *testing.T) {
 	policyName := sdkacctest.RandString(22)
 

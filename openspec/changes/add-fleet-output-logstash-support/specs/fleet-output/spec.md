@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: Resource supports Logstash output type end-to-end
-The `elasticstack_fleet_output` resource SHALL support `type = "logstash"` for create, read, update, and delete operations using the Fleet Outputs API. When `type` is `logstash`, the resource SHALL build a valid Logstash output payload from Terraform plan values and SHALL persist returned API values to Terraform state using the same common field mapping used by other output types.
+The `elasticstack_fleet_output` resource SHALL support `type = "logstash"` for create, read, update, and delete operations using the Fleet Outputs API. When `type` is `logstash`, the resource SHALL build a valid Logstash output payload from Terraform plan values and SHALL persist returned API values to Terraform state using the same common field mapping used by other output types. The resource SHALL support both SSL-enabled and SSL-disabled Logstash configurations, including updates that transition between these modes.
 
 #### Scenario: Create Logstash output
 - **WHEN** a configuration sets `type = "logstash"` with valid common fields (including `name` and `hosts`) and create runs
@@ -15,8 +15,16 @@ The `elasticstack_fleet_output` resource SHALL support `type = "logstash"` for c
 - **WHEN** read receives a Fleet response for an output with `type = "logstash"`
 - **THEN** the provider SHALL map common output fields into state and SHALL NOT raise an unknown output type diagnostic
 
+#### Scenario: Create Logstash output without SSL
+- **WHEN** a configuration sets `type = "logstash"` and omits the `ssl` block
+- **THEN** the provider SHALL create the output successfully and persist `ssl` as null in Terraform state
+
+#### Scenario: Update Logstash output from SSL enabled to SSL disabled
+- **WHEN** an existing `type = "logstash"` output has `ssl` configured and an update removes the `ssl` block
+- **THEN** the provider SHALL update the output successfully and persist `ssl` as null in Terraform state
+
 ### Requirement: Acceptance coverage for Logstash output lifecycle
-The Fleet output acceptance test suite SHALL include coverage for `type = "logstash"` lifecycle behavior to verify create/read/update/import compatibility and protect against regressions.
+The Fleet output acceptance test suite SHALL include coverage for `type = "logstash"` lifecycle behavior to verify create/read/update/import compatibility and protect against regressions. Acceptance coverage SHALL include SSL-enabled and SSL-disabled variants, including mode transitions.
 
 #### Scenario: Acceptance test for Logstash lifecycle
 - **WHEN** provider acceptance tests are executed for Fleet output resource
@@ -25,3 +33,7 @@ The Fleet output acceptance test suite SHALL include coverage for `type = "logst
 #### Scenario: Acceptance test for Logstash import
 - **WHEN** a pre-existing Logstash output is imported into Terraform state
 - **THEN** the import/read cycle SHALL populate `output_id` and common fields consistently with managed resources
+
+#### Scenario: Acceptance test for SSL enable/disable transition
+- **WHEN** a Logstash output is updated from SSL-enabled configuration to SSL-disabled configuration (or the reverse)
+- **THEN** the provider SHALL apply the update successfully and state SHALL reflect the configured SSL mode

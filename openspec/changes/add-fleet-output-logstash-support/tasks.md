@@ -9,6 +9,7 @@
 - [x] 2.1 Add or update unit tests for request/state mapping branches specific to `logstash` output type.
 - [x] 2.2 Add acceptance coverage for Logstash output create/read/update behavior.
 - [x] 2.3 Add or extend import verification for a Logstash output resource.
+- [x] 2.4 Add test coverage for SSL-enabled and SSL-disabled Logstash configurations, including update transitions between SSL modes.
 
 ## 3. Documentation and validation
 

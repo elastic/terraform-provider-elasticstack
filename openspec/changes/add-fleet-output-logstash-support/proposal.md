@@ -1,11 +1,12 @@
 ## Why
 
-The Fleet output resource implementation currently supports `elasticsearch` and `kafka` output types, but does not fully support `logstash`. Fleet supports Logstash outputs as a first-class output type, so the Terraform provider should expose this behavior to keep provider functionality aligned with Fleet capabilities.
+The Fleet output resource implementation currently supports `elasticsearch` and `kafka` output types, but does not fully support `logstash`. Fleet supports Logstash outputs as a first-class output type, including SSL-enabled and non-SSL configurations, so the Terraform provider should expose this behavior to keep provider functionality aligned with Fleet capabilities.
 
 ## What Changes
 
 - Add full `logstash` output type support to `elasticstack_fleet_output` CRUD behavior.
 - Ensure create/update request mapping and read/state mapping support `logstash` outputs consistently.
+- Ensure `logstash` output configuration supports both SSL-enabled and SSL-disabled operation, including transitions between these modes.
 - Add or update acceptance and unit tests to cover `logstash` output creation, read/refresh, update, and import compatibility paths.
 - Update provider documentation and examples for `elasticstack_fleet_output` to include `logstash` output usage and constraints.
 
