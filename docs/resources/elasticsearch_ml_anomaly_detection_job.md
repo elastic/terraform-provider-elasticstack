@@ -88,7 +88,7 @@ This identifier can contain lowercase alphanumeric characters (a-z and 0-9), hyp
 - `custom_settings` (String) Advanced configuration option. Contains custom meta data about the job. For example, it can contain custom URL information.
 - `daily_model_snapshot_retention_after_days` (Number) Advanced configuration option, which affects the automatic removal of old model snapshots for this job.
 - `description` (String) A description of the job.
-- `elasticsearch_connection` (Block List, Deprecated) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- `elasticsearch_connection` (Block List) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - `groups` (Set of String) A set of job groups. A job can belong to no groups or many.
 - `model_plot_config` (Attributes) This advanced configuration option stores model information along with the results. It provides a more detailed view into anomaly detection. (see [below for nested schema](#nestedatt--model_plot_config))
 - `model_snapshot_retention_days` (Number) Advanced configuration option, which affects the automatic removal of old model snapshots for this job.
