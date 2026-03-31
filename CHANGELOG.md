@@ -2,6 +2,7 @@
 
 ### Changes
 
+- Add `elasticstack_kibana_agentbuilder_tool` resource and `elasticstack_kibana_export_agentbuilder_tool` data source ([#2111](https://github.com/elastic/terraform-provider-elasticstack/pull/2111))
 - Add `elasticstack_kibana_agentbuilder_workflow` resource and `elasticstack_kibana_export_agentbuilder_workflow` data source ([#1923](https://github.com/elastic/terraform-provider-elasticstack/pull/1923))
 - Add `elasticstack_fleet_output` data source. ([#1762](https://github.com/elastic/terraform-provider-elasticstack/pull/1762))
 - Fix `termField` validation for ESQL `.es-query` alert rules in `elasticstack_kibana_alerting_rule`. ([#1914](https://github.com/elastic/terraform-provider-elasticstack/pull/1914))
