@@ -694,6 +694,15 @@ func Test_panelModel_toAPI_configJSONErrors(t *testing.T) {
 			errorSummary:  "Failed to create lens panel",
 			errorContains: "unexpected end of JSON input",
 		},
+		{
+			name: "rejects missing slo burn rate config",
+			panel: panelModel{
+				Type: types.StringValue("slo_burn_rate"),
+				Grid: panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0)},
+			},
+			errorSummary:  "Missing SLO burn rate panel configuration",
+			errorContains: "SLO burn rate panels require `slo_burn_rate_config`.",
+		},
 	}
 
 	for _, tt := range tests {

@@ -47,6 +47,7 @@ type panelModel struct {
 	HeatmapConfig           *heatmapConfigModel                               `tfsdk:"heatmap_config"`
 	WaffleConfig            *waffleConfigModel                                `tfsdk:"waffle_config"`
 	TimeSliderControlConfig *timeSliderControlConfigModel                     `tfsdk:"time_slider_control_config"`
+	SloBurnRateConfig       *sloBurnRateConfigModel                           `tfsdk:"slo_burn_rate_config"`
 	ConfigJSON              customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config_json"`
 }
 
@@ -204,7 +205,8 @@ func panelUsesConfigJSONOnly(pm *panelModel) bool {
 		pm.RegionMapConfig == nil &&
 		pm.HeatmapConfig == nil &&
 		pm.WaffleConfig == nil &&
-		pm.TimeSliderControlConfig == nil
+		pm.TimeSliderControlConfig == nil &&
+		pm.SloBurnRateConfig == nil
 }
 
 func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelModel, panelItem kbapi.DashboardPanelItem) (panelModel, diag.Diagnostics) {
@@ -258,6 +260,15 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 			pm.ConfigJSON = customtypes.NewJSONWithDefaultsValue(string(configBytes), populatePanelConfigJSONDefaults)
 		}
 		populateTimeSliderControlFromAPI(&pm, tfPanel, tsPanel.Config)
+	case panelTypeSloBurnRate:
+		sbrPanel, err := panelItem.AsKbnDashboardPanelSloBurnRate()
+		if err != nil {
+			return panelModel{}, diagutil.FrameworkDiagFromError(err)
+		}
+		setPanelGridFromAPI(&pm, sbrPanel.Grid.X, sbrPanel.Grid.Y, sbrPanel.Grid.W, sbrPanel.Grid.H)
+		pm.ID = types.StringPointerValue(sbrPanel.Uid)
+		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
+		populateSloBurnRateFromAPI(&pm, tfPanel, sbrPanel.Config)
 	case panelTypeLens:
 		lensPanel, err := panelItem.AsKbnDashboardPanelLens()
 		if err != nil {
@@ -434,6 +445,25 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 		buildTimeSliderControlConfig(pm, &tsPanel)
 		if err := panelItem.FromKbnDashboardPanelTimeSliderControl(tsPanel); err != nil {
 			diags.AddError("Failed to create time slider control panel", err.Error())
+		}
+		return panelItem, diags
+	}
+
+	if pm.Type.ValueString() == panelTypeSloBurnRate || pm.SloBurnRateConfig != nil {
+		if pm.SloBurnRateConfig == nil {
+			diags.AddError(
+				"Missing SLO burn rate panel configuration",
+				"SLO burn rate panels require `slo_burn_rate_config`.",
+			)
+			return kbapi.DashboardPanelItem{}, diags
+		}
+		sbrPanel := kbapi.KbnDashboardPanelSloBurnRate{
+			Grid: grid,
+			Uid:  uid,
+		}
+		buildSloBurnRateConfig(pm, &sbrPanel)
+		if err := panelItem.FromKbnDashboardPanelSloBurnRate(sbrPanel); err != nil {
+			diags.AddError("Failed to create SLO burn rate panel", err.Error())
 		}
 		return panelItem, diags
 	}
