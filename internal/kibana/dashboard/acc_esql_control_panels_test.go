@@ -201,6 +201,24 @@ func TestAccResourceDashboardESQLControlConfigJSONRejected(t *testing.T) {
 	})
 }
 
+func TestAccResourceDashboardESQLControlInvalidConfig(t *testing.T) {
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			// esql_control_config with type = "lens" must be rejected (REQ-006)
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("invalid_panel_type"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable("unused"),
+				},
+				ExpectError: regexp.MustCompile(`Invalid Configuration`),
+			},
+		},
+	})
+}
+
 func TestAccResourceDashboardESQLControlInvalidEnum(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
