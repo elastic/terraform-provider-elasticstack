@@ -72,6 +72,16 @@ func TestAccResourceILM(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				ImportState:       true,
+				ImportStateVerify: true,
+				ResourceName:      "elasticstack_elasticsearch_index_lifecycle.test",
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("remove_actions"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
@@ -204,6 +214,27 @@ func TestAccResourceILMRolloverConditions(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_rollover", "hot.0.rollover.0.min_size", "50gb"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_rollover", "hot.0.rollover.0.min_primary_shard_docs", "500"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_rollover", "hot.0.rollover.0.min_primary_shard_size", "25gb"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(index.RolloverMinConditionsMinSupportedVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_rollover", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_rollover", "hot.0.rollover.0.max_age", "14d"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_rollover", "hot.0.rollover.0.max_docs", "15000"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_rollover", "hot.0.rollover.0.max_size", "150gb"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_rollover", "hot.0.rollover.0.max_primary_shard_docs", "8000"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_rollover", "hot.0.rollover.0.max_primary_shard_size", "75gb"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_rollover", "hot.0.rollover.0.min_age", "5d"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_rollover", "hot.0.rollover.0.min_docs", "2000"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_rollover", "hot.0.rollover.0.min_size", "60gb"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_rollover", "hot.0.rollover.0.min_primary_shard_docs", "750"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_rollover", "hot.0.rollover.0.min_primary_shard_size", "30gb"),
 				),
 			},
 		},
@@ -397,6 +428,23 @@ func TestAccResourceILMDeleteWaitForSnapshot(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_delete_snapshot", "name", policyName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_delete_snapshot", "delete.#", "1"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_delete_snapshot", "delete.0.wait_for_snapshot.0.policy", slmPolicyName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_delete_snapshot", "delete.0.delete.0.delete_searchable_snapshot", "true"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index_lifecycle.test_delete_snapshot", "modified_date"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("remove_wait_for_snapshot"),
+				ConfigVariables: config.Variables{
+					"policy_name":     config.StringVariable(policyName),
+					"repository_name": config.StringVariable(repositoryName),
+					"slm_policy_name": config.StringVariable(slmPolicyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_delete_snapshot", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_delete_snapshot", "delete.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_delete_snapshot", "delete.0.wait_for_snapshot.#", "0"),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_delete_snapshot", "delete.0.wait_for_snapshot.0.policy"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_delete_snapshot", "delete.0.delete.0.delete_searchable_snapshot", "true"),
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index_lifecycle.test_delete_snapshot", "modified_date"),
 				),
