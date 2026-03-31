@@ -570,7 +570,6 @@ var transformers = []TransformFunc{
 	fixGetMaintenanceWindowFindParams,
 	fixGetStreamsAttachmentTypesParams,
 	fixGetWorkflowsExecutionsParams,
-	fixSecurityAPIPageSize,
 	fixSecurityExceptionListItems,
 	removeDuplicateOneOfRefs,
 	fixDashboardPanelItemRefs,
@@ -967,11 +966,6 @@ func fixGetWorkflowsExecutionsParams(schema *Schema) {
 	get := schema.MustGetPath("/api/workflows/workflow/{workflowId}/executions").MustGetEndpoint("get")
 	get.Set("parameters.1.schema.anyOf.1.x-go-type", "[]GetWorkflowsWorkflowWorkflowidExecutionsParamsStatuses0")
 	get.Set("parameters.2.schema.anyOf.1.x-go-type", "[]GetWorkflowsWorkflowWorkflowidExecutionsParamsExecutionTypes0")
-}
-
-func fixSecurityAPIPageSize(schema *Schema) {
-	apiPageSize := schema.Components.MustGetMap("schemas.Security_Endpoint_Management_API_ApiPageSize")
-	schema.Components.Set("schemas.Security_Endpoint_Management_API_ApiPageSize", apiPageSize.MustGetMap("allOf.0"))
 }
 
 func fixDashboardPanelItemRefs(schema *Schema) {
