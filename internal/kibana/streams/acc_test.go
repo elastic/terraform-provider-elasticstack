@@ -313,12 +313,12 @@ func TestAccResourceKibanaStreamQuery(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"suffix": config.StringVariable(suffix),
 				},
-			Check: resource.ComposeTestCheckFunc(
-				resource.TestCheckResourceAttrSet("elasticstack_kibana_stream.query", "id"),
-				resource.TestCheckResourceAttr("elasticstack_kibana_stream.query", "name", "logs.otel.testacc-w"+suffix+".view"),
-				resource.TestCheckResourceAttr("elasticstack_kibana_stream.query", "query_config.esql", "FROM $.logs.otel.testacc-w"+suffix+" | LIMIT 10"),
-				resource.TestCheckResourceAttr("elasticstack_kibana_stream.query", "query_config.view", "$.logs.otel.testacc-w"+suffix+".view"),
-			),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_stream.query", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_stream.query", "name", "logs.otel.testacc-w"+suffix+".view"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_stream.query", "query_config.esql", "FROM $.logs.otel.testacc-w"+suffix+" | LIMIT 10"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_stream.query", "query_config.view", "$.logs.otel.testacc-w"+suffix+".view"),
+				),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
