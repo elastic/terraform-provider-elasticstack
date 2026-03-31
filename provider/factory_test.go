@@ -15,31 +15,24 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package provider
+package provider_test
 
 import (
 	"context"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/provider"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestMuxServer(t *testing.T) {
-	const providerConfig = `
-	provider "elasticstack" {
-		elasticsearch {
-		  username  = "sup"
-		  password  = "dawg"
-		  endpoints = ["http://localhost:9200"]
-		}
-	  }
-	`
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: map[string]func() (tfprotov6.ProviderServer, error){
 			"elasticstack": func() (tfprotov6.ProviderServer, error) {
 				version := "acceptance_test"
-				server, err := ProtoV6ProviderServerFactory(context.Background(), version)
+				server, err := provider.ProtoV6ProviderServerFactory(context.Background(), version)
 				if err != nil {
 					return nil, err
 				}
@@ -49,7 +42,7 @@ func TestMuxServer(t *testing.T) {
 		},
 		Steps: []resource.TestStep{
 			{
-				Config: providerConfig,
+				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 			},
 		},
 	})

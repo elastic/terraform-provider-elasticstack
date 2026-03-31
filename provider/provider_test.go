@@ -20,7 +20,6 @@ package provider_test
 import (
 	"fmt"
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -30,6 +29,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/provider"
 	"github.com/hashicorp/go-version"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	tfconfig "github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -48,8 +48,12 @@ func TestElasticsearchAPIKeyConnection(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(apikey.MinVersion),
-				Config:   testElasticsearchConnection(apiKeyName),
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(apikey.MinVersion),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables: tfconfig.Variables{
+					"api_key_name": tfconfig.StringVariable(apiKeyName),
+					"endpoints":    tfconfig.StringVariable(os.Getenv("ELASTICSEARCH_ENDPOINTS")),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_security_user.test", "username", "elastic"),
 				),
@@ -69,7 +73,11 @@ func TestElasticsearchBearerTokenConnection(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testElasticsearchBearerTokenConnection(bearerToken),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables: tfconfig.Variables{
+					"endpoints":    tfconfig.StringVariable(os.Getenv("ELASTICSEARCH_ENDPOINTS")),
+					"bearer_token": tfconfig.StringVariable(bearerToken),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_security_user.test", "username", "elastic"),
 				),
@@ -86,8 +94,9 @@ func TestFleetConfiguration(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionForFleet),
-				Config:   testFleetConfiguration(envConfig),
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minVersionForFleet),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables: fleetConfigVariables(envConfig),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_fleet_enrollment_tokens.test", "tokens.#"),
 				),
@@ -109,8 +118,9 @@ func TestFleetBearerTokenConfiguration(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionForFleet),
-				Config:   testFleetBearerTokenConfiguration(envConfig, bearerToken),
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minVersionForFleet),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables: fleetBearerTokenConfigVariables(envConfig, bearerToken),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_fleet_enrollment_tokens.test", "tokens.#"),
 				),
@@ -253,78 +263,31 @@ resource "elasticstack_kibana_space" "acc_test" {
 }`, cfg.Kibana.Address, cfg.Kibana.ApiKey)
 }
 
-func testFleetConfiguration(cfg config.Client) string {
-	caCerts := ""
-	if len(cfg.Fleet.CACerts) > 0 {
-		quotedCas := []string{}
-		for _, ca := range cfg.Fleet.CACerts {
-			quotedCas = append(quotedCas, fmt.Sprintf(`"%s"`, ca))
-		}
-
-		caCerts = fmt.Sprintf("ca_certs = [%s]", strings.Join(quotedCas, ","))
+func fleetConfigVariables(cfg config.Client) tfconfig.Variables {
+	caCertVars := make([]tfconfig.Variable, len(cfg.Fleet.CACerts))
+	for i, ca := range cfg.Fleet.CACerts {
+		caCertVars[i] = tfconfig.StringVariable(ca)
 	}
 
-	return fmt.Sprintf(`
-provider "elasticstack" {
-	fleet {
-		endpoint = "%s"
-		username = "%s"
-		password = "%s"
-		%s
+	return tfconfig.Variables{
+		"fleet_endpoint": tfconfig.StringVariable(cfg.Fleet.URL),
+		"fleet_username": tfconfig.StringVariable(cfg.Fleet.Username),
+		"fleet_password": tfconfig.StringVariable(cfg.Fleet.Password),
+		"fleet_ca_certs": tfconfig.ListVariable(caCertVars...),
 	}
 }
 
-data "elasticstack_fleet_enrollment_tokens" "test" {}`, cfg.Fleet.URL, cfg.Fleet.Username, cfg.Fleet.Password, caCerts)
-}
+func fleetBearerTokenConfigVariables(cfg config.Client, bearerToken string) tfconfig.Variables {
+	caCertVars := make([]tfconfig.Variable, len(cfg.Fleet.CACerts))
+	for i, ca := range cfg.Fleet.CACerts {
+		caCertVars[i] = tfconfig.StringVariable(ca)
+	}
 
-func testElasticsearchConnection(apiKeyName string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_security_api_key" "test_connection" {
-  name = "%s"
-
-  role_descriptors = jsonencode({
-    role-a = {
-      cluster = ["all"]
-      indices = [{
-        names = ["*"]
-        privileges = ["all"]
-        allow_restricted_indices = false
-      }]
-    }
-  })
-
-  expiration = "1d"
-}
-
-
-data "elasticstack_elasticsearch_security_user" "test" {
-  username = "elastic"
-
-  elasticsearch_connection {
-    endpoints = ["%s"]
-    api_key   = elasticstack_elasticsearch_security_api_key.test_connection.encoded
-  }
-}
-`, apiKeyName, os.Getenv("ELASTICSEARCH_ENDPOINTS"))
-}
-
-func testElasticsearchBearerTokenConnection(bearerToken string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {
-    endpoints    = ["%s"]
-    bearer_token = "%s"
-  }
-}
-
-data "elasticstack_elasticsearch_security_user" "test" {
-  username = "elastic"
-}
-`, os.Getenv("ELASTICSEARCH_ENDPOINTS"), bearerToken)
+	return tfconfig.Variables{
+		"fleet_endpoint": tfconfig.StringVariable(cfg.Fleet.URL),
+		"bearer_token":   tfconfig.StringVariable(bearerToken),
+		"fleet_ca_certs": tfconfig.ListVariable(caCertVars...),
+	}
 }
 
 func testKibanaBearerTokenConfiguration(cfg config.Client) string {
@@ -343,25 +306,3 @@ resource "elasticstack_kibana_space" "acc_test" {
 }`, cfg.Kibana.Address, cfg.Kibana.BearerToken)
 }
 
-func testFleetBearerTokenConfiguration(cfg config.Client, bearerToken string) string {
-	caCerts := ""
-	if len(cfg.Fleet.CACerts) > 0 {
-		quotedCas := []string{}
-		for _, ca := range cfg.Fleet.CACerts {
-			quotedCas = append(quotedCas, fmt.Sprintf(`"%s"`, ca))
-		}
-
-		caCerts = fmt.Sprintf("ca_certs = [%s]", strings.Join(quotedCas, ","))
-	}
-
-	return fmt.Sprintf(`
-provider "elasticstack" {
-	fleet {
-		endpoint     = "%s"
-		bearer_token = "%s"
-		%s
-	}
-}
-
-data "elasticstack_fleet_enrollment_tokens" "test" {}`, cfg.Fleet.URL, bearerToken, caCerts)
-}
