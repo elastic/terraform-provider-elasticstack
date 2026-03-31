@@ -226,6 +226,47 @@ func Test_PlanModifyString(t *testing.T) {
 			},
 		},
 		{
+			name: "should carry forward server-computed keys when type matches (e.g. model_settings for semantic_text)",
+			stateMappings: mapToJSONStringValue(t, map[string]any{
+				"properties": map[string]any{
+					"summary": map[string]any{
+						"type":         "semantic_text",
+						"inference_id": ".jina-embeddings-v3",
+						"model_settings": map[string]any{
+							"dimensions":   1024,
+							"element_type": "float",
+							"service":      "elastic",
+							"similarity":   "cosine",
+							"task_type":    "text_embedding",
+						},
+					},
+				},
+			}),
+			configMappings: mapToJSONStringValue(t, map[string]any{
+				"properties": map[string]any{
+					"summary": map[string]any{
+						"type":         "semantic_text",
+						"inference_id": ".jina-embeddings-v3",
+					},
+				},
+			}),
+			expectedPlanMappings: mapToJSONStringValue(t, map[string]any{
+				"properties": map[string]any{
+					"summary": map[string]any{
+						"type":         "semantic_text",
+						"inference_id": ".jina-embeddings-v3",
+						"model_settings": map[string]any{
+							"dimensions":   1024,
+							"element_type": "float",
+							"service":      "elastic",
+							"similarity":   "cosine",
+							"task_type":    "text_embedding",
+						},
+					},
+				},
+			}),
+		},
+		{
 			name: "requires replace when a sub-fields type is changed",
 			stateMappings: mapToJSONStringValue(t, map[string]any{
 				"properties": map[string]any{

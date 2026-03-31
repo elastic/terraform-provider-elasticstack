@@ -98,6 +98,15 @@ func (p mappingsPlanModifier) modifyMappings(initialPath path.Path, oldMappings 
 				if !reflect.DeepEqual(s, ns) {
 					return true, newMappings, diags
 				}
+				// Types match: carry forward any server-computed keys from the old
+				// state that aren't in the config (e.g. model_settings added by ES
+				// for semantic_text fields), so the plan matches what ES will return.
+				for oldKey, oldVal := range oldFieldSettings {
+					if _, exists := newSettings[oldKey]; !exists {
+						newSettings[oldKey] = oldVal
+					}
+				}
+				newMappings[k] = newSettings
 				continue
 			}
 
