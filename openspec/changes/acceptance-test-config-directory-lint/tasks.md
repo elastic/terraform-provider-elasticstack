@@ -21,9 +21,9 @@
 
 ## 4. Migrate existing in-scope violations
 
-- [ ] 4.1 Convert ordinary in-scope acceptance tests that still use inline `Config` to directory-backed fixtures with `acctest.NamedTestCaseDirectory(...)`, including `provider/**` tests when applicable.
-- [ ] 4.2 Replace in-scope `ConfigDirectory: config.TestNameDirectory()` usage with `acctest.NamedTestCaseDirectory(...)` and corresponding fixture directories.
-- [ ] 4.3 Preserve legitimate older-provider compatibility coverage by keeping `ExternalProviders` steps on inline `Config`.
+- [x] 4.1 Convert ordinary in-scope acceptance tests that still use inline `Config` to directory-backed fixtures with `acctest.NamedTestCaseDirectory(...)`, including `provider/**` tests when applicable.
+- [x] 4.2 Replace in-scope `ConfigDirectory: config.TestNameDirectory()` usage with `acctest.NamedTestCaseDirectory(...)` and corresponding fixture directories.
+- [x] 4.3 Preserve legitimate older-provider compatibility coverage by keeping `ExternalProviders` steps on inline `Config`.
 
 ## 5. Add regression coverage
 
