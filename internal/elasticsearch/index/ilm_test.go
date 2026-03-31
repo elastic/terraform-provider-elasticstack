@@ -127,7 +127,7 @@ func TestAccResourceILM(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "hot.0.min_age", "1h"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "hot.0.set_priority.0.priority", "10"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "hot.0.downsample.0.fixed_interval", "1d"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "hot.0.downsample.0.wait_timeout", "1d"),
+					checkILMDownsampleDefaultWaitTimeout("elasticstack_elasticsearch_index_lifecycle.test", "hot.0.downsample.0.wait_timeout"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "hot.0.rollover.0.max_age", "1d"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "hot.0.readonly.0.enabled", "true"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "delete.0.min_age", "0ms"),
@@ -741,4 +741,18 @@ resource "elasticstack_elasticsearch_index_lifecycle" "test_conn" {
   }
 }
 `, policyName, endpoint, authConfig)
+}
+
+func checkILMDownsampleDefaultWaitTimeout(resourceName, attribute string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		unsupported, err := versionutils.CheckIfVersionIsUnsupported(downsampleVersionLimit)()
+		if err != nil {
+			return err
+		}
+		if unsupported {
+			return nil
+		}
+
+		return resource.TestCheckResourceAttr(resourceName, attribute, "1d")(s)
+	}
 }
