@@ -182,7 +182,7 @@ func TestKibanaConfiguration(t *testing.T) {
 								return os.Getenv("KIBANA_API_KEY") == "", nil
 							},
 							ConfigDirectory: acctest.NamedTestCaseDirectory("api_key"),
-							ConfigVariables: kibanaApiKeyConfigVariables(envConfig),
+							ConfigVariables: kibanaAPIKeyConfigVariables(envConfig),
 							Check: resource.ComposeTestCheckFunc(
 								resource.TestCheckResourceAttrSet("elasticstack_kibana_space.acc_test", "name"),
 							),
@@ -240,7 +240,7 @@ func kibanaUsernamePasswordConfigVariables(cfg config.Client) tfconfig.Variables
 	}
 }
 
-func kibanaApiKeyConfigVariables(cfg config.Client) tfconfig.Variables {
+func kibanaAPIKeyConfigVariables(cfg config.Client) tfconfig.Variables {
 	return tfconfig.Variables{
 		"kibana_endpoint": tfconfig.StringVariable(cfg.Kibana.Address),
 		"kibana_api_key":  tfconfig.StringVariable(cfg.Kibana.ApiKey),

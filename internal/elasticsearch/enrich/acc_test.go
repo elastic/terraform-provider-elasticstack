@@ -306,7 +306,13 @@ func TestAccDataSourceEnrichPolicyConnection(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
-				ConfigVariables: config.Variables{"name": config.StringVariable(name), "endpoints": config.ListVariable(config.StringVariable(primaryESEndpoint())), "api_key": config.StringVariable(os.Getenv("ELASTICSEARCH_API_KEY")), "username": config.StringVariable(os.Getenv("ELASTICSEARCH_USERNAME")), "password": config.StringVariable(os.Getenv("ELASTICSEARCH_PASSWORD"))},
+				ConfigVariables: config.Variables{
+					"name":      config.StringVariable(name),
+					"endpoints": config.ListVariable(config.StringVariable(primaryESEndpoint())),
+					"api_key":   config.StringVariable(os.Getenv("ELASTICSEARCH_API_KEY")),
+					"username":  config.StringVariable(os.Getenv("ELASTICSEARCH_USERNAME")),
+					"password":  config.StringVariable(os.Getenv("ELASTICSEARCH_PASSWORD")),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_enrich_policy.test", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "name", name),
@@ -425,7 +431,12 @@ func TestAccDataSourceEnrichPolicyConnectionBasicAuth(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
-				ConfigVariables: config.Variables{"name": config.StringVariable(name), "endpoint": config.StringVariable(primaryESEndpoint()), "username": config.StringVariable(os.Getenv("ELASTICSEARCH_USERNAME")), "password": config.StringVariable(os.Getenv("ELASTICSEARCH_PASSWORD"))},
+				ConfigVariables: config.Variables{
+					"name":     config.StringVariable(name),
+					"endpoint": config.StringVariable(primaryESEndpoint()),
+					"username": config.StringVariable(os.Getenv("ELASTICSEARCH_USERNAME")),
+					"password": config.StringVariable(os.Getenv("ELASTICSEARCH_PASSWORD")),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_enrich_policy.test", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "name", name),
@@ -483,7 +494,13 @@ func TestAccResourceEnrichPolicyConnection(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
-				ConfigVariables: config.Variables{"name": config.StringVariable(name), "endpoints": config.ListVariable(config.StringVariable(primaryESEndpoint())), "api_key": config.StringVariable(os.Getenv("ELASTICSEARCH_API_KEY")), "username": config.StringVariable(os.Getenv("ELASTICSEARCH_USERNAME")), "password": config.StringVariable(os.Getenv("ELASTICSEARCH_PASSWORD"))},
+				ConfigVariables: config.Variables{
+					"name":      config.StringVariable(name),
+					"endpoints": config.ListVariable(config.StringVariable(primaryESEndpoint())),
+					"api_key":   config.StringVariable(os.Getenv("ELASTICSEARCH_API_KEY")),
+					"username":  config.StringVariable(os.Getenv("ELASTICSEARCH_USERNAME")),
+					"password":  config.StringVariable(os.Getenv("ELASTICSEARCH_PASSWORD")),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_enrich_policy.policy", "id"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "name", name),
