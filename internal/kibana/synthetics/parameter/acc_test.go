@@ -26,14 +26,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-const (
-	providerConfig = `
-provider "elasticstack" {
-	kibana {}
-}
-`
-)
-
 var (
 	minKibanaParameterAPIVersion = version.Must(version.NewVersion("8.12.0"))
 )
@@ -46,15 +38,8 @@ func TestSyntheticParameterResource(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaParameterAPIVersion),
-				Config: providerConfig + `
-resource "elasticstack_kibana_synthetics_parameter" "test" {
-	key = "test-key"
-	value = "test-value"
-	description = "Test description"
-	tags = ["a", "b"]
-}
-`,
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minKibanaParameterAPIVersion),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceID, "key", "test-key"),
 					resource.TestCheckResourceAttr(resourceID, "value", "test-value"),
@@ -70,26 +55,12 @@ resource "elasticstack_kibana_synthetics_parameter" "test" {
 				ResourceName:      resourceID,
 				ImportState:       true,
 				ImportStateVerify: true,
-				Config: providerConfig + `
-resource "elasticstack_kibana_synthetics_parameter" "test" {
-	key = "test-key"
-	value = "test-value"
-	description = "Test description"
-	tags = ["a", "b"]
-}
-`,
+				ConfigDirectory:   acctest.NamedTestCaseDirectory("import"),
 			},
 			// Update and Read testing
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaParameterAPIVersion),
-				Config: providerConfig + `
-resource "elasticstack_kibana_synthetics_parameter" "test" {
-	key = "test-key-2"
-	value = "test-value-2"
-	description = "Test description 2"
-	tags = ["c", "d", "e"]
-}
-`,
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minKibanaParameterAPIVersion),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceID, "key", "test-key-2"),
 					resource.TestCheckResourceAttr(resourceID, "value", "test-value-2"),

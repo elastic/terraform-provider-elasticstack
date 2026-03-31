@@ -34,7 +34,7 @@ func TestAccDataSourceKibanaSecurityRole(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceSecurityRole,
+				ConfigDirectory: acctest.NamedTestCaseDirectory("all_attributes"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_kibana_security_role.test", "name", "data_source_test"),
 					resource.TestCheckNoResourceAttr("data.elasticstack_kibana_security_role.test", "kibana.0.feature.#"),
@@ -46,7 +46,7 @@ func TestAccDataSourceKibanaSecurityRole(t *testing.T) {
 			},
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedRemoteIndicesVersion),
-				Config:   testAccDataSourceSecurityRoleRemoteIndices,
+				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_kibana_security_role.test", "name", "data_source_test2"),
 					resource.TestCheckNoResourceAttr("data.elasticstack_kibana_security_role.test", "kibana.0.feature.#"),
@@ -64,67 +64,3 @@ func TestAccDataSourceKibanaSecurityRole(t *testing.T) {
 	})
 }
 
-const testAccDataSourceSecurityRole = `
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-
-resource "elasticstack_kibana_security_role" "test" {
-	name    = "data_source_test"
-	elasticsearch {
-	  cluster = [ "create_snapshot" ]
-	  indices {
-		names = ["sample"]
-		privileges = ["create", "read", "write"]
-	  }
-	  run_as = ["kibana", "elastic"]
-	}
-	kibana {
-	  base = [ "all" ]
-	  spaces = ["default"]
-	}
-}
-
-data "elasticstack_kibana_security_role" "test" {
-  name = elasticstack_kibana_security_role.test.name
-}
-`
-
-const testAccDataSourceSecurityRoleRemoteIndices = `
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-
-resource "elasticstack_kibana_security_role" "test" {
-	name    = "data_source_test2"
-	elasticsearch {
-	  cluster = [ "create_snapshot" ]
-	  indices {
-		names = ["sample"]
-		privileges = ["create", "read", "write"]
-	  }
-      remote_indices {
-	    clusters = ["test-cluster"]
-        field_security {
-          grant = ["sample"]
-          except = []
-        }
-        names = ["sample"]
-        privileges = ["create", "read", "write"]
-      }
-	  run_as = ["kibana", "elastic"]
-	}
-	kibana {
-	  base = [ "all" ]
-	  spaces = ["default"]
-	}
-}
-
-data "elasticstack_kibana_security_role" "test" {
-  name = elasticstack_kibana_security_role.test.name
-}
-`

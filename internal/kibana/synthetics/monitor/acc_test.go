@@ -19,7 +19,6 @@ package monitor_test
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 	"testing"
 
@@ -28,6 +27,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -40,405 +40,21 @@ const (
 	httpCheckExpectedUpdated = `{"request":{"body":"name=first\u0026email=someemail@someemailprovider.com",` +
 		`"headers":{"Content-Type":"application/x-www-form-urlencoded"},"method":"POST"},` +
 		`"response":{"body":{"positive":["foo","bar"]},"status":[200,201,301]}}`
-
-	httpMonitorMinConfig = `
-
-resource "elasticstack_kibana_synthetics_monitor" "%s" {
-	name = "TestHttpMonitorResource - %s"
-	private_locations = [elasticstack_kibana_synthetics_private_location.%s.label]
-	http = {
-		url = "http://localhost:5601"
-	}
-}
-`
-	httpMonitorConfig = `
-
-resource "elasticstack_kibana_synthetics_monitor" "%s" {
-	name = "TestHttpMonitorResource - %s"
-	space_id = "testacc"
-	namespace = "test_namespace"
-	schedule = 5
-	private_locations = [elasticstack_kibana_synthetics_private_location.%s.label]
-	enabled = true
-	tags = ["a", "b"]
-	alert = {
-		status = {
-			enabled = true
-		}
-		tls = {
-			enabled = true
-		}
-	}
-	service_name = "test apm service"
-	timeout = 30
-	http = {
-		url = "http://localhost:5601"
-		mode = "any"
-		ipv4 = true
-		ipv6 = false
-	}
-}
-`
-	httpMonitorSslConfig = `
-
-resource "elasticstack_kibana_synthetics_monitor" "%s" {
-	name = "TestHttpMonitorResource - %s"
-	private_locations = [elasticstack_kibana_synthetics_private_location.%s.label]
-	http = {
-		url = "http://localhost:5601"
-		ssl_verification_mode = "full"
-		ssl_supported_protocols = ["TLSv1.2"]
-		ssl_certificate_authorities = ["ca1", "ca2"]
-		ssl_certificate = "cert"
-		ssl_key = "key"
-		ssl_key_passphrase = "pass"
-	}
-}
-`
-
-	httpMonitorUpdated = `
-resource "elasticstack_kibana_synthetics_monitor" "%s" {
-	name = "TestHttpMonitorResource Updated - %s"
-	space_id = "testacc"
-	schedule = 10
-	private_locations = [elasticstack_kibana_synthetics_private_location.%s.label]
-	enabled = false
-	tags = ["c", "d", "e"]
-	alert = {
-		status = {
-			enabled = true
-		}
-		tls = {
-			enabled = false
-		}
-	}
-	service_name = "test apm service"
-	timeout = 30
-	http = {
-		url = "http://localhost:8080"
-		ssl_verification_mode = "full"
-		ssl_supported_protocols = ["TLSv1.2"]
-		max_redirects = 10
-		mode = "all"
-		ipv4 = true
-		ipv6 = true
-		proxy_url = "http://localhost"
-		proxy_header = jsonencode({
-			"header-name" = "header-value-updated"
-		})
-		username = "testupdated"
-		password = "testpassword-updated"
-		check = jsonencode({
-			"request": {
-				"method": "POST",
-				"headers": {
-					"Content-Type": "application/x-www-form-urlencoded",
-				},
-				"body": "name=first&email=someemail@someemailprovider.com",
-			},
-			"response": {
-				"status": [200, 201, 301],
-				"body": {
-					"positive": ["foo", "bar"]
-				}
-			}
-		})
-		response = jsonencode({
-			"include_body":           "never",
-			"include_body_max_bytes": "1024",
-		})
-	}
-	params = jsonencode({
-		"param-name" = "param-value-updated"
-  	})
-	retest_on_failure = false
-}
-
-`
-
-	tcpMonitorMinConfig = `
-
-resource "elasticstack_kibana_synthetics_monitor" "%s" {
-	name = "TestTcpMonitorResource - %s"
-	private_locations = [elasticstack_kibana_synthetics_private_location.%s.label]
-	tcp = {
-		host = "http://localhost:5601"
-	}
-}
-`
-
-	tcpMonitorSslConfig = `
-
-resource "elasticstack_kibana_synthetics_monitor" "%s" {
-	name = "TestHttpMonitorResource - %s"
-	private_locations = [elasticstack_kibana_synthetics_private_location.%s.label]
-	tcp = {
-		host = "http://localhost:5601"
-		ssl_verification_mode = "full"
-		ssl_supported_protocols = ["TLSv1.2"]
-		ssl_certificate_authorities = ["ca1", "ca2"]
-		ssl_certificate = "cert"
-		ssl_key = "key"
-		ssl_key_passphrase = "pass"
-	}
-}
-`
-
-	tcpMonitorConfig = `
-
-resource "elasticstack_kibana_synthetics_monitor" "%s" {
-	name = "TestTcpMonitorResource - %s"
-	space_id = "testacc"
-	namespace = "testacc_test"
-	schedule = 5
-	private_locations = [elasticstack_kibana_synthetics_private_location.%s.label]
-	enabled = true
-	tags = ["a", "b"]
-	alert = {
-		status = {
-			enabled = true
-		}
-		tls = {
-			enabled = true
-		}
-	}
-	service_name = "test apm service"
-	timeout = 30
-	tcp = {
-		host = "http://localhost:5601"
-		proxy_use_local_resolver = true
-	}
-}
-`
-
-	tcpMonitorUpdated = `
-resource "elasticstack_kibana_synthetics_monitor" "%s" {
-	name = "TestTcpMonitorResource Updated - %s"
-	space_id = "testacc"
-	schedule = 10
-	private_locations = [elasticstack_kibana_synthetics_private_location.%s.label]
-	enabled = false
-	tags = ["c", "d", "e"]
-	alert = {
-		status = {
-			enabled = true
-		}
-		tls = {
-			enabled = false
-		}
-	}
-	service_name = "test apm service"
-	timeout = 30
-	tcp = {
-		host = "http://localhost:8080"
-		ssl_verification_mode = "full"
-		ssl_supported_protocols = ["TLSv1.2"]
-		proxy_url = "http://localhost"
-		proxy_use_local_resolver = false
-		check_send = "Hello Updated"
-		check_receive = "World Updated"
-	}
-}
-`
-
-	icmpMonitorMinConfig = `
-
-resource "elasticstack_kibana_synthetics_monitor" "%s" {
-	name = "TestIcmpMonitorResource - %s"
-	private_locations = [elasticstack_kibana_synthetics_private_location.%s.label]
-	icmp = {
-		host = "localhost"
-	}
-}
-`
-	icmpMonitorConfig = `
-
-resource "elasticstack_kibana_synthetics_monitor" "%s" {
-	name = "TestIcmpMonitorResource - %s"
-	space_id = "testacc"
-	namespace = "testacc_namespace"
-	schedule = 5
-	private_locations = [elasticstack_kibana_synthetics_private_location.%s.label]
-	enabled = true
-	tags = ["a", "b"]
-	alert = {
-		status = {
-			enabled = true
-		}
-		tls = {
-			enabled = true
-		}
-	}
-	service_name = "test apm service"
-	timeout = 30
-	icmp = {
-		host = "localhost"
-	}
-}
-`
-
-	icmpMonitorUpdated = `
-resource "elasticstack_kibana_synthetics_monitor" "%s" {
-	name = "TestIcmpMonitorResource Updated - %s"
-	space_id = "testacc"
-	schedule = 10
-	private_locations = [elasticstack_kibana_synthetics_private_location.%s.label]
-	enabled = false
-	tags = ["c", "d", "e"]
-	alert = {
-		status = {
-			enabled = true
-		}
-		tls = {
-			enabled = false
-		}
-	}
-	service_name = "test apm service"
-	timeout = 30
-	icmp = {
-		host = "google.com"
-		wait = 10
-	}
-}
-`
-	browserMonitorConfig = `
-
-resource "elasticstack_kibana_synthetics_monitor" "%s" {
-	name = "TestBrowserMonitorResource - %s"
-	space_id = "testacc"
-	namespace = "testacc_ns"
-	schedule = 5
-	private_locations = [elasticstack_kibana_synthetics_private_location.%s.label]
-	enabled = true
-	tags = ["a", "b"]
-	service_name = "test apm service"
-	timeout = 30
-	browser = {
-		inline_script = "step('Go to https://google.com.co', () => page.goto('https://www.google.com'))"
-	}
-}
-`
-	browserMonitorMinConfig = `
-
-resource "elasticstack_kibana_synthetics_monitor" "%s" {
-	name = "TestBrowserMonitorResource - %s"
-	private_locations = [elasticstack_kibana_synthetics_private_location.%s.label]
-	alert = {
-		status = {
-			enabled = true
-		}
-		tls = {
-			enabled = true
-		}
-	}
-	browser = {
-		inline_script = "step('Go to https://google.com.co', () => page.goto('https://www.google.com'))"
-	}
-}
-`
-
-	browserMonitorUpdated = `
-resource "elasticstack_kibana_synthetics_monitor" "%s" {
-	name = "TestBrowserMonitorResource Updated - %s"
-	space_id = "testacc"
-	schedule = 10
-	private_locations = [elasticstack_kibana_synthetics_private_location.%s.label]
-	enabled = false
-	tags = ["c", "d", "e"]
-	alert = {
-		status = {
-			enabled = true
-		}
-		tls = {
-			enabled = false
-		}
-	}
-	service_name = "test apm service"
-	timeout = 30
-	browser = {
-		inline_script = "step('Go to https://google.de', () => page.goto('https://www.google.de'))"
-		synthetics_args = ["--no-sandbox", "--disable-setuid-sandbox"]
-		screenshots = "off"
-		ignore_https_errors = true
-		playwright_options = jsonencode({"httpCredentials":{"password":"test","username":"test"},"ignoreHTTPSErrors":false})
-	}
-}
-`
-
-	httpMonitorLabelsConfig = `
-resource "elasticstack_kibana_synthetics_monitor" "%s" {
-	name = "TestHttpMonitorLabels - %s"
-	private_locations = [elasticstack_kibana_synthetics_private_location.%s.label]
-	labels = {
-		environment = "production"
-		team = "platform"
-		service = "web-app"
-	}
-	http = {
-		url = "http://localhost:5601"
-	}
-}
-`
-
-	httpMonitorLabelsUpdated = `
-resource "elasticstack_kibana_synthetics_monitor" "%s" {
-	name = "TestHttpMonitorLabels Updated - %s"
-	private_locations = [elasticstack_kibana_synthetics_private_location.%s.label]
-	labels = {
-		environment = "staging"
-		team = "platform-updated"
-		service = "web-app-v2"
-	}
-	http = {
-		url = "http://localhost:5601"
-	}
-}
-`
-
-	httpMonitorLabelsRemoved = `
-resource "elasticstack_kibana_synthetics_monitor" "%s" {
-	name = "TestHttpMonitorLabels Removed - %s"
-	private_locations = [elasticstack_kibana_synthetics_private_location.%s.label]
-	http = {
-		url = "http://localhost:5601"
-	}
-}
-`
-
-	httpMonitorInvalidNamespaceAndLocation = `
-resource "elasticstack_kibana_synthetics_monitor" "%s" {
-	name = "TestHttpMonitor Invalid - %s"
-	locations = ["us_central_qa"]
-	namespace = "%s"
-	http = {
-		url = "http://localhost:5601"
-	}
-}
-`
 )
 
 func validationTest(t *testing.T, check resource.ErrorCheckFunc) {
 	name := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
-	id := "invalid-monitor"
-
-	provider := `
-provider "elasticstack" {
-  	elasticsearch {}
-	kibana {}
-	fleet{}
-}
-
-`
-
-	config := provider + fmt.Sprintf(httpMonitorInvalidNamespaceAndLocation, id, name, "***")
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
-				Config:   config,
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("validate"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(name),
+				},
 			},
 		},
 		ErrorCheck: check,
@@ -475,25 +91,25 @@ func TestSyntheticMonitorSchemaValidationNoLocation(t *testing.T) {
 
 func TestSyntheticMonitorHTTPResource(t *testing.T) {
 
+	httpMonitorID := "elasticstack_kibana_synthetics_monitor.http-monitor"
+	bmMonitorID := "elasticstack_kibana_synthetics_monitor.http-monitor-min"
+	sslHTTPMonitorID := "elasticstack_kibana_synthetics_monitor.http-monitor-ssl"
+
 	name := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
-	id := "http-monitor"
-	httpMonitorID, config := testMonitorConfig(id, httpMonitorConfig, name)
-
 	bmName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
-	bmMonitorID, bmConfig := testMonitorConfig("http-monitor-min", httpMonitorMinConfig, bmName)
-
 	sslName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
-	sslHTTPMonitorID, sslConfig := testMonitorConfig("http-monitor-ssl", httpMonitorSslConfig, sslName)
 
-	_, configUpdated := testMonitorConfig(id, httpMonitorUpdated, name)
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			// Create and Read http monitor with minimum fields
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
-				Config:   bmConfig,
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("http_min"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(bmName),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(bmMonitorID, "id"),
 					resource.TestCheckResourceAttr(bmMonitorID, "name", "TestHttpMonitorResource - "+bmName),
@@ -506,8 +122,11 @@ func TestSyntheticMonitorHTTPResource(t *testing.T) {
 			},
 			// Create and Read http monitor with ssl fields, starting from ES 8.16.0
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(kibana816Version),
-				Config:   sslConfig,
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(kibana816Version),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("http_ssl"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(sslName),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(sslHTTPMonitorID, "id"),
 					resource.TestCheckResourceAttr(sslHTTPMonitorID, "name", "TestHttpMonitorResource - "+sslName),
@@ -531,12 +150,18 @@ func TestSyntheticMonitorHTTPResource(t *testing.T) {
 				ResourceName:      sslHTTPMonitorID,
 				ImportState:       true,
 				ImportStateVerify: true,
-				Config:            sslConfig,
+				ConfigDirectory:   acctest.NamedTestCaseDirectory("http_ssl"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(sslName),
+				},
 			},
 			// Create and Read http monitor
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
-				Config:   config,
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("http_create"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(name),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(httpMonitorID, "id"),
 					resource.TestCheckResourceAttr(httpMonitorID, "name", "TestHttpMonitorResource - "+name),
@@ -572,13 +197,19 @@ func TestSyntheticMonitorHTTPResource(t *testing.T) {
 				ResourceName:      httpMonitorID,
 				ImportState:       true,
 				ImportStateVerify: true,
-				Config:            config,
+				ConfigDirectory:   acctest.NamedTestCaseDirectory("http_create"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(name),
+				},
 			},
 			// Update and Read testing http monitor
 			{
-				SkipFunc:     versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
-				ResourceName: httpMonitorID,
-				Config:       configUpdated,
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
+				ResourceName:    httpMonitorID,
+				ConfigDirectory: acctest.NamedTestCaseDirectory("http_update"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(name),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(httpMonitorID, "id"),
 					resource.TestCheckResourceAttr(httpMonitorID, "name", "TestHttpMonitorResource Updated - "+name),
@@ -625,16 +256,13 @@ func TestSyntheticMonitorHTTPResource(t *testing.T) {
 
 func TestSyntheticMonitorTCPResource(t *testing.T) {
 
+	tcpMonitorID := "elasticstack_kibana_synthetics_monitor.tcp-monitor"
+	bmMonitorID := "elasticstack_kibana_synthetics_monitor.tcp-monitor-min"
+	sslTCPMonitorID := "elasticstack_kibana_synthetics_monitor.tcp-monitor-ssl"
+
 	name := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
-	id := "tcp-monitor"
-	tcpMonitorID, config := testMonitorConfig(id, tcpMonitorConfig, name)
-	_, configUpdated := testMonitorConfig(id, tcpMonitorUpdated, name)
-
 	bmName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
-	bmMonitorID, bmConfig := testMonitorConfig("tcp-monitor-min", tcpMonitorMinConfig, bmName)
-
 	sslName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
-	sslTCPMonitorID, sslConfig := testMonitorConfig("tcp-monitor-ssl", tcpMonitorSslConfig, sslName)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -642,8 +270,11 @@ func TestSyntheticMonitorTCPResource(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create and Read tcp monitor with minimum fields
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
-				Config:   bmConfig,
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("tcp_min"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(bmName),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(bmMonitorID, "id"),
 					resource.TestCheckResourceAttr(bmMonitorID, "name", "TestTcpMonitorResource - "+bmName),
@@ -657,8 +288,11 @@ func TestSyntheticMonitorTCPResource(t *testing.T) {
 			// Create and Read tcp monitor with ssl fields, starting from ES 8.16.0
 			// Create and Read tcp monitor with ssl fields, starting from ES 8.16.0
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(kibana816Version),
-				Config:   sslConfig,
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(kibana816Version),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("tcp_ssl"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(sslName),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(sslTCPMonitorID, "id"),
 					resource.TestCheckResourceAttr(sslTCPMonitorID, "name", "TestHttpMonitorResource - "+sslName),
@@ -682,12 +316,18 @@ func TestSyntheticMonitorTCPResource(t *testing.T) {
 				ResourceName:      sslTCPMonitorID,
 				ImportState:       true,
 				ImportStateVerify: true,
-				Config:            sslConfig,
+				ConfigDirectory:   acctest.NamedTestCaseDirectory("tcp_ssl"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(sslName),
+				},
 			},
 			// Create and Read tcp monitor
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
-				Config:   config,
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("tcp_create"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(name),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(tcpMonitorID, "id"),
 					resource.TestCheckResourceAttr(tcpMonitorID, "name", "TestTcpMonitorResource - "+name),
@@ -720,13 +360,19 @@ func TestSyntheticMonitorTCPResource(t *testing.T) {
 				ResourceName:      tcpMonitorID,
 				ImportState:       true,
 				ImportStateVerify: true,
-				Config:            config,
+				ConfigDirectory:   acctest.NamedTestCaseDirectory("tcp_create"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(name),
+				},
 			},
 			// Update and Read tcp monitor
 			{
-				SkipFunc:     versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
-				ResourceName: tcpMonitorID,
-				Config:       configUpdated,
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
+				ResourceName:    tcpMonitorID,
+				ConfigDirectory: acctest.NamedTestCaseDirectory("tcp_update"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(name),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(tcpMonitorID, "id"),
 					resource.TestCheckResourceAttr(tcpMonitorID, "name", "TestTcpMonitorResource Updated - "+name),
@@ -766,13 +412,11 @@ func TestSyntheticMonitorTCPResource(t *testing.T) {
 
 func TestSyntheticMonitorICMPResource(t *testing.T) {
 
-	name := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
-	id := "icmp-monitor"
-	icmpMonitorID, config := testMonitorConfig(id, icmpMonitorConfig, name)
-	_, configUpdated := testMonitorConfig(id, icmpMonitorUpdated, name)
+	icmpMonitorID := "elasticstack_kibana_synthetics_monitor.icmp-monitor"
+	bmMonitorID := "elasticstack_kibana_synthetics_monitor.icmp-monitor-min"
 
+	name := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	bmName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
-	bmMonitorID, bmConfig := testMonitorConfig("icmp-monitor-min", icmpMonitorMinConfig, bmName)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -780,8 +424,11 @@ func TestSyntheticMonitorICMPResource(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create and Read icmp monitor with minimum fields
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
-				Config:   bmConfig,
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("icmp_min"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(bmName),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(bmMonitorID, "id"),
 					resource.TestCheckResourceAttr(bmMonitorID, "name", "TestIcmpMonitorResource - "+bmName),
@@ -795,8 +442,11 @@ func TestSyntheticMonitorICMPResource(t *testing.T) {
 
 			// Create and Read icmp monitor
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
-				Config:   config,
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("icmp_create"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(name),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(icmpMonitorID, "id"),
 					resource.TestCheckResourceAttr(icmpMonitorID, "name", "TestIcmpMonitorResource - "+name),
@@ -822,13 +472,19 @@ func TestSyntheticMonitorICMPResource(t *testing.T) {
 				ResourceName:      icmpMonitorID,
 				ImportState:       true,
 				ImportStateVerify: true,
-				Config:            config,
+				ConfigDirectory:   acctest.NamedTestCaseDirectory("icmp_create"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(name),
+				},
 			},
 			// Update and Read icmp monitor
 			{
-				SkipFunc:     versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
-				ResourceName: icmpMonitorID,
-				Config:       configUpdated,
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
+				ResourceName:    icmpMonitorID,
+				ConfigDirectory: acctest.NamedTestCaseDirectory("icmp_update"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(name),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(icmpMonitorID, "id"),
 					resource.TestCheckResourceAttr(icmpMonitorID, "name", "TestIcmpMonitorResource Updated - "+name),
@@ -861,13 +517,11 @@ func TestSyntheticMonitorICMPResource(t *testing.T) {
 
 func TestSyntheticMonitorBrowserResource(t *testing.T) {
 
-	name := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
-	id := "browser-monitor"
-	browserMonitorID, config := testMonitorConfig(id, browserMonitorConfig, name)
-	_, configUpdated := testMonitorConfig(id, browserMonitorUpdated, name)
+	browserMonitorID := "elasticstack_kibana_synthetics_monitor.browser-monitor"
+	bmMonitorID := "elasticstack_kibana_synthetics_monitor.browser-monitor-min"
 
+	name := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	bmName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
-	bmMonitorID, bmConfig := testMonitorConfig("browser-monitor-min", browserMonitorMinConfig, bmName)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -875,8 +529,11 @@ func TestSyntheticMonitorBrowserResource(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create and Read browser monitor with minimum fields
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
-				Config:   bmConfig,
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("browser_min"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(bmName),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(bmMonitorID, "id"),
 					resource.TestCheckResourceAttr(bmMonitorID, "name", "TestBrowserMonitorResource - "+bmName),
@@ -889,8 +546,11 @@ func TestSyntheticMonitorBrowserResource(t *testing.T) {
 			},
 			// Create and Read browser monitor
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
-				Config:   config,
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("browser_create"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(name),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(browserMonitorID, "id"),
 					resource.TestCheckResourceAttr(browserMonitorID, "name", "TestBrowserMonitorResource - "+name),
@@ -916,13 +576,19 @@ func TestSyntheticMonitorBrowserResource(t *testing.T) {
 				ResourceName:      browserMonitorID,
 				ImportState:       true,
 				ImportStateVerify: true,
-				Config:            config,
+				ConfigDirectory:   acctest.NamedTestCaseDirectory("browser_create"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(name),
+				},
 			},
 			// Update and Read browser monitor
 			{
-				SkipFunc:     versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
-				ResourceName: browserMonitorID,
-				Config:       configUpdated,
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
+				ResourceName:    browserMonitorID,
+				ConfigDirectory: acctest.NamedTestCaseDirectory("browser_update"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(name),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(browserMonitorID, "id"),
 					resource.TestCheckResourceAttr(browserMonitorID, "name", "TestBrowserMonitorResource Updated - "+name),
@@ -959,11 +625,8 @@ func TestSyntheticMonitorBrowserResource(t *testing.T) {
 }
 
 func TestSyntheticMonitorLabelsResource(t *testing.T) {
+	labelsMonitorID := "elasticstack_kibana_synthetics_monitor.http-monitor-labels"
 	name := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
-	id := "http-monitor-labels"
-	labelsMonitorID, labelsConfig := testMonitorConfig(id, httpMonitorLabelsConfig, name)
-	_, labelsConfigUpdated := testMonitorConfig(id, httpMonitorLabelsUpdated, name)
-	_, labelsConfigRemoved := testMonitorConfig(id, httpMonitorLabelsRemoved, name)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -971,8 +634,11 @@ func TestSyntheticMonitorLabelsResource(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create and Read monitor with labels
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(monitor.MinLabelsVersion),
-				Config:   labelsConfig,
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(monitor.MinLabelsVersion),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("labels_create"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(name),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(labelsMonitorID, "id"),
 					resource.TestCheckResourceAttr(labelsMonitorID, "name", "TestHttpMonitorLabels - "+name),
@@ -989,12 +655,18 @@ func TestSyntheticMonitorLabelsResource(t *testing.T) {
 				ResourceName:      labelsMonitorID,
 				ImportState:       true,
 				ImportStateVerify: true,
-				Config:            labelsConfig,
+				ConfigDirectory:   acctest.NamedTestCaseDirectory("labels_create"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(name),
+				},
 			},
 			// Update labels - change values but keep same keys
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(monitor.MinLabelsVersion),
-				Config:   labelsConfigUpdated,
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(monitor.MinLabelsVersion),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("labels_update"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(name),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(labelsMonitorID, "id"),
 					resource.TestCheckResourceAttr(labelsMonitorID, "name", "TestHttpMonitorLabels Updated - "+name),
@@ -1006,8 +678,11 @@ func TestSyntheticMonitorLabelsResource(t *testing.T) {
 			},
 			// Remove all labels - this tests the round-trip consistency fix
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(monitor.MinLabelsVersion),
-				Config:   labelsConfigRemoved,
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(monitor.MinLabelsVersion),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("labels_removed"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(name),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(labelsMonitorID, "id"),
 					resource.TestCheckResourceAttr(labelsMonitorID, "name", "TestHttpMonitorLabels Removed - "+name),
@@ -1023,35 +698,3 @@ func TestSyntheticMonitorLabelsResource(t *testing.T) {
 	})
 }
 
-func testMonitorConfig(id, cfg, name string) (string, string) {
-
-	resourceID := "elasticstack_kibana_synthetics_monitor." + id
-	privateLocationID := "pl-" + id
-	agentPolicyID := "apl-" + id
-
-	provider := fmt.Sprintf(`
-provider "elasticstack" {
-  	elasticsearch {}
-	kibana {}
-	fleet{}
-}
-
-resource "elasticstack_fleet_agent_policy" "%s" {
-	name            = "TestMonitorResource Agent Policy - %s"
-	namespace       = "testacc"
-	description     = "TestMonitorResource Agent Policy"
-	monitor_logs    = true
-	monitor_metrics = true
-	skip_destroy    = false
-}
-
-resource "elasticstack_kibana_synthetics_private_location" "%s" {
-	label = "monitor-pll-%s"
-	agent_policy_id = elasticstack_fleet_agent_policy.%s.policy_id
-}
-`, agentPolicyID, name, privateLocationID, name, agentPolicyID)
-
-	config := fmt.Sprintf(cfg, id, name, privateLocationID)
-
-	return resourceID, provider + config
-}

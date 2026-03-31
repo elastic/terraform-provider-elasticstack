@@ -274,7 +274,7 @@ func TestAccResourceKibanaConnectorFromSDK(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
-				ConfigDirectory:          config.TestNameDirectory(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("upgrade"),
 				ConfigVariables: config.Variables{
 					"connector_name": config.StringVariable(connectorName),
 				},
@@ -320,7 +320,7 @@ func TestAccResourceKibanaConnectorEmptyConfigFromSDK(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
-				ConfigDirectory:          config.TestNameDirectory(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("upgrade"),
 				ConfigVariables: config.Variables{
 					"connector_name": config.StringVariable(connectorName),
 				},

@@ -682,7 +682,7 @@ func TestAccResourceSloFromSDK(t *testing.T) {
 				// Verify the current (Framework) implementation can read and manage the SDK-created state.
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(sloConstraints),
-				Config:                   sloFromSDKCreateConfig,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"name": config.StringVariable(sloName),
 				},

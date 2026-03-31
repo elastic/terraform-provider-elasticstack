@@ -18,7 +18,6 @@
 package defaultdataview_test
 
 import (
-	"embed"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -29,19 +28,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-//go:embed test_data/*.tf
-var testDataFS embed.FS
-
 var minDataViewAPISupport = version.Must(version.NewVersion("8.1.0"))
 
-// loadTestData reads and returns the content of a test data file
-func loadTestData(filename string) string {
-	data, err := testDataFS.ReadFile("test_data/" + filename)
-	if err != nil {
-		panic("Failed to load test data file: " + filename + " - " + err.Error())
-	}
-	return string(data)
-}
 
 func TestAccResourceDefaultDataView(t *testing.T) {
 	indexName1 := "my-index-" + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
@@ -53,7 +41,7 @@ func TestAccResourceDefaultDataView(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minDataViewAPISupport),
-				Config:   loadTestData("basic.tf"),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("basic"),
 				ConfigVariables: config.Variables{
 					"index_name": config.StringVariable(indexName1),
 				},
@@ -67,7 +55,7 @@ func TestAccResourceDefaultDataView(t *testing.T) {
 			},
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minDataViewAPISupport),
-				Config:   loadTestData("update.tf"),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"index_name1": config.StringVariable(indexName1),
 					"index_name2": config.StringVariable(indexName2),
@@ -80,7 +68,7 @@ func TestAccResourceDefaultDataView(t *testing.T) {
 			},
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minDataViewAPISupport),
-				Config:   loadTestData("unset.tf"),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("unset"),
 				ConfigVariables: config.Variables{
 					"index_name1": config.StringVariable(indexName1),
 					"index_name2": config.StringVariable(indexName2),
@@ -104,7 +92,7 @@ func TestAccResourceDefaultDataViewWithSkipDelete(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minDataViewAPISupport),
-				Config:   loadTestData("skip_delete.tf"),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("skip_delete"),
 				ConfigVariables: config.Variables{
 					"index_name": config.StringVariable(indexName),
 				},
@@ -128,7 +116,7 @@ func TestAccResourceDefaultDataViewWithCustomSpace(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minDataViewAPISupport),
-				Config:   loadTestData("custom_space.tf"),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("custom_space"),
 				ConfigVariables: config.Variables{
 					"index_name": config.StringVariable(indexName),
 					"space_id":   config.StringVariable(spaceID),

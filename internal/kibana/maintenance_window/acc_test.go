@@ -36,7 +36,7 @@ func TestAccResourceMaintenanceWindow(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minMaintenanceWindowAPISupport),
-				Config:   testAccResourceMaintenanceWindowCreate,
+				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_maintenance_window.test_maintenance_window", "title", "Terraform Maintenance Window"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_maintenance_window.test_maintenance_window", "enabled", "true"),
@@ -52,7 +52,7 @@ func TestAccResourceMaintenanceWindow(t *testing.T) {
 			},
 			{
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minMaintenanceWindowAPISupport),
-				Config:   testAccResourceMaintenanceWindowUpdate,
+				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_maintenance_window.test_maintenance_window", "title", "Terraform Maintenance Window UPDATED"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_maintenance_window.test_maintenance_window", "enabled", "false"),
@@ -72,62 +72,3 @@ func TestAccResourceMaintenanceWindow(t *testing.T) {
 	})
 }
 
-const testAccResourceMaintenanceWindowCreate = `
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_kibana_maintenance_window" "test_maintenance_window" {
-  title   	      = "Terraform Maintenance Window"
-  enabled 	      = true
-
-  custom_schedule = {
-    start         = "1992-01-01T05:00:00.200Z"
-    duration      = "10d"
-	timezone      = "UTC"
-
-    recurring = {
-      every       = "20d"
-      end         = "2029-05-17T05:05:00.000Z"
-      on_week_day = ["MO", "TU"]
-    }
-  }
-
-  scope = {
-    alerting = {
-      kql         = "_id: '1234'"
-    }
-  }
-}
-`
-
-const testAccResourceMaintenanceWindowUpdate = `
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_kibana_maintenance_window" "test_maintenance_window" {
-  title   		   = "Terraform Maintenance Window UPDATED"
-  enabled 		   = false
-
-  custom_schedule = {
-    start          = "1999-02-02T05:00:00.200Z"
-    duration       = "12d"
-	timezone       = "Asia/Taipei"
-
-    recurring = {
-      every        = "21d"
-	  on_month_day = [1, 2, 3]
-	  on_month 	   = [4, 5]
-    }
-  }
-
-  scope = {
-    alerting = {
-      kql          = "_id: 'foobar'"
-    }
-  }
-}
-`
