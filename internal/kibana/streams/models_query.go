@@ -40,9 +40,10 @@ func (m *queryConfigModel) populateFromAPI(q *kibanaoapi.StreamQueryESQLDef) {
 }
 
 // toAPI converts the query config model to an API query definition.
-func (m *queryConfigModel) toAPI() *kibanaoapi.StreamQueryESQLDef {
+// The view is always derived as "$."+streamName — the API enforces this convention.
+func (m *queryConfigModel) toAPI(streamName string) *kibanaoapi.StreamQueryESQLDef {
 	return &kibanaoapi.StreamQueryESQLDef{
 		Esql: m.Esql.ValueString(),
-		View: m.View.ValueString(),
+		View: "$." + streamName,
 	}
 }

@@ -165,7 +165,7 @@ func (m *streamModel) toAPIUpsertRequest(ctx context.Context, diags *diag.Diagno
 	case streamTypeClassic:
 		req.Stream.Ingest = m.ClassicConfig.toAPIIngest(diags)
 	case streamTypeQuery:
-		req.Stream.Query = m.QueryConfig.toAPI()
+		req.Stream.Query = m.QueryConfig.toAPI(m.Name.ValueString())
 	}
 
 	// Map dashboards

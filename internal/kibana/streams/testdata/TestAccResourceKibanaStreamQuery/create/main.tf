@@ -9,12 +9,11 @@ provider "elasticstack" {
 }
 
 resource "elasticstack_kibana_stream" "query" {
-  name        = "logs.otel.testacc${var.suffix}.view"
+  name        = "logs.otel.testacc-q${var.suffix}"
   space_id    = "default"
   description = "Test query stream"
 
   query_config = {
     esql = "FROM logs* | LIMIT 10"
-    view = "logs-otel-testacc-${var.suffix}"
   }
 }

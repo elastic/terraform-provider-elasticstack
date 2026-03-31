@@ -412,28 +412,16 @@ func TestQueryConfigRoundTrip(t *testing.T) {
 		assert.True(t, m.Esql.IsNull() || m.Esql.IsUnknown() || m.Esql.ValueString() == "")
 	})
 
-	t.Run("toAPI round-trips esql and view", func(t *testing.T) {
-		t.Parallel()
-		m := queryConfigModel{
-			Esql: types.StringValue("FROM logs*"),
-			View: types.StringValue("my-view"),
-		}
-		q := m.toAPI()
-		require.NotNil(t, q)
-		assert.Equal(t, "FROM logs*", q.Esql)
-		assert.Equal(t, "my-view", q.View)
-	})
-
-	t.Run("toAPI with null view sends empty string", func(t *testing.T) {
+	t.Run("toAPI derives view from stream name", func(t *testing.T) {
 		t.Parallel()
 		m := queryConfigModel{
 			Esql: types.StringValue("FROM logs*"),
 			View: types.StringNull(),
 		}
-		q := m.toAPI()
+		q := m.toAPI("logs.nginx.errors-view")
 		require.NotNil(t, q)
 		assert.Equal(t, "FROM logs*", q.Esql)
-		assert.Empty(t, q.View)
+		assert.Equal(t, "$.logs.nginx.errors-view", q.View)
 	})
 }
 
@@ -478,7 +466,7 @@ func TestToAPIUpsertRequest(t *testing.T) {
 			Description: types.StringValue(""),
 			QueryConfig: &queryConfigModel{
 				Esql: types.StringValue("FROM logs.nginx | WHERE http.response.status_code >= 400"),
-				View: types.StringValue("logs-nginx-errors"),
+				View: types.StringNull(), // computed — not set by user
 			},
 			Dashboards: types.ListNull(types.StringType),
 		}
@@ -489,7 +477,8 @@ func TestToAPIUpsertRequest(t *testing.T) {
 		assert.Nil(t, req.Stream.Ingest)
 		require.NotNil(t, req.Stream.Query)
 		assert.Equal(t, "FROM logs.nginx | WHERE http.response.status_code >= 400", req.Stream.Query.Esql)
-		assert.Equal(t, "logs-nginx-errors", req.Stream.Query.View)
+		// view is always derived as "$.{name}"
+		assert.Equal(t, "$.logs.nginx.errors-view", req.Stream.Query.View)
 	})
 
 	t.Run("attached queries include all fields", func(t *testing.T) {

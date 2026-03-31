@@ -268,22 +268,25 @@ func checkQueryStreamsEnabled() func() (bool, error) {
 		if err != nil {
 			return false, err
 		}
+		// Use logs.otel as parent (it is always present on 9.4+ SNAPSHOT installs).
+		// The view must be "$.{stream_name}" — the API enforces this convention.
+		const probeName = "logs.otel.__tfacc_query_probe__"
 		probe := kibanaoapi.StreamUpsertRequest{
 			Stream: kibanaoapi.StreamDefinition{
 				Type:  "query",
-				Query: &kibanaoapi.StreamQueryESQLDef{Esql: "FROM logs* | LIMIT 1", View: "logs-tfacc-query-probe"},
+				Query: &kibanaoapi.StreamQueryESQLDef{Esql: "FROM logs* | LIMIT 1", View: "$." + probeName},
 			},
 			Dashboards: []string{},
 			Rules:      []string{},
 			Queries:    []kibanaoapi.StreamQuery{},
 		}
-		_, diags := kibanaoapi.UpsertStream(context.Background(), kibanaClient, "default", "logs.__tfacc_query_probe__", probe)
+		_, diags := kibanaoapi.UpsertStream(context.Background(), kibanaClient, "default", probeName, probe)
 		if diags.HasError() {
 			if strings.Contains(diags[0].Detail()+diags[0].Summary(), "not enabled") {
 				return true, nil
 			}
 		}
-		_ = kibanaoapi.DeleteStream(context.Background(), kibanaClient, "default", "logs.__tfacc_query_probe__")
+		_ = kibanaoapi.DeleteStream(context.Background(), kibanaClient, "default", probeName)
 		return false, nil
 	}
 }
@@ -312,9 +315,9 @@ func TestAccResourceKibanaStreamQuery(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_stream.query", "id"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_stream.query", "name", "logs.otel.testacc"+suffix+".view"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_stream.query", "name", "logs.otel.testacc-q"+suffix),
 					resource.TestCheckResourceAttr("elasticstack_kibana_stream.query", "query_config.esql", "FROM logs* | LIMIT 10"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_stream.query", "query_config.view", "logs-otel-testacc-"+suffix),
+					resource.TestCheckResourceAttr("elasticstack_kibana_stream.query", "query_config.view", "$.logs.otel.testacc-q"+suffix),
 				),
 			},
 			{

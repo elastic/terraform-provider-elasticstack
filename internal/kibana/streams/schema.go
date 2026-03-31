@@ -249,9 +249,10 @@ func getQueryConfigSchema() map[string]schema.Attribute {
 			Required:            true,
 		},
 		"view": schema.StringAttribute{
-			MarkdownDescription: "The name of the Kibana data view associated with this query stream. " +
-				"Required by the API — must be a non-empty string (e.g. `logs-nginx-errors`).",
-			Required: true,
+			MarkdownDescription: "The Kibana data view name for this query stream. " +
+				"Automatically set to `$.{name}` (the stream name prefixed with `$.`) — " +
+				"this is enforced by the API and cannot be changed.",
+			Computed: true,
 		},
 	}
 }
