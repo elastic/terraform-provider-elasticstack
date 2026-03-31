@@ -28,6 +28,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
@@ -41,7 +42,8 @@ func TestResourceLogstashPipeline(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceLogstashPipelineCreate(pipelineID),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{"pipeline_id": config.StringVariable(pipelineID)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "pipeline_id", pipelineID),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -53,7 +55,8 @@ func TestResourceLogstashPipeline(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccResourceLogstashPipelineUpdate(pipelineID),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{"pipeline_id": config.StringVariable(pipelineID)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "pipeline_id", pipelineID),
 					resource.TestCheckResourceAttr(resourceName, "description", "Updated description of Logstash Pipeline"),
@@ -78,7 +81,8 @@ func TestResourceLogstashPipeline(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccResourceLogstashPipelineUpdateWithMetadata(pipelineID),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("update_with_metadata"),
+				ConfigVariables: config.Variables{"pipeline_id": config.StringVariable(pipelineID)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "pipeline_id", pipelineID),
 					resource.TestCheckResourceAttr(resourceName, "description", "Updated description of Logstash Pipeline"),
@@ -110,91 +114,6 @@ func TestResourceLogstashPipeline(t *testing.T) {
 			},
 		},
 	})
-}
-
-func testAccResourceLogstashPipelineCreate(pipelineID string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_logstash_pipeline" "test" {
-  pipeline_id = "%s"
-  description = "Description of Logstash Pipeline"
-  pipeline = "input{} filter{} output{}"
-  username = "test_user"
-}
-  `, pipelineID)
-}
-
-func testAccResourceLogstashPipelineUpdate(pipelineID string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_logstash_pipeline" "test" {
-  pipeline_id = "%s"
-  description = "Updated description of Logstash Pipeline"
-  pipeline = "input{} \nfilter{} \noutput{}"
-  username = "test_user"
-
-  pipeline_batch_delay = 100
-  pipeline_batch_size = 250
-  pipeline_ecs_compatibility = "disabled"
-  pipeline_metadata = jsonencode({
-    type = "logstash_pipeline"
-    version = 2
-  })
-  pipeline_ordered = "auto"
-  pipeline_plugin_classloaders = false
-  pipeline_unsafe_shutdown = false
-  pipeline_workers = 2
-  queue_checkpoint_acks = 1024
-  queue_checkpoint_retry = true
-  queue_checkpoint_writes = 2048
-  queue_drain = false
-  queue_max_bytes = "1mb"
-  queue_max_events = 0
-  queue_page_capacity = "64mb"
-  queue_type = "memory"
-}
-  `, pipelineID)
-}
-
-func testAccResourceLogstashPipelineUpdateWithMetadata(pipelineID string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_logstash_pipeline" "test" {
-  pipeline_id = "%s"
-  description = "Updated description of Logstash Pipeline"
-  pipeline = "input{} \nfilter{} \noutput{}"
-  username = "test_user"
-
-  pipeline_batch_delay = 100
-  pipeline_batch_size = 250
-  pipeline_ecs_compatibility = "disabled"
-  pipeline_metadata = jsonencode({
-    type = "logstash_pipeline"
-    version = 3
-  })
-  pipeline_ordered = "auto"
-  pipeline_plugin_classloaders = true
-  pipeline_unsafe_shutdown = true
-  pipeline_workers = 2
-  queue_checkpoint_acks = 1024
-  queue_checkpoint_retry = true
-  queue_checkpoint_writes = 2048
-  queue_drain = true
-  queue_max_bytes = "2mb"
-  queue_max_events = 1
-  queue_page_capacity = "64mb"
-  queue_type = "memory"
-}
-  `, pipelineID)
 }
 
 func checkResourceLogstashPipelineDestroy(s *terraform.State) error {

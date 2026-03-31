@@ -30,7 +30,7 @@ func TestAccDataSourceSecurityUser(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceSecurityUser,
+				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_security_user.test", "username", "elastic"),
 					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_security_user.test", "roles.*", "superuser"),
@@ -40,12 +40,3 @@ func TestAccDataSourceSecurityUser(t *testing.T) {
 	})
 }
 
-const testAccDataSourceSecurityUser = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_security_user" "test" {
-  username = "elastic"
-}
-`

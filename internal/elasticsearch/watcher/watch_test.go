@@ -26,6 +26,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
@@ -52,7 +53,8 @@ func TestResourceWatch(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceWatchCreate(watchID),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{"watch_id": config.StringVariable(watchID)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "watch_id", watchID),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "active", "false"),
@@ -64,7 +66,8 @@ func TestResourceWatch(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccResourceWatchUpdate(watchID),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{"watch_id": config.StringVariable(watchID)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "watch_id", watchID),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "active", "true"),
@@ -79,94 +82,6 @@ func TestResourceWatch(t *testing.T) {
 			},
 		},
 	})
-}
-
-func testAccResourceWatchCreate(watchID string) string {
-	return fmt.Sprintf(`
- provider "elasticstack" {
-   elasticsearch {}
- }
-
- resource "elasticstack_elasticsearch_watch" "test" {
-  watch_id = "%s"
-	active = false
- 	
-	trigger = <<EOF
-	{
-		"schedule" : { "cron" : "0 0/1 * * * ?" }
-	}
-EOF
- }
- 	`, watchID)
-}
-
-func testAccResourceWatchUpdate(watchID string) string {
-	return fmt.Sprintf(`
- provider "elasticstack" {
-   elasticsearch {}
- }
-
- resource "elasticstack_elasticsearch_watch" "test" {
-  watch_id = "%s"
-	active = true
-	
-	trigger = <<EOF
-	{
-		"schedule" : { "cron" : "0 0/2 * * * ?" }
-	}
-EOF
-
-	input = <<EOF
-	{
-		"simple" : {
-			"name" : "example"
-		}
-	}
-EOF
-
-	condition = <<EOF
-	{
-		"never" : {}
-	}
-EOF
-
-	actions = <<EOF
-	{
-		"log" : {
-			"logging" : {
-				"level" : "info",
-				"text" : "example logging text"
-			}
-		}
-	}
-EOF
-
-	metadata = <<EOF
-	{
-		"example_key" : "example_value"
-	}
-EOF
-
-	transform = <<EOF
-	{
-		"search" : {
-			"request" : {
-				"body" : { 
-					"query" : { 
-						"match_all" : {} 
-					}
-				},
-				"indices": [],
-				"rest_total_hits_as_int" : true,
-				"search_type": "query_then_fetch"
-			}
-		}
-	}
-EOF
-
-	throttle_period_in_millis = 10000
- }
- 	`, watchID)
 }
 
 func checkResourceWatchDestroy(s *terraform.State) error {
