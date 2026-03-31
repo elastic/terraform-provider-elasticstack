@@ -36,23 +36,23 @@ func makeSloErrorBudgetAPIConfig(opts ...func(*kbapi.SloErrorBudgetEmbeddable)) 
 	return cfg
 }
 
-func withSloInstanceID(id string) func(*kbapi.SloErrorBudgetEmbeddable) {
+func sebWithSloInstanceID(id string) func(*kbapi.SloErrorBudgetEmbeddable) {
 	return func(c *kbapi.SloErrorBudgetEmbeddable) { c.SloInstanceId = new(id) }
 }
 
-func withSloTitle(t string) func(*kbapi.SloErrorBudgetEmbeddable) {
+func sebWithSloTitle(t string) func(*kbapi.SloErrorBudgetEmbeddable) {
 	return func(c *kbapi.SloErrorBudgetEmbeddable) { c.Title = new(t) }
 }
 
-func withSloDescription(d string) func(*kbapi.SloErrorBudgetEmbeddable) {
+func sebWithSloDescription(d string) func(*kbapi.SloErrorBudgetEmbeddable) {
 	return func(c *kbapi.SloErrorBudgetEmbeddable) { c.Description = new(d) }
 }
 
-func withHideTitle(v bool) func(*kbapi.SloErrorBudgetEmbeddable) {
+func sebWithHideTitle(v bool) func(*kbapi.SloErrorBudgetEmbeddable) {
 	return func(c *kbapi.SloErrorBudgetEmbeddable) { c.HideTitle = new(v) }
 }
 
-func withHideBorder(v bool) func(*kbapi.SloErrorBudgetEmbeddable) {
+func sebWithHideBorder(v bool) func(*kbapi.SloErrorBudgetEmbeddable) {
 	return func(c *kbapi.SloErrorBudgetEmbeddable) { c.HideBorder = new(v) }
 }
 
@@ -106,7 +106,7 @@ func Test_buildSloErrorBudgetConfig_minimal(t *testing.T) {
 	assert.Nil(t, sebPanel.Config.Drilldowns)
 }
 
-func Test_buildSloErrorBudgetConfig_withSloInstanceID(t *testing.T) {
+func Test_buildSloErrorBudgetConfig_sebWithSloInstanceID(t *testing.T) {
 	pm := panelModel{
 		SloErrorBudgetConfig: &sloErrorBudgetConfigModel{
 			SloID:         types.StringValue("my-slo-id"),
@@ -237,7 +237,7 @@ func Test_populateSloErrorBudgetFromAPI_sloInstanceID_nullPreservation(t *testin
 			SloInstanceID: types.StringNull(),
 		},
 	}
-	apiCfg := makeSloErrorBudgetAPIConfig(withSloInstanceID("*"))
+	apiCfg := makeSloErrorBudgetAPIConfig(sebWithSloInstanceID("*"))
 	populateSloErrorBudgetFromAPI(pm, tfPanel, apiCfg)
 	require.NotNil(t, pm.SloErrorBudgetConfig)
 	assert.True(t, pm.SloErrorBudgetConfig.SloInstanceID.IsNull(), "slo_instance_id should remain null")
@@ -257,7 +257,7 @@ func Test_populateSloErrorBudgetFromAPI_sloInstanceID_writtenWhenKnown(t *testin
 			SloInstanceID: types.StringValue("old-instance"),
 		},
 	}
-	apiCfg := makeSloErrorBudgetAPIConfig(withSloInstanceID("new-instance"))
+	apiCfg := makeSloErrorBudgetAPIConfig(sebWithSloInstanceID("new-instance"))
 	populateSloErrorBudgetFromAPI(pm, tfPanel, apiCfg)
 	assert.Equal(t, "new-instance", pm.SloErrorBudgetConfig.SloInstanceID.ValueString())
 }
@@ -266,11 +266,11 @@ func Test_populateSloErrorBudgetFromAPI_import_populatesAll(t *testing.T) {
 	// tfPanel == nil means import. Should populate all API-returned fields.
 	pm := &panelModel{}
 	apiCfg := makeSloErrorBudgetAPIConfig(
-		withSloInstanceID("my-instance"),
-		withSloTitle("My Title"),
-		withSloDescription("My Desc"),
-		withHideTitle(true),
-		withHideBorder(false),
+		sebWithSloInstanceID("my-instance"),
+		sebWithSloTitle("My Title"),
+		sebWithSloDescription("My Desc"),
+		sebWithHideTitle(true),
+		sebWithHideBorder(false),
 	)
 	populateSloErrorBudgetFromAPI(pm, nil, apiCfg)
 	require.NotNil(t, pm.SloErrorBudgetConfig)
