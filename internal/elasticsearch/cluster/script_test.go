@@ -36,9 +36,9 @@ func TestAccResourceScript(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		CheckDestroy:             checkScriptDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{"script_id": config.StringVariable(scriptID)},
 				Check: resource.ComposeTestCheckFunc(
@@ -49,6 +49,7 @@ func TestAccResourceScript(t *testing.T) {
 				),
 			},
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{"script_id": config.StringVariable(scriptID)},
 				Check: resource.ComposeTestCheckFunc(
@@ -59,6 +60,7 @@ func TestAccResourceScript(t *testing.T) {
 				),
 			},
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				// Ensure the provider doesn't panic if the script has been deleted outside of the Terraform flow
 				PreConfig: func() {
 					client, err := clients.NewAcceptanceTestingClient()
@@ -89,9 +91,9 @@ func TestAccResourceScriptSearchTemplate(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		CheckDestroy:             checkScriptDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{"script_id": config.StringVariable(scriptID)},
 				Check: resource.ComposeTestCheckFunc(

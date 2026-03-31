@@ -31,9 +31,9 @@ func TestAccDataSourceSnapRepoMissing(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables: config.Variables{"name": config.StringVariable(name)},
 			},
@@ -46,9 +46,9 @@ func TestAccDataSourceSnapRepoFs(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables: config.Variables{"name": config.StringVariable(name)},
 				Check: resource.ComposeTestCheckFunc(
@@ -70,9 +70,9 @@ func TestAccDataSourceSnapRepoURL(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables: config.Variables{"name": config.StringVariable(name)},
 				Check: resource.ComposeTestCheckFunc(

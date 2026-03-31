@@ -27,9 +27,9 @@ import (
 func TestAccDataSourceKibanaConnector(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_kibana_action_connector.myconnector", "name", "myconnector"),

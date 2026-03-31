@@ -50,9 +50,9 @@ func TestResourceWatch(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		CheckDestroy:             checkResourceWatchDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{"watch_id": config.StringVariable(watchID)},
 				Check: resource.ComposeTestCheckFunc(
@@ -66,6 +66,7 @@ func TestResourceWatch(t *testing.T) {
 				),
 			},
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{"watch_id": config.StringVariable(watchID)},
 				Check: resource.ComposeTestCheckFunc(

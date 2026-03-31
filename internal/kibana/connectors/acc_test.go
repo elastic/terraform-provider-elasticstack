@@ -77,9 +77,9 @@ func TestAccResourceKibanaConnectorCasesWebhook(t *testing.T) {
 			resource.Test(t, resource.TestCase{
 				PreCheck:                 func() { acctest.PreCheck(t) },
 				CheckDestroy:             checkResourceKibanaConnectorDestroy,
-				ProtoV6ProviderFactories: acctest.Providers,
 				Steps: []resource.TestStep{
 					{
+						ProtoV6ProviderFactories: acctest.Providers,
 						SkipFunc:        versionutils.CheckIfVersionIsUnsupported(tc.minVersion),
 						ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 						ConfigVariables: vars,
@@ -116,6 +116,7 @@ func TestAccResourceKibanaConnectorCasesWebhook(t *testing.T) {
 						),
 					},
 					{
+						ProtoV6ProviderFactories: acctest.Providers,
 						SkipFunc:        versionutils.CheckIfVersionIsUnsupported(tc.minVersion),
 						ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
 						ConfigVariables: vars,
@@ -138,6 +139,7 @@ func TestAccResourceKibanaConnectorCasesWebhook(t *testing.T) {
 						),
 					},
 					{
+						ProtoV6ProviderFactories: acctest.Providers,
 						SkipFunc:        versionutils.CheckIfVersionIsUnsupported(tc.minVersion),
 						ConfigDirectory: acctest.NamedTestCaseDirectory("null_headers"),
 						ConfigVariables: vars,
@@ -210,9 +212,9 @@ func TestAccResourceKibanaConnectorIndex(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		CheckDestroy:             checkResourceKibanaConnectorDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -226,6 +228,7 @@ func TestAccResourceKibanaConnectorIndex(t *testing.T) {
 				),
 			},
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
@@ -385,9 +388,9 @@ func TestAccResourceKibanaConnectorAI(t *testing.T) {
 			resource.Test(t, resource.TestCase{
 				PreCheck:                 func() { acctest.PreCheck(t) },
 				CheckDestroy:             checkResourceKibanaConnectorDestroy,
-				ProtoV6ProviderFactories: acctest.Providers,
 				Steps: []resource.TestStep{
 					{
+						ProtoV6ProviderFactories: acctest.Providers,
 						SkipFunc:        versionutils.CheckIfVersionIsUnsupported(tc.minSupportedVersion),
 						ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 						ConfigVariables: config.Variables{
@@ -398,6 +401,7 @@ func TestAccResourceKibanaConnectorAI(t *testing.T) {
 						),
 					},
 					{
+						ProtoV6ProviderFactories: acctest.Providers,
 						SkipFunc:        versionutils.CheckIfVersionIsUnsupported(tc.minSupportedVersion),
 						ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
 						ConfigVariables: config.Variables{

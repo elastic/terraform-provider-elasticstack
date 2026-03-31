@@ -51,9 +51,9 @@ func TestAccResourcePrebuiltRulesInSpace(t *testing.T) {
 func testAccResourcePrebuiltRules(t *testing.T, spaceID string) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minVersionPrebuiltRules),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -70,6 +70,7 @@ func testAccResourcePrebuiltRules(t *testing.T, spaceID string) {
 				),
 			},
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minVersionPrebuiltRules),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -82,6 +83,7 @@ func testAccResourcePrebuiltRules(t *testing.T, spaceID string) {
 				},
 			},
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minVersionPrebuiltRules),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{

@@ -47,9 +47,9 @@ func TestAccResourceSecurityAPIKey(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		CheckDestroy:             checkResourceSecurityAPIKeyDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(apikey.MinVersion),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -87,6 +87,7 @@ func TestAccResourceSecurityAPIKey(t *testing.T) {
 				),
 			},
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(apikey.MinVersionWithUpdate),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
@@ -136,7 +137,6 @@ func TestAccResourceSecurityAPIKeyRotation(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		CheckDestroy:             checkResourceSecurityAPIKeyDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
 		ExternalProviders: map[string]resource.ExternalProvider{
 			"time": {
 				Source:            "hashicorp/time",
@@ -145,6 +145,7 @@ func TestAccResourceSecurityAPIKeyRotation(t *testing.T) {
 		},
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(apikey.MinVersion),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("rotation"),
 				ConfigVariables: config.Variables{
@@ -171,6 +172,7 @@ func TestAccResourceSecurityAPIKeyRotation(t *testing.T) {
 				),
 			},
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(apikey.MinVersion),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("rotation"),
 				ConfigVariables: config.Variables{
@@ -205,9 +207,9 @@ func TestAccResourceSecurityAPIKeyWithRemoteIndices(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		CheckDestroy:             checkResourceSecurityAPIKeyDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minSupportedRemoteIndicesVersion),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -262,9 +264,9 @@ func TestAccResourceSecurityAPIKeyWithWorkflowRestriction(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		CheckDestroy:             checkResourceSecurityAPIKeyDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(apikey.MinVersionWithRestriction),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -315,9 +317,9 @@ func TestAccResourceSecurityAPIKeyWithWorkflowRestrictionOnElasticPre8_9_x(t *te
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		CheckDestroy:             checkResourceSecurityAPIKeyDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        SkipWhenAPIKeysAreNotSupportedOrRestrictionsAreSupported(apikey.MinVersion, apikey.MinVersionWithRestriction),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -454,9 +456,9 @@ func TestAccResourceSecurityAPIKeyCrossCluster(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		CheckDestroy:             checkResourceSecurityAPIKeyDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(apikey.MinVersionWithCrossCluster),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -471,6 +473,7 @@ func TestAccResourceSecurityAPIKeyCrossCluster(t *testing.T) {
 				),
 			},
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(apikey.MinVersionWithCrossCluster),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
@@ -495,9 +498,9 @@ func TestAccResourceSecurityAPIKeyWithDefaultAllowRestrictedIndices(t *testing.T
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		CheckDestroy:             checkResourceSecurityAPIKeyDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(apikey.MinVersion),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{

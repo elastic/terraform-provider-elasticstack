@@ -36,9 +36,9 @@ func TestAccResourceDefaultDataView(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minDataViewAPISupport),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("basic"),
 				ConfigVariables: config.Variables{
@@ -53,6 +53,7 @@ func TestAccResourceDefaultDataView(t *testing.T) {
 				),
 			},
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minDataViewAPISupport),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
@@ -66,6 +67,7 @@ func TestAccResourceDefaultDataView(t *testing.T) {
 				),
 			},
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minDataViewAPISupport),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("unset"),
 				ConfigVariables: config.Variables{
@@ -87,9 +89,9 @@ func TestAccResourceDefaultDataViewWithSkipDelete(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minDataViewAPISupport),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("skip_delete"),
 				ConfigVariables: config.Variables{
@@ -111,9 +113,9 @@ func TestAccResourceDefaultDataViewWithCustomSpace(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minDataViewAPISupport),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("custom_space"),
 				ConfigVariables: config.Variables{

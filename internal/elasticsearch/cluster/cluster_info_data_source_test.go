@@ -31,9 +31,9 @@ import (
 func TestAccDataSourceClusterInfo(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test", "tagline", "You Know, for Search"),
@@ -49,9 +49,9 @@ func TestAccDataSourceClusterInfo(t *testing.T) {
 func TestAccDataSourceClusterInfo_topLevelAttributes(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_info.test", "id"),
@@ -74,9 +74,9 @@ func TestAccDataSourceClusterInfo_topLevelAttributes(t *testing.T) {
 func TestAccDataSourceClusterInfo_versionBlock(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test", "version.#", "1"),
@@ -103,9 +103,9 @@ func TestAccDataSourceClusterInfo_versionFieldFormats(t *testing.T) {
 	semverRe := regexp.MustCompile(`^\d+\.\d+\.\d+(-[a-zA-Z0-9.]+)?$`)
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestMatchResourceAttr("data.elasticstack_elasticsearch_info.test", "version.0.number", semverRe),
@@ -125,9 +125,9 @@ func TestAccDataSourceClusterInfo_versionFieldFormats(t *testing.T) {
 func TestAccDataSourceClusterInfo_refreshStability(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_info.test", "id"),
@@ -138,6 +138,7 @@ func TestAccDataSourceClusterInfo_refreshStability(t *testing.T) {
 			},
 			// Second step with identical config: attributes must remain populated.
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("read_again"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_info.test", "id"),
@@ -162,9 +163,9 @@ func TestAccDataSourceClusterInfo_withExplicitConnection(t *testing.T) {
 	endpoint := clusterInfoPrimaryESEndpoint()
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables: config.Variables{
 					"endpoints": config.ListVariable(config.StringVariable(endpoint)),
@@ -203,9 +204,9 @@ func TestAccDataSourceClusterInfo_clusterUUIDAndNameFormats(t *testing.T) {
 	nonEmptyRe := regexp.MustCompile(`\S`)
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestMatchResourceAttr("data.elasticstack_elasticsearch_info.test", "cluster_uuid", uuidRe),
@@ -237,9 +238,9 @@ func TestAccDataSourceClusterInfo_versionBuildFormats(t *testing.T) {
 	luceneVersionRe := regexp.MustCompile(`^\d+\.\d+\.\d+`)
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestMatchResourceAttr("data.elasticstack_elasticsearch_info.test", "version.0.build_hash", buildHashRe),

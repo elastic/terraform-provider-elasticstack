@@ -44,9 +44,9 @@ func TestElasticsearchAPIKeyConnection(t *testing.T) {
 	apiKeyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(apikey.MinVersion),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables: tfconfig.Variables{
@@ -69,9 +69,9 @@ func TestElasticsearchBearerTokenConnection(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables: tfconfig.Variables{
 					"endpoints":    tfconfig.StringVariable(os.Getenv("ELASTICSEARCH_ENDPOINTS")),
@@ -90,9 +90,9 @@ func TestFleetConfiguration(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minVersionForFleet),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables: fleetConfigVariables(envConfig),
@@ -114,9 +114,9 @@ func TestFleetBearerTokenConfiguration(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minVersionForFleet),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables: fleetBearerTokenConfigVariables(envConfig, bearerToken),

@@ -51,9 +51,9 @@ func TestAccResourceEnableRule(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "space_id", defaultSpaceID),
@@ -79,9 +79,9 @@ func TestAccResourceEnableRuleDefaultSpaceID(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "space_id", defaultSpaceID),
@@ -111,9 +111,9 @@ func TestAccResourceEnableRuleWithManualDisable(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"tag_key":   config.StringVariable(tagKey),
@@ -139,6 +139,7 @@ func TestAccResourceEnableRuleWithManualDisable(t *testing.T) {
 				),
 			},
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"tag_key":   config.StringVariable(tagKey),
@@ -168,9 +169,9 @@ func TestAccResourceEnableRuleDisableOnDestroyFalse(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("disable_on_destroy_false"),
 				ConfigVariables: config.Variables{
 					"tag_key":   config.StringVariable(tagKey),
@@ -186,6 +187,7 @@ func TestAccResourceEnableRuleDisableOnDestroyFalse(t *testing.T) {
 				),
 			},
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("disable_on_destroy_true"),
 				ConfigVariables: config.Variables{
 					"tag_key":   config.StringVariable(tagKey),
@@ -201,6 +203,7 @@ func TestAccResourceEnableRuleDisableOnDestroyFalse(t *testing.T) {
 				),
 			},
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("disable_on_destroy_false"),
 				ConfigVariables: config.Variables{
 					"tag_key":   config.StringVariable(tagKey),
@@ -216,6 +219,7 @@ func TestAccResourceEnableRuleDisableOnDestroyFalse(t *testing.T) {
 				),
 			},
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				// Destroy the enable_rule resource but keep the rules
 				ConfigDirectory: acctest.NamedTestCaseDirectory("rules_only"),
 				ConfigVariables: config.Variables{

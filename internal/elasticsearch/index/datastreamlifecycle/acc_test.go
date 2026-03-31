@@ -41,9 +41,9 @@ func TestAccResourceDataStreamLifecycle(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		CheckDestroy:             checkResourceDataStreamLifecycleDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{"name": config.StringVariable(dsName)},
@@ -79,6 +79,7 @@ func TestAccResourceDataStreamLifecycle(t *testing.T) {
 				),
 			},
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{"name": config.StringVariable(dsName)},
@@ -104,6 +105,7 @@ func TestAccResourceDataStreamLifecycle(t *testing.T) {
 				),
 			},
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("reenable"),
 				ConfigVariables: config.Variables{"name": config.StringVariable(dsName)},
@@ -125,6 +127,7 @@ func TestAccResourceDataStreamLifecycle(t *testing.T) {
 				),
 			},
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("single_downsampling"),
 				ConfigVariables: config.Variables{"name": config.StringVariable(dsName)},
@@ -144,6 +147,7 @@ func TestAccResourceDataStreamLifecycle(t *testing.T) {
 				),
 			},
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("remove_retention"),
 				ConfigVariables: config.Variables{"name": config.StringVariable(dsName)},
@@ -165,6 +169,7 @@ func TestAccResourceDataStreamLifecycle(t *testing.T) {
 				),
 			},
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc: versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion),
 				PreConfig: func() {
 					client, err := clients.NewAcceptanceTestingClient()

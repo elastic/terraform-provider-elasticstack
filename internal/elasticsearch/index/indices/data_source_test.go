@@ -34,9 +34,9 @@ import (
 func TestAccIndicesDataSource(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// At least one index must be returned for the .security-* pattern.
@@ -56,9 +56,9 @@ func TestAccIndicesDataSource(t *testing.T) {
 func TestAccIndicesDataSource_Target_DefaultAndExplicitAll(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				// Omitted target — defaults to "*" (all indices).
 				ConfigDirectory: acctest.NamedTestCaseDirectory("no_target"),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -69,6 +69,7 @@ func TestAccIndicesDataSource_Target_DefaultAndExplicitAll(t *testing.T) {
 				),
 			},
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				// Explicit "*" wildcard — should return all non-hidden indices.
 				ConfigDirectory: acctest.NamedTestCaseDirectory("star"),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -79,6 +80,7 @@ func TestAccIndicesDataSource_Target_DefaultAndExplicitAll(t *testing.T) {
 				),
 			},
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				// Explicit "_all" wildcard — equivalent to "*".
 				ConfigDirectory: acctest.NamedTestCaseDirectory("explicit_all"),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -102,9 +104,9 @@ func TestAccIndicesDataSource_Target_FilteringExactVsWildcard(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				// Wildcard should return both indices.
 				ConfigDirectory: acctest.NamedTestCaseDirectory("filter"),
 				ConfigVariables: config.Variables{
@@ -134,9 +136,9 @@ func TestAccIndicesDataSource_ReadsIndexSettings_TypedFields(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables: config.Variables{
 					"index_name": config.StringVariable(indexName),
@@ -169,9 +171,9 @@ func TestAccIndicesDataSource_ReadsAliasNestedFields(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables: config.Variables{
 					"index_name": config.StringVariable(indexName),
@@ -214,9 +216,9 @@ func TestAccIndicesDataSource_ReadsMappingsAnalysisAndSettingsRaw(t *testing.T) 
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables: config.Variables{
 					"index_name": config.StringVariable(indexName),
@@ -259,9 +261,9 @@ func TestAccIndicesDataSource_ReadsIndexSettings_BroadCoverage(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables: config.Variables{
 					"index_name":    config.StringVariable(indexName),
@@ -301,9 +303,9 @@ func TestAccIndicesDataSource_ReadsSlowlogSettings(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables: config.Variables{
 					"index_name": config.StringVariable(indexName),
@@ -330,9 +332,9 @@ func TestAccIndicesDataSource_ReadsSlowlogLevels(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionMeetsConstraints(slowlogLevelVersionConstraint),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables: config.Variables{

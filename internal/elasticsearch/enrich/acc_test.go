@@ -39,9 +39,9 @@ func TestAccResourceEnrichPolicyFW(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		CheckDestroy:             checkEnrichPolicyDestroyFW(name),
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{"name": config.StringVariable(name)},
 				Check: resource.ComposeTestCheckFunc(
@@ -67,9 +67,9 @@ func TestAccResourceEnrichPolicyNoExecute(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		CheckDestroy:             checkEnrichPolicyDestroyFW(name),
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("no_execute"),
 				ConfigVariables: config.Variables{"name": config.StringVariable(name)},
 				Check: resource.ComposeTestCheckFunc(
@@ -93,9 +93,9 @@ func TestAccResourceEnrichPolicyQueryOmitted(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		CheckDestroy:             checkEnrichPolicyDestroyFW(name),
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{"name": config.StringVariable(name)},
 				Check: resource.ComposeTestCheckFunc(
@@ -115,9 +115,9 @@ func TestAccResourceEnrichPolicyRangePolicyType(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		CheckDestroy:             checkEnrichPolicyDestroyFW(name),
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{"name": config.StringVariable(name)},
 				Check: resource.ComposeTestCheckFunc(
@@ -139,9 +139,9 @@ func TestAccResourceEnrichPolicyGeoMatchPolicyType(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		CheckDestroy:             checkEnrichPolicyDestroyFW(name),
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{"name": config.StringVariable(name)},
 				Check: resource.ComposeTestCheckFunc(
@@ -165,9 +165,9 @@ func TestAccDataSourceEnrichPolicyFW(t *testing.T) {
 	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables: config.Variables{"name": config.StringVariable(name)},
 				Check: resource.ComposeTestCheckFunc(
@@ -191,9 +191,9 @@ func TestAccDataSourceEnrichPolicyGeoMatch(t *testing.T) {
 	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables: config.Variables{"name": config.StringVariable(name)},
 				Check: resource.ComposeTestCheckFunc(
@@ -216,9 +216,9 @@ func TestAccDataSourceEnrichPolicyRange(t *testing.T) {
 	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables: config.Variables{"name": config.StringVariable(name)},
 				Check: resource.ComposeTestCheckFunc(
@@ -241,9 +241,9 @@ func TestAccDataSourceEnrichPolicyMultiIndex(t *testing.T) {
 	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables: config.Variables{"name": config.StringVariable(name)},
 				Check: resource.ComposeTestCheckFunc(
@@ -302,9 +302,9 @@ func TestAccDataSourceEnrichPolicyConnection(t *testing.T) {
 	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables: config.Variables{
 					"name":      config.StringVariable(name),
@@ -330,9 +330,9 @@ func TestAccDataSourceEnrichPolicyQueryNull(t *testing.T) {
 	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables: config.Variables{"name": config.StringVariable(name)},
 				Check: resource.ComposeTestCheckFunc(
@@ -356,9 +356,9 @@ func TestAccDataSourceEnrichPolicyQueryUpdate(t *testing.T) {
 	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables: config.Variables{"name": config.StringVariable(name)},
 				Check: resource.ComposeTestCheckFunc(
@@ -374,6 +374,7 @@ func TestAccDataSourceEnrichPolicyQueryUpdate(t *testing.T) {
 				),
 			},
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{"name": config.StringVariable(name)},
 				Check: resource.ComposeTestCheckFunc(
@@ -397,9 +398,9 @@ func TestAccDataSourceEnrichPolicyConnectionAPIKey(t *testing.T) {
 	endpoint := primaryESEndpoint()
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables: config.Variables{"name": config.StringVariable(name), "endpoint": config.StringVariable(primaryESEndpoint())},
 				Check: resource.ComposeTestCheckFunc(
@@ -427,9 +428,9 @@ func TestAccDataSourceEnrichPolicyConnectionBasicAuth(t *testing.T) {
 	endpoint := primaryESEndpoint()
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { preCheckESBasicAuth(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables: config.Variables{
 					"name":     config.StringVariable(name),
@@ -459,25 +460,29 @@ func TestAccDataSourceEnrichPolicyConnectionBasicAuth(t *testing.T) {
 
 func TestAccDataSourceEnrichPolicyConnectionValidation(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("ca_conflict"),
 				ExpectError:     regexp.MustCompile(`(?s)(Invalid Attribute Combination|ca_file.*ca_data|ca_data.*ca_file)`),
 			},
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("cert_data"),
 				ExpectError:     regexp.MustCompile(`(?s)(Missing Configuration for Required Attribute|cert_data.*key_data|key_data.*cert_data)`),
 			},
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("cert_file"),
 				ExpectError:     regexp.MustCompile(`(?s)(Missing Configuration for Required Attribute|cert_file.*key_file|key_file.*cert_file)`),
 			},
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("client_auth"),
 				ExpectError:     regexp.MustCompile(`(?s)(Missing Configuration for Required Attribute|es_client_authentication.*bearer_token|bearer_token.*es_client_authentication)`),
 			},
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("multiple_blocks"),
 				ExpectError:     regexp.MustCompile(`(?s)(at most 1 elements|at most 1 element|elasticsearch_connection)`),
 			},
@@ -490,9 +495,9 @@ func TestAccResourceEnrichPolicyConnection(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		CheckDestroy:             checkEnrichPolicyDestroyFW(name),
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"name":      config.StringVariable(name),
@@ -521,9 +526,9 @@ func TestAccDataSourceEnrichPolicyTermQuery(t *testing.T) {
 	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables: config.Variables{"name": config.StringVariable(name)},
 				Check: resource.ComposeTestCheckFunc(

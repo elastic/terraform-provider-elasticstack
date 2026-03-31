@@ -31,9 +31,9 @@ func TestAccDataSourceKibanaSecurityRole(t *testing.T) {
 	minSupportedRemoteIndicesVersion := version.Must(version.NewSemver("8.10.0"))
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("all_attributes"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_kibana_security_role.test", "name", "data_source_test"),
@@ -45,6 +45,7 @@ func TestAccDataSourceKibanaSecurityRole(t *testing.T) {
 				),
 			},
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minSupportedRemoteIndicesVersion),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(

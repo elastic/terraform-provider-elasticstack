@@ -40,10 +40,10 @@ func TestAccResourceSecurityListDataStreams(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		CheckDestroy:             checkResourceListDataStreamsDestroy,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(MinListDataStreamsVersion),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -56,7 +56,8 @@ func TestAccResourceSecurityListDataStreams(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_data_streams.test", "list_item_index", "true"),
 				),
 			},
-			{ // Import
+			{
+				ProtoV6ProviderFactories: acctest.Providers, // Import
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(MinListDataStreamsVersion),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -75,10 +76,10 @@ func TestAccResourceSecurityListDataStreamsWithSpace(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		CheckDestroy:             checkResourceListDataStreamsDestroy,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(MinListDataStreamsVersion),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("with_space"),
 				ConfigVariables: config.Variables{
@@ -91,7 +92,8 @@ func TestAccResourceSecurityListDataStreamsWithSpace(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_data_streams.test", "list_item_index", "true"),
 				),
 			},
-			{ // Import
+			{
+				ProtoV6ProviderFactories: acctest.Providers, // Import
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(MinListDataStreamsVersion),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("with_space"),
 				ConfigVariables: config.Variables{

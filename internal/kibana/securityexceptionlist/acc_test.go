@@ -140,10 +140,10 @@ func TestAccResourceExceptionListAgnostic(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		CheckDestroy:             checkResourceExceptionListDestroy,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minExceptionListAPISupport),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("agnostic_create"),
 				ConfigVariables: config.Variables{
@@ -168,6 +168,7 @@ func TestAccResourceExceptionListAgnostic(t *testing.T) {
 				),
 			},
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minExceptionListAPISupport),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("agnostic_update"),
 				ConfigVariables: config.Variables{
@@ -186,7 +187,8 @@ func TestAccResourceExceptionListAgnostic(t *testing.T) {
 					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_exception_list.test", "tags.*", "updated"),
 				),
 			},
-			{ // Import
+			{
+				ProtoV6ProviderFactories: acctest.Providers, // Import
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minExceptionListAPISupport),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("agnostic_update"),
 				ConfigVariables: config.Variables{
@@ -213,10 +215,10 @@ func TestAccResourceExceptionListWithSpace(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		CheckDestroy:             checkResourceExceptionListDestroy,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minExceptionListAPISupport),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -248,6 +250,7 @@ func TestAccResourceExceptionListWithSpace(t *testing.T) {
 				),
 			},
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minExceptionListAPISupport),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
@@ -273,7 +276,8 @@ func TestAccResourceExceptionListWithSpace(t *testing.T) {
 					resource.TestCheckTypeSetElemAttr(resourceName, "tags.*", "updated"),
 				),
 			},
-			{ // Import
+			{
+				ProtoV6ProviderFactories: acctest.Providers, // Import
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minExceptionListAPISupport),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{

@@ -47,9 +47,9 @@ func validationTest(t *testing.T, check resource.ErrorCheckFunc) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("validate"),
 				ConfigVariables: config.Variables{
@@ -101,10 +101,10 @@ func TestSyntheticMonitorHTTPResource(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			// Create and Read http monitor with minimum fields
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("http_min"),
 				ConfigVariables: config.Variables{
@@ -122,6 +122,7 @@ func TestSyntheticMonitorHTTPResource(t *testing.T) {
 			},
 			// Create and Read http monitor with ssl fields, starting from ES 8.16.0
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(kibana816Version),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("http_ssl"),
 				ConfigVariables: config.Variables{
@@ -146,6 +147,7 @@ func TestSyntheticMonitorHTTPResource(t *testing.T) {
 			},
 			// ImportState testing ssl fields
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:          versionutils.CheckIfVersionIsUnsupported(kibana816Version),
 				ResourceName:      sslHTTPMonitorID,
 				ImportState:       true,
@@ -157,6 +159,7 @@ func TestSyntheticMonitorHTTPResource(t *testing.T) {
 			},
 			// Create and Read http monitor
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("http_create"),
 				ConfigVariables: config.Variables{
@@ -193,6 +196,7 @@ func TestSyntheticMonitorHTTPResource(t *testing.T) {
 			},
 			// ImportState testing
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:          versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
 				ResourceName:      httpMonitorID,
 				ImportState:       true,
@@ -204,6 +208,7 @@ func TestSyntheticMonitorHTTPResource(t *testing.T) {
 			},
 			// Update and Read testing http monitor
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
 				ResourceName:    httpMonitorID,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("http_update"),
@@ -266,10 +271,10 @@ func TestSyntheticMonitorTCPResource(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			// Create and Read tcp monitor with minimum fields
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("tcp_min"),
 				ConfigVariables: config.Variables{
@@ -288,6 +293,7 @@ func TestSyntheticMonitorTCPResource(t *testing.T) {
 			// Create and Read tcp monitor with ssl fields, starting from ES 8.16.0
 			// Create and Read tcp monitor with ssl fields, starting from ES 8.16.0
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(kibana816Version),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("tcp_ssl"),
 				ConfigVariables: config.Variables{
@@ -312,6 +318,7 @@ func TestSyntheticMonitorTCPResource(t *testing.T) {
 			},
 			// ImportState testing ssl fields
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:          versionutils.CheckIfVersionIsUnsupported(kibana816Version),
 				ResourceName:      sslTCPMonitorID,
 				ImportState:       true,
@@ -323,6 +330,7 @@ func TestSyntheticMonitorTCPResource(t *testing.T) {
 			},
 			// Create and Read tcp monitor
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("tcp_create"),
 				ConfigVariables: config.Variables{
@@ -356,6 +364,7 @@ func TestSyntheticMonitorTCPResource(t *testing.T) {
 			},
 			// ImportState testing
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:          versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
 				ResourceName:      tcpMonitorID,
 				ImportState:       true,
@@ -367,6 +376,7 @@ func TestSyntheticMonitorTCPResource(t *testing.T) {
 			},
 			// Update and Read tcp monitor
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
 				ResourceName:    tcpMonitorID,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("tcp_update"),
@@ -420,10 +430,10 @@ func TestSyntheticMonitorICMPResource(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			// Create and Read icmp monitor with minimum fields
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("icmp_min"),
 				ConfigVariables: config.Variables{
@@ -442,6 +452,7 @@ func TestSyntheticMonitorICMPResource(t *testing.T) {
 
 			// Create and Read icmp monitor
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("icmp_create"),
 				ConfigVariables: config.Variables{
@@ -468,6 +479,7 @@ func TestSyntheticMonitorICMPResource(t *testing.T) {
 			},
 			// ImportState testing
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:          versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
 				ResourceName:      icmpMonitorID,
 				ImportState:       true,
@@ -479,6 +491,7 @@ func TestSyntheticMonitorICMPResource(t *testing.T) {
 			},
 			// Update and Read icmp monitor
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
 				ResourceName:    icmpMonitorID,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("icmp_update"),
@@ -525,10 +538,10 @@ func TestSyntheticMonitorBrowserResource(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			// Create and Read browser monitor with minimum fields
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("browser_min"),
 				ConfigVariables: config.Variables{
@@ -546,6 +559,7 @@ func TestSyntheticMonitorBrowserResource(t *testing.T) {
 			},
 			// Create and Read browser monitor
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("browser_create"),
 				ConfigVariables: config.Variables{
@@ -572,6 +586,7 @@ func TestSyntheticMonitorBrowserResource(t *testing.T) {
 			},
 			// ImportState testing
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:          versionutils.CheckIfVersionIsUnsupported(kibana816Version),
 				ResourceName:      browserMonitorID,
 				ImportState:       true,
@@ -583,6 +598,7 @@ func TestSyntheticMonitorBrowserResource(t *testing.T) {
 			},
 			// Update and Read browser monitor
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
 				ResourceName:    browserMonitorID,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("browser_update"),
@@ -630,10 +646,10 @@ func TestSyntheticMonitorLabelsResource(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			// Create and Read monitor with labels
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(monitor.MinLabelsVersion),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("labels_create"),
 				ConfigVariables: config.Variables{
@@ -651,6 +667,7 @@ func TestSyntheticMonitorLabelsResource(t *testing.T) {
 			},
 			// ImportState testing
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:          versionutils.CheckIfVersionIsUnsupported(monitor.MinLabelsVersion),
 				ResourceName:      labelsMonitorID,
 				ImportState:       true,
@@ -662,6 +679,7 @@ func TestSyntheticMonitorLabelsResource(t *testing.T) {
 			},
 			// Update labels - change values but keep same keys
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(monitor.MinLabelsVersion),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("labels_update"),
 				ConfigVariables: config.Variables{
@@ -678,6 +696,7 @@ func TestSyntheticMonitorLabelsResource(t *testing.T) {
 			},
 			// Remove all labels - this tests the round-trip consistency fix
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(monitor.MinLabelsVersion),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("labels_removed"),
 				ConfigVariables: config.Variables{

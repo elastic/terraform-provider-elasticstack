@@ -196,10 +196,10 @@ func TestAccResourceExceptionItemWithSpace(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		CheckDestroy:             checkResourceExceptionItemDestroy,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -233,6 +233,7 @@ func TestAccResourceExceptionItemWithSpace(t *testing.T) {
 				),
 			},
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
@@ -259,7 +260,8 @@ func TestAccResourceExceptionItemWithSpace(t *testing.T) {
 					resource.TestCheckTypeSetElemAttr(resourceName, "tags.*", "updated"),
 				),
 			},
-			{ // Import
+			{
+				ProtoV6ProviderFactories: acctest.Providers, // Import
 				SkipFunc:        versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{

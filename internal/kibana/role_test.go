@@ -42,9 +42,9 @@ func TestAccResourceKibanaSecurityRole(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		CheckDestroy:             checkResourceSecurityRoleDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{"role_name": config.StringVariable(roleName)},
 				Check: resource.ComposeTestCheckFunc(
@@ -58,6 +58,7 @@ func TestAccResourceKibanaSecurityRole(t *testing.T) {
 				),
 			},
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{"role_name": config.StringVariable(roleName)},
 				Check: resource.ComposeTestCheckFunc(
@@ -70,6 +71,7 @@ func TestAccResourceKibanaSecurityRole(t *testing.T) {
 				),
 			},
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minSupportedDescriptionVersion),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("with_description"),
 				ConfigVariables: config.Variables{"role_name": config.StringVariable(roleName)},
@@ -81,6 +83,7 @@ func TestAccResourceKibanaSecurityRole(t *testing.T) {
 				),
 			},
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minSupportedRemoteIndicesVersion),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("remote_indices_create"),
 				ConfigVariables: config.Variables{"role_name": config.StringVariable(roleNameRemoteIndices)},
@@ -99,6 +102,7 @@ func TestAccResourceKibanaSecurityRole(t *testing.T) {
 				),
 			},
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minSupportedRemoteIndicesVersion),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("remote_indices_update"),
 				ConfigVariables: config.Variables{"role_name": config.StringVariable(roleNameRemoteIndices)},

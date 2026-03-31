@@ -34,10 +34,10 @@ func TestSyntheticParameterResource(t *testing.T) {
 	resourceID := "elasticstack_kibana_synthetics_parameter.test"
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minKibanaParameterAPIVersion),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -51,6 +51,7 @@ func TestSyntheticParameterResource(t *testing.T) {
 			},
 			// ImportState testing
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:          versionutils.CheckIfVersionIsUnsupported(minKibanaParameterAPIVersion),
 				ResourceName:      resourceID,
 				ImportState:       true,
@@ -59,6 +60,7 @@ func TestSyntheticParameterResource(t *testing.T) {
 			},
 			// Update and Read testing
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minKibanaParameterAPIVersion),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
 				Check: resource.ComposeAggregateTestCheckFunc(

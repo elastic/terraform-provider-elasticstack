@@ -39,9 +39,9 @@ func TestResourceLogstashPipeline(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		CheckDestroy:             checkResourceLogstashPipelineDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{"pipeline_id": config.StringVariable(pipelineID)},
 				Check: resource.ComposeTestCheckFunc(
@@ -55,6 +55,7 @@ func TestResourceLogstashPipeline(t *testing.T) {
 				),
 			},
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{"pipeline_id": config.StringVariable(pipelineID)},
 				Check: resource.ComposeTestCheckFunc(
@@ -81,6 +82,7 @@ func TestResourceLogstashPipeline(t *testing.T) {
 				),
 			},
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("update_with_metadata"),
 				ConfigVariables: config.Variables{"pipeline_id": config.StringVariable(pipelineID)},
 				Check: resource.ComposeTestCheckFunc(

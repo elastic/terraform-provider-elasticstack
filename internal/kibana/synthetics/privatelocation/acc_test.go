@@ -41,10 +41,10 @@ func TestSyntheticPrivateLocationResource(t *testing.T) {
 	randomSuffix := sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minKibanaPrivateLocationAPIVersion),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
@@ -62,6 +62,7 @@ func TestSyntheticPrivateLocationResource(t *testing.T) {
 			},
 			// ImportState testing
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:          versionutils.CheckIfVersionIsUnsupported(minKibanaPrivateLocationAPIVersion),
 				ResourceName:      resourceID,
 				ImportState:       true,
@@ -73,6 +74,7 @@ func TestSyntheticPrivateLocationResource(t *testing.T) {
 			},
 			// Update and Read testing
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minKibanaPrivateLocationAPIVersion),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("update_with_geo"),
 				ConfigVariables: config.Variables{
@@ -91,6 +93,7 @@ func TestSyntheticPrivateLocationResource(t *testing.T) {
 			},
 			// Update and Read testing
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minKibanaPrivateLocationAPIVersion),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("update_no_optional"),
 				ConfigVariables: config.Variables{
@@ -105,6 +108,7 @@ func TestSyntheticPrivateLocationResource(t *testing.T) {
 			},
 			// Update and Read testing
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minKibanaPrivateLocationAPIVersion),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("update_tags_only"),
 				ConfigVariables: config.Variables{
@@ -122,6 +126,7 @@ func TestSyntheticPrivateLocationResource(t *testing.T) {
 			},
 			// Update and Read testing
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minKibanaPrivateLocationAPIVersion),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("update_geo_only"),
 				ConfigVariables: config.Variables{

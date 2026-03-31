@@ -86,9 +86,9 @@ resource "elasticstack_fleet_integration" "test_integration" {
 func TestAccResourceIntegration(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				Check: resource.ComposeTestCheckFunc(
@@ -97,6 +97,7 @@ func TestAccResourceIntegration(t *testing.T) {
 				),
 			},
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:          versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
 				ResourceName:      "elasticstack_fleet_integration.test_integration",
 				ConfigDirectory:   acctest.NamedTestCaseDirectory("create"),
@@ -112,9 +113,9 @@ func TestAccResourceIntegrationWithPolicy(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("v1_16_0"),
 				ConfigVariables: config.Variables{
@@ -126,6 +127,7 @@ func TestAccResourceIntegrationWithPolicy(t *testing.T) {
 				),
 			},
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("v1_17_0"),
 				ConfigVariables: config.Variables{
@@ -137,6 +139,7 @@ func TestAccResourceIntegrationWithPolicy(t *testing.T) {
 				),
 			},
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
 				ResourceName:    "elasticstack_fleet_integration.test_integration",
 				ConfigDirectory: acctest.NamedTestCaseDirectory("v1_17_0"),
@@ -154,9 +157,9 @@ func TestAccResourceIntegrationWithPolicy(t *testing.T) {
 func TestAccResourceIntegrationDeleted(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				Check: resource.ComposeTestCheckFunc(
@@ -165,6 +168,7 @@ func TestAccResourceIntegrationDeleted(t *testing.T) {
 				),
 			},
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				// Force uninstall the integration
@@ -190,9 +194,9 @@ func TestAccResourceIntegrationDeleted(t *testing.T) {
 func TestAccResourceIntegration_ExternalChange(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				Check: resource.ComposeTestCheckFunc(
@@ -201,6 +205,7 @@ func TestAccResourceIntegration_ExternalChange(t *testing.T) {
 				),
 			},
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				PreConfig: func() {
@@ -229,6 +234,7 @@ func TestAccResourceIntegration_ExternalChange(t *testing.T) {
 				),
 			},
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				PreConfig: func() {
@@ -261,9 +267,9 @@ func TestAccResourceIntegration_ExternalChange(t *testing.T) {
 func TestAccResourceIntegrationWithPrerelease(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				Check: resource.ComposeTestCheckFunc(
@@ -279,9 +285,9 @@ func TestAccResourceIntegrationWithPrerelease(t *testing.T) {
 func TestAccResourceIntegrationWithAllParameters(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("all_params_step1"),
 				Check: resource.ComposeTestCheckFunc(
@@ -292,6 +298,7 @@ func TestAccResourceIntegrationWithAllParameters(t *testing.T) {
 				),
 			},
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(integration.MinVersionIgnoreMappingUpdateErrors),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("all_params_step2"),
 				Check: resource.ComposeTestCheckFunc(

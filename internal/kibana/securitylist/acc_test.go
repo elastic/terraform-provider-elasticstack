@@ -31,9 +31,9 @@ func TestAccResourceSecurityList(t *testing.T) {
 	spaceID := "test-space-" + uuid.New().String()[:8]
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
-			{ // Create
+			{
+				ProtoV6ProviderFactories: acctest.Providers, // Create
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"space_id":    config.StringVariable(spaceID),
@@ -53,7 +53,8 @@ func TestAccResourceSecurityList(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_list.test", "updated_by"),
 				),
 			},
-			{ // Update
+			{
+				ProtoV6ProviderFactories: acctest.Providers, // Update
 				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"space_id":    config.StringVariable(spaceID),
@@ -67,7 +68,8 @@ func TestAccResourceSecurityList(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_list.test", "description", "An updated test security list"),
 				),
 			},
-			{ // Import
+			{
+				ProtoV6ProviderFactories: acctest.Providers, // Import
 				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"space_id":    config.StringVariable(spaceID),
@@ -89,9 +91,9 @@ func TestAccResourceSecurityList_KeywordType(t *testing.T) {
 	spaceID := "test-space-" + uuid.New().String()[:8]
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("keyword_type"),
 				ConfigVariables: config.Variables{
 					"space_id":    config.StringVariable(spaceID),
@@ -113,9 +115,9 @@ func TestAccResourceSecurityList_WithMetadata(t *testing.T) {
 	spaceID := "test-space-" + uuid.New().String()[:8]
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
-			{ // Create with metadata
+			{
+				ProtoV6ProviderFactories: acctest.Providers, // Create with metadata
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create_with_meta"),
 				ConfigVariables: config.Variables{
 					"space_id":    config.StringVariable(spaceID),
@@ -131,7 +133,8 @@ func TestAccResourceSecurityList_WithMetadata(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_list.test", "meta"),
 				),
 			},
-			{ // Update metadata
+			{
+				ProtoV6ProviderFactories: acctest.Providers, // Update metadata
 				ConfigDirectory: acctest.NamedTestCaseDirectory("update_meta"),
 				ConfigVariables: config.Variables{
 					"space_id":    config.StringVariable(spaceID),

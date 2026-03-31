@@ -38,9 +38,9 @@ func TestAccResourceDataStream(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		CheckDestroy:             checkResourceDataStreamDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{"name": config.StringVariable(dsName)},
 				Check: resource.ComposeTestCheckFunc(
@@ -62,6 +62,7 @@ func TestAccResourceDataStream(t *testing.T) {
 				),
 			},
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:   acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables:   config.Variables{"name": config.StringVariable(dsName)},
 				ResourceName:      "elasticstack_elasticsearch_data_stream.test_ds",
@@ -82,6 +83,7 @@ func TestAccResourceDataStream(t *testing.T) {
 				),
 			},
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{"name": config.StringVariable(dsNameUpdated)},
 				Check: resource.ComposeTestCheckFunc(
@@ -109,9 +111,9 @@ func TestAccResourceDataStreamWithMetadata(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
 		CheckDestroy:             checkResourceDataStreamDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{"name": config.StringVariable(dsName)},
 				Check: resource.ComposeTestCheckFunc(
@@ -120,6 +122,7 @@ func TestAccResourceDataStreamWithMetadata(t *testing.T) {
 				),
 			},
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:   acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables:   config.Variables{"name": config.StringVariable(dsName)},
 				ResourceName:      "elasticstack_elasticsearch_data_stream.test_ds",

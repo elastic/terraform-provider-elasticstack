@@ -33,9 +33,9 @@ var minVersionIntegrationDataSource = version.Must(version.NewVersion("8.6.0"))
 func TestAccDataSourceIntegration(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationDataSource),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(

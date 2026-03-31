@@ -42,6 +42,7 @@ func TestMuxServer(t *testing.T) {
 		},
 		Steps: []resource.TestStep{
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 			},
 		},
