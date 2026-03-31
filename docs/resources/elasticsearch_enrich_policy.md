@@ -58,7 +58,7 @@ resource "elasticstack_elasticsearch_enrich_policy" "policy1" {
 
 ### Optional
 
-- `elasticsearch_connection` (Block List, Deprecated) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- `elasticsearch_connection` (Block List) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - `execute` (Boolean) Whether to call the execute API function in order to create the enrich index.
 - `query` (String) Query used to filter documents in the enrich index. The policy only uses documents matching this query to enrich incoming documents. Defaults to a match_all query.
 

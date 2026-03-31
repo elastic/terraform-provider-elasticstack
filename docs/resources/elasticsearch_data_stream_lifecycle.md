@@ -64,7 +64,7 @@ resource "elasticstack_elasticsearch_data_stream_lifecycle" "my_data_stream_life
 
 - `data_retention` (String) Every document added to this data stream will be stored at least for this time frame. When empty, every document in this data stream will be stored indefinitely
 - `downsampling` (Attributes List) Downsampling configuration objects, each defining an after interval representing when the backing index is meant to be downsampled and a fixed_interval representing the downsampling interval. (see [below for nested schema](#nestedatt--downsampling))
-- `elasticsearch_connection` (Block List, Deprecated) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- `elasticsearch_connection` (Block List) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - `enabled` (Boolean) Data stream lifecycle on/off.
 - `expand_wildcards` (String) Determines how wildcard patterns in the `indices` parameter match data streams and indices. Supports comma-separated values, such as `closed,hidden`.
 
