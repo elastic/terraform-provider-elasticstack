@@ -278,9 +278,8 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 		}
 		setPanelGridFromAPI(&pm, esqlPanel.Grid.X, esqlPanel.Grid.Y, esqlPanel.Grid.W, esqlPanel.Grid.H)
 		pm.ID = types.StringPointerValue(esqlPanel.Uid)
-		if configBytes, err := json.Marshal(esqlPanel.Config); err == nil {
-			pm.ConfigJSON = customtypes.NewJSONWithDefaultsValue(string(configBytes), populatePanelConfigJSONDefaults)
-		}
+		// ES|QL control panels are managed via esql_control_config; config_json remains unset.
+		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
 		populateEsqlControlFromAPI(&pm, tfPanel, esqlPanel.Config)
 	case panelTypeLens:
 		lensPanel, err := panelItem.AsKbnDashboardPanelLens()
@@ -481,7 +480,7 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 		return panelItem, diags
 	}
 
-	if pm.Type.ValueString() == panelTypeEsqlControl || pm.EsqlControlConfig != nil {
+	if pm.EsqlControlConfig != nil {
 		esqlPanel := kbapi.KbnDashboardPanelEsqlControl{
 			Grid: grid,
 			Uid:  uid,

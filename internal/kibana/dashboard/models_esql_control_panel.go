@@ -82,37 +82,23 @@ func populateEsqlControlFromAPI(pm *panelModel, tfPanel *panelModel, apiConfig k
 			VariableType:     types.StringValue(string(apiConfig.VariableType)),
 			EsqlQuery:        types.StringValue(apiConfig.EsqlQuery),
 			ControlType:      types.StringValue(string(apiConfig.ControlType)),
+			Title:            types.StringPointerValue(apiConfig.Title),
+			SingleSelect:     types.BoolPointerValue(apiConfig.SingleSelect),
 			AvailableOptions: types.ListNull(types.StringType),
 		}
 		pm.EsqlControlConfig = existing
-		if apiConfig.Title != nil {
-			existing.Title = types.StringValue(*apiConfig.Title)
-		}
-		if apiConfig.SingleSelect != nil {
-			existing.SingleSelect = types.BoolValue(*apiConfig.SingleSelect)
-		}
 		if apiConfig.AvailableOptions != nil {
 			existing.AvailableOptions = stringsToList(*apiConfig.AvailableOptions)
 		}
 		if apiConfig.DisplaySettings != nil {
 			d := apiConfig.DisplaySettings
-			m := &esqlControlDisplaySettingsModel{}
-			if d.Placeholder != nil {
-				m.Placeholder = types.StringValue(*d.Placeholder)
+			existing.DisplaySettings = &esqlControlDisplaySettingsModel{
+				Placeholder:   types.StringPointerValue(d.Placeholder),
+				HideActionBar: types.BoolPointerValue(d.HideActionBar),
+				HideExclude:   types.BoolPointerValue(d.HideExclude),
+				HideExists:    types.BoolPointerValue(d.HideExists),
+				HideSort:      types.BoolPointerValue(d.HideSort),
 			}
-			if d.HideActionBar != nil {
-				m.HideActionBar = types.BoolValue(*d.HideActionBar)
-			}
-			if d.HideExclude != nil {
-				m.HideExclude = types.BoolValue(*d.HideExclude)
-			}
-			if d.HideExists != nil {
-				m.HideExists = types.BoolValue(*d.HideExists)
-			}
-			if d.HideSort != nil {
-				m.HideSort = types.BoolValue(*d.HideSort)
-			}
-			existing.DisplaySettings = m
 		}
 		return
 	}
@@ -137,8 +123,8 @@ func populateEsqlControlFromAPI(pm *panelModel, tfPanel *panelModel, apiConfig k
 		existing.SingleSelect = types.BoolValue(*apiConfig.SingleSelect)
 	}
 
-	// available_options: if TF state had it set (non-null list), update from API.
-	if !existing.AvailableOptions.IsNull() && apiConfig.AvailableOptions != nil {
+	// available_options: if TF state had it set (known, non-null list), update from API.
+	if typeutils.IsKnown(existing.AvailableOptions) && apiConfig.AvailableOptions != nil {
 		existing.AvailableOptions = stringsToList(*apiConfig.AvailableOptions)
 	}
 
@@ -182,7 +168,7 @@ func buildEsqlControlConfig(pm panelModel, esqlPanel *kbapi.KbnDashboardPanelEsq
 	if typeutils.IsKnown(cfg.SingleSelect) {
 		esqlPanel.Config.SingleSelect = cfg.SingleSelect.ValueBoolPointer()
 	}
-	if !cfg.AvailableOptions.IsNull() {
+	if typeutils.IsKnown(cfg.AvailableOptions) {
 		opts := listToStrings(cfg.AvailableOptions)
 		esqlPanel.Config.AvailableOptions = &opts
 	}

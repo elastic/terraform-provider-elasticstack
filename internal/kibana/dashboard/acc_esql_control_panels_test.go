@@ -99,7 +99,7 @@ func TestAccResourceDashboardESQLControl(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.esql_control_config.control_type"),
 				),
 			},
-			// Update to no config block
+			// esql_control_config is required when type = "esql_control"; omitting it must be rejected.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
@@ -107,10 +107,7 @@ func TestAccResourceDashboardESQLControl(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
 				},
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.type", "esql_control"),
-					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.esql_control_config"),
-				),
+				ExpectError: regexp.MustCompile(`(?i)esql_control_config`),
 			},
 		},
 	})
@@ -197,17 +194,8 @@ func TestAccResourceDashboardESQLControlConfigJSONRejected(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
-				Config: `
-resource "elasticstack_kibana_dashboard" "test" {
-  title = "config-json-esql-test"
-  panels = [{
-    type        = "esql_control"
-    grid        = { x = 0, y = 0 }
-    config_json = "{}"
-  }]
-}
-`,
-				ExpectError: regexp.MustCompile(`(?i)esql_control|not supported|not allowed`),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("config_json_rejected"),
+				ExpectError:              regexp.MustCompile(`(?i)esql_control|not supported|not allowed`),
 			},
 		},
 	})
@@ -220,44 +208,14 @@ func TestAccResourceDashboardESQLControlInvalidEnum(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
-				Config: `
-resource "elasticstack_kibana_dashboard" "test" {
-  title = "invalid-enum-test"
-  panels = [{
-    type = "esql_control"
-    grid = { x = 0, y = 0 }
-    esql_control_config = {
-      selected_options = []
-      variable_name    = "v"
-      variable_type    = "unsupported_type"
-      esql_query       = "FROM *"
-      control_type     = "STATIC_VALUES"
-    }
-  }]
-}
-`,
-				ExpectError: regexp.MustCompile(`(?i)unsupported_type`),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("invalid_variable_type"),
+				ExpectError:              regexp.MustCompile(`(?i)unsupported_type`),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
-				Config: `
-resource "elasticstack_kibana_dashboard" "test" {
-  title = "invalid-control-type-test"
-  panels = [{
-    type = "esql_control"
-    grid = { x = 0, y = 0 }
-    esql_control_config = {
-      selected_options = []
-      variable_name    = "v"
-      variable_type    = "values"
-      esql_query       = "FROM *"
-      control_type     = "UNSUPPORTED"
-    }
-  }]
-}
-`,
-				ExpectError: regexp.MustCompile(`(?i)UNSUPPORTED`),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("invalid_control_type"),
+				ExpectError:              regexp.MustCompile(`(?i)UNSUPPORTED`),
 			},
 		},
 	})
