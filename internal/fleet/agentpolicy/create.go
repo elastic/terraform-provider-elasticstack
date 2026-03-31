@@ -127,7 +127,9 @@ func (r *agentPolicyResource) Create(ctx context.Context, req resource.CreateReq
 		typeutils.IsKnown(planModel.IsProtected) && !planModel.IsProtected.ValueBool() {
 		resp.Diagnostics.AddError(
 			"Fleet API did not enable tamper protection",
-			"The agent policy was saved but is_protected is still false. Ensure Elastic Stack 8.10.0 or later, that your license allows tamper protection, and that the Fleet API accepts is_protected on this deployment.",
+			"The agent policy was saved but is_protected is still false. "+
+				"Ensure Elastic Stack 8.10.0 or later, that your license allows tamper protection, "+
+				"and that the Fleet API accepts is_protected on this deployment.",
 		)
 		return
 	}
