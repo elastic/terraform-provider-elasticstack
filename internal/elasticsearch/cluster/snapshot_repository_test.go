@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -38,7 +39,8 @@ func TestAccResourceSnapRepoFs(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccRepoFsCreate(name),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+					ConfigVariables: config.Variables{"name": config.StringVariable(name)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_fs_repo", "name", name),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_fs_repo", "fs.0.location", "/tmp"),
@@ -71,7 +73,8 @@ func TestAccResourceSnapRepoURL(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccRepoURLCreate(name),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+					ConfigVariables: config.Variables{"name": config.StringVariable(name)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_url_repo", "name", name),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_url_repo", "url.0.url", "file:/tmp"),
@@ -80,40 +83,6 @@ func TestAccResourceSnapRepoURL(t *testing.T) {
 			},
 		},
 	})
-}
-
-func testAccRepoFsCreate(name string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_snapshot_repository" "test_fs_repo" {
-  name = "%s"
-
-  fs {
-    location                  = "/tmp"
-    compress                  = true
-    max_restore_bytes_per_sec = "10mb"
-  }
-}
-	`, name)
-}
-
-func testAccRepoURLCreate(name string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_snapshot_repository" "test_url_repo" {
-  name = "%s"
-
-  url {
-    url = "file:/tmp"
-  }
-}
-	`, name)
 }
 
 func checkRepoDestroy(name string) func(s *terraform.State) error {

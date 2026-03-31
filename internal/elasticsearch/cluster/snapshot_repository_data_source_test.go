@@ -18,10 +18,10 @@
 package cluster_test
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
@@ -34,14 +34,8 @@ func TestAccDataSourceSnapRepoMissing(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_snapshot_repository" "test_fs_repo" {
-  name = "%s"
-}`, name),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables: config.Variables{"name": config.StringVariable(name)},
 			},
 		},
 	})
@@ -55,7 +49,8 @@ func TestAccDataSourceSnapRepoFs(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceSnapRepoFs(name),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
+					ConfigVariables: config.Variables{"name": config.StringVariable(name)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_fs_repo", "name", name),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_fs_repo", "gcs.#", "0"),
@@ -70,28 +65,6 @@ func TestAccDataSourceSnapRepoFs(t *testing.T) {
 	})
 }
 
-func testAccDataSourceSnapRepoFs(name string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_snapshot_repository" "test_fs_repo" {
-  name = "%s"
-
-  fs {
-    location                  = "/tmp"
-    compress                  = true
-    max_restore_bytes_per_sec = "10mb"
-  }
-}
-
-data "elasticstack_elasticsearch_snapshot_repository" "test_fs_repo" {
-  name = resource.elasticstack_elasticsearch_snapshot_repository.test_fs_repo.name
-}
-	`, name)
-}
-
 func TestAccDataSourceSnapRepoURL(t *testing.T) {
 	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
@@ -100,7 +73,8 @@ func TestAccDataSourceSnapRepoURL(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceSnapRepoURL(name),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
+					ConfigVariables: config.Variables{"name": config.StringVariable(name)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_url_repo", "name", name),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_url_repo", "s3.#", "0"),
@@ -111,24 +85,4 @@ func TestAccDataSourceSnapRepoURL(t *testing.T) {
 			},
 		},
 	})
-}
-
-func testAccDataSourceSnapRepoURL(name string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_snapshot_repository" "test_url_repo" {
-  name = "%s"
-
-  url {
-    url = "file:/tmp"
-  }
-}
-
-data "elasticstack_elasticsearch_snapshot_repository" "test_url_repo" {
-  name = resource.elasticstack_elasticsearch_snapshot_repository.test_url_repo.name
-}
-	`, name)
 }

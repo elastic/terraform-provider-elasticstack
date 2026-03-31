@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -38,7 +39,8 @@ func TestAccResourceSLM(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSlmCreate(name),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{"name": config.StringVariable(name)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "name", name),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "schedule", "0 30 1 * * ?"),
@@ -85,7 +87,8 @@ func TestAccResourceSLMWithMetadata(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSlmCreateWithMetadata(name),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{"name": config.StringVariable(name)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm_metadata", "name", name),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm_metadata", "schedule", "0 30 1 * * ?"),
@@ -104,79 +107,6 @@ func TestAccResourceSLMWithMetadata(t *testing.T) {
 			},
 		},
 	})
-}
-
-func testAccSlmCreate(name string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_snapshot_repository" "repo" {
-  name = "%s-repo"
-
-  fs {
-    location                  = "/tmp/snapshots"
-    compress                  = true
-    max_restore_bytes_per_sec = "20mb"
-  }
-}
-
-resource "elasticstack_elasticsearch_snapshot_lifecycle" "test_slm" {
-  name = "%s"
-
-  schedule      = "0 30 1 * * ?"
-  snapshot_name = "<daily-snap-{now/d}>"
-  repository    = elasticstack_elasticsearch_snapshot_repository.repo.name
-
-  indices              = ["data-*", "abc"]
-  ignore_unavailable   = false
-  include_global_state = false
-
-  expire_after = "30d"
-  min_count    = 5
-  max_count    = 50
-}
-	`, name, name)
-}
-
-func testAccSlmCreateWithMetadata(name string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_snapshot_repository" "repo" {
-  name = "%s-repo"
-
-  fs {
-    location                  = "/tmp/snapshots"
-    compress                  = true
-    max_restore_bytes_per_sec = "20mb"
-  }
-}
-
-resource "elasticstack_elasticsearch_snapshot_lifecycle" "test_slm_metadata" {
-  name = "%s"
-
-  schedule      = "0 30 1 * * ?"
-  snapshot_name = "<daily-snap-{now/d}>"
-  repository    = elasticstack_elasticsearch_snapshot_repository.repo.name
-
-  indices              = ["data-*", "abc"]
-  ignore_unavailable   = false
-  include_global_state = false
-
-  expire_after = "30d"
-  min_count    = 5
-  max_count    = 50
-
-  metadata = jsonencode({
-    created_by = "terraform"
-    purpose    = "daily backup"
-  })
-}
-	`, name, name)
 }
 
 func checkSlmDestroy(name string) func(s *terraform.State) error {
