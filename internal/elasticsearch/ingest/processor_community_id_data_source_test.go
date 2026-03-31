@@ -32,7 +32,97 @@ func TestAccDataSourceIngestProcessorCommunityID(t *testing.T) {
 			{
 				Config: testAccDataSourceIngestProcessorCommunityID,
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "seed", "0"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "ignore_missing", "false"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "ignore_failure", "false"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "json", expectedJSONCommunityID),
+				),
+			},
+		},
+	})
+}
+
+func TestAccDataSourceIngestProcessorCommunityIDCoreNetwork(t *testing.T) {
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccDataSourceIngestProcessorCommunityIDCoreNetwork,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "source_ip", "source.address"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "source_port", "12345"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "destination_ip", "destination.address"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "destination_port", "443"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "target_field", "network.community_id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "seed", "123"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "ignore_missing", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "ignore_failure", "true"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "json", expectedJSONCommunityIDCoreNetwork),
+				),
+			},
+		},
+	})
+}
+
+func TestAccDataSourceIngestProcessorCommunityIDICMP(t *testing.T) {
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccDataSourceIngestProcessorCommunityIDICMP,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "transport", "icmp"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "icmp_type", "3"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "icmp_code", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "seed", "0"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "ignore_missing", "false"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "ignore_failure", "false"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "json", expectedJSONCommunityIDICMP),
+				),
+			},
+		},
+	})
+}
+
+func TestAccDataSourceIngestProcessorCommunityIDMetadata(t *testing.T) {
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccDataSourceIngestProcessorCommunityIDMetadata,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "description", "Compute the community ID"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "if", "ctx.network != null"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "tag", "community-id-tag"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "seed", "0"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "ignore_missing", "false"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "ignore_failure", "false"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "json", expectedJSONCommunityIDMetadata),
+				),
+			},
+		},
+	})
+}
+
+func TestAccDataSourceIngestProcessorCommunityIDOnFailure(t *testing.T) {
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccDataSourceIngestProcessorCommunityIDOnFailure,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_community_id.test_on_failure", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_community_id.test_on_failure", "on_failure.#", "1"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_community_id.test_on_failure", "on_failure.0", `{"set":{"field":"error.message","value":"community id failed"}}`),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_community_id.test_on_failure", "json", expectedJSONCommunityIDOnFailure),
 				),
 			},
 		},
@@ -47,10 +137,119 @@ const expectedJSONCommunityID = `{
 	}
 }`
 
+const expectedJSONCommunityIDCoreNetwork = `{
+	"community_id": {
+		"ignore_failure": true,
+		"source_ip": "source.address",
+		"source_port": 12345,
+		"destination_ip": "destination.address",
+		"destination_port": 443,
+		"target_field": "network.community_id",
+		"seed": 123,
+		"ignore_missing": true
+	}
+}`
+
+const expectedJSONCommunityIDICMP = `{
+	"community_id": {
+		"ignore_failure": false,
+		"icmp_type": 3,
+		"icmp_code": 1,
+		"transport": "icmp",
+		"seed": 0,
+		"ignore_missing": false
+	}
+}`
+
+const expectedJSONCommunityIDMetadata = `{
+	"community_id": {
+		"description": "Compute the community ID",
+		"if": "ctx.network != null",
+		"ignore_failure": false,
+		"tag": "community-id-tag",
+		"seed": 0,
+		"ignore_missing": false
+	}
+}`
+
+const expectedJSONCommunityIDOnFailure = `{
+	"community_id": {
+		"ignore_failure": false,
+		"on_failure": [
+			{
+				"set": {
+					"field": "error.message",
+					"value": "community id failed"
+				}
+			}
+		],
+		"seed": 0,
+		"ignore_missing": false
+	}
+}`
+
 const testAccDataSourceIngestProcessorCommunityID = `
 provider "elasticstack" {
   elasticsearch {}
 }
 
 data "elasticstack_elasticsearch_ingest_processor_community_id" "test" {}
+`
+
+const testAccDataSourceIngestProcessorCommunityIDCoreNetwork = `
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+data "elasticstack_elasticsearch_ingest_processor_community_id" "test" {
+  source_ip        = "source.address"
+  source_port      = 12345
+  destination_ip   = "destination.address"
+  destination_port = 443
+  target_field     = "network.community_id"
+  seed             = 123
+  ignore_missing   = true
+  ignore_failure   = true
+}
+`
+
+const testAccDataSourceIngestProcessorCommunityIDICMP = `
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+data "elasticstack_elasticsearch_ingest_processor_community_id" "test" {
+  transport = "icmp"
+  icmp_type = 3
+  icmp_code = 1
+}
+`
+
+const testAccDataSourceIngestProcessorCommunityIDMetadata = `
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+data "elasticstack_elasticsearch_ingest_processor_community_id" "test" {
+  description = "Compute the community ID"
+  if          = "ctx.network != null"
+  tag         = "community-id-tag"
+}
+`
+
+const testAccDataSourceIngestProcessorCommunityIDOnFailure = `
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+data "elasticstack_elasticsearch_ingest_processor_community_id" "test_on_failure" {
+  on_failure = [
+    jsonencode({
+      set = {
+        field = "error.message"
+        value = "community id failed"
+      }
+    })
+  ]
+}
 `
