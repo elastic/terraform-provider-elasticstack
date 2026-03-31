@@ -185,8 +185,9 @@ func inspectTestStep(pass *analysis.Pass, lit *ast.CompositeLit) {
 	hasConfigDir := configDirExpr != nil
 	hasExternalProviders := externalProvidersExpr != nil
 
-	// Non-goal: steps with neither Config nor ConfigDirectory are fine (import-only, refresh-only, etc.).
-	if !hasConfig && !hasConfigDir {
+	// Non-goal: steps with neither Config, ConfigDirectory, nor ExternalProviders are out of scope.
+	// Import-only, refresh-only, and plan-only steps need not specify a config source.
+	if !hasConfig && !hasConfigDir && !hasExternalProviders {
 		return
 	}
 

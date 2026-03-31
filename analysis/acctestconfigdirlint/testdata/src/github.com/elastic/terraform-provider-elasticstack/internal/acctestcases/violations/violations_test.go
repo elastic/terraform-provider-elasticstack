@@ -64,6 +64,21 @@ func TestViolation3_ExternalProvidersWithConfigDirectory(t *testing.T) {
 	})
 }
 
+// TestViolation_ExternalProvidersWithoutConfig exercises violation 3 (scenario 8):
+// a step sets ExternalProviders but has neither Config nor ConfigDirectory.
+func TestViolation_ExternalProvidersWithoutConfig(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		Steps: []resource.TestStep{
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{ // want `sets ExternalProviders without inline Config`
+					"aws": {Source: "hashicorp/aws"},
+				},
+				// No Config, no ConfigDirectory
+			},
+		},
+	})
+}
+
 // TestViolation4_InlineConfigNoExternalProviders_ParallelTest exercises violation 1
 // inside resource.ParallelTest to ensure the analyzer checks both entry points.
 func TestViolation4_InlineConfigNoExternalProviders_ParallelTest(t *testing.T) {
