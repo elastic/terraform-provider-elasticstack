@@ -22,6 +22,7 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
+	"os"
 	"regexp"
 	"testing"
 
@@ -1013,8 +1014,14 @@ func TestAccResourceAgentPolicyTamperProtection(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agentpolicy.MinVersionTamperProtection),
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_is_protected"),
+				SkipFunc: func() (bool, error) {
+					enabled := os.Getenv("TF_ACC_FLEET_TAMPER_PROTECTION")
+					if enabled != "1" && enabled != "true" {
+						return true, nil
+					}
+					return versionutils.CheckIfVersionIsUnsupported(agentpolicy.MinVersionTamperProtection)()
+				},
+				ConfigDirectory: acctest.NamedTestCaseDirectory("with_is_protected"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
 				},
