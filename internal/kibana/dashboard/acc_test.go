@@ -111,11 +111,10 @@ func TestAccResourceEmptyDashboard(t *testing.T) {
 }
 
 func TestAccResourceDashboardAccessControl(t *testing.T) {
+	t.Skip("Access control requires a full user profile which is not currently supported in the test environment")
 	dashboardTitle := "Test Dashboard " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum) + " with Access Control"
 	username := "tf-dashboard-" + sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
 	password := "TestPass-" + sdkacctest.RandStringFromCharSet(12, sdkacctest.CharSetAlphaNum)
-
-	t.Skip("Access control requires a full user profile which is not currently supported in the test environment")
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
