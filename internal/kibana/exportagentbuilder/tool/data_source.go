@@ -27,9 +27,10 @@ import (
 
 // Ensure the implementation satisfies the expected interfaces.
 var (
-	_                               datasource.DataSource              = &DataSource{}
-	_                               datasource.DataSourceWithConfigure = &DataSource{}
-	minKibanaAgentBuilderAPIVersion                                    = version.Must(version.NewVersion("9.4.0-SNAPSHOT"))
+	_                                       datasource.DataSource              = &DataSource{}
+	_                                       datasource.DataSourceWithConfigure = &DataSource{}
+	minKibanaAgentBuilderAPIVersion                                            = version.Must(version.NewVersion("9.3.0"))
+	minKibanaAgentBuilderWorkflowAPIVersion                                    = version.Must(version.NewVersion("9.4.0-SNAPSHOT"))
 )
 
 // NewDataSource is a helper function to simplify the provider implementation.

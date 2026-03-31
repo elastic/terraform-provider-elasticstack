@@ -118,6 +118,19 @@ func (d *DataSource) Read(ctx context.Context, req datasource.ReadRequest, resp 
 	}
 
 	if config.IncludeWorkflow.ValueBool() {
+		supported, sdkDiags := d.client.EnforceMinVersion(ctx, minKibanaAgentBuilderWorkflowAPIVersion)
+		resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		if !supported {
+			resp.Diagnostics.AddError(
+				"Unsupported server version",
+				fmt.Sprintf("Exporting workflow configuration requires Elastic Stack v%s or later.", minKibanaAgentBuilderWorkflowAPIVersion),
+			)
+			return
+		}
+
 		if tool.Type != "workflow" {
 			resp.Diagnostics.AddError(
 				"Invalid use of include_workflow",

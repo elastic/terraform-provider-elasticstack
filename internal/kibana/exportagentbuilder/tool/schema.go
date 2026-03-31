@@ -65,7 +65,7 @@ func (d *DataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp 
 				Computed:    true,
 			},
 			"include_workflow": schema.BoolAttribute{
-				Description: "When true, the workflow referenced by this tool will also be exported. Only valid when the tool type is `workflow`. Defaults to false.",
+				Description: "When true, the workflow referenced by this tool will also be exported. Only valid when the tool type is `workflow`. Requires Kibana 9.4.0 or above. Defaults to false.",
 				Optional:    true,
 			},
 			"workflow_id": schema.StringAttribute{

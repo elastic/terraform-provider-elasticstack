@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -36,7 +37,9 @@ import (
 )
 
 var (
-	minKibanaAgentBuilderAPIVersion = version.Must(version.NewVersion("9.4.0-SNAPSHOT"))
+	minKibanaAgentBuilderAPIVersion         = version.Must(version.NewVersion("9.3.0"))
+	minKibanaAgentBuilderWorkflowAPIVersion = version.Must(version.NewVersion("9.4.0-SNAPSHOT"))
+	below940Constraints                     = version.MustConstraints(version.NewConstraint(">= 9.3.0, < 9.4.0-SNAPSHOT"))
 )
 
 func preCheckWithWorkflowsEnabled(t *testing.T) {
@@ -90,7 +93,7 @@ func preCheckWithWorkflowsEnabled(t *testing.T) {
 	}
 }
 
-func TestAccDataSourceKibanaExportABTool(t *testing.T) {
+func TestAccDataSourceKibanaExportAgentBuilderTool(t *testing.T) {
 	toolID := "test-tool-" + uuid.New().String()[:8]
 
 	resource.Test(t, resource.TestCase{
@@ -117,14 +120,14 @@ func TestAccDataSourceKibanaExportABTool(t *testing.T) {
 	})
 }
 
-func TestAccDataSourceKibanaExportABToolWorkflow(t *testing.T) {
+func TestAccDataSourceKibanaExportAgentBuilderToolWorkflow(t *testing.T) {
 	toolID := "test-workflow-tool-" + uuid.New().String()[:8]
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { preCheckWithWorkflowsEnabled(t) },
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderAPIVersion),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaAgentBuilderWorkflowAPIVersion),
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables: config.Variables{
@@ -141,7 +144,26 @@ func TestAccDataSourceKibanaExportABToolWorkflow(t *testing.T) {
 	})
 }
 
-func TestAccDataSourceKibanaExportABToolSpace(t *testing.T) {
+func TestAccDataSourceKibanaExportAgentBuilderToolWorkflowUnsupportedVersion(t *testing.T) {
+	toolID := "test-workflow-tool-" + uuid.New().String()[:8]
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { preCheckWithWorkflowsEnabled(t) },
+		Steps: []resource.TestStep{
+			{
+				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(below940Constraints),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read_workflow_unsupported"),
+				ConfigVariables: config.Variables{
+					"tool_id": config.StringVariable(toolID),
+				},
+				ExpectError: regexp.MustCompile(`Unsupported server version`),
+			},
+		},
+	})
+}
+
+func TestAccDataSourceKibanaExportAgentBuilderToolSpace(t *testing.T) {
 	toolID := "test-tool-" + uuid.New().String()[:8]
 	spaceID := fmt.Sprintf("test-space-%s", uuid.New().String()[:8])
 
