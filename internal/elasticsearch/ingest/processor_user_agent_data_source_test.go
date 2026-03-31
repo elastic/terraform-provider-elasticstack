@@ -46,4 +46,3 @@ const expectedJSONUserAgent = `{
 		"ignore_missing": false
 	}
 }`
-

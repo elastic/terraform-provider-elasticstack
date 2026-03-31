@@ -45,4 +45,3 @@ const expectedJSONReroute = `{
 		"destination": "logs-generic-default"
 	}
 }`
-

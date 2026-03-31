@@ -49,4 +49,3 @@ const expectedJSONSplit = `{
 		"ignore_missing": false
 	}
 }`
-

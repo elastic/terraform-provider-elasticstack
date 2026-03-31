@@ -25,7 +25,7 @@ resource "elasticstack_elasticsearch_enrich_policy" "policy" {
   indices       = [elasticstack_elasticsearch_index.my_index.name]
   match_field   = "email"
   enrich_fields = ["first_name", "last_name"]
-  query = <<-EOD
+  query         = <<-EOD
   {"match_all": {}}
   EOD
 }

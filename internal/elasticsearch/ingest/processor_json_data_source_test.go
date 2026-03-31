@@ -47,4 +47,3 @@ const expectedJSONJSON = `{
 		"target_field": "json_target"
 	}
 }`
-

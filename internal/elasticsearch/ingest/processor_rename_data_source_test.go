@@ -48,4 +48,3 @@ const expectedJSONRename = `{
 		"ignore_missing": false
 	}
 }`
-

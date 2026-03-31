@@ -51,7 +51,7 @@ func TestAccDataSourceSecurityRole(t *testing.T) {
 			},
 			{
 				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedRemoteIndicesVersion),
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minSupportedRemoteIndicesVersion),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_security_role.test", "name", "data_source_test"),
 					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_security_role.test", "cluster.*", "all"),
@@ -69,7 +69,7 @@ func TestAccDataSourceSecurityRole(t *testing.T) {
 			},
 			{
 				ConfigDirectory: acctest.NamedTestCaseDirectory("all_attributes"),
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(security.MinSupportedDescriptionVersion),
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(security.MinSupportedDescriptionVersion),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_security_role.test", "name", "data_source_test"),
 					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_security_role.test", "cluster.*", "all"),
@@ -87,4 +87,3 @@ func TestAccDataSourceSecurityRole(t *testing.T) {
 		},
 	})
 }
-

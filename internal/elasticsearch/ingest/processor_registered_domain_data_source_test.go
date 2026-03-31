@@ -49,4 +49,3 @@ const expectedJSONRegisteredDomain = `{
 		"ignore_missing": false
 	}
 }`
-

@@ -25,7 +25,7 @@ resource "elasticstack_elasticsearch_enrich_policy" "policy" {
   indices       = [elasticstack_elasticsearch_index.my_index.name]
   match_field   = "email"
   enrich_fields = ["city"]
-  query = jsonencode({ term = { active = { value = true } } })
+  query         = jsonencode({ term = { active = { value = true } } })
 }
 
 data "elasticstack_elasticsearch_enrich_policy" "test" {

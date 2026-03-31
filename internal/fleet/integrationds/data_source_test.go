@@ -36,7 +36,7 @@ func TestAccDataSourceIntegration(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationDataSource),
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationDataSource),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_fleet_integration.test", "name", "tcp"),
@@ -46,7 +46,6 @@ func TestAccDataSourceIntegration(t *testing.T) {
 		},
 	})
 }
-
 
 // checkResourceAttrStringNotEmpty verifies that the string value at key
 // is not empty.

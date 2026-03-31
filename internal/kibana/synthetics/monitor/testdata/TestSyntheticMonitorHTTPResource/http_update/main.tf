@@ -44,7 +44,7 @@ resource "elasticstack_kibana_synthetics_monitor" "http-monitor" {
     "param-name" = "param-value-updated"
   })
   http = {
-    url  = "http://localhost:8080"
+    url                     = "http://localhost:8080"
     ssl_verification_mode   = "full"
     ssl_supported_protocols = ["TLSv1.2"]
     max_redirects           = 10

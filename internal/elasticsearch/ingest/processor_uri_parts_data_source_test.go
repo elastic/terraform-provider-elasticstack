@@ -49,4 +49,3 @@ const expectedJSONURIParts = `{
 		"target_field": "url"
 	}
 }`
-

@@ -22,11 +22,11 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
-	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest/checks"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -46,7 +46,7 @@ func TestAccResourceKibanaSecurityRole(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
-					ConfigVariables:  config.Variables{"role_name": config.StringVariable(roleName)},
+				ConfigVariables: config.Variables{"role_name": config.StringVariable(roleName)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_role.test", "name", roleName),
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_security_role.test", "kibana.0.base.#"),
@@ -59,7 +59,7 @@ func TestAccResourceKibanaSecurityRole(t *testing.T) {
 			},
 			{
 				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
-					ConfigVariables:  config.Variables{"role_name": config.StringVariable(roleName)},
+				ConfigVariables: config.Variables{"role_name": config.StringVariable(roleName)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_role.test", "name", roleName),
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_security_role.test", "kibana.0.feature.#"),
@@ -70,9 +70,9 @@ func TestAccResourceKibanaSecurityRole(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedDescriptionVersion),
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minSupportedDescriptionVersion),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("with_description"),
-					ConfigVariables:  config.Variables{"role_name": config.StringVariable(roleName)},
+				ConfigVariables: config.Variables{"role_name": config.StringVariable(roleName)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_role.test", "name", roleName),
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_security_role.test", "kibana.0.feature.#"),
@@ -81,9 +81,9 @@ func TestAccResourceKibanaSecurityRole(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedRemoteIndicesVersion),
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minSupportedRemoteIndicesVersion),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("remote_indices_create"),
-					ConfigVariables:  config.Variables{"role_name": config.StringVariable(roleNameRemoteIndices)},
+				ConfigVariables: config.Variables{"role_name": config.StringVariable(roleNameRemoteIndices)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_role.test", "name", roleNameRemoteIndices),
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_security_role.test", "kibana.0.base.#"),
@@ -99,9 +99,9 @@ func TestAccResourceKibanaSecurityRole(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedRemoteIndicesVersion),
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minSupportedRemoteIndicesVersion),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("remote_indices_update"),
-					ConfigVariables:  config.Variables{"role_name": config.StringVariable(roleNameRemoteIndices)},
+				ConfigVariables: config.Variables{"role_name": config.StringVariable(roleNameRemoteIndices)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_role.test", "name", roleNameRemoteIndices),
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_security_role.test", "kibana.0.feature.#"),

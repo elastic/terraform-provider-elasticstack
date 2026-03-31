@@ -41,4 +41,3 @@ func TestAccDataSourceKibanaConnector(t *testing.T) {
 		},
 	})
 }
-

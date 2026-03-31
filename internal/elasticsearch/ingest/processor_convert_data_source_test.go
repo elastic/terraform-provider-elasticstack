@@ -49,4 +49,3 @@ const expectedJSONConvert = `{
 		"ignore_missing": false
 	}
 }`
-

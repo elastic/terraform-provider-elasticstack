@@ -121,6 +121,3 @@ const expectedJSONCircleShapeType = `{
 		"ignore_missing": false
 	}
 }`
-
-
-

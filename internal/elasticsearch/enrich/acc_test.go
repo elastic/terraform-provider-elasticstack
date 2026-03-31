@@ -28,9 +28,9 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
-	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
@@ -286,8 +286,8 @@ func TestAccResourceEnrichPolicyFromSDK(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory: acctest.NamedTestCaseDirectory("upgrade"),
-				ConfigVariables: config.Variables{"name": config.StringVariable(name)},
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("upgrade"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "name", name),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_enrich_policy.policy", "policy_type", "match"),
@@ -463,23 +463,23 @@ func TestAccDataSourceEnrichPolicyConnectionValidation(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ConfigDirectory: acctest.NamedTestCaseDirectory("ca_conflict"),
-				ExpectError: regexp.MustCompile(`(?s)(Invalid Attribute Combination|ca_file.*ca_data|ca_data.*ca_file)`),
+				ExpectError:     regexp.MustCompile(`(?s)(Invalid Attribute Combination|ca_file.*ca_data|ca_data.*ca_file)`),
 			},
 			{
 				ConfigDirectory: acctest.NamedTestCaseDirectory("cert_data"),
-				ExpectError: regexp.MustCompile(`(?s)(Missing Configuration for Required Attribute|cert_data.*key_data|key_data.*cert_data)`),
+				ExpectError:     regexp.MustCompile(`(?s)(Missing Configuration for Required Attribute|cert_data.*key_data|key_data.*cert_data)`),
 			},
 			{
 				ConfigDirectory: acctest.NamedTestCaseDirectory("cert_file"),
-				ExpectError: regexp.MustCompile(`(?s)(Missing Configuration for Required Attribute|cert_file.*key_file|key_file.*cert_file)`),
+				ExpectError:     regexp.MustCompile(`(?s)(Missing Configuration for Required Attribute|cert_file.*key_file|key_file.*cert_file)`),
 			},
 			{
 				ConfigDirectory: acctest.NamedTestCaseDirectory("client_auth"),
-				ExpectError: regexp.MustCompile(`(?s)(Missing Configuration for Required Attribute|es_client_authentication.*bearer_token|bearer_token.*es_client_authentication)`),
+				ExpectError:     regexp.MustCompile(`(?s)(Missing Configuration for Required Attribute|es_client_authentication.*bearer_token|bearer_token.*es_client_authentication)`),
 			},
 			{
 				ConfigDirectory: acctest.NamedTestCaseDirectory("multiple_blocks"),
-				ExpectError: regexp.MustCompile(`(?s)(at most 1 elements|at most 1 element|elasticsearch_connection)`),
+				ExpectError:     regexp.MustCompile(`(?s)(at most 1 elements|at most 1 element|elasticsearch_connection)`),
 			},
 		},
 	})

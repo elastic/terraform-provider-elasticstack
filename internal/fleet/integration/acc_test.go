@@ -29,8 +29,8 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/integration"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
-	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/config"
+	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/stretchr/testify/require"
 )
@@ -137,9 +137,9 @@ func TestAccResourceIntegrationWithPolicy(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:          versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
-				ResourceName:      "elasticstack_fleet_integration.test_integration",
-				ConfigDirectory:   acctest.NamedTestCaseDirectory("v1_17_0"),
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicy),
+				ResourceName:    "elasticstack_fleet_integration.test_integration",
+				ConfigDirectory: acctest.NamedTestCaseDirectory("v1_17_0"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
 				},
@@ -364,4 +364,3 @@ resource "elasticstack_fleet_integration" "test_integration_upgrade" {
 }
 `, spaceID)
 }
-

@@ -9,18 +9,18 @@ provider "elasticstack" {
 }
 
 resource "elasticstack_kibana_security_role" "test" {
-	name    = var.role_name
-	description = "Role description"
-	elasticsearch {
-	  cluster = [ "create_snapshot" ]
-	  indices {
-		names = ["sample"]
-		privileges = ["create", "read", "write"]
-	  }
-	  run_as = ["kibana", "elastic"]
-	}
-	kibana {
-	  base = [ "all" ]
-	  spaces = ["default"]
-	}
+  name        = var.role_name
+  description = "Role description"
+  elasticsearch {
+    cluster = ["create_snapshot"]
+    indices {
+      names      = ["sample"]
+      privileges = ["create", "read", "write"]
+    }
+    run_as = ["kibana", "elastic"]
+  }
+  kibana {
+    base   = ["all"]
+    spaces = ["default"]
+  }
 }

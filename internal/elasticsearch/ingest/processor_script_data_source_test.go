@@ -51,4 +51,3 @@ const expectedJSONScript = `{
 		"source": "String[] envSplit = ctx['env'].splitOnToken(params['delimiter']);\nArrayList tags = new ArrayList();\ntags.add(envSplit[params['position']].trim());\nctx['tags'] = tags;\n"
 	}
 }`
-

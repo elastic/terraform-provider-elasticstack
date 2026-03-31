@@ -26,12 +26,12 @@ resource "elasticstack_kibana_synthetics_monitor" "http-monitor-ssl" {
   name              = "TestHttpMonitorResource - ${var.name}"
   private_locations = [elasticstack_kibana_synthetics_private_location.pl-http-monitor-ssl.label]
   http = {
-    url                          = "http://localhost:5601"
-    ssl_verification_mode        = "full"
-    ssl_supported_protocols      = ["TLSv1.2"]
-    ssl_certificate_authorities  = ["ca1", "ca2"]
-    ssl_certificate              = "cert"
-    ssl_key                      = "key"
-    ssl_key_passphrase           = "pass"
+    url                         = "http://localhost:5601"
+    ssl_verification_mode       = "full"
+    ssl_supported_protocols     = ["TLSv1.2"]
+    ssl_certificate_authorities = ["ca1", "ca2"]
+    ssl_certificate             = "cert"
+    ssl_key                     = "key"
+    ssl_key_passphrase          = "pass"
   }
 }

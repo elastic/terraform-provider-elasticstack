@@ -46,4 +46,3 @@ const expectedJSONSetSecurityUser = `{
 		"ignore_failure": false
 	}
 }`
-

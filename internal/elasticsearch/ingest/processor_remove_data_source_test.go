@@ -46,4 +46,3 @@ const expectedJSONRemove = `{
 		"ignore_missing": false
 	}
 }`
-

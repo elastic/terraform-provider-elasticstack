@@ -83,5 +83,3 @@ const expectedJSONAppendAllAttributes = `{
 		"tag": "append-tag"
 	}
 }`
-
-

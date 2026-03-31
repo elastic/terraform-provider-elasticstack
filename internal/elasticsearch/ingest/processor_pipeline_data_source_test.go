@@ -45,4 +45,3 @@ const expectedJSONPipeline = `{
 		"ignore_failure": false
 	}
 }`
-

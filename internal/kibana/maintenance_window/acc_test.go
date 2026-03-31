@@ -35,7 +35,7 @@ func TestAccResourceMaintenanceWindow(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minMaintenanceWindowAPISupport),
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minMaintenanceWindowAPISupport),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_maintenance_window.test_maintenance_window", "title", "Terraform Maintenance Window"),
@@ -51,7 +51,7 @@ func TestAccResourceMaintenanceWindow(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minMaintenanceWindowAPISupport),
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minMaintenanceWindowAPISupport),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_maintenance_window.test_maintenance_window", "title", "Terraform Maintenance Window UPDATED"),
@@ -71,4 +71,3 @@ func TestAccResourceMaintenanceWindow(t *testing.T) {
 		},
 	})
 }
-

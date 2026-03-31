@@ -1,6 +1,6 @@
 provider "elasticstack" {
-	elasticsearch {}
-	kibana {}
+  elasticsearch {}
+  kibana {}
 }
 
 data "elasticstack_kibana_spaces" "all_spaces" {

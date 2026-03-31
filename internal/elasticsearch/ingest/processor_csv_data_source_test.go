@@ -51,4 +51,3 @@ const expectedJSONCSV = `{
 		"ignore_missing": false
 	}
 }`
-

@@ -24,7 +24,7 @@ resource "elasticstack_elasticsearch_security_role" "test" {
     version = 1
   })
 
-  description =  "Test data source"
+  description = "Test data source"
 }
 
 data "elasticstack_elasticsearch_security_role" "test" {

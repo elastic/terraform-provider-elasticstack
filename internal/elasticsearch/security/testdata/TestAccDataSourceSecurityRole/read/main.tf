@@ -13,13 +13,13 @@ resource "elasticstack_elasticsearch_security_role" "test" {
   }
 
   remote_indices {
-	clusters = ["test-cluster2"]
-	field_security {
-	  grant = ["sample"]
-	  except = []
-	}
-	names = ["sample2"]
-	privileges = ["create", "read", "write"]
+    clusters = ["test-cluster2"]
+    field_security {
+      grant  = ["sample"]
+      except = []
+    }
+    names      = ["sample2"]
+    privileges = ["create", "read", "write"]
   }
 
   applications {

@@ -47,4 +47,3 @@ const expectedJSONUppercase = `{
 		"ignore_missing": false
 	}
 }`
-

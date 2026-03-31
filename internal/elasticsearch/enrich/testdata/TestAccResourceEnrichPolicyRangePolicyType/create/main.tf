@@ -24,7 +24,7 @@ resource "elasticstack_elasticsearch_enrich_policy" "policy" {
   indices       = [elasticstack_elasticsearch_index.my_index.name]
   match_field   = "range_field"
   enrich_fields = ["range_label"]
-  query = <<-EOD
+  query         = <<-EOD
   {"match_all": {}}
   EOD
 }

@@ -9,62 +9,62 @@ provider "elasticstack" {
 }
 
 resource "elasticstack_kibana_security_role" "test" {
-  name    = var.role_name
+  name = var.role_name
   elasticsearch {
-    cluster = [ "create_snapshot" ]
+    cluster = ["create_snapshot"]
     indices {
       field_security {
-        grant = ["sample"]
+        grant  = ["sample"]
         except = []
       }
-      names = ["sample"]
+      names      = ["sample"]
       privileges = ["create", "read", "write"]
     }
     remote_indices {
-	  clusters = ["test-cluster"]
+      clusters = ["test-cluster"]
       field_security {
-        grant = ["sample"]
+        grant  = ["sample"]
         except = []
       }
-      names = ["sample"]
+      names      = ["sample"]
       privileges = ["create", "read", "write"]
     }
   }
   kibana {
     feature {
-      name = "actions"
+      name       = "actions"
       privileges = ["read"]
     }
     feature {
-      name = "advancedSettings"
+      name       = "advancedSettings"
       privileges = ["read"]
     }
     feature {
-      name = "discover"
+      name       = "discover"
       privileges = ["minimal_read", "url_create", "store_search_session"]
     }
     feature {
-      name = "generalCases"
+      name       = "generalCases"
       privileges = ["minimal_read", "cases_delete"]
     }
     feature {
-      name = "observabilityCases"
+      name       = "observabilityCases"
       privileges = ["minimal_read", "cases_delete"]
     }
     feature {
-      name = "osquery"
+      name       = "osquery"
       privileges = ["minimal_read", "live_queries_all", "run_saved_queries", "saved_queries_read", "packs_all"]
     }
     feature {
-      name = "rulesSettings"
+      name       = "rulesSettings"
       privileges = ["minimal_read", "readFlappingSettings"]
     }
     feature {
-      name = "securitySolutionCases"
+      name       = "securitySolutionCases"
       privileges = ["minimal_read", "cases_delete"]
     }
     feature {
-      name = "visualize"
+      name       = "visualize"
       privileges = ["minimal_read", "url_create"]
     }
 

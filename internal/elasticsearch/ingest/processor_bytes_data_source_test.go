@@ -109,6 +109,3 @@ const expectedJSONBytesOnFailure = `{
 		"ignore_missing": false
 	}
 }`
-
-
-

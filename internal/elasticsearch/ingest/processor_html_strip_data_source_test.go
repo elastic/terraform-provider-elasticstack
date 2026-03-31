@@ -47,4 +47,3 @@ const expectedJSONHTMLStrip = `{
 		"ignore_missing": false
 	}
 }`
-

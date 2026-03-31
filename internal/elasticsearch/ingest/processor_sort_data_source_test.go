@@ -47,4 +47,3 @@ const expectedJSONSort = `{
 		"order": "desc"
 	}
 }`
-

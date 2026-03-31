@@ -45,7 +45,7 @@ func TestAccDataSourceKibanaSecurityRole(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedRemoteIndicesVersion),
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minSupportedRemoteIndicesVersion),
 				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_kibana_security_role.test", "name", "data_source_test2"),
@@ -63,4 +63,3 @@ func TestAccDataSourceKibanaSecurityRole(t *testing.T) {
 		},
 	})
 }
-

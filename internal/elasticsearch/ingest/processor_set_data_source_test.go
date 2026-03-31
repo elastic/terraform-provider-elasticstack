@@ -50,4 +50,3 @@ const expectedJSONSet = `{
 		"value": "1"
 	}
 }`
-

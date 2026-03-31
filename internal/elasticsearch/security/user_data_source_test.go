@@ -39,4 +39,3 @@ func TestAccDataSourceSecurityUser(t *testing.T) {
 		},
 	})
 }
-

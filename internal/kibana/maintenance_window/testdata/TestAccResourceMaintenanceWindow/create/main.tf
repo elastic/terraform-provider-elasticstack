@@ -4,13 +4,13 @@ provider "elasticstack" {
 }
 
 resource "elasticstack_kibana_maintenance_window" "test_maintenance_window" {
-  title   	      = "Terraform Maintenance Window"
-  enabled 	      = true
+  title   = "Terraform Maintenance Window"
+  enabled = true
 
   custom_schedule = {
-    start         = "1992-01-01T05:00:00.200Z"
-    duration      = "10d"
-	timezone      = "UTC"
+    start    = "1992-01-01T05:00:00.200Z"
+    duration = "10d"
+    timezone = "UTC"
 
     recurring = {
       every       = "20d"
@@ -21,7 +21,7 @@ resource "elasticstack_kibana_maintenance_window" "test_maintenance_window" {
 
   scope = {
     alerting = {
-      kql         = "_id: '1234'"
+      kql = "_id: '1234'"
     }
   }
 }

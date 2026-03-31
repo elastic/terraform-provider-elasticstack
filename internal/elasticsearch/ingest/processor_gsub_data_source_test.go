@@ -49,4 +49,3 @@ const expectedJSONGsub = `{
 		"replacement": "-"
 	}
 }`
-

@@ -12,9 +12,9 @@ resource "elasticstack_elasticsearch_logstash_pipeline" "test" {
   pipeline    = "input{} \nfilter{} \noutput{}"
   username    = "test_user"
 
-  pipeline_batch_delay         = 100
-  pipeline_batch_size          = 250
-  pipeline_ecs_compatibility   = "disabled"
+  pipeline_batch_delay       = 100
+  pipeline_batch_size        = 250
+  pipeline_ecs_compatibility = "disabled"
   pipeline_metadata = jsonencode({
     type    = "logstash_pipeline"
     version = 3

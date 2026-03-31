@@ -47,4 +47,3 @@ const expectedJSONTrim = `{
 		"ignore_missing": false
 	}
 }`
-

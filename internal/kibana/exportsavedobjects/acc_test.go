@@ -42,4 +42,3 @@ func TestAccDataSourceKibanaExportSavedObjects(t *testing.T) {
 		},
 	})
 }
-

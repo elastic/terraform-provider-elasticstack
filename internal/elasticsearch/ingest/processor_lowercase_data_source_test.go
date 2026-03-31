@@ -47,4 +47,3 @@ const expectedJSONLowercase = `{
 		"ignore_missing": false
 	}
 }`
-

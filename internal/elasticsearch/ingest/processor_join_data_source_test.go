@@ -47,4 +47,3 @@ const expectedJSONJoin = `{
 		"separator": "-"
 	}
 }`
-

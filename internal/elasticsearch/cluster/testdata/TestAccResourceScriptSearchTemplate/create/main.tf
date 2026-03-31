@@ -10,7 +10,7 @@ provider "elasticstack" {
 resource "elasticstack_elasticsearch_script" "search_template_test" {
   script_id = var.script_id
   lang      = "mustache"
-  source    = jsonencode({
+  source = jsonencode({
     query = {
       match = {
         message = "{{query_string}}"
