@@ -59,7 +59,7 @@ func Test_mosaicPanelConfigConverter_populateFromAttributes_buildAttributes_roun
 	var mosaicChart kbapi.MosaicChart
 	require.NoError(t, mosaicChart.FromMosaicNoESQL(api))
 
-	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	var attrs kbapi.LensApiState
 	require.NoError(t, attrs.FromMosaicChart(mosaicChart))
 
 	converter := newMosaicPanelConfigConverter()
@@ -104,7 +104,7 @@ func Test_mosaicPanelConfigConverter_populateFromAttributes_buildAttributes_roun
 	var mosaicChart kbapi.MosaicChart
 	require.NoError(t, mosaicChart.FromMosaicESQL(api))
 
-	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	var attrs kbapi.LensApiState
 	require.NoError(t, attrs.FromMosaicChart(mosaicChart))
 
 	converter := newMosaicPanelConfigConverter()
@@ -151,13 +151,13 @@ func Test_mosaicConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 				return &b
 			}(),
 			TruncateAfterLines: new(float32(4)),
-			Visible: func() *kbapi.MosaicLegendVisible {
-				v := kbapi.MosaicLegendVisibleAuto
+			Visibility: func() *kbapi.MosaicLegendVisibility {
+				v := kbapi.MosaicLegendVisibilityAuto
 				return &v
 			}(),
 		},
-		ValueDisplay: kbapi.ValueDisplay{
-			Mode:            kbapi.ValueDisplayModePercentage,
+		Values: kbapi.ValueDisplay{
+			Mode:            func() *kbapi.ValueDisplayMode { m := kbapi.ValueDisplayModePercentage; return &m }(),
 			PercentDecimals: new(float32(2)),
 		},
 	}
@@ -286,8 +286,8 @@ func Test_mosaicConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 		},
 		GroupBy:          &groupBy,
 		GroupBreakdownBy: &groupBreakdownBy,
-		ValueDisplay: kbapi.ValueDisplay{
-			Mode:            kbapi.ValueDisplayModeAbsolute,
+		Values: kbapi.ValueDisplay{
+			Mode:            func() *kbapi.ValueDisplayMode { m := kbapi.ValueDisplayModeAbsolute; return &m }(),
 			PercentDecimals: new(float32(1)),
 		},
 	}

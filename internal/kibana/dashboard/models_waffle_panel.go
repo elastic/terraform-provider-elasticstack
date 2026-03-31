@@ -45,7 +45,7 @@ type wafflePanelConfigConverter struct {
 	lensVisualizationBase
 }
 
-func (c wafflePanelConfigConverter) populateFromAttributes(ctx context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes) diag.Diagnostics {
+func (c wafflePanelConfigConverter) populateFromAttributes(ctx context.Context, pm *panelModel, attrs kbapi.LensApiState) diag.Diagnostics {
 	seed := pm.WaffleConfig
 	waffleChart, err := attrs.AsWaffleChart()
 	if err != nil {
@@ -104,20 +104,20 @@ func waffleChartJSONUsesESQLDataset(waffleChartJSON []byte) (bool, error) {
 	}
 }
 
-func (c wafflePanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelLens_Config_0_Attributes, diag.Diagnostics) {
+func (c wafflePanelConfigConverter) buildAttributes(pm panelModel) (kbapi.LensApiState, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	configModel := *pm.WaffleConfig
 
 	waffleChart, wDiags := configModel.toAPI()
 	diags.Append(wDiags...)
 	if diags.HasError() {
-		return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}, diags
+		return kbapi.LensApiState{}, diags
 	}
 
-	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	var attrs kbapi.LensApiState
 	if err := attrs.FromWaffleChart(waffleChart); err != nil {
 		diags.AddError("Failed to create waffle chart attributes", err.Error())
-		return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}, diags
+		return kbapi.LensApiState{}, diags
 	}
 
 	return attrs, diags
@@ -283,36 +283,26 @@ func (m *waffleConfigModel) fromAPINoESQL(ctx context.Context, api kbapi.WaffleN
 	}
 
 	datasetBytes, err := api.Dataset.MarshalJSON()
-	if err != nil {
-		diags.AddError("Failed to marshal dataset_json", err.Error())
+	dv, ok := marshalToNormalized(datasetBytes, err, "dataset_json", &diags)
+	if !ok {
 		return diags
 	}
-	m.DatasetJSON = jsontypes.NewNormalizedValue(string(datasetBytes))
+	m.DatasetJSON = dv
 
 	m.Query = &filterSimpleModel{}
 	m.Query.fromAPI(api.Query)
 
-	if api.Filters != nil && len(*api.Filters) > 0 {
-		m.Filters = make([]chartFilterJSONModel, 0, len(*api.Filters))
-		for _, f := range *api.Filters {
-			fm := chartFilterJSONModel{}
-			fd := fm.populateFromAPIItem(f)
-			diags.Append(fd...)
-			if !fd.HasError() {
-				m.Filters = append(m.Filters, fm)
-			}
-		}
-	}
+	m.Filters = populateFiltersFromAPI(api.Filters, &diags)
 
 	m.Legend = &waffleLegendModel{}
 	m.Legend.fromAPI(ctx, api.Legend)
 
-	if api.ValueDisplay.Mode != "" || api.ValueDisplay.PercentDecimals != nil {
+	if api.Values.Mode != nil || api.Values.PercentDecimals != nil {
 		m.ValueDisplay = &waffleValueDisplay{
-			Mode: types.StringValue(string(api.ValueDisplay.Mode)),
+			Mode: typeutils.StringishPointerValue(api.Values.Mode),
 		}
-		if api.ValueDisplay.PercentDecimals != nil {
-			m.ValueDisplay.PercentDecimals = types.Float64Value(float64(*api.ValueDisplay.PercentDecimals))
+		if api.Values.PercentDecimals != nil {
+			m.ValueDisplay.PercentDecimals = types.Float64Value(float64(*api.Values.PercentDecimals))
 		} else {
 			m.ValueDisplay.PercentDecimals = types.Float64Null()
 		}
@@ -326,7 +316,7 @@ func (m *waffleConfigModel) fromAPINoESQL(ctx context.Context, api kbapi.WaffleN
 				diags.AddError("Failed to marshal metric", err.Error())
 				continue
 			}
-			m.Metrics[i].Config = customtypes.NewJSONWithDefaultsValue[map[string]any](
+			m.Metrics[i].Config = customtypes.NewJSONWithDefaultsValue(
 				string(b),
 				populatePieChartMetricDefaults,
 			)
@@ -341,7 +331,7 @@ func (m *waffleConfigModel) fromAPINoESQL(ctx context.Context, api kbapi.WaffleN
 				diags.AddError("Failed to marshal group_by", err.Error())
 				continue
 			}
-			m.GroupBy[i].Config = customtypes.NewJSONWithDefaultsValue[map[string]any](
+			m.GroupBy[i].Config = customtypes.NewJSONWithDefaultsValue(
 				string(b),
 				populateLensGroupByDefaults,
 			)
@@ -368,35 +358,25 @@ func (m *waffleConfigModel) fromAPIESQL(ctx context.Context, api kbapi.WaffleESQ
 	}
 
 	datasetBytes, err := api.Dataset.MarshalJSON()
-	if err != nil {
-		diags.AddError("Failed to marshal dataset_json", err.Error())
+	dv, ok := marshalToNormalized(datasetBytes, err, "dataset_json", &diags)
+	if !ok {
 		return diags
 	}
-	m.DatasetJSON = jsontypes.NewNormalizedValue(string(datasetBytes))
+	m.DatasetJSON = dv
 
 	m.Query = nil
 
-	if api.Filters != nil && len(*api.Filters) > 0 {
-		m.Filters = make([]chartFilterJSONModel, 0, len(*api.Filters))
-		for _, f := range *api.Filters {
-			fm := chartFilterJSONModel{}
-			fd := fm.populateFromAPIItem(f)
-			diags.Append(fd...)
-			if !fd.HasError() {
-				m.Filters = append(m.Filters, fm)
-			}
-		}
-	}
+	m.Filters = populateFiltersFromAPI(api.Filters, &diags)
 
 	m.Legend = &waffleLegendModel{}
 	m.Legend.fromAPI(ctx, api.Legend)
 
-	if api.ValueDisplay.Mode != "" || api.ValueDisplay.PercentDecimals != nil {
+	if api.Values.Mode != nil || api.Values.PercentDecimals != nil {
 		m.ValueDisplay = &waffleValueDisplay{
-			Mode: types.StringValue(string(api.ValueDisplay.Mode)),
+			Mode: typeutils.StringishPointerValue(api.Values.Mode),
 		}
-		if api.ValueDisplay.PercentDecimals != nil {
-			m.ValueDisplay.PercentDecimals = types.Float64Value(float64(*api.ValueDisplay.PercentDecimals))
+		if api.Values.PercentDecimals != nil {
+			m.ValueDisplay.PercentDecimals = types.Float64Value(float64(*api.Values.PercentDecimals))
 		} else {
 			m.ValueDisplay.PercentDecimals = types.Float64Null()
 		}
@@ -492,8 +472,8 @@ func (m *waffleLegendModel) fromAPI(ctx context.Context, api kbapi.WaffleLegend)
 	} else {
 		m.Values = types.ListNull(types.StringType)
 	}
-	if api.Visible != nil {
-		m.Visible = types.StringValue(string(*api.Visible))
+	if api.Visibility != nil {
+		m.Visible = types.StringValue(string(*api.Visibility))
 	} else {
 		m.Visible = types.StringNull()
 	}
@@ -516,8 +496,8 @@ func (m *waffleLegendModel) toAPI() (kbapi.WaffleLegend, diag.Diagnostics) {
 		leg.TruncateAfterLines = &v
 	}
 	if typeutils.IsKnown(m.Visible) {
-		v := kbapi.WaffleLegendVisible(m.Visible.ValueString())
-		leg.Visible = &v
+		v := kbapi.WaffleLegendVisibility(m.Visible.ValueString())
+		leg.Visibility = &v
 	}
 	if !m.Values.IsNull() && !m.Values.IsUnknown() {
 		elems := m.Values.Elements()
@@ -609,20 +589,7 @@ func (m *waffleConfigModel) toAPINoESQL() (kbapi.WaffleNoESQL, diag.Diagnostics)
 	}
 	api.Query = m.Query.toAPI()
 
-	if len(m.Filters) > 0 {
-		filters := make([]kbapi.WaffleNoESQL_Filters_Item, 0, len(m.Filters))
-		for _, f := range m.Filters {
-			var item kbapi.WaffleNoESQL_Filters_Item
-			fd := decodeChartFilterJSON(f.FilterJSON, &item)
-			diags.Append(fd...)
-			if !fd.HasError() {
-				filters = append(filters, item)
-			}
-		}
-		if len(filters) > 0 {
-			api.Filters = &filters
-		}
-	}
+	api.Filters = buildFiltersForAPI(m.Filters, &diags)
 
 	if m.Legend == nil {
 		diags.AddError("Missing legend", "waffle_config.legend must be provided")
@@ -633,18 +600,20 @@ func (m *waffleConfigModel) toAPINoESQL() (kbapi.WaffleNoESQL, diag.Diagnostics)
 	api.Legend = leg
 
 	if m.ValueDisplay != nil && typeutils.IsKnown(m.ValueDisplay.Mode) {
+		mode := kbapi.ValueDisplayMode(m.ValueDisplay.Mode.ValueString())
 		vd := kbapi.ValueDisplay{
-			Mode: kbapi.ValueDisplayMode(m.ValueDisplay.Mode.ValueString()),
+			Mode: &mode,
 		}
 		if typeutils.IsKnown(m.ValueDisplay.PercentDecimals) {
 			p := float32(m.ValueDisplay.PercentDecimals.ValueFloat64())
 			vd.PercentDecimals = &p
 		}
-		api.ValueDisplay = vd
+		api.Values = vd
 	} else {
 		// Required by the Dashboard API; omitting mode yields HTTP 400.
-		api.ValueDisplay = kbapi.ValueDisplay{
-			Mode: kbapi.ValueDisplayModePercentage,
+		mode := kbapi.ValueDisplayModePercentage
+		api.Values = kbapi.ValueDisplay{
+			Mode: &mode,
 		}
 	}
 
@@ -695,20 +664,7 @@ func (m *waffleConfigModel) toAPIESQL() (kbapi.WaffleESQL, diag.Diagnostics) {
 		return api, diags
 	}
 
-	if len(m.Filters) > 0 {
-		filters := make([]kbapi.WaffleESQL_Filters_Item, 0, len(m.Filters))
-		for _, f := range m.Filters {
-			var item kbapi.WaffleESQL_Filters_Item
-			fd := decodeChartFilterJSON(f.FilterJSON, &item)
-			diags.Append(fd...)
-			if !fd.HasError() {
-				filters = append(filters, item)
-			}
-		}
-		if len(filters) > 0 {
-			api.Filters = &filters
-		}
-	}
+	api.Filters = buildFiltersForAPI(m.Filters, &diags)
 
 	if m.Legend == nil {
 		diags.AddError("Missing legend", "waffle_config.legend must be provided")
@@ -719,17 +675,19 @@ func (m *waffleConfigModel) toAPIESQL() (kbapi.WaffleESQL, diag.Diagnostics) {
 	api.Legend = leg
 
 	if m.ValueDisplay != nil && typeutils.IsKnown(m.ValueDisplay.Mode) {
+		mode := kbapi.ValueDisplayMode(m.ValueDisplay.Mode.ValueString())
 		vd := kbapi.ValueDisplay{
-			Mode: kbapi.ValueDisplayMode(m.ValueDisplay.Mode.ValueString()),
+			Mode: &mode,
 		}
 		if typeutils.IsKnown(m.ValueDisplay.PercentDecimals) {
 			p := float32(m.ValueDisplay.PercentDecimals.ValueFloat64())
 			vd.PercentDecimals = &p
 		}
-		api.ValueDisplay = vd
+		api.Values = vd
 	} else {
-		api.ValueDisplay = kbapi.ValueDisplay{
-			Mode: kbapi.ValueDisplayModePercentage,
+		mode := kbapi.ValueDisplayModePercentage
+		api.Values = kbapi.ValueDisplay{
+			Mode: &mode,
 		}
 	}
 

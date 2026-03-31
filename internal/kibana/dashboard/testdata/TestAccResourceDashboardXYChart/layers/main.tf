@@ -74,7 +74,7 @@ resource "elasticstack_kibana_dashboard" "test" {
                     values = ["host-a"]
                   }
                 ]
-                unassignedColor = {
+                unassigned = {
                   type  = "color_code"
                   value = "#D3DAE6"
                 }

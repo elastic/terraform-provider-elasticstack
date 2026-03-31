@@ -63,11 +63,11 @@ func Test_gaugeConfigModel_fromAPI_toAPI(t *testing.T) {
 				require.NoError(t, err)
 				api.Shape = &shape
 
-				var fItem kbapi.GaugeNoESQL_Filters_Item
+				var fItem kbapi.LensPanelFilters_Item
 				err = json.Unmarshal([]byte(`{"type":"condition","condition":{"field":"host.name","operator":"is","value":"foo"}}`), &fItem)
 				require.NoError(t, err)
-				filters := []kbapi.GaugeNoESQL_Filters_Item{fItem}
-				api.Filters = &filters
+				filters := []kbapi.LensPanelFilters_Item{fItem}
+				api.Filters = filters
 
 				return api
 			}(),
@@ -179,7 +179,7 @@ func Test_gaugePanelConfigConverter_populateFromAttributes_buildAttributes_round
 	var gaugeChart kbapi.GaugeChart
 	require.NoError(t, gaugeChart.FromGaugeNoESQL(api))
 
-	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	var attrs kbapi.LensApiState
 	require.NoError(t, attrs.FromGaugeChart(gaugeChart))
 
 	converter := newGaugePanelConfigConverter()
