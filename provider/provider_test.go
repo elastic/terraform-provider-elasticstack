@@ -145,10 +145,10 @@ func TestKibanaConfiguration(t *testing.T) {
 			post: func(_ *testing.T) {},
 			tc: func() resource.TestCase {
 				return resource.TestCase{
-					PreCheck:                 func() { acctest.PreCheck(t) },
-					ProtoV6ProviderFactories: acctest.Providers,
+					PreCheck: func() { acctest.PreCheck(t) },
 					Steps: []resource.TestStep{
 						{
+							ProtoV6ProviderFactories: acctest.Providers,
 							SkipFunc: func() (bool, error) {
 								return envConfig.Kibana.Username == "", nil
 							},
@@ -174,10 +174,10 @@ func TestKibanaConfiguration(t *testing.T) {
 			post: func(_ *testing.T) {},
 			tc: func() resource.TestCase {
 				return resource.TestCase{
-					PreCheck:                 func() { acctest.PreCheck(t) },
-					ProtoV6ProviderFactories: acctest.Providers,
+					PreCheck: func() { acctest.PreCheck(t) },
 					Steps: []resource.TestStep{
 						{
+							ProtoV6ProviderFactories: acctest.Providers,
 							SkipFunc: func() (bool, error) {
 								return os.Getenv("KIBANA_API_KEY") == "", nil
 							},
@@ -204,10 +204,10 @@ func TestKibanaConfiguration(t *testing.T) {
 			post: func(_ *testing.T) {},
 			tc: func() resource.TestCase {
 				return resource.TestCase{
-					PreCheck:                 func() { acctest.PreCheck(t) },
-					ProtoV6ProviderFactories: acctest.Providers,
+					PreCheck: func() { acctest.PreCheck(t) },
 					Steps: []resource.TestStep{
 						{
+							ProtoV6ProviderFactories: acctest.Providers,
 							SkipFunc: func() (bool, error) {
 								return os.Getenv("KIBANA_BEARER_TOKEN") == "", nil
 							},

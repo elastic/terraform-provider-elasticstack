@@ -106,6 +106,8 @@ func TestAccResourceScriptImport(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"script_id": config.StringVariable(scriptID)},
 				ResourceName:             "elasticstack_elasticsearch_script.test",
 				ImportStateIdFunc: func(_ *terraform.State) (string, error) {
 					client, err := clients.NewAcceptanceTestingClient()

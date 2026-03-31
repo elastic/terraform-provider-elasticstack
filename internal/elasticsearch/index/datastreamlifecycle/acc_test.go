@@ -67,6 +67,8 @@ func TestAccResourceDataStreamLifecycle(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(dsName)},
 				ResourceName:             "elasticstack_elasticsearch_data_stream_lifecycle.test_ds_lifecycle",
 				ImportState:              true,
 				ImportStateVerify:        true,

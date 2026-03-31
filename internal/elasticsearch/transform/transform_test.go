@@ -38,12 +38,12 @@ func TestAccResourceTransformWithPivot(t *testing.T) {
 
 	transformNamePivot := sdkacctest.RandStringFromCharSet(18, sdkacctest.CharSetAlphaNum)
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceTransformDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceTransformDestroy,
 		Steps: []resource.TestStep{
 			{
-				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"transform_name": config.StringVariable(transformNamePivot),
 				},
@@ -65,7 +65,8 @@ func TestAccResourceTransformWithPivot(t *testing.T) {
 				),
 			},
 			{
-				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"transform_name": config.StringVariable(transformNamePivot),
 				},
@@ -89,10 +90,14 @@ func TestAccResourceTransformWithPivot(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ResourceName:             "elasticstack_elasticsearch_transform.test_pivot",
-				ImportState:              true,
-				ImportStateVerify:        true,
-				ImportStateVerifyIgnore:  []string{"defer_validation", "elasticsearch_connection", "timeout"},
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"transform_name": config.StringVariable(transformNamePivot),
+				},
+				ResourceName:            "elasticstack_elasticsearch_transform.test_pivot",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"defer_validation", "elasticsearch_connection", "timeout"},
 			},
 		},
 	})
@@ -102,12 +107,12 @@ func TestAccResourceTransformWithLatest(t *testing.T) {
 
 	transformNameLatest := sdkacctest.RandStringFromCharSet(20, sdkacctest.CharSetAlphaNum)
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceTransformDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceTransformDestroy,
 		Steps: []resource.TestStep{
 			{
-				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"transform_name": config.StringVariable(transformNameLatest),
 				},
@@ -133,13 +138,13 @@ func TestAccResourceTransformWithAdvancedSettings(t *testing.T) {
 	pipelineName := sdkacctest.RandStringFromCharSet(20, sdkacctest.CharSetAlphaNum)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceTransformDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceTransformDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minSupportedAdvancedSettingsVersion),
-				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedAdvancedSettingsVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"transform_name": config.StringVariable(transformName),
 					"pipeline_name":  config.StringVariable(pipelineName),
@@ -172,12 +177,12 @@ func TestAccResourceTransformNoDefer(t *testing.T) {
 	transformName := sdkacctest.RandStringFromCharSet(18, sdkacctest.CharSetAlphaNum)
 	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceTransformDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceTransformDestroy,
 		Steps: []resource.TestStep{
 			{
-				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"transform_name": config.StringVariable(transformName),
 					"index_name":     config.StringVariable(indexName),
@@ -198,13 +203,13 @@ func TestAccResourceTransformNoDefer(t *testing.T) {
 func TestAccResourceTransformWithAliases(t *testing.T) {
 	transformName := sdkacctest.RandStringFromCharSet(18, sdkacctest.CharSetAlphaNum)
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceTransformDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceTransformDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minSupportedDestAliasesVersion),
-				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedDestAliasesVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"transform_name": config.StringVariable(transformName),
 				},
@@ -218,8 +223,9 @@ func TestAccResourceTransformWithAliases(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minSupportedDestAliasesVersion),
-				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedDestAliasesVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"transform_name": config.StringVariable(transformName),
 				},

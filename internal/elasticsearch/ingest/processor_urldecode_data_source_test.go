@@ -26,11 +26,11 @@ import (
 
 func TestAccDataSourceIngestProcessorUrldecode(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_urldecode.test", "field", "my_url_to_decode"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_urldecode.test", "json", expectedJSONUrldecode),

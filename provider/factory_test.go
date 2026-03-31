@@ -29,21 +29,20 @@ import (
 
 func TestMuxServer(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		ProtoV6ProviderFactories: map[string]func() (tfprotov6.ProviderServer, error){
-			"elasticstack": func() (tfprotov6.ProviderServer, error) {
-				version := "acceptance_test"
-				server, err := provider.ProtoV6ProviderServerFactory(context.Background(), version)
-				if err != nil {
-					return nil, err
-				}
-
-				return server(), nil
-			},
-		},
 		Steps: []resource.TestStep{
 			{
-				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ProtoV6ProviderFactories: map[string]func() (tfprotov6.ProviderServer, error){
+					"elasticstack": func() (tfprotov6.ProviderServer, error) {
+						version := "acceptance_test"
+						server, err := provider.ProtoV6ProviderServerFactory(context.Background(), version)
+						if err != nil {
+							return nil, err
+						}
+
+						return server(), nil
+					},
+				},
+				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
 			},
 		},
 	})

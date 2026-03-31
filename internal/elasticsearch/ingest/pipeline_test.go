@@ -34,13 +34,13 @@ func TestAccResourceIngestPipeline(t *testing.T) {
 	resourceName := "elasticstack_elasticsearch_ingest_pipeline.test_pipeline"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceIngestPipelineDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIngestPipelineDestroy,
 		Steps: []resource.TestStep{
 			{
-				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
-				ConfigVariables: config.Variables{"name": config.StringVariable(pipelineName)},
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(pipelineName)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", pipelineName),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -54,8 +54,9 @@ func TestAccResourceIngestPipeline(t *testing.T) {
 				),
 			},
 			{
-				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
-				ConfigVariables: config.Variables{"name": config.StringVariable(pipelineName)},
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(pipelineName)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", pipelineName),
 					resource.TestCheckResourceAttr(resourceName, "description", "Updated Pipeline"),
@@ -67,6 +68,8 @@ func TestAccResourceIngestPipeline(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(pipelineName)},
 				ResourceName:             resourceName,
 				ImportState:              true,
 				ImportStateVerify:        true,

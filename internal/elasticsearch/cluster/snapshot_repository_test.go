@@ -50,6 +50,8 @@ func TestAccResourceSnapRepoFs(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
 				ResourceName:             "elasticstack_elasticsearch_snapshot_repository.test_fs_repo",
 				ImportState:              true,
 				ImportStateCheck: func(is []*terraform.InstanceState) error {

@@ -110,6 +110,8 @@ func TestResourceLogstashPipeline(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_with_metadata"),
+				ConfigVariables:          config.Variables{"pipeline_id": config.StringVariable(pipelineID)},
 				ResourceName:             resourceName,
 				ImportState:              true,
 				ImportStateVerify:        true,

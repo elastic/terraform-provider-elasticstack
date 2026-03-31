@@ -130,6 +130,11 @@ func TestAccResourceEnableRuleWithManualDisable(t *testing.T) {
 			{
 				// Manually disable one rule outside of Terraform to test drift detection
 				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"tag_key":   config.StringVariable(tagKey),
+					"tag_value": config.StringVariable(tagValue),
+				},
 				PreConfig: func() {
 					disableOneRule(t, spaceID, tagKey, tagValue)
 				},
