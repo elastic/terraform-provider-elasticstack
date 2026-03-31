@@ -39,7 +39,7 @@ func getSchema() schema.Schema {
 		Description: "Manages an Elasticsearch alias. " +
 			"See the [alias documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-aliases.html) for more details.",
 		Blocks: map[string]schema.Block{
-			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(false),
+			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(),
 		},
 
 		Attributes: map[string]schema.Attribute{

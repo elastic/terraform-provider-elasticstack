@@ -60,7 +60,7 @@ output "watch" {
 - `actions` (String) The list of actions that will be run if the condition matches.
 - `active` (Boolean) Defines whether the watch is active or inactive by default. The default value is true, which means the watch is active by default.
 - `condition` (String) The condition that defines if the actions should be run.
-- `elasticsearch_connection` (Block List, Max: 1, Deprecated) Elasticsearch connection configuration block. This property will be removed in a future provider version. Configure the Elasticsearch connection via the provider configuration instead. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- `elasticsearch_connection` (Block List, Max: 1) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - `input` (String) The input that defines the input that loads the data for the watch.
 - `metadata` (String) Metadata json that will be copied into the history entries.
 - `throttle_period_in_millis` (Number) Minimum time in milliseconds between actions being run. Defaults to 5000.

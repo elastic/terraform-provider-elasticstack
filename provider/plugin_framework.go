@@ -31,11 +31,13 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/output"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/outputds"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/serverhost"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilderworkflow"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/alertingrule"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/connectors"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dataview"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/defaultdataview"
+	exportagentbuilderworkflow "github.com/elastic/terraform-provider-elasticstack/internal/kibana/exportagentbuilder/workflow"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/exportsavedobjects"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/import_saved_objects"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/maintenance_window"
@@ -89,7 +91,7 @@ func (p *Provider) Metadata(_ context.Context, _ fwprovider.MetadataRequest, res
 func (p *Provider) Schema(ctx context.Context, req fwprovider.SchemaRequest, res *fwprovider.SchemaResponse) {
 	res.Schema = fwschema.Schema{
 		Blocks: map[string]fwschema.Block{
-			esKeyName:    schema.GetEsFWConnectionBlock(true),
+			esKeyName:    schema.GetEsFWConnectionBlock(),
 			kbKeyName:    schema.GetKbFWConnectionBlock(),
 			fleetKeyName: schema.GetFleetFWConnectionBlock(),
 		},
@@ -150,6 +152,7 @@ func (p *Provider) resources(_ context.Context, validateLocation bool) []func() 
 		func() resource.Resource { return &datastreamlifecycle.Resource{} },
 		func() resource.Resource { return &connectors.Resource{} },
 		agentpolicy.NewResource,
+		agentbuilderworkflow.NewResource,
 		integration.NewResource,
 		integrationpolicy.NewResource,
 		output.NewResource,
@@ -189,6 +192,7 @@ func (p *Provider) dataSources(ctx context.Context) []func() datasource.DataSour
 	return []func() datasource.DataSource{
 		indices.NewDataSource,
 		spaces.NewDataSource,
+		exportagentbuilderworkflow.NewDataSource,
 		exportsavedobjects.NewDataSource,
 		enrollmenttokens.NewDataSource,
 		integrationds.NewDataSource,

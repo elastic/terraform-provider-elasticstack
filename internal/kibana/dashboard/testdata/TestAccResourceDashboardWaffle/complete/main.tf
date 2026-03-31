@@ -45,7 +45,7 @@ resource "elasticstack_kibana_dashboard" "test" {
       ]
       legend = {
         size                 = "small"
-        visible              = "show"
+        visible              = "visible"
         truncate_after_lines = 8
         values               = ["absolute"]
       }

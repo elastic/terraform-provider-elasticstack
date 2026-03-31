@@ -42,7 +42,7 @@ resource "elasticstack_kibana_dashboard" "test" {
             mode    = "categorical"
             palette = "default"
             mapping = []
-            unassignedColor = {
+            unassigned = {
               type  = "color_code"
               value = "#D3DAE6"
             }

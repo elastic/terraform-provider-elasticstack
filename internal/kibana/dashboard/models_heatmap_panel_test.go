@@ -48,23 +48,20 @@ func Test_heatmapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 				return &lang
 			}(),
 		},
-		Axis: kbapi.HeatmapAxes{
+		Axes: kbapi.HeatmapAxes{
 			X: kbapi.HeatmapXAxis{
 				Labels: &struct {
-					Orientation *kbapi.HeatmapXAxisLabelsOrientation `json:"orientation,omitempty"`
-					Visible     *bool                                `json:"visible,omitempty"`
+					Orientation kbapi.VisApiOrientation `json:"orientation"`
+					Visible     *bool                   `json:"visible,omitempty"`
 				}{
-					Orientation: func() *kbapi.HeatmapXAxisLabelsOrientation {
-						orientation := kbapi.HeatmapXAxisLabelsOrientation("horizontal")
-						return &orientation
-					}(),
-					Visible: new(true),
+					Orientation: kbapi.VisApiOrientation("horizontal"),
+					Visible:     new(true),
 				},
 				Title: &struct {
-					Value   *string `json:"value,omitempty"`
+					Text    *string `json:"text,omitempty"`
 					Visible *bool   `json:"visible,omitempty"`
 				}{
-					Value:   new("X Axis"),
+					Text:    new("X Axis"),
 					Visible: new(true),
 				},
 			},
@@ -75,10 +72,10 @@ func Test_heatmapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 					Visible: new(false),
 				},
 				Title: &struct {
-					Value   *string `json:"value,omitempty"`
+					Text    *string `json:"text,omitempty"`
 					Visible *bool   `json:"visible,omitempty"`
 				}{
-					Value:   new("Y Axis"),
+					Text:    new("Y Axis"),
 					Visible: new(true),
 				},
 			},
@@ -108,10 +105,10 @@ func Test_heatmapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 	require.NoError(t, json.Unmarshal([]byte(`{"operation":"filters","filters":[{"label":"All","filter":{"query":"*","language":"kuery"}}]}`), &yAxis))
 	heatmap.Y = &yAxis
 
-	var fItem kbapi.HeatmapNoESQL_Filters_Item
+	var fItem kbapi.LensPanelFilters_Item
 	require.NoError(t, json.Unmarshal([]byte(`{"type":"condition","condition":{"field":"status","operator":"is","value":"200"}}`), &fItem))
-	filters := []kbapi.HeatmapNoESQL_Filters_Item{fItem}
-	heatmap.Filters = &filters
+	filters := []kbapi.LensPanelFilters_Item{fItem}
+	heatmap.Filters = filters
 
 	model := &heatmapConfigModel{}
 	diags := model.fromAPINoESQL(context.Background(), heatmap)
@@ -208,7 +205,7 @@ func Test_heatmapPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 	var heatmapChart kbapi.HeatmapChart
 	require.NoError(t, heatmapChart.FromHeatmapNoESQL(heatmap))
 
-	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	var attrs kbapi.LensApiState
 	require.NoError(t, attrs.FromHeatmapChart(heatmapChart))
 
 	converter := newHeatmapPanelConfigConverter()
@@ -256,7 +253,7 @@ func Test_heatmapPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 	var heatmapChart kbapi.HeatmapChart
 	require.NoError(t, heatmapChart.FromHeatmapESQL(heatmap))
 
-	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	var attrs kbapi.LensApiState
 	require.NoError(t, attrs.FromHeatmapChart(heatmapChart))
 
 	converter := newHeatmapPanelConfigConverter()
