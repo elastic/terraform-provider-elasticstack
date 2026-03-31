@@ -11,6 +11,7 @@
 - Add flapping detection to `elasticstack_kibana_alerting_rule`. ([1966](https://github.com/elastic/terraform-provider-elasticstack/pull/1966))
 - Attempt recovery when data view creation fails ([#2024](https://github.com/elastic/terraform-provider-elasticstack/pull/2024))
 - Fix several "Provider produced inconsistent result after apply" errors in the anomaly detection job resource. ([2034](https://github.com/elastic/terraform-provider-elasticstack/pull/2034))
+- Remove deprecation warning on the `elasticsearch_connection` attribute provider wide ([2100](https://github.com/elastic/terraform-provider-elasticstack/pull/2100))
 
 
 ## [0.14.3] - 2026-03-02
