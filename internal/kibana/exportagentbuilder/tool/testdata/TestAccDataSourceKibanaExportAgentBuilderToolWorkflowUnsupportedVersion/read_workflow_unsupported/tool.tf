@@ -9,10 +9,16 @@ provider "elasticstack" {
 
 resource "elasticstack_kibana_agentbuilder_tool" "test" {
   tool_id     = var.tool_id
-  type        = "workflow"
-  description = "Workflow tool"
+  type        = "esql"
+  description = "ES|QL tool"
   configuration = jsonencode({
-    workflow_id = "test-workflow-id"
+    query = "FROM logs-* | LIMIT ?limit"
+    params = {
+      limit = {
+        type        = "integer"
+        description = "Maximum number of results to return"
+      }
+    }
   })
 }
 

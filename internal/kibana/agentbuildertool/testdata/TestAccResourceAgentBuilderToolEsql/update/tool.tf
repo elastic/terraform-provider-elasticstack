@@ -13,7 +13,7 @@ resource "elasticstack_kibana_agentbuilder_tool" "test_esql" {
   description = "Updated ES|QL tool"
   tags        = ["test", "esql", "updated"]
   configuration = jsonencode({
-    query = "FROM logs-* | WHERE @timestamp >= ?startTime AND cloud.region == ?region | LIMIT ?limit"
+    query = "FROM logs-* | WHERE @timestamp >= ?startTime | LIMIT ?limit"
     params = {
       limit = {
         type        = "integer"
@@ -22,10 +22,6 @@ resource "elasticstack_kibana_agentbuilder_tool" "test_esql" {
       startTime = {
         type        = "date"
         description = "Start time in ISO format"
-      }
-      region = {
-        type        = "string"
-        description = "Cloud region filter"
       }
     }
   })
