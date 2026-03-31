@@ -364,7 +364,7 @@ func TestAccResourceKibanaStreamQuery(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_stream.query", "description", "Updated query stream"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_stream.query", "query_config.esql", "FROM logs* | WHERE @timestamp > NOW() - 1 HOUR | LIMIT 10"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_stream.query", "query_config.esql", "FROM $.logs.otel | WHERE @timestamp > NOW() - 1 HOUR | LIMIT 10"),
 				),
 			},
 			{
