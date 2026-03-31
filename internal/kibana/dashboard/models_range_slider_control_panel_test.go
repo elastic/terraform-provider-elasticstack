@@ -38,7 +38,7 @@ func apiRangeSliderConfig(opts ...func(*kbapi.KbnDashboardPanelRangeSliderContro
 	return cfg
 }
 
-func withTitle(t string) func(*kbapi.KbnDashboardPanelRangeSliderControl_Config) {
+func rsWithTitle(t string) func(*kbapi.KbnDashboardPanelRangeSliderControl_Config) {
 	return func(c *kbapi.KbnDashboardPanelRangeSliderControl_Config) { c.Title = &t }
 }
 func withUseGlobalFilters(b bool) func(*kbapi.KbnDashboardPanelRangeSliderControl_Config) {
@@ -66,7 +66,7 @@ func mustStringList(elems ...string) types.List {
 func Test_populateRangeSliderControlFromAPI_import_allFields(t *testing.T) {
 	pm := &panelModel{}
 	apiCfg := apiRangeSliderConfig(
-		withTitle("My Control"),
+		rsWithTitle("My Control"),
 		withUseGlobalFilters(true),
 		withIgnoreValidations(false),
 		withValue("100", "500"),
@@ -120,7 +120,7 @@ func Test_populateRangeSliderControlFromAPI_knownFields_updatedFromAPI(t *testin
 	}
 	tfPanel := &panelModel{RangeSliderControlConfig: pm.RangeSliderControlConfig}
 	apiCfg := apiRangeSliderConfig(
-		withTitle("new title"),
+		rsWithTitle("new title"),
 		withUseGlobalFilters(true),
 		withIgnoreValidations(true),
 		withValue("10", "90"),
@@ -152,7 +152,7 @@ func Test_populateRangeSliderControlFromAPI_nullOptionalFields_preserved(t *test
 	}
 	tfPanel := &panelModel{RangeSliderControlConfig: pm.RangeSliderControlConfig}
 	apiCfg := apiRangeSliderConfig(
-		withTitle("ignored"),
+		rsWithTitle("ignored"),
 		withUseGlobalFilters(true),
 		withIgnoreValidations(true),
 		withValue("10", "90"),

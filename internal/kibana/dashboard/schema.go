@@ -50,9 +50,9 @@ const (
 	operationTerms        = "terms"
 	panelTypeMarkdown     = "markdown"
 	panelTypeLens         = "lens"
-	panelTypeTimeSlider  = "time_slider_control"
-	panelTypeSloBurnRate = "slo_burn_rate"
-	panelTypeRangeSlider = "range_slider_control"
+	panelTypeTimeSlider   = "time_slider_control"
+	panelTypeSloBurnRate  = "slo_burn_rate"
+	panelTypeRangeSlider  = "range_slider_control"
 )
 
 var sloBurnRateDurationRegex = regexp.MustCompile(`^\d+[mhd]$`)
