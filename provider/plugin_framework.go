@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package provider
 
 import (
@@ -65,6 +82,7 @@ const (
 	IncludeExperimentalEnvVar    = "TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL"
 	SkipLocationValidationEnvVar = "TF_ELASTICSTACK_SKIP_LOCATION_VALIDATION"
 	AccTestVersion               = "acctest"
+	envVarEnabled                = "true"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -88,7 +106,7 @@ func (p *Provider) Metadata(_ context.Context, _ fwprovider.MetadataRequest, res
 	res.Version = p.version
 }
 
-func (p *Provider) Schema(ctx context.Context, req fwprovider.SchemaRequest, res *fwprovider.SchemaResponse) {
+func (p *Provider) Schema(_ context.Context, _ fwprovider.SchemaRequest, res *fwprovider.SchemaResponse) {
 	res.Schema = fwschema.Schema{
 		Blocks: map[string]fwschema.Block{
 			esKeyName:    schema.GetEsFWConnectionBlock(),
@@ -119,7 +137,7 @@ func (p *Provider) Configure(ctx context.Context, req fwprovider.ConfigureReques
 func (p *Provider) DataSources(ctx context.Context) []func() datasource.DataSource {
 	datasources := p.dataSources(ctx)
 
-	if p.version == AccTestVersion || os.Getenv(IncludeExperimentalEnvVar) == "true" {
+	if p.version == AccTestVersion || os.Getenv(IncludeExperimentalEnvVar) == envVarEnabled {
 		datasources = append(datasources, p.experimentalDataSources(ctx)...)
 	}
 
@@ -127,10 +145,10 @@ func (p *Provider) DataSources(ctx context.Context) []func() datasource.DataSour
 }
 
 func (p *Provider) Resources(ctx context.Context) []func() resource.Resource {
-	validateLocation := !(os.Getenv(SkipLocationValidationEnvVar) == "true")
+	validateLocation := os.Getenv(SkipLocationValidationEnvVar) != envVarEnabled
 	resources := p.resources(ctx, validateLocation)
 
-	if p.version == AccTestVersion || os.Getenv(IncludeExperimentalEnvVar) == "true" {
+	if p.version == AccTestVersion || os.Getenv(IncludeExperimentalEnvVar) == envVarEnabled {
 		resources = append(resources, p.experimentalResources(ctx)...)
 	}
 
@@ -182,13 +200,13 @@ func (p *Provider) resources(_ context.Context, validateLocation bool) []func() 
 	}
 }
 
-func (p *Provider) experimentalResources(ctx context.Context) []func() resource.Resource {
+func (p *Provider) experimentalResources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		dashboard.NewResource,
 	}
 }
 
-func (p *Provider) dataSources(ctx context.Context) []func() datasource.DataSource {
+func (p *Provider) dataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
 		indices.NewDataSource,
 		spaces.NewDataSource,
@@ -202,6 +220,6 @@ func (p *Provider) dataSources(ctx context.Context) []func() datasource.DataSour
 	}
 }
 
-func (p *Provider) experimentalDataSources(ctx context.Context) []func() datasource.DataSource {
+func (p *Provider) experimentalDataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{}
 }
