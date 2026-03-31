@@ -30,6 +30,8 @@ linters:
       - legacy
       - std-error-handling
     paths:
+      - ^libs/
+      - ^generated/
       - third_party$
       - builtin$
       - examples$
@@ -46,6 +48,8 @@ formatters:
   exclusions:
     generated: lax
     paths:
+      - ^libs/
+      - ^generated/
       - third_party$
       - builtin$
       - examples$
