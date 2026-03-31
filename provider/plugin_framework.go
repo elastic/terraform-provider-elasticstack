@@ -31,12 +31,14 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/output"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/outputds"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/serverhost"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuildertool"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilderworkflow"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/alertingrule"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/connectors"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dataview"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/defaultdataview"
+	exportagentbuildertool "github.com/elastic/terraform-provider-elasticstack/internal/kibana/exportagentbuilder/tool"
 	exportagentbuilderworkflow "github.com/elastic/terraform-provider-elasticstack/internal/kibana/exportagentbuilder/workflow"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/exportsavedobjects"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/import_saved_objects"
@@ -152,6 +154,7 @@ func (p *Provider) resources(_ context.Context, validateLocation bool) []func() 
 		func() resource.Resource { return &datastreamlifecycle.Resource{} },
 		func() resource.Resource { return &connectors.Resource{} },
 		agentpolicy.NewResource,
+		agentbuildertool.NewResource,
 		agentbuilderworkflow.NewResource,
 		integration.NewResource,
 		integrationpolicy.NewResource,
@@ -192,6 +195,7 @@ func (p *Provider) dataSources(ctx context.Context) []func() datasource.DataSour
 	return []func() datasource.DataSource{
 		indices.NewDataSource,
 		spaces.NewDataSource,
+		exportagentbuildertool.NewDataSource,
 		exportagentbuilderworkflow.NewDataSource,
 		exportsavedobjects.NewDataSource,
 		enrollmenttokens.NewDataSource,

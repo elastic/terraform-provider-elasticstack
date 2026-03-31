@@ -17,6 +17,15 @@
 
 package models
 
+type Tool struct {
+	ID            string         `json:"id"`
+	Type          string         `json:"type"`
+	Description   *string        `json:"description,omitempty"`
+	Tags          []string       `json:"tags,omitempty"`
+	ReadOnly      bool           `json:"readonly"`
+	Configuration map[string]any `json:"configuration"`
+}
+
 type Workflow struct {
 	ID          string  `json:"id"`
 	Yaml        string  `json:"yaml"`
