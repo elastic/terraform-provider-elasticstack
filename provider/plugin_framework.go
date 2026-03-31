@@ -89,7 +89,7 @@ func (p *Provider) Metadata(_ context.Context, _ fwprovider.MetadataRequest, res
 func (p *Provider) Schema(ctx context.Context, req fwprovider.SchemaRequest, res *fwprovider.SchemaResponse) {
 	res.Schema = fwschema.Schema{
 		Blocks: map[string]fwschema.Block{
-			esKeyName:    schema.GetEsFWConnectionBlock(true),
+			esKeyName:    schema.GetEsFWConnectionBlock(),
 			kbKeyName:    schema.GetKbFWConnectionBlock(),
 			fleetKeyName: schema.GetFleetFWConnectionBlock(),
 		},
