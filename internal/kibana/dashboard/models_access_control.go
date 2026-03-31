@@ -26,61 +26,35 @@ import (
 // AccessControlValue maps to the access_control block
 type AccessControlValue struct {
 	AccessMode types.String `tfsdk:"access_mode"`
-	Owner      types.String `tfsdk:"owner"`
 }
 
-type accessControlAPIPostModel = struct {
+// toCreateAPI converts the Terraform model to the POST API model
+func (m *AccessControlValue) toCreateAPI() *struct {
 	AccessMode *kbapi.PostDashboardsIdJSONBodyAccessControlAccessMode `json:"access_mode,omitempty"`
-	Owner      *string                                                `json:"owner,omitempty"`
-}
-
-type accessControlAPIPutModel = struct {
-	AccessMode *kbapi.PutDashboardsIdJSONBodyAccessControlAccessMode `json:"access_mode,omitempty"`
-	Owner      *string                                               `json:"owner,omitempty"`
-}
-
-// ToCreateAPI converts the Terraform model to the POST API model
-func (m *AccessControlValue) toCreateAPI() *accessControlAPIPostModel {
+} {
 	if m == nil {
 		return nil
 	}
 
-	apiModel := &accessControlAPIPostModel{}
+	result := &struct {
+		AccessMode *kbapi.PostDashboardsIdJSONBodyAccessControlAccessMode `json:"access_mode,omitempty"`
+	}{}
 
 	if typeutils.IsKnown(m.AccessMode) {
 		mode := kbapi.PostDashboardsIdJSONBodyAccessControlAccessMode(m.AccessMode.ValueString())
-		apiModel.AccessMode = &mode
+		result.AccessMode = &mode
 	}
 
-	if typeutils.IsKnown(m.Owner) {
-		owner := m.Owner.ValueString()
-		apiModel.Owner = &owner
-	}
-
-	return apiModel
-}
-
-// ToUpdateAPI converts the Terraform model to the PUT API model
-func (m *AccessControlValue) toUpdateAPI() *accessControlAPIPutModel {
-	createModel := m.toCreateAPI()
-	if createModel == nil {
-		return nil
-	}
-
-	return &accessControlAPIPutModel{
-		AccessMode: (*kbapi.PutDashboardsIdJSONBodyAccessControlAccessMode)(createModel.AccessMode),
-		Owner:      createModel.Owner,
-	}
+	return result
 }
 
 // newAccessControlFromAPI maps the API response to the Terraform model
-func newAccessControlFromAPI(accessMode *string, owner *string) *AccessControlValue {
-	if accessMode == nil && owner == nil {
+func newAccessControlFromAPI(accessMode *string) *AccessControlValue {
+	if accessMode == nil {
 		return nil
 	}
 
 	return &AccessControlValue{
 		AccessMode: types.StringPointerValue(accessMode),
-		Owner:      types.StringPointerValue(owner),
 	}
 }

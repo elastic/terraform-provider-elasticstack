@@ -129,7 +129,7 @@ func (m *dashboardModel) populateFromAPI(ctx context.Context, resp *kbapi.GetDas
 			s := string(*data.Data.AccessControl.AccessMode)
 			accessMode = &s
 		}
-		m.AccessControl = newAccessControlFromAPI(accessMode, data.Data.AccessControl.Owner)
+		m.AccessControl = newAccessControlFromAPI(accessMode)
 	}
 
 	// Map panels
@@ -234,9 +234,6 @@ func (m *dashboardModel) toAPIUpdateRequest(ctx context.Context, diags *diag.Dia
 	panels, panelsDiags := m.panelsToAPI()
 	diags.Append(panelsDiags...)
 	req.Panels = panels
-
-	// Set access control
-	req.AccessControl = m.AccessControl.toUpdateAPI()
 
 	return req
 }

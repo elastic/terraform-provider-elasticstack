@@ -34,8 +34,8 @@ resource "elasticstack_kibana_dashboard" "test" {
         query    = ""
       }
       legend = jsonencode({
-        visible = "show"
-        size    = "auto"
+        visibility = "visible"
+        size       = "auto"
       })
       metrics = [
         {
@@ -54,7 +54,7 @@ resource "elasticstack_kibana_dashboard" "test" {
               mode    = "categorical"
               palette = "default"
               mapping = []
-              unassignedColor = {
+              unassigned = {
                 type  = "color_code"
                 value = "#555555"
               }

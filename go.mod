@@ -4,14 +4,14 @@ go 1.26.1
 
 require (
 	github.com/disaster37/go-kibana-rest/v8 v8.5.0
-	github.com/elastic/elastic-transport-go/v8 v8.9.0
+	github.com/elastic/elastic-transport-go/v8 v8.10.0
 	github.com/elastic/go-elasticsearch/v8 v8.19.3
 	github.com/google/go-github/v84 v84.0.0
 	github.com/google/gofuzz v1.2.0
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-cty v1.5.0
 	github.com/hashicorp/go-uuid v1.0.3
-	github.com/hashicorp/go-version v1.8.0
+	github.com/hashicorp/go-version v1.9.0
 	github.com/hashicorp/terraform-plugin-framework v1.19.0
 	github.com/hashicorp/terraform-plugin-framework-jsontypes v0.2.0
 	github.com/hashicorp/terraform-plugin-framework-timeouts v0.7.0

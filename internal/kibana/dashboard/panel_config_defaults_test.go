@@ -172,8 +172,8 @@ func Test_populatePanelConfigJSONDefaults_gauge(t *testing.T) {
 				"operation": "median",
 				"field": "latency",
 				"empty_as_null": false,
-				"hide_title": false,
-				"ticks": "auto"
+				"title": {"visible": true},
+				"ticks": {"visible": true, "mode": "auto"}
 			}
 		}
 	}`

@@ -27,8 +27,8 @@ import (
 type lensVisualizationConverter interface {
 	vizType() string
 	handlesTFConfig(pm panelModel) bool
-	populateFromAttributes(ctx context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes) diag.Diagnostics
-	buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelLens_Config_0_Attributes, diag.Diagnostics)
+	populateFromAttributes(ctx context.Context, pm *panelModel, attrs kbapi.LensApiState) diag.Diagnostics
+	buildAttributes(pm panelModel) (kbapi.LensApiState, diag.Diagnostics)
 }
 
 type lensVisualizationBase struct {
@@ -47,7 +47,7 @@ func (c lensVisualizationBase) handlesTFConfig(pm panelModel) bool {
 	return c.hasTFPanelConfig(pm)
 }
 
-func detectLensVizType(attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes) string {
+func detectLensVizType(attrs kbapi.LensApiState) string {
 	chart, err := attrs.AsXyChart()
 	if err != nil {
 		return ""
