@@ -14,6 +14,6 @@ resource "elasticstack_kibana_stream" "query" {
   description = "Test query stream"
 
   query_config = {
-    esql = "FROM logs* | LIMIT 10"
+    esql = "FROM $.logs.otel | LIMIT 10"
   }
 }

@@ -14,6 +14,6 @@ resource "elasticstack_kibana_stream" "query" {
   description = "Updated query stream"
 
   query_config = {
-    esql = "FROM logs* | WHERE @timestamp > NOW() - 1 HOUR | LIMIT 10"
+    esql = "FROM $.logs.otel | WHERE @timestamp > NOW() - 1 HOUR | LIMIT 10"
   }
 }

@@ -245,8 +245,11 @@ func getClassicConfigSchema() map[string]schema.Attribute {
 func getQueryConfigSchema() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"esql": schema.StringAttribute{
-			MarkdownDescription: "The ES|QL query that defines this virtual stream (e.g. `FROM logs* | WHERE host.name == \"web-01\"`).",
-			Required:            true,
+			MarkdownDescription: "The ES|QL query that defines this virtual stream. " +
+				"The `FROM` clause must reference the parent stream using the `$.{parent}` data view notation, " +
+				"where `{parent}` is the stream name with its last `.segment` removed. " +
+				"For example, a query stream named `logs.otel.errors` must use `FROM $.logs.otel | ...`.",
+			Required: true,
 		},
 		"view": schema.StringAttribute{
 			MarkdownDescription: "The Kibana data view name for this query stream. " +

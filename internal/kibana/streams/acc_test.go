@@ -274,7 +274,7 @@ func checkQueryStreamsEnabled() func() (bool, error) {
 		probe := kibanaoapi.StreamUpsertRequest{
 			Stream: kibanaoapi.StreamDefinition{
 				Type:  "query",
-				Query: &kibanaoapi.StreamQueryESQLDef{Esql: "FROM logs* | LIMIT 1", View: "$." + probeName},
+				Query: &kibanaoapi.StreamQueryESQLDef{Esql: "FROM $.logs.otel | LIMIT 1", View: "$." + probeName},
 			},
 			Dashboards: []string{},
 			Rules:      []string{},
@@ -316,7 +316,7 @@ func TestAccResourceKibanaStreamQuery(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_stream.query", "id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_stream.query", "name", "logs.otel.testacc-q"+suffix),
-					resource.TestCheckResourceAttr("elasticstack_kibana_stream.query", "query_config.esql", "FROM logs* | LIMIT 10"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_stream.query", "query_config.esql", "FROM $.logs.otel | LIMIT 10"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_stream.query", "query_config.view", "$.logs.otel.testacc-q"+suffix),
 				),
 			},
