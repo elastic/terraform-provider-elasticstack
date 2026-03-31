@@ -51,12 +51,10 @@ resource "elasticstack_kibana_dashboard" "test" {
         }
       ])
 
-      label_position = "hidden"
-
       legend = {
         nested               = false
         size                 = "small"
-        visible              = "show"
+        visible              = "visible"
         truncate_after_lines = 10
       }
 

@@ -65,9 +65,9 @@ func Test_regionMapConfigModel_fromAPI_toAPI(t *testing.T) {
 				_ = json.Unmarshal([]byte(`{"operation":"count"}`), &api.Metric)
 				_ = json.Unmarshal([]byte(`{"operation":"filters","filters":[{"filter":{"query":"*","language":"kuery"},"label":"All"}]}`), &api.Region)
 
-				var fItem kbapi.RegionMapNoESQL_Filters_Item
+				var fItem kbapi.LensPanelFilters_Item
 				_ = json.Unmarshal([]byte(`{"type":"condition","condition":{"field":"status","operator":"is","value":"active"}}`), &fItem)
-				api.Filters = &[]kbapi.RegionMapNoESQL_Filters_Item{fItem}
+				api.Filters = []kbapi.LensPanelFilters_Item{fItem}
 
 				return &api
 			}(),
@@ -91,9 +91,9 @@ func Test_regionMapConfigModel_fromAPI_toAPI(t *testing.T) {
 				_ = json.Unmarshal([]byte(`{"operation":"value","column":"value","format":{"id":"number"}}`), &api.Metric)
 				_ = json.Unmarshal([]byte(`{"operation":"value","column":"region","ems":{"boundaries":"world_countries","join":"name"}}`), &api.Region)
 
-				var fItem kbapi.RegionMapESQL_Filters_Item
+				var fItem kbapi.LensPanelFilters_Item
 				_ = json.Unmarshal([]byte(`{"type":"condition","condition":{"field":"region","operator":"is","value":"US"}}`), &fItem)
-				api.Filters = &[]kbapi.RegionMapESQL_Filters_Item{fItem}
+				api.Filters = []kbapi.LensPanelFilters_Item{fItem}
 
 				return &api
 			}(),
@@ -170,7 +170,7 @@ func Test_regionMapPanelConfigConverter_populateFromAttributes_buildAttributes_r
 	var regionMapChart kbapi.RegionMapChart
 	require.NoError(t, regionMapChart.FromRegionMapNoESQL(api))
 
-	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	var attrs kbapi.LensApiState
 	require.NoError(t, attrs.FromRegionMapChart(regionMapChart))
 
 	converter := newRegionMapPanelConfigConverter()
@@ -207,7 +207,7 @@ func Test_regionMapPanelConfigConverter_populateFromAttributes_buildAttributes_r
 	var regionMapChart kbapi.RegionMapChart
 	require.NoError(t, regionMapChart.FromRegionMapESQL(api))
 
-	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	var attrs kbapi.LensApiState
 	require.NoError(t, attrs.FromRegionMapChart(regionMapChart))
 
 	converter := newRegionMapPanelConfigConverter()
