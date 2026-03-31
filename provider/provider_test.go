@@ -43,12 +43,12 @@ func TestProvider(t *testing.T) {
 func TestElasticsearchAPIKeyConnection(t *testing.T) {
 	apiKeyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(apikey.MinVersion),
-				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(apikey.MinVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables: tfconfig.Variables{
 					"api_key_name": tfconfig.StringVariable(apiKeyName),
 					"endpoints":    tfconfig.StringVariable(os.Getenv("ELASTICSEARCH_ENDPOINTS")),
@@ -68,11 +68,11 @@ func TestElasticsearchBearerTokenConnection(t *testing.T) {
 	}
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables: tfconfig.Variables{
 					"endpoints":    tfconfig.StringVariable(os.Getenv("ELASTICSEARCH_ENDPOINTS")),
 					"bearer_token": tfconfig.StringVariable(bearerToken),
@@ -89,13 +89,13 @@ func TestFleetConfiguration(t *testing.T) {
 	envConfig := config.NewFromEnv("acceptance-testing")
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minVersionForFleet),
-				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
-				ConfigVariables: fleetConfigVariables(envConfig),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionForFleet),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables:          fleetConfigVariables(envConfig),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_fleet_enrollment_tokens.test", "tokens.#"),
 				),
@@ -113,13 +113,13 @@ func TestFleetBearerTokenConfiguration(t *testing.T) {
 	envConfig := config.NewFromEnv("acceptance-testing")
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minVersionForFleet),
-				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
-				ConfigVariables: fleetBearerTokenConfigVariables(envConfig, bearerToken),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionForFleet),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables:          fleetBearerTokenConfigVariables(envConfig, bearerToken),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_fleet_enrollment_tokens.test", "tokens.#"),
 				),

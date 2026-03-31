@@ -96,13 +96,13 @@ func TestAccResourceFleetServerHost(t *testing.T) {
 	policyName := sdkacctest.RandString(22)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceFleetServerHostDestroy,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceFleetServerHostDestroy,
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minVersionFleetServerHost),
-				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionFleetServerHost),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"name": config.StringVariable(fmt.Sprintf("FleetServerHost %s", policyName)),
 				},
@@ -115,8 +115,8 @@ func TestAccResourceFleetServerHost(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minVersionFleetServerHost),
-				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionFleetServerHost),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"name": config.StringVariable(fmt.Sprintf("Updated FleetServerHost %s", policyName)),
 				},
@@ -129,8 +129,8 @@ func TestAccResourceFleetServerHost(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minVersionFleetServerHost),
-				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionFleetServerHost),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"name": config.StringVariable(fmt.Sprintf("Updated FleetServerHost %s", policyName)),
 				},

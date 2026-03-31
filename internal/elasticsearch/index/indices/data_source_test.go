@@ -33,11 +33,11 @@ import (
 // and exposes at least one well-known .security index with its shard count and alias.
 func TestAccIndicesDataSource(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// At least one index must be returned for the .security-* pattern.
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.security_indices", "id", ".security-*"),
@@ -55,7 +55,7 @@ func TestAccIndicesDataSource(t *testing.T) {
 // non-empty result with a populated id.
 func TestAccIndicesDataSource_Target_DefaultAndExplicitAll(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -103,7 +103,7 @@ func TestAccIndicesDataSource_Target_FilteringExactVsWildcard(t *testing.T) {
 	indexB := prefix + "b"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -135,11 +135,11 @@ func TestAccIndicesDataSource_ReadsIndexSettings_TypedFields(t *testing.T) {
 	indexName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlpha)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables: config.Variables{
 					"index_name": config.StringVariable(indexName),
 				},
@@ -170,11 +170,11 @@ func TestAccIndicesDataSource_ReadsAliasNestedFields(t *testing.T) {
 	aliasName := indexName + "_alias"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables: config.Variables{
 					"index_name": config.StringVariable(indexName),
 					"alias_name": config.StringVariable(aliasName),
@@ -215,11 +215,11 @@ func TestAccIndicesDataSource_ReadsMappingsAnalysisAndSettingsRaw(t *testing.T) 
 	indexName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlpha)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables: config.Variables{
 					"index_name": config.StringVariable(indexName),
 				},
@@ -260,11 +260,11 @@ func TestAccIndicesDataSource_ReadsIndexSettings_BroadCoverage(t *testing.T) {
 	pipelineName := sdkacctest.RandomWithPrefix("tf-acc-test")
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables: config.Variables{
 					"index_name":    config.StringVariable(indexName),
 					"pipeline_name": config.StringVariable(pipelineName),
@@ -302,11 +302,11 @@ func TestAccIndicesDataSource_ReadsSlowlogSettings(t *testing.T) {
 	indexName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlpha)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables: config.Variables{
 					"index_name": config.StringVariable(indexName),
 				},
@@ -331,12 +331,12 @@ func TestAccIndicesDataSource_ReadsSlowlogLevels(t *testing.T) {
 	indexName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlpha)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:        versionutils.CheckIfVersionMeetsConstraints(slowlogLevelVersionConstraint),
-				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
+				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(slowlogLevelVersionConstraint),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables: config.Variables{
 					"index_name": config.StringVariable(indexName),
 				},

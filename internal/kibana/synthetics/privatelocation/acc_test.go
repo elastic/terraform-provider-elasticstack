@@ -40,13 +40,13 @@ func TestSyntheticPrivateLocationResource(t *testing.T) {
 	resourceID := "elasticstack_kibana_synthetics_private_location.test"
 	randomSuffix := sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minKibanaPrivateLocationAPIVersion),
-				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaPrivateLocationAPIVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"suffix": config.StringVariable(randomSuffix),
 				},
@@ -63,11 +63,11 @@ func TestSyntheticPrivateLocationResource(t *testing.T) {
 			// ImportState testing
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:          versionutils.CheckIfVersionIsUnsupported(minKibanaPrivateLocationAPIVersion),
-				ResourceName:      resourceID,
-				ImportState:       true,
-				ImportStateVerify: true,
-				ConfigDirectory:   acctest.NamedTestCaseDirectory("import"),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaPrivateLocationAPIVersion),
+				ResourceName:             resourceID,
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("import"),
 				ConfigVariables: config.Variables{
 					"suffix": config.StringVariable(randomSuffix),
 				},
@@ -75,8 +75,8 @@ func TestSyntheticPrivateLocationResource(t *testing.T) {
 			// Update and Read testing
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minKibanaPrivateLocationAPIVersion),
-				ConfigDirectory: acctest.NamedTestCaseDirectory("update_with_geo"),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaPrivateLocationAPIVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_with_geo"),
 				ConfigVariables: config.Variables{
 					"suffix": config.StringVariable(randomSuffix),
 				},
@@ -94,8 +94,8 @@ func TestSyntheticPrivateLocationResource(t *testing.T) {
 			// Update and Read testing
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minKibanaPrivateLocationAPIVersion),
-				ConfigDirectory: acctest.NamedTestCaseDirectory("update_no_optional"),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaPrivateLocationAPIVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_no_optional"),
 				ConfigVariables: config.Variables{
 					"suffix": config.StringVariable(randomSuffix),
 				},
@@ -109,8 +109,8 @@ func TestSyntheticPrivateLocationResource(t *testing.T) {
 			// Update and Read testing
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minKibanaPrivateLocationAPIVersion),
-				ConfigDirectory: acctest.NamedTestCaseDirectory("update_tags_only"),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaPrivateLocationAPIVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_tags_only"),
 				ConfigVariables: config.Variables{
 					"suffix": config.StringVariable(randomSuffix),
 				},
@@ -127,8 +127,8 @@ func TestSyntheticPrivateLocationResource(t *testing.T) {
 			// Update and Read testing
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minKibanaPrivateLocationAPIVersion),
-				ConfigDirectory: acctest.NamedTestCaseDirectory("update_geo_only"),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaPrivateLocationAPIVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_geo_only"),
 				ConfigVariables: config.Variables{
 					"suffix": config.StringVariable(randomSuffix),
 				},

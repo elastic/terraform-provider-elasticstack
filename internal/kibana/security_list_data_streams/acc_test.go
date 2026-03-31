@@ -39,13 +39,13 @@ func TestAccResourceSecurityListDataStreams(t *testing.T) {
 	spaceID := fmt.Sprintf("test-space-%s", uuid.New().String()[:8])
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceListDataStreamsDestroy,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceListDataStreamsDestroy,
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(MinListDataStreamsVersion),
-				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(MinListDataStreamsVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"space_id": config.StringVariable(spaceID),
 				},
@@ -58,8 +58,8 @@ func TestAccResourceSecurityListDataStreams(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers, // Import
-				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(MinListDataStreamsVersion),
-				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(MinListDataStreamsVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"space_id": config.StringVariable(spaceID),
 				},
@@ -75,13 +75,13 @@ func TestAccResourceSecurityListDataStreamsWithSpace(t *testing.T) {
 	spaceID := fmt.Sprintf("test-space-%s", uuid.New().String()[:8])
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceListDataStreamsDestroy,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceListDataStreamsDestroy,
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(MinListDataStreamsVersion),
-				ConfigDirectory: acctest.NamedTestCaseDirectory("with_space"),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(MinListDataStreamsVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_space"),
 				ConfigVariables: config.Variables{
 					"space_id": config.StringVariable(spaceID),
 				},
@@ -94,8 +94,8 @@ func TestAccResourceSecurityListDataStreamsWithSpace(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers, // Import
-				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(MinListDataStreamsVersion),
-				ConfigDirectory: acctest.NamedTestCaseDirectory("with_space"),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(MinListDataStreamsVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_space"),
 				ConfigVariables: config.Variables{
 					"space_id": config.StringVariable(spaceID),
 				},

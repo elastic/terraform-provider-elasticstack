@@ -34,13 +34,13 @@ func TestAccResourceSLM(t *testing.T) {
 	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkSlmDestroy(name),
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkSlmDestroy(name),
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
-				ConfigVariables: config.Variables{"name": config.StringVariable(name)},
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "name", name),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "schedule", "0 30 1 * * ?"),
@@ -55,15 +55,17 @@ func TestAccResourceSLM(t *testing.T) {
 				),
 			},
 			{
-				RefreshState: true,
+				ProtoV6ProviderFactories: acctest.Providers,
+				RefreshState:             true,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "ignore_unavailable", "false"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "include_global_state", "false"),
 				),
 			},
 			{
-				ResourceName: "elasticstack_elasticsearch_snapshot_lifecycle.test_slm",
-				ImportState:  true,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ResourceName:             "elasticstack_elasticsearch_snapshot_lifecycle.test_slm",
+				ImportState:              true,
 				ImportStateCheck: func(is []*terraform.InstanceState) error {
 					importedName := is[0].Attributes["name"]
 					if importedName != name {
@@ -82,13 +84,13 @@ func TestAccResourceSLMWithMetadata(t *testing.T) {
 	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkSlmDestroy(name),
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkSlmDestroy(name),
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
-				ConfigVariables: config.Variables{"name": config.StringVariable(name)},
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm_metadata", "name", name),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm_metadata", "schedule", "0 30 1 * * ?"),
@@ -100,7 +102,8 @@ func TestAccResourceSLMWithMetadata(t *testing.T) {
 				),
 			},
 			{
-				RefreshState: true,
+				ProtoV6ProviderFactories: acctest.Providers,
+				RefreshState:             true,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_snapshot_lifecycle.test_slm_metadata", "metadata"),
 				),

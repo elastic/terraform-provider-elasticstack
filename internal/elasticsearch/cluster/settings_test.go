@@ -31,12 +31,12 @@ import (
 
 func TestAccResourceClusterSettings(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceClusterSettingsDestroy,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceClusterSettingsDestroy,
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_cluster_settings.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_cluster_settings.test", "persistent.0.setting.#", "3"),
@@ -77,7 +77,7 @@ func TestAccResourceClusterSettings(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory: acctest.NamedTestCaseDirectory("transient_update"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("transient_update"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_cluster_settings.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_cluster_settings.test", "persistent.0.setting.#", "3"),
@@ -118,7 +118,7 @@ func TestAccResourceClusterSettings(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_cluster_settings.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_cluster_settings.test", "persistent.0.setting.#", "4"),
@@ -153,7 +153,7 @@ func TestAccResourceClusterSettings(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory: acctest.NamedTestCaseDirectory("persistent_value_list_update"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("persistent_value_list_update"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_cluster_settings.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_cluster_settings.test", "persistent.0.setting.#", "4"),
@@ -187,8 +187,9 @@ func TestAccResourceClusterSettings(t *testing.T) {
 				),
 			},
 			{
-				ResourceName: "elasticstack_elasticsearch_cluster_settings.test",
-				ImportState:  true,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ResourceName:             "elasticstack_elasticsearch_cluster_settings.test",
+				ImportState:              true,
 				ImportStateCheck: func(is []*terraform.InstanceState) error {
 					if len(is) != 1 {
 						return fmt.Errorf("expected 1 imported instance state, got %d", len(is))
@@ -216,12 +217,12 @@ func TestAccResourceClusterSettings(t *testing.T) {
 
 func TestAccResourceClusterSettingsPersistentOnly(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceClusterSettingsDestroy,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceClusterSettingsDestroy,
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_cluster_settings.test_persistent", "id"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_cluster_settings.test_persistent", "persistent.0.setting.#", "1"),

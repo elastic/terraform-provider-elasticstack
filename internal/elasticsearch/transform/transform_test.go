@@ -88,10 +88,11 @@ func TestAccResourceTransformWithPivot(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            "elasticstack_elasticsearch_transform.test_pivot",
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"defer_validation", "elasticsearch_connection", "timeout"},
+				ProtoV6ProviderFactories: acctest.Providers,
+				ResourceName:             "elasticstack_elasticsearch_transform.test_pivot",
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ImportStateVerifyIgnore:  []string{"defer_validation", "elasticsearch_connection", "timeout"},
 			},
 		},
 	})

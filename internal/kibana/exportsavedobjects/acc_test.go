@@ -26,11 +26,11 @@ import (
 
 func TestAccDataSourceKibanaExportSavedObjects(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_export_saved_objects.test", "id"),
 					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_export_saved_objects.test", "exported_objects"),

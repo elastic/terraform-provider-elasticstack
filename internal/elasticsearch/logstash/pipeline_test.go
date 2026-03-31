@@ -37,13 +37,13 @@ func TestResourceLogstashPipeline(t *testing.T) {
 	pipelineID := "pipeline-" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	resourceName := "elasticstack_elasticsearch_logstash_pipeline.test"
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceLogstashPipelineDestroy,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceLogstashPipelineDestroy,
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
-				ConfigVariables: config.Variables{"pipeline_id": config.StringVariable(pipelineID)},
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"pipeline_id": config.StringVariable(pipelineID)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "pipeline_id", pipelineID),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -56,8 +56,8 @@ func TestResourceLogstashPipeline(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
-				ConfigVariables: config.Variables{"pipeline_id": config.StringVariable(pipelineID)},
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables:          config.Variables{"pipeline_id": config.StringVariable(pipelineID)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "pipeline_id", pipelineID),
 					resource.TestCheckResourceAttr(resourceName, "description", "Updated description of Logstash Pipeline"),
@@ -83,8 +83,8 @@ func TestResourceLogstashPipeline(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory: acctest.NamedTestCaseDirectory("update_with_metadata"),
-				ConfigVariables: config.Variables{"pipeline_id": config.StringVariable(pipelineID)},
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_with_metadata"),
+				ConfigVariables:          config.Variables{"pipeline_id": config.StringVariable(pipelineID)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "pipeline_id", pipelineID),
 					resource.TestCheckResourceAttr(resourceName, "description", "Updated description of Logstash Pipeline"),
@@ -109,10 +109,11 @@ func TestResourceLogstashPipeline(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceName,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"elasticsearch_connection"},
+				ProtoV6ProviderFactories: acctest.Providers,
+				ResourceName:             resourceName,
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ImportStateVerifyIgnore:  []string{"elasticsearch_connection"},
 			},
 		},
 	})

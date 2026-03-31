@@ -50,11 +50,11 @@ func TestAccResourceEnableRule(t *testing.T) {
 	}
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "space_id", defaultSpaceID),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "key", "test_tag"),
@@ -78,11 +78,11 @@ func TestAccResourceEnableRuleDefaultSpaceID(t *testing.T) {
 	}
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "space_id", defaultSpaceID),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "key", "test_tag"),
@@ -110,11 +110,11 @@ func TestAccResourceEnableRuleWithManualDisable(t *testing.T) {
 	spaceID := defaultSpaceID
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"tag_key":   config.StringVariable(tagKey),
 					"tag_value": config.StringVariable(tagValue),
@@ -129,6 +129,7 @@ func TestAccResourceEnableRuleWithManualDisable(t *testing.T) {
 			},
 			{
 				// Manually disable one rule outside of Terraform to test drift detection
+				ProtoV6ProviderFactories: acctest.Providers,
 				PreConfig: func() {
 					disableOneRule(t, spaceID, tagKey, tagValue)
 				},
@@ -140,7 +141,7 @@ func TestAccResourceEnableRuleWithManualDisable(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"tag_key":   config.StringVariable(tagKey),
 					"tag_value": config.StringVariable(tagValue),
@@ -168,11 +169,11 @@ func TestAccResourceEnableRuleDisableOnDestroyFalse(t *testing.T) {
 	spaceID := defaultSpaceID
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory: acctest.NamedTestCaseDirectory("disable_on_destroy_false"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("disable_on_destroy_false"),
 				ConfigVariables: config.Variables{
 					"tag_key":   config.StringVariable(tagKey),
 					"tag_value": config.StringVariable(tagValue),
@@ -188,7 +189,7 @@ func TestAccResourceEnableRuleDisableOnDestroyFalse(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory: acctest.NamedTestCaseDirectory("disable_on_destroy_true"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("disable_on_destroy_true"),
 				ConfigVariables: config.Variables{
 					"tag_key":   config.StringVariable(tagKey),
 					"tag_value": config.StringVariable(tagValue),
@@ -204,7 +205,7 @@ func TestAccResourceEnableRuleDisableOnDestroyFalse(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory: acctest.NamedTestCaseDirectory("disable_on_destroy_false"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("disable_on_destroy_false"),
 				ConfigVariables: config.Variables{
 					"tag_key":   config.StringVariable(tagKey),
 					"tag_value": config.StringVariable(tagValue),

@@ -39,14 +39,14 @@ func TestAccResourceDataStreamLifecycle(t *testing.T) {
 	dsName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlpha)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceDataStreamLifecycleDestroy,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceDataStreamLifecycleDestroy,
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion),
-				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
-				ConfigVariables: config.Variables{"name": config.StringVariable(dsName)},
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(dsName)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestMatchResourceAttr("elasticstack_elasticsearch_data_stream_lifecycle.test_ds_lifecycle", "id", dataStreamLifecycleIDRegexp(dsName+"-one")),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream_lifecycle.test_ds_lifecycle", "name", dsName+"-one"),
@@ -65,11 +65,12 @@ func TestAccResourceDataStreamLifecycle(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:                versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion),
-				ResourceName:            "elasticstack_elasticsearch_data_stream_lifecycle.test_ds_lifecycle",
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"name", "enabled", "expand_wildcards"},
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion),
+				ResourceName:             "elasticstack_elasticsearch_data_stream_lifecycle.test_ds_lifecycle",
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ImportStateVerifyIgnore:  []string{"name", "enabled", "expand_wildcards"},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestMatchResourceAttr(
 						"elasticstack_elasticsearch_data_stream_lifecycle.test_ds_lifecycle",
@@ -80,9 +81,9 @@ func TestAccResourceDataStreamLifecycle(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion),
-				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
-				ConfigVariables: config.Variables{"name": config.StringVariable(dsName)},
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(dsName)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestMatchResourceAttr("elasticstack_elasticsearch_data_stream_lifecycle.test_ds_lifecycle", "id", dataStreamLifecycleIDRegexp(dsName+"-one")),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream_lifecycle.test_ds_lifecycle", "name", dsName+"-one"),
@@ -106,9 +107,9 @@ func TestAccResourceDataStreamLifecycle(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion),
-				ConfigDirectory: acctest.NamedTestCaseDirectory("reenable"),
-				ConfigVariables: config.Variables{"name": config.StringVariable(dsName)},
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("reenable"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(dsName)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestMatchResourceAttr("elasticstack_elasticsearch_data_stream_lifecycle.test_ds_lifecycle", "id", dataStreamLifecycleIDRegexp(dsName+"-one")),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream_lifecycle.test_ds_lifecycle", "name", dsName+"-one"),
@@ -128,9 +129,9 @@ func TestAccResourceDataStreamLifecycle(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion),
-				ConfigDirectory: acctest.NamedTestCaseDirectory("single_downsampling"),
-				ConfigVariables: config.Variables{"name": config.StringVariable(dsName)},
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("single_downsampling"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(dsName)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestMatchResourceAttr("elasticstack_elasticsearch_data_stream_lifecycle.test_ds_lifecycle", "id", dataStreamLifecycleIDRegexp(dsName+"-one")),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream_lifecycle.test_ds_lifecycle", "name", dsName+"-one"),
@@ -148,9 +149,9 @@ func TestAccResourceDataStreamLifecycle(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion),
-				ConfigDirectory: acctest.NamedTestCaseDirectory("remove_retention"),
-				ConfigVariables: config.Variables{"name": config.StringVariable(dsName)},
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("remove_retention"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(dsName)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestMatchResourceAttr("elasticstack_elasticsearch_data_stream_lifecycle.test_ds_lifecycle", "id", dataStreamLifecycleIDRegexp(dsName+"-one")),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_data_stream_lifecycle.test_ds_lifecycle", "name", dsName+"-one"),
@@ -170,7 +171,7 @@ func TestAccResourceDataStreamLifecycle(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(datastreamlifecycle.MinVersion),
 				PreConfig: func() {
 					client, err := clients.NewAcceptanceTestingClient()
 					if err != nil {

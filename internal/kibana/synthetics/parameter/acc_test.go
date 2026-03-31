@@ -33,13 +33,13 @@ var (
 func TestSyntheticParameterResource(t *testing.T) {
 	resourceID := "elasticstack_kibana_synthetics_parameter.test"
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minKibanaParameterAPIVersion),
-				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaParameterAPIVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceID, "key", "test-key"),
 					resource.TestCheckResourceAttr(resourceID, "value", "test-value"),
@@ -52,17 +52,17 @@ func TestSyntheticParameterResource(t *testing.T) {
 			// ImportState testing
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:          versionutils.CheckIfVersionIsUnsupported(minKibanaParameterAPIVersion),
-				ResourceName:      resourceID,
-				ImportState:       true,
-				ImportStateVerify: true,
-				ConfigDirectory:   acctest.NamedTestCaseDirectory("import"),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaParameterAPIVersion),
+				ResourceName:             resourceID,
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("import"),
 			},
 			// Update and Read testing
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(minKibanaParameterAPIVersion),
-				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaParameterAPIVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceID, "key", "test-key-2"),
 					resource.TestCheckResourceAttr(resourceID, "value", "test-value-2"),
