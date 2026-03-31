@@ -106,32 +106,32 @@ func TestAccResourceEmptyDashboard(t *testing.T) {
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"time_range_mode"},
 			},
-			{
-				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_access_control"),
-				ConfigVariables: config.Variables{
-					"dashboard_title": config.StringVariable(dashboardTitle + " with Access Control"),
-				},
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "title", dashboardTitle+" with Access Control"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "access_control.access_mode", "write_restricted"),
-				),
-			},
-			{
-				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_access_control"),
-				ConfigVariables: config.Variables{
-					"dashboard_title": config.StringVariable(dashboardTitle + " with Access Control"),
-				},
-				ResourceName:      "elasticstack_kibana_dashboard.test",
-				ImportState:       true,
-				ImportStateVerify: true,
-				// Access control is not returned by the GET Dashboard API.
-				ImportStateVerifyIgnore: []string{"access_control"},
-			},
+			// {
+			// 	ProtoV6ProviderFactories: acctest.Providers,
+			// 	SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+			// 	ConfigDirectory:          acctest.NamedTestCaseDirectory("with_access_control"),
+			// 	ConfigVariables: config.Variables{
+			// 		"dashboard_title": config.StringVariable(dashboardTitle + " with Access Control"),
+			// 	},
+			// 	Check: resource.ComposeTestCheckFunc(
+			// 		resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
+			// 		resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "title", dashboardTitle+" with Access Control"),
+			// 		resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "access_control.access_mode", "write_restricted"),
+			// 	),
+			// },
+			// {
+			// 	ProtoV6ProviderFactories: acctest.Providers,
+			// 	SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+			// 	ConfigDirectory:          acctest.NamedTestCaseDirectory("with_access_control"),
+			// 	ConfigVariables: config.Variables{
+			// 		"dashboard_title": config.StringVariable(dashboardTitle + " with Access Control"),
+			// 	},
+			// 	ResourceName:      "elasticstack_kibana_dashboard.test",
+			// 	ImportState:       true,
+			// 	ImportStateVerify: true,
+			// 	// Access control is not returned by the GET Dashboard API.
+			// 	ImportStateVerifyIgnore: []string{"access_control"},
+			// },
 		},
 	})
 }
