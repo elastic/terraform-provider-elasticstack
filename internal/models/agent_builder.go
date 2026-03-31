@@ -17,7 +17,6 @@
 
 package models
 
-<<<<<<< HEAD
 type Tool struct {
 	ID            string         `json:"id"`
 	Type          string         `json:"type"`
@@ -27,8 +26,6 @@ type Tool struct {
 	Configuration map[string]any `json:"configuration"`
 }
 
-=======
->>>>>>> main
 type Workflow struct {
 	ID          string  `json:"id"`
 	Yaml        string  `json:"yaml"`
