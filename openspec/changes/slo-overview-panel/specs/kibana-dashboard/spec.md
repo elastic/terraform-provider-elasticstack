@@ -2,6 +2,8 @@
 
 ### Requirement: Replacement fields and schema validation (REQ-006)
 
+Schema validation SHALL enforce that `slo_overview_config` is valid only for panels with `type = "slo_overview"`, is mutually exclusive with all other panel configuration blocks and with `config_json`, that exactly one of `single` or `groups` is set, and that `groups.group_filters.group_by` is restricted to its documented enum values.
+
 REQ-006 is extended to include:
 
 - `slo_overview_config` SHALL be valid only for panels with `type = "slo_overview"`.
@@ -29,6 +31,8 @@ REQ-006 is extended to include:
 - THEN the configuration SHALL be rejected before any dashboard API call
 
 ### Requirement: Panels, sections, and `config_json` round-trip behavior (REQ-010)
+
+`config_json` SHALL NOT be supported for `slo_overview` panels; the `slo_overview` panel type SHALL be managed exclusively through the typed `slo_overview_config` block.
 
 The existing REQ-010 text:
 

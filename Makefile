@@ -186,9 +186,9 @@ node_modules/.openspec-stamp: package-lock.json package.json
 	@ touch $@
 
 .PHONY: check-openspec
-check-openspec: ## Validate OpenSpec specs (structural); requires `make setup` or `make setup-openspec`
+check-openspec: ## Validate OpenSpec specs and change proposals (structural); requires `make setup` or `make setup-openspec`
 	@ test -x $(OPENSPEC_BIN) || { echo "OpenSpec CLI missing; run 'make setup' or 'make setup-openspec'" >&2; exit 1; }
-	@ OPENSPEC_TELEMETRY=0 $(OPENSPEC_BIN) validate --specs
+	@ OPENSPEC_TELEMETRY=0 $(OPENSPEC_BIN) validate --all
 
 .PHONY: renovate-post-upgrade
 renovate-post-upgrade: vendor notice

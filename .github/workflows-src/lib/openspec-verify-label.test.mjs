@@ -33,3 +33,24 @@ test('verify-label workflow provisions Terraform with wrapper disabled', () => {
   assert.match(source, /uses: hashicorp\/setup-terraform@v4/);
   assert.match(source, /terraform_wrapper: false/);
 });
+
+test('verify-label workflow declares remove-labels safe output for verify-openspec only', () => {
+  const source = workflowSource();
+  assert.match(
+    source,
+    /remove-labels:\s*\n\s*target:\s*triggering\s*\n\s*allowed:\s*\[\s*verify-openspec\s*\]\s*\n\s*max:\s*1/m,
+  );
+});
+
+test('verify-label workflow does not use completion_cleanup job or inline label-removal script', () => {
+  const source = workflowSource();
+  assert.doesNotMatch(source, /completion_cleanup/);
+  assert.doesNotMatch(source, /remove_verify_label\.inline\.js/);
+});
+
+test('verify-label workflow prompt instructs terminal remove-labels cleanup', () => {
+  const source = workflowSource();
+  assert.match(source, /## Remove trigger label \(final safe outputs\)/);
+  assert.match(source, /remove-labels.*terminal/s);
+  assert.match(source, /post-agent script or job/);
+});
