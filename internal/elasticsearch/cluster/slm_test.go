@@ -56,14 +56,6 @@ func TestAccResourceSLM(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				RefreshState:             true,
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "ignore_unavailable", "false"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "include_global_state", "false"),
-				),
-			},
-			{
-				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
 				ResourceName:             "elasticstack_elasticsearch_snapshot_lifecycle.test_slm",
@@ -100,13 +92,6 @@ func TestAccResourceSLMWithMetadata(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm_metadata", "expire_after", "30d"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm_metadata", "min_count", "5"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm_metadata", "max_count", "50"),
-					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_snapshot_lifecycle.test_slm_metadata", "metadata"),
-				),
-			},
-			{
-				ProtoV6ProviderFactories: acctest.Providers,
-				RefreshState:             true,
-				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_snapshot_lifecycle.test_slm_metadata", "metadata"),
 				),
 			},

@@ -140,14 +140,8 @@ func TestAccResourceSecurityAPIKeyRotation(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ExternalProviders: map[string]resource.ExternalProvider{
-					"time": {
-						Source:            "hashicorp/time",
-						VersionConstraint: "0.9.0",
-					},
-				},
-				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(apikey.MinVersion),
-				ConfigDirectory: acctest.NamedTestCaseDirectory("rotation"),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(apikey.MinVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("rotation"),
 				ConfigVariables: config.Variables{
 					"api_key_name": config.StringVariable(apiKeyName),
 					"epoch":        config.StringVariable("1"),
@@ -173,14 +167,8 @@ func TestAccResourceSecurityAPIKeyRotation(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ExternalProviders: map[string]resource.ExternalProvider{
-					"time": {
-						Source:            "hashicorp/time",
-						VersionConstraint: "0.9.0",
-					},
-				},
-				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(apikey.MinVersion),
-				ConfigDirectory: acctest.NamedTestCaseDirectory("rotation"),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(apikey.MinVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("rotation"),
 				ConfigVariables: config.Variables{
 					"api_key_name": config.StringVariable(apiKeyName),
 					"epoch":        config.StringVariable("2"),

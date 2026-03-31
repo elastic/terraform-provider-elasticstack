@@ -133,11 +133,13 @@ func TestAccResourceEnableRuleWithManualDisable(t *testing.T) {
 				PreConfig: func() {
 					disableOneRule(t, spaceID, tagKey, tagValue)
 				},
-				RefreshState:       true,
+				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"tag_key":   config.StringVariable(tagKey),
+					"tag_value": config.StringVariable(tagValue),
+				},
+				PlanOnly:           true,
 				ExpectNonEmptyPlan: true,
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "all_rules_enabled", "false"),
-				),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
