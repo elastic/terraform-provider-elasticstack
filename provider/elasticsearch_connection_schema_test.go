@@ -58,6 +58,10 @@ func runSDKEntitySubtests(t *testing.T, entityKind string, entities map[string]*
 			if !reflect.DeepEqual(actual, expected) {
 				t.Fatalf("entity %q %q schema does not exactly match helper definition", entityName, esConnectionBlockKey)
 			}
+
+			if actual.Deprecated != "" {
+				t.Fatalf("entity %q %q schema has unexpected deprecation warning: %q", entityName, esConnectionBlockKey, actual.Deprecated)
+			}
 		})
 	}
 }
@@ -139,6 +143,10 @@ func runFrameworkResourceSubtests(t *testing.T, ctx context.Context, entities []
 			if !reflect.DeepEqual(actual, expected) {
 				t.Fatalf("resource %q %q block does not exactly match helper definition", entity.name, esConnectionBlockKey)
 			}
+
+			if msg := actual.GetDeprecationMessage(); msg != "" {
+				t.Fatalf("resource %q %q block has unexpected deprecation message: %q", entity.name, esConnectionBlockKey, msg)
+			}
 		})
 	}
 }
@@ -159,6 +167,10 @@ func runFrameworkDataSourceSubtests(t *testing.T, ctx context.Context, entities 
 
 			if !reflect.DeepEqual(actual, expected) {
 				t.Fatalf("data source %q %q block does not exactly match helper definition", entity.name, esConnectionBlockKey)
+			}
+
+			if msg := actual.GetDeprecationMessage(); msg != "" {
+				t.Fatalf("data source %q %q block has unexpected deprecation message: %q", entity.name, esConnectionBlockKey, msg)
 			}
 		})
 	}
