@@ -42,7 +42,7 @@ output "workflow_yaml" {
 
 ### Optional
 
-- `include_workflow` (Boolean) When true, the workflow referenced by this tool will also be exported. Only valid when the tool type is `workflow`. Defaults to false.
+- `include_workflow` (Boolean) When true, the workflow referenced by this tool will also be exported. Only valid when the tool type is `workflow`. Requires Kibana 9.4.0 or above. Defaults to false.
 - `space_id` (String) An identifier for the space. If space_id is not provided, the default space is used.
 
 ### Read-Only
