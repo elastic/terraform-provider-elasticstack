@@ -560,7 +560,8 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 		default:
 			diags.AddError(
 				"Unsupported panel type for config_json",
-				"Only markdown and lens panel types are currently supported with config_json.",
+				"Only markdown and lens panel types are currently supported with config_json. "+
+					"The esql_control panel type must be managed using the esql_control_config block.",
 			)
 			return kbapi.DashboardPanelItem{}, diags
 		}
