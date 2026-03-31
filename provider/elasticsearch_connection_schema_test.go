@@ -69,7 +69,7 @@ func runSDKEntitySubtests(t *testing.T, entityKind string, entities map[string]*
 func TestFrameworkElasticsearchEntities_ConnectionSchemaMatchesHelper(t *testing.T) {
 	ctx := context.Background()
 	baseProvider := provider.NewFrameworkProvider("dev")
-	expected := providerschema.GetEsFWConnectionBlock(false)
+	expected := providerschema.GetEsFWConnectionBlock()
 
 	resourceEntities := frameworkResourceEntities(ctx, baseProvider)
 	dataSourceEntities := frameworkDataSourceEntities(ctx, baseProvider)
