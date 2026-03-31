@@ -253,6 +253,17 @@ func TestAccResourceOutputLogstash(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "ssl.key", "placeholder"),
 				),
 			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				ResourceName:      "elasticstack_fleet_output.test_output",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
 		},
 	})
 }
