@@ -29,7 +29,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func GetEsFWConnectionBlock(isProviderConfiguration bool) fwschema.Block {
+func GetEsFWConnectionBlock(_ bool) fwschema.Block {
 	usernamePath := path.MatchRelative().AtParent().AtName("username")
 	passwordPath := path.MatchRelative().AtParent().AtName("password")
 	apiKeyPath := path.MatchRelative().AtParent().AtName("api_key")
@@ -542,4 +542,3 @@ func GetFleetConnectionSchema() *schema.Schema {
 func makePathRef(keyName string, keyValue string) string {
 	return fmt.Sprintf("%s.0.%s", keyName, keyValue)
 }
-
