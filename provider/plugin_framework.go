@@ -51,6 +51,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/securitylistitem"
 	kibanaslo "github.com/elastic/terraform-provider-elasticstack/internal/kibana/slo"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/spaces"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/streams"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics/monitor"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics/parameter"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics/privatelocation"
@@ -185,6 +186,7 @@ func (p *Provider) resources(_ context.Context, validateLocation bool) []func() 
 func (p *Provider) experimentalResources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		dashboard.NewResource,
+		streams.NewResource,
 	}
 }
 
