@@ -69,7 +69,7 @@
     "elasticstack_elasticsearch_index_template": "2026-03-31T09:37:51Z",
     "elasticstack_elasticsearch_index_template_ilm_attachment": "2026-03-31T10:21:19Z",
     "elasticstack_elasticsearch_ingest_pipeline": "2026-03-19T02:29:37Z",
-    "elasticstack_elasticsearch_logstash_pipeline": null,
+    "elasticstack_elasticsearch_logstash_pipeline": "2026-04-01T10:38:58.270Z",
     "elasticstack_elasticsearch_ml_anomaly_detection_job": null,
     "elasticstack_elasticsearch_ml_datafeed": null,
     "elasticstack_elasticsearch_ml_datafeed_state": null,
