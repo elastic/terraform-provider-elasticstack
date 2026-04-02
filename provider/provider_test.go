@@ -131,105 +131,74 @@ func TestFleetBearerTokenConfiguration(t *testing.T) {
 func TestKibanaConfiguration(t *testing.T) {
 	var envConfig config.Client
 
-	testCases := []struct {
-		name string
-		tc   func() resource.TestCase
-		pre  func(t *testing.T)
-		post func(t *testing.T)
-	}{
-		{
-			name: "with username and password",
-			pre: func(_ *testing.T) {
-				envConfig = config.NewFromEnv("acceptance-testing")
-			},
-			post: func(_ *testing.T) {},
-			tc: func() resource.TestCase {
-				return resource.TestCase{
-					PreCheck: func() { acctest.PreCheck(t) },
-					Steps: []resource.TestStep{
-						{
-							ProtoV6ProviderFactories: acctest.Providers,
-							SkipFunc: func() (bool, error) {
-								return envConfig.Kibana.Username == "", nil
-							},
-							ConfigDirectory: acctest.NamedTestCaseDirectory("username_password"),
-							ConfigVariables: kibanaUsernamePasswordConfigVariables(envConfig),
-							Check: resource.ComposeTestCheckFunc(
-								resource.TestCheckResourceAttrSet("elasticstack_kibana_space.acc_test", "name"),
-							),
-						},
+	t.Run("with username and password", func(_ *testing.T) {
+		envConfig = config.NewFromEnv("acceptance-testing")
+		resource.Test(t, resource.TestCase{
+			PreCheck: func() { acctest.PreCheck(t) },
+			Steps: []resource.TestStep{
+				{
+					ProtoV6ProviderFactories: acctest.Providers,
+					SkipFunc: func() (bool, error) {
+						return envConfig.Kibana.Username == "", nil
 					},
-				}
+					ConfigDirectory: acctest.NamedTestCaseDirectory("username_password"),
+					ConfigVariables: kibanaUsernamePasswordConfigVariables(envConfig),
+					Check: resource.ComposeTestCheckFunc(
+						resource.TestCheckResourceAttrSet("elasticstack_kibana_space.acc_test", "name"),
+					),
+				},
 			},
-		},
-		{
-			name: "with api key",
-			pre: func(t *testing.T) {
-				apiKey := os.Getenv("KIBANA_API_KEY")
-				t.Setenv("KIBANA_USERNAME", "")
-				t.Setenv("KIBANA_PASSWORD", "")
-				t.Setenv("KIBANA_API_KEY", apiKey)
-				envConfig = config.NewFromEnv("acceptance-testing")
-			},
-			post: func(_ *testing.T) {},
-			tc: func() resource.TestCase {
-				return resource.TestCase{
-					PreCheck: func() { acctest.PreCheck(t) },
-					Steps: []resource.TestStep{
-						{
-							ProtoV6ProviderFactories: acctest.Providers,
-							SkipFunc: func() (bool, error) {
-								return os.Getenv("KIBANA_API_KEY") == "", nil
-							},
-							ConfigDirectory: acctest.NamedTestCaseDirectory("api_key"),
-							ConfigVariables: kibanaAPIKeyConfigVariables(envConfig),
-							Check: resource.ComposeTestCheckFunc(
-								resource.TestCheckResourceAttrSet("elasticstack_kibana_space.acc_test", "name"),
-							),
-						},
-					},
-				}
-			},
-		},
-		{
-			name: "with bearer token",
-			pre: func(t *testing.T) {
-				bearerToken := os.Getenv("KIBANA_BEARER_TOKEN")
-				t.Setenv("KIBANA_USERNAME", "")
-				t.Setenv("KIBANA_PASSWORD", "")
-				t.Setenv("KIBANA_API_KEY", "")
-				t.Setenv("KIBANA_BEARER_TOKEN", bearerToken)
-				envConfig = config.NewFromEnv("acceptance-testing")
-			},
-			post: func(_ *testing.T) {},
-			tc: func() resource.TestCase {
-				return resource.TestCase{
-					PreCheck: func() { acctest.PreCheck(t) },
-					Steps: []resource.TestStep{
-						{
-							ProtoV6ProviderFactories: acctest.Providers,
-							SkipFunc: func() (bool, error) {
-								return os.Getenv("KIBANA_BEARER_TOKEN") == "", nil
-							},
-							ConfigDirectory: acctest.NamedTestCaseDirectory("bearer_token"),
-							ConfigVariables: kibanaBearerTokenConfigVariables(envConfig),
-							Check: resource.ComposeTestCheckFunc(
-								resource.TestCheckResourceAttrSet("elasticstack_kibana_space.acc_test", "name"),
-							),
-						},
-					},
-				}
-			},
-		},
-	}
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			tc.pre(t)
-			resource.Test(t, tc.tc())
-			tc.post(t)
 		})
+	})
 
-	}
+	t.Run("with api key", func(t *testing.T) {
+		apiKey := os.Getenv("KIBANA_API_KEY")
+		t.Setenv("KIBANA_USERNAME", "")
+		t.Setenv("KIBANA_PASSWORD", "")
+		t.Setenv("KIBANA_API_KEY", apiKey)
+		envConfig = config.NewFromEnv("acceptance-testing")
+		resource.Test(t, resource.TestCase{
+			PreCheck: func() { acctest.PreCheck(t) },
+			Steps: []resource.TestStep{
+				{
+					ProtoV6ProviderFactories: acctest.Providers,
+					SkipFunc: func() (bool, error) {
+						return os.Getenv("KIBANA_API_KEY") == "", nil
+					},
+					ConfigDirectory: acctest.NamedTestCaseDirectory("api_key"),
+					ConfigVariables: kibanaAPIKeyConfigVariables(envConfig),
+					Check: resource.ComposeTestCheckFunc(
+						resource.TestCheckResourceAttrSet("elasticstack_kibana_space.acc_test", "name"),
+					),
+				},
+			},
+		})
+	})
+
+	t.Run("with bearer token", func(t *testing.T) {
+		bearerToken := os.Getenv("KIBANA_BEARER_TOKEN")
+		t.Setenv("KIBANA_USERNAME", "")
+		t.Setenv("KIBANA_PASSWORD", "")
+		t.Setenv("KIBANA_API_KEY", "")
+		t.Setenv("KIBANA_BEARER_TOKEN", bearerToken)
+		envConfig = config.NewFromEnv("acceptance-testing")
+		resource.Test(t, resource.TestCase{
+			PreCheck: func() { acctest.PreCheck(t) },
+			Steps: []resource.TestStep{
+				{
+					ProtoV6ProviderFactories: acctest.Providers,
+					SkipFunc: func() (bool, error) {
+						return os.Getenv("KIBANA_BEARER_TOKEN") == "", nil
+					},
+					ConfigDirectory: acctest.NamedTestCaseDirectory("bearer_token"),
+					ConfigVariables: kibanaBearerTokenConfigVariables(envConfig),
+					Check: resource.ComposeTestCheckFunc(
+						resource.TestCheckResourceAttrSet("elasticstack_kibana_space.acc_test", "name"),
+					),
+				},
+			},
+		})
+	})
 }
 
 func kibanaUsernamePasswordConfigVariables(cfg config.Client) tfconfig.Variables {

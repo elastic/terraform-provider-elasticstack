@@ -35,7 +35,7 @@ const (
 
 var Analyzer = &analysis.Analyzer{
 	Name:     "acctestconfigdirlint",
-	Doc:      "enforce directory-backed fixture usage in acceptance test steps",
+	Doc:      "enforce directory-backed fixtures and step-local provider wiring in acceptance tests (resource.TestCase must be a composite literal as the second argument to resource.Test or resource.ParallelTest)",
 	Requires: []*analysis.Analyzer{inspect.Analyzer},
 	Run:      run,
 }
@@ -92,10 +92,9 @@ func isAcceptanceTestCall(pass *analysis.Pass, call *ast.CallExpr) bool {
 }
 
 // inspectTestCase extracts the Steps slice from a resource.TestCase and inspects each step.
+// Only a composite literal is analyzed: patterns such as resource.Test(t, factory()) are not
+// followed, so acceptance tests should pass the TestCase literal directly as the second argument.
 func inspectTestCase(pass *analysis.Pass, expr ast.Expr) {
-	// The TestCase may be a composite literal or a variable reference.
-	// Handle composite literal directly; for variables, we can't easily follow them,
-	// so we only handle the inline literal case.
 	lit, ok := expr.(*ast.CompositeLit)
 	if !ok {
 		return
@@ -223,6 +222,9 @@ func inspectTestStep(pass *analysis.Pass, lit *ast.CompositeLit) {
 		case hasConfig && !hasExternalProviders:
 			// Ordinary step with inline Config but no ExternalProviders.
 			pass.Reportf(configExpr.Pos(), msgInlineConfigWithoutExternalProviders)
+			// Do not also report missing provider wiring for the same step; the inline-Config
+			// diagnostic is the actionable fix for ordinary coverage.
+			return
 		}
 	}
 
