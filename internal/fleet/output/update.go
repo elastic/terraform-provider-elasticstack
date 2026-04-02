@@ -47,7 +47,7 @@ func (r *outputResource) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
-	body, diags := planModel.toAPIUpdateModel(ctx, r.client)
+	body, diags := planModel.toAPIUpdateModel(ctx, r.client, stateModel)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -71,6 +71,7 @@ func (r *outputResource) Update(ctx context.Context, req resource.UpdateRequest,
 	}
 
 	plannedSSL := planModel.Ssl
+	plannedConfigYaml := planModel.ConfigYaml
 	// Populate from API response
 	// With Sets, we don't need order preservation - Terraform handles set comparison automatically
 	diags = planModel.populateFromAPI(ctx, output)
@@ -79,6 +80,7 @@ func (r *outputResource) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 	planModel.Ssl = normalizeSSLFromPlan(plannedSSL, planModel.Ssl)
+	planModel.ConfigYaml = normalizeConfigYamlFromPlan(plannedConfigYaml, planModel.ConfigYaml)
 
 	diags = resp.State.Set(ctx, planModel)
 	resp.Diagnostics.Append(diags...)

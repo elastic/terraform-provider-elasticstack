@@ -64,7 +64,7 @@ func Test_outputModel_toAPIUpdateModel_logstash(t *testing.T) {
 		Ssl:                 types.ObjectNull(getSslAttrTypes()),
 	}
 
-	union, diags := model.toAPIUpdateModel(context.Background(), nil)
+	union, diags := model.toAPIUpdateModel(context.Background(), nil, outputModel{})
 	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags)
 
 	updateModel, err := union.AsUpdateOutputLogstash()
@@ -73,6 +73,24 @@ func Test_outputModel_toAPIUpdateModel_logstash(t *testing.T) {
 	assert.Equal(t, "logstash", string(*updateModel.Type))
 	require.NotNil(t, updateModel.Name)
 	assert.Equal(t, "Updated Logstash Output", *updateModel.Name)
+}
+
+func Test_logstashConfigYamlForUpdate(t *testing.T) {
+	t.Parallel()
+
+	t.Run("plan set returns plan value", func(t *testing.T) {
+		v := logstashConfigYamlForUpdate(types.StringValue("a: 1"), types.StringNull())
+		require.NotNil(t, v)
+		assert.Equal(t, "a: 1", *v)
+	})
+	t.Run("plan unset and prior value clears with empty string", func(t *testing.T) {
+		v := logstashConfigYamlForUpdate(types.StringNull(), types.StringValue(`"ssl.verification_mode": none`))
+		require.NotNil(t, v)
+		assert.Equal(t, "", *v)
+	})
+	t.Run("plan unset and no prior value omits field", func(t *testing.T) {
+		assert.Nil(t, logstashConfigYamlForUpdate(types.StringNull(), types.StringNull()))
+	})
 }
 
 func Test_outputModel_populateFromAPI_logstash(t *testing.T) {

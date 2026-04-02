@@ -92,14 +92,14 @@ func (model outputModel) toAPICreateModel(ctx context.Context, client *clients.A
 	}
 }
 
-func (model outputModel) toAPIUpdateModel(ctx context.Context, client *clients.APIClient) (union kbapi.UpdateOutputUnion, diags diag.Diagnostics) {
+func (model outputModel) toAPIUpdateModel(ctx context.Context, client *clients.APIClient, state outputModel) (union kbapi.UpdateOutputUnion, diags diag.Diagnostics) {
 	outputType := model.Type.ValueString()
 
 	switch outputType {
 	case "elasticsearch":
 		return model.toAPIUpdateElasticsearchModel(ctx)
 	case "logstash":
-		return model.toAPIUpdateLogstashModel(ctx)
+		return model.toAPIUpdateLogstashModel(ctx, state)
 	case "kafka":
 		if diags := assertKafkaSupport(ctx, client); diags.HasError() {
 			return kbapi.UpdateOutputUnion{}, diags

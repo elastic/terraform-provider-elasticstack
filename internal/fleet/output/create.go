@@ -66,12 +66,14 @@ func (r *outputResource) Create(ctx context.Context, req resource.CreateRequest,
 	}
 
 	plannedSSL := planModel.Ssl
+	plannedConfigYaml := planModel.ConfigYaml
 	diags = planModel.populateFromAPI(ctx, output)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 	planModel.Ssl = normalizeSSLFromPlan(plannedSSL, planModel.Ssl)
+	planModel.ConfigYaml = normalizeConfigYamlFromPlan(plannedConfigYaml, planModel.ConfigYaml)
 
 	diags = resp.State.Set(ctx, planModel)
 	resp.Diagnostics.Append(diags...)
