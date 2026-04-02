@@ -351,10 +351,18 @@ func TestAccResourceLogstashPipelineExplicitConnection(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ResourceName:             resourceName,
-				ImportState:              true,
-				ImportStateVerify:        true,
-				ImportStateVerifyIgnore:  []string{"elasticsearch_connection"},
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"pipeline_id": config.StringVariable(pipelineID),
+					"endpoints":   config.ListVariable(endpointVars...),
+					"api_key":     config.StringVariable(os.Getenv("ELASTICSEARCH_API_KEY")),
+					"username":    config.StringVariable(os.Getenv("ELASTICSEARCH_USERNAME")),
+					"password":    config.StringVariable(os.Getenv("ELASTICSEARCH_PASSWORD")),
+				},
+				ResourceName:            resourceName,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"elasticsearch_connection"},
 			},
 		},
 	})
