@@ -86,7 +86,7 @@ func Test_logstashConfigYamlForUpdate(t *testing.T) {
 	t.Run("plan unset and prior value clears with empty string", func(t *testing.T) {
 		v := logstashConfigYamlForUpdate(types.StringNull(), types.StringValue(`"ssl.verification_mode": none`))
 		require.NotNil(t, v)
-		assert.Equal(t, "", *v)
+		assert.Empty(t, *v)
 	})
 	t.Run("plan unset and no prior value omits field", func(t *testing.T) {
 		assert.Nil(t, logstashConfigYamlForUpdate(types.StringNull(), types.StringNull()))
