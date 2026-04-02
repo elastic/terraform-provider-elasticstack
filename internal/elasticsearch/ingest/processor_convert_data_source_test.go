@@ -26,11 +26,11 @@ import (
 
 func TestAccDataSourceIngestProcessorConvert(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorConvert,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_convert.test", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_convert.test", "field", "id"),
@@ -40,7 +40,8 @@ func TestAccDataSourceIngestProcessorConvert(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccDataSourceIngestProcessorConvertAllAttributes,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("all_attributes"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_convert.test", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_convert.test", "field", "id"),
@@ -60,11 +61,11 @@ func TestAccDataSourceIngestProcessorConvert(t *testing.T) {
 
 func TestAccDataSourceIngestProcessorConvertOnFailure(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorConvertOnFailure,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_convert.test", "on_failure.#", "1"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_convert.test", "ignore_failure", "false"),
@@ -116,51 +117,3 @@ const expectedJSONConvertOnFailure = `{
 		]
 	}
 }`
-
-const testAccDataSourceIngestProcessorConvert = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_convert" "test" {
-  description = "converts the content of the id field to an integer"
-  field       = "id"
-  type        = "integer"
-}
-`
-
-const testAccDataSourceIngestProcessorConvertAllAttributes = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_convert" "test" {
-  description    = "converts the content of the id field to an integer"
-  field          = "id"
-  target_field   = "converted_id"
-  type           = "integer"
-  if             = "ctx.id != null"
-  ignore_missing = true
-  ignore_failure = true
-  tag            = "convert-tag"
-}
-`
-
-const testAccDataSourceIngestProcessorConvertOnFailure = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_convert" "test" {
-  field = "id"
-  type  = "integer"
-  on_failure = [
-    jsonencode({
-      set = {
-        field = "error.message"
-        value = "convert failed"
-      }
-    })
-  ]
-}
-`

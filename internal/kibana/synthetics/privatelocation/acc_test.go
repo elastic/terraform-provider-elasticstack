@@ -27,18 +27,9 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
-)
-
-const (
-	providerConfig = `
-provider "elasticstack" {
-  	elasticsearch {}
-	kibana {}
-	fleet{}
-}
-`
 )
 
 var (
@@ -49,23 +40,16 @@ func TestSyntheticPrivateLocationResource(t *testing.T) {
 	resourceID := "elasticstack_kibana_synthetics_private_location.test"
 	randomSuffix := sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaPrivateLocationAPIVersion),
-				Config: testConfig("testacc", "test_policy", randomSuffix) + fmt.Sprintf(`
-resource "elasticstack_kibana_synthetics_private_location" "test" {
-	label = "pl-test-label-%s"
-	agent_policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
-	tags = ["a", "b"]
-	geo = {
-		lat = 42.42
-		lon = -42.42
-	}
-}
-`, randomSuffix),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaPrivateLocationAPIVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"suffix": config.StringVariable(randomSuffix),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceID, "label", fmt.Sprintf("pl-test-label-%s", randomSuffix)),
 					resource.TestCheckResourceAttrSet(resourceID, "agent_policy_id"),
@@ -78,36 +62,24 @@ resource "elasticstack_kibana_synthetics_private_location" "test" {
 			},
 			// ImportState testing
 			{
-				SkipFunc:          versionutils.CheckIfVersionIsUnsupported(minKibanaPrivateLocationAPIVersion),
-				ResourceName:      resourceID,
-				ImportState:       true,
-				ImportStateVerify: true,
-				Config: testConfig("testacc", "test_policy", randomSuffix) + fmt.Sprintf(`
-resource "elasticstack_kibana_synthetics_private_location" "test" {
-	label = "pl-test-label-%s"
-	agent_policy_id = elasticstack_fleet_agent_policy.test_policy.policy_id
-	tags = ["a", "b"]
-	geo = {
-		lat = 42.42
-		lon = -42.42
-	}
-}
-`, randomSuffix),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaPrivateLocationAPIVersion),
+				ResourceName:             resourceID,
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("import"),
+				ConfigVariables: config.Variables{
+					"suffix": config.StringVariable(randomSuffix),
+				},
 			},
 			// Update and Read testing
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaPrivateLocationAPIVersion),
-				Config: testConfig("default", "test_policy_default", randomSuffix) + fmt.Sprintf(`
-resource "elasticstack_kibana_synthetics_private_location" "test" {
-	label = "pl-test-label-2-%s"
-	agent_policy_id = elasticstack_fleet_agent_policy.test_policy_default.policy_id
-	tags = ["c", "d", "e"]
-	geo = {
-		lat = -33.21
-		lon = -33.21
-	}
-}
-`, randomSuffix),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaPrivateLocationAPIVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_with_geo"),
+				ConfigVariables: config.Variables{
+					"suffix": config.StringVariable(randomSuffix),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceID, "label", fmt.Sprintf("pl-test-label-2-%s", randomSuffix)),
 					resource.TestCheckResourceAttrSet(resourceID, "agent_policy_id"),
@@ -121,13 +93,12 @@ resource "elasticstack_kibana_synthetics_private_location" "test" {
 			},
 			// Update and Read testing
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaPrivateLocationAPIVersion),
-				Config: testConfig("default", "test_policy_default", randomSuffix) + fmt.Sprintf(`
-resource "elasticstack_kibana_synthetics_private_location" "test" {
-	label = "pl-test-label-2-%s"
-	agent_policy_id = elasticstack_fleet_agent_policy.test_policy_default.policy_id
-}
-`, randomSuffix),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaPrivateLocationAPIVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_no_optional"),
+				ConfigVariables: config.Variables{
+					"suffix": config.StringVariable(randomSuffix),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceID, "label", fmt.Sprintf("pl-test-label-2-%s", randomSuffix)),
 					resource.TestCheckResourceAttrSet(resourceID, "agent_policy_id"),
@@ -137,14 +108,12 @@ resource "elasticstack_kibana_synthetics_private_location" "test" {
 			},
 			// Update and Read testing
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaPrivateLocationAPIVersion),
-				Config: testConfig("default", "test_policy_default", randomSuffix) + fmt.Sprintf(`
-resource "elasticstack_kibana_synthetics_private_location" "test" {
-	label = "pl-test-label-2-%s"
-	agent_policy_id = elasticstack_fleet_agent_policy.test_policy_default.policy_id
-	tags = ["c", "d", "e"]
-}
-`, randomSuffix),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaPrivateLocationAPIVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_tags_only"),
+				ConfigVariables: config.Variables{
+					"suffix": config.StringVariable(randomSuffix),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceID, "label", fmt.Sprintf("pl-test-label-2-%s", randomSuffix)),
 					resource.TestCheckResourceAttrSet(resourceID, "agent_policy_id"),
@@ -157,17 +126,12 @@ resource "elasticstack_kibana_synthetics_private_location" "test" {
 			},
 			// Update and Read testing
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minKibanaPrivateLocationAPIVersion),
-				Config: testConfig("default", "test_policy_default", randomSuffix) + fmt.Sprintf(`
-resource "elasticstack_kibana_synthetics_private_location" "test" {
-	label = "pl-test-label-2-%s"
-	agent_policy_id = elasticstack_fleet_agent_policy.test_policy_default.policy_id
-	geo = {
-		lat = -33.21
-		lon = -33.21
-	}
-}
-`, randomSuffix),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaPrivateLocationAPIVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_geo_only"),
+				ConfigVariables: config.Variables{
+					"suffix": config.StringVariable(randomSuffix),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceID, "label", fmt.Sprintf("pl-test-label-2-%s", randomSuffix)),
 					resource.TestCheckResourceAttrSet(resourceID, "agent_policy_id"),
@@ -179,17 +143,4 @@ resource "elasticstack_kibana_synthetics_private_location" "test" {
 			// Delete testing automatically occurs in TestCase
 		},
 	})
-}
-
-func testConfig(namespace, agentPolicy, randomSuffix string) string {
-	return providerConfig + fmt.Sprintf(`
-resource "elasticstack_fleet_agent_policy" "%s" {
-	name            = "Private Location Agent Policy - %s - %s"
-	namespace       = "%s"
-	description     = "TestPrivateLocationResource Agent Policy"
-	monitor_logs    = true
-	monitor_metrics = true
-	skip_destroy    = false
-}
-`, agentPolicy, agentPolicy, randomSuffix, namespace)
 }
