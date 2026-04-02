@@ -21,7 +21,6 @@ import (
 	_ "embed"
 	"fmt"
 	"os"
-	"path"
 	"strings"
 	"testing"
 
@@ -217,7 +216,7 @@ func TestAccResourceILMRolloverConditions(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(ilm.RolloverMinConditionsMinSupportedVersion),
-				ConfigDirectory:          legacyIndexTestCaseDirectory("update"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
 				},
@@ -371,7 +370,7 @@ func TestAccResourceILMFrozenPhase(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          legacyIndexTestCaseDirectory("create"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name":     config.StringVariable(policyName),
 					"repository_name": config.StringVariable(repositoryName),
@@ -399,7 +398,7 @@ func TestAccResourceILMDeleteWaitForSnapshot(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          legacyIndexTestCaseDirectory("create"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name":     config.StringVariable(policyName),
 					"repository_name": config.StringVariable(repositoryName),
@@ -414,7 +413,7 @@ func TestAccResourceILMDeleteWaitForSnapshot(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          legacyIndexTestCaseDirectory("restore_default"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("restore_default"),
 				ConfigVariables: config.Variables{
 					"policy_name":     config.StringVariable(policyName),
 					"repository_name": config.StringVariable(repositoryName),
@@ -429,7 +428,7 @@ func TestAccResourceILMDeleteWaitForSnapshot(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          legacyIndexTestCaseDirectory("remove_wait_for_snapshot"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("remove_wait_for_snapshot"),
 				ConfigVariables: config.Variables{
 					"policy_name":     config.StringVariable(policyName),
 					"repository_name": config.StringVariable(repositoryName),
@@ -499,7 +498,7 @@ func TestAccResourceILMSearchableSnapshotPhases(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          legacyIndexTestCaseDirectory("create"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name":     config.StringVariable(policyName),
 					"repository_name": config.StringVariable(repositoryName),
@@ -514,7 +513,7 @@ func TestAccResourceILMSearchableSnapshotPhases(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          legacyIndexTestCaseDirectory("update"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"policy_name":     config.StringVariable(policyName),
 					"repository_name": config.StringVariable(repositoryName),
@@ -541,7 +540,7 @@ func TestAccResourceILMHotActions(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(allowWriteAfterShrinkVersionLimit),
-				ConfigDirectory:          legacyIndexTestCaseDirectory("number_of_shards"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("number_of_shards"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
 				},
@@ -559,7 +558,7 @@ func TestAccResourceILMHotActions(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(allowWriteAfterShrinkVersionLimit),
-				ConfigDirectory:          legacyIndexTestCaseDirectory("max_primary_shard_size"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("max_primary_shard_size"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
 				},
@@ -588,7 +587,7 @@ func TestAccResourceILMWarmDownsampleAndShrink(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(allowWriteAfterShrinkVersionLimit),
-				ConfigDirectory:          legacyIndexTestCaseDirectory("create"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
 				},
@@ -609,7 +608,7 @@ func TestAccResourceILMWarmDownsampleAndShrink(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(allowWriteAfterShrinkVersionLimit),
-				ConfigDirectory:          legacyIndexTestCaseDirectory("update"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
 				},
@@ -641,7 +640,7 @@ func TestAccResourceILMColdAllocateAndDownsample(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(downsampleVersionLimit),
-				ConfigDirectory:          legacyIndexTestCaseDirectory("create"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
 				},
@@ -660,7 +659,7 @@ func TestAccResourceILMColdAllocateAndDownsample(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(downsampleVersionLimit),
-				ConfigDirectory:          legacyIndexTestCaseDirectory("update"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
 				},
@@ -688,7 +687,7 @@ func TestAccResourceILMPhaseActionToggles(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          legacyIndexTestCaseDirectory("create"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
 				},
@@ -707,7 +706,7 @@ func TestAccResourceILMPhaseActionToggles(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          legacyIndexTestCaseDirectory("update"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
 				},
@@ -868,13 +867,6 @@ func TestAccResourceILM_hotReadonlyDisabled(t *testing.T) {
 			},
 		},
 	})
-}
-
-func legacyIndexTestCaseDirectory(name string) config.TestStepConfigFunc {
-	return func(tscr config.TestStepConfigRequest) string {
-		testDir := config.TestNameDirectory()(tscr)
-		return path.Join(testDir, "..", "..", "..", "testdata", path.Base(testDir), name)
-	}
 }
 
 func ilmPrimaryESEndpoint() string {
