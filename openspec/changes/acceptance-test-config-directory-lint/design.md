@@ -1,19 +1,19 @@
 ## Context
 
-Acceptance-style provider tests commonly build `resource.TestCase` values passed to `resource.Test` or `resource.ParallelTest`, whose `Steps` are anonymous `resource.TestStep` literals. The current preferred pattern is:
+Acceptance-style provider tests commonly build inline `resource.TestCase` composite literals passed directly to `resource.Test` or `resource.ParallelTest`, whose `Steps` are anonymous `resource.TestStep` literals. The current preferred pattern is:
 
 - ordinary provider-managed steps use `ConfigDirectory: acctest.NamedTestCaseDirectory("<case>")`
 - ordinary provider-managed steps declare `ProtoV6ProviderFactories` on the `resource.TestStep`
 - compatibility steps that exercise a previous provider version use `ExternalProviders` together with inline `Config`
 - the enclosing `resource.TestCase` does not provide inherited `ProtoV6ProviderFactories`
 
-That structure is not easy to enforce with a pattern-only linter because the step literals are usually anonymous `{ ... }` elements inside `[]resource.TestStep`, and the rule depends on relationships between sibling fields on the same struct literal plus one field on the enclosing `resource.TestCase`. The repo also already has a suitable precedent for a custom type-aware analyzer via `analysis/esclienthelper`.
+That structure is not easy to enforce with a pattern-only linter because the step literals are usually anonymous `{ ... }` elements inside `[]resource.TestStep`, and the rule depends on relationships between sibling fields on the same struct literal plus one field on the enclosing `resource.TestCase`. The repo also already has a suitable precedent for a custom type-aware analyzer via `analysis/esclienthelper`. The implemented analyzer intentionally limits itself to inline `resource.TestCase` composite literals passed directly as the second argument, rather than following variables, helper-returned values, or broader data flow.
 
 ## Goals / Non-Goals
 
 **Goals:**
 
-- Enforce the acceptance-test fixture convention for in-scope `resource.TestStep` literals in any Go test file that uses `resource.Test` or `resource.ParallelTest`.
+- Enforce the acceptance-test fixture convention for in-scope `resource.TestStep` literals inside inline `resource.TestCase` composite literals passed directly to `resource.Test` or `resource.ParallelTest`.
 - Enforce that provider wiring is step-local: `ProtoV6ProviderFactories` belongs on ordinary `resource.TestStep` values, not on the enclosing `resource.TestCase`.
 - Require every in-scope `resource.TestStep` to declare exactly one provider-wiring path: `ProtoV6ProviderFactories` or `ExternalProviders`.
 - Allow exactly one inline-config exception path: steps that declare `ExternalProviders`.
@@ -24,6 +24,7 @@ That structure is not easy to enforce with a pattern-only linter because the ste
 **Non-Goals:**
 
 - Linting arbitrary `resource.TestStep`-shaped structs or unrelated composite literals outside actual `resource.Test` / `resource.ParallelTest` acceptance-test flows.
+- Following `resource.TestCase` values through variables, helper functions, factory functions, or other non-inline call patterns.
 - Enforcing that every test step always has either `Config` or `ConfigDirectory`; import-only, refresh-only, and plan-only steps may legitimately have neither.
 - Validating the semantic reason a step uses `ExternalProviders` beyond treating it as the accepted marker for previous-provider compatibility coverage.
 - Validating the contents of `ProtoV6ProviderFactories` or whether a specific external provider version is the correct historical one for a compatibility scenario.
@@ -33,7 +34,7 @@ That structure is not easy to enforce with a pattern-only linter because the ste
 
 - **Custom analyzer, not `gocritic` ruleguard**: Implement the rule as a dedicated `go/analysis` analyzer using the same plugin-module pattern as `analysis/esclienthelper`. The rule needs typed detection of `resource.TestStep` literals plus sibling-field validation on the same composite literal, which is a better fit for a real analyzer than for pattern-only ruleguard checks.
 
-- **Behavior-based scope, not path-based scope**: Analyze `_test.go` files anywhere in the repository and inspect `resource.TestStep` literals that appear within acceptance-test flows driven by `resource.Test` or `resource.ParallelTest`. This includes files like `internal/elasticsearch/index/template_test.go`, `internal/kibana/space_test.go`, and `provider/provider_test.go`, even when they are not named `*_acc_test.go`.
+- **Inline-literal scope, not generalized data-flow scope**: Analyze `_test.go` files anywhere in the repository, but only inspect `resource.TestStep` literals that appear inside inline `resource.TestCase` composite literals passed directly as the second argument to `resource.Test` or `resource.ParallelTest`. This still includes files like `internal/elasticsearch/index/template_test.go`, `internal/kibana/space_test.go`, and `provider/provider_test.go`, even when they are not named `*_acc_test.go`, but excludes patterns like `resource.Test(t, tc)` or `resource.Test(t, buildCase())`.
 
 - **Directory-backed default path**: Any in-scope `resource.TestStep` that supplies Terraform configuration through `ConfigDirectory` must call `acctest.NamedTestCaseDirectory(...)` directly. This keeps the fixture convention explicit, consistent, and easy to audit.
 
@@ -53,11 +54,11 @@ That structure is not easy to enforce with a pattern-only linter because the ste
   - compatibility steps with `ExternalProviders` should use inline `Config`
   - `config.TestNameDirectory()` and other `ConfigDirectory` helpers are not accepted in-scope
 
-- **Migration before full enforcement**: Existing in-scope violations should be updated as part of enabling the rule so repository lint can fail only on new regressions, not on already-known drift, regardless of package path.
+- **Migration before full enforcement**: Existing in-scope violations should be updated as part of enabling the rule so repository lint can fail only on new regressions, not on already-known drift, for inline-literal acceptance tests regardless of package path.
 
 ## Risks / Trade-offs
 
-- **[Risk] Behavior-based scope is harder to detect than path-based scope** -> Mitigation: define in-scope tests explicitly in terms of `resource.Test` / `resource.ParallelTest` call sites and add regression tests that cover both `internal/**` and `provider/**` examples.
+- **[Risk] Inline-literal scope is narrower than the conceptual acceptance-test population** -> Mitigation: document the direct-second-argument constraint explicitly in the proposal/spec/design and keep regression coverage for both `internal/**` and `provider/**` examples that use inline literals.
 - **[Risk] Some current inline-config tests require non-trivial fixture extraction** -> Mitigation: treat migration as explicit implementation work and convert the in-scope tests before the analyzer is fully enforced.
 - **[Risk] Per-step `ProtoV6ProviderFactories` migration touches many existing tests mechanically** -> Mitigation: stage the migration with targeted search-and-convert work plus analyzer regression coverage for both ordinary and compatibility shapes.
 - **[Risk] Direct-call requirement for `acctest.NamedTestCaseDirectory(...)` is stricter than necessary** -> Mitigation: accept that strictness in v1 to keep the convention visible and deterministic; wrappers can be reconsidered later if a real need appears.
@@ -65,7 +66,7 @@ That structure is not easy to enforce with a pattern-only linter because the ste
 
 ## Migration Plan
 
-1. Add the new `acceptance-test-config-directory-lint` delta spec covering scope, allowed field combinations, diagnostics, and lint integration expectations.
+1. Add the new `acceptance-test-config-directory-lint` delta spec covering inline-literal scope, allowed field combinations, diagnostics, and lint integration expectations.
 2. Implement a dedicated analyzer package and plugin-module wrapper modeled after `analysis/esclienthelper`.
 3. Update `golangci-lint` configuration so the analyzer runs in normal local and CI lint workflows.
 4. Convert existing in-scope inline-config acceptance steps that are not external-provider compatibility steps to directory-backed fixtures.

@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: In-scope acceptance test step scope
-The lint rule SHALL evaluate `resource.TestStep` composite literals in `_test.go` files that participate in acceptance-test flows driven by `resource.Test` or `resource.ParallelTest`. The rule SHALL apply without path-based exclusions, including files under `internal/**` and `provider/**`. The rule SHALL ignore non-`resource.TestStep` structs and code outside those acceptance-test flows.
+The lint rule SHALL evaluate `resource.TestStep` composite literals in `_test.go` files only when those steps appear inside an inline `resource.TestCase` composite literal passed directly as the second argument to `resource.Test` or `resource.ParallelTest`. The rule SHALL apply without path-based exclusions, including files under `internal/**` and `provider/**`. The rule SHALL ignore non-`resource.TestStep` structs, code outside those acceptance-test flows, and non-inline `resource.TestCase` patterns such as variables or helper-returned values.
 
 #### Scenario: Out-of-scope test code is ignored
 - **GIVEN** a Go test file outside the lint rule's defined acceptance-test scope
@@ -12,6 +12,11 @@ The lint rule SHALL evaluate `resource.TestStep` composite literals in `_test.go
 - **GIVEN** a `_test.go` file under `provider/**`
 - **WHEN** the file uses `resource.Test` or `resource.ParallelTest` with `resource.TestStep` values
 - **THEN** the analyzer SHALL evaluate those test steps using the same rules as any other in-scope acceptance test
+
+#### Scenario: Non-inline test case is ignored
+- **GIVEN** a `_test.go` file that stores a `resource.TestCase` in a variable or returns it from a helper
+- **WHEN** the file later passes that non-inline value to `resource.Test` or `resource.ParallelTest`
+- **THEN** the analyzer SHALL treat that call as out of scope for this rule
 
 ### Requirement: Provider wiring is step-local
 An in-scope `resource.TestCase` SHALL NOT set `ProtoV6ProviderFactories`. Every in-scope `resource.TestStep` SHALL declare exactly one provider-wiring mode by setting either `ProtoV6ProviderFactories` or `ExternalProviders`.

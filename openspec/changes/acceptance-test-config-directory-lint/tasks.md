@@ -2,13 +2,13 @@
 
 ## 1. Define the lint capability
 
-- [x] 1.1 Add the `acceptance-test-config-directory-lint` delta spec describing in-scope `resource.TestStep` enforcement for any `_test.go` file that uses `resource.Test` or `resource.ParallelTest`.
+- [x] 1.1 Add the `acceptance-test-config-directory-lint` delta spec describing in-scope `resource.TestStep` enforcement for inline `resource.TestCase` composite literals passed directly to `resource.Test` or `resource.ParallelTest` from `_test.go` files.
 - [x] 1.2 Confirm the spec captures the single accepted inline-config exception: steps that also declare `ExternalProviders`.
 
 ## 2. Implement the analyzer
 
 - [x] 2.1 Add a new custom analyzer package and plugin-module wrapper following the existing `analysis/esclienthelper` structure.
-- [x] 2.2 Detect in-scope `resource.TestStep` composite literals in any `_test.go` file within `resource.Test` and `resource.ParallelTest` acceptance-test flows, without path-based exclusions.
+- [x] 2.2 Detect in-scope `resource.TestStep` composite literals inside inline `resource.TestCase` composite literals passed directly to `resource.Test` and `resource.ParallelTest`, without path-based exclusions.
 - [x] 2.3 Report a violation when an in-scope step sets `Config` without also setting `ExternalProviders`.
 - [x] 2.4 Report a violation when an in-scope step sets `ConfigDirectory` with anything other than a direct `acctest.NamedTestCaseDirectory(...)` call.
 - [x] 2.5 Report a violation when an in-scope step sets `ExternalProviders` but does not use inline `Config`, or mixes `ExternalProviders` with `ConfigDirectory`.
