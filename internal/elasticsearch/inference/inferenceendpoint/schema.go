@@ -33,9 +33,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
 
-const taskTypeDescription = "The task type of the inference endpoint. One of `sparse_embedding`, `text_embedding`, " +
-	"`rerank`, `completion`, `chat_completion`. When omitted, the task type is inferred from the service."
-
 const inferenceEndpointDescription = "Creates or updates an inference endpoint." +
 	"See the [inference endpoint API documentation](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-inference-put-1) for more details."
 
@@ -66,10 +63,9 @@ func (r *inferenceEndpointResource) Schema(_ context.Context, _ resource.SchemaR
 				},
 			},
 			"task_type": schema.StringAttribute{
-				MarkdownDescription: taskTypeDescription,
 				Optional:            true,
 				Computed:            true,
-				Description:         fmt.Sprintf("must be one of [%v]", validTaskTypes),
+				MarkdownDescription: fmt.Sprintf("must be one of [%v]", validTaskTypes),
 
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplaceIfConfigured(),
