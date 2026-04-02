@@ -28,8 +28,7 @@
 | What | Where |
 |------|--------|
 | Client | `internal/clients/fleet/`: `client.go`, `fleet.go`. |
-| Fleet APIs | Documented at Elastic Fleet API |
-| Generated client | `generated/kbapi/kibana.gen.go` — OpenAPI-generated types and `ClientWithResponses` interface. Large file; search for API/type names. |
+| Fleet APIs | Documented at Elastic Fleet API; implementation in this repo may wrap HTTP or a separate SDK. |
 
 ---
 
