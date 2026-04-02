@@ -155,12 +155,12 @@ func TestAccResourceLogstashPipelinePersistedQueue(t *testing.T) {
 	pipelineID := "pipeline-" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	resourceName := "elasticstack_elasticsearch_logstash_pipeline.test_persisted"
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceLogstashPipelineDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceLogstashPipelineDestroy,
 		Steps: []resource.TestStep{
 			{
-				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"pipeline_id": config.StringVariable(pipelineID),
 				},
@@ -187,13 +187,13 @@ func TestAccResourceLogstashPipelineEnumVariants(t *testing.T) {
 	pipelineID := "pipeline-" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	resourceName := "elasticstack_elasticsearch_logstash_pipeline.test_enums"
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceLogstashPipelineDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceLogstashPipelineDestroy,
 		Steps: []resource.TestStep{
 			// Step 1: set ecs_compatibility = "v1", pipeline_ordered = "false"
 			{
-				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"pipeline_id": config.StringVariable(pipelineID),
 				},
@@ -205,7 +205,8 @@ func TestAccResourceLogstashPipelineEnumVariants(t *testing.T) {
 			},
 			// Step 2: switch to ecs_compatibility = "v8", pipeline_ordered = "true"
 			{
-				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"pipeline_id": config.StringVariable(pipelineID),
 				},
@@ -231,13 +232,13 @@ func TestAccResourceLogstashPipelineOptionalUnset(t *testing.T) {
 	pipelineID := "pipeline-" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	resourceName := "elasticstack_elasticsearch_logstash_pipeline.test_optional"
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceLogstashPipelineDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceLogstashPipelineDestroy,
 		Steps: []resource.TestStep{
 			// Step 1: create with a selection of optional attributes set.
 			{
-				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"pipeline_id": config.StringVariable(pipelineID),
 				},
@@ -259,7 +260,8 @@ func TestAccResourceLogstashPipelineOptionalUnset(t *testing.T) {
 			// server-side, so only the description (explicitly set to "" by the provider) can
 			// be asserted as cleared.
 			{
-				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"pipeline_id": config.StringVariable(pipelineID),
 				},
@@ -279,12 +281,12 @@ func TestAccResourceLogstashPipelineForceNew(t *testing.T) {
 	secondID := "pipeline-" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	resourceName := "elasticstack_elasticsearch_logstash_pipeline.test_forcenew"
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceLogstashPipelineDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceLogstashPipelineDestroy,
 		Steps: []resource.TestStep{
 			{
-				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"pipeline_id": config.StringVariable(firstID),
 				},
@@ -295,7 +297,8 @@ func TestAccResourceLogstashPipelineForceNew(t *testing.T) {
 			},
 			// Changing pipeline_id must trigger a destroy + create (ForceNew).
 			{
-				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"pipeline_id": config.StringVariable(secondID),
 				},
@@ -323,12 +326,12 @@ func TestAccResourceLogstashPipelineExplicitConnection(t *testing.T) {
 	pipelineID := "pipeline-" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	resourceName := "elasticstack_elasticsearch_logstash_pipeline.test_conn"
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceLogstashPipelineDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceLogstashPipelineDestroy,
 		Steps: []resource.TestStep{
 			{
-				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"pipeline_id": config.StringVariable(pipelineID),
 					"endpoints":   config.ListVariable(endpointVars...),
@@ -347,10 +350,11 @@ func TestAccResourceLogstashPipelineExplicitConnection(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceName,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"elasticsearch_connection"},
+				ProtoV6ProviderFactories: acctest.Providers,
+				ResourceName:             resourceName,
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ImportStateVerifyIgnore:  []string{"elasticsearch_connection"},
 			},
 		},
 	})

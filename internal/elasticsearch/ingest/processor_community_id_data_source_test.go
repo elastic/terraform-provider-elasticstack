@@ -45,8 +45,7 @@ func TestAccDataSourceIngestProcessorCommunityID(t *testing.T) {
 
 func TestAccDataSourceIngestProcessorCommunityIDCoreNetwork(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -70,8 +69,7 @@ func TestAccDataSourceIngestProcessorCommunityIDCoreNetwork(t *testing.T) {
 
 func TestAccDataSourceIngestProcessorCommunityIDICMP(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -93,8 +91,7 @@ func TestAccDataSourceIngestProcessorCommunityIDICMP(t *testing.T) {
 
 func TestAccDataSourceIngestProcessorCommunityIDMetadata(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -116,8 +113,7 @@ func TestAccDataSourceIngestProcessorCommunityIDMetadata(t *testing.T) {
 
 func TestAccDataSourceIngestProcessorCommunityIDOnFailure(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
