@@ -51,6 +51,20 @@ func TestViolation_InlineConfigDeduplicatesMissingProviderWiring(t *testing.T) {
 	})
 }
 
+// TestViolation_InlineConfigWithConfigDirectoryWithoutExternal reports inline Config even when
+// ConfigDirectory is also set (Config branch must not be skipped in favor of ConfigDirectory).
+func TestViolation_InlineConfigWithConfigDirectoryWithoutExternal(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				Config:                   `resource "null_resource" "example" {}`, // want `resource.TestStep sets Config without ExternalProviders`
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+			},
+		},
+	})
+}
+
 // TestViolation2_ConfigDirectoryNotNamedHelper exercises violation 2:
 // a step sets ConfigDirectory to something other than acctest.NamedTestCaseDirectory(...).
 func TestViolation2_ConfigDirectoryNotNamedHelper(t *testing.T) {

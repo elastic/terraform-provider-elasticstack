@@ -213,18 +213,19 @@ func inspectTestStep(pass *analysis.Pass, lit *ast.CompositeLit) {
 			// ExternalProviders set but no inline Config.
 			pass.Reportf(externalProvidersExpr.Pos(), msgExternalProvidersWithoutConfig)
 
+		case hasConfig && !hasExternalProviders:
+			// Inline Config without ExternalProviders is invalid for ordinary steps, even if
+			// ConfigDirectory is also set (must diagnose Config, not only ConfigDirectory).
+			pass.Reportf(configExpr.Pos(), msgInlineConfigWithoutExternalProviders)
+			// Do not also report missing provider wiring for the same step; the inline-Config
+			// diagnostic is the actionable fix for ordinary coverage.
+			return
+
 		case hasConfigDir:
 			// ConfigDirectory set – must be a direct call to acctest.NamedTestCaseDirectory(...).
 			if !isNamedTestCaseDirectoryCall(pass, configDirExpr) {
 				pass.Reportf(configDirExpr.Pos(), msgConfigDirectoryNotNamedHelper)
 			}
-
-		case hasConfig && !hasExternalProviders:
-			// Ordinary step with inline Config but no ExternalProviders.
-			pass.Reportf(configExpr.Pos(), msgInlineConfigWithoutExternalProviders)
-			// Do not also report missing provider wiring for the same step; the inline-Config
-			// diagnostic is the actionable fix for ordinary coverage.
-			return
 		}
 	}
 
