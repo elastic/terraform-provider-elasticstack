@@ -32,8 +32,45 @@ func TestAccDataSourceIngestProcessorConvert(t *testing.T) {
 			{
 				Config: testAccDataSourceIngestProcessorConvert,
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_convert.test", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_convert.test", "field", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_convert.test", "type", "integer"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_convert.test", "description", "converts the content of the id field to an integer"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_convert.test", "json", expectedJSONConvert),
+				),
+			},
+			{
+				Config: testAccDataSourceIngestProcessorConvertAllAttributes,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_convert.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_convert.test", "field", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_convert.test", "target_field", "converted_id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_convert.test", "type", "integer"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_convert.test", "description", "converts the content of the id field to an integer"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_convert.test", "if", "ctx.id != null"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_convert.test", "ignore_missing", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_convert.test", "ignore_failure", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_convert.test", "tag", "convert-tag"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_convert.test", "json", expectedJSONConvertAllAttributes),
+				),
+			},
+		},
+	})
+}
+
+func TestAccDataSourceIngestProcessorConvertOnFailure(t *testing.T) {
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccDataSourceIngestProcessorConvertOnFailure,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_convert.test", "on_failure.#", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_convert.test", "ignore_failure", "false"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_convert.test", "ignore_missing", "false"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_convert.test", "on_failure.0", `{"set":{"field":"error.message","value":"convert failed"}}`),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_convert.test", "json", expectedJSONConvertOnFailure),
 				),
 			},
 		},
@@ -50,6 +87,36 @@ const expectedJSONConvert = `{
 	}
 }`
 
+const expectedJSONConvertAllAttributes = `{
+	"convert": {
+		"description": "converts the content of the id field to an integer",
+		"field": "id",
+		"target_field": "converted_id",
+		"type": "integer",
+		"if": "ctx.id != null",
+		"ignore_failure": true,
+		"ignore_missing": true,
+		"tag": "convert-tag"
+	}
+}`
+
+const expectedJSONConvertOnFailure = `{
+	"convert": {
+		"field": "id",
+		"type": "integer",
+		"ignore_failure": false,
+		"ignore_missing": false,
+		"on_failure": [
+			{
+				"set": {
+					"field": "error.message",
+					"value": "convert failed"
+				}
+			}
+		]
+	}
+}`
+
 const testAccDataSourceIngestProcessorConvert = `
 provider "elasticstack" {
   elasticsearch {}
@@ -59,5 +126,41 @@ data "elasticstack_elasticsearch_ingest_processor_convert" "test" {
   description = "converts the content of the id field to an integer"
   field       = "id"
   type        = "integer"
+}
+`
+
+const testAccDataSourceIngestProcessorConvertAllAttributes = `
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+data "elasticstack_elasticsearch_ingest_processor_convert" "test" {
+  description    = "converts the content of the id field to an integer"
+  field          = "id"
+  target_field   = "converted_id"
+  type           = "integer"
+  if             = "ctx.id != null"
+  ignore_missing = true
+  ignore_failure = true
+  tag            = "convert-tag"
+}
+`
+
+const testAccDataSourceIngestProcessorConvertOnFailure = `
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+data "elasticstack_elasticsearch_ingest_processor_convert" "test" {
+  field = "id"
+  type  = "integer"
+  on_failure = [
+    jsonencode({
+      set = {
+        field = "error.message"
+        value = "convert failed"
+      }
+    })
+  ]
 }
 `
