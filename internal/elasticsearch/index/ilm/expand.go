@@ -56,66 +56,69 @@ func expandPhase(p map[string]any, serverVersion *version.Version) (*models.Phas
 
 	actions := make(map[string]models.Action)
 	for actionName, action := range p {
-		if a := action.([]any); len(a) > 0 {
-			switch actionName {
-			case "allocate":
-				actions[actionName], diags = expandAction(a, serverVersion, "number_of_replicas", "total_shards_per_node", "include", "exclude", "require")
-			case ilmPhaseDelete:
-				actions[actionName], diags = expandAction(a, serverVersion, "delete_searchable_snapshot")
-			case "forcemerge":
-				actions[actionName], diags = expandAction(a, serverVersion, "max_num_segments", "index_codec")
-			case "freeze":
-				if a[0] != nil {
-					ac := a[0].(map[string]any)
-					if ac["enabled"].(bool) {
-						actions[actionName], diags = expandAction(a, serverVersion)
-					}
+		a, ok := action.([]any)
+		if !ok || len(a) == 0 {
+			continue
+		}
+
+		switch actionName {
+		case "allocate":
+			actions[actionName], diags = expandAction(a, serverVersion, "number_of_replicas", "total_shards_per_node", "include", "exclude", "require")
+		case ilmPhaseDelete:
+			actions[actionName], diags = expandAction(a, serverVersion, "delete_searchable_snapshot")
+		case "forcemerge":
+			actions[actionName], diags = expandAction(a, serverVersion, "max_num_segments", "index_codec")
+		case "freeze":
+			if a[0] != nil {
+				ac := a[0].(map[string]any)
+				if ac["enabled"].(bool) {
+					actions[actionName], diags = expandAction(a, serverVersion)
 				}
-			case "migrate":
-				actions[actionName], diags = expandAction(a, serverVersion, "enabled")
-			case "readonly":
-				if a[0] != nil {
-					ac := a[0].(map[string]any)
-					if ac["enabled"].(bool) {
-						actions[actionName], diags = expandAction(a, serverVersion)
-					}
-				}
-			case "rollover":
-				actions[actionName], diags = expandAction(
-					a,
-					serverVersion,
-					"max_age",
-					"max_docs",
-					"max_size",
-					"max_primary_shard_docs",
-					"max_primary_shard_size",
-					"min_age",
-					"min_docs",
-					"min_size",
-					"min_primary_shard_docs",
-					"min_primary_shard_size",
-				)
-			case "searchable_snapshot":
-				actions[actionName], diags = expandAction(a, serverVersion, "snapshot_repository", "force_merge_index")
-			case "set_priority":
-				actions[actionName], diags = expandAction(a, serverVersion, "priority")
-			case "shrink":
-				actions[actionName], diags = expandAction(a, serverVersion, "number_of_shards", "max_primary_shard_size", "allow_write_after_shrink")
-			case "unfollow":
-				if a[0] != nil {
-					ac := a[0].(map[string]any)
-					if ac["enabled"].(bool) {
-						actions[actionName], diags = expandAction(a, serverVersion)
-					}
-				}
-			case "wait_for_snapshot":
-				actions[actionName], diags = expandAction(a, serverVersion, "policy")
-			case "downsample":
-				actions[actionName], diags = expandAction(a, serverVersion, "fixed_interval", "wait_timeout")
-			default:
-				diags.AddError("Unknown action defined.", fmt.Sprintf(`Configured action "%s" is not supported`, actionName))
-				return nil, diags
 			}
+		case "migrate":
+			actions[actionName], diags = expandAction(a, serverVersion, "enabled")
+		case "readonly":
+			if a[0] != nil {
+				ac := a[0].(map[string]any)
+				if ac["enabled"].(bool) {
+					actions[actionName], diags = expandAction(a, serverVersion)
+				}
+			}
+		case "rollover":
+			actions[actionName], diags = expandAction(
+				a,
+				serverVersion,
+				"max_age",
+				"max_docs",
+				"max_size",
+				"max_primary_shard_docs",
+				"max_primary_shard_size",
+				"min_age",
+				"min_docs",
+				"min_size",
+				"min_primary_shard_docs",
+				"min_primary_shard_size",
+			)
+		case "searchable_snapshot":
+			actions[actionName], diags = expandAction(a, serverVersion, "snapshot_repository", "force_merge_index")
+		case "set_priority":
+			actions[actionName], diags = expandAction(a, serverVersion, "priority")
+		case "shrink":
+			actions[actionName], diags = expandAction(a, serverVersion, "number_of_shards", "max_primary_shard_size", "allow_write_after_shrink")
+		case "unfollow":
+			if a[0] != nil {
+				ac := a[0].(map[string]any)
+				if ac["enabled"].(bool) {
+					actions[actionName], diags = expandAction(a, serverVersion)
+				}
+			}
+		case "wait_for_snapshot":
+			actions[actionName], diags = expandAction(a, serverVersion, "policy")
+		case "downsample":
+			actions[actionName], diags = expandAction(a, serverVersion, "fixed_interval", "wait_timeout")
+		default:
+			diags.AddError("Unknown action defined.", fmt.Sprintf(`Configured action "%s" is not supported`, actionName))
+			return nil, diags
 		}
 		if diags.HasError() {
 			return nil, diags
@@ -135,7 +138,7 @@ func expandAction(a []any, serverVersion *version.Version, settings ...string) (
 			if v, ok := action.(map[string]any)[setting]; ok && v != nil {
 				options := ilmActionSettingOptions[setting]
 
-				if options.minVersion != nil && options.minVersion.GreaterThan(serverVersion) {
+				if options.minVersion != nil && serverVersion != nil && options.minVersion.GreaterThan(serverVersion) {
 					if v != options.def {
 						var unsupported diag.Diagnostics
 						unsupported.AddError(
