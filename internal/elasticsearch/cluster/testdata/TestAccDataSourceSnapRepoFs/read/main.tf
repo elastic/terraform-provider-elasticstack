@@ -18,5 +18,5 @@ resource "elasticstack_elasticsearch_snapshot_repository" "test_fs_repo" {
 }
 
 data "elasticstack_elasticsearch_snapshot_repository" "test_fs_repo" {
-  name = resource.elasticstack_elasticsearch_snapshot_repository.test_fs_repo.name
+  name = elasticstack_elasticsearch_snapshot_repository.test_fs_repo.name
 }

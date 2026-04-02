@@ -19,13 +19,12 @@ resource "elasticstack_elasticsearch_ingest_pipeline" "test_pipeline" {
         value       = "indexed"
       }
     }),
-    <<EOF
-    {"json": {
-      "field": "data",
-      "target_field": "parsed_data"
-    }}
-EOF
-    ,
+    jsonencode({
+      json = {
+        field        = "data"
+        target_field = "parsed_data"
+      }
+    }),
   ]
 
   on_failure = [
