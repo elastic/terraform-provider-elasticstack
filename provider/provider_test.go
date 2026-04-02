@@ -131,7 +131,7 @@ func TestFleetBearerTokenConfiguration(t *testing.T) {
 func TestKibanaConfiguration(t *testing.T) {
 	var envConfig config.Client
 
-	t.Run("with username and password", func(_ *testing.T) {
+	t.Run("with username and password", func(t *testing.T) {
 		envConfig = config.NewFromEnv("acceptance-testing")
 		resource.Test(t, resource.TestCase{
 			PreCheck: func() { acctest.PreCheck(t) },

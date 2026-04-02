@@ -43,6 +43,7 @@ func TestAnalyzer_CompliantCases(t *testing.T) {
 //   - ProtoV6ProviderFactories on resource.TestCase (must be step-local)
 //   - missing step-level ProtoV6ProviderFactories / ExternalProviders wiring
 //   - both ProtoV6ProviderFactories and ExternalProviders on the same step
+//   - inline Config without ExternalProviders does not also report missing provider wiring
 func TestAnalyzer_Violations(t *testing.T) {
 	testdata := analysistest.TestData()
 	analysistest.Run(t, testdata, NewAnalyzer(), "github.com/elastic/terraform-provider-elasticstack/internal/acctestcases/violations")
