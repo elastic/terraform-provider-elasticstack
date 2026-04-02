@@ -42,7 +42,7 @@ resource "elasticstack_elasticsearch_inference_endpoint" "example" {
 ### Optional
 
 - `chunking_settings` (String) Configuration for chunking input text, as a JSON object. Applicable only for embedding task types.
-- `elasticsearch_connection` (Block List, Deprecated) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- `elasticsearch_connection` (Block List) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - `task_settings` (String) Task-specific settings, as a JSON object. Optional and service-dependent. Only keys explicitly set here are tracked; server-applied defaults returned by the API are ignored to avoid perpetual drift.
 - `task_type` (String) must be one of [[sparse_embedding text_embedding rerank completion chat_completion embedding]]
 
