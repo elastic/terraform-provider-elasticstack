@@ -14,7 +14,7 @@ Practitioners cannot manage SLO error budget panels as code today. These panels 
 
 ### New Capabilities
 
-- `kibana-dashboard`: practitioners can declare an `slo_error_budget` panel with a typed `slo_error_budget_config` block, including required `slo_id`, optional `slo_instance_id` (API default `"*"`), optional `drilldowns` as a list of typed objects, and optional display fields `title`, `description`, `hide_title`, and `hide_border`.
+- `kibana-dashboard`: practitioners can declare an `slo_error_budget` panel with a typed `slo_error_budget_config` block, including required `slo_id`, optional `slo_instance_id` (API default `"*"`), optional `drilldowns` as a list of typed objects with `url` and `label`, and optional display fields `title`, `description`, `hide_title`, and `hide_border`.
 
 ### Modified Capabilities
 
