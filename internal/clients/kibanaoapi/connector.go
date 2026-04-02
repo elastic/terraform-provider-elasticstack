@@ -394,6 +394,10 @@ func connectorConfigWithDefaultsCasesWebhook(plan string) (string, error) {
 	if err := json.Unmarshal([]byte(plan), &custom); err != nil {
 		return "", err
 	}
+	if custom.AuthType == nil {
+		authType := kbapi.WebhookAuthenticationBasic
+		custom.AuthType = &authType
+	}
 	if custom.CreateIncidentMethod == nil {
 		custom.CreateIncidentMethod = new(kbapi.CasesWebhookConfigCreateIncidentMethodPost)
 	}

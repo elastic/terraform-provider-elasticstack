@@ -59,7 +59,7 @@ func Test_mosaicPanelConfigConverter_populateFromAttributes_buildAttributes_roun
 	var mosaicChart kbapi.MosaicChart
 	require.NoError(t, mosaicChart.FromMosaicNoESQL(api))
 
-	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	var attrs kbapi.LensApiState
 	require.NoError(t, attrs.FromMosaicChart(mosaicChart))
 
 	converter := newMosaicPanelConfigConverter()
@@ -104,7 +104,7 @@ func Test_mosaicPanelConfigConverter_populateFromAttributes_buildAttributes_roun
 	var mosaicChart kbapi.MosaicChart
 	require.NoError(t, mosaicChart.FromMosaicESQL(api))
 
-	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	var attrs kbapi.LensApiState
 	require.NoError(t, attrs.FromMosaicChart(mosaicChart))
 
 	converter := newMosaicPanelConfigConverter()
@@ -151,16 +151,13 @@ func Test_mosaicConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 				return &b
 			}(),
 			TruncateAfterLines: new(float32(4)),
-			Visible: func() *kbapi.MosaicLegendVisible {
-				v := kbapi.MosaicLegendVisibleAuto
+			Visibility: func() *kbapi.MosaicLegendVisibility {
+				v := kbapi.MosaicLegendVisibilityAuto
 				return &v
 			}(),
 		},
-		ValueDisplay: &struct {
-			Mode            kbapi.MosaicNoESQLValueDisplayMode `json:"mode"`
-			PercentDecimals *float32                           `json:"percent_decimals,omitempty"`
-		}{
-			Mode:            kbapi.MosaicNoESQLValueDisplayModePercentage,
+		Values: kbapi.ValueDisplay{
+			Mode:            func() *kbapi.ValueDisplayMode { m := kbapi.ValueDisplayModePercentage; return &m }(),
 			PercentDecimals: new(float32(2)),
 		},
 	}
@@ -189,9 +186,9 @@ func Test_mosaicConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 	groupBreakdownBy := []kbapi.MosaicNoESQL_GroupBreakdownBy_Item{groupBreakdownByItem}
 	api.GroupBreakdownBy = &groupBreakdownBy
 
-	var metricItem kbapi.MosaicNoESQL_Metrics_Item
-	require.NoError(t, json.Unmarshal([]byte(`{"operation":"count"}`), &metricItem))
-	api.Metrics = []kbapi.MosaicNoESQL_Metrics_Item{metricItem}
+	var metricUnion kbapi.MosaicNoESQL_Metric
+	require.NoError(t, json.Unmarshal([]byte(`{"operation":"count"}`), &metricUnion))
+	api.Metric = metricUnion
 
 	model := &mosaicConfigModel{}
 	diags := model.fromAPINoESQL(api)
@@ -224,7 +221,9 @@ func Test_mosaicConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 	assert.Len(t, *roundTrip.GroupBy, 1)
 	assert.NotNil(t, roundTrip.GroupBreakdownBy)
 	assert.Len(t, *roundTrip.GroupBreakdownBy, 1)
-	assert.Len(t, roundTrip.Metrics, 1)
+	opBytes, err := roundTrip.Metric.MarshalJSON()
+	require.NoError(t, err)
+	assert.Contains(t, string(opBytes), "count")
 }
 
 func Test_mosaicConfigModel_fromAPI_toAPI_esql(t *testing.T) {
@@ -238,12 +237,15 @@ func Test_mosaicConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 		CollapseBy kbapi.CollapseBy                 `json:"collapse_by"`
 		Color      kbapi.ColorMapping               `json:"color"`
 		Column     string                           `json:"column"`
+		Format     kbapi.FormatType                 `json:"format"`
+		Label      *string                          `json:"label,omitempty"`
 		Operation  kbapi.MosaicESQLGroupByOperation `json:"operation"`
 	}{
 		{
 			CollapseBy: kbapi.CollapseByAvg,
 			Color:      colorMapping,
 			Column:     "host.name",
+			Format:     format,
 			Operation:  kbapi.MosaicESQLGroupByOperationValue,
 		},
 	}
@@ -252,26 +254,16 @@ func Test_mosaicConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 		CollapseBy kbapi.CollapseBy                          `json:"collapse_by"`
 		Color      kbapi.ColorMapping                        `json:"color"`
 		Column     string                                    `json:"column"`
+		Format     kbapi.FormatType                          `json:"format"`
+		Label      *string                                   `json:"label,omitempty"`
 		Operation  kbapi.MosaicESQLGroupBreakdownByOperation `json:"operation"`
 	}{
 		{
 			CollapseBy: kbapi.CollapseByAvg,
 			Color:      colorMapping,
 			Column:     "service.name",
+			Format:     format,
 			Operation:  kbapi.MosaicESQLGroupBreakdownByOperationValue,
-		},
-	}
-
-	metrics := []struct {
-		Column    string                           `json:"column"`
-		Format    kbapi.FormatType                 `json:"format"`
-		Label     *string                          `json:"label,omitempty"`
-		Operation kbapi.MosaicESQLMetricsOperation `json:"operation"`
-	}{
-		{
-			Column:    "bytes",
-			Format:    format,
-			Operation: kbapi.MosaicESQLMetricsOperationValue,
 		},
 	}
 
@@ -282,14 +274,20 @@ func Test_mosaicConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 		IgnoreGlobalFilters: new(false),
 		Sampling:            new(float32(1)),
 		Legend:              kbapi.MosaicLegend{Size: kbapi.LegendSizeSmall},
-		Metrics:             metrics,
-		GroupBy:             &groupBy,
-		GroupBreakdownBy:    &groupBreakdownBy,
-		ValueDisplay: &struct {
-			Mode            kbapi.MosaicESQLValueDisplayMode `json:"mode"`
-			PercentDecimals *float32                         `json:"percent_decimals,omitempty"`
+		Metric: struct {
+			Column    string                          `json:"column"`
+			Format    kbapi.FormatType                `json:"format"`
+			Label     *string                         `json:"label,omitempty"`
+			Operation kbapi.MosaicESQLMetricOperation `json:"operation"`
 		}{
-			Mode:            kbapi.MosaicESQLValueDisplayModeAbsolute,
+			Column:    "bytes",
+			Format:    format,
+			Operation: kbapi.MosaicESQLMetricOperationValue,
+		},
+		GroupBy:          &groupBy,
+		GroupBreakdownBy: &groupBreakdownBy,
+		Values: kbapi.ValueDisplay{
+			Mode:            func() *kbapi.ValueDisplayMode { m := kbapi.ValueDisplayModeAbsolute; return &m }(),
 			PercentDecimals: new(float32(1)),
 		},
 	}
@@ -315,7 +313,7 @@ func Test_mosaicConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 	assert.Equal(t, kbapi.MosaicESQLTypeMosaic, roundTrip.Type)
 	assert.NotNil(t, roundTrip.GroupBy)
 	assert.NotNil(t, roundTrip.GroupBreakdownBy)
-	assert.Len(t, roundTrip.Metrics, 1)
+	assert.Equal(t, "bytes", roundTrip.Metric.Column)
 }
 
 func newTestMosaicNoESQLModel(t *testing.T) *mosaicConfigModel {
@@ -329,7 +327,7 @@ func newTestMosaicNoESQLModel(t *testing.T) *mosaicConfigModel {
 	apiJSON := `{
 		"type": "mosaic",
 		"legend": {"size": "medium"},
-		"metrics": [{"operation":"count"}],
+		"metric": {"operation":"count"},
 		"dataset": {"type":"dataView","id":"metrics-*"},
 		"query": {"language":"kuery","query":"status:200"},
 		"group_by": ` + groupBy + `,
@@ -345,13 +343,15 @@ func newTestMosaicNoESQLModel(t *testing.T) *mosaicConfigModel {
 func newTestMosaicESQLModel(t *testing.T) *mosaicConfigModel {
 	t.Helper()
 	groupBy := `[{"collapse_by":"avg","column":"host.name","operation":"value",` +
+		`"format":{"type":"number","decimals":2},` +
 		`"color":{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"color_code","value":"#D3DAE6"}}}]`
 	groupBreakdownBy := `[{"collapse_by":"avg","column":"service.name","operation":"value",` +
+		`"format":{"type":"number","decimals":2},` +
 		`"color":{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"color_code","value":"#D3DAE6"}}}]`
 	apiJSON := `{
 		"type": "mosaic",
 		"legend": {"size": "small"},
-		"metrics": [{"column":"bytes","operation":"value","format":{"type":"number","decimals":2}}],
+		"metric": {"column":"bytes","operation":"value","format":{"type":"number","decimals":2}},
 		"dataset": {"type":"esql","query":"FROM metrics-* | LIMIT 10"},
 		"group_by": ` + groupBy + `,
 		"group_breakdown_by": ` + groupBreakdownBy + `

@@ -60,7 +60,7 @@ func Test_wafflePanelConfigConverter_populateFromAttributes_NoESQL_emptyQueryNoL
 	var waffleChart kbapi.WaffleChart
 	require.NoError(t, waffleChart.FromWaffleNoESQL(waffle))
 
-	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	var attrs kbapi.LensApiState
 	require.NoError(t, attrs.FromWaffleChart(waffleChart))
 
 	converter := newWafflePanelConfigConverter()
@@ -92,7 +92,7 @@ func Test_wafflePanelConfigConverter_populateFromAttributes_buildAttributes_roun
 	var waffleChart kbapi.WaffleChart
 	require.NoError(t, waffleChart.FromWaffleNoESQL(waffle))
 
-	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	var attrs kbapi.LensApiState
 	require.NoError(t, attrs.FromWaffleChart(waffleChart))
 
 	converter := newWafflePanelConfigConverter()
@@ -148,10 +148,13 @@ func Test_wafflePanelConfigConverter_populateFromAttributes_buildAttributes_roun
 			CollapseBy kbapi.CollapseBy                 `json:"collapse_by"`
 			Color      kbapi.ColorMapping               `json:"color"`
 			Column     string                           `json:"column"`
+			Format     kbapi.FormatType                 `json:"format"`
+			Label      *string                          `json:"label,omitempty"`
 			Operation  kbapi.WaffleESQLGroupByOperation `json:"operation"`
 		}{
 			{
 				Column:     "host",
+				Format:     format,
 				Operation:  kbapi.WaffleESQLGroupByOperationValue,
 				CollapseBy: kbapi.CollapseByAvg,
 				Color:      colorMap,
@@ -163,7 +166,7 @@ func Test_wafflePanelConfigConverter_populateFromAttributes_buildAttributes_roun
 	var waffleChart kbapi.WaffleChart
 	require.NoError(t, waffleChart.FromWaffleESQL(waffle))
 
-	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	var attrs kbapi.LensApiState
 	require.NoError(t, attrs.FromWaffleChart(waffleChart))
 
 	converter := newWafflePanelConfigConverter()

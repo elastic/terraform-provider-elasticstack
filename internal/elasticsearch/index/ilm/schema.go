@@ -40,7 +40,7 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 		Version:             currentSchemaVersion,
 		MarkdownDescription: resourceMarkdownDescription,
 		Blocks: map[string]schema.Block{
-			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(false),
+			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(),
 			ilmPhaseHot:                phaseHotBlock(),
 			ilmPhaseWarm:               phaseWarmBlock(),
 			ilmPhaseCold:               phaseColdBlock(),

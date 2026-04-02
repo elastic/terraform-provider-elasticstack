@@ -52,7 +52,7 @@ func Test_treemapPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 	var treemapChart kbapi.TreemapChart
 	require.NoError(t, treemapChart.FromTreemapNoESQL(api))
 
-	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	var attrs kbapi.LensApiState
 	require.NoError(t, attrs.FromTreemapChart(treemapChart))
 
 	converter := newTreemapPanelConfigConverter()
@@ -92,7 +92,7 @@ func Test_treemapPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 	var treemapChart kbapi.TreemapChart
 	require.NoError(t, treemapChart.FromTreemapESQL(api))
 
-	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	var attrs kbapi.LensApiState
 	require.NoError(t, attrs.FromTreemapChart(treemapChart))
 
 	converter := newTreemapPanelConfigConverter()
@@ -139,16 +139,13 @@ func Test_treemapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 				return &b
 			}(),
 			TruncateAfterLines: new(float32(4)),
-			Visible: func() *kbapi.TreemapLegendVisible {
-				v := kbapi.TreemapLegendVisibleAuto
+			Visibility: func() *kbapi.TreemapLegendVisibility {
+				v := kbapi.TreemapLegendVisibilityAuto
 				return &v
 			}(),
 		},
-		ValueDisplay: &struct {
-			Mode            kbapi.TreemapNoESQLValueDisplayMode `json:"mode"`
-			PercentDecimals *float32                            `json:"percent_decimals,omitempty"`
-		}{
-			Mode:            kbapi.TreemapNoESQLValueDisplayModePercentage,
+		Values: kbapi.ValueDisplay{
+			Mode:            func() *kbapi.ValueDisplayMode { m := kbapi.ValueDisplayModePercentage; return &m }(),
 			PercentDecimals: new(float32(2)),
 		},
 	}
@@ -170,9 +167,6 @@ func Test_treemapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 	require.NoError(t, json.Unmarshal([]byte(`{"operation":"count"}`), &metricItem))
 	api.Metrics = []kbapi.TreemapNoESQL_Metrics_Item{metricItem}
 
-	lp := kbapi.TreemapNoESQLLabelPositionVisible
-	api.LabelPosition = &lp
-
 	model := &treemapConfigModel{}
 	diags := model.fromAPINoESQL(api)
 	require.False(t, diags.HasError())
@@ -187,7 +181,6 @@ func Test_treemapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 	assert.False(t, model.Dataset.IsNull())
 	assert.False(t, model.GroupBy.IsNull())
 	assert.False(t, model.Metrics.IsNull())
-	assert.Equal(t, types.StringValue("visible"), model.LabelPosition)
 	require.NotNil(t, model.Legend)
 	assert.Equal(t, types.StringValue("medium"), model.Legend.Size)
 	require.NotNil(t, model.ValueDisplay)
@@ -219,12 +212,15 @@ func Test_treemapConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 		CollapseBy kbapi.CollapseBy                  `json:"collapse_by"`
 		Color      kbapi.ColorMapping                `json:"color"`
 		Column     string                            `json:"column"`
+		Format     kbapi.FormatType                  `json:"format"`
+		Label      *string                           `json:"label,omitempty"`
 		Operation  kbapi.TreemapESQLGroupByOperation `json:"operation"`
 	}{
 		{
 			CollapseBy: kbapi.CollapseByAvg,
 			Color:      colorMapping,
 			Column:     "host.name",
+			Format:     format,
 			Operation:  kbapi.TreemapESQLGroupByOperationValue,
 		},
 	}
@@ -253,17 +249,11 @@ func Test_treemapConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 		Legend:              kbapi.TreemapLegend{Size: kbapi.LegendSizeSmall},
 		Metrics:             metrics,
 		GroupBy:             &groupBy,
-		ValueDisplay: &struct {
-			Mode            kbapi.TreemapESQLValueDisplayMode `json:"mode"`
-			PercentDecimals *float32                          `json:"percent_decimals,omitempty"`
-		}{
-			Mode: kbapi.TreemapESQLValueDisplayModeAbsolute,
+		Values: kbapi.ValueDisplay{
+			Mode: func() *kbapi.ValueDisplayMode { m := kbapi.ValueDisplayModeAbsolute; return &m }(),
 		},
 	}
 	require.NoError(t, json.Unmarshal([]byte(`{"type":"esql","query":"FROM metrics-* | LIMIT 10"}`), &api.Dataset))
-
-	lp := kbapi.TreemapESQLLabelPositionHidden
-	api.LabelPosition = &lp
 
 	model := &treemapConfigModel{}
 	diags := model.fromAPIESQL(api)
@@ -273,7 +263,6 @@ func Test_treemapConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 	assert.False(t, model.Dataset.IsNull())
 	assert.False(t, model.GroupBy.IsNull())
 	assert.False(t, model.Metrics.IsNull())
-	assert.Equal(t, types.StringValue("hidden"), model.LabelPosition)
 	assert.Nil(t, model.Query)
 
 	schema, diags := model.toAPI()
@@ -353,7 +342,7 @@ func Test_treemapConfigModel_toAPIESQLChartSchema(t *testing.T) {
 	var treemapChart kbapi.TreemapChart
 	require.NoError(t, treemapChart.FromTreemapESQL(api))
 
-	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	var attrs kbapi.LensApiState
 	require.NoError(t, attrs.FromTreemapChart(treemapChart))
 
 	converter := newTreemapPanelConfigConverter()

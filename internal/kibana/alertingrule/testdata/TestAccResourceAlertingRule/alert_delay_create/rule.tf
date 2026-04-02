@@ -3,12 +3,16 @@ variable "name" {
   type        = string
 }
 
+variable "rule_id" {
+  type = string
+}
+
 provider "elasticstack" {
   kibana {}
 }
 
 resource "elasticstack_kibana_action_connector" "index_example" {
-  name              = "my_index_connector"
+  name              = "${var.name}-index"
   connector_type_id = ".index"
   config = jsonencode({
     index              = "my-index"
@@ -18,7 +22,7 @@ resource "elasticstack_kibana_action_connector" "index_example" {
 
 resource "elasticstack_kibana_alerting_rule" "test_rule" {
   name     = var.name
-  rule_id  = "cf33ce2d-9fc4-5131-a350-b5bd6482736c"
+  rule_id  = var.rule_id
   consumer = "alerts"
   params = jsonencode({
     aggType             = "avg"

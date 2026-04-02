@@ -39,12 +39,6 @@ resource "elasticstack_kibana_dashboard" "test" {
             format = {
               type = "number"
             }
-            alignments = {
-              labels = "center"
-            }
-            icon = {
-              name = "document"
-            }
           })
         }
       ]
@@ -52,7 +46,6 @@ resource "elasticstack_kibana_dashboard" "test" {
         operation = "terms"
         fields    = ["category"]
         size      = 3
-        columns   = 3
         rank_by = {
           direction = "desc"
           metric    = 0
@@ -61,8 +54,14 @@ resource "elasticstack_kibana_dashboard" "test" {
       })
       filters = [
         {
-          language = "kuery"
-          query    = "event.category:web"
+          filter_json = jsonencode({
+            type = "condition"
+            condition = {
+              field    = "event.category"
+              operator = "is"
+              value    = "web"
+            }
+          })
         }
       ]
       ignore_global_filters = false

@@ -22,7 +22,9 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
@@ -38,8 +40,8 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 		return
 	}
 
-	sv, diags := serverVersionFW(ctx, client)
-	resp.Diagnostics.Append(diags...)
+	sv, sdkDiags := client.ServerVersion(ctx)
+	resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -58,13 +60,19 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 
 	prior := plan
 
-	out, diags := readFull(ctx, client, plan.Name.ValueString(), &prior)
+	ilmDef, diags := elasticsearch.GetIlm(ctx, client, plan.Name.ValueString())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	if out == nil {
+	if ilmDef == nil {
+		tflog.Warn(ctx, "ILM policy missing after update readback", map[string]any{"policy_name": plan.Name.ValueString()})
 		resp.Diagnostics.AddError("ILM policy missing after update", plan.Name.ValueString())
+		return
+	}
+	out, diags := readPolicyIntoModel(ctx, ilmDef, &prior, plan.Name.ValueString())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 

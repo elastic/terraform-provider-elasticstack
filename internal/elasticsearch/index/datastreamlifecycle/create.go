@@ -66,7 +66,7 @@ func (r Resource) create(ctx context.Context, plan tfsdk.Plan, state *tfsdk.Stat
 		return diags
 	}
 
-	finalModel, d := r.read(ctx, client, planModel)
+	finalModel, d := r.read(ctx, planModel)
 	diags.Append(d...)
 	if diags.HasError() {
 		return diags

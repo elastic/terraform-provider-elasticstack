@@ -18,6 +18,7 @@
 package dashboard_test
 
 import (
+	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -28,7 +29,7 @@ import (
 )
 
 const xyChartDataLayerBreakdownExpected = `{"collapse_by":"avg","color":{"mapping":[{"color":{"type":"color_code","value":"#54B399"},` +
-	`"values":["host-a"]}],"mode":"categorical","palette":"default","unassignedColor":{"type":"color_code","value":"#D3DAE6"}},` +
+	`"values":["host-a"]}],"mode":"categorical","palette":"default","unassigned":{"type":"color_code","value":"#D3DAE6"}},` +
 	`"column":"host.name","operation":"value"}`
 
 func TestAccResourceDashboardXYChart(t *testing.T) {
@@ -129,7 +130,7 @@ func TestAccResourceDashboardXYChart(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.filters.#", "1"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.filters.0.query", "log.level:error"),
+					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.xy_chart_config.filters.0.filter_json", regexp.MustCompile(`"field":"log.level"`)),
 				),
 			},
 			{

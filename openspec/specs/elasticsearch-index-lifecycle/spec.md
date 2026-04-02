@@ -4,7 +4,7 @@ Resource implementation: `internal/elasticsearch/index/ilm/`
 
 ## Purpose
 
-Define the Terraform schema and runtime behavior for managing **Elasticsearch index lifecycle management (ILM) policies**: creating and updating policies on the cluster, reading them into state (including refresh and drift detection), deleting them, importing existing policies, choosing the Elasticsearch connection, and enforcing **server-version gates** for ILM action fields that only exist on newer Elasticsearch releases.
+Manage Elasticsearch Index Lifecycle Management (ILM) policies through the Terraform Plugin Framework resource. The resource creates and updates policies, reads them back into Terraform state, deletes them by policy name, supports import by composite id, allows an optional resource-scoped Elasticsearch connection, and preserves compatibility with older Elasticsearch versions and older SDK-shaped state.
 
 ## Schema
 
@@ -12,437 +12,290 @@ Define the Terraform schema and runtime behavior for managing **Elasticsearch in
 
 ```hcl
 resource "elasticstack_elasticsearch_index_lifecycle" "example" {
-  id            = <computed, string> # <cluster_uuid>/<policy_name>
-  name          = <required, string> # policy identifier; force new
-  metadata      = <optional, json string> # valid JSON; normalized diff
-  modified_date = <computed, string> # last modification time from the cluster
+  id            = <computed, string>      # <cluster_uuid>/<policy_name>
+  name          = <required, string>      # force new
+  metadata      = <optional, json object> # normalized JSON string
+  modified_date = <computed, string>
 
-  # At least one of hot, warm, cold, frozen, delete MUST be set (schema: AtLeastOneOf).
-  # Each phase is a Plugin Framework SingleNestedBlock (at most one block per phase; state stores a single object or null).
-  hot    { /* phase_hot */ }
-  warm   { /* phase_warm */ }
-  cold   { /* phase_cold */ }
-  frozen { /* phase_frozen */ }
-  delete { /* phase_delete */ }
+  hot    { /* SingleNestedBlock */ }
+  warm   { /* SingleNestedBlock */ }
+  cold   { /* SingleNestedBlock */ }
+  frozen { /* SingleNestedBlock */ }
+  delete { /* SingleNestedBlock */ }
 
-  elasticsearch_connection {
-    endpoints                = <optional, list(string)>
-    username                 = <optional, string>
-    password                 = <optional, string>
-    api_key                  = <optional, string>
-    bearer_token             = <optional, string>
-    es_client_authentication = <optional, string>
-    insecure                 = <optional, bool>
-    headers                  = <optional, map(string)>
-    ca_file                  = <optional, string>
-    ca_data                  = <optional, string>
-    cert_file                = <optional, string>
-    key_file                 = <optional, string>
-    cert_data                = <optional, string>
-    key_data                 = <optional, string>
-  }
+  elasticsearch_connection { /* list nested block from shared provider schema */ }
 }
 ```
 
-In Terraform configuration, each phase is written as a **`SingleNestedBlock`** (for example `hot { ... }`). State stores that phase as an object-shaped value (or null when absent), not as a single-element list.
+### Phase blocks
 
-### Per-phase object (common)
+Each phase block is a Plugin Framework `SingleNestedBlock`. In Terraform state, each phase is stored as a single object value or `null`, not as a single-element list.
 
-Every phase object MAY include:
+Every phase supports:
 
-| Attribute | Constraint | Notes |
-|-----------|--------------|--------|
-| `min_age` | optional + computed, string | Minimum age before entering this phase; may be populated from the cluster on read. |
+| Attribute | Type | Notes |
+|-----------|------|-------|
+| `min_age` | optional + computed string | Defaults to `"0ms"` when omitted. |
 
-### Allowed nested actions by phase
+Allowed nested action blocks:
 
-| Phase | Nested action blocks (each is a **`SingleNestedBlock`**) |
-|-------|-----------------------------------------------------------------------------|
-| **hot** | `set_priority`, `unfollow`, `rollover`, `readonly`, `shrink`, `forcemerge`, `searchable_snapshot`, `downsample` |
-| **warm** | `set_priority`, `unfollow`, `readonly`, `allocate`, `migrate`, `shrink`, `forcemerge`, `downsample` |
-| **cold** | `set_priority`, `unfollow`, `readonly`, `searchable_snapshot`, `allocate`, `migrate`, `freeze`, `downsample` |
-| **frozen** | `searchable_snapshot` only (plus `min_age`) |
-| **delete** | `wait_for_snapshot`, `delete` (the ILM delete action; plus `min_age`) |
+| Phase | Allowed actions |
+|-------|-----------------|
+| `hot` | `set_priority`, `unfollow`, `rollover`, `readonly`, `shrink`, `forcemerge`, `searchable_snapshot`, `downsample` |
+| `warm` | `set_priority`, `unfollow`, `readonly`, `allocate`, `migrate`, `shrink`, `forcemerge`, `downsample` |
+| `cold` | `set_priority`, `unfollow`, `readonly`, `searchable_snapshot`, `allocate`, `migrate`, `freeze`, `downsample` |
+| `frozen` | `searchable_snapshot` |
+| `delete` | `wait_for_snapshot`, `delete` |
 
-### Nested action block schemas
+### Action block shapes
 
-Each action below is expressed as Terraform nested block syntax. All such blocks are **optional** and use **`SingleNestedBlock`** semantics (`action { ... }`); state stores each declared action as an object, not as a list.
+All ILM action blocks are also `SingleNestedBlock`s.
 
 ```hcl
-# allocate — warm, cold only
 allocate {
-  number_of_replicas     = <optional, int, default 0>
-  total_shards_per_node  = <optional, int, default -1> # ES >= 7.16 when non-default
-  include                = <optional, json string, default "{}"> # JSON object as string; normalized diff
-  exclude                = <optional, json string, default "{}">
-  require                = <optional, json string, default "{}">
+  number_of_replicas    = <optional + computed, int>    # default 0
+  total_shards_per_node = <optional + computed, int>    # default -1; non-default requires ES >= 7.16
+  include               = <optional, json object string>
+  exclude               = <optional, json object string>
+  require               = <optional, json object string>
 }
 
-# delete — delete phase only (ILM action that removes the index)
 delete {
-  delete_searchable_snapshot = <optional, bool, default true>
+  delete_searchable_snapshot = <optional + computed, bool> # default true
 }
 
-# forcemerge — hot, warm only
-# When the block is omitted, max_num_segments is not required. When the block is declared, max_num_segments is required (object-level AlsoRequires).
 forcemerge {
-  max_num_segments = <optional, int, >= 1> # required when block is present
-  index_codec        = <optional, string>
+  max_num_segments = <optional, int>    # required when block is present; >= 1
+  index_codec      = <optional, string>
 }
 
-# freeze — cold only
 freeze {
-  enabled = <optional, bool, default true> # when false, action omitted from API (see requirements)
+  enabled = <optional + computed, bool> # default true
 }
 
-# migrate — warm, cold only
 migrate {
-  enabled = <optional, bool, default true>
+  enabled = <optional + computed, bool> # default true
 }
 
-# readonly — hot, warm, cold only
 readonly {
-  enabled = <optional, bool, default true>
+  enabled = <optional + computed, bool> # default true
 }
 
-# rollover — hot only
 rollover {
-  max_age                 = <optional, string>
-  max_docs                = <optional, int>
-  max_size                = <optional, string>
-  max_primary_shard_docs  = <optional, int> # ES >= 8.2 when non-default
-  max_primary_shard_size  = <optional, string>
-  min_age                 = <optional, string> # ES >= 8.4 when non-default
-  min_docs                = <optional, int>  # ES >= 8.4 when non-default
-  min_size                = <optional, string>
-  min_primary_shard_docs  = <optional, int>  # ES >= 8.4 when non-default
-  min_primary_shard_size  = <optional, string> # ES >= 8.4 when non-default
+  max_age                = <optional, string>
+  max_docs               = <optional, int>
+  max_size               = <optional, string>
+  max_primary_shard_docs = <optional, int>    # non-default requires ES >= 8.2
+  max_primary_shard_size = <optional, string>
+  min_age                = <optional, string> # non-default requires ES >= 8.4
+  min_docs               = <optional, int>    # non-default requires ES >= 8.4
+  min_size               = <optional, string> # non-default requires ES >= 8.4
+  min_primary_shard_docs = <optional, int>    # non-default requires ES >= 8.4
+  min_primary_shard_size = <optional, string> # non-default requires ES >= 8.4
 }
 
-# searchable_snapshot — hot, cold, frozen only
-# snapshot_repository required when block is present (object-level AlsoRequires).
 searchable_snapshot {
-  snapshot_repository = <optional, string> # required when block is present
-  force_merge_index   = <optional, bool, default true>
+  snapshot_repository = <optional, string>          # required when block is present
+  force_merge_index   = <optional + computed, bool> # default true
 }
 
-# set_priority — hot, warm, cold only
-# priority required when block is present (object-level AlsoRequires).
 set_priority {
-  priority = <optional, int, >= 0> # required when block is present; index recovery priority for this phase
+  priority = <optional, int> # required when block is present; >= 0
 }
 
-# shrink — hot, warm only
 shrink {
-  number_of_shards           = <optional, int>
-  max_primary_shard_size     = <optional, string>
-  allow_write_after_shrink     = <optional, bool> # ES >= 8.14 when non-default
+  number_of_shards         = <optional, int>
+  max_primary_shard_size   = <optional, string>
+  allow_write_after_shrink = <optional + computed, bool> # default false; non-default requires ES >= 8.14
 }
 
-# unfollow — hot, warm, cold only
 unfollow {
-  enabled = <optional, bool, default true>
+  enabled = <optional + computed, bool> # default true
 }
 
-# wait_for_snapshot — delete phase only
-# policy required when block is present (object-level AlsoRequires).
 wait_for_snapshot {
-  policy = <optional, string> # required when block is present; SLM policy name to wait for
+  policy = <optional, string> # required when block is present
 }
 
-# downsample — hot, warm, cold only
-# fixed_interval required when block is present (object-level AlsoRequires).
 downsample {
   fixed_interval = <optional, string> # required when block is present
-  wait_timeout     = <optional + computed, string> # may be set by the cluster on read
+  wait_timeout   = <optional + computed, string>
 }
 ```
 
-### Example: fully expanded phase shapes (illustrative)
+Additional schema behavior:
 
-Each phase is one `SingleNestedBlock` (e.g. `hot { min_age = "1h" ... }`).
-
-```hcl
-  hot {
-    min_age = <optional+computed, string>
-
-    set_priority { priority = <optional int; required when block present> }
-    unfollow { enabled = <optional bool> }
-    rollover {
-      max_age = <optional string>
-      # ... all rollover fields per table above
-    }
-    readonly { enabled = <optional bool> }
-    shrink {
-      number_of_shards         = <optional int>
-      max_primary_shard_size   = <optional string>
-      allow_write_after_shrink = <optional bool>
-    }
-    forcemerge {
-      max_num_segments = <optional int; required when block present>
-      index_codec      = <optional string>
-    }
-    searchable_snapshot {
-      snapshot_repository = <optional string; required when block present>
-      force_merge_index   = <optional bool>
-    }
-    downsample {
-      fixed_interval = <optional string; required when block present>
-      wait_timeout   = <optional+computed string>
-    }
-  }
-
-  warm {
-    min_age = <optional+computed, string>
-    set_priority { ... }
-    unfollow { ... }
-    readonly { ... }
-    allocate { ... }
-    migrate { ... }
-    shrink { ... }
-    forcemerge { ... }
-    downsample { ... }
-  }
-
-  cold {
-    min_age = <optional+computed, string>
-    set_priority { ... }
-    unfollow { ... }
-    readonly { ... }
-    searchable_snapshot { ... }
-    allocate { ... }
-    migrate { ... }
-    freeze { ... }
-    downsample { ... }
-  }
-
-  frozen {
-    min_age = <optional+computed, string>
-    searchable_snapshot {
-      snapshot_repository = <optional string; required when block present>
-      force_merge_index   = <optional bool>
-    }
-  }
-
-  delete {
-    min_age = <optional+computed, string>
-    wait_for_snapshot { policy = <optional string; required when block present> }
-    delete { delete_searchable_snapshot = <optional bool> }
-  }
-```
+- `metadata`, `allocate.include`, `allocate.exclude`, and `allocate.require` use normalized JSON object string types and validate JSON-object syntax.
+- Empty allocation filter objects are omitted from state on read so unset optional filters remain absent.
+- `elasticsearch_connection` remains list-shaped in state because it comes from the shared provider connection schema.
 
 ## Requirements
 
-### Requirement: ILM policy CRUD APIs (REQ-001–REQ-003)
+### Requirement: CRUD APIs and diagnostics (REQ-001–REQ-004)
 
-The resource SHALL use the Elasticsearch **Put lifecycle policy** API to create and update ILM policies ([Put lifecycle API](https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-put-lifecycle.html)). The resource SHALL use the **Get lifecycle policy** API to read policies ([Get lifecycle API](https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-get-lifecycle.html)). The resource SHALL use the **Delete lifecycle policy** API to delete policies ([Delete lifecycle API](https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-delete-lifecycle.html)).
+The resource SHALL use the Elasticsearch Put Lifecycle API to create and update ILM policies, the Get Lifecycle API to read them, and the Delete Lifecycle API to delete them. When Elasticsearch returns a non-success response for create, update, read, or delete, except for HTTP `404` on read, the resource SHALL surface that failure as Terraform diagnostics.
 
-#### Scenario: Documented APIs for lifecycle operations
+#### Scenario: Non-success lifecycle API response
 
-- GIVEN an ILM policy managed by this resource
-- WHEN create, update, read, or delete runs
-- THEN the provider SHALL call the Put, Get, and Delete lifecycle APIs as documented
+- GIVEN Elasticsearch returns a non-success response for Put, Get, or Delete lifecycle
+- WHEN the provider handles that response
+- THEN Terraform SHALL receive an error diagnostic
 
-### Requirement: API error surfacing (REQ-004)
+### Requirement: Identity, import, and replacement (REQ-005–REQ-007)
 
-When Elasticsearch returns a non-success response for create, update, or delete, or for read when the response is not a successful retrieval (excluding **not found** on read as specified elsewhere), the resource SHALL surface the error in Terraform diagnostics.
+The resource SHALL expose a computed `id` in the format `<cluster_uuid>/<policy_name>`. Create and update SHALL derive that id from the connected cluster UUID and the configured `name`. Import SHALL use passthrough of the provided `id`. Changing `name` SHALL require replacement instead of in-place rename.
 
-#### Scenario: Non-success response
-
-- GIVEN an Elasticsearch error on create, update, read (other than not found), or delete
-- WHEN the provider handles the response
-- THEN the error SHALL appear in diagnostics
-
-### Requirement: Identity (REQ-005–REQ-006)
-
-The resource SHALL expose a computed `id` in the format `<cluster_uuid>/<policy_name>`. After a successful create or update, the resource SHALL set `id` using the target cluster identifier and the configured policy `name`.
-
-#### Scenario: Computed id after apply
-
-- GIVEN a successful create or update
-- WHEN state is written
-- THEN `id` SHALL equal `<cluster_uuid>/<policy_name>` for the connected cluster and configured name
-
-### Requirement: Import (REQ-007)
-
-The resource SHALL support import using **passthrough** of the stored `id` (no custom import logic). The imported value SHALL be the same composite `id` format used in state.
-
-#### Scenario: Import by id
+#### Scenario: Import by composite id
 
 - GIVEN an import id in the form `<cluster_uuid>/<policy_name>`
 - WHEN import completes
-- THEN state SHALL retain that `id` for subsequent read
+- THEN the resource SHALL store that id unchanged and use it on subsequent read and delete
 
-### Requirement: Policy name lifecycle (REQ-008)
+#### Scenario: Rename requested
 
-When the `name` argument changes, the resource SHALL require **replacement** (new policy identity), not an in-place rename via the same resource instance.
+- GIVEN an existing resource instance
+- WHEN `name` changes in configuration
+- THEN Terraform SHALL plan replacement
 
-#### Scenario: Renaming a policy
+### Requirement: Validation and connection selection (REQ-008–REQ-010)
 
-- GIVEN a planned change to `name`
-- WHEN Terraform evaluates the resource
-- THEN replacement SHALL be required
+The resource SHALL reject configuration that omits all five phase blocks `hot`, `warm`, `cold`, `frozen`, and `delete`. The resource SHALL accept `metadata` and allocation filters only when they are valid JSON objects. By default, the resource SHALL use the provider-level Elasticsearch client; when `elasticsearch_connection` is configured, the resource SHALL construct and use a resource-scoped Elasticsearch client for create, read, update, and delete.
 
-### Requirement: Elasticsearch connection (REQ-009–REQ-010)
+#### Scenario: No lifecycle phases configured
 
-By default, the resource SHALL use the provider-configured Elasticsearch client. When `elasticsearch_connection` is set, the resource SHALL use a **resource-scoped** Elasticsearch client for all API calls for that instance.
+- GIVEN all phase blocks are absent
+- WHEN configuration is validated
+- THEN the provider SHALL return a validation error before any lifecycle API call
 
-#### Scenario: Override connection
+#### Scenario: Resource-scoped connection override
 
-- GIVEN `elasticsearch_connection` is configured
-- WHEN create, read, update, or delete runs
-- THEN API calls SHALL use the connection defined by that block
+- GIVEN `elasticsearch_connection` is configured for the resource
+- WHEN CRUD operations run
+- THEN the provider SHALL use that resource-scoped connection
 
-### Requirement: Create and update flow (REQ-011)
+### Requirement: Create and update flow (REQ-011–REQ-012)
 
-Create and update SHALL both **put** the full policy definition derived from configuration, then **read** the policy back into state so computed fields and cluster-returned values are refreshed.
+Create and update SHALL expand the Terraform model into a full `models.Policy`, set `policy.Name` from `name`, submit the policy with the Put Lifecycle API, set `id`, and then read the policy back so computed fields and cluster-returned values are refreshed into state.
 
-#### Scenario: Read after write
+#### Scenario: Read after successful put
 
-- GIVEN a successful put
-- WHEN create or update finishes
-- THEN read logic SHALL run to populate state
+- GIVEN a successful Put Lifecycle request
+- WHEN create or update completes
+- THEN the provider SHALL perform read-after-write and populate computed state such as `modified_date`
 
-### Requirement: Read and absent policy (REQ-012–REQ-013)
+### Requirement: Read and delete behavior (REQ-013–REQ-016)
 
-Read SHALL parse `id` as a composite identifier; if the format is invalid, the resource SHALL return an error diagnostic. When the lifecycle API indicates the policy **does not exist**, the resource SHALL **remove the resource from state** (empty `id`) and SHALL log a warning that the policy was not found.
+Read and delete SHALL parse `id` as a composite identifier and return an error diagnostic when the format is invalid. Read SHALL call the Get Lifecycle API for the policy name portion of the id. If the API returns `404`, the provider SHALL log a warning and remove the resource from state. If the API returns success but does not contain the requested policy name in the response body, the provider SHALL return an error diagnostic. Delete SHALL call the Delete Lifecycle API with the policy name portion of `id`.
 
 #### Scenario: Policy removed outside Terraform
 
-- GIVEN the policy was deleted on the cluster
-- WHEN refresh runs
-- THEN the resource SHALL be removed from state and SHALL not fail with a hard error solely due to absence
+- GIVEN the policy no longer exists on the cluster
+- WHEN read runs
+- THEN the provider SHALL remove the resource from state and SHALL not fail solely because of the missing policy
 
-#### Scenario: Invalid stored id
+#### Scenario: Successful response missing named policy
 
-- GIVEN `id` is not `<cluster_uuid>/<resource identifier>`
-- WHEN read or delete parses `id`
-- THEN the provider SHALL return an error diagnostic describing the required format
-
-### Requirement: Delete (REQ-014)
-
-Delete SHALL derive the policy name from the composite `id` and SHALL call the delete lifecycle API for that name.
-
-#### Scenario: Delete uses policy name from id
-
-- GIVEN a valid `id` in state
-- WHEN delete runs
-- THEN the delete API SHALL be invoked for the policy name portion of `id`
-
-### Requirement: Phase and metadata validation (REQ-015–REQ-016)
-
-The resource SHALL require **at least one** of the phase blocks `hot`, `warm`, `cold`, `frozen`, or `delete`. The resource SHALL accept `metadata` only if it is **valid JSON**. JSON-valued allocation attributes (`include`, `exclude`, `require`) SHALL be valid JSON; where used, the provider SHALL apply **JSON-aware diff suppression** so equivalent objects do not churn the plan solely due to formatting.
-
-#### Scenario: No phase defined
-
-- GIVEN none of the phase blocks are set
-- WHEN Terraform validates configuration
-- THEN validation SHALL fail (at least one phase required)
-
-### Requirement: Server version compatibility for optional ILM fields (REQ-017)
-
-For ILM action settings that are only supported starting at a **minimum Elasticsearch version**, the resource SHALL compare the **connected server version** to that minimum when expanding configuration into the API model. If the server is **older** than the required version and the user has set a **non-default** value for that setting, the resource SHALL fail with a diagnostic that instructs removal of the setting or use of the default. If the value equals the default, the resource SHALL **omit** sending that unsupported setting in the policy payload.
-
-#### Scenario: Rollover min conditions on old cluster
-
-- GIVEN Elasticsearch < 8.4 and rollover **min_**\* conditions are set to non-default values
-- WHEN create or update expands the policy
+- GIVEN Get Lifecycle succeeds but the requested policy is absent from the response object
+- WHEN read runs
 - THEN the provider SHALL return an error diagnostic
 
-#### Scenario: Allocate total_shards_per_node on old cluster
+### Requirement: Metadata and phase/action mapping (REQ-017–REQ-021)
 
-- GIVEN Elasticsearch < 7.16 and `total_shards_per_node` is set to a non-default value
-- WHEN create or update expands the allocate action
-- THEN the provider SHALL return an error diagnostic
+On create and update, the resource SHALL decode `metadata` JSON into the policy metadata map when `metadata` is set. For each configured phase, the resource SHALL expand `min_age` and the configured action blocks into the API model. `allocate.include`, `allocate.exclude`, and `allocate.require` SHALL be decoded from JSON object strings into maps. `readonly`, `freeze`, and `unfollow` SHALL be omitted from the API payload when `enabled = false`. `migrate` SHALL still be sent with its configured `enabled` value, including `false`. Unknown action names encountered during expansion SHALL return an error diagnostic.
 
-### Requirement: Mapping for togglable actions (REQ-018)
+On read, the provider SHALL flatten API phases back into Terraform phase objects, serialize allocation filters back to JSON strings, retain prior `metadata` when the API omits metadata, and set `modified_date` from the policy definition returned by Elasticsearch.
 
-For actions **readonly**, **freeze**, and **unfollow**, the resource SHALL send the action to Elasticsearch only when **`enabled` is true**. When **`enabled` is false** but the user still declares the block (so Terraform can express “disabled”), read/flatten SHALL map state in a way that preserves that intent without falsely implying the action is active.
+#### Scenario: Disabled readonly omitted from API payload
 
-#### Scenario: Disabled readonly block retained in config
+- GIVEN `readonly { enabled = false }` is configured in a phase
+- WHEN the policy is expanded for create or update
+- THEN the `readonly` action SHALL be omitted from the Elasticsearch payload
 
-- GIVEN the user sets `readonly { enabled = false }` in a phase
-- WHEN state is refreshed from the API
-- THEN configuration SHALL be able to represent the disabled case without spurious enabled=true drift (per provider flatten rules)
+#### Scenario: Migrate false preserved in payload
 
-### Requirement: Unknown phase actions (REQ-019)
+- GIVEN `migrate { enabled = false }` is configured
+- WHEN the policy is expanded for create or update
+- THEN the payload SHALL still contain the `migrate` action with `enabled = false`
 
-If expansion encounters an action key that is not supported by the provider’s mapping for that phase, the resource SHALL fail with an error diagnostic indicating the action is not supported.
+### Requirement: Version-gated ILM settings (REQ-022–REQ-025)
 
-#### Scenario: Unexpected action in expanded phase map
+For ILM action settings that are only supported on newer Elasticsearch versions, the provider SHALL compare the connected server version to the setting's minimum supported version during expansion. If the configured value is non-default on an unsupported server, the provider SHALL return an error diagnostic. If the configured value equals the default, the provider SHALL omit that unsupported setting from the payload instead of failing.
 
-- GIVEN an internal expansion path surfaces an unknown action name
-- WHEN the policy is expanded
-- THEN the provider SHALL return a diagnostic
+The following minimum versions SHALL apply:
 
-### Requirement: Single nested blocks for phases and actions (REQ-020)
+- `rollover.max_primary_shard_docs`: Elasticsearch `8.2.0`
+- `rollover.min_age`, `rollover.min_docs`, `rollover.min_size`, `rollover.min_primary_shard_docs`, `rollover.min_primary_shard_size`: Elasticsearch `8.4.0`
+- `allocate.total_shards_per_node` when not `-1`: Elasticsearch `7.16.0`
+- `shrink.allow_write_after_shrink` when `true`: Elasticsearch `8.14.0`
 
-The resource SHALL model each of the phase blocks `hot`, `warm`, `cold`, `frozen`, and `delete` as a **Plugin Framework `SingleNestedBlock`** (at most one block per phase in configuration; state stores a single nested object or null when absent), not as a list nested block with a maximum length of one.
+#### Scenario: Unsupported rollover min condition
 
-Each ILM action block allowed under a phase (for example `set_priority`, `rollover`, `forcemerge`, `searchable_snapshot`, `wait_for_snapshot`, `delete`, and other actions defined by the provider schema) SHALL likewise be modeled as a **`SingleNestedBlock`**.
+- GIVEN Elasticsearch is older than `8.4.0`
+- WHEN a non-default rollover `min_*` condition is configured
+- THEN the provider SHALL return an unsupported-setting diagnostic
 
-The **`elasticsearch_connection`** block SHALL remain a **list nested block** as provided by the shared provider connection schema.
+#### Scenario: Unsupported allow-write-after-shrink
 
-#### Scenario: Phase block cardinality
+- GIVEN Elasticsearch is older than `8.14.0`
+- WHEN `shrink.allow_write_after_shrink = true` is configured
+- THEN the provider SHALL return an unsupported-setting diagnostic
 
-- GIVEN a Terraform configuration for this resource
-- WHEN the user declares a phase (for example `hot { ... }`)
-- THEN the schema SHALL allow at most one such block for that phase and SHALL persist that phase as an object-shaped value in state, not as a single-element list
+### Requirement: Read-state normalization (REQ-026–REQ-028)
 
-#### Scenario: Action block cardinality
+On read, when the API omits `total_shards_per_node` inside an `allocate` action, the provider SHALL store `-1` in state. When a `shrink` action is present and the API omits `allow_write_after_shrink`, the provider SHALL store `false` in state. When allocation filters serialize to empty JSON objects, the provider SHALL omit those filter attributes from state so unset optional filters remain absent.
 
-- GIVEN a phase that supports an ILM action block
-- WHEN the user declares that action (for example `forcemerge { ... }`)
-- THEN the schema SHALL allow at most one such block and SHALL persist it as an object-shaped value in state, not as a single-element list
+#### Scenario: Allocate default restored on read
 
-### Requirement: State schema version and upgrade (REQ-021)
+- GIVEN an `allocate` action from Elasticsearch that omits `total_shards_per_node`
+- WHEN the provider flattens the phase
+- THEN state SHALL contain `total_shards_per_node = -1`
 
-The resource SHALL use a **non-zero** `schema.Schema.Version` for this resource type after this change.
+#### Scenario: Empty allocation filter omitted
 
-The resource SHALL implement **`ResourceWithUpgradeState`** and SHALL migrate stored Terraform state from the **prior version** (list-shaped nested values for phases and ILM actions) to the **new version** (object-shaped nested values) for the same logical configuration.
+- GIVEN an `allocate` action whose `include`, `exclude`, or `require` values serialize to `{}`
+- WHEN the provider flattens the phase
+- THEN the corresponding Terraform attribute SHALL be absent from state
 
-The migration SHALL unwrap list-encoded values **only** for known ILM phase keys and known ILM action keys under those phases (including the delete-phase ILM action block named `delete`). The migration SHALL **not** alter the encoding of **`elasticsearch_connection`**.
+### Requirement: Disabled toggle preservation across refresh (REQ-029)
 
-#### Scenario: Upgrade from list-shaped phase state
+For `readonly`, `freeze`, and `unfollow`, when the API omits the action because it is inactive but the prior Terraform configuration had declared the block, the provider SHALL preserve that declaration in state by writing the block with `enabled = false`.
 
-- GIVEN persisted state where a phase is stored as a JSON array containing one object
-- WHEN Terraform loads state and runs the state upgrader
-- THEN the upgraded state SHALL store that phase as a single object (or equivalent null) consistent with `SingleNestedBlock` semantics
+#### Scenario: Disabled unfollow remains disabled after refresh
 
-#### Scenario: Connection block unchanged by upgrade
+- GIVEN prior Terraform state declared `unfollow { enabled = false }`
+- WHEN refresh reads a phase whose API actions omit `unfollow`
+- THEN state SHALL still contain `unfollow.enabled = false`
 
-- GIVEN persisted state that includes `elasticsearch_connection` as a list
-- WHEN the state upgrader runs
-- THEN the `elasticsearch_connection` value SHALL remain list-shaped as defined by the connection schema
+### Requirement: Plugin Framework nested-block shape and state upgrade (REQ-030–REQ-031)
 
-### Requirement: Action fields optional with object-level AlsoRequires (REQ-022)
+The resource SHALL model each phase block and each ILM action block as a Plugin Framework `SingleNestedBlock`, so state stores them as objects instead of singleton lists. The resource SHALL use schema version `1` and implement state upgrade from schema version `0`, unwrapping legacy singleton-list phase values and legacy singleton-list action values into object values. The upgrade SHALL leave `elasticsearch_connection` list-shaped.
 
-For the ILM action blocks **`forcemerge`**, **`searchable_snapshot`**, **`set_priority`**, **`wait_for_snapshot`**, and **`downsample`**, each attribute that is **required for API correctness when the action is declared** SHALL be **optional** at the Terraform attribute level (so an entirely omitted action block does not force those attributes to appear).
+#### Scenario: Upgrade old SDK-shaped nested values
 
-When the user **declares** one of these action blocks in configuration, validation SHALL require that all of the following previously required attributes are set (non-null), using object-level validation equivalent to **`objectvalidator.AlsoRequires`**:
+- GIVEN persisted schema version `0` state with a phase stored as `[ { ... } ]`
+- WHEN Terraform runs the state upgrader
+- THEN the upgraded state SHALL store that phase as a single object value
 
-- **`forcemerge`**: `max_num_segments`
-- **`searchable_snapshot`**: `snapshot_repository`
-- **`set_priority`**: `priority`
-- **`wait_for_snapshot`**: `policy`
-- **`downsample`**: `fixed_interval`
+#### Scenario: Connection block not rewritten
 
-Existing attribute-level validators (for example minimum values) SHALL remain on those attributes where applicable.
+- GIVEN persisted state with `elasticsearch_connection` stored as a list
+- WHEN the ILM state upgrader runs
+- THEN `elasticsearch_connection` SHALL remain list-shaped
 
-#### Scenario: Omitted action block is valid
+### Requirement: Action block presence validation (REQ-032)
 
-- GIVEN a phase without a particular action block (for example no `forcemerge` block)
-- WHEN Terraform validates configuration
-- THEN validation SHALL NOT fail solely because `max_num_segments` is unset
+The blocks `forcemerge`, `searchable_snapshot`, `set_priority`, `wait_for_snapshot`, and `downsample` SHALL keep their key attributes optional at the attribute level so omitted blocks are valid, but SHALL require those attributes when the block is present using object-level validation equivalent to `objectvalidator.AlsoRequires`.
 
-#### Scenario: Empty action block is invalid
+The required-when-present attributes SHALL be:
 
-- GIVEN the user declares `forcemerge { }` with no attributes
-- WHEN Terraform validates configuration
-- THEN validation SHALL fail with a diagnostic indicating the required fields when the block is present
+- `forcemerge.max_num_segments`
+- `searchable_snapshot.snapshot_repository`
+- `set_priority.priority`
+- `wait_for_snapshot.policy`
+- `downsample.fixed_interval`
 
-#### Scenario: Searchable snapshot requires repository when present
+#### Scenario: Empty searchable snapshot block
 
-- GIVEN the user declares `searchable_snapshot { force_merge_index = true }` without `snapshot_repository`
-- WHEN Terraform validates configuration
-- THEN validation SHALL fail with a diagnostic
+- GIVEN the user declares `searchable_snapshot { force_merge_index = true }`
+- WHEN Terraform validates the block
+- THEN validation SHALL fail because `snapshot_repository` is required when the block is present

@@ -33,7 +33,14 @@ resource "elasticstack_kibana_dashboard" "test" {
       }
       filters = [
         {
-          query = "log.level:error OR log.level:warning"
+          filter_json = jsonencode({
+            type = "condition"
+            condition = {
+              field    = "log.level"
+              operator = "is"
+              value    = "error"
+            }
+          })
         }
       ]
       metric_json = jsonencode({

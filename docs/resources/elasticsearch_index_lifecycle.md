@@ -64,7 +64,7 @@ resource "elasticstack_elasticsearch_index_lifecycle" "my_ilm" {
 
 - `cold` (Block, Optional) The index is no longer being updated and is queried infrequently. The information still needs to be searchable, but it's okay if those queries are slower. (see [below for nested schema](#nestedblock--cold))
 - `delete` (Block, Optional) The index is no longer needed and can safely be removed. (see [below for nested schema](#nestedblock--delete))
-- `elasticsearch_connection` (Block List, Deprecated) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- `elasticsearch_connection` (Block List) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - `frozen` (Block, Optional) The index is no longer being updated and is queried rarely. The information still needs to be searchable, but it's okay if those queries are extremely slow. (see [below for nested schema](#nestedblock--frozen))
 - `hot` (Block, Optional) The index is actively being updated and queried. (see [below for nested schema](#nestedblock--hot))
 - `metadata` (String) Optional user metadata about the ilm policy. Must be valid JSON document.

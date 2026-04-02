@@ -34,8 +34,6 @@ resource "elasticstack_kibana_dashboard" "test" {
       metric_json = jsonencode({
         operation     = "count"
         empty_as_null = false
-        hide_title    = false
-        ticks         = "auto"
       })
       shape_json = jsonencode({
         type = "circle"
@@ -44,8 +42,14 @@ resource "elasticstack_kibana_dashboard" "test" {
       sampling              = 1
       filters = [
         {
-          query    = "response:200"
-          language = "kuery"
+          filter_json = jsonencode({
+            type = "condition"
+            condition = {
+              field    = "response"
+              operator = "is"
+              value    = "200"
+            }
+          })
         }
       ]
     }

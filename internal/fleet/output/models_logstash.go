@@ -39,7 +39,11 @@ func (model *outputModel) fromAPILogstashModel(ctx context.Context, data *kbapi.
 	model.DefaultIntegrations = types.BoolPointerValue(data.IsDefault)
 	model.DefaultMonitoring = types.BoolPointerValue(data.IsDefaultMonitoring)
 	model.ConfigYaml = types.StringPointerValue(data.ConfigYaml)
-	model.Ssl, diags = sslToObjectValue(ctx, data.Ssl)
+	if data.Ssl != nil {
+		model.Ssl, diags = sslToObjectValue(ctx, data.Ssl.Certificate, data.Ssl.CertificateAuthorities, data.Ssl.Key)
+	} else {
+		model.Ssl, diags = sslToObjectValue(ctx, nil, nil, nil)
+	}
 
 	// Note: SpaceIDs is not returned by the API for outputs
 	// If it's currently null/unknown, set to explicit null to satisfy Terraform's requirement
@@ -57,7 +61,7 @@ func (model outputModel) toAPICreateLogstashModel(ctx context.Context) (kbapi.Ne
 		return kbapi.NewOutputUnion{}, diags
 	}
 	body := kbapi.NewOutputLogstash{
-		Type:                 kbapi.NewOutputLogstashTypeLogstash,
+		Type:                 kbapi.KibanaHTTPAPIsNewOutputLogstashTypeLogstash,
 		CaSha256:             model.CaSha256.ValueStringPointer(),
 		CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
 		ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
@@ -66,7 +70,7 @@ func (model outputModel) toAPICreateLogstashModel(ctx context.Context) (kbapi.Ne
 		IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
 		IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
 		Name:                 model.Name.ValueString(),
-		Ssl:                  ssl,
+		Ssl:                  ssl.toCreateLogstash(),
 	}
 
 	var union kbapi.NewOutputUnion
@@ -85,7 +89,10 @@ func (model outputModel) toAPIUpdateLogstashModel(ctx context.Context) (kbapi.Up
 		return kbapi.UpdateOutputUnion{}, diags
 	}
 	body := kbapi.UpdateOutputLogstash{
-		Type:                 new(kbapi.Logstash),
+		Type: func() *kbapi.UpdateOutputLogstashType {
+			outputType := kbapi.Logstash
+			return &outputType
+		}(),
 		CaSha256:             model.CaSha256.ValueStringPointer(),
 		CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
 		ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
@@ -93,7 +100,7 @@ func (model outputModel) toAPIUpdateLogstashModel(ctx context.Context) (kbapi.Up
 		IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
 		IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
 		Name:                 model.Name.ValueStringPointer(),
-		Ssl:                  ssl,
+		Ssl:                  ssl.toUpdateLogstash(),
 	}
 
 	var union kbapi.UpdateOutputUnion

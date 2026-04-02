@@ -21,7 +21,9 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -44,13 +46,19 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 		return
 	}
 
-	out, diags := readFull(ctx, client, policyName, &prior)
+	ilmDef, diags := elasticsearch.GetIlm(ctx, client, policyName)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	if out == nil {
+	if ilmDef == nil {
+		tflog.Warn(ctx, "ILM policy not found during read, removing from state", map[string]any{"policy_name": policyName})
 		resp.State.RemoveResource(ctx)
+		return
+	}
+	out, diags := readPolicyIntoModel(ctx, ilmDef, &prior, policyName)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 

@@ -37,8 +37,14 @@ resource "elasticstack_kibana_dashboard" "test" {
 
       filters = [
         {
-          query    = "host.os.keyword: \"linux\""
-          language = "kuery"
+          filter_json = jsonencode({
+            type = "condition"
+            condition = {
+              field    = "host.os.keyword"
+              operator = "is"
+              value    = "linux"
+            }
+          })
         }
       ]
 
@@ -49,7 +55,7 @@ resource "elasticstack_kibana_dashboard" "test" {
             mode    = "categorical"
             palette = "default"
             mapping = []
-            unassignedColor = {
+            unassigned = {
               type  = "color_code"
               value = "#D3DAE6"
             }
@@ -65,12 +71,10 @@ resource "elasticstack_kibana_dashboard" "test" {
         }
       ])
 
-      label_position = "hidden"
-
       legend = {
         nested               = false
         size                 = "small"
-        visible              = "show"
+        visible              = "visible"
         truncate_after_lines = 10
       }
 

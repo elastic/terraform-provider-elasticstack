@@ -33,16 +33,16 @@ import (
 func buildLensMosaicPanelForTest(t *testing.T) panelModel {
 	t.Helper()
 	groupBy := `[{"operation":"terms","collapse_by":"avg","fields":["host.name"],` +
-		`"color":{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"color_code","value":"#D3DAE6"}}}]`
+		`"color":{"mode":"categorical","palette":"default","mapping":[],"unassigned":{"type":"color_code","value":"#D3DAE6"}}}]`
 	groupBreakdownBy := `[{"operation":"terms","collapse_by":"avg","fields":["service.name"],` +
-		`"color":{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"color_code","value":"#D3DAE6"}}}]`
+		`"color":{"mode":"categorical","palette":"default","mapping":[],"unassigned":{"type":"color_code","value":"#D3DAE6"}}}]`
 	apiJSON := `{
 		"type": "mosaic",
 		"title": "Lens Mosaic",
 		"dataset": {"type":"dataView","id":"metrics-*"},
 		"query": {"language":"kuery","query":""},
 		"legend": {"size":"small"},
-		"metrics": [{"operation":"count"}],
+		"metric": {"operation":"count"},
 		"group_by": ` + groupBy + `,
 		"group_breakdown_by": ` + groupBreakdownBy + `
 	}`
@@ -52,7 +52,7 @@ func buildLensMosaicPanelForTest(t *testing.T) panelModel {
 	var chart kbapi.MosaicChart
 	require.NoError(t, chart.FromMosaicNoESQL(api))
 
-	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	var attrs kbapi.LensApiState
 	require.NoError(t, attrs.FromMosaicChart(chart))
 
 	converter := newMosaicPanelConfigConverter()
@@ -86,7 +86,7 @@ func buildLensTreemapPanelForTest(t *testing.T) panelModel {
 	var chart kbapi.TreemapChart
 	require.NoError(t, chart.FromTreemapNoESQL(api))
 
-	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	var attrs kbapi.LensApiState
 	require.NoError(t, attrs.FromTreemapChart(chart))
 
 	converter := newTreemapPanelConfigConverter()
@@ -119,7 +119,7 @@ func buildLensWafflePanelForTest(t *testing.T) panelModel {
 	var chart kbapi.WaffleChart
 	require.NoError(t, chart.FromWaffleNoESQL(api))
 
-	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	var attrs kbapi.LensApiState
 	require.NoError(t, attrs.FromWaffleChart(chart))
 
 	converter := newWafflePanelConfigConverter()
@@ -519,10 +519,12 @@ func Test_panelsToAPI(t *testing.T) {
 							"type": "treemap",
 							"title": "Lens Treemap",
 							"dataset": {"type":"dataView","id":"metrics-*"},
+							"filters": [],
 							"query": {"language":"kuery","query":""},
 							"legend": {"size":"small"},
 							"metrics": [{"operation":"count"}],
-							"group_by": [{"operation":"terms","field":"host.name","collapse_by":"avg"}]
+							"group_by": [{"operation":"terms","field":"host.name","collapse_by":"avg"}],
+							"values": {}
 						},
 						"time_range": {"from": "now-15m", "to": "now"}
 					}
@@ -546,15 +548,17 @@ func Test_panelsToAPI(t *testing.T) {
 							"type": "mosaic",
 							"title": "Lens Mosaic",
 							"dataset": {"type":"dataView","id":"metrics-*"},
+							"filters": [],
 							"query": {"language":"kuery","query":""},
 							"legend": {"size":"small"},
-							"metrics": [{"operation":"count"}],
+							"metric": {"operation":"count"},
 							"group_by": [{"operation":"terms","collapse_by":"avg","fields":["host.name"],
 								"color":{"mode":"categorical","palette":"default","mapping":[],
-								"unassignedColor":{"type":"color_code","value":"#D3DAE6"}}}],
+								"unassigned":{"type":"color_code","value":"#D3DAE6"}}}],
 							"group_breakdown_by": [{"operation":"terms","collapse_by":"avg","fields":["service.name"],
 								"color":{"mode":"categorical","palette":"default","mapping":[],
-								"unassignedColor":{"type":"color_code","value":"#D3DAE6"}}}]
+								"unassigned":{"type":"color_code","value":"#D3DAE6"}}}],
+							"values": {}
 						},
 						"time_range": {"from": "now-15m", "to": "now"}
 					}
@@ -578,9 +582,11 @@ func Test_panelsToAPI(t *testing.T) {
 							"type": "waffle",
 							"title": "Lens Waffle",
 							"dataset": {"type":"dataView","id":"metrics-*"},
+							"filters": [],
 							"query": {"language":"kuery","query":""},
 							"legend": {"size":"small"},
-							"metrics": [{"operation":"count"}]
+							"metrics": [{"operation":"count"}],
+							"values": {"mode": "percentage"}
 						},
 						"time_range": {"from": "now-15m", "to": "now"}
 					}
@@ -637,6 +643,74 @@ func Test_panelsToAPI(t *testing.T) {
 			require.NoError(t, json.Unmarshal(jsonBytes, &actualJSON))
 
 			assert.Equal(t, expectedJSON, actualJSON)
+		})
+	}
+}
+
+func Test_panelModel_toAPI_configJSONErrors(t *testing.T) {
+	tests := []struct {
+		name          string
+		panel         panelModel
+		errorSummary  string
+		errorContains string
+	}{
+		{
+			name: "rejects unsupported config_json panel type",
+			panel: panelModel{
+				Type:       types.StringValue("metric"),
+				Grid:       panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0)},
+				ConfigJSON: customtypes.NewJSONWithDefaultsValue(`{"content":"ignored"}`, populatePanelConfigJSONDefaults),
+			},
+			errorSummary:  "Unsupported panel type for config_json",
+			errorContains: "Only markdown and lens panel types are currently supported",
+		},
+		{
+			name: "rejects missing panel configuration",
+			panel: panelModel{
+				Type:       types.StringValue("markdown"),
+				Grid:       panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0)},
+				ConfigJSON: customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults),
+			},
+			errorSummary:  "Unsupported panel configuration",
+			errorContains: "No panel configuration block was provided",
+		},
+		{
+			name: "rejects invalid markdown config_json",
+			panel: panelModel{
+				Type:       types.StringValue("markdown"),
+				Grid:       panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0)},
+				ConfigJSON: customtypes.NewJSONWithDefaultsValue(`{"content":`, populatePanelConfigJSONDefaults),
+			},
+			errorSummary:  "Failed to create markdown panel",
+			errorContains: "unexpected end of JSON input",
+		},
+		{
+			name: "rejects invalid lens config_json",
+			panel: panelModel{
+				Type:       types.StringValue("lens"),
+				Grid:       panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0)},
+				ConfigJSON: customtypes.NewJSONWithDefaultsValue(`{"attributes":`, populatePanelConfigJSONDefaults),
+			},
+			errorSummary:  "Failed to create lens panel",
+			errorContains: "unexpected end of JSON input",
+		},
+		{
+			name: "rejects missing slo burn rate config",
+			panel: panelModel{
+				Type: types.StringValue("slo_burn_rate"),
+				Grid: panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0)},
+			},
+			errorSummary:  "Missing SLO burn rate panel configuration",
+			errorContains: "SLO burn rate panels require `slo_burn_rate_config`.",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, diags := tt.panel.toAPI()
+			require.True(t, diags.HasError())
+			require.Equal(t, tt.errorSummary, diags[0].Summary())
+			require.Contains(t, diags[0].Detail(), tt.errorContains)
 		})
 	}
 }

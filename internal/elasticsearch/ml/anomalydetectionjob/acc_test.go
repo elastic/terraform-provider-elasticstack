@@ -28,6 +28,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
+const testResourceAddr = "elasticstack_elasticsearch_ml_anomaly_detection_job.test"
+
 func TestAccResourceAnomalyDetectionJobBasic(t *testing.T) {
 	jobID := fmt.Sprintf("test-anomaly-detector-basic-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 
@@ -170,6 +172,106 @@ func TestAccResourceAnomalyDetectionJobComprehensive(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "create_time"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "job_type", "anomaly_detector"),
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "job_version"),
+				),
+			},
+		},
+	})
+}
+
+// Regression test for #1567: empty influencer list causes "inconsistent result after apply".
+func TestAccResourceAnomalyDetectionJobEmptyInfluencers(t *testing.T) {
+	jobID := fmt.Sprintf("test-ad-empty-inf-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	addr := testResourceAddr
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"job_id": config.StringVariable(jobID)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(addr, "job_id", jobID),
+					resource.TestCheckResourceAttr(addr, "analysis_config.influencers.#", "0"),
+					resource.TestCheckNoResourceAttr(addr, "analysis_config.detectors.0.detector_description"),
+					resource.TestCheckResourceAttrSet(addr, "id"),
+				),
+			},
+		},
+	})
+}
+
+// Regression test for #1568: categorization_filters cause "inconsistent result after apply"
+// because ES silently converts them to categorization_analyzer char_filter patterns.
+func TestAccResourceAnomalyDetectionJobCategorizationFilters(t *testing.T) {
+	jobID := fmt.Sprintf("test-ad-cat-filt-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	addr := testResourceAddr
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"job_id": config.StringVariable(jobID)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(addr, "job_id", jobID),
+					resource.TestCheckResourceAttr(addr, "analysis_config.categorization_field_name", "message"),
+					resource.TestCheckResourceAttr(addr, "analysis_config.categorization_filters.#", "2"),
+					resource.TestCheckResourceAttrSet(addr, "id"),
+				),
+			},
+		},
+	})
+}
+
+// Regression test for #1569: per_partition_categorization with enabled=false causes
+// "inconsistent result" because ES drops stop_on_warn when disabled.
+func TestAccResourceAnomalyDetectionJobPerPartitionDisabled(t *testing.T) {
+	jobID := fmt.Sprintf("test-ad-ppc-off-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	addr := testResourceAddr
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"job_id": config.StringVariable(jobID)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(addr, "job_id", jobID),
+					resource.TestCheckResourceAttr(addr, "analysis_config.per_partition_categorization.enabled", "false"),
+					resource.TestCheckResourceAttr(addr, "analysis_config.per_partition_categorization.stop_on_warn", "false"),
+					resource.TestCheckResourceAttrSet(addr, "id"),
+				),
+			},
+		},
+	})
+}
+
+// Regression test for #1564: custom_rules with conditions were not sent to ES on create,
+// and the read path failed to serialize them back from the API response.
+func TestAccResourceAnomalyDetectionJobCustomRules(t *testing.T) {
+	jobID := fmt.Sprintf("test-ad-rules-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	addr := testResourceAddr
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"job_id": config.StringVariable(jobID)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(addr, "job_id", jobID),
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.custom_rules.#", "1"),
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.custom_rules.0.actions.#", "1"),
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.custom_rules.0.actions.0", "skip_result"),
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.custom_rules.0.conditions.#", "1"),
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.custom_rules.0.conditions.0.applies_to", "actual"),
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.custom_rules.0.conditions.0.operator", "lt"),
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.custom_rules.0.conditions.0.value", "10"),
+					resource.TestCheckResourceAttrSet(addr, "id"),
 				),
 			},
 		},

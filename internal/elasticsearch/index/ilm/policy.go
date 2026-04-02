@@ -20,17 +20,11 @@ package ilm
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 func policyFromModel(ctx context.Context, m *tfModel, serverVersion *version.Version) (*models.Policy, diag.Diagnostics) {
@@ -111,30 +105,4 @@ func readPolicyIntoModel(ctx context.Context, ilmDef *models.PolicyDefinition, p
 	}
 
 	return out, diags
-}
-
-func readFull(ctx context.Context, apiClient *clients.APIClient, policyName string, prior *tfModel) (*tfModel, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	ilmDef, fwDiags := elasticsearch.GetIlm(ctx, apiClient, policyName)
-	diags.Append(fwDiags...)
-	if diags.HasError() {
-		return nil, diags
-	}
-	if ilmDef == nil {
-		tflog.Warn(ctx, fmt.Sprintf(`ILM policy "%s" not found, removing from state`, policyName))
-		return nil, diags
-	}
-	out, d := readPolicyIntoModel(ctx, ilmDef, prior, policyName)
-	diags.Append(d...)
-	return out, diags
-}
-
-func serverVersionFW(ctx context.Context, c *clients.APIClient) (*version.Version, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	sv, sdkd := c.ServerVersion(ctx)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkd)...)
-	if diags.HasError() {
-		return nil, diags
-	}
-	return sv, diags
 }

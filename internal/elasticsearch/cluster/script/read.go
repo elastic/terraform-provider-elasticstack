@@ -45,14 +45,8 @@ func (r *scriptResource) Read(ctx context.Context, req resource.ReadRequest, res
 	}
 	scriptID := compID.ResourceID
 
-	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, data.ElasticsearchConnection, r.client)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	// Use the helper read function
-	readData, readDiags := r.read(ctx, scriptID, client)
+	readData, readDiags := r.read(ctx, scriptID, data)
 	resp.Diagnostics.Append(readDiags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -80,9 +74,15 @@ func (r *scriptResource) Read(ctx context.Context, req resource.ReadRequest, res
 	resp.Diagnostics.Append(resp.State.Set(ctx, &readData)...)
 }
 
-func (r *scriptResource) read(ctx context.Context, scriptID string, client *clients.APIClient) (Data, diag.Diagnostics) {
+func (r *scriptResource) read(ctx context.Context, scriptID string, stateData Data) (Data, diag.Diagnostics) {
 	var data Data
 	var diags diag.Diagnostics
+
+	client, fwDiags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, stateData.ElasticsearchConnection, r.client)
+	diags.Append(fwDiags...)
+	if diags.HasError() {
+		return data, diags
+	}
 
 	script, frameworkDiags := elasticsearch.GetScript(ctx, client, scriptID)
 	diags.Append(frameworkDiags...)

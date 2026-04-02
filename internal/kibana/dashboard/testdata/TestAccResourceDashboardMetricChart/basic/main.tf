@@ -39,12 +39,6 @@ resource "elasticstack_kibana_dashboard" "test" {
             format = {
               type = "number"
             }
-            alignments = {
-              labels = "center"
-            }
-            icon = {
-              name = "document"
-            }
           })
         }
       ]
