@@ -216,7 +216,7 @@ resource "elasticstack_fleet_output" "remote" {
   ]
 
   # Optional: automatic integration asset sync to the remote cluster (subscription/version limits apply).
-  sync_integrations            = true
+  sync_integrations             = true
   sync_uninstalled_integrations = false
   write_to_logs_streams         = false
 
