@@ -30,7 +30,8 @@ func TestOrdinaryStep(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		Steps: []resource.TestStep{
 			{
-				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 			},
 		},
 	})
@@ -42,7 +43,8 @@ func TestOrdinaryStepParallel(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		Steps: []resource.TestStep{
 			{
-				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 			},
 		},
 	})
@@ -64,12 +66,13 @@ func TestCompatibilityStep(t *testing.T) {
 }
 
 // TestImportOnlyStep verifies that a step with neither Config nor ConfigDirectory
-// (e.g. import-only or refresh-only) produces no diagnostic.
+// (e.g. import-only or refresh-only) still declares provider wiring via ProtoV6ProviderFactories.
 func TestImportOnlyStep(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		Steps: []resource.TestStep{
 			{
-				// No Config, no ConfigDirectory – import-only step is out of scope.
+				ProtoV6ProviderFactories: acctest.Providers,
+				// No Config, no ConfigDirectory – import-only step still needs step-local provider wiring.
 			},
 		},
 	})
@@ -81,12 +84,15 @@ func TestMixedCompliantSteps(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		Steps: []resource.TestStep{
 			{
-				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 			},
 			{
-				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 			},
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				// import-only step
 			},
 			{

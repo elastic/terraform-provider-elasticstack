@@ -25,10 +25,10 @@ import (
 
 // TestAnalyzer_CompliantCases verifies that fully compliant test steps produce no diagnostics.
 // Covered patterns:
-//   - ordinary step: ConfigDirectory: acctest.NamedTestCaseDirectory(...) inside resource.Test
-//   - ordinary step: ConfigDirectory: acctest.NamedTestCaseDirectory(...) inside resource.ParallelTest
+//   - ordinary step: step-level ProtoV6ProviderFactories + ConfigDirectory: acctest.NamedTestCaseDirectory(...) inside resource.Test
+//   - ordinary step: same inside resource.ParallelTest
 //   - compatibility step: ExternalProviders + Config: "..." inside resource.Test
-//   - import-only step: neither Config nor ConfigDirectory
+//   - import-only step: step-level ProtoV6ProviderFactories, neither Config nor ConfigDirectory
 func TestAnalyzer_CompliantCases(t *testing.T) {
 	testdata := analysistest.TestData()
 	analysistest.Run(t, testdata, NewAnalyzer(), "github.com/elastic/terraform-provider-elasticstack/internal/acctestcases/compliant")
@@ -40,6 +40,9 @@ func TestAnalyzer_CompliantCases(t *testing.T) {
 //   - ConfigDirectory set to config.TestNameDirectory() instead of acctest.NamedTestCaseDirectory (violation 2)
 //   - ExternalProviders + ConfigDirectory together (violation 4)
 //   - inline Config without ExternalProviders inside resource.ParallelTest (violation 1, parallel variant)
+//   - ProtoV6ProviderFactories on resource.TestCase (must be step-local)
+//   - missing step-level ProtoV6ProviderFactories / ExternalProviders wiring
+//   - both ProtoV6ProviderFactories and ExternalProviders on the same step
 func TestAnalyzer_Violations(t *testing.T) {
 	testdata := analysistest.TestData()
 	analysistest.Run(t, testdata, NewAnalyzer(), "github.com/elastic/terraform-provider-elasticstack/internal/acctestcases/violations")

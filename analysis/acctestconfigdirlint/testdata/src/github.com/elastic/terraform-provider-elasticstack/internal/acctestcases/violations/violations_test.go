@@ -31,7 +31,8 @@ func TestViolation1_InlineConfigWithoutExternalProviders(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		Steps: []resource.TestStep{
 			{
-				Config: `resource "null_resource" "example" {}`, // want `resource.TestStep sets Config without ExternalProviders`
+				ProtoV6ProviderFactories: acctest.Providers,
+				Config:                   `resource "null_resource" "example" {}`, // want `resource.TestStep sets Config without ExternalProviders`
 			},
 		},
 	})
@@ -43,7 +44,8 @@ func TestViolation2_ConfigDirectoryNotNamedHelper(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		Steps: []resource.TestStep{
 			{
-				ConfigDirectory: config.TestNameDirectory(), // want `resource.TestStep sets ConfigDirectory to a value other than acctest.NamedTestCaseDirectory`
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          config.TestNameDirectory(), // want `resource.TestStep sets ConfigDirectory to a value other than acctest.NamedTestCaseDirectory`
 			},
 		},
 	})
@@ -85,7 +87,47 @@ func TestViolation4_InlineConfigNoExternalProviders_ParallelTest(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		Steps: []resource.TestStep{
 			{
-				Config: `resource "null_resource" "other" {}`, // want `resource.TestStep sets Config without ExternalProviders`
+				ProtoV6ProviderFactories: acctest.Providers,
+				Config:                   `resource "null_resource" "other" {}`, // want `resource.TestStep sets Config without ExternalProviders`
+			},
+		},
+	})
+}
+
+// TestViolation_TestCaseProtoV6ProviderFactories reports test-case-level ProtoV6 wiring.
+func TestViolation_TestCaseProtoV6ProviderFactories(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: acctest.Providers, // want `resource.TestCase sets ProtoV6ProviderFactories`
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+			},
+		},
+	})
+}
+
+// TestViolation_MissingStepProviderWiring reports a step with ConfigDirectory but no provider mode.
+func TestViolation_MissingStepProviderWiring(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		Steps: []resource.TestStep{
+			{ // want `resource.TestStep sets neither ProtoV6ProviderFactories nor ExternalProviders`
+				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+			},
+		},
+	})
+}
+
+// TestViolation_MixedProtoV6AndExternalProviders reports both wiring modes on one step.
+func TestViolation_MixedProtoV6AndExternalProviders(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers, // want `resource.TestStep sets both ProtoV6ProviderFactories and ExternalProviders`
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"aws": {Source: "hashicorp/aws"},
+				},
+				Config: `resource "aws_instance" "example" {}`,
 			},
 		},
 	})
