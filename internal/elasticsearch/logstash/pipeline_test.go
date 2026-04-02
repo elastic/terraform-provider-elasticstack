@@ -160,7 +160,10 @@ func TestAccResourceLogstashPipelinePersistedQueue(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceLogstashPipelinePersistedQueue(pipelineID),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"pipeline_id": config.StringVariable(pipelineID),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "pipeline_id", pipelineID),
 					resource.TestCheckResourceAttr(resourceName, "queue_type", "persisted"),
@@ -177,29 +180,6 @@ func TestAccResourceLogstashPipelinePersistedQueue(t *testing.T) {
 	})
 }
 
-func testAccResourceLogstashPipelinePersistedQueue(pipelineID string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_logstash_pipeline" "test_persisted" {
-  pipeline_id = "%s"
-  pipeline    = "input{} filter{} output{}"
-  username    = "test_user"
-
-  queue_type               = "persisted"
-  queue_max_bytes          = "512mb"
-  queue_max_events         = 2000
-  queue_page_capacity      = "128mb"
-  queue_checkpoint_acks    = 512
-  queue_checkpoint_writes  = 1024
-  queue_checkpoint_retry   = false
-  queue_drain              = true
-}
-`, pipelineID)
-}
-
 // TestAccResourceLogstashPipelineEnumVariants verifies that the enum attributes
 // pipeline_ecs_compatibility and pipeline_ordered accept values other than the ones
 // exercised by the main test ("disabled" and "auto").
@@ -213,7 +193,10 @@ func TestAccResourceLogstashPipelineEnumVariants(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Step 1: set ecs_compatibility = "v1", pipeline_ordered = "false"
 			{
-				Config: testAccResourceLogstashPipelineEnumVariants(pipelineID, "v1", "false"),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"pipeline_id": config.StringVariable(pipelineID),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "pipeline_id", pipelineID),
 					resource.TestCheckResourceAttr(resourceName, "pipeline_ecs_compatibility", "v1"),
@@ -222,7 +205,10 @@ func TestAccResourceLogstashPipelineEnumVariants(t *testing.T) {
 			},
 			// Step 2: switch to ecs_compatibility = "v8", pipeline_ordered = "true"
 			{
-				Config: testAccResourceLogstashPipelineEnumVariants(pipelineID, "v8", "true"),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"pipeline_id": config.StringVariable(pipelineID),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "pipeline_id", pipelineID),
 					resource.TestCheckResourceAttr(resourceName, "pipeline_ecs_compatibility", "v8"),
@@ -231,22 +217,6 @@ func TestAccResourceLogstashPipelineEnumVariants(t *testing.T) {
 			},
 		},
 	})
-}
-
-func testAccResourceLogstashPipelineEnumVariants(pipelineID, ecsCompat, ordered string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_logstash_pipeline" "test_enums" {
-  pipeline_id                = "%s"
-  pipeline                   = "input{} filter{} output{}"
-  username                   = "test_user"
-  pipeline_ecs_compatibility = "%s"
-  pipeline_ordered           = "%s"
-}
-`, pipelineID, ecsCompat, ordered)
 }
 
 // TestAccResourceLogstashPipelineOptionalUnset verifies that optional attributes can be
@@ -267,7 +237,10 @@ func TestAccResourceLogstashPipelineOptionalUnset(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Step 1: create with a selection of optional attributes set.
 			{
-				Config: testAccResourceLogstashPipelineOptionalSet(pipelineID),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"pipeline_id": config.StringVariable(pipelineID),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "pipeline_id", pipelineID),
 					resource.TestCheckResourceAttr(resourceName, "description", "Optional attrs set"),
@@ -286,7 +259,10 @@ func TestAccResourceLogstashPipelineOptionalUnset(t *testing.T) {
 			// server-side, so only the description (explicitly set to "" by the provider) can
 			// be asserted as cleared.
 			{
-				Config: testAccResourceLogstashPipelineOptionalUnset(pipelineID),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"pipeline_id": config.StringVariable(pipelineID),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "pipeline_id", pipelineID),
 					resource.TestCheckResourceAttr(resourceName, "description", ""),
@@ -294,43 +270,6 @@ func TestAccResourceLogstashPipelineOptionalUnset(t *testing.T) {
 			},
 		},
 	})
-}
-
-func testAccResourceLogstashPipelineOptionalSet(pipelineID string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_logstash_pipeline" "test_optional" {
-  pipeline_id              = "%s"
-  pipeline                 = "input{} filter{} output{}"
-  username                 = "test_user"
-  description              = "Optional attrs set"
-  pipeline_batch_delay     = 75
-  pipeline_batch_size      = 150
-  pipeline_workers         = 1
-  pipeline_ecs_compatibility = "disabled"
-  pipeline_ordered         = "auto"
-  pipeline_unsafe_shutdown = true
-  queue_type               = "memory"
-  queue_max_bytes          = "256mb"
-}
-`, pipelineID)
-}
-
-func testAccResourceLogstashPipelineOptionalUnset(pipelineID string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_logstash_pipeline" "test_optional" {
-  pipeline_id = "%s"
-  pipeline    = "input{} filter{} output{}"
-  username    = "test_user"
-}
-`, pipelineID)
 }
 
 // TestAccResourceLogstashPipelineForceNew verifies that changing pipeline_id (a ForceNew
@@ -345,7 +284,10 @@ func TestAccResourceLogstashPipelineForceNew(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceLogstashPipelineForceNew(firstID),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"pipeline_id": config.StringVariable(firstID),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "pipeline_id", firstID),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -353,7 +295,10 @@ func TestAccResourceLogstashPipelineForceNew(t *testing.T) {
 			},
 			// Changing pipeline_id must trigger a destroy + create (ForceNew).
 			{
-				Config: testAccResourceLogstashPipelineForceNew(secondID),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"pipeline_id": config.StringVariable(secondID),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "pipeline_id", secondID),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -363,26 +308,16 @@ func TestAccResourceLogstashPipelineForceNew(t *testing.T) {
 	})
 }
 
-func testAccResourceLogstashPipelineForceNew(pipelineID string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_logstash_pipeline" "test_forcenew" {
-  pipeline_id = "%s"
-  pipeline    = "input{} filter{} output{}"
-  username    = "test_user"
-}
-`, pipelineID)
-}
-
 // TestAccResourceLogstashPipelineExplicitConnection tests the elasticsearch_connection
 // block by supplying explicit endpoint credentials from the test environment.
 func TestAccResourceLogstashPipelineExplicitConnection(t *testing.T) {
 	endpoints := logstashPipelineESEndpoints()
 	if len(endpoints) == 0 {
 		t.Skip("ELASTICSEARCH_ENDPOINTS must be set to run this test")
+	}
+	endpointVars := make([]config.Variable, 0, len(endpoints))
+	for _, endpoint := range endpoints {
+		endpointVars = append(endpointVars, config.StringVariable(endpoint))
 	}
 
 	pipelineID := "pipeline-" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
@@ -393,7 +328,14 @@ func TestAccResourceLogstashPipelineExplicitConnection(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceLogstashPipelineExplicitConnection(pipelineID),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"pipeline_id": config.StringVariable(pipelineID),
+					"endpoints":   config.ListVariable(endpointVars...),
+					"api_key":     config.StringVariable(os.Getenv("ELASTICSEARCH_API_KEY")),
+					"username":    config.StringVariable(os.Getenv("ELASTICSEARCH_USERNAME")),
+					"password":    config.StringVariable(os.Getenv("ELASTICSEARCH_PASSWORD")),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "pipeline_id", pipelineID),
 					resource.TestCheckResourceAttr(resourceName, "pipeline", "input{} filter{} output{}"),
@@ -412,43 +354,6 @@ func TestAccResourceLogstashPipelineExplicitConnection(t *testing.T) {
 			},
 		},
 	})
-}
-
-func testAccResourceLogstashPipelineExplicitConnection(pipelineID string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_logstash_pipeline" "test_conn" {
-  pipeline_id = "%s"
-  pipeline    = "input{} filter{} output{}"
-  username    = "test_user"
-
-  elasticsearch_connection {
-    %s
-    insecure = true
-  }
-}
-`, pipelineID, buildLogstashPipelineESConnectionBlock())
-}
-
-func buildLogstashPipelineESConnectionBlock() string {
-	endpoints := logstashPipelineESEndpoints()
-	quoted := make([]string, 0, len(endpoints))
-	for _, ep := range endpoints {
-		quoted = append(quoted, fmt.Sprintf("%q", ep))
-	}
-	endpointList := strings.Join(quoted, ", ")
-
-	if apiKey := os.Getenv("ELASTICSEARCH_API_KEY"); apiKey != "" {
-		return fmt.Sprintf(`endpoints = [%s]
-    api_key   = %q`, endpointList, apiKey)
-	}
-
-	return fmt.Sprintf(`endpoints = [%s]
-    username  = %q
-    password  = %q`, endpointList, os.Getenv("ELASTICSEARCH_USERNAME"), os.Getenv("ELASTICSEARCH_PASSWORD"))
 }
 
 func logstashPipelineESEndpoints() []string {

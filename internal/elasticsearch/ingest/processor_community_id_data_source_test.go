@@ -49,7 +49,8 @@ func TestAccDataSourceIngestProcessorCommunityIDCoreNetwork(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorCommunityIDCoreNetwork,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "source_ip", "source.address"),
@@ -73,7 +74,8 @@ func TestAccDataSourceIngestProcessorCommunityIDICMP(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorCommunityIDICMP,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "transport", "icmp"),
@@ -95,7 +97,8 @@ func TestAccDataSourceIngestProcessorCommunityIDMetadata(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorCommunityIDMetadata,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "description", "Compute the community ID"),
@@ -117,7 +120,8 @@ func TestAccDataSourceIngestProcessorCommunityIDOnFailure(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorCommunityIDOnFailure,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_community_id.test_on_failure", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_community_id.test_on_failure", "on_failure.#", "1"),
@@ -187,61 +191,3 @@ const expectedJSONCommunityIDOnFailure = `{
 		"ignore_missing": false
 	}
 }`
-
-const testAccDataSourceIngestProcessorCommunityIDCoreNetwork = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_community_id" "test" {
-  source_ip        = "source.address"
-  source_port      = 12345
-  destination_ip   = "destination.address"
-  destination_port = 443
-  target_field     = "network.community_id"
-  seed             = 123
-  ignore_missing   = true
-  ignore_failure   = true
-}
-`
-
-const testAccDataSourceIngestProcessorCommunityIDICMP = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_community_id" "test" {
-  transport = "icmp"
-  icmp_type = 3
-  icmp_code = 1
-}
-`
-
-const testAccDataSourceIngestProcessorCommunityIDMetadata = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_community_id" "test" {
-  description = "Compute the community ID"
-  if          = "ctx.network != null"
-  tag         = "community-id-tag"
-}
-`
-
-const testAccDataSourceIngestProcessorCommunityIDOnFailure = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_community_id" "test_on_failure" {
-  on_failure = [
-    jsonencode({
-      set = {
-        field = "error.message"
-        value = "community id failed"
-      }
-    })
-  ]
-}
-`

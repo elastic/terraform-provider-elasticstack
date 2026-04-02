@@ -326,7 +326,10 @@ func TestAccResourceIndexTemplateMetadataAndMappings(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				Config:                   testAccResourceIndexTemplateMetadataAndMappingsConfig(templateName, "", "", nil),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("unset"),
+				ConfigVariables: config.Variables{
+					"template_name": config.StringVariable(templateName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "name", templateName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "index_patterns.#", "2"),
@@ -515,7 +518,10 @@ func TestAccResourceIndexTemplateAliasDetails(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				Config:                   testAccResourceIndexTemplateAliasDetailsConfig(templateName, "detailed_alias_v2", "shard_2", "shard_2", "shard_2"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"template_name": config.StringVariable(templateName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "name", templateName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "template.0.alias.#", "1"),
@@ -797,7 +803,10 @@ func TestAccResourceIndexTemplateCollectionGrowth(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(index.MinSupportedIgnoreMissingComponentTemplateVersion),
-				Config:                   testAccResourceIndexTemplateCollectionGrowthConfig(templateName, nil, nil),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"template_name": config.StringVariable(templateName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "name", templateName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "composed_of.#", "0"),
@@ -807,11 +816,10 @@ func TestAccResourceIndexTemplateCollectionGrowth(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(index.MinSupportedIgnoreMissingComponentTemplateVersion),
-				Config: testAccResourceIndexTemplateCollectionGrowthConfig(
-					templateName,
-					[]string{"elasticstack_elasticsearch_component_template.component_a.name"},
-					[]string{"elasticstack_elasticsearch_component_template.component_b.name"},
-				),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"template_name": config.StringVariable(templateName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "name", templateName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "composed_of.#", "1"),
@@ -823,17 +831,10 @@ func TestAccResourceIndexTemplateCollectionGrowth(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(index.MinSupportedIgnoreMissingComponentTemplateVersion),
-				Config: testAccResourceIndexTemplateCollectionGrowthConfig(
-					templateName,
-					[]string{
-						"elasticstack_elasticsearch_component_template.component_a.name",
-						"elasticstack_elasticsearch_component_template.component_b.name",
-					},
-					[]string{
-						"elasticstack_elasticsearch_component_template.component_b.name",
-						"elasticstack_elasticsearch_component_template.component_c.name",
-					},
-				),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("expand"),
+				ConfigVariables: config.Variables{
+					"template_name": config.StringVariable(templateName),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "name", templateName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template.test", "composed_of.#", "2"),
@@ -972,115 +973,6 @@ func templateAliasPrefix(s *terraform.State, resourceName, aliasName string) (st
 	}
 
 	return "", fmt.Errorf("alias %q not found for %s", aliasName, resourceName)
-}
-
-func testAccResourceIndexTemplateAliasDetailsConfig(name, aliasName, routing, searchRouting, indexRouting string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_index_template" "test" {
-  name           = %q
-  index_patterns = [%q]
-
-  template {
-    alias {
-      name           = %q
-      is_hidden      = true
-      is_write_index = true
-      routing        = %q
-      search_routing = %q
-      index_routing  = %q
-    }
-  }
-}`, name, name+"-*", aliasName, routing, searchRouting, indexRouting)
-}
-
-func testAccResourceIndexTemplateMetadataAndMappingsConfig(name, metadata, mappings string, templateVersion *int) string {
-	versionLine := ""
-	if templateVersion != nil {
-		versionLine = fmt.Sprintf("  version        = %d\n", *templateVersion)
-	}
-
-	metadataLine := ""
-	if metadata != "" {
-		metadataLine = fmt.Sprintf("  metadata       = %q\n", metadata)
-	}
-
-	templateBlock := ""
-	if mappings != "" {
-		templateBlock = fmt.Sprintf(`
-  template {
-    mappings = %q
-  }`, mappings)
-	}
-
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_index_template" "test" {
-  name           = %q
-  index_patterns = [%q, %q]
-%s%s%s
-}`, name, name+"-a-*", name+"-b-*", versionLine, metadataLine, templateBlock)
-}
-
-func testAccResourceIndexTemplateCollectionGrowthConfig(name string, composedOf, ignoreMissing []string) string {
-	componentList := "[]"
-	if len(composedOf) > 0 {
-		componentList = fmt.Sprintf("[%s]", strings.Join(composedOf, ", "))
-	}
-
-	ignoreMissingList := "[]"
-	if len(ignoreMissing) > 0 {
-		ignoreMissingList = fmt.Sprintf("[%s]", strings.Join(ignoreMissing, ", "))
-	}
-
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_component_template" "component_a" {
-  name = %q
-
-  template {
-    settings = jsonencode({
-      number_of_shards = "1"
-    })
-  }
-}
-
-resource "elasticstack_elasticsearch_component_template" "component_b" {
-  name = %q
-
-  template {
-    settings = jsonencode({
-      number_of_shards = "1"
-    })
-  }
-}
-
-resource "elasticstack_elasticsearch_component_template" "component_c" {
-  name = %q
-
-  template {
-    settings = jsonencode({
-      number_of_shards = "1"
-    })
-  }
-}
-
-resource "elasticstack_elasticsearch_index_template" "test" {
-  name           = %q
-  index_patterns = [%q]
-
-  composed_of                        = %s
-  ignore_missing_component_templates = %s
-}`, name+"-comp-a@custom", name+"-comp-b@custom", name+"-comp-c@custom", name, name+"-*", componentList, ignoreMissingList)
 }
 
 func indexTemplateESEndpoints() []string {

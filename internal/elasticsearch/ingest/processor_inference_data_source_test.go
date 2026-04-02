@@ -30,7 +30,7 @@ func TestAccDataSourceIngestProcessorInference(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorInference,
+				ConfigDirectory: acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_inference.test", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "model_id", "my_endpoint"),
@@ -38,7 +38,7 @@ func TestAccDataSourceIngestProcessorInference(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccDataSourceIngestProcessorInferenceAllAttributes,
+				ConfigDirectory: acctest.NamedTestCaseDirectory("all_attributes"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_inference.test", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "model_id", "my_endpoint"),
@@ -87,47 +87,3 @@ const expectedJSONInferenceAllAttributes = `{
     "tag": "inference-tag"
   }
 }`
-
-const testAccDataSourceIngestProcessorInference = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_inference" "test" {
-  model_id = "my_endpoint"
-  input_output {
-    input_field  = "foo"
-    output_field = "bar"
-  }
-}
-`
-
-const testAccDataSourceIngestProcessorInferenceAllAttributes = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_inference" "test" {
-  model_id = "my_endpoint"
-  input_output {
-    input_field  = "foo"
-    output_field = "bar"
-  }
-  field_map = {
-    content = "text_field"
-  }
-  target_field   = "ml.inference"
-  description    = "Run inference on foo"
-  if             = "ctx.lang == 'en'"
-  ignore_failure = true
-  tag            = "inference-tag"
-  on_failure = [
-    jsonencode({
-      set = {
-        field = "error.message"
-        value = "inference failed"
-      }
-    })
-  ]
-}
-`

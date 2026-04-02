@@ -456,6 +456,16 @@ func TestAccResourceILMDeleteWaitForSnapshot(t *testing.T) {
 func TestAccResourceILMConnectionOverride(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	endpoint := ilmPrimaryESEndpoint()
+	apiKey := os.Getenv("ELASTICSEARCH_API_KEY")
+	username := os.Getenv("ELASTICSEARCH_USERNAME")
+	password := os.Getenv("ELASTICSEARCH_PASSWORD")
+
+	if username == "" {
+		username = "elastic"
+	}
+	if password == "" {
+		password = "password"
+	}
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { acctest.PreCheck(t) },
@@ -463,7 +473,14 @@ func TestAccResourceILMConnectionOverride(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceILMConnectionOverrideConfig(policyName),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+					"endpoints":   config.ListVariable(config.StringVariable(endpoint)),
+					"api_key":     config.StringVariable(apiKey),
+					"username":    config.StringVariable(username),
+					"password":    config.StringVariable(password),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_conn", "name", policyName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_conn", "hot.#", "1"),
@@ -742,53 +759,6 @@ func ilmPrimaryESEndpoint() string {
 	}
 
 	return "http://localhost:9200"
-}
-
-func testAccResourceILMConnectionOverrideConfig(policyName string) string {
-	endpoint := ilmPrimaryESEndpoint()
-	apiKey := os.Getenv("ELASTICSEARCH_API_KEY")
-	username := os.Getenv("ELASTICSEARCH_USERNAME")
-	password := os.Getenv("ELASTICSEARCH_PASSWORD")
-
-	if username == "" {
-		username = "elastic"
-	}
-	if password == "" {
-		password = "password"
-	}
-
-	var authConfig string
-	if apiKey != "" {
-		authConfig = fmt.Sprintf("    api_key   = %q", apiKey)
-	} else {
-		authConfig = fmt.Sprintf("    username  = %q\n    password  = %q", username, password)
-	}
-
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_index_lifecycle" "test_conn" {
-  name = %q
-
-  elasticsearch_connection {
-    endpoints = [%q]
-    insecure  = true
-%s
-  }
-
-  hot {
-    rollover {
-      max_age = "7d"
-    }
-  }
-
-  delete {
-    delete {}
-  }
-}
-`, policyName, endpoint, authConfig)
 }
 
 func checkILMDownsampleDefaultWaitTimeout(resourceName, attribute string) resource.TestCheckFunc {
