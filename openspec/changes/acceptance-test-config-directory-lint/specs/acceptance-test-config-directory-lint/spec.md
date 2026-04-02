@@ -13,6 +13,29 @@ The lint rule SHALL evaluate `resource.TestStep` composite literals in `_test.go
 - **WHEN** the file uses `resource.Test` or `resource.ParallelTest` with `resource.TestStep` values
 - **THEN** the analyzer SHALL evaluate those test steps using the same rules as any other in-scope acceptance test
 
+### Requirement: Provider wiring is step-local
+An in-scope `resource.TestCase` SHALL NOT set `ProtoV6ProviderFactories`. Every in-scope `resource.TestStep` SHALL declare exactly one provider-wiring mode by setting either `ProtoV6ProviderFactories` or `ExternalProviders`.
+
+#### Scenario: Ordinary step uses step-level ProtoV6 provider factories
+- **GIVEN** an in-scope acceptance `resource.TestStep`
+- **WHEN** the step sets `ProtoV6ProviderFactories`
+- **THEN** the analyzer SHALL report no diagnostic for provider wiring on that step
+
+#### Scenario: Test case sets ProtoV6 provider factories
+- **GIVEN** an in-scope acceptance `resource.TestCase`
+- **WHEN** the test case sets `ProtoV6ProviderFactories`
+- **THEN** the analyzer SHALL emit a diagnostic requiring provider factories to be declared on each `resource.TestStep` instead
+
+#### Scenario: Step omits both provider-wiring modes
+- **GIVEN** an in-scope acceptance `resource.TestStep`
+- **WHEN** the step sets neither `ProtoV6ProviderFactories` nor `ExternalProviders`
+- **THEN** the analyzer SHALL emit a diagnostic requiring the step to declare one provider-wiring mode
+
+#### Scenario: Step mixes ProtoV6 and external provider wiring
+- **GIVEN** an in-scope acceptance `resource.TestStep`
+- **WHEN** the step sets both `ProtoV6ProviderFactories` and `ExternalProviders`
+- **THEN** the analyzer SHALL emit a diagnostic requiring the step to choose exactly one provider-wiring mode
+
 ### Requirement: Ordinary acceptance steps use directory-backed fixtures
 Any in-scope `resource.TestStep` that supplies Terraform configuration through `ConfigDirectory` SHALL call `acctest.NamedTestCaseDirectory(...)` directly.
 
@@ -27,7 +50,7 @@ Any in-scope `resource.TestStep` that supplies Terraform configuration through `
 - **THEN** the analyzer SHALL emit a diagnostic requiring `acctest.NamedTestCaseDirectory(...)`
 
 ### Requirement: Inline config is restricted to external-provider compatibility steps
-Any in-scope `resource.TestStep` that sets `Config` SHALL also set `ExternalProviders`. Inline `Config` SHALL NOT be accepted as the ordinary fixture mechanism for in-scope acceptance steps.
+Any in-scope `resource.TestStep` that sets `Config` SHALL also set `ExternalProviders`. Inline `Config` SHALL NOT be accepted as the ordinary fixture mechanism for in-scope acceptance steps, which use `ProtoV6ProviderFactories` and directory-backed fixtures instead.
 
 #### Scenario: Ordinary inline config is rejected
 - **GIVEN** an in-scope acceptance `resource.TestStep`
@@ -40,7 +63,7 @@ Any in-scope `resource.TestStep` that sets `Config` SHALL also set `ExternalProv
 - **THEN** the analyzer SHALL report no diagnostic for using inline `Config`
 
 ### Requirement: External-provider compatibility steps stay on inline config
-Any in-scope `resource.TestStep` that sets `ExternalProviders` SHALL use inline `Config` and SHALL NOT use `ConfigDirectory`.
+Any in-scope `resource.TestStep` that sets `ExternalProviders` SHALL use inline `Config`, SHALL NOT use `ConfigDirectory`, and SHALL NOT set `ProtoV6ProviderFactories`. `ExternalProviders` SHALL be used only for backwards-compatibility testing.
 
 #### Scenario: External-provider compatibility step mixes config sources
 - **GIVEN** an in-scope acceptance `resource.TestStep`
@@ -52,16 +75,21 @@ Any in-scope `resource.TestStep` that sets `ExternalProviders` SHALL use inline 
 - **WHEN** the step sets `ExternalProviders` and omits `Config`
 - **THEN** the analyzer SHALL emit a diagnostic requiring inline `Config`
 
+#### Scenario: External-provider compatibility step also sets ProtoV6 provider factories
+- **GIVEN** an in-scope acceptance `resource.TestStep`
+- **WHEN** the step sets both `ExternalProviders` and `ProtoV6ProviderFactories`
+- **THEN** the analyzer SHALL emit a diagnostic requiring the step to use only `ExternalProviders` for backwards-compatibility wiring
+
 ### Requirement: Field-relationship diagnostics are actionable
-When the lint rule reports a violation, the diagnostic SHALL identify the invalid `resource.TestStep` field relationship and SHALL direct contributors toward the accepted shape for that step.
+When the lint rule reports a violation, the diagnostic SHALL identify the invalid `resource.TestCase` or `resource.TestStep` field relationship and SHALL direct contributors toward the accepted shape for that step.
 
 #### Scenario: Diagnostic explains the accepted replacement
 - **GIVEN** a non-compliant in-scope acceptance `resource.TestStep`
 - **WHEN** the analyzer emits a diagnostic
-- **THEN** the diagnostic SHALL tell the contributor whether to switch to `ConfigDirectory: acctest.NamedTestCaseDirectory(...)` or to keep the step as an `ExternalProviders` plus inline `Config` compatibility case
+- **THEN** the diagnostic SHALL tell the contributor whether to move `ProtoV6ProviderFactories` onto the step, switch to `ConfigDirectory: acctest.NamedTestCaseDirectory(...)`, or keep the step as an `ExternalProviders` plus inline `Config` compatibility case
 
 ### Requirement: Repository lint enforces the rule
-The analyzer SHALL be wired into repository lint execution so `make check-lint` fails on violations, and regression tests SHALL cover compliant and non-compliant step shapes.
+The analyzer SHALL be wired into repository lint execution so `make check-lint` fails on violations, and regression tests SHALL cover compliant and non-compliant step shapes for both config sourcing and provider wiring.
 
 #### Scenario: Lint fails on a new violation
 - **GIVEN** a committed in-scope acceptance step that violates the config-directory lint rule
@@ -69,6 +97,6 @@ The analyzer SHALL be wired into repository lint execution so `make check-lint` 
 - **THEN** the lint command SHALL fail in local and CI workflows
 
 #### Scenario: Regression tests protect the accepted shapes
-- **GIVEN** analyzer regression coverage for directory-backed ordinary steps and external-provider compatibility steps
+- **GIVEN** analyzer regression coverage for directory-backed ordinary steps, step-level `ProtoV6ProviderFactories`, and external-provider compatibility steps
 - **WHEN** the analyzer implementation changes later
 - **THEN** the regression suite SHALL continue to distinguish compliant and non-compliant step shapes as specified
