@@ -21,7 +21,6 @@ import (
 	_ "embed"
 	"fmt"
 	"os"
-	"path"
 	"strings"
 	"testing"
 
@@ -217,7 +216,7 @@ func TestAccResourceILMRolloverConditions(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(ilm.RolloverMinConditionsMinSupportedVersion),
-				ConfigDirectory:          legacyIndexTestCaseDirectory("update"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
 				},
@@ -371,7 +370,7 @@ func TestAccResourceILMFrozenPhase(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          legacyIndexTestCaseDirectory("create"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name":     config.StringVariable(policyName),
 					"repository_name": config.StringVariable(repositoryName),
@@ -399,7 +398,7 @@ func TestAccResourceILMDeleteWaitForSnapshot(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          legacyIndexTestCaseDirectory("create"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name":     config.StringVariable(policyName),
 					"repository_name": config.StringVariable(repositoryName),
@@ -414,7 +413,7 @@ func TestAccResourceILMDeleteWaitForSnapshot(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          legacyIndexTestCaseDirectory("restore_default"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("restore_default"),
 				ConfigVariables: config.Variables{
 					"policy_name":     config.StringVariable(policyName),
 					"repository_name": config.StringVariable(repositoryName),
@@ -429,7 +428,7 @@ func TestAccResourceILMDeleteWaitForSnapshot(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          legacyIndexTestCaseDirectory("remove_wait_for_snapshot"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("remove_wait_for_snapshot"),
 				ConfigVariables: config.Variables{
 					"policy_name":     config.StringVariable(policyName),
 					"repository_name": config.StringVariable(repositoryName),
@@ -449,14 +448,31 @@ func TestAccResourceILMDeleteWaitForSnapshot(t *testing.T) {
 func TestAccResourceILMConnectionOverride(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	endpoint := ilmPrimaryESEndpoint()
+	apiKey := os.Getenv("ELASTICSEARCH_API_KEY")
+	username := os.Getenv("ELASTICSEARCH_USERNAME")
+	password := os.Getenv("ELASTICSEARCH_PASSWORD")
+
+	if username == "" {
+		username = "elastic"
+	}
+	if password == "" {
+		password = "password"
+	}
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkResourceILMDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceILMDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceILMConnectionOverrideConfig(policyName),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+					"endpoints":   config.ListVariable(config.StringVariable(endpoint)),
+					"api_key":     config.StringVariable(apiKey),
+					"username":    config.StringVariable(username),
+					"password":    config.StringVariable(password),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_conn", "name", policyName),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_conn", "hot.rollover.max_age", "7d"),
@@ -482,7 +498,7 @@ func TestAccResourceILMSearchableSnapshotPhases(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          legacyIndexTestCaseDirectory("create"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name":     config.StringVariable(policyName),
 					"repository_name": config.StringVariable(repositoryName),
@@ -497,7 +513,7 @@ func TestAccResourceILMSearchableSnapshotPhases(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          legacyIndexTestCaseDirectory("update"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"policy_name":     config.StringVariable(policyName),
 					"repository_name": config.StringVariable(repositoryName),
@@ -524,7 +540,7 @@ func TestAccResourceILMHotActions(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(allowWriteAfterShrinkVersionLimit),
-				ConfigDirectory:          legacyIndexTestCaseDirectory("number_of_shards"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("number_of_shards"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
 				},
@@ -542,7 +558,7 @@ func TestAccResourceILMHotActions(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(allowWriteAfterShrinkVersionLimit),
-				ConfigDirectory:          legacyIndexTestCaseDirectory("max_primary_shard_size"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("max_primary_shard_size"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
 				},
@@ -571,7 +587,7 @@ func TestAccResourceILMWarmDownsampleAndShrink(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(allowWriteAfterShrinkVersionLimit),
-				ConfigDirectory:          legacyIndexTestCaseDirectory("create"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
 				},
@@ -592,7 +608,7 @@ func TestAccResourceILMWarmDownsampleAndShrink(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(allowWriteAfterShrinkVersionLimit),
-				ConfigDirectory:          legacyIndexTestCaseDirectory("update"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
 				},
@@ -624,7 +640,7 @@ func TestAccResourceILMColdAllocateAndDownsample(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(downsampleVersionLimit),
-				ConfigDirectory:          legacyIndexTestCaseDirectory("create"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
 				},
@@ -643,7 +659,7 @@ func TestAccResourceILMColdAllocateAndDownsample(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(downsampleVersionLimit),
-				ConfigDirectory:          legacyIndexTestCaseDirectory("update"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
 				},
@@ -671,7 +687,7 @@ func TestAccResourceILMPhaseActionToggles(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          legacyIndexTestCaseDirectory("create"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
 				},
@@ -690,7 +706,7 @@ func TestAccResourceILMPhaseActionToggles(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          legacyIndexTestCaseDirectory("update"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
 				},
@@ -853,13 +869,6 @@ func TestAccResourceILM_hotReadonlyDisabled(t *testing.T) {
 	})
 }
 
-func legacyIndexTestCaseDirectory(name string) config.TestStepConfigFunc {
-	return func(tscr config.TestStepConfigRequest) string {
-		testDir := config.TestNameDirectory()(tscr)
-		return path.Join(testDir, "..", "..", "..", "testdata", path.Base(testDir), name)
-	}
-}
-
 func ilmPrimaryESEndpoint() string {
 	for endpoint := range strings.SplitSeq(os.Getenv("ELASTICSEARCH_ENDPOINTS"), ",") {
 		endpoint = strings.TrimSpace(endpoint)
@@ -869,53 +878,6 @@ func ilmPrimaryESEndpoint() string {
 	}
 
 	return "http://localhost:9200"
-}
-
-func testAccResourceILMConnectionOverrideConfig(policyName string) string {
-	endpoint := ilmPrimaryESEndpoint()
-	apiKey := os.Getenv("ELASTICSEARCH_API_KEY")
-	username := os.Getenv("ELASTICSEARCH_USERNAME")
-	password := os.Getenv("ELASTICSEARCH_PASSWORD")
-
-	if username == "" {
-		username = "elastic"
-	}
-	if password == "" {
-		password = "password"
-	}
-
-	var authConfig string
-	if apiKey != "" {
-		authConfig = fmt.Sprintf("    api_key   = %q", apiKey)
-	} else {
-		authConfig = fmt.Sprintf("    username  = %q\n    password  = %q", username, password)
-	}
-
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_index_lifecycle" "test_conn" {
-  name = %q
-
-  elasticsearch_connection {
-    endpoints = [%q]
-    insecure  = true
-%s
-  }
-
-  hot {
-    rollover {
-      max_age = "7d"
-    }
-  }
-
-  delete {
-    delete {}
-  }
-}
-`, policyName, endpoint, authConfig)
 }
 
 func checkILMDownsampleDefaultWaitTimeout(resourceName, attribute string) resource.TestCheckFunc {

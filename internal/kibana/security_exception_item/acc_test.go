@@ -195,13 +195,13 @@ func TestAccResourceExceptionItemWithSpace(t *testing.T) {
 	spaceID := fmt.Sprintf("test-space-%s", uuid.New().String()[:8])
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
-		CheckDestroy:             checkResourceExceptionItemDestroy,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceExceptionItemDestroy,
 		Steps: []resource.TestStep{
 			{
-				SkipFunc:        versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
-				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"space_id":       config.StringVariable(spaceID),
 					"list_id":        config.StringVariable("test-exception-list-for-item-space"),
@@ -233,8 +233,9 @@ func TestAccResourceExceptionItemWithSpace(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc:        versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
-				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"space_id":       config.StringVariable(spaceID),
 					"list_id":        config.StringVariable("test-exception-list-for-item-space"),
@@ -259,9 +260,10 @@ func TestAccResourceExceptionItemWithSpace(t *testing.T) {
 					resource.TestCheckTypeSetElemAttr(resourceName, "tags.*", "updated"),
 				),
 			},
-			{ // Import
-				SkipFunc:        versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
-				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
+			{
+				ProtoV6ProviderFactories: acctest.Providers, // Import
+				SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(allTestsVersionsConstraint),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables: config.Variables{
 					"space_id":       config.StringVariable(spaceID),
 					"list_id":        config.StringVariable("test-exception-list-for-item-space"),

@@ -26,11 +26,11 @@ import (
 
 func TestAccSpacesDataSource(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSpacesDataSourceConfig,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_kibana_spaces.all_spaces", "spaces.0.id", "default"),
 					resource.TestCheckResourceAttr("data.elasticstack_kibana_spaces.all_spaces", "spaces.0.name", "Default"),
@@ -40,14 +40,3 @@ func TestAccSpacesDataSource(t *testing.T) {
 		},
 	})
 }
-
-const testAccSpacesDataSourceConfig = `
-provider "elasticstack" {
-	elasticsearch {}
-	kibana {}
-}
-
-data "elasticstack_kibana_spaces" "all_spaces" {
-
-}
-`

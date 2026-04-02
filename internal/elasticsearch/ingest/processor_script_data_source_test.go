@@ -26,11 +26,11 @@ import (
 
 func TestAccDataSourceIngestProcessorScript(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorScript,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_script.test", "json", expectedJSONScript),
 				),
@@ -51,27 +51,3 @@ const expectedJSONScript = `{
 		"source": "String[] envSplit = ctx['env'].splitOnToken(params['delimiter']);\nArrayList tags = new ArrayList();\ntags.add(envSplit[params['position']].trim());\nctx['tags'] = tags;\n"
 	}
 }`
-
-const testAccDataSourceIngestProcessorScript = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_script" "test" {
-  description = "Extract 'tags' from 'env' field"
-  lang        = "painless"
-
-  source = <<EOF
-String[] envSplit = ctx['env'].splitOnToken(params['delimiter']);
-ArrayList tags = new ArrayList();
-tags.add(envSplit[params['position']].trim());
-ctx['tags'] = tags;
-EOF
-
-  params = jsonencode({
-    delimiter = "-"
-    position  = 1
-  })
-
-}
-`

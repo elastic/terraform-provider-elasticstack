@@ -26,11 +26,11 @@ import (
 
 func TestAccDataSourceIngestProcessorConvert(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorConvert,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_convert.test", "field", "id"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_convert.test", "json", expectedJSONConvert),
@@ -49,15 +49,3 @@ const expectedJSONConvert = `{
 		"ignore_missing": false
 	}
 }`
-
-const testAccDataSourceIngestProcessorConvert = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_convert" "test" {
-  description = "converts the content of the id field to an integer"
-  field       = "id"
-  type        = "integer"
-}
-`
