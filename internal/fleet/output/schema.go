@@ -72,7 +72,7 @@ func getSchema() schema.Schema {
 				Description: "The output type.",
 				Required:    true,
 				Validators: []validator.String{
-					stringvalidator.OneOf("elasticsearch", "logstash", "kafka"),
+					stringvalidator.OneOf("elasticsearch", "logstash", "kafka", "remote_elasticsearch"),
 				},
 			},
 			"hosts": schema.ListAttribute{
@@ -82,6 +82,15 @@ func getSchema() schema.Schema {
 					listvalidator.SizeAtLeast(1),
 				},
 				ElementType: types.StringType,
+			},
+			"service_token": schema.StringAttribute{
+				Description: "Service token for remote Elasticsearch outputs.",
+				Optional:    true,
+				Sensitive:   true,
+				Validators: []validator.String{
+					validators.RequiredIfDependentPathEquals(path.Root("type"), "remote_elasticsearch"),
+					validators.AllowedIfDependentPathEquals(path.Root("type"), "remote_elasticsearch"),
+				},
 			},
 			"ca_sha256": schema.StringAttribute{
 				Description: "Fingerprint of the Elasticsearch CA certificate.",
@@ -131,14 +140,14 @@ func getSchema() schema.Schema {
 					},
 					"certificate": schema.StringAttribute{
 						Description: "Client SSL certificate.",
-						Required:    true,
+						Optional:    true,
 						Validators: []validator.String{
 							stringvalidator.LengthAtLeast(1),
 						},
 					},
 					"key": schema.StringAttribute{
 						Description: "Client SSL certificate key.",
-						Required:    true,
+						Optional:    true,
 						Sensitive:   true,
 						Validators: []validator.String{
 							stringvalidator.LengthAtLeast(1),

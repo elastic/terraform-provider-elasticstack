@@ -34,6 +34,7 @@ type outputModel struct {
 	Name                 types.String `tfsdk:"name"`
 	Type                 types.String `tfsdk:"type"`
 	Hosts                types.List   `tfsdk:"hosts"` // > string
+	ServiceToken         types.String `tfsdk:"service_token"`
 	CaSha256             types.String `tfsdk:"ca_sha256"`
 	CaTrustedFingerprint types.String `tfsdk:"ca_trusted_fingerprint"`
 	DefaultIntegrations  types.Bool   `tfsdk:"default_integrations"`
@@ -64,6 +65,8 @@ func (model *outputModel) populateFromAPI(ctx context.Context, union *kbapi.Outp
 
 	case kbapi.OutputKafka:
 		diags.Append(model.fromAPIKafkaModel(ctx, &output)...)
+	case kbapi.OutputRemoteElasticsearch:
+		diags.Append(model.fromAPIRemoteElasticsearchModel(ctx, &output)...)
 	default:
 		diags.AddError(fmt.Sprintf("unhandled output type: %T", output), "")
 	}
@@ -85,6 +88,8 @@ func (model outputModel) toAPICreateModel(ctx context.Context, client *clients.A
 		}
 
 		return model.toAPICreateKafkaModel(ctx)
+	case "remote_elasticsearch":
+		return model.toAPICreateRemoteElasticsearchModel(ctx)
 	default:
 		return kbapi.NewOutputUnion{}, diag.Diagnostics{
 			diag.NewErrorDiagnostic(fmt.Sprintf("unhandled output type: %s", outputType), ""),
@@ -106,6 +111,8 @@ func (model outputModel) toAPIUpdateModel(ctx context.Context, client *clients.A
 		}
 
 		return model.toAPIUpdateKafkaModel(ctx)
+	case "remote_elasticsearch":
+		return model.toAPIUpdateRemoteElasticsearchModel(ctx)
 	default:
 		diags.AddError(fmt.Sprintf("unhandled output type: %s", outputType), "")
 	}

@@ -21,6 +21,7 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -349,6 +350,52 @@ func TestAccResourceOutputKafkaComplex(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "kafka.hash.hash", "event.hash"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "kafka.hash.random", "false"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "kafka.sasl.mechanism", "SCRAM-SHA-256"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceOutputRemoteElasticsearch(t *testing.T) {
+	serviceToken := os.Getenv("TF_ACC_FLEET_REMOTE_SERVICE_TOKEN")
+	if serviceToken == "" {
+		t.Skip("TF_ACC_FLEET_REMOTE_SERVICE_TOKEN must be set for remote_elasticsearch acceptance coverage")
+	}
+
+	policyName := sdkacctest.RandString(22)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceOutputDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name":   config.StringVariable(policyName),
+					"service_token": config.StringVariable(serviceToken),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "name", fmt.Sprintf("Remote Elasticsearch Output %s", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "id", fmt.Sprintf("%s-remote-elasticsearch-output", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "type", "remote_elasticsearch"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "hosts.0", "https://elasticsearch:9200"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionOutput),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"policy_name":   config.StringVariable(policyName),
+					"service_token": config.StringVariable(serviceToken),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "name", fmt.Sprintf("Updated Remote Elasticsearch Output %s", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "id", fmt.Sprintf("%s-remote-elasticsearch-output", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "type", "remote_elasticsearch"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "hosts.0", "https://elasticsearch:9200"),
 				),
 			},
 		},

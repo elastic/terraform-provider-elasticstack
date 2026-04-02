@@ -213,6 +213,7 @@ resource "elasticstack_fleet_output" "kafka_round_robin" {
 - `default_monitoring` (Boolean) Make this output the default for agent monitoring.
 - `kafka` (Attributes) Kafka-specific configuration. (see [below for nested schema](#nestedatt--kafka))
 - `output_id` (String) Unique identifier of the output.
+- `service_token` (String, Sensitive) Service token for remote Elasticsearch outputs.
 - `space_ids` (Set of String) The Kibana space IDs where this output is available. When set, the output will be created and managed within the specified space. Note: The order of space IDs does not matter as this is a set.
 - `ssl` (Attributes) SSL configuration. (see [below for nested schema](#nestedatt--ssl))
 
@@ -291,14 +292,11 @@ Optional:
 <a id="nestedatt--ssl"></a>
 ### Nested Schema for `ssl`
 
-Required:
-
-- `certificate` (String) Client SSL certificate.
-- `key` (String, Sensitive) Client SSL certificate key.
-
 Optional:
 
+- `certificate` (String) Client SSL certificate.
 - `certificate_authorities` (List of String) Server SSL certificate authorities.
+- `key` (String, Sensitive) Client SSL certificate key.
 
 ## Import
 
