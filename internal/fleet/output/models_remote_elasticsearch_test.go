@@ -98,12 +98,12 @@ func TestOutputModelFromAPIRemoteElasticsearchModelPreservesServiceToken(t *test
 	}
 
 	diags := model.fromAPIRemoteElasticsearchModel(context.Background(), &kbapi.OutputRemoteElasticsearch{
-		Id:                 stringPtr("output-id"),
+		Id:                 new("output-id"),
 		Name:               "remote-output",
 		Type:               kbapi.KibanaHTTPAPIsOutputRemoteElasticsearchTypeRemoteElasticsearch,
 		Hosts:              []string{"https://remote-es:9200"},
-		SyncIntegrations:   boolPtr(true),
-		WriteToLogsStreams: boolPtr(false),
+		SyncIntegrations:   new(true),
+		WriteToLogsStreams: new(false),
 		// ServiceToken intentionally omitted to simulate redaction.
 	})
 	require.False(t, diags.HasError())
@@ -113,12 +113,4 @@ func TestOutputModelFromAPIRemoteElasticsearchModelPreservesServiceToken(t *test
 	assert.Equal(t, "remote_elasticsearch", model.Type.ValueString())
 	assert.True(t, model.SyncIntegrations.ValueBool())
 	assert.False(t, model.WriteToLogsStreams.ValueBool())
-}
-
-func stringPtr(s string) *string {
-	return &s
-}
-
-func boolPtr(b bool) *bool {
-	return &b
 }
