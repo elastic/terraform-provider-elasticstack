@@ -172,8 +172,8 @@ func Test_populatePanelConfigJSONDefaults_gauge(t *testing.T) {
 				"operation": "median",
 				"field": "latency",
 				"empty_as_null": false,
-				"hide_title": false,
-				"ticks": "auto"
+				"title": {"visible": true},
+				"ticks": {"visible": true, "mode": "auto"}
 			}
 		}
 	}`
@@ -372,6 +372,95 @@ func Test_populatePanelConfigJSONDefaults_treemap(t *testing.T) {
 			},
 		},
 	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var config map[string]any
+			require.NoError(t, json.Unmarshal([]byte(tt.input), &config))
+			result := populatePanelConfigJSONDefaults(config)
+			if tt.expected != "" {
+				assertPanelConfigEquals(t, tt.expected, result)
+			} else if tt.check != nil {
+				attrs := result["attributes"].(map[string]any)
+				tt.check(t, attrs)
+			}
+		})
+	}
+}
+
+func Test_populatePanelConfigJSONDefaults_mosaic(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+		check    func(t *testing.T, attrs map[string]any)
+	}{
+		{
+			name: "terms groupings get partition defaults and metrics get partition metric defaults",
+			input: `{
+				"attributes": {
+					"type": "mosaic",
+					"group_by": [{"operation": "terms", "field": "org"}],
+					"group_breakdown_by": [{"operation": "terms", "field": "service"}],
+					"metrics": [{"operation": "count"}]
+				}
+			}`,
+			expected: `{
+				"attributes": {
+					"type": "mosaic",
+					"filters": [],
+					"group_by": [
+						{
+							"operation": "terms",
+							"field": "org",
+							"collapse_by": "avg",
+							"format": {"type": "number", "decimals": 2},
+							"size": 5,
+							"rank_by": {"type": "column", "metric": 0, "direction": "desc"}
+						}
+					],
+					"group_breakdown_by": [
+						{
+							"operation": "terms",
+							"field": "service",
+							"collapse_by": "avg",
+							"format": {"type": "number", "decimals": 2},
+							"size": 5,
+							"rank_by": {"type": "column", "metric": 0, "direction": "desc"}
+						}
+					],
+					"metrics": [{"operation": "count", "empty_as_null": false, "show_metric_label": true}]
+				}
+			}`,
+		},
+		{
+			name: "value groupings and metrics normalize null fields",
+			input: `{
+				"attributes": {
+					"type": "mosaic",
+					"group_by": [{"operation": "value"}],
+					"group_breakdown_by": [{"operation": "value"}],
+					"metrics": [{"operation": "value"}]
+				}
+			}`,
+			check: func(t *testing.T, attrs map[string]any) {
+				assert.Equal(t, []any{}, attrs["filters"])
+				groupBy := attrs["group_by"].([]any)
+				require.Len(t, groupBy, 1)
+				assert.Equal(t, "value", groupBy[0].(map[string]any)["operation"])
+
+				groupBreakdownBy := attrs["group_breakdown_by"].([]any)
+				require.Len(t, groupBreakdownBy, 1)
+				assert.Equal(t, "value", groupBreakdownBy[0].(map[string]any)["operation"])
+
+				metrics := attrs["metrics"].([]any)
+				require.Len(t, metrics, 1)
+				m0 := metrics[0].(map[string]any)
+				assert.Equal(t, "value", m0["operation"])
+				assert.Nil(t, m0["format"])
+			},
+		},
+	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var config map[string]any

@@ -60,6 +60,8 @@ func populateLensAttributesDefaults(attrs map[string]any) map[string]any {
 		populateHeatmapAttributes(attrs)
 	case "treemap":
 		populateTreemapAttributes(attrs)
+	case "mosaic":
+		populateMosaicAttributes(attrs)
 	case "waffle":
 		populateWaffleAttributes(attrs)
 	case "xy":
@@ -193,6 +195,26 @@ func populateTreemapAttributes(attrs map[string]any) {
 		for i := range metrics {
 			if i < len(populated) {
 				metrics[i] = populated[i]
+			}
+		}
+	}
+}
+
+func populateMosaicAttributes(attrs map[string]any) {
+	populateTreemapAttributes(attrs)
+
+	if groupBreakdownBy, ok := attrs["group_breakdown_by"].([]any); ok {
+		groupBreakdownMaps := make([]map[string]any, 0, len(groupBreakdownBy))
+		for _, g := range groupBreakdownBy {
+			if m, ok := g.(map[string]any); ok {
+				groupBreakdownMaps = append(groupBreakdownMaps, m)
+			}
+		}
+
+		populated := populatePartitionGroupByDefaults(groupBreakdownMaps)
+		for i := range groupBreakdownBy {
+			if i < len(populated) {
+				groupBreakdownBy[i] = populated[i]
 			}
 		}
 	}

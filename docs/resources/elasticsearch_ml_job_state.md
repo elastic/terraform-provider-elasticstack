@@ -107,7 +107,7 @@ resource "elasticstack_elasticsearch_ml_job_state" "example_with_options" {
 
 ### Optional
 
-- `elasticsearch_connection` (Block List, Deprecated) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
+- `elasticsearch_connection` (Block List) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - `force` (Boolean) When closing a job, use to forcefully close it. This method is quicker but can miss important clean up tasks.
 - `job_timeout` (String) Timeout for the operation. Examples: `30s`, `5m`, `1h`. Default is `30s`.
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))

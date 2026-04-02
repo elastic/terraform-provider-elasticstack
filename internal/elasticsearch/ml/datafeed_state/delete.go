@@ -43,7 +43,8 @@ func (r *mlDatafeedStateResource) Delete(ctx context.Context, req resource.Delet
 	}
 
 	datafeedID := data.DatafeedID.ValueString()
-	currentState, fwDiags := datafeed.GetDatafeedState(ctx, client, datafeedID)
+	datafeedModel := datafeed.Datafeed{ElasticsearchConnection: data.ElasticsearchConnection}
+	currentState, fwDiags := datafeed.GetDatafeedState(ctx, datafeedModel, r.client, datafeedID)
 	resp.Diagnostics.Append(fwDiags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -74,7 +75,7 @@ func (r *mlDatafeedStateResource) Delete(ctx context.Context, req resource.Delet
 		}
 
 		// Wait for the datafeed to stop
-		_, diags := datafeed.WaitForDatafeedState(ctx, client, datafeedID, datafeed.StateStopped)
+		_, diags := datafeed.WaitForDatafeedState(ctx, datafeedModel, r.client, datafeedID, datafeed.StateStopped)
 		resp.Diagnostics.Append(diags...)
 		if resp.Diagnostics.HasError() {
 			return

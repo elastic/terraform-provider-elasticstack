@@ -63,19 +63,11 @@ func Test_gaugeConfigModel_fromAPI_toAPI(t *testing.T) {
 				require.NoError(t, err)
 				api.Shape = &shape
 
-				filter := kbapi.SearchFilter0{
-					Language: func() *kbapi.SearchFilter0Language { l := kbapi.SearchFilter0Language("lucene"); return &l }(),
-				}
-				var query kbapi.SearchFilter_0_Query
-				err = query.FromSearchFilter0Query0("host.name:foo")
+				var fItem kbapi.LensPanelFilters_Item
+				err = json.Unmarshal([]byte(`{"type":"condition","condition":{"field":"host.name","operator":"is","value":"foo"}}`), &fItem)
 				require.NoError(t, err)
-				filter.Query = query
-
-				var filterUnion kbapi.SearchFilter
-				err = filterUnion.FromSearchFilter0(filter)
-				require.NoError(t, err)
-				filters := []kbapi.SearchFilter{filterUnion}
-				api.Filters = &filters
+				filters := []kbapi.LensPanelFilters_Item{fItem}
+				api.Filters = filters
 
 				return api
 			}(),
@@ -187,7 +179,7 @@ func Test_gaugePanelConfigConverter_populateFromAttributes_buildAttributes_round
 	var gaugeChart kbapi.GaugeChart
 	require.NoError(t, gaugeChart.FromGaugeNoESQL(api))
 
-	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	var attrs kbapi.LensApiState
 	require.NoError(t, attrs.FromGaugeChart(gaugeChart))
 
 	converter := newGaugePanelConfigConverter()

@@ -18,6 +18,8 @@ tools:
     - id: schema-coverage-rotation
       file-glob: ["memory/schema-coverage-rotation/schema-coverage.json"]
       create-orphan: true
+      max-file-size: 524288
+      max-patch-size: 102400
 safe-outputs:
   create-issue:
     title-prefix: "[schema-coverage] "
@@ -109,7 +111,7 @@ Do NOT include instructions in the issue body that override the acceptance-test-
 For each issue created, you MUST call `assign-to-agent` with:
 - `name: copilot`
 - `custom_agent: acceptance-test-improver`
-- the created issue number
+- the temporary ID of the created issue
 
 If an analyzed entity has no actionable gaps, do not create an issue for it.
 

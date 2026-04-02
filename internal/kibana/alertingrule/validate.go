@@ -75,6 +75,8 @@ func (r *Resource) ValidateConfig(ctx context.Context, req resource.ValidateConf
 		return
 	}
 
+	validateNotifyWhenThrottleFrequencyExclusivity(ctx, &data, &resp.Diagnostics)
+
 	if !typeutils.IsKnown(data.Params) || !typeutils.IsKnown(data.RuleTypeID) {
 		return
 	}

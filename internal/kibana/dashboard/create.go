@@ -22,6 +22,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -44,24 +45,35 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 
 	spaceID := planModel.SpaceID.ValueString()
 
+	dashboardID := planModel.DashboardID.ValueString()
+	if dashboardID == "" {
+		dashboardID = uuid.New().String()
+		planModel.DashboardID = types.StringValue(dashboardID)
+	}
+
 	// Convert the plan to an API request
 	apiReq := planModel.toAPICreateRequest(ctx, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	createResp, diags := kibanaoapi.CreateDashboard(ctx, kibanaClient, spaceID, planModel.DashboardID.ValueString(), apiReq)
+	createResp, diags := kibanaoapi.CreateDashboard(ctx, kibanaClient, spaceID, dashboardID, apiReq)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
+	if createResp.JSON201 == nil {
+		resp.Diagnostics.AddError("Dashboard create returned no body", "expected 201 response with dashboard id")
+		return
+	}
 	compID := clients.CompositeID{
 		ClusterID:  spaceID,
-		ResourceID: createResp.JSON200.Id,
+		ResourceID: createResp.JSON201.Id,
 	}
 	planModel.ID = types.StringValue(compID.String())
 
+	planPanels := planModel.Panels
 	readModel, diags := r.read(ctx, planModel)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -72,6 +84,8 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 		resp.Diagnostics.AddError("Error reading dashboard after creation", "The dashboard was created but could not be read.")
 		return
 	}
+
+	alignXYChartXAxisScaleFromPlanPanels(planPanels, readModel.Panels)
 
 	// Set state
 	diags = resp.State.Set(ctx, *readModel)

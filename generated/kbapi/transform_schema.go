@@ -557,7 +557,6 @@ type TransformFunc func(schema *Schema)
 
 var transformers = []TransformFunc{
 	mergeDashboardsSchema,
-	mergeWorkflowsSchema,
 	transformRemoveKbnXsrf,
 	transformRemoveApiVersionParam,
 	transformSimplifyContentType,
@@ -570,7 +569,7 @@ var transformers = []TransformFunc{
 	fixGetSyntheticsMonitorsParams,
 	fixGetMaintenanceWindowFindParams,
 	fixGetStreamsAttachmentTypesParams,
-	fixSecurityAPIPageSize,
+	fixGetWorkflowsExecutionsParams,
 	fixSecurityExceptionListItems,
 	removeDuplicateOneOfRefs,
 	fixDashboardPanelItemRefs,
@@ -578,35 +577,6 @@ var transformers = []TransformFunc{
 	transformRemoveUnusedComponents,
 	transformOmitEmptyNullable,
 	fixAlertingRuleParams,
-}
-
-//go:embed workflows.yaml
-var workflowsYaml string
-
-func mergeWorkflowsSchema(schema *Schema) {
-	var workflowsSchema Schema
-	err := yaml.Unmarshal([]byte(workflowsYaml), &workflowsSchema)
-	if err != nil {
-		log.Fatalf("failed to unmarshal schema from dashboards.yaml: %v", err)
-	}
-
-	// Merge paths
-	for path, pathInfo := range workflowsSchema.Paths {
-		// Only add the path if it doesn't already exist
-		if _, ok := schema.Paths[path]; !ok {
-			schema.Paths[path] = pathInfo
-		}
-	}
-
-	// Merge component schemas
-	dashboardSchemas := workflowsSchema.Components.MustGetMap("schemas")
-	schemaSchemas := schema.Components.MustGetMap("schemas")
-	for key, schemaInfo := range dashboardSchemas {
-		// Only add the schema if it doesn't already exist
-		if _, ok := schemaSchemas[key]; !ok {
-			schemaSchemas[key] = schemaInfo
-		}
-	}
 }
 
 //go:embed dashboards.json
@@ -992,9 +962,10 @@ func fixGetStreamsAttachmentTypesParams(schema *Schema) {
 	schema.MustGetPath("/api/streams/{streamName}/attachments").MustGetEndpoint("get").Set("parameters.2.schema.anyOf.1.x-go-type", "[]GetStreamsStreamnameAttachmentsParamsAttachmentTypes0")
 }
 
-func fixSecurityAPIPageSize(schema *Schema) {
-	apiPageSize := schema.Components.MustGetMap("schemas.Security_Endpoint_Management_API_ApiPageSize")
-	schema.Components.Set("schemas.Security_Endpoint_Management_API_ApiPageSize", apiPageSize.MustGetMap("allOf.0"))
+func fixGetWorkflowsExecutionsParams(schema *Schema) {
+	get := schema.MustGetPath("/api/workflows/workflow/{workflowId}/executions").MustGetEndpoint("get")
+	get.Set("parameters.1.schema.anyOf.1.x-go-type", "[]GetWorkflowsWorkflowWorkflowidExecutionsParamsStatuses0")
+	get.Set("parameters.2.schema.anyOf.1.x-go-type", "[]GetWorkflowsWorkflowWorkflowidExecutionsParamsExecutionTypes0")
 }
 
 func fixDashboardPanelItemRefs(schema *Schema) {
@@ -1162,12 +1133,6 @@ func transformFleetPaths(schema *Schema) {
 		schema.Components.CreateRef(schema, fmt.Sprintf("%s_logstash", name), fmt.Sprintf("schemas.%s_union.anyOf.2", name))
 		schema.Components.CreateRef(schema, kafkaComponent, fmt.Sprintf("schemas.%s_union.anyOf.3", name))
 
-		// Extract child structs
-		for _, typ := range []string{"elasticsearch", "remote_elasticsearch", "logstash", "kafka"} {
-			schema.Components.CreateRef(schema, fmt.Sprintf("%s_shipper", name), fmt.Sprintf("schemas.%s_%s.properties.shipper", name, typ))
-			schema.Components.CreateRef(schema, fmt.Sprintf("%s_ssl", name), fmt.Sprintf("schemas.%s_%s.properties.ssl", name, typ))
-		}
-
 		// Ideally just remove the "anyOf", however then we would need to make
 		// refs for each of the "oneOf" options. So turn them into an "any" instead.
 		// See: https://github.com/elastic/kibana/issues/197153
@@ -1184,25 +1149,18 @@ func transformFleetPaths(schema *Schema) {
 			  - type: number
 			  - not: {}
 		*/
+	}
 
-		// https://github.com/elastic/kibana/issues/197153
-		kafkaRequiredName := fmt.Sprintf("schemas.%s.required", kafkaComponent)
-		props := schema.Components.MustGetMap(fmt.Sprintf("schemas.%s.properties", kafkaComponent))
-		required := schema.Components.MustGetSlice(kafkaRequiredName)
-		for key, apiType := range map[string]string{"compression_level": "integer", "connection_type": "string", "password": "string", "username": "string"} {
-			props.Set(key, Map{
-				"type": apiType,
-			})
-			required = slices.DeleteFunc(required, func(item any) bool {
-				itemStr, ok := item.(string)
-				if !ok {
-					return false
-				}
-
-				return itemStr == key
-			})
-		}
-		schema.Components.Set(kafkaRequiredName, required)
+	for _, componentName := range []string{
+		"schemas.Kibana_HTTP_APIs_new_output_kafka",
+		"schemas.Kibana_HTTP_APIs_output_kafka",
+		"schemas.update_output_kafka",
+	} {
+		kafkaComponent := schema.Components.MustGetMap(componentName)
+		kafkaComponent.Delete("properties.compression_level.oneOf")
+		kafkaComponent.Delete("properties.connection_type.oneOf")
+		kafkaComponent.Delete("properties.password.oneOf")
+		kafkaComponent.Delete("properties.username.oneOf")
 	}
 
 	// Add the missing discriminator to the response union

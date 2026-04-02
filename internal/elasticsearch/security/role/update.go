@@ -46,14 +46,14 @@ func (r *roleResource) update(ctx context.Context, plan tfsdk.Plan, state *tfsdk
 	}
 
 	roleID := data.Name.ValueString()
-	id, sdkDiags := r.client.ID(ctx, roleID)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	client, clientDiags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, data.ElasticsearchConnection, r.client)
+	diags.Append(clientDiags...)
 	if diags.HasError() {
 		return diags
 	}
 
-	client, clientDiags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, data.ElasticsearchConnection, r.client)
-	diags.Append(clientDiags...)
+	id, sdkDiags := client.ID(ctx, roleID)
+	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
 		return diags
 	}

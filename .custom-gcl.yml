@@ -1,0 +1,7 @@
+version: v2.11.4
+name: golangci-lint-custom
+destination: ./bin
+plugins:
+  - module: github.com/elastic/terraform-provider-elasticstack/analysis/esclienthelperplugin
+    import: github.com/elastic/terraform-provider-elasticstack/analysis/esclienthelperplugin/plugin
+    path: ./analysis/esclienthelperplugin

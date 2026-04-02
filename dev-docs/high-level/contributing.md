@@ -13,7 +13,7 @@ Requirements:
 * [Node.js](https://nodejs.org/) 24.x (for OpenSpec; installed via `make setup` / `npm ci`)
 * Docker (for acceptance tests)
 
-OpenSpec requirements specs live under `openspec/specs/`; see [`openspec-requirements.md`](./openspec-requirements.md).
+OpenSpec requirements specs live under `openspec/specs/`; see [`openspec-requirements.md`](./openspec-requirements.md). PR review automation (e.g. the **`verify-openspec`** label workflow) is documented in [`code-review.md`](./code-review.md).
 
 ## Development Workflow
 
