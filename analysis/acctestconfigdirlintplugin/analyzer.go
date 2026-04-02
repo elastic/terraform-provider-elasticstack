@@ -112,6 +112,20 @@ func inspectTestCase(pass *analysis.Pass, expr ast.Expr) {
 			continue
 		}
 		key, ok := kv.Key.(*ast.Ident)
+		if !ok {
+			continue
+		}
+		if key.Name == "ProtoV6ProviderFactories" {
+			pass.Reportf(kv.Value.Pos(), msgTestCaseProtoV6ProviderFactories)
+		}
+	}
+
+	for _, elt := range lit.Elts {
+		kv, ok := elt.(*ast.KeyValueExpr)
+		if !ok {
+			continue
+		}
+		key, ok := kv.Key.(*ast.Ident)
 		if !ok || key.Name != "Steps" {
 			continue
 		}
@@ -161,6 +175,7 @@ func inspectTestStep(pass *analysis.Pass, lit *ast.CompositeLit) {
 	var configExpr ast.Expr
 	var configDirExpr ast.Expr
 	var externalProvidersExpr ast.Expr
+	var protoV6Expr ast.Expr
 
 	for _, elt := range lit.Elts {
 		kv, ok := elt.(*ast.KeyValueExpr)
@@ -178,37 +193,46 @@ func inspectTestStep(pass *analysis.Pass, lit *ast.CompositeLit) {
 			configDirExpr = kv.Value
 		case "ExternalProviders":
 			externalProvidersExpr = kv.Value
+		case "ProtoV6ProviderFactories":
+			protoV6Expr = kv.Value
 		}
 	}
 
 	hasConfig := configExpr != nil
 	hasConfigDir := configDirExpr != nil
 	hasExternalProviders := externalProvidersExpr != nil
+	hasProtoV6 := protoV6Expr != nil
 
-	// Non-goal: steps with neither Config, ConfigDirectory, nor ExternalProviders are out of scope.
-	// Import-only, refresh-only, and plan-only steps need not specify a config source.
-	if !hasConfig && !hasConfigDir && !hasExternalProviders {
-		return
+	// Config / ConfigDirectory / ExternalProviders relationships (field-relationship rules).
+	if hasConfig || hasConfigDir || hasExternalProviders {
+		switch {
+		case hasExternalProviders && hasConfigDir:
+			// Invalid mix: ExternalProviders + ConfigDirectory.
+			pass.Reportf(externalProvidersExpr.Pos(), msgExternalProvidersWithConfigDirectory)
+
+		case hasExternalProviders && !hasConfig:
+			// ExternalProviders set but no inline Config.
+			pass.Reportf(externalProvidersExpr.Pos(), msgExternalProvidersWithoutConfig)
+
+		case hasConfigDir:
+			// ConfigDirectory set – must be a direct call to acctest.NamedTestCaseDirectory(...).
+			if !isNamedTestCaseDirectoryCall(pass, configDirExpr) {
+				pass.Reportf(configDirExpr.Pos(), msgConfigDirectoryNotNamedHelper)
+			}
+
+		case hasConfig && !hasExternalProviders:
+			// Ordinary step with inline Config but no ExternalProviders.
+			pass.Reportf(configExpr.Pos(), msgInlineConfigWithoutExternalProviders)
+		}
 	}
 
-	switch {
-	case hasExternalProviders && hasConfigDir:
-		// Invalid mix: ExternalProviders + ConfigDirectory.
-		pass.Reportf(externalProvidersExpr.Pos(), msgExternalProvidersWithConfigDirectory)
-
-	case hasExternalProviders && !hasConfig:
-		// ExternalProviders set but no inline Config.
-		pass.Reportf(externalProvidersExpr.Pos(), msgExternalProvidersWithoutConfig)
-
-	case hasConfigDir:
-		// ConfigDirectory set – must be a direct call to acctest.NamedTestCaseDirectory(...).
-		if !isNamedTestCaseDirectoryCall(pass, configDirExpr) {
-			pass.Reportf(configDirExpr.Pos(), msgConfigDirectoryNotNamedHelper)
-		}
-
-	case hasConfig && !hasExternalProviders:
-		// Ordinary step with inline Config but no ExternalProviders.
-		pass.Reportf(configExpr.Pos(), msgInlineConfigWithoutExternalProviders)
+	// Provider wiring: exactly one of ProtoV6ProviderFactories or ExternalProviders per step.
+	if hasProtoV6 && hasExternalProviders {
+		pass.Reportf(protoV6Expr.Pos(), msgMixedStepProviderWiring)
+		return
+	}
+	if !hasProtoV6 && !hasExternalProviders {
+		pass.Reportf(lit.Lbrace, msgMissingStepProviderWiring)
 	}
 }
 

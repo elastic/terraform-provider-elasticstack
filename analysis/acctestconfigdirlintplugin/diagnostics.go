@@ -38,4 +38,18 @@ const (
 	// This is an invalid mix: compatibility steps use ExternalProviders + Config, not ConfigDirectory.
 	msgExternalProvidersWithConfigDirectory = "resource.TestStep sets both ExternalProviders and ConfigDirectory; " +
 		"compatibility steps must pair ExternalProviders with Config: \"...\", not with ConfigDirectory"
+
+	// msgTestCaseProtoV6ProviderFactories is reported when resource.TestCase sets ProtoV6ProviderFactories.
+	msgTestCaseProtoV6ProviderFactories = "resource.TestCase sets ProtoV6ProviderFactories; " +
+		"declare ProtoV6ProviderFactories on each ordinary resource.TestStep instead, " +
+		"or use ExternalProviders on compatibility steps"
+
+	// msgMissingStepProviderWiring is reported when a step sets neither ProtoV6ProviderFactories nor ExternalProviders.
+	msgMissingStepProviderWiring = "resource.TestStep sets neither ProtoV6ProviderFactories nor ExternalProviders; " +
+		"ordinary steps must set ProtoV6ProviderFactories on the step, " +
+		"and backwards-compatibility steps must set ExternalProviders (with inline Config)"
+
+	// msgMixedStepProviderWiring is reported when a step sets both wiring modes.
+	msgMixedStepProviderWiring = "resource.TestStep sets both ProtoV6ProviderFactories and ExternalProviders; " +
+		"choose exactly one: ProtoV6ProviderFactories for ordinary coverage, or ExternalProviders for compatibility steps"
 )
