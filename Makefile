@@ -38,6 +38,8 @@ RERUN_FAILS ?= 5
 
 export GOBIN = $(shell pwd)/bin
 
+# OpenSpec CLI (see package.json); installed via `make setup-openspec`
+OPENSPEC_BIN := $(CURDIR)/node_modules/.bin/openspec
 
 $(GOBIN): ## create bin/ in the current directory
 	mkdir -p $(GOBIN)
@@ -129,8 +131,22 @@ copy-kibana-ca: ## Copy Kibana CA certificate to local machine
 docs-generate: tools ## Generate documentation for the provider
 	@ go tool github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate --provider-name terraform-provider-elasticstack
 
+.PHONY: workflow-generate
+workflow-generate: ## Generate workflow markdown sources
+	@ go run ./scripts/compile-workflow-sources --manifest .github/workflows-src/manifest.json
+	@ gh aw compile
+
+.PHONY: workflow-test
+workflow-test: ## Run unit tests for workflow source generation
+	@ go test ./scripts/compile-workflow-sources -run 'TestCompileWorkflow'
+	@ node --test .github/workflows-src/lib/*.test.mjs
+
+.PHONY: check-workflows
+check-workflows: ## Check generated workflow markdown sources
+	@ go run ./scripts/compile-workflow-sources --manifest .github/workflows-src/manifest.json --check
+
 .PHONY: gen
-gen: docs-generate ## Generate the code and documentation
+gen: docs-generate workflow-generate ## Generate the code and documentation
 	@ go generate ./...
 
 .PHONY: clean
@@ -144,18 +160,35 @@ install: build ## Install built provider into the local terraform cache
 
 .PHONY: tools
 tools: $(GOBIN)  ## Download golangci-lint locally if necessary.
-	@[[ -f $(GOBIN)/golangci-lint ]] || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOBIN) v2.11.3
+	@[[ -f $(GOBIN)/golangci-lint ]] || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOBIN) v2.11.4
+
+.PHONY: golangci-lint-custom
+golangci-lint-custom: tools
+	@ [[ -f $(GOBIN)/golangci-lint-custom ]] || $(GOBIN)/golangci-lint custom
 
 .PHONY: golangci-lint
-golangci-lint:
-	@ $(GOBIN)/golangci-lint run --max-same-issues=0 $(GOLANGCIFLAGS) ./internal/...
+golangci-lint: golangci-lint-custom
+	@ $(GOBIN)/golangci-lint-custom run --max-same-issues=0 $(GOLANGCIFLAGS) ./internal/...
 
 .PHONY: lint
 lint: GOLANGCIFLAGS += --fix
-lint: setup golangci-lint fmt docs-generate ## Run lints to check the spelling and common go patterns
+lint: setup golangci-lint fmt docs-generate workflow-generate ## Run lints to check the spelling and common go patterns
 
 .PHONY: check-lint
-check-lint: setup golangci-lint check-fmt check-docs
+check-lint: setup check-openspec golangci-lint workflow-test check-workflows check-fmt check-docs
+
+.PHONY: setup-openspec
+setup-openspec: node_modules/.openspec-stamp ## Install Node dependencies (OpenSpec CLI via npm ci)
+
+node_modules/.openspec-stamp: package-lock.json package.json
+	@ command -v npm >/dev/null 2>&1 || { echo "npm not found; install Node.js 24.x for OpenSpec" >&2; exit 1; }
+	npm ci
+	@ touch $@
+
+.PHONY: check-openspec
+check-openspec: ## Validate OpenSpec specs and change proposals (structural); requires `make setup` or `make setup-openspec`
+	@ test -x $(OPENSPEC_BIN) || { echo "OpenSpec CLI missing; run 'make setup' or 'make setup-openspec'" >&2; exit 1; }
+	@ OPENSPEC_TELEMETRY=0 $(OPENSPEC_BIN) validate --all
 
 .PHONY: renovate-post-upgrade
 renovate-post-upgrade: vendor notice
@@ -183,7 +216,7 @@ check-docs: docs-generate  ## Check uncommitted changes on docs
 	fi
 
 .PHONY: setup
-setup: tools vendor ## Setup the dev environment
+setup: tools vendor setup-openspec ## Setup the dev environment
 
 .PHONY: release-snapshot
 release-snapshot: tools ## Make local-only test release to see if it works using "release" command

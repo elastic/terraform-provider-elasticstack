@@ -65,6 +65,7 @@ resource "elasticstack_kibana_alerting_rule" "example" {
 - `actions` (Block List) An action that runs under defined conditions. (see [below for nested schema](#nestedblock--actions))
 - `alert_delay` (Number) A number that indicates how many consecutive runs need to meet the rule conditions for an alert to occur.
 - `enabled` (Boolean) Indicates if you want to run the rule on an interval basis.
+- `flapping` (Attributes) Rule-level [flapping detection](https://www.elastic.co/guide/en/kibana/master/alerting-settings.html) (Kibana **8.16** or higher). When this object is set in configuration, `look_back_window` and `status_change_threshold` are required. The optional `enabled` attribute is supported only from **Elastic Stack 9.3** onward; configuring it against an older stack returns an error. When `flapping` is omitted from configuration on update, Terraform retains the previous value, so existing server-side flapping settings are not cleared by that omission. (see [below for nested schema](#nestedatt--flapping))
 - `notify_when` (String) Required until v8.6.0. Deprecated in v8.13.0. Use the `notify_when` property in the action `frequency` object instead. Defines how often alerts generate actions. Valid values include: `onActionGroupChange`: Actions run when the alert status changes; `onActiveAlert`: Actions run when the alert becomes active and at each check interval while the rule conditions are met; `onThrottleInterval`: Actions run when the alert becomes active and at the interval specified in the throttle property while the rule conditions are met. NOTE: This is a rule level property; if you update the rule in Kibana, it is automatically changed to use action-specific `notify_when` values.
 - `rule_id` (String) The identifier for the rule. Until Kibana version 8.17.0 this should be a UUID v1 or v4, for later versions any format can be used. If it is omitted, an ID is randomly generated.
 - `space_id` (String) An identifier for the space. If space_id is not provided, the default space is used.
@@ -120,6 +121,17 @@ Optional:
 - `notify_when` (String) Defines how often alerts generate actions. Valid values include: `onActionGroupChange`: Actions run when the alert status changes; `onActiveAlert`: Actions run when the alert becomes active and at each check interval while the rule conditions are met; `onThrottleInterval`: Actions run when the alert becomes active and at the interval specified in the throttle property while the rule conditions are met.
 - `summary` (Boolean) Indicates whether the action is a summary.
 - `throttle` (String) Defines how often an alert generates repeated actions. This custom action interval must be specified in seconds, minutes, hours, or days. For example, 10m or 1h. This property is applicable only if `notify_when` is `onThrottleInterval`.
+
+
+
+<a id="nestedatt--flapping"></a>
+### Nested Schema for `flapping`
+
+Optional:
+
+- `enabled` (Boolean) Whether the rule may enter the flapping state. When unset, the Kibana default applies. Supported only from Elastic Stack 9.3 onward.
+- `look_back_window` (Number) Minimum number of rule runs in which the status change threshold must be met.
+- `status_change_threshold` (Number) Minimum number of times an alert must switch between active and recovered within the look-back window.
 
 ## Import
 

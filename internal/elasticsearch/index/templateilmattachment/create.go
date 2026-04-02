@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
@@ -36,9 +37,14 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	client, fwDiags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, plan.ElasticsearchConnection, r.client)
+	resp.Diagnostics.Append(fwDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	// Check Elasticsearch version
-	serverVersion, sdkDiags := r.client.ServerVersion(ctx)
+	serverVersion, sdkDiags := client.ServerVersion(ctx)
 	if sdkDiags.HasError() {
 		resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 		return
@@ -58,7 +64,7 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 
 	// Generate the resource ID
 	componentTemplateName := plan.getComponentTemplateName()
-	id, sdkDiags := r.client.ID(ctx, componentTemplateName)
+	id, sdkDiags := client.ID(ctx, componentTemplateName)
 	if sdkDiags.HasError() {
 		resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 		return
@@ -66,7 +72,7 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 	plan.ID = types.StringValue(id.String())
 
 	// Read existing component template (if any) to preserve other settings
-	existing, sdkDiags := elasticsearch.GetComponentTemplate(ctx, r.client, componentTemplateName, true)
+	existing, sdkDiags := elasticsearch.GetComponentTemplate(ctx, client, componentTemplateName, true)
 	if sdkDiags.HasError() {
 		resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 		return
@@ -116,13 +122,13 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 	)
 
 	// Write the component template
-	if sdkDiags := elasticsearch.PutComponentTemplate(ctx, r.client, &componentTemplate); sdkDiags.HasError() {
+	if sdkDiags := elasticsearch.PutComponentTemplate(ctx, client, &componentTemplate); sdkDiags.HasError() {
 		resp.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 		return
 	}
 
 	// Read back to ensure state consistency
-	found, diags := readILMAttachment(ctx, r.client, &plan)
+	found, diags := readILMAttachment(ctx, &plan, r.client)
 	resp.Diagnostics.Append(diags...)
 	if !found && !resp.Diagnostics.HasError() {
 		resp.Diagnostics.AddError(

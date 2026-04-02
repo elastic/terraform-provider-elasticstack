@@ -1,11 +1,11 @@
 ---
 name: entity-requirements
-description: Examines an existing Terraform resource or data source implementation and produces a comprehensive requirements document following dev-docs/requirements/template.md. Use when the user asks to document requirements for a Terraform entity, capture behavior from code, or write a requirements doc for a resource/data source.
+description: Examines an existing Terraform resource or data source implementation and produces an OpenSpec requirements document under openspec/specs/. Use when the user asks to document requirements for a Terraform entity, capture behavior from code, or write a requirements doc for a resource/data source.
 ---
 
 # Entity Requirements Documentation
 
-Produce a **requirements document** for an existing Terraform resource or data source by examining its code path and capturing behavior. Output follows the repo template at `dev-docs/requirements/template.md`.
+Produce an **OpenSpec spec** (`spec.md`) for an existing Terraform resource or data source by examining its code path and capturing behavior. Follow [`dev-docs/high-level/openspec-requirements.md`](../../../dev-docs/high-level/openspec-requirements.md) and the OpenSpec shape: `## Purpose`, optional `## Schema`, `## Requirements` with `### Requirement:` and `#### Scenario:` blocks; use **SHALL** / **MUST** in requirement text.
 
 ## Input
 
@@ -30,11 +30,12 @@ Produce a **requirements document** for an existing Terraform resource or data s
    - Mapping: config/API/state (JSON parsing, empty vs null, preserve-unknown behavior).
    - Lifecycle: replacement vs in-place update (e.g. `RequiresReplace`).
 
-3. **Write the document**
-   - **Path**: `dev-docs/requirements/<domain>/<name>.md` (e.g. `dev-docs/requirements/elasticsearch/security/role.md`). Match existing layout under `dev-docs/requirements/`.
-   - **Title and implementation**: First line and “Resource implementation” (or “Data source implementation”) per template.
-   - **Schema**: HCL-style block listing each attribute/block with `<required|optional|optional+computed|computed>`, types, and short notes (e.g. version requirements, deprecated blocks). Follow the example in the template and in `dev-docs/requirements/elasticsearch/security/role.md`.
-   - **Requirements**: Numbered list `**[REQ-NNN] (Category)**: The resource/data source shall ...**`. Derive every requirement from the code; do not invent behavior. Use categories such as API, Identity, Import, Lifecycle, Connection, Compatibility, Create/Update, Read, Delete, Mapping, Plan/State, State, StateUpgrade. See [reference.md](reference.md) for categories and examples.
+3. **Write the spec**
+   - **Path**: `openspec/specs/<capability>/spec.md` (e.g. `openspec/specs/elasticsearch-security-role/spec.md`). Use a stable capability id: `<backend>-<area>-<resource>` (see authoring guide).
+   - **Title and implementation**: H1 title and a line `Resource implementation:` or `Data source implementation:` with the Go package path (as in legacy docs).
+   - **Purpose**: Short `## Purpose` paragraph.
+   - **Schema**: Optional `## Schema` with HCL-style block listing each attribute/block with `<required|optional|optional+computed|computed>`, types, and notes. Example reference: `openspec/specs/elasticsearch-security-role/spec.md`.
+   - **Requirements**: `### Requirement: …` sections (group related behaviors; reference legacy REQ ids in titles like `(REQ-001–REQ-003)` when useful). Each requirement body MUST contain **SHALL** or **MUST**. Add `#### Scenario:` blocks (Given/When/Then) for verifiable behavior. Derive everything from the code; do not invent behavior. Categories: API, Identity, Import, Lifecycle, Connection, Compatibility, Create/Update, Read, Delete, Mapping, Plan/State, State, StateUpgrade. See [reference.md](reference.md).
 
 4. **Quality**
    - Every requirement must be traceable to the implementation (file/function or logic).
@@ -43,30 +44,35 @@ Produce a **requirements document** for an existing Terraform resource or data s
 
 ## Output format
 
-Use the structure from `dev-docs/requirements/template.md`:
+Use this OpenSpec-oriented structure:
 
 ```markdown
-# `<RESOURCE_OR_DATA_SOURCE_NAME>` — Schema and Functional Requirements
+# `<name>` — Schema and Functional Requirements
 
 Resource implementation: `<GO_PACKAGE_OR_DIR>`
-# or: Data source implementation: ...
+
+## Purpose
+...
 
 ## Schema
-
-```hcl
-resource "<PROVIDER_TYPE>" "example" {
-  # attributes/blocks with required|optional|computed and notes
-}
-```
+\`\`\`hcl
+...
+\`\`\`
 
 ## Requirements
 
-- **[REQ-001] (API)**: ...
-- **[REQ-002] (Identity)**: ...
+### Requirement: Short name (REQ-xxx)
+
+The resource SHALL ...
+
+#### Scenario: ...
+- GIVEN ...
+- WHEN ...
+- THEN ...
 ```
 
 ## Reference
 
-- Template: `dev-docs/requirements/template.md`
-- Example: `dev-docs/requirements/elasticsearch/security/role.md`
+- Authoring: `dev-docs/high-level/openspec-requirements.md`
+- Example: `openspec/specs/elasticsearch-security-role/spec.md`
 - Full code-path checklist and requirement categories: [reference.md](reference.md)

@@ -31,11 +31,13 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/output"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/outputds"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/serverhost"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilderworkflow"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/alertingrule"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/connectors"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dataview"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/defaultdataview"
+	exportagentbuilderworkflow "github.com/elastic/terraform-provider-elasticstack/internal/kibana/exportagentbuilder/workflow"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/exportsavedobjects"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/import_saved_objects"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/maintenance_window"
@@ -49,6 +51,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/securitylistitem"
 	kibanaslo "github.com/elastic/terraform-provider-elasticstack/internal/kibana/slo"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/spaces"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/streams"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics/monitor"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics/parameter"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics/privatelocation"
@@ -60,8 +63,9 @@ import (
 )
 
 const (
-	IncludeExperimentalEnvVar = "TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL"
-	AccTestVersion            = "acctest"
+	IncludeExperimentalEnvVar    = "TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL"
+	SkipLocationValidationEnvVar = "TF_ELASTICSTACK_SKIP_LOCATION_VALIDATION"
+	AccTestVersion               = "acctest"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -88,7 +92,7 @@ func (p *Provider) Metadata(_ context.Context, _ fwprovider.MetadataRequest, res
 func (p *Provider) Schema(ctx context.Context, req fwprovider.SchemaRequest, res *fwprovider.SchemaResponse) {
 	res.Schema = fwschema.Schema{
 		Blocks: map[string]fwschema.Block{
-			esKeyName:    schema.GetEsFWConnectionBlock(true),
+			esKeyName:    schema.GetEsFWConnectionBlock(),
 			kbKeyName:    schema.GetKbFWConnectionBlock(),
 			fleetKeyName: schema.GetFleetFWConnectionBlock(),
 		},
@@ -124,7 +128,8 @@ func (p *Provider) DataSources(ctx context.Context) []func() datasource.DataSour
 }
 
 func (p *Provider) Resources(ctx context.Context) []func() resource.Resource {
-	resources := p.resources(ctx)
+	validateLocation := !(os.Getenv(SkipLocationValidationEnvVar) == "true")
+	resources := p.resources(ctx, validateLocation)
 
 	if p.version == AccTestVersion || os.Getenv(IncludeExperimentalEnvVar) == "true" {
 		resources = append(resources, p.experimentalResources(ctx)...)
@@ -133,7 +138,7 @@ func (p *Provider) Resources(ctx context.Context) []func() resource.Resource {
 	return resources
 }
 
-func (p *Provider) resources(ctx context.Context) []func() resource.Resource {
+func (p *Provider) resources(_ context.Context, validateLocation bool) []func() resource.Resource {
 	return []func() resource.Resource{
 		agentconfiguration.NewAgentConfigurationResource,
 		func() resource.Resource { return &importsavedobjects.Resource{} },
@@ -143,11 +148,12 @@ func (p *Provider) resources(ctx context.Context) []func() resource.Resource {
 		func() resource.Resource { return &parameter.Resource{} },
 		func() resource.Resource { return &privatelocation.Resource{} },
 		func() resource.Resource { return &index.Resource{} },
-		monitor.NewResource,
+		func() resource.Resource { return monitor.NewResource(validateLocation) },
 		func() resource.Resource { return &apikey.Resource{} },
 		func() resource.Resource { return &datastreamlifecycle.Resource{} },
 		func() resource.Resource { return &connectors.Resource{} },
 		agentpolicy.NewResource,
+		agentbuilderworkflow.NewResource,
 		integration.NewResource,
 		integrationpolicy.NewResource,
 		output.NewResource,
@@ -180,6 +186,7 @@ func (p *Provider) resources(ctx context.Context) []func() resource.Resource {
 func (p *Provider) experimentalResources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		dashboard.NewResource,
+		streams.NewResource,
 	}
 }
 
@@ -187,6 +194,7 @@ func (p *Provider) dataSources(ctx context.Context) []func() datasource.DataSour
 	return []func() datasource.DataSource{
 		indices.NewDataSource,
 		spaces.NewDataSource,
+		exportagentbuilderworkflow.NewDataSource,
 		exportsavedobjects.NewDataSource,
 		enrollmenttokens.NewDataSource,
 		integrationds.NewDataSource,

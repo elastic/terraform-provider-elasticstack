@@ -25,7 +25,7 @@ import (
 	"strconv"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
+	schemautil "github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -100,9 +100,10 @@ func init() {
 }
 
 type tfModel struct {
-	ID      types.String `tfsdk:"id"`
-	Target  types.String `tfsdk:"target"`
-	Indices types.List   `tfsdk:"indices"`
+	ID                      types.String `tfsdk:"id"`
+	Target                  types.String `tfsdk:"target"`
+	ElasticsearchConnection types.List   `tfsdk:"elasticsearch_connection"`
+	Indices                 types.List   `tfsdk:"indices"`
 }
 
 type indexTfModel struct {

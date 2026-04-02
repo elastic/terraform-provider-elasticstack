@@ -20,6 +20,7 @@ package alias
 import (
 	"context"
 
+	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -37,6 +38,9 @@ func getSchema() schema.Schema {
 	return schema.Schema{
 		Description: "Manages an Elasticsearch alias. " +
 			"See the [alias documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-aliases.html) for more details.",
+		Blocks: map[string]schema.Block{
+			"elasticsearch_connection": providerschema.GetEsFWConnectionBlock(),
+		},
 
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{

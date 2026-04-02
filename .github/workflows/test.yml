@@ -41,6 +41,10 @@ jobs:
               return;
             }
 
+            const allowedBotEmails = new Set([
+              '198982749+Copilot@users.noreply.github.com',
+              '41898282+github-actions[bot]@users.noreply.github.com',
+            ]);
             const branch = context.ref.replace('refs/heads/', '');
             const { data: pulls } = await github.rest.pulls.list({
               owner: context.repo.owner,
@@ -50,12 +54,24 @@ jobs:
               per_page: 1,
             });
 
-            const shouldRun = pulls.length === 0;
-            core.info(
-              shouldRun
-                ? `No open PR found for ${branch}; running workflow for push.`
-                : `Open PR found for ${branch}; skipping duplicate push workflow execution.`
-            );
+            const commits = context.payload.commits || [];
+            const noOpenPR = pulls.length === 0;
+            const allAllowedBots =
+              commits.length > 0 &&
+              commits.every((c) => allowedBotEmails.has(c.author && c.author.email));
+            const shouldRun = noOpenPR || allAllowedBots;
+
+            if (shouldRun) {
+              core.info(
+                noOpenPR
+                  ? `No open PR found for ${branch}; running workflow for push.`
+                  : `Open PR found for ${branch}, but all ${commits.length} pushed commit(s) are authored by an allowed bot user; running workflow for push.`
+              );
+            } else {
+              core.info(
+                `Open PR found for ${branch} and not all pushed commits are authored by an allowed bot user; skipping push workflow execution.`
+              );
+            }
             core.setOutput('should_run', shouldRun ? 'true' : 'false');
 
   build:
@@ -66,7 +82,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
         with:
           go-version-file: 'go.mod'
           cache: true
@@ -82,9 +98,16 @@ jobs:
     needs: preflight
     if: needs.preflight.outputs.should_run == 'true'
     runs-on: ubuntu-latest
+    env:
+      OPENSPEC_TELEMETRY: "0"
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
         with:
           go-version-file: 'go.mod'
           cache: true
@@ -158,7 +181,7 @@ jobs:
           sudo rm -rf /usr/local/lib/android
 
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
         with:
           go-version-file: 'go.mod'
           cache: true
@@ -303,7 +326,7 @@ jobs:
       pull-requests: write
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
         with:
           go-version-file: go.mod
           cache: true

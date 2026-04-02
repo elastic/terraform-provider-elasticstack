@@ -50,7 +50,7 @@ type legacyMetricPanelConfigConverter struct {
 	lensVisualizationBase
 }
 
-func (c legacyMetricPanelConfigConverter) populateFromAttributes(ctx context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes) diag.Diagnostics {
+func (c legacyMetricPanelConfigConverter) populateFromAttributes(ctx context.Context, pm *panelModel, attrs kbapi.LensApiState) diag.Diagnostics {
 	legacyMetricChart, err := attrs.AsLegacyMetricChart()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
@@ -60,20 +60,20 @@ func (c legacyMetricPanelConfigConverter) populateFromAttributes(ctx context.Con
 	return pm.LegacyMetricConfig.fromAPI(ctx, legacyMetricChart)
 }
 
-func (c legacyMetricPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelLens_Config_0_Attributes, diag.Diagnostics) {
+func (c legacyMetricPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.LensApiState, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	configModel := *pm.LegacyMetricConfig
 
 	legacyMetricChart, legacyDiags := configModel.toAPI()
 	diags.Append(legacyDiags...)
 	if diags.HasError() {
-		return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}, diags
+		return kbapi.LensApiState{}, diags
 	}
 
-	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	var attrs kbapi.LensApiState
 	if err := attrs.FromLegacyMetricChart(legacyMetricChart); err != nil {
 		diags.AddError("Failed to create legacy metric attributes", err.Error())
-		return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}, diags
+		return kbapi.LensApiState{}, diags
 	}
 
 	return attrs, diags
@@ -86,7 +86,7 @@ type legacyMetricConfigModel struct {
 	IgnoreGlobalFilters types.Bool                                        `tfsdk:"ignore_global_filters"`
 	Sampling            types.Float64                                     `tfsdk:"sampling"`
 	Query               *filterSimpleModel                                `tfsdk:"query"`
-	Filters             []searchFilterModel                               `tfsdk:"filters"`
+	Filters             []chartFilterJSONModel                            `tfsdk:"filters"`
 	MetricJSON          customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"metric_json"`
 }
 
@@ -107,47 +107,50 @@ func (m *legacyMetricConfigModel) fromAPI(ctx context.Context, apiChart kbapi.Le
 	return diags
 }
 
+func (m *legacyMetricConfigModel) populateCommonFields(
+	title, description *string,
+	ignoreGlobalFilters *bool,
+	sampling *float32,
+	datasetBytes []byte,
+	datasetErr error,
+	filters []kbapi.LensPanelFilters_Item,
+	diags *diag.Diagnostics,
+) bool {
+	m.Title = types.StringPointerValue(title)
+	m.Description = types.StringPointerValue(description)
+	m.IgnoreGlobalFilters = types.BoolPointerValue(ignoreGlobalFilters)
+	if sampling != nil {
+		m.Sampling = types.Float64Value(float64(*sampling))
+	} else {
+		m.Sampling = types.Float64Null()
+	}
+	dv, ok := marshalToNormalized(datasetBytes, datasetErr, "dataset", diags)
+	if !ok {
+		return false
+	}
+	m.DatasetJSON = dv
+	m.Filters = populateFiltersFromAPI(filters, diags)
+	return !diags.HasError()
+}
+
 func (m *legacyMetricConfigModel) fromAPINoESQL(ctx context.Context, api kbapi.LegacyMetricNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
 
-	m.Title = types.StringPointerValue(api.Title)
-	m.Description = types.StringPointerValue(api.Description)
-
-	datasetBytes, err := api.Dataset.MarshalJSON()
-	if err != nil {
-		diags.AddError("Failed to marshal dataset", err.Error())
+	datasetBytes, datasetErr := api.Dataset.MarshalJSON()
+	if !m.populateCommonFields(api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling, datasetBytes, datasetErr, api.Filters, &diags) {
 		return diags
-	}
-	m.DatasetJSON = jsontypes.NewNormalizedValue(string(datasetBytes))
-
-	m.IgnoreGlobalFilters = types.BoolPointerValue(api.IgnoreGlobalFilters)
-	if api.Sampling != nil {
-		m.Sampling = types.Float64Value(float64(*api.Sampling))
-	} else {
-		m.Sampling = types.Float64Null()
 	}
 
 	m.Query = &filterSimpleModel{}
 	m.Query.fromAPI(api.Query)
 
-	if api.Filters != nil && len(*api.Filters) > 0 {
-		m.Filters = make([]searchFilterModel, len(*api.Filters))
-		for i, filterSchema := range *api.Filters {
-			filterDiags := m.Filters[i].fromAPI(filterSchema)
-			diags.Append(filterDiags...)
-		}
-	}
-
 	metricBytes, err := api.Metric.MarshalJSON()
-	if err != nil {
-		diags.AddError("Failed to marshal metric", err.Error())
+	mv, ok := marshalToJSONWithDefaults(metricBytes, err, "metric", populateLegacyMetricMetricDefaults, &diags)
+	if !ok {
 		return diags
 	}
-	m.MetricJSON = customtypes.NewJSONWithDefaultsValue(
-		string(metricBytes),
-		populateLegacyMetricMetricDefaults,
-	)
+	m.MetricJSON = mv
 
 	return diags
 }
@@ -156,42 +159,19 @@ func (m *legacyMetricConfigModel) fromAPIESQL(ctx context.Context, api kbapi.Leg
 	var diags diag.Diagnostics
 	_ = ctx
 
-	m.Title = types.StringPointerValue(api.Title)
-	m.Description = types.StringPointerValue(api.Description)
-
-	datasetBytes, err := api.Dataset.MarshalJSON()
-	if err != nil {
-		diags.AddError("Failed to marshal dataset", err.Error())
+	datasetBytes, datasetErr := api.Dataset.MarshalJSON()
+	if !m.populateCommonFields(api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling, datasetBytes, datasetErr, api.Filters, &diags) {
 		return diags
 	}
-	m.DatasetJSON = jsontypes.NewNormalizedValue(string(datasetBytes))
-
-	m.IgnoreGlobalFilters = types.BoolPointerValue(api.IgnoreGlobalFilters)
-	if api.Sampling != nil {
-		m.Sampling = types.Float64Value(float64(*api.Sampling))
-	} else {
-		m.Sampling = types.Float64Null()
-	}
-
-	if api.Filters != nil && len(*api.Filters) > 0 {
-		m.Filters = make([]searchFilterModel, len(*api.Filters))
-		for i, filterSchema := range *api.Filters {
-			filterDiags := m.Filters[i].fromAPI(filterSchema)
-			diags.Append(filterDiags...)
-		}
-	}
-
-	metricBytes, err := json.Marshal(api.Metric)
-	if err != nil {
-		diags.AddError("Failed to marshal metric", err.Error())
-		return diags
-	}
-	m.MetricJSON = customtypes.NewJSONWithDefaultsValue[map[string]any](
-		string(metricBytes),
-		populateLegacyMetricMetricDefaults,
-	)
 
 	m.Query = nil
+
+	metricBytes, err := json.Marshal(api.Metric)
+	mv, ok := marshalToJSONWithDefaults(metricBytes, err, "metric", populateLegacyMetricMetricDefaults, &diags)
+	if !ok {
+		return diags
+	}
+	m.MetricJSON = mv
 
 	return diags
 }
@@ -231,15 +211,7 @@ func (m *legacyMetricConfigModel) toAPI() (kbapi.LegacyMetricChart, diag.Diagnos
 			api.Sampling = &sampling
 		}
 
-		if len(m.Filters) > 0 {
-			filters := make([]kbapi.SearchFilter, len(m.Filters))
-			for i, filterModel := range m.Filters {
-				filter, filterDiags := filterModel.toAPI()
-				diags.Append(filterDiags...)
-				filters[i] = filter
-			}
-			api.Filters = &filters
-		}
+		api.Filters = buildFiltersForAPI(m.Filters, &diags)
 
 		if m.Query != nil {
 			diags.AddError("Invalid legacy metric query", "Query is not supported for ESQL legacy metric charts")
@@ -263,7 +235,8 @@ func (m *legacyMetricConfigModel) toAPI() (kbapi.LegacyMetricChart, diag.Diagnos
 			diags.AddError("Failed to unmarshal metric", err.Error())
 			return result, diags
 		}
-		api.Metric.Alignments = metric.Alignments
+		api.Metric.Labels = metric.Labels
+		api.Metric.Values = metric.Values
 		api.Metric.ApplyColorTo = metric.ApplyColorTo
 		var color kbapi.LegacyMetricESQL_Metric_Color
 		if err := color.FromColorByValueAbsolute(metric.Color); err != nil {
@@ -300,15 +273,7 @@ func (m *legacyMetricConfigModel) toAPI() (kbapi.LegacyMetricChart, diag.Diagnos
 			api.Sampling = &sampling
 		}
 
-		if len(m.Filters) > 0 {
-			filters := make([]kbapi.SearchFilter, len(m.Filters))
-			for i, filterModel := range m.Filters {
-				filter, filterDiags := filterModel.toAPI()
-				diags.Append(filterDiags...)
-				filters[i] = filter
-			}
-			api.Filters = &filters
-		}
+		api.Filters = buildFiltersForAPI(m.Filters, &diags)
 
 		if m.Query != nil {
 			api.Query = m.Query.toAPI()
@@ -368,10 +333,12 @@ func (m *legacyMetricConfigModel) datasetType() (string, diag.Diagnostics) {
 }
 
 type legacyMetricESQLMetricAPIModel struct {
-	Alignments *struct {
-		Labels *kbapi.LegacyMetricESQLMetricAlignmentsLabels `json:"labels,omitempty"`
-		Value  *kbapi.LegacyMetricESQLMetricAlignmentsValue  `json:"value,omitempty"`
-	} `json:"alignments,omitempty"`
+	Labels *struct {
+		Alignment *kbapi.LegacyMetricESQLMetricLabelsAlignment `json:"alignment,omitempty"`
+	} `json:"labels,omitempty"`
+	Values *struct {
+		Alignment *kbapi.LegacyMetricESQLMetricValuesAlignment `json:"alignment,omitempty"`
+	} `json:"values,omitempty"`
 	ApplyColorTo *kbapi.LegacyMetricESQLMetricApplyColorTo `json:"apply_color_to,omitempty"`
 	Color        kbapi.ColorByValueAbsolute                `json:"color"`
 	Column       string                                    `json:"column"`

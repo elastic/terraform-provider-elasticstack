@@ -60,6 +60,7 @@ output "watch" {
 - `actions` (String) The list of actions that will be run if the condition matches.
 - `active` (Boolean) Defines whether the watch is active or inactive by default. The default value is true, which means the watch is active by default.
 - `condition` (String) The condition that defines if the actions should be run.
+- `elasticsearch_connection` (Block List, Max: 1) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - `input` (String) The input that defines the input that loads the data for the watch.
 - `metadata` (String) Metadata json that will be copied into the history entries.
 - `throttle_period_in_millis` (Number) Minimum time in milliseconds between actions being run. Defaults to 5000.
@@ -68,6 +69,26 @@ output "watch" {
 ### Read-Only
 
 - `id` (String) Internal identifier of the resource.
+
+<a id="nestedblock--elasticsearch_connection"></a>
+### Nested Schema for `elasticsearch_connection`
+
+Optional:
+
+- `api_key` (String, Sensitive) API Key to use for authentication to Elasticsearch
+- `bearer_token` (String, Sensitive) Bearer Token to use for authentication to Elasticsearch
+- `ca_data` (String) PEM-encoded custom Certificate Authority certificate
+- `ca_file` (String) Path to a custom Certificate Authority certificate
+- `cert_data` (String) PEM encoded certificate for client auth
+- `cert_file` (String) Path to a file containing the PEM encoded certificate for client auth
+- `endpoints` (List of String, Sensitive) A list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
+- `es_client_authentication` (String, Sensitive) ES Client Authentication field to be used with the JWT token
+- `headers` (Map of String, Sensitive) A list of headers to be sent with each request to Elasticsearch.
+- `insecure` (Boolean) Disable TLS certificate validation
+- `key_data` (String, Sensitive) PEM encoded private key for client auth
+- `key_file` (String) Path to a file containing the PEM encoded private key for client auth
+- `password` (String, Sensitive) Password to use for API authentication to Elasticsearch.
+- `username` (String) Username to use for API authentication to Elasticsearch.
 
 ## Import
 

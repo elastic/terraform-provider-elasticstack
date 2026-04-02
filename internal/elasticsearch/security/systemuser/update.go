@@ -41,14 +41,14 @@ func (r *systemUserResource) update(ctx context.Context, plan tfsdk.Plan, state 
 	}
 
 	usernameID := data.Username.ValueString()
-	id, sdkDiags := r.client.ID(ctx, usernameID)
-	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+	client, connDiags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, data.ElasticsearchConnection, r.client)
+	diags.Append(connDiags...)
 	if diags.HasError() {
 		return diags
 	}
 
-	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, data.ElasticsearchConnection, r.client)
-	diags.Append(diags...)
+	id, sdkDiags := client.ID(ctx, usernameID)
+	diags.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
 	if diags.HasError() {
 		return diags
 	}
@@ -71,7 +71,7 @@ func (r *systemUserResource) update(ctx context.Context, plan tfsdk.Plan, state 
 		userPassword.PasswordHash = data.PasswordHash.ValueStringPointer()
 	}
 	if userPassword.Password != nil || userPassword.PasswordHash != nil {
-		diags.Append(elasticsearch.ChangeUserPassword(ctx, r.client, usernameID, &userPassword)...)
+		diags.Append(elasticsearch.ChangeUserPassword(ctx, client, usernameID, &userPassword)...)
 		if diags.HasError() {
 			return diags
 		}
@@ -79,9 +79,9 @@ func (r *systemUserResource) update(ctx context.Context, plan tfsdk.Plan, state 
 
 	if typeutils.IsKnown(data.Enabled) && !data.Enabled.IsNull() && data.Enabled.ValueBool() != user.Enabled {
 		if data.Enabled.ValueBool() {
-			diags.Append(elasticsearch.EnableUser(ctx, r.client, usernameID)...)
+			diags.Append(elasticsearch.EnableUser(ctx, client, usernameID)...)
 		} else {
-			diags.Append(elasticsearch.DisableUser(ctx, r.client, usernameID)...)
+			diags.Append(elasticsearch.DisableUser(ctx, client, usernameID)...)
 		}
 		if diags.HasError() {
 			return diags

@@ -36,25 +36,28 @@ func Test_pieChartPanelConfigConverter_populateFromAttributes_buildAttributes_ro
 	title := "Pie Round-Trip"
 	desc := "Converter test"
 	donutHole := kbapi.PieNoESQLDonutHoleSmall
-	labelPos := kbapi.PieNoESQLLabelPositionInside
-	visible := kbapi.PieLegendVisibleShow
+	labelPos := kbapi.PieNoESQLLabelsPositionInside
+	visibility := kbapi.PieLegendVisibilityVisible
 
 	apiChart := kbapi.PieNoESQL{
-		Title:         &title,
-		Description:   &desc,
-		DonutHole:     &donutHole,
-		LabelPosition: &labelPos,
-		Legend:        kbapi.PieLegend{Visible: &visible},
-		Dataset:       kbapi.PieNoESQL_Dataset{},
-		Query:         kbapi.FilterSimple{Query: "response:200", Language: new(kbapi.FilterSimpleLanguageKuery)},
-		Metrics:       []kbapi.PieNoESQL_Metrics_Item{},
-		GroupBy:       new([]kbapi.PieNoESQL_GroupBy_Item{}),
+		Title:       &title,
+		Description: &desc,
+		DonutHole:   &donutHole,
+		Labels: &struct {
+			Position *kbapi.PieNoESQLLabelsPosition `json:"position,omitempty"`
+			Visible  *bool                          `json:"visible,omitempty"`
+		}{Position: &labelPos},
+		Legend:  kbapi.PieLegend{Visibility: &visibility},
+		Dataset: kbapi.PieNoESQL_Dataset{},
+		Query:   kbapi.FilterSimple{Query: "response:200", Language: new(kbapi.FilterSimpleLanguageKuery)},
+		Metrics: []kbapi.PieNoESQL_Metrics_Item{},
+		GroupBy: new([]kbapi.PieNoESQL_GroupBy_Item{}),
 	}
 
 	var pieChart kbapi.PieChart
 	require.NoError(t, pieChart.FromPieNoESQL(apiChart))
 
-	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	var attrs kbapi.LensApiState
 	require.NoError(t, attrs.FromPieChart(pieChart))
 
 	converter := newPieChartPanelConfigConverter()
@@ -79,14 +82,14 @@ func Test_pieChartConfigModel_fromAPI_toAPI_PieNoESQL(t *testing.T) {
 	title := "My Pie Chart"
 	desc := "A delicious pie chart"
 	donutHole := kbapi.PieNoESQLDonutHoleSmall
-	labelPos := kbapi.PieNoESQLLabelPositionInside
+	labelPos := kbapi.PieNoESQLLabelsPositionInside
 
 	// Create a dummy dataset
 	dataset := kbapi.PieNoESQL_Dataset{}
 
-	visible := kbapi.PieLegendVisibleShow
+	visibility := kbapi.PieLegendVisibilityVisible
 	legend := kbapi.PieLegend{
-		Visible: &visible,
+		Visibility: &visibility,
 	}
 
 	query := kbapi.FilterSimple{
@@ -95,15 +98,18 @@ func Test_pieChartConfigModel_fromAPI_toAPI_PieNoESQL(t *testing.T) {
 	}
 
 	apiChart := kbapi.PieNoESQL{
-		Title:         &title,
-		Description:   &desc,
-		DonutHole:     &donutHole,
-		LabelPosition: &labelPos,
-		Legend:        legend,
-		Dataset:       dataset,
-		Query:         query,
-		Metrics:       []kbapi.PieNoESQL_Metrics_Item{}, // Empty for simplicity
-		GroupBy:       new([]kbapi.PieNoESQL_GroupBy_Item{}),
+		Title:       &title,
+		Description: &desc,
+		DonutHole:   &donutHole,
+		Labels: &struct {
+			Position *kbapi.PieNoESQLLabelsPosition `json:"position,omitempty"`
+			Visible  *bool                          `json:"visible,omitempty"`
+		}{Position: &labelPos},
+		Legend:  legend,
+		Dataset: dataset,
+		Query:   query,
+		Metrics: []kbapi.PieNoESQL_Metrics_Item{}, // Empty for simplicity
+		GroupBy: new([]kbapi.PieNoESQL_GroupBy_Item{}),
 	}
 
 	// Wrap in PieChart
@@ -188,7 +194,7 @@ func Test_pieChartConfigModel_toAPI_withMetrics(t *testing.T) {
 			{Config: customtypes.NewJSONWithDefaultsValue[map[string]any](`{"operation":"sum","field":"bytes"}`, populatePieChartMetricDefaults)},
 		},
 		GroupBy: []pieGroupByModel{
-			{Config: customtypes.NewJSONWithDefaultsValue(`{"operation":"terms","field":"host.name"}`, populatePieChartGroupByDefaults)},
+			{Config: customtypes.NewJSONWithDefaultsValue(`{"operation":"terms","field":"host.name"}`, populateLensGroupByDefaults)},
 		},
 	}
 
@@ -212,8 +218,8 @@ func Test_pieChartConfigModel_toAPI_withGroupBy(t *testing.T) {
 			{Config: customtypes.NewJSONWithDefaultsValue[map[string]any](`{"operation":"count"}`, populatePieChartMetricDefaults)},
 		},
 		GroupBy: []pieGroupByModel{
-			{Config: customtypes.NewJSONWithDefaultsValue(`{"operation":"terms","field":"host.name","size":10}`, populatePieChartGroupByDefaults)},
-			{Config: customtypes.NewJSONWithDefaultsValue(`{"operation":"terms","field":"service.name"}`, populatePieChartGroupByDefaults)},
+			{Config: customtypes.NewJSONWithDefaultsValue(`{"operation":"terms","field":"host.name","size":10}`, populateLensGroupByDefaults)},
+			{Config: customtypes.NewJSONWithDefaultsValue(`{"operation":"terms","field":"service.name"}`, populateLensGroupByDefaults)},
 		},
 	}
 

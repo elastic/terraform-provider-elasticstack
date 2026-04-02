@@ -45,3 +45,6 @@ var alertsFilterDescription string
 
 //go:embed descriptions/timeframe_days.md
 var timeframeDaysDescription string
+
+//go:embed descriptions/flapping.md
+var flappingDescription string

@@ -33,17 +33,11 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 		return
 	}
 
-	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, planModel.ElasticsearchConnection, r.client)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	if planModel.Type.ValueString() == "cross_cluster" {
-		updateDiags := r.updateCrossClusterAPIKey(ctx, client, planModel)
+		updateDiags := r.updateCrossClusterAPIKey(ctx, planModel)
 		resp.Diagnostics.Append(updateDiags...)
 	} else {
-		updateDiags := r.updateAPIKey(ctx, client, planModel)
+		updateDiags := r.updateAPIKey(ctx, planModel)
 		resp.Diagnostics.Append(updateDiags...)
 	}
 
@@ -51,7 +45,7 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 		return
 	}
 
-	finalModel, diags := r.read(ctx, client, planModel)
+	finalModel, diags := r.read(ctx, planModel)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -60,24 +54,36 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 	resp.Diagnostics.Append(resp.State.Set(ctx, *finalModel)...)
 }
 
-func (r *Resource) updateCrossClusterAPIKey(ctx context.Context, client *clients.APIClient, planModel tfModel) diag.Diagnostics {
+func (r *Resource) updateCrossClusterAPIKey(ctx context.Context, planModel tfModel) diag.Diagnostics {
+	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, planModel.ElasticsearchConnection, r.client)
+	if diags.HasError() {
+		return diags
+	}
+
 	// Handle cross-cluster API key update
 	crossClusterModel, modelDiags := planModel.toCrossClusterAPIModel(ctx)
-	if modelDiags.HasError() {
-		return modelDiags
+	diags.Append(modelDiags...)
+	if diags.HasError() {
+		return diags
 	}
 
-	updateDiags := elasticsearch.UpdateCrossClusterAPIKey(client, crossClusterModel)
-	return updateDiags
+	diags.Append(elasticsearch.UpdateCrossClusterAPIKey(client, crossClusterModel)...)
+	return diags
 }
 
-func (r *Resource) updateAPIKey(ctx context.Context, client *clients.APIClient, planModel tfModel) diag.Diagnostics {
-	// Handle regular API key update
-	apiModel, modelDiags := r.buildAPIModel(ctx, planModel, client)
-	if modelDiags.HasError() {
-		return modelDiags
+func (r *Resource) updateAPIKey(ctx context.Context, planModel tfModel) diag.Diagnostics {
+	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, planModel.ElasticsearchConnection, r.client)
+	if diags.HasError() {
+		return diags
 	}
 
-	updateDiags := elasticsearch.UpdateAPIKey(client, apiModel)
-	return updateDiags
+	// Handle regular API key update
+	apiModel, modelDiags := r.buildAPIModel(ctx, planModel)
+	diags.Append(modelDiags...)
+	if diags.HasError() {
+		return diags
+	}
+
+	diags.Append(elasticsearch.UpdateAPIKey(client, apiModel)...)
+	return diags
 }

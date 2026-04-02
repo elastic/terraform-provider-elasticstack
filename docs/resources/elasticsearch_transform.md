@@ -96,6 +96,7 @@ resource "elasticstack_elasticsearch_transform" "transform_with_pivot" {
 - `defer_validation` (Boolean) When true, deferrable validations are not run upon creation, but rather when the transform is started. This behavior may be desired if the source index does not exist until after the transform is created. Default is `false`
 - `description` (String) Free text description of the transform.
 - `docs_per_second` (Number) Specifies a limit on the number of input documents per second. Default (unset) value disables throttling.
+- `elasticsearch_connection` (Block List, Max: 1) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - `enabled` (Boolean) Controls whether the transform should be started or stopped. Default is `false` (stopped).
 - `frequency` (String) The interval between checks for changes in the source indices when the transform is running continuously. Defaults to `1m`.
 - `latest` (String) The latest method transforms the data by finding the latest document for each unique key. JSON definition expected. Either 'pivot' or 'latest' must be present.
@@ -148,6 +149,27 @@ Optional:
 
 - `query` (String) A query clause that retrieves a subset of data from the source index.
 - `runtime_mappings` (String) Definitions of search-time runtime fields that can be used by the transform.
+
+
+<a id="nestedblock--elasticsearch_connection"></a>
+### Nested Schema for `elasticsearch_connection`
+
+Optional:
+
+- `api_key` (String, Sensitive) API Key to use for authentication to Elasticsearch
+- `bearer_token` (String, Sensitive) Bearer Token to use for authentication to Elasticsearch
+- `ca_data` (String) PEM-encoded custom Certificate Authority certificate
+- `ca_file` (String) Path to a custom Certificate Authority certificate
+- `cert_data` (String) PEM encoded certificate for client auth
+- `cert_file` (String) Path to a file containing the PEM encoded certificate for client auth
+- `endpoints` (List of String, Sensitive) A list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
+- `es_client_authentication` (String, Sensitive) ES Client Authentication field to be used with the JWT token
+- `headers` (Map of String, Sensitive) A list of headers to be sent with each request to Elasticsearch.
+- `insecure` (Boolean) Disable TLS certificate validation
+- `key_data` (String, Sensitive) PEM encoded private key for client auth
+- `key_file` (String) Path to a file containing the PEM encoded private key for client auth
+- `password` (String, Sensitive) Password to use for API authentication to Elasticsearch.
+- `username` (String) Username to use for API authentication to Elasticsearch.
 
 
 <a id="nestedblock--retention_policy"></a>

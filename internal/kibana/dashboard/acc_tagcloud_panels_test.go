@@ -18,6 +18,7 @@
 package dashboard_test
 
 import (
+	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -30,7 +31,7 @@ import (
 func TestAccResourceDashboardTagcloud(t *testing.T) {
 	dashboardTitle := "Test Dashboard with Tagcloud " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
@@ -90,7 +91,7 @@ func TestAccResourceDashboardTagcloud(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.tagcloud_config.query.query", "service.name:*"),
 					// Check filters
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.tagcloud_config.filters.#", "1"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.tagcloud_config.filters.0.query", "log.level:error OR log.level:warning"),
+					resource.TestMatchResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.tagcloud_config.filters.0.filter_json", regexp.MustCompile(`"field":"log.level"`)),
 				),
 			},
 			{

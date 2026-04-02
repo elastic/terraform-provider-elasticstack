@@ -20,6 +20,7 @@ package alias
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -44,6 +45,11 @@ func (r *aliasResource) Update(ctx context.Context, req resource.UpdateRequest, 
 	}
 
 	aliasName := planModel.Name.ValueString()
+	client, diags := clients.MaybeNewAPIClientFromFrameworkResource(ctx, planModel.ElasticsearchConnection, r.client)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	// Get current configuration from state
 	currentConfigs, diags := stateModel.toAliasConfigs(ctx)
@@ -108,14 +114,20 @@ func (r *aliasResource) Update(ctx context.Context, req resource.UpdateRequest, 
 
 	// Apply the atomic changes
 	if len(actions) > 0 {
-		resp.Diagnostics.Append(elasticsearch.UpdateAliasesAtomic(ctx, r.client, actions)...)
+		resp.Diagnostics.Append(elasticsearch.UpdateAliasesAtomic(ctx, client, actions)...)
 		if resp.Diagnostics.HasError() {
 			return
 		}
 	}
 
 	// Read back the alias to ensure state consistency, updating the current model
-	diags = readAliasIntoModel(ctx, r.client, aliasName, &planModel)
+	indices, diags := elasticsearch.GetAlias(ctx, client, aliasName)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	diags = readAliasIntoModel(ctx, aliasName, indices, &planModel)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

@@ -10,7 +10,6 @@ on:
   pull_request:
     paths:
       - .github/workflows/copilot-setup-steps.yml
-
 jobs:
   # The job MUST be called `copilot-setup-steps` or it will not be picked up by Copilot.
   copilot-setup-steps:
@@ -24,7 +23,12 @@ jobs:
 
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6 — same pin as test.yml lint
+        with:
+          node-version-file: package.json
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
         with:
           go-version-file: 'go.mod'
           cache: true
@@ -40,22 +44,19 @@ jobs:
 
       - name: Setup Kibana user
         run: make set-kibana-password
-        env:
-          ELASTICSEARCH_PASSWORD: ${{ env.ELASTICSEARCH_PASSWORD }}
-          KIBANA_SYSTEM_USERNAME: ${{ env.KIBANA_SYSTEM_USERNAME }}
-          KIBANA_SYSTEM_PASSWORD: ${{ env.KIBANA_SYSTEM_PASSWORD }}
 
       - id: get-api-key
         name: Get ES API key
         run: |-
           echo "apikey=$(make create-es-api-key | jq -r .encoded)" >> "$GITHUB_OUTPUT"
-        env:
-          ELASTICSEARCH_PASSWORD: ${{ env.ELASTICSEARCH_PASSWORD }}
 
       - id: setup-fleet
         name: Setup Fleet
         run: |-
           make setup-kibana-fleet
         env:
-          ELASTICSEARCH_PASSWORD: ${{ env.ELASTICSEARCH_PASSWORD }}
           FLEET_NAME: "fleet"
+
+      - name: Docker compose logs
+        if: failure()
+        run: docker compose logs --no-color
