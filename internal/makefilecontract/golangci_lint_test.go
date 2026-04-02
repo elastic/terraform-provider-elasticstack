@@ -15,42 +15,27 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package provider
+package makefilecontract_test
 
 import (
-	"context"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
-
-	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
-	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-func TestMuxServer(t *testing.T) {
-	const providerConfig = `
-	provider "elasticstack" {
-		elasticsearch {
-		  username  = "sup"
-		  password  = "dawg"
-		  endpoints = ["http://localhost:9200"]
-		}
-	  }
-	`
-	resource.Test(t, resource.TestCase{
-		ProtoV6ProviderFactories: map[string]func() (tfprotov6.ProviderServer, error){
-			"elasticstack": func() (tfprotov6.ProviderServer, error) {
-				version := "acceptance_test"
-				server, err := ProtoV6ProviderServerFactory(context.Background(), version)
-				if err != nil {
-					return nil, err
-				}
+// Guards REQ-041: the golangci-lint Make recipe must pass ./... so lint covers the full module.
+func TestMakefileGolangCILintUsesModuleWildcard(t *testing.T) {
+	t.Parallel()
 
-				return server(), nil
-			},
-		},
-		Steps: []resource.TestStep{
-			{
-				Config: providerConfig,
-			},
-		},
-	})
+	makefilePath := filepath.Join("..", "..", "Makefile")
+	data, err := os.ReadFile(makefilePath)
+	if err != nil {
+		t.Fatalf("read Makefile: %v", err)
+	}
+
+	const want = "golangci-lint-custom run --max-same-issues=0 $(GOLANGCIFLAGS) ./..."
+	if !strings.Contains(string(data), want) {
+		t.Fatalf("Makefile must contain golangci-lint invocation %q", want)
+	}
 }

@@ -168,7 +168,7 @@ golangci-lint-custom: tools
 
 .PHONY: golangci-lint
 golangci-lint: golangci-lint-custom
-	@ $(GOBIN)/golangci-lint-custom run --max-same-issues=0 $(GOLANGCIFLAGS) ./internal/...
+	@ $(GOBIN)/golangci-lint-custom run --max-same-issues=0 $(GOLANGCIFLAGS) ./...
 
 .PHONY: lint
 lint: GOLANGCIFLAGS += --fix
