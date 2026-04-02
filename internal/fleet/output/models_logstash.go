@@ -88,6 +88,32 @@ func (model outputModel) toAPIUpdateLogstashModel(ctx context.Context, prior out
 	if diags.HasError() {
 		return kbapi.UpdateOutputUnion{}, diags
 	}
+
+	// When ssl is omitted from configuration, objectValueToSSLUpdate returns nil and we would
+	// omit "ssl" from JSON (omitempty). The Fleet API then leaves any previously stored SSL
+	// in place; Read repopulates ssl and refresh shows perpetual drift. If prior state had
+	// ssl configured, send an explicit empty ssl object to clear it (same idea as
+	// logstashConfigYamlForUpdate for config_yaml).
+	var sslField *struct {
+		Certificate            *string                                        `json:"certificate,omitempty"`
+		CertificateAuthorities *[]string                                      `json:"certificate_authorities,omitempty"`
+		Key                    *string                                        `json:"key,omitempty"`
+		VerificationMode       *kbapi.UpdateOutputLogstashSslVerificationMode `json:"verification_mode,omitempty"`
+	}
+	switch {
+	case ssl != nil:
+		sslField = ssl.toUpdateLogstash()
+	case !prior.Ssl.IsNull() && !prior.Ssl.IsUnknown():
+		sslField = &struct {
+			Certificate            *string                                        `json:"certificate,omitempty"`
+			CertificateAuthorities *[]string                                      `json:"certificate_authorities,omitempty"`
+			Key                    *string                                        `json:"key,omitempty"`
+			VerificationMode       *kbapi.UpdateOutputLogstashSslVerificationMode `json:"verification_mode,omitempty"`
+		}{}
+	default:
+		sslField = nil
+	}
+
 	body := kbapi.UpdateOutputLogstash{
 		Type: func() *kbapi.UpdateOutputLogstashType {
 			outputType := kbapi.Logstash
@@ -100,7 +126,7 @@ func (model outputModel) toAPIUpdateLogstashModel(ctx context.Context, prior out
 		IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
 		IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
 		Name:                 model.Name.ValueStringPointer(),
-		Ssl:                  ssl.toUpdateLogstash(),
+		Ssl:                  sslField,
 	}
 
 	var union kbapi.UpdateOutputUnion

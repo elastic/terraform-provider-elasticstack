@@ -75,6 +75,34 @@ func Test_outputModel_toAPIUpdateModel_logstash(t *testing.T) {
 	assert.Equal(t, "Updated Logstash Output", *updateModel.Name)
 }
 
+func Test_outputModel_toAPIUpdateModel_logstash_sendsEmptySslToClearFleet(t *testing.T) {
+	t.Parallel()
+
+	cas := []string{"placeholder"}
+	priorSsl, d := sslToObjectValue(context.Background(), ptrString("placeholder"), &cas, ptrString("placeholder"))
+	require.False(t, d.HasError())
+
+	model := outputModel{
+		Name:                types.StringValue("Logstash Output (No SSL)"),
+		Type:                types.StringValue("logstash"),
+		Hosts:               types.ListValueMust(types.StringType, []attr.Value{types.StringValue("logstash:5044")}),
+		DefaultIntegrations: types.BoolValue(false),
+		DefaultMonitoring:   types.BoolValue(false),
+		Ssl:                 types.ObjectNull(getSslAttrTypes()),
+	}
+
+	prior := outputModel{
+		Ssl: priorSsl,
+	}
+
+	union, diags := model.toAPIUpdateModel(context.Background(), nil, prior)
+	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags)
+
+	updateModel, err := union.AsUpdateOutputLogstash()
+	require.NoError(t, err)
+	require.NotNil(t, updateModel.Ssl, "empty ssl object must be sent so Fleet clears stored ssl")
+}
+
 func Test_logstashConfigYamlForUpdate(t *testing.T) {
 	t.Parallel()
 
