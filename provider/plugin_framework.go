@@ -32,6 +32,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/indices"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/templateilmattachment"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/inference/inferenceendpoint"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/anomalydetectionjob"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed_state"
@@ -181,6 +182,7 @@ func (p *Provider) resources(_ context.Context, validateLocation bool) []func() 
 		systemuser.NewSystemUserResource,
 		securityuser.NewUserResource,
 		role.NewRoleResource,
+		inferenceendpoint.NewInferenceEndpointResource,
 		script.NewScriptResource,
 		maintenancewindow.NewResource,
 		enrich.NewEnrichPolicyResource,
