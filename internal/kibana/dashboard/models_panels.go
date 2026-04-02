@@ -47,6 +47,9 @@ type panelModel struct {
 	HeatmapConfig           *heatmapConfigModel                               `tfsdk:"heatmap_config"`
 	WaffleConfig            *waffleConfigModel                                `tfsdk:"waffle_config"`
 	TimeSliderControlConfig *timeSliderControlConfigModel                     `tfsdk:"time_slider_control_config"`
+	SloBurnRateConfig       *sloBurnRateConfigModel                           `tfsdk:"slo_burn_rate_config"`
+	SloErrorBudgetConfig    *sloErrorBudgetConfigModel                        `tfsdk:"slo_error_budget_config"`
+	EsqlControlConfig       *esqlControlConfigModel                           `tfsdk:"esql_control_config"`
 	ConfigJSON              customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config_json"`
 }
 
@@ -204,7 +207,10 @@ func panelUsesConfigJSONOnly(pm *panelModel) bool {
 		pm.RegionMapConfig == nil &&
 		pm.HeatmapConfig == nil &&
 		pm.WaffleConfig == nil &&
-		pm.TimeSliderControlConfig == nil
+		pm.TimeSliderControlConfig == nil &&
+		pm.SloBurnRateConfig == nil &&
+		pm.SloErrorBudgetConfig == nil &&
+		pm.EsqlControlConfig == nil
 }
 
 func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelModel, panelItem kbapi.DashboardPanelItem) (panelModel, diag.Diagnostics) {
@@ -258,6 +264,25 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 			pm.ConfigJSON = customtypes.NewJSONWithDefaultsValue(string(configBytes), populatePanelConfigJSONDefaults)
 		}
 		populateTimeSliderControlFromAPI(&pm, tfPanel, tsPanel.Config)
+	case panelTypeSloBurnRate:
+		sbrPanel, err := panelItem.AsKbnDashboardPanelSloBurnRate()
+		if err != nil {
+			return panelModel{}, diagutil.FrameworkDiagFromError(err)
+		}
+		setPanelGridFromAPI(&pm, sbrPanel.Grid.X, sbrPanel.Grid.Y, sbrPanel.Grid.W, sbrPanel.Grid.H)
+		pm.ID = types.StringPointerValue(sbrPanel.Uid)
+		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
+		populateSloBurnRateFromAPI(&pm, tfPanel, sbrPanel.Config)
+	case panelTypeEsqlControl:
+		esqlPanel, err := panelItem.AsKbnDashboardPanelEsqlControl()
+		if err != nil {
+			return panelModel{}, diagutil.FrameworkDiagFromError(err)
+		}
+		setPanelGridFromAPI(&pm, esqlPanel.Grid.X, esqlPanel.Grid.Y, esqlPanel.Grid.W, esqlPanel.Grid.H)
+		pm.ID = types.StringPointerValue(esqlPanel.Uid)
+		// ES|QL control panels are managed via esql_control_config; config_json remains unset.
+		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
+		populateEsqlControlFromAPI(&pm, tfPanel, esqlPanel.Config)
 	case panelTypeLens:
 		lensPanel, err := panelItem.AsKbnDashboardPanelLens()
 		if err != nil {
@@ -287,6 +312,15 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 				break
 			}
 		}
+	case panelTypeSloErrorBudget:
+		sebPanel, err := panelItem.AsKbnDashboardPanelSloErrorBudget()
+		if err != nil {
+			return panelModel{}, diagutil.FrameworkDiagFromError(err)
+		}
+		setPanelGridFromAPI(&pm, sebPanel.Grid.X, sebPanel.Grid.Y, sebPanel.Grid.W, sebPanel.Grid.H)
+		pm.ID = types.StringPointerValue(sebPanel.Uid)
+		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
+		populateSloErrorBudgetFromAPI(&pm, tfPanel, sebPanel.Config)
 	default:
 		// No typed mapping yet; keep only the panel type.
 		pm.ID = types.StringNull()
@@ -438,6 +472,49 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 		return panelItem, diags
 	}
 
+	if pm.Type.ValueString() == panelTypeSloBurnRate || pm.SloBurnRateConfig != nil {
+		if pm.SloBurnRateConfig == nil {
+			diags.AddError(
+				"Missing SLO burn rate panel configuration",
+				"SLO burn rate panels require `slo_burn_rate_config`.",
+			)
+			return kbapi.DashboardPanelItem{}, diags
+		}
+		sbrPanel := kbapi.KbnDashboardPanelSloBurnRate{
+			Grid: grid,
+			Uid:  uid,
+		}
+		buildSloBurnRateConfig(pm, &sbrPanel)
+		if err := panelItem.FromKbnDashboardPanelSloBurnRate(sbrPanel); err != nil {
+			diags.AddError("Failed to create SLO burn rate panel", err.Error())
+		}
+		return panelItem, diags
+	}
+
+	if pm.SloErrorBudgetConfig != nil {
+		sebPanel := kbapi.KbnDashboardPanelSloErrorBudget{
+			Grid: grid,
+			Uid:  uid,
+		}
+		buildSloErrorBudgetConfig(pm, &sebPanel)
+		if err := panelItem.FromKbnDashboardPanelSloErrorBudget(sebPanel); err != nil {
+			diags.AddError("Failed to create SLO error budget panel", err.Error())
+		}
+		return panelItem, diags
+	}
+
+	if pm.EsqlControlConfig != nil {
+		esqlPanel := kbapi.KbnDashboardPanelEsqlControl{
+			Grid: grid,
+			Uid:  uid,
+		}
+		buildEsqlControlConfig(pm, &esqlPanel)
+		if err := panelItem.FromKbnDashboardPanelEsqlControl(esqlPanel); err != nil {
+			diags.AddError("Failed to create esql control panel", err.Error())
+		}
+		return panelItem, diags
+	}
+
 	for _, converter := range lensVizConverters {
 		if !converter.handlesTFConfig(pm) {
 			continue
@@ -506,7 +583,8 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 		default:
 			diags.AddError(
 				"Unsupported panel type for config_json",
-				"Only markdown and lens panel types are currently supported with config_json.",
+				"Only markdown and lens panel types are currently supported with config_json. "+
+					"The esql_control panel type must be managed using the esql_control_config block.",
 			)
 			return kbapi.DashboardPanelItem{}, diags
 		}

@@ -43,7 +43,7 @@ type gaugePanelConfigConverter struct {
 	lensVisualizationBase
 }
 
-func (c gaugePanelConfigConverter) populateFromAttributes(ctx context.Context, pm *panelModel, attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes) diag.Diagnostics {
+func (c gaugePanelConfigConverter) populateFromAttributes(ctx context.Context, pm *panelModel, attrs kbapi.LensApiState) diag.Diagnostics {
 	gaugeChart, err := attrs.AsGaugeChart()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
@@ -58,26 +58,26 @@ func (c gaugePanelConfigConverter) populateFromAttributes(ctx context.Context, p
 	return pm.GaugeConfig.fromAPI(ctx, gaugeNoESQL)
 }
 
-func (c gaugePanelConfigConverter) buildAttributes(pm panelModel) (kbapi.KbnDashboardPanelLens_Config_0_Attributes, diag.Diagnostics) {
+func (c gaugePanelConfigConverter) buildAttributes(pm panelModel) (kbapi.LensApiState, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	configModel := *pm.GaugeConfig
 
 	gaugeNoESQL, gaugeDiags := configModel.toAPI()
 	diags.Append(gaugeDiags...)
 	if diags.HasError() {
-		return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}, diags
+		return kbapi.LensApiState{}, diags
 	}
 
 	var gaugeChart kbapi.GaugeChart
 	if err := gaugeChart.FromGaugeNoESQL(gaugeNoESQL); err != nil {
 		diags.AddError("Failed to convert gauge to schema", err.Error())
-		return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}, diags
+		return kbapi.LensApiState{}, diags
 	}
 
-	var attrs kbapi.KbnDashboardPanelLens_Config_0_Attributes
+	var attrs kbapi.LensApiState
 	if err := attrs.FromGaugeChart(gaugeChart); err != nil {
 		diags.AddError("Failed to create gauge attributes", err.Error())
-		return kbapi.KbnDashboardPanelLens_Config_0_Attributes{}, diags
+		return kbapi.LensApiState{}, diags
 	}
 
 	return attrs, diags
@@ -103,11 +103,11 @@ func (m *gaugeConfigModel) fromAPI(ctx context.Context, api kbapi.GaugeNoESQL) d
 	m.Description = types.StringPointerValue(api.Description)
 
 	datasetBytes, err := api.Dataset.MarshalJSON()
-	if err != nil {
-		diags.AddError("Failed to marshal dataset", err.Error())
+	v, ok := marshalToNormalized(datasetBytes, err, "dataset", &diags)
+	if !ok {
 		return diags
 	}
-	m.DatasetJSON = jsontypes.NewNormalizedValue(string(datasetBytes))
+	m.DatasetJSON = v
 
 	m.IgnoreGlobalFilters = types.BoolPointerValue(api.IgnoreGlobalFilters)
 	if api.Sampling != nil {
@@ -119,35 +119,22 @@ func (m *gaugeConfigModel) fromAPI(ctx context.Context, api kbapi.GaugeNoESQL) d
 	m.Query = &filterSimpleModel{}
 	m.Query.fromAPI(api.Query)
 
-	if api.Filters != nil && len(*api.Filters) > 0 {
-		m.Filters = make([]chartFilterJSONModel, 0, len(*api.Filters))
-		for _, filterSchema := range *api.Filters {
-			fm := chartFilterJSONModel{}
-			filterDiags := fm.populateFromAPIItem(filterSchema)
-			diags.Append(filterDiags...)
-			if !filterDiags.HasError() {
-				m.Filters = append(m.Filters, fm)
-			}
-		}
-	}
+	m.Filters = populateFiltersFromAPI(api.Filters, &diags)
 
 	metricBytes, err := api.Metric.MarshalJSON()
-	if err != nil {
-		diags.AddError("Failed to marshal metric", err.Error())
+	mv, ok := marshalToJSONWithDefaults(metricBytes, err, "metric", populateGaugeMetricDefaults, &diags)
+	if !ok {
 		return diags
 	}
-	m.MetricJSON = customtypes.NewJSONWithDefaultsValue(
-		string(metricBytes),
-		populateGaugeMetricDefaults,
-	)
+	m.MetricJSON = mv
 
 	if api.Shape != nil {
 		shapeBytes, err := api.Shape.MarshalJSON()
-		if err != nil {
-			diags.AddError("Failed to marshal shape", err.Error())
+		sv, ok := marshalToNormalized(shapeBytes, err, "shape", &diags)
+		if !ok {
 			return diags
 		}
-		m.ShapeJSON = jsontypes.NewNormalizedValue(string(shapeBytes))
+		m.ShapeJSON = sv
 	} else {
 		m.ShapeJSON = jsontypes.NewNormalizedNull()
 	}
@@ -189,20 +176,7 @@ func (m *gaugeConfigModel) toAPI() (kbapi.GaugeNoESQL, diag.Diagnostics) {
 		api.Query = m.Query.toAPI()
 	}
 
-	if len(m.Filters) > 0 {
-		filters := make([]kbapi.GaugeNoESQL_Filters_Item, 0, len(m.Filters))
-		for _, filterModel := range m.Filters {
-			var item kbapi.GaugeNoESQL_Filters_Item
-			filterDiags := decodeChartFilterJSON(filterModel.FilterJSON, &item)
-			diags.Append(filterDiags...)
-			if !filterDiags.HasError() {
-				filters = append(filters, item)
-			}
-		}
-		if len(filters) > 0 {
-			api.Filters = &filters
-		}
-	}
+	api.Filters = buildFiltersForAPI(m.Filters, &diags)
 
 	if typeutils.IsKnown(m.MetricJSON) {
 		if err := json.Unmarshal([]byte(m.MetricJSON.ValueString()), &api.Metric); err != nil {
