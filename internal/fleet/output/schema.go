@@ -92,6 +92,27 @@ func getSchema() schema.Schema {
 					validators.AllowedIfDependentPathEquals(path.Root("type"), "remote_elasticsearch"),
 				},
 			},
+			"sync_integrations": schema.BoolAttribute{
+				Description: "When type is remote_elasticsearch, whether Fleet synchronizes integration assets to the remote cluster. Subscription and version requirements apply per Elastic documentation.",
+				Optional:    true,
+				Validators: []validator.Bool{
+					validators.AllowedIfDependentPathEquals(path.Root("type"), "remote_elasticsearch"),
+				},
+			},
+			"sync_uninstalled_integrations": schema.BoolAttribute{
+				Description: "When type is remote_elasticsearch, whether to sync uninstalled integrations. Only meaningful when sync_integrations is enabled.",
+				Optional:    true,
+				Validators: []validator.Bool{
+					validators.AllowedIfDependentPathEquals(path.Root("type"), "remote_elasticsearch"),
+				},
+			},
+			"write_to_logs_streams": schema.BoolAttribute{
+				Description: "When type is remote_elasticsearch, whether agents using this output send data to wired logs streams (preview in newer stacks).",
+				Optional:    true,
+				Validators: []validator.Bool{
+					validators.AllowedIfDependentPathEquals(path.Root("type"), "remote_elasticsearch"),
+				},
+			},
 			"ca_sha256": schema.StringAttribute{
 				Description: "Fingerprint of the Elasticsearch CA certificate.",
 				Optional:    true,

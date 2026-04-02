@@ -3,6 +3,7 @@
 - [x] 1.1 Extend `elasticstack_fleet_output` type validation to accept `remote_elasticsearch` and add schema fields for required service-token auth plus optional TLS/mTLS settings.
 - [x] 1.2 Mark remote auth/key material as sensitive and configure plan/state behavior for fields that may be redacted by Fleet read APIs.
 - [x] 1.3 Update internal output models and request builders so create/update calls include remote Elasticsearch-specific payload fields.
+- [x] 1.4 Expose `sync_integrations`, `sync_uninstalled_integrations`, and `write_to_logs_streams` for `remote_elasticsearch`, with conditional schema validation and API mapping; extend docs and examples.
 
 ## 2. CRUD/state mapping behavior
 

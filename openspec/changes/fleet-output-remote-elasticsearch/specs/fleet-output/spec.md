@@ -42,3 +42,14 @@ For `remote_elasticsearch` outputs, when Fleet read responses omit or redact sec
 #### Scenario: Secret redacted in API response
 - **WHEN** a read response for a remote Elasticsearch output omits a configured secret authentication field
 - **THEN** the provider SHALL retain the prior state value for that secret field
+
+### Requirement: Remote Elasticsearch integration sync and related toggles
+When `type = "remote_elasticsearch"`, the resource SHALL expose attributes aligned with Fleet for automatic integration synchronization and related remote-output options (`sync_integrations`, `sync_uninstalled_integrations`, `write_to_logs_streams` where supported by the API), and SHALL map them on create, read, and update.
+
+#### Scenario: Configure integration sync on remote output
+- **WHEN** a resource sets `type = "remote_elasticsearch"` and configures sync-related boolean attributes
+- **THEN** the provider SHALL send and read back those fields through Fleet output APIs
+
+#### Scenario: Sync fields only valid for remote type
+- **WHEN** `type` is not `remote_elasticsearch` and sync-related attributes are set
+- **THEN** schema validation SHALL reject the configuration

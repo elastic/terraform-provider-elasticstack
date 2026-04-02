@@ -32,13 +32,16 @@ func TestOutputModelToAPICreateRemoteElasticsearchModel(t *testing.T) {
 	t.Parallel()
 
 	model := outputModel{
-		OutputID:            types.StringValue("remote-output-id"),
-		Name:                types.StringValue("remote-output"),
-		Type:                types.StringValue("remote_elasticsearch"),
-		Hosts:               types.ListValueMust(types.StringType, []attr.Value{types.StringValue("https://remote-es:9200")}),
-		ServiceToken:        types.StringValue("service-token-value"),
-		DefaultIntegrations: types.BoolValue(true),
-		DefaultMonitoring:   types.BoolValue(false),
+		OutputID:                    types.StringValue("remote-output-id"),
+		Name:                        types.StringValue("remote-output"),
+		Type:                        types.StringValue("remote_elasticsearch"),
+		Hosts:                       types.ListValueMust(types.StringType, []attr.Value{types.StringValue("https://remote-es:9200")}),
+		ServiceToken:                types.StringValue("service-token-value"),
+		DefaultIntegrations:         types.BoolValue(true),
+		DefaultMonitoring:           types.BoolValue(false),
+		SyncIntegrations:            types.BoolValue(true),
+		SyncUninstalledIntegrations: types.BoolValue(false),
+		WriteToLogsStreams:          types.BoolValue(false),
 	}
 
 	union, diags := model.toAPICreateRemoteElasticsearchModel(context.Background())
@@ -52,6 +55,12 @@ func TestOutputModelToAPICreateRemoteElasticsearchModel(t *testing.T) {
 	assert.Equal(t, []string{"https://remote-es:9200"}, body.Hosts)
 	require.NotNil(t, body.ServiceToken)
 	assert.Equal(t, "service-token-value", *body.ServiceToken)
+	require.NotNil(t, body.SyncIntegrations)
+	assert.True(t, *body.SyncIntegrations)
+	require.NotNil(t, body.SyncUninstalledIntegrations)
+	assert.False(t, *body.SyncUninstalledIntegrations)
+	require.NotNil(t, body.WriteToLogsStreams)
+	assert.False(t, *body.WriteToLogsStreams)
 }
 
 func TestOutputModelToAPIUpdateRemoteElasticsearchModel(t *testing.T) {
@@ -89,10 +98,12 @@ func TestOutputModelFromAPIRemoteElasticsearchModelPreservesServiceToken(t *test
 	}
 
 	diags := model.fromAPIRemoteElasticsearchModel(context.Background(), &kbapi.OutputRemoteElasticsearch{
-		Id:    new("output-id"),
-		Name:  "remote-output",
-		Type:  kbapi.KibanaHTTPAPIsOutputRemoteElasticsearchTypeRemoteElasticsearch,
-		Hosts: []string{"https://remote-es:9200"},
+		Id:                 stringPtr("output-id"),
+		Name:               "remote-output",
+		Type:               kbapi.KibanaHTTPAPIsOutputRemoteElasticsearchTypeRemoteElasticsearch,
+		Hosts:              []string{"https://remote-es:9200"},
+		SyncIntegrations:   boolPtr(true),
+		WriteToLogsStreams: boolPtr(false),
 		// ServiceToken intentionally omitted to simulate redaction.
 	})
 	require.False(t, diags.HasError())
@@ -100,9 +111,14 @@ func TestOutputModelFromAPIRemoteElasticsearchModelPreservesServiceToken(t *test
 	assert.Equal(t, "existing-token", model.ServiceToken.ValueString())
 	assert.Equal(t, "output-id", model.OutputID.ValueString())
 	assert.Equal(t, "remote_elasticsearch", model.Type.ValueString())
+	assert.True(t, model.SyncIntegrations.ValueBool())
+	assert.False(t, model.WriteToLogsStreams.ValueBool())
 }
 
-//go:fix inline
-func ptr[T any](v T) *T {
-	return new(v)
+func stringPtr(s string) *string {
+	return &s
+}
+
+func boolPtr(b bool) *bool {
+	return &b
 }

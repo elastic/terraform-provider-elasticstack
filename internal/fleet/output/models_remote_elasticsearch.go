@@ -52,6 +52,10 @@ func (model *outputModel) fromAPIRemoteElasticsearchModel(ctx context.Context, d
 		model.ServiceToken = types.StringNull()
 	}
 
+	model.SyncIntegrations = types.BoolPointerValue(data.SyncIntegrations)
+	model.SyncUninstalledIntegrations = types.BoolPointerValue(data.SyncUninstalledIntegrations)
+	model.WriteToLogsStreams = types.BoolPointerValue(data.WriteToLogsStreams)
+
 	// Note: SpaceIDs is not returned by the API for outputs.
 	if model.SpaceIDs.IsNull() || model.SpaceIDs.IsUnknown() {
 		model.SpaceIDs = types.SetNull(types.StringType)
@@ -67,17 +71,20 @@ func (model outputModel) toAPICreateRemoteElasticsearchModel(ctx context.Context
 	}
 
 	body := kbapi.NewOutputRemoteElasticsearch{
-		Type:                 kbapi.KibanaHTTPAPIsNewOutputRemoteElasticsearchTypeRemoteElasticsearch,
-		CaSha256:             model.CaSha256.ValueStringPointer(),
-		CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
-		ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
-		Hosts:                typeutils.ListTypeToSliceString(ctx, model.Hosts, path.Root("hosts"), &diags),
-		Id:                   model.OutputID.ValueStringPointer(),
-		IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
-		IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
-		Name:                 model.Name.ValueString(),
-		ServiceToken:         model.ServiceToken.ValueStringPointer(),
-		Ssl:                  ssl.toCreateRemoteElasticsearch(),
+		Type:                        kbapi.KibanaHTTPAPIsNewOutputRemoteElasticsearchTypeRemoteElasticsearch,
+		CaSha256:                    model.CaSha256.ValueStringPointer(),
+		CaTrustedFingerprint:        model.CaTrustedFingerprint.ValueStringPointer(),
+		ConfigYaml:                  model.ConfigYaml.ValueStringPointer(),
+		Hosts:                       typeutils.ListTypeToSliceString(ctx, model.Hosts, path.Root("hosts"), &diags),
+		Id:                          model.OutputID.ValueStringPointer(),
+		IsDefault:                   model.DefaultIntegrations.ValueBoolPointer(),
+		IsDefaultMonitoring:         model.DefaultMonitoring.ValueBoolPointer(),
+		Name:                        model.Name.ValueString(),
+		ServiceToken:                model.ServiceToken.ValueStringPointer(),
+		Ssl:                         ssl.toCreateRemoteElasticsearch(),
+		SyncIntegrations:            model.SyncIntegrations.ValueBoolPointer(),
+		SyncUninstalledIntegrations: model.SyncUninstalledIntegrations.ValueBoolPointer(),
+		WriteToLogsStreams:          model.WriteToLogsStreams.ValueBoolPointer(),
 	}
 
 	var union kbapi.NewOutputUnion
@@ -101,15 +108,18 @@ func (model outputModel) toAPIUpdateRemoteElasticsearchModel(ctx context.Context
 			outputType := kbapi.RemoteElasticsearch
 			return &outputType
 		}(),
-		CaSha256:             model.CaSha256.ValueStringPointer(),
-		CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
-		ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
-		Hosts:                schemautil.SliceRef(typeutils.ListTypeToSliceString(ctx, model.Hosts, path.Root("hosts"), &diags)),
-		IsDefault:            model.DefaultIntegrations.ValueBoolPointer(),
-		IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
-		Name:                 model.Name.ValueStringPointer(),
-		ServiceToken:         model.ServiceToken.ValueStringPointer(),
-		Ssl:                  ssl.toUpdateRemoteElasticsearch(),
+		CaSha256:                    model.CaSha256.ValueStringPointer(),
+		CaTrustedFingerprint:        model.CaTrustedFingerprint.ValueStringPointer(),
+		ConfigYaml:                  model.ConfigYaml.ValueStringPointer(),
+		Hosts:                       schemautil.SliceRef(typeutils.ListTypeToSliceString(ctx, model.Hosts, path.Root("hosts"), &diags)),
+		IsDefault:                   model.DefaultIntegrations.ValueBoolPointer(),
+		IsDefaultMonitoring:         model.DefaultMonitoring.ValueBoolPointer(),
+		Name:                        model.Name.ValueStringPointer(),
+		ServiceToken:                model.ServiceToken.ValueStringPointer(),
+		Ssl:                         ssl.toUpdateRemoteElasticsearch(),
+		SyncIntegrations:            model.SyncIntegrations.ValueBoolPointer(),
+		SyncUninstalledIntegrations: model.SyncUninstalledIntegrations.ValueBoolPointer(),
+		WriteToLogsStreams:          model.WriteToLogsStreams.ValueBoolPointer(),
 	}
 
 	var union kbapi.UpdateOutputUnion
