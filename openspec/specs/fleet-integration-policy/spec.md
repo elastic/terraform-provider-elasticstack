@@ -120,27 +120,13 @@ When `output_id` is configured with a known value, the resource SHALL verify the
 
 ### Requirement: Create — API request body (REQ-011)
 
-On create, the resource SHALL construct a `PackagePolicyRequest` from the plan model and submit it to the Fleet create package policy API. The request body SHALL include `name`, `namespace`, `description` (if set), `force` (if set), `integration_name` and `integration_version` as the package reference, `agent_policy_id` or `policy_ids` based on which attribute is configured, `output_id` if set, `vars` from `vars_json` (with provider-internal context keys stripped before sending), and `inputs` derived from the `inputs` attribute. When `space_ids` is configured with a known value, the first element SHALL be used as the space context for the create API call. When `space_ids` is not configured (null or unknown), the resource SHALL attempt to discover the space of the referenced agent policy: first via the global (default space) endpoint, then by enumerating the user's accessible Kibana spaces via `GET /api/spaces/space` and trying each one. If the agent policy is found, the resource SHALL use that space as the space context for the create API call. If discovery fails, the resource SHALL use the default space and SHALL add a warning diagnostic suggesting the user set `space_ids` explicitly if the create operation fails.
+On create, the resource SHALL construct a `PackagePolicyRequest` from the plan model and submit it to the Fleet create package policy API. The request body SHALL include `name`, `namespace`, `description` (if set), `force` (if set), `integration_name` and `integration_version` as the package reference, `agent_policy_id` or `policy_ids` based on which attribute is configured, `output_id` if set, `vars` from `vars_json` (with provider-internal context keys stripped before sending), and `inputs` derived from the `inputs` attribute. When `space_ids` is configured with a known value, the first element SHALL be used as the space context for the create API call.
 
 #### Scenario: space context from space_ids
 
 - GIVEN `space_ids` is set to `["my-space"]`
 - WHEN create runs
 - THEN the package policy SHALL be created in the "my-space" Kibana space
-
-#### Scenario: space context inherited from agent policy via space discovery
-
-- GIVEN `space_ids` is not set on the integration policy
-- AND the referenced agent policy resides in the "my-space" Kibana space
-- WHEN create runs
-- THEN the resource SHALL discover the agent policy's space by enumerating accessible spaces and SHALL create the package policy in "my-space"
-
-#### Scenario: space discovery failure produces helpful diagnostic
-
-- GIVEN `space_ids` is not set on the integration policy
-- AND the agent policy's space cannot be discovered (e.g. no accessible spaces)
-- WHEN create fails with a 403 error
-- THEN the resource SHALL add a warning diagnostic suggesting the user set `space_ids` explicitly
 
 ### Requirement: Create — policy_id in request (REQ-012)
 
@@ -154,20 +140,13 @@ When `policy_id` is configured with a known value at create time, the resource S
 
 ### Requirement: Create — read-back after create (REQ-013)
 
-After a successful create, the resource SHALL retrieve package info for the created policy's package (name and version) from the Fleet registry cache. The resource SHALL call `populateFromAPI` to set all state fields from the API response. When `inputs` was null or empty in the plan, the resource SHALL not populate `inputs` from the API response (to avoid provider-produced inconsistent result errors). When `space_ids` was not configured by the user but a space was discovered during creation (see REQ-011), the resource SHALL persist the discovered space as `space_ids` in state so that subsequent Read, Update, and Delete operations use the correct space-scoped endpoint.
+After a successful create, the resource SHALL retrieve package info for the created policy's package (name and version) from the Fleet registry cache. The resource SHALL call `populateFromAPI` to set all state fields from the API response. When `inputs` was null or empty in the plan, the resource SHALL not populate `inputs` from the API response (to avoid provider-produced inconsistent result errors).
 
 #### Scenario: Inputs omitted in plan
 
 - GIVEN `inputs` is null or empty in the plan
 - WHEN create completes
 - THEN `inputs` in state SHALL be null (not populated from API)
-
-#### Scenario: Discovered space persisted in state
-
-- GIVEN `space_ids` is not configured by the user
-- AND the agent policy's space was discovered as "my-space" during creation
-- WHEN create completes
-- THEN `space_ids` in state SHALL be `["my-space"]`
 
 ### Requirement: Update — space-aware operation (REQ-014)
 

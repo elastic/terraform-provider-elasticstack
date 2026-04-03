@@ -297,7 +297,7 @@ func (model integrationPolicyModel) toAPIModel(ctx context.Context, feat feature
 	}
 
 	body.Inputs = model.toAPIInputsFromInputsAttribute(ctx, &diags)
-	// Note: space_ids is read-only for integration policies and inherited from the agent policy
+	// Note: space_ids is not included in the request body; the Fleet API manages space assignment
 
 	return body, diags
 }

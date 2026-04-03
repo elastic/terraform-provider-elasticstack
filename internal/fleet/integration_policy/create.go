@@ -66,20 +66,6 @@ func (r *integrationPolicyResource) Create(ctx context.Context, req resource.Cre
 		if !tempDiags.HasError() && len(spaceIDs) > 0 {
 			spaceID = spaceIDs[0].ValueString()
 		}
-	} else {
-		// No explicit space_ids: attempt to inherit the space from the referenced agent policy.
-		// This tries the global endpoint first (for admin users), then enumerates the user's
-		// accessible spaces to find the agent policy (for space-restricted users).
-		agentPolicyID := planModel.AgentPolicyID.ValueString()
-		if agentPolicyID == "" && typeutils.IsKnown(planModel.AgentPolicyIDs) && len(planModel.AgentPolicyIDs.Elements()) > 0 {
-			var ids []string
-			if diags := planModel.AgentPolicyIDs.ElementsAs(ctx, &ids, false); !diags.HasError() && len(ids) > 0 {
-				agentPolicyID = ids[0]
-			}
-		}
-		if agentPolicyID != "" {
-			spaceID = fleet.FindAgentPolicySpace(ctx, client, agentPolicyID)
-		}
 	}
 
 	// Create package policy with appropriate space context
@@ -125,17 +111,6 @@ func (r *integrationPolicyResource) Create(ctx context.Context, req resource.Cre
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
-	}
-
-	// If we discovered a space during creation but space_ids wasn't populated
-	// from the API response, persist it in state so that subsequent Read/Delete
-	// operations use the correct space-scoped endpoint.
-	if spaceID != "" && !typeutils.IsKnown(planModel.SpaceIDs) {
-		spaceIDs, d := types.SetValueFrom(ctx, types.StringType, []string{spaceID})
-		resp.Diagnostics.Append(d...)
-		if !d.HasError() {
-			planModel.SpaceIDs = spaceIDs
-		}
 	}
 
 	// If plan didn't have input configured, ensure we don't add it now

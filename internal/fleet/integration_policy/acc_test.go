@@ -40,12 +40,11 @@ import (
 )
 
 var (
-	minVersionIntegrationPolicy         = version.Must(version.NewVersion("8.10.0"))
-	minVersionIntegrationPolicyIDs      = version.Must(version.NewVersion("8.15.0"))
-	minVersionOutputID                  = version.Must(version.NewVersion("8.16.0"))
-	minVersionSQLIntegration            = version.Must(version.NewVersion("9.1.0"))
-	minVersionGCPVertexAI               = version.Must(version.NewVersion("8.17.0"))
-	minVersionIntegrationPolicySpaceIDs = version.Must(version.NewVersion("9.1.0"))
+	minVersionIntegrationPolicy    = version.Must(version.NewVersion("8.10.0"))
+	minVersionIntegrationPolicyIDs = version.Must(version.NewVersion("8.15.0"))
+	minVersionOutputID             = version.Must(version.NewVersion("8.16.0"))
+	minVersionSQLIntegration       = version.Must(version.NewVersion("9.1.0"))
+	minVersionGCPVertexAI          = version.Must(version.NewVersion("8.17.0"))
 )
 
 const (
@@ -842,38 +841,6 @@ func TestAccResourceIntegrationPolicy_VersionUpdate(t *testing.T) {
 						"elasticstack_fleet_integration_policy.test_policy", "agent_policy_id",
 						"elasticstack_fleet_agent_policy.test_policy", "policy_id",
 					),
-				),
-			},
-		},
-	})
-}
-
-// TestAccResourceIntegrationPolicyInNonDefaultSpace verifies that an integration policy
-// created without explicit space_ids automatically inherits the space from the referenced
-// agent policy (issue #1948).
-func TestAccResourceIntegrationPolicyInNonDefaultSpace(t *testing.T) {
-	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
-	spaceName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
-	spaceID := fmt.Sprintf("space-%s", spaceName)
-
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { acctest.PreCheck(t) },
-		CheckDestroy: checkResourceIntegrationPolicyDestroy,
-		Steps: []resource.TestStep{
-			{
-				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationPolicySpaceIDs),
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
-				ConfigVariables: config.Variables{
-					"policy_name": config.StringVariable(policyName),
-					"space_id":    config.StringVariable(spaceID),
-					"space_name":  config.StringVariable(fmt.Sprintf("Test Space %s", spaceName)),
-				},
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "description", "Test Integration Policy with inherited space"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "space_ids.#", "1"),
-					resource.TestCheckTypeSetElemAttr("elasticstack_fleet_integration_policy.test_policy", "space_ids.*", spaceID),
 				),
 			},
 		},
