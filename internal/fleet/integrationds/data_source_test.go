@@ -24,15 +24,11 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
-	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-var (
-	minVersionIntegrationDataSource        = version.Must(version.NewVersion("8.6.0"))
-	minVersionIntegrationDataSourceSpaceID = version.Must(version.NewVersion("9.1.0"))
-)
+var minVersionIntegrationDataSource = version.Must(version.NewVersion("8.6.0"))
 
 func TestAccDataSourceIntegration(t *testing.T) {
 	resource.Test(t, resource.TestCase{
