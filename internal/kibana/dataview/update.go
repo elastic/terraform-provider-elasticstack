@@ -72,7 +72,7 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 
 		if !resp.Diagnostics.HasError() {
 			resp.Diagnostics.Append(
-				kibanaoapi.UpdateDataViewNamespaces(ctx, client, spaceID, viewID, oldNS, newNS)...,
+				kibanaoapi.UpdateDataViewNamespaces(ctx, client, viewID, oldNS, newNS)...,
 			)
 		}
 	}

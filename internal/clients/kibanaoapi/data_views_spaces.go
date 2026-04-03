@@ -30,7 +30,6 @@ import (
 func UpdateDataViewNamespaces(
 	ctx context.Context,
 	client *Client,
-	spaceID string,
 	dataViewID string,
 	oldNamespaces []string,
 	newNamespaces []string,
@@ -57,7 +56,7 @@ func UpdateDataViewNamespaces(
 
 	reqBody := kbapi.PostSpacesUpdateObjectsSpacesJSONRequestBody{
 		Objects: []struct {
-			Id   string `json:"id"`
+			Id   string `json:"id"` //nolint:revive // var-naming: generated API struct
 			Type string `json:"type"`
 		}{
 			{Id: dataViewID, Type: "index-pattern"},
