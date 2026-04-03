@@ -155,11 +155,17 @@ var ruleTypeAdditionalAllowedParamsKeys = map[string][]string{
 	// currently missing from generated `.es-query` params models.
 	// TODO: remove when upstream Kibana schema includes this key.
 	// Tracking: https://github.com/elastic/kibana/issues/252451
+	// UI-created .es-query rules using searchSource form carry searchConfiguration
+	// with nested filter arrays. The generated Filter.Meta.Params type is
+	// map[string]interface{} which cannot decode a JSON array (combined/phrases
+	// filter types); stripping the field before validation avoids false failures.
+	// The raw field is preserved in the API payload so push_rules is unaffected.
+	// TODO: remove when the generated Filter.Meta.Params type supports array values.
 	// Kibana's runtime API accepts termField for ESQL rules (per-group alerting),
 	// but the generated ESQL params struct omits it.
 	// TODO: remove when upstream Kibana schema includes this key.
 	// Tracking: https://github.com/elastic/kibana/issues/252451
-	".es-query": {"sourceFields"},
+	".es-query": {"sourceFields", "searchConfiguration"},
 	// Kibana accepts this convenience field alongside filterQuery in metrics
 	// threshold rules.
 	"metrics.alert.threshold": {"filterQueryText"},

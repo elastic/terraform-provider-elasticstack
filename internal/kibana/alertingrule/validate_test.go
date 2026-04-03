@@ -698,3 +698,36 @@ func TestValidateRuleParamsFixturesFromClusterMgmtCustomers(t *testing.T) {
 		})
 	}
 }
+
+// TestValidateRuleParamsEsQuerySearchSource verifies that .es-query rules using
+// searchType=searchSource pass validation even when searchConfiguration contains
+// combined/phrases filters whose meta.params field is a JSON array rather than
+// the map[string]interface{} the generated struct expects.
+func TestValidateRuleParamsEsQuerySearchSource(t *testing.T) {
+	params := map[string]any{
+		"aggType": "count", "excludeHitsFromPreviousRun": false, "groupBy": "all",
+		"searchType": "searchSource", "size": float64(100), "sourceFields": []any{},
+		"termSize": float64(5), "threshold": []any{float64(3)},
+		"thresholdComparator": ">", "timeField": "@timestamp",
+		"timeWindowSize": float64(1), "timeWindowUnit": "m",
+		"searchConfiguration": map[string]any{
+			"index": "98ae3207", "query": map[string]any{"language": "lucene", "query": ""},
+			"filter": []any{map[string]any{
+				"$state": map[string]any{"store": "appState"}, "query": map[string]any{},
+				"meta": map[string]any{
+					"alias": nil, "disabled": false, "negate": false,
+					"index": "98ae3207", "relation": "AND", "type": "combined",
+					"params": []any{
+						map[string]any{"meta": map[string]any{"type": "phrase", "key": "service.environment"}, "query": map[string]any{}},
+						map[string]any{"meta": map[string]any{"type": "phrase", "key": "service.name"}, "query": map[string]any{}},
+					},
+				},
+			}},
+		},
+	}
+	errs := validateRuleParams(".es-query", params)
+	if len(errs) > 0 {
+		raw, _ := json.Marshal(params)
+		t.Fatalf("expected no validation errors for searchSource rule with combined filter, got: %v\nparams: %s", errs, string(raw))
+	}
+}
