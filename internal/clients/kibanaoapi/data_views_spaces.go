@@ -18,27 +18,13 @@
 package kibanaoapi
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
-	"fmt"
-	"io"
 	"net/http"
 	"slices"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
-
-type updateObjectsSpacesRequest struct {
-	Objects        []savedObjectRef `json:"objects"`
-	SpacesToAdd    []string         `json:"spacesToAdd"`
-	SpacesToRemove []string         `json:"spacesToRemove"`
-}
-
-type savedObjectRef struct {
-	Type string `json:"type"`
-	ID   string `json:"id"`
-}
 
 // UpdateDataViewNamespaces diffs old/new namespaces and calls
 func UpdateDataViewNamespaces(
@@ -69,41 +55,27 @@ func UpdateDataViewNamespaces(
 		return diags
 	}
 
-	reqBody := updateObjectsSpacesRequest{
-		Objects:        []savedObjectRef{{Type: "index-pattern", ID: dataViewID}},
+	reqBody := kbapi.PostSpacesUpdateObjectsSpacesJSONRequestBody{
+		Objects: []struct {
+			Id   string `json:"id"`
+			Type string `json:"type"`
+		}{
+			{Id: dataViewID, Type: "index-pattern"},
+		},
 		SpacesToAdd:    spacesToAdd,
 		SpacesToRemove: spacesToRemove,
 	}
 
-	bodyBytes, err := json.Marshal(reqBody)
-	if err != nil {
-		diags.AddError("Failed to marshal spaces request", err.Error())
-		return diags
-	}
-
-	path := BuildSpaceAwarePath(spaceID, "/api/spaces/_update_objects_spaces")
-	url := client.URL + path
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(bodyBytes))
-	if err != nil {
-		diags.AddError("Failed to create spaces request", err.Error())
-		return diags
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := client.HTTP.Do(req)
+	resp, err := client.API.PostSpacesUpdateObjectsSpacesWithResponse(ctx, reqBody)
 	if err != nil {
 		diags.AddError("Failed to update data view namespaces", err.Error())
 		return diags
 	}
-	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode() != http.StatusOK {
 		diags.AddError(
-			fmt.Sprintf("Unexpected status %d when updating data view namespaces", resp.StatusCode),
-			fmt.Sprintf("dataViewID=%s spacesToAdd=%v spacesToRemove=%v response=%s",
-				dataViewID, spacesToAdd, spacesToRemove, string(body)),
+			"Unexpected status when updating data view namespaces",
+			string(resp.Body),
 		)
 	}
 
