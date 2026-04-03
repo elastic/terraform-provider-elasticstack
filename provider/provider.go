@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package provider
 
 import (
@@ -52,6 +69,7 @@ func New(version string) *schema.Provider {
 			"elasticstack_elasticsearch_ingest_processor_grok":              ingest.DataSourceProcessorGrok(),
 			"elasticstack_elasticsearch_ingest_processor_gsub":              ingest.DataSourceProcessorGsub(),
 			"elasticstack_elasticsearch_ingest_processor_html_strip":        ingest.DataSourceProcessorHTMLStrip(),
+			"elasticstack_elasticsearch_ingest_processor_inference":         ingest.DataSourceProcessorInference(),
 			"elasticstack_elasticsearch_ingest_processor_join":              ingest.DataSourceProcessorJoin(),
 			"elasticstack_elasticsearch_ingest_processor_json":              ingest.DataSourceProcessorJSON(),
 			"elasticstack_elasticsearch_ingest_processor_kv":                ingest.DataSourceProcessorKV(),
@@ -84,7 +102,6 @@ func New(version string) *schema.Provider {
 			"elasticstack_elasticsearch_cluster_settings":    cluster.ResourceSettings(),
 			"elasticstack_elasticsearch_component_template":  index.ResourceComponentTemplate(),
 			"elasticstack_elasticsearch_data_stream":         index.ResourceDataStream(),
-			"elasticstack_elasticsearch_index_lifecycle":     index.ResourceIlm(),
 			"elasticstack_elasticsearch_index_template":      index.ResourceTemplate(),
 			"elasticstack_elasticsearch_ingest_pipeline":     ingest.ResourceIngestPipeline(),
 			"elasticstack_elasticsearch_logstash_pipeline":   logstash.ResourceLogstashPipeline(),

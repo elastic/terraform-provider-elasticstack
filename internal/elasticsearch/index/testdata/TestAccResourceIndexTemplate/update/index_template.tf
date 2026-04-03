@@ -9,7 +9,11 @@ variable "template_name" {
 resource "elasticstack_elasticsearch_index_template" "test" {
   name = var.template_name
 
-  index_patterns = ["${var.template_name}-logs-*"]
+  index_patterns = [
+    "${var.template_name}-logs-*",
+    "${var.template_name}-metrics-*",
+    "${var.template_name}-traces-*",
+  ]
 
   template {
     alias {
@@ -20,7 +24,8 @@ resource "elasticstack_elasticsearch_index_template" "test" {
     }
 
     settings = jsonencode({
-      number_of_shards = "3"
+      number_of_replicas = "0"
+      number_of_shards   = "1"
     })
   }
 }

@@ -26,11 +26,11 @@ import (
 
 func TestAccDataSourceIngestProcessorDissect(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorDissect,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_dissect.test", "field", "message"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_dissect.test", "json", expectedJSONDissect),
@@ -48,16 +48,5 @@ const expectedJSONDissect = `{
 		"ignore_missing": false,
 		"pattern": "%{clientip} %{ident} %{auth} [%{@timestamp}] \"%{verb} %{request} HTTP/%{httpversion}\" %{status} %{size}"
 	}
-}
-`
-
-const testAccDataSourceIngestProcessorDissect = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_dissect" "test" {
-  field   = "message"
-  pattern = "%%{clientip} %%{ident} %%{auth} [%%{@timestamp}] \"%%{verb} %%{request} HTTP/%%{httpversion}\" %%{status} %%{size}"
 }
 `

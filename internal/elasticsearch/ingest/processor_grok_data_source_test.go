@@ -26,11 +26,11 @@ import (
 
 func TestAccDataSourceIngestProcessorGrok(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorGrok,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_grok.test", "field", "message"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_grok.test", "json", expectedJSONGrok),
@@ -55,20 +55,5 @@ const expectedJSONGrok = `{
 		],
 		"trace_match": false
 	}
-}
-`
-
-const testAccDataSourceIngestProcessorGrok = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_grok" "test" {
-  field    = "message"
-  patterns = ["%%{FAVORITE_DOG:pet}", "%%{FAVORITE_CAT:pet}"]
-  pattern_definitions = {
-    FAVORITE_DOG = "beagle"
-    FAVORITE_CAT = "burmese"
-  }
 }
 `

@@ -26,11 +26,11 @@ import (
 
 func TestAccDataSourceIngestProcessorDotExpander(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorDotExpander,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_dot_expander.test", "field", "foo.bar"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_dot_expander.test", "json", expectedJSONDotExpander),
@@ -46,15 +46,5 @@ const expectedJSONDotExpander = `{
 		"ignore_failure": false,
 		"override": false
 	}
-}
-`
-
-const testAccDataSourceIngestProcessorDotExpander = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_dot_expander" "test" {
-  field = "foo.bar"
 }
 `

@@ -36,12 +36,12 @@ var (
 
 func TestAccDataSourceIntegration(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationDataSource),
-				Config:   testAccDataSourceIntegration,
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationDataSource),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_fleet_integration.test", "name", "tcp"),
 					checkResourceAttrStringNotEmpty("data.elasticstack_fleet_integration.test", "version"),
@@ -49,60 +49,6 @@ func TestAccDataSourceIntegration(t *testing.T) {
 			},
 		},
 	})
-}
-
-const testAccDataSourceIntegration = `
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-data "elasticstack_fleet_integration" "test" {
-  name = "tcp"
-}
-`
-
-func TestAccDataSourceIntegrationWithSpaceID(t *testing.T) {
-	spaceName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
-	spaceID := fmt.Sprintf("space-%s", spaceName)
-
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
-		Steps: []resource.TestStep{
-			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minVersionIntegrationDataSourceSpaceID),
-				Config:   testAccDataSourceIntegrationWithSpaceID(spaceID, spaceName),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("data.elasticstack_fleet_integration.test", "name", "tcp"),
-					resource.TestCheckResourceAttr("data.elasticstack_fleet_integration.test", "space_id", spaceID),
-					checkResourceAttrStringNotEmpty("data.elasticstack_fleet_integration.test", "version"),
-				),
-			},
-		},
-	})
-}
-
-func testAccDataSourceIntegrationWithSpaceID(spaceID, spaceName string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-resource "elasticstack_kibana_space" "test_space" {
-  space_id    = %q
-  name        = %q
-  description = "Test space for Fleet integration data source space_id test"
-}
-
-data "elasticstack_fleet_integration" "test" {
-  name     = "tcp"
-  space_id = elasticstack_kibana_space.test_space.space_id
-
-  depends_on = [elasticstack_kibana_space.test_space]
-}
-`, spaceID, spaceName)
 }
 
 // checkResourceAttrStringNotEmpty verifies that the string value at key

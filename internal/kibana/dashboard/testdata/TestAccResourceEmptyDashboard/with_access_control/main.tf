@@ -19,6 +19,5 @@ resource "elasticstack_kibana_dashboard" "test" {
 
   access_control = {
     access_mode = "write_restricted"
-    owner       = "elastic"
   }
 }

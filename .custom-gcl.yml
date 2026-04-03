@@ -5,3 +5,6 @@ plugins:
   - module: github.com/elastic/terraform-provider-elasticstack/analysis/esclienthelperplugin
     import: github.com/elastic/terraform-provider-elasticstack/analysis/esclienthelperplugin/plugin
     path: ./analysis/esclienthelperplugin
+  - module: github.com/elastic/terraform-provider-elasticstack/analysis/acctestconfigdirlintplugin
+    import: github.com/elastic/terraform-provider-elasticstack/analysis/acctestconfigdirlintplugin/plugin
+    path: ./analysis/acctestconfigdirlintplugin

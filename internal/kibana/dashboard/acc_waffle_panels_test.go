@@ -80,7 +80,7 @@ func TestAccResourceDashboardWaffle(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.waffle_config.legend.size", "small"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.waffle_config.legend.values.#", "1"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.waffle_config.legend.values.0", "absolute"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.waffle_config.legend.visible", "show"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.waffle_config.legend.visible", "visible"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.waffle_config.legend.truncate_after_lines", "8"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.waffle_config.value_display.mode", "percentage"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.waffle_config.value_display.percent_decimals", "1"),

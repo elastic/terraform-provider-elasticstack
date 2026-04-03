@@ -44,6 +44,8 @@ func Test_panelConfigValidateDiags_markdown(t *testing.T) {
 			"markdown",
 			panelConfigValueState{Set: true},
 			panelConfigValueState{},
+			panelConfigValueState{},
+			panelConfigValueState{},
 			lensConfigStates(nil),
 			nil,
 		)
@@ -55,6 +57,8 @@ func Test_panelConfigValidateDiags_markdown(t *testing.T) {
 			"markdown",
 			panelConfigValueState{},
 			panelConfigValueState{Set: true},
+			panelConfigValueState{},
+			panelConfigValueState{},
 			lensConfigStates(nil),
 			nil,
 		)
@@ -64,6 +68,8 @@ func Test_panelConfigValidateDiags_markdown(t *testing.T) {
 	t.Run("rejects missing config", func(t *testing.T) {
 		diags := panelConfigValidateDiags(
 			"markdown",
+			panelConfigValueState{},
+			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
 			lensConfigStates(nil),
@@ -81,6 +87,8 @@ func Test_panelConfigValidateDiags_lens(t *testing.T) {
 			"lens",
 			panelConfigValueState{},
 			panelConfigValueState{},
+			panelConfigValueState{},
+			panelConfigValueState{},
 			lensConfigStates(map[string]panelConfigValueState{
 				"xy_chart_config": {Set: true},
 			}),
@@ -94,6 +102,8 @@ func Test_panelConfigValidateDiags_lens(t *testing.T) {
 			"lens",
 			panelConfigValueState{},
 			panelConfigValueState{Set: true},
+			panelConfigValueState{},
+			panelConfigValueState{},
 			lensConfigStates(nil),
 			nil,
 		)
@@ -103,6 +113,8 @@ func Test_panelConfigValidateDiags_lens(t *testing.T) {
 	t.Run("rejects missing config", func(t *testing.T) {
 		diags := panelConfigValidateDiags(
 			"lens",
+			panelConfigValueState{},
+			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
 			lensConfigStates(nil),
@@ -116,6 +128,8 @@ func Test_panelConfigValidateDiags_lens(t *testing.T) {
 	t.Run("rejects multiple typed configs", func(t *testing.T) {
 		diags := panelConfigValidateDiags(
 			"lens",
+			panelConfigValueState{},
+			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
 			lensConfigStates(map[string]panelConfigValueState{
@@ -134,6 +148,8 @@ func Test_panelConfigValidateDiags_lens(t *testing.T) {
 			"lens",
 			panelConfigValueState{},
 			panelConfigValueState{Set: true},
+			panelConfigValueState{},
+			panelConfigValueState{},
 			lensConfigStates(map[string]panelConfigValueState{
 				"gauge_config": {Set: true},
 			}),
@@ -149,6 +165,8 @@ func Test_panelConfigValidateDiags_lens(t *testing.T) {
 			"lens",
 			panelConfigValueState{},
 			panelConfigValueState{Unknown: true},
+			panelConfigValueState{},
+			panelConfigValueState{},
 			lensConfigStates(nil),
 			nil,
 		)
@@ -160,6 +178,8 @@ func Test_panelConfigValidateDiags_timeSlider(t *testing.T) {
 	t.Run("accepts no config blocks", func(t *testing.T) {
 		diags := panelConfigValidateDiags(
 			"time_slider_control",
+			panelConfigValueState{},
+			panelConfigValueState{},
 			panelConfigValueState{},
 			panelConfigValueState{},
 			lensConfigStates(nil),
@@ -175,6 +195,8 @@ func Test_panelConfigValidateDiags_timeSlider(t *testing.T) {
 			"time_slider_control",
 			panelConfigValueState{},
 			panelConfigValueState{Set: true},
+			panelConfigValueState{},
+			panelConfigValueState{},
 			lensConfigStates(nil),
 			nil,
 		)
@@ -186,11 +208,112 @@ func Test_panelConfigValidateDiags_timeSlider(t *testing.T) {
 			"time_slider_control",
 			panelConfigValueState{},
 			panelConfigValueState{Unknown: true},
+			panelConfigValueState{},
+			panelConfigValueState{},
 			lensConfigStates(nil),
 			nil,
 		)
 		require.False(t, diags.HasError())
 	})
+}
+
+func Test_panelConfigValidateDiags_SloBurnRate(t *testing.T) {
+	t.Run("accepts slo_burn_rate_config", func(t *testing.T) {
+		diags := panelConfigValidateDiags(
+			"slo_burn_rate",
+			panelConfigValueState{},
+			panelConfigValueState{},
+			panelConfigValueState{Set: true},
+			panelConfigValueState{},
+			lensConfigStates(nil),
+			nil,
+		)
+		require.False(t, diags.HasError())
+	})
+
+	t.Run("rejects missing config", func(t *testing.T) {
+		diags := panelConfigValidateDiags(
+			"slo_burn_rate",
+			panelConfigValueState{},
+			panelConfigValueState{},
+			panelConfigValueState{},
+			panelConfigValueState{},
+			lensConfigStates(nil),
+			nil,
+		)
+		require.True(t, diags.HasError())
+		require.Len(t, diags, 1)
+		require.Equal(t, "Missing SLO burn rate panel configuration", diags[0].Summary())
+	})
+
+	t.Run("defers when config is unknown", func(t *testing.T) {
+		diags := panelConfigValidateDiags(
+			"slo_burn_rate",
+			panelConfigValueState{},
+			panelConfigValueState{},
+			panelConfigValueState{Unknown: true},
+			panelConfigValueState{},
+			lensConfigStates(nil),
+			nil,
+		)
+		require.False(t, diags.HasError())
+	})
+}
+
+func Test_panelConfigValidateDiags_sloErrorBudget(t *testing.T) {
+	t.Run("accepts slo_error_budget_config", func(t *testing.T) {
+		diags := panelConfigValidateDiags(
+			"slo_error_budget",
+			panelConfigValueState{},
+			panelConfigValueState{},
+			panelConfigValueState{},
+			panelConfigValueState{Set: true},
+			lensConfigStates(nil),
+			nil,
+		)
+		require.False(t, diags.HasError())
+	})
+
+	t.Run("defers when slo_error_budget_config is unknown", func(t *testing.T) {
+		diags := panelConfigValidateDiags(
+			"slo_error_budget",
+			panelConfigValueState{},
+			panelConfigValueState{},
+			panelConfigValueState{},
+			panelConfigValueState{Unknown: true},
+			lensConfigStates(nil),
+			nil,
+		)
+		require.False(t, diags.HasError())
+	})
+
+	t.Run("rejects missing slo_error_budget_config", func(t *testing.T) {
+		diags := panelConfigValidateDiags(
+			"slo_error_budget",
+			panelConfigValueState{},
+			panelConfigValueState{},
+			panelConfigValueState{},
+			panelConfigValueState{},
+			lensConfigStates(nil),
+			nil,
+		)
+		require.True(t, diags.HasError())
+		require.Len(t, diags, 1)
+		require.Equal(t, "Missing slo_error_budget panel configuration", diags[0].Summary())
+	})
+}
+
+func Test_getSloErrorBudgetSchema_drilldownsHardcodeAPIConstants(t *testing.T) {
+	drilldownsAttr, ok := getSloErrorBudgetSchema()["drilldowns"].(schema.ListNestedAttribute)
+	require.True(t, ok)
+
+	attrs := drilldownsAttr.NestedObject.Attributes
+	require.Contains(t, attrs, "url")
+	require.Contains(t, attrs, "label")
+	require.Contains(t, attrs, "encode_url")
+	require.Contains(t, attrs, "open_in_new_tab")
+	require.NotContains(t, attrs, "trigger")
+	require.NotContains(t, attrs, "type")
 }
 
 func Test_timeSliderControlPercentageValidators(t *testing.T) {

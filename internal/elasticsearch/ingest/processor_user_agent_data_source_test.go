@@ -26,11 +26,11 @@ import (
 
 func TestAccDataSourceIngestProcessorUserAgent(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorUserAgent,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_user_agent.test", "field", "agent"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_user_agent.test", "json", expectedJSONUserAgent),
@@ -46,13 +46,3 @@ const expectedJSONUserAgent = `{
 		"ignore_missing": false
 	}
 }`
-
-const testAccDataSourceIngestProcessorUserAgent = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_user_agent" "test" {
-  field = "agent"
-}
-`
