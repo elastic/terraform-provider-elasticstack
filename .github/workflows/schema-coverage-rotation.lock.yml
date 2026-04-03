@@ -27,7 +27,7 @@
 name: "Schema Coverage Rotation"
 "on":
   schedule:
-  - cron: "18 10 * * *"
+  - cron: "32 20 * * *"
     # Friendly format: daily (scattered)
   workflow_dispatch:
     inputs:
