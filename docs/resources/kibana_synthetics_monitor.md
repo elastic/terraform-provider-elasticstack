@@ -87,7 +87,7 @@ resource "elasticstack_kibana_synthetics_monitor" "my_monitor" {
 - `params` (String) Monitor parameters. Raw JSON object, use `jsonencode` function to represent JSON
 - `private_locations` (List of String) These Private Locations refer to locations hosted and managed by you, whereas locations are hosted by Elastic. You can specify a Private Location using the location's name.
 - `retest_on_failure` (Boolean) Enable or disable retesting when a monitor fails. By default, monitors are automatically retested if the monitor goes from "up" to "down". If the result of the retest is also "down", an error will be created, and if configured, an alert sent. Then the monitor will resume running according to the defined schedule. Using retest_on_failure can reduce noise related to transient problems. Default: `true`.
-- `schedule` (Number) The monitor's schedule in minutes. Supported values are 1, 3, 5, 10, 15, 30, 60, 120 and 240.
+- `schedule` (Number) The monitor's schedule in minutes. Supported values are 0.1 (10s), 0.5 (30s), 1, 3, 5, 10, 15, 30, 60, 120 and 240.
 - `service_name` (String) The APM service name.
 - `space_id` (String) Kibana space. The space ID that is part of the Kibana URL when inside the space. Space IDs are limited to lowercase alphanumeric, underscore, and hyphen characters (a-z, 0-9, _, and -). You are cannot change the ID with the update operation.
 - `tags` (List of String) An array of tags.
