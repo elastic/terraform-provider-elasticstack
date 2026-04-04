@@ -37,7 +37,7 @@ var (
 )
 
 // accTestKibanaSpaceIDCharset matches elasticstack_kibana_space space_id validation (^[a-z0-9_-]+$).
-const accTestKibanaSpaceIDCharset = "abcdefghijklmnopqrstuvwxyz0123456789"
+const accTestKibanaSpaceIDCharset = "abcdefghijklmnopqrstuvwxyz0123456789_-"
 
 const (
 	httpCheckExpectedUpdated = `{"request":{"body":"name=first\u0026email=someemail@someemailprovider.com",` +

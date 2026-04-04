@@ -53,7 +53,7 @@ func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, respo
 		resourceID = compositeID.ResourceID
 	}
 
-	spaceID := state.SpaceID.ValueString()
+	spaceID := effectiveSpaceID(state.SpaceID, compositeID)
 
 	result, err := kibanaClient.KibanaSynthetics.PrivateLocation.Get(ctx, spaceID, resourceID)
 	if err != nil {

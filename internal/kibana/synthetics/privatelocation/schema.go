@@ -116,6 +116,17 @@ func tryReadCompositeID(id string) (*clients.CompositeID, diag.Diagnostics) {
 	return nil, diag.Diagnostics{}
 }
 
+// effectiveSpaceID returns the Kibana space for API calls. When the resource id
+// is a composite import id (<space_id>/<private_location_id>), the space
+// segment is used if space_id is not yet in state (for example right after import).
+func effectiveSpaceID(spaceID types.String, compositeID *clients.CompositeID) string {
+	s := spaceID.ValueString()
+	if compositeID != nil && (spaceID.IsNull() || spaceID.IsUnknown() || s == "") {
+		return compositeID.ClusterID
+	}
+	return s
+}
+
 func toModelV0(pLoc kbapi.PrivateLocation, spaceID string) tfModelV0 {
 
 	return tfModelV0{

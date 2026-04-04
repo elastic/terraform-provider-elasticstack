@@ -51,7 +51,7 @@ func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, r
 		resourceID = compositeID.ResourceID
 	}
 
-	spaceID := plan.SpaceID.ValueString()
+	spaceID := effectiveSpaceID(plan.SpaceID, compositeID)
 
 	err := kibanaClient.KibanaSynthetics.PrivateLocation.Delete(ctx, spaceID, resourceID)
 

@@ -46,7 +46,7 @@ func Test_roundtrip(t *testing.T) {
 			name:    "all fields",
 			id:      "id-2",
 			ns:      "ns-2",
-			spaceID: "testacc",
+			spaceID: "sample-space",
 			plc: kbapi.PrivateLocationConfig{
 				Label:         "label-2",
 				AgentPolicyId: "agent-policy-id-2",
