@@ -81,10 +81,9 @@ import (
 )
 
 const (
-	IncludeExperimentalEnvVar    = "TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL"
-	SkipLocationValidationEnvVar = "TF_ELASTICSTACK_SKIP_LOCATION_VALIDATION"
-	AccTestVersion               = "acctest"
-	envVarEnabled                = "true"
+	IncludeExperimentalEnvVar = "TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL"
+	AccTestVersion            = "acctest"
+	envVarEnabled             = "true"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -166,7 +165,7 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		func() resource.Resource { return &parameter.Resource{} },
 		func() resource.Resource { return &privatelocation.Resource{} },
 		func() resource.Resource { return &index.Resource{} },
-		func() resource.Resource { return monitor.NewResource() },
+		monitor.NewResource,
 		func() resource.Resource { return &apikey.Resource{} },
 		func() resource.Resource { return &datastreamlifecycle.Resource{} },
 		ilm.NewResource,

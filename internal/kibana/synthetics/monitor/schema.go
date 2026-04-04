@@ -138,8 +138,8 @@ type tfModelV0 struct {
 //go:embed resource-description.md
 var monitorDescription string
 
-// skipLocationValidationEnvVar mirrors provider.SkipLocationValidationEnvVar so acceptance
-// tests can use t.Setenv after provider init; validation reads the variable at validate time.
+// skipLocationValidationEnvVar: when set to "true" at validate time, managed location enum
+// validation is skipped (e.g. acceptance tests using t.Setenv after provider init).
 const skipLocationValidationEnvVar = "TF_ELASTICSTACK_SKIP_LOCATION_VALIDATION"
 
 var managedElasticLocationOneOf = stringvalidator.OneOf(
