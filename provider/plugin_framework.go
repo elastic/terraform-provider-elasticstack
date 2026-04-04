@@ -33,6 +33,8 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/indices"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/templateilmattachment"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/anomalydetectionjob"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/calendar"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/calendar_event"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed_state"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/jobstate"
@@ -189,6 +191,8 @@ func (p *Provider) resources(_ context.Context, validateLocation bool) []func() 
 		templateilmattachment.NewResource,
 		datafeed.NewDatafeedResource,
 		anomalydetectionjob.NewAnomalyDetectionJobResource,
+		calendar.NewCalendarResource,
+		calendar_event.NewCalendarEventResource,
 		security_detection_rule.NewSecurityDetectionRuleResource,
 		jobstate.NewMLJobStateResource,
 		datafeedstate.NewMLDatafeedStateResource,
