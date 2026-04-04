@@ -37,6 +37,11 @@ test('verify-label workflow provisions Terraform with wrapper disabled', () => {
   assert.match(source, /terraform_wrapper: false/);
 });
 
+test('verify-label workflow bootstraps the repo with make setup', () => {
+  const source = workflowSource();
+  assert.match(source, /Setup repository dependencies\s*\n\s*run: make setup/m);
+});
+
 test('verify-label workflow declares remove-labels safe output for verify-openspec only', () => {
   const source = workflowSource();
   assert.match(

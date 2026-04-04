@@ -8,4 +8,4 @@
 
 - [x] 2.1 Sync the `ci-aw-openspec-verification` canonical spec with the approved requirement changes from this delta spec.
 - [x] 2.2 Validate the updated change and specs with `make check-openspec` or equivalent `npx openspec validate --all`.
-- [x] 2.3 Run or inspect a representative verify-label workflow execution to confirm AWF no longer fails solely due to blocked Go module access in the review phase.
+- [ ] 2.3 Run or inspect a representative verify-label workflow execution **on a branch that includes this change’s workflow revision** to confirm AWF no longer fails solely due to blocked Go module access in the review phase. (Not satisfied from CI history alone until such a run exists.)
