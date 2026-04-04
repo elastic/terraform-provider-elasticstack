@@ -48,7 +48,7 @@ type panelModel struct {
 	WaffleConfig             *waffleConfigModel                                `tfsdk:"waffle_config"`
 	TimeSliderControlConfig  *timeSliderControlConfigModel                     `tfsdk:"time_slider_control_config"`
 	SloBurnRateConfig        *sloBurnRateConfigModel                           `tfsdk:"slo_burn_rate_config"`
-	SloOverviewConfig       *sloOverviewConfigModel                            `tfsdk:"slo_overview_config"`
+	SloOverviewConfig        *sloOverviewConfigModel                           `tfsdk:"slo_overview_config"`
 	SloErrorBudgetConfig     *sloErrorBudgetConfigModel                        `tfsdk:"slo_error_budget_config"`
 	EsqlControlConfig        *esqlControlConfigModel                           `tfsdk:"esql_control_config"`
 	OptionsListControlConfig *optionsListControlConfigModel                    `tfsdk:"options_list_control_config"`
@@ -215,7 +215,7 @@ func panelUsesConfigJSONOnly(pm *panelModel) bool {
 		pm.SloOverviewConfig == nil &&
 		pm.SloErrorBudgetConfig == nil &&
 		pm.EsqlControlConfig == nil &&
-		pm.OptionsListControlConfig == nil
+		pm.OptionsListControlConfig == nil &&
 		pm.RangeSliderControlConfig == nil
 }
 
@@ -494,8 +494,8 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 
 	if pm.SloOverviewConfig != nil {
 		return sloOverviewToAPI(pm, grid, uid)
-  }
-  
+	}
+
 	if pm.Type.ValueString() == panelTypeRangeSlider || pm.RangeSliderControlConfig != nil {
 		if pm.RangeSliderControlConfig == nil {
 			diags.AddError(

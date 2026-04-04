@@ -406,6 +406,7 @@ func Test_panelConfigValidateDiags_optionsListControl(t *testing.T) {
 			panelConfigValueState{},
 			panelConfigValueState{},
 			lensConfigStates(nil),
+			panelConfigValueState{},
 			nil,
 		)
 		require.False(t, diags.HasError())
@@ -421,6 +422,7 @@ func Test_panelConfigValidateDiags_optionsListControl(t *testing.T) {
 			panelConfigValueState{},
 			panelConfigValueState{},
 			lensConfigStates(nil),
+			panelConfigValueState{},
 			nil,
 		)
 		require.False(t, diags.HasError())
@@ -434,6 +436,7 @@ func Test_panelConfigValidateDiags_optionsListControl(t *testing.T) {
 			panelConfigValueState{},
 			panelConfigValueState{},
 			lensConfigStates(nil),
+			panelConfigValueState{},
 			nil,
 		)
 		require.False(t, diags.HasError())
