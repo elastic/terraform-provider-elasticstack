@@ -43,17 +43,18 @@ import (
 )
 
 const (
-	dashboardValueAuto    = "auto"
-	dashboardValueAverage = "average"
-	pieChartTypeNumber    = "number"
-	pieChartTypePercent   = "percent"
-	operationTerms        = "terms"
-	panelTypeMarkdown     = "markdown"
-	panelTypeLens         = "lens"
-	panelTypeTimeSlider   = "time_slider_control"
-	panelTypeSloBurnRate  = "slo_burn_rate"
+	dashboardValueAuto      = "auto"
+	dashboardValueAverage   = "average"
+	pieChartTypeNumber      = "number"
+	pieChartTypePercent     = "percent"
+	operationTerms          = "terms"
+	panelTypeMarkdown       = "markdown"
+	panelTypeLens           = "lens"
+	panelTypeTimeSlider     = "time_slider_control"
+	panelTypeSloBurnRate    = "slo_burn_rate"
 	// panelTypeSloOverview is defined in models_slo_overview_panel.go
-	panelTypeEsqlControl  = "esql_control"
+	panelTypeSloErrorBudget = "slo_error_budget"
+	panelTypeEsqlControl    = "esql_control"
 )
 
 var sloBurnRateDurationRegex = regexp.MustCompile(`^\d+[mhd]$`)
@@ -76,6 +77,7 @@ var panelConfigNames = []string{
 	"time_slider_control_config",
 	"slo_burn_rate_config",
 	"slo_overview_config",
+	"slo_error_budget_config",
 	"esql_control_config",
 }
 
@@ -926,6 +928,21 @@ func getPanelSchema() schema.NestedAttributeObject {
 					sloOverviewConfigModeValidator{},
 				},
 			},
+			"slo_error_budget_config": schema.SingleNestedAttribute{
+				MarkdownDescription: panelConfigDescription(
+					"Configuration for an SLO error budget panel. Displays the burn chart of remaining error budget for a specific SLO.",
+					"slo_error_budget_config",
+					panelConfigNames,
+				),
+				Optional:   true,
+				Attributes: getSloErrorBudgetSchema(),
+				Validators: []validator.Object{
+					objectvalidator.ConflictsWith(
+						siblingPanelConfigPathsExcept("slo_error_budget_config", panelConfigNames)...,
+					),
+					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeSloErrorBudget}),
+				},
+			},
 			"esql_control_config": schema.SingleNestedAttribute{
 				MarkdownDescription: panelConfigDescription(
 					"Configuration for an ES|QL control panel. Use this to manage ES|QL variable controls on a dashboard.",
@@ -1019,6 +1036,60 @@ func getPanelSchema() schema.NestedAttributeObject {
 						siblingPanelConfigPathsExcept("config_json", panelConfigNames)...,
 					),
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeLens, panelTypeMarkdown}),
+				},
+			},
+		},
+	}
+}
+
+// getSloErrorBudgetSchema returns the schema for SLO error budget panel configuration.
+func getSloErrorBudgetSchema() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"slo_id": schema.StringAttribute{
+			MarkdownDescription: "The ID of the SLO to display the error budget for.",
+			Required:            true,
+		},
+		"slo_instance_id": schema.StringAttribute{
+			MarkdownDescription: "ID of the SLO instance. Set when the SLO uses group_by; identifies which instance to show. Defaults to `*` (all instances) when omitted.",
+			Optional:            true,
+		},
+		"title": schema.StringAttribute{
+			MarkdownDescription: "The title displayed in the panel header.",
+			Optional:            true,
+		},
+		"description": schema.StringAttribute{
+			MarkdownDescription: "The description of the panel.",
+			Optional:            true,
+		},
+		"hide_title": schema.BoolAttribute{
+			MarkdownDescription: "Hide the title of the panel.",
+			Optional:            true,
+		},
+		"hide_border": schema.BoolAttribute{
+			MarkdownDescription: "Hide the border of the panel.",
+			Optional:            true,
+		},
+		"drilldowns": schema.ListNestedAttribute{
+			MarkdownDescription: "URL drilldowns to configure on the panel.",
+			Optional:            true,
+			NestedObject: schema.NestedAttributeObject{
+				Attributes: map[string]schema.Attribute{
+					"url": schema.StringAttribute{
+						MarkdownDescription: "Templated URL. Variables documented at https://www.elastic.co/docs/explore-analyze/dashboards/drilldowns#url-template-variable",
+						Required:            true,
+					},
+					"label": schema.StringAttribute{
+						MarkdownDescription: "The label displayed for the drilldown.",
+						Required:            true,
+					},
+					"encode_url": schema.BoolAttribute{
+						MarkdownDescription: "When true, the URL is escaped using percent encoding. Defaults to `true` when omitted.",
+						Optional:            true,
+					},
+					"open_in_new_tab": schema.BoolAttribute{
+						MarkdownDescription: "When true, the drilldown URL opens in a new browser tab. Defaults to `true` when omitted.",
+						Optional:            true,
+					},
 				},
 			},
 		},

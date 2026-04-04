@@ -26,11 +26,11 @@ import (
 
 func TestAccDataSourceIngestProcessorCSV(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorCSV,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_csv.test", "field", "my_field"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_csv.test", "json", expectedJSONCSV),
@@ -51,14 +51,3 @@ const expectedJSONCSV = `{
 		"ignore_missing": false
 	}
 }`
-
-const testAccDataSourceIngestProcessorCSV = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_csv" "test" {
-  field         = "my_field"
-  target_fields = ["field1", "field2"]
-}
-`
