@@ -51,6 +51,7 @@ type panelModel struct {
 	SloOverviewConfig        *sloOverviewConfigModel                           `tfsdk:"slo_overview_config"`
 	SloErrorBudgetConfig     *sloErrorBudgetConfigModel                        `tfsdk:"slo_error_budget_config"`
 	EsqlControlConfig        *esqlControlConfigModel                           `tfsdk:"esql_control_config"`
+	OptionsListControlConfig *optionsListControlConfigModel                    `tfsdk:"options_list_control_config"`
 	RangeSliderControlConfig *rangeSliderControlConfigModel                    `tfsdk:"range_slider_control_config"`
 	ConfigJSON               customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config_json"`
 }
@@ -214,6 +215,7 @@ func panelUsesConfigJSONOnly(pm *panelModel) bool {
 		pm.SloOverviewConfig == nil &&
 		pm.SloErrorBudgetConfig == nil &&
 		pm.EsqlControlConfig == nil &&
+		pm.OptionsListControlConfig == nil &&
 		pm.RangeSliderControlConfig == nil
 }
 
@@ -297,6 +299,17 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 		// ES|QL control panels are managed via esql_control_config; config_json remains unset.
 		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
 		populateEsqlControlFromAPI(&pm, tfPanel, esqlPanel.Config)
+	case panelTypeOptionsListControl:
+		olPanel, err := panelItem.AsKbnDashboardPanelOptionsListControl()
+		if err != nil {
+			return panelModel{}, diagutil.FrameworkDiagFromError(err)
+		}
+		setPanelGridFromAPI(&pm, olPanel.Grid.X, olPanel.Grid.Y, olPanel.Grid.W, olPanel.Grid.H)
+		pm.ID = types.StringPointerValue(olPanel.Uid)
+		if configBytes, err := json.Marshal(olPanel.Config); err == nil {
+			pm.ConfigJSON = customtypes.NewJSONWithDefaultsValue(string(configBytes), populatePanelConfigJSONDefaults)
+		}
+		populateOptionsListControlFromAPI(&pm, tfPanel, olPanel.Config)
 	case panelTypeRangeSlider:
 		rsPanel, err := panelItem.AsKbnDashboardPanelRangeSliderControl()
 		if err != nil {
@@ -559,6 +572,18 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 		buildEsqlControlConfig(pm, &esqlPanel)
 		if err := panelItem.FromKbnDashboardPanelEsqlControl(esqlPanel); err != nil {
 			diags.AddError("Failed to create esql control panel", err.Error())
+		}
+		return panelItem, diags
+	}
+
+	if pm.Type.ValueString() == panelTypeOptionsListControl || pm.OptionsListControlConfig != nil {
+		olPanel := kbapi.KbnDashboardPanelOptionsListControl{
+			Grid: grid,
+			Uid:  uid,
+		}
+		buildOptionsListControlConfig(pm, &olPanel)
+		if err := panelItem.FromKbnDashboardPanelOptionsListControl(olPanel); err != nil {
+			diags.AddError("Failed to create options list control panel", err.Error())
 		}
 		return panelItem, diags
 	}

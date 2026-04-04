@@ -43,19 +43,19 @@ import (
 )
 
 const (
-	dashboardValueAuto    = "auto"
-	dashboardValueAverage = "average"
-	pieChartTypeNumber    = "number"
-	pieChartTypePercent   = "percent"
-	operationTerms        = "terms"
-	panelTypeMarkdown     = "markdown"
-	panelTypeLens         = "lens"
-	panelTypeTimeSlider   = "time_slider_control"
-	panelTypeSloBurnRate  = "slo_burn_rate"
-	// panelTypeSloOverview is defined in models_slo_overview_panel.go
-	panelTypeSloErrorBudget = "slo_error_budget"
-	panelTypeEsqlControl    = "esql_control"
-	panelTypeRangeSlider    = "range_slider_control"
+	dashboardValueAuto          = "auto"
+	dashboardValueAverage       = "average"
+	pieChartTypeNumber          = "number"
+	pieChartTypePercent         = "percent"
+	operationTerms              = "terms"
+	panelTypeMarkdown           = "markdown"
+	panelTypeLens               = "lens"
+	panelTypeTimeSlider         = "time_slider_control"
+	panelTypeSloBurnRate        = "slo_burn_rate"
+	panelTypeSloErrorBudget     = "slo_error_budget"
+	panelTypeEsqlControl        = "esql_control"
+	panelTypeOptionsListControl = "options_list_control"
+	panelTypeRangeSlider        = "range_slider_control"
 )
 
 var sloBurnRateDurationRegex = regexp.MustCompile(`^\d+[mhd]$`)
@@ -80,6 +80,7 @@ var panelConfigNames = []string{
 	"slo_overview_config",
 	"slo_error_budget_config",
 	"esql_control_config",
+	"options_list_control_config",
 	"range_slider_control_config",
 }
 
@@ -1026,6 +1027,117 @@ func getPanelSchema() schema.NestedAttributeObject {
 					),
 					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeEsqlControl}),
 					validators.RequiredIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeEsqlControl}),
+				},
+			},
+			"options_list_control_config": schema.SingleNestedAttribute{
+				MarkdownDescription: panelConfigDescription(
+					"Configuration for an options list control panel. Provides a dropdown or multi-select filter based on a field in a data view.",
+					"options_list_control_config",
+					panelConfigNames,
+				),
+				Optional: true,
+				Attributes: map[string]schema.Attribute{
+					"data_view_id": schema.StringAttribute{
+						MarkdownDescription: "The ID of the data view that the control is tied to.",
+						Required:            true,
+					},
+					"field_name": schema.StringAttribute{
+						MarkdownDescription: "The name of the field in the data view that the control is tied to.",
+						Required:            true,
+					},
+					"title": schema.StringAttribute{
+						MarkdownDescription: "Human-readable label displayed above the control.",
+						Optional:            true,
+					},
+					"use_global_filters": schema.BoolAttribute{
+						MarkdownDescription: "Whether the control applies the dashboard's global filters to its own query.",
+						Optional:            true,
+					},
+					"ignore_validations": schema.BoolAttribute{
+						MarkdownDescription: "Whether the control skips field-level validation against the data view.",
+						Optional:            true,
+					},
+					"single_select": schema.BoolAttribute{
+						MarkdownDescription: "When true, only one option may be selected at a time.",
+						Optional:            true,
+					},
+					"exclude": schema.BoolAttribute{
+						MarkdownDescription: "When true, selected options are used as an exclusion filter rather than an inclusion filter.",
+						Optional:            true,
+					},
+					"exists_selected": schema.BoolAttribute{
+						MarkdownDescription: "When true, the control filters for documents where the field exists.",
+						Optional:            true,
+					},
+					"run_past_timeout": schema.BoolAttribute{
+						MarkdownDescription: "When true, the control continues to show results even when the underlying query times out.",
+						Optional:            true,
+					},
+					"search_technique": schema.StringAttribute{
+						MarkdownDescription: "The technique used to match suggestions. Must be one of `prefix`, `wildcard`, or `exact` when set.",
+						Optional:            true,
+						Validators: []validator.String{
+							stringvalidator.OneOf("prefix", "wildcard", "exact"),
+						},
+					},
+					"selected_options": schema.ListAttribute{
+						MarkdownDescription: "The initially or persistently selected option values. All values are represented as strings.",
+						Optional:            true,
+						ElementType:         types.StringType,
+					},
+					"display_settings": schema.SingleNestedAttribute{
+						MarkdownDescription: "Display preferences for the control widget.",
+						Optional:            true,
+						Attributes: map[string]schema.Attribute{
+							"placeholder": schema.StringAttribute{
+								MarkdownDescription: "Placeholder text shown when no option is selected.",
+								Optional:            true,
+							},
+							"hide_action_bar": schema.BoolAttribute{
+								MarkdownDescription: "When true, hides the action bar on the control.",
+								Optional:            true,
+							},
+							"hide_exclude": schema.BoolAttribute{
+								MarkdownDescription: "When true, hides the exclude toggle.",
+								Optional:            true,
+							},
+							"hide_exists": schema.BoolAttribute{
+								MarkdownDescription: "When true, hides the exists filter option.",
+								Optional:            true,
+							},
+							"hide_sort": schema.BoolAttribute{
+								MarkdownDescription: "When true, hides the sort control.",
+								Optional:            true,
+							},
+						},
+					},
+					"sort": schema.SingleNestedAttribute{
+						MarkdownDescription: "Default sort configuration for the suggestion list.",
+						Optional:            true,
+						Attributes: map[string]schema.Attribute{
+							"by": schema.StringAttribute{
+								MarkdownDescription: "The field or criterion to sort by. Must be one of `_count` or `_key`.",
+								Required:            true,
+								Validators: []validator.String{
+									stringvalidator.OneOf("_count", "_key"),
+								},
+							},
+							"direction": schema.StringAttribute{
+								MarkdownDescription: "The sort direction. Must be one of `asc` or `desc`.",
+								Required:            true,
+								Validators: []validator.String{
+									stringvalidator.OneOf("asc", "desc"),
+								},
+							},
+						},
+					},
+				},
+				Validators: []validator.Object{
+					objectvalidator.ConflictsWith(
+						siblingPanelConfigPathsExcept("options_list_control_config", panelConfigNames)...,
+					),
+					validators.AllowedIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeOptionsListControl}),
+					validators.RequiredIfDependentPathExpressionOneOf(path.MatchRelative().AtParent().AtName("type"), []string{panelTypeOptionsListControl}),
 				},
 			},
 			"range_slider_control_config": schema.SingleNestedAttribute{

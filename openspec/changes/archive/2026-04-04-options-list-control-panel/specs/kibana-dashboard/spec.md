@@ -63,7 +63,7 @@ When a panel entry sets `type = "options_list_control"`, the resource SHALL acce
 
 The `options_list_control_config` block SHALL conflict with all other typed panel config blocks (`markdown_config`, `xy_chart_config`, `treemap_config`, `mosaic_config`, `datatable_config`, `tagcloud_config`, `heatmap_config`, `waffle_config`, `region_map_config`, `gauge_config`, `metric_chart_config`, `pie_chart_config`, `legacy_metric_config`) and with `config_json`. When `type` is `options_list_control`, no other typed config block or `config_json` SHALL be present on the same panel entry.
 
-For API mapping, the provider SHALL write the `options_list_control_config` attributes into the panel's `config` object as defined by the `kbn-dashboard-panel-options_list_control` API schema. On read-back, the provider SHALL populate all attributes that are present in the API response and SHALL treat a nil or empty `display_settings` API object as equivalent to an omitted `display_settings` block in state.
+For API mapping, the provider SHALL write the `options_list_control_config` attributes into the panel's `config` object as defined by the `kbn-dashboard-panel-options_list_control` API schema. On read-back, the provider SHALL use null-preservation semantics: optional boolean attributes (`use_global_filters`, `ignore_validations`, `exclude`, `exists_selected`, `run_past_timeout`) and the `sort` block SHALL remain null in state when the prior state value was null, even if Kibana returns a server-side default for that attribute. Only attributes that were explicitly set by the user (non-null in prior state) SHALL be updated from the API response. During import (no prior state), only `data_view_id`, `field_name`, `title`, `single_select`, `search_technique`, `selected_options`, and `display_settings` SHALL be populated; the remaining optional boolean attributes and `sort` SHALL be left null to avoid forcing users to manage Kibana server-side defaults in their configuration. The provider SHALL treat a nil or empty `display_settings` API object as equivalent to an omitted `display_settings` block in state.
 
 #### Scenario: Options list control panel requires data_view_id and field_name
 
@@ -82,6 +82,14 @@ For API mapping, the provider SHALL write the `options_list_control_config` attr
 - GIVEN a dashboard with an `options_list_control` panel that sets `data_view_id`, `field_name`, `search_technique = "prefix"`, `single_select = true`, and a `display_settings` block
 - WHEN the provider creates the dashboard and reads it back
 - THEN all configured attributes SHALL be present in state and a subsequent plan SHALL show no changes
+
+#### Scenario: Options list control panel import leaves server-default booleans null
+
+- GIVEN an existing dashboard with an `options_list_control` panel where Kibana stores server-side defaults for `use_global_filters`, `ignore_validations`, `exclude`, `exists_selected`, `run_past_timeout`, and `sort`
+- WHEN the provider imports the dashboard resource
+- THEN `data_view_id` and `field_name` SHALL be populated in state
+- AND `use_global_filters`, `ignore_validations`, `exclude`, `exists_selected`, `run_past_timeout`, and `sort` SHALL remain null in state
+- AND a subsequent plan against a configuration that omits those attributes SHALL show no changes
 
 #### Scenario: Options list control config conflicts with other typed blocks
 
