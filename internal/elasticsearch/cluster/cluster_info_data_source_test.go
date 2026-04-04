@@ -18,23 +18,23 @@
 package cluster_test
 
 import (
-	"fmt"
 	"os"
 	"regexp"
 	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccDataSourceClusterInfo(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceClusterInfoConfig,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test", "tagline", "You Know, for Search"),
 				),
@@ -48,11 +48,11 @@ func TestAccDataSourceClusterInfo(t *testing.T) {
 // that the resource id is set to cluster_uuid.
 func TestAccDataSourceClusterInfo_topLevelAttributes(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceClusterInfoConfig,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_info.test", "id"),
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_info.test", "cluster_uuid"),
@@ -73,11 +73,11 @@ func TestAccDataSourceClusterInfo_topLevelAttributes(t *testing.T) {
 // present (exactly one element) and that all nested fields are populated.
 func TestAccDataSourceClusterInfo_versionBlock(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceClusterInfoConfig,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_info.test", "version.#", "1"),
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_info.test", "version.0.number"),
@@ -102,11 +102,11 @@ func TestAccDataSourceClusterInfo_versionFieldFormats(t *testing.T) {
 	// Matches x.y.z and x.y.z-TAG (e.g. 8.14.0-SNAPSHOT), anchored at both ends.
 	semverRe := regexp.MustCompile(`^\d+\.\d+\.\d+(-[a-zA-Z0-9.]+)?$`)
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceClusterInfoConfig,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestMatchResourceAttr("data.elasticstack_elasticsearch_info.test", "version.0.number", semverRe),
 					resource.TestMatchResourceAttr("data.elasticstack_elasticsearch_info.test", "version.0.minimum_index_compatibility_version", semverRe),
@@ -124,11 +124,11 @@ func TestAccDataSourceClusterInfo_versionFieldFormats(t *testing.T) {
 // for the key identity and version attributes.
 func TestAccDataSourceClusterInfo_refreshStability(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceClusterInfoConfig,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_info.test", "id"),
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_info.test", "cluster_uuid"),
@@ -138,7 +138,8 @@ func TestAccDataSourceClusterInfo_refreshStability(t *testing.T) {
 			},
 			// Second step with identical config: attributes must remain populated.
 			{
-				Config: testAccDataSourceClusterInfoConfig,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read_again"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_info.test", "id"),
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_info.test", "cluster_uuid"),
@@ -161,11 +162,17 @@ func TestAccDataSourceClusterInfo_refreshStability(t *testing.T) {
 func TestAccDataSourceClusterInfo_withExplicitConnection(t *testing.T) {
 	endpoint := clusterInfoPrimaryESEndpoint()
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceClusterInfoExplicitConnectionConfig(),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables: config.Variables{
+					"endpoints": config.ListVariable(config.StringVariable(endpoint)),
+					"api_key":   config.StringVariable(os.Getenv("ELASTICSEARCH_API_KEY")),
+					"username":  config.StringVariable(os.Getenv("ELASTICSEARCH_USERNAME")),
+					"password":  config.StringVariable(os.Getenv("ELASTICSEARCH_PASSWORD")),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_info.test_conn", "id"),
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_info.test_conn", "cluster_uuid"),
@@ -196,11 +203,11 @@ func TestAccDataSourceClusterInfo_clusterUUIDAndNameFormats(t *testing.T) {
 	// cluster_name and node name must be at least one non-whitespace character.
 	nonEmptyRe := regexp.MustCompile(`\S`)
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceClusterInfoConfig,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestMatchResourceAttr("data.elasticstack_elasticsearch_info.test", "cluster_uuid", uuidRe),
 					resource.TestMatchResourceAttr("data.elasticstack_elasticsearch_info.test", "cluster_name", nonEmptyRe),
@@ -230,11 +237,11 @@ func TestAccDataSourceClusterInfo_versionBuildFormats(t *testing.T) {
 	buildTypeRe := regexp.MustCompile(`^(tar|zip|docker|rpm|deb|pkg)$`)
 	luceneVersionRe := regexp.MustCompile(`^\d+\.\d+\.\d+`)
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceClusterInfoConfig,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestMatchResourceAttr("data.elasticstack_elasticsearch_info.test", "version.0.build_hash", buildHashRe),
 					resource.TestMatchResourceAttr("data.elasticstack_elasticsearch_info.test", "version.0.build_date", buildDateRe),
@@ -262,50 +269,3 @@ func clusterInfoPrimaryESEndpoint() string {
 	}
 	return "http://localhost:9200"
 }
-
-// testAccDataSourceClusterInfoExplicitConnectionConfig returns HCL that
-// exercises the elasticsearch_connection block with an explicit endpoint list
-// and insecure = true.  Auth credentials are drawn from the same env vars
-// used by the acceptance-test harness.
-func testAccDataSourceClusterInfoExplicitConnectionConfig() string {
-	rawEndpoints := os.Getenv("ELASTICSEARCH_ENDPOINTS")
-	apiKey := os.Getenv("ELASTICSEARCH_API_KEY")
-	username := os.Getenv("ELASTICSEARCH_USERNAME")
-	password := os.Getenv("ELASTICSEARCH_PASSWORD")
-
-	parts := strings.Split(rawEndpoints, ",")
-	quoted := make([]string, 0, len(parts))
-	for _, p := range parts {
-		p = strings.TrimSpace(p)
-		if p != "" {
-			quoted = append(quoted, fmt.Sprintf("%q", p))
-		}
-	}
-	endpointList := strings.Join(quoted, ", ")
-
-	var authLines string
-	if apiKey != "" {
-		authLines = fmt.Sprintf("    api_key = %q", apiKey)
-	} else {
-		authLines = fmt.Sprintf("    username = %q\n    password = %q", username, password)
-	}
-
-	return fmt.Sprintf(`
-data "elasticstack_elasticsearch_info" "test_conn" {
-  elasticsearch_connection {
-    endpoints = [%s]
-    insecure  = true
-%s
-  }
-}
-`, endpointList, authLines)
-}
-
-const testAccDataSourceClusterInfoConfig = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_info" "test" {
-}
-`

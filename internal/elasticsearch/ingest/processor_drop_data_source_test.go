@@ -26,11 +26,11 @@ import (
 
 func TestAccDataSourceIngestProcessorDrop(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorDrop,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_drop.test", "json", expectedJSONDrop),
 				),
@@ -44,15 +44,5 @@ const expectedJSONDrop = `{
 		"ignore_failure": false,
 		"if" : "ctx.network_name == 'Guest'"
 	}
-}
-`
-
-const testAccDataSourceIngestProcessorDrop = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_drop" "test" {
-  if = "ctx.network_name == 'Guest'"
 }
 `

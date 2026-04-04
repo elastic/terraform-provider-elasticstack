@@ -2,14 +2,18 @@
 
 ### Changes
 
+- Add `elasticstack_kibana_agentbuilder_workflow` resource and `elasticstack_kibana_export_agentbuilder_workflow` data source ([#1923](https://github.com/elastic/terraform-provider-elasticstack/pull/1923))
 - Add `elasticstack_fleet_output` data source. ([#1762](https://github.com/elastic/terraform-provider-elasticstack/pull/1762))
 - Fix `termField` validation for ESQL `.es-query` alert rules in `elasticstack_kibana_alerting_rule`. ([#1914](https://github.com/elastic/terraform-provider-elasticstack/pull/1914))
 - Fix perpetual diff in `elasticstack_elasticsearch_index_template` if `search_routing` or `index_routing` was unset but `routing` was set ([#1841](https://github.com/elastic/terraform-provider-elasticstack/pull/1841))
 - Fix provider panic in `elasticstack_fleet_integration_policy` when the integration version is no longer available in the package registry. ([#1913](https://github.com/elastic/terraform-provider-elasticstack/pull/1913))
+- Add `elasticstack_elasticsearch_ingest_processor_inference` data source ([#1956](https://github.com/elastic/terraform-provider-elasticstack/pull/1956))
 - Add an experimental flag to skip synthetics location validation. ([#1924](https://github.com/elastic/terraform-provider-elasticstack/pull/1924))
 - Add flapping detection to `elasticstack_kibana_alerting_rule`. ([1966](https://github.com/elastic/terraform-provider-elasticstack/pull/1966))
 - Attempt recovery when data view creation fails ([#2024](https://github.com/elastic/terraform-provider-elasticstack/pull/2024))
 - Fix several "Provider produced inconsistent result after apply" errors in the anomaly detection job resource. ([2034](https://github.com/elastic/terraform-provider-elasticstack/pull/2034))
+- Remove deprecation warning on the `elasticsearch_connection` attribute provider wide ([#2100](https://github.com/elastic/terraform-provider-elasticstack/pull/2100))
+- Migrate `elasticstack_elasticsearch_index_lifecycle` to the Terraform Plugin Framework ([#2002](https://github.com/elastic/terraform-provider-elasticstack/pull/2002))
 
 
 ## [0.14.3] - 2026-03-02

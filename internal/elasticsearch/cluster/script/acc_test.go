@@ -24,6 +24,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -34,12 +35,13 @@ func TestAccResourceScript(t *testing.T) {
 	scriptID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkScriptDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkScriptDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccScriptCreate(scriptID),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"script_id": config.StringVariable(scriptID)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_script.test", "script_id", scriptID),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_script.test", "lang", "painless"),
@@ -48,7 +50,9 @@ func TestAccResourceScript(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccScriptUpdate(scriptID),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables:          config.Variables{"script_id": config.StringVariable(scriptID)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_script.test", "script_id", scriptID),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_script.test", "lang", "painless"),
@@ -57,6 +61,7 @@ func TestAccResourceScript(t *testing.T) {
 				),
 			},
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				// Ensure the provider doesn't panic if the script has been deleted outside of the Terraform flow
 				PreConfig: func() {
 					client, err := clients.NewAcceptanceTestingClient()
@@ -68,7 +73,8 @@ func TestAccResourceScript(t *testing.T) {
 					_, err = esClient.DeleteScript(scriptID)
 					require.NoError(t, err)
 				},
-				Config: testAccScriptUpdate(scriptID),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{"script_id": config.StringVariable(scriptID)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_script.test", "script_id", scriptID),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_script.test", "lang", "painless"),
@@ -84,12 +90,13 @@ func TestAccResourceScriptImport(t *testing.T) {
 	scriptID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkScriptDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkScriptDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccScriptCreate(scriptID),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"script_id": config.StringVariable(scriptID)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_script.test", "script_id", scriptID),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_script.test", "lang", "painless"),
@@ -98,7 +105,10 @@ func TestAccResourceScriptImport(t *testing.T) {
 				),
 			},
 			{
-				ResourceName: "elasticstack_elasticsearch_script.test",
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"script_id": config.StringVariable(scriptID)},
+				ResourceName:             "elasticstack_elasticsearch_script.test",
 				ImportStateIdFunc: func(_ *terraform.State) (string, error) {
 					client, err := clients.NewAcceptanceTestingClient()
 					if err != nil {
@@ -124,12 +134,13 @@ func TestAccResourceScriptSearchTemplate(t *testing.T) {
 	scriptID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		CheckDestroy:             checkScriptDestroy,
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkScriptDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSearchTemplateCreate(scriptID),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"script_id": config.StringVariable(scriptID)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_script.search_template_test", "script_id", scriptID),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_script.search_template_test", "lang", "mustache"),
@@ -165,7 +176,8 @@ func TestAccResourceScriptFromSDK(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				Config:                   testAccScriptCreateFromSDK(scriptID),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("upgrade"),
+				ConfigVariables:          config.Variables{"script_id": config.StringVariable(scriptID)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_script.test", "script_id", scriptID),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_script.test", "lang", "painless"),
@@ -175,63 +187,6 @@ func TestAccResourceScriptFromSDK(t *testing.T) {
 			},
 		},
 	})
-}
-
-func testAccScriptCreate(id string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_script" "test" {
-  script_id = "%s"
-  lang      = "painless"
-  source    = "Math.log(_score * 2) + params['my_modifier']"
-  context   = "score"
-}
-	`, id)
-}
-
-func testAccScriptUpdate(id string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_script" "test" {
-  script_id = "%s"
-  lang      = "painless"
-  source    = "Math.log(_score * 4) + params['changed_modifier']"
-  params    = jsonencode({
-    changed_modifier = 2
-  })
-}
-	`, id)
-}
-
-func testAccSearchTemplateCreate(id string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_script" "search_template_test" {
-  script_id = "%s"
-  lang      = "mustache"
-  source    = jsonencode({
-    query = {
-      match = {
-        message = "{{query_string}}"
-      }
-    }
-    from = "{{from}}"
-    size = "{{size}}"
-  })
-  params = jsonencode({
-    query_string = "My query string"
-  })
-}
-	`, id)
 }
 
 func testAccScriptCreateFromSDK(id string) string {

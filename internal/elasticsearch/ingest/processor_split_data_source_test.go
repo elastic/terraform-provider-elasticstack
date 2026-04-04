@@ -26,11 +26,11 @@ import (
 
 func TestAccDataSourceIngestProcessorSplit(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorSplit,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_split.test", "field", "my_field"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_split.test", "json", expectedJSONSplit),
@@ -49,14 +49,3 @@ const expectedJSONSplit = `{
 		"ignore_missing": false
 	}
 }`
-
-const testAccDataSourceIngestProcessorSplit = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_split" "test" {
-  field     = "my_field"
-  separator = "\\s+"
-}
-`

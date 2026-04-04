@@ -26,11 +26,11 @@ import (
 
 func TestAccDataSourceIngestProcessorGsub(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorGsub,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_gsub.test", "field", "field1"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_gsub.test", "json", expectedJSONGsub),
@@ -49,15 +49,3 @@ const expectedJSONGsub = `{
 		"replacement": "-"
 	}
 }`
-
-const testAccDataSourceIngestProcessorGsub = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_gsub" "test" {
-  field       = "field1"
-  pattern     = "\\."
-  replacement = "-"
-}
-`

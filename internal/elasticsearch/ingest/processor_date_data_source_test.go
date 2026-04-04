@@ -26,11 +26,11 @@ import (
 
 func TestAccDataSourceIngestProcessorDate(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorDate,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_date.test", "field", "initial_date"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_date.test", "json", expectedJSONDate),
@@ -52,18 +52,5 @@ const expectedJSONDate = `{
     "target_field": "timestamp",
     "timezone": "Europe/Amsterdam"
   }
-}
-`
-
-const testAccDataSourceIngestProcessorDate = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_date" "test" {
-  field        = "initial_date"
-  target_field = "timestamp"
-  formats      = ["dd/MM/yyyy HH:mm:ss"]
-  timezone     = "Europe/Amsterdam"
 }
 `

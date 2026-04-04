@@ -26,11 +26,11 @@ import (
 
 func TestAccDataSourceIngestProcessorBytes(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorBytes,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_bytes.test", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_bytes.test", "field", "file.size"),
@@ -38,7 +38,8 @@ func TestAccDataSourceIngestProcessorBytes(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccDataSourceIngestProcessorBytesAllAttributes,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("all_attributes"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_bytes.test", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_bytes.test", "field", "document.size"),
@@ -57,11 +58,11 @@ func TestAccDataSourceIngestProcessorBytes(t *testing.T) {
 
 func TestAccDataSourceIngestProcessorBytesOnFailure(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorBytesOnFailure,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_bytes.test_on_failure", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_bytes.test_on_failure", "field", "file.size"),
@@ -109,48 +110,3 @@ const expectedJSONBytesOnFailure = `{
 		"ignore_missing": false
 	}
 }`
-
-const testAccDataSourceIngestProcessorBytes = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_bytes" "test" {
-  field = "file.size"
-}
-`
-
-const testAccDataSourceIngestProcessorBytesAllAttributes = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_bytes" "test" {
-  field          = "document.size"
-  target_field   = "document.size_bytes"
-  ignore_missing = true
-  ignore_failure = true
-  description    = "Convert document size to bytes"
-  if             = "ctx.document?.size != null"
-  tag            = "bytes-tag"
-}
-`
-
-const testAccDataSourceIngestProcessorBytesOnFailure = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_bytes" "test_on_failure" {
-  field = "file.size"
-
-  on_failure = [
-    jsonencode({
-      set = {
-        field = "error.message"
-        value = "{{ _ingest.on_failure_message }}"
-      }
-    })
-  ]
-}
-`
