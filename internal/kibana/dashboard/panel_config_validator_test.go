@@ -284,6 +284,7 @@ func Test_panelConfigValidateDiags_sloErrorBudget(t *testing.T) {
 			panelConfigValueState{},
 			panelConfigValueState{Set: true},
 			lensConfigStates(nil),
+			panelConfigValueState{},
 			nil,
 		)
 		require.False(t, diags.HasError())
@@ -297,6 +298,7 @@ func Test_panelConfigValidateDiags_sloErrorBudget(t *testing.T) {
 			panelConfigValueState{},
 			panelConfigValueState{Unknown: true},
 			lensConfigStates(nil),
+			panelConfigValueState{},
 			nil,
 		)
 		require.False(t, diags.HasError())
@@ -310,6 +312,7 @@ func Test_panelConfigValidateDiags_sloErrorBudget(t *testing.T) {
 			panelConfigValueState{},
 			panelConfigValueState{},
 			lensConfigStates(nil),
+			panelConfigValueState{},
 			nil,
 		)
 		require.True(t, diags.HasError())
