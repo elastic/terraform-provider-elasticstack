@@ -40,14 +40,15 @@ func (r *Resource) Create(ctx context.Context, request resource.CreateRequest, r
 	}
 
 	input := plan.toPrivateLocationConfig()
+	spaceID := plan.SpaceID.ValueString()
 
-	result, err := kibanaClient.KibanaSynthetics.PrivateLocation.Create(ctx, input)
+	result, err := kibanaClient.KibanaSynthetics.PrivateLocation.Create(ctx, spaceID, input)
 	if err != nil {
 		response.Diagnostics.AddError(fmt.Sprintf("Failed to create private location `%s`", input.Label), err.Error())
 		return
 	}
 
-	plan = toModelV0(*result)
+	plan = toModelV0(*result, spaceID)
 
 	diags = response.State.Set(ctx, plan)
 	response.Diagnostics.Append(diags...)

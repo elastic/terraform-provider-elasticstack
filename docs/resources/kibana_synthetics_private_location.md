@@ -54,6 +54,7 @@ resource "elasticstack_kibana_synthetics_private_location" "example" {
 ### Optional
 
 - `geo` (Attributes) Geographic coordinates (WGS84) for the location (see [below for nested schema](#nestedatt--geo))
+- `space_id` (String) Kibana space. The space ID that is part of the Kibana URL when inside the space. Space IDs are limited to lowercase alphanumeric, underscore, and hyphen characters (a-z, 0-9, _, and -). You are cannot change the ID with the update operation.
 - `tags` (List of String) An array of tags to categorize the private location.
 
 ### Read-Only

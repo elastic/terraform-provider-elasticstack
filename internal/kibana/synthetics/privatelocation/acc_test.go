@@ -51,6 +51,7 @@ func TestSyntheticPrivateLocationResource(t *testing.T) {
 					"suffix": config.StringVariable(randomSuffix),
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceID, "space_id", ""),
 					resource.TestCheckResourceAttr(resourceID, "label", fmt.Sprintf("pl-test-label-%s", randomSuffix)),
 					resource.TestCheckResourceAttrSet(resourceID, "agent_policy_id"),
 					resource.TestCheckResourceAttr(resourceID, "tags.#", "2"),
@@ -141,6 +142,34 @@ func TestSyntheticPrivateLocationResource(t *testing.T) {
 				),
 			},
 			// Delete testing automatically occurs in TestCase
+		},
+	})
+}
+
+func TestSyntheticPrivateLocationResource_nonDefaultSpace(t *testing.T) {
+	resourceID := "elasticstack_kibana_synthetics_private_location.test"
+	randomSuffix := sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaPrivateLocationAPIVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_in_space"),
+				ConfigVariables: config.Variables{
+					"suffix": config.StringVariable(randomSuffix),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceID, "space_id", "testacc"),
+					resource.TestCheckResourceAttr(resourceID, "label", fmt.Sprintf("pl-test-label-space-%s", randomSuffix)),
+					resource.TestCheckResourceAttrSet(resourceID, "agent_policy_id"),
+					resource.TestCheckResourceAttr(resourceID, "tags.#", "2"),
+					resource.TestCheckResourceAttr(resourceID, "tags.0", "a"),
+					resource.TestCheckResourceAttr(resourceID, "tags.1", "b"),
+					resource.TestCheckResourceAttr(resourceID, "geo.lat", "42.42"),
+					resource.TestCheckResourceAttr(resourceID, "geo.lon", "-42.42"),
+				),
+			},
 		},
 	})
 }

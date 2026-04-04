@@ -53,7 +53,9 @@ func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, respo
 		resourceID = compositeID.ResourceID
 	}
 
-	result, err := kibanaClient.KibanaSynthetics.PrivateLocation.Get(ctx, resourceID)
+	spaceID := state.SpaceID.ValueString()
+
+	result, err := kibanaClient.KibanaSynthetics.PrivateLocation.Get(ctx, spaceID, resourceID)
 	if err != nil {
 		var apiError *kbapi.APIError
 		if errors.As(err, &apiError) && apiError.Code == 404 {
@@ -65,7 +67,7 @@ func (r *Resource) Read(ctx context.Context, request resource.ReadRequest, respo
 		return
 	}
 
-	state = toModelV0(*result)
+	state = toModelV0(*result, spaceID)
 
 	// Set refreshed state
 	diags = response.State.Set(ctx, &state)

@@ -51,7 +51,9 @@ func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, r
 		resourceID = compositeID.ResourceID
 	}
 
-	err := kibanaClient.KibanaSynthetics.PrivateLocation.Delete(ctx, resourceID)
+	spaceID := plan.SpaceID.ValueString()
+
+	err := kibanaClient.KibanaSynthetics.PrivateLocation.Delete(ctx, spaceID, resourceID)
 
 	if err != nil {
 		response.Diagnostics.AddError(fmt.Sprintf("Failed to delete private location `%s`", resourceID), err.Error())
