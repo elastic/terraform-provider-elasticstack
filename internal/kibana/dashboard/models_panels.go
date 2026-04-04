@@ -48,6 +48,7 @@ type panelModel struct {
 	WaffleConfig             *waffleConfigModel                                `tfsdk:"waffle_config"`
 	TimeSliderControlConfig  *timeSliderControlConfigModel                     `tfsdk:"time_slider_control_config"`
 	SloBurnRateConfig        *sloBurnRateConfigModel                           `tfsdk:"slo_burn_rate_config"`
+	SloOverviewConfig       *sloOverviewConfigModel                            `tfsdk:"slo_overview_config"`
 	SloErrorBudgetConfig     *sloErrorBudgetConfigModel                        `tfsdk:"slo_error_budget_config"`
 	EsqlControlConfig        *esqlControlConfigModel                           `tfsdk:"esql_control_config"`
 	RangeSliderControlConfig *rangeSliderControlConfigModel                    `tfsdk:"range_slider_control_config"`
@@ -210,6 +211,7 @@ func panelUsesConfigJSONOnly(pm *panelModel) bool {
 		pm.WaffleConfig == nil &&
 		pm.TimeSliderControlConfig == nil &&
 		pm.SloBurnRateConfig == nil &&
+		pm.SloOverviewConfig == nil &&
 		pm.SloErrorBudgetConfig == nil &&
 		pm.EsqlControlConfig == nil &&
 		pm.RangeSliderControlConfig == nil
@@ -253,6 +255,16 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 				pm.ConfigJSON = customtypes.NewJSONWithDefaultsValue(string(configBytes), populatePanelConfigJSONDefaults)
 			}
 		}
+	case panelTypeSloOverview:
+		sloPanel, err := panelItem.AsKbnDashboardPanelSloOverview()
+		if err != nil {
+			return panelModel{}, diagutil.FrameworkDiagFromError(err)
+		}
+		setPanelGridFromAPI(&pm, sloPanel.Grid.X, sloPanel.Grid.Y, sloPanel.Grid.W, sloPanel.Grid.H)
+		pm.ID = types.StringPointerValue(sloPanel.Uid)
+		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
+		d := sloOverviewFromAPI(&pm, tfPanel, sloPanel)
+		diags.Append(d...)
 	case panelTypeTimeSlider:
 		tsPanel, err := panelItem.AsKbnDashboardPanelTimeSliderControl()
 		if err != nil {
@@ -467,6 +479,10 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 		return panelItem, diags
 	}
 
+	if pm.SloOverviewConfig != nil {
+		return sloOverviewToAPI(pm, grid, uid)
+  }
+  
 	if pm.Type.ValueString() == panelTypeRangeSlider || pm.RangeSliderControlConfig != nil {
 		if pm.RangeSliderControlConfig == nil {
 			diags.AddError(
@@ -612,6 +628,11 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 				diags.AddError("Failed to create lens panel", err.Error())
 			}
 			return panelItem, diags
+		case panelTypeSloOverview:
+			diags.AddError(
+				"Unsupported panel type for config_json",
+				"The slo_overview panel type must be managed through the typed slo_overview_config block, not config_json.",
+			)
 		default:
 			diags.AddError(
 				"Unsupported panel type for config_json",
