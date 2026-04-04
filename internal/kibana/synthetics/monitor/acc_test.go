@@ -168,7 +168,7 @@ func TestSyntheticMonitorHTTPResource(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(httpMonitorID, "id"),
 					resource.TestCheckResourceAttr(httpMonitorID, "name", "TestHttpMonitorResource - "+name),
-					resource.TestCheckResourceAttr(httpMonitorID, "space_id", "testacc"),
+					resource.TestCheckResourceAttr(httpMonitorID, "space_id", ""),
 					resource.TestCheckResourceAttr(httpMonitorID, "namespace", "test_namespace"),
 					resource.TestCheckResourceAttr(httpMonitorID, "schedule", "5"),
 					resource.TestCheckResourceAttr(httpMonitorID, "private_locations.#", "1"),
@@ -218,7 +218,7 @@ func TestSyntheticMonitorHTTPResource(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(httpMonitorID, "id"),
 					resource.TestCheckResourceAttr(httpMonitorID, "name", "TestHttpMonitorResource Updated - "+name),
-					resource.TestCheckResourceAttr(httpMonitorID, "space_id", "testacc"),
+					resource.TestCheckResourceAttr(httpMonitorID, "space_id", ""),
 					resource.TestCheckResourceAttr(httpMonitorID, "namespace", "test_namespace"),
 					resource.TestCheckResourceAttr(httpMonitorID, "schedule", "10"),
 					resource.TestCheckResourceAttr(httpMonitorID, "private_locations.#", "1"),
@@ -339,7 +339,7 @@ func TestSyntheticMonitorTCPResource(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(tcpMonitorID, "id"),
 					resource.TestCheckResourceAttr(tcpMonitorID, "name", "TestTcpMonitorResource - "+name),
-					resource.TestCheckResourceAttr(tcpMonitorID, "space_id", "testacc"),
+					resource.TestCheckResourceAttr(tcpMonitorID, "space_id", ""),
 					resource.TestCheckResourceAttr(tcpMonitorID, "namespace", "testacc_test"),
 					resource.TestCheckResourceAttr(tcpMonitorID, "schedule", "5"),
 					resource.TestCheckResourceAttr(tcpMonitorID, "private_locations.#", "1"),
@@ -386,7 +386,7 @@ func TestSyntheticMonitorTCPResource(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(tcpMonitorID, "id"),
 					resource.TestCheckResourceAttr(tcpMonitorID, "name", "TestTcpMonitorResource Updated - "+name),
-					resource.TestCheckResourceAttr(tcpMonitorID, "space_id", "testacc"),
+					resource.TestCheckResourceAttr(tcpMonitorID, "space_id", ""),
 					resource.TestCheckResourceAttr(tcpMonitorID, "namespace", "testacc_test"),
 					resource.TestCheckResourceAttr(tcpMonitorID, "schedule", "10"),
 					resource.TestCheckResourceAttr(tcpMonitorID, "private_locations.#", "1"),
@@ -461,7 +461,7 @@ func TestSyntheticMonitorICMPResource(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(icmpMonitorID, "id"),
 					resource.TestCheckResourceAttr(icmpMonitorID, "name", "TestIcmpMonitorResource - "+name),
-					resource.TestCheckResourceAttr(icmpMonitorID, "space_id", "testacc"),
+					resource.TestCheckResourceAttr(icmpMonitorID, "space_id", ""),
 					resource.TestCheckResourceAttr(icmpMonitorID, "namespace", "testacc_namespace"),
 					resource.TestCheckResourceAttr(icmpMonitorID, "schedule", "5"),
 					resource.TestCheckResourceAttr(icmpMonitorID, "private_locations.#", "1"),
@@ -501,7 +501,7 @@ func TestSyntheticMonitorICMPResource(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(icmpMonitorID, "id"),
 					resource.TestCheckResourceAttr(icmpMonitorID, "name", "TestIcmpMonitorResource Updated - "+name),
-					resource.TestCheckResourceAttr(icmpMonitorID, "space_id", "testacc"),
+					resource.TestCheckResourceAttr(icmpMonitorID, "space_id", ""),
 					resource.TestCheckResourceAttr(icmpMonitorID, "namespace", "testacc_namespace"),
 					resource.TestCheckResourceAttr(icmpMonitorID, "schedule", "10"),
 					resource.TestCheckResourceAttr(icmpMonitorID, "private_locations.#", "1"),
@@ -568,7 +568,7 @@ func TestSyntheticMonitorBrowserResource(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(browserMonitorID, "id"),
 					resource.TestCheckResourceAttr(browserMonitorID, "name", "TestBrowserMonitorResource - "+name),
-					resource.TestCheckResourceAttr(browserMonitorID, "space_id", "testacc"),
+					resource.TestCheckResourceAttr(browserMonitorID, "space_id", ""),
 					resource.TestCheckResourceAttr(browserMonitorID, "namespace", "testacc_ns"),
 					resource.TestCheckResourceAttr(browserMonitorID, "schedule", "5"),
 					resource.TestCheckResourceAttr(browserMonitorID, "private_locations.#", "1"),
@@ -608,7 +608,7 @@ func TestSyntheticMonitorBrowserResource(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(browserMonitorID, "id"),
 					resource.TestCheckResourceAttr(browserMonitorID, "name", "TestBrowserMonitorResource Updated - "+name),
-					resource.TestCheckResourceAttr(browserMonitorID, "space_id", "testacc"),
+					resource.TestCheckResourceAttr(browserMonitorID, "space_id", ""),
 					resource.TestCheckResourceAttr(browserMonitorID, "namespace", "testacc_ns"),
 					resource.TestCheckResourceAttr(browserMonitorID, "schedule", "10"),
 					resource.TestCheckResourceAttr(browserMonitorID, "private_locations.#", "1"),
