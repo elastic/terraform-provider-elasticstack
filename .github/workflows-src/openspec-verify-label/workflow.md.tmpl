@@ -32,8 +32,11 @@ steps:
     with:
       go-version-file: go.mod
       cache: false
-  - name: Capture GOROOT for AWF chroot mode
-    run: echo "GOROOT=$(go env GOROOT)" >> "$GITHUB_ENV"
+  - name: Export Go paths for AWF chroot mode
+    run: |
+      echo "GOROOT=$(go env GOROOT)" >> "$GITHUB_ENV"
+      echo "GOPATH=$(go env GOPATH)" >> "$GITHUB_ENV"
+      echo "GOMODCACHE=$(go env GOMODCACHE)" >> "$GITHUB_ENV"
   - name: Setup Node.js
     uses: actions/setup-node@v6
     with:
@@ -62,7 +65,7 @@ tools:
   github:
     toolsets: [repos, pull_requests]
 network:
-  allowed: [defaults, node]
+  allowed: [defaults, node, go]
 checkout:
   fetch-depth: 0
 safe-outputs:

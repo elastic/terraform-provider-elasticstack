@@ -12,12 +12,15 @@ function workflowSource() {
   return readFileSync(workflowPath, 'utf8');
 }
 
-test('verify-label workflow installs Go from go.mod and exports GOROOT', () => {
+test('verify-label workflow installs Go from go.mod and exports Go paths for AWF', () => {
   const source = workflowSource();
   assert.match(source, /uses: actions\/setup-go@v6/);
   assert.match(source, /go-version-file: go\.mod/);
-  assert.match(source, /Capture GOROOT for AWF chroot mode/);
+  assert.match(source, /Export Go paths for AWF chroot mode/);
   assert.match(source, /GOROOT=\$\(go env GOROOT\)/);
+  assert.match(source, /GOPATH=\$\(go env GOPATH\)/);
+  assert.match(source, /GOMODCACHE=\$\(go env GOMODCACHE\)/);
+  assert.match(source, /allowed: \[defaults, node, go\]/);
 });
 
 test('verify-label workflow installs Node from package.json and omits runtimes.go', () => {
