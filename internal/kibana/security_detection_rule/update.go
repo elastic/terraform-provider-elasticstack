@@ -82,7 +82,7 @@ func (r *securityDetectionRuleResource) Update(ctx context.Context, req resource
 		return
 	}
 
-	readData, diags := r.read(ctx, uid.String(), compID.ClusterID)
+	readData, diags := r.read(ctx, uid.String(), compID.ClusterID, &data)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
