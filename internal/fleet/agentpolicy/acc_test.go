@@ -22,6 +22,7 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
+	"os"
 	"regexp"
 	"testing"
 
@@ -117,6 +118,7 @@ func TestAccResourceAgentPolicy(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "description", "Test Agent Policy"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_logs", "true"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_metrics", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "is_protected", "false"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "skip_destroy", "false"),
 					resource.TestCheckResourceAttrWith("elasticstack_fleet_agent_policy.test_policy", "policy_id", func(value string) error {
 						originalPolicyID = value
@@ -143,6 +145,7 @@ func TestAccResourceAgentPolicy(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "description", "Test Agent Policy"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_logs", "true"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_metrics", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "is_protected", "false"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "skip_destroy", "false"),
 					resource.TestCheckResourceAttrWith("elasticstack_fleet_agent_policy.test_policy", "policy_id", func(value string) error {
 						originalPolicyID = value
@@ -996,6 +999,38 @@ func TestAccResourceAgentPolicyWithRestrictedUser(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "description", "Updated Test Agent Policy"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "space_ids.0", spaceID),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceAgentPolicyTamperProtection(t *testing.T) {
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceAgentPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc: func() (bool, error) {
+					// Tamper protection requires specific licensing/capabilities and can be ignored by Fleet
+					// even on supported versions. Default to skipping unless explicitly enabled.
+					enabled := os.Getenv("TF_ACC_FLEET_TAMPER_PROTECTION")
+					if enabled != "1" && enabled != "true" {
+						return true, nil
+					}
+					return versionutils.CheckIfVersionIsUnsupported(agentpolicy.MinVersionTamperProtection)()
+				},
+				ConfigDirectory: acctest.NamedTestCaseDirectory("with_is_protected"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "is_protected", "true"),
 				),
 			},
 		},

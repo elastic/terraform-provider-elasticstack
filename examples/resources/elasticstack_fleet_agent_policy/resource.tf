@@ -3,12 +3,13 @@ provider "elasticstack" {
 }
 
 resource "elasticstack_fleet_agent_policy" "test_policy" {
-  name             = "Test Policy"
-  namespace        = "default"
-  description      = "Test Agent Policy"
-  sys_monitoring   = true
-  monitor_logs     = true
-  monitor_metrics  = true
+  name            = "Test Policy"
+  namespace       = "default"
+  description     = "Test Agent Policy"
+  sys_monitoring  = true
+  monitor_logs    = true
+  monitor_metrics = true
+  # is_protected   = true  # optional: agent tamper protection (requires Elastic Stack 8.10.0+)
   space_ids        = ["default"]
   host_name_format = "hostname" # or "fqdn" for fully qualified domain names
 
