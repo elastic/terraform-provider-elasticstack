@@ -1,7 +1,7 @@
 variable "index_name" { type = string }
-variable "space1"     { type = string }
-variable "space2"     { type = string }
-variable "space3"     { type = string }
+variable "space1" { type = string }
+variable "space2" { type = string }
+variable "space3" { type = string }
 
 resource "elasticstack_kibana_space" "space1" {
   space_id = var.space1
