@@ -43,15 +43,15 @@ import (
 )
 
 const (
-	dashboardValueAuto      = "auto"
-	dashboardValueAverage   = "average"
-	pieChartTypeNumber      = "number"
-	pieChartTypePercent     = "percent"
-	operationTerms          = "terms"
-	panelTypeMarkdown       = "markdown"
-	panelTypeLens           = "lens"
-	panelTypeTimeSlider     = "time_slider_control"
-	panelTypeSloBurnRate    = "slo_burn_rate"
+	dashboardValueAuto    = "auto"
+	dashboardValueAverage = "average"
+	pieChartTypeNumber    = "number"
+	pieChartTypePercent   = "percent"
+	operationTerms        = "terms"
+	panelTypeMarkdown     = "markdown"
+	panelTypeLens         = "lens"
+	panelTypeTimeSlider   = "time_slider_control"
+	panelTypeSloBurnRate  = "slo_burn_rate"
 	// panelTypeSloOverview is defined in models_slo_overview_panel.go
 	panelTypeSloErrorBudget = "slo_error_budget"
 	panelTypeEsqlControl    = "esql_control"
