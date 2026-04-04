@@ -75,7 +75,10 @@ func waffleConfigModeValidateDiags(esqlMode bool, metrics, groupBy, esqlMetrics,
 	}
 	if esqlMode {
 		if (!metrics.Unknown && metrics.Count > 0) || (!groupBy.Unknown && groupBy.Count > 0) {
-			add("Invalid waffle_config for ES|QL mode", "Do not set `metrics` or `group_by` when using ES|QL mode (omit `query` or leave `query.expression` and `query.language` unset). Use `esql_metrics` instead.")
+			add(
+				"Invalid waffle_config for ES|QL mode",
+				"Do not set `metrics` or `group_by` when using ES|QL mode (omit `query` or leave `query.expression` and `query.language` unset). Use `esql_metrics` instead.",
+			)
 		}
 		if !esqlMetrics.Unknown && esqlMetrics.Count < 1 {
 			add("Missing esql_metrics", "ES|QL waffles require at least one `esql_metrics` entry.")
