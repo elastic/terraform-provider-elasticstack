@@ -6,7 +6,7 @@ resource "elasticstack_kibana_dashboard" "test" {
   refresh_interval_pause = true
   refresh_interval_value = 0
 
-  query_language = "kuery"
+  query_language = "kql"
   query_text     = ""
 
   panels = [{

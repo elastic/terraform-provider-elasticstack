@@ -70,7 +70,7 @@ func Test_wafflePanelConfigConverter_populateFromAttributes_NoESQL_emptyQueryNoL
 	require.NotNil(t, pm.WaffleConfig)
 	assert.False(t, pm.WaffleConfig.usesESQL())
 	require.NotNil(t, pm.WaffleConfig.Query)
-	assert.True(t, pm.WaffleConfig.Query.Query.IsNull() || pm.WaffleConfig.Query.Query.ValueString() == "")
+	assert.True(t, pm.WaffleConfig.Query.Expression.IsNull() || pm.WaffleConfig.Query.Expression.ValueString() == "")
 }
 
 func Test_wafflePanelConfigConverter_populateFromAttributes_buildAttributes_roundTrip_NoESQL(t *testing.T) {
@@ -81,7 +81,7 @@ func Test_wafflePanelConfigConverter_populateFromAttributes_buildAttributes_roun
 		"title": "Waffle NoESQL Round-Trip",
 		"description": "test",
 		"dataset": {"type":"dataView","id":"metrics-*"},
-		"query": {"language":"kuery","query":""},
+		"query": {"language":"kql","query":""},
 		"legend": {"size":"medium","visible":"auto"},
 		"metrics": [{"operation":"count"}],
 		"group_by": [{"operation":"terms","field":"host.name","collapse_by":"avg"}]
@@ -194,8 +194,8 @@ func Test_waffleConfigModel_toAPI_NoESQL_errors(t *testing.T) {
 			Size: types.StringValue("medium"),
 		},
 		Query: &filterSimpleModel{
-			Language: types.StringValue("kuery"),
-			Query:    types.StringValue(""),
+			Language:   types.StringValue("kql"),
+			Expression: types.StringValue(""),
 		},
 	}
 	_, diags := m.toAPI()
@@ -207,8 +207,8 @@ func Test_waffleConfigModel_toAPI_NoESQL_errors(t *testing.T) {
 			Size: types.StringValue("medium"),
 		},
 		Query: &filterSimpleModel{
-			Language: types.StringValue("kuery"),
-			Query:    types.StringValue(""),
+			Language:   types.StringValue("kql"),
+			Expression: types.StringValue(""),
 		},
 		Metrics: nil,
 	}

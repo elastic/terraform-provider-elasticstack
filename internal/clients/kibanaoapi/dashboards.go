@@ -18,7 +18,6 @@
 package kibanaoapi
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"net/http"
@@ -83,27 +82,6 @@ func GetDashboard(ctx context.Context, client *Client, spaceID string, dashboard
 func CreateDashboard(ctx context.Context, client *Client, spaceID string, req kbapi.PostDashboardsJSONRequestBody) (*kbapi.PostDashboardsResponse, diag.Diagnostics) {
 	resp, err := client.API.PostDashboardsWithResponse(
 		ctx, req,
-		spaceAwarePathRequestEditor(spaceID),
-		addAPIVersionQueryParamRequestEditor(),
-	)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-
-	switch resp.StatusCode() {
-	case http.StatusCreated:
-		return resp, nil
-	default:
-		return nil, reportUnknownError(resp.StatusCode(), resp.Body)
-	}
-}
-
-// CreateDashboardRaw creates a new dashboard using a prebuilt JSON body.
-func CreateDashboardRaw(ctx context.Context, client *Client, spaceID string, body []byte) (*kbapi.PostDashboardsResponse, diag.Diagnostics) {
-	resp, err := client.API.PostDashboardsWithBodyWithResponse(
-		ctx,
-		"application/json",
-		bytes.NewReader(body),
 		spaceAwarePathRequestEditor(spaceID),
 		addAPIVersionQueryParamRequestEditor(),
 	)

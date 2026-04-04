@@ -815,8 +815,8 @@ func Test_xyChartPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 			},
 		},
 		Query: &filterSimpleModel{
-			Query:    types.StringValue("*"),
-			Language: types.StringValue("kuery"),
+			Expression: types.StringValue("*"),
+			Language:   types.StringValue("kql"),
 		},
 	}
 
@@ -887,8 +887,8 @@ func Test_xyChartConfigModel_toAPI_fromAPI(t *testing.T) {
 					Visibility: types.StringValue("visible"),
 				},
 				Query: &filterSimpleModel{
-					Query:    types.StringValue("*"),
-					Language: types.StringValue("kuery"),
+					Expression: types.StringValue("*"),
+					Language:   types.StringValue("kql"),
 				},
 			},
 			expectError: false,

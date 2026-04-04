@@ -238,7 +238,6 @@ type waffleValueDisplay struct {
 
 type waffleEsqlMetric struct {
 	Column     types.String         `tfsdk:"column"`
-	Operation  types.String         `tfsdk:"operation"`
 	Label      types.String         `tfsdk:"label"`
 	FormatJSON jsontypes.Normalized `tfsdk:"format_json"`
 	Color      *waffleStaticColor   `tfsdk:"color"`
@@ -251,7 +250,6 @@ type waffleStaticColor struct {
 
 type waffleEsqlGroupBy struct {
 	Column     types.String         `tfsdk:"column"`
-	Operation  types.String         `tfsdk:"operation"`
 	CollapseBy types.String         `tfsdk:"collapse_by"`
 	ColorJSON  jsontypes.Normalized `tfsdk:"color_json"`
 	FormatJSON jsontypes.Normalized `tfsdk:"format_json"`
@@ -265,7 +263,7 @@ func (m *waffleConfigModel) usesESQL() bool {
 	if m.Query == nil {
 		return true
 	}
-	return m.Query.Query.IsNull() && m.Query.Language.IsNull()
+	return m.Query.Expression.IsNull() && m.Query.Language.IsNull()
 }
 
 func (m *waffleConfigModel) fromAPINoESQL(ctx context.Context, api kbapi.WaffleNoESQL) diag.Diagnostics {
@@ -386,8 +384,7 @@ func (m *waffleConfigModel) fromAPIESQL(ctx context.Context, api kbapi.WaffleESQ
 		m.EsqlMetrics = make([]waffleEsqlMetric, len(api.Metrics))
 		for i, met := range api.Metrics {
 			em := waffleEsqlMetric{
-				Column:    types.StringValue(met.Column),
-				Operation: types.StringValue("value"),
+				Column: types.StringValue(met.Column),
 				FormatJSON: func() jsontypes.Normalized {
 					b, err := json.Marshal(met.Format)
 					if err != nil {
@@ -432,7 +429,6 @@ func (m *waffleConfigModel) fromAPIESQL(ctx context.Context, api kbapi.WaffleESQ
 			formatStr := normalizeKibanaLensNumberFormatJSONString(string(formatBytes))
 			eg := waffleEsqlGroupBy{
 				Column:     types.StringValue(gb.Column),
-				Operation:  types.StringValue("value"),
 				CollapseBy: types.StringValue(string(gb.CollapseBy)),
 				ColorJSON:  jsontypes.NewNormalizedValue(string(colorBytes)),
 				FormatJSON: jsontypes.NewNormalizedValue(formatStr),

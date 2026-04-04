@@ -9,7 +9,7 @@ resource "elasticstack_kibana_dashboard" "test" {
   time_to                = "now"
   refresh_interval_pause = true
   refresh_interval_value = 0
-  query_language         = "kuery"
+  query_language         = "kql"
   query_text             = ""
 
   panels = [{
@@ -79,8 +79,10 @@ resource "elasticstack_kibana_dashboard" "test" {
             ignore_global_filters = false
             sampling              = 1
             dataset_json = jsonencode({
-              type = "dataView"
-              id   = "metrics-*"
+              type = "index"
+              index = "metrics-*"
+
+              time_field = "@timestamp"
             })
             y = [
               {
@@ -99,8 +101,8 @@ resource "elasticstack_kibana_dashboard" "test" {
         position   = "right"
       }
       query = {
-        language = "kuery"
-        query    = ""
+        language = "kql"
+        expression    = ""
       }
     }
   }]

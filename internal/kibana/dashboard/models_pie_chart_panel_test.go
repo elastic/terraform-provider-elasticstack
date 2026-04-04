@@ -128,7 +128,7 @@ func Test_pieChartConfigModel_fromAPI_toAPI_PieNoESQL(t *testing.T) {
 	assert.Equal(t, desc, model.Description.ValueString())
 	assert.Equal(t, string(donutHole), model.DonutHole.ValueString())
 	assert.Equal(t, string(labelPos), model.LabelPosition.ValueString())
-	assert.Equal(t, "response:200", model.Query.Query.ValueString())
+	assert.Equal(t, "response:200", model.Query.Expression.ValueString())
 
 	// Test toAPI
 	resultSchema, diags := model.toAPI()
@@ -188,7 +188,7 @@ func Test_pieChartConfigModel_toAPI_withMetrics(t *testing.T) {
 		Description: types.StringValue("Test"),
 		Dataset:     jsontypes.NewNormalizedValue(`{"type":"dataView","id":"logs-*"}`),
 		Legend:      jsontypes.NewNormalizedValue(`{"visible":"show"}`),
-		Query:       &filterSimpleModel{Query: types.StringValue("*"), Language: types.StringValue("kuery")},
+		Query:       &filterSimpleModel{Expression: types.StringValue("*"), Language: types.StringValue("kql")},
 		Metrics: []pieMetricModel{
 			{Config: customtypes.NewJSONWithDefaultsValue[map[string]any](`{"operation":"count"}`, populatePieChartMetricDefaults)},
 			{Config: customtypes.NewJSONWithDefaultsValue[map[string]any](`{"operation":"sum","field":"bytes"}`, populatePieChartMetricDefaults)},
@@ -213,7 +213,7 @@ func Test_pieChartConfigModel_toAPI_withGroupBy(t *testing.T) {
 		Title:   types.StringValue("Pie with groupBy"),
 		Dataset: jsontypes.NewNormalizedValue(`{"type":"dataView","id":"logs-*"}`),
 		Legend:  jsontypes.NewNormalizedValue(`{"visible":"show"}`),
-		Query:   &filterSimpleModel{Query: types.StringValue("*"), Language: types.StringValue("kuery")},
+		Query:   &filterSimpleModel{Expression: types.StringValue("*"), Language: types.StringValue("kql")},
 		Metrics: []pieMetricModel{
 			{Config: customtypes.NewJSONWithDefaultsValue[map[string]any](`{"operation":"count"}`, populatePieChartMetricDefaults)},
 		},

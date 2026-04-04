@@ -39,7 +39,7 @@ func Test_metricChartPanelConfigConverter_populateFromAttributes_buildAttributes
 		IgnoreGlobalFilters: new(false),
 		Sampling:            new(float32(1.0)),
 		Query: kbapi.FilterSimple{
-			Language:   new(kbapi.FilterSimpleLanguage("kuery")),
+			Language:   new(kbapi.FilterSimpleLanguage("kql")),
 			Expression: "*",
 		},
 		Metrics: []kbapi.MetricNoESQL_Metrics_Item{},
@@ -91,7 +91,7 @@ func Test_metricChartConfigModel_fromAPI_toAPI_variant0(t *testing.T) {
 				IgnoreGlobalFilters: new(false),
 				Sampling:            new(float32(1.0)),
 				Query: kbapi.FilterSimple{
-					Language:   new(kbapi.FilterSimpleLanguage("kuery")),
+					Language:   new(kbapi.FilterSimpleLanguage("kql")),
 					Expression: "",
 				},
 				Metrics: []kbapi.MetricNoESQL_Metrics_Item{},
@@ -426,7 +426,7 @@ func Test_metricChartConfigModel_withBreakdownBy(t *testing.T) {
 		Type:        kbapi.MetricNoESQLTypeMetric,
 		BreakdownBy: &breakdownBy,
 		Query: kbapi.FilterSimple{
-			Language:   new(kbapi.FilterSimpleLanguage("kuery")),
+			Language:   new(kbapi.FilterSimpleLanguage("kql")),
 			Expression: "status:active",
 		},
 		Metrics: []kbapi.MetricNoESQL_Metrics_Item{},

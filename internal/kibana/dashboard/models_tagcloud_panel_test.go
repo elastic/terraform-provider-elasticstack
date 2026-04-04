@@ -39,7 +39,7 @@ func Test_tagcloudPanelConfigConverter_populateFromAttributes_buildAttributes_ro
 		Description: new("Converter round-trip test"),
 	}
 	_ = json.Unmarshal([]byte(`{"index":"test-index"}`), &api.Dataset)
-	_ = json.Unmarshal([]byte(`{"expression":"*","language":"kuery"}`), &api.Query)
+	_ = json.Unmarshal([]byte(`{"expression":"*","language":"kql"}`), &api.Query)
 	_ = json.Unmarshal([]byte(`{"operation":{"operation_type":"count"}}`), &api.Metric)
 	_ = json.Unmarshal([]byte(`{"operation":{"operation_type":"terms"},"field":"tags.keyword"}`), &api.TagBy)
 
@@ -100,7 +100,7 @@ func Test_tagcloudConfigModel_fromAPI_toAPI(t *testing.T) {
 				// Set dataset as JSON
 				_ = json.Unmarshal([]byte(`{"index":"test-index"}`), &api.Dataset)
 				// Set query as JSON
-				_ = json.Unmarshal([]byte(`{"expression":"status:active","language":"kuery"}`), &api.Query)
+				_ = json.Unmarshal([]byte(`{"expression":"status:active","language":"kql"}`), &api.Query)
 				// Set metric as JSON
 				_ = json.Unmarshal([]byte(`{"operation":{"operation_type":"count"}}`), &api.Metric)
 				// Set tagBy as JSON
@@ -114,8 +114,8 @@ func Test_tagcloudConfigModel_fromAPI_toAPI(t *testing.T) {
 				IgnoreGlobalFilters: types.BoolValue(true),
 				Sampling:            types.Float64Value(0.5),
 				Query: &filterSimpleModel{
-					Language: types.StringValue("kuery"),
-					Query:    types.StringValue("status:active"),
+					Language:   types.StringValue("kql"),
+					Expression: types.StringValue("status:active"),
 				},
 				Orientation: types.StringValue("horizontal"),
 				FontSize: &fontSizeModel{
@@ -148,8 +148,8 @@ func Test_tagcloudConfigModel_fromAPI_toAPI(t *testing.T) {
 				IgnoreGlobalFilters: types.BoolNull(),
 				Sampling:            types.Float64Null(),
 				Query: &filterSimpleModel{
-					Language: types.StringValue("kuery"),
-					Query:    types.StringValue("*"),
+					Language:   types.StringValue("kql"),
+					Expression: types.StringValue("*"),
 				},
 				Orientation: types.StringNull(),
 				FontSize:    nil,
@@ -175,7 +175,7 @@ func Test_tagcloudConfigModel_fromAPI_toAPI(t *testing.T) {
 			if tt.expected.Query != nil {
 				require.NotNil(t, model.Query, "Query should not be nil")
 				assert.Equal(t, tt.expected.Query.Language, model.Query.Language, "Query language should match")
-				assert.Equal(t, tt.expected.Query.Query, model.Query.Query, "Query text should match")
+				assert.Equal(t, tt.expected.Query.Expression, model.Query.Expression, "Query text should match")
 			}
 
 			// Validate font size
@@ -361,7 +361,7 @@ func Test_tagcloudConfig_JSONFields(t *testing.T) {
 				Description: types.StringValue("Test description"),
 				DatasetJSON: jsontypes.NewNormalizedValue(tt.datasetJSON),
 				Query: &filterSimpleModel{
-					Query: types.StringValue("*"),
+					Expression: types.StringValue("*"),
 				},
 				MetricJSON: customtypes.NewJSONWithDefaultsValue[map[string]any](tt.metricJSON, populateTagcloudMetricDefaults),
 				TagByJSON:  customtypes.NewJSONWithDefaultsValue[map[string]any](tt.tagByJSON, populateTagcloudTagByDefaults),

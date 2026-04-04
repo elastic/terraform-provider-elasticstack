@@ -11,7 +11,7 @@ resource "elasticstack_kibana_dashboard" "test" {
   time_to                = "now"
   refresh_interval_pause = true
   refresh_interval_value = 0
-  query_language         = "kuery"
+  query_language         = "kql"
   query_text             = ""
 
   panels = [{
@@ -26,8 +26,10 @@ resource "elasticstack_kibana_dashboard" "test" {
     config_json = jsonencode({
       attributes = {
         dataset = {
-          id   = "metrics-*"
-          type = "dataView"
+          type = "index"
+          index = "metrics-*"
+
+          time_field = "@timestamp"
         }
         description           = ""
         filters               = []

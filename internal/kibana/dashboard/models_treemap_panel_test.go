@@ -41,7 +41,7 @@ func Test_treemapPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 		"ignore_global_filters": true,
 		"sampling": 0.5,
 		"dataset": {"type":"dataView","id":"metrics-*"},
-		"query": {"language":"kuery","query":"status:200"},
+		"query": {"language":"kql","query":"status:200"},
 		"legend": {"size": "medium"},
 		"metrics": [{"operation":"count"}],
 		"group_by": ` + groupBy + `
@@ -128,7 +128,7 @@ func Test_treemapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 		Query: kbapi.FilterSimple{
 			Expression: "status:200",
 			Language: func() *kbapi.FilterSimpleLanguage {
-				lang := kbapi.FilterSimpleLanguage("kuery")
+				lang := kbapi.FilterSimpleLanguage("kql")
 				return &lang
 			}(),
 		},
@@ -176,8 +176,8 @@ func Test_treemapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 	assert.Equal(t, types.BoolValue(true), model.IgnoreGlobalFilters)
 	assert.Equal(t, types.Float64Value(0.5), model.Sampling)
 	require.NotNil(t, model.Query)
-	assert.Equal(t, types.StringValue("status:200"), model.Query.Query)
-	assert.Equal(t, types.StringValue("kuery"), model.Query.Language)
+	assert.Equal(t, types.StringValue("status:200"), model.Query.Expression)
+	assert.Equal(t, types.StringValue("kql"), model.Query.Language)
 	assert.False(t, model.Dataset.IsNull())
 	assert.False(t, model.GroupBy.IsNull())
 	assert.False(t, model.Metrics.IsNull())
@@ -295,7 +295,7 @@ func Test_treemapConfigModel_fromAPINoESQL_preservesKnownWhenAPIIsDefault(t *tes
 		Type:                kbapi.TreemapNoESQLTypeTreemap,
 		IgnoreGlobalFilters: new(false),      // snapshot default
 		Sampling:            new(float32(1)), // snapshot default
-		Query:               kbapi.FilterSimple{Expression: "x", Language: func() *kbapi.FilterSimpleLanguage { l := kbapi.FilterSimpleLanguage("kuery"); return &l }()},
+		Query:               kbapi.FilterSimple{Expression: "x", Language: func() *kbapi.FilterSimpleLanguage { l := kbapi.FilterSimpleLanguage("kql"); return &l }()},
 		Legend:              kbapi.TreemapLegend{Size: kbapi.LegendSizeM},
 	}
 	require.NoError(t, json.Unmarshal([]byte(`{"type":"dataView","id":"x"}`), &api.Dataset))

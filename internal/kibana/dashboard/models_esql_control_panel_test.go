@@ -64,7 +64,7 @@ func Test_populateEsqlControlFromAPI_import_populatesAllFields(t *testing.T) {
 	assert.Equal(t, types.StringValue("FROM logs-*"), pm.EsqlControlConfig.EsqlQuery)
 	assert.Equal(t, types.StringValue("STATIC_VALUES"), pm.EsqlControlConfig.ControlType)
 	assert.Equal(t, types.StringValue("My Control"), pm.EsqlControlConfig.Title)
-	assert.True(t, pm.EsqlControlConfig.SingleSelect.IsNull())
+	assert.Equal(t, types.BoolValue(true), pm.EsqlControlConfig.SingleSelect)
 	assert.Equal(t, stringsToList([]string{"a", "b"}), pm.EsqlControlConfig.AvailableOptions)
 	require.NotNil(t, pm.EsqlControlConfig.DisplaySettings)
 	assert.Equal(t, types.StringValue("Select..."), pm.EsqlControlConfig.DisplaySettings.Placeholder)

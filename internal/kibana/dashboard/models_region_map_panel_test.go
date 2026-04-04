@@ -55,7 +55,7 @@ func Test_regionMapConfigModel_fromAPI_toAPI(t *testing.T) {
 					Sampling:            new(float32(0.75)),
 				}
 
-				lang := kbapi.FilterSimpleLanguage("kuery")
+				lang := kbapi.FilterSimpleLanguage("kql")
 				api.Query = kbapi.FilterSimple{
 					Language:   &lang,
 					Expression: "*",
@@ -63,7 +63,7 @@ func Test_regionMapConfigModel_fromAPI_toAPI(t *testing.T) {
 
 				_ = json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &api.Dataset)
 				_ = json.Unmarshal([]byte(`{"operation":"count"}`), &api.Metric)
-				_ = json.Unmarshal([]byte(`{"operation":"filters","filters":[{"filter":{"query":"*","language":"kuery"},"label":"All"}]}`), &api.Region)
+				_ = json.Unmarshal([]byte(`{"operation":"filters","filters":[{"filter":{"query":"*","language":"kql"},"label":"All"}]}`), &api.Region)
 
 				var fItem kbapi.LensPanelFilters_Item
 				_ = json.Unmarshal([]byte(`{"type":"condition","condition":{"field":"status","operator":"is","value":"active"}}`), &fItem)
@@ -123,7 +123,7 @@ func Test_regionMapConfigModel_fromAPI_toAPI(t *testing.T) {
 
 			if tt.expectQuery {
 				require.NotNil(t, model.Query)
-				assert.Equal(t, types.StringValue("*"), model.Query.Query)
+				assert.Equal(t, types.StringValue("*"), model.Query.Expression)
 			} else {
 				assert.Nil(t, model.Query)
 			}
@@ -161,11 +161,11 @@ func Test_regionMapPanelConfigConverter_populateFromAttributes_buildAttributes_r
 		IgnoreGlobalFilters: new(true),
 		Sampling:            new(float32(0.75)),
 	}
-	lang := kbapi.FilterSimpleLanguage("kuery")
+	lang := kbapi.FilterSimpleLanguage("kql")
 	api.Query = kbapi.FilterSimple{Language: &lang, Expression: "*"}
 	_ = json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &api.Dataset)
 	_ = json.Unmarshal([]byte(`{"operation":"count"}`), &api.Metric)
-	_ = json.Unmarshal([]byte(`{"operation":"filters","filters":[{"filter":{"query":"*","language":"kuery"},"label":"All"}]}`), &api.Region)
+	_ = json.Unmarshal([]byte(`{"operation":"filters","filters":[{"filter":{"query":"*","language":"kql"},"label":"All"}]}`), &api.Region)
 
 	var regionMapChart kbapi.RegionMapChart
 	require.NoError(t, regionMapChart.FromRegionMapNoESQL(api))

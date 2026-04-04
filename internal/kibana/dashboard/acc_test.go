@@ -54,7 +54,7 @@ func TestAccResourceEmptyDashboard(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "time_to", "now"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "refresh_interval_pause", "true"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "refresh_interval_value", "90000"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "query_language", "kuery"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "query_language", "kql"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "query_text", ""),
 				),
 			},

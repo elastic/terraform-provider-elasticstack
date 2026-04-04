@@ -82,6 +82,10 @@ func TestAccResourceDashboardESQLControl(t *testing.T) {
 				ResourceName:      "elasticstack_kibana_dashboard.test",
 				ImportState:       true,
 				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					// Kibana may omit or relocate single_select on read; optional in config.
+					"panels.0.esql_control_config.single_select",
+				},
 			},
 			// Update to empty config block
 			{

@@ -53,7 +53,7 @@ func TestAccResourceDashboardPieChart(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.pie_chart_config.label_position", "inside"),
 
 					// Check query
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.pie_chart_config.query.language", "kuery"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.pie_chart_config.query.language", "kql"),
 
 					// Check JSON fields are set
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.pie_chart_config.dataset"),

@@ -9,7 +9,7 @@ resource "elasticstack_kibana_dashboard" "test" {
   time_to                = "now"
   refresh_interval_pause = true
   refresh_interval_value = 0
-  query_language         = "kuery"
+  query_language         = "kql"
   query_text             = ""
 
   panels = [{
@@ -24,12 +24,14 @@ resource "elasticstack_kibana_dashboard" "test" {
       title       = "Complete Heatmap"
       description = "Complete heatmap visualization"
       dataset_json = jsonencode({
-        type = "dataView"
-        id   = "metrics-*"
+        type = "index"
+        index = "metrics-*"
+
+        time_field = "@timestamp"
       })
       query = {
-        language = "kuery"
-        query    = ""
+        language = "kql"
+        expression    = ""
       }
       filters = [
         {
@@ -97,7 +99,7 @@ resource "elasticstack_kibana_dashboard" "test" {
         }
       }
       legend = {
-        visible              = true
+        visibility           = true
         size                 = "s"
         truncate_after_lines = 10
       }

@@ -263,7 +263,7 @@ func (m *heatmapConfigModel) usesESQL() bool {
 	if m.Query == nil {
 		return true
 	}
-	return m.Query.Query.IsNull() && m.Query.Language.IsNull()
+	return m.Query.Expression.IsNull() && m.Query.Language.IsNull()
 }
 
 func (m *heatmapConfigModel) toAPINoESQL() (kbapi.HeatmapNoESQL, diag.Diagnostics) {
@@ -661,19 +661,17 @@ func (m *heatmapCellsLabelsModel) toAPI() *struct {
 }
 
 type heatmapLegendModel struct {
-	Visible            types.Bool   `tfsdk:"visible"`
-	Position           types.String `tfsdk:"position"`
+	Visibility         types.Bool   `tfsdk:"visibility"`
 	Size               types.String `tfsdk:"size"`
 	TruncateAfterLines types.Int64  `tfsdk:"truncate_after_lines"`
 }
 
 func (m *heatmapLegendModel) fromAPI(api kbapi.HeatmapLegend) {
 	if api.Visibility != nil {
-		m.Visible = types.BoolValue(*api.Visibility != kbapi.HeatmapLegendVisibilityHidden)
+		m.Visibility = types.BoolValue(*api.Visibility != kbapi.HeatmapLegendVisibilityHidden)
 	} else {
-		m.Visible = types.BoolNull()
+		m.Visibility = types.BoolNull()
 	}
-	m.Position = types.StringNull()
 	m.Size = types.StringValue(string(api.Size))
 
 	if api.TruncateAfterLines != nil {
@@ -692,9 +690,9 @@ func (m *heatmapLegendModel) toAPI() (kbapi.HeatmapLegend, diag.Diagnostics) {
 		return legend, diags
 	}
 
-	if typeutils.IsKnown(m.Visible) {
+	if typeutils.IsKnown(m.Visibility) {
 		visibility := kbapi.HeatmapLegendVisibilityVisible
-		if !m.Visible.ValueBool() {
+		if !m.Visibility.ValueBool() {
 			visibility = kbapi.HeatmapLegendVisibilityHidden
 		}
 		legend.Visibility = &visibility

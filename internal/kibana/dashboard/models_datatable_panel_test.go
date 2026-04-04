@@ -111,7 +111,7 @@ func Test_datatableNoESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 	}
 
 	require.NoError(t, json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &api.Dataset))
-	require.NoError(t, json.Unmarshal([]byte(`{"language":"kuery","expression":"*"}`), &api.Query))
+	require.NoError(t, json.Unmarshal([]byte(`{"language":"kql","expression":"*"}`), &api.Query))
 
 	metric := kbapi.DatatableNoESQL_Metrics_Item{}
 	require.NoError(t, json.Unmarshal([]byte(`{"operation":"count"}`), &metric))
@@ -144,7 +144,7 @@ func Test_datatableNoESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 	assert.Equal(t, types.BoolValue(true), model.IgnoreGlobalFilters)
 	assert.Equal(t, types.Float64Value(0.5), model.Sampling)
 	require.NotNil(t, model.Query)
-	assert.Equal(t, types.StringValue("*"), model.Query.Query)
+	assert.Equal(t, types.StringValue("*"), model.Query.Expression)
 	assert.Len(t, model.Metrics, 1)
 	assert.Len(t, model.Rows, 1)
 	assert.Len(t, model.SplitMetricsBy, 1)
@@ -279,7 +279,7 @@ func Test_datatablePanelConfigConverter_populateFromAttributes_buildAttributes_r
 		Metrics: []kbapi.DatatableNoESQL_Metrics_Item{},
 	}
 	require.NoError(t, json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &api.Dataset))
-	require.NoError(t, json.Unmarshal([]byte(`{"language":"kuery","expression":"*"}`), &api.Query))
+	require.NoError(t, json.Unmarshal([]byte(`{"language":"kql","expression":"*"}`), &api.Query))
 
 	var datatableChart kbapi.DatatableChart
 	require.NoError(t, datatableChart.FromDatatableNoESQL(api))

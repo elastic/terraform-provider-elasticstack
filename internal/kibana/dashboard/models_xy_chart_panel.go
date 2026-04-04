@@ -746,7 +746,13 @@ func (m *xyLegendModel) fromAPI(ctx context.Context, apiLegend kbapi.XyLegend) d
 
 	// Try outside vertical legend first since it carries required size information.
 	legendOutsideVertical, err := apiLegend.AsXyLegendOutsideVertical()
-	if err == nil {
+	if err == nil &&
+		legendOutsideVertical.Placement != nil &&
+		*legendOutsideVertical.Placement == kbapi.XyLegendOutsideVerticalPlacementOutside &&
+		(legendOutsideVertical.Position == nil ||
+			*legendOutsideVertical.Position == kbapi.XyLegendOutsideVerticalPositionLeft ||
+			*legendOutsideVertical.Position == kbapi.XyLegendOutsideVerticalPositionRight) &&
+		legendOutsideVertical.Size != "" {
 		m.Inside = types.BoolValue(false)
 		m.Visibility = typeutils.StringishPointerValue(legendOutsideVertical.Visibility)
 		m.Position = typeutils.StringishPointerValue(legendOutsideVertical.Position)

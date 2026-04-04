@@ -45,12 +45,12 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 	spaceID := planModel.SpaceID.ValueString()
 
 	// Convert the plan to an API request.
-	apiReqBody := planModel.toAPICreateRequestJSON(ctx, &resp.Diagnostics)
+	apiReq := planModel.toAPICreateRequest(ctx, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	createResp, diags := kibanaoapi.CreateDashboardRaw(ctx, kibanaClient, spaceID, apiReqBody)
+	createResp, diags := kibanaoapi.CreateDashboard(ctx, kibanaClient, spaceID, apiReq)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

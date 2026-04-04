@@ -53,7 +53,7 @@ func Test_gaugeConfigModel_fromAPI_toAPI(t *testing.T) {
 
 				err := json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &api.Dataset)
 				require.NoError(t, err)
-				err = json.Unmarshal([]byte(`{"expression":"status:active","language":"kuery"}`), &api.Query)
+				err = json.Unmarshal([]byte(`{"expression":"status:active","language":"kql"}`), &api.Query)
 				require.NoError(t, err)
 				err = json.Unmarshal([]byte(`{"operation":"count"}`), &api.Metric)
 				require.NoError(t, err)
@@ -77,8 +77,8 @@ func Test_gaugeConfigModel_fromAPI_toAPI(t *testing.T) {
 				IgnoreGlobalFilters: types.BoolValue(true),
 				Sampling:            types.Float64Value(0.5),
 				Query: &filterSimpleModel{
-					Language: types.StringValue("kuery"),
-					Query:    types.StringValue("status:active"),
+					Language:   types.StringValue("kql"),
+					Expression: types.StringValue("status:active"),
 				},
 			},
 		},
@@ -104,8 +104,8 @@ func Test_gaugeConfigModel_fromAPI_toAPI(t *testing.T) {
 				IgnoreGlobalFilters: types.BoolNull(),
 				Sampling:            types.Float64Null(),
 				Query: &filterSimpleModel{
-					Language: types.StringValue("kuery"), // Language should default to "kuery"
-					Query:    types.StringValue("*"),
+					Language:   types.StringValue("kql"), // Language should default to "kql"
+					Expression: types.StringValue("*"),
 				},
 			},
 		},
@@ -125,7 +125,7 @@ func Test_gaugeConfigModel_fromAPI_toAPI(t *testing.T) {
 			if tt.expected.Query != nil {
 				require.NotNil(t, model.Query, "Query should not be nil")
 				assert.Equal(t, tt.expected.Query.Language, model.Query.Language, "Query language should match")
-				assert.Equal(t, tt.expected.Query.Query, model.Query.Query, "Query text should match")
+				assert.Equal(t, tt.expected.Query.Expression, model.Query.Expression, "Query text should match")
 			}
 
 			assert.False(t, model.DatasetJSON.IsNull(), "Dataset should not be null")
@@ -173,7 +173,7 @@ func Test_gaugePanelConfigConverter_populateFromAttributes_buildAttributes_round
 		Sampling:            new(float32(0.5)),
 	}
 	require.NoError(t, json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &api.Dataset))
-	require.NoError(t, json.Unmarshal([]byte(`{"expression":"status:active","language":"kuery"}`), &api.Query))
+	require.NoError(t, json.Unmarshal([]byte(`{"expression":"status:active","language":"kql"}`), &api.Query))
 	require.NoError(t, json.Unmarshal([]byte(`{"operation":"count"}`), &api.Metric))
 
 	var gaugeChart kbapi.GaugeChart

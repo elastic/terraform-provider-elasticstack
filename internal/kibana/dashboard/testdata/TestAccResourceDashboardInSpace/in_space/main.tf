@@ -22,6 +22,6 @@ resource "elasticstack_kibana_dashboard" "test_space" {
   refresh_interval_pause = true
   refresh_interval_value = 60000
 
-  query_language = "kuery"
+  query_language = "kql"
   query_text     = ""
 }
