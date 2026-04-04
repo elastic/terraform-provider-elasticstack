@@ -24,7 +24,6 @@ resource "elasticstack_kibana_synthetics_private_location" "pl-http-monitor" {
 
 resource "elasticstack_kibana_synthetics_monitor" "http-monitor" {
   name              = "TestHttpMonitorResource - ${var.name}"
-  space_id          = "testacc"
   namespace         = "test_namespace"
   schedule          = 5
   private_locations = [elasticstack_kibana_synthetics_private_location.pl-http-monitor.label]

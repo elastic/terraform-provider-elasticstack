@@ -147,8 +147,7 @@ func (p *Provider) DataSources(ctx context.Context) []func() datasource.DataSour
 }
 
 func (p *Provider) Resources(ctx context.Context) []func() resource.Resource {
-	validateLocation := os.Getenv(SkipLocationValidationEnvVar) != envVarEnabled
-	resources := p.resources(ctx, validateLocation)
+	resources := p.resources(ctx)
 
 	if p.version == AccTestVersion || os.Getenv(IncludeExperimentalEnvVar) == envVarEnabled {
 		resources = append(resources, p.experimentalResources(ctx)...)
@@ -157,7 +156,7 @@ func (p *Provider) Resources(ctx context.Context) []func() resource.Resource {
 	return resources
 }
 
-func (p *Provider) resources(_ context.Context, validateLocation bool) []func() resource.Resource {
+func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		agentconfiguration.NewAgentConfigurationResource,
 		func() resource.Resource { return &importsavedobjects.Resource{} },
@@ -167,7 +166,7 @@ func (p *Provider) resources(_ context.Context, validateLocation bool) []func() 
 		func() resource.Resource { return &parameter.Resource{} },
 		func() resource.Resource { return &privatelocation.Resource{} },
 		func() resource.Resource { return &index.Resource{} },
-		func() resource.Resource { return monitor.NewResource(validateLocation) },
+		func() resource.Resource { return monitor.NewResource() },
 		func() resource.Resource { return &apikey.Resource{} },
 		func() resource.Resource { return &datastreamlifecycle.Resource{} },
 		ilm.NewResource,

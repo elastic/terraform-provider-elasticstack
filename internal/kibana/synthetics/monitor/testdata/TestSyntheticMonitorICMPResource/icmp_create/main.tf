@@ -24,7 +24,6 @@ resource "elasticstack_kibana_synthetics_private_location" "pl-icmp-monitor" {
 
 resource "elasticstack_kibana_synthetics_monitor" "icmp-monitor" {
   name              = "TestIcmpMonitorResource - ${var.name}"
-  space_id          = "testacc"
   namespace         = "testacc_namespace"
   schedule          = 5
   private_locations = [elasticstack_kibana_synthetics_private_location.pl-icmp-monitor.label]
