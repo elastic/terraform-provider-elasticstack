@@ -26,11 +26,11 @@ import (
 
 func TestAccDataSourceIngestProcessorSetSecurityUser(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorSetSecurityUser,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_set_security_user.test", "field", "user"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_set_security_user.test", "json", expectedJSONSetSecurityUser),
@@ -46,13 +46,3 @@ const expectedJSONSetSecurityUser = `{
 		"ignore_failure": false
 	}
 }`
-
-const testAccDataSourceIngestProcessorSetSecurityUser = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_set_security_user" "test" {
-  field = "user"
-}
-`

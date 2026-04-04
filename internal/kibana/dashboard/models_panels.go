@@ -48,6 +48,7 @@ type panelModel struct {
 	WaffleConfig             *waffleConfigModel                                `tfsdk:"waffle_config"`
 	TimeSliderControlConfig  *timeSliderControlConfigModel                     `tfsdk:"time_slider_control_config"`
 	SloBurnRateConfig        *sloBurnRateConfigModel                           `tfsdk:"slo_burn_rate_config"`
+	SloErrorBudgetConfig     *sloErrorBudgetConfigModel                        `tfsdk:"slo_error_budget_config"`
 	EsqlControlConfig        *esqlControlConfigModel                           `tfsdk:"esql_control_config"`
 	OptionsListControlConfig *optionsListControlConfigModel                    `tfsdk:"options_list_control_config"`
 	ConfigJSON               customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"config_json"`
@@ -209,6 +210,7 @@ func panelUsesConfigJSONOnly(pm *panelModel) bool {
 		pm.WaffleConfig == nil &&
 		pm.TimeSliderControlConfig == nil &&
 		pm.SloBurnRateConfig == nil &&
+		pm.SloErrorBudgetConfig == nil &&
 		pm.EsqlControlConfig == nil &&
 		pm.OptionsListControlConfig == nil
 }
@@ -323,6 +325,15 @@ func (m *dashboardModel) mapPanelFromAPI(ctx context.Context, tfPanel *panelMode
 				break
 			}
 		}
+	case panelTypeSloErrorBudget:
+		sebPanel, err := panelItem.AsKbnDashboardPanelSloErrorBudget()
+		if err != nil {
+			return panelModel{}, diagutil.FrameworkDiagFromError(err)
+		}
+		setPanelGridFromAPI(&pm, sebPanel.Grid.X, sebPanel.Grid.Y, sebPanel.Grid.W, sebPanel.Grid.H)
+		pm.ID = types.StringPointerValue(sebPanel.Uid)
+		pm.ConfigJSON = customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults)
+		populateSloErrorBudgetFromAPI(&pm, tfPanel, sebPanel.Config)
 	default:
 		// No typed mapping yet; keep only the panel type.
 		pm.ID = types.StringNull()
@@ -489,6 +500,18 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 		buildSloBurnRateConfig(pm, &sbrPanel)
 		if err := panelItem.FromKbnDashboardPanelSloBurnRate(sbrPanel); err != nil {
 			diags.AddError("Failed to create SLO burn rate panel", err.Error())
+		}
+		return panelItem, diags
+	}
+
+	if pm.SloErrorBudgetConfig != nil {
+		sebPanel := kbapi.KbnDashboardPanelSloErrorBudget{
+			Grid: grid,
+			Uid:  uid,
+		}
+		buildSloErrorBudgetConfig(pm, &sebPanel)
+		if err := panelItem.FromKbnDashboardPanelSloErrorBudget(sebPanel); err != nil {
+			diags.AddError("Failed to create SLO error budget panel", err.Error())
 		}
 		return panelItem, diags
 	}

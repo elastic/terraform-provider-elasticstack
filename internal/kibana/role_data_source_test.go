@@ -30,11 +30,11 @@ import (
 func TestAccDataSourceKibanaSecurityRole(t *testing.T) {
 	minSupportedRemoteIndicesVersion := version.Must(version.NewSemver("8.10.0"))
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceSecurityRole,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("all_attributes"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_kibana_security_role.test", "name", "data_source_test"),
 					resource.TestCheckNoResourceAttr("data.elasticstack_kibana_security_role.test", "kibana.0.feature.#"),
@@ -45,8 +45,9 @@ func TestAccDataSourceKibanaSecurityRole(t *testing.T) {
 				),
 			},
 			{
-				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSupportedRemoteIndicesVersion),
-				Config:   testAccDataSourceSecurityRoleRemoteIndices,
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedRemoteIndicesVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_kibana_security_role.test", "name", "data_source_test2"),
 					resource.TestCheckNoResourceAttr("data.elasticstack_kibana_security_role.test", "kibana.0.feature.#"),
@@ -63,68 +64,3 @@ func TestAccDataSourceKibanaSecurityRole(t *testing.T) {
 		},
 	})
 }
-
-const testAccDataSourceSecurityRole = `
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-
-resource "elasticstack_kibana_security_role" "test" {
-	name    = "data_source_test"
-	elasticsearch {
-	  cluster = [ "create_snapshot" ]
-	  indices {
-		names = ["sample"]
-		privileges = ["create", "read", "write"]
-	  }
-	  run_as = ["kibana", "elastic"]
-	}
-	kibana {
-	  base = [ "all" ]
-	  spaces = ["default"]
-	}
-}
-
-data "elasticstack_kibana_security_role" "test" {
-  name = elasticstack_kibana_security_role.test.name
-}
-`
-
-const testAccDataSourceSecurityRoleRemoteIndices = `
-provider "elasticstack" {
-  elasticsearch {}
-  kibana {}
-}
-
-
-resource "elasticstack_kibana_security_role" "test" {
-	name    = "data_source_test2"
-	elasticsearch {
-	  cluster = [ "create_snapshot" ]
-	  indices {
-		names = ["sample"]
-		privileges = ["create", "read", "write"]
-	  }
-      remote_indices {
-	    clusters = ["test-cluster"]
-        field_security {
-          grant = ["sample"]
-          except = []
-        }
-        names = ["sample"]
-        privileges = ["create", "read", "write"]
-      }
-	  run_as = ["kibana", "elastic"]
-	}
-	kibana {
-	  base = [ "all" ]
-	  spaces = ["default"]
-	}
-}
-
-data "elasticstack_kibana_security_role" "test" {
-  name = elasticstack_kibana_security_role.test.name
-}
-`

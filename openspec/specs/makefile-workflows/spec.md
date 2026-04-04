@@ -226,13 +226,20 @@ The `docs-generate` target SHALL regenerate Terraform provider website/markdown 
 
 ### Requirement: golangci-lint execution (REQ-041–REQ-043)
 
-The `tools` target SHALL provision golangci-lint at the **version pinned in the repository**. The `golangci-lint` target SHALL lint Go code under `internal/` with zero tolerance for duplicate identical issues unless `GOLANGCIFLAGS` alters behavior. The `lint` target SHALL enable auto-fix behavior where supported; `check-lint` SHALL not depend on that fix mode for golangci-lint.
+The `tools` target SHALL provision golangci-lint at the **version pinned in the repository**. The `golangci-lint` target SHALL lint Go code across the repository module using `./...`, while still honoring repository-configured golangci-lint exclusions, with zero tolerance for duplicate identical issues unless `GOLANGCIFLAGS` alters behavior. The `lint` target SHALL enable auto-fix behavior where supported; `check-lint` SHALL not depend on that fix mode for golangci-lint.
 
 #### Scenario: Lint without fix
 
 - GIVEN `make check-lint`
 - WHEN golangci-lint runs
 - THEN it SHALL report issues without the fix-only mode used by `lint`
+
+#### Scenario: Repository-wide Go lint scope
+
+- GIVEN `make golangci-lint`
+- WHEN the target invokes golangci-lint
+- THEN it SHALL run against `./...`
+- AND Go packages outside `internal/` SHALL be part of the lint scope unless excluded by repository golangci-lint configuration
 
 ### Requirement: Lint aggregate targets (REQ-044–REQ-045)
 The `lint` target SHALL run setup, golangci-lint (with fix), formatting, and documentation generation. The `check-lint` target SHALL run setup, OpenSpec structural validation, golangci-lint (check mode), workflow generation checks, format check, and documentation freshness check.

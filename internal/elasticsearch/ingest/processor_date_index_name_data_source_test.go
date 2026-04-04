@@ -26,11 +26,11 @@ import (
 
 func TestAccDataSourceIngestProcessorDateIndexName(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceIngestProcessorDateIndexName,
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_date_index_name.test", "field", "date1"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_date_index_name.test", "json", expectedJSONDateIndexName),
@@ -51,18 +51,5 @@ const expectedJSONDateIndexName = `{
 		"locale": "ENGLISH",
 		"timezone": "UTC"
 	}
-}
-`
-
-const testAccDataSourceIngestProcessorDateIndexName = `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-data "elasticstack_elasticsearch_ingest_processor_date_index_name" "test" {
-  description       = "monthly date-time index naming"
-  field             = "date1"
-  index_name_prefix = "my-index-"
-  date_rounding     = "M"
 }
 `

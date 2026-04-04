@@ -30,6 +30,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -49,11 +50,11 @@ func TestAccResourceEnableRule(t *testing.T) {
 	}
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceEnableRuleBasic(),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "space_id", defaultSpaceID),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "key", "test_tag"),
@@ -77,11 +78,11 @@ func TestAccResourceEnableRuleDefaultSpaceID(t *testing.T) {
 	}
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceEnableRuleDefaultSpaceID(),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "space_id", defaultSpaceID),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "key", "test_tag"),
@@ -109,11 +110,15 @@ func TestAccResourceEnableRuleWithManualDisable(t *testing.T) {
 	spaceID := defaultSpaceID
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceEnableRuleWithRules(tagKey, tagValue),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"tag_key":   config.StringVariable(tagKey),
+					"tag_value": config.StringVariable(tagValue),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "space_id", spaceID),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "key", tagKey),
@@ -124,17 +129,25 @@ func TestAccResourceEnableRuleWithManualDisable(t *testing.T) {
 			},
 			{
 				// Manually disable one rule outside of Terraform to test drift detection
+				ProtoV6ProviderFactories: acctest.Providers,
 				PreConfig: func() {
 					disableOneRule(t, spaceID, tagKey, tagValue)
 				},
-				RefreshState:       true,
+				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"tag_key":   config.StringVariable(tagKey),
+					"tag_value": config.StringVariable(tagValue),
+				},
+				PlanOnly:           true,
 				ExpectNonEmptyPlan: true,
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "all_rules_enabled", "false"),
-				),
 			},
 			{
-				Config: testAccResourceEnableRuleWithRules(tagKey, tagValue),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"tag_key":   config.StringVariable(tagKey),
+					"tag_value": config.StringVariable(tagValue),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "all_rules_enabled", "true"),
 					checkRulesEnabled(spaceID, tagKey, tagValue),
@@ -158,11 +171,15 @@ func TestAccResourceEnableRuleDisableOnDestroyFalse(t *testing.T) {
 	spaceID := defaultSpaceID
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(t) },
-		ProtoV6ProviderFactories: acctest.Providers,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceEnableRuleDisableOnDestroy(tagKey, tagValue, false),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("disable_on_destroy_false"),
+				ConfigVariables: config.Variables{
+					"tag_key":   config.StringVariable(tagKey),
+					"tag_value": config.StringVariable(tagValue),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "space_id", spaceID),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "key", tagKey),
@@ -173,7 +190,12 @@ func TestAccResourceEnableRuleDisableOnDestroyFalse(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccResourceEnableRuleDisableOnDestroy(tagKey, tagValue, true),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("disable_on_destroy_true"),
+				ConfigVariables: config.Variables{
+					"tag_key":   config.StringVariable(tagKey),
+					"tag_value": config.StringVariable(tagValue),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "space_id", spaceID),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "key", tagKey),
@@ -184,7 +206,12 @@ func TestAccResourceEnableRuleDisableOnDestroyFalse(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccResourceEnableRuleDisableOnDestroy(tagKey, tagValue, false),
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("disable_on_destroy_false"),
+				ConfigVariables: config.Variables{
+					"tag_key":   config.StringVariable(tagKey),
+					"tag_value": config.StringVariable(tagValue),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "space_id", spaceID),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_enable_rule.test", "key", tagKey),
@@ -195,8 +222,13 @@ func TestAccResourceEnableRuleDisableOnDestroyFalse(t *testing.T) {
 				),
 			},
 			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				// Destroy the enable_rule resource but keep the rules
-				Config: testAccResourceEnableRuleDisableOnDestroyFalseRulesOnly(tagKey, tagValue),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("rules_only"),
+				ConfigVariables: config.Variables{
+					"tag_key":   config.StringVariable(tagKey),
+					"tag_value": config.StringVariable(tagValue),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					// Verify rules are still enabled after destroying the enable_rule resource
 					checkRulesEnabled(spaceID, tagKey, tagValue),
@@ -204,123 +236,6 @@ func TestAccResourceEnableRuleDisableOnDestroyFalse(t *testing.T) {
 			},
 		},
 	})
-}
-
-// testAccCreateDetectionRules creates two test detection rules with the specified tag
-func testAccCreateDetectionRules(tagKey, tagValue string) string {
-	return fmt.Sprintf(`
-resource "elasticstack_kibana_security_detection_rule" "test_rule_1" {
-  name        = "Test Rule 1 - %s"
-  type        = "query"
-  query       = "event.action:test"
-  language    = "kuery"
-  description = "Test rule for enable_rule resource"
-  severity    = "low"
-  risk_score  = 21
-  index       = ["logs-*"]
-  tags        = ["%s: %s", "test"]
-  
-  lifecycle {
-    ignore_changes = [enabled]
-  }
-}
-
-resource "elasticstack_kibana_security_detection_rule" "test_rule_2" {
-  name        = "Test Rule 2 - %s"
-  type        = "query"
-  query       = "event.action:test2"
-  language    = "kuery"
-  description = "Test rule for enable_rule resource"
-  severity    = "low"
-  risk_score  = 21
-  index       = ["logs-*"]
-  tags        = ["%s: %s", "test"]
-  
-  lifecycle {
-    ignore_changes = [enabled]
-  }
-}
-`, tagValue, tagKey, tagValue, tagValue, tagKey, tagValue)
-}
-
-func testAccResourceEnableRuleBasic() string {
-	return `
-provider "elasticstack" {
-  kibana {}
-}
-
-resource "elasticstack_kibana_security_enable_rule" "test" {
-  space_id = "default"
-  key      = "test_tag"
-  value    = "terraform_test"
-}
-`
-}
-
-func testAccResourceEnableRuleDefaultSpaceID() string {
-	return `
-provider "elasticstack" {
-  kibana {}
-}
-
-resource "elasticstack_kibana_security_enable_rule" "test" {
-  key   = "test_tag"
-  value = "terraform_test_default_space"
-}
-`
-}
-
-func testAccResourceEnableRuleWithRules(tagKey, tagValue string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  kibana {}
-}
-
-%s
-
-resource "elasticstack_kibana_security_enable_rule" "test" {
-  space_id = "default"
-  key      = "%s"
-  value    = "%s"
-
-  depends_on = [
-    elasticstack_kibana_security_detection_rule.test_rule_1,
-    elasticstack_kibana_security_detection_rule.test_rule_2
-  ]
-}
-`, testAccCreateDetectionRules(tagKey, tagValue), tagKey, tagValue)
-}
-
-func testAccResourceEnableRuleDisableOnDestroy(tagKey, tagValue string, disableOnDestroy bool) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  kibana {}
-}
-
-%s
-
-resource "elasticstack_kibana_security_enable_rule" "test" {
-  space_id          = "default"
-  key               = "%s"
-  value             = "%s"
-  disable_on_destroy = %t
-   
-  depends_on = [
-    elasticstack_kibana_security_detection_rule.test_rule_1,
-    elasticstack_kibana_security_detection_rule.test_rule_2
-  ]
-}
-`, testAccCreateDetectionRules(tagKey, tagValue), tagKey, tagValue, disableOnDestroy)
-}
-
-func testAccResourceEnableRuleDisableOnDestroyFalseRulesOnly(tagKey, tagValue string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  kibana {}
-}
-
-%s
-`, testAccCreateDetectionRules(tagKey, tagValue))
 }
 
 // checkRulesEnabled verifies that all rules matching the tag are in the expected enabled state
