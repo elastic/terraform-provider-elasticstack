@@ -26,15 +26,15 @@ resource "elasticstack_kibana_dashboard" "test" {
       description = "Test treemap visualization"
 
       dataset_json = jsonencode({
-        type = "index"
+        type  = "index"
         index = "metrics-*"
 
         time_field = "@timestamp"
       })
 
       query = {
-        language = "kql"
-        expression    = ""
+        language   = "kql"
+        expression = ""
       }
 
       group_by_json = jsonencode([

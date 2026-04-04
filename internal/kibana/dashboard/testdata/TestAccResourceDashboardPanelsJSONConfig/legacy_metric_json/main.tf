@@ -26,7 +26,7 @@ resource "elasticstack_kibana_dashboard" "test" {
     config_json = jsonencode({
       attributes = {
         dataset = {
-          type = "index"
+          type  = "index"
           index = "metrics-*"
 
           time_field = "@timestamp"

@@ -24,14 +24,14 @@ resource "elasticstack_kibana_dashboard" "test" {
       title       = "Sample Metric Chart with Secondary Metric"
       description = "Test metric chart with secondary metric"
       dataset_json = jsonencode({
-        type = "index"
+        type  = "index"
         index = "metrics-*"
 
         time_field = "@timestamp"
       })
       query = {
-        language = "kql"
-        expression    = "status:active"
+        language   = "kql"
+        expression = "status:active"
       }
       metrics = [
         {

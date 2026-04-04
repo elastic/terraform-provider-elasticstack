@@ -26,15 +26,15 @@ resource "elasticstack_kibana_dashboard" "test" {
       description = "Complete mosaic visualization"
 
       dataset_json = jsonencode({
-        type = "index"
+        type  = "index"
         index = "metrics-*"
 
         time_field = "@timestamp"
       })
 
       query = {
-        language = "kql"
-        expression    = "service.name:*"
+        language   = "kql"
+        expression = "service.name:*"
       }
 
       filters = [

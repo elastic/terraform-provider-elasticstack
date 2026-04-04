@@ -24,14 +24,14 @@ resource "elasticstack_kibana_dashboard" "test" {
       title       = "Complete Waffle"
       description = "Complete waffle visualization"
       dataset_json = jsonencode({
-        type = "index"
+        type  = "index"
         index = "metrics-*"
 
         time_field = "@timestamp"
       })
       query = {
-        language = "kql"
-        expression    = ""
+        language   = "kql"
+        expression = ""
       }
       filters = [
         {

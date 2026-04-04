@@ -49,7 +49,7 @@ resource "elasticstack_kibana_dashboard" "test" {
           type = "line"
           data_layer = {
             dataset_json = jsonencode({
-              type = "index"
+              type  = "index"
               index = "metrics-*"
 
               time_field = "@timestamp"
@@ -72,7 +72,7 @@ resource "elasticstack_kibana_dashboard" "test" {
             ignore_global_filters = true
             sampling              = 0.5
             dataset_json = jsonencode({
-              type = "index"
+              type  = "index"
               index = "metrics-*"
 
               time_field = "@timestamp"
@@ -100,8 +100,8 @@ resource "elasticstack_kibana_dashboard" "test" {
         position   = "right"
       }
       query = {
-        language = "kql"
-        expression    = ""
+        language   = "kql"
+        expression = ""
       }
     }
   }]

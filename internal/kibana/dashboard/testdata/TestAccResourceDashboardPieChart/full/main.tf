@@ -26,14 +26,14 @@ resource "elasticstack_kibana_dashboard" "test" {
       donut_hole     = "l"
       label_position = "outside"
       dataset = jsonencode({
-        type = "index"
+        type  = "index"
         index = "metrics-*"
 
         time_field = "@timestamp"
       })
       query = {
-        language = "kql"
-        expression    = ""
+        language   = "kql"
+        expression = ""
       }
       legend = jsonencode({
         visibility = "visible"

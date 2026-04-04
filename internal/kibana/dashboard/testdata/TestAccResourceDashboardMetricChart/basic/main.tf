@@ -24,14 +24,14 @@ resource "elasticstack_kibana_dashboard" "test" {
       title       = "Sample Metric Chart"
       description = "Test metric chart visualization"
       dataset_json = jsonencode({
-        type = "index"
+        type  = "index"
         index = "metrics-*"
 
         time_field = "@timestamp"
       })
       query = {
-        language = "kql"
-        expression    = ""
+        language   = "kql"
+        expression = ""
       }
       metrics = [
         {

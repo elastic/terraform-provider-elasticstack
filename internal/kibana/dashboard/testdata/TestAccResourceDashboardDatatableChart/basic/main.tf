@@ -25,7 +25,7 @@ resource "elasticstack_kibana_dashboard" "test" {
         title       = "Sample Datatable"
         description = "Test datatable visualization"
         dataset_json = jsonencode({
-          type = "index"
+          type  = "index"
           index = "metrics-*"
 
           time_field = "@timestamp"
@@ -34,8 +34,8 @@ resource "elasticstack_kibana_dashboard" "test" {
           mode = "compact"
         }
         query = {
-          language = "kql"
-          expression    = ""
+          language   = "kql"
+          expression = ""
         }
         metrics = [
           {

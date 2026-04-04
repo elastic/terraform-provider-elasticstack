@@ -98,8 +98,8 @@ resource "elasticstack_kibana_dashboard" "test" {
         position   = "right"
       }
       query = {
-        language = "kql"
-        expression    = ""
+        language   = "kql"
+        expression = ""
       }
     }
   }]

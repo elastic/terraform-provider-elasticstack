@@ -24,14 +24,14 @@ resource "elasticstack_kibana_dashboard" "test" {
       title       = "Updated Legacy Metric"
       description = "Updated description"
       dataset_json = jsonencode({
-        type = "index"
+        type  = "index"
         index = "metrics-*"
 
         time_field = "@timestamp"
       })
       query = {
-        language = "lucene"
-        expression    = "status:500"
+        language   = "lucene"
+        expression = "status:500"
       }
       filters = [
         {
