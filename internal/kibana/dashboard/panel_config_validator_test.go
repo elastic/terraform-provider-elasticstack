@@ -22,6 +22,7 @@ import (
 	"maps"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	tfvalidator "github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -47,6 +48,7 @@ func Test_panelConfigValidateDiags_markdown(t *testing.T) {
 			panelConfigValueState{},
 			panelConfigValueState{},
 			lensConfigStates(nil),
+			panelConfigValueState{},
 			nil,
 		)
 		require.False(t, diags.HasError())
@@ -60,6 +62,7 @@ func Test_panelConfigValidateDiags_markdown(t *testing.T) {
 			panelConfigValueState{},
 			panelConfigValueState{},
 			lensConfigStates(nil),
+			panelConfigValueState{},
 			nil,
 		)
 		require.False(t, diags.HasError())
@@ -73,6 +76,7 @@ func Test_panelConfigValidateDiags_markdown(t *testing.T) {
 			panelConfigValueState{},
 			panelConfigValueState{},
 			lensConfigStates(nil),
+			panelConfigValueState{},
 			nil,
 		)
 		require.True(t, diags.HasError())
@@ -92,6 +96,7 @@ func Test_panelConfigValidateDiags_lens(t *testing.T) {
 			lensConfigStates(map[string]panelConfigValueState{
 				"xy_chart_config": {Set: true},
 			}),
+			panelConfigValueState{},
 			nil,
 		)
 		require.False(t, diags.HasError())
@@ -105,6 +110,7 @@ func Test_panelConfigValidateDiags_lens(t *testing.T) {
 			panelConfigValueState{},
 			panelConfigValueState{},
 			lensConfigStates(nil),
+			panelConfigValueState{},
 			nil,
 		)
 		require.False(t, diags.HasError())
@@ -118,6 +124,7 @@ func Test_panelConfigValidateDiags_lens(t *testing.T) {
 			panelConfigValueState{},
 			panelConfigValueState{},
 			lensConfigStates(nil),
+			panelConfigValueState{},
 			nil,
 		)
 		require.True(t, diags.HasError())
@@ -136,6 +143,7 @@ func Test_panelConfigValidateDiags_lens(t *testing.T) {
 				"xy_chart_config": {Set: true},
 				"heatmap_config":  {Set: true},
 			}),
+			panelConfigValueState{},
 			nil,
 		)
 		require.True(t, diags.HasError())
@@ -153,6 +161,7 @@ func Test_panelConfigValidateDiags_lens(t *testing.T) {
 			lensConfigStates(map[string]panelConfigValueState{
 				"gauge_config": {Set: true},
 			}),
+			panelConfigValueState{},
 			nil,
 		)
 		require.True(t, diags.HasError())
@@ -168,6 +177,7 @@ func Test_panelConfigValidateDiags_lens(t *testing.T) {
 			panelConfigValueState{},
 			panelConfigValueState{},
 			lensConfigStates(nil),
+			panelConfigValueState{},
 			nil,
 		)
 		require.False(t, diags.HasError())
@@ -183,6 +193,7 @@ func Test_panelConfigValidateDiags_timeSlider(t *testing.T) {
 			panelConfigValueState{},
 			panelConfigValueState{},
 			lensConfigStates(nil),
+			panelConfigValueState{},
 			nil,
 		)
 		require.False(t, diags.HasError())
@@ -198,6 +209,7 @@ func Test_panelConfigValidateDiags_timeSlider(t *testing.T) {
 			panelConfigValueState{},
 			panelConfigValueState{},
 			lensConfigStates(nil),
+			panelConfigValueState{},
 			nil,
 		)
 		require.False(t, diags.HasError())
@@ -211,6 +223,7 @@ func Test_panelConfigValidateDiags_timeSlider(t *testing.T) {
 			panelConfigValueState{},
 			panelConfigValueState{},
 			lensConfigStates(nil),
+			panelConfigValueState{},
 			nil,
 		)
 		require.False(t, diags.HasError())
@@ -226,6 +239,7 @@ func Test_panelConfigValidateDiags_SloBurnRate(t *testing.T) {
 			panelConfigValueState{Set: true},
 			panelConfigValueState{},
 			lensConfigStates(nil),
+			panelConfigValueState{},
 			nil,
 		)
 		require.False(t, diags.HasError())
@@ -239,6 +253,7 @@ func Test_panelConfigValidateDiags_SloBurnRate(t *testing.T) {
 			panelConfigValueState{},
 			panelConfigValueState{},
 			lensConfigStates(nil),
+			panelConfigValueState{},
 			nil,
 		)
 		require.True(t, diags.HasError())
@@ -254,10 +269,73 @@ func Test_panelConfigValidateDiags_SloBurnRate(t *testing.T) {
 			panelConfigValueState{Unknown: true},
 			panelConfigValueState{},
 			lensConfigStates(nil),
+			panelConfigValueState{},
 			nil,
 		)
 		require.False(t, diags.HasError())
 	})
+}
+
+func Test_rangeSliderControlValueListSizeValidator(t *testing.T) {
+	panelSchema := getPanelSchema()
+	rsAttr, ok := panelSchema.Attributes["range_slider_control_config"].(schema.SingleNestedAttribute)
+	require.True(t, ok)
+
+	valueAttr, ok := rsAttr.Attributes["value"].(schema.ListAttribute)
+	require.True(t, ok)
+	require.NotEmpty(t, valueAttr.Validators)
+
+	testCases := []struct {
+		name      string
+		value     types.List
+		expectErr bool
+	}{
+		{
+			name:      "rejects empty list",
+			value:     types.ListValueMust(types.StringType, []attr.Value{}),
+			expectErr: true,
+		},
+		{
+			name:      "rejects single element",
+			value:     types.ListValueMust(types.StringType, []attr.Value{types.StringValue("10")}),
+			expectErr: true,
+		},
+		{
+			name:      "accepts exactly two elements",
+			value:     types.ListValueMust(types.StringType, []attr.Value{types.StringValue("10"), types.StringValue("500")}),
+			expectErr: false,
+		},
+		{
+			name: "rejects three elements",
+			value: types.ListValueMust(types.StringType, []attr.Value{
+				types.StringValue("10"),
+				types.StringValue("200"),
+				types.StringValue("500"),
+			}),
+			expectErr: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			req := tfvalidator.ListRequest{
+				Path:           path.Root("value"),
+				PathExpression: path.MatchRoot("value"),
+				ConfigValue:    tc.value,
+			}
+			resp := tfvalidator.ListResponse{}
+
+			for _, v := range valueAttr.Validators {
+				v.ValidateList(context.Background(), req, &resp)
+			}
+
+			if tc.expectErr {
+				require.True(t, resp.Diagnostics.HasError(), "expected error but got none")
+			} else {
+				require.False(t, resp.Diagnostics.HasError(), "unexpected error: %s", resp.Diagnostics)
+			}
+		})
+	}
 }
 
 func Test_panelConfigValidateDiags_sloErrorBudget(t *testing.T) {
@@ -269,6 +347,7 @@ func Test_panelConfigValidateDiags_sloErrorBudget(t *testing.T) {
 			panelConfigValueState{},
 			panelConfigValueState{Set: true},
 			lensConfigStates(nil),
+			panelConfigValueState{},
 			nil,
 		)
 		require.False(t, diags.HasError())
@@ -282,6 +361,7 @@ func Test_panelConfigValidateDiags_sloErrorBudget(t *testing.T) {
 			panelConfigValueState{},
 			panelConfigValueState{Unknown: true},
 			lensConfigStates(nil),
+			panelConfigValueState{},
 			nil,
 		)
 		require.False(t, diags.HasError())
@@ -295,6 +375,7 @@ func Test_panelConfigValidateDiags_sloErrorBudget(t *testing.T) {
 			panelConfigValueState{},
 			panelConfigValueState{},
 			lensConfigStates(nil),
+			panelConfigValueState{},
 			nil,
 		)
 		require.True(t, diags.HasError())
