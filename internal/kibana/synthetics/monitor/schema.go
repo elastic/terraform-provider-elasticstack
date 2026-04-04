@@ -157,12 +157,12 @@ var managedElasticLocationOneOf = stringvalidator.OneOf(
 
 type managedLocationStringValidator struct{}
 
-func (v managedLocationStringValidator) Description(_ context.Context) string {
-	return managedElasticLocationOneOf.Description(context.Background())
+func (v managedLocationStringValidator) Description(ctx context.Context) string {
+	return managedElasticLocationOneOf.Description(ctx)
 }
 
-func (v managedLocationStringValidator) MarkdownDescription(_ context.Context) string {
-	return managedElasticLocationOneOf.MarkdownDescription(context.Background())
+func (v managedLocationStringValidator) MarkdownDescription(ctx context.Context) string {
+	return managedElasticLocationOneOf.MarkdownDescription(ctx)
 }
 
 func (v managedLocationStringValidator) ValidateString(ctx context.Context, req validator.StringRequest, resp *validator.StringResponse) {
