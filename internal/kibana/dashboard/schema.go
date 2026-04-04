@@ -2552,7 +2552,7 @@ func getSloSharedDisplaySchema() map[string]schema.Attribute {
 			Optional:            true,
 		},
 		"drilldowns": schema.ListNestedAttribute{
-			MarkdownDescription: "URL drilldowns attached to the panel.",
+			MarkdownDescription: "URL drilldowns attached to the panel. The trigger (`on_open_panel_menu`) and type (`url_drilldown`) are set automatically.",
 			Optional:            true,
 			NestedObject: schema.NestedAttributeObject{
 				Attributes: map[string]schema.Attribute{
@@ -2562,14 +2562,6 @@ func getSloSharedDisplaySchema() map[string]schema.Attribute {
 					},
 					"label": schema.StringAttribute{
 						MarkdownDescription: "The display label for the drilldown link.",
-						Required:            true,
-					},
-					"trigger": schema.StringAttribute{
-						MarkdownDescription: "The trigger event for the drilldown (e.g., `on_open_panel_menu`).",
-						Required:            true,
-					},
-					"type": schema.StringAttribute{
-						MarkdownDescription: "The drilldown type (e.g., `url_drilldown`).",
 						Required:            true,
 					},
 					"encode_url": schema.BoolAttribute{

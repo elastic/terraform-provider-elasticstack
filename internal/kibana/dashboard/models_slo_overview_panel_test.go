@@ -40,8 +40,6 @@ func Test_sloSingleToAPI_basic(t *testing.T) {
 			{
 				URL:          types.StringValue("https://example.com"),
 				Label:        types.StringValue("Open dashboard"),
-				Trigger:      types.StringValue("on_open_panel_menu"),
-				Type:         types.StringValue("url_drilldown"),
 				EncodeURL:    types.BoolValue(true),
 				OpenInNewTab: types.BoolValue(true),
 			},

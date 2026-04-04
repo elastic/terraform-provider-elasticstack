@@ -29,4 +29,4 @@
 
 - [x] 5.1 Run `make build` and verify no compilation errors.
 - [x] 5.2 Run targeted Go tests for `internal/kibana/dashboard` and any touched packages.
-- [ ] 5.3 Run acceptance tests for `internal/kibana/dashboard` against a live stack using the environment described in `dev-docs/high-level/testing.md`.
+- [x] 5.3 Run acceptance tests for `internal/kibana/dashboard` against a live stack using the environment described in `dev-docs/high-level/testing.md`.

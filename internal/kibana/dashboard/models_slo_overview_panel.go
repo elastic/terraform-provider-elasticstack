@@ -69,11 +69,11 @@ type sloGroupFiltersModel struct {
 }
 
 // sloDrilldownModel holds one URL drilldown entry.
+// trigger and type are always hardcoded to "on_open_panel_menu" / "url_drilldown" — they
+// are not exposed to users (matching the slo_burn_rate_config drilldowns approach).
 type sloDrilldownModel struct {
 	URL          types.String `tfsdk:"url"`
 	Label        types.String `tfsdk:"label"`
-	Trigger      types.String `tfsdk:"trigger"`
-	Type         types.String `tfsdk:"type"`
 	EncodeURL    types.Bool   `tfsdk:"encode_url"`
 	OpenInNewTab types.Bool   `tfsdk:"open_in_new_tab"`
 }
@@ -273,14 +273,15 @@ func injectDrilldownsJSON(api any, drilldowns []sloDrilldownModel) diag.Diagnost
 }
 
 // buildDrilldownsWire converts TF drilldown models to JSON wire format.
+// trigger and type are always hardcoded to the only values Kibana accepts for SLO overview panels.
 func buildDrilldownsWire(drilldowns []sloDrilldownModel) []sloDrilldownWireJSON {
 	result := make([]sloDrilldownWireJSON, len(drilldowns))
 	for i, dd := range drilldowns {
 		result[i] = sloDrilldownWireJSON{
 			URL:     dd.URL.ValueString(),
 			Label:   dd.Label.ValueString(),
-			Trigger: dd.Trigger.ValueString(),
-			Type:    dd.Type.ValueString(),
+			Trigger: "on_open_panel_menu",
+			Type:    "url_drilldown",
 		}
 		if typeutils.IsKnown(dd.EncodeURL) {
 			result[i].EncodeURL = dd.EncodeURL.ValueBoolPointer()
@@ -406,11 +407,21 @@ func sloSingleFromAPI(pm *panelModel, tfPanel *panelModel, api kbapi.SloSingleOv
 
 	m.SloID = types.StringValue(api.SloId)
 
-	// slo_instance_id null-preservation: if prior state was null and API returns "*", preserve null
+	// slo_instance_id null-preservation:
+	//   - On import (priorSingle == nil): normalize API wildcard "*" to null so the imported
+	//     state matches the config of a user who omitted slo_instance_id.
+	//   - Normal refresh (priorSingle != nil): if prior state was null and API returns "*",
+	//     preserve null; otherwise take the API value.
+	//   - API omitted it: preserve prior state if known, else null.
 	if api.SloInstanceId != nil {
-		if priorSingle != nil && priorSingle.SloInstanceID.IsNull() && *api.SloInstanceId == "*" {
+		switch {
+		case priorSingle == nil && *api.SloInstanceId == "*":
+			// Import path: normalize wildcard to null
 			m.SloInstanceID = types.StringNull()
-		} else {
+		case priorSingle != nil && priorSingle.SloInstanceID.IsNull() && *api.SloInstanceId == "*":
+			// Refresh path: prior null — keep null
+			m.SloInstanceID = types.StringNull()
+		default:
 			m.SloInstanceID = types.StringPointerValue(api.SloInstanceId)
 		}
 	} else {
@@ -555,6 +566,7 @@ func sloGroupsFromAPI(pm *panelModel, tfPanel *panelModel, api kbapi.SloGroupOve
 }
 
 // drilldownsFromWireJSON decodes a JSON array of drilldown objects into TF models.
+// trigger and type are not stored in state — they are always hardcoded constants.
 func drilldownsFromWireJSON(b []byte) []sloDrilldownModel {
 	var wire []sloDrilldownWireJSON
 	if err := json.Unmarshal(b, &wire); err != nil {
@@ -563,10 +575,8 @@ func drilldownsFromWireJSON(b []byte) []sloDrilldownModel {
 	result := make([]sloDrilldownModel, len(wire))
 	for i, dd := range wire {
 		result[i] = sloDrilldownModel{
-			URL:     types.StringValue(dd.URL),
-			Label:   types.StringValue(dd.Label),
-			Trigger: types.StringValue(dd.Trigger),
-			Type:    types.StringValue(dd.Type),
+			URL:   types.StringValue(dd.URL),
+			Label: types.StringValue(dd.Label),
 		}
 		result[i].EncodeURL = types.BoolPointerValue(dd.EncodeURL)
 		result[i].OpenInNewTab = types.BoolPointerValue(dd.OpenInNewTab)
