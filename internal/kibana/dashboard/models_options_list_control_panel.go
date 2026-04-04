@@ -128,7 +128,7 @@ func populateOptionsListControlFromAPI(pm *panelModel, tfPanel *panelModel, apiC
 	if typeutils.IsKnown(existing.SearchTechnique) && apiConfig.SearchTechnique != nil {
 		existing.SearchTechnique = types.StringValue(string(*apiConfig.SearchTechnique))
 	}
-	if !existing.SelectedOptions.IsNull() && apiConfig.SelectedOptions != nil {
+	if !existing.SelectedOptions.IsNull() && !existing.SelectedOptions.IsUnknown() && apiConfig.SelectedOptions != nil {
 		existing.SelectedOptions = selectedOptionsToList(*apiConfig.SelectedOptions)
 	}
 
@@ -195,7 +195,7 @@ func buildOptionsListControlConfig(pm panelModel, olPanel *kbapi.KbnDashboardPan
 		st := kbapi.KbnDashboardPanelOptionsListControlConfigSearchTechnique(cfg.SearchTechnique.ValueString())
 		olPanel.Config.SearchTechnique = &st
 	}
-	if !cfg.SelectedOptions.IsNull() {
+	if !cfg.SelectedOptions.IsNull() && !cfg.SelectedOptions.IsUnknown() {
 		elems := cfg.SelectedOptions.Elements()
 		items := make([]kbapi.KbnDashboardPanelOptionsListControl_Config_SelectedOptions_Item, 0, len(elems))
 		for _, e := range elems {

@@ -18,6 +18,7 @@
 package dashboard_test
 
 import (
+	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -97,18 +98,23 @@ func TestAccResourceDashboardOptionsListControl(t *testing.T) {
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.options_list_control_config.single_select"),
 				),
 			},
-			// Update to no config block (block absent entirely)
+		},
+	})
+}
+
+func TestAccResourceDashboardOptionsListControlInvalidConfig(t *testing.T) {
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			// options_list_control_config is required when type = "options_list_control"; omitting it must be rejected.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("no_config"),
 				ConfigVariables: config.Variables{
-					"dashboard_title": config.StringVariable(dashboardTitle),
+					"dashboard_title": config.StringVariable("unused"),
 				},
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.type", "options_list_control"),
-					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.options_list_control_config"),
-				),
+				ExpectError: regexp.MustCompile(`(?i)options_list_control_config`),
 			},
 		},
 	})
