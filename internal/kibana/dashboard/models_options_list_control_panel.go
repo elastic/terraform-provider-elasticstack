@@ -66,49 +66,31 @@ func populateOptionsListControlFromAPI(pm *panelModel, tfPanel *panelModel, apiC
 	existing := pm.OptionsListControlConfig
 
 	if tfPanel == nil {
-		// On import: populate from API unconditionally.
+		// On import: populate from API. Required fields are always set; optional fields are
+		// set only if present in the API response. Fields that Kibana returns as server-side
+		// defaults (e.g. use_global_filters, exclude, sort) are treated as optional and left
+		// null when absent from the user's configuration — matching the null-preservation
+		// behaviour used during normal apply reads.
 		pm.OptionsListControlConfig = &optionsListControlConfigModel{
-			DataViewID: types.StringValue(apiConfig.DataViewId),
-			FieldName:  types.StringValue(apiConfig.FieldName),
+			DataViewID:      types.StringValue(apiConfig.DataViewId),
+			FieldName:       types.StringValue(apiConfig.FieldName),
+			SelectedOptions: types.ListNull(types.StringType),
 		}
 		existing = pm.OptionsListControlConfig
 		if apiConfig.Title != nil {
 			existing.Title = types.StringValue(*apiConfig.Title)
 		}
-		if apiConfig.UseGlobalFilters != nil {
-			existing.UseGlobalFilters = types.BoolValue(*apiConfig.UseGlobalFilters)
-		}
-		if apiConfig.IgnoreValidations != nil {
-			existing.IgnoreValidations = types.BoolValue(*apiConfig.IgnoreValidations)
-		}
 		if apiConfig.SingleSelect != nil {
 			existing.SingleSelect = types.BoolValue(*apiConfig.SingleSelect)
-		}
-		if apiConfig.Exclude != nil {
-			existing.Exclude = types.BoolValue(*apiConfig.Exclude)
-		}
-		if apiConfig.ExistsSelected != nil {
-			existing.ExistsSelected = types.BoolValue(*apiConfig.ExistsSelected)
-		}
-		if apiConfig.RunPastTimeout != nil {
-			existing.RunPastTimeout = types.BoolValue(*apiConfig.RunPastTimeout)
 		}
 		if apiConfig.SearchTechnique != nil {
 			existing.SearchTechnique = types.StringValue(string(*apiConfig.SearchTechnique))
 		}
 		if apiConfig.SelectedOptions != nil {
 			existing.SelectedOptions = selectedOptionsToList(*apiConfig.SelectedOptions)
-		} else {
-			existing.SelectedOptions = types.ListNull(types.StringType)
 		}
 		if apiConfig.DisplaySettings != nil {
 			existing.DisplaySettings = displaySettingsFromAPI(apiConfig.DisplaySettings)
-		}
-		if apiConfig.Sort != nil {
-			existing.Sort = &optionsListControlSortModel{
-				By:        types.StringValue(string(apiConfig.Sort.By)),
-				Direction: types.StringValue(string(apiConfig.Sort.Direction)),
-			}
 		}
 		return
 	}

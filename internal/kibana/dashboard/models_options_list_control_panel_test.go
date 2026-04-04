@@ -43,8 +43,11 @@ func Test_populateOptionsListControlFromAPI_nilBlock_preservedAsNil(t *testing.T
 	assert.Nil(t, pm.OptionsListControlConfig)
 }
 
-// Test: on import (tfPanel == nil), populate all returned fields.
-func Test_populateOptionsListControlFromAPI_import_populatesAllFields(t *testing.T) {
+// Test: on import (tfPanel == nil), required fields and user-configurable optional fields are
+// populated; server-default boolean flags (use_global_filters, exclude, exists_selected,
+// ignore_validations, run_past_timeout) and sort are intentionally left null to avoid
+// post-import drift when users have not explicitly configured them.
+func Test_populateOptionsListControlFromAPI_import_populatesUserConfigurableFields(t *testing.T) {
 	pm := &panelModel{}
 	st := kbapi.KbnDashboardPanelOptionsListControlConfigSearchTechniquePrefix
 	apiCfg := kbapi.KbnDashboardPanelOptionsListControl_Config{
@@ -85,22 +88,21 @@ func Test_populateOptionsListControlFromAPI_import_populatesAllFields(t *testing
 	assert.Equal(t, types.StringValue("dv1"), cfg.DataViewID)
 	assert.Equal(t, types.StringValue("field1"), cfg.FieldName)
 	assert.Equal(t, types.StringValue("My Control"), cfg.Title)
-	assert.Equal(t, types.BoolValue(true), cfg.UseGlobalFilters)
-	assert.Equal(t, types.BoolValue(false), cfg.IgnoreValidations)
 	assert.Equal(t, types.BoolValue(true), cfg.SingleSelect)
-	assert.Equal(t, types.BoolValue(false), cfg.Exclude)
-	assert.Equal(t, types.BoolValue(true), cfg.ExistsSelected)
-	assert.Equal(t, types.BoolValue(false), cfg.RunPastTimeout)
 	assert.Equal(t, types.StringValue("prefix"), cfg.SearchTechnique)
+	// Server-default boolean flags are left null on import to match apply-read null-preservation.
+	assert.True(t, cfg.UseGlobalFilters.IsNull())
+	assert.True(t, cfg.IgnoreValidations.IsNull())
+	assert.True(t, cfg.Exclude.IsNull())
+	assert.True(t, cfg.ExistsSelected.IsNull())
+	assert.True(t, cfg.RunPastTimeout.IsNull())
+	assert.Nil(t, cfg.Sort)
 	require.NotNil(t, cfg.DisplaySettings)
 	assert.Equal(t, types.StringValue("Select..."), cfg.DisplaySettings.Placeholder)
 	assert.Equal(t, types.BoolValue(true), cfg.DisplaySettings.HideActionBar)
 	assert.Equal(t, types.BoolValue(false), cfg.DisplaySettings.HideExclude)
 	assert.Equal(t, types.BoolValue(true), cfg.DisplaySettings.HideExists)
 	assert.Equal(t, types.BoolValue(false), cfg.DisplaySettings.HideSort)
-	require.NotNil(t, cfg.Sort)
-	assert.Equal(t, types.StringValue("_key"), cfg.Sort.By)
-	assert.Equal(t, types.StringValue("asc"), cfg.Sort.Direction)
 }
 
 // Test: on import with no optional fields, only required fields are populated.
