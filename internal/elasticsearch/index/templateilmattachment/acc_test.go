@@ -18,8 +18,15 @@
 package templateilmattachment_test
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -29,6 +36,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/templateilmattachment"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
+	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -103,18 +111,135 @@ func TestAccResourceIndexTemplateIlmAttachment_fleet(t *testing.T) {
 					checkComponentTemplateHasILM("logs-system.syslog@custom", "test-fleet-policy-2"),
 				),
 			},
+			// Update again
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(templateilmattachment.MinVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name":          config.StringVariable("test-fleet-policy-3"),
+					"fleet_system_version": config.StringVariable(fleetSystemVersion),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(
+						"elasticstack_elasticsearch_index_template_ilm_attachment.test",
+						"lifecycle_name", "test-fleet-policy-3"),
+					checkComponentTemplateHasILM("logs-system.syslog@custom", "test-fleet-policy-3"),
+				),
+			},
 			// Import
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(templateilmattachment.MinVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
-					"policy_name":          config.StringVariable("test-fleet-policy-2"),
+					"policy_name":          config.StringVariable("test-fleet-policy-3"),
 					"fleet_system_version": config.StringVariable(fleetSystemVersion),
 				},
 				ResourceName:      "elasticstack_elasticsearch_index_template_ilm_attachment.test",
 				ImportState:       true,
 				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccResourceIndexTemplateIlmAttachment_connectionOverrideBasicAuth(t *testing.T) {
+	indexTemplate := fmt.Sprintf("logs-ilm-basic-%s", sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum))
+	policyName := fmt.Sprintf("test-ilm-basic-%s", sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum))
+	endpoint := primaryESEndpoint()
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { preCheckESBasicAuth(t) },
+		CheckDestroy: checkResourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				Config:                   testAccResourceIndexTemplateIlmAttachmentBasicAuthConfig(indexTemplate, policyName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template_ilm_attachment.test", "index_template", indexTemplate),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template_ilm_attachment.test", "lifecycle_name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template_ilm_attachment.test", "elasticsearch_connection.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template_ilm_attachment.test", "elasticsearch_connection.0.username", os.Getenv("ELASTICSEARCH_USERNAME")),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index_template_ilm_attachment.test", "elasticsearch_connection.0.password"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template_ilm_attachment.test", "elasticsearch_connection.0.endpoints.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template_ilm_attachment.test", "elasticsearch_connection.0.endpoints.0", endpoint),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template_ilm_attachment.test", "elasticsearch_connection.0.headers.%", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template_ilm_attachment.test", "elasticsearch_connection.0.headers.XTerraformTest", "basic-auth"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template_ilm_attachment.test", "elasticsearch_connection.0.insecure", "true"),
+					checkComponentTemplateHasILM(indexTemplate+"@custom", policyName),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceIndexTemplateIlmAttachment_connectionOverrideAPIKey(t *testing.T) {
+	indexTemplate := fmt.Sprintf("logs-ilm-apikey-%s", sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum))
+	policyName := fmt.Sprintf("test-ilm-apikey-%s", sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum))
+	endpoint := primaryESEndpoint()
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				Config:                   testAccResourceIndexTemplateIlmAttachmentAPIKeyConfig(indexTemplate, policyName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template_ilm_attachment.test", "index_template", indexTemplate),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template_ilm_attachment.test", "lifecycle_name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template_ilm_attachment.test", "elasticsearch_connection.#", "1"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index_template_ilm_attachment.test", "elasticsearch_connection.0.api_key"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template_ilm_attachment.test", "elasticsearch_connection.0.endpoints.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template_ilm_attachment.test", "elasticsearch_connection.0.endpoints.0", endpoint),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template_ilm_attachment.test", "elasticsearch_connection.0.headers.%", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template_ilm_attachment.test", "elasticsearch_connection.0.headers.XTerraformTest", "api-key"),
+					checkComponentTemplateHasILM(indexTemplate+"@custom", policyName),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceIndexTemplateIlmAttachment_connectionOverrideBearerToken(t *testing.T) {
+	indexTemplate := fmt.Sprintf("logs-ilm-bearer-%s", sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum))
+	policyName := fmt.Sprintf("test-ilm-bearer-%s", sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum))
+	endpoint := primaryESEndpoint()
+	var bearerToken string
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			preCheckESBasicAuth(t)
+			bearerToken = createESAccessToken(t)
+		},
+		CheckDestroy: checkResourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				Config:                   testAccResourceIndexTemplateIlmAttachmentBearerTokenConfig(indexTemplate, policyName, bearerToken),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template_ilm_attachment.test", "index_template", indexTemplate),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template_ilm_attachment.test", "lifecycle_name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template_ilm_attachment.test", "elasticsearch_connection.#", "1"),
+					checkResourceAttrExists("elasticstack_elasticsearch_index_template_ilm_attachment.test", "elasticsearch_connection.0.bearer_token"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template_ilm_attachment.test", "elasticsearch_connection.0.es_client_authentication", "shared-secret"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template_ilm_attachment.test", "elasticsearch_connection.0.endpoints.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template_ilm_attachment.test", "elasticsearch_connection.0.endpoints.0", endpoint),
+					checkComponentTemplateHasILM(indexTemplate+"@custom", policyName),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceIndexTemplateIlmAttachment_connectionValidationConflictingAuth(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: acctest.Providers,
+		Steps: []resource.TestStep{
+			{
+				Config:      testAccResourceIndexTemplateIlmAttachmentConflictingAuthConfig(),
+				ExpectError: regexp.MustCompile(`(?s)(Invalid Attribute Combination|api_key.*username|username.*api_key|api_key.*password|password.*api_key)`),
 			},
 		},
 	})
@@ -310,5 +435,223 @@ func checkComponentTemplateHasILM(name string, expectedPolicy string) resource.T
 		}
 
 		return nil
+	}
+}
+
+func testAccResourceIndexTemplateIlmAttachmentBasicAuthConfig(indexTemplate, policyName string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_index_lifecycle" "test" {
+  name = %q
+
+  hot {
+    rollover {
+      max_age = "1d"
+    }
+  }
+
+  delete {
+    min_age = "30d"
+    delete {}
+  }
+}
+
+resource "elasticstack_elasticsearch_index_template_ilm_attachment" "test" {
+  index_template = %q
+  lifecycle_name = elasticstack_elasticsearch_index_lifecycle.test.name
+
+  elasticsearch_connection {
+    endpoints = [%q]
+    username  = %q
+    password  = %q
+    headers = {
+      XTerraformTest = "basic-auth"
+    }
+    insecure = true
+  }
+}
+`, policyName, indexTemplate, primaryESEndpoint(), os.Getenv("ELASTICSEARCH_USERNAME"), os.Getenv("ELASTICSEARCH_PASSWORD"))
+}
+
+func testAccResourceIndexTemplateIlmAttachmentAPIKeyConfig(indexTemplate, policyName string) string {
+	apiKeyName := fmt.Sprintf("%s-api-key", policyName)
+
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_index_lifecycle" "test" {
+  name = %q
+
+  hot {
+    rollover {
+      max_age = "1d"
+    }
+  }
+
+  delete {
+    min_age = "30d"
+    delete {}
+  }
+}
+
+resource "elasticstack_elasticsearch_security_api_key" "test" {
+  name = %q
+  role_descriptors = jsonencode({
+    template_ilm_attachment = {
+      cluster = ["all"]
+    }
+  })
+}
+
+resource "elasticstack_elasticsearch_index_template_ilm_attachment" "test" {
+  index_template = %q
+  lifecycle_name = elasticstack_elasticsearch_index_lifecycle.test.name
+
+  elasticsearch_connection {
+    endpoints = [%q]
+    api_key   = elasticstack_elasticsearch_security_api_key.test.encoded
+    headers = {
+      XTerraformTest = "api-key"
+    }
+  }
+}
+`, policyName, apiKeyName, indexTemplate, primaryESEndpoint())
+}
+
+func testAccResourceIndexTemplateIlmAttachmentBearerTokenConfig(indexTemplate, policyName, bearerToken string) string {
+	return fmt.Sprintf(`
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_index_lifecycle" "test" {
+  name = %q
+
+  hot {
+    rollover {
+      max_age = "1d"
+    }
+  }
+
+  delete {
+    min_age = "30d"
+    delete {}
+  }
+}
+
+resource "elasticstack_elasticsearch_index_template_ilm_attachment" "test" {
+  index_template = %q
+  lifecycle_name = elasticstack_elasticsearch_index_lifecycle.test.name
+
+  elasticsearch_connection {
+    endpoints                = [%q]
+    bearer_token             = %q
+    es_client_authentication = "shared-secret"
+  }
+}
+`, policyName, indexTemplate, primaryESEndpoint(), bearerToken)
+}
+
+func testAccResourceIndexTemplateIlmAttachmentConflictingAuthConfig() string {
+	return `
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_index_template_ilm_attachment" "test" {
+  index_template = "validation-conflicting-auth"
+  lifecycle_name = "validation-conflicting-auth"
+
+  elasticsearch_connection {
+    endpoints = ["http://localhost:9200"]
+    username  = "elastic"
+    password  = "password"
+    api_key   = "Zm9vOmJhcg=="
+  }
+}
+`
+}
+
+func preCheckESBasicAuth(t *testing.T) {
+	acctest.PreCheck(t)
+	if os.Getenv("ELASTICSEARCH_USERNAME") == "" || os.Getenv("ELASTICSEARCH_PASSWORD") == "" {
+		t.Skip("ELASTICSEARCH_USERNAME and ELASTICSEARCH_PASSWORD must be set for explicit basic auth coverage")
+	}
+}
+
+func primaryESEndpoint() string {
+	for endpoint := range strings.SplitSeq(os.Getenv("ELASTICSEARCH_ENDPOINTS"), ",") {
+		endpoint = strings.TrimSpace(endpoint)
+		if endpoint != "" {
+			return endpoint
+		}
+	}
+
+	return "http://localhost:9200"
+}
+
+func createESAccessToken(t *testing.T) string {
+	t.Helper()
+
+	payload, err := json.Marshal(map[string]string{
+		"grant_type": "password",
+		"username":   os.Getenv("ELASTICSEARCH_USERNAME"),
+		"password":   os.Getenv("ELASTICSEARCH_PASSWORD"),
+	})
+	if err != nil {
+		t.Fatalf("failed to marshal token request: %v", err)
+	}
+
+	req, err := http.NewRequest(http.MethodPost, primaryESEndpoint()+"/_security/oauth2/token", bytes.NewReader(payload))
+	if err != nil {
+		t.Fatalf("failed to build token request: %v", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.SetBasicAuth(os.Getenv("ELASTICSEARCH_USERNAME"), os.Getenv("ELASTICSEARCH_PASSWORD"))
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("failed to create Elasticsearch access token: %v", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("failed to read token response: %v", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("failed to create Elasticsearch access token: status %d: %s", resp.StatusCode, string(body))
+	}
+
+	var tokenResponse struct {
+		AccessToken string `json:"access_token"`
+	}
+	if err := json.Unmarshal(body, &tokenResponse); err != nil {
+		t.Fatalf("failed to decode token response: %v", err)
+	}
+	if tokenResponse.AccessToken == "" {
+		t.Fatalf("token response did not include an access_token")
+	}
+
+	return tokenResponse.AccessToken
+}
+
+func checkResourceAttrExists(resourceName, attr string) resource.TestCheckFunc {
+	return func(state *terraform.State) error {
+		rs, ok := state.RootModule().Resources[resourceName]
+		if !ok {
+			return fmt.Errorf("resource %s not found in state", resourceName)
+		}
+
+		if _, ok := rs.Primary.Attributes[attr]; ok {
+			return nil
+		}
+		return fmt.Errorf("resource %s attribute %s not present", resourceName, attr)
 	}
 }
