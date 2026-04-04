@@ -126,18 +126,16 @@ func Test_wafflePanelConfigConverter_populateFromAttributes_buildAttributes_roun
 		Type:        kbapi.WaffleESQLTypeWaffle,
 		Title:       new("Waffle ESQL Round-Trip"),
 		Description: new("esql test"),
-		Legend:      kbapi.WaffleLegend{Size: kbapi.LegendSizeSmall},
+		Legend:      kbapi.WaffleLegend{Size: kbapi.LegendSizeS},
 		Metrics: []struct {
-			Color     kbapi.StaticColor                `json:"color"`
-			Column    string                           `json:"column"`
-			Format    kbapi.FormatType                 `json:"format"`
-			Label     *string                          `json:"label,omitempty"`
-			Operation kbapi.WaffleESQLMetricsOperation `json:"operation"`
+			Color  kbapi.StaticColor `json:"color"`
+			Column string            `json:"column"`
+			Format kbapi.FormatType  `json:"format"`
+			Label  *string           `json:"label,omitempty"`
 		}{
 			{
-				Column:    "cnt",
-				Operation: kbapi.WaffleESQLMetricsOperationValue,
-				Format:    format,
+				Column: "cnt",
+				Format: format,
 				Color: kbapi.StaticColor{
 					Type:  kbapi.Static,
 					Color: "#006BB4",
@@ -145,17 +143,15 @@ func Test_wafflePanelConfigConverter_populateFromAttributes_buildAttributes_roun
 			},
 		},
 		GroupBy: &[]struct {
-			CollapseBy kbapi.CollapseBy                 `json:"collapse_by"`
-			Color      kbapi.ColorMapping               `json:"color"`
-			Column     string                           `json:"column"`
-			Format     kbapi.FormatType                 `json:"format"`
-			Label      *string                          `json:"label,omitempty"`
-			Operation  kbapi.WaffleESQLGroupByOperation `json:"operation"`
+			CollapseBy kbapi.CollapseBy   `json:"collapse_by"`
+			Color      kbapi.ColorMapping `json:"color"`
+			Column     string             `json:"column"`
+			Format     kbapi.FormatType   `json:"format"`
+			Label      *string            `json:"label,omitempty"`
 		}{
 			{
 				Column:     "host",
 				Format:     format,
-				Operation:  kbapi.WaffleESQLGroupByOperationValue,
 				CollapseBy: kbapi.CollapseByAvg,
 				Color:      colorMap,
 			},

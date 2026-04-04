@@ -45,7 +45,7 @@ resource "elasticstack_kibana_dashboard" "test" {
       breakdown_by_json = jsonencode({
         operation = "terms"
         fields    = ["category"]
-        size      = 3
+        limit     = 3
         rank_by = {
           direction = "desc"
           metric    = 0

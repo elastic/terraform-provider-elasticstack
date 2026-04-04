@@ -22,7 +22,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -45,19 +44,13 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 
 	spaceID := planModel.SpaceID.ValueString()
 
-	dashboardID := planModel.DashboardID.ValueString()
-	if dashboardID == "" {
-		dashboardID = uuid.New().String()
-		planModel.DashboardID = types.StringValue(dashboardID)
-	}
-
-	// Convert the plan to an API request
-	apiReq := planModel.toAPICreateRequest(ctx, &resp.Diagnostics)
+	// Convert the plan to an API request.
+	apiReqBody := planModel.toAPICreateRequestJSON(ctx, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	createResp, diags := kibanaoapi.CreateDashboard(ctx, kibanaClient, spaceID, dashboardID, apiReq)
+	createResp, diags := kibanaoapi.CreateDashboardRaw(ctx, kibanaClient, spaceID, apiReqBody)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -72,6 +65,7 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 		ResourceID: createResp.JSON201.Id,
 	}
 	planModel.ID = types.StringValue(compID.String())
+	planModel.DashboardID = types.StringValue(createResp.JSON201.Id)
 
 	planPanels := planModel.Panels
 	readModel, diags := r.read(ctx, planModel)

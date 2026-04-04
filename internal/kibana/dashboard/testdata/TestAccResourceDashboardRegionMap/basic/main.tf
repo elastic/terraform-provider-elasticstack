@@ -40,8 +40,8 @@ resource "elasticstack_kibana_dashboard" "test" {
           {
             label = "All"
             filter = {
-              query    = "*"
-              language = "kuery"
+              expression = "*"
+              language   = "kql"
             }
           }
         ]

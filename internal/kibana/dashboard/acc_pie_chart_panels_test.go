@@ -49,7 +49,7 @@ func TestAccResourceDashboardPieChart(t *testing.T) {
 					// Check pie chart config
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.pie_chart_config.title", "Sample Pie Chart"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.pie_chart_config.description", "Test pie chart visualization"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.pie_chart_config.donut_hole", "small"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.pie_chart_config.donut_hole", "s"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.pie_chart_config.label_position", "inside"),
 
 					// Check query
@@ -79,7 +79,7 @@ func TestAccResourceDashboardPieChart(t *testing.T) {
 					// Check pie chart config
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.pie_chart_config.title", "Full Pie Chart"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.pie_chart_config.description", "Full pie chart visualization"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.pie_chart_config.donut_hole", "large"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.pie_chart_config.donut_hole", "l"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.pie_chart_config.label_position", "outside"),
 
 					// Check new attributes (using values compatible with current API behavior/defaults)

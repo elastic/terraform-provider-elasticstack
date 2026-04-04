@@ -142,8 +142,8 @@ func (m *dashboardModel) populateFromAPI(ctx context.Context, resp *kbapi.GetDas
 }
 
 // toAPICreateRequest converts the Terraform model to an API create request
-func (m *dashboardModel) toAPICreateRequest(ctx context.Context, diags *diag.Diagnostics) kbapi.PostDashboardsIdJSONRequestBody {
-	req := kbapi.PostDashboardsIdJSONRequestBody{}
+func (m *dashboardModel) toAPICreateRequest(ctx context.Context, diags *diag.Diagnostics) kbapi.PostDashboardsJSONRequestBody {
+	req := kbapi.PostDashboardsJSONRequestBody{}
 	req.Title = m.Title.ValueString()
 	req.RefreshInterval.Pause = m.RefreshIntervalPause.ValueBool()
 	req.RefreshInterval.Value = float32(m.RefreshIntervalValue.ValueInt64())
@@ -180,15 +180,53 @@ func (m *dashboardModel) toAPICreateRequest(ctx context.Context, diags *diag.Dia
 	diags.Append(optionsDiags...)
 	req.Options = options
 
-	// Set panels
-	panels, panelsDiags := m.panelsToAPI()
-	diags.Append(panelsDiags...)
-	req.Panels = panels
-
 	// Set access control
 	req.AccessControl = m.AccessControl.toCreateAPI()
 
 	return req
+}
+
+func (m *dashboardModel) toAPICreateRequestJSON(ctx context.Context, diags *diag.Diagnostics) []byte {
+	req := m.toAPICreateRequest(ctx, diags)
+
+	body, err := json.Marshal(req)
+	if err != nil {
+		diags.AddError("Failed to marshal dashboard create request", err.Error())
+		return nil
+	}
+
+	var raw map[string]any
+	if err := json.Unmarshal(body, &raw); err != nil {
+		diags.AddError("Failed to decode dashboard create request", err.Error())
+		return nil
+	}
+
+	panels, panelsDiags := m.panelsToAPI()
+	diags.Append(panelsDiags...)
+	if diags.HasError() {
+		return nil
+	}
+	if panels != nil {
+		panelBytes, err := json.Marshal(panels)
+		if err != nil {
+			diags.AddError("Failed to marshal dashboard panels for create", err.Error())
+			return nil
+		}
+		var rawPanels any
+		if err := json.Unmarshal(panelBytes, &rawPanels); err != nil {
+			diags.AddError("Failed to decode dashboard panels for create", err.Error())
+			return nil
+		}
+		raw["panels"] = rawPanels
+	}
+
+	finalBody, err := json.Marshal(raw)
+	if err != nil {
+		diags.AddError("Failed to encode dashboard create request", err.Error())
+		return nil
+	}
+
+	return finalBody
 }
 
 // toAPIUpdateRequest converts the Terraform model to an API update request

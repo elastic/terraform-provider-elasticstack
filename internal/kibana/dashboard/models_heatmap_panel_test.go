@@ -42,7 +42,7 @@ func Test_heatmapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 		IgnoreGlobalFilters: new(true),
 		Sampling:            new(float32(0.5)),
 		Query: kbapi.FilterSimple{
-			Query: "status:200",
+			Expression: "status:200",
 			Language: func() *kbapi.FilterSimpleLanguage {
 				lang := kbapi.FilterSimpleLanguage("kuery")
 				return &lang
@@ -88,12 +88,11 @@ func Test_heatmapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 			},
 		},
 		Legend: kbapi.HeatmapLegend{
-			Size: kbapi.LegendSizeMedium,
-			Position: func() *kbapi.HeatmapLegendPosition {
-				pos := kbapi.HeatmapLegendPosition("right")
-				return &pos
+			Size: kbapi.LegendSizeM,
+			Visibility: func() *kbapi.HeatmapLegendVisibility {
+				visibility := kbapi.HeatmapLegendVisibilityVisible
+				return &visibility
 			}(),
-			Visible:            new(true),
 			TruncateAfterLines: new(float32(4)),
 		},
 	}
@@ -137,8 +136,8 @@ func Test_heatmapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 	assert.Equal(t, kbapi.HeatmapNoESQLTypeHeatmap, heatmapRoundTrip.Type)
 	require.NotNil(t, heatmapRoundTrip.Title)
 	assert.Equal(t, "Test Heatmap", *heatmapRoundTrip.Title)
-	assert.Equal(t, kbapi.LegendSizeMedium, heatmapRoundTrip.Legend.Size)
-	assert.Equal(t, "status:200", heatmapRoundTrip.Query.Query)
+	assert.Equal(t, kbapi.LegendSizeM, heatmapRoundTrip.Legend.Size)
+	assert.Equal(t, "status:200", heatmapRoundTrip.Query.Expression)
 }
 
 func Test_heatmapConfigModel_fromAPI_toAPI_esql(t *testing.T) {
@@ -181,7 +180,6 @@ func Test_heatmapConfigModel_fromAPI_toAPI_esql(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, kbapi.HeatmapESQLTypeHeatmap, heatmapRoundTrip.Type)
 	assert.Equal(t, "bytes", heatmapRoundTrip.Metric.Column)
-	assert.Equal(t, kbapi.HeatmapESQLMetricOperationValue, heatmapRoundTrip.Metric.Operation)
 }
 
 func Test_heatmapPanelConfigConverter_populateFromAttributes_buildAttributes_roundTrip_NoESQL(t *testing.T) {
@@ -194,8 +192,8 @@ func Test_heatmapPanelConfigConverter_populateFromAttributes_buildAttributes_rou
 		IgnoreGlobalFilters: new(true),
 		Sampling:            new(float32(0.5)),
 		Query: kbapi.FilterSimple{
-			Query:    "status:200",
-			Language: new(kbapi.FilterSimpleLanguage("kuery")),
+			Expression: "status:200",
+			Language:   new(kbapi.FilterSimpleLanguage("kuery")),
 		},
 	}
 	require.NoError(t, json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &heatmap.Dataset))

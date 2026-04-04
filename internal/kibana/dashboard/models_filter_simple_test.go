@@ -34,8 +34,8 @@ func Test_filterSimpleModel_fromAPI_toAPI(t *testing.T) {
 		{
 			name: "all fields populated",
 			apiQuery: kbapi.FilterSimple{
-				Query:    "test query",
-				Language: func() *kbapi.FilterSimpleLanguage { l := kbapi.FilterSimpleLanguage("kuery"); return &l }(),
+				Expression: "test query",
+				Language:   func() *kbapi.FilterSimpleLanguage { l := kbapi.FilterSimpleLanguage("kuery"); return &l }(),
 			},
 			expected: &filterSimpleModel{
 				Query:    types.StringValue("test query"),
@@ -45,8 +45,8 @@ func Test_filterSimpleModel_fromAPI_toAPI(t *testing.T) {
 		{
 			name: "only required field",
 			apiQuery: kbapi.FilterSimple{
-				Query:    "simple query",
-				Language: nil,
+				Expression: "simple query",
+				Language:   nil,
 			},
 			expected: &filterSimpleModel{
 				Query:    types.StringValue("simple query"),
@@ -66,7 +66,7 @@ func Test_filterSimpleModel_fromAPI_toAPI(t *testing.T) {
 
 			// Test toAPI
 			apiQuery := model.toAPI()
-			assert.Equal(t, tt.apiQuery.Query, apiQuery.Query)
+			assert.Equal(t, tt.apiQuery.Expression, apiQuery.Expression)
 		})
 	}
 }

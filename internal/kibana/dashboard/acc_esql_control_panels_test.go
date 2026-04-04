@@ -109,6 +109,17 @@ func TestAccResourceDashboardESQLControl(t *testing.T) {
 				},
 				ExpectError: regexp.MustCompile(`(?i)esql_control_config`),
 			},
+			// Restore a valid config so post-test destroy does not reuse the invalid fixture.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty_config"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
 		},
 	})
 }

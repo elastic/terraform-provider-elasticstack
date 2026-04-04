@@ -39,7 +39,7 @@ func Test_tagcloudPanelConfigConverter_populateFromAttributes_buildAttributes_ro
 		Description: new("Converter round-trip test"),
 	}
 	_ = json.Unmarshal([]byte(`{"index":"test-index"}`), &api.Dataset)
-	_ = json.Unmarshal([]byte(`{"query":"*","language":"kuery"}`), &api.Query)
+	_ = json.Unmarshal([]byte(`{"expression":"*","language":"kuery"}`), &api.Query)
 	_ = json.Unmarshal([]byte(`{"operation":{"operation_type":"count"}}`), &api.Metric)
 	_ = json.Unmarshal([]byte(`{"operation":{"operation_type":"terms"},"field":"tags.keyword"}`), &api.TagBy)
 
@@ -100,7 +100,7 @@ func Test_tagcloudConfigModel_fromAPI_toAPI(t *testing.T) {
 				// Set dataset as JSON
 				_ = json.Unmarshal([]byte(`{"index":"test-index"}`), &api.Dataset)
 				// Set query as JSON
-				_ = json.Unmarshal([]byte(`{"query":"status:active","language":"kuery"}`), &api.Query)
+				_ = json.Unmarshal([]byte(`{"expression":"status:active","language":"kuery"}`), &api.Query)
 				// Set metric as JSON
 				_ = json.Unmarshal([]byte(`{"operation":{"operation_type":"count"}}`), &api.Metric)
 				// Set tagBy as JSON
@@ -134,7 +134,7 @@ func Test_tagcloudConfigModel_fromAPI_toAPI(t *testing.T) {
 				// Set dataset as JSON
 				_ = json.Unmarshal([]byte(`{"index":"test-index"}`), &api.Dataset)
 				// Set query as JSON
-				_ = json.Unmarshal([]byte(`{"query":"*"}`), &api.Query)
+				_ = json.Unmarshal([]byte(`{"expression":"*"}`), &api.Query)
 				// Set metric as JSON
 				_ = json.Unmarshal([]byte(`{"operation":{"operation_type":"count"}}`), &api.Metric)
 				// Set tagBy as JSON
@@ -285,7 +285,7 @@ func Test_fontSizeModel_roundTrip(t *testing.T) {
 			// Set dataset as JSON
 			_ = json.Unmarshal([]byte(`{"index":"test-index"}`), &api.Dataset)
 			// Set query as JSON
-			_ = json.Unmarshal([]byte(`{"query":"*"}`), &api.Query)
+			_ = json.Unmarshal([]byte(`{"expression":"*"}`), &api.Query)
 			// Set metric as JSON
 			_ = json.Unmarshal([]byte(`{"operation":{"operation_type":"count"}}`), &api.Metric)
 			// Set tagBy as JSON

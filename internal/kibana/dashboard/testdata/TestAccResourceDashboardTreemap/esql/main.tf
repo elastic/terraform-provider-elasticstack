@@ -34,7 +34,6 @@ resource "elasticstack_kibana_dashboard" "test" {
 
       group_by_json = jsonencode([
         {
-          operation   = "value"
           column      = "host.name"
           collapse_by = "avg"
         }
@@ -42,8 +41,12 @@ resource "elasticstack_kibana_dashboard" "test" {
 
       metrics_json = jsonencode([
         {
-          operation = "value"
-          column    = "bytes"
+          column = "bytes"
+          format = {
+            type     = "number"
+            decimals = 2
+            compact  = false
+          }
           color = {
             type  = "static"
             color = "#54B399"
@@ -53,7 +56,7 @@ resource "elasticstack_kibana_dashboard" "test" {
 
       legend = {
         nested               = false
-        size                 = "small"
+        size                 = "s"
         visible              = "visible"
         truncate_after_lines = 10
       }

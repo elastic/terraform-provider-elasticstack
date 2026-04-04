@@ -32,7 +32,7 @@ resource "elasticstack_kibana_dashboard" "test" {
         query    = ""
       }
       legend = {
-        size   = "medium"
+        size   = "m"
         values = ["absolute"]
       }
       metrics = [

@@ -50,7 +50,7 @@ resource "elasticstack_kibana_dashboard" "test" {
       tag_by_json = jsonencode({
         operation = "terms"
         fields    = ["service.name"]
-        size      = 15
+        limit     = 15
       })
       orientation           = "vertical"
       ignore_global_filters = true

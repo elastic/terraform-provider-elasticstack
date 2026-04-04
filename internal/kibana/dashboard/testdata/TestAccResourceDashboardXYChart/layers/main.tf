@@ -55,11 +55,9 @@ resource "elasticstack_kibana_dashboard" "test" {
               query = "FROM metrics-* | KEEP @timestamp, host.name, system.cpu.user.pct | LIMIT 10"
             })
             x_json = jsonencode({
-              operation = "value"
-              column    = "@timestamp"
+              column = "@timestamp"
             })
             breakdown_by_json = jsonencode({
-              operation   = "value"
               column      = "host.name"
               collapse_by = "avg"
               color = {
@@ -83,8 +81,7 @@ resource "elasticstack_kibana_dashboard" "test" {
             y = [
               {
                 config_json = jsonencode({
-                  operation = "value"
-                  column    = "system.cpu.user.pct"
+                  column = "system.cpu.user.pct"
                   color = {
                     type  = "static"
                     color = "#54B399"

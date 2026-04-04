@@ -39,8 +39,8 @@ func Test_metricChartPanelConfigConverter_populateFromAttributes_buildAttributes
 		IgnoreGlobalFilters: new(false),
 		Sampling:            new(float32(1.0)),
 		Query: kbapi.FilterSimple{
-			Language: new(kbapi.FilterSimpleLanguage("kuery")),
-			Query:    "*",
+			Language:   new(kbapi.FilterSimpleLanguage("kuery")),
+			Expression: "*",
 		},
 		Metrics: []kbapi.MetricNoESQL_Metrics_Item{},
 	}
@@ -91,8 +91,8 @@ func Test_metricChartConfigModel_fromAPI_toAPI_variant0(t *testing.T) {
 				IgnoreGlobalFilters: new(false),
 				Sampling:            new(float32(1.0)),
 				Query: kbapi.FilterSimple{
-					Language: new(kbapi.FilterSimpleLanguage("kuery")),
-					Query:    "",
+					Language:   new(kbapi.FilterSimpleLanguage("kuery")),
+					Expression: "",
 				},
 				Metrics: []kbapi.MetricNoESQL_Metrics_Item{},
 			},
@@ -105,7 +105,7 @@ func Test_metricChartConfigModel_fromAPI_toAPI_variant0(t *testing.T) {
 			apiChart: kbapi.MetricNoESQL{
 				Type: kbapi.MetricNoESQLTypeMetric,
 				Query: kbapi.FilterSimple{
-					Query: "",
+					Expression: "",
 				},
 				Metrics: []kbapi.MetricNoESQL_Metrics_Item{},
 			},
@@ -340,7 +340,7 @@ func Test_metricChartConfigModel_withDataset(t *testing.T) {
 		Type:    kbapi.MetricNoESQLTypeMetric,
 		Dataset: dataset,
 		Query: kbapi.FilterSimple{
-			Query: "",
+			Expression: "",
 		},
 		Metrics: []kbapi.MetricNoESQL_Metrics_Item{},
 	}
@@ -387,7 +387,7 @@ func Test_metricChartConfigModel_withFilters(t *testing.T) {
 		Type:    kbapi.MetricNoESQLTypeMetric,
 		Filters: filters,
 		Query: kbapi.FilterSimple{
-			Query: "",
+			Expression: "",
 		},
 		Metrics: []kbapi.MetricNoESQL_Metrics_Item{},
 	}
@@ -426,8 +426,8 @@ func Test_metricChartConfigModel_withBreakdownBy(t *testing.T) {
 		Type:        kbapi.MetricNoESQLTypeMetric,
 		BreakdownBy: &breakdownBy,
 		Query: kbapi.FilterSimple{
-			Language: new(kbapi.FilterSimpleLanguage("kuery")),
-			Query:    "status:active",
+			Language:   new(kbapi.FilterSimpleLanguage("kuery")),
+			Expression: "status:active",
 		},
 		Metrics: []kbapi.MetricNoESQL_Metrics_Item{},
 	}

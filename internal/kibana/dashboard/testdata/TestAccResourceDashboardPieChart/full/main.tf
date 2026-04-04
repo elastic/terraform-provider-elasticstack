@@ -23,7 +23,7 @@ resource "elasticstack_kibana_dashboard" "test" {
     pie_chart_config = {
       title          = "Full Pie Chart"
       description    = "Full pie chart visualization"
-      donut_hole     = "large"
+      donut_hole     = "l"
       label_position = "outside"
       dataset = jsonencode({
         type = "dataView"
@@ -58,6 +58,12 @@ resource "elasticstack_kibana_dashboard" "test" {
                 type  = "color_code"
                 value = "#555555"
               }
+            }
+            limit = 5
+            rank_by = {
+              direction = "desc"
+              metric    = 0
+              type      = "column"
             }
           })
         }

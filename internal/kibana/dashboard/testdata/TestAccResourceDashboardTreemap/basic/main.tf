@@ -48,6 +48,12 @@ resource "elasticstack_kibana_dashboard" "test" {
             }
           }
           fields = ["host.name"]
+          limit  = 5
+          rank_by = {
+            direction = "desc"
+            metric    = 0
+            type      = "column"
+          }
         }
       ])
 
@@ -60,7 +66,7 @@ resource "elasticstack_kibana_dashboard" "test" {
 
       legend = {
         nested               = true
-        size                 = "medium"
+        size                 = "m"
         visible              = "auto"
         truncate_after_lines = 5
       }

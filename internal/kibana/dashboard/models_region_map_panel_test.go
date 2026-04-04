@@ -57,8 +57,8 @@ func Test_regionMapConfigModel_fromAPI_toAPI(t *testing.T) {
 
 				lang := kbapi.FilterSimpleLanguage("kuery")
 				api.Query = kbapi.FilterSimple{
-					Language: &lang,
-					Query:    "*",
+					Language:   &lang,
+					Expression: "*",
 				}
 
 				_ = json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &api.Dataset)
@@ -145,7 +145,7 @@ func Test_regionMapConfigModel_fromAPI_toAPI(t *testing.T) {
 				assert.Equal(t, tt.expectTitle, *apiNoESQL.Title)
 				require.NotNil(t, apiNoESQL.Sampling)
 				assert.InDelta(t, tt.expectSample, *apiNoESQL.Sampling, 0.001)
-				assert.Equal(t, "*", apiNoESQL.Query.Query)
+				assert.Equal(t, "*", apiNoESQL.Query.Expression)
 			}
 		})
 	}
@@ -162,7 +162,7 @@ func Test_regionMapPanelConfigConverter_populateFromAttributes_buildAttributes_r
 		Sampling:            new(float32(0.75)),
 	}
 	lang := kbapi.FilterSimpleLanguage("kuery")
-	api.Query = kbapi.FilterSimple{Language: &lang, Query: "*"}
+	api.Query = kbapi.FilterSimple{Language: &lang, Expression: "*"}
 	_ = json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &api.Dataset)
 	_ = json.Unmarshal([]byte(`{"operation":"count"}`), &api.Metric)
 	_ = json.Unmarshal([]byte(`{"operation":"filters","filters":[{"filter":{"query":"*","language":"kuery"},"label":"All"}]}`), &api.Region)

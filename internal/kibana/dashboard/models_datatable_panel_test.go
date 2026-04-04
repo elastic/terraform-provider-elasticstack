@@ -111,7 +111,7 @@ func Test_datatableNoESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 	}
 
 	require.NoError(t, json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &api.Dataset))
-	require.NoError(t, json.Unmarshal([]byte(`{"language":"kuery","query":"*"}`), &api.Query))
+	require.NoError(t, json.Unmarshal([]byte(`{"language":"kuery","expression":"*"}`), &api.Query))
 
 	metric := kbapi.DatatableNoESQL_Metrics_Item{}
 	require.NoError(t, json.Unmarshal([]byte(`{"operation":"count"}`), &metric))
@@ -162,9 +162,8 @@ func Test_datatableESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 	}
 
 	metric := kbapi.DatatableESQLMetric{
-		Column:    "system.cpu.user.pct",
-		Operation: kbapi.DatatableESQLMetricOperationValue,
-		Format:    kbapi.FormatType{},
+		Column: "system.cpu.user.pct",
+		Format: kbapi.FormatType{},
 	}
 	require.NoError(t, json.Unmarshal([]byte(`{"type":"number","decimals":2}`), &metric.Format))
 
@@ -179,27 +178,23 @@ func Test_datatableESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 		Column       string                               `json:"column"`
 		Format       kbapi.FormatType                     `json:"format"`
 		Label        *string                              `json:"label,omitempty"`
-		Operation    kbapi.DatatableESQLRowsOperation     `json:"operation"`
 		Visible      *bool                                `json:"visible,omitempty"`
 		Width        *float32                             `json:"width,omitempty"`
 	}{
 		Column:     "host.name",
 		Format:     rowFormat,
-		Operation:  kbapi.DatatableESQLRowsOperationValue,
 		CollapseBy: kbapi.CollapseByAvg,
 	}
 
 	splitFormat := kbapi.FormatType{}
 	require.NoError(t, json.Unmarshal([]byte(`{"type":"number"}`), &splitFormat))
 	split := struct {
-		Column    string                                     `json:"column"`
-		Format    kbapi.FormatType                           `json:"format"`
-		Label     *string                                    `json:"label,omitempty"`
-		Operation kbapi.DatatableESQLSplitMetricsByOperation `json:"operation"`
+		Column string           `json:"column"`
+		Format kbapi.FormatType `json:"format"`
+		Label  *string          `json:"label,omitempty"`
 	}{
-		Column:    "host.name",
-		Format:    splitFormat,
-		Operation: kbapi.DatatableESQLSplitMetricsByOperationValue,
+		Column: "host.name",
+		Format: splitFormat,
 	}
 
 	api := kbapi.DatatableESQL{
@@ -219,15 +214,13 @@ func Test_datatableESQLConfigModel_fromAPI_toAPI(t *testing.T) {
 			Column       string                               `json:"column"`
 			Format       kbapi.FormatType                     `json:"format"`
 			Label        *string                              `json:"label,omitempty"`
-			Operation    kbapi.DatatableESQLRowsOperation     `json:"operation"`
 			Visible      *bool                                `json:"visible,omitempty"`
 			Width        *float32                             `json:"width,omitempty"`
 		}{row},
 		SplitMetricsBy: &[]struct {
-			Column    string                                     `json:"column"`
-			Format    kbapi.FormatType                           `json:"format"`
-			Label     *string                                    `json:"label,omitempty"`
-			Operation kbapi.DatatableESQLSplitMetricsByOperation `json:"operation"`
+			Column string           `json:"column"`
+			Format kbapi.FormatType `json:"format"`
+			Label  *string          `json:"label,omitempty"`
 		}{split},
 	}
 
@@ -286,7 +279,7 @@ func Test_datatablePanelConfigConverter_populateFromAttributes_buildAttributes_r
 		Metrics: []kbapi.DatatableNoESQL_Metrics_Item{},
 	}
 	require.NoError(t, json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &api.Dataset))
-	require.NoError(t, json.Unmarshal([]byte(`{"language":"kuery","query":"*"}`), &api.Query))
+	require.NoError(t, json.Unmarshal([]byte(`{"language":"kuery","expression":"*"}`), &api.Query))
 
 	var datatableChart kbapi.DatatableChart
 	require.NoError(t, datatableChart.FromDatatableNoESQL(api))
@@ -315,8 +308,7 @@ func Test_datatablePanelConfigConverter_populateFromAttributes_buildAttributes_r
 	ctx := context.Background()
 
 	metric := kbapi.DatatableESQLMetric{
-		Column:    "host.name",
-		Operation: kbapi.DatatableESQLMetricOperationValue,
+		Column: "host.name",
 	}
 	api := kbapi.DatatableESQL{
 		Type:                kbapi.DatatableESQLTypeDataTable,

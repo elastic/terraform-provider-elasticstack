@@ -40,8 +40,8 @@ resource "elasticstack_kibana_dashboard" "test" {
           {
             label = "All"
             filter = {
-              query    = "*"
-              language = "kuery"
+              expression = "*"
+              language   = "kql"
             }
           }
         ]
@@ -52,8 +52,8 @@ resource "elasticstack_kibana_dashboard" "test" {
           {
             label = "All"
             filter = {
-              query    = "*"
-              language = "kuery"
+              expression = "*"
+              language   = "kql"
             }
           }
         ]
@@ -86,8 +86,7 @@ resource "elasticstack_kibana_dashboard" "test" {
       }
       legend = {
         visible              = true
-        size                 = "medium"
-        position             = "right"
+        size                 = "m"
         truncate_after_lines = 5
       }
       ignore_global_filters = false

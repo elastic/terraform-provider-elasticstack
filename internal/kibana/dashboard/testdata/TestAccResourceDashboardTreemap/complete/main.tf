@@ -61,7 +61,12 @@ resource "elasticstack_kibana_dashboard" "test" {
             }
           }
           fields = ["service.name"]
-          size   = 5
+          rank_by = {
+            direction = "desc"
+            metric    = 0
+            type      = "column"
+          }
+          limit = 5
         }
       ])
 
@@ -73,7 +78,7 @@ resource "elasticstack_kibana_dashboard" "test" {
 
       legend = {
         nested               = false
-        size                 = "small"
+        size                 = "s"
         visible              = "visible"
         truncate_after_lines = 10
       }

@@ -35,7 +35,7 @@ resource "elasticstack_kibana_dashboard" "test" {
       # Omit `query` for ES|QL mode (see provider docs).
 
       legend = {
-        size = "medium"
+        size = "m"
       }
 
       esql_metrics = [{

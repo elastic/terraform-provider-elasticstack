@@ -24,10 +24,11 @@ resource "elasticstack_kibana_dashboard" "test" {
       h = 6
     }
     esql_control_config = {
-      variable_name = "my_var"
-      variable_type = "values"
-      esql_query    = "FROM logs-* | STATS count = COUNT(*) BY host.name"
-      control_type  = "STATIC_VALUES"
+      selected_options = []
+      variable_name    = "my_var"
+      variable_type    = "values"
+      esql_query       = "FROM logs-* | STATS count = COUNT(*) BY host.name"
+      control_type     = "STATIC_VALUES"
     }
   }]
 }

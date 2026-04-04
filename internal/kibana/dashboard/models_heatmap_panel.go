@@ -50,7 +50,7 @@ func (c heatmapPanelConfigConverter) populateFromAttributes(ctx context.Context,
 	}
 
 	pm.HeatmapConfig = &heatmapConfigModel{}
-	if heatmapNoESQL, err := heatmapChart.AsHeatmapNoESQL(); err == nil && (heatmapNoESQL.Query.Query != "" || heatmapNoESQL.Query.Language != nil) {
+	if heatmapNoESQL, err := heatmapChart.AsHeatmapNoESQL(); err == nil && !isHeatmapNoESQLCandidateActuallyESQL(heatmapNoESQL) {
 		return pm.HeatmapConfig.fromAPINoESQL(ctx, heatmapNoESQL)
 	}
 	heatmapESQL, err := heatmapChart.AsHeatmapESQL()
@@ -93,6 +93,22 @@ type heatmapConfigModel struct {
 	MetricJSON          customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"metric_json"`
 	XAxisJSON           jsontypes.Normalized                              `tfsdk:"x_axis_json"`
 	YAxisJSON           jsontypes.Normalized                              `tfsdk:"y_axis_json"`
+}
+
+func isHeatmapNoESQLCandidateActuallyESQL(apiChart kbapi.HeatmapNoESQL) bool {
+	body, err := apiChart.Dataset.MarshalJSON()
+	if err != nil {
+		return false
+	}
+
+	var dataset struct {
+		Type string `json:"type"`
+	}
+	if err := json.Unmarshal(body, &dataset); err != nil {
+		return false
+	}
+
+	return dataset.Type == legacyMetricDatasetTypeESQL || dataset.Type == legacyMetricDatasetTypeTable
 }
 
 func (m *heatmapConfigModel) populateCommonFields(
@@ -652,8 +668,12 @@ type heatmapLegendModel struct {
 }
 
 func (m *heatmapLegendModel) fromAPI(api kbapi.HeatmapLegend) {
-	m.Visible = types.BoolPointerValue(api.Visible)
-	m.Position = typeutils.StringishPointerValue(api.Position)
+	if api.Visibility != nil {
+		m.Visible = types.BoolValue(*api.Visibility != kbapi.HeatmapLegendVisibilityHidden)
+	} else {
+		m.Visible = types.BoolNull()
+	}
+	m.Position = types.StringNull()
 	m.Size = types.StringValue(string(api.Size))
 
 	if api.TruncateAfterLines != nil {
@@ -673,11 +693,11 @@ func (m *heatmapLegendModel) toAPI() (kbapi.HeatmapLegend, diag.Diagnostics) {
 	}
 
 	if typeutils.IsKnown(m.Visible) {
-		legend.Visible = new(m.Visible.ValueBool())
-	}
-	if typeutils.IsKnown(m.Position) {
-		pos := kbapi.HeatmapLegendPosition(m.Position.ValueString())
-		legend.Position = &pos
+		visibility := kbapi.HeatmapLegendVisibilityVisible
+		if !m.Visible.ValueBool() {
+			visibility = kbapi.HeatmapLegendVisibilityHidden
+		}
+		legend.Visibility = &visibility
 	}
 	if typeutils.IsKnown(m.Size) {
 		legend.Size = kbapi.LegendSize(m.Size.ValueString())

@@ -37,7 +37,7 @@ resource "elasticstack_kibana_dashboard" "test" {
       tag_by_json = jsonencode({
         operation = "terms"
         fields    = ["host.name"]
-        size      = 10
+        limit     = 10
       })
       orientation = "horizontal"
       font_size = {

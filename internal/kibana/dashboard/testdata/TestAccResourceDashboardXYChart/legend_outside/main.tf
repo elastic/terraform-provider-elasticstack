@@ -68,8 +68,8 @@ resource "elasticstack_kibana_dashboard" "test" {
       legend = {
         visibility           = "visible"
         inside               = false
-        position             = "bottom"
-        size                 = "large"
+        position             = "right"
+        size                 = "l"
         truncate_after_lines = 3
         statistics           = ["avg", "max"]
       }

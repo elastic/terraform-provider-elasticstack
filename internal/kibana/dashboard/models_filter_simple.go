@@ -29,8 +29,12 @@ type filterSimpleModel struct {
 }
 
 func (m *filterSimpleModel) fromAPI(apiQuery kbapi.FilterSimple) {
-	m.Query = types.StringValue(apiQuery.Query)
+	m.Query = types.StringValue(apiQuery.Expression)
 	if apiQuery.Language == nil {
+		m.Language = types.StringValue("kuery")
+		return
+	}
+	if *apiQuery.Language == kbapi.FilterSimpleLanguageKql {
 		m.Language = types.StringValue("kuery")
 		return
 	}
@@ -43,10 +47,13 @@ func (m *filterSimpleModel) toAPI() kbapi.FilterSimple {
 	}
 
 	query := kbapi.FilterSimple{
-		Query: m.Query.ValueString(),
+		Expression: m.Query.ValueString(),
 	}
 	if typeutils.IsKnown(m.Language) {
 		lang := kbapi.FilterSimpleLanguage(m.Language.ValueString())
+		if lang == kbapi.FilterSimpleLanguage("kuery") {
+			lang = kbapi.FilterSimpleLanguageKql
+		}
 		query.Language = &lang
 	}
 	return query

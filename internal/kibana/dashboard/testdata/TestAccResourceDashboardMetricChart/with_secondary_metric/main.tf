@@ -49,8 +49,8 @@ resource "elasticstack_kibana_dashboard" "test" {
             sort_by           = "@timestamp",
             show_array_values = false,
             filter = {
-              query    = "\"@timestamp\": *"
-              language = "kuery"
+              expression = "\"@timestamp\": *"
+              language   = "kql"
             }
           })
         }

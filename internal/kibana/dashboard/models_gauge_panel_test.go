@@ -53,7 +53,7 @@ func Test_gaugeConfigModel_fromAPI_toAPI(t *testing.T) {
 
 				err := json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &api.Dataset)
 				require.NoError(t, err)
-				err = json.Unmarshal([]byte(`{"query":"status:active","language":"kuery"}`), &api.Query)
+				err = json.Unmarshal([]byte(`{"expression":"status:active","language":"kuery"}`), &api.Query)
 				require.NoError(t, err)
 				err = json.Unmarshal([]byte(`{"operation":"count"}`), &api.Metric)
 				require.NoError(t, err)
@@ -91,7 +91,7 @@ func Test_gaugeConfigModel_fromAPI_toAPI(t *testing.T) {
 
 				err := json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &api.Dataset)
 				require.NoError(t, err)
-				err = json.Unmarshal([]byte(`{"query":"*"}`), &api.Query)
+				err = json.Unmarshal([]byte(`{"expression":"*"}`), &api.Query)
 				require.NoError(t, err)
 				err = json.Unmarshal([]byte(`{"operation":"count"}`), &api.Metric)
 				require.NoError(t, err)
@@ -173,7 +173,7 @@ func Test_gaugePanelConfigConverter_populateFromAttributes_buildAttributes_round
 		Sampling:            new(float32(0.5)),
 	}
 	require.NoError(t, json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &api.Dataset))
-	require.NoError(t, json.Unmarshal([]byte(`{"query":"status:active","language":"kuery"}`), &api.Query))
+	require.NoError(t, json.Unmarshal([]byte(`{"expression":"status:active","language":"kuery"}`), &api.Query))
 	require.NoError(t, json.Unmarshal([]byte(`{"operation":"count"}`), &api.Metric))
 
 	var gaugeChart kbapi.GaugeChart

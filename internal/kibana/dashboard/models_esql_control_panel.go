@@ -76,6 +76,10 @@ func populateEsqlControlFromAPI(pm *panelModel, tfPanel *panelModel, apiConfig k
 
 	// On import (tfPanel == nil) there is no prior intent — populate from API.
 	if tfPanel == nil {
+		singleSelect := types.BoolNull()
+		if apiConfig.SingleSelect != nil && !*apiConfig.SingleSelect {
+			singleSelect = types.BoolValue(false)
+		}
 		existing = &esqlControlConfigModel{
 			SelectedOptions:  stringsToList(apiConfig.SelectedOptions),
 			VariableName:     types.StringValue(apiConfig.VariableName),
@@ -83,7 +87,7 @@ func populateEsqlControlFromAPI(pm *panelModel, tfPanel *panelModel, apiConfig k
 			EsqlQuery:        types.StringValue(apiConfig.EsqlQuery),
 			ControlType:      types.StringValue(string(apiConfig.ControlType)),
 			Title:            types.StringPointerValue(apiConfig.Title),
-			SingleSelect:     types.BoolPointerValue(apiConfig.SingleSelect),
+			SingleSelect:     singleSelect,
 			AvailableOptions: types.ListNull(types.StringType),
 		}
 		pm.EsqlControlConfig = existing

@@ -2,12 +2,7 @@ variable "dashboard_title" {
   type = string
 }
 
-variable "dashboard_id" {
-  type = string
-}
-
 resource "elasticstack_kibana_dashboard" "test" {
-  dashboard_id           = var.dashboard_id
   space_id               = "default"
   title                  = var.dashboard_title
   description            = "Test for issue #1790"
@@ -45,10 +40,6 @@ resource "elasticstack_kibana_dashboard" "test" {
             decimals = 2
             compact  = false
           }
-        }
-        query = {
-          language = "kuery"
-          query    = ""
         }
         sampling = 1
         title    = ""
