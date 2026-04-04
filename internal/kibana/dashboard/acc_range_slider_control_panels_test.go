@@ -140,7 +140,7 @@ func TestAccResourceDashboardRangeSliderControlInvalidConfig(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable("unused"),
 				},
-				ExpectError: regexp.MustCompile(`(?s)value.*list must contain at least 2 elements`),
+				ExpectError: regexp.MustCompile(`(?s)value.*list must contain at[\s]+least 2 elements`),
 			},
 		},
 	})
