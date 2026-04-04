@@ -276,11 +276,11 @@ Before the agent performs verification, the workflow SHALL run `make setup` in t
 - **THEN** the command SHALL retain access to the configured Go workspace and module cache through the exported Go environment variables
 
 ### Requirement: Deterministic agent setup before verification
-The workflow SHALL use deterministic custom workflow steps in the agent job to prepare the repository workspace before agent reasoning begins. At a minimum, it SHALL run repository-standard Node dependency installation at the repository root so `npx openspec` is available to the agent without the prompt having to rediscover setup steps.
+The workflow SHALL use deterministic custom workflow steps in the agent job to prepare the repository workspace before agent reasoning begins. At a minimum, after the review toolchains are provisioned, it SHALL run `make setup` at the repository root so `npx openspec` is available and repository Go dependencies are prepared per the review-environment bootstrap requirement, without the prompt having to rediscover those steps.
 
 #### Scenario: OpenSpec CLI is available before agent reasoning
 - **WHEN** the agent job starts for a verification run
-- **THEN** deterministic custom steps SHALL install the repository's Node dependencies before the agent uses `npx openspec`
+- **THEN** deterministic custom steps SHALL complete `make setup` before the agent uses `npx openspec`
 
 ### Requirement: Deterministic gates may skip agent execution
 The workflow SHALL use deterministic pre-activation outputs to decide whether the expensive agent job runs. When label verification or change-selection gating determines that the pull request is not eligible for verification, the workflow SHALL skip the agent job rather than starting it only to emit a no-op result. When the agent job is skipped, the `remove-labels` safe output is not invoked by this workflow for that run; REQ-015’s label-removal contract applies only when the agent runs and completes handling.
