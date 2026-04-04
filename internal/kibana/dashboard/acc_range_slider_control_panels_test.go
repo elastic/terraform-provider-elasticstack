@@ -101,19 +101,6 @@ func TestAccResourceDashboardRangeSliderControl(t *testing.T) {
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.range_slider_control_config.value"),
 				),
 			},
-			// Update to no config block
-			{
-				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("no_config"),
-				ConfigVariables: config.Variables{
-					"dashboard_title": config.StringVariable(dashboardTitle),
-				},
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.type", "range_slider_control"),
-					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.range_slider_control_config"),
-				),
-			},
 		},
 	})
 }
@@ -141,6 +128,16 @@ func TestAccResourceDashboardRangeSliderControlInvalidConfig(t *testing.T) {
 					"dashboard_title": config.StringVariable("unused"),
 				},
 				ExpectError: regexp.MustCompile(`(?s)value.*list must contain at[\s]+least 2 elements`),
+			},
+			// range_slider_control_config is required when type = "range_slider_control"; omitting it must be rejected.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minDashboardAPISupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("no_config"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable("unused"),
+				},
+				ExpectError: regexp.MustCompile(`(?i)range_slider_control_config`),
 			},
 		},
 	})

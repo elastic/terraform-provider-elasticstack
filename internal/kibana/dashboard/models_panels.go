@@ -468,6 +468,13 @@ func (pm panelModel) toAPI() (kbapi.DashboardPanelItem, diag.Diagnostics) {
 	}
 
 	if pm.Type.ValueString() == panelTypeRangeSlider || pm.RangeSliderControlConfig != nil {
+		if pm.RangeSliderControlConfig == nil {
+			diags.AddError(
+				"Missing range slider control panel configuration",
+				"Range slider control panels require `range_slider_control_config`.",
+			)
+			return kbapi.DashboardPanelItem{}, diags
+		}
 		rsPanel := kbapi.KbnDashboardPanelRangeSliderControl{
 			Grid:   grid,
 			Uid:    uid,
