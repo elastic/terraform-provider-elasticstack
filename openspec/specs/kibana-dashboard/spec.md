@@ -386,6 +386,12 @@ On refresh, the resource SHALL parse the composite `id`, read the dashboard from
 - WHEN refresh runs and Kibana returns not found
 - THEN the resource SHALL remove the dashboard from state
 
+#### Scenario: Read maps nested query and time_range
+
+- GIVEN a successful refresh after create with `query { language = "kuery" text = "foo" }` and `time_range { from = "now-7d" to = "now" }`
+- WHEN state is repopulated from the GET response
+- THEN the resource SHALL set `query.language`, `query.text`, and `time_range.from` / `time_range.to` from the API payload
+
 ### Requirement: State preservation for fields Kibana omits or defaults (REQ-009)
 
 When Kibana omits or defaults fields on read, the resource SHALL preserve prior Terraform intent to avoid inconsistent results and spurious drift. The resource preserves the prior `time_range.mode` value already held in state or plan instead of overwriting it from read-back when the GET response does not supply a usable mode. When the GET dashboard API omits `access_control`, the resource SHALL preserve the prior `access_control` value instead of clearing it. When the options block was omitted in Terraform and Kibana materializes only the default dashboard options matching the implementation's `isDashboardOptionsDefaultSet` helper (including `auto_apply_filters` and `hide_panel_borders` at their API defaults when applicable), the resource SHALL keep the `options` block null in state. When a section's prior `collapsed` value was null and Kibana returns `false`, the resource SHALL preserve null rather than forcing `false` into state.
@@ -400,23 +406,25 @@ The resource models only the currently supported Terraform subset of dashboard f
 
 ### Requirement: Panels, sections, and `config_json` round-trip behavior (REQ-010)
 
-`config_json` SHALL NOT be supported for `options_list_control` panels; the `options_list_control` panel type SHALL be managed exclusively through the typed `options_list_control_config` block.
+The resource SHALL support top-level `panels`, section-contained `panels`, and `sections` in the order returned by the API and the order given in configuration when building requests. For panel reads, it SHALL distinguish sections from top-level panels and map each panel's `type`, `grid`, optional **`uid`**, and configuration. For typed panel mappings, the resource SHALL seed from prior state or plan so that optional panel attributes omitted by Kibana on read can be preserved. When a panel is managed through `config_json` only, the resource SHALL preserve that JSON-centric representation and SHALL NOT populate typed configuration blocks from the API for that panel.
 
-The existing REQ-010 text:
+On write, `config_json` SHALL be supported only for `markdown` and `lens` panel types; using `config_json` with any other panel type, including `slo_burn_rate`, `slo_error_budget`, and `esql_control`, or omitting all panel configuration blocks, SHALL return an error diagnostic. The `esql_control` panel type SHALL be managed exclusively through the typed `esql_control_config` block.
 
-> On write, `config_json` SHALL be supported only for `markdown` and `lens` panel types; using `config_json` with any other panel type, or omitting all panel configuration blocks, SHALL return an error diagnostic.
+`config_json` SHALL NOT be supported for `options_list_control` panels; the `options_list_control` panel type SHALL be managed exclusively through the typed `options_list_control_config` block; using `config_json` with `type = "options_list_control"` SHALL return an error diagnostic.
 
-is updated to additionally state:
+**Panel and section identity**: The Terraform attributes **`panels[].uid`** and **`sections[].uid`** replace **`panels[].id`** and **`sections[].id`** to match API `uid`.
 
-> The `options_list_control` panel type SHALL be managed exclusively through the typed `options_list_control_config` block; using `config_json` with `type = "options_list_control"` SHALL return an error diagnostic.
+#### Scenario: Panel uid round-trip
+
+- GIVEN a panel with `uid = "panel-a"` in configuration
+- WHEN create or update runs
+- THEN the API request SHALL include `uid` (or equivalent panel identity) consistent with `panel-a` for that panel
 
 #### Scenario: config_json rejected for options_list_control panel type
 
 - GIVEN a panel with `type = "options_list_control"` configured through `config_json`
 - WHEN the provider builds the API request on create or update
 - THEN it SHALL return an error diagnostic stating that `config_json` is not supported for `options_list_control`
-
----
 
 ### Requirement: Panel default normalization and XY-axis drift prevention (REQ-011)
 
@@ -438,9 +446,17 @@ For `type = "markdown"` panels, the resource SHALL accept `markdown_config` with
 - WHEN create, update, or read runs
 - THEN the provider SHALL map the markdown fields between Terraform and the dashboard API
 
-### Requirement: XY chart panel behavior (REQ-013)
+### Requirement: XY chart panel behavior and typed Lens `time_range` (REQ-013)
 
-For XY chart Lens panels, the resource SHALL require `axis`, `decorations`, `fitting`, `legend`, `query`, and at least one `layers` entry. Each layer SHALL represent either a data layer or a reference-line layer, not both. When the provider builds a typed Lens XY panel, it SHALL set `time_range` on `KbnDashboardPanelLensConfig0` to the implementation’s fixed window for typed converters. The Terraform schema for typed XY panels does not expose that Lens-level `time_range` as a separate configurable attribute.
+For **typed** Lens panels (those built through the provider’s typed `*_config` blocks and the shared typed Lens write path, not panels managed solely through raw `config_json`), the provider SHALL set `time_range` on `KbnDashboardPanelLensConfig0` to the implementation’s fixed window from **`lensPanelTimeRange()`** when assembling the Lens payload. The Terraform schema does not expose that Lens-level `time_range` as a separate configurable attribute for those panels; it remains implementation-defined. REQ-025 governs raw `config_json` Lens panels (no `lensPanelTimeRange()` injection on that path).
+
+For XY chart Lens panels specifically, the resource SHALL require `axis`, `decorations`, `fitting`, `legend`, `query`, and at least one `layers` entry. Each layer SHALL represent either a data layer or a reference-line layer, not both.
+
+#### Scenario: Typed Lens write includes Lens time_range
+
+- GIVEN a typed Lens panel on create or update (for example XY, heatmap, pie, or treemap panels using their typed configuration blocks)
+- WHEN the provider builds the Lens panel payload through the typed converter path
+- THEN it SHALL set `time_range` on `KbnDashboardPanelLensConfig0` to the implementation’s fixed window for typed converters
 
 #### Scenario: XY panel requires layers
 
@@ -498,6 +514,12 @@ For heatmap Lens panels, the resource SHALL require `dataset_json`, `axes`, `cel
 - WHEN the provider builds the API request
 - THEN it SHALL require `query` to be present
 
+#### Scenario: Heatmap legend visibility enum
+
+- GIVEN `heatmap_config.legend.visibility = "hidden"`
+- WHEN the provider builds the API request
+- THEN it SHALL set API heatmap legend visibility to the `hidden` enum value
+
 ### Requirement: Waffle panel behavior (REQ-019)
 
 For waffle Lens panels, the resource SHALL enforce mutually exclusive non-ES|QL and ES|QL modes. In non-ES|QL mode it SHALL require `query` and at least one `metrics` entry, and it MAY accept `group_by`. In ES|QL mode it SHALL require at least one `esql_metrics` entry, it MAY accept `esql_group_by`, and it SHALL reject `metrics` and `group_by`. On read-back, the provider SHALL preserve the waffle fields that Kibana may omit or materialize differently, including the implementation's merge behavior for `ignore_global_filters`, `sampling`, legend values, visibility, and value-display details. ES|QL number-format JSON for waffle metric formats SHALL normalize the default decimals and compact settings trimmed by the implementation.
@@ -547,6 +569,12 @@ For pie Lens panels, the resource SHALL require at least one `metrics` entry and
 - GIVEN a pie panel read from Kibana without explicit `ignore_global_filters` or `sampling`
 - WHEN state is refreshed
 - THEN the provider SHALL reconcile those fields as `false` and `1.0`
+
+#### Scenario: Pie chart uses dataset_json
+
+- GIVEN `pie_chart_config` with `dataset_json` set to a normalized JSON string for the pie dataset
+- WHEN the provider builds the Lens attributes
+- THEN it SHALL decode `dataset_json` into the API pie dataset shape
 
 ### Requirement: Legacy metric panel behavior (REQ-024)
 
