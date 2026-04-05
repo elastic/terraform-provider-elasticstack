@@ -210,10 +210,10 @@ func Test_pieChartConfigModel_toAPI_withMetrics(t *testing.T) {
 
 func Test_pieChartConfigModel_toAPI_withGroupBy(t *testing.T) {
 	model := &pieChartConfigModel{
-		Title:   types.StringValue("Pie with groupBy"),
+		Title:       types.StringValue("Pie with groupBy"),
 		DatasetJSON: jsontypes.NewNormalizedValue(`{"type":"dataView","id":"logs-*"}`),
 		LegendJSON:  jsontypes.NewNormalizedValue(`{"visible":"show"}`),
-		Query:   &filterSimpleModel{Expression: types.StringValue("*"), Language: types.StringValue("kql")},
+		Query:       &filterSimpleModel{Expression: types.StringValue("*"), Language: types.StringValue("kql")},
 		Metrics: []pieMetricModel{
 			{Config: customtypes.NewJSONWithDefaultsValue[map[string]any](`{"operation":"count"}`, populatePieChartMetricDefaults)},
 		},

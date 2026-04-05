@@ -36,19 +36,19 @@ const jsonNullString = "null"
 
 // dashboardModel is the top-level Terraform model
 type dashboardModel struct {
-	ID                types.String           `tfsdk:"id"`
-	SpaceID           types.String           `tfsdk:"space_id"`
-	DashboardID       types.String           `tfsdk:"dashboard_id"`
-	Title             types.String           `tfsdk:"title"`
-	Description       types.String           `tfsdk:"description"`
-	TimeRange         *timeRangeModel        `tfsdk:"time_range"`
-	RefreshInterval   *refreshIntervalModel  `tfsdk:"refresh_interval"`
-	Query             *dashboardQueryModel `tfsdk:"query"`
-	Tags              types.List             `tfsdk:"tags"`
-	Options           *optionsModel          `tfsdk:"options"`
-	AccessControl     *AccessControlValue    `tfsdk:"access_control"`
-	Panels            []panelModel           `tfsdk:"panels"`
-	Sections          []sectionModel         `tfsdk:"sections"`
+	ID              types.String          `tfsdk:"id"`
+	SpaceID         types.String          `tfsdk:"space_id"`
+	DashboardID     types.String          `tfsdk:"dashboard_id"`
+	Title           types.String          `tfsdk:"title"`
+	Description     types.String          `tfsdk:"description"`
+	TimeRange       *timeRangeModel       `tfsdk:"time_range"`
+	RefreshInterval *refreshIntervalModel `tfsdk:"refresh_interval"`
+	Query           *dashboardQueryModel  `tfsdk:"query"`
+	Tags            types.List            `tfsdk:"tags"`
+	Options         *optionsModel         `tfsdk:"options"`
+	AccessControl   *AccessControlValue   `tfsdk:"access_control"`
+	Panels          []panelModel          `tfsdk:"panels"`
+	Sections        []sectionModel        `tfsdk:"sections"`
 }
 
 // populateFromAPI populates the Terraform model from the API response

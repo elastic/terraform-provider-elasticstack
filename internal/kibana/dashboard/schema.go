@@ -416,7 +416,7 @@ func getSchema() schema.Schema {
 			},
 			"time_range": schema.SingleNestedAttribute{
 				MarkdownDescription: "Dashboard time selection (`from`, `to`, optional `mode`). Aligns with the Kibana Dashboard API `time_range` object.",
-				Required:              true,
+				Required:            true,
 				Attributes: map[string]schema.Attribute{
 					"from": schema.StringAttribute{
 						MarkdownDescription: "Start of the time range (e.g., 'now-15m', '2023-01-01T00:00:00Z').",
@@ -437,7 +437,7 @@ func getSchema() schema.Schema {
 			},
 			"refresh_interval": schema.SingleNestedAttribute{
 				MarkdownDescription: "Auto-refresh settings for the dashboard. Aligns with the Kibana Dashboard API `refresh_interval` object.",
-				Required:              true,
+				Required:            true,
 				Attributes: map[string]schema.Attribute{
 					"pause": schema.BoolAttribute{
 						MarkdownDescription: "When true, auto-refresh is paused.",
@@ -451,7 +451,7 @@ func getSchema() schema.Schema {
 			},
 			"query": schema.SingleNestedAttribute{
 				MarkdownDescription: "Dashboard-level query. Aligns with the Kibana Dashboard API `query` object: `language` plus exactly one of `text` (string branch) or `json` (object branch).",
-				Required:              true,
+				Required:            true,
 				Attributes: map[string]schema.Attribute{
 					"language": schema.StringAttribute{
 						MarkdownDescription: "Query language (e.g., `kql`, `lucene`, `kuery`).",
@@ -459,15 +459,15 @@ func getSchema() schema.Schema {
 					},
 					"text": schema.StringAttribute{
 						MarkdownDescription: "Query string for KQL or Lucene. Mutually exclusive with `json`.",
-						Optional:              true,
+						Optional:            true,
 						Validators: []validator.String{
 							stringvalidator.ConflictsWith(path.MatchRoot("query").AtName("json")),
 						},
 					},
 					"json": schema.StringAttribute{
 						MarkdownDescription: "Query as normalized JSON for the object branch of the API union. Mutually exclusive with `text`.",
-						CustomType:            jsontypes.NormalizedType{},
-						Optional:              true,
+						CustomType:          jsontypes.NormalizedType{},
+						Optional:            true,
 						Validators: []validator.String{
 							stringvalidator.ConflictsWith(path.MatchRoot("query").AtName("text")),
 						},
@@ -2208,7 +2208,7 @@ func getHeatmapLegendSchema() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"visibility": schema.StringAttribute{
 			MarkdownDescription: "Legend visibility. Valid values are `visible` or `hidden`.",
-			Optional:              true,
+			Optional:            true,
 			Validators: []validator.String{
 				stringvalidator.OneOf("visible", "hidden"),
 			},
@@ -2602,8 +2602,8 @@ func getPieChart() map[string]schema.Attribute {
 		},
 		"dataset_json": schema.StringAttribute{
 			MarkdownDescription: "Dataset configuration as JSON. For standard layers, this specifies the data view and query.",
-			CustomType:            jsontypes.NormalizedType{},
-			Optional:              true,
+			CustomType:          jsontypes.NormalizedType{},
+			Optional:            true,
 		},
 		"ignore_global_filters": schema.BoolAttribute{
 			MarkdownDescription: "If true, ignore global filters when fetching data for this layer. Default is false.",
@@ -2633,8 +2633,8 @@ func getPieChart() map[string]schema.Attribute {
 		},
 		"legend_json": schema.StringAttribute{
 			MarkdownDescription: "Legend configuration as JSON.",
-			CustomType:            jsontypes.NormalizedType{},
-			Optional:              true,
+			CustomType:          jsontypes.NormalizedType{},
+			Optional:            true,
 		},
 		"query": schema.SingleNestedAttribute{
 			MarkdownDescription: "Query configuration for filtering data.",
