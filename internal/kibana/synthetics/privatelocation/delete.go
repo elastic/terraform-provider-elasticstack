@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -52,6 +53,21 @@ func (r *Resource) Delete(ctx context.Context, request resource.DeleteRequest, r
 	}
 
 	spaceID := effectiveSpaceID(plan.SpaceID, compositeID)
+
+	if requiresSpaceIDMinVersion(spaceID) {
+		supported, sdkDiags := r.client.EnforceMinVersion(ctx, MinVersionSpaceID)
+		response.Diagnostics.Append(diagutil.FrameworkDiagsFromSDK(sdkDiags)...)
+		if response.Diagnostics.HasError() {
+			return
+		}
+		if !supported {
+			response.Diagnostics.AddError(
+				"Unsupported server version",
+				fmt.Sprintf("Synthetics private locations in a non-default Kibana space require Elastic Stack %s or later.", MinVersionSpaceID),
+			)
+			return
+		}
+	}
 
 	err := kibanaClient.KibanaSynthetics.PrivateLocation.Delete(ctx, spaceID, resourceID)
 
