@@ -25,6 +25,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/agentpolicy"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-testing/config"
@@ -159,8 +160,9 @@ func TestSyntheticPrivateLocationResource_nonDefaultSpace(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaPrivateLocationAPIVersion),
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_in_space"),
+				// Fleet agent policy space_ids needs 9.1+ (see agentpolicy.MinVersionSpaceIDs).
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(agentpolicy.MinVersionSpaceIDs),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("create_in_space"),
 				ConfigVariables: config.Variables{
 					"suffix":   config.StringVariable(randomSuffix),
 					"space_id": config.StringVariable(spaceID),
@@ -178,7 +180,7 @@ func TestSyntheticPrivateLocationResource_nonDefaultSpace(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaPrivateLocationAPIVersion),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agentpolicy.MinVersionSpaceIDs),
 				ResourceName:             resourceID,
 				ImportState:              true,
 				ImportStateVerify:        true,

@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/agentpolicy"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics/monitor"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
@@ -653,8 +654,9 @@ func TestSyntheticMonitorHTTPResource_nonDefaultSpace(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("http_non_default_space"),
+				// Fleet agent policy space_ids (required to scope the policy to the Kibana space) needs 9.1+.
+				SkipFunc:        versionutils.CheckIfVersionIsUnsupported(agentpolicy.MinVersionSpaceIDs),
+				ConfigDirectory: acctest.NamedTestCaseDirectory("http_non_default_space"),
 				ConfigVariables: config.Variables{
 					"name":     config.StringVariable(name),
 					"space_id": config.StringVariable(spaceID),
@@ -685,7 +687,7 @@ func TestSyntheticMonitorTCPResource_nonDefaultSpace(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agentpolicy.MinVersionSpaceIDs),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("tcp_non_default_space"),
 				ConfigVariables: config.Variables{
 					"name":     config.StringVariable(name),
@@ -716,7 +718,7 @@ func TestSyntheticMonitorICMPResource_nonDefaultSpace(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agentpolicy.MinVersionSpaceIDs),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("icmp_non_default_space"),
 				ConfigVariables: config.Variables{
 					"name":     config.StringVariable(name),
@@ -747,7 +749,7 @@ func TestSyntheticMonitorBrowserResource_nonDefaultSpace(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agentpolicy.MinVersionSpaceIDs),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("browser_non_default_space"),
 				ConfigVariables: config.Variables{
 					"name":     config.StringVariable(name),
