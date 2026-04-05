@@ -62,7 +62,7 @@ func buildLensMosaicPanelForTest(t *testing.T) panelModel {
 
 	return panelModel{
 		Type:         types.StringValue("lens"),
-		ID:           types.StringValue("mosaic-1"),
+		UID:           types.StringValue("mosaic-1"),
 		Grid:         panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0), W: types.Int64Value(6), H: types.Int64Value(6)},
 		MosaicConfig: pm.MosaicConfig,
 	}
@@ -96,7 +96,7 @@ func buildLensTreemapPanelForTest(t *testing.T) panelModel {
 
 	return panelModel{
 		Type:          types.StringValue("lens"),
-		ID:            types.StringValue("treemap-1"),
+		UID:            types.StringValue("treemap-1"),
 		Grid:          panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0), W: types.Int64Value(6), H: types.Int64Value(6)},
 		TreemapConfig: pm.TreemapConfig,
 	}
@@ -129,7 +129,7 @@ func buildLensWafflePanelForTest(t *testing.T) panelModel {
 
 	return panelModel{
 		Type:         types.StringValue("lens"),
-		ID:           types.StringValue("waffle-1"),
+		UID:           types.StringValue("waffle-1"),
 		Grid:         panelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0), W: types.Int64Value(8), H: types.Int64Value(10)},
 		WaffleConfig: pm.WaffleConfig,
 	}
@@ -182,7 +182,7 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 						W: types.Int64Value(2),
 						H: types.Int64Value(3),
 					},
-					ID: types.StringValue("1"),
+					UID: types.StringValue("1"),
 					MarkdownConfig: &markdownConfigModel{
 						Title:       types.StringValue("My Panel"),
 						Content:     types.StringValue("some content"),
@@ -218,7 +218,7 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 						W: types.Int64Null(),
 						H: types.Int64Null(),
 					},
-					ID: types.StringNull(),
+					UID: types.StringNull(),
 					MarkdownConfig: &markdownConfigModel{
 						Title:       types.StringNull(),
 						Content:     types.StringNull(),
@@ -249,7 +249,7 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 			expectedSections: []sectionModel{
 				{
 					Title:     types.StringValue("My Section"),
-					ID:        types.StringValue("section1"),
+					UID:        types.StringValue("section1"),
 					Collapsed: types.BoolValue(true),
 					Grid: sectionGridModel{
 						Y: types.Int64Value(100),
@@ -263,7 +263,7 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 								W: types.Int64Value(4),
 								H: types.Int64Value(4),
 							},
-							ID: types.StringNull(),
+							UID: types.StringNull(),
 							MarkdownConfig: &markdownConfigModel{
 								Title:       types.StringValue("Inner Panel"),
 								Content:     types.StringValue("Inner content"),
@@ -313,7 +313,7 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 						W: types.Int64Value(6),
 						H: types.Int64Value(6),
 					},
-					ID: types.StringValue("panel1"),
+					UID: types.StringValue("panel1"),
 					MarkdownConfig: &markdownConfigModel{
 						Title:       types.StringValue("Panel 1"),
 						Content:     types.StringValue("Panel 1 body"),
@@ -330,7 +330,7 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 						W: types.Int64Value(6),
 						H: types.Int64Value(6),
 					},
-					ID:             types.StringValue("panel2"),
+					UID:             types.StringValue("panel2"),
 					MarkdownConfig: nil,
 					ConfigJSON:     customtypes.NewJSONWithDefaultsValue(`{ "title": "Panel 2" }`, populatePanelConfigJSONDefaults),
 				},
@@ -338,7 +338,7 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 			expectedSections: []sectionModel{
 				{
 					Title:     types.StringValue("Section 1"),
-					ID:        types.StringValue("section1"),
+					UID:        types.StringValue("section1"),
 					Collapsed: types.BoolNull(),
 					Grid: sectionGridModel{
 						Y: types.Int64Value(100),
@@ -352,7 +352,7 @@ func Test_mapPanelsFromAPI(t *testing.T) {
 								W: types.Int64Value(6),
 								H: types.Int64Value(6),
 							},
-							ID: types.StringNull(),
+							UID: types.StringNull(),
 							MarkdownConfig: &markdownConfigModel{
 								Title:       types.StringValue("Inner Panel"),
 								Content:     types.StringValue("Inner panel body"),
@@ -395,7 +395,7 @@ func assertPanelsEqual(t *testing.T, expected, actual panelModel) {
 	t.Helper()
 	assert.Equal(t, expected.Type, actual.Type)
 	assert.Equal(t, expected.Grid, actual.Grid)
-	assert.Equal(t, expected.ID, actual.ID)
+	assert.Equal(t, expected.UID, actual.UID)
 	assert.Equal(t, expected.MarkdownConfig, actual.MarkdownConfig)
 	assert.Equal(t, expected.XYChartConfig, actual.XYChartConfig)
 	assert.Equal(t, expected.TreemapConfig, actual.TreemapConfig)
@@ -418,7 +418,7 @@ func assertPanelsEqual(t *testing.T, expected, actual panelModel) {
 func assertSectionsEqual(t *testing.T, expected, actual sectionModel) {
 	t.Helper()
 	assert.Equal(t, expected.Title, actual.Title)
-	assert.Equal(t, expected.ID, actual.ID)
+	assert.Equal(t, expected.UID, actual.UID)
 	assert.Equal(t, expected.Collapsed, actual.Collapsed)
 	assert.Equal(t, expected.Grid, actual.Grid)
 	assert.Len(t, actual.Panels, len(expected.Panels))
@@ -445,7 +445,7 @@ func Test_panelsToAPI(t *testing.T) {
 							W: types.Int64Value(2),
 							H: types.Int64Value(3),
 						},
-						ID: types.StringValue("1"),
+						UID: types.StringValue("1"),
 						MarkdownConfig: &markdownConfigModel{
 							Title:     types.StringValue("My Panel"),
 							Content:   types.StringValue("some content"),
@@ -483,7 +483,7 @@ func Test_panelsToAPI(t *testing.T) {
 							X: types.Int64Value(10),
 							Y: types.Int64Value(20),
 						},
-						ID:             types.StringNull(),
+						UID:             types.StringNull(),
 						MarkdownConfig: nil,
 						ConfigJSON:     customtypes.NewJSONWithDefaultsValue(`{"content":"from json"}`, populatePanelConfigJSONDefaults),
 					},
@@ -599,7 +599,7 @@ func Test_panelsToAPI(t *testing.T) {
 				Sections: []sectionModel{
 					{
 						Title:     types.StringValue("Test Section"),
-						ID:        types.StringValue("sec-1"),
+						UID:        types.StringValue("sec-1"),
 						Collapsed: types.BoolValue(true),
 						Grid:      sectionGridModel{Y: types.Int64Value(50)},
 						Panels: []panelModel{

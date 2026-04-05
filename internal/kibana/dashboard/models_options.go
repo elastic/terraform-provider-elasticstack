@@ -24,11 +24,13 @@ import (
 )
 
 type optionsModel struct {
-	HidePanelTitles types.Bool `tfsdk:"hide_panel_titles"`
-	UseMargins      types.Bool `tfsdk:"use_margins"`
-	SyncColors      types.Bool `tfsdk:"sync_colors"`
-	SyncTooltips    types.Bool `tfsdk:"sync_tooltips"`
-	SyncCursor      types.Bool `tfsdk:"sync_cursor"`
+	HidePanelTitles  types.Bool `tfsdk:"hide_panel_titles"`
+	UseMargins       types.Bool `tfsdk:"use_margins"`
+	SyncColors       types.Bool `tfsdk:"sync_colors"`
+	SyncTooltips     types.Bool `tfsdk:"sync_tooltips"`
+	SyncCursor       types.Bool `tfsdk:"sync_cursor"`
+	AutoApplyFilters types.Bool `tfsdk:"auto_apply_filters"`
+	HidePanelBorders types.Bool `tfsdk:"hide_panel_borders"`
 }
 
 func (m *dashboardModel) optionsToAPI() (*optionsAPIModel, diag.Diagnostics) {
@@ -77,11 +79,13 @@ func (m *dashboardModel) mapOptionsFromAPI(options *optionsAPIModel) *optionsMod
 	}
 
 	model := optionsModel{
-		HidePanelTitles: types.BoolPointerValue(options.HidePanelTitles),
-		UseMargins:      types.BoolPointerValue(options.UseMargins),
-		SyncColors:      types.BoolPointerValue(options.SyncColors),
-		SyncTooltips:    types.BoolPointerValue(options.SyncTooltips),
-		SyncCursor:      types.BoolPointerValue(options.SyncCursor),
+		HidePanelTitles:  types.BoolPointerValue(options.HidePanelTitles),
+		UseMargins:       types.BoolPointerValue(options.UseMargins),
+		SyncColors:       types.BoolPointerValue(options.SyncColors),
+		SyncTooltips:     types.BoolPointerValue(options.SyncTooltips),
+		SyncCursor:       types.BoolPointerValue(options.SyncCursor),
+		AutoApplyFilters: types.BoolPointerValue(options.AutoApplyFilters),
+		HidePanelBorders: types.BoolPointerValue(options.HidePanelBorders),
 	}
 
 	return &model
@@ -104,6 +108,12 @@ func (m optionsModel) toAPI() *optionsAPIModel {
 	if typeutils.IsKnown(m.SyncCursor) {
 		options.SyncCursor = m.SyncCursor.ValueBoolPointer()
 	}
+	if typeutils.IsKnown(m.AutoApplyFilters) {
+		options.AutoApplyFilters = m.AutoApplyFilters.ValueBoolPointer()
+	}
+	if typeutils.IsKnown(m.HidePanelBorders) {
+		options.HidePanelBorders = m.HidePanelBorders.ValueBoolPointer()
+	}
 
 	return &options
 }
@@ -113,11 +123,23 @@ func isDashboardOptionsDefaultSet(options *optionsAPIModel) bool {
 		return false
 	}
 
+	// OpenAPI examples use auto_apply_filters=true and hide_panel_borders=false as defaults.
+	// When those pointers are omitted on GET, treat them as matching defaults so an omitted
+	// Terraform `options` block stays null in state (REQ-009).
 	return boolPtrEquals(options.HidePanelTitles, false) &&
 		boolPtrEquals(options.UseMargins, true) &&
 		boolPtrEquals(options.SyncColors, false) &&
 		boolPtrEquals(options.SyncTooltips, false) &&
-		boolPtrEquals(options.SyncCursor, true)
+		boolPtrEquals(options.SyncCursor, true) &&
+		boolPtrEqualsOrOmitted(options.AutoApplyFilters, true) &&
+		boolPtrEqualsOrOmitted(options.HidePanelBorders, false)
+}
+
+func boolPtrEqualsOrOmitted(value *bool, expected bool) bool {
+	if value == nil {
+		return true
+	}
+	return *value == expected
 }
 
 func boolPtrEquals(value *bool, expected bool) bool {

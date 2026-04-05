@@ -86,12 +86,12 @@ func (c pieChartPanelConfigConverter) buildAttributes(pm panelModel) (kbapi.Lens
 type pieChartConfigModel struct {
 	Title               types.String           `tfsdk:"title"`
 	Description         types.String           `tfsdk:"description"`
-	Dataset             jsontypes.Normalized   `tfsdk:"dataset"`
+	DatasetJSON         jsontypes.Normalized   `tfsdk:"dataset_json"`
 	IgnoreGlobalFilters types.Bool             `tfsdk:"ignore_global_filters"`
 	Sampling            types.Float64          `tfsdk:"sampling"`
 	DonutHole           types.String           `tfsdk:"donut_hole"`
 	LabelPosition       types.String           `tfsdk:"label_position"`
-	Legend              jsontypes.Normalized   `tfsdk:"legend"`
+	LegendJSON          jsontypes.Normalized   `tfsdk:"legend_json"`
 	Query               *filterSimpleModel     `tfsdk:"query"`
 	Filters             []chartFilterJSONModel `tfsdk:"filters"`
 	Metrics             []pieMetricModel       `tfsdk:"metrics"`
@@ -174,16 +174,16 @@ func (m *pieChartConfigModel) populateCommonFields(
 	} else {
 		m.LabelPosition = types.StringNull()
 	}
-	dv, ok := marshalToNormalized(datasetBytes, datasetErr, "dataset", diags)
+	dv, ok := marshalToNormalized(datasetBytes, datasetErr, "dataset_json", diags)
 	if !ok {
 		return false
 	}
-	m.Dataset = dv
-	lv, ok := marshalToNormalized(legendBytes, legendErr, "legend", diags)
+	m.DatasetJSON = dv
+	lv, ok := marshalToNormalized(legendBytes, legendErr, "legend_json", diags)
 	if !ok {
 		return false
 	}
-	m.Legend = lv
+	m.LegendJSON = lv
 	m.Filters = populateFiltersFromAPI(filters, diags)
 	return !diags.HasError()
 }
@@ -351,8 +351,8 @@ func (m *pieChartConfigModel) toAPI() (kbapi.PieChart, diag.Diagnostics) {
 		}
 
 		// Legend
-		if !m.Legend.IsNull() {
-			if err := json.Unmarshal([]byte(m.Legend.ValueString()), &chart.Legend); err != nil {
+		if !m.LegendJSON.IsNull() {
+			if err := json.Unmarshal([]byte(m.LegendJSON.ValueString()), &chart.Legend); err != nil {
 				diags.AddError("Failed to unmarshal legend", err.Error())
 			}
 		}
@@ -361,8 +361,8 @@ func (m *pieChartConfigModel) toAPI() (kbapi.PieChart, diag.Diagnostics) {
 		}
 
 		// Dataset
-		if !m.Dataset.IsNull() {
-			if err := json.Unmarshal([]byte(m.Dataset.ValueString()), &chart.Dataset); err != nil {
+		if !m.DatasetJSON.IsNull() {
+			if err := json.Unmarshal([]byte(m.DatasetJSON.ValueString()), &chart.Dataset); err != nil {
 				diags.AddError("Failed to unmarshal dataset", err.Error())
 			}
 		}
@@ -431,8 +431,8 @@ func (m *pieChartConfigModel) toAPI() (kbapi.PieChart, diag.Diagnostics) {
 		}
 
 		// Legend
-		if !m.Legend.IsNull() {
-			if err := json.Unmarshal([]byte(m.Legend.ValueString()), &chart.Legend); err != nil {
+		if !m.LegendJSON.IsNull() {
+			if err := json.Unmarshal([]byte(m.LegendJSON.ValueString()), &chart.Legend); err != nil {
 				diags.AddError("Failed to unmarshal legend", err.Error())
 			}
 		}
@@ -441,8 +441,8 @@ func (m *pieChartConfigModel) toAPI() (kbapi.PieChart, diag.Diagnostics) {
 		}
 
 		// Dataset
-		if !m.Dataset.IsNull() {
-			if err := json.Unmarshal([]byte(m.Dataset.ValueString()), &chart.Dataset); err != nil {
+		if !m.DatasetJSON.IsNull() {
+			if err := json.Unmarshal([]byte(m.DatasetJSON.ValueString()), &chart.Dataset); err != nil {
 				diags.AddError("Failed to unmarshal dataset", err.Error())
 			}
 		}

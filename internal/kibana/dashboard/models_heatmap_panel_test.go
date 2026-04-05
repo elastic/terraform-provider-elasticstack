@@ -127,6 +127,7 @@ func Test_heatmapConfigModel_fromAPI_toAPI_noESQL(t *testing.T) {
 	require.NotNil(t, model.Axes)
 	require.NotNil(t, model.Cells)
 	require.NotNil(t, model.Legend)
+	assert.Equal(t, types.StringValue("visible"), model.Legend.Visibility)
 
 	chart, diags := model.toAPI()
 	require.False(t, diags.HasError())
