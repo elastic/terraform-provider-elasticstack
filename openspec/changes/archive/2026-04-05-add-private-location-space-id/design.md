@@ -8,11 +8,11 @@ Private location CRUD in `libs/go-kibana-rest/kbapi` builds URLs with `basePath(
 
 - Add optional `space_id` on the private location resource, aligned with naming and semantics used by `elasticstack_kibana_synthetics_monitor` (`space_id` optional; empty string means default space).
 - Thread the chosen space through `KibanaSynthetics.PrivateLocation` Create, Get, and Delete so all requests hit the correct space-scoped API paths.
-- Document replacement behavior when `space_id` changes and keep import behavior coherent (import id remains the Kibana private location id; practitioners set `space_id` to match the location’s space).
+- Document replacement behavior when `space_id` changes and keep import behavior aligned with other space-scoped Kibana resources: practitioners MAY import with a composite id `<space_id>/<private_location_id>` so the space segment is unambiguous; read/delete resolve the effective space from configured `space_id` when present, and otherwise from the composite id’s space segment when the stored id is composite (for example immediately after import, before `space_id` is present in state).
 
 **Non-Goals:**
 
-- Changing composite import id format to embed space (unless existing patterns in the repo require it—prefer keeping import id as today plus explicit `space_id` in configuration).
+- Replacing the established provider composite import convention (`<space_id>/<resource_id>` for non-default spaces) with import ids that omit the space and rely on configuration alone.
 - In-place update support (still unsupported).
 - OpenAPI/generated `kbapi` client migration for this resource.
 
@@ -24,13 +24,15 @@ Private location CRUD in `libs/go-kibana-rest/kbapi` builds URLs with `basePath(
 
 3. **Default when unset:** Omit attribute or set to `""` → default space, consistent with monitor resource patterns in tests and docs.
 
+4. **Import uses the provider’s composite id form for non-default spaces:** `terraform import ... <space_id>/<private_location_id>`. **`effectiveSpaceID`** (in the resource implementation) chooses the Kibana space for API calls from configured `space_id` when it is set; if `space_id` is null, unknown, or empty and the stored resource id parses as composite, the space segment from that id is used (for example right after import before refresh materializes `space_id`). **Rationale:** Matches other space-scoped resources in this provider and avoids relying on config-only import semantics that differ from documented import syntax. **Alternatives considered:** Import identifier only the bare private location id with mandatory `space_id` in configuration—rejected in favor of consistency with existing composite import patterns.
+
 ## Risks / Trade-offs
 
 - **[Risk] Signature change in `kbapi` breaks callers** → **Mitigation:** Update all call sites in-repo (provider + tests under `libs/go-kibana-rest`); run `make build` and targeted tests.
 
 - **[Risk] Acceptance tests may not always create a secondary Kibana space** → **Mitigation:** Follow existing monitor acceptance patterns for space-scoped tests; if stack fixtures lack a second space, document manual verification or skip conditions consistent with `testing.md`.
 
-- **[Risk] Import without `space_id` assumes default space** → **Mitigation:** Document that imported locations in non-default spaces require `space_id` in configuration before refresh; 404 on wrong space surfaces as remove-from-state per existing read behavior.
+- **[Risk] Wrong space on import** → **Mitigation:** Document composite import `<space_id>/<private_location_id>` for non-default spaces; the implementation derives the API space from configured `space_id` when set, and otherwise from the composite id’s space segment when `space_id` is empty or not yet in state. If the practitioner imports with only the bare private location id and omits `space_id`, behavior matches default-space assumptions; 404 on wrong space surfaces as remove-from-state per existing read behavior.
 
 ## Migration Plan
 
